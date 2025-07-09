@@ -1,5 +1,9 @@
 import type { TextRendererOptions } from '@affine/core/blocksuite/ai/components/text-renderer';
 import type { EditorHost } from '@blocksuite/affine/std';
+import {
+  NotificationProvider,
+  ThemeProvider,
+} from '@blocksuite/affine-shared/services';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -65,6 +69,7 @@ export class AIChatBlockMessage extends LitElement {
   }
 
   private renderStreamObjects(answer: StreamObject[]) {
+    const notificationService = this.host.std.get(NotificationProvider);
     return html`<chat-content-stream-objects
       .answer=${answer}
       .host=${this.host}
@@ -72,17 +77,19 @@ export class AIChatBlockMessage extends LitElement {
       .extensions=${this.textRendererOptions.extensions}
       .affineFeatureFlagService=${this.textRendererOptions
         .affineFeatureFlagService}
+      .notificationService=${notificationService}
+      .theme=${this.host.std.get(ThemeProvider).app$}
     ></chat-content-stream-objects>`;
   }
 
   private renderRichText(text: string) {
     return html`<chat-content-rich-text
-      .host=${this.host}
       .text=${text}
       .state=${this.state}
       .extensions=${this.textRendererOptions.extensions}
       .affineFeatureFlagService=${this.textRendererOptions
         .affineFeatureFlagService}
+      .theme=${this.host.std.get(ThemeProvider).app$}
     ></chat-content-rich-text>`;
   }
 

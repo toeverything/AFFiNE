@@ -62,7 +62,7 @@ export class AIScrollableTextRenderer extends WithDisposable(
   }
 
   override render() {
-    const { host, answer, state, textRendererOptions } = this;
+    const { answer, state, textRendererOptions } = this;
 
     return html` <style>
         .ai-scrollable-text-renderer {
@@ -71,7 +71,6 @@ export class AIScrollableTextRenderer extends WithDisposable(
       </style>
       <div class="ai-scrollable-text-renderer" @wheel=${this._onWheel}>
         <text-renderer
-          .host=${host}
           .answer=${answer}
           .state=${state}
           .options=${textRendererOptions}
@@ -83,7 +82,7 @@ export class AIScrollableTextRenderer extends WithDisposable(
   accessor answer!: string;
 
   @property({ attribute: false })
-  accessor host: EditorHost | null | undefined;
+  accessor host!: EditorHost;
 
   @property({ attribute: false })
   accessor state: AffineAIPanelState | undefined;

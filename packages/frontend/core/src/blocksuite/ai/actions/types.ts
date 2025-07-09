@@ -1,4 +1,5 @@
 import type {
+  AddContextFileInput,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
   ContextWorkspaceEmbeddingStatus,
@@ -295,10 +296,7 @@ declare global {
       }) => Promise<boolean>;
       addContextFile: (
         file: File,
-        options: {
-          contextId: string;
-          blobId: string;
-        }
+        options: AddContextFileInput
       ) => Promise<CopilotContextFile>;
       removeContextFile: (options: {
         contextId: string;

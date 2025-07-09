@@ -1,6 +1,5 @@
 import type { CopilotSessionType } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import type { NotificationService } from '@blocksuite/affine/shared/services';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -133,9 +132,6 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor onDocClick!: (docId: string, sessionId: string) => void;
-
-  @property({ attribute: false })
-  accessor notification: NotificationService | null | undefined;
 
   @state()
   private accessor sessions: BlockSuitePresets.AIRecentSession[] = [];

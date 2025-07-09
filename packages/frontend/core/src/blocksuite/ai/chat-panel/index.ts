@@ -1,5 +1,6 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { AppThemeService } from '@affine/core/modules/theme';
 import type { WorkbenchService } from '@affine/core/modules/workbench';
 import type {
   ContextEmbedStatus,
@@ -7,7 +8,7 @@ import type {
   UpdateChatSessionInput,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
+import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -125,6 +126,12 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor affineWorkbenchService!: WorkbenchService;
 
+  @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   @state()
   accessor session: CopilotChatHistoryFragment | null | undefined;
 
@@ -144,7 +151,6 @@ export class ChatPanel extends SignalWatcher(
   private get chatTitle() {
     const [done, total] = this.embeddingProgress;
     const isEmbedding = total > 0 && done < total;
-    const notification = this.host.std.getOptional(NotificationProvider);
 
     return html`
       <div class="chat-panel-title-text">
@@ -170,7 +176,7 @@ export class ChatPanel extends SignalWatcher(
         .onOpenSession=${this.openSession}
         .onOpenDoc=${this.openDoc}
         .docDisplayConfig=${this.docDisplayConfig}
-        .notification=${notification}
+        .notificationService=${this.notificationService}
       ></ai-chat-toolbar>
     `;
   }
@@ -371,6 +377,8 @@ export class ChatPanel extends SignalWatcher(
         .docDisplayConfig=${this.docDisplayConfig}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .affineThemeService=${this.affineThemeService}
+        .notificationService=${this.notificationService}
       ></playground-content>
     `;
 
@@ -444,6 +452,8 @@ export class ChatPanel extends SignalWatcher(
           .extensions=${this.extensions}
           .affineFeatureFlagService=${this.affineFeatureFlagService}
           .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+          .affineThemeService=${this.affineThemeService}
+          .notificationService=${this.notificationService}
           .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
           .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}

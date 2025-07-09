@@ -1,5 +1,6 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { AppThemeService } from '@affine/core/modules/theme';
 import type {
   ContextEmbedStatus,
   CopilotChatHistoryFragment,
@@ -8,6 +9,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { type Signal } from '@preact/signals-core';
 import {
   css,
@@ -159,6 +161,12 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
+
+  @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
   accessor onEmbeddingProgressChange!: (
@@ -401,6 +409,8 @@ export class AIChatContent extends SignalWatcher(
         .isHistoryLoading=${this.isHistoryLoading}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .affineThemeService=${this.affineThemeService}
+        .notificationService=${this.notificationService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .width=${this.width}

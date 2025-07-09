@@ -2,7 +2,7 @@ import type { TagMeta } from '@affine/core/components/page-list';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import { MoreVerticalIcon, PlusIcon } from '@blocksuite/icons/lit';
 import { flip, offset } from '@floating-ui/dom';
 import { computed, type Signal, signal } from '@preact/signals-core';
@@ -81,9 +81,6 @@ export class ChatPanelChips extends SignalWatcher(
   `;
 
   private _abortController: AbortController | null = null;
-
-  @property({ attribute: false })
-  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor chips!: ChatChip[];
@@ -167,7 +164,6 @@ export class ChatPanelChips extends SignalWatcher(
               .removeChip=${this._removeChip}
               .checkTokenLimit=${this._checkTokenLimit}
               .docDisplayConfig=${this.docDisplayConfig}
-              .host=${this.host}
             ></chat-panel-doc-chip>`;
           }
           if (isFileChip(chip)) {
@@ -407,13 +403,8 @@ export class ChatPanelChips extends SignalWatcher(
       if (!contextId || !AIProvider.context) {
         throw new Error('Context not found');
       }
-      if (!this.host) {
-        throw new Error('Host not found');
-      }
-      const blobId = await this.host.store.blobSync.set(chip.file);
       const contextFile = await AIProvider.context.addContextFile(chip.file, {
         contextId,
-        blobId,
       });
       this._updateChip(chip, {
         state: contextFile.status,

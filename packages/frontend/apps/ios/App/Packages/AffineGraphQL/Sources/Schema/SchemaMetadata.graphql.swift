@@ -25,6 +25,10 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "AggregateResultObjectType": return AffineGraphQL.Objects.AggregateResultObjectType
     case "AppConfigValidateResult": return AffineGraphQL.Objects.AppConfigValidateResult
     case "ChatMessage": return AffineGraphQL.Objects.ChatMessage
+    case "CommentChangeObjectType": return AffineGraphQL.Objects.CommentChangeObjectType
+    case "CommentChangeObjectTypeEdge": return AffineGraphQL.Objects.CommentChangeObjectTypeEdge
+    case "CommentObjectType": return AffineGraphQL.Objects.CommentObjectType
+    case "CommentObjectTypeEdge": return AffineGraphQL.Objects.CommentObjectTypeEdge
     case "ContextMatchedDocChunk": return AffineGraphQL.Objects.ContextMatchedDocChunk
     case "ContextMatchedFileChunk": return AffineGraphQL.Objects.ContextMatchedFileChunk
     case "ContextWorkspaceEmbeddingStatus": return AffineGraphQL.Objects.ContextWorkspaceEmbeddingStatus
@@ -35,11 +39,11 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "CopilotContextFile": return AffineGraphQL.Objects.CopilotContextFile
     case "CopilotDocType": return AffineGraphQL.Objects.CopilotDocType
     case "CopilotHistories": return AffineGraphQL.Objects.CopilotHistories
+    case "CopilotHistoriesTypeEdge": return AffineGraphQL.Objects.CopilotHistoriesTypeEdge
     case "CopilotPromptConfigType": return AffineGraphQL.Objects.CopilotPromptConfigType
     case "CopilotPromptMessageType": return AffineGraphQL.Objects.CopilotPromptMessageType
     case "CopilotPromptType": return AffineGraphQL.Objects.CopilotPromptType
     case "CopilotQuota": return AffineGraphQL.Objects.CopilotQuota
-    case "CopilotSessionType": return AffineGraphQL.Objects.CopilotSessionType
     case "CopilotWorkspaceConfig": return AffineGraphQL.Objects.CopilotWorkspaceConfig
     case "CopilotWorkspaceFile": return AffineGraphQL.Objects.CopilotWorkspaceFile
     case "CopilotWorkspaceFileTypeEdge": return AffineGraphQL.Objects.CopilotWorkspaceFileTypeEdge
@@ -67,6 +71,9 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "NotificationObjectType": return AffineGraphQL.Objects.NotificationObjectType
     case "NotificationObjectTypeEdge": return AffineGraphQL.Objects.NotificationObjectTypeEdge
     case "PageInfo": return AffineGraphQL.Objects.PageInfo
+    case "PaginatedCommentChangeObjectType": return AffineGraphQL.Objects.PaginatedCommentChangeObjectType
+    case "PaginatedCommentObjectType": return AffineGraphQL.Objects.PaginatedCommentObjectType
+    case "PaginatedCopilotHistoriesType": return AffineGraphQL.Objects.PaginatedCopilotHistoriesType
     case "PaginatedCopilotWorkspaceFileType": return AffineGraphQL.Objects.PaginatedCopilotWorkspaceFileType
     case "PaginatedDocType": return AffineGraphQL.Objects.PaginatedDocType
     case "PaginatedGrantedDocUserType": return AffineGraphQL.Objects.PaginatedGrantedDocUserType
@@ -77,6 +84,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "Query": return AffineGraphQL.Objects.Query
     case "ReleaseVersionType": return AffineGraphQL.Objects.ReleaseVersionType
     case "RemoveAvatar": return AffineGraphQL.Objects.RemoveAvatar
+    case "ReplyObjectType": return AffineGraphQL.Objects.ReplyObjectType
     case "SearchDocObjectType": return AffineGraphQL.Objects.SearchDocObjectType
     case "SearchNodeObjectType": return AffineGraphQL.Objects.SearchNodeObjectType
     case "SearchResultObjectType": return AffineGraphQL.Objects.SearchResultObjectType

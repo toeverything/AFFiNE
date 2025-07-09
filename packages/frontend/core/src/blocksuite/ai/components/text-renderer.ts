@@ -1,17 +1,15 @@
 import { createReactComponentFromLit } from '@affine/component';
-import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewProvider } from '@blocksuite/affine/components/peek';
-import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
+import type { ColorScheme } from '@blocksuite/affine/model';
 import {
   codeBlockWrapMiddleware,
   defaultImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/shared/adapters';
-import { ThemeProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import {
   BlockStdScope,
@@ -22,10 +20,10 @@ import {
 import type {
   ExtensionType,
   Query,
-  Schema,
   Store,
   TransformerMiddleware,
 } from '@blocksuite/affine/store';
+import type { Signal } from '@preact/signals-core';
 import {
   darkCssVariablesV2,
   lightCssVariablesV2,
@@ -103,6 +101,7 @@ export type TextRendererOptions = {
   additionalMiddlewares?: TransformerMiddleware[];
   testId?: string;
   affineFeatureFlagService?: FeatureFlagService;
+  theme?: Signal<ColorScheme>;
 };
 
 // todo: refactor it for more general purpose usage instead of AI only?
@@ -221,6 +220,8 @@ export class TextRenderer extends SignalWatcher(
 
   private _doc: Store | null = null;
 
+  private _host: EditorHost | null = null;
+
   private readonly _query: Query = {
     mode: 'strict',
     match: [
@@ -243,7 +244,7 @@ export class TextRenderer extends SignalWatcher(
   private _timer?: ReturnType<typeof setInterval> | null = null;
 
   private readonly _subscribeDocLinkClicked = () => {
-    const refNodeSlots = this.host?.std.getOptional(RefNodeSlotsProvider);
+    const refNodeSlots = this._host?.std.getOptional(RefNodeSlotsProvider);
     if (!refNodeSlots) return;
     this.disposables.add(
       refNodeSlots.docLinkClicked
@@ -254,7 +255,7 @@ export class TextRenderer extends SignalWatcher(
         )
         .subscribe(options => {
           // Open the doc in center peek
-          this.host?.std
+          this._host?.std
             .getOptional(PeekViewProvider)
             ?.peek({
               docId: options.pageId,
@@ -268,40 +269,27 @@ export class TextRenderer extends SignalWatcher(
     if (this._answers.length > 0) {
       const latestAnswer = this._answers.pop();
       this._answers = [];
-      const schema = this.schema ?? this.host?.std.store.schema;
-      let provider: ServiceProvider;
-      if (this.host) {
-        provider = this.host.std.store.provider;
-      } else {
-        const container = new Container();
-        getStoreManager()
-          .config.init()
-          .value.get('store')
-          .forEach(ext => {
-            ext.setup(container);
-          });
-
-        provider = container.provider();
-      }
-      if (latestAnswer && schema) {
+      if (latestAnswer) {
         const middlewares = [
           defaultImageProxyMiddleware,
           codeBlockWrapMiddleware(true),
           ...(this.options.additionalMiddlewares ?? []),
         ];
-        const affineFeatureFlagService = this.options.affineFeatureFlagService;
         markDownToDoc(
-          provider,
-          schema,
           latestAnswer,
           middlewares,
-          affineFeatureFlagService
+          this.options.affineFeatureFlagService
         )
           .then(doc => {
             this.disposeDoc();
             this._doc = doc.doc.getStore({
               query: this._query,
             });
+            this._host = new BlockStdScope({
+              store: this._doc,
+              extensions:
+                this.options.extensions ?? getCustomPageEditorBlockSpecs(),
+            }).render();
             this.disposables.add(() => {
               doc.doc.removeStore({ query: this._query });
             });
@@ -309,14 +297,10 @@ export class TextRenderer extends SignalWatcher(
             this.requestUpdate();
             if (this.state !== 'generating') {
               this._doc.load();
-              // LinkPreviewService & ImageProxyService config should read from host settings
-              const imageProxyService =
-                this.host?.std.store.get(ImageProxyService);
-              if (imageProxyService) {
-                this._doc
-                  ?.get(ImageProxyService)
-                  .setImageProxyURL(imageProxyService.imageProxyURL);
-              }
+              const imageProxyService = this._host.std.get(ImageProxyService);
+              imageProxyService.setImageProxyURL(
+                imageProxyService.imageProxyURL
+              );
               this._clearTimer();
             }
           })
@@ -341,7 +325,6 @@ export class TextRenderer extends SignalWatcher(
 
   private disposeDoc() {
     this._doc?.dispose();
-    this._doc?.workspace.dispose();
   }
 
   override disconnectedCallback() {
@@ -355,22 +338,22 @@ export class TextRenderer extends SignalWatcher(
       return nothing;
     }
 
-    const { customHeading, testId } = this.options;
+    const { customHeading, testId = 'ai-text-renderer' } = this.options;
     const classes = classMap({
       'text-renderer-container': true,
       'custom-heading': !!customHeading,
     });
-    const theme = this.host?.std.get(ThemeProvider).app$.value;
+    const theme = this.options.theme?.value;
     return html`
-      <div class=${classes} data-testid=${testId} data-app-theme=${theme}>
+      <div
+        class=${classes}
+        data-testid=${testId}
+        data-app-theme=${theme ?? 'light'}
+      >
         ${keyed(
           this._doc,
           html`<div class="ai-answer-text-editor affine-page-viewport">
-            ${new BlockStdScope({
-              store: this._doc,
-              extensions:
-                this.options.extensions ?? getCustomPageEditorBlockSpecs(),
-            }).render()}
+            ${this._host}
           </div>`
         )}
       </div>
@@ -417,26 +400,16 @@ export class TextRenderer extends SignalWatcher(
   accessor answer!: string;
 
   @property({ attribute: false })
-  accessor host: EditorHost | null | undefined;
-
-  @property({ attribute: false })
-  accessor schema: Schema | null = null;
-
-  @property({ attribute: false })
   accessor options!: TextRendererOptions;
 
   @property({ attribute: false })
   accessor state: AffineAIPanelState | undefined = undefined;
 }
 
-export const createTextRenderer = (
-  host: EditorHost | null | undefined,
-  options: TextRendererOptions
-) => {
+export const createTextRenderer = (options: TextRendererOptions) => {
   return (answer: string, state?: AffineAIPanelState) => {
     return html`<text-renderer
       contenteditable="false"
-      .host=${host}
       .answer=${answer}
       .state=${state}
       .options=${options}

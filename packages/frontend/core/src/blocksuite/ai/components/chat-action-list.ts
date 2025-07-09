@@ -1,11 +1,11 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import type { ImageSelection } from '@blocksuite/affine/shared/selection';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import type {
   BlockSelection,
   EditorHost,
   TextSelection,
 } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -96,6 +96,9 @@ export class ChatActionList extends LitElement {
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-action-list';
 
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   override render() {
     const { actions } = this;
     if (!actions.length) {
@@ -148,7 +151,7 @@ export class ChatActionList extends LitElement {
                   messageId
                 );
                 if (success) {
-                  this.host.std.getOptional(NotificationProvider)?.notify({
+                  this.notificationService.notify({
                     title: action.toast,
                     accent: 'success',
                     onClose: function (): void {},

@@ -7,25 +7,30 @@ public class GetCopilotSessionsQuery: GraphQLQuery {
   public static let operationName: String = "getCopilotSessions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotSessions($workspaceId: String!, $docId: String, $options: QueryChatSessionsInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename sessions(docId: $docId, options: $options) { __typename id parentSessionId docId pinned promptName model optionalModels } } } }"#
+      #"query getCopilotSessions($workspaceId: String!, $pagination: PaginationInput!, $docId: String, $options: QueryChatHistoriesInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats(pagination: $pagination, docId: $docId, options: $options) { __typename ...PaginatedCopilotChats } } } }"#,
+      fragments: [CopilotChatHistory.self, CopilotChatMessage.self, PaginatedCopilotChats.self]
     ))
 
   public var workspaceId: String
+  public var pagination: PaginationInput
   public var docId: GraphQLNullable<String>
-  public var options: GraphQLNullable<QueryChatSessionsInput>
+  public var options: GraphQLNullable<QueryChatHistoriesInput>
 
   public init(
     workspaceId: String,
+    pagination: PaginationInput,
     docId: GraphQLNullable<String>,
-    options: GraphQLNullable<QueryChatSessionsInput>
+    options: GraphQLNullable<QueryChatHistoriesInput>
   ) {
     self.workspaceId = workspaceId
+    self.pagination = pagination
     self.docId = docId
     self.options = options
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
+    "pagination": pagination,
     "docId": docId,
     "options": options
   ] }
@@ -67,41 +72,41 @@ public class GetCopilotSessionsQuery: GraphQLQuery {
         public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Copilot }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
-          .field("sessions", [Session].self, arguments: [
+          .field("chats", Chats.self, arguments: [
+            "pagination": .variable("pagination"),
             "docId": .variable("docId"),
             "options": .variable("options")
           ]),
         ] }
 
-        /// Get the session list in the workspace
-        public var sessions: [Session] { __data["sessions"] }
+        public var chats: Chats { __data["chats"] }
 
-        /// CurrentUser.Copilot.Session
+        /// CurrentUser.Copilot.Chats
         ///
-        /// Parent Type: `CopilotSessionType`
-        public struct Session: AffineGraphQL.SelectionSet {
+        /// Parent Type: `PaginatedCopilotHistoriesType`
+        public struct Chats: AffineGraphQL.SelectionSet {
           public let __data: DataDict
           public init(_dataDict: DataDict) { __data = _dataDict }
 
-          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotSessionType }
+          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.PaginatedCopilotHistoriesType }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
-            .field("id", AffineGraphQL.ID.self),
-            .field("parentSessionId", AffineGraphQL.ID?.self),
-            .field("docId", String?.self),
-            .field("pinned", Bool.self),
-            .field("promptName", String.self),
-            .field("model", String.self),
-            .field("optionalModels", [String].self),
+            .fragment(PaginatedCopilotChats.self),
           ] }
 
-          public var id: AffineGraphQL.ID { __data["id"] }
-          public var parentSessionId: AffineGraphQL.ID? { __data["parentSessionId"] }
-          public var docId: String? { __data["docId"] }
-          public var pinned: Bool { __data["pinned"] }
-          public var promptName: String { __data["promptName"] }
-          public var model: String { __data["model"] }
-          public var optionalModels: [String] { __data["optionalModels"] }
+          public var pageInfo: PageInfo { __data["pageInfo"] }
+          public var edges: [Edge] { __data["edges"] }
+
+          public struct Fragments: FragmentContainer {
+            public let __data: DataDict
+            public init(_dataDict: DataDict) { __data = _dataDict }
+
+            public var paginatedCopilotChats: PaginatedCopilotChats { _toFragment() }
+          }
+
+          public typealias PageInfo = PaginatedCopilotChats.PageInfo
+
+          public typealias Edge = PaginatedCopilotChats.Edge
         }
       }
     }

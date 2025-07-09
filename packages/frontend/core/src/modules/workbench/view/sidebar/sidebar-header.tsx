@@ -26,7 +26,7 @@ function Container({
 
 const ToggleButton = ({ onToggle }: { onToggle?: () => void }) => {
   return (
-    <IconButton size="24" onClick={onToggle}>
+    <IconButton size="24" onClick={onToggle} data-testid="right-sidebar-close">
       <RightSidebarIcon />
     </IconButton>
   );

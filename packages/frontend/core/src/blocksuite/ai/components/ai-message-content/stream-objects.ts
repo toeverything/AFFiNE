@@ -1,14 +1,13 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { ImageProxyService } from '@blocksuite/affine/shared/adapters';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { ColorScheme } from '@blocksuite/affine/model';
+import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { BlockDiffProvider } from '../../services/block-diff';
 import type { AffineAIPanelState } from '../../widgets/ai-panel/type';
 import type { StreamObject } from '../ai-chat-messages';
 
@@ -42,12 +41,16 @@ export class ChatContentStreamObjects extends WithDisposable(
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
+  @property({ attribute: false })
+  accessor theme!: Signal<ColorScheme>;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   private renderToolCall(streamObject: StreamObject) {
     if (streamObject.type !== 'tool-call') {
       return nothing;
     }
-    const imageProxyService = this.host?.store.get(ImageProxyService);
-    const blockDiffService = this.host?.view.std.getOptional(BlockDiffProvider);
 
     switch (streamObject.toolName) {
       case 'web_crawl_exa':
@@ -55,7 +58,6 @@ export class ChatContentStreamObjects extends WithDisposable(
           <web-crawl-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
@@ -63,7 +65,6 @@ export class ChatContentStreamObjects extends WithDisposable(
           <web-search-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
       case 'doc_compose':
@@ -72,7 +73,8 @@ export class ChatContentStreamObjects extends WithDisposable(
             .std=${this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
+            .theme=${this.theme}
+            .notificationService=${this.notificationService}
           ></doc-compose-tool>
         `;
       case 'code_artifact':
@@ -81,7 +83,6 @@ export class ChatContentStreamObjects extends WithDisposable(
             .std=${this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></code-artifact-tool>
         `;
       case 'doc_edit':
@@ -89,7 +90,7 @@ export class ChatContentStreamObjects extends WithDisposable(
           <doc-edit-tool
             .data=${streamObject}
             .doc=${this.host?.store}
-            .blockDiffService=${blockDiffService}
+            .notificationService=${this.notificationService}
           ></doc-edit-tool>
         `;
       default: {
@@ -105,8 +106,6 @@ export class ChatContentStreamObjects extends WithDisposable(
     if (streamObject.type !== 'tool-result') {
       return nothing;
     }
-    const imageProxyService = this.host?.store.get(ImageProxyService);
-    const blockDiffService = this.host?.view.std.getOptional(BlockDiffProvider);
 
     switch (streamObject.toolName) {
       case 'web_crawl_exa':
@@ -114,7 +113,6 @@ export class ChatContentStreamObjects extends WithDisposable(
           <web-crawl-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
@@ -122,7 +120,6 @@ export class ChatContentStreamObjects extends WithDisposable(
           <web-search-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
       case 'doc_compose':
@@ -131,7 +128,8 @@ export class ChatContentStreamObjects extends WithDisposable(
             .std=${this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
+            .theme=${this.theme}
+            .notificationService=${this.notificationService}
           ></doc-compose-tool>
         `;
       case 'code_artifact':
@@ -140,7 +138,6 @@ export class ChatContentStreamObjects extends WithDisposable(
             .std=${this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></code-artifact-tool>
         `;
       case 'doc_edit':
@@ -148,8 +145,8 @@ export class ChatContentStreamObjects extends WithDisposable(
           <doc-edit-tool
             .data=${streamObject}
             .host=${this.host}
-            .blockDiffService=${blockDiffService}
             .renderRichText=${this.renderRichText.bind(this)}
+            .notificationService=${this.notificationService}
           ></doc-edit-tool>
         `;
       default: {
@@ -158,7 +155,6 @@ export class ChatContentStreamObjects extends WithDisposable(
           <tool-result-card
             .name=${name}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></tool-result-card>
         `;
       }
@@ -167,11 +163,11 @@ export class ChatContentStreamObjects extends WithDisposable(
 
   private renderRichText(text: string) {
     return html`<chat-content-rich-text
-      .host=${this.host}
       .text=${text}
       .state=${this.state}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .theme=${this.theme}
     ></chat-content-rich-text>`;
   }
 

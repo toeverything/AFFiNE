@@ -1,7 +1,7 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CloseIcon,
   CopyIcon,
@@ -14,7 +14,7 @@ import {
 import { css, html, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
-import type { BlockDiffService } from '../../services/block-diff';
+import { BlockDiffProvider } from '../../services/block-diff';
 import { diffMarkdown } from '../../utils/apply-model/markdown-diff';
 import { copyText } from '../../utils/editor-actions';
 import type { ToolError } from './type';
@@ -190,13 +190,17 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
   accessor data!: DocEditToolCall | DocEditToolResult;
 
   @property({ attribute: false })
-  accessor blockDiffService: BlockDiffService | undefined;
+  accessor renderRichText!: (text: string) => string;
 
   @property({ attribute: false })
-  accessor renderRichText!: (text: string) => string;
+  accessor notificationService!: NotificationService;
 
   @state()
   accessor isCollapsed = false;
+
+  get blockDiffService() {
+    return this.host?.std.getOptional(BlockDiffProvider);
+  }
 
   private async _handleApply(markdown: string) {
     if (!this.host) {
@@ -229,14 +233,9 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
     if (!this.host) {
       return;
     }
-    const success = await copyText(
-      this.host,
-      removeMarkdownComments(changedMarkdown)
-    );
+    const success = await copyText(removeMarkdownComments(changedMarkdown));
     if (success) {
-      const notificationService =
-        this.host?.std.getOptional(NotificationProvider);
-      notificationService?.notify({
+      this.notificationService.notify({
         title: 'Copied to clipboard',
         accent: 'success',
         onClose: function (): void {},

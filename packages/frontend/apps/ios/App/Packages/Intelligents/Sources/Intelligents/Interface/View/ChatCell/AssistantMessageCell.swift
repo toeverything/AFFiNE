@@ -55,7 +55,7 @@ class AssistantMessageCell: ChatBaseCell {
     )
     markdownViewForSizeCalculation.setMarkdown(
       vm.documentBlocks,
-      renderedContent: vm.documentRenderedContent,
+      renderedContent: vm.documentRenderedContent
     )
     let boundingSize = markdownViewForSizeCalculation.boundingSize(for: width)
     return ceil(boundingSize.height)

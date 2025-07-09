@@ -1,8 +1,11 @@
+import { useConfirmModal } from '@affine/component';
 import { AIProvider, ChatPanel } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
+import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { AppThemeService } from '@affine/core/modules/theme';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
@@ -51,6 +54,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     reasoningConfig,
     playgroundConfig,
   } = useAIChatConfig();
+  const confirmModal = useConfirmModal();
 
   useEffect(() => {
     if (!editor || !editor.host) return;
@@ -87,6 +91,11 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       );
       chatPanelRef.current.affineWorkbenchService =
         framework.get(WorkbenchService);
+      chatPanelRef.current.affineThemeService = framework.get(AppThemeService);
+      chatPanelRef.current.notificationService = new NotificationServiceImpl(
+        confirmModal.closeConfirmModal,
+        confirmModal.openConfirmModal
+      );
 
       containerRef.current?.append(chatPanelRef.current);
     } else {
@@ -117,6 +126,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     searchMenuConfig,
     reasoningConfig,
     playgroundConfig,
+    confirmModal,
   ]);
 
   const [autoResized, setAutoResized] = useState(false);
