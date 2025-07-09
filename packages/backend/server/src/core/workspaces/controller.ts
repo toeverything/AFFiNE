@@ -195,7 +195,7 @@ export class WorkspacesController {
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Read');
 
     const { body, metadata, redirectUrl } =
-      await this.commentAttachmentStorage.get(workspaceId, docId, key);
+      await this.commentAttachmentStorage.get(workspaceId, docId, key, true);
 
     if (redirectUrl) {
       return res.redirect(redirectUrl);
