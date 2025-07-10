@@ -266,6 +266,7 @@
     "./components/toggle-button": "./src/components/toggle-button.ts",
     "./components/toggle-switch": "./src/components/toggle-switch.ts",
     "./components/toolbar": "./src/components/toolbar.ts",
+    "./components/tooltip": "./src/components/tooltip.ts",
     "./components/view-dropdown-menu": "./src/components/view-dropdown-menu.ts",
     "./components/tooltip-content-with-shortcut": "./src/components/tooltip-content-with-shortcut.ts",
     "./components/resource": "./src/components/resource.ts",

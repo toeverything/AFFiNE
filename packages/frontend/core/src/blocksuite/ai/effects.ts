@@ -1,3 +1,5 @@
+import { effects as tooltipEffects } from '@blocksuite/affine-components/tooltip';
+
 import { AIChatBlockComponent } from './blocks/ai-chat-block/ai-chat-block';
 import { EdgelessAIChatBlockComponent } from './blocks/ai-chat-block/ai-chat-edgeless-block';
 import { LitTranscriptionBlock } from './blocks/ai-chat-block/ai-transcription-block';
@@ -113,6 +115,7 @@ export function registerAIEffects() {
   registerMiniMindmapBlocks();
   componentAiItemEffects();
   componentPlaygroundEffects();
+  tooltipEffects();
 
   customElements.define('ask-ai-icon', AskAIIcon);
   customElements.define('ask-ai-button', AskAIButton);

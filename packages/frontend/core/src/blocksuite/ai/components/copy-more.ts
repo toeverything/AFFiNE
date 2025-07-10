@@ -1,5 +1,5 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
-import { Tooltip } from '@blocksuite/affine/components/toolbar';
+import { Tooltip } from '@blocksuite/affine/components/tooltip';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { noop } from '@blocksuite/affine/global/utils';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
