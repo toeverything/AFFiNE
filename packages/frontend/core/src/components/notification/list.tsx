@@ -2,6 +2,8 @@ import {
   Avatar,
   Button,
   IconButton,
+  Menu,
+  MenuItem,
   notify,
   observeIntersection,
   Scrollable,
@@ -31,6 +33,7 @@ import {
   CollaborationIcon,
   DeleteIcon,
   EdgelessIcon,
+  MoreHorizontalIcon,
   NotificationIcon,
   PageIcon,
 } from '@blocksuite/icons/rc';
@@ -80,37 +83,59 @@ export const NotificationList = () => {
     return;
   }, [hasMore, notificationListService]);
 
-  return (
-    <Scrollable.Root>
-      <Scrollable.Viewport className={styles.containerScrollViewport}>
-        {notifications.length > 0 ? (
-          <ul className={styles.itemList}>
-            {notifications.map(notification => (
-              <li key={notification.id}>
-                <NotificationItem notification={notification} />
-              </li>
-            ))}
-            {userFriendlyError && (
-              <div className={styles.error}>{userFriendlyError.message}</div>
-            )}
-          </ul>
-        ) : isLoading ? (
-          <NotificationItemSkeleton />
-        ) : userFriendlyError ? (
-          <div className={styles.error}>{userFriendlyError.message}</div>
-        ) : (
-          <NotificationListEmpty />
-        )}
+  const handleDeleteAll = useCallback(() => {
+    notificationListService.readAllNotifications().catch(err => {
+      notify.error(UserFriendlyError.fromAny(err));
+    });
+  }, [notificationListService]);
 
-        <div
-          ref={loadMoreIndicatorRef}
-          className={hasMore ? styles.loadMoreIndicator : ''}
-        >
-          {hasMore ? t['com.affine.notification.loading-more']() : null}
-        </div>
-      </Scrollable.Viewport>
-      <Scrollable.Scrollbar />
-    </Scrollable.Root>
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <span>{t['com.affine.rootAppSidebar.notifications']()}</span>
+        {notifications.length > 0 && (
+          <Menu
+            items={
+              <MenuItem prefixIcon={<DeleteIcon />} onClick={handleDeleteAll}>
+                <span>{t['com.affine.notification.delete-all']()}</span>
+              </MenuItem>
+            }
+          >
+            <IconButton icon={<MoreHorizontalIcon />} />
+          </Menu>
+        )}
+      </div>
+      <Scrollable.Root className={styles.scrollRoot}>
+        <Scrollable.Viewport className={styles.scrollViewport}>
+          {notifications.length > 0 ? (
+            <ul className={styles.itemList}>
+              {notifications.map(notification => (
+                <li key={notification.id}>
+                  <NotificationItem notification={notification} />
+                </li>
+              ))}
+              {userFriendlyError && (
+                <div className={styles.error}>{userFriendlyError.message}</div>
+              )}
+            </ul>
+          ) : isLoading ? (
+            <NotificationItemSkeleton />
+          ) : userFriendlyError ? (
+            <div className={styles.error}>{userFriendlyError.message}</div>
+          ) : (
+            <NotificationListEmpty />
+          )}
+
+          <div
+            ref={loadMoreIndicatorRef}
+            className={hasMore ? styles.loadMoreIndicator : ''}
+          >
+            {hasMore ? t['com.affine.notification.loading-more']() : null}
+          </div>
+        </Scrollable.Viewport>
+        <Scrollable.Scrollbar />
+      </Scrollable.Root>
+    </div>
   );
 };
 

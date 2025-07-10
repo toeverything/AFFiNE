@@ -2,9 +2,32 @@ import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { keyframes, style } from '@vanilla-extract/css';
 
-export const containerScrollViewport = style({
+export const container = style({
   maxHeight: '448px',
   width: '360px',
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+export const header = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  fontSize: cssVar('fontSm'),
+  lineHeight: '22px',
+  padding: '4px 8px 8px',
+  borderBottom: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+});
+
+export const scrollRoot = style({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+export const scrollViewport = style({
+  flex: 1,
+  padding: '8px 0px ',
 });
 
 export const itemList = style({

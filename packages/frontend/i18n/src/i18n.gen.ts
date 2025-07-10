@@ -7779,6 +7779,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.notification.invitation.accept"](): string;
     /**
+      * `Delete all notifications`
+      */
+    ["com.affine.notification.delete-all"](): string;
+    /**
       * `Tips`
       */
     tips(): string;

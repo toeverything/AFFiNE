@@ -1948,6 +1948,7 @@
   "com.affine.notification.invitation-blocked": "There is an issue regarding your invitation to <1>{{workspaceName}}</1> ",
   "com.affine.notification.invitation": "<1>{{username}}</1> invited you to join <2>{{workspaceName}}</2>",
   "com.affine.notification.invitation.accept": "Accept & Join",
+  "com.affine.notification.delete-all": "Delete all notifications",
   "tips": "Tips",
   "Template": "Template",
   "com.affine.template-list.delete": "Delete Template",
