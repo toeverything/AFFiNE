@@ -22,7 +22,6 @@ import {
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import { useI18n } from '@affine/i18n';
 import { type Signal, signal } from '@preact/signals-core';
 import { useFramework, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -48,7 +47,6 @@ function useCopilotClient() {
 }
 
 export const Component = () => {
-  const t = useI18n();
   const framework = useFramework();
   const [isBodyProvided, setIsBodyProvided] = useState(false);
   const [isHeaderProvided, setIsHeaderProvided] = useState(false);
@@ -266,7 +264,7 @@ export const Component = () => {
 
   return (
     <>
-      <ViewTitle title={t['AFFiNE AI']()} />
+      <ViewTitle title="AFFiNE Intelligence" />
       <ViewIcon icon="ai" />
       <ViewHeader>
         <div className={styles.chatHeader}>
