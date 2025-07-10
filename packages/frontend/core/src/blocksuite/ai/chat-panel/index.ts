@@ -30,6 +30,7 @@ import type {
   AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
+import type { ChatStatus } from '../components/ai-chat-messages';
 import { createPlaygroundModal } from '../components/playground/modal';
 import { AIProvider } from '../provider';
 import type { AppSidebarConfig } from './chat-config';
@@ -138,6 +139,9 @@ export class ChatPanel extends SignalWatcher(
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
 
+  @state()
+  accessor status: ChatStatus = 'idle';
+
   private isSidebarOpen: Signal<boolean | undefined> = signal(false);
 
   private sidebarWidth: Signal<number | undefined> = signal(undefined);
@@ -171,6 +175,7 @@ export class ChatPanel extends SignalWatcher(
         .session=${this.session}
         .workspaceId=${this.doc.workspace.id}
         .docId=${this.doc.id}
+        .status=${this.status}
         .onNewSession=${this.newSession}
         .onTogglePin=${this.togglePin}
         .onOpenSession=${this.openSession}
@@ -359,6 +364,7 @@ export class ChatPanel extends SignalWatcher(
   private readonly onContextChange = async (
     context: Partial<ChatContextValue>
   ) => {
+    this.status = context.status ?? 'idle';
     if (context.status === 'success') {
       await this.rebindSession();
     }

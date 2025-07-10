@@ -1,6 +1,10 @@
 import { observeResize, useConfirmModal } from '@affine/component';
 import { CopilotClient } from '@affine/core/blocksuite/ai';
-import { AIChatContent } from '@affine/core/blocksuite/ai/components/ai-chat-content';
+import {
+  AIChatContent,
+  type ChatContextValue,
+} from '@affine/core/blocksuite/ai/components/ai-chat-content';
+import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
 import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import type { PromptKey } from '@affine/core/blocksuite/ai/provider/prompt';
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
@@ -57,6 +61,7 @@ export const Component = () => {
   const [currentSession, setCurrentSession] = useState<CopilotSession | null>(
     null
   );
+  const [status, setStatus] = useState<ChatStatus>('idle');
   const [isTogglingPin, setIsTogglingPin] = useState(false);
   const [isOpeningSession, setIsOpeningSession] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -131,6 +136,10 @@ export const Component = () => {
     [chatContent, chatTool, client, isOpeningSession, workspaceId]
   );
 
+  const onContextChange = useCallback((context: Partial<ChatContextValue>) => {
+    setStatus(context.status ?? 'idle');
+  }, []);
+
   const confirmModal = useConfirmModal();
 
   // init or update ai-chat-content
@@ -151,6 +160,7 @@ export const Component = () => {
     content.searchMenuConfig = searchMenuConfig;
     content.networkSearchConfig = networkSearchConfig;
     content.reasoningConfig = reasoningConfig;
+    content.onContextChange = onContextChange;
     content.affineFeatureFlagService = framework.get(FeatureFlagService);
     content.affineWorkspaceDialogService = framework.get(
       WorkspaceDialogService
@@ -182,6 +192,7 @@ export const Component = () => {
     searchMenuConfig,
     workspaceId,
     confirmModal,
+    onContextChange,
   ]);
 
   // init or update header ai-chat-toolbar
@@ -197,6 +208,7 @@ export const Component = () => {
 
     tool.session = currentSession;
     tool.workspaceId = workspaceId;
+    tool.status = status;
     tool.docDisplayConfig = docDisplayConfig;
     tool.onOpenSession = onOpenSession;
     tool.notificationService = new NotificationServiceImpl(
@@ -239,6 +251,7 @@ export const Component = () => {
     workspaceId,
     confirmModal,
     framework,
+    status,
   ]);
 
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {

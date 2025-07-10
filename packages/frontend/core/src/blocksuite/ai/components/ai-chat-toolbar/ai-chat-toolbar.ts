@@ -15,6 +15,7 @@ import { css, html } from 'lit';
 import { property, query } from 'lit/decorators.js';
 
 import type { DocDisplayConfig } from '../ai-chat-chips';
+import type { ChatStatus } from '../ai-chat-messages';
 
 export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
@@ -25,6 +26,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor docId: string | undefined;
+
+  @property({ attribute: false })
+  accessor status!: ChatStatus;
 
   @property({ attribute: false })
   accessor onNewSession!: () => void;
@@ -49,6 +53,10 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
 
   private abortController: AbortController | null = null;
 
+  get isGenerating() {
+    return this.status === 'transmitting' || this.status === 'loading';
+  }
+
   static override styles = css`
     .ai-chat-toolbar {
       display: flex;
@@ -72,6 +80,10 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
           height: 16px;
           color: ${unsafeCSSVarV2('icon/primary')};
         }
+
+        &[data-disabled='true'] {
+          cursor: not-allowed;
+        }
       }
     }
   `;
@@ -84,7 +96,11 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
           ${PlusIcon()}
           <affine-tooltip>New Chat</affine-tooltip>
         </div>
-        <div class="chat-toolbar-icon" @click=${this.onTogglePin}>
+        <div
+          class="chat-toolbar-icon"
+          @click=${this.onPinClick}
+          data-disabled=${this.isGenerating}
+        >
           ${pinned ? PinedIcon() : PinIcon()}
           <affine-tooltip>
             ${pinned ? 'Unpin this Chat' : 'Pin this Chat'}
@@ -100,6 +116,16 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
       </div>
     `;
   }
+
+  private readonly onPinClick = async () => {
+    if (this.isGenerating) {
+      this.notificationService.toast(
+        'Cannot pin a chat while generating an answer'
+      );
+      return;
+    }
+    await this.onTogglePin();
+  };
 
   private readonly unpinConfirm = async () => {
     if (this.session && this.session.pinned) {
