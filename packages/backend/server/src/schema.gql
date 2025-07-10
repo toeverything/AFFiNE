@@ -595,6 +595,7 @@ type DocType {
   mode: PublicDocMode!
   permissions: DocPermissions!
   public: Boolean!
+  summary: String
   title: String
   updatedAt: DateTime
   workspaceId: String!

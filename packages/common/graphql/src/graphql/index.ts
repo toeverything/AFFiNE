@@ -1584,6 +1584,8 @@ export const getWorkspacePageByIdQuery = {
       mode
       defaultRole
       public
+      title
+      summary
     }
   }
 }`,

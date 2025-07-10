@@ -99,3 +99,56 @@ e2e(
     t.is(result2.workspace.doc.public, true);
   }
 );
+
+e2e('should get doc with title and summary', async t => {
+  const owner = await app.signup();
+
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+
+  const docSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const doc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: docSnapshot.id,
+    title: 'doc1',
+    summary: 'summary1',
+  });
+
+  const result = await app.gql({
+    query: getWorkspacePageByIdQuery,
+    variables: { workspaceId: workspace.id, pageId: doc.docId },
+  });
+
+  t.is(result.workspace.doc.title, doc.title);
+  t.is(result.workspace.doc.summary, doc.summary);
+});
+
+e2e('should get doc with title and null summary', async t => {
+  const owner = await app.signup();
+
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+
+  const docSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const doc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: docSnapshot.id,
+    title: 'doc1',
+  });
+
+  const result = await app.gql({
+    query: getWorkspacePageByIdQuery,
+    variables: { workspaceId: workspace.id, pageId: doc.docId },
+  });
+
+  t.is(result.workspace.doc.title, doc.title);
+  t.is(result.workspace.doc.summary, null);
+});

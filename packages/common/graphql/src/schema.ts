@@ -703,6 +703,7 @@ export interface DocType {
   mode: PublicDocMode;
   permissions: DocPermissions;
   public: Scalars['Boolean']['output'];
+  summary: Maybe<Scalars['String']['output']>;
   title: Maybe<Scalars['String']['output']>;
   updatedAt: Maybe<Scalars['DateTime']['output']>;
   workspaceId: Scalars['String']['output'];
@@ -5147,6 +5148,8 @@ export type GetWorkspacePageByIdQuery = {
       mode: PublicDocMode;
       defaultRole: DocRole;
       public: boolean;
+      title: string | null;
+      summary: string | null;
     };
   };
 };
