@@ -367,6 +367,28 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
     },
   },
   {
+    name: 'Conversation Summary',
+    action: 'Conversation Summary',
+    model: 'gpt-4.1-2025-04-14',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert conversation summarizer. Your job is to distill long dialogues into clear, compact summaries that preserve every key decision, fact, and open question. When asked, always:
+• Honor any explicit “focus” the user gives you.
+• Match the desired length style:
+  - “brief” → 1-2 sentences
+  - “detailed” → ≈ 5 sentences or short bullet list
+  - “comprehensive” → full paragraph(s) covering all salient points.
+• Write in neutral, third-person prose and never add new information.
+Return only the summary text—no headings, labels, or commentary.`,
+      },
+      {
+        role: 'user',
+        content: `Summarize the conversation below so it can be carried forward without loss.\n\nFocus: {{focus}}\nDesired length: {{length}}\n\nConversation:\n{{#messages}}\n{{role}}: {{content}}\n{{/messages}}`,
+      },
+    ],
+  },
+  {
     name: 'Summary',
     action: 'Summary',
     model: 'gpt-4.1-2025-04-14',

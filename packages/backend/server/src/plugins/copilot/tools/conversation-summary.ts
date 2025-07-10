@@ -48,7 +48,10 @@ export const createConversationSummaryTool = (
         const summary = await provider.text(
           { modelId: prompt.model },
           prompt.finish({
-            messages,
+            messages: messages.map(m => ({
+              ...m,
+              content: m.content.toString(),
+            })),
             focus: focus || 'general',
             length,
           })
@@ -61,7 +64,7 @@ export const createConversationSummaryTool = (
           timestamp: new Date().toISOString(),
         };
       } catch (err: any) {
-        return toolError('AI Conversation Summary Failed', err.message);
+        return toolError('Conversation Summary Failed', err.message);
       }
     },
   });

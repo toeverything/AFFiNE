@@ -484,6 +484,31 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     prefer: CopilotProviderType.Gemini,
   },
   {
+    promptName: ['Conversation Summary'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        params: {
+          messages: [{ role: 'user', content: TestAssets.SSOT }],
+          focus: 'technical decisions',
+          length: 'comprehensive',
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      const cleared = result.toLowerCase();
+      t.assert(
+        cleared.includes('single source of truth') ||
+          /single.*source/.test(cleared) ||
+          cleared.includes('ssot'),
+        'should include original keyword'
+      );
+    },
+    type: 'text' as const,
+  },
+  {
     promptName: [
       'Summary',
       'Summary as title',
