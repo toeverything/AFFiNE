@@ -59,7 +59,8 @@ export type KnownMetricScopes =
   | 'mail'
   | 'ai'
   | 'event'
-  | 'queue';
+  | 'queue'
+  | 'storage';
 
 const metricCreators: MetricCreators = {
   counter(meter: Meter, name: string, opts?: MetricOptions) {
