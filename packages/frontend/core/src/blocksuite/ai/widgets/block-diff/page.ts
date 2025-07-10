@@ -1,3 +1,4 @@
+import { track } from '@affine/track';
 import { WidgetComponent, WidgetViewExtension } from '@blocksuite/affine/std';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import {
@@ -82,6 +83,16 @@ export class AffineBlockDiffWidgetForPage extends WidgetComponent {
     diffs[this.currentIndex].scrollIntoView({ behavior: 'smooth' });
   }
 
+  async _handleAcceptAll() {
+    track.applyModel.widget.page.acceptAll();
+    await this.diffService.acceptAll(this.std.store);
+  }
+
+  _handleRejectAll() {
+    track.applyModel.widget.page.rejectAll();
+    this.diffService.rejectAll();
+  }
+
   get diffService() {
     return this.std.get(BlockDiffProvider);
   }
@@ -112,7 +123,7 @@ export class AffineBlockDiffWidgetForPage extends WidgetComponent {
             </div>
             <div
               class="ai-block-diff-all-option"
-              @click=${() => this.diffService.rejectAll()}
+              @click=${() => this._handleRejectAll()}
             >
               ${CloseIcon({
                 style: `color: ${unsafeCSSVarV2('icon/secondary')}`,
@@ -121,7 +132,7 @@ export class AffineBlockDiffWidgetForPage extends WidgetComponent {
             </div>
             <div
               class="ai-block-diff-all-option"
-              @click=${() => this.diffService.acceptAll(this.std.store)}
+              @click=${() => this._handleAcceptAll()}
             >
               ${DoneIcon({
                 style: `color: ${unsafeCSSVarV2('icon/activated')}`,

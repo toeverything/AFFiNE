@@ -207,6 +207,16 @@ type CommentEvents =
   | 'resolveComment';
 // END SECTION
 
+// SECTION: apply model
+type ApplyModelEvents =
+  | 'acceptAll'
+  | 'rejectAll'
+  | 'accept'
+  | 'reject'
+  | 'apply'
+  | 'copy';
+// END SECTION
+
 type UserEvents =
   | GeneralEvents
   | AppEvents
@@ -231,7 +241,8 @@ type UserEvents =
   | IntegrationEvents
   | MeetingEvents
   | MentionEvents
-  | WorkspaceEmbeddingEvents;
+  | WorkspaceEmbeddingEvents
+  | ApplyModelEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -564,6 +575,15 @@ interface PageEvents extends PageDivision {
       $: ['createDoc'];
     };
   };
+  applyModel: {
+    widget: {
+      page: ['acceptAll', 'rejectAll'];
+      block: ['accept', 'reject'];
+    };
+    chat: {
+      $: ['apply', 'accept', 'reject', 'copy'];
+    };
+  };
 }
 
 type OrganizeItemType = 'doc' | 'folder' | 'collection' | 'tag' | 'favorite';
@@ -633,6 +653,13 @@ type RecordingEventArgs = {
   type: 'Meeting record';
   method?: string;
   option?: 'Auto transcribing' | 'handle transcribing' | 'on' | 'off';
+};
+
+type ApplyModelArgs = {
+  /*  ​​User's complete instruction */
+  instruction?: string;
+  /* Split individual semantic change requests */
+  operation?: string;
 };
 
 export type EventArgs = {
@@ -829,6 +856,9 @@ export type EventArgs = {
   };
   editComment: { type: 'root' | 'node' };
   deleteComment: { type: 'root' | 'node' };
+  accept: ApplyModelArgs;
+  reject: ApplyModelArgs;
+  apply: ApplyModelArgs;
 };
 
 // for type checking

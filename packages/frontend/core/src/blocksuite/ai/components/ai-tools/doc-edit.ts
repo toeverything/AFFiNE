@@ -1,3 +1,4 @@
+import track from '@affine/track';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
@@ -203,24 +204,33 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
   }
 
   private async _handleApply(markdown: string) {
-    if (!this.host) {
+    if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
+    track.applyModel.chat.$.apply({
+      instruction: this.data.args.instructions,
+    });
     await this.blockDiffService?.apply(this.host.store, markdown);
   }
 
   private async _handleReject(changedMarkdown: string) {
-    if (!this.host) {
+    if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
+    track.applyModel.chat.$.reject({
+      instruction: this.data.args.instructions,
+    });
     this.blockDiffService?.setChangedMarkdown(changedMarkdown);
     this.blockDiffService?.rejectAll();
   }
 
   private async _handleAccept(changedMarkdown: string) {
-    if (!this.host) {
+    if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
+    track.applyModel.chat.$.accept({
+      instruction: this.data.args.instructions,
+    });
     await this.blockDiffService?.apply(this.host.store, changedMarkdown);
     await this.blockDiffService?.acceptAll(this.host.store);
   }
@@ -233,6 +243,7 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
     if (!this.host) {
       return;
     }
+    track.applyModel.chat.$.copy();
     const success = await copyText(removeMarkdownComments(changedMarkdown));
     if (success) {
       this.notificationService.notify({

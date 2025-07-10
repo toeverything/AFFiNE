@@ -1,3 +1,4 @@
+import track from '@affine/track';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { CloseIcon, DoneIcon } from '@blocksuite/icons/lit';
@@ -50,12 +51,12 @@ export class BlockDiffOptions extends WithDisposable(LitElement) {
   accessor onReject!: (op: PatchOp) => void;
 
   private readonly _handleAcceptClick = () => {
-    console.log('accept', this.op);
+    track.applyModel.widget.block.accept();
     this.onAccept(this.op);
   };
 
   private readonly _handleRejectClick = () => {
-    console.log('reject', this.op);
+    track.applyModel.widget.block.reject();
     this.onReject(this.op);
   };
 
