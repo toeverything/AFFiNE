@@ -21,6 +21,10 @@ on:
         required: true
         type: boolean
         default: false
+      ios-app-version:
+        description: 'iOS App Store Version (Optional, use tag version if empty)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -117,3 +121,4 @@ jobs:
       build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
       app-version: ${{ needs.prepare.outputs.APP_VERSION }}
       git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
+      ios-app-version: ${{ inputs.ios-app-version }}
