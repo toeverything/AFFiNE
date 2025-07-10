@@ -3,11 +3,11 @@ import { AIProvider, ChatPanel } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
+import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { AppThemeService } from '@affine/core/modules/theme';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import { ViewExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
@@ -55,6 +55,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     playgroundConfig,
   } = useAIChatConfig();
   const confirmModal = useConfirmModal();
+  const specs = useAISpecs();
 
   useEffect(() => {
     if (!editor || !editor.host) return;
@@ -81,9 +82,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       chatPanelRef.current.networkSearchConfig = networkSearchConfig;
       chatPanelRef.current.reasoningConfig = reasoningConfig;
       chatPanelRef.current.playgroundConfig = playgroundConfig;
-      chatPanelRef.current.extensions = editor.host.std
-        .get(ViewExtensionManagerIdentifier)
-        .get('preview-page');
+      chatPanelRef.current.extensions = specs;
       chatPanelRef.current.affineFeatureFlagService =
         framework.get(FeatureFlagService);
       chatPanelRef.current.affineWorkspaceDialogService = framework.get(
@@ -127,6 +126,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     reasoningConfig,
     playgroundConfig,
     confirmModal,
+    specs,
   ]);
 
   const [autoResized, setAutoResized] = useState(false);

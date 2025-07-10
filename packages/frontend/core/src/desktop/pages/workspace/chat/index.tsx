@@ -9,6 +9,7 @@ import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-too
 import type { PromptKey } from '@affine/core/blocksuite/ai/provider/prompt';
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
+import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
 import {
   EventSourceService,
   FetchService,
@@ -139,6 +140,7 @@ export const Component = () => {
   }, []);
 
   const confirmModal = useConfirmModal();
+  const specs = useAISpecs();
 
   // init or update ai-chat-content
   useEffect(() => {
@@ -154,6 +156,7 @@ export const Component = () => {
 
     content.session = currentSession;
     content.workspaceId = workspaceId;
+    content.extensions = specs;
     content.docDisplayConfig = docDisplayConfig;
     content.searchMenuConfig = searchMenuConfig;
     content.networkSearchConfig = networkSearchConfig;
@@ -191,6 +194,7 @@ export const Component = () => {
     workspaceId,
     confirmModal,
     onContextChange,
+    specs,
   ]);
 
   // init or update header ai-chat-toolbar
