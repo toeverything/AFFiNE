@@ -207,6 +207,7 @@ const retry = async (
       try {
         await callback(t);
       } catch (e) {
+        console.error(`Error during ${action}:`, e);
         t.log(`Error during ${action}:`, e);
         throw e;
       }
@@ -490,7 +491,10 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
         role: 'user' as const,
         content: '',
         params: {
-          messages: [{ role: 'user', content: TestAssets.SSOT }],
+          messages: [
+            { role: 'user', content: 'what is single source of truth?' },
+            { role: 'assistant', content: TestAssets.SSOT },
+          ],
           focus: 'technical decisions',
           length: 'comprehensive',
         },

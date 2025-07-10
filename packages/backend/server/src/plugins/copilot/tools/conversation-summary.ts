@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { tool } from 'ai';
 import { z } from 'zod';
 
@@ -5,7 +6,10 @@ import type { PromptService } from '../prompt';
 import type { CopilotProviderFactory } from '../providers';
 import { toolError } from './error';
 
+const logger = new Logger('ConversationSummaryTool');
+
 export const createConversationSummaryTool = (
+  sessionId: string | undefined,
   promptService: PromptService,
   factory: CopilotProviderFactory
 ) => {
@@ -64,6 +68,7 @@ export const createConversationSummaryTool = (
           timestamp: new Date().toISOString(),
         };
       } catch (err: any) {
+        logger.error(`Failed to summarize conversation (${sessionId})`, err);
         return toolError('Conversation Summary Failed', err.message);
       }
     },

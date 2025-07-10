@@ -21,6 +21,7 @@ import {
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
   createCodeArtifactTool,
+  createConversationSummaryTool,
   createDocComposeTool,
   createDocEditTool,
   createDocKeywordSearchTool,
@@ -159,7 +160,8 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'conversationSummary': {
-            tools.conversation_summary = createDocComposeTool(
+            tools.conversation_summary = createConversationSummaryTool(
+              options.session,
               prompt,
               this.factory
             );

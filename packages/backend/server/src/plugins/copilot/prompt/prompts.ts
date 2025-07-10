@@ -387,6 +387,9 @@ Return only the summary text—no headings, labels, or commentary.`,
         content: `Summarize the conversation below so it can be carried forward without loss.\n\nFocus: {{focus}}\nDesired length: {{length}}\n\nConversation:\n{{#messages}}\n{{role}}: {{content}}\n{{/messages}}`,
       },
     ],
+    config: {
+      requireContent: false,
+    },
   },
   {
     name: 'Summary',
