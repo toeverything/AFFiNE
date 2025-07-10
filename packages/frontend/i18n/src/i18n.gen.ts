@@ -8239,7 +8239,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.comments"](): string;
     /**
-      * `No comments yet`
+      * `No comments yet, select content to add comment to`
       */
     ["com.affine.comment.no-comments"](): string;
     /**

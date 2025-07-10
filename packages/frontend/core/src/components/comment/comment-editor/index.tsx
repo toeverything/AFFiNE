@@ -1,8 +1,9 @@
-import { IconButton, notify } from '@affine/component';
+import { IconButton, notify, toast } from '@affine/component';
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
 import type { CommentAttachment } from '@affine/core/modules/comment/types';
 import { PeekViewService } from '@affine/core/modules/peek-view';
+import { downloadResourceWithUrl } from '@affine/core/utils/resource';
 import { DebugLogger } from '@affine/debug';
 import { getAttachmentFileIconRC } from '@blocksuite/affine/components/icons';
 import { type RichText, selectTextModel } from '@blocksuite/affine/rich-text';
@@ -79,16 +80,6 @@ export interface CommentEditorRef {
   getSnapshot: () => DocSnapshot | null | undefined;
   focus: () => void;
 }
-
-const download = (url: string, name: string) => {
-  const element = document.createElement('a');
-  element.setAttribute('download', name);
-  element.setAttribute('href', url);
-  element.style.display = 'none';
-  document.body.append(element);
-  element.click();
-  element.remove();
-};
 
 // todo: get rid of circular data changes
 const useSnapshotDoc = (
@@ -313,6 +304,28 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       [addAttachments]
     );
 
+    const handleDragOver = useCallback(
+      (e: React.DragEvent) => {
+        if (readonly) return;
+        // Prevent default to allow drop
+        e.preventDefault();
+      },
+      [readonly]
+    );
+
+    const handleDrop = useCallback(
+      (e: React.DragEvent) => {
+        if (readonly) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const files = Array.from(e.dataTransfer?.files ?? []);
+        if (files.length) {
+          addAttachments(files);
+        }
+      },
+      [addAttachments, readonly]
+    );
+
     const openFilePicker = useAsyncCallback(async () => {
       if (isUploadDisabled) return;
       const files = await openFilesWith('Any');
@@ -382,8 +395,6 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         if (!attachments) return;
         const att = attachments[index];
         if (!att) return;
-        const url = att.url || att.localUrl;
-        if (!url) return;
         if (isImageAttachment(att)) {
           // translate attachment index to image index
           const imageAttachments = attachments.filter(isImageAttachment);
@@ -391,13 +402,19 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
           if (imageIndex >= 0) {
             handleImagePreview(imageIndex);
           }
-        } else if (att.url || att.localUrl) {
+        } else if (att.url) {
           // todo: open attachment preview. for now, just download it
-          download(url, att.filename ?? att.file?.name ?? 'attachment');
-          notify({
-            title: 'Downloading attachment',
-            message: 'The attachment is being downloaded to your computer.',
+          downloadResourceWithUrl(
+            att.url,
+            att.filename ?? att.file?.name ?? 'attachment'
+          ).catch(e => {
+            console.error('Failed to download attachment', e);
+            notify.error({
+              title: 'Failed to download attachment',
+              message: e.message,
+            });
           });
+          toast('The attachment is being downloaded to your computer.');
         }
       },
       [attachments, handleImagePreview]
@@ -538,6 +555,8 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         onClick={readonly ? undefined : handleClickEditor}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         data-readonly={!!readonly}
         className={clsx(styles.container, 'comment-editor-viewport')}
       >

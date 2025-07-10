@@ -596,7 +596,7 @@ const CommentList = ({ entity }: { entity: DocCommentEntity }) => {
   const [filterState, setFilterState] = useState<CommentFilterState>({
     showResolvedComments: false,
     onlyMyReplies: false,
-    onlyCurrentMode: true,
+    onlyCurrentMode: false,
   });
 
   const onFilterChange = useCallback(

@@ -2067,7 +2067,7 @@
   "com.affine.migration-all-docs-notification.error": "Migration failed: {{errorMessage}}",
   "com.affine.migration-all-docs-notification.button": "Migrate data",
   "com.affine.comment.comments": "Comments",
-  "com.affine.comment.no-comments": "No comments yet",
+  "com.affine.comment.no-comments": "No comments yet, select content to add comment to",
   "com.affine.comment.delete.confirm.title": "Delete the thread?",
   "com.affine.comment.delete.confirm.description": "All comments will also be deleted, and this action cannot be undone.",
   "com.affine.comment.reply.delete.confirm.title": "Delete this reply?",

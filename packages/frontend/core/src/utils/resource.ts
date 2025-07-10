@@ -33,7 +33,22 @@ export async function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
+export function downloadFile(url: string, filename: string) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.target = '_blank';
+  a.click();
+}
+
 export async function downloadResourceWithUrl(url: string, filename: string) {
+  // 1. if url is not same origin, fetch it to blob and download it
+  // 2. otherwise, download it directly
+  const sameOrigin = new URL(url).origin === window.location.origin;
+  if (sameOrigin) {
+    downloadFile(url, filename);
+    return;
+  }
   // given input url may not have correct mime type
   const blob = await resourceUrlToBlob(url);
   if (!blob) return;
