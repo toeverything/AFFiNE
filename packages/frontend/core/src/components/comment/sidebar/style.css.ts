@@ -39,6 +39,7 @@ export const commentList = style({
 export const empty = style({
   height: '100%',
   flex: 1,
+  padding: 32,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
