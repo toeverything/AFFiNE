@@ -22,7 +22,7 @@ import { isEqual } from 'lodash-es';
 })
 export class InlineComment extends WithDisposable(ShadowlessElement) {
   static override styles = css`
-    inline-comment {
+    inline-comment.unresolved {
       display: inline-block;
       background-color: ${unsafeCSSVarV2('block/comment/highlightDefault')};
       border-bottom: 2px solid
@@ -41,6 +41,9 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
   })
   accessor commentIds!: string[];
 
+  @property({ attribute: false })
+  accessor unresolved = false;
+
   private _index: number = 0;
 
   @consume({ context: stdContext })
@@ -54,8 +57,10 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
   }
 
   private readonly _handleClick = () => {
-    this._provider?.highlightComment(this.commentIds[this._index]);
-    this._index = (this._index + 1) % this.commentIds.length;
+    if (this.unresolved) {
+      this._provider?.highlightComment(this.commentIds[this._index]);
+      this._index = (this._index + 1) % this.commentIds.length;
+    }
   };
 
   private readonly _handleHighlight = (id: CommentId | null) => {
@@ -87,6 +92,13 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
         this.classList.add('highlighted');
       } else {
         this.classList.remove('highlighted');
+      }
+    }
+    if (_changedProperties.has('unresolved')) {
+      if (this.unresolved) {
+        this.classList.add('unresolved');
+      } else {
+        this.classList.remove('unresolved');
       }
     }
   }

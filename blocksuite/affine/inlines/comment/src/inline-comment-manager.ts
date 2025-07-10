@@ -43,10 +43,14 @@ export class InlineCommentManager extends LifeCycleWatcher {
 
     this._disposables.add(provider.onCommentAdded(this._handleAddComment));
     this._disposables.add(
-      provider.onCommentDeleted(this._handleDeleteAndResolve)
+      provider.onCommentDeleted(id =>
+        this._handleDeleteAndResolve(id, 'delete')
+      )
     );
     this._disposables.add(
-      provider.onCommentResolved(this._handleDeleteAndResolve)
+      provider.onCommentResolved(id =>
+        this._handleDeleteAndResolve(id, 'resolve')
+      )
     );
     this._disposables.add(
       provider.onCommentHighlighted(this._handleHighlightComment)
@@ -64,15 +68,16 @@ export class InlineCommentManager extends LifeCycleWatcher {
     const provider = this._provider;
     if (!provider) return;
 
-    const commentsInProvider = await provider.getComments('unresolved');
+    const commentsInProvider = await provider.getComments('all');
 
     const commentsInEditor = this.getCommentsInEditor();
 
     // remove comments that are in editor but not in provider
     // which means the comment may be removed or resolved in provider side
     difference(commentsInEditor, commentsInProvider).forEach(comment => {
-      this._handleDeleteAndResolve(comment);
-      this.std.get(BlockElementCommentManager).handleDeleteAndResolve(comment);
+      this.std
+        .get(BlockElementCommentManager)
+        .handleDeleteAndResolve(comment, 'delete');
     });
   }
 
@@ -162,7 +167,10 @@ export class InlineCommentManager extends LifeCycleWatcher {
     });
   };
 
-  private readonly _handleDeleteAndResolve = (id: CommentId) => {
+  private readonly _handleDeleteAndResolve = (
+    id: CommentId,
+    type: 'delete' | 'resolve'
+  ) => {
     const commentedTexts = findCommentedTexts(this.std.store, id);
     if (commentedTexts.length === 0) return;
 
@@ -176,7 +184,7 @@ export class InlineCommentManager extends LifeCycleWatcher {
         inlineEditor?.formatText(
           selection.from,
           {
-            [`comment-${id}`]: null,
+            [`comment-${id}`]: type === 'delete' ? null : false,
           },
           {
             withoutTransact: true,

@@ -21,19 +21,25 @@ export const CommentInlineSpecExtension =
     ),
     match: delta => {
       if (!delta.attributes) return false;
-      const comments = Object.entries(delta.attributes).filter(
-        ([key, value]) => isInlineCommendId(key) && value === true
-      );
+      const comments = Object.keys(delta.attributes).filter(isInlineCommendId);
       return comments.length > 0;
     },
-    renderer: ({ delta, children }) =>
-      html`<inline-comment .commentIds=${extractCommentIdFromDelta(delta)}
+    renderer: ({ delta, children }) => {
+      if (!delta.attributes) return html`${nothing}`;
+
+      const unresolved = Object.entries(delta.attributes).some(
+        ([key, value]) => isInlineCommendId(key) && value === true
+      );
+      return html`<inline-comment
+        .unresolved=${unresolved}
+        .commentIds=${extractCommentIdFromDelta(delta)}
         >${when(
           children,
           () => html`${children}`,
           () => nothing
         )}</inline-comment
-      >`,
+      >`;
+    },
     wrapper: true,
   });
 

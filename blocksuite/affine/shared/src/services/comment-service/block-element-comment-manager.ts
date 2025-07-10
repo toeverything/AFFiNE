@@ -57,10 +57,12 @@ export class BlockElementCommentManager extends LifeCycleWatcher {
 
     this._disposables.add(provider.onCommentAdded(this._handleAddComment));
     this._disposables.add(
-      provider.onCommentDeleted(this.handleDeleteAndResolve)
+      provider.onCommentDeleted(id => this.handleDeleteAndResolve(id, 'delete'))
     );
     this._disposables.add(
-      provider.onCommentResolved(this.handleDeleteAndResolve)
+      provider.onCommentResolved(id =>
+        this.handleDeleteAndResolve(id, 'resolve')
+      )
     );
     this._disposables.add(
       provider.onCommentHighlighted(this._handleHighlightComment)
@@ -147,18 +149,29 @@ export class BlockElementCommentManager extends LifeCycleWatcher {
     }
   };
 
-  readonly handleDeleteAndResolve = (id: CommentId) => {
+  readonly handleDeleteAndResolve = (
+    id: CommentId,
+    type: 'delete' | 'resolve'
+  ) => {
     const commentedBlocks = findCommentedBlocks(this.std.store, id);
     this.std.store.withoutTransact(() => {
       commentedBlocks.forEach(block => {
-        delete block.props.comments[id];
+        if (type === 'delete') {
+          delete block.props.comments[id];
+        } else {
+          block.props.comments[id] = false;
+        }
       });
     });
 
     const commentedElements = findCommentedElements(this.std.store, id);
     this.std.store.withoutTransact(() => {
       commentedElements.forEach(element => {
-        delete element.comments[id];
+        if (type === 'delete') {
+          delete element.comments[id];
+        } else {
+          element.comments[id] = false;
+        }
       });
     });
   };
