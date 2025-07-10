@@ -6,20 +6,10 @@ import {
   ImagePart,
   TextPart,
   TextStreamPart,
-  ToolSet,
 } from 'ai';
 import { ZodType } from 'zod';
 
-import {
-  createCodeArtifactTool,
-  createDocComposeTool,
-  createDocEditTool,
-  createDocKeywordSearchTool,
-  createDocReadTool,
-  createDocSemanticSearchTool,
-  createExaCrawlTool,
-  createExaSearchTool,
-} from '../tools';
+import { CustomAITools } from '../tools';
 import { PromptMessage, StreamObject } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
@@ -385,17 +375,6 @@ export class CitationParser {
   }
 }
 
-export interface CustomAITools extends ToolSet {
-  doc_edit: ReturnType<typeof createDocEditTool>;
-  doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
-  doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
-  doc_read: ReturnType<typeof createDocReadTool>;
-  doc_compose: ReturnType<typeof createDocComposeTool>;
-  web_search_exa: ReturnType<typeof createExaSearchTool>;
-  web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
-  code_artifact: ReturnType<typeof createCodeArtifactTool>;
-}
-
 type ChunkType = TextStreamPart<CustomAITools>['type'];
 
 export function toError(error: unknown): Error {
@@ -451,6 +430,10 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
+          case 'conversation_summary': {
+            result += `\nSummarizing context\n`;
+            break;
+          }
           case 'web_search_exa': {
             result += `\nSearching the web "${chunk.args.query}"\n`;
             break;

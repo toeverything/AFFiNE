@@ -60,6 +60,8 @@ export const VertexSchema: JSONSchema = {
 export const PromptConfigStrictSchema = z.object({
   tools: z
     .enum([
+      'codeArtifact',
+      'conversationSummary',
       // work with morph
       'docEdit',
       // work with indexer
@@ -71,7 +73,6 @@ export const PromptConfigStrictSchema = z.object({
       'webSearch',
       // artifact tools
       'docCompose',
-      'codeArtifact',
     ])
     .array()
     .nullable()
