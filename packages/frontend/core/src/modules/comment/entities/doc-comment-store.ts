@@ -337,6 +337,7 @@ export class DocCommentStore extends Entity<{
     }
 
     const res = await graphql.gql({
+      timeout: 180_000,
       query: uploadCommentAttachmentMutation,
       variables: {
         workspaceId: this.currentWorkspaceId,
