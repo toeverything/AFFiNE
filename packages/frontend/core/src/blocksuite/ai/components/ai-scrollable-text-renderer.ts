@@ -1,6 +1,6 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { PropertyValues } from 'lit';
 import { css, html } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -82,9 +82,6 @@ export class AIScrollableTextRenderer extends WithDisposable(
   accessor answer!: string;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
-
-  @property({ attribute: false })
   accessor state: AffineAIPanelState | undefined;
 
   @property({ attribute: false })
@@ -101,19 +98,16 @@ export class AIScrollableTextRenderer extends WithDisposable(
 }
 
 export const createAIScrollableTextRenderer: (
-  host: EditorHost,
   textRendererOptions: TextRendererOptions,
   maxHeight: number,
   autoScroll: boolean
 ) => AffineAIPanelWidgetConfig['answerRenderer'] = (
-  host,
   textRendererOptions,
   maxHeight,
   autoScroll
 ) => {
   return (answer: string, state: AffineAIPanelState | undefined) => {
     return html`<ai-scrollable-text-renderer
-      .host=${host}
       .answer=${answer}
       .state=${state}
       .textRendererOptions=${textRendererOptions}
