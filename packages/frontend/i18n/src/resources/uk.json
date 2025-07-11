@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Id робочого простору необхідний для оновлення підписки для команди.",
   "error.COPILOT_SESSION_NOT_FOUND": "Сесію Copilot не знайдено.",
   "error.COPILOT_SESSION_DELETED": "Сесію Copilot було видалено.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Немає доступного постачальника Copilot.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Не вдалося створити текст.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Не вдалося створити повідомлення чату.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash не налаштований.",

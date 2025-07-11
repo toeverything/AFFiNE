@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "L'ID dello spazio di lavoro è necessario per aggiornare l'abbonamento al team.",
   "error.COPILOT_SESSION_NOT_FOUND": "Sessione copilot non trovata.",
   "error.COPILOT_SESSION_DELETED": "La sessione copilot è stata eliminata.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Nessun provider copilot disponibile.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Impossibile generare il testo.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Impossibile creare il messaggio di chat.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash non è configurato.",

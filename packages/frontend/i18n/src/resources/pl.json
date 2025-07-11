@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Identyfikator środowiska pracy jest wymagany do aktualizacji subskrypcji zespołu.",
   "error.COPILOT_SESSION_NOT_FOUND": "Nie znaleziono sesji Copilota.",
   "error.COPILOT_SESSION_DELETED": "Sesja Copilot została usunięta.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Brak dostępnych dostawców Copilota.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Nie udało się wygenerować tekstu.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Nie udało się utworzyć wiadomości na czacie.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Nie skonfigurowano Unsplash.",

@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Το ID χώρου εργασίας απαιτείται για την ενημέρωση της συνδρομής της ομάδας.",
   "error.COPILOT_SESSION_NOT_FOUND": "Δεν βρέθηκε συνεδρία του Copilot.",
   "error.COPILOT_SESSION_DELETED": "Η συνεδρία του Copilot έχει διαγραφεί.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Δεν υπάρχει διαθέσιμος πάροχος Copilot.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Αποτυχία δημιουργίας κειμένου.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Απέτυχε να δημιουργήσει μήνυμα συνομιλίας.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Το Unsplash δεν έχει ρυθμιστεί.",

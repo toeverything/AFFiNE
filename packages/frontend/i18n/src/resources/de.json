@@ -2133,7 +2133,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Workspace-ID ist erforderlich, um Teamabonnement zu aktualisieren.",
   "error.COPILOT_SESSION_NOT_FOUND": "Copilot-Sitzung nicht gefunden.",
   "error.COPILOT_SESSION_DELETED": "Copilot-Sitzung wurde gelöscht.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Kein Copilot-Anbieter verfügbar.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Fehler beim Generieren von Text.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Fehler beim Erstellen der Chat-Nachricht.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash ist nicht konfiguriert.",

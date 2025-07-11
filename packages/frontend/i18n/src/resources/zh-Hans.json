@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "更新团队订阅需要工作区ID。",
   "error.COPILOT_SESSION_NOT_FOUND": "找不到Copilot会话。",
   "error.COPILOT_SESSION_DELETED": "Copilot 会话已被删除。",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "没有可用的 Copilot 提供商。",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "无法生成文本。",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "无法创建聊天消息。",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash未配置。",

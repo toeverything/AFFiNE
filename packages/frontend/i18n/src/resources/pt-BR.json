@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "O ID do espaço de trabalho é necessário para atualizar a assinatura da equipe.",
   "error.COPILOT_SESSION_NOT_FOUND": "Sessão do Copilot não encontrada.",
   "error.COPILOT_SESSION_DELETED": "Sessão do Copilot foi deletada.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Nenhum provedor de Copilot disponível.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Falha ao gerar texto.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Falha ao criar mensagem de chat.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash não está configurado.",

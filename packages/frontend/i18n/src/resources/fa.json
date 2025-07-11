@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "برای به‌روزرسانی اشتراک تیمی نیاز به شناسه محیط کاری است.",
   "error.COPILOT_SESSION_NOT_FOUND": "جلسه Copilot پیدا نشد.",
   "error.COPILOT_SESSION_DELETED": "جلسه Copilot حذف شده است.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "هیچ ارائه‌دهنده Copilot قابل دسترسی نیست.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "تولید متن انجام نشد.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "ساخت پیام گفتگویی انجام نشد.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash پیکربندی نشده است.",

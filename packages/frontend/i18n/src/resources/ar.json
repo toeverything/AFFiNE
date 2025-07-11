@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "معرف مساحة العمل مطلوب لتحديث اشتراك الفريق.",
   "error.COPILOT_SESSION_NOT_FOUND": "لم يتم العثور على جلسة Copilot.",
   "error.COPILOT_SESSION_DELETED": "تم حذف جلسة Copilot.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "لا يوجد مقدم لخدمة Copilot متاح.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "فشل في توليد النص.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "فشل في إنشاء رسالة الدردشة.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "لم يتم تكوين Unsplash.",

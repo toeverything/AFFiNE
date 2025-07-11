@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "チームサブスクリプションを更新するにはワークスペースIDが必要です。",
   "error.COPILOT_SESSION_NOT_FOUND": "Copilotセッションが見つかりません。",
   "error.COPILOT_SESSION_DELETED": "Copilotセッションが削除されました。",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "利用可能なCopilotプロバイダがありません。",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "テキストの生成に失敗しました。",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "チャットメッセージの作成に失敗しました。",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplashは設定されていません。",

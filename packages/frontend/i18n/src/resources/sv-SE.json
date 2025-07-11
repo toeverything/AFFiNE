@@ -2130,7 +2130,6 @@
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Arbetsområde-ID krävs för att uppdatera teamprenumerationen.",
   "error.COPILOT_SESSION_NOT_FOUND": "Copilot-session hittades inte.",
   "error.COPILOT_SESSION_DELETED": "Copilot-session har raderats.",
-  "error.NO_COPILOT_PROVIDER_AVAILABLE": "Ingen copilot-leverantör tillgänglig.",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Misslyckades med att generera text.",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Misslyckades med att skapa chatmeddelande.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash är inte konfigurerad.",
