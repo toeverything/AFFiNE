@@ -25,74 +25,82 @@ export class DesktopStateSynchronizer extends Service {
     const workbench = this.workbenchService.workbench;
     const appInfo = this.electronApi.appInfo;
 
-    this.electronApi.events.ui.onTabAction(event => {
-      if (
-        event.type === 'open-in-split-view' &&
-        event.payload.tabId === appInfo?.viewId
-      ) {
-        workbench.openAll({
-          at: 'beside',
-          show: false,
-        });
-      }
-
-      if (
-        event.type === 'separate-view' &&
-        event.payload.tabId === appInfo?.viewId
-      ) {
-        const view = workbench.viewAt(event.payload.viewIndex);
-        if (view) {
-          workbench.close(view);
+    this.disposables.push(
+      this.electronApi.events.ui.onTabAction(event => {
+        if (
+          event.type === 'open-in-split-view' &&
+          event.payload.tabId === appInfo?.viewId
+        ) {
+          workbench.openAll({
+            at: 'beside',
+            show: false,
+          });
         }
-      }
 
-      if (
-        event.type === 'activate-view' &&
-        event.payload.tabId === appInfo?.viewId
-      ) {
-        workbench.active(event.payload.viewIndex);
-      }
-    });
-
-    this.electronApi.events.ui.onCloseView(() => {
-      (async () => {
-        if (await this.electronApi.handler.ui.isActiveTab()) {
-          // close current view. stop if any one is successful
-          // 1. peek view
-          // 2. split view
-          // 3. tab
-          // 4. otherwise, hide the window
-          if (this.peekViewService.peekView.show$.value?.value) {
-            this.peekViewService.peekView.close();
-          } else if (workbench.views$.value.length > 1) {
-            workbench.close(workbench.activeView$.value);
-          } else {
-            const tabs = await this.electronApi.handler.ui.getTabsStatus();
-            if (tabs.length > 1) {
-              await this.electronApi.handler.ui.closeTab();
-            } else {
-              await this.electronApi.handler.ui.handleHideApp();
-            }
+        if (
+          event.type === 'separate-view' &&
+          event.payload.tabId === appInfo?.viewId
+        ) {
+          const view = workbench.viewAt(event.payload.viewIndex);
+          if (view) {
+            workbench.close(view);
           }
         }
-      })().catch(console.error);
-    });
 
-    this.electronApi.events.ui.onToggleRightSidebar(tabId => {
-      if (tabId === appInfo?.viewId) {
-        workbench.setSidebarOpen(!workbench.sidebarOpen$.value);
-      }
-    });
+        if (
+          event.type === 'activate-view' &&
+          event.payload.tabId === appInfo?.viewId
+        ) {
+          workbench.active(event.payload.viewIndex);
+        }
+      })
+    );
 
-    this.electronApi.events.ui.onTabGoToRequest(opts => {
-      if (opts.tabId === appInfo?.viewId) {
-        this.workbenchService.workbench.open(opts.to);
-      }
-    });
+    this.disposables.push(
+      this.electronApi.events.ui.onCloseView(() => {
+        (async () => {
+          if (await this.electronApi.handler.ui.isActiveTab()) {
+            // close current view. stop if any one is successful
+            // 1. peek view
+            // 2. split view
+            // 3. tab
+            // 4. otherwise, hide the window
+            if (this.peekViewService.peekView.show$.value?.value) {
+              this.peekViewService.peekView.close();
+            } else if (workbench.views$.value.length > 1) {
+              workbench.close(workbench.activeView$.value);
+            } else {
+              const tabs = await this.electronApi.handler.ui.getTabsStatus();
+              if (tabs.length > 1) {
+                await this.electronApi.handler.ui.closeTab();
+              } else {
+                await this.electronApi.handler.ui.handleHideApp();
+              }
+            }
+          }
+        })().catch(console.error);
+      })
+    );
+
+    this.disposables.push(
+      this.electronApi.events.ui.onToggleRightSidebar(tabId => {
+        if (tabId === appInfo?.viewId) {
+          workbench.setSidebarOpen(!workbench.sidebarOpen$.value);
+        }
+      })
+    );
+
+    this.disposables.push(
+      this.electronApi.events.ui.onTabGoToRequest(opts => {
+        if (opts.tabId === appInfo?.viewId) {
+          this.workbenchService.workbench.open(opts.to);
+        }
+      })
+    );
 
     // sync workbench state with main process
     // also fill tab view meta with title & moduleName
-    LiveData.computed(get => {
+    const viewsSub = LiveData.computed(get => {
       return get(workbench.views$).map(view => {
         const location = get(view.location$);
         return {
@@ -118,19 +126,21 @@ export class DesktopStateSynchronizer extends Service {
         .catch(console.error);
     });
 
-    workbench.activeViewIndex$.subscribe(activeViewIndex => {
-      if (!appInfo?.viewId) {
-        return;
+    const activeViewIndexSub = workbench.activeViewIndex$.subscribe(
+      activeViewIndex => {
+        if (!appInfo?.viewId) {
+          return;
+        }
+
+        this.electronApi.handler.ui
+          .updateWorkbenchMeta(appInfo.viewId, {
+            activeViewIndex: activeViewIndex,
+          })
+          .catch(console.error);
       }
+    );
 
-      this.electronApi.handler.ui
-        .updateWorkbenchMeta(appInfo.viewId, {
-          activeViewIndex: activeViewIndex,
-        })
-        .catch(console.error);
-    });
-
-    workbench.basename$.subscribe(basename => {
+    const basenameSub = workbench.basename$.subscribe(basename => {
       if (!appInfo?.viewId) {
         return;
       }
@@ -141,5 +151,11 @@ export class DesktopStateSynchronizer extends Service {
         })
         .catch(console.error);
     });
+
+    this.disposables.push(
+      () => viewsSub.unsubscribe(),
+      () => activeViewIndexSub.unsubscribe(),
+      () => basenameSub.unsubscribe()
+    );
   };
 }
