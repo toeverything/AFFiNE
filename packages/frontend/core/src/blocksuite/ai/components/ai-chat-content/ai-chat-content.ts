@@ -63,7 +63,7 @@ export class AIChatContent extends SignalWatcher(
       .ai-chat-title {
         background: var(--affine-background-primary-color);
         position: relative;
-        padding: 8px 0px;
+        padding: 8px var(--h-padding);
         width: 100%;
         height: 36px;
         display: flex;
@@ -80,7 +80,8 @@ export class AIChatContent extends SignalWatcher(
 
       ai-chat-messages {
         flex: 1;
-        overflow-y: hidden;
+        overflow-y: auto;
+        padding: 0 var(--h-padding);
         transition:
           flex-grow 0.32s cubic-bezier(0.07, 0.83, 0.46, 1),
           padding-top 0.32s ease,
@@ -99,18 +100,25 @@ export class AIChatContent extends SignalWatcher(
       container-name: chat-panel-split-view;
     }
     .chat-panel-main {
+      --h-padding: 8px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       height: 100%;
       width: 100%;
-      padding: 8px 24px 0 24px;
+      padding: 8px calc(24px - var(--h-padding)) 0 calc(24px - var(--h-padding));
       max-width: 800px;
       margin: 0 auto;
     }
+
+    ai-chat-composer {
+      padding: 0 var(--h-padding);
+    }
+
     @container chat-panel-split-view (width < 540px) {
       .chat-panel-main {
-        padding: 8px 12px 0 12px;
+        padding: 8px calc(12px - var(--h-padding)) 0
+          calc(12px - var(--h-padding));
       }
     }
   `;

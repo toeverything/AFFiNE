@@ -43,9 +43,8 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
       display: flex;
       flex-direction: column;
       gap: 24px;
-      height: 100%;
+      min-height: 100%;
       position: relative;
-      overflow-y: auto;
     }
 
     chat-panel-assistant-message,

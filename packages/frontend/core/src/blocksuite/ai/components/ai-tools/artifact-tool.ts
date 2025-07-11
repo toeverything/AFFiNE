@@ -3,6 +3,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { ColorScheme } from '@blocksuite/affine/model';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { type NotificationService } from '@blocksuite/affine-shared/services';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { Signal } from '@preact/signals-core';
 import {
   css,
@@ -29,12 +30,17 @@ export abstract class ArtifactTool<
 > extends SignalWatcher(WithDisposable(ShadowlessElement)) {
   static override styles = css`
     .artifact-tool-card {
-      cursor: pointer;
       margin: 8px 0;
-    }
+      padding: 10px 0;
 
-    .artifact-tool-card:hover {
-      opacity: 0.8;
+      .affine-embed-linked-doc-block {
+        box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
+        cursor: pointer;
+      }
+
+      .affine-embed-linked-doc-block:hover {
+        background-color: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
+      }
     }
   `;
 
@@ -119,23 +125,24 @@ export abstract class ArtifactTool<
 
     return html`
       <div
-        class="affine-embed-linked-doc-block artifact-tool-card ${className ??
-        ''} horizontal"
+        class="artifact-tool-card ${className ?? ''}"
         @click=${this.onCardClick}
       >
-        <div class="affine-embed-linked-doc-content">
-          <div class="affine-embed-linked-doc-content-title">
-            <div class="affine-embed-linked-doc-content-title-icon">
-              ${resolvedIcon}
-            </div>
-            <div class="affine-embed-linked-doc-content-title-text">
-              ${title}
+        <div class="affine-embed-linked-doc-block horizontal">
+          <div class="affine-embed-linked-doc-content">
+            <div class="affine-embed-linked-doc-content-title">
+              <div class="affine-embed-linked-doc-content-title-icon">
+                ${resolvedIcon}
+              </div>
+              <div class="affine-embed-linked-doc-content-title-text">
+                ${title}
+              </div>
             </div>
           </div>
+          ${banner
+            ? html`<div class="affine-embed-linked-doc-banner">${banner}</div>`
+            : nothing}
         </div>
-        ${banner
-          ? html`<div class="affine-embed-linked-doc-banner">${banner}</div>`
-          : nothing}
       </div>
     `;
   }
