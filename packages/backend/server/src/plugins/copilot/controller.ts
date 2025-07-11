@@ -124,7 +124,7 @@ export class CopilotController implements BeforeApplicationShutdown {
       modelId: model,
     });
     if (!provider) {
-      throw new NoCopilotProviderAvailable();
+      throw new NoCopilotProviderAvailable({ modelId: model });
     }
 
     return { provider, model, hasAttachment };

@@ -569,7 +569,7 @@ export class ChatSessionService {
       });
 
     if (!provider) {
-      throw new NoCopilotProviderAvailable();
+      throw new NoCopilotProviderAvailable({ modelId: prompt.model });
     }
 
     return provider.text(cond, [...prompt.finish({}), msg], config);

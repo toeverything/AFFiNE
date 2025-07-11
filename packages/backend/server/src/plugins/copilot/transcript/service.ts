@@ -171,7 +171,7 @@ export class CopilotTranscriptionService {
     );
 
     if (!provider) {
-      throw new NoCopilotProviderAvailable();
+      throw new NoCopilotProviderAvailable({ modelId });
     }
 
     return provider;

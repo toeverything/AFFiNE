@@ -653,7 +653,8 @@ export const USER_FRIENDLY_ERRORS = {
   },
   no_copilot_provider_available: {
     type: 'internal_server_error',
-    message: `No copilot provider available.`,
+    args: { modelId: 'string' },
+    message: ({ modelId }) => `No copilot provider available: ${modelId}`,
   },
   copilot_failed_to_generate_text: {
     type: 'internal_server_error',

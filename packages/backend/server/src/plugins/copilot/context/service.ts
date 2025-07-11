@@ -125,7 +125,10 @@ export class CopilotContextService implements OnApplicationBootstrap {
 
   async get(id: string): Promise<ContextSession> {
     if (!this.embeddingClient) {
-      throw new NoCopilotProviderAvailable('embedding client not configured');
+      throw new NoCopilotProviderAvailable(
+        { modelId: 'embedding' },
+        'embedding client not configured'
+      );
     }
 
     const context = await this.getCachedSession(id);

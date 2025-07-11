@@ -8706,9 +8706,11 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_SESSION_DELETED"](): string;
     /**
-      * `No copilot provider available.`
+      * `No copilot provider available: {{modelId}}`
       */
-    ["error.NO_COPILOT_PROVIDER_AVAILABLE"](): string;
+    ["error.NO_COPILOT_PROVIDER_AVAILABLE"](options: {
+        readonly modelId: string;
+    }): string;
     /**
       * `Failed to generate text.`
       */

@@ -769,6 +769,7 @@ export type ErrorDataUnion =
   | MemberNotFoundInSpaceDataType
   | MentionUserDocAccessDeniedDataType
   | MissingOauthQueryParameterDataType
+  | NoCopilotProviderAvailableDataType
   | NoMoreSeatDataType
   | NotInSpaceDataType
   | QueryTooLongDataType
@@ -1879,6 +1880,11 @@ export interface MutationValidateAppConfigArgs {
 
 export interface MutationVerifyEmailArgs {
   token: Scalars['String']['input'];
+}
+
+export interface NoCopilotProviderAvailableDataType {
+  __typename?: 'NoCopilotProviderAvailableDataType';
+  modelId: Scalars['String']['output'];
 }
 
 export interface NoMoreSeatDataType {
