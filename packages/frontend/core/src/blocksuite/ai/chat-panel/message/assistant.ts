@@ -79,6 +79,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
 
+  @property({ attribute: false })
+  accessor independentMode!: boolean;
+
   get state() {
     const { isLast, status } = this;
     return isLast
@@ -175,7 +178,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
         : EdgelessEditorActions
       : null;
 
-    const showActions = host && !!markdown;
+    const showActions = host && !!markdown && !this.independentMode;
 
     return html`
       <chat-copy-more

@@ -327,6 +327,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .notificationService=${this.notificationService}
                     .retry=${() => this.retry()}
                     .width=${this.width}
+                    .independentMode=${this.independentMode}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item) && this.host) {
                   return html`<chat-message-action
