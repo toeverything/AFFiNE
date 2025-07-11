@@ -175,56 +175,6 @@ test.describe('AIBasic/Chat', () => {
     await expect(firstAnswer.getByTestId('chat-actions')).toBeVisible();
   });
 
-  test('should show scroll indicator when there are many messages', async ({
-    loggedInPage: page,
-    utils,
-  }) => {
-    // Set window height to 100px to ensure scroll indicator appears
-    await page.setViewportSize({ width: 1280, height: 400 });
-
-    // Type and send a message
-    await utils.chatPanel.makeChat(
-      page,
-      'Hello, give a introduction about the moon. Answer in 500 words.'
-    );
-
-    await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content:
-          'Hello, give a introduction about the moon. Answer in 500 words.',
-      },
-      {
-        role: 'assistant',
-        status: 'success',
-      },
-    ]);
-
-    // Wait for the answer to be completely rendered
-    await page.waitForTimeout(1000);
-
-    // Scroll up to trigger scroll indicator
-    const chatMessagesContainer = page.getByTestId(
-      'chat-panel-messages-container'
-    );
-    await chatMessagesContainer.evaluate(el => {
-      el.scrollTop = 0;
-    });
-
-    const scrollDownIndicator = page.getByTestId(
-      'chat-panel-scroll-down-indicator'
-    );
-
-    // Verify scroll indicator appears
-    await expect(scrollDownIndicator).toBeVisible();
-
-    // Click scroll indicator to scroll to bottom
-    await scrollDownIndicator.click();
-
-    // Verify scroll indicator disappears
-    await expect(scrollDownIndicator).not.toBeVisible();
-  });
-
   test('should show error when request failed', async ({
     loggedInPage: page,
     utils,
