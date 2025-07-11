@@ -917,3 +917,178 @@ test('should handle fork and session attachment operations', async t => {
     'attach and detach operation results'
   );
 });
+
+test('should cleanup empty sessions correctly', async t => {
+  const { copilotSession, db } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  // should be deleted
+  const neverUsedSessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    neverUsedSessionIds.map(async id => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: { messageCost: 0, updatedAt: oneDayAgo },
+      });
+    })
+  );
+
+  // should be marked as deleted
+  const emptySessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    emptySessionIds.map(async id => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: { messageCost: 100, updatedAt: oneDayAgo },
+      });
+    })
+  );
+
+  // should not be affected
+  const recentSessionId = randomUUID();
+  await createTestSession(t, { sessionId: recentSessionId });
+  await db.aiSession.update({
+    where: { id: recentSessionId },
+    data: { messageCost: 0, updatedAt: twoHoursAgo },
+  });
+
+  // Create session with messages (should not be affected)
+  const sessionWithMsgId = randomUUID();
+  await createSessionWithMessages(
+    t,
+    { sessionId: sessionWithMsgId },
+    'test message'
+  );
+
+  const result = await copilotSession.cleanupEmptySessions(oneDayAgo);
+
+  const remainingSessions = await db.aiSession.findMany({
+    where: {
+      id: {
+        in: [
+          ...neverUsedSessionIds,
+          ...emptySessionIds,
+          recentSessionId,
+          sessionWithMsgId,
+        ],
+      },
+    },
+    select: { id: true, deletedAt: true, pinned: true },
+  });
+
+  t.snapshot(
+    {
+      cleanupResult: result,
+      remainingSessions: remainingSessions.map(s => ({
+        deleted: !!s.deletedAt,
+        pinned: s.pinned,
+        type: neverUsedSessionIds.includes(s.id)
+          ? 'zeroCost'
+          : emptySessionIds.includes(s.id)
+            ? 'noMessages'
+            : s.id === recentSessionId
+              ? 'recent'
+              : 'withMessages',
+      })),
+    },
+    'cleanup empty sessions results'
+  );
+});
+
+test('should get sessions for title generation correctly', async t => {
+  const { copilotSession, db } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  // create valid sessions with messages
+  const sessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    sessionIds.map(async (id, index) => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: {
+          updatedAt: new Date(Date.now() - index * 1000),
+          messages: {
+            create: Array.from({ length: index + 1 }, (_, i) => ({
+              role: 'assistant',
+              content: `assistant message ${i}`,
+            })),
+          },
+        },
+      });
+    })
+  );
+
+  // create excluded sessions
+  const excludedSessions = [
+    {
+      reason: 'hasTitle',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSession.update({
+          where: { id },
+          data: { title: 'Existing Title' },
+        });
+      },
+    },
+    {
+      reason: 'isDeleted',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSession.update({
+          where: { id },
+          data: { deletedAt: new Date() },
+        });
+      },
+    },
+    {
+      reason: 'noMessages',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+      },
+    },
+    {
+      reason: 'isAction',
+      setupFn: async (id: string) => {
+        await createTestSession(t, {
+          sessionId: id,
+          promptName: TEST_PROMPTS.ACTION,
+        });
+      },
+    },
+    {
+      reason: 'noAssistantMessages',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSessionMessage.create({
+          data: { sessionId: id, role: 'user', content: 'User message only' },
+        });
+      },
+    },
+  ];
+
+  await Promise.all(
+    excludedSessions.map(async session => {
+      await session.setupFn(randomUUID());
+    })
+  );
+
+  const result = await copilotSession.toBeGenerateTitle(10);
+
+  t.snapshot(
+    {
+      total: result.length,
+      sessions: result.map(s => ({
+        assistantMessageCount: s._count.messages,
+        isValid: sessionIds.includes(s.id),
+      })),
+      onlyValidSessionsReturned: result.every(s => sessionIds.includes(s.id)),
+    },
+    'sessions for title generation results'
+  );
+});

@@ -582,4 +582,57 @@ export class CopilotSessionModel extends BaseModel {
       .map(({ messageCost, prompt: { action } }) => (action ? 1 : messageCost))
       .reduce((prev, cost) => prev + cost, 0);
   }
+
+  @Transactional()
+  async cleanupEmptySessions(earlyThen: Date) {
+    // delete never used sessions
+    const { count: removed } = await this.db.aiSession.deleteMany({
+      where: {
+        messageCost: 0,
+        deletedAt: null,
+        // filter session updated more than 24 hours ago
+        updatedAt: { lt: earlyThen },
+      },
+    });
+
+    // mark empty sessions as deleted
+    const { count: cleaned } = await this.db.aiSession.updateMany({
+      where: {
+        deletedAt: null,
+        messages: { none: {} },
+        // filter session updated more than 24 hours ago
+        updatedAt: { lt: earlyThen },
+      },
+      data: {
+        deletedAt: new Date(),
+        pinned: false,
+      },
+    });
+
+    return { removed, cleaned };
+  }
+
+  @Transactional()
+  async toBeGenerateTitle(take: number) {
+    const sessions = await this.db.aiSession
+      .findMany({
+        where: {
+          title: null,
+          deletedAt: null,
+          messages: { some: {} },
+          // only generate titles for non-actions sessions
+          prompt: { action: null },
+        },
+        select: {
+          id: true,
+          // count assistant messages
+          _count: { select: { messages: { where: { role: 'assistant' } } } },
+        },
+        take,
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(s => s.filter(s => s._count.messages > 0));
+
+    return sessions;
+  }
 }

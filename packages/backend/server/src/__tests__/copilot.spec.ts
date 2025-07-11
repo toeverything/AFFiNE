@@ -18,6 +18,7 @@ import {
 } from '../models';
 import { CopilotModule } from '../plugins/copilot';
 import { CopilotContextService } from '../plugins/copilot/context';
+import { CopilotCronJobs } from '../plugins/copilot/cron';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
@@ -77,6 +78,7 @@ type Context = {
   jobs: CopilotEmbeddingJob;
   storage: CopilotStorage;
   workflow: CopilotWorkflowService;
+  cronJobs: CopilotCronJobs;
   executors: {
     image: CopilotChatImageExecutor;
     text: CopilotChatTextExecutor;
@@ -137,6 +139,7 @@ test.before(async t => {
   const jobs = module.get(CopilotEmbeddingJob);
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
+  const cronJobs = module.get(CopilotCronJobs);
 
   t.context.module = module;
   t.context.auth = auth;
@@ -153,6 +156,7 @@ test.before(async t => {
   t.context.jobs = jobs;
   t.context.transcript = transcript;
   t.context.workspaceEmbedding = workspaceEmbedding;
+  t.context.cronJobs = cronJobs;
 
   t.context.executors = {
     image: module.get(CopilotChatImageExecutor),
@@ -1930,4 +1934,72 @@ test('should handle generateSessionTitle correctly under various conditions', as
       'should use correct prompt for title generation'
     );
   }
+});
+
+test('should handle copilot cron jobs correctly', async t => {
+  const { cronJobs, copilotSession } = t.context;
+
+  // mock calls
+  const mockCleanupResult = { removed: 2, cleaned: 3 };
+  const mockSessions = [
+    { id: 'session1', _count: { messages: 1 } },
+    { id: 'session2', _count: { messages: 2 } },
+  ];
+  const cleanupStub = Sinon.stub(
+    copilotSession,
+    'cleanupEmptySessions'
+  ).resolves(mockCleanupResult);
+  const toBeGenerateStub = Sinon.stub(
+    copilotSession,
+    'toBeGenerateTitle'
+  ).resolves(mockSessions);
+  const jobAddStub = Sinon.stub(cronJobs['jobs'], 'add').resolves();
+
+  // daily cleanup job scheduling
+  {
+    await cronJobs.dailyCleanupJob();
+    t.snapshot(
+      jobAddStub.getCalls().map(call => ({
+        args: call.args,
+      })),
+      'daily job scheduling calls'
+    );
+
+    jobAddStub.reset();
+    cleanupStub.reset();
+    toBeGenerateStub.reset();
+  }
+
+  // cleanup empty sessions
+  {
+    // mock
+    cleanupStub.resolves(mockCleanupResult);
+    toBeGenerateStub.resolves(mockSessions);
+
+    await cronJobs.cleanupEmptySessions();
+    t.snapshot(
+      cleanupStub.getCalls().map(call => ({
+        args: call.args.map(arg => (arg instanceof Date ? 'Date' : arg)), // Replace Date with string for stable snapshot
+      })),
+      'cleanup empty sessions calls'
+    );
+  }
+
+  // generate missing titles
+  await cronJobs.generateMissingTitles();
+  t.snapshot(
+    {
+      modelCalls: toBeGenerateStub.getCalls().map(call => ({
+        args: call.args,
+      })),
+      jobCalls: jobAddStub.getCalls().map(call => ({
+        args: call.args,
+      })),
+    },
+    'title generation calls'
+  );
+
+  cleanupStub.restore();
+  toBeGenerateStub.restore();
+  jobAddStub.restore();
 });
