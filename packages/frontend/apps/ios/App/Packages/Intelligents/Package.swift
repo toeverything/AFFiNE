@@ -21,7 +21,7 @@ let package = Package(
     .package(url: "https://github.com/SwifterSwift/SwifterSwift.git", from: "6.0.0"),
     .package(url: "https://github.com/Recouse/EventSource", from: "0.1.4"),
     .package(url: "https://github.com/Lakr233/ListViewKit", from: "1.1.6"),
-    .package(url: "https://github.com/Lakr233/MarkdownView", exact: "2.3.8"),
+    .package(url: "https://github.com/Lakr233/MarkdownView", from: "3.1.9"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [

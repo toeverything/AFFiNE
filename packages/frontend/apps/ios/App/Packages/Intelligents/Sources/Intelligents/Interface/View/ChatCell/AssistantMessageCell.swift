@@ -14,16 +14,13 @@ import UIKit
 private let markdownViewForSizeCalculation: MarkdownTextView = .init()
 
 class AssistantMessageCell: ChatBaseCell {
-  let markdownView = MarkdownTextView()
+  let markdownView = MarkdownTextView().then {
+    $0.textView.isSelectable = true
+  }
 
   override func prepareContentView(inside contentView: UIView) {
     super.prepareContentView(inside: contentView)
     contentView.addSubview(markdownView)
-  }
-
-  override func prepareForReuse() {
-    super.prepareForReuse()
-    markdownView.prepareForReuse()
   }
 
   override func configure(with viewModel: any ChatCellViewModel) {
@@ -33,10 +30,7 @@ class AssistantMessageCell: ChatBaseCell {
       assertionFailure()
       return
     }
-    markdownView.setMarkdown(
-      vm.documentBlocks,
-      renderedContent: vm.documentRenderedContent
-    )
+    markdownView.setMarkdown(vm.preprocessedContent)
   }
 
   override func layoutContentView(bounds: CGRect) {
@@ -53,10 +47,7 @@ class AssistantMessageCell: ChatBaseCell {
     markdownViewForSizeCalculation.frame = .init(
       x: 0, y: 0, width: width, height: .greatestFiniteMagnitude
     )
-    markdownViewForSizeCalculation.setMarkdown(
-      vm.documentBlocks,
-      renderedContent: vm.documentRenderedContent
-    )
+    markdownViewForSizeCalculation.setMarkdownManually(vm.preprocessedContent)
     let boundingSize = markdownViewForSizeCalculation.boundingSize(for: width)
     return ceil(boundingSize.height)
   }

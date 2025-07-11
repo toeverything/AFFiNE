@@ -164,24 +164,11 @@ extension ChatManager {
     vmId: UUID
   ) {
     let result = MarkdownParser().parse(document)
-    var renderedContexts: [String: RenderedItem] = [:]
-    for (key, value) in result.mathContext {
-      let image = MathRenderer.renderToImage(
-        latex: value,
-        fontSize: MarkdownTheme.default.fonts.body.pointSize,
-        textColor: MarkdownTheme.default.colors.body
-      )?.withRenderingMode(.alwaysTemplate)
-      let renderedContext = RenderedItem(
-        image: image,
-        text: value
-      )
-      renderedContexts["math://\(key)"] = renderedContext
-    }
+    let content = MarkdownTextView.PreprocessContent(parserResult: result, theme: .default)
 
     with(sessionId: sessionId, vmId: vmId) { (viewModel: inout AssistantMessageCellViewModel) in
       viewModel.content = document
-      viewModel.documentBlocks = result.document
-      viewModel.documentRenderedContent = renderedContexts
+      viewModel.preprocessedContent = content
     }
   }
 }

@@ -28,15 +28,6 @@
       }
     },
     {
-      "identity" : "litext",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/Litext",
-      "state" : {
-        "revision" : "c37f3ab5826659854311e20d6c3942d4905b00b6",
-        "version" : "0.5.0"
-      }
-    },
-    {
       "identity" : "lrucache",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nicklockwood/LRUCache",
@@ -50,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/MarkdownView",
       "state" : {
-        "revision" : "29a9da19d6dc21af4e629c423961b0f453ffe192",
-        "version" : "2.3.8"
+        "revision" : "446dba45be81c67d0717d19277367dcbe5b2fb12",
+        "version" : "3.1.9"
       }
     },
     {
@@ -68,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/Splash",
       "state" : {
-        "revision" : "4d997712fe07f75695aacdf287aeb3b1f2c6ab88",
-        "version" : "0.17.0"
+        "revision" : "de9cde249fdb7a173a6e6b950ab18b11f6c2a557",
+        "version" : "0.18.0"
       }
     },
     {
