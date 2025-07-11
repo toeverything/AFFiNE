@@ -109,6 +109,7 @@ export class DocComposeTool extends ArtifactTool<
   }
 
   protected override getPreviewContent() {
+    if (!this.std) return html``;
     const resultData = this.data;
     const title = this.data.args.title;
     const result = resultData.type === 'tool-result' ? resultData.result : null;

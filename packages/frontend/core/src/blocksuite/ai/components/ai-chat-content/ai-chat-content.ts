@@ -6,11 +6,7 @@ import type {
   CopilotChatHistoryFragment,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import {
-  type BlockStdScope,
-  type EditorHost,
-  ShadowlessElement,
-} from '@blocksuite/affine/std';
+import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { type Signal } from '@preact/signals-core';
@@ -138,9 +134,6 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
-
-  @property({ attribute: false })
-  accessor std: BlockStdScope | null | undefined;
 
   @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
@@ -415,7 +408,6 @@ export class AIChatContent extends SignalWatcher(
         })}
         ${ref(this.chatMessagesRef)}
         .host=${this.host}
-        .std=${this.std}
         .workspaceId=${this.workspaceId}
         .docId=${this.docId}
         .session=${this.session}

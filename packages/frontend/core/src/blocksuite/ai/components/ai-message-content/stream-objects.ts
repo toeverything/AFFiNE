@@ -90,6 +90,7 @@ export class ChatContentStreamObjects extends WithDisposable(
             .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
+            .theme=${this.theme}
           ></code-artifact-tool>
         `;
       case 'doc_edit':

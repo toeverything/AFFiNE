@@ -58,7 +58,9 @@ function useCopilotClient() {
 
 function createMockStd(workspace: Workspace) {
   workspace.meta.initialize();
-  const store = workspace.createDoc().getStore();
+  // just pick a random doc for now
+  const store = workspace.docs.values().next().value?.getStore();
+  if (!store) return null;
   const std = new BlockStdScope({
     store,
     extensions: [...getViewManager().config.init().value.get('page')],
@@ -187,7 +189,7 @@ export const Component = () => {
     content.session = currentSession;
     content.workspaceId = workspaceId;
     content.extensions = specs;
-    content.std = mockStd;
+    content.host = mockStd?.host;
     content.docDisplayConfig = docDisplayConfig;
     content.searchMenuConfig = searchMenuConfig;
     content.networkSearchConfig = networkSearchConfig;
