@@ -82,6 +82,7 @@ export const Component = () => {
       const sessionId = await client.createSession({
         workspaceId,
         promptName: 'Chat With AFFiNE AI' satisfies PromptKey,
+        reuseLatestChat: false,
         ...options,
       });
 
