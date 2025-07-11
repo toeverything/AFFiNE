@@ -3,7 +3,11 @@ import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
