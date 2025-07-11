@@ -98,7 +98,7 @@ const AIChatButton = () => {
 
   return (
     <MenuLinkItem icon={<AiOutlineIcon />} active={aiChatActive} to={'/chat'}>
-      <span data-testid="ai-chat">AFFiNE Intelligence</span>
+      <span data-testid="ai-chat">Intelligence</span>
     </MenuLinkItem>
   );
 };

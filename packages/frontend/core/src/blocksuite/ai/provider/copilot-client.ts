@@ -165,7 +165,8 @@ export class CopilotClient {
     docId?: string,
     options?: RequestOptions<
       typeof getCopilotSessionsQuery
-    >['variables']['options']
+    >['variables']['options'],
+    signal?: AbortSignal
   ) {
     try {
       const res = await this.gql({
@@ -176,6 +177,7 @@ export class CopilotClient {
           docId,
           options,
         },
+        signal,
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {

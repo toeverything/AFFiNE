@@ -260,6 +260,38 @@ export const Component = () => {
     status,
   ]);
 
+  // restore pinned session
+  useEffect(() => {
+    if (!chatContent) return;
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+    client
+      .getSessions(
+        workspaceId,
+        {},
+        undefined,
+        { pinned: true, limit: 1 },
+        signal
+      )
+      .then(sessions => {
+        if (!Array.isArray(sessions)) return;
+        const session = sessions[0];
+        if (!session) return;
+        setCurrentSession(session);
+        if (chatContent) {
+          chatContent.session = session;
+          chatContent.reloadSession();
+        }
+      })
+      .catch(console.error);
+
+    // abort the request
+    return () => {
+      controller.abort();
+    };
+  }, [chatContent, client, workspaceId]);
+
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {
     if (node) {
       setIsBodyProvided(true);
@@ -285,7 +317,7 @@ export const Component = () => {
 
   return (
     <>
-      <ViewTitle title="AFFiNE Intelligence" />
+      <ViewTitle title="Intelligence" />
       <ViewIcon icon="ai" />
       <ViewHeader>
         <div className={styles.chatHeader}>
