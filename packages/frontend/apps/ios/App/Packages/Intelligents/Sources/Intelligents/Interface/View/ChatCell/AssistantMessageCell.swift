@@ -14,9 +14,7 @@ import UIKit
 private let markdownViewForSizeCalculation: MarkdownTextView = .init()
 
 class AssistantMessageCell: ChatBaseCell {
-  let markdownView = MarkdownTextView().then {
-    $0.textView.isSelectable = true
-  }
+  let markdownView = MarkdownTextView()
 
   override func prepareContentView(inside contentView: UIView) {
     super.prepareContentView(inside: contentView)
