@@ -36,6 +36,7 @@ import { DocRendererModule } from './core/doc-renderer';
 import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
 import { MailModule } from './core/mail';
+import { MonitorModule } from './core/monitor';
 import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
@@ -112,6 +113,7 @@ export const FunctionalityModules = [
   WebSocketModule,
   JobModule.forRoot(),
   ModelsModule,
+  MonitorModule,
 ];
 
 export class AppModuleBuilder {
