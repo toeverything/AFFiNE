@@ -6,8 +6,7 @@ import {
   type FeatureFlagService,
   type NotificationService,
 } from '@blocksuite/affine/shared/services';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';

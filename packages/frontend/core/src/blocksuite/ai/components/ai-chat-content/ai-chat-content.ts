@@ -6,8 +6,7 @@ import type {
   CopilotChatHistoryFragment,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { type Signal } from '@preact/signals-core';

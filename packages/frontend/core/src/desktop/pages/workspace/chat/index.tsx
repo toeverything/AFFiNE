@@ -7,6 +7,7 @@ import {
 import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
 import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import type { PromptKey } from '@affine/core/blocksuite/ai/provider/prompt';
+import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
 import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
@@ -27,8 +28,12 @@ import {
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
+import { BlockStdScope } from '@blocksuite/affine/std';
+import type { Workspace } from '@blocksuite/affine/store';
 import { type Signal, signal } from '@preact/signals-core';
 import { useFramework, useService } from '@toeverything/infra';
+import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import * as styles from './index.css';
@@ -49,6 +54,28 @@ function useCopilotClient() {
       ),
     [graphqlService, eventSourceService, fetchService]
   );
+}
+
+function createMockStd(workspace: Workspace) {
+  workspace.meta.initialize();
+  // just pick a random doc for now
+  const store = workspace.docs.values().next().value?.getStore();
+  if (!store) return null;
+  const std = new BlockStdScope({
+    store,
+    extensions: [...getViewManager().config.init().value.get('page')],
+  });
+  std.render();
+  return std;
+}
+
+function useMockStd() {
+  const workspace = useService(WorkspaceService).workspace;
+  const std = useMemo(() => {
+    if (!workspace) return null;
+    return createMockStd(workspace.docCollection);
+  }, [workspace]);
+  return std;
 }
 
 export const Component = () => {
@@ -145,6 +172,7 @@ export const Component = () => {
 
   const confirmModal = useConfirmModal();
   const specs = useAISpecs();
+  const mockStd = useMockStd();
 
   // init or update ai-chat-content
   useEffect(() => {
@@ -161,6 +189,7 @@ export const Component = () => {
     content.session = currentSession;
     content.workspaceId = workspaceId;
     content.extensions = specs;
+    content.host = mockStd?.host;
     content.docDisplayConfig = docDisplayConfig;
     content.searchMenuConfig = searchMenuConfig;
     content.networkSearchConfig = networkSearchConfig;
@@ -192,6 +221,7 @@ export const Component = () => {
     docDisplayConfig,
     framework,
     isBodyProvided,
+    mockStd,
     networkSearchConfig,
     reasoningConfig,
     searchMenuConfig,
@@ -260,37 +290,21 @@ export const Component = () => {
     status,
   ]);
 
-  // restore pinned session
   useEffect(() => {
-    if (!chatContent) return;
-
-    const controller = new AbortController();
-    const signal = controller.signal;
-    client
-      .getSessions(
-        workspaceId,
-        {},
-        undefined,
-        { pinned: true, limit: 1 },
-        signal
-      )
-      .then(sessions => {
-        if (!Array.isArray(sessions)) return;
-        const session = sessions[0];
-        if (!session) return;
-        setCurrentSession(session);
-        if (chatContent) {
-          chatContent.session = session;
-          chatContent.reloadSession();
-        }
-      })
-      .catch(console.error);
-
-    // abort the request
-    return () => {
-      controller.abort();
-    };
-  }, [chatContent, client, workspaceId]);
+    const refNodeSlots = mockStd?.getOptional(RefNodeSlotsProvider);
+    if (!refNodeSlots) return;
+    const sub = refNodeSlots.docLinkClicked.subscribe(event => {
+      const { workbench } = framework.get(WorkbenchService);
+      workbench.openDoc({
+        docId: event.pageId,
+        mode: event.params?.mode,
+        blockIds: event.params?.blockIds,
+        elementIds: event.params?.elementIds,
+        refreshKey: nanoid(),
+      });
+    });
+    return () => sub.unsubscribe();
+  }, [framework, mockStd]);
 
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {
     if (node) {
