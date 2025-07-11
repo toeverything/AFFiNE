@@ -4838,9 +4838,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.setting.account"](): string;
     /**
-      * `Delete your account`
+      * `Delete your account from {{server}}`
       */
-    ["com.affine.setting.account.delete"](): string;
+    ["com.affine.setting.account.delete-from-server"](options: {
+        readonly server: string;
+    }): string;
     /**
       * `Once deleted, your account will no longer be accessible, and all data in your personal cloud space will be permanently deleted.`
       */
@@ -4857,10 +4859,6 @@ export function useAFFiNEI18N(): {
       * `Delete your account?`
       */
     ["com.affine.setting.account.delete.confirm-title"](): string;
-    /**
-      * `Are you sure you want to delete your account?`
-      */
-    ["com.affine.setting.account.delete.confirm-description-1"](): string;
     /**
       * `Please type your email to confirm`
       */
@@ -9292,9 +9290,17 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `Are you sure you want to delete your account from <1>{{server}}</1>?`
+      */
+    ["com.affine.setting.account.delete.confirm-delete-description-1"]: ComponentType<TypedTransProps<{
+        readonly server: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
       * `Your account will be inaccessible, and your personal cloud space will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
-    ["com.affine.setting.account.delete.confirm-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+    ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
     }>>;
     /**
