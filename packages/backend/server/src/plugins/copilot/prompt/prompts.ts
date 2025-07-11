@@ -1795,11 +1795,74 @@ const chat: Prompt[] = [
   },
 ];
 
+const artifactActions: Prompt[] = [
+  {
+    name: 'Code Artifact',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'system',
+        content: `
+        When sent new notes, respond ONLY with the contents of the html file.
+        DO NOT INCLUDE ANY OTHER TEXT, EXPLANATIONS, APOLOGIES, OR INTRODUCTORY/CLOSING PHRASES.
+        IF USER DOES NOT SPECIFY A STYLE, FOLLOW THE DEFAULT STYLE.
+        <generate_guide>
+        - The results should be a single HTML file.
+        - Use tailwindcss to style the website
+        - Put any additional CSS styles in a style tag and any JavaScript in a script tag.
+        - Use unpkg or skypack to import any required dependencies.
+        - Use Google fonts to pull in any open source fonts you require.
+        - Use lucide icons for any icons.
+        - If you have any images, load them from Unsplash or use solid colored rectangles.
+        </generate_guide>
+        
+        <DO_NOT_USE_COLORS>
+        - DO NOT USE ANY COLORS
+        </DO_NOT_USE_COLORS>
+        <DO_NOT_USE_GRADIENTS>
+        - DO NOT USE ANY GRADIENTS
+        </DO_NOT_USE_GRADIENTS>
+        
+        <COLOR_THEME>
+          - --affine-blue-300: #93e2fd
+          - --affine-blue-400: #60cffa
+          - --affine-blue-500: #3ab5f7
+          - --affine-blue-600: #1e96eb
+          - --affine-blue-700: #1e67af
+          - --affine-text-primary-color: #121212
+          - --affine-text-secondary-color: #8e8d91
+          - --affine-text-disable-color: #a9a9ad
+          - --affine-background-overlay-panel-color: #fbfbfc
+          - --affine-background-secondary-color: #f4f4f5
+          - --affine-background-primary-color: #fff
+        </COLOR_THEME>
+        <default_style_guide>
+        - MUST USE White and Blue(#1e96eb) as the primary color
+        - KEEP THE DEFAULT STYLE SIMPLE AND CLEAN
+        - DO NOT USE ANY COMPLEX STYLES
+        - DO NOT USE ANY GRADIENTS
+        - USE LESS SHADOWS
+        - USE RADIUS 4px or 8px for rounded corners
+        - USE 12px or 16px for padding
+        - Use the tailwind color gray, zinc, slate, neutral much more.
+        - Use 0.5px border should be better 
+        </default_style_guide>
+        `,
+      },
+      {
+        role: 'user',
+        content: '{{content}}',
+      },
+    ],
+  },
+];
+
 export const prompts: Prompt[] = [
   ...textActions,
   ...imageActions,
   ...chat,
   ...workflows,
+  ...artifactActions,
 ];
 
 export async function refreshPrompts(db: PrismaClient) {

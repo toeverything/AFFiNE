@@ -5,9 +5,7 @@ import { z } from 'zod';
 import type { PromptService } from '../prompt';
 import type { CopilotProviderFactory } from '../providers';
 import { toolError } from './error';
-
 const logger = new Logger('CodeArtifactTool');
-
 /**
  * A copilot tool that produces a completely self-contained HTML artifact.
  * The returned HTML must include <style> and <script> tags directly so that
@@ -37,23 +35,20 @@ export const createCodeArtifactTool = (
     }),
     execute: async ({ title, userPrompt }) => {
       try {
-        const prompt = await promptService.get('Make it real with text');
+        const prompt = await promptService.get('Code Artifact');
         if (!prompt) {
           throw new Error('Prompt not found');
         }
-
         const provider = await factory.getProviderByModel(prompt.model);
         if (!provider) {
           throw new Error('Provider not found');
         }
-
         const content = await provider.text(
           {
             modelId: prompt.model,
           },
-          [...prompt.finish({}), { role: 'user', content: userPrompt }]
+          prompt.finish({ content: userPrompt })
         );
-
         // Remove surrounding ``` or ```html fences if present
         let stripped = content.trim();
         if (stripped.startsWith('```')) {
@@ -65,7 +60,6 @@ export const createCodeArtifactTool = (
             stripped = stripped.slice(0, -3);
           }
         }
-
         return {
           title,
           html: stripped,
