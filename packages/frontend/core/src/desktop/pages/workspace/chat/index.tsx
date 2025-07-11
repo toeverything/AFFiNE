@@ -125,7 +125,10 @@ export const Component = () => {
         .getSession(workspaceId, sessionId)
         .then(session => {
           setCurrentSession(session);
-          chatContent?.reloadSession();
+          if (chatContent) {
+            chatContent.session = session;
+            chatContent.reloadSession();
+          }
           chatTool?.closeHistoryMenu();
         })
         .catch(console.error)
