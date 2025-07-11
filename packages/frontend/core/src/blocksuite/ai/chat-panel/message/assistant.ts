@@ -37,6 +37,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
+
+  @property({ attribute: false })
   accessor item!: ChatMessage;
 
   @property({ attribute: false })
@@ -123,6 +126,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   private renderStreamObjects(answer: StreamObject[]) {
     return html`<chat-content-stream-objects
       .host=${this.host}
+      .std=${this.std}
       .answer=${answer}
       .state=${this.state}
       .width=${this.width}

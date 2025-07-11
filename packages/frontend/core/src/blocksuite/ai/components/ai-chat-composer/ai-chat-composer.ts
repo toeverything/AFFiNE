@@ -317,12 +317,11 @@ export class AIChatComposer extends SignalWatcher(
             this.embeddingCompleted = false;
             return;
           }
+          const prevCompleted = this.embeddingCompleted;
           const completed = status.embedded === status.total;
           this.embeddingCompleted = completed;
-          if (completed) {
-            this.embeddingCompleted = true;
-          } else {
-            this.embeddingCompleted = false;
+          if (prevCompleted !== completed) {
+            this.requestUpdate();
           }
         },
         signal
