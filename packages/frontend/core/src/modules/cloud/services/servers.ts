@@ -47,6 +47,17 @@ export class ServersService extends Service {
     [] as any
   );
 
+  serversWithAccount$ = this.servers$
+    .map(servers =>
+      servers.map(server =>
+        server.account$.map(account => ({
+          server,
+          account,
+        }))
+      )
+    )
+    .flat();
+
   server$(id: string) {
     return this.servers$.map(servers =>
       servers.find(server => server.id === id)
