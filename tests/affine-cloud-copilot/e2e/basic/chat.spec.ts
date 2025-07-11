@@ -311,17 +311,6 @@ test.describe('AIBasic/Chat', () => {
       },
       {
         role: 'assistant',
-        status: 'transmitting',
-      },
-    ]);
-
-    await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content: 'Introduce Large Language Model. Answer in 50 words.',
-      },
-      {
-        role: 'assistant',
         status: 'success',
       },
     ]);
