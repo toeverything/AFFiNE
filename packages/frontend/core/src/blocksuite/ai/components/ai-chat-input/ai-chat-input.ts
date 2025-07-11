@@ -1,11 +1,9 @@
-import { toast } from '@affine/component';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import { ArrowUpBigIcon, CloseIcon, ImageIcon } from '@blocksuite/icons/lit';
+import { ArrowUpBigIcon, CloseIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -16,6 +14,7 @@ import { type AIError, AIProvider, type AISendParams } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
 import { mergeStreamObjects } from '../../utils/stream-objects';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { ChatChip, DocDisplayConfig } from '../ai-chat-chips/type';
 import { isDocChip } from '../ai-chat-chips/utils';
 import {
@@ -23,7 +22,6 @@ import {
   isChatMessage,
   StreamObjectSchema,
 } from '../ai-chat-messages';
-import { MAX_IMAGE_COUNT } from './const';
 import type {
   AIChatInputContext,
   AINetworkSearchConfig,
@@ -336,6 +334,12 @@ export class AIChatInput extends SignalWatcher(
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
 
   @property({ attribute: false })
+  accessor addImages!: (images: File[]) => void;
+
+  @property({ attribute: false })
+  accessor addChip!: (chip: ChatChip) => Promise<void>;
+
+  @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
@@ -343,6 +347,9 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
   accessor isRootSession: boolean = true;
@@ -357,7 +364,7 @@ export class AIChatInput extends SignalWatcher(
   accessor testId = 'chat-panel-input-container';
 
   @property({ attribute: false })
-  accessor addImages!: (images: File[]) => void;
+  accessor portalContainer: HTMLElement | null = null;
 
   private get _isNetworkActive() {
     return (
@@ -368,10 +375,6 @@ export class AIChatInput extends SignalWatcher(
 
   private get _isReasoningActive() {
     return !!this.reasoningConfig.enabled.value;
-  }
-
-  private get _isImageUploadDisabled() {
-    return this.chatContextValue.images.length >= MAX_IMAGE_COUNT;
   }
 
   override connectedCallback() {
@@ -453,14 +456,14 @@ export class AIChatInput extends SignalWatcher(
         data-testid="chat-panel-input"
       ></textarea>
       <div class="chat-panel-input-actions">
-        <div
-          class="chat-input-icon"
-          data-testid="chat-panel-input-image-upload"
-          aria-disabled=${this._isImageUploadDisabled}
-          @click=${this._uploadImageFiles}
-        >
-          ${ImageIcon()}
-          <affine-tooltip>Upload</affine-tooltip>
+        <div class="chat-input-icon">
+          <ai-chat-add-context
+            .addChip=${this.addChip}
+            .addImages=${this.addImages}
+            .docDisplayConfig=${this.docDisplayConfig}
+            .searchMenuConfig=${this.searchMenuConfig}
+            .portalContainer=${this.portalContainer}
+          ></ai-chat-add-context>
         </div>
         <div class="chat-input-footer-spacer"></div>
         <chat-input-preference
@@ -553,18 +556,6 @@ export class AIChatInput extends SignalWatcher(
     const oldImages = this.chatContextValue.images;
     const newImages = oldImages.filter((_, i) => i !== index);
     this.updateContext({ images: newImages });
-  };
-
-  private readonly _uploadImageFiles = async (_e: MouseEvent) => {
-    if (this._isImageUploadDisabled) return;
-
-    const images = await openFilesWith('Images');
-    if (!images) return;
-    if (this.chatContextValue.images.length + images.length > MAX_IMAGE_COUNT) {
-      toast(`You can only upload up to ${MAX_IMAGE_COUNT} images`);
-      return;
-    }
-    this.addImages(images);
   };
 
   private readonly _onTextareaSend = async (e: MouseEvent | KeyboardEvent) => {

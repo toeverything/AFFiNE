@@ -12,7 +12,8 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
 import { AIProvider } from '../../provider';
-import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type {
   AINetworkSearchConfig,
   AIPlaygroundConfig,

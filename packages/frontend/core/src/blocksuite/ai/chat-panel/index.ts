@@ -20,10 +20,8 @@ import { property, state } from 'lit/decorators.js';
 import { keyed } from 'lit/directives/keyed.js';
 
 import { AffineIcon } from '../_common/icons';
-import type {
-  DocDisplayConfig,
-  SearchMenuConfig,
-} from '../components/ai-chat-chips';
+import type { SearchMenuConfig } from '../components/ai-chat-add-context';
+import type { DocDisplayConfig } from '../components/ai-chat-chips';
 import type { ChatContextValue } from '../components/ai-chat-content';
 import type {
   AINetworkSearchConfig,
@@ -385,6 +383,7 @@ export class ChatPanel extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
       ></playground-content>
     `;
 

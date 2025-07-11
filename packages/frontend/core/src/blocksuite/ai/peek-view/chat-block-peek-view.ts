@@ -29,10 +29,8 @@ import {
   queryHistoryMessages,
 } from '../_common/chat-actions-handle';
 import { type AIChatBlockModel } from '../blocks';
-import type {
-  DocDisplayConfig,
-  SearchMenuConfig,
-} from '../components/ai-chat-chips';
+import type { SearchMenuConfig } from '../components/ai-chat-add-context';
+import type { DocDisplayConfig } from '../components/ai-chat-chips';
 import type {
   AINetworkSearchConfig,
   AIReasoningConfig,
@@ -609,6 +607,7 @@ export class AIChatBlockPeekView extends LitElement {
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .notificationService=${notificationService}
         .onChatSuccess=${this._onChatSuccess}
         .trackOptions=${{
           where: 'ai-chat-block',

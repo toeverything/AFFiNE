@@ -29,7 +29,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
 import { extractSelectedContent } from '../../utils/extract';
-import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type {
   AINetworkSearchConfig,
   AIReasoningConfig,
@@ -451,6 +452,7 @@ export class AIChatContent extends SignalWatcher(
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .notificationService=${this.notificationService}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

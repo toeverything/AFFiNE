@@ -260,8 +260,12 @@ export class ChatPanelUtils {
     });
 
     const fileChooserPromise = page.waitForEvent('filechooser');
-    // Open file upload dialog
-    await page.getByTestId('chat-panel-input-image-upload').click();
+    const withButton = page.getByTestId('chat-panel-with-button');
+    await withButton.hover();
+    await withButton.click({ delay: 200 });
+    const withMenu = page.getByTestId('ai-add-popover');
+    await withMenu.waitFor({ state: 'visible' });
+    await withMenu.getByTestId('ai-chat-with-images').click();
 
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(images);
@@ -368,11 +372,5 @@ export class ChatPanelUtils {
   public static async isNetworkSearchEnabled(page: Page) {
     const networkSearch = await page.getByTestId('chat-network-search');
     return (await networkSearch.getAttribute('aria-disabled')) === 'false';
-  }
-
-  public static async isImageUploadEnabled(page: Page) {
-    const imageUpload = await page.getByTestId('chat-panel-input-image-upload');
-    const disabled = await imageUpload.getAttribute('data-disabled');
-    return disabled === 'false';
   }
 }

@@ -78,6 +78,42 @@ export function getChipKey(chip: ChatChip) {
   return null;
 }
 
+export function omitChip(chips: ChatChip[], chip: ChatChip) {
+  return chips.filter(item => {
+    if (isDocChip(chip)) {
+      return !isDocChip(item) || item.docId !== chip.docId;
+    }
+    if (isFileChip(chip)) {
+      return !isFileChip(item) || item.file !== chip.file;
+    }
+    if (isTagChip(chip)) {
+      return !isTagChip(item) || item.tagId !== chip.tagId;
+    }
+    if (isCollectionChip(chip)) {
+      return !isCollectionChip(item) || item.collectionId !== chip.collectionId;
+    }
+    return true;
+  });
+}
+
+export function findChipIndex(chips: ChatChip[], chip: ChatChip) {
+  return chips.findIndex(item => {
+    if (isDocChip(chip)) {
+      return isDocChip(item) && item.docId === chip.docId;
+    }
+    if (isFileChip(chip)) {
+      return isFileChip(item) && item.file === chip.file;
+    }
+    if (isTagChip(chip)) {
+      return isTagChip(item) && item.tagId === chip.tagId;
+    }
+    if (isCollectionChip(chip)) {
+      return isCollectionChip(item) && item.collectionId === chip.collectionId;
+    }
+    return -1;
+  });
+}
+
 export function estimateTokenCount(text: string): number {
   const chinese = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
   const english = text.replace(/[\u4e00-\u9fa5]/g, '');

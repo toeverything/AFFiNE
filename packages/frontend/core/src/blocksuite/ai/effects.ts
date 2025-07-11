@@ -26,6 +26,7 @@ import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
 import { ChatPanelSplitView } from './chat-panel/split-view';
+import { AIChatAddContext } from './components/ai-chat-add-context';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
@@ -138,6 +139,7 @@ export function registerAIEffects() {
   customElements.define('ai-chat-messages', AIChatMessages);
   customElements.define('chat-panel', ChatPanel);
   customElements.define('ai-chat-input', AIChatInput);
+  customElements.define('ai-chat-add-context', AIChatAddContext);
   customElements.define(
     'ai-chat-embedding-status-tooltip',
     AIChatEmbeddingStatusTooltip

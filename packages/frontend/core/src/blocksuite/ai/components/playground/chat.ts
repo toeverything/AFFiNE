@@ -1,3 +1,4 @@
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type {
@@ -19,7 +20,8 @@ import { throttle } from 'lodash-es';
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
 import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { AIProvider } from '../../provider';
-import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { ChatContextValue } from '../ai-chat-content';
 import type {
   AINetworkSearchConfig,
@@ -164,6 +166,9 @@ export class PlaygroundChat extends SignalWatcher(
 
   @property({ attribute: false })
   accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
@@ -351,6 +356,8 @@ export class PlaygroundChat extends SignalWatcher(
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .notificationService=${this.notificationService}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
       ></ai-chat-composer>
     </div>`;
   }
