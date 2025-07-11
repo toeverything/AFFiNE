@@ -13,6 +13,7 @@ import {
 } from '@blocksuite/affine/std/gfx';
 import type { Block, Store } from '@blocksuite/affine/store';
 import { useFramework } from '@toeverything/infra';
+import clsx from 'clsx';
 import { isEqual } from 'lodash-es';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { map, pairwise } from 'rxjs';
@@ -65,7 +66,7 @@ export const EdgelessSnapshot = (props: Props) => {
       .codeBlockHtmlPreview(framework).value;
     return manager
       .get('preview-edgeless')
-      .concat([ViewportElementExtension('.ref-viewport')]);
+      .concat([ViewportElementExtension('.setting-editor-snapshot')]);
   }, [framework]);
 
   const updateElements = useCallback(() => {
@@ -156,7 +157,7 @@ export const EdgelessSnapshot = (props: Props) => {
   }, [editorSetting.provider, keyName, updateElements]);
 
   return (
-    <div className={snapshotContainer}>
+    <div className={clsx(snapshotContainer, 'setting-editor-snapshot')}>
       <div className={snapshotTitle}>{title}</div>
       <div className={snapshotLabel}>{title}</div>
       <div ref={wrapperRef} className={editorWrapper} style={{ height }}>
