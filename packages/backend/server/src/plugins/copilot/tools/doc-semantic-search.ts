@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
-import type { ChunkSimilarity } from '../../../models';
+import type { ChunkSimilarity, Models } from '../../../models';
 import type { CopilotContextService } from '../context';
 import type { ContextSession } from '../context/session';
 import type { CopilotChatOptions } from '../providers';
@@ -11,7 +11,8 @@ import { toolError } from './error';
 export const buildDocSearchGetter = (
   ac: AccessController,
   context: CopilotContextService,
-  docContext: ContextSession | null
+  docContext: ContextSession | null,
+  models: Models
 ) => {
   const searchDocs = async (
     options: CopilotChatOptions,
@@ -45,7 +46,24 @@ export const buildDocSearchGetter = (
     }
     if (!docChunks.length && !fileChunks.length)
       return `No results found for "${query}".`;
-    return [...fileChunks, ...docChunks];
+
+    const docMetas = await models.doc
+      .findAuthors(
+        docChunks.map(c => ({
+          // oxlint-disable-next-line no-non-null-assertion
+          workspaceId: options.workspace!,
+          docId: c.docId,
+        }))
+      )
+      .then(docs => new Map(docs.filter(d => !!d).map(doc => [doc.id, doc])));
+
+    return [
+      ...fileChunks,
+      ...docChunks.map(c => ({
+        ...c,
+        ...docMetas.get(c.docId),
+      })),
+    ] as ChunkSimilarity[];
   };
   return searchDocs;
 };

@@ -141,6 +141,7 @@ export abstract class CopilotProvider<C = any> {
       this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
       const ac = this.moduleRef.get(AccessController, { strict: false });
       const docReader = this.moduleRef.get(DocReader, { strict: false });
+      const models = this.moduleRef.get(Models, { strict: false });
       const prompt = this.moduleRef.get(PromptService, {
         strict: false,
       });
@@ -182,7 +183,12 @@ export abstract class CopilotProvider<C = any> {
             const docContext = options.session
               ? await context.getBySessionId(options.session)
               : null;
-            const searchDocs = buildDocSearchGetter(ac, context, docContext);
+            const searchDocs = buildDocSearchGetter(
+              ac,
+              context,
+              docContext,
+              models
+            );
             tools.doc_semantic_search = createDocSemanticSearchTool(
               searchDocs.bind(null, options)
             );
@@ -204,7 +210,6 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'docRead': {
-            const models = this.moduleRef.get(Models, { strict: false });
             const getDoc = buildDocContentGetter(ac, docReader, models);
             tools.doc_read = createDocReadTool(getDoc.bind(null, options));
             break;
