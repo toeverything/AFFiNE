@@ -165,6 +165,13 @@ export class CopilotContextModel extends BaseModel {
     fileId: string,
     embeddings: Embedding[]
   ) {
+    if (embeddings.length === 0) {
+      this.logger.warn(
+        `No embeddings provided for contextId: ${contextId}, fileId: ${fileId}. Skipping insertion.`
+      );
+      return;
+    }
+
     const values = this.processEmbeddings(contextId, fileId, embeddings);
 
     await this.db.$executeRaw`
@@ -204,6 +211,13 @@ export class CopilotContextModel extends BaseModel {
     docId: string,
     embeddings: Embedding[]
   ) {
+    if (embeddings.length === 0) {
+      this.logger.warn(
+        `No embeddings provided for workspaceId: ${workspaceId}, docId: ${docId}. Skipping insertion.`
+      );
+      return;
+    }
+
     const values = this.processEmbeddings(
       workspaceId,
       docId,

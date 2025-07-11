@@ -660,6 +660,12 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'internal_server_error',
     message: `Failed to generate text.`,
   },
+  copilot_failed_to_generate_embedding: {
+    type: 'internal_server_error',
+    args: { provider: 'string', message: 'string' },
+    message: ({ provider, message }) =>
+      `Failed to generate embedding with ${provider}: ${message}`,
+  },
   copilot_failed_to_create_message: {
     type: 'internal_server_error',
     message: `Failed to create chat message.`,

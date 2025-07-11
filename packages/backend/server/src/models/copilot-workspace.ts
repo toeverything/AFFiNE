@@ -283,6 +283,13 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     fileId: string,
     embeddings: Embedding[]
   ) {
+    if (embeddings.length === 0) {
+      this.logger.warn(
+        `No embeddings provided for workspaceId: ${workspaceId}, fileId: ${fileId}. Skipping insertion.`
+      );
+      return;
+    }
+
     const values = this.processEmbeddings(workspaceId, fileId, embeddings);
     await this.db.$executeRaw`
           INSERT INTO "ai_workspace_file_embeddings"

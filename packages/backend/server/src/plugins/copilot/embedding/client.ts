@@ -5,6 +5,7 @@ import {
   CopilotPromptNotFound,
   CopilotProviderNotSupported,
 } from '../../../base';
+import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
 import { ChunkSimilarity, Embedding } from '../../../models';
 import { PromptService } from '../prompt';
 import {
@@ -74,6 +75,12 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       input,
       { dimensions: EMBEDDING_DIMENSIONS }
     );
+    if (embeddings.length !== input.length) {
+      throw new CopilotFailedToGenerateEmbedding({
+        provider: provider.type,
+        message: `Expected ${input.length} embeddings, got ${embeddings.length}`,
+      });
+    }
 
     return Array.from(embeddings.entries()).map(([index, embedding]) => ({
       index,

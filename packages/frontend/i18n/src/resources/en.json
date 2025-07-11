@@ -2166,6 +2166,7 @@
   "error.COPILOT_SESSION_DELETED": "Copilot session has been deleted.",
   "error.NO_COPILOT_PROVIDER_AVAILABLE": "No copilot provider available: {{modelId}}",
   "error.COPILOT_FAILED_TO_GENERATE_TEXT": "Failed to generate text.",
+  "error.COPILOT_FAILED_TO_GENERATE_EMBEDDING": "Failed to generate embedding with {{provider}}: {{message}}",
   "error.COPILOT_FAILED_TO_CREATE_MESSAGE": "Failed to create chat message.",
   "error.UNSPLASH_IS_NOT_CONFIGURED": "Unsplash is not configured.",
   "error.COPILOT_ACTION_TAKEN": "Action has been taken, no more messages allowed.",
