@@ -52,14 +52,14 @@ extension ChatManager {
     let uploadableAttachments: [GraphQLFile] = [
       inputBoxData.fileAttachments.map { file -> GraphQLFile in
         .init(
-          fieldName: file.name,
+          fieldName: "options.blobs",
           originalName: file.name,
           data: file.data ?? .init()
         )
       },
       inputBoxData.imageAttachments.map { image -> GraphQLFile in
         .init(
-          fieldName: image.hashValue.description,
+          fieldName: "options.blobs",
           originalName: "image.jpg",
           data: image.imageData
         )
@@ -67,6 +67,7 @@ extension ChatManager {
     ].flatMap(\.self)
     assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
     guard let input = try? CreateChatMessageInput(
+      attachments: [],
       content: .some(content),
       params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
       sessionId: sessionId
