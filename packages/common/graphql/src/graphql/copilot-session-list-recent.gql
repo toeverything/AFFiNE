@@ -11,7 +11,7 @@ query getCopilotRecentSessions(
         options: {
           fork: false
           sessionOrder: desc
-          withMessages: true
+          withMessages: false
         }
       ) {
         ...PaginatedCopilotChats

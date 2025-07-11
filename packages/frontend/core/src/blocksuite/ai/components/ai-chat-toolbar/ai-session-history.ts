@@ -225,7 +225,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
               }}
             >
               <div class="ai-session-title">
-                ${session.sessionId}
+                ${session.title || 'New chat'}
                 <affine-tooltip .offsetX=${60}>
                   Click to open this chat
                 </affine-tooltip>
