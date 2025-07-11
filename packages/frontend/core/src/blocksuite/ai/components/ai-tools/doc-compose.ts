@@ -4,7 +4,6 @@ import { getEmbedLinkedDocIcons } from '@blocksuite/affine/blocks/embed-doc';
 import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import type { ColorScheme } from '@blocksuite/affine/model';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
@@ -110,8 +109,6 @@ export class DocComposeTool extends ArtifactTool<
   }
 
   protected override getPreviewContent() {
-    if (!this.std) return html``;
-    const std = this.std;
     const resultData = this.data;
     const title = this.data.args.title;
     const result = resultData.type === 'tool-result' ? resultData.result : null;
@@ -122,8 +119,7 @@ export class DocComposeTool extends ArtifactTool<
       ${successResult
         ? html`<text-renderer
             .answer=${successResult.markdown}
-            .host=${std.host}
-            .schema=${std.store.schema}
+            .schema=${this.std?.store.schema}
             .options=${{
               customHeading: true,
               extensions: getCustomPageEditorBlockSpecs(),
@@ -161,7 +157,6 @@ export class DocComposeTool extends ArtifactTool<
           return;
         }
         const workspace = std.store.workspace;
-        const notificationService = std.get(NotificationProvider);
         const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
         const docId = await MarkdownTransformer.importMarkdownToDoc({
           collection: workspace,
@@ -171,7 +166,7 @@ export class DocComposeTool extends ArtifactTool<
           extensions: getStoreManager().config.init().value.get('store'),
         });
         if (docId) {
-          const open = await notificationService.confirm({
+          const open = await this.notificationService.confirm({
             title: 'Open the doc you just created',
             message: 'Doc saved successfully! Would you like to open it now?',
             cancelText: 'Cancel',

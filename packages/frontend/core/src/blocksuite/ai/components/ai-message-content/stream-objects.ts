@@ -1,7 +1,11 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { ColorScheme } from '@blocksuite/affine/model';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
@@ -28,6 +32,9 @@ export class ChatContentStreamObjects extends WithDisposable(
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
 
   @property({ attribute: false })
   accessor state: AffineAIPanelState = 'finished';
@@ -70,7 +77,7 @@ export class ChatContentStreamObjects extends WithDisposable(
       case 'doc_compose':
         return html`
           <doc-compose-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
             .theme=${this.theme}
@@ -80,7 +87,7 @@ export class ChatContentStreamObjects extends WithDisposable(
       case 'code_artifact':
         return html`
           <code-artifact-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
           ></code-artifact-tool>
@@ -125,7 +132,7 @@ export class ChatContentStreamObjects extends WithDisposable(
       case 'doc_compose':
         return html`
           <doc-compose-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
             .theme=${this.theme}
@@ -135,7 +142,7 @@ export class ChatContentStreamObjects extends WithDisposable(
       case 'code_artifact':
         return html`
           <code-artifact-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
             .theme=${this.theme}

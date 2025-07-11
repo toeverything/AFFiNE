@@ -3,8 +3,11 @@ import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
@@ -36,6 +39,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
 
   @property({ attribute: false })
   accessor item!: ChatMessage;
@@ -124,6 +130,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   private renderStreamObjects(answer: StreamObject[]) {
     return html`<chat-content-stream-objects
       .host=${this.host}
+      .std=${this.std}
       .answer=${answer}
       .state=${this.state}
       .width=${this.width}

@@ -6,8 +6,11 @@ import {
   type FeatureFlagService,
   type NotificationService,
 } from '@blocksuite/affine/shared/services';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
@@ -159,6 +162,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
 
   @property({ attribute: false })
   accessor workspaceId!: string;
@@ -318,6 +324,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                 } else if (isChatMessage(item) && item.role === 'assistant') {
                   return html`<chat-message-assistant
                     .host=${this.host}
+                    .std=${this.std}
                     .session=${this.session}
                     .item=${item}
                     .isLast=${isLast}
