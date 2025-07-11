@@ -7,7 +7,7 @@ import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
-interface ToolResult {
+export interface ToolResult {
   title: string;
   icon?: string | TemplateResult<1>;
   content?: string;

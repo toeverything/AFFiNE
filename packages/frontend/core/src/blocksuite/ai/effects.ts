@@ -57,6 +57,9 @@ import {
 } from './components/ai-tools/code-artifact';
 import { DocComposeTool } from './components/ai-tools/doc-compose';
 import { DocEditTool } from './components/ai-tools/doc-edit';
+import { DocKeywordSearchResult } from './components/ai-tools/doc-keyword-search-result';
+import { DocReadResult } from './components/ai-tools/doc-read-result';
+import { DocSemanticSearchResult } from './components/ai-tools/doc-semantic-search-result';
 import { ToolCallCard } from './components/ai-tools/tool-call-card';
 import { ToolFailedCard } from './components/ai-tools/tool-failed-card';
 import { ToolResultCard } from './components/ai-tools/tool-result-card';
@@ -208,6 +211,9 @@ export function registerAIEffects() {
   customElements.define('tool-call-card', ToolCallCard);
   customElements.define('tool-result-card', ToolResultCard);
   customElements.define('tool-call-failed', ToolFailedCard);
+  customElements.define('doc-semantic-search-result', DocSemanticSearchResult);
+  customElements.define('doc-keyword-search-result', DocKeywordSearchResult);
+  customElements.define('doc-read-result', DocReadResult);
   customElements.define('web-crawl-tool', WebCrawlTool);
   customElements.define('web-search-tool', WebSearchTool);
   customElements.define('doc-compose-tool', DocComposeTool);

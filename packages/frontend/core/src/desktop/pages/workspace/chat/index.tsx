@@ -306,6 +306,38 @@ export const Component = () => {
     return () => sub.unsubscribe();
   }, [framework, mockStd]);
 
+  // restore pinned session
+  useEffect(() => {
+    if (!chatContent) return;
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+    client
+      .getSessions(
+        workspaceId,
+        {},
+        undefined,
+        { pinned: true, limit: 1 },
+        signal
+      )
+      .then(sessions => {
+        if (!Array.isArray(sessions)) return;
+        const session = sessions[0];
+        if (!session) return;
+        setCurrentSession(session);
+        if (chatContent) {
+          chatContent.session = session;
+          chatContent.reloadSession();
+        }
+      })
+      .catch(console.error);
+
+    // abort the request
+    return () => {
+      controller.abort();
+    };
+  }, [chatContent, client, workspaceId]);
+
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {
     if (node) {
       setIsBodyProvided(true);

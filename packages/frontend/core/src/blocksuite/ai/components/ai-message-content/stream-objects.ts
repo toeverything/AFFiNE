@@ -101,6 +101,21 @@ export class ChatContentStreamObjects extends WithDisposable(
             .notificationService=${this.notificationService}
           ></doc-edit-tool>
         `;
+      case 'doc_semantic_search':
+        return html`<doc-semantic-search-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-semantic-search-result>`;
+      case 'doc_keyword_search':
+        return html`<doc-keyword-search-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-keyword-search-result>`;
+      case 'doc_read':
+        return html`<doc-read-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-read-result>`;
       default: {
         const name = streamObject.toolName + ' tool calling';
         return html`
@@ -159,6 +174,21 @@ export class ChatContentStreamObjects extends WithDisposable(
             .notificationService=${this.notificationService}
           ></doc-edit-tool>
         `;
+      case 'doc_semantic_search':
+        return html`<doc-semantic-search-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-semantic-search-result>`;
+      case 'doc_keyword_search':
+        return html`<doc-keyword-search-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-keyword-search-result>`;
+      case 'doc_read':
+        return html`<doc-read-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-read-result>`;
       default: {
         const name = streamObject.toolName + ' tool result';
         return html`
