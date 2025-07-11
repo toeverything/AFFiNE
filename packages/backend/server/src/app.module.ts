@@ -113,6 +113,7 @@ export const FunctionalityModules = [
   WebSocketModule,
   JobModule.forRoot(),
   ModelsModule,
+  ScheduleModule.forRoot(),
   MonitorModule,
 ];
 
@@ -153,12 +154,8 @@ export function buildAppModule(env: Env) {
     // basic
     .use(...FunctionalityModules)
 
-    // enable schedule module on graphql server and doc service
-    .useIf(
-      () => env.flavors.graphql || env.flavors.doc,
-      ScheduleModule.forRoot(),
-      IndexerModule
-    )
+    // enable indexer module on graphql server and doc service
+    .useIf(() => env.flavors.graphql || env.flavors.doc, IndexerModule)
 
     // auth
     .use(UserModule, AuthModule, PermissionModule)
