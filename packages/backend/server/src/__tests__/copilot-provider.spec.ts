@@ -351,10 +351,10 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
         params: {
           files: [
             {
-              blobId: 'euclidean_distance',
-              fileName: 'euclidean_distance.rs',
-              fileType: 'text/rust',
-              fileContent: TestAssets.Code,
+              blobId: 'todo_md',
+              fileName: 'todo.md',
+              fileType: 'text/markdown',
+              fileContent: TestAssets.TODO,
             },
           ],
         },
@@ -476,6 +476,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
         },
       },
     ],
+    config: { model: 'gemini-2.5-pro' },
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       t.notThrows(() => {
         TranscriptionResponseSchema.parse(JSON.parse(result));
@@ -697,11 +698,12 @@ for (const {
         t.truthy(provider, 'should have provider');
         await retry(`action: ${promptName}`, t, async t => {
           const finalConfig = Object.assign({}, prompt.config, config);
+          const modelId = finalConfig.model || prompt.model;
 
           switch (type) {
             case 'text': {
               const result = await provider.text(
-                { modelId: prompt.model },
+                { modelId },
                 [
                   ...prompt.finish(
                     messages.reduce(
@@ -720,7 +722,7 @@ for (const {
             }
             case 'structured': {
               const result = await provider.structure(
-                { modelId: prompt.model },
+                { modelId },
                 [
                   ...prompt.finish(
                     messages.reduce(
@@ -739,7 +741,7 @@ for (const {
             case 'object': {
               const streamObjects: StreamObject[] = [];
               for await (const chunk of provider.streamObject(
-                { modelId: prompt.model },
+                { modelId },
                 [
                   ...prompt.finish(
                     messages.reduce(
@@ -771,7 +773,7 @@ for (const {
                 });
               }
               const stream = provider.streamImages(
-                { modelId: prompt.model },
+                { modelId },
                 [
                   ...prompt.finish(
                     finalMessage.reduce(
