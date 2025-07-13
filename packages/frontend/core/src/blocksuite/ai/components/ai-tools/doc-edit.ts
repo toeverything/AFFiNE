@@ -2,6 +2,7 @@ import track from '@affine/track';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import { AIStarIconWithAnimation } from '@blocksuite/affine-components/icons';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CloseIcon,
@@ -14,7 +15,9 @@ import {
 } from '@blocksuite/icons/lit';
 import { css, html, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
 
+import { AIProvider } from '../../provider';
 import { BlockDiffProvider } from '../../services/block-diff';
 import { diffMarkdown } from '../../utils/apply-model/markdown-diff';
 import { copyText } from '../../utils/editor-actions';
@@ -37,8 +40,12 @@ interface DocEditToolResult {
   };
   result:
     | {
-        result: string;
-        content: string;
+        result: {
+          op: string;
+          updates: string;
+          originalContent: string;
+          changedContent: string;
+        }[];
       }
     | ToolError
     | null;
@@ -199,40 +206,108 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
   @state()
   accessor isCollapsed = false;
 
+  @state()
+  accessor applyingMap: Record<string, boolean> = {};
+
+  @state()
+  accessor acceptingMap: Record<string, boolean> = {};
+
   get blockDiffService() {
     return this.host?.std.getOptional(BlockDiffProvider);
   }
 
-  private async _handleApply(markdown: string) {
-    if (!this.host || this.data.type !== 'tool-result') {
-      return;
-    }
-    track.applyModel.chat.$.apply({
-      instruction: this.data.args.instructions,
-    });
-    await this.blockDiffService?.apply(this.host.store, markdown);
+  get isBusy() {
+    return undefined;
   }
 
-  private async _handleReject(changedMarkdown: string) {
+  isBusyForOp(op: string) {
+    return this.applyingMap[op] || this.acceptingMap[op];
+  }
+
+  private async _handleApply(op: string, updates: string) {
+    if (
+      !this.host ||
+      this.data.type !== 'tool-result' ||
+      this.isBusyForOp(op)
+    ) {
+      return;
+    }
+    this.applyingMap = { ...this.applyingMap, [op]: true };
+    try {
+      const markdown = await AIProvider.context?.applyDocUpdates(
+        this.host.std.workspace.id,
+        this.data.args.doc_id,
+        op,
+        updates
+      );
+      if (!markdown) {
+        return;
+      }
+      track.applyModel.chat.$.apply({
+        instruction: this.data.args.instructions,
+        operation: op,
+      });
+      await this.blockDiffService?.apply(this.host.store, markdown);
+    } catch (error) {
+      this.notificationService.notify({
+        title: 'Failed to apply updates',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        accent: 'error',
+        onClose: function (): void {},
+      });
+    } finally {
+      this.applyingMap = { ...this.applyingMap, [op]: false };
+    }
+  }
+
+  private async _handleReject(op: string) {
     if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
+    // TODO: set the rejected status
     track.applyModel.chat.$.reject({
       instruction: this.data.args.instructions,
+      operation: op,
     });
-    this.blockDiffService?.setChangedMarkdown(changedMarkdown);
+    this.blockDiffService?.setChangedMarkdown(null);
     this.blockDiffService?.rejectAll();
   }
 
-  private async _handleAccept(changedMarkdown: string) {
-    if (!this.host || this.data.type !== 'tool-result') {
+  private async _handleAccept(op: string, updates: string) {
+    if (
+      !this.host ||
+      this.data.type !== 'tool-result' ||
+      this.isBusyForOp(op)
+    ) {
       return;
     }
-    track.applyModel.chat.$.accept({
-      instruction: this.data.args.instructions,
-    });
-    await this.blockDiffService?.apply(this.host.store, changedMarkdown);
-    await this.blockDiffService?.acceptAll(this.host.store);
+    this.acceptingMap = { ...this.acceptingMap, [op]: true };
+    try {
+      const changedMarkdown = await AIProvider.context?.applyDocUpdates(
+        this.host.std.workspace.id,
+        this.data.args.doc_id,
+        op,
+        updates
+      );
+      if (!changedMarkdown) {
+        return;
+      }
+      track.applyModel.chat.$.accept({
+        instruction: this.data.args.instructions,
+        operation: op,
+      });
+      await this.blockDiffService?.apply(this.host.store, changedMarkdown);
+      await this.blockDiffService?.acceptAll(this.host.store);
+    } catch (error) {
+      this.notificationService.notify({
+        title: 'Failed to apply updates',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        accent: 'error',
+        onClose: function (): void {},
+      });
+    } finally {
+      this.acceptingMap = { ...this.acceptingMap, [op]: false };
+    }
   }
 
   private async _toggleCollapse() {
@@ -322,69 +397,84 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
 
     const result = this.data.result;
 
-    if (result && 'result' in result && 'content' in result) {
-      const { result: changedMarkdown, content } = result;
-      const { instructions, doc_id: docId } = this.data.args;
+    if (result && 'result' in result && Array.isArray(result.result)) {
+      const { doc_id: docId } = this.data.args;
 
-      const diffs = diffMarkdown(content, changedMarkdown);
-
-      return html`
-        <div class="doc-edit-tool-result-wrapper">
-          <div class="doc-edit-tool-result-title">${instructions}</div>
-          <div
-            class="doc-edit-tool-result-card ${this.isCollapsed
-              ? 'collapsed'
-              : ''}"
-          >
-            <div class="doc-edit-tool-result-card-header">
-              <div class="doc-edit-tool-result-card-header-title">
-                ${PenIcon({
-                  style: `color: ${unsafeCSSVarV2('icon/activated')}`,
-                })}
-                ${docId}
-              </div>
-              <div class="doc-edit-tool-result-card-header-operations">
-                <span @click=${() => this._toggleCollapse()}
-                  >${this.isCollapsed
-                    ? ExpandFullIcon()
-                    : ExpandCloseIcon()}</span
-                >
-                <span @click=${() => this._handleCopy(changedMarkdown)}>
-                  ${CopyIcon()}
-                </span>
-                <button @click=${() => this._handleApply(changedMarkdown)}>
-                  Apply
-                </button>
-              </div>
-            </div>
-            <div class="doc-edit-tool-result-card-content">
-              <div class="doc-edit-tool-result-card-content-title">
-                ${this.renderBlockDiffs(diffs)}
-              </div>
-            </div>
-            <div class="doc-edit-tool-result-card-footer">
+      return repeat(
+        result.result,
+        change => change.op,
+        ({ op, updates, originalContent, changedContent }) => {
+          const diffs = diffMarkdown(originalContent, changedContent);
+          return html`
+            <div class="doc-edit-tool-result-wrapper">
+              <div class="doc-edit-tool-result-title">${op}</div>
               <div
-                class="doc-edit-tool-result-reject"
-                @click=${() => this._handleReject(changedMarkdown)}
+                class="doc-edit-tool-result-card ${this.isCollapsed
+                  ? 'collapsed'
+                  : ''}"
               >
-                ${CloseIcon({
-                  style: `color: ${unsafeCSSVarV2('icon/secondary')}`,
-                })}
-                Reject
-              </div>
-              <div
-                class="doc-edit-tool-result-accept"
-                @click=${() => this._handleAccept(changedMarkdown)}
-              >
-                ${DoneIcon({
-                  style: `color: ${unsafeCSSVarV2('icon/activated')}`,
-                })}
-                Accept
+                <div class="doc-edit-tool-result-card-header">
+                  <div class="doc-edit-tool-result-card-header-title">
+                    ${PenIcon({
+                      style: `color: ${unsafeCSSVarV2('icon/activated')}`,
+                    })}
+                    ${docId}
+                  </div>
+                  <div class="doc-edit-tool-result-card-header-operations">
+                    <span @click=${() => this._toggleCollapse()}
+                      >${this.isCollapsed
+                        ? ExpandFullIcon()
+                        : ExpandCloseIcon()}</span
+                    >
+                    <span @click=${() => this._handleCopy(changedContent)}>
+                      ${CopyIcon()}
+                    </span>
+                    <button
+                      @click=${() => this._handleApply(op, updates)}
+                      ?disabled=${this.isBusyForOp(op)}
+                    >
+                      ${this.applyingMap[op]
+                        ? AIStarIconWithAnimation
+                        : html`Apply`}
+                    </button>
+                  </div>
+                </div>
+                <div class="doc-edit-tool-result-card-content">
+                  <div class="doc-edit-tool-result-card-content-title">
+                    ${this.renderBlockDiffs(diffs)}
+                  </div>
+                </div>
+                <div class="doc-edit-tool-result-card-footer">
+                  <div
+                    class="doc-edit-tool-result-reject"
+                    @click=${() => this._handleReject(op)}
+                  >
+                    ${CloseIcon({
+                      style: `color: ${unsafeCSSVarV2('icon/secondary')}`,
+                    })}
+                    Reject
+                  </div>
+                  <button
+                    class="doc-edit-tool-result-accept"
+                    @click=${() => this._handleAccept(op, updates)}
+                    ?disabled=${this.isBusyForOp(op)}
+                    style="${this.isBusyForOp(op)
+                      ? 'pointer-events: none; opacity: 0.6;'
+                      : ''}"
+                  >
+                    ${this.acceptingMap[op]
+                      ? AIStarIconWithAnimation
+                      : DoneIcon({
+                          style: `color: ${unsafeCSSVarV2('icon/activated')}`,
+                        })}
+                    ${this.acceptingMap[op] ? 'Accepting...' : 'Accept'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      `;
+          `;
+        }
+      );
     }
 
     return html`

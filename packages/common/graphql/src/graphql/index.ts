@@ -555,6 +555,19 @@ export const uploadCommentAttachmentMutation = {
   file: true,
 };
 
+export const applyDocUpdatesQuery = {
+  id: 'applyDocUpdatesQuery' as const,
+  op: 'applyDocUpdates',
+  query: `query applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) {
+  applyDocUpdates(
+    workspaceId: $workspaceId
+    docId: $docId
+    op: $op
+    updates: $updates
+  )
+}`,
+};
+
 export const addContextCategoryMutation = {
   id: 'addContextCategoryMutation' as const,
   op: 'addContextCategory',

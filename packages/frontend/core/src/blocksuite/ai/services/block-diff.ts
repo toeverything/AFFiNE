@@ -80,13 +80,13 @@ export interface BlockDiffProvider {
    * Set the original markdown
    * @param originalMarkdown - The original markdown
    */
-  setOriginalMarkdown(originalMarkdown: string): void;
+  setOriginalMarkdown(originalMarkdown: string | null): void;
 
   /**
    * Set the changed markdown
    * @param changedMarkdown - The changed markdown
    */
-  setChangedMarkdown(changedMarkdown: string): void;
+  setChangedMarkdown(changedMarkdown: string | null): void;
 
   /**
    * Apply the diff to the doc

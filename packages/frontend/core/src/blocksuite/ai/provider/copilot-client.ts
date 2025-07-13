@@ -4,6 +4,7 @@ import {
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
+  applyDocUpdatesQuery,
   cleanupCopilotSessionMutation,
   createCopilotContextMutation,
   createCopilotMessageMutation,
@@ -499,5 +500,22 @@ export class CopilotClient {
       query: getWorkspaceEmbeddingStatusQuery,
       variables: { workspaceId },
     }).then(res => res.queryWorkspaceEmbeddingStatus);
+  }
+
+  applyDocUpdates(
+    workspaceId: string,
+    docId: string,
+    op: string,
+    updates: string
+  ) {
+    return this.gql({
+      query: applyDocUpdatesQuery,
+      variables: {
+        workspaceId,
+        docId,
+        op,
+        updates,
+      },
+    }).then(res => res.applyDocUpdates);
   }
 }

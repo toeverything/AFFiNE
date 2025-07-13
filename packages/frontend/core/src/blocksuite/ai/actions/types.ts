@@ -348,6 +348,12 @@ declare global {
         files?: ContextMatchedFileChunk[];
         docs?: ContextMatchedDocChunk[];
       }>;
+      applyDocUpdates: (
+        workspaceId: string,
+        docId: string,
+        op: string,
+        updates: string
+      ) => Promise<string>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)

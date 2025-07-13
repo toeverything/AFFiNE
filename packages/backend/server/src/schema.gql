@@ -1518,6 +1518,9 @@ type PublicUserType {
 type Query {
   """get the whole app configuration"""
   appConfig: JSONObject!
+
+  """Apply updates to a doc using LLM and return the merged markdown."""
+  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String!
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.quotaUsage` instead")
 
   """Get current user"""

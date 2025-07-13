@@ -472,10 +472,18 @@ export class TextStreamParser {
         result = this.addPrefix(result);
         switch (chunk.toolName) {
           case 'doc_edit': {
-            if (chunk.result && typeof chunk.result === 'object') {
-              result += `\n${chunk.result.result}\n`;
+            if (
+              chunk.result &&
+              typeof chunk.result === 'object' &&
+              Array.isArray(chunk.result.result)
+            ) {
+              result += chunk.result.result
+                .map(item => {
+                  return `\n${item.changedContent}\n`;
+                })
+                .join('');
               this.docEditFootnotes[this.docEditFootnotes.length - 1].result =
-                chunk.result.result;
+                result;
             } else {
               this.docEditFootnotes.pop();
             }

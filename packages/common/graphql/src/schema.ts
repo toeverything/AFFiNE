@@ -2073,6 +2073,8 @@ export interface Query {
   __typename?: 'Query';
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
+  /** Apply updates to a doc using LLM and return the merged markdown. */
+  applyDocUpdates: Scalars['String']['output'];
   /** @deprecated use `user.quotaUsage` instead */
   collectAllBlobSizes: WorkspaceBlobSizes;
   /** Get current user */
@@ -2118,6 +2120,13 @@ export interface Query {
   workspaceRolePermissions: WorkspaceRolePermissions;
   /** Get all accessible workspaces for current user */
   workspaces: Array<WorkspaceType>;
+}
+
+export interface QueryApplyDocUpdatesArgs {
+  docId: Scalars['String']['input'];
+  op: Scalars['String']['input'];
+  updates: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryErrorArgs {
@@ -3507,6 +3516,18 @@ export type UploadCommentAttachmentMutationVariables = Exact<{
 export type UploadCommentAttachmentMutation = {
   __typename?: 'Mutation';
   uploadCommentAttachment: string;
+};
+
+export type ApplyDocUpdatesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  op: Scalars['String']['input'];
+  updates: Scalars['String']['input'];
+}>;
+
+export type ApplyDocUpdatesQuery = {
+  __typename?: 'Query';
+  applyDocUpdates: string;
 };
 
 export type AddContextCategoryMutationVariables = Exact<{
@@ -6146,6 +6167,11 @@ export type Queries =
       name: 'listCommentsQuery';
       variables: ListCommentsQueryVariables;
       response: ListCommentsQuery;
+    }
+  | {
+      name: 'applyDocUpdatesQuery';
+      variables: ApplyDocUpdatesQueryVariables;
+      response: ApplyDocUpdatesQuery;
     }
   | {
       name: 'listContextObjectQuery';
