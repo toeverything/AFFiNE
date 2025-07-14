@@ -1,4 +1,5 @@
 import { tool } from 'ai';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
@@ -7,6 +8,29 @@ import type { CopilotContextService } from '../context';
 import type { ContextSession } from '../context/session';
 import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
+
+const FILTER_PREFIX = [
+  'Title: ',
+  'Created at: ',
+  'Updated at: ',
+  'Created by: ',
+  'Updated by: ',
+];
+
+function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
+  if (chunk.content) {
+    const lines = chunk.content.split('\n');
+    let maxLines = 5;
+    while (maxLines > 0 && lines.length > 0) {
+      if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
+        lines.shift();
+        maxLines--;
+      }
+    }
+    return { ...chunk, content: lines.join('\n') };
+  }
+  return chunk;
+}
 
 export const buildDocSearchGetter = (
   ac: AccessController,
@@ -47,18 +71,37 @@ export const buildDocSearchGetter = (
     if (!docChunks.length && !fileChunks.length)
       return `No results found for "${query}".`;
 
+    const docIds = docChunks.map(c => ({
+      // oxlint-disable-next-line no-non-null-assertion
+      workspaceId: options.workspace!,
+      docId: c.docId,
+    }));
+    const docAuthors = await models.doc
+      .findAuthors(docIds)
+      .then(
+        docs =>
+          new Map(
+            docs
+              .filter(d => !!d)
+              .map(doc => [doc.id, omit(doc, ['id', 'workspaceId'])])
+          )
+      );
     const docMetas = await models.doc
-      .findAuthors(
-        docChunks.map(c => ({
-          // oxlint-disable-next-line no-non-null-assertion
-          workspaceId: options.workspace!,
-          docId: c.docId,
-        }))
-      )
-      .then(docs => new Map(docs.filter(d => !!d).map(doc => [doc.id, doc])));
+      .findMetas(docIds, { select: { title: true } })
+      .then(
+        docs =>
+          new Map(
+            docs
+              .filter(d => !!d)
+              .map(doc => [
+                doc.docId,
+                Object.assign({}, doc, docAuthors.get(doc.docId)),
+              ])
+          )
+      );
 
     return [
-      ...fileChunks,
+      ...fileChunks.map(clearEmbeddingChunk),
       ...docChunks.map(c => ({
         ...c,
         ...docMetas.get(c.docId),
