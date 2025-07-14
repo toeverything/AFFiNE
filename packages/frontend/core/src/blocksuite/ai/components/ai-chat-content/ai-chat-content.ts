@@ -219,14 +219,7 @@ export class AIChatContent extends SignalWatcher(
   }
 
   get showActions() {
-    if (this.docId) {
-      if (!this.session) {
-        return true;
-      }
-      return this.session.docId === this.docId;
-    } else {
-      return false;
-    }
+    return false;
   }
 
   private readonly updateHistory = async () => {
@@ -269,7 +262,7 @@ export class AIChatContent extends SignalWatcher(
   };
 
   private readonly updateActions = async () => {
-    if (!this.docId || !AIProvider.histories) {
+    if (!this.docId || !AIProvider.histories || !this.showActions) {
       return;
     }
     const actions = await AIProvider.histories.actions(

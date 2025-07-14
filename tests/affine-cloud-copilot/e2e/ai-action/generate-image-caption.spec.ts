@@ -29,7 +29,7 @@ test.describe('AIAction/GenerateImageCaption', () => {
     );
   });
 
-  test('should show chat history in chat panel', async ({
+  test.skip('should show chat history in chat panel', async ({
     loggedInPage: page,
     utils,
   }) => {
