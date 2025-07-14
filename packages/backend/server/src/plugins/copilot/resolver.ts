@@ -37,6 +37,7 @@ import { Admin } from '../../core/common';
 import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
+import { CopilotCronJobs } from './cron';
 import { PromptService } from './prompt';
 import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
@@ -773,7 +774,18 @@ class CreateCopilotPromptInput {
 @Admin()
 @Resolver(() => String)
 export class PromptsManagementResolver {
-  constructor(private readonly promptService: PromptService) {}
+  constructor(
+    private readonly cron: CopilotCronJobs,
+    private readonly promptService: PromptService
+  ) {}
+
+  @Query(() => Boolean, {
+    description: 'Trigger generate missing titles cron job',
+  })
+  async triggerGenerateTitleCron() {
+    await this.cron.triggerGenerateMissingTitles();
+    return true;
+  }
 
   @Query(() => [CopilotPromptType], {
     description: 'List all copilot prompts',

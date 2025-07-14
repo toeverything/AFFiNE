@@ -613,7 +613,7 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async toBeGenerateTitle(take: number) {
+  async toBeGenerateTitle() {
     const sessions = await this.db.aiSession
       .findMany({
         where: {
@@ -628,7 +628,6 @@ export class CopilotSessionModel extends BaseModel {
           // count assistant messages
           _count: { select: { messages: { where: { role: 'assistant' } } } },
         },
-        take,
         orderBy: { updatedAt: 'desc' },
       })
       .then(s => s.filter(s => s._count.messages > 0));

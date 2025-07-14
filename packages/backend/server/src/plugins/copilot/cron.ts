@@ -11,8 +11,6 @@ declare global {
   }
 }
 
-const GENERATE_TITLES_BATCH_SIZE = 100;
-
 @Injectable()
 export class CopilotCronJobs {
   private readonly logger = new Logger(CopilotCronJobs.name);
@@ -37,6 +35,14 @@ export class CopilotCronJobs {
     );
   }
 
+  async triggerGenerateMissingTitles() {
+    await this.jobs.add(
+      'copilot.session.generateMissingTitles',
+      {},
+      { jobId: 'trigger-copilot-generate-missing-titles' }
+    );
+  }
+
   @OnJob('copilot.session.cleanupEmptySessions')
   async cleanupEmptySessions() {
     const { removed, cleaned } =
@@ -51,9 +57,7 @@ export class CopilotCronJobs {
 
   @OnJob('copilot.session.generateMissingTitles')
   async generateMissingTitles() {
-    const sessions = await this.models.copilotSession.toBeGenerateTitle(
-      GENERATE_TITLES_BATCH_SIZE
-    );
+    const sessions = await this.models.copilotSession.toBeGenerateTitle();
 
     for (const session of sessions) {
       await this.jobs.add('copilot.session.generateTitle', {
