@@ -9,13 +9,11 @@ import type {
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { type NotificationService } from '@blocksuite/affine/shared/services';
-import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
-import { CenterPeekIcon } from '@blocksuite/icons/lit';
 import { type Signal, signal } from '@preact/signals-core';
-import { css, html, nothing, type PropertyValues } from 'lit';
+import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { keyed } from 'lit/directives/keyed.js';
 
@@ -29,7 +27,6 @@ import type {
   AIReasoningConfig,
 } from '../components/ai-chat-input';
 import type { ChatStatus } from '../components/ai-chat-messages';
-import { createPlaygroundModal } from '../components/playground/modal';
 import { AIProvider } from '../provider';
 import type { AppSidebarConfig } from './chat-config';
 
@@ -43,12 +40,6 @@ export class ChatPanel extends SignalWatcher(
 
       .chat-panel-container {
         height: 100%;
-      }
-
-      .chat-panel-title-text {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--affine-text-secondary-color);
       }
 
       .chat-loading-container {
@@ -71,20 +62,6 @@ export class ChatPanel extends SignalWatcher(
         font-weight: 600;
         font-size: var(--affine-font-sm);
         color: var(--affine-text-secondary-color);
-      }
-
-      .chat-panel-playground {
-        cursor: pointer;
-        padding: 2px;
-        margin-left: 8px;
-        margin-right: auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .chat-panel-playground:hover svg {
-        color: ${unsafeCSSVarV2('icon/activated')};
       }
     }
   `;
@@ -148,40 +125,6 @@ export class ChatPanel extends SignalWatcher(
 
   private get isInitialized() {
     return this.session !== undefined;
-  }
-
-  private get chatTitle() {
-    const [done, total] = this.embeddingProgress;
-    const isEmbedding = total > 0 && done < total;
-
-    return html`
-      <div class="chat-panel-title-text">
-        ${isEmbedding
-          ? html`<span data-testid="chat-panel-embedding-progress"
-              >Embedding ${done}/${total}</span
-            >`
-          : 'AFFiNE AI'}
-      </div>
-      ${this.playgroundConfig.visible.value
-        ? html`
-            <div class="chat-panel-playground" @click=${this.openPlayground}>
-              ${CenterPeekIcon()}
-            </div>
-          `
-        : nothing}
-      <ai-chat-toolbar
-        .session=${this.session}
-        .workspaceId=${this.doc.workspace.id}
-        .docId=${this.doc.id}
-        .status=${this.status}
-        .onNewSession=${this.newSession}
-        .onTogglePin=${this.togglePin}
-        .onOpenSession=${this.openSession}
-        .onOpenDoc=${this.openDoc}
-        .docDisplayConfig=${this.docDisplayConfig}
-        .notificationService=${this.notificationService}
-      ></ai-chat-toolbar>
-    `;
   }
 
   private readonly getSessionIdFromUrl = () => {
@@ -368,28 +311,6 @@ export class ChatPanel extends SignalWatcher(
     }
   };
 
-  private readonly openPlayground = () => {
-    const playgroundContent = html`
-      <playground-content
-        .host=${this.host}
-        .doc=${this.doc}
-        .networkSearchConfig=${this.networkSearchConfig}
-        .reasoningConfig=${this.reasoningConfig}
-        .playgroundConfig=${this.playgroundConfig}
-        .appSidebarConfig=${this.appSidebarConfig}
-        .searchMenuConfig=${this.searchMenuConfig}
-        .docDisplayConfig=${this.docDisplayConfig}
-        .extensions=${this.extensions}
-        .affineFeatureFlagService=${this.affineFeatureFlagService}
-        .affineThemeService=${this.affineThemeService}
-        .notificationService=${this.notificationService}
-        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
-      ></playground-content>
-    `;
-
-    createPlaygroundModal(playgroundContent, 'AI Playground');
-  };
-
   protected override updated(changedProperties: PropertyValues) {
     if (changedProperties.has('doc')) {
       if (this.session?.pinned) {
@@ -441,10 +362,31 @@ export class ChatPanel extends SignalWatcher(
     }
 
     return html`<div class="chat-panel-container">
+      <ai-chat-panel-title
+        .host=${this.host}
+        .doc=${this.doc}
+        .playgroundConfig=${this.playgroundConfig}
+        .appSidebarConfig=${this.appSidebarConfig}
+        .networkSearchConfig=${this.networkSearchConfig}
+        .reasoningConfig=${this.reasoningConfig}
+        .searchMenuConfig=${this.searchMenuConfig}
+        .docDisplayConfig=${this.docDisplayConfig}
+        .extensions=${this.extensions}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .affineThemeService=${this.affineThemeService}
+        .notificationService=${this.notificationService}
+        .session=${this.session}
+        .status=${this.status}
+        .embeddingProgress=${this.embeddingProgress}
+        .newSession=${this.newSession}
+        .togglePin=${this.togglePin}
+        .openSession=${this.openSession}
+        .openDoc=${this.openDoc}
+      ></ai-chat-panel-title>
       ${keyed(
         this.hasPinned ? this.session?.sessionId : this.doc.id,
         html`<ai-chat-content
-          .chatTitle=${this.chatTitle}
           .host=${this.host}
           .session=${this.session}
           .createSession=${this.createSession}

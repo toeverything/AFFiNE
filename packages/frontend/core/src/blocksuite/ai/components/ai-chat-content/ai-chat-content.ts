@@ -10,13 +10,7 @@ import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { type Signal } from '@preact/signals-core';
-import {
-  css,
-  html,
-  nothing,
-  type PropertyValues,
-  type TemplateResult,
-} from 'lit';
+import { css, html, type PropertyValues, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
@@ -59,24 +53,6 @@ export class AIChatContent extends SignalWatcher(
       flex-direction: column;
       justify-content: center;
       height: 100%;
-
-      .ai-chat-title {
-        background: var(--affine-background-primary-color);
-        position: relative;
-        padding: 8px var(--h-padding);
-        width: 100%;
-        height: 36px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        z-index: 1;
-
-        svg {
-          width: 18px;
-          height: 18px;
-          color: var(--affine-text-secondary-color);
-        }
-      }
 
       ai-chat-messages {
         flex: 1;
@@ -128,9 +104,6 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor onboardingOffsetY!: number;
-
-  @property({ attribute: false })
-  accessor chatTitle: TemplateResult<1> | undefined;
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
@@ -328,16 +301,6 @@ export class AIChatContent extends SignalWatcher(
     }
   }
 
-  public reset() {
-    this.updateContext(DEFAULT_CHAT_CONTEXT_VALUE);
-    this.closePreviewPanel(true);
-  }
-
-  public reloadSession() {
-    this.reset();
-    this.initChatContent().catch(console.error);
-  }
-
   public openPreviewPanel(content?: TemplateResult<1>) {
     this.showPreviewPanel = true;
     if (content) this.previewPanelContent = content;
@@ -390,10 +353,7 @@ export class AIChatContent extends SignalWatcher(
   }
 
   override render() {
-    const left = html`${this.chatTitle
-        ? html`<div class="ai-chat-title">${this.chatTitle}</div>`
-        : nothing}
-      <ai-chat-messages
+    const left = html` <ai-chat-messages
         class=${classMap({
           'ai-chat-messages': true,
           'independent-mode': !!this.independentMode,
