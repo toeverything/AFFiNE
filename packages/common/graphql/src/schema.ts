@@ -1440,6 +1440,10 @@ export interface Mutation {
   sendVerifyEmail: Scalars['Boolean']['output'];
   setBlob: Scalars['String']['output'];
   submitAudioTranscription: Maybe<TranscriptionResultType>;
+  /** Trigger cleanup of trashed doc embeddings */
+  triggerCleanupTrashedDocEmbeddings: Scalars['Boolean']['output'];
+  /** Trigger generate missing titles cron job */
+  triggerGenerateTitleCron: Scalars['Boolean']['output'];
   /** update app configuration */
   updateAppConfig: Scalars['JSONObject']['output'];
   /** Update a comment content */

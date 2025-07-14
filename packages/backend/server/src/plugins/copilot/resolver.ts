@@ -779,11 +779,19 @@ export class PromptsManagementResolver {
     private readonly promptService: PromptService
   ) {}
 
-  @Query(() => Boolean, {
+  @Mutation(() => Boolean, {
     description: 'Trigger generate missing titles cron job',
   })
   async triggerGenerateTitleCron() {
     await this.cron.triggerGenerateMissingTitles();
+    return true;
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'Trigger cleanup of trashed doc embeddings',
+  })
+  async triggerCleanupTrashedDocEmbeddings() {
+    await this.cron.triggerCleanupTrashedDocEmbeddings();
     return true;
   }
 
