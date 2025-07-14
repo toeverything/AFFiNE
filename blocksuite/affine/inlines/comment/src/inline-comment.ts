@@ -22,8 +22,11 @@ import { isEqual } from 'lodash-es';
 })
 export class InlineComment extends WithDisposable(ShadowlessElement) {
   static override styles = css`
-    inline-comment.unresolved {
+    inline-comment {
       display: inline-block;
+    }
+
+    inline-comment.unresolved {
       background-color: ${unsafeCSSVarV2('block/comment/highlightDefault')};
       border-bottom: 2px solid
         ${unsafeCSSVarV2('block/comment/highlightUnderline')};
