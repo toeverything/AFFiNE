@@ -85,11 +85,7 @@ extension MainViewController: InputBoxDelegate {
     }
 
     ChatManager.shared.closeAll()
-    ChatManager.shared.startUserRequest(
-      content: inputData.text,
-      inputBoxData: inputData,
-      sessionId: currentSession.id
-    )
+    ChatManager.shared.startUserRequest(editorData: inputData, sessionId: currentSession.id)
   }
 
   private func showAlert(title: String, message: String) {

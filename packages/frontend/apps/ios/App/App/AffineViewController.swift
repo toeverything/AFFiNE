@@ -64,12 +64,7 @@ class AFFiNEViewController: CAPBridgeViewController {
         switch result {
         case .failure: break
         case .success:
-          #if DEBUG
-          // only show the button in debug mode before we get done
           self.presentIntelligentsButton()
-          #else
-          break
-          #endif
         }
       }
     }

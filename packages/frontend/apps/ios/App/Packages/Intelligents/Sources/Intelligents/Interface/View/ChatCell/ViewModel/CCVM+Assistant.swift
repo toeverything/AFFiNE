@@ -52,7 +52,7 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
     actions: [MessageActionViewModel]? = nil
   ) {
     // time expensive rendering should not happen here
-    assert(!Thread.isMainThread || content.isEmpty)
+    assert(!Thread.isMainThread || content.count < 10) // allow placeholder content
 
     self.id = id
     self.content = content

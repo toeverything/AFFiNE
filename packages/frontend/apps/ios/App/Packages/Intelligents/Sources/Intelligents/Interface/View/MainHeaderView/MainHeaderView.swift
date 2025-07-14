@@ -57,6 +57,7 @@ class MainHeaderView: UIView {
     $0.showsMenuAsPrimaryAction = true
     $0.menu = .init(options: [.displayInline], children: [
       UIAction(title: "Clear History", image: .affineBroom, handler: { _ in
+        ChatManager.shared.clearCurrentSession()
         ChatManager.shared.clearAll()
       }),
     ])
