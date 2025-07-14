@@ -19,6 +19,9 @@ export class ChatPanelDocChip extends SignalWatcher(
   accessor chip!: DocChip;
 
   @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
   accessor addChip!: (chip: DocChip) => void;
 
   @property({ attribute: false })
@@ -81,7 +84,10 @@ export class ChatPanelDocChip extends SignalWatcher(
         state: 'processing',
       });
       const mode = this.docDisplayConfig.getDocPrimaryMode(this.chip.docId);
-      track.$.chatPanel.chatPanelInput.addEmbeddingDoc({
+      const page = this.independentMode
+        ? track.$.intelligence
+        : track.$.chatPanel;
+      page.chatPanelInput.addEmbeddingDoc({
         control: 'addButton',
         method: 'suggestion',
         type: mode,

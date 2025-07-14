@@ -59,7 +59,7 @@ export class AIChatComposer extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor independentMode!: boolean;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
@@ -85,9 +85,9 @@ export class AIChatComposer extends SignalWatcher(
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
 
   @property({ attribute: false })
-  accessor onEmbeddingProgressChange!: (
-    count: Record<ContextEmbedStatus, number>
-  ) => void;
+  accessor onEmbeddingProgressChange:
+    | ((count: Record<ContextEmbedStatus, number>) => void)
+    | undefined;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -136,6 +136,7 @@ export class AIChatComposer extends SignalWatcher(
       <chat-panel-chips
         .chips=${this.chips}
         .isCollapsed=${this.isChipsCollapsed}
+        .independentMode=${this.independentMode}
         .addChip=${this.addChip}
         .updateChip=${this.updateChip}
         .removeChip=${this.removeChip}
@@ -603,7 +604,7 @@ export class AIChatComposer extends SignalWatcher(
       return chip;
     });
     this.updateChips(nextChips);
-    this.onEmbeddingProgressChange(count);
+    this.onEmbeddingProgressChange?.(count);
     if (count.processing === 0) {
       this._abortPoll();
     }

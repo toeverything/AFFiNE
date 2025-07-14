@@ -24,6 +24,12 @@ export class AIChatAddContext extends SignalWatcher(
   `;
 
   @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
   accessor addChip!: (chip: ChatChip) => Promise<void>;
 
   @property({ attribute: false })
@@ -69,6 +75,8 @@ export class AIChatAddContext extends SignalWatcher(
     createLitPortal({
       template: html`
         <chat-panel-add-popover
+          .docId=${this.docId}
+          .independentMode=${this.independentMode}
           .addChip=${this.addChip}
           .addImages=${this.addImages}
           .searchMenuConfig=${this.searchMenuConfig}

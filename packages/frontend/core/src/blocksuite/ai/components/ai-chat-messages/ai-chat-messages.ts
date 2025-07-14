@@ -150,7 +150,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor avatarUrl = '';
 
   @property({ attribute: false })
-  accessor independentMode!: boolean;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
   accessor messages!: HistoryMessage[];
@@ -275,7 +275,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
       <div
         class=${classMap({
           'chat-panel-messages-container': true,
-          'independent-mode': this.independentMode,
+          'independent-mode': !!this.independentMode,
         })}
         data-testid="chat-panel-messages-container"
         @scroll=${() => this._debouncedOnScroll()}
