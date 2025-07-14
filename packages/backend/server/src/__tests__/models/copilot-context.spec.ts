@@ -164,11 +164,14 @@ test('should insert embedding by doc id', async t => {
     );
 
     {
-      const ret = await t.context.copilotContext.hasWorkspaceEmbedding(
+      const ret = await t.context.copilotContext.listWorkspaceEmbedding(
         workspace.id,
         [docId]
       );
-      t.true(ret.has(docId), 'should return doc id when embedding is inserted');
+      t.true(
+        ret.includes(docId),
+        'should return doc id when embedding is inserted'
+      );
     }
 
     {
@@ -317,8 +320,8 @@ test('should merge doc status correctly', async t => {
 
     const hasEmbeddingStub = Sinon.stub(
       t.context.copilotContext,
-      'hasWorkspaceEmbedding'
-    ).resolves(new Set<string>());
+      'listWorkspaceEmbedding'
+    ).resolves([]);
 
     const stubResult = await t.context.copilotContext.mergeDocStatus(
       workspace.id,

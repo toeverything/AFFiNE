@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { type Workspace } from '@prisma/client';
+import { Prisma, type Workspace } from '@prisma/client';
 
 import { EventBus } from '../base';
 import { BaseModel } from './base';
@@ -91,6 +91,19 @@ export class WorkspaceModel extends BaseModel {
         sid: 'asc',
       },
     });
+  }
+
+  async list<S extends Prisma.WorkspaceSelect>(
+    where: Prisma.WorkspaceWhereInput = {},
+    select?: S
+  ) {
+    return (await this.db.workspace.findMany({
+      where,
+      select,
+      orderBy: {
+        sid: 'asc',
+      },
+    })) as Prisma.WorkspaceGetPayload<{ select: S }>[];
   }
 
   async delete(workspaceId: string) {

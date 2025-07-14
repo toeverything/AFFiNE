@@ -12,6 +12,7 @@ import {
   OnJob,
 } from '../../../base';
 import { DocReader } from '../../../core/doc';
+import { readAllDocIdsFromWorkspaceSnapshot } from '../../../core/utils/blocksuite';
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
@@ -412,6 +413,41 @@ export class CopilotEmbeddingJob {
       this.logger.error(
         `Error embedding doc ${docId} in workspace ${workspaceId}`,
         error
+      );
+    }
+  }
+
+  @OnJob('copilot.embedding.cleanupTrashedDocEmbeddings')
+  async cleanupTrashedDocEmbeddings({
+    workspaceId,
+  }: Jobs['copilot.embedding.cleanupTrashedDocEmbeddings']) {
+    const workspace = await this.models.workspace.get(workspaceId);
+    if (!workspace) {
+      this.logger.warn(`workspace ${workspaceId} not found`);
+      return;
+    }
+
+    const snapshot = await this.models.doc.getSnapshot(
+      workspaceId,
+      workspaceId
+    );
+    if (!snapshot) {
+      this.logger.warn(`workspace snapshot ${workspaceId} not found`);
+      return;
+    }
+
+    const docIdsInWorkspace = readAllDocIdsFromWorkspaceSnapshot(snapshot.blob);
+    const docIdsInEmbedding =
+      await this.models.copilotContext.listWorkspaceEmbedding(workspaceId);
+    const docIdsInWorkspaceSet = new Set(docIdsInWorkspace);
+
+    const deletedDocIds = docIdsInEmbedding.filter(
+      docId => !docIdsInWorkspaceSet.has(docId)
+    );
+    for (const docId of deletedDocIds) {
+      await this.models.copilotContext.deleteWorkspaceEmbedding(
+        workspaceId,
+        docId
       );
     }
   }

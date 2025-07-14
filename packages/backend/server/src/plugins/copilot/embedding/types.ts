@@ -61,6 +61,10 @@ declare global {
       fileId: string;
       fileName: string;
     };
+
+    'copilot.embedding.cleanupTrashedDocEmbeddings': {
+      workspaceId: string;
+    };
   }
 }
 

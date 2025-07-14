@@ -8,6 +8,7 @@ declare global {
   interface Jobs {
     'copilot.session.cleanupEmptySessions': {};
     'copilot.session.generateMissingTitles': {};
+    'copilot.cleanupTrashedDocEmbeddings': {};
   }
 }
 
@@ -67,5 +68,19 @@ export class CopilotCronJobs {
     this.logger.log(
       `Scheduled title generation for ${sessions.length} sessions`
     );
+  }
+
+  @OnJob('copilot.cleanupTrashedDocEmbeddings')
+  async cleanupTrashedDocEmbeddings() {
+    const workspaces = await this.models.workspace.list(undefined, {
+      id: true,
+    });
+    for (const { id: workspaceId } of workspaces) {
+      await this.jobs.add(
+        'copilot.embedding.cleanupTrashedDocEmbeddings',
+        { workspaceId },
+        { jobId: `cleanup-trashed-doc-embeddings-${workspaceId}` }
+      );
+    }
   }
 }

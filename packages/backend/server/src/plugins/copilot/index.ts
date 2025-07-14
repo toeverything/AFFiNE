@@ -64,8 +64,8 @@ import {
     // context
     CopilotContextResolver,
     CopilotContextService,
+    // jobs
     CopilotEmbeddingJob,
-    // cron jobs
     CopilotCronJobs,
     // transcription
     CopilotTranscriptionService,

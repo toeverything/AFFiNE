@@ -84,11 +84,17 @@ export class CopilotContextModel extends BaseModel {
   }
 
   async mergeDocStatus(workspaceId: string, docs: ContextDoc[]) {
-    const docIds = Array.from(new Set(docs.map(doc => doc.id)));
-    const finishedDoc = await this.hasWorkspaceEmbedding(workspaceId, docIds);
+    const canEmbedding = await this.checkEmbeddingAvailable();
+    const finishedDoc = canEmbedding
+      ? await this.listWorkspaceEmbedding(
+          workspaceId,
+          Array.from(new Set(docs.map(doc => doc.id)))
+        )
+      : [];
+    const finishedDocSet = new Set(finishedDoc);
 
     for (const doc of docs) {
-      const status = finishedDoc.has(doc.id)
+      const status = finishedDocSet.has(doc.id)
         ? ContextEmbedStatus.finished
         : undefined;
       // NOTE: when the document has not been synchronized to the server or is in the embedding queue
@@ -120,24 +126,17 @@ export class CopilotContextModel extends BaseModel {
     return Number(count) === 2;
   }
 
-  async hasWorkspaceEmbedding(workspaceId: string, docIds: string[]) {
-    const canEmbedding = await this.checkEmbeddingAvailable();
-    if (!canEmbedding) {
-      return new Set();
-    }
-
+  async listWorkspaceEmbedding(workspaceId: string, docIds?: string[]) {
     const existsIds = await this.db.aiWorkspaceEmbedding
-      .findMany({
+      .groupBy({
         where: {
           workspaceId,
-          docId: { in: docIds },
+          docId: docIds ? { in: docIds } : undefined,
         },
-        select: {
-          docId: true,
-        },
+        by: ['docId'],
       })
       .then(r => r.map(r => r.docId));
-    return new Set(existsIds);
+    return existsIds;
   }
 
   private processEmbeddings(
