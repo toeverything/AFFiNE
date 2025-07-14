@@ -106,6 +106,9 @@ export const Component = () => {
 
   const createSession = useCallback(
     async (options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}) => {
+      if (currentSession) {
+        return currentSession;
+      }
       const sessionId = await client.createSession({
         workspaceId,
         promptName: 'Chat With AFFiNE AI' satisfies PromptKey,
@@ -117,7 +120,7 @@ export const Component = () => {
       setCurrentSession(session);
       return session;
     },
-    [client, workspaceId]
+    [client, currentSession, workspaceId]
   );
 
   const togglePin = useCallback(async () => {
@@ -204,10 +207,10 @@ export const Component = () => {
       confirmModal.closeConfirmModal,
       confirmModal.openConfirmModal
     );
+    content.createSession = createSession;
 
     if (!chatContent) {
       // initial values that won't change
-      content.createSession = createSession;
       content.independentMode = true;
       content.onboardingOffsetY = -100;
       chatContainerRef.current?.append(content);
