@@ -23,7 +23,7 @@ import { isEqual } from 'lodash-es';
 export class InlineComment extends WithDisposable(ShadowlessElement) {
   static override styles = css`
     inline-comment {
-      display: inline-block;
+      display: inline;
     }
 
     inline-comment.unresolved {
