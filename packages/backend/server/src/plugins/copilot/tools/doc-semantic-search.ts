@@ -25,6 +25,9 @@ function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
       if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
         lines.shift();
         maxLines--;
+      } else {
+        // only process consecutive metadata rows
+        break;
       }
     }
     return { ...chunk, content: lines.join('\n') };
