@@ -4365,6 +4365,7 @@ export type GetCopilotSessionQuery = {
 export type GetCopilotRecentSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 export type GetCopilotRecentSessionsQuery = {

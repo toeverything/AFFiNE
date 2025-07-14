@@ -124,7 +124,7 @@ export class AIChatContent extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor independentMode!: boolean;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
   accessor onboardingOffsetY!: number;
@@ -177,9 +177,9 @@ export class AIChatContent extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor onEmbeddingProgressChange!: (
-    count: Record<ContextEmbedStatus, number>
-  ) => void;
+  accessor onEmbeddingProgressChange:
+    | ((count: Record<ContextEmbedStatus, number>) => void)
+    | undefined;
 
   @property({ attribute: false })
   accessor onContextChange!: (context: Partial<ChatContextValue>) => void;
@@ -403,7 +403,7 @@ export class AIChatContent extends SignalWatcher(
       <ai-chat-messages
         class=${classMap({
           'ai-chat-messages': true,
-          'independent-mode': this.independentMode,
+          'independent-mode': !!this.independentMode,
           'no-message': this.messages.length === 0,
         })}
         ${ref(this.chatMessagesRef)}

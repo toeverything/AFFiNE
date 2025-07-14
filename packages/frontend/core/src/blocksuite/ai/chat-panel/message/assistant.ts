@@ -81,7 +81,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor independentMode!: boolean;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
   accessor docDisplayService!: DocDisplayConfig;

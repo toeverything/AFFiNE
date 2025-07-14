@@ -290,7 +290,7 @@ export class AIChatInput extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor independentMode!: boolean;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
@@ -458,6 +458,8 @@ export class AIChatInput extends SignalWatcher(
       <div class="chat-panel-input-actions">
         <div class="chat-input-icon">
           <ai-chat-add-context
+            .docId=${this.docId}
+            .independentMode=${this.independentMode}
             .addChip=${this.addChip}
             .addImages=${this.addImages}
             .docDisplayConfig=${this.docDisplayConfig}

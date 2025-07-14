@@ -442,6 +442,9 @@ interface PageEvents extends PageDivision {
     chatPanel: {
       chatPanelInput: ['addEmbeddingDoc'];
     };
+    intelligence: {
+      chatPanelInput: ['addEmbeddingDoc'];
+    };
     commentPanel: {
       $: ['createComment', 'editComment', 'deleteComment', 'resolveComment'];
     };
@@ -720,7 +723,7 @@ export type EventArgs = {
   addEmbeddingDoc: {
     type?: 'page' | 'edgeless';
     control: 'addButton' | 'atMenu';
-    method: 'doc' | 'file' | 'tags' | 'collections' | 'suggestion';
+    method: 'doc' | 'cur-doc' | 'file' | 'tags' | 'collections' | 'suggestion';
   };
   openAttachmentInFullscreen: AttachmentEventArgs;
   openAttachmentInNewTab: AttachmentEventArgs;

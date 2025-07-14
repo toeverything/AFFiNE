@@ -82,6 +82,9 @@ export class ChatPanelChips extends SignalWatcher(
   accessor isCollapsed!: boolean;
 
   @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
   accessor addChip!: (chip: ChatChip) => Promise<void>;
 
   @property({ attribute: false })
@@ -142,6 +145,7 @@ export class ChatPanelChips extends SignalWatcher(
           if (isDocChip(chip)) {
             return html`<chat-panel-doc-chip
               .chip=${chip}
+              .independentMode=${this.independentMode}
               .addChip=${this.addChip}
               .updateChip=${this.updateChip}
               .removeChip=${this.removeChip}

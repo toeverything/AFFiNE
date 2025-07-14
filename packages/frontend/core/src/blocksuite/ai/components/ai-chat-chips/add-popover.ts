@@ -1,7 +1,7 @@
 import { toast } from '@affine/component';
 import type { TagMeta } from '@affine/core/components/page-list';
 import type { CollectionMeta } from '@affine/core/modules/collection';
-import track from '@affine/track';
+import track, { type EventArgs } from '@affine/track';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -119,6 +119,12 @@ export class ChatPanelAddPopover extends SignalWatcher(
   `;
 
   private accessor _query = '';
+
+  @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @state()
   private accessor _searchGroups: MenuGroup[] = [];
@@ -497,7 +503,8 @@ export class ChatPanelAddPopover extends SignalWatcher(
       state: 'processing',
     });
     const mode = this.docDisplayConfig.getDocPrimaryMode(meta.id);
-    this._track('doc', mode);
+    const method = meta.id === this.docId ? 'cur-doc' : 'doc';
+    this._track(method, mode);
   };
 
   private readonly _addTagChip = async (tag: TagMeta) => {
@@ -561,10 +568,13 @@ export class ChatPanelAddPopover extends SignalWatcher(
   }
 
   private _track(
-    method: 'doc' | 'file' | 'tags' | 'collections',
+    method: EventArgs['addEmbeddingDoc']['method'],
     type?: 'page' | 'edgeless'
   ) {
-    track.$.chatPanel.chatPanelInput.addEmbeddingDoc({
+    const page = this.independentMode
+      ? track.$.intelligence
+      : track.$.chatPanel;
+    page.chatPanelInput.addEmbeddingDoc({
       control: 'addButton',
       method,
       type,

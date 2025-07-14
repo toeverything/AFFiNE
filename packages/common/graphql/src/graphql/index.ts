@@ -1068,12 +1068,12 @@ ${paginatedCopilotChatsFragment}`,
 export const getCopilotRecentSessionsQuery = {
   id: 'getCopilotRecentSessionsQuery' as const,
   op: 'getCopilotRecentSessions',
-  query: `query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) {
+  query: `query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10, $offset: Int = 0) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       chats(
-        pagination: {first: $limit}
-        options: {fork: false, sessionOrder: desc, withMessages: false}
+        pagination: {first: $limit, offset: $offset}
+        options: {action: false, fork: false, sessionOrder: desc, withMessages: false}
       ) {
         ...PaginatedCopilotChats
       }
