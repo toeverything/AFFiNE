@@ -507,6 +507,8 @@ export class ChatSessionService {
     return await this.models.copilotSession.fork({
       ...session,
       userId: options.userId,
+      // docId can be changed in fork
+      docId: options.docId,
       sessionId: randomUUID(),
       parentSessionId: options.sessionId,
       messages,
