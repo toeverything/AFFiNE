@@ -1546,6 +1546,9 @@ type Query {
   """server config"""
   serverConfig: ServerConfigType!
 
+  """Trigger generate missing titles cron job"""
+  triggerGenerateTitleCron: Boolean!
+
   """Get user by email"""
   user(email: String!): UserOrLimitedUser
 

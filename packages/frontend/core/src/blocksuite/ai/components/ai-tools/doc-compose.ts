@@ -46,7 +46,6 @@ export class DocComposeTool extends ArtifactTool<
   static override styles = css`
     .doc-compose-result-preview {
       padding: 24px;
-      height: 100%;
     }
 
     .doc-compose-result-preview-title {
