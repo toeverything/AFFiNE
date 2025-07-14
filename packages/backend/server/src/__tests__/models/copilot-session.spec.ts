@@ -1078,7 +1078,7 @@ test('should get sessions for title generation correctly', async t => {
     })
   );
 
-  const result = await copilotSession.toBeGenerateTitle(10);
+  const result = await copilotSession.toBeGenerateTitle();
 
   t.snapshot(
     {
