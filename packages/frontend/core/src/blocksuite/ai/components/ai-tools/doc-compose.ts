@@ -124,6 +124,7 @@ export class DocComposeTool extends ArtifactTool<
             .options=${{
               customHeading: true,
               extensions: getCustomPageEditorBlockSpecs(),
+              theme: this.theme,
             }}
           ></text-renderer>`
         : html`<div class="doc-compose-result-preview-loading">

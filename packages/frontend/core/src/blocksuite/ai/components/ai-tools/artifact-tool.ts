@@ -34,7 +34,7 @@ export abstract class ArtifactTool<
       padding: 10px 0;
 
       .affine-embed-linked-doc-block {
-        box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
+        box-shadow: ${unsafeCSSVar('buttonShadow')};
         cursor: pointer;
       }
 

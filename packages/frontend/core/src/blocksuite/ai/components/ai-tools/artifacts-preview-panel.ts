@@ -104,10 +104,6 @@ export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
       color: ${unsafeCSSVarV2('icon/secondary')};
     }
 
-    .artifact-panel-content {
-      height: calc(100% - 52px);
-    }
-
     .artifact-panel-close:hover {
       background-color: ${unsafeCSSVarV2('layer/background/tertiary')};
     }
