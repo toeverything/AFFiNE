@@ -18,6 +18,7 @@ import {
   EdgelessEditorActions,
   PageEditorActions,
 } from '../../_common/chat-actions-handle';
+import type { DocDisplayConfig } from '../../components/ai-chat-chips';
 import {
   type ChatMessage,
   type ChatStatus,
@@ -82,6 +83,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor independentMode!: boolean;
 
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
   get state() {
     const { isLast, status } = this;
     return isLast
@@ -141,6 +145,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       .affineFeatureFlagService=${this.affineFeatureFlagService}
       .notificationService=${this.notificationService}
       .theme=${this.affineThemeService.appTheme.themeSignal}
+      .docDisplayService=${this.docDisplayService}
     ></chat-content-stream-objects>`;
   }
 

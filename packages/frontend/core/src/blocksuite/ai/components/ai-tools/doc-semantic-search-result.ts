@@ -5,6 +5,8 @@ import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
+import type { DocDisplayConfig } from '../ai-chat-chips';
+
 interface DocSemanticSearchToolCall {
   type: 'tool-call';
   toolCallId: string;
@@ -58,6 +60,9 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
   renderToolCall() {
     return html`<tool-call-card
       .name=${`Finding semantically related pages for "${this.data.args.query}"`}
@@ -75,7 +80,10 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
       .icon=${AiEmbeddingIcon()}
       .width=${this.width}
       .results=${this.data.result
-        .map(result => parseResultContent(result.content))
+        .map(result => ({
+          ...parseResultContent(result.content),
+          title: this.docDisplayService.getTitle(result.docId),
+        }))
         .filter(Boolean)}
     ></tool-result-card>`;
   }

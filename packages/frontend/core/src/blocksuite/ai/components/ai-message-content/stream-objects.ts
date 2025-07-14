@@ -13,6 +13,7 @@ import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { AffineAIPanelState } from '../../widgets/ai-panel/type';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { StreamObject } from '../ai-chat-messages';
 
 export class ChatContentStreamObjects extends WithDisposable(
@@ -53,6 +54,9 @@ export class ChatContentStreamObjects extends WithDisposable(
 
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
 
   private renderToolCall(streamObject: StreamObject) {
     if (streamObject.type !== 'tool-call') {
@@ -178,6 +182,7 @@ export class ChatContentStreamObjects extends WithDisposable(
         return html`<doc-semantic-search-result
           .data=${streamObject}
           .width=${this.width}
+          .docDisplayService=${this.docDisplayService}
         ></doc-semantic-search-result>`;
       case 'doc_keyword_search':
         return html`<doc-keyword-search-result

@@ -20,6 +20,7 @@ import { AffineIcon } from '../../_common/icons';
 import { AIPreloadConfig } from '../../chat-panel/preload-config';
 import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
 import { mergeStreamObjects } from '../../utils/stream-objects';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import { type ChatContextValue } from '../ai-chat-content/type';
 import type {
   AINetworkSearchConfig,
@@ -202,6 +203,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
 
@@ -328,6 +332,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .retry=${() => this.retry()}
                     .width=${this.width}
                     .independentMode=${this.independentMode}
+                    .docDisplayService=${this.docDisplayService}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item) && this.host) {
                   return html`<chat-message-action

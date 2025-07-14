@@ -424,6 +424,7 @@ export class AIChatContent extends SignalWatcher(
         .width=${this.width}
         .independentMode=${this.independentMode}
         .messages=${this.messages}
+        .docDisplayService=${this.docDisplayConfig}
       ></ai-chat-messages>
       <ai-chat-composer
         style=${styleMap({
