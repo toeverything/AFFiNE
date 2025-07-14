@@ -135,10 +135,30 @@ export class CopilotEmbeddingJob {
     if (enableDocEmbedding) {
       const toBeEmbedDocIds =
         await this.models.copilotWorkspace.findDocsToEmbed(workspaceId);
+      if (!toBeEmbedDocIds.length) {
+        return;
+      }
+      // filter out trashed docs
+      const rootSnapshot = await this.models.doc.getSnapshot(
+        workspaceId,
+        workspaceId
+      );
+      if (!rootSnapshot) {
+        this.logger.warn(
+          `Root snapshot for workspace ${workspaceId} not found, skipping embedding.`
+        );
+        return;
+      }
+      const allDocIds = new Set(
+        readAllDocIdsFromWorkspaceSnapshot(rootSnapshot.blob)
+      );
       this.logger.log(
         `Trigger embedding for ${toBeEmbedDocIds.length} docs in workspace ${workspaceId}`
       );
-      for (const docId of toBeEmbedDocIds) {
+      const finalToBeEmbedDocIds = toBeEmbedDocIds.filter(docId =>
+        allDocIds.has(docId)
+      );
+      for (const docId of finalToBeEmbedDocIds) {
         await this.queue.add(
           'copilot.embedding.docs',
           {
