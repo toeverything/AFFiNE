@@ -303,7 +303,7 @@ const textActions: Prompt[] = [
   {
     name: 'Transcript audio',
     action: 'Transcript audio',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-pro',
     optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'],
     messages: [
       {
