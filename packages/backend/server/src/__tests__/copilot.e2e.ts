@@ -290,6 +290,7 @@ test('should fork session correctly', async t => {
 
   const assertForkSession = async (
     workspaceId: string,
+    docId: string,
     sessionId: string,
     lastMessageId: string | undefined,
     error: string,
@@ -300,13 +301,7 @@ test('should fork session correctly', async t => {
     }
   ) =>
     await asserter(
-      forkCopilotSession(
-        app,
-        workspaceId,
-        randomUUID(),
-        sessionId,
-        lastMessageId
-      )
+      forkCopilotSession(app, workspaceId, docId, sessionId, lastMessageId)
     );
 
   // prepare session
@@ -330,6 +325,7 @@ test('should fork session correctly', async t => {
     // should be able to fork session
     forkedSessionId = await assertForkSession(
       id,
+      docId,
       sessionId,
       latestMessageId!,
       'should be able to fork session with cloud workspace that user can access'
@@ -340,6 +336,7 @@ test('should fork session correctly', async t => {
   {
     forkedSessionId = await assertForkSession(
       id,
+      docId,
       sessionId,
       undefined,
       'should be able to fork session without latestMessageId'
@@ -348,18 +345,25 @@ test('should fork session correctly', async t => {
 
   // should not be able to fork session with wrong latestMessageId
   {
-    await assertForkSession(id, sessionId, 'wrong-message-id', '', async x => {
-      await t.throwsAsync(
-        x,
-        { instanceOf: Error },
-        'should not able to fork session with wrong latestMessageId'
-      );
-    });
+    await assertForkSession(
+      id,
+      docId,
+      sessionId,
+      'wrong-message-id',
+      '',
+      async x => {
+        await t.throwsAsync(
+          x,
+          { instanceOf: Error },
+          'should not able to fork session with wrong latestMessageId'
+        );
+      }
+    );
   }
 
   {
     const u2 = await app.signupV1();
-    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+    await assertForkSession(id, docId, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
         { instanceOf: Error },
@@ -371,7 +375,7 @@ test('should fork session correctly', async t => {
     const inviteId = await inviteUser(app, id, u2.email);
     await app.switchUser(u2);
     await acceptInviteById(app, id, inviteId, false);
-    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+    await assertForkSession(id, docId, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
         { instanceOf: Error },
@@ -389,6 +393,7 @@ test('should fork session correctly', async t => {
     await app.switchUser(u2);
     await assertForkSession(
       id,
+      docId,
       forkedSessionId,
       latestMessageId!,
       'should able to fork a forked session created by other user'
