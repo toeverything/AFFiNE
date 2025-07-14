@@ -156,8 +156,8 @@ export const Component = () => {
         .then(session => {
           setCurrentSession(session);
           if (chatContent) {
-            chatContent.session = session;
-            chatContent.reloadSession();
+            chatContent.remove();
+            setChatContent(null);
           }
           chatTool?.closeHistoryMenu();
         })
@@ -258,7 +258,8 @@ export const Component = () => {
     tool.onNewSession = () => {
       if (!currentSession) return;
       setCurrentSession(null);
-      chatContent?.reset();
+      chatContent?.remove();
+      setChatContent(null);
     };
 
     tool.onTogglePin = async () => {
@@ -329,8 +330,8 @@ export const Component = () => {
         if (!session) return;
         setCurrentSession(session);
         if (chatContent) {
-          chatContent.session = session;
-          chatContent.reloadSession();
+          chatContent.remove();
+          setChatContent(null);
         }
       })
       .catch(console.error);
