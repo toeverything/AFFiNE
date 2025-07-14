@@ -111,6 +111,19 @@ export class MockCopilotProvider extends OpenAIProvider {
         },
       ],
     },
+    {
+      id: 'gemini-2.5-pro',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
   ];
 
   override async text(

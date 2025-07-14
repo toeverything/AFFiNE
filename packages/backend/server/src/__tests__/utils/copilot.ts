@@ -433,7 +433,7 @@ export async function submitAudioTranscription(
   for (const [idx, buffer] of content.entries()) {
     resp = resp.attach(idx.toString(), buffer, {
       filename: fileName,
-      contentType: 'application/octet-stream',
+      contentType: 'audio/opus',
     });
   }
 
