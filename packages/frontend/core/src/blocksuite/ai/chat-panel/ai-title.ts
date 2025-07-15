@@ -106,7 +106,7 @@ export class AIChatPanelTitle extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor session!: CopilotChatHistoryFragment;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor status!: ChatStatus;

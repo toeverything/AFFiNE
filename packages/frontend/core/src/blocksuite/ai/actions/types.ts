@@ -407,7 +407,8 @@ declare global {
       ) => Promise<CopilotChatHistoryFragment[] | undefined>;
       getRecentSessions: (
         workspaceId: string,
-        limit?: number
+        limit?: number,
+        offset?: number
       ) => Promise<AIRecentSession[] | undefined>;
       updateSession: (options: UpdateChatSessionInput) => Promise<string>;
     }

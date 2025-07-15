@@ -186,13 +186,18 @@ export class CopilotClient {
     }
   }
 
-  async getRecentSessions(workspaceId: string, limit?: number) {
+  async getRecentSessions(
+    workspaceId: string,
+    limit?: number,
+    offset?: number
+  ) {
     try {
       const res = await this.gql({
         query: getCopilotRecentSessionsQuery,
         variables: {
           workspaceId,
           limit,
+          offset,
         },
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);

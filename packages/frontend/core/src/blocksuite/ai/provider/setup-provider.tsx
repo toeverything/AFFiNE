@@ -589,8 +589,12 @@ Could you make a new website based on these notes and send back just the html fi
     ) => {
       return client.getSessions(workspaceId, {}, docId, options);
     },
-    getRecentSessions: async (workspaceId: string, limit?: number) => {
-      return client.getRecentSessions(workspaceId, limit);
+    getRecentSessions: async (
+      workspaceId: string,
+      limit?: number,
+      offset?: number
+    ) => {
+      return client.getRecentSessions(workspaceId, limit, offset);
     },
     updateSession: async (options: UpdateChatSessionInput) => {
       return client.updateSession(options);

@@ -3,8 +3,8 @@ import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import { css, html, nothing } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { css, html, nothing, type PropertyValues } from 'lit';
+import { property, query, state } from 'lit/decorators.js';
 
 import { AIProvider } from '../../provider';
 import type { DocDisplayConfig } from '../ai-chat-chips';
@@ -133,11 +133,21 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor onDocClick!: (docId: string, sessionId: string) => void;
 
-  @state()
-  private accessor sessions: BlockSuitePresets.AIRecentSession[] = [];
+  @query('.ai-session-history')
+  accessor scrollContainer!: HTMLElement;
 
   @state()
-  private accessor loading = true;
+  private accessor sessions: BlockSuitePresets.AIRecentSession[] | undefined;
+
+  @state()
+  private accessor loadingMore = false;
+
+  @state()
+  private accessor hasMore = true;
+
+  private accessor currentOffset = 0;
+
+  private readonly pageSize = 10;
 
   private groupSessionsByTime(
     sessions: BlockSuitePresets.AIRecentSession[]
@@ -188,21 +198,44 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   }
 
   private async getRecentSessions() {
-    this.loading = true;
-    const limit = 50;
-    const sessions = await AIProvider.session?.getRecentSessions(
-      this.workspaceId,
-      limit
-    );
-    if (sessions) {
-      this.sessions = sessions;
-    }
-    this.loading = false;
+    this.loadingMore = true;
+
+    const moreSessions =
+      (await AIProvider.session?.getRecentSessions(
+        this.workspaceId,
+        this.pageSize,
+        this.currentOffset
+      )) || [];
+    this.sessions = [...(this.sessions || []), ...moreSessions];
+
+    this.currentOffset += moreSessions.length;
+    this.hasMore = moreSessions.length === this.pageSize;
+    this.loadingMore = false;
   }
+
+  private readonly onScroll = () => {
+    if (!this.hasMore || this.loadingMore) {
+      return;
+    }
+    // load more when within 50px of bottom
+    const { scrollTop, scrollHeight, clientHeight } = this.scrollContainer;
+    const threshold = 50;
+    if (scrollTop + clientHeight >= scrollHeight - threshold) {
+      this.getRecentSessions().catch(console.error);
+    }
+  };
 
   override connectedCallback() {
     super.connectedCallback();
     this.getRecentSessions().catch(console.error);
+  }
+
+  override firstUpdated(changedProperties: PropertyValues) {
+    super.firstUpdated(changedProperties);
+    this.disposables.add(() => {
+      this.scrollContainer.removeEventListener('scroll', this.onScroll);
+    });
+    this.scrollContainer.addEventListener('scroll', this.onScroll);
   }
 
   private renderSessionGroup(
@@ -256,35 +289,43 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
     </div>`;
   }
 
-  override render() {
-    if (this.loading) {
-      return html`
-        <div class="ai-session-history">
-          <div class="loading-container">
-            <div class="loading-title">Loading history...</div>
-          </div>
-        </div>
-      `;
+  private renderLoading() {
+    return html`
+      <div class="loading-container">
+        <div class="loading-title">Loading history...</div>
+      </div>
+    `;
+  }
+
+  private renderEmpty() {
+    return html`
+      <div class="empty-container">
+        <div class="empty-title">Empty history</div>
+      </div>
+    `;
+  }
+
+  private renderHistory() {
+    if (!this.sessions) {
+      return this.renderLoading();
     }
 
     if (this.sessions.length === 0) {
-      return html`
-        <div class="ai-session-history">
-          <div class="empty-container">
-            <div class="empty-title">Empty history</div>
-          </div>
-        </div>
-      `;
+      return this.renderEmpty();
     }
 
     const groupedSessions = this.groupSessionsByTime(this.sessions);
     return html`
-      <div class="ai-session-history">
-        ${this.renderSessionGroup('Today', groupedSessions.today)}
-        ${this.renderSessionGroup('Last 7 days', groupedSessions.last7Days)}
-        ${this.renderSessionGroup('Last 30 days', groupedSessions.last30Days)}
-        ${this.renderSessionGroup('Older', groupedSessions.older)}
-      </div>
+      ${this.renderSessionGroup('Today', groupedSessions.today)}
+      ${this.renderSessionGroup('Last 7 days', groupedSessions.last7Days)}
+      ${this.renderSessionGroup('Last 30 days', groupedSessions.last30Days)}
+      ${this.renderSessionGroup('Older', groupedSessions.older)}
+    `;
+  }
+
+  override render() {
+    return html`
+      <div class="ai-session-history">${this.renderHistory()}</div>
     `;
   }
 }
