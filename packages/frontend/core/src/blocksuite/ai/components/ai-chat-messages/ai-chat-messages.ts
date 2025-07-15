@@ -206,6 +206,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor docDisplayService!: DocDisplayConfig;
 
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
 
@@ -333,6 +336,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .width=${this.width}
                     .independentMode=${this.independentMode}
                     .docDisplayService=${this.docDisplayService}
+                    .onOpenDoc=${this.onOpenDoc}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item) && this.host) {
                   return html`<chat-message-action

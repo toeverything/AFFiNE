@@ -8,7 +8,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 export interface ToolResult {
-  title: string;
+  title: string | TemplateResult<1>;
   icon?: string | TemplateResult<1>;
   content?: string;
 }

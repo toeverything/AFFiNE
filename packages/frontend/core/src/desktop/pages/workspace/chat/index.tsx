@@ -94,6 +94,7 @@ export const Component = () => {
   const chatToolContainerRef = useRef<HTMLDivElement>(null);
   const widthSignalRef = useRef<Signal<number>>(signal(0));
   const client = useCopilotClient();
+  const workbench = useService(WorkbenchService).workbench;
 
   const workspaceId = useService(WorkspaceService).workspace.id;
 
@@ -173,6 +174,13 @@ export const Component = () => {
     setStatus(context.status ?? 'idle');
   }, []);
 
+  const onOpenDoc = useCallback(
+    (docId: string) => {
+      workbench.openDoc(docId, { at: 'active' });
+    },
+    [workbench]
+  );
+
   const confirmModal = useConfirmModal();
   const specs = useAISpecs();
   const mockStd = useMockStd();
@@ -208,6 +216,7 @@ export const Component = () => {
       confirmModal.openConfirmModal
     );
     content.createSession = createSession;
+    content.onOpenDoc = onOpenDoc;
 
     if (!chatContent) {
       // initial values that won't change
@@ -232,6 +241,7 @@ export const Component = () => {
     confirmModal,
     onContextChange,
     specs,
+    onOpenDoc,
   ]);
 
   // init or update header ai-chat-toolbar

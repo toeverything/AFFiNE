@@ -158,6 +158,9 @@ export class AIChatContent extends SignalWatcher(
   accessor onContextChange!: (context: Partial<ChatContextValue>) => void;
 
   @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
+  @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
   @state()
@@ -378,6 +381,7 @@ export class AIChatContent extends SignalWatcher(
         .independentMode=${this.independentMode}
         .messages=${this.messages}
         .docDisplayService=${this.docDisplayConfig}
+        .onOpenDoc=${this.onOpenDoc}
       ></ai-chat-messages>
       <ai-chat-composer
         style=${styleMap({

@@ -2,7 +2,7 @@ import { WithDisposable } from '@blocksuite/global/lit';
 import { PageIcon, SearchIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { Signal } from '@preact/signals-core';
-import { html, nothing } from 'lit';
+import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { ToolResult } from './tool-result-card';
@@ -26,11 +26,20 @@ interface DocKeywordSearchToolResult {
 }
 
 export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
+  static override styles = css`
+    .doc-keyword-search-result-title {
+      cursor: pointer;
+    }
+  `;
+
   @property({ attribute: false })
   accessor data!: DocKeywordSearchToolCall | DocKeywordSearchToolResult;
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   renderToolCall() {
     return html`<tool-call-card
@@ -47,7 +56,12 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
     let results: ToolResult[] = [];
     try {
       results = this.data.result.map(item => ({
-        title: item.title,
+        title: html`<span
+          class="doc-keyword-search-result-title"
+          @click=${() => this.onOpenDoc(item.docId)}
+        >
+          ${item.title}
+        </span>`,
         icon: PageIcon(),
       }));
     } catch (err) {

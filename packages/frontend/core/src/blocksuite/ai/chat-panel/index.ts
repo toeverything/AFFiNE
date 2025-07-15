@@ -404,6 +404,7 @@ export class ChatPanel extends SignalWatcher(
           .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
           .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}
+          .onOpenDoc=${this.openDoc}
         ></ai-chat-content>`
       )}
     </div>`;
