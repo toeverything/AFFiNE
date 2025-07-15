@@ -337,6 +337,10 @@ export class CopilotEmbeddingJob {
     const signal = this.getWorkspaceSignal(workspaceId);
 
     try {
+      const hasNewDoc = await this.models.doc.exists(
+        workspaceId,
+        docId.split(':space:')[1]
+      );
       const needEmbedding =
         await this.models.copilotWorkspace.checkDocNeedEmbedded(
           workspaceId,
@@ -352,8 +356,11 @@ export class CopilotEmbeddingJob {
           );
           return;
         }
-        const fragment = await this.getDocFragment(workspaceId, docId);
-        if (fragment) {
+        // if doc id deprecated, skip embedding and fulfill empty embedding
+        const fragment = !hasNewDoc
+          ? await this.getDocFragment(workspaceId, docId)
+          : undefined;
+        if (!hasNewDoc && fragment) {
           // fast fall for empty doc, journal is easily to create a empty doc
           if (fragment.summary.trim()) {
             const embeddings = await this.embeddingClient.getFileEmbeddings(
@@ -382,7 +389,7 @@ export class CopilotEmbeddingJob {
             );
             await this.fulfillEmptyEmbedding(workspaceId, docId);
           }
-        } else if (contextId) {
+        } else {
           this.logger.warn(
             `Doc ${docId} in workspace ${workspaceId} has no fragment, fulfilling empty embedding.`
           );
