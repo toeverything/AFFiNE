@@ -182,6 +182,9 @@ test.describe('AISettings/Embedding', () => {
       uploadThroughput: -1,
     });
 
+    await utils.settings.disableWorkspaceEmbedding(page);
+    await utils.settings.enableWorkspaceEmbedding(page);
+
     await utils.settings.waitForFileEmbeddingReadiness(page, 2);
 
     await utils.settings.closeSettingsPanel(page);
