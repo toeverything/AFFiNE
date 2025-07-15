@@ -63,7 +63,7 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
           AND s.guid NOT LIKE '%:settings:%'
           AND e.doc_id IS NULL
           AND id.doc_id IS NULL
-          AND s.blob <> E'\\x0000';`;
+          AND s.blob <> E'\\\\x0000';`;
 
     return docIds.map(r => r.id);
   }
