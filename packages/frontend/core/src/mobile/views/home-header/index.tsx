@@ -6,10 +6,11 @@ import {
 } from '@affine/component';
 import { NotificationList } from '@affine/core/components/notification/list';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
+import { NotificationCountService } from '@affine/core/modules/notification';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { NotificationIcon, SettingsIcon } from '@blocksuite/icons/rc';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useRef, useState } from 'react';
 
@@ -31,6 +32,8 @@ export const HomeHeader = () => {
   const floatWorkspaceCardRef = useRef<HTMLDivElement>(null);
   const t = useI18n();
   const workbench = useService(WorkbenchService).workbench;
+  const notificationCountService = useService(NotificationCountService);
+  const notificationCount = useLiveData(notificationCountService.count$);
 
   const navSearch = useCallback(() => {
     startScopedViewTransition(searchVTScope, () => {
@@ -73,7 +76,17 @@ export const HomeHeader = () => {
           ref={floatWorkspaceCardRef}
         />
         <Menu items={<NotificationList />}>
-          <NotificationIcon width={28} height={28} />
+          <div style={{ position: 'relative' }}>
+            <NotificationIcon width={28} height={28} />
+            <div
+              className={styles.notificationBadge}
+              style={{
+                fontSize: notificationCount > 99 ? '8px' : '12px',
+              }}
+            >
+              {notificationCount > 99 ? '99+' : notificationCount}
+            </div>
+          </div>
         </Menu>
         <IconButton
           style={{ transition: 'none' }}
