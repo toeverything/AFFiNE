@@ -109,17 +109,16 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
     tagId,
   ]);
 
-  if (!currentTag || !tagId) {
-    return <PageNotFound />;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const handleDisplayPreferenceChange = useCallback(
     (displayPreference: ExplorerDisplayPreference) => {
       explorerContextValue.displayPreference$.next(displayPreference);
     },
     [explorerContextValue]
   );
+
+  if (!currentTag || !tagId) {
+    return <PageNotFound />;
+  }
 
   return (
     <DocExplorerContext.Provider value={explorerContextValue}>
