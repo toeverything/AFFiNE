@@ -42,6 +42,8 @@ export const empty = style({
   padding: 32,
   display: 'flex',
   alignItems: 'center',
+  textAlign: 'center',
+  lineHeight: '24px',
   justifyContent: 'center',
   color: cssVarV2('text/secondary'),
 });
