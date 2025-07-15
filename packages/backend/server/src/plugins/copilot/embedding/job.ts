@@ -339,7 +339,7 @@ export class CopilotEmbeddingJob {
     try {
       const hasNewDoc = await this.models.doc.exists(
         workspaceId,
-        docId.split(':space:')[1]
+        docId.split(':space:')[1] || ''
       );
       const needEmbedding =
         await this.models.copilotWorkspace.checkDocNeedEmbedded(
