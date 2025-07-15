@@ -1,12 +1,14 @@
 import {
   IconButton,
+  Menu,
   SafeArea,
   startScopedViewTransition,
 } from '@affine/component';
+import { NotificationList } from '@affine/core/components/notification/list';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
-import { SettingsIcon } from '@blocksuite/icons/rc';
+import { NotificationIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useRef, useState } from 'react';
@@ -70,6 +72,9 @@ export const HomeHeader = () => {
           className={styles.floatWsSelector}
           ref={floatWorkspaceCardRef}
         />
+        <Menu items={<NotificationList />}>
+          <NotificationIcon width={28} height={28} />
+        </Menu>
         <IconButton
           style={{ transition: 'none' }}
           onClick={openSetting}

@@ -34,6 +34,7 @@ export const menuContent = style({
   fontWeight: '400',
   display: 'flex',
   flexDirection: 'column',
+  // alignItems: 'center',
   gap: 0,
   width: '100%',
   flexShrink: 0,
