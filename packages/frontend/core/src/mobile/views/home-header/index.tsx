@@ -78,14 +78,16 @@ export const HomeHeader = () => {
         <Menu items={<NotificationList />}>
           <div style={{ position: 'relative' }}>
             <NotificationIcon width={28} height={28} />
-            <div
-              className={styles.notificationBadge}
-              style={{
-                fontSize: notificationCount > 99 ? '8px' : '12px',
-              }}
-            >
-              {notificationCount > 99 ? '99+' : notificationCount}
-            </div>
+            {notificationCount > 0 && (
+              <div
+                className={styles.notificationBadge}
+                style={{
+                  fontSize: notificationCount > 99 ? '8px' : '12px',
+                }}
+              >
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </div>
+            )}
           </div>
         </Menu>
         <IconButton
