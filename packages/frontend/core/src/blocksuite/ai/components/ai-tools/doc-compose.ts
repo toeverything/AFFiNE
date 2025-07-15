@@ -1,11 +1,11 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
 import { getEmbedLinkedDocIcons } from '@blocksuite/affine/blocks/embed-doc';
-import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import type { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
 import type { BlockStdScope } from '@blocksuite/std';
 import { css, html } from 'lit';
@@ -88,6 +88,9 @@ export class DocComposeTool extends ArtifactTool<
   @property({ attribute: false })
   accessor std: BlockStdScope | undefined;
 
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   protected getBanner(theme: ColorScheme) {
     const { LinkedDocEmptyBanner } = getEmbedLinkedDocIcons(
       theme,
@@ -98,13 +101,14 @@ export class DocComposeTool extends ArtifactTool<
   }
 
   protected getCardMeta() {
-    const composing = this.data.type === 'tool-call';
     return {
       title: this.data.args.title,
-      icon: PageIcon(),
-      loading: composing,
       className: 'doc-compose-result',
     };
+  }
+
+  protected override getIcon() {
+    return PageIcon();
   }
 
   protected override getPreviewContent() {
@@ -126,11 +130,7 @@ export class DocComposeTool extends ArtifactTool<
               theme: this.theme,
             }}
           ></text-renderer>`
-        : html`<div class="doc-compose-result-preview-loading">
-            ${LoadingIcon({
-              size: '32px',
-            })}
-          </div>`}
+        : html``}
     </div>`;
   }
 

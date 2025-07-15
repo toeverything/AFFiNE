@@ -3,6 +3,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type BlockStdScope } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CodeBlockIcon,
   CopyIcon,
@@ -437,6 +438,9 @@ export class CodeArtifactTool extends ArtifactTool<
   @property({ attribute: false })
   accessor std: BlockStdScope | undefined;
 
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   @state()
   private accessor mode: 'preview' | 'code' = 'code';
 
@@ -447,25 +451,19 @@ export class CodeArtifactTool extends ArtifactTool<
   }
 
   protected getCardMeta() {
-    const loading = this.data.type === 'tool-call';
     return {
       title: this.data.args.title,
-      icon: CodeBlockIcon({ width: '20', height: '20' }),
-      loading,
       className: 'code-artifact-result',
     };
   }
 
+  protected override getIcon() {
+    return CodeBlockIcon();
+  }
+
   protected override getPreviewContent() {
     if (this.data.type !== 'tool-result' || !this.data.result) {
-      // loading state
-      return html`<div class="code-artifact-preview">
-        <div
-          style="display:flex;justify-content:center;align-items:center;height:100%"
-        >
-          ${CodeBlockIcon({ width: '24', height: '24' })}
-        </div>
-      </div>`;
+      return html``;
     }
 
     const result = this.data.result;

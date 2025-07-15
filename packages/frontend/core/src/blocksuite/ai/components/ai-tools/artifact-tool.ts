@@ -2,7 +2,6 @@ import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { ColorScheme } from '@blocksuite/affine/model';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import { type NotificationService } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { Signal } from '@preact/signals-core';
 import {
@@ -42,17 +41,22 @@ export abstract class ArtifactTool<
         background-color: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
       }
     }
+
+    .artifact-skeleton-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+
+      artifact-skeleton {
+        margin-top: -24px;
+      }
+    }
   `;
 
   /** Tool data coming from ChatGPT (tool-call / tool-result). */
   @property({ attribute: false })
   accessor data!: TData;
-
-  @property({ attribute: false })
-  accessor width: Signal<number | undefined> | undefined;
-
-  @property({ attribute: false })
-  accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
   accessor theme!: Signal<ColorScheme>;
@@ -64,13 +68,14 @@ export abstract class ArtifactTool<
    */
   protected abstract getCardMeta(): {
     title: string;
-    /** Page / file icon shown when not loading */
-    icon: TemplateResult | HTMLElement | string | null;
-    /** Whether the spinner should be displayed */
-    loading: boolean;
     /** Extra css class appended to card root */
     className?: string;
   };
+
+  /**
+   * Icon shown in the card (when not loading) and in the loading skeleton.
+   */
+  protected abstract getIcon(): TemplateResult | HTMLElement | string | null;
 
   /** Banner shown on the right side of the card (can be undefined). */
   protected abstract getBanner(
@@ -90,11 +95,14 @@ export abstract class ArtifactTool<
 
   /** Open or refresh the preview panel. */
   private openOrUpdatePreviewPanel() {
-    renderPreviewPanel(
-      this,
-      this.getPreviewContent(),
-      this.getPreviewControls()
-    );
+    const content = this.isLoading()
+      ? this.renderLoadingSkeleton()
+      : this.getPreviewContent();
+    renderPreviewPanel(this, content, this.getPreviewControls());
+  }
+
+  protected isLoading(): boolean {
+    return this.data.type !== 'tool-result';
   }
 
   protected refreshPreviewPanel() {
@@ -108,18 +116,23 @@ export abstract class ArtifactTool<
     return null;
   }
 
+  protected renderLoadingSkeleton() {
+    const icon = this.getIcon();
+    return html`<div class="artifact-skeleton-container">
+      <artifact-skeleton .icon=${icon}></artifact-skeleton>
+    </div>`;
+  }
+
   private readonly onCardClick = (_e: Event) => {
     this.openOrUpdatePreviewPanel();
   };
 
   protected renderCard() {
-    const { title, icon, loading, className } = this.getCardMeta();
+    const { title, className } = this.getCardMeta();
 
-    const resolvedIcon = loading
-      ? LoadingIcon({
-          size: '20px',
-        })
-      : icon;
+    const resolvedIcon = this.isLoading()
+      ? LoadingIcon({ size: '20px' })
+      : this.getIcon();
 
     const banner = this.getBanner(this.theme.value);
 

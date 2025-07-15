@@ -39,6 +39,13 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
   private readonly _loadTheme = async (
     highlighter: HighlighterCore
   ): Promise<void> => {
+    // It is possible that by the time the highlighter is ready all instances
+    // have already been unmounted. In that case there is no need to load
+    // themes or update state.
+    if (CodeBlockHighlighter._refCount === 0) {
+      return;
+    }
+
     const config = this.std.getOptional(CodeBlockConfigExtension.identifier);
     const darkTheme = config?.theme?.dark ?? CODE_BLOCK_DEFAULT_DARK_THEME;
     const lightTheme = config?.theme?.light ?? CODE_BLOCK_DEFAULT_LIGHT_THEME;
@@ -78,14 +85,27 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
   override unmounted(): void {
     CodeBlockHighlighter._refCount--;
 
-    // Only dispose the shared highlighter when no instances are using it
-    if (
-      CodeBlockHighlighter._refCount === 0 &&
-      CodeBlockHighlighter._sharedHighlighter
-    ) {
-      CodeBlockHighlighter._sharedHighlighter.dispose();
+    // Dispose the shared highlighter **after** any in-flight creation finishes.
+    if (CodeBlockHighlighter._refCount !== 0) {
+      return;
+    }
+
+    const doDispose = (highlighter: HighlighterCore | null) => {
+      if (highlighter) {
+        highlighter.dispose();
+      }
       CodeBlockHighlighter._sharedHighlighter = null;
       CodeBlockHighlighter._highlighterPromise = null;
+    };
+
+    if (CodeBlockHighlighter._sharedHighlighter) {
+      // Highlighter already created – dispose immediately.
+      doDispose(CodeBlockHighlighter._sharedHighlighter);
+    } else if (CodeBlockHighlighter._highlighterPromise) {
+      // Highlighter still being created – wait for it, then dispose.
+      CodeBlockHighlighter._highlighterPromise
+        .then(doDispose)
+        .catch(console.error);
     }
   }
 }
