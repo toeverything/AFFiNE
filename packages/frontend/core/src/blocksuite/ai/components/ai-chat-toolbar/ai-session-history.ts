@@ -1,4 +1,4 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -73,6 +73,10 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
         background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
       }
 
+      .ai-session-item[aria-selected='true'] .ai-session-title {
+        color: ${unsafeCSSVarV2('text/emphasis')};
+      }
+
       .ai-session-doc:hover {
         background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
       }
@@ -119,7 +123,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor workspaceId!: string;
@@ -223,6 +227,8 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
                 e.stopPropagation();
                 this.onSessionClick(session.sessionId);
               }}
+              aria-selected=${this.session?.sessionId === session.sessionId}
+              data-session-id=${session.sessionId}
             >
               <div class="ai-session-title">
                 ${session.title || 'New chat'}
