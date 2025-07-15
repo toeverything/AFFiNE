@@ -40,6 +40,13 @@ export class ChatPanel extends SignalWatcher(
 
       .chat-panel-container {
         height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      ai-chat-content {
+        height: 0;
+        flex-grow: 1;
       }
 
       .chat-loading-container {

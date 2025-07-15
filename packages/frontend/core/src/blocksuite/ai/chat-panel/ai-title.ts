@@ -30,7 +30,7 @@ export class AIChatPanelTitle extends SignalWatcher(
     .ai-chat-panel-title {
       background: var(--affine-background-primary-color);
       position: relative;
-      padding: 8px var(--h-padding);
+      padding: 8px var(--h-padding, 16px);
       width: 100%;
       height: 36px;
       display: flex;
