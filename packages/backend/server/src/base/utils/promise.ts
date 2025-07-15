@@ -48,3 +48,7 @@ export function defer(dispose: () => Promise<void>) {
     [Symbol.asyncDispose]: dispose,
   };
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
