@@ -23,6 +23,7 @@ import {
   CallMetric,
   CopilotDocNotFound,
   CopilotFailedToCreateMessage,
+  CopilotProviderSideError,
   CopilotSessionNotFound,
   type FileUpload,
   paginate,
@@ -31,15 +32,18 @@ import {
   RequestMutex,
   Throttle,
   TooManyRequest,
+  UserFriendlyError,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
+import { DocReader } from '../../core/doc';
 import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { CopilotCronJobs } from './cron';
 import { PromptService } from './prompt';
 import { PromptMessage, StreamObject } from './providers';
+import { CopilotProviderFactory } from './providers/factory';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
@@ -397,7 +401,9 @@ export class CopilotResolver {
     private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
     private readonly chatSession: ChatSessionService,
-    private readonly storage: CopilotStorage
+    private readonly storage: CopilotStorage,
+    private readonly docReader: DocReader,
+    private readonly providerFactory: CopilotProviderFactory
   ) {}
 
   @ResolveField(() => CopilotQuotaType, {
@@ -722,6 +728,65 @@ export class CopilotResolver {
       return await this.chatSession.createMessage({ ...options, attachments });
     } catch (e: any) {
       throw new CopilotFailedToCreateMessage(e.message);
+    }
+  }
+
+  @Query(() => String, {
+    description:
+      'Apply updates to a doc using LLM and return the merged markdown.',
+  })
+  async applyDocUpdates(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'workspaceId', type: () => String })
+    workspaceId: string,
+    @Args({ name: 'docId', type: () => String })
+    docId: string,
+    @Args({ name: 'op', type: () => String })
+    op: string,
+    @Args({ name: 'updates', type: () => String })
+    updates: string
+  ): Promise<string> {
+    await this.assertPermission(user, { workspaceId, docId });
+
+    const docContent = await this.docReader.getDocMarkdown(
+      workspaceId,
+      docId,
+      true
+    );
+    if (!docContent || !docContent.markdown) {
+      throw new NotFoundException('Doc not found or empty');
+    }
+
+    const markdown = docContent.markdown.trim();
+
+    // Get LLM provider
+    const provider =
+      await this.providerFactory.getProviderByModel('morph-v3-large');
+    if (!provider) {
+      throw new BadRequestException('No LLM provider available');
+    }
+
+    try {
+      return await provider.text(
+        { modelId: 'morph-v3-large' },
+        [
+          {
+            role: 'user',
+            content: `<instruction>${op}</instruction>\n<code>${markdown}</code>\n<update>${updates}</update>`,
+          },
+        ],
+        { reasoning: false }
+      );
+    } catch (e: any) {
+      if (e instanceof UserFriendlyError) {
+        throw e;
+      } else {
+        throw new CopilotProviderSideError({
+          provider: provider.type,
+          kind: 'unexpected_response',
+          message: e?.message || 'Unexpected apply response',
+        });
+      }
     }
   }
 

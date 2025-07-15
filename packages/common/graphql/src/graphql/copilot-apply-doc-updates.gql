@@ -1,0 +1,3 @@
+query applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) {
+  applyDocUpdates(workspaceId: $workspaceId, docId: $docId, op: $op, updates: $updates)
+} 

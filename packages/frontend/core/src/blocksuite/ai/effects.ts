@@ -22,6 +22,7 @@ import { ActionMindmap } from './chat-panel/actions/mindmap';
 import { ActionSlides } from './chat-panel/actions/slides';
 import { ActionText } from './chat-panel/actions/text';
 import { AILoading } from './chat-panel/ai-loading';
+import { AIChatPanelTitle } from './chat-panel/ai-title';
 import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
@@ -141,6 +142,7 @@ export function registerAIEffects() {
   customElements.define('ai-session-history', AISessionHistory);
   customElements.define('ai-chat-messages', AIChatMessages);
   customElements.define('chat-panel', ChatPanel);
+  customElements.define('ai-chat-panel-title', AIChatPanelTitle);
   customElements.define('ai-chat-input', AIChatInput);
   customElements.define('ai-chat-add-context', AIChatAddContext);
   customElements.define(

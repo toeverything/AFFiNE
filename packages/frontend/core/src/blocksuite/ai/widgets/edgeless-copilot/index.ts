@@ -54,6 +54,8 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
 
   private _selectionModelRect!: DOMRect;
 
+  private _autoUpdateCleanup: (() => void) | null = null;
+
   groups: AIItemGroupConfig[] = [];
 
   get gfx() {
@@ -145,7 +147,8 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
 
     const originMaxHeight = window.getComputedStyle(panel).maxHeight;
 
-    autoUpdate(referenceElement, panel, () => {
+    this._autoUpdateCleanup?.();
+    this._autoUpdateCleanup = autoUpdate(referenceElement, panel, () => {
       computePosition(referenceElement, panel, {
         placement: 'bottom-start',
         middleware: [
@@ -267,6 +270,8 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
         this._copilotPanel = null;
       })
     );
+
+    this._disposables.add(() => this._autoUpdateCleanup?.());
   }
 
   determineInsertionBounds(width = 800, height = 95) {

@@ -94,6 +94,7 @@ export const Component = () => {
   const chatToolContainerRef = useRef<HTMLDivElement>(null);
   const widthSignalRef = useRef<Signal<number>>(signal(0));
   const client = useCopilotClient();
+  const workbench = useService(WorkbenchService).workbench;
 
   const workspaceId = useService(WorkspaceService).workspace.id;
 
@@ -156,8 +157,8 @@ export const Component = () => {
         .then(session => {
           setCurrentSession(session);
           if (chatContent) {
-            chatContent.session = session;
-            chatContent.reloadSession();
+            chatContent.remove();
+            setChatContent(null);
           }
           chatTool?.closeHistoryMenu();
         })
@@ -172,6 +173,13 @@ export const Component = () => {
   const onContextChange = useCallback((context: Partial<ChatContextValue>) => {
     setStatus(context.status ?? 'idle');
   }, []);
+
+  const onOpenDoc = useCallback(
+    (docId: string) => {
+      workbench.openDoc(docId, { at: 'active' });
+    },
+    [workbench]
+  );
 
   const confirmModal = useConfirmModal();
   const specs = useAISpecs();
@@ -208,6 +216,7 @@ export const Component = () => {
       confirmModal.openConfirmModal
     );
     content.createSession = createSession;
+    content.onOpenDoc = onOpenDoc;
 
     if (!chatContent) {
       // initial values that won't change
@@ -232,6 +241,7 @@ export const Component = () => {
     confirmModal,
     onContextChange,
     specs,
+    onOpenDoc,
   ]);
 
   // init or update header ai-chat-toolbar
@@ -258,7 +268,8 @@ export const Component = () => {
     tool.onNewSession = () => {
       if (!currentSession) return;
       setCurrentSession(null);
-      chatContent?.reset();
+      chatContent?.remove();
+      setChatContent(null);
     };
 
     tool.onTogglePin = async () => {
@@ -329,8 +340,8 @@ export const Component = () => {
         if (!session) return;
         setCurrentSession(session);
         if (chatContent) {
-          chatContent.session = session;
-          chatContent.reloadSession();
+          chatContent.remove();
+          setChatContent(null);
         }
       })
       .catch(console.error);

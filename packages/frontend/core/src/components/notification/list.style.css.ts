@@ -7,6 +7,12 @@ export const container = style({
   width: '360px',
   display: 'flex',
   flexDirection: 'column',
+
+  selectors: {
+    '&[data-mobile]': {
+      width: '100%',
+    },
+  },
 });
 
 export const header = style({

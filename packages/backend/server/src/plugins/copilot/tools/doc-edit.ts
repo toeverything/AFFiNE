@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
+import { type PromptService } from '../prompt';
 import type { CopilotChatOptions, CopilotProviderFactory } from '../providers';
 
 export const buildContentGetter = (ac: AccessController, doc: DocReader) => {
@@ -24,14 +25,20 @@ export const buildContentGetter = (ac: AccessController, doc: DocReader) => {
 
 export const createDocEditTool = (
   factory: CopilotProviderFactory,
+  prompt: PromptService,
   getContent: (targetId?: string) => Promise<string | undefined>
 ) => {
   return tool({
     description: `
-Use this tool to propose an edit to a structured Markdown document with identifiable blocks. Each block begins with a comment like <!-- block_id=... -->, and represents a unit of editable content such as a heading, paragraph, list, or code snippet.
+Use this tool to propose an edit to a structured Markdown document with identifiable blocks. 
+Each block begins with a comment like <!-- block_id=... -->, and represents a unit of editable content such as a heading, paragraph, list, or code snippet.
 This will be read by a less intelligent model, which will quickly apply the edit. You should make it clear what the edit is, while also minimizing the unchanged code you write.
 
-Your task is to return a list of block-level changes needed to fulfill the user's intent. Each change should correspond to a specific user instruction and be represented by one of the following operations:
+If you receive a markdown without block_id comments, you should call \`doc_read\` tool to get the content.
+
+Your task is to return a list of block-level changes needed to fulfill the user's intent. **Each change in code_edit must be completely independent: each code_edit entry should only perform a single, isolated change, and must not include the effects of other changes. For example, the updates for a delete operation should only show the context related to the deletion, and must not include any content modified by other operations (such as bolding or insertion). This ensures that each change can be applied independently and in any order.**
+
+Each change should correspond to a specific user instruction and be represented by one of the following operations:
 
 replace: Replace the content of a block with updated Markdown.
 
@@ -41,83 +48,75 @@ insert: Add a new block, and specify its block_id and content.
 
 Important Instructions:
 - Use the existing block structure as-is. Do not reformat or reorder blocks unless explicitly asked.
-- Always preserve block_id and type in your replacements.
-- When replacing a block, use the full new block including <!-- block_id=... type=... --> and the updated content.
 - When inserting, follow the same format as a replacement, but ensure the new block_id does not conflict with existing IDs.
+- When replacing content, always keep the original block_id unchanged.
+- When deleting content, only use the format <!-- delete block_id=xxx -->, and only for valid block_id present in the original <code> content.
 - Each list item should be a block.
-- Use <!-- existing blocks ... --> for unchanged sections.
-- If you plan on deleting a section, you must provide surrounding context to indicate the deletion.
+- Your task is to return a list of block-level changes needed to fulfill the user's intent. 
+- **Each change in code_edit must be completely independent: each code_edit entry should only perform a single, isolated change, and must not include the effects of other changes. For example, the updates for a delete operation should only show the context related to the deletion, and must not include any content modified by other operations (such as bolding or insertion). This ensures that each change can be applied independently and in any order.**
 
-Example Input Document:
-\`\`\`md
-<!-- block_id=block-001 type=paragraph -->
-# My Holiday Plan
+Original Content:
+\`\`\`markdown
+<!-- block_id=001 flavour=paragraph -->
+# Andriy Shevchenko
 
-<!-- block_id=block-002 type=paragraph -->
-I plan to travel to Paris, France, where I will visit the Eiffel Tower, the Louvre, and the Champs-Élysées.
+<!-- block_id=002 flavour=paragraph -->
+## Player Profile
 
-<!-- block_id=block-003 type=paragraph -->
-I love Paris.
+<!-- block_id=003 flavour=paragraph -->
+Andriy Shevchenko is a legendary Ukrainian striker, best known for his time at AC Milan and Dynamo Kyiv. He won the Ballon d'Or in 2004.
 
-<!-- block_id=block-004 type=paragraph -->
-## Reason for the delay
+<!-- block_id=004 flavour=paragraph -->
+## Career Overview
 
-<!-- block_id=block-005 type=paragraph -->
-This plan has been brewing for a long time, but I always postponed it because I was too busy with work.
-
-<!-- block_id=block-006 type=paragraph -->
-## Trip Steps
-
-<!-- block_id=block-007 type=list -->
-- Book flight tickets
-<!-- block_id=block-008 type=list -->
-- Reserve a hotel
-<!-- block_id=block-009 type=list -->
-- Prepare visa documents
-<!-- block_id=block-010 type=list -->
-- Plan the itinerary
-
-<!-- block_id=block-011 type=paragraph -->
-Additionally, I plan to learn some basic French to make communication easier during the trip.
+<!-- block_id=005 flavour=list -->
+- Born in 1976 in Ukraine.
+<!-- block_id=006 flavour=list -->
+- Rose to fame at Dynamo Kyiv in the 1990s.
+<!-- block_id=007 flavour=list -->
+- Starred at AC Milan (1999–2006), scoring over 170 goals.
+<!-- block_id=008 flavour=list -->
+- Played for Chelsea (2006–2009) before returning to Kyiv.
+<!-- block_id=009 flavour=list -->
+- Coached Ukraine national team, reaching Euro 2020 quarter-finals.
 \`\`\`
 
-Example User Request:
-
+User Request：
 \`\`\`
-Translate the trip steps to Chinese, remove the reason for the delay, and bold the final paragraph.
+Bold the player’s name in the intro, add a summary section at the end, and remove the career overview.
 \`\`\`
 
-Expected Output:
-
-\`\`\`md
-<!-- existing blocks ... -->
-
-<!-- block_id=block-002 type=paragraph -->
-I plan to travel to Paris, France, where I will visit the Eiffel Tower, the Louvre, and the Champs-Élysées.
-
-<!-- block_id=block-003 type=paragraph -->
-I love Paris.
-
-<!-- delete block-004 -->
-
-<!-- delete block-005 -->
-
-<!-- block_id=block-006 type=paragraph -->
-## Trip Steps
-
-<!-- block_id=block-007 type=list -->
-- 订机票
-<!-- block_id=block-008 type=list -->
-- 预定酒店
-<!-- block_id=block-009 type=list -->
-- 准备签证材料
-<!-- block_id=block-010 type=list -->
-- 规划行程
-
-<!-- existing blocks ... -->
-
-<!-- block_id=block-011 type=paragraph -->
-**Additionally, I plan to learn some basic French to make communication easier during the trip.**
+Example response:
+\`\`\`json
+[
+  {
+    "op": "Bold the player's name in the introduction",
+    "updates": "
+      <!-- block_id=003 flavour=paragraph -->
+      **Andriy Shevchenko** is a legendary Ukrainian striker, best known for his time at AC Milan and Dynamo Kyiv. He won the Ballon d'Or in 2004.
+    "
+  },
+  {
+    "op": "Add a summary section at the end",
+    "updates": "
+      <!-- block_id=new-abc123 flavour=paragraph -->
+      ## Summary
+      <!-- block_id=new-def456 flavour=paragraph -->
+      Shevchenko is celebrated as one of the greatest Ukrainian footballers of all time. Known for his composure, strength, and goal-scoring instinct, he left a lasting legacy both on and off the pitch.
+    "
+  },
+  {
+    "op": "Delete the career overview section",
+    "updates": "
+      <!-- delete block_id=004 -->
+      <!-- delete block_id=005 -->
+      <!-- delete block_id=006 -->
+      <!-- delete block_id=007 -->
+      <!-- delete block_id=008 -->
+      <!-- delete block_id=009 -->
+    "
+  }
+]
 \`\`\`
 You should specify the following arguments before the others: [doc_id], [origin_content]
 
@@ -144,14 +143,32 @@ You should specify the following arguments before the others: [doc_id], [origin_
         ),
 
       code_edit: z
-        .string()
+        .array(
+          z.object({
+            op: z
+              .string()
+              .describe(
+                'A short description of the change, such as "Bold intro name"'
+              ),
+            updates: z
+              .string()
+              .describe(
+                'Markdown block fragments that represent the change, including the block_id and type'
+              ),
+          })
+        )
         .describe(
-          'Specify only the necessary Markdown block-level changes. Return a list of inserted, replaced, or deleted blocks. Each block must start with its <!-- block_id=... type=... --> comment. Use <!-- existing blocks ... --> for unchanged sections.If you plan on deleting a section, you must provide surrounding context to indicate the deletion.'
+          'An array of independent semantic changes to apply to the document.'
         ),
     }),
     execute: async ({ doc_id, origin_content, code_edit }) => {
       try {
-        const provider = await factory.getProviderByModel('morph-v2');
+        const applyPrompt = await prompt.get('Apply Updates');
+        if (!applyPrompt) {
+          return 'Prompt not found';
+        }
+        const model = applyPrompt.model;
+        const provider = await factory.getProviderByModel(model);
         if (!provider) {
           return 'Editing docs is not supported';
         }
@@ -160,14 +177,27 @@ You should specify the following arguments before the others: [doc_id], [origin_
         if (!content) {
           return 'Doc not found or doc is empty';
         }
-        const result = await provider.text({ modelId: 'morph-v2' }, [
-          {
-            role: 'user',
-            content: `<code>${content}</code>\n<update>${code_edit}</update>`,
-          },
-        ]);
 
-        return { result, content };
+        const changedContents = await Promise.all(
+          code_edit.map(async edit => {
+            return await provider.text({ modelId: model }, [
+              ...applyPrompt.finish({
+                content,
+                op: edit.op,
+                updates: edit.updates,
+              }),
+            ]);
+          })
+        );
+
+        return {
+          result: changedContents.map((changedContent, index) => ({
+            op: code_edit[index].op,
+            updates: code_edit[index].updates,
+            originalContent: content,
+            changedContent,
+          })),
+        };
       } catch {
         return 'Failed to apply edit to the doc';
       }

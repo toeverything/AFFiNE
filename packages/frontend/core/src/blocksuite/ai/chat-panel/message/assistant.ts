@@ -86,6 +86,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor docDisplayService!: DocDisplayConfig;
 
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
   get state() {
     const { isLast, status } = this;
     return isLast
@@ -146,6 +149,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       .notificationService=${this.notificationService}
       .theme=${this.affineThemeService.appTheme.themeSignal}
       .docDisplayService=${this.docDisplayService}
+      .onOpenDoc=${this.onOpenDoc}
     ></chat-content-stream-objects>`;
   }
 

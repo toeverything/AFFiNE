@@ -1624,6 +1624,166 @@ const imageActions: Prompt[] = [
   },
 ];
 
+const modelActions: Prompt[] = [
+  {
+    name: 'Apply Updates',
+    action: 'Apply Updates',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'user',
+        content: `
+You are a Markdown document update engine.
+
+You will be given:
+
+1. content: The original Markdown document
+   - The content is structured into blocks.
+   - Each block starts with a comment like <!-- block_id=... flavour=... --> and contains the block's content.
+   - The content is {{content}}
+
+2. op: A description of the edit intention
+   - This describes the semantic meaning of the edit, such as "Bold the first paragraph".
+   - The op is {{op}}
+
+3. updates: A Markdown snippet
+   - The updates is {{updates}}
+   - This represents the block-level changes to apply to the original Markdown.
+   - The update may:
+     - **Replace** an existing block (same block_id, new content)
+     - **Delete** block(s) using <!-- delete block BLOCK_ID -->
+     - **Insert** new block(s) with a new unique block_id
+   - When performing deletions, the update will include **surrounding context blocks** (or use <!-- existing blocks -->) to help you determine where and what to delete.
+
+Your task:
+- Apply the update in <updates> to the document in <code>, following the intent described in <op>.
+- Preserve all block_id and flavour comments.
+- Maintain the original block order unless the update clearly appends new blocks.
+- Do not remove or alter unrelated blocks.
+- Output only the fully updated Markdown content. Do not wrap the content in \`\`\`markdown.
+
+---
+
+✍️ Examples
+
+✅ Replacement (modifying an existing block)
+
+<code>
+<!-- block_id=101 flavour=paragraph -->
+## Introduction
+
+<!-- block_id=102 flavour=paragraph -->
+This document provides an overview of the system architecture and its components.
+</code>
+
+<op>
+Make the introduction more formal.
+</op>
+
+<updates>
+<!-- block_id=102 flavour=paragraph -->
+This document outlines the architectural design and individual components of the system in detail.
+</updates>
+
+Expected Output:
+<!-- block_id=101 flavour=paragraph -->
+## Introduction
+
+<!-- block_id=102 flavour=paragraph -->
+This document outlines the architectural design and individual components of the system in detail.
+
+---
+
+➕ Insertion (adding new content)
+
+<code>
+<!-- block_id=201 flavour=paragraph -->
+# Project Summary
+
+<!-- block_id=202 flavour=paragraph -->
+This project aims to build a collaborative text editing tool.
+</code>
+
+<op>
+Add a disclaimer section at the end.
+</op>
+
+<updates>
+<!-- block_id=new-301 flavour=paragraph -->
+## Disclaimer
+
+<!-- block_id=new-302 flavour=paragraph -->
+This document is subject to change. Do not distribute externally.
+</updates>
+
+Expected Output:
+<!-- block_id=201 flavour=paragraph -->
+# Project Summary
+
+<!-- block_id=202 flavour=paragraph -->
+This project aims to build a collaborative text editing tool.
+
+<!-- block_id=new-301 flavour=paragraph -->
+## Disclaimer
+
+<!-- block_id=new-302 flavour=paragraph -->
+This document is subject to change. Do not distribute externally.
+
+---
+
+❌ Deletion (removing blocks)
+
+<code>
+<!-- block_id=401 flavour=paragraph -->
+## Author
+
+<!-- block_id=402 flavour=paragraph -->
+Written by the AI team at OpenResearch.
+
+<!-- block_id=403 flavour=paragraph -->
+## Experimental Section
+
+<!-- block_id=404 flavour=paragraph -->
+The following section is still under development and may change without notice.
+
+<!-- block_id=405 flavour=paragraph -->
+## License
+
+<!-- block_id=406 flavour=paragraph -->
+This document is licensed under CC BY-NC 4.0.
+</code>
+
+<op>
+Remove the experimental section.
+</op>
+
+<updates>
+<!-- delete block_id=403 -->
+<!-- delete block_id=404 -->
+</updates>
+
+Expected Output:
+<!-- block_id=401 flavour=paragraph -->
+## Author
+
+<!-- block_id=402 flavour=paragraph -->
+Written by the AI team at OpenResearch.
+
+<!-- block_id=405 flavour=paragraph -->
+## License
+
+<!-- block_id=406 flavour=paragraph -->
+This document is licensed under CC BY-NC 4.0.
+
+---
+
+Now apply the \`updates\` to the \`content\`, following the intent in \`op\`, and return the updated Markdown.
+`,
+      },
+    ],
+  },
+];
+
 const CHAT_PROMPT: Omit<Prompt, 'name'> = {
   model: 'claude-sonnet-4@20250514',
   optionalModels: [
@@ -1861,6 +2021,7 @@ const artifactActions: Prompt[] = [
 export const prompts: Prompt[] = [
   ...textActions,
   ...imageActions,
+  ...modelActions,
   ...chat,
   ...workflows,
   ...artifactActions,

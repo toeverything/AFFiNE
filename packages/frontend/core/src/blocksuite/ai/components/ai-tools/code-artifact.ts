@@ -352,6 +352,8 @@ export class CodeArtifactTool extends ArtifactTool<
 > {
   static override styles = css`
     .code-artifact-preview {
+      overflow: hidden;
+      position: absolute;
       padding: 0;
       width: 100%;
       height: 100%;
@@ -361,6 +363,11 @@ export class CodeArtifactTool extends ArtifactTool<
 
     .code-artifact-preview > html-preview {
       height: 100%;
+    }
+
+    .code-artifact-preview > code-highlighter {
+      height: 100%;
+      overflow: auto;
     }
 
     .code-artifact-preview :is(.html-preview-iframe, .html-preview-container) {

@@ -172,6 +172,7 @@ export abstract class CopilotProvider<C = any> {
             const getDocContent = buildContentGetter(ac, docReader);
             tools.doc_edit = createDocEditTool(
               this.factory,
+              prompt,
               getDocContent.bind(null, options)
             );
             break;

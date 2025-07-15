@@ -58,10 +58,12 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
             ON id.workspace_id = s.workspace_id
                AND id.doc_id = s.guid
         WHERE s.workspace_id = ${workspaceId}
-          AND s.guid != s.workspace_id
+          AND s.guid <> s.workspace_id
           AND s.guid NOT LIKE '%$%'
+          AND s.guid NOT LIKE '%:settings:%'
           AND e.doc_id IS NULL
-          AND id.doc_id IS NULL;`;
+          AND id.doc_id IS NULL
+          AND s.blob <> E'\\\\x0000';`;
 
     return docIds.map(r => r.id);
   }
@@ -160,6 +162,8 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
         { id: { notIn: ignoredDocIds } },
         { id: { not: workspaceId } },
         { id: { not: { contains: '$' } } },
+        { id: { not: { contains: ':settings:' } } },
+        { blob: { not: new Uint8Array([0, 0]) } },
       ],
     };
 

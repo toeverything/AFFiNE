@@ -252,7 +252,7 @@ export const NavigationPanelDocNode = ({
       extractEmojiAsIcon={enableEmojiIcon}
       collapsed={isCollapsed}
       setCollapsed={setCollapsed}
-      collapsible={appSettings.showLinkedDocInSidebar}
+      collapsible={!!appSettings.showLinkedDocInSidebar}
       canDrop={handleCanDrop}
       to={`/${docId}`}
       onClick={() => {

@@ -160,6 +160,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
           mainAxis: 0,
           crossAxis: -100,
         });
+        this.disposables.add(() => this._morePopper?.dispose());
       }
     }
   }

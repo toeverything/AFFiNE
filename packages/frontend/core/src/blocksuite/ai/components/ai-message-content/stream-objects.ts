@@ -58,6 +58,9 @@ export class ChatContentStreamObjects extends WithDisposable(
   @property({ attribute: false })
   accessor docDisplayService!: DocDisplayConfig;
 
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
   private renderToolCall(streamObject: StreamObject) {
     if (streamObject.type !== 'tool-call') {
       return nothing;
@@ -183,11 +186,13 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
           .docDisplayService=${this.docDisplayService}
+          .onOpenDoc=${this.onOpenDoc}
         ></doc-semantic-search-result>`;
       case 'doc_keyword_search':
         return html`<doc-keyword-search-result
           .data=${streamObject}
           .width=${this.width}
+          .onOpenDoc=${this.onOpenDoc}
         ></doc-keyword-search-result>`;
       case 'doc_read':
         return html`<doc-read-result

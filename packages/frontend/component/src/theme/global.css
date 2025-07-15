@@ -6,6 +6,7 @@
 
 :root {
   --noise-background: url(./noise.avif);
+  text-autospace: normal;
 }
 
 html,
