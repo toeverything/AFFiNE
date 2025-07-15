@@ -1,3 +1,5 @@
+import { setTimeout } from 'node:timers/promises';
+
 import { defer as rxjsDefer, retry } from 'rxjs';
 
 export class RetryablePromise<T> extends Promise<T> {
@@ -50,5 +52,5 @@ export function defer(dispose: () => Promise<void>) {
 }
 
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return setTimeout(ms);
 }
