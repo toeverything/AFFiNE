@@ -214,6 +214,21 @@ test('should insert and search embedding', async t => {
     );
     t.false(results.includes(docId), 'docs containing `$` should be excluded');
   }
+
+  {
+    const docId = 'empty_doc';
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId: docId,
+      blob: Uint8Array.from([0, 0]),
+      timestamp: Date.now(),
+      editorId: user.id,
+    });
+    const results = await t.context.copilotWorkspace.findDocsToEmbed(
+      workspace.id
+    );
+    t.false(results.includes(docId), 'empty documents should be excluded');
+  }
 });
 
 test('should check need to be embedded', async t => {
