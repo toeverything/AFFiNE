@@ -844,7 +844,7 @@ export class PromptsManagementResolver {
     private readonly promptService: PromptService
   ) {}
 
-  @Query(() => Boolean, {
+  @Mutation(() => Boolean, {
     description: 'Trigger generate missing titles cron job',
   })
   async triggerGenerateTitleCron() {

@@ -1440,6 +1440,8 @@ export interface Mutation {
   sendVerifyEmail: Scalars['Boolean']['output'];
   setBlob: Scalars['String']['output'];
   submitAudioTranscription: Maybe<TranscriptionResultType>;
+  /** Trigger generate missing titles cron job */
+  triggerGenerateTitleCron: Scalars['Boolean']['output'];
   /** update app configuration */
   updateAppConfig: Scalars['JSONObject']['output'];
   /** Update a comment content */
