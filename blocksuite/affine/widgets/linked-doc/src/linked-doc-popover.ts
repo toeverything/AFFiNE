@@ -343,7 +343,18 @@ export class LinkedDocPopover extends SignalWatcher(
   override willUpdate() {
     if (!this.hasUpdated) {
       const updatePosition = throttle(() => {
-        this._position = getPopperPosition(this, this.context.startNativeRange);
+        this._position = getPopperPosition(
+          {
+            getBoundingClientRect: () => {
+              return {
+                ...this.getBoundingClientRect(),
+                // Workaround: the width of the popover is zero when it is not rendered
+                width: 280,
+              };
+            },
+          },
+          this.context.startNativeRange
+        );
       }, 10);
 
       this.disposables.addFromEvent(window, 'resize', updatePosition);
