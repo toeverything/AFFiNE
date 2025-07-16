@@ -622,6 +622,8 @@
   "com.affine.journal.daily-count-created-empty-tips": "You haven't created anything yet",
   "com.affine.journal.daily-count-updated-empty-tips": "You haven't updated anything yet",
   "com.affine.journal.updated-today": "Updated",
+  "com.affine.journal.placeholder.title": "No Journal",
+  "com.affine.journal.placeholder.create": "Create Daily Journal",
   "com.affine.just-now": "Just now",
   "com.affine.keyboardShortcuts.appendDailyNote": "Append to daily note",
   "com.affine.keyboardShortcuts.bodyText": "Body text",
