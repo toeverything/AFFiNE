@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
+    "@affine/i18n": "workspace:*",
     "@affine/native": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@electron-forge/cli": "^7.6.0",

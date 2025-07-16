@@ -8287,6 +8287,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.copy-link"](): string;
     /**
+      * `Copy`
+      */
+    ["com.affine.context-menu.copy"](): string;
+    /**
+      * `Paste`
+      */
+    ["com.affine.context-menu.paste"](): string;
+    /**
+      * `Cut`
+      */
+    ["com.affine.context-menu.cut"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;

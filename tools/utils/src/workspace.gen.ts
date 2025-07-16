@@ -1257,6 +1257,7 @@ export const PackageList = [
     name: '@affine/electron',
     workspaceDependencies: [
       'tools/utils',
+      'packages/frontend/i18n',
       'packages/frontend/native',
       'packages/common/nbstore',
       'packages/common/infra',

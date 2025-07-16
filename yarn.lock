@@ -552,6 +552,7 @@ __metadata:
   resolution: "@affine/electron@workspace:packages/frontend/apps/electron"
   dependencies:
     "@affine-tools/utils": "workspace:*"
+    "@affine/i18n": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/nbstore": "workspace:*"
     "@electron-forge/cli": "npm:^7.6.0"
