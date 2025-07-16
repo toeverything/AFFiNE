@@ -310,7 +310,10 @@ math {
 
 /* AI Block Diff */
 .ai-block-diff-deleted {
-  background-color: var(--aI-applyDeleteHighlight, #ffeaea) !important;
+  background-color: var(
+    --affine-v2-aI-applyDeleteHighlight,
+    #ffeaea
+  ) !important;
   border-radius: 4px !important;
   padding: 8px 0px !important;
   margin-bottom: 10px !important;
