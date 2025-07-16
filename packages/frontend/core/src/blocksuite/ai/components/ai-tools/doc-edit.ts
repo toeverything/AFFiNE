@@ -2,7 +2,7 @@ import track from '@affine/track';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
-import { AIStarIconWithAnimation } from '@blocksuite/affine-components/icons';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CloseIcon,
@@ -83,7 +83,7 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      background: ${unsafeCSSVarV2('layer/background/overlayPanel')};
+      background: ${unsafeCSSVar('--affine-overlay-panel-shadow')};
       box-shadow: ${unsafeCSSVar('shadow1')};
       border-radius: 8px;
       width: 100%;
@@ -96,7 +96,6 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
 
         width: 100%;
         justify-content: space-between;
-        border-bottom: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
 
         .doc-edit-tool-result-card-header-title {
           display: flex;
@@ -118,9 +117,17 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
           padding-right: 8px;
           color: ${unsafeCSSVarV2('text/secondary')};
 
-          span {
-            width: 20px;
-            height: 20px;
+          button {
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+          }
+
+          button:hover {
+            background: ${unsafeCSSVar('hoverColor')};
           }
         }
       }
@@ -128,23 +135,27 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
       .doc-edit-tool-result-card-content {
         padding: 8px;
         width: 100%;
+        border-top: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       }
 
       .doc-edit-tool-result-card-footer {
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        padding: 8px;
         gap: 4px;
         width: 100%;
         cursor: pointer;
 
-        .doc-edit-tool-result-reject,
-        .doc-edit-tool-result-accept {
+        button {
           display: flex;
           align-items: center;
           gap: 4px;
-          padding: 8px;
+          padding: 4px;
+          border-radius: 4px;
+        }
+
+        button:hover {
+          background: ${unsafeCSSVar('hoverColor')};
         }
       }
 
@@ -421,54 +432,54 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
                     ${docId}
                   </div>
                   <div class="doc-edit-tool-result-card-header-operations">
-                    <span @click=${() => this._toggleCollapse()}
-                      >${this.isCollapsed
-                        ? ExpandFullIcon()
-                        : ExpandCloseIcon()}</span
-                    >
-                    <span @click=${() => this._handleCopy(changedContent)}>
+                    <button @click=${() => this._toggleCollapse()}>
+                      ${this.isCollapsed ? ExpandFullIcon() : ExpandCloseIcon()}
+                      <affine-tooltip>
+                        ${this.isCollapsed ? 'Expand' : 'Collapse'}
+                      </affine-tooltip>
+                    </button>
+                    <button @click=${() => this._handleCopy(changedContent)}>
                       ${CopyIcon()}
-                    </span>
+                      <affine-tooltip>Copy</affine-tooltip>
+                    </button>
                     <button
                       @click=${() => this._handleApply(op, updates)}
                       ?disabled=${this.isBusyForOp(op)}
                     >
                       ${this.applyingMap[op]
-                        ? AIStarIconWithAnimation
-                        : html`Apply`}
+                        ? html`${LoadingIcon()} Applying`
+                        : 'Apply'}
                     </button>
                   </div>
                 </div>
                 <div class="doc-edit-tool-result-card-content">
-                  <div class="doc-edit-tool-result-card-content-title">
-                    ${this.renderBlockDiffs(diffs)}
+                  ${this.renderBlockDiffs(diffs)}
+                  <div class="doc-edit-tool-result-card-footer">
+                    <button
+                      class="doc-edit-tool-result-reject"
+                      @click=${() => this._handleReject(op)}
+                    >
+                      ${CloseIcon({
+                        style: `color: ${unsafeCSSVarV2('icon/secondary')}`,
+                      })}
+                      Reject
+                    </button>
+                    <button
+                      class="doc-edit-tool-result-accept"
+                      @click=${() => this._handleAccept(op, updates)}
+                      ?disabled=${this.isBusyForOp(op)}
+                      style="${this.isBusyForOp(op)
+                        ? 'pointer-events: none; opacity: 0.6;'
+                        : ''}"
+                    >
+                      ${this.acceptingMap[op]
+                        ? html`${LoadingIcon()}`
+                        : DoneIcon({
+                            style: `color: ${unsafeCSSVarV2('icon/activated')}`,
+                          })}
+                      ${this.acceptingMap[op] ? 'Accepting...' : 'Accept'}
+                    </button>
                   </div>
-                </div>
-                <div class="doc-edit-tool-result-card-footer">
-                  <div
-                    class="doc-edit-tool-result-reject"
-                    @click=${() => this._handleReject(op)}
-                  >
-                    ${CloseIcon({
-                      style: `color: ${unsafeCSSVarV2('icon/secondary')}`,
-                    })}
-                    Reject
-                  </div>
-                  <button
-                    class="doc-edit-tool-result-accept"
-                    @click=${() => this._handleAccept(op, updates)}
-                    ?disabled=${this.isBusyForOp(op)}
-                    style="${this.isBusyForOp(op)
-                      ? 'pointer-events: none; opacity: 0.6;'
-                      : ''}"
-                  >
-                    ${this.acceptingMap[op]
-                      ? AIStarIconWithAnimation
-                      : DoneIcon({
-                          style: `color: ${unsafeCSSVarV2('icon/activated')}`,
-                        })}
-                    ${this.acceptingMap[op] ? 'Accepting...' : 'Accept'}
-                  </button>
                 </div>
               </div>
             </div>
