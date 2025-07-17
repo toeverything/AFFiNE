@@ -1,6 +1,7 @@
 import type { Server } from '@affine/core/modules/cloud';
 import { useLiveData } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
+import semver from 'semver';
 
 const rules = [
   {
@@ -47,7 +48,7 @@ export const useSelfhostLoginVersionGuard = (server: Server) => {
     useLiveData(server.config$.selector(c => c.version)) ?? '0.0.0';
 
   for (const rule of rules) {
-    if (serverVersion.localeCompare(rule.min) < 0) {
+    if (semver.lt(serverVersion, rule.min)) {
       return rule.tip(serverVersion, rule.min);
     }
   }

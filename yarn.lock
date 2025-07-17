@@ -435,6 +435,7 @@ __metadata:
     "@types/bytes": "npm:^3.1.5"
     "@types/image-blob-reduce": "npm:^4.1.4"
     "@types/lodash-es": "npm:^4.17.12"
+    "@types/semver": "npm:^7"
     "@vanilla-extract/css": "npm:^1.17.0"
     "@vanilla-extract/dynamic": "npm:^2.1.2"
     "@webcontainer/api": "npm:^1.6.1"
@@ -476,6 +477,7 @@ __metadata:
     react-transition-state: "npm:^2.2.0"
     react-virtuoso: "npm:^4.12.3"
     rxjs: "npm:^7.8.1"
+    semver: "npm:^7.7.2"
     ses: "npm:^1.10.0"
     shiki: "npm:^3.7.0"
     socket.io-client: "npm:^4.8.1"
@@ -15351,7 +15353,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/semver@npm:^7.5.8":
+"@types/semver@npm:^7, @types/semver@npm:^7.5.8":
   version: 7.7.0
   resolution: "@types/semver@npm:7.7.0"
   checksum: 10/ee4514c6c852b1c38f951239db02f9edeea39f5310fad9396a00b51efa2a2d96b3dfca1ae84c88181ea5b7157c57d32d7ef94edacee36fbf975546396b85ba5b
