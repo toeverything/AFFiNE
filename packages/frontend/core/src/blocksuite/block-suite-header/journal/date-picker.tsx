@@ -1,5 +1,6 @@
 import type { WeekDatePickerHandle } from '@affine/component';
 import { WeekDatePicker } from '@affine/component';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import {
   JOURNAL_DATE_FORMAT,
   JournalService,
@@ -25,6 +26,11 @@ export const JournalWeekDatePicker = ({ page }: JournalWeekDatePickerProps) => {
   );
   const workbench = useService(WorkbenchService).workbench;
 
+  const featureFlagService = useService(FeatureFlagService);
+  const isTwoStepJournalConfirmationEnabled = useLiveData(
+    featureFlagService.flags.enable_two_step_journal_confirmation.$
+  );
+
   useEffect(() => {
     if (!journalDate) return;
     setDate(journalDate.format(JOURNAL_DATE_FORMAT));
@@ -33,14 +39,19 @@ export const JournalWeekDatePicker = ({ page }: JournalWeekDatePickerProps) => {
 
   const openJournal = useCallback(
     (date: string) => {
-      const docs = journalService.journalsByDate$(date).value;
-      if (docs.length > 0) {
-        workbench.openDoc(docs[0].id, { at: 'active' });
+      if (isTwoStepJournalConfirmationEnabled) {
+        const docs = journalService.journalsByDate$(date).value;
+        if (docs.length > 0) {
+          workbench.openDoc(docs[0].id, { at: 'active' });
+        } else {
+          workbench.open(`/journals?date=${date}`, { at: 'active' });
+        }
       } else {
-        workbench.open(`/journals?date=${date}`, { at: 'active' });
+        const doc = journalService.ensureJournalByDate(date);
+        workbench.openDoc(doc.id, { at: 'active' });
       }
     },
-    [journalService, workbench]
+    [isTwoStepJournalConfirmationEnabled, journalService, workbench]
   );
 
   return (

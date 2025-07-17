@@ -16,6 +16,7 @@ import {
   DocsService,
 } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { JournalService } from '@affine/core/modules/journal';
 import {
   WorkbenchLink,
@@ -113,16 +114,26 @@ export const EditorJournalPanel = () => {
   const journalDate = journalDateStr ? dayjs(journalDateStr) : null;
   const isJournal = !!journalDate;
 
+  const featureFlagService = useService(FeatureFlagService);
+  const isTwoStepJournalConfirmationEnabled = useLiveData(
+    featureFlagService.flags.enable_two_step_journal_confirmation.$
+  );
+
   const openJournal = useCallback(
     (date: string) => {
-      const docs = journalService.journalsByDate$(date).value;
-      if (docs.length > 0) {
-        workbench.openDoc(docs[0].id, { at: 'active' });
+      if (isTwoStepJournalConfirmationEnabled) {
+        const docs = journalService.journalsByDate$(date).value;
+        if (docs.length > 0) {
+          workbench.openDoc(docs[0].id, { at: 'active' });
+        } else {
+          workbench.open(`/journals?date=${date}`, { at: 'active' });
+        }
       } else {
-        workbench.open(`/journals?date=${date}`, { at: 'active' });
+        const doc = journalService.ensureJournalByDate(date);
+        workbench.openDoc(doc.id, { at: 'active' });
       }
     },
-    [journalService, workbench]
+    [isTwoStepJournalConfirmationEnabled, journalService, workbench]
   );
 
   const onDateSelect = useCallback(
