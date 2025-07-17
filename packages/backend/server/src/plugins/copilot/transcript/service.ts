@@ -55,7 +55,8 @@ export class CopilotTranscriptionService {
       userId,
       'unlimited_copilot'
     );
-    return prompt?.optionalModels[Number(hasAccess)];
+    // choose the pro model if user has copilot plan
+    return prompt?.optionalModels[hasAccess ? 1 : 0];
   }
 
   async submitTranscriptionJob(
