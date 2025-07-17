@@ -15,6 +15,7 @@
     { "path": "../../common/graphql" },
     { "path": "../i18n" },
     { "path": "../../common/nbstore" },
+    { "path": "../../common/reader" },
     { "path": "../track" },
     { "path": "../../../blocksuite/affine/all" },
     { "path": "../../../blocksuite/affine/components" },
