@@ -20,6 +20,7 @@
     "@blocksuite/affine-block-paragraph": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-block-surface-ref": "workspace:*",
+    "@blocksuite/affine-block-table": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-fragment-doc-title": "workspace:*",

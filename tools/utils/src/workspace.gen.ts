@@ -979,6 +979,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/paragraph',
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/blocks/surface-ref',
+      'blocksuite/affine/blocks/table',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/fragments/doc-title',

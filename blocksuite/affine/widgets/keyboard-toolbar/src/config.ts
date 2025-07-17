@@ -18,6 +18,7 @@ import {
 } from '@blocksuite/affine-block-paragraph';
 import { DefaultTool, getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import { insertSurfaceRefBlockCommand } from '@blocksuite/affine-block-surface-ref';
+import { insertTableBlockCommand } from '@blocksuite/affine-block-table';
 import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { toast } from '@blocksuite/affine-components/toast';
 import { insertInlineLatex } from '@blocksuite/affine-inline-latex';
@@ -40,14 +41,20 @@ import {
   deleteSelectedModelsCommand,
   draftSelectedModelsCommand,
   duplicateSelectedModelsCommand,
+  focusBlockEnd,
   getBlockSelectionsCommand,
   getSelectedModelsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
+import {
+  FeatureFlagService,
+  TelemetryProvider,
+} from '@blocksuite/affine-shared/services';
 import type { AffineTextStyleAttributes } from '@blocksuite/affine-shared/types';
 import {
   createDefaultDoc,
+  isInsideBlockByFlavour,
   openSingleFileWith,
   type Signal,
 } from '@blocksuite/affine-shared/utils';
@@ -87,6 +94,7 @@ import {
   RedoIcon,
   RightTabIcon,
   StrikeThroughIcon,
+  TableIcon,
   TeXIcon,
   TextIcon,
   TodayIcon,
@@ -256,6 +264,62 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
         .pipe(getTextSelectionCommand)
         .pipe(insertInlineLatex)
         .run();
+    },
+  },
+  {
+    name: 'Table',
+    icon: TableIcon(),
+    showWhen: ({ std, rootComponent: { model } }) =>
+      std.store.schema.flavourSchemaMap.has('affine:table') &&
+      !isInsideBlockByFlavour(std.store, model, 'affine:edgeless-text'),
+    action: ({ std }) => {
+      std.command
+        .chain()
+        .pipe(getSelectedModelsCommand)
+        .pipe(insertTableBlockCommand, {
+          place: 'after',
+          removeEmptyLine: true,
+        })
+        .pipe(({ insertedTableBlockId }) => {
+          if (insertedTableBlockId) {
+            const telemetry = std.getOptional(TelemetryProvider);
+            telemetry?.track('BlockCreated', {
+              blockType: 'affine:table',
+            });
+          }
+        })
+        .run();
+    },
+  },
+  {
+    name: 'Callout',
+    icon: FontIcon(),
+    showWhen: ({ std, rootComponent: { model } }) => {
+      return (
+        std.get(FeatureFlagService).getFlag('enable_callout') &&
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text')
+      );
+    },
+    action: ({ rootComponent: { model }, std }) => {
+      const { store } = model;
+      const parent = store.getParent(model);
+      if (!parent) return;
+
+      const index = parent.children.indexOf(model);
+      if (index === -1) return;
+      const calloutId = store.addBlock('affine:callout', {}, parent, index + 1);
+      if (!calloutId) return;
+      const paragraphId = store.addBlock('affine:paragraph', {}, calloutId);
+      if (!paragraphId) return;
+      std.host.updateComplete
+        .then(() => {
+          const paragraph = std.view.getBlock(paragraphId);
+          if (!paragraph) return;
+          std.command.exec(focusBlockEnd, {
+            focusBlock: paragraph,
+          });
+        })
+        .catch(console.error);
     },
   },
 ];
