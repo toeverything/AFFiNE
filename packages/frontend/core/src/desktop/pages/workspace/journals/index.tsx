@@ -124,7 +124,11 @@ export const Component = () => {
               <div className={styles.placeholderText}>
                 {t['com.affine.journal.placeholder.title']()}
               </div>
-              <Button variant="primary" onClick={createJournal}>
+              <Button
+                variant="primary"
+                onClick={createJournal}
+                data-testid="confirm-create-journal-button"
+              >
                 {t['com.affine.journal.placeholder.create']()}
               </Button>
             </div>

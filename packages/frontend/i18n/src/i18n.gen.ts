@@ -2494,6 +2494,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.journal.updated-today"](): string;
     /**
+      * `No Journal`
+      */
+    ["com.affine.journal.placeholder.title"](): string;
+    /**
+      * `Create Daily Journal`
+      */
+    ["com.affine.journal.placeholder.create"](): string;
+    /**
       * `Just now`
       */
     ["com.affine.just-now"](): string;

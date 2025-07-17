@@ -1,5 +1,8 @@
 import { test } from '@affine-test/kit/playwright';
-import { openHomePage } from '@affine-test/kit/utils/load-page';
+import {
+  confirmCreateJournal,
+  openHomePage,
+} from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect, type Locator, type Page } from '@playwright/test';
 
@@ -183,6 +186,7 @@ test('set default template for journal', async ({ page }) => {
 
   // by default create a journal, should not use template
   await page.getByTestId('slider-bar-journals-button').click();
+  await confirmCreateJournal(page);
   await waitForEditorLoad(page);
   await expect(
     page.getByText('This is a journal template doc')
