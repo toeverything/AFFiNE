@@ -121,7 +121,7 @@ export class CopilotTranscriptionResolver {
       throw new CopilotTranscriptionAudioNotProvided();
     }
 
-    const jobResult = await this.transcript.submitTranscriptionJob(
+    const jobResult = await this.transcript.submitJob(
       user.id,
       workspaceId,
       blobId,

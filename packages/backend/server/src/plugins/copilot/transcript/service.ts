@@ -59,7 +59,7 @@ export class CopilotTranscriptionService {
     return prompt?.optionalModels[hasAccess ? 1 : 0];
   }
 
-  async submitTranscriptionJob(
+  async submitJob(
     userId: string,
     workspaceId: string,
     blobId: string,
