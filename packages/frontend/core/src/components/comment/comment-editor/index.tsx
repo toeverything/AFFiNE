@@ -514,7 +514,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       return;
     }, [doc, onChange, snapshotHelper]);
 
-    // Add keydown handler to commit on CMD/CTRL + Enter key
+    // Add keydown handler to commit on Enter key
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
         if (readonly) return;
@@ -523,8 +523,8 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         const activeElement = document.activeElement;
         if (!editorRef.current?.contains(activeElement)) return;
 
-        // If Enter is pressed with CMD/CTRL key, commit the comment
-        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        // If Enter is pressed without CMD/CTRL key, commit the comment
+        if (e.key === 'Enter' && !(e.metaKey || e.ctrlKey)) {
           e.preventDefault();
           e.stopPropagation();
           handleCommit();

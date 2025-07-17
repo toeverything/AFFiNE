@@ -163,6 +163,10 @@ export const commentActions = style({
   },
 });
 
+export const actionButton = style({
+  backgroundColor: cssVarV2('button/buttonOverHover'),
+});
+
 export const readonlyCommentContainer = style({
   display: 'flex',
   flexDirection: 'column',
