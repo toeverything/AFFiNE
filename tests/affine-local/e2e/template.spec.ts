@@ -204,6 +204,7 @@ test('set default template for journal', async ({ page }) => {
   const prevWeekButton = page.getByTestId('week-picker-prev');
   await prevWeekButton.click();
   await page.getByTestId('week-picker-day').first().click();
+  await confirmCreateJournal(page);
   await waitForEditorLoad(page);
   await expect(page.getByText('This is a page template doc')).toBeVisible();
 
@@ -216,6 +217,7 @@ test('set default template for journal', async ({ page }) => {
   // create a new journal
   await prevWeekButton.click();
   await page.getByTestId('week-picker-day').first().click();
+  await confirmCreateJournal(page);
   await waitForEditorLoad(page);
   await expect(page.getByText('This is a journal template doc')).toBeVisible();
 });
