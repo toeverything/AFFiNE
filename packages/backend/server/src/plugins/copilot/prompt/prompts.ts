@@ -303,7 +303,7 @@ const textActions: Prompt[] = [
   {
     name: 'Transcript audio',
     action: 'Transcript audio',
-    model: 'gemini-2.5-pro',
+    model: 'gemini-2.5-flash',
     optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'],
     messages: [
       {
@@ -334,6 +334,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
     config: {
       requireContent: false,
       requireAttachment: true,
+      maxRetries: 1,
     },
   },
   {

@@ -129,7 +129,16 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         system,
         messages: msgs,
         schema,
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              thinkingBudget: -1,
+              includeThoughts: false,
+            },
+          },
+        },
         abortSignal: options.signal,
+        maxRetries: options.maxRetries || 3,
         experimental_repairText: async ({ text, error }) => {
           if (error instanceof JSONParseError) {
             // strange fixed response, temporarily replace it
