@@ -3,6 +3,7 @@ import { type Framework } from '@toeverything/infra';
 
 import {
   configureAIButtonModule,
+  configureAIDraftModule,
   configureAINetworkSearchModule,
   configureAIPlaygroundModule,
   configureAIReasoningModule,
@@ -110,6 +111,7 @@ export function configureCommonModules(framework: Framework) {
   configureAIReasoningModule(framework);
   configureAIPlaygroundModule(framework);
   configureAIButtonModule(framework);
+  configureAIDraftModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
   configureMediaModule(framework);

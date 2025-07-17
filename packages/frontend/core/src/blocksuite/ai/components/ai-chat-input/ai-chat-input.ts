@@ -1,10 +1,11 @@
+import type { AIDraftService } from '@affine/core/modules/ai-button';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { ArrowUpBigIcon, CloseIcon } from '@blocksuite/icons/lit';
-import { css, html, nothing } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -352,6 +353,9 @@ export class AIChatInput extends SignalWatcher(
   accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
+  accessor aiDraftService!: AIDraftService;
+
+  @property({ attribute: false })
   accessor isRootSession: boolean = true;
 
   @property({ attribute: false })
@@ -379,6 +383,7 @@ export class AIChatInput extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
+
     this._disposables.add(
       AIProvider.slots.requestSendWithChat.subscribe(
         (params: AISendParams | null) => {
@@ -397,6 +402,17 @@ export class AIChatInput extends SignalWatcher(
         }
       )
     );
+  }
+
+  protected override firstUpdated(changedProperties: PropertyValues): void {
+    super.firstUpdated(changedProperties);
+    this.aiDraftService
+      .getDraft()
+      .then(draft => {
+        this.textarea.value = draft.input;
+        this.isInputEmpty = !this.textarea.value.trim();
+      })
+      .catch(console.error);
   }
 
   protected override render() {
@@ -506,9 +522,11 @@ export class AIChatInput extends SignalWatcher(
     }
   };
 
-  private readonly _handleInput = () => {
+  private readonly _handleInput = async () => {
     const { textarea } = this;
-    this.isInputEmpty = !textarea.value.trim();
+    const value = textarea.value.trim();
+    this.isInputEmpty = !value;
+
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
     let imagesHeight = this.imagePreviewGrid?.scrollHeight ?? 0;
@@ -517,6 +535,10 @@ export class AIChatInput extends SignalWatcher(
       textarea.style.height = '148px';
       textarea.style.overflowY = 'scroll';
     }
+
+    await this.aiDraftService.setDraft({
+      input: value,
+    });
   };
 
   private readonly _handleKeyDown = async (evt: KeyboardEvent) => {
@@ -572,6 +594,9 @@ export class AIChatInput extends SignalWatcher(
     this.textarea.style.height = 'unset';
 
     await this.send(value);
+    await this.aiDraftService.setDraft({
+      input: '',
+    });
   };
 
   private readonly _handleModelChange = (modelId: string) => {

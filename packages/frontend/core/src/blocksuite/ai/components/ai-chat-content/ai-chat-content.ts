@@ -1,3 +1,5 @@
+import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
@@ -15,6 +17,7 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { pick } from 'lodash-es';
 
 import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
@@ -150,6 +153,9 @@ export class AIChatContent extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
+  accessor aiDraftService!: AIDraftService;
+
+  @property({ attribute: false })
   accessor onEmbeddingProgressChange:
     | ((count: Record<ContextEmbedStatus, number>) => void)
     | undefined;
@@ -263,6 +269,19 @@ export class AIChatContent extends SignalWatcher(
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
     this.chatContextValue = { ...this.chatContextValue, ...context };
     this.onContextChange?.(context);
+    this.updateDraft(context).catch(console.error);
+  };
+
+  private readonly updateDraft = async (context: Partial<ChatContextValue>) => {
+    const draft: Partial<AIDraftState> = pick(context, [
+      'quote',
+      'images',
+      'markdown',
+    ]);
+    if (!Object.keys(draft).length) {
+      return;
+    }
+    await this.aiDraftService.setDraft(draft);
   };
 
   private readonly initChatContent = async () => {
@@ -322,7 +341,18 @@ export class AIChatContent extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
+
     this.initChatContent().catch(console.error);
+
+    this.aiDraftService
+      .getDraft()
+      .then(draft => {
+        this.chatContextValue = {
+          ...this.chatContextValue,
+          ...draft,
+        };
+      })
+      .catch(console.error);
 
     this._disposables.add(
       AIProvider.slots.actions.subscribe(({ event }) => {
@@ -403,6 +433,7 @@ export class AIChatContent extends SignalWatcher(
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${this.notificationService}
+        .aiDraftService=${this.aiDraftService}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

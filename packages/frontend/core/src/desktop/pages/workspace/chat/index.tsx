@@ -11,6 +11,7 @@ import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
 import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
+import { AIDraftService } from '@affine/core/modules/ai-button';
 import {
   EventSourceService,
   FetchService,
@@ -221,6 +222,7 @@ export const Component = () => {
       confirmModal.closeConfirmModal,
       confirmModal.openConfirmModal
     );
+    content.aiDraftService = framework.get(AIDraftService);
     content.createSession = createSession;
     content.onOpenDoc = onOpenDoc;
 
