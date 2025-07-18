@@ -143,6 +143,9 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   @Field(() => [String], { nullable: true, deprecationReason: 'use blobs' })
   attachments!: string[] | undefined;
 
+  @Field(() => GraphQLUpload, { nullable: true })
+  blob!: Promise<FileUpload> | undefined;
+
   @Field(() => [GraphQLUpload], { nullable: true })
   blobs!: Promise<FileUpload>[] | undefined;
 
@@ -703,10 +706,13 @@ export class CopilotResolver {
     }
 
     const attachments: PromptMessage['attachments'] = options.attachments || [];
-    if (options.blobs) {
+    if (options.blob || options.blobs) {
       const { workspaceId } = session.config;
 
-      const blobs = await Promise.all(options.blobs);
+      const blobs = await Promise.all(
+        options.blob ? [options.blob] : options.blobs || []
+      );
+      delete options.blob;
       delete options.blobs;
 
       for (const blob of blobs) {

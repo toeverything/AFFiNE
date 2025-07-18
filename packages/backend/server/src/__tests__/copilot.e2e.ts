@@ -461,6 +461,29 @@ test('should create message correctly', async t => {
         sessionId,
         undefined,
         undefined,
+        new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
+      );
+      t.truthy(messageId, 'should be able to create message with blob');
+    }
+
+    // with attachments
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const smallestPng =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
+      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+      const messageId = await createCopilotMessage(
+        app,
+        sessionId,
+        undefined,
+        undefined,
+        undefined,
         [new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })]
       );
       t.truthy(messageId, 'should be able to create message with blobs');

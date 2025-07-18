@@ -569,6 +569,7 @@ export interface CopilotWorkspaceIgnoredDocTypeEdge {
 
 export interface CreateChatMessageInput {
   attachments?: InputMaybe<Array<Scalars['String']['input']>>;
+  blob?: InputMaybe<Scalars['Upload']['input']>;
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
   content?: InputMaybe<Scalars['String']['input']>;
   params?: InputMaybe<Scalars['JSON']['input']>;

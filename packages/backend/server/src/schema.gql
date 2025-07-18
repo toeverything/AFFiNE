@@ -457,6 +457,7 @@ type CopilotWorkspaceIgnoredDocTypeEdge {
 
 input CreateChatMessageInput {
   attachments: [String!]
+  blob: Upload
   blobs: [Upload!]
   content: String
   params: JSON

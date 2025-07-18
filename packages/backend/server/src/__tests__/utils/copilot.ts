@@ -554,52 +554,73 @@ export async function createCopilotMessage(
   sessionId: string,
   content?: string,
   attachments?: string[],
+  blob?: File,
   blobs?: File[],
   params?: Record<string, string>
 ): Promise<string> {
-  let resp = app
-    .POST('/graphql')
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .field(
-      'operations',
-      JSON.stringify({
-        query: `
+  const gql = {
+    query: `
           mutation createCopilotMessage($options: CreateChatMessageInput!) {
             createCopilotMessage(options: $options)
           }
         `,
-        variables: {
-          options: { sessionId, content, attachments, blobs: [], params },
-        },
-      })
-    )
-    .field(
-      'map',
-      JSON.stringify(
-        Array.from<any>({ length: blobs?.length ?? 0 }).reduce(
-          (acc, _, idx) => {
-            acc[idx.toString()] = [`variables.options.blobs.${idx}`];
-            return acc;
-          },
-          {}
-        )
-      )
-    );
-  if (blobs && blobs.length) {
-    for (const [idx, file] of blobs.entries()) {
-      resp = resp.attach(
-        idx.toString(),
-        Buffer.from(await file.arrayBuffer()),
-        {
-          filename: file.name || `file${idx}`,
-          contentType: file.type || 'application/octet-stream',
-        }
+    variables: {
+      options: {
+        sessionId,
+        content,
+        attachments,
+        blob: null,
+        blobs: [],
+        params,
+      },
+    },
+  };
+
+  let resp = app
+    .POST('/graphql')
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' });
+  if (blob || blobs) {
+    resp = resp.field('operations', JSON.stringify(gql));
+
+    if (blob) {
+      resp = resp.field(
+        'map',
+        JSON.stringify({ '0': ['variables.options.blob'] })
       );
+      resp = resp.attach('0', Buffer.from(await blob.arrayBuffer()), {
+        filename: blob.name || 'file',
+        contentType: blob.type || 'application/octet-stream',
+      });
+    } else if (blobs && blobs.length) {
+      resp = resp.field(
+        'map',
+        JSON.stringify(
+          Array.from<any>({ length: blobs?.length ?? 0 }).reduce(
+            (acc, _, idx) => {
+              acc[idx.toString()] = [`variables.options.blobs.${idx}`];
+              return acc;
+            },
+            {}
+          )
+        )
+      );
+      for (const [idx, file] of blobs.entries()) {
+        resp = resp.attach(
+          idx.toString(),
+          Buffer.from(await file.arrayBuffer()),
+          {
+            filename: file.name || `file${idx}`,
+            contentType: file.type || 'application/octet-stream',
+          }
+        );
+      }
     }
+  } else {
+    resp = resp.send(gql);
   }
 
   const res = await resp.expect(200);
-
+  console.log('createCopilotMessage', res.body);
   return res.body.data.createCopilotMessage;
 }
 
