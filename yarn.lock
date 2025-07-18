@@ -26988,7 +26988,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:2.0.1, multer@npm:^2.0.0":
+"multer@npm:2.0.1":
   version: 2.0.1
   resolution: "multer@npm:2.0.1"
   dependencies:
@@ -27000,6 +27000,21 @@ __metadata:
     type-is: "npm:^1.6.18"
     xtend: "npm:^4.0.2"
   checksum: 10/cb0dda65ae37be40968fc1f9ea492bdb4c20bd189ce427e11e95d333837193544606b82ef6431f2acd3cd11156164f215bdeb46f47847d29b6bf3a36ac736a8f
+  languageName: node
+  linkType: hard
+
+"multer@npm:^2.0.0":
+  version: 2.0.2
+  resolution: "multer@npm:2.0.2"
+  dependencies:
+    append-field: "npm:^1.0.0"
+    busboy: "npm:^1.6.0"
+    concat-stream: "npm:^2.0.0"
+    mkdirp: "npm:^0.5.6"
+    object-assign: "npm:^4.1.1"
+    type-is: "npm:^1.6.18"
+    xtend: "npm:^4.0.2"
+  checksum: 10/4bdcb07138cf72f93adc08a0dc27c058faab9f6721067a58f394fa546d73d11b7f100cdd66e733d649d184f9d1b402065f6888b31ec427409f056ee92c4367a6
   languageName: node
   linkType: hard
 
