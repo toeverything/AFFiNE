@@ -152,7 +152,7 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
   }
 
   @Transactional()
-  async getWorkspaceEmbeddingStatus(workspaceId: string) {
+  async getEmbeddingStatus(workspaceId: string) {
     const ignoredDocIds = (await this.listIgnoredDocIds(workspaceId)).map(
       d => d.docId
     );

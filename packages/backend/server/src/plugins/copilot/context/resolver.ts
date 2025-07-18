@@ -373,9 +373,7 @@ export class CopilotContextRootResolver {
 
     if (this.context.canEmbedding) {
       const { total, embedded } =
-        await this.models.copilotWorkspace.getWorkspaceEmbeddingStatus(
-          workspaceId
-        );
+        await this.models.copilotWorkspace.getEmbeddingStatus(workspaceId);
       return { total, embedded };
     }
 
