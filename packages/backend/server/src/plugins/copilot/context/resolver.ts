@@ -356,6 +356,7 @@ export class CopilotContextRootResolver {
     return false;
   }
 
+  @Throttle('strict')
   @Query(() => ContextWorkspaceEmbeddingStatus, {
     description: 'query workspace embedding status',
   })
