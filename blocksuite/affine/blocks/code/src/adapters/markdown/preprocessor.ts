@@ -63,8 +63,8 @@ const codePreprocessor: MarkdownAdapterPreprocessor = {
             return `<${trimmedLine}>`;
           }
         }
-
-        return line.replace(/^ /, '&#x20;');
+        return line;
+        // return line.replace(/^ /, '&#x20;');
       })
       .join('\n');
 
