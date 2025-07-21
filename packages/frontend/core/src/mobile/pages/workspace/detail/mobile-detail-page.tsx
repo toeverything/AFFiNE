@@ -242,10 +242,6 @@ const MobileDetailPage = ({
   const workbench = useService(WorkbenchService).workbench;
   const [showTitle, setShowTitle] = useState(checkShowTitle);
   const title = useLiveData(docDisplayMetaService.title$(pageId));
-  const featureFlagService = useService(FeatureFlagService);
-  const isTwoStepJournalConfirmationEnabled = useLiveData(
-    featureFlagService.flags.enable_two_step_journal_confirmation.$
-  );
 
   const canAccess = useGuard('Doc_Read', pageId);
 
@@ -256,25 +252,17 @@ const MobileDetailPage = ({
 
   const handleDateChange = useCallback(
     (date: string) => {
-      if (isTwoStepJournalConfirmationEnabled) {
-        const docs = journalService.journalsByDate$(date).value;
-        if (docs.length > 0) {
-          workbench.openDoc(
-            { docId: docs[0].id, fromTab: fromTab ? 'true' : undefined },
-            { replaceHistory: true }
-          );
-        } else {
-          workbench.open(`/journals?date=${date}`);
-        }
-      } else {
-        const docId = journalService.ensureJournalByDate(date).id;
+      const docs = journalService.journalsByDate$(date).value;
+      if (docs.length > 0) {
         workbench.openDoc(
-          { docId, fromTab: fromTab ? 'true' : undefined },
+          { docId: docs[0].id, fromTab: fromTab ? 'true' : undefined },
           { replaceHistory: true }
         );
+      } else {
+        workbench.open(`/journals?date=${date}`);
       }
     },
-    [fromTab, isTwoStepJournalConfirmationEnabled, journalService, workbench]
+    [fromTab, journalService, workbench]
   );
 
   useGlobalEvent(

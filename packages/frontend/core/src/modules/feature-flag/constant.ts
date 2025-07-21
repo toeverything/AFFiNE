@@ -264,14 +264,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_two_step_journal_confirmation: {
-    category: 'affine',
-    displayName: 'Enable Two Step Journal Confirmation',
-    description:
-      'When enabled, you must confirm the journal before you can create a new journal.',
-    configurable: isCanaryBuild,
-    defaultState: isCanaryBuild,
-  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

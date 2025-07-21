@@ -2,17 +2,13 @@ import {
   getDateFromUrl,
   JournalPlaceholder,
 } from '@affine/core/desktop/pages/workspace/journals';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import {
-  JOURNAL_DATE_FORMAT,
-  JournalService,
-} from '@affine/core/modules/journal';
+import { JournalService } from '@affine/core/modules/journal';
 import { ViewService, WorkbenchService } from '@affine/core/modules/workbench';
 import { i18nTime } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 
 import { AppTabs, PageHeader } from '../../components';
 import { JournalDatePicker } from './detail/journal-date-picker';
@@ -77,31 +73,6 @@ export const JournalsPageWithConfirmation = () => {
   );
 };
 
-export const JournalsPageWithoutConfirmation = () => {
-  const journalService = useService(JournalService);
-  const workbench = useService(WorkbenchService).workbench;
-
-  useEffect(() => {
-    const today = dayjs().format(JOURNAL_DATE_FORMAT);
-    const doc = journalService.ensureJournalByDate(today);
-    workbench.openDoc(doc.id, {
-      replaceHistory: true,
-      at: 'active',
-    });
-  }, [journalService, workbench]);
-
-  return null;
-};
-
 export const Component = () => {
-  const featureFlagService = useService(FeatureFlagService);
-  const isTwoStepJournalConfirmationEnabled = useLiveData(
-    featureFlagService.flags.enable_two_step_journal_confirmation.$
-  );
-
-  if (isTwoStepJournalConfirmationEnabled) {
-    return <JournalsPageWithConfirmation />;
-  }
-
-  return <JournalsPageWithoutConfirmation />;
+  return <JournalsPageWithConfirmation />;
 };

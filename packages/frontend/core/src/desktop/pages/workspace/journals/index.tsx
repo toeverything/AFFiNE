@@ -4,7 +4,6 @@ import {
   type WeekDatePickerHandle,
 } from '@affine/component';
 import { BlocksuiteEditorJournalDocTitleUI } from '@affine/core/blocksuite/block-suite-editor/journal-doc-title';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import {
   JOURNAL_DATE_FORMAT,
   JournalService,
@@ -22,13 +21,7 @@ import { TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import type { Location } from 'history';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';
 import * as styles from './index.css';
@@ -157,31 +150,6 @@ export const JournalsPageWithConfirmation = () => {
   );
 };
 
-export const JournalsPageWithoutConfirmation = () => {
-  const journalService = useService(JournalService);
-  const workbench = useService(WorkbenchService).workbench;
-
-  useEffect(() => {
-    const today = dayjs().format(JOURNAL_DATE_FORMAT);
-    const doc = journalService.ensureJournalByDate(today);
-    workbench.openDoc(doc.id, {
-      replaceHistory: true,
-      at: 'active',
-    });
-  }, [journalService, workbench]);
-
-  return null;
-};
-
 export const Component = () => {
-  const featureFlagService = useService(FeatureFlagService);
-  const isTwoStepJournalConfirmationEnabled = useLiveData(
-    featureFlagService.flags.enable_two_step_journal_confirmation.$
-  );
-
-  if (isTwoStepJournalConfirmationEnabled) {
-    return <JournalsPageWithConfirmation />;
-  }
-
-  return <JournalsPageWithoutConfirmation />;
+  return <JournalsPageWithConfirmation />;
 };
