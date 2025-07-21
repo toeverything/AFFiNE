@@ -7,7 +7,6 @@ import { NavigationGestureProvider } from '@affine/core/mobile/modules/navigatio
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
-import { AIButtonProvider } from '@affine/core/modules/ai-button';
 import {
   AuthProvider,
   AuthService,
@@ -18,6 +17,7 @@ import {
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
@@ -62,7 +62,6 @@ import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
 import { ModalConfigProvider } from './modal-config';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
-import { Intelligents } from './plugins/intelligents';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { writeEndpointToken } from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
@@ -162,14 +161,6 @@ framework.impl(HapticProvider, {
   selectionChanged: () => Haptics.selectionChanged(),
   selectionEnd: () => Haptics.selectionEnd(),
 });
-framework.impl(AIButtonProvider, {
-  presentAIButton: () => {
-    return Intelligents.presentIntelligentsButton();
-  },
-  dismissAIButton: () => {
-    return Intelligents.dismissIntelligentsButton();
-  },
-});
 framework.scope(ServerScope).override(AuthProvider, resolver => {
   const serverService = resolver.get(ServerService);
   const endpoint = serverService.server.baseUrl;
@@ -223,6 +214,10 @@ const frameworkProvider = framework.provider();
 };
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
+};
+(window as any).getAiButtonFeatureFlag = () => {
+  const featureFlagService = frameworkProvider.get(FeatureFlagService);
+  return featureFlagService.flags.enable_mobile_ai_button.value;
 };
 (window as any).getCurrentWorkspaceId = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
