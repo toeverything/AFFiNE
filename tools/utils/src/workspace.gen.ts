@@ -9,6 +9,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/bookmark',
       'blocksuite/affine/blocks/callout',
       'blocksuite/affine/blocks/code',
+      'blocksuite/affine/blocks/column',
       'blocksuite/affine/blocks/data-view',
       'blocksuite/affine/blocks/database',
       'blocksuite/affine/blocks/divider',
@@ -19,6 +20,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/image',
       'blocksuite/affine/blocks/latex',
       'blocksuite/affine/blocks/list',
+      'blocksuite/affine/blocks/multi-column-container',
       'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/paragraph',
       'blocksuite/affine/blocks/root',
@@ -139,6 +141,18 @@ export const PackageList = [
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/blocks/column',
+    name: '@blocksuite/affine-block-column',
+    workspaceDependencies: [
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -308,6 +322,18 @@ export const PackageList = [
       'blocksuite/affine/inlines/preset',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
+      'blocksuite/affine/shared',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/blocks/multi-column-container',
+    name: '@blocksuite/affine-block-multi-column-container',
+    workspaceDependencies: [
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -1492,6 +1518,7 @@ export type PackageName =
   | '@blocksuite/affine-block-bookmark'
   | '@blocksuite/affine-block-callout'
   | '@blocksuite/affine-block-code'
+  | '@blocksuite/affine-block-column'
   | '@blocksuite/affine-block-data-view'
   | '@blocksuite/affine-block-database'
   | '@blocksuite/affine-block-divider'
@@ -1502,6 +1529,7 @@ export type PackageName =
   | '@blocksuite/affine-block-image'
   | '@blocksuite/affine-block-latex'
   | '@blocksuite/affine-block-list'
+  | '@blocksuite/affine-block-multi-column-container'
   | '@blocksuite/affine-block-note'
   | '@blocksuite/affine-block-paragraph'
   | '@blocksuite/affine-block-root'

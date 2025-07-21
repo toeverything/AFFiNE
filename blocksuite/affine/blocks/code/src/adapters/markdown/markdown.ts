@@ -56,7 +56,6 @@ export const codeBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
             flavour: 'affine:code',
             props: {
               language,
-              preview: language === 'html',
               wrap,
               text: {
                 '$blocksuite:internal:text$': true,

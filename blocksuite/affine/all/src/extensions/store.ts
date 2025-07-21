@@ -2,6 +2,7 @@ import { AttachmentStoreExtension } from '@blocksuite/affine-block-attachment/st
 import { BookmarkStoreExtension } from '@blocksuite/affine-block-bookmark/store';
 import { CalloutStoreExtension } from '@blocksuite/affine-block-callout/store';
 import { CodeStoreExtension } from '@blocksuite/affine-block-code/store';
+import { ColumnStoreExtension } from '@blocksuite/affine-block-column';
 import { DataViewStoreExtension } from '@blocksuite/affine-block-data-view/store';
 import { DatabaseStoreExtension } from '@blocksuite/affine-block-database/store';
 import { DividerStoreExtension } from '@blocksuite/affine-block-divider/store';
@@ -12,6 +13,7 @@ import { FrameStoreExtension } from '@blocksuite/affine-block-frame/store';
 import { ImageStoreExtension } from '@blocksuite/affine-block-image/store';
 import { LatexStoreExtension } from '@blocksuite/affine-block-latex/store';
 import { ListStoreExtension } from '@blocksuite/affine-block-list/store';
+import { MultiColumnContainerStoreExtension } from '@blocksuite/affine-block-multi-column-container';
 import { NoteStoreExtension } from '@blocksuite/affine-block-note/store';
 import { ParagraphStoreExtension } from '@blocksuite/affine-block-paragraph/store';
 import { RootStoreExtension } from '@blocksuite/affine-block-root/store';
@@ -49,6 +51,8 @@ export function getInternalStoreExtensions() {
     ImageStoreExtension,
     LatexStoreExtension,
     ListStoreExtension,
+    ColumnStoreExtension,
+    MultiColumnContainerStoreExtension,
     NoteStoreExtension,
     ParagraphStoreExtension,
     SurfaceRefStoreExtension,

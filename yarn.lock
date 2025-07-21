@@ -2549,6 +2549,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@blocksuite/affine-block-column@workspace:*, @blocksuite/affine-block-column@workspace:blocksuite/affine/blocks/column":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-column@workspace:blocksuite/affine/blocks/column"
+  dependencies:
+    "@blocksuite/affine-ext-loader": "workspace:^"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/icons": "npm:^2.2.12"
+    "@blocksuite/std": "workspace:*"
+    "@blocksuite/store": "workspace:*"
+    "@emotion/css": "npm:^11.13.4"
+    "@preact/signals-core": "npm:^1.11.0"
+    "@types/node": "npm:^22.10.1"
+    lit: "npm:^3.2.1"
+    typescript: "npm:^5.6.3"
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/affine-block-data-view@workspace:*, @blocksuite/affine-block-data-view@workspace:blocksuite/affine/blocks/data-view":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-block-data-view@workspace:blocksuite/affine/blocks/data-view"
@@ -2841,6 +2860,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@blocksuite/affine-block-multi-column-container@workspace:*, @blocksuite/affine-block-multi-column-container@workspace:blocksuite/affine/blocks/multi-column-container":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-multi-column-container@workspace:blocksuite/affine/blocks/multi-column-container"
+  dependencies:
+    "@blocksuite/affine-ext-loader": "workspace:^"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/icons": "npm:^2.2.12"
+    "@blocksuite/std": "workspace:*"
+    "@blocksuite/store": "workspace:*"
+    "@emotion/css": "npm:^11.13.4"
+    "@preact/signals-core": "npm:^1.11.0"
+    "@types/node": "npm:^22.10.1"
+    lit: "npm:^3.2.1"
+    typescript: "npm:^5.6.3"
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/affine-block-note@workspace:*, @blocksuite/affine-block-note@workspace:blocksuite/affine/blocks/note":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-block-note@workspace:blocksuite/affine/blocks/note"
@@ -3071,7 +3109,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@blocksuite/affine-ext-loader@workspace:*, @blocksuite/affine-ext-loader@workspace:blocksuite/affine/ext-loader":
+"@blocksuite/affine-ext-loader@workspace:*, @blocksuite/affine-ext-loader@workspace:^, @blocksuite/affine-ext-loader@workspace:blocksuite/affine/ext-loader":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-ext-loader@workspace:blocksuite/affine/ext-loader"
   dependencies:
@@ -4221,6 +4259,7 @@ __metadata:
     "@blocksuite/affine-block-bookmark": "workspace:*"
     "@blocksuite/affine-block-callout": "workspace:*"
     "@blocksuite/affine-block-code": "workspace:*"
+    "@blocksuite/affine-block-column": "workspace:*"
     "@blocksuite/affine-block-data-view": "workspace:*"
     "@blocksuite/affine-block-database": "workspace:*"
     "@blocksuite/affine-block-divider": "workspace:*"
@@ -4231,6 +4270,7 @@ __metadata:
     "@blocksuite/affine-block-image": "workspace:*"
     "@blocksuite/affine-block-latex": "workspace:*"
     "@blocksuite/affine-block-list": "workspace:*"
+    "@blocksuite/affine-block-multi-column-container": "workspace:*"
     "@blocksuite/affine-block-note": "workspace:*"
     "@blocksuite/affine-block-paragraph": "workspace:*"
     "@blocksuite/affine-block-root": "workspace:*"
@@ -5535,7 +5575,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@emotion/css@npm:^11.13.5":
+"@emotion/css@npm:^11.13.4, @emotion/css@npm:^11.13.5":
   version: 11.13.5
   resolution: "@emotion/css@npm:11.13.5"
   dependencies:
@@ -10858,6 +10898,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@preact/signals-core@npm:^1.11.0":
+  version: 1.11.0
+  resolution: "@preact/signals-core@npm:1.11.0"
+  checksum: 10/aa47ba90492cc8d8c126a88513b1fac69fcd16f7455025e5431f5dc2ab4ff5b419e5b6e2be54c84b0c500d359fcc8d996272279d32e71d535c00715129721b43
+  languageName: node
+  linkType: hard
+
 "@preact/signals-core@npm:^1.2.3, @preact/signals-core@npm:^1.8.0":
   version: 1.8.0
   resolution: "@preact/signals-core@npm:1.8.0"
@@ -15209,6 +15256,15 @@ __metadata:
   dependencies:
     undici-types: "npm:~6.21.0"
   checksum: 10/2369a96a832a6e8111d2b996c56fb1b78b27fad0879de3e344ae2835697464e001d6fe813a11902348fc7dc63b9510000f3d2cd4bedadf2d3fce7b7bb7903444
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.10.1":
+  version: 22.16.5
+  resolution: "@types/node@npm:22.16.5"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10/ba45b5c9113cbc5edb12960fcfe7e80db2c998af5c1931264240695b27d756570d92462150b95781bd67a03aa82111cc970ab0f4504eb99213edff8bf425354e
   languageName: node
   linkType: hard
 
@@ -33147,7 +33203,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5, typescript@npm:^5.3.3, typescript@npm:^5.4.3, typescript@npm:^5.5.4, typescript@npm:^5.7.2, typescript@npm:^5.8.3":
+"typescript@npm:^5, typescript@npm:^5.3.3, typescript@npm:^5.4.3, typescript@npm:^5.5.4, typescript@npm:^5.6.3, typescript@npm:^5.7.2, typescript@npm:^5.8.3":
   version: 5.8.3
   resolution: "typescript@npm:5.8.3"
   bin:
@@ -33157,7 +33213,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.3.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.5.4#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.3.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.5.4#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.6.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
   version: 5.8.3
   resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
   bin:

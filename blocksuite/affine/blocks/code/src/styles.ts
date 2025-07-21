@@ -68,6 +68,5 @@ export const codeBlockStyles = css`
   }
 
   affine-code .affine-code-block-preview {
-    padding: 12px;
   }
 `;

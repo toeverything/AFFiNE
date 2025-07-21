@@ -44,11 +44,18 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   private readonly _localPreview$ = signal<boolean | null>(null);
 
   preview$: Signal<boolean> = computed(() => {
-    const modelPreview = !!this.model.props.preview$.value;
+    const modelPreview = this.model.props.preview$.value;
+    const language = this.model.props.language$.value?.toLowerCase();
+
+    // For HTML language, default to preview mode if not explicitly set
+    const shouldDefaultToPreview =
+      language === 'html' && modelPreview === undefined;
+    const effectivePreview = shouldDefaultToPreview ? true : !!modelPreview;
+
     if (this.store.readonly) {
-      return this._localPreview$.value ?? modelPreview;
+      return this._localPreview$.value ?? effectivePreview;
     }
-    return modelPreview;
+    return effectivePreview;
   });
 
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
@@ -426,6 +433,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           mobile: IS_MOBILE,
           wrap: this.model.props.wrap,
           'disable-line-numbers': !showLineNumbers,
+        })}
+        style=${styleMap({
+          padding: shouldRenderPreview ? '4px' : undefined,
+          margin: shouldRenderPreview ? '-18px 0' : undefined,
+          backgroundColor: shouldRenderPreview ? 'transparent' : undefined,
         })}
       >
         <rich-text

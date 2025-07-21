@@ -2,6 +2,7 @@ import { AttachmentViewExtension } from '@blocksuite/affine-block-attachment/vie
 import { BookmarkViewExtension } from '@blocksuite/affine-block-bookmark/view';
 import { CalloutViewExtension } from '@blocksuite/affine-block-callout/view';
 import { CodeBlockViewExtension } from '@blocksuite/affine-block-code/view';
+import { ColumnViewExtension } from '@blocksuite/affine-block-column';
 import { DataViewViewExtension } from '@blocksuite/affine-block-data-view/view';
 import { DatabaseViewExtension } from '@blocksuite/affine-block-database/view';
 import { DividerViewExtension } from '@blocksuite/affine-block-divider/view';
@@ -12,6 +13,7 @@ import { FrameViewExtension } from '@blocksuite/affine-block-frame/view';
 import { ImageViewExtension } from '@blocksuite/affine-block-image/view';
 import { LatexViewExtension } from '@blocksuite/affine-block-latex/view';
 import { ListViewExtension } from '@blocksuite/affine-block-list/view';
+import { MultiColumnContainerViewExtension } from '@blocksuite/affine-block-multi-column-container';
 import { NoteViewExtension } from '@blocksuite/affine-block-note/view';
 import { ParagraphViewExtension } from '@blocksuite/affine-block-paragraph/view';
 import { RootViewExtension } from '@blocksuite/affine-block-root/view';
@@ -88,6 +90,8 @@ export function getInternalViewExtensions() {
     ImageViewExtension,
     LatexViewExtension,
     ListViewExtension,
+    MultiColumnContainerViewExtension,
+    ColumnViewExtension,
     NoteViewExtension,
     ParagraphViewExtension,
     SurfaceRefViewExtension,
