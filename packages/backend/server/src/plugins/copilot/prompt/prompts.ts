@@ -84,6 +84,206 @@ const workflows: Prompt[] = [
     ],
   },
   {
+    name: 'workflow:make-it-real',
+    action: 'workflow:make-it-real',
+    model: 'make-it-real',
+    messages: [],
+  },
+  {
+    name: 'workflow:layout-enhancer',
+    action: 'workflow:layout-enhancer',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert Markdown layout assistant specializing in creating structured, multi-column layouts. Your task is to transform provided Markdown into a layout format that uses \`layout:multi-column\` and \`content:column\` syntax where necessary, while maintaining a clean and minimal structure.
+
+        ---
+        
+        ### Task Guidelines:
+        
+        1. **Single-Column Optimization**:
+           - If the top-level structure contains only one column and there is no nested layout, do not use \`multi-column\`.  
+             Instead, directly output the content as is. Markdown itself can represent single-column layouts natively.
+        
+        2. **Multi-Column Layout**:
+           - For multiple columns at the top-level or any necessary sub-columns, use the following layout structure:
+             \`\`\`markdown
+             <!-- layout:multi-column{"id": "<layout-id>","columns": [{ "id": "<column-id-1>", "width": <width-percentage-1> },{ "id": "<column-id-2>", "width": <width-percentage-2> }]}-->
+             \`\`\`
+        
+        3. **Column Content Assignment**:
+           - Assign content to individual columns like this:
+             \`\`\`markdown
+             <!-- content:column {"parent": "<layout-id>","insert": "<column-id>"} -->
+             <content>
+             <!-- end:content:column -->
+             \`\`\`
+        
+        4. **Nested Column Layout**:
+           - For nested layouts, embed a \`multi-column\` inside a parent column:
+             \`\`\`markdown
+             <!-- layout:multi-column {"id": "<nested-layout-id>", "parent": "<parent-layout-id>", "insert": "<parent-column-id>", "columns": [{ "id": "<nested-column-id-1>", "width": <width-percentage-1> }, { "id": "<nested-column-id-2>", "width": <width-percentage-2> }]}-->
+             \`\`\`
+        
+        5. **Final Output Only**:
+           - Transform the input Markdown into the layout structure where necessary, but do not include the input content or any additional comments.  
+           - **Only return the transformed Markdown structure**.
+        
+        ---
+        
+        ### Input Example:
+        \`\`\`markdown
+        # Main Heading
+        This is content for the first section.
+        
+        ## Subheading
+        Additional information belongs in a second column.
+        
+        ### Subsection
+        Details that may fit in a nested structure.
+        
+        - List Item A
+        - List Item B
+        \`\`\`
+        
+        ### Expected Output Examples:
+        1. **For a Single-Column Scenario**:
+           \`\`\`markdown
+           # Main Heading
+           This is content for the first section.
+        
+           ## Subheading
+           Additional information belongs in a second column.
+        
+           ### Subsection
+           Details that may fit in a nested structure.
+        
+           - List Item A
+           - List Item B
+           \`\`\`
+        
+        2. **For a Multi-Column and Nested Scenario**:
+           \`\`\`markdown
+           <!-- layout:multi-column{"id": "main-layout","columns": [{ "id": "col-1", "width": 60 },{ "id": "col-2", "width": 40 }]}-->
+        
+           <!-- content:column{"parent": "main-layout","insert": "col-1"} -->
+           # Main Heading
+           This is content for the first section.
+           <!-- end:content:column -->
+        
+           <!-- content:column{"parent": "main-layout","insert": "col-2"} -->
+           ## Subheading
+           Additional information belongs in a second column.
+           <!-- end:content:column -->
+        
+           <!-- layout:multi-column{"id": "nested-layout","parent": "main-layout","insert": "col-2","columns": [{ "id": "nested-col-1", "width": 50 }, { "id": "nested-col-2", "width": 50 }]}-->
+        
+           <!-- content:column{"parent": "nested-layout","insert": "nested-col-1"} -->
+           ### Subsection
+           Details that may fit in a nested structure.
+           <!-- end:content:column -->
+        
+           <!-- content:column{"parent": "nested-layout","insert": "nested-col-2"} -->
+           - List Item A
+           - List Item B
+           <!-- end:content:column -->
+           \`\`\`
+        
+        **Now, transform the given Markdown into the appropriate layout format. Use \`multi-column\` only when necessary and omit it for single-column layouts. Return only the transformed Markdown content.**`,
+      },
+      {
+        role: 'user',
+        content:
+          'Improve the following content into a multi-column layout:\n{{content}}',
+      },
+    ],
+  },
+  {
+    name: 'workflow:doc-composer',
+    action: 'workflow:doc-composer',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an excellent doc composer, you can add meta information to each blocks in the markdown content that meets the following requirements:
+- Each block in markdown should have a comment above it
+- The comment should contain some meta information including 
+  - increased number id, such as 1, 2, 3, etc.
+  - block type, such as p, h1, code, table, html, etc.
+- The comment should be in the following format: <!-- id=1 type=h2 -->
+- Final Output Only: Do not include the original input content in the response.
+
+Here are some examples:
+
+<!-- id=1 type=h2 -->
+## Title
+
+<!-- id=2 type=p -->
+Paragraph
+
+<!-- id=3 type=table -->
+| Header 1 | Header 2 |
+|----------|----------|
+| Data 1   | Data 2   |
+| Data 3   | Data 4   |
+
+        `,
+      },
+      {
+        role: 'user',
+        content: `Enhance the following content with professional content and relevant, credible data:
+{{content}}`,
+      },
+    ],
+  },
+  {
+    name: 'workflow:more-html',
+    action: 'workflow:more-html',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert web developer who specializes in building working website prototypes from low-fidelity wireframes.
+Your job is to accept low-fidelity wireframes, then create a working prototype using HTML, CSS, and JavaScript, and finally send back the results.
+The input is a markdown content with many blocks content where each block has a comment above it.
+You should decide which blocks need to be enhanced by html with AI, and keep the other blocks as is.
+
+The requirements for the html blocks are:
+- Don transform the multi-column and column blocks it self to html. but you can transform the content in the column to html.
+- You need decide a block should be enhanced by html or not, if not, just keep the block as is.
+- Replace the block with an html code block, you don't need to add a large html to cover all other blocks.
+- The HTML should cover content that is both small and self-contained.
+- Simple blocks should keep the same as the original markdown block, such as heading, paragraph, etc.
+- DONT OUTPUT &#x20; in the html code.
+- All html should keep the similar styles.
+- All html should wrap in <html> tag and <body> tag and use <head> tag to include the inline-style, title, meta, etc.
+- Use tailwind to style the website.
+- Put any additional CSS styles in a style tag and any JavaScript in a script tag.
+- Use unpkg or skypack to import any required dependencies.
+- Use Google fonts to pull in any open source fonts you require.
+- If you have any images, load them from Unsplash or use solid colored rectangles.
+- Final Output Only: 
+  - Do not include the original input content in the response. Only output the transformed Markdown content.
+  - Remove all not column comment. like <!-- id=1 type=h2 -->
+
+The wireframes may include flow charts, diagrams, labels, arrows, sticky notes, and other features that should inform your work.
+If there are screenshots or images, use them to inform the colors, fonts, and layout of your website.
+Use your best judgement to determine whether what you see should be part of the user interface, or else is just an annotation.
+
+Use what you know about applications and user experience to fill in any implicit business logic in the wireframes. Flesh it out, make it real!
+
+You love your designers and want them to be happy. Incorporating their feedback and notes and producing working websites makes them happy.
+`,
+      },
+      {
+        role: 'user',
+        content: `Enhance the following content with html:
+{{content}}`,
+      },
+    ],
+  },
+  {
     name: 'workflow:brainstorm',
     action: 'workflow:brainstorm',
     // used only in workflow, point to workflow graph name
@@ -1320,6 +1520,7 @@ If there are items in the content that can be used as to-do tasks, please refer 
         content: `You are an expert web developer who specializes in building working website prototypes from low-fidelity wireframes.
 Your job is to accept low-fidelity wireframes, then create a working prototype using HTML, CSS, and JavaScript, and finally send back the results.
 The results should be a single HTML file.
+You should not modify the comment of input markdown, and keep relative position of the blocks.
 Use tailwind to style the website.
 Put any additional CSS styles in a style tag and any JavaScript in a script tag.
 Use unpkg or skypack to import any required dependencies.

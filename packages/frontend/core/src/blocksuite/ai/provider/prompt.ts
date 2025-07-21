@@ -43,6 +43,7 @@ export const promptKeys = [
   // workflows
   'workflow:presentation',
   'workflow:brainstorm',
+  'workflow:make-it-real',
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];

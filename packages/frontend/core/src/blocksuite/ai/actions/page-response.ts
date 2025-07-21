@@ -23,8 +23,10 @@ import {
   LayerManager,
 } from '@blocksuite/affine/std/gfx';
 import { type BlockProps, Text } from '@blocksuite/affine/store';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import * as Y from 'yjs';
 
+import { getStoreManager } from '../../manager/store';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import type { AffineNode, AIContext } from '../utils/context';
 import { insertAbove, insertBelow, replace } from '../utils/editor-actions';
@@ -115,8 +117,11 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext, place: Place) {
   const bound = getEdgelessContentBound(host);
   const x = bound ? bound.x + bound.w + PADDING * 2 : 0;
   const y = bound ? bound.y : 0;
-  const htmlBound = new Bound(x, y + PADDING, width || 800, height || 600);
-  const html = preprocessHtml(aiPanel.answer);
+  const noteBound = new Bound(x, y + PADDING, width || 800, height || 600);
+  const md = preprocessHtml(aiPanel.answer);
+
+  console.log(md);
+
   host.store.transact(() => {
     const ifUseCodeBlock = host.std.getOptional(
       CodeBlockPreviewIdentifier('html')
@@ -125,28 +130,31 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext, place: Place) {
       const note = host.store.addBlock(
         'affine:note',
         {
-          xywh: htmlBound.serialize(),
+          xywh: noteBound.serialize(),
         },
         host.store.root
       );
-      host.store.addBlock(
-        'affine:code',
-        { text: new Text(html), language: 'html', preview: true },
-        note
-      );
-      const frameBound = expandBound(htmlBound, PADDING);
-      addSurfaceRefBlock(host, frameBound, place);
+
+      MarkdownTransformer.importMarkdownToBlock({
+        doc: host.store,
+        blockId: note,
+        markdown: md,
+        extensions: getStoreManager().config.init().value.get('store'),
+      }).catch(console.error);
+
+      // const frameBound = expandBound(noteBound, PADDING);
+      // addSurfaceRefBlock(host, frameBound, place);
     } else {
       host.store.addBlock(
         'affine:embed-html',
         {
-          html,
+          html: md,
           design: 'ai:makeItReal', // as tag
-          xywh: htmlBound.serialize(),
+          xywh: noteBound.serialize(),
         },
         surface.id
       );
-      const frameBound = expandBound(htmlBound, PADDING);
+      const frameBound = expandBound(noteBound, PADDING);
       addSurfaceRefBlock(host, frameBound, place);
     }
   });

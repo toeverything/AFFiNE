@@ -20,7 +20,7 @@ import {
 import { TelemetryProvider } from '@blocksuite/affine/shared/services';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
-import { Text } from '@blocksuite/affine/store';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import {
   AFFINE_TOOLBAR_WIDGET,
   type AffineToolbarWidget,
@@ -35,6 +35,7 @@ import {
 import { html, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { getStoreManager } from '../../manager/store';
 import { insertFromMarkdown } from '../../utils';
 import type { AIItemConfig } from '../components/ai-item/types';
 import { AIProvider } from '../provider';
@@ -474,9 +475,9 @@ function responseToBrainstormMindmap(host: EditorHost, ctx: AIContext) {
 
 function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
   const aiPanel = getAIPanelWidget(host);
-  let html = aiPanel.answer;
-  if (!html) return;
-  html = preprocessHtml(html);
+  if (!aiPanel.answer) return;
+  const md = preprocessHtml(aiPanel.answer);
+  console.log(md);
 
   const edgelessCopilot = getEdgelessCopilotWidget(host);
   const surface = getSurfaceBlock(host.store);
@@ -504,11 +505,13 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
         },
         host.store.root
       );
-      host.store.addBlock(
-        'affine:code',
-        { text: new Text(html), language: 'html', preview: true },
-        note
-      );
+
+      MarkdownTransformer.importMarkdownToBlock({
+        doc: host.store,
+        blockId: note,
+        markdown: md,
+        extensions: getStoreManager().config.init().value.get('store'),
+      }).catch(console.error);
     } else {
       host.store.addBlock(
         'affine:embed-html',

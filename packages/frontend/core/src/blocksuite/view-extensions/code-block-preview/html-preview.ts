@@ -2,7 +2,9 @@ import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
+import { uuidv4 } from '@blocksuite/affine/store';
 import { ShadowlessElement } from '@blocksuite/std';
+import { signal } from '@preact/signals-core';
 import { css, html, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
@@ -50,10 +52,13 @@ export class HTMLPreview extends SignalWatcher(
 
     .html-preview-iframe {
       width: 100%;
-      height: 544px;
       border: none;
     }
   `;
+
+  private readonly _iframeId = uuidv4();
+
+  private readonly _height = signal(0);
 
   @property({ attribute: false })
   accessor model: CodeBlockModel | null = null;
@@ -80,7 +85,27 @@ export class HTMLPreview extends SignalWatcher(
       );
     }
 
+    // 监听iframe高度变化
+    this.disposables.add(this._setupHeightListener());
+
     return result;
+  }
+
+  private _setupHeightListener() {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.data?.type === 'iframe-height' &&
+        event.data.id === this._iframeId
+      ) {
+        this._height.value = event.data.height;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
   }
 
   override updated(changedProperties: PropertyValues): void {
@@ -104,7 +129,7 @@ export class HTMLPreview extends SignalWatcher(
     }
 
     try {
-      linkIframe(this.iframe, this.normalizedHtml);
+      linkIframe(this.iframe, this.normalizedHtml, this._iframeId);
       this.state = 'finish';
     } catch (error) {
       console.error('HTML preview iframe failed:', error);
@@ -145,6 +170,7 @@ export class HTMLPreview extends SignalWatcher(
           title="HTML Preview"
           style=${styleMap({
             display: this.state === 'finish' ? undefined : 'none',
+            height: `${this._height.value}px`,
           })}
         ></iframe>
       </div>

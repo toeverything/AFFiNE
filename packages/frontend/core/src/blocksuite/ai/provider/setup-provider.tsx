@@ -408,30 +408,17 @@ export function setupAIProvider(
   });
 
   AIProvider.provide('makeItReal', async options => {
-    let promptName: PromptKey = 'Make it real';
-    let content = options.input || '';
-
-    // wireframes
-    if (options.attachments?.length) {
-      content = `Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?
-Here are our design notes:\n ${content}.`;
-    } else {
-      // notes
-      promptName = 'Make it real with text';
-      content = `Here are the latest notes: \n ${content}.
-Could you make a new website based on these notes and send back just the html file?`;
-    }
-
     const sessionId = await createSession({
-      promptName,
+      promptName: 'workflow:make-it-real',
       ...options,
     });
-
     return textToText({
       ...options,
       client,
       sessionId,
-      content,
+      content: options.input,
+      timeout: 300000, // 5分钟超时，因为这个工作流比较复杂
+      endpoint: Endpoint.Workflow,
     });
   });
 
