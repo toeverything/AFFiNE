@@ -18,6 +18,7 @@
     { "path": "../../common/reader" },
     { "path": "../track" },
     { "path": "../../../blocksuite/affine/all" },
+    { "path": "../../../blocksuite/affine/blocks/root" },
     { "path": "../../../blocksuite/affine/components" },
     { "path": "../../../blocksuite/affine/shared" },
     { "path": "../../../blocksuite/framework/global" },

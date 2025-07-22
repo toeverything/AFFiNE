@@ -12,5 +12,11 @@ export type ChatContextValue = {
   markdown: string;
   // images of the selected content or user uploaded
   images: File[];
+  // snapshot of the selected content
+  snapshot: string | null;
+  // attachments of the selected content
+  attachments: { sourceId: string; name: string }[];
+  // combined markdown of the selected elements
+  combinedElementsMarkdown: string | null;
   abortController: AbortController | null;
 };

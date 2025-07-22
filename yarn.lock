@@ -404,6 +404,7 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
+    "@blocksuite/affine-block-root": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-ext-loader": "workspace:*"
     "@blocksuite/affine-shared": "workspace:*"

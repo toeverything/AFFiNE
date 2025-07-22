@@ -1351,6 +1351,7 @@ export const PackageList = [
       'packages/frontend/templates',
       'packages/frontend/track',
       'blocksuite/affine/all',
+      'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
