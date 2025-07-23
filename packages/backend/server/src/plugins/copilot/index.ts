@@ -17,6 +17,8 @@ import {
 import { CopilotController } from './controller';
 import { CopilotCronJobs } from './cron';
 import { CopilotEmbeddingJob } from './embedding';
+import { WorkspaceMcpController } from './mcp/controller';
+import { WorkspaceMcpProvider } from './mcp/provider';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import { CopilotProviderFactory, CopilotProviders } from './providers';
@@ -78,7 +80,9 @@ import {
     UserCopilotResolver,
     PromptsManagementResolver,
     CopilotContextRootResolver,
+    // mcp
+    WorkspaceMcpProvider,
   ],
-  controllers: [CopilotController],
+  controllers: [CopilotController, WorkspaceMcpController],
 })
 export class CopilotModule {}

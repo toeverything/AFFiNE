@@ -52,8 +52,7 @@ import { CopilotEmbeddingJob } from '../embedding';
 import { COPILOT_LOCKER, CopilotType } from '../resolver';
 import { ChatSessionService } from '../session';
 import { CopilotStorage } from '../storage';
-import { MAX_EMBEDDABLE_SIZE } from '../types';
-import { getSignal, readStream } from '../utils';
+import { getSignal, MAX_EMBEDDABLE_SIZE, readStream } from '../utils';
 import { CopilotContextService } from './service';
 
 @InputType()

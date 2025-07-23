@@ -27,7 +27,7 @@ import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
 import { COPILOT_LOCKER } from '../resolver';
-import { MAX_EMBEDDABLE_SIZE } from '../types';
+import { MAX_EMBEDDABLE_SIZE } from '../utils';
 import { CopilotWorkspaceService } from './service';
 import {
   CopilotWorkspaceFileType,

@@ -931,6 +931,7 @@ __metadata:
     "@fal-ai/serverless-client": "npm:^0.15.0"
     "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^2.4.1"
     "@google-cloud/opentelemetry-resource-util": "npm:^2.4.0"
+    "@modelcontextprotocol/sdk": "npm:^1.16.0"
     "@nestjs-cls/transactional": "npm:^2.6.1"
     "@nestjs-cls/transactional-adapter-prisma": "npm:^1.2.19"
     "@nestjs/apollo": "npm:^13.0.4"
@@ -7927,21 +7928,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@modelcontextprotocol/sdk@npm:^1.8.0":
-  version: 1.11.1
-  resolution: "@modelcontextprotocol/sdk@npm:1.11.1"
+"@modelcontextprotocol/sdk@npm:^1.16.0, @modelcontextprotocol/sdk@npm:^1.8.0":
+  version: 1.16.0
+  resolution: "@modelcontextprotocol/sdk@npm:1.16.0"
   dependencies:
+    ajv: "npm:^6.12.6"
     content-type: "npm:^1.0.5"
     cors: "npm:^2.8.5"
-    cross-spawn: "npm:^7.0.3"
+    cross-spawn: "npm:^7.0.5"
     eventsource: "npm:^3.0.2"
+    eventsource-parser: "npm:^3.0.0"
     express: "npm:^5.0.1"
     express-rate-limit: "npm:^7.5.0"
     pkce-challenge: "npm:^5.0.0"
     raw-body: "npm:^3.0.0"
     zod: "npm:^3.23.8"
     zod-to-json-schema: "npm:^3.24.1"
-  checksum: 10/bf388e3f5082839ccf32eb4f16e086ead71310f30c3103ff99f337d7bcfc6da6b3377dc9bd64ac9b862969487081c36889faea02c5c30805695e8addac96b9a8
+  checksum: 10/2f462fc1fc1f06c6c4b1e01e403f01e41ba5aaaaebd298381ccf70242d1c73423c9c4a2b7717b19c190e65a098979ccebf2f50b159c55870f5f3977d5b24e269
   languageName: node
   linkType: hard
 
@@ -16649,7 +16652,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^6.12.0, ajv@npm:^6.12.4":
+"ajv@npm:^6.12.0, ajv@npm:^6.12.4, ajv@npm:^6.12.6":
   version: 6.12.6
   resolution: "ajv@npm:6.12.6"
   dependencies:
@@ -19291,7 +19294,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cross-spawn@npm:^7.0.1, cross-spawn@npm:^7.0.3, cross-spawn@npm:^7.0.6":
+"cross-spawn@npm:^7.0.1, cross-spawn@npm:^7.0.3, cross-spawn@npm:^7.0.5, cross-spawn@npm:^7.0.6":
   version: 7.0.6
   resolution: "cross-spawn@npm:7.0.6"
   dependencies:
@@ -21149,10 +21152,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventsource-parser@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "eventsource-parser@npm:3.0.1"
-  checksum: 10/2730c54c3cb47d55d2967f2ece843f9fc95d8a11c2fef6fece8d17d9080193cbe3cd9ac7b04a325977f63cbf8c1664fdd0512dec1aec601666a5c5bd8564b61f
+"eventsource-parser@npm:^3.0.0, eventsource-parser@npm:^3.0.1":
+  version: 3.0.3
+  resolution: "eventsource-parser@npm:3.0.3"
+  checksum: 10/b8f8e79333441ad0eb9299e3fa693ab506892ffc53f0cc1d23134090351cf2d71c8e405a2e879f6acfbd2e17f41d5a00dafba05ff25c82141fc07078ad992187
   languageName: node
   linkType: hard
 

@@ -7,33 +7,8 @@ import type { ChunkSimilarity, Models } from '../../../models';
 import type { CopilotContextService } from '../context';
 import type { ContextSession } from '../context/session';
 import type { CopilotChatOptions } from '../providers';
+import { clearEmbeddingChunk } from '../utils';
 import { toolError } from './error';
-
-const FILTER_PREFIX = [
-  'Title: ',
-  'Created at: ',
-  'Updated at: ',
-  'Created by: ',
-  'Updated by: ',
-];
-
-function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
-  if (chunk.content) {
-    const lines = chunk.content.split('\n');
-    let maxLines = 5;
-    while (maxLines > 0 && lines.length > 0) {
-      if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
-        lines.shift();
-        maxLines--;
-      } else {
-        // only process consecutive metadata rows
-        break;
-      }
-    }
-    return { ...chunk, content: lines.join('\n') };
-  }
-  return chunk;
-}
 
 export const buildDocSearchGetter = (
   ac: AccessController,

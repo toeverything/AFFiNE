@@ -2,9 +2,12 @@ import { Readable } from 'node:stream';
 
 import type { Request } from 'express';
 
-import { readBufferWithLimit } from '../../base';
-import { PromptTools } from './providers';
-import { MAX_EMBEDDABLE_SIZE, ToolsConfig } from './types';
+import { OneMB, readBufferWithLimit } from '../../base';
+import type { ChunkSimilarity } from '../../models';
+import type { PromptTools } from './providers';
+import type { ToolsConfig } from './types';
+
+export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;
 
 export function readStream(
   readable: Readable,
@@ -79,4 +82,30 @@ export function getTools(
     }
   });
   return result;
+}
+
+const FILTER_PREFIX = [
+  'Title: ',
+  'Created at: ',
+  'Updated at: ',
+  'Created by: ',
+  'Updated by: ',
+];
+
+export function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
+  if (chunk.content) {
+    const lines = chunk.content.split('\n');
+    let maxLines = 5;
+    while (maxLines > 0 && lines.length > 0) {
+      if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
+        lines.shift();
+        maxLines--;
+      } else {
+        // only process consecutive metadata rows
+        break;
+      }
+    }
+    return { ...chunk, content: lines.join('\n') };
+  }
+  return chunk;
 }
