@@ -7,24 +7,28 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
   public static let operationName: String = "getCopilotRecentSessions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: $limit } options: { fork: false, sessionOrder: desc, withMessages: false } ) { __typename ...PaginatedCopilotChats } } } }"#,
+      #"query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10, $offset: Int = 0) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: $limit, offset: $offset } options: { action: false, fork: false, sessionOrder: desc, withMessages: false } ) { __typename ...PaginatedCopilotChats } } } }"#,
       fragments: [CopilotChatHistory.self, CopilotChatMessage.self, PaginatedCopilotChats.self]
     ))
 
   public var workspaceId: String
   public var limit: GraphQLNullable<Int>
+  public var offset: GraphQLNullable<Int>
 
   public init(
     workspaceId: String,
-    limit: GraphQLNullable<Int> = 10
+    limit: GraphQLNullable<Int> = 10,
+    offset: GraphQLNullable<Int> = 0
   ) {
     self.workspaceId = workspaceId
     self.limit = limit
+    self.offset = offset
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
-    "limit": limit
+    "limit": limit,
+    "offset": offset
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -65,8 +69,12 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("chats", Chats.self, arguments: [
-            "pagination": ["first": .variable("limit")],
+            "pagination": [
+              "first": .variable("limit"),
+              "offset": .variable("offset")
+            ],
             "options": [
+              "action": false,
               "fork": false,
               "sessionOrder": "desc",
               "withMessages": false
