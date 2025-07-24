@@ -103,54 +103,52 @@ export class InlineCommentManager extends LifeCycleWatcher {
     id: CommentId,
     selections: BaseSelection[]
   ) => {
-    const needCommentTexts = selections
-      .map(selection => {
-        if (!selection.is(TextSelection)) return [];
-        const [_, { selectedBlocks }] = this.std.command
-          .chain()
-          .pipe(getSelectedBlocksCommand, {
-            textSelection: selection,
-          })
-          .run();
+    const needCommentTexts = selections.flatMap(selection => {
+      if (!selection.is(TextSelection)) return [];
+      const [_, { selectedBlocks }] = this.std.command
+        .chain()
+        .pipe(getSelectedBlocksCommand, {
+          textSelection: selection,
+        })
+        .run();
 
-        if (!selectedBlocks) return [];
+      if (!selectedBlocks) return [];
 
-        type MakeRequired<T, K extends keyof T> = T & {
-          [key in K]: NonNullable<T[key]>;
-        };
+      type MakeRequired<T, K extends keyof T> = T & {
+        [key in K]: NonNullable<T[key]>;
+      };
 
-        return selectedBlocks
-          .map(
-            ({ model }) =>
-              [model, getInlineEditorByModel(this.std, model)] as const
-          )
-          .filter(
-            (
-              pair
-            ): pair is [MakeRequired<BlockModel, 'text'>, AffineInlineEditor] =>
-              !!pair[0].text && !!pair[1]
-          )
-          .map(([model, inlineEditor]) => {
-            let from: TextRangePoint;
-            let to: TextRangePoint | null;
-            if (model.id === selection.from.blockId) {
-              from = selection.from;
-              to = null;
-            } else if (model.id === selection.to?.blockId) {
-              from = selection.to;
-              to = null;
-            } else {
-              from = {
-                blockId: model.id,
-                index: 0,
-                length: model.text.yText.length,
-              };
-              to = null;
-            }
-            return [new TextSelection({ from, to }), inlineEditor] as const;
-          });
-      })
-      .flat();
+      return selectedBlocks
+        .map(
+          ({ model }) =>
+            [model, getInlineEditorByModel(this.std, model)] as const
+        )
+        .filter(
+          (
+            pair
+          ): pair is [MakeRequired<BlockModel, 'text'>, AffineInlineEditor] =>
+            !!pair[0].text && !!pair[1]
+        )
+        .map(([model, inlineEditor]) => {
+          let from: TextRangePoint;
+          let to: TextRangePoint | null;
+          if (model.id === selection.from.blockId) {
+            from = selection.from;
+            to = null;
+          } else if (model.id === selection.to?.blockId) {
+            from = selection.to;
+            to = null;
+          } else {
+            from = {
+              blockId: model.id,
+              index: 0,
+              length: model.text.yText.length,
+            };
+            to = null;
+          }
+          return [new TextSelection({ from, to }), inlineEditor] as const;
+        });
+    });
 
     if (needCommentTexts.length === 0) return;
 

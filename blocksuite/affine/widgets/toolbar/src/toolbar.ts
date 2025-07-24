@@ -418,9 +418,9 @@ export class AffineToolbarWidget extends WidgetComponent {
           return;
         }
 
-        const elementIds = selections
-          .map(s => (s.editing || s.inoperable ? [] : s.elements))
-          .flat();
+        const elementIds = selections.flatMap(s =>
+          s.editing || s.inoperable ? [] : s.elements
+        );
         const count = elementIds.length;
         const activated = context.activated && Boolean(count);
 

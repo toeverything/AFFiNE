@@ -113,11 +113,9 @@ export class LinkedDocPopover extends SignalWatcher(
   }
 
   private get _flattenActionList() {
-    return this._actionGroup
-      .map(group =>
-        group.items.map(item => ({ ...item, groupName: group.name }))
-      )
-      .flat();
+    return this._actionGroup.flatMap(group =>
+      group.items.map(item => ({ ...item, groupName: group.name }))
+    );
   }
 
   private get _query() {
