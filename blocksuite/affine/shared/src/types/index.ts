@@ -43,6 +43,8 @@ export type AffineTextStyleAttributes = {
   code?: true | null;
   color?: string | null;
   background?: string | null;
+  superscript?: true | null;
+  subscript?: true | null;
 };
 
 export type AffineTextAttributes = AffineTextStyleAttributes & {
