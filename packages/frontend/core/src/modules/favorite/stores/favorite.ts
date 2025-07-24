@@ -17,20 +17,26 @@ export class FavoriteStore extends Store {
   }
 
   watchIsLoading() {
-    return this.workspaceDBService.userdataDB$
-      .map(db => LiveData.from(db.favorite.isLoading$, false))
-      .flat();
+    return (
+      this.workspaceDBService.userdataDB$
+        .map(db => LiveData.from(db.favorite.isLoading$, false))
+        // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
+        .flat()
+    );
   }
 
   watchFavorites() {
-    return this.workspaceDBService.userdataDB$
-      .map(db => LiveData.from(db.favorite.find$(), []))
-      .flat()
-      .map(raw => {
-        return raw
-          .map(data => this.toRecord(data))
-          .filter((record): record is FavoriteRecord => !!record);
-      });
+    return (
+      this.workspaceDBService.userdataDB$
+        .map(db => LiveData.from(db.favorite.find$(), []))
+        // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
+        .flat()
+        .map(raw => {
+          return raw
+            .map(data => this.toRecord(data))
+            .filter((record): record is FavoriteRecord => !!record);
+        })
+    );
   }
 
   addFavorite(

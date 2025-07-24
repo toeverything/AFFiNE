@@ -11,27 +11,36 @@ export class TemplateDocSettingStore extends Store {
   }
 
   watchIsLoading() {
-    return this.dbService.userdataDB$
-      .map(db => LiveData.from(db.settings.isLoading$, false))
-      .flat();
+    return (
+      this.dbService.userdataDB$
+        .map(db => LiveData.from(db.settings.isLoading$, false))
+        // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
+        .flat()
+    );
   }
 
   watchSetting() {
-    return this.dbService.userdataDB$
-      .map(db => LiveData.from(db.settings.find$({ key: this.key }), []))
-      .flat()
-      .map(raw => raw?.[0]?.value as TemplateDocSettings);
+    return (
+      this.dbService.userdataDB$
+        .map(db => LiveData.from(db.settings.find$({ key: this.key }), []))
+        // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
+        .flat()
+        .map(raw => raw?.[0]?.value as TemplateDocSettings)
+    );
   }
 
   watchSettingKey<T extends keyof TemplateDocSettings>(key: T) {
-    return this.dbService.userdataDB$
-      .map(db => LiveData.from(db.settings.find$({ key: this.key }), []))
-      .flat()
-      .map(raw => {
-        const value = raw?.[0]?.value as TemplateDocSettings;
-        if (!value) return undefined;
-        return value[key];
-      });
+    return (
+      this.dbService.userdataDB$
+        .map(db => LiveData.from(db.settings.find$({ key: this.key }), []))
+        // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
+        .flat()
+        .map(raw => {
+          const value = raw?.[0]?.value as TemplateDocSettings;
+          if (!value) return undefined;
+          return value[key];
+        })
+    );
   }
 
   updateSetting<T extends keyof TemplateDocSettings>(

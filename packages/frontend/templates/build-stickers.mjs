@@ -51,8 +51,7 @@ import stickerContent${id} from './stickers/${category}/Content/${sticker}';`,
 }
 
 const importStatements = Object.values(data)
-  .map(v => Object.values(v).map(v => v.importStatement))
-  .flat()
+  .flatMap(v => Object.values(v).map(v => v.importStatement))
   .join('\n');
 
 const templates = `const templates = {

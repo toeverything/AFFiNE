@@ -56,6 +56,7 @@ export class ServersService extends Service {
         }))
       )
     )
+    // oxlint-disable-next-line unicorn/prefer-array-flat-map
     .flat();
 
   server$(id: string) {

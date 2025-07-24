@@ -22,11 +22,13 @@ export class QuickSearch extends Entity {
 
   readonly items$ = this.state$
     .map(s => s?.sessions.map(session => session.items$) ?? [])
+    // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
     .flat()
     .map(items => items.flat());
 
   readonly error$ = this.state$
     .map(s => s?.sessions.map(session => session.error$) ?? [])
+    // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
     .flat()
     .map(items => items.find(v => !!v) ?? null);
 
@@ -40,6 +42,7 @@ export class QuickSearch extends Entity {
         s?.sessions.map(session => session.isLoading$ ?? new LiveData(false)) ??
         []
     )
+    // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
     .flat()
     .map(items => items.reduce((acc, item) => acc || item, false));
 
@@ -53,6 +56,7 @@ export class QuickSearch extends Entity {
             >
         ) ?? []
     )
+
     .flat()
     .map(items => mean(items.filter((v): v is number => v === null)));
 
