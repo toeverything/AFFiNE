@@ -148,6 +148,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       .affineFeatureFlagService=${this.affineFeatureFlagService}
       .notificationService=${this.notificationService}
       .theme=${this.affineThemeService.appTheme.themeSignal}
+      .independentMode=${this.independentMode}
       .docDisplayService=${this.docDisplayService}
       .onOpenDoc=${this.onOpenDoc}
     ></chat-content-stream-objects>`;

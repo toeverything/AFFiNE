@@ -6,11 +6,12 @@ import {
 } from '@affine/core/modules/collection';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { FilterMinusIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
@@ -26,9 +27,11 @@ const CollectionIcon = () => <ViewLayersIcon />;
 export const NavigationPanelCollectionNode = ({
   collectionId,
   operations: additionalOperations,
+  parentPath,
 }: {
   collectionId: string;
   operations?: NodeOperation[];
+  parentPath: string[];
 }) => {
   const t = useI18n();
   const { globalContextService, collectionService, workspaceDialogService } =
@@ -37,17 +40,28 @@ export const NavigationPanelCollectionNode = ({
       CollectionService,
       WorkspaceDialogService,
     });
+  const navigationPanelService = useService(NavigationPanelService);
   const active =
     useLiveData(globalContextService.globalContext.collectionId.$) ===
     collectionId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...parentPath, `collection-${collectionId}`],
+    [parentPath, collectionId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
 
   const collection = useLiveData(collectionService.collection$(collectionId));
   const name = useLiveData(collection?.name$);
 
   const handleOpenCollapsed = useCallback(() => {
     setCollapsed(false);
-  }, []);
+  }, [setCollapsed]);
 
   const handleEditCollection = useCallback(() => {
     if (!collection) {
@@ -95,6 +109,7 @@ export const NavigationPanelCollectionNode = ({
       <NavigationPanelCollectionNodeChildren
         collection={collection}
         onAddDoc={handleAddDocToCollection}
+        path={path}
       />
     </NavigationPanelTreeNode>
   );
@@ -103,9 +118,11 @@ export const NavigationPanelCollectionNode = ({
 const NavigationPanelCollectionNodeChildren = ({
   collection,
   onAddDoc,
+  path,
 }: {
   collection: Collection;
   onAddDoc?: () => void;
+  path: string[];
 }) => {
   const t = useI18n();
   const { shareDocsListService, collectionService } = useServices({
@@ -147,6 +164,7 @@ const NavigationPanelCollectionNodeChildren = ({
         <NavigationPanelDocNode
           key={docId}
           docId={docId}
+          parentPath={path}
           operations={
             allowList
               ? [

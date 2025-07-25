@@ -4,14 +4,15 @@ import {
   toast,
 } from '@affine/component';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   NavigationPanelTreeNode,
@@ -31,6 +32,7 @@ export const NavigationPanelTagNode = ({
   operations: additionalOperations,
   dropEffect,
   canDrop,
+  parentPath,
 }: {
   tagId: string;
 } & GenericNavigationPanelNode) => {
@@ -39,9 +41,20 @@ export const NavigationPanelTagNode = ({
     TagService,
     GlobalContextService,
   });
+  const navigationPanelService = useService(NavigationPanelService);
   const active =
     useLiveData(globalContextService.globalContext.tagId.$) === tagId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...(parentPath ?? []), `tag-${tagId}`],
+    [parentPath, tagId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
 
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
   const tagColor = useLiveData(tagRecord?.color$);
@@ -154,7 +167,7 @@ export const NavigationPanelTagNode = ({
       () => ({
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      []
+      [setCollapsed]
     )
   );
 
@@ -188,7 +201,7 @@ export const NavigationPanelTagNode = ({
       dropEffect={handleDropEffectOnTag}
       data-testid={`navigation-panel-tag-${tagId}`}
     >
-      <NavigationPanelTagNodeDocs tag={tagRecord} />
+      <NavigationPanelTagNodeDocs tag={tagRecord} path={path} />
     </NavigationPanelTreeNode>
   );
 };
@@ -198,7 +211,13 @@ export const NavigationPanelTagNode = ({
  * so we split the tag node children into a separate component,
  * so it won't be rendered when the tag node is collapsed.
  */
-export const NavigationPanelTagNodeDocs = ({ tag }: { tag: Tag }) => {
+export const NavigationPanelTagNodeDocs = ({
+  tag,
+  path,
+}: {
+  tag: Tag;
+  path: string[];
+}) => {
   const tagDocIds = useLiveData(tag.pageIds$);
 
   return tagDocIds.map(docId => (
@@ -209,6 +228,7 @@ export const NavigationPanelTagNodeDocs = ({ tag }: { tag: Tag }) => {
       location={{
         at: 'navigation-panel:tags:docs',
       }}
+      parentPath={path}
     />
   ));
 };

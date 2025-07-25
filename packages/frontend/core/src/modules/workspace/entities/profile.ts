@@ -24,6 +24,7 @@ export interface WorkspaceProfileInfo {
   isOwner?: boolean;
   isAdmin?: boolean;
   isTeam?: boolean;
+  isEmpty?: boolean;
 }
 
 /**
@@ -61,6 +62,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
   }
 
   private setProfile(info: WorkspaceProfileInfo) {
+    console.log('setProfile', info, isEqual(this.profile$.value, info));
     if (isEqual(this.profile$.value, info)) {
       return;
     }
