@@ -46,6 +46,7 @@ export class QuickSearch extends Entity {
     .flat()
     .map(items => items.reduce((acc, item) => acc || item, false));
 
+  // oxlint-disable-next-line unicorn/prefer-array-flat-map -- LiveData doesn't have flatMap
   readonly loadingProgress$ = this.state$
     .map(
       s =>
