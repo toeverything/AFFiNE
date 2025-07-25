@@ -9,6 +9,7 @@ import { createDocReadTool } from './doc-read';
 import { createDocSemanticSearchTool } from './doc-semantic-search';
 import { createExaCrawlTool } from './exa-crawl';
 import { createExaSearchTool } from './exa-search';
+import { createSectionEditTool } from './section-edit';
 
 export interface CustomAITools extends ToolSet {
   code_artifact: ReturnType<typeof createCodeArtifactTool>;
@@ -18,6 +19,7 @@ export interface CustomAITools extends ToolSet {
   doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
   doc_read: ReturnType<typeof createDocReadTool>;
   doc_compose: ReturnType<typeof createDocComposeTool>;
+  section_edit: ReturnType<typeof createSectionEditTool>;
   web_search_exa: ReturnType<typeof createExaSearchTool>;
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
 }
@@ -32,3 +34,4 @@ export * from './doc-semantic-search';
 export * from './error';
 export * from './exa-crawl';
 export * from './exa-search';
+export * from './section-edit';

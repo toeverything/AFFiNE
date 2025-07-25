@@ -53,6 +53,9 @@ export class ChatContentStreamObjects extends WithDisposable(
   accessor theme!: Signal<ColorScheme>;
 
   @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
@@ -123,6 +126,18 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
         ></doc-read-result>`;
+      case 'section_edit':
+        return html`
+          <section-edit-tool
+            .data=${streamObject}
+            .extensions=${this.extensions}
+            .affineFeatureFlagService=${this.affineFeatureFlagService}
+            .notificationService=${this.notificationService}
+            .theme=${this.theme}
+            .host=${this.host}
+            .independentMode=${this.independentMode}
+          ></section-edit-tool>
+        `;
       default: {
         const name = streamObject.toolName + ' tool calling';
         return html`
@@ -199,6 +214,18 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
         ></doc-read-result>`;
+      case 'section_edit':
+        return html`
+          <section-edit-tool
+            .data=${streamObject}
+            .extensions=${this.extensions}
+            .affineFeatureFlagService=${this.affineFeatureFlagService}
+            .notificationService=${this.notificationService}
+            .theme=${this.theme}
+            .host=${this.host}
+            .independentMode=${this.independentMode}
+          ></section-edit-tool>
+        `;
       default: {
         const name = streamObject.toolName + ' tool result';
         return html`

@@ -78,6 +78,7 @@ export class AIChatBlockMessage extends LitElement {
       .affineFeatureFlagService=${this.textRendererOptions
         .affineFeatureFlagService}
       .notificationService=${notificationService}
+      .independentMode=${false}
       .theme=${this.host.std.get(ThemeProvider).app$}
     ></chat-content-stream-objects>`;
   }

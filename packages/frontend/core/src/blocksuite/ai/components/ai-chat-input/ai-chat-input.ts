@@ -593,10 +593,10 @@ export class AIChatInput extends SignalWatcher(
     this.isInputEmpty = true;
     this.textarea.style.height = 'unset';
 
-    await this.send(value);
     await this.aiDraftService.setDraft({
       input: '',
     });
+    await this.send(value);
   };
 
   private readonly _handleModelChange = (modelId: string) => {

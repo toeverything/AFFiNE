@@ -159,6 +159,7 @@
       }
     ],
     "unicorn/prefer-array-some": "error",
+    "unicorn/prefer-array-flat-map": "off",
     "unicorn/no-useless-promise-resolve-reject": "error",
     "unicorn/no-unnecessary-await": "error",
     "unicorn/no-useless-fallback-in-spread": "error",
