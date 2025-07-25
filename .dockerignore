@@ -1,0 +1,28 @@
+# Ignore node_modules (all levels)
+node_modules
+**/node_modules
+.yarn/cache
+
+# Git and logs
+.git
+*.log
+
+# Environment & config
+*.env
+*.tsbuildinfo
+.DS_Store
+
+# Build output
+dist
+build
+coverage
+**/dist
+**/build
+
+# Archives
+*.zip
+*.tar.gz
+
+# Ignore Docker-related files (optional, depending on your setup)
+Dockerfile
+docker-compose*.yml

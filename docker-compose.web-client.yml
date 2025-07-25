@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  affine-web-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.web-client
+    ports:
+      - '8080:80'

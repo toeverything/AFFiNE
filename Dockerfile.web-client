@@ -1,0 +1,26 @@
+# Stage 1: Build the AFFiNE web client
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Enable Yarn
+RUN corepack enable
+
+# Copy source code into the container
+COPY . .
+
+# Install dependencies
+RUN yarn install --immutable
+
+# ✅ Replace this with the correct workspace name
+RUN yarn workspace @affine/web build
+
+# Stage 2: Use NGINX to serve the static files
+FROM nginx:alpine
+
+# Copy the built web client output
+COPY --from=builder /app/packages/web/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
