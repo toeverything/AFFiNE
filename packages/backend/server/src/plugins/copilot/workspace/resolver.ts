@@ -103,6 +103,7 @@ export class CopilotWorkspaceEmbeddingConfigResolver {
 
     return ignoredDocs;
   }
+
   @Mutation(() => Number, {
     name: 'updateWorkspaceEmbeddingIgnoredDocs',
     complexity: 2,

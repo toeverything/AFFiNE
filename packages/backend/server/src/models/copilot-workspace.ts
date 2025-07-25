@@ -152,7 +152,7 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
   }
 
   @Transactional()
-  async getWorkspaceEmbeddingStatus(workspaceId: string) {
+  async getEmbeddingStatus(workspaceId: string) {
     const ignoredDocIds = (await this.listIgnoredDocIds(workspaceId)).map(
       d => d.docId
     );
@@ -168,9 +168,13 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     };
 
     const [docTotal, docEmbedded, fileTotal, fileEmbedded] = await Promise.all([
-      this.db.snapshot.count({ where: snapshotCondition }),
-      this.db.snapshot.count({
+      this.db.snapshot.findMany({
+        where: snapshotCondition,
+        select: { id: true },
+      }),
+      this.db.snapshot.findMany({
         where: { ...snapshotCondition, embedding: { some: {} } },
+        select: { id: true },
       }),
       this.db.aiWorkspaceFiles.count({ where: { workspaceId } }),
       this.db.aiWorkspaceFiles.count({
@@ -178,9 +182,23 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
       }),
     ]);
 
+    const docTotalIds = docTotal.map(d => d.id);
+    const docTotalSet = new Set(docTotalIds);
+    const outdatedDocPrefix = `${workspaceId}:space:`;
+    const duplicateOutdatedDocSet = new Set(
+      docTotalIds
+        .filter(id => id.startsWith(outdatedDocPrefix))
+        .filter(id => docTotalSet.has(id.slice(outdatedDocPrefix.length)))
+    );
+
     return {
-      total: docTotal + fileTotal,
-      embedded: docEmbedded + fileEmbedded,
+      total:
+        docTotalIds.filter(id => !duplicateOutdatedDocSet.has(id)).length +
+        fileTotal,
+      embedded:
+        docEmbedded
+          .map(d => d.id)
+          .filter(id => !duplicateOutdatedDocSet.has(id)).length + fileEmbedded,
     };
   }
 

@@ -531,6 +531,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
       'Make it longer',
       'Make it shorter',
       'Continue writing',
+      'Section Edit',
       'Chat With AFFiNE AI',
       'Search With AFFiNE AI',
     ],

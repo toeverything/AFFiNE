@@ -22,11 +22,20 @@ class MainHeaderView: UIView {
     $0.textAlignment = .center
   }
 
+  private lazy var modelMenu = UIDeferredMenuElement.uncached { completion in
+    completion([])
+  }
+
   private lazy var dropdownButton = UIButton(type: .system).then {
     $0.imageView?.contentMode = .scaleAspectFit
     $0.setImage(UIImage.affineArrowDown, for: .normal)
     $0.tintColor = UIColor.affineIconPrimary
     $0.addTarget(self, action: #selector(dropdownButtonTapped), for: .touchUpInside)
+    $0.showsMenuAsPrimaryAction = true
+    $0.menu = UIMenu(options: [.displayInline], children: [
+      modelMenu,
+    ])
+    $0.isHidden = true
   }
 
   private lazy var centerStackView = UIStackView().then {
@@ -45,6 +54,13 @@ class MainHeaderView: UIView {
     $0.layer.cornerRadius = 8
     $0.addTarget(self, action: #selector(menuButtonTapped), for: .touchUpInside)
     $0.setContentHuggingPriority(.required, for: .horizontal)
+    $0.showsMenuAsPrimaryAction = true
+    $0.menu = .init(options: [.displayInline], children: [
+      UIAction(title: "Clear History", image: .affineBroom, handler: { _ in
+        ChatManager.shared.clearCurrentSession()
+        ChatManager.shared.clearAll()
+      }),
+    ])
   }
 
   private lazy var leftSpacerView = UIView()

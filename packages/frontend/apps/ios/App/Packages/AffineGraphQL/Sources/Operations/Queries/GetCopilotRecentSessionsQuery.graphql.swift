@@ -7,7 +7,7 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
   public static let operationName: String = "getCopilotRecentSessions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: $limit } options: { fork: false, sessionOrder: desc, withMessages: true } ) { __typename ...PaginatedCopilotChats } } } }"#,
+      #"query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: $limit } options: { fork: false, sessionOrder: desc, withMessages: false } ) { __typename ...PaginatedCopilotChats } } } }"#,
       fragments: [CopilotChatHistory.self, CopilotChatMessage.self, PaginatedCopilotChats.self]
     ))
 
@@ -69,7 +69,7 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
             "options": [
               "fork": false,
               "sessionOrder": "desc",
-              "withMessages": true
+              "withMessages": false
             ]
           ]),
         ] }

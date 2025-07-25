@@ -22,9 +22,10 @@ export const parseBlockToMd = (
       block.content
         .split('\n')
         .map(line => padding + line)
+        .slice(0, -1)
         .join('\n') +
       '\n' +
-      block.children.map(b => parseBlockToMd(b, padding + '  ')).join('')
+      block.children.map(b => parseBlockToMd(b, padding + '    ')).join('')
     );
   } else {
     return block.children.map(b => parseBlockToMd(b, padding)).join('');
@@ -109,7 +110,7 @@ export function parseBlock(
           const checked = yBlock.get('prop:checked') as boolean;
           prefix = checked ? '- [x] ' : '- [ ] ';
         }
-        result.content = prefix + toMd() + '\n';
+        result.content = prefix + toMd();
         break;
       }
       case 'affine:code': {

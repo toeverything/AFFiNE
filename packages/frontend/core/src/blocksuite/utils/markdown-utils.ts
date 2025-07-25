@@ -4,7 +4,6 @@ import {
   defaultImageProxyMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
-  MixTextAdapter,
   pasteMiddleware,
   PlainTextAdapter,
   titleMiddleware,
@@ -146,7 +145,7 @@ export const markdownToSnapshot = async (
     ? [defaultImageProxyMiddleware, pasteMiddleware(host.std)]
     : [defaultImageProxyMiddleware];
   const transformer = store.getTransformer(middlewares);
-  const markdownAdapter = new MixTextAdapter(transformer, store.provider);
+  const markdownAdapter = new MarkdownAdapter(transformer, store.provider);
   const payload = {
     file: markdown,
     assets: transformer.assetsManager,
@@ -154,10 +153,31 @@ export const markdownToSnapshot = async (
     pageId: store.id,
   };
 
-  const snapshot = await markdownAdapter.toSliceSnapshot(payload);
+  const page = await markdownAdapter.toDoc(payload);
+
+  if (page) {
+    const pageSnapshot = transformer.docToSnapshot(page);
+    if (pageSnapshot) {
+      const snapshot: SliceSnapshot = {
+        type: 'slice',
+        content: [
+          pageSnapshot.blocks.children.find(
+            b => b.flavour === 'affine:note'
+          ) as BlockSnapshot,
+        ],
+        workspaceId: payload.workspaceId,
+        pageId: payload.pageId,
+      };
+
+      return {
+        snapshot,
+        transformer,
+      };
+    }
+  }
 
   return {
-    snapshot,
+    snapshot: null,
     transformer,
   };
 };

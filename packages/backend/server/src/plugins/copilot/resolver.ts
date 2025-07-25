@@ -37,7 +37,7 @@ import {
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { DocReader } from '../../core/doc';
-import { AccessController } from '../../core/permission';
+import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { CopilotCronJobs } from './cron';
@@ -420,7 +420,8 @@ export class CopilotResolver {
 
   private async assertPermission(
     user: CurrentUser,
-    options: { workspaceId?: string | null; docId?: string | null }
+    options: { workspaceId?: string | null; docId?: string | null },
+    fallbackAction?: DocAction
   ) {
     const { workspaceId, docId } = options;
     if (!workspaceId) {
@@ -431,7 +432,7 @@ export class CopilotResolver {
         .user(user.id)
         .doc({ workspaceId, docId })
         .allowLocal()
-        .assert('Doc.Update');
+        .assert(fallbackAction ?? 'Doc.Update');
     } else {
       await this.ac
         .user(user.id)
@@ -510,7 +511,7 @@ export class CopilotResolver {
     if (!workspaceId) {
       return [];
     } else {
-      await this.assertPermission(user, { workspaceId, docId });
+      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
     const histories = await this.chatSession.list(
@@ -540,7 +541,7 @@ export class CopilotResolver {
     if (!workspaceId) {
       return paginate([], 'updatedAt', pagination, 0);
     } else {
-      await this.assertPermission(user, { workspaceId, docId });
+      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
     const finalOptions = Object.assign(

@@ -17,6 +17,7 @@ enum BridgedWindowScript: String {
   case getCurrentServerBaseUrl = "window.getCurrentServerBaseUrl()"
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
   case getCurrentDocId = "window.getCurrentDocId();"
+  case getAiButtonFeatureFlag = "window.getAiButtonFeatureFlag();"
   case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
   case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
 

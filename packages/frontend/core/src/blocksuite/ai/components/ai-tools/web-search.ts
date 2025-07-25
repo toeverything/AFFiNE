@@ -47,6 +47,7 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
       ></tool-call-card>
     `;
   }
+
   renderToolResult() {
     if (this.data.type !== 'tool-result') {
       return nothing;

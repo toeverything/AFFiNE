@@ -20,12 +20,22 @@ export const body = style({
   width: '100%',
   height: '100%',
   borderTop: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
+  selectors: {
+    '&[data-mobile]': {
+      borderTop: 'none',
+    },
+  },
 });
 
 export const content = style({
   maxWidth: 944,
   padding: '0px 50px',
   margin: '0 auto',
+  selectors: {
+    '[data-mobile] &': {
+      padding: '0 24px',
+    },
+  },
 });
 
 export const docTitleContainer = style({

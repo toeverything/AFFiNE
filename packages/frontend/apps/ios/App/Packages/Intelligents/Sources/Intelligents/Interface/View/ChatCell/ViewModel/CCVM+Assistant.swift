@@ -38,8 +38,7 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
   var citations: [CitationViewModel]?
   var actions: [MessageActionViewModel]?
 
-  var documentBlocks: [MarkdownBlockNode]
-  var documentRenderedContent: RenderContext
+  var preprocessedContent: MarkdownTextView.PreprocessContent
 
   init(
     id: UUID,
@@ -53,7 +52,7 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
     actions: [MessageActionViewModel]? = nil
   ) {
     // time expensive rendering should not happen here
-    assert(!Thread.isMainThread || content.isEmpty)
+    assert(!Thread.isMainThread || content.count < 10) // allow placeholder content
 
     self.id = id
     self.content = content
@@ -67,21 +66,10 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
 
     let parser = MarkdownParser()
     let parserResult = parser.parse(content)
-    documentBlocks = parserResult.document
-    var renderedContexts: [String: RenderedItem] = [:]
-    for (key, value) in parserResult.mathContext {
-      let image = MathRenderer.renderToImage(
-        latex: value,
-        fontSize: MarkdownTheme.default.fonts.body.pointSize,
-        textColor: MarkdownTheme.default.colors.body
-      )?.withRenderingMode(.alwaysTemplate)
-      let renderedContext = RenderedItem(
-        image: image,
-        text: value
-      )
-      renderedContexts["math://\(key)"] = renderedContext
-    }
-    documentRenderedContent = renderedContexts
+    preprocessedContent = MarkdownTextView.PreprocessContent(
+      parserResult: parserResult,
+      theme: .default,
+    )
   }
 }
 

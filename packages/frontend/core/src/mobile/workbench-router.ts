@@ -4,6 +4,7 @@ import { Component as All } from './pages/workspace/all';
 import { Component as Collection } from './pages/workspace/collection';
 import { Component as CollectionDetail } from './pages/workspace/collection/detail';
 import { Component as Home } from './pages/workspace/home';
+import { Component as Journals } from './pages/workspace/journals';
 import { Component as Search } from './pages/workspace/search';
 import { Component as Tag } from './pages/workspace/tag';
 import { Component as TagDetail } from './pages/workspace/tag/detail';
@@ -40,6 +41,11 @@ export const workbenchRoutes = [
     path: '/tag/:tagId',
     // lazy: () => import('./pages/workspace/tag/detail'),
     Component: TagDetail,
+  },
+  {
+    path: '/journals',
+    // lazy: () => import('./pages/workspace/journals'),
+    Component: Journals,
   },
   {
     path: '/trash',

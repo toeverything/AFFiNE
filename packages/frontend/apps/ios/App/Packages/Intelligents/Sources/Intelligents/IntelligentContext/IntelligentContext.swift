@@ -40,6 +40,7 @@ public class IntelligentContext {
     case currentWorkspaceId
     case currentServerBaseUrl
     case currentI18nLocale
+    case currentAiButtonFeatureFlag
   }
 
   @Published public private(set) var currentSession: ChatSessionObject?
@@ -53,6 +54,7 @@ public class IntelligentContext {
   public enum IntelligentError: Error, LocalizedError {
     case loginRequired(String)
     case sessionCreationFailed(String)
+    case featureClosed
 
     public var errorDescription: String? {
       switch self {
@@ -60,6 +62,8 @@ public class IntelligentContext {
         "Login required: \(reason)"
       case let .sessionCreationFailed(reason):
         "Session creation failed: \(reason)"
+      case let .featureClosed:
+        "Intelligent feature closed"
       }
     }
   }
@@ -81,6 +85,11 @@ public class IntelligentContext {
       }
       webViewGroup.wait()
       webViewMetadata = webViewMetadataResult
+      
+      if webViewMetadataResult[.currentAiButtonFeatureFlag] as? Bool == false {
+        completion(.failure(IntelligentError.featureClosed))
+        return
+      }
 
       // Check required webView metadata
       guard let baseUrlString = webViewMetadataResult[.currentServerBaseUrl] as? String,

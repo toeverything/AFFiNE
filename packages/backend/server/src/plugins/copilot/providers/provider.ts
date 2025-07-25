@@ -29,6 +29,7 @@ import {
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
+  createSectionEditTool,
 } from '../tools';
 import { CopilotProviderFactory } from './factory';
 import {
@@ -222,6 +223,10 @@ export abstract class CopilotProvider<C = any> {
           }
           case 'docCompose': {
             tools.doc_compose = createDocComposeTool(prompt, this.factory);
+            break;
+          }
+          case 'sectionEdit': {
+            tools.section_edit = createSectionEditTool(prompt, this.factory);
             break;
           }
         }

@@ -356,6 +356,7 @@ export class CopilotContextRootResolver {
     return false;
   }
 
+  @Throttle('strict')
   @Query(() => ContextWorkspaceEmbeddingStatus, {
     description: 'query workspace embedding status',
   })
@@ -372,9 +373,7 @@ export class CopilotContextRootResolver {
 
     if (this.context.canEmbedding) {
       const { total, embedded } =
-        await this.models.copilotWorkspace.getWorkspaceEmbeddingStatus(
-          workspaceId
-        );
+        await this.models.copilotWorkspace.getEmbeddingStatus(workspaceId);
       return { total, embedded };
     }
 
