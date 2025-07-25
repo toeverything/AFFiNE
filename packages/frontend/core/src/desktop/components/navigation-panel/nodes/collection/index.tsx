@@ -11,6 +11,7 @@ import {
 } from '@affine/core/modules/collection';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -47,6 +48,7 @@ export const NavigationPanelCollectionNode = ({
   operations: additionalOperations,
   canDrop,
   dropEffect,
+  parentPath,
 }: {
   collectionId: string;
 } & GenericNavigationPanelNode) => {
@@ -55,10 +57,21 @@ export const NavigationPanelCollectionNode = ({
     GlobalContextService,
     WorkspaceDialogService,
   });
+  const navigationPanelService = useService(NavigationPanelService);
   const active =
     useLiveData(globalContextService.globalContext.collectionId.$) ===
     collectionId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...(parentPath ?? []), `collection-${collectionId}`],
+    [parentPath, collectionId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
 
   const collectionService = useService(CollectionService);
   const collection = useLiveData(collectionService.collection$(collectionId));
@@ -160,7 +173,7 @@ export const NavigationPanelCollectionNode = ({
 
   const handleOpenCollapsed = useCallback(() => {
     setCollapsed(false);
-  }, []);
+  }, [setCollapsed]);
 
   const handleEditCollection = useCallback(() => {
     if (!collection) {
@@ -217,15 +230,20 @@ export const NavigationPanelCollectionNode = ({
       dropEffect={handleDropEffectOnCollection}
       data-testid={`navigation-panel-collection-${collectionId}`}
     >
-      <NavigationPanelCollectionNodeChildren collection={collection} />
+      <NavigationPanelCollectionNodeChildren
+        collection={collection}
+        path={path}
+      />
     </NavigationPanelTreeNode>
   );
 };
 
 const NavigationPanelCollectionNodeChildren = ({
   collection,
+  path,
 }: {
   collection: Collection;
+  path: string[];
 }) => {
   const t = useI18n();
   const { collectionService } = useServices({
@@ -264,6 +282,7 @@ const NavigationPanelCollectionNodeChildren = ({
         at: 'navigation-panel:collection:filtered-docs',
         collectionId: collection.id,
       }}
+      parentPath={path}
       operations={
         allowList.has(docId)
           ? [

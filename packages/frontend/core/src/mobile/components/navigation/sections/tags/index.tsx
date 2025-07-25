@@ -5,7 +5,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AddTagIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -25,7 +25,7 @@ export const NavigationPanelTags = () => {
     TagService,
     NavigationPanelService,
   });
-  const navigationPanelSection = navigationPanelService.sections.tags;
+  const path = useMemo(() => ['tags'], []);
   const tags = useLiveData(tagService.tagList.tags$);
   const [showNewTagDialog, setShowNewTagDialog] = useState(false);
 
@@ -36,19 +36,23 @@ export const NavigationPanelTags = () => {
       setShowNewTagDialog(false);
       tagService.tagList.createTag(name, color);
       track.$.navigationPanel.organize.createOrganizeItem({ type: 'tag' });
-      navigationPanelSection.setCollapsed(false);
+      navigationPanelService.setCollapsed(path, false);
     },
-    [navigationPanelSection, tagService]
+    [navigationPanelService, path, tagService]
   );
 
   return (
     <CollapsibleSection
-      name="tags"
+      path={path}
       title={t['com.affine.rootAppSidebar.tags']()}
     >
       <NavigationPanelTreeRoot>
         {tags.map(tag => (
-          <NavigationPanelTagNode key={tag.id} tagId={tag.id} />
+          <NavigationPanelTagNode
+            key={tag.id}
+            tagId={tag.id}
+            parentPath={path}
+          />
         ))}
         <AddItemPlaceholder
           icon={<AddTagIcon />}

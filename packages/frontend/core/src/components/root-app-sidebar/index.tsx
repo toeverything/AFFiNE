@@ -229,7 +229,7 @@ export const RootAppSidebar = memo((): ReactElement => {
         <NavigationPanelTags />
         <NavigationPanelCollections />
         <CollapsibleSection
-          name="others"
+          path={['others']}
           title={t['com.affine.rootAppSidebar.others']()}
           contentStyle={{ padding: '6px 8px 0 8px' }}
         >

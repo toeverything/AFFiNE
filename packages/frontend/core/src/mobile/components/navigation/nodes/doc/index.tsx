@@ -7,6 +7,7 @@ import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { useI18n } from '@affine/i18n';
 import {
   LiveData,
@@ -29,10 +30,12 @@ export const NavigationPanelDocNode = ({
   docId,
   isLinked,
   operations: additionalOperations,
+  parentPath,
 }: {
   docId: string;
   isLinked?: boolean;
   operations?: NodeOperation[];
+  parentPath: string[];
 }) => {
   const t = useI18n();
   const {
@@ -48,9 +51,20 @@ export const NavigationPanelDocNode = ({
     DocDisplayMetaService,
     FeatureFlagService,
   });
+  const navigationPanelService = useService(NavigationPanelService);
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...parentPath, `doc-${docId}`],
+    [parentPath, docId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
   const DocIcon = useLiveData(
@@ -103,7 +117,7 @@ export const NavigationPanelDocNode = ({
       openInfoModal: () => workspaceDialogService.open('doc-info', { docId }),
       openNodeCollapsed: () => setCollapsed(false),
     }),
-    [docId, workspaceDialogService]
+    [docId, setCollapsed, workspaceDialogService]
   );
   const operations = useNavigationPanelDocNodeOperationsMenu(docId, option);
   const { handleAddLinkedPage } = useNavigationPanelDocNodeOperations(
@@ -150,6 +164,7 @@ export const NavigationPanelDocNode = ({
                   key={`${child.docId}-${index}`}
                   docId={child.docId}
                   isLinked
+                  parentPath={path}
                 />
               ))
             : null
