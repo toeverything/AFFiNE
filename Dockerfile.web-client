@@ -6,13 +6,17 @@ WORKDIR /app
 # Enable Yarn
 RUN corepack enable
 
-# Copy source code into the container
-COPY . .
+# Copy only manifest files first to leverage Docker layer caching
+COPY package.json yarn.lock ./  
+COPY workspaces.json ./  
 
 # Install dependencies
-RUN yarn install --immutable
+RUN yarn install --immutable --network-timeout 100000
 
-# ✅ Replace this with the correct workspace name
+# Copy the rest of the source code
+COPY . .
+
+# Build the web client
 RUN yarn workspace @affine/web build
 
 # Stage 2: Use NGINX to serve the static files
@@ -20,6 +24,9 @@ FROM nginx:alpine
 
 # Copy the built web client output
 COPY --from=builder /app/packages/web/dist /usr/share/nginx/html
+
+# Replace the default NGINX config to support SPA routing
+COPY nginx-web-client.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
