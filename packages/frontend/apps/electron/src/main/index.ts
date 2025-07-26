@@ -1,7 +1,6 @@
 import './security-restrictions';
 
 import path from 'node:path';
-
 import * as Sentry from '@sentry/electron/main';
 import { IPCMode } from '@sentry/electron/main';
 import { app } from 'electron';
@@ -24,27 +23,19 @@ app.enableSandbox();
 
 app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
 if (isDev) {
-  // In electron the dev server will be resolved to 0.0.0.0, but it
-  // might be blocked by electron.
-  // See https://github.com/webpack/webpack-dev-server/pull/384
   app.commandLine.appendSwitch('host-rules', 'MAP 0.0.0.0 127.0.0.1');
 }
-// https://github.com/electron/electron/issues/43556
-// // `CalculateNativeWinOcclusion` - Disable native window occlusion tracker (https://groups.google.com/a/chromium.org/g/embedder-dev/c/ZF3uHHyWLKw/m/VDN2hDXMAAAJ)
+
 app.commandLine.appendSwitch(
   'disable-features',
   'PlzDedicatedWorker,CalculateNativeWinOcclusion'
 );
 
-// Following features are enabled from the runtime:
-// `DocumentPolicyIncludeJSCallStacksInCrashReports` - https://www.electronjs.org/docs/latest/api/web-frame-main#framecollectjavascriptcallstack-experimental
-// `EarlyEstablishGpuChannel` - Refs https://issues.chromium.org/issues/40208065
-// `EstablishGpuChannelAsync` - Refs https://issues.chromium.org/issues/40208065
-const featuresToEnable = `DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync`;
+const featuresToEnable =
+  'DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync';
 app.commandLine.appendSwitch('enable-features', featuresToEnable);
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
-// use the same data for internal & beta for testing
 if (overrideSession) {
   const appName = buildType === 'stable' ? 'AFFiNE' : `AFFiNE-${buildType}`;
   const userDataPath = path.join(app.getPath('appData'), appName);
@@ -57,33 +48,20 @@ if (require('electron-squirrel-startup')) app.quit();
 
 if (process.env.SKIP_ONBOARDING) {
   launchStage.value = 'main';
-  persistentConfig.set({
-    onBoarding: false,
-  });
+  persistentConfig.set({ onBoarding: false });
 }
 
-/**
- * Prevent multiple instances
- */
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
-  logger.info(
-    'Another instance is running or responding deep link, exiting...'
-  );
+  logger.info('Another instance is running or responding deep link, exiting...');
   app.quit();
   process.exit(0);
 }
 
-/**
- * Shout down background process if all windows was closed
- */
 app.on('window-all-closed', () => {
   app.quit();
 });
 
-/**
- * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
- */
 app.on('activate', () => {
   if (app.isReady()) {
     launch().catch(e => console.error('Failed launch:', e));
@@ -92,9 +70,6 @@ app.on('activate', () => {
 
 setupDeepLink(app);
 
-/**
- * Create app window when background process will be ready
- */
 app
   .whenReady()
   .then(registerProtocol)
@@ -108,7 +83,6 @@ app
   .catch(e => console.error('Failed create window:', e));
 
 if (process.env.SENTRY_RELEASE) {
-  // https://docs.sentry.io/platforms/javascript/guides/electron/
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.BUILD_TYPE ?? 'development',

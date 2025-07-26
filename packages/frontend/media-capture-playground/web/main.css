@@ -1,1 +1,7 @@
 @import 'tailwindcss';
+
+/* main.css */
+body.battery-saver-mode {
+  filter: grayscale(100%);
+  transition: filter 0.3s ease-in-out;
+}
