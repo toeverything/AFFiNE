@@ -62,7 +62,7 @@ public class IntelligentContext {
         "Login required: \(reason)"
       case let .sessionCreationFailed(reason):
         "Session creation failed: \(reason)"
-      case let .featureClosed:
+      case .featureClosed:
         "Intelligent feature closed"
       }
     }

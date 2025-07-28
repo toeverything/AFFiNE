@@ -167,8 +167,12 @@ private extension ChatManager {
       "files": [String](), // attachment in context, keep nil for now
       "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
     ]
-    let attachmentFieldName = "options.blobs"
-    var uploadableAttachments: [GraphQLFile] = [
+    let hasMultipleAttachmentBlobs = [
+      editorData.fileAttachments.count,
+      editorData.documentAttachments.count,
+    ].reduce(0, +) > 1
+    let attachmentFieldName = hasMultipleAttachmentBlobs ? "options.blobs" : "options.blob"
+    let uploadableAttachments: [GraphQLFile] = [
       editorData.fileAttachments.map { file -> GraphQLFile in
         .init(fieldName: attachmentFieldName, originalName: file.name, data: file.data ?? .init())
       },
@@ -177,15 +181,10 @@ private extension ChatManager {
       },
     ].flatMap(\.self)
     assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    // in Apollo, filed name is handled as attached object to field when there is only one attachment
-    // to use array on our server, we need to append a dummy attachment
-    // which is ignored if data is empty and name is empty
-    if uploadableAttachments.count == 1 {
-      uploadableAttachments.append(.init(fieldName: attachmentFieldName, originalName: "", data: .init()))
-    }
     guard let input = try? CreateChatMessageInput(
       attachments: [],
-      blobs: .some([]), // must have the placeholder
+      blob: hasMultipleAttachmentBlobs ? .none : "",
+      blobs: hasMultipleAttachmentBlobs ? .some([]) : .none,
       content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
       params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
       sessionId: sessionId
