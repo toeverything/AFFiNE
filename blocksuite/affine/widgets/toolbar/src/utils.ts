@@ -229,7 +229,7 @@ export function renderToolbar(
         ? module.config.when(context)
         : (module.config.when ?? true)
     )
-    .flatMap<ToolbarActions[]>(module => module.config.actions);
+    .flatMap(module => module.config.actions);
 
   const combined = combine(actions, context);
 
