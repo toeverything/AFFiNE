@@ -37,6 +37,14 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface AccessToken {
+  __typename?: 'AccessToken';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
 export interface AddContextBlobInput {
   blobId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
@@ -985,6 +993,11 @@ export interface ForkChatSessionInput {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface GenerateAccessTokenInput {
+  expiresAt?: InputMaybe<Scalars['DateTime']['input']>;
+  name: Scalars['String']['input'];
+}
+
 export interface GrantDocUserRolesInput {
   docId: Scalars['String']['input'];
   role: DocRole;
@@ -1396,6 +1409,7 @@ export interface Mutation {
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
+  generateUserAccessToken: RevealedAccessToken;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1443,6 +1457,7 @@ export interface Mutation {
   revokePublicDoc: DocType;
   /** @deprecated use revokePublicDoc instead */
   revokePublicPage: DocType;
+  revokeUserAccessToken: Scalars['Boolean']['output'];
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -1650,6 +1665,10 @@ export interface MutationGenerateLicenseKeyArgs {
   sessionId: Scalars['String']['input'];
 }
 
+export interface MutationGenerateUserAccessTokenArgs {
+  input: GenerateAccessTokenInput;
+}
+
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -1788,6 +1807,10 @@ export interface MutationRevokePublicDocArgs {
 export interface MutationRevokePublicPageArgs {
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeUserAccessTokenArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface MutationSendChangeEmailArgs {
@@ -2094,6 +2117,7 @@ export interface PublicUserType {
 
 export interface Query {
   __typename?: 'Query';
+  accessTokens: Array<AccessToken>;
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
   /** Apply updates to a doc using LLM and return the merged markdown. */
@@ -2286,6 +2310,15 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface RevealedAccessToken {
+  __typename?: 'RevealedAccessToken';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  token: Scalars['String']['output'];
 }
 
 export interface RevokeDocUserRoleInput {
@@ -3009,6 +3042,46 @@ export interface TokenType {
   sessionToken: Maybe<Scalars['String']['output']>;
   token: Scalars['String']['output'];
 }
+
+export type GenerateUserAccessTokenMutationVariables = Exact<{
+  input: GenerateAccessTokenInput;
+}>;
+
+export type GenerateUserAccessTokenMutation = {
+  __typename?: 'Mutation';
+  generateUserAccessToken: {
+    __typename?: 'RevealedAccessToken';
+    id: string;
+    name: string;
+    token: string;
+    createdAt: string;
+    expiresAt: string | null;
+  };
+};
+
+export type ListUserAccessTokensQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ListUserAccessTokensQuery = {
+  __typename?: 'Query';
+  accessTokens: Array<{
+    __typename?: 'AccessToken';
+    id: string;
+    name: string;
+    createdAt: string;
+    expiresAt: string | null;
+  }>;
+};
+
+export type RevokeUserAccessTokenMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type RevokeUserAccessTokenMutation = {
+  __typename?: 'Mutation';
+  revokeUserAccessToken: boolean;
+};
 
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -6185,6 +6258,11 @@ export type GrantWorkspaceTeamMemberMutation = {
 
 export type Queries =
   | {
+      name: 'listUserAccessTokensQuery';
+      variables: ListUserAccessTokensQueryVariables;
+      response: ListUserAccessTokensQuery;
+    }
+  | {
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
@@ -6536,6 +6614,16 @@ export type Queries =
     };
 
 export type Mutations =
+  | {
+      name: 'generateUserAccessTokenMutation';
+      variables: GenerateUserAccessTokenMutationVariables;
+      response: GenerateUserAccessTokenMutation;
+    }
+  | {
+      name: 'revokeUserAccessTokenMutation';
+      variables: RevokeUserAccessTokenMutationVariables;
+      response: RevokeUserAccessTokenMutation;
+    }
   | {
       name: 'createChangePasswordUrlMutation';
       variables: CreateChangePasswordUrlMutationVariables;

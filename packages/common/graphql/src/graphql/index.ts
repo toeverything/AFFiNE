@@ -70,6 +70,41 @@ export const licenseBodyFragment = `fragment licenseBody on License {
   validatedAt
   variant
 }`;
+export const generateUserAccessTokenMutation = {
+  id: 'generateUserAccessTokenMutation' as const,
+  op: 'generateUserAccessToken',
+  query: `mutation generateUserAccessToken($input: GenerateAccessTokenInput!) {
+  generateUserAccessToken(input: $input) {
+    id
+    name
+    token
+    createdAt
+    expiresAt
+  }
+}`,
+};
+
+export const listUserAccessTokensQuery = {
+  id: 'listUserAccessTokensQuery' as const,
+  op: 'listUserAccessTokens',
+  query: `query listUserAccessTokens {
+  accessTokens {
+    id
+    name
+    createdAt
+    expiresAt
+  }
+}`,
+};
+
+export const revokeUserAccessTokenMutation = {
+  id: 'revokeUserAccessTokenMutation' as const,
+  op: 'revokeUserAccessToken',
+  query: `mutation revokeUserAccessToken($id: String!) {
+  revokeUserAccessToken(id: $id)
+}`,
+};
+
 export const adminServerConfigQuery = {
   id: 'adminServerConfigQuery' as const,
   op: 'adminServerConfig',

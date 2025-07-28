@@ -1,5 +1,6 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { createParamDecorator } from '@nestjs/common';
+import { AccessToken } from '@prisma/client';
 
 import { getRequestResponseFromContext } from '../../base';
 import type { User, UserSession } from '../../models';
@@ -40,7 +41,8 @@ import type { User, UserSession } from '../../models';
 // oxlint-disable-next-line no-redeclare
 export const CurrentUser = createParamDecorator(
   (_: unknown, context: ExecutionContext) => {
-    return getRequestResponseFromContext(context).req.session?.user;
+    const req = getRequestResponseFromContext(context).req;
+    return req.session?.user ?? req.token?.user;
   }
 );
 
@@ -59,5 +61,9 @@ export const Session = createParamDecorator(
 );
 
 export type Session = UserSession & {
+  user: CurrentUser;
+};
+
+export type TokenSession = AccessToken & {
   user: CurrentUser;
 };

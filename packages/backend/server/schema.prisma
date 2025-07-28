@@ -49,6 +49,7 @@ model User {
   comments                     Comment[]
   replies                      Reply[]
   commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
+  AccessToken                  AccessToken[]
 
   @@index([email])
   @@map("users")
@@ -948,4 +949,18 @@ model CommentAttachment {
 
   @@id([workspaceId, docId, key])
   @@map("comment_attachments")
+}
+
+model AccessToken {
+  id        String    @id @default(uuid()) @db.VarChar
+  name      String    @db.VarChar
+  token     String    @unique @db.VarChar
+  userId    String    @map("user_id") @db.VarChar
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("access_tokens")
 }

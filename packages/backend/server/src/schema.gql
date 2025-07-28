@@ -2,6 +2,13 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AccessToken {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  id: String!
+  name: String!
+}
+
 input AddContextBlobInput {
   blobId: String!
   contextId: String!
@@ -812,6 +819,11 @@ input ForkChatSessionInput {
   workspaceId: String!
 }
 
+input GenerateAccessTokenInput {
+  expiresAt: DateTime
+  name: String!
+}
+
 input GrantDocUserRolesInput {
   docId: String!
   role: DocRole!
@@ -1247,6 +1259,7 @@ type Mutation {
   """Create a chat session"""
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
+  generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 
@@ -1302,6 +1315,7 @@ type Mutation {
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
   revokePublicPage(docId: String!, workspaceId: String!): DocType! @deprecated(reason: "use revokePublicDoc instead")
+  revokeUserAccessToken(id: String!): Boolean!
   sendChangeEmail(callbackUrl: String!, email: String): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
@@ -1536,6 +1550,8 @@ type PublicUserType {
 }
 
 type Query {
+  accessTokens: [AccessToken!]!
+
   """get the whole app configuration"""
   appConfig: JSONObject!
 
@@ -1683,6 +1699,14 @@ type ReplyObjectType {
 input ReplyUpdateInput {
   content: JSONObject!
   id: ID!
+}
+
+type RevealedAccessToken {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  id: String!
+  name: String!
+  token: String!
 }
 
 input RevokeDocUserRoleInput {
