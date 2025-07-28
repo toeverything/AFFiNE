@@ -1481,13 +1481,21 @@ Key requirements:
 - Maintain the original markdown formatting
 - Preserve the tone and style unless specifically asked to change it
 - Only make the requested changes
-- Return only the modified text without any explanations or comments`,
+- Return only the modified text without any explanations or comments
+- Use the full document context to ensure consistency and accuracy
+- Do not output markdown annotations like <!-- block_id=... -->`,
       },
       {
         role: 'user',
         content: `Please modify the following text according to these instructions: "{{instructions}}"
-Original text:
-{{content}}`,
+
+Full document context:
+{{document}}
+
+Section to edit:
+{{content}}
+
+Please return only the modified section, maintaining consistency with the overall document context.`,
       },
     ],
   },
