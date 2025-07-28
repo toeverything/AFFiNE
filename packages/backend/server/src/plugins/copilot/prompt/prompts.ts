@@ -1468,6 +1468,29 @@ When sent new notes, respond ONLY with the contents of the html file.`,
       },
     ],
   },
+  {
+    name: 'Section Edit',
+    action: 'Section Edit',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert text editor. Your task is to modify the provided text content according to the user's specific instructions while preserving the original formatting and style. 
+Key requirements:
+- Follow the user's instructions precisely
+- Maintain the original markdown formatting
+- Preserve the tone and style unless specifically asked to change it
+- Only make the requested changes
+- Return only the modified text without any explanations or comments`,
+      },
+      {
+        role: 'user',
+        content: `Please modify the following text according to these instructions: "{{instructions}}"
+Original text:
+{{content}}`,
+      },
+    ],
+  },
 ];
 
 const imageActions: Prompt[] = [
@@ -1924,7 +1947,7 @@ Below is the user's query. Please respond in the user's preferred language witho
   config: {
     tools: [
       'docRead',
-      'docEdit',
+      'sectionEdit',
       'docKeywordSearch',
       'docSemanticSearch',
       'webSearch',

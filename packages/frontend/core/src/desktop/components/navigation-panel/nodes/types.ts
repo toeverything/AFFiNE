@@ -46,4 +46,9 @@ export interface GenericNavigationPanelNode {
    * The drop effect to be used when an element is dropped over the node.
    */
   dropEffect?: NavigationPanelTreeNodeDropEffect;
+  /**
+   * The path segments to the parent node in the navigation tree.
+   * Used to persist the node's collapsed/expanded state in cache storage.
+   */
+  parentPath: string[];
 }

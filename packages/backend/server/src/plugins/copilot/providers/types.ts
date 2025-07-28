@@ -73,6 +73,8 @@ export const PromptConfigStrictSchema = z.object({
       'webSearch',
       // artifact tools
       'docCompose',
+      // section editing
+      'sectionEdit',
     ])
     .array()
     .nullable()

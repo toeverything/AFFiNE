@@ -14,6 +14,7 @@ import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { GuardService } from '@affine/core/modules/permissions';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -46,6 +47,7 @@ export const NavigationPanelDocNode = ({
   canDrop,
   operations: additionalOperations,
   dropEffect,
+  parentPath,
 }: {
   docId: string;
   isLinked?: boolean;
@@ -67,11 +69,22 @@ export const NavigationPanelDocNode = ({
     FeatureFlagService,
     GuardService,
   });
+  const navigationPanelService = useService(NavigationPanelService);
   const { appSettings } = useAppSettingHelper();
 
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...(parentPath ?? []), `doc-${docId}`],
+    [parentPath, docId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
   const isCollapsed = appSettings.showLinkedDocInSidebar ? collapsed : true;
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
@@ -227,7 +240,7 @@ export const NavigationPanelDocNode = ({
         openInfoModal: () => workspaceDialogService.open('doc-info', { docId }),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      [docId, workspaceDialogService]
+      [docId, setCollapsed, workspaceDialogService]
     )
   );
 
@@ -302,6 +315,7 @@ export const NavigationPanelDocNode = ({
                       at: 'navigation-panel:doc:linked-docs',
                       docId,
                     }}
+                    parentPath={path}
                     isLinked
                   />
                 ))

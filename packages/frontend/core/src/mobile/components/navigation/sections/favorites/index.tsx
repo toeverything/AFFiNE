@@ -6,7 +6,7 @@ import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -24,7 +24,7 @@ export const NavigationPanelFavorites = () => {
     });
 
   const t = useI18n();
-  const navigationPanelSection = navigationPanelService.sections.favorites;
+  const path = useMemo(() => ['favorites'], []);
   const favorites = useLiveData(favoriteService.favoriteList.sortedList$);
   const isLoading = useLiveData(favoriteService.favoriteList.isLoading$);
   const { createPage } = usePageHelper(
@@ -38,19 +38,23 @@ export const NavigationPanelFavorites = () => {
       newDoc.id,
       favoriteService.favoriteList.indexAt('before')
     );
-    navigationPanelSection.setCollapsed(false);
-  }, [createPage, navigationPanelSection, favoriteService.favoriteList]);
+    navigationPanelService.setCollapsed(path, false);
+  }, [createPage, favoriteService.favoriteList, navigationPanelService, path]);
 
   return (
     <CollapsibleSection
-      name="favorites"
+      path={path}
       title={t['com.affine.rootAppSidebar.favorites']()}
       testId="navigation-panel-favorites"
       headerTestId="navigation-panel-favorite-category-divider"
     >
       <NavigationPanelTreeRoot placeholder={isLoading ? 'Loading' : null}>
         {favorites.map(favorite => (
-          <FavoriteNode key={favorite.id} favorite={favorite} />
+          <FavoriteNode
+            key={favorite.id}
+            favorite={favorite}
+            parentPath={path}
+          />
         ))}
         <AddItemPlaceholder
           data-testid="navigation-panel-bar-add-favorite-button"
@@ -66,19 +70,24 @@ export const NavigationPanelFavorites = () => {
 
 export const FavoriteNode = ({
   favorite,
+  parentPath,
 }: {
   favorite: {
     id: string;
     type: FavoriteSupportTypeUnion;
   };
+  parentPath: string[];
 }) => {
   return favorite.type === 'doc' ? (
-    <NavigationPanelDocNode docId={favorite.id} />
+    <NavigationPanelDocNode docId={favorite.id} parentPath={parentPath} />
   ) : favorite.type === 'tag' ? (
-    <NavigationPanelTagNode tagId={favorite.id} />
+    <NavigationPanelTagNode tagId={favorite.id} parentPath={parentPath} />
   ) : favorite.type === 'folder' ? (
-    <NavigationPanelFolderNode nodeId={favorite.id} />
+    <NavigationPanelFolderNode nodeId={favorite.id} parentPath={parentPath} />
   ) : (
-    <NavigationPanelCollectionNode collectionId={favorite.id} />
+    <NavigationPanelCollectionNode
+      collectionId={favorite.id}
+      parentPath={parentPath}
+    />
   );
 };
