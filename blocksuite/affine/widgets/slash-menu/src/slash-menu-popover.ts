@@ -142,7 +142,7 @@ export class SlashMenu extends WithDisposable(LitElement) {
       // We search first and second layer
       if (this._filteredItems.length !== 0 && depth >= 1) break;
 
-      queue = queue.flatMap<typeof queue>(item => {
+      queue = queue.flatMap(item => {
         if (isSubMenuItem(item)) {
           return item.subMenu;
         } else {
