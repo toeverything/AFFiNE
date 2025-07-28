@@ -36,6 +36,7 @@ import { ChatPanelChip } from './components/ai-chat-chips/chip';
 import { ChatPanelCollectionChip } from './components/ai-chat-chips/collection-chip';
 import { ChatPanelDocChip } from './components/ai-chat-chips/doc-chip';
 import { ChatPanelFileChip } from './components/ai-chat-chips/file-chip';
+import { ChatPanelSelectedChip } from './components/ai-chat-chips/selected-chip';
 import { ChatPanelTagChip } from './components/ai-chat-chips/tag-chip';
 import { AIChatComposer } from './components/ai-chat-composer';
 import { AIChatContent } from './components/ai-chat-content';
@@ -164,6 +165,7 @@ export function registerAIEffects() {
   customElements.define('chat-panel-file-chip', ChatPanelFileChip);
   customElements.define('chat-panel-tag-chip', ChatPanelTagChip);
   customElements.define('chat-panel-collection-chip', ChatPanelCollectionChip);
+  customElements.define('chat-panel-selected-chip', ChatPanelSelectedChip);
   customElements.define('chat-panel-chip', ChatPanelChip);
   customElements.define('ai-error-wrapper', AIErrorWrapper);
   customElements.define('ai-slides-renderer', AISlidesRenderer);

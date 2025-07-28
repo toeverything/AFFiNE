@@ -36,7 +36,19 @@ export interface CollectionChip extends BaseChip {
   collectionId: string;
 }
 
-export type ChatChip = DocChip | FileChip | TagChip | CollectionChip;
+export interface SelectedContextChip extends BaseChip {
+  uuid: string;
+  attachments: { sourceId: string; name: string }[];
+  snapshot: string | null;
+  markdownSummary: string | null;
+}
+
+export type ChatChip =
+  | DocChip
+  | FileChip
+  | TagChip
+  | CollectionChip
+  | SelectedContextChip;
 
 export interface DocDisplayConfig {
   getIcon: (docId: string) => any;

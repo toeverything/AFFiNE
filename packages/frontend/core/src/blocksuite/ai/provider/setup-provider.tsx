@@ -99,6 +99,8 @@ export function setupAIProvider(
       params: {
         docs: contexts?.docs,
         files: contexts?.files,
+        selectedSnapshot: contexts?.selectedSnapshot,
+        selectedMarkdown: contexts?.selectedMarkdown,
         searchMode: webSearch ? 'MUST' : 'AUTO',
       },
       endpoint: Endpoint.StreamObject,

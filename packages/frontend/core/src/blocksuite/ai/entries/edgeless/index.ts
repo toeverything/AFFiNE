@@ -57,11 +57,20 @@ export function edgelessToolbarAIEntryConfig(): ToolbarModuleConfig {
                 aiPanel.hide();
                 extractSelectedContent(host)
                   .then(context => {
-                    AIProvider.slots.requestSendWithChat.next({
-                      input,
-                      context,
-                      host,
-                    });
+                    if (context?.attachments?.length) {
+                      AIProvider.slots.requestOpenWithChat.next({
+                        input,
+                        host,
+                        context,
+                        autoSelect: true,
+                      });
+                    } else {
+                      AIProvider.slots.requestSendWithChat.next({
+                        input,
+                        context,
+                        host,
+                      });
+                    }
                   })
                   .catch(console.error);
               };

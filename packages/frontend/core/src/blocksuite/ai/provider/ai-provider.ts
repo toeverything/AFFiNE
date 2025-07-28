@@ -18,9 +18,11 @@ export interface AIUserInfo {
 
 export interface AIChatParams {
   host: EditorHost;
+  input?: string;
   mode?: 'page' | 'edgeless';
   // Auto select and append selection to input via `Continue with AI` action.
   autoSelect?: boolean;
+  context?: Partial<ChatContextValue | null>;
 }
 
 export interface AISendParams {

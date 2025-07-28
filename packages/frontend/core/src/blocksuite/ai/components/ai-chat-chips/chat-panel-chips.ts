@@ -18,6 +18,7 @@ import {
   isCollectionChip,
   isDocChip,
   isFileChip,
+  isSelectedContextChip,
   isTagChip,
 } from './utils';
 
@@ -183,6 +184,12 @@ export class ChatPanelChips extends SignalWatcher(
               .removeChip=${this.removeChip}
             ></chat-panel-collection-chip>`;
           }
+          if (isSelectedContextChip(chip)) {
+            return html`<chat-panel-selected-chip
+              .chip=${chip}
+              .removeChip=${this.removeChip}
+            ></chat-panel-selected-chip>`;
+          }
           return null;
         }
       )}
@@ -271,12 +278,27 @@ export class ChatPanelChips extends SignalWatcher(
       if (isFileChip(chip) || isTagChip(chip) || isCollectionChip(chip)) {
         return acc;
       }
-      if (chip.docId === newChip.docId) {
+      if (isDocChip(chip) && chip.docId === newChip.docId) {
         return acc + newTokenCount;
       }
-      if (chip.markdown?.value && chip.state === 'finished') {
+
+      if (
+        isDocChip(chip) &&
+        chip.markdown?.value &&
+        chip.state === 'finished'
+      ) {
         const tokenCount =
           chip.tokenCount ?? estimateTokenCount(chip.markdown.value);
+        return acc + tokenCount;
+      }
+      if (
+        isSelectedContextChip(chip) &&
+        chip.markdownSummary &&
+        chip.snapshot
+      ) {
+        const tokenCount =
+          estimateTokenCount(chip.markdownSummary) +
+          estimateTokenCount(JSON.stringify(chip.snapshot));
         return acc + tokenCount;
       }
       return acc;
