@@ -1,4 +1,7 @@
-import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -153,7 +156,10 @@ export class AIChatContent extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor aiDraftService!: AIDraftService;
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
   accessor onEmbeddingProgressChange:
@@ -273,6 +279,9 @@ export class AIChatContent extends SignalWatcher(
   };
 
   private readonly updateDraft = async (context: Partial<ChatContextValue>) => {
+    if (!this.aiDraftService) {
+      return;
+    }
     const draft: Partial<AIDraftState> = pick(context, [
       'quote',
       'images',
@@ -344,15 +353,17 @@ export class AIChatContent extends SignalWatcher(
 
     this.initChatContent().catch(console.error);
 
-    this.aiDraftService
-      .getDraft()
-      .then(draft => {
-        this.chatContextValue = {
-          ...this.chatContextValue,
-          ...draft,
-        };
-      })
-      .catch(console.error);
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.chatContextValue = {
+            ...this.chatContextValue,
+            ...draft,
+          };
+        })
+        .catch(console.error);
+    }
 
     this._disposables.add(
       AIProvider.slots.actions.subscribe(({ event }) => {
@@ -405,6 +416,7 @@ export class AIChatContent extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .width=${this.width}
@@ -434,6 +446,7 @@ export class AIChatContent extends SignalWatcher(
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${this.notificationService}
         .aiDraftService=${this.aiDraftService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

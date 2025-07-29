@@ -1,3 +1,4 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
@@ -205,6 +206,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor docDisplayService!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
@@ -467,6 +471,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         isRootSession: true,
         reasoning: this._isReasoningActive,
         webSearch: this._isNetworkActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
       });
 
       for await (const text of stream) {

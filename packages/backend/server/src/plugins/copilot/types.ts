@@ -16,6 +16,23 @@ const zMaybeString = z.preprocess(val => {
   return s === '' || s == null ? undefined : s;
 }, z.string().min(1).optional());
 
+const ToolsConfigSchema = z.preprocess(
+  val => {
+    // if val is a string, try to parse it as JSON
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return {};
+      }
+    }
+    return val || {};
+  },
+  z.record(z.enum(['searchWorkspace', 'readingDocs']), z.boolean()).default({})
+);
+
+export type ToolsConfig = z.infer<typeof ToolsConfigSchema>;
+
 export const ChatQuerySchema = z
   .object({
     messageId: zMaybeString,
@@ -23,15 +40,25 @@ export const ChatQuerySchema = z
     retry: zBool,
     reasoning: zBool,
     webSearch: zBool,
+    toolsConfig: ToolsConfigSchema,
   })
   .catchall(z.string())
   .transform(
-    ({ messageId, modelId, retry, reasoning, webSearch, ...params }) => ({
+    ({
       messageId,
       modelId,
       retry,
       reasoning,
       webSearch,
+      toolsConfig,
+      ...params
+    }) => ({
+      messageId,
+      modelId,
+      retry,
+      reasoning,
+      webSearch,
+      toolsConfig,
       params,
     })
   );

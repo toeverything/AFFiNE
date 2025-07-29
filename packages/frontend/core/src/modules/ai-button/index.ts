@@ -1,6 +1,10 @@
 export { AIButtonProvider } from './provider/ai-button';
 export { AIButtonService } from './services/ai-button';
 export { AIDraftService } from './services/ai-draft';
+export {
+  type AIToolsConfig,
+  AIToolsConfigService,
+} from './services/tools-config';
 
 import type { Framework } from '@toeverything/infra';
 
@@ -13,6 +17,7 @@ import { AIDraftService } from './services/ai-draft';
 import { AINetworkSearchService } from './services/network-search';
 import { AIPlaygroundService } from './services/playground';
 import { AIReasoningService } from './services/reasoning';
+import { AIToolsConfigService } from './services/tools-config';
 
 export const configureAIButtonModule = (framework: Framework) => {
   framework.service(AIButtonService, container => {
@@ -39,4 +44,8 @@ export function configureAIDraftModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
     .service(AIDraftService, [GlobalStateService, CacheStorage]);
+}
+
+export function configureAIToolsConfigModule(framework: Framework) {
+  framework.service(AIToolsConfigService, [GlobalStateService]);
 }

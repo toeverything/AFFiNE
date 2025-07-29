@@ -2,6 +2,10 @@ import { toReactNode } from '@affine/component';
 import { AIChatBlockPeekViewTemplate } from '@affine/core/blocksuite/ai';
 import type { AIChatBlockModel } from '@affine/core/blocksuite/ai/blocks/ai-chat-block/model/ai-chat-model';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
+import {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -27,6 +31,8 @@ export const AIChatBlockPeekView = ({
   const framework = useFramework();
   const affineFeatureFlagService = framework.get(FeatureFlagService);
   const affineWorkspaceDialogService = framework.get(WorkspaceDialogService);
+  const aiDraftService = framework.get(AIDraftService);
+  const aiToolsConfigService = framework.get(AIToolsConfigService);
 
   return useMemo(() => {
     const template = AIChatBlockPeekViewTemplate(
@@ -37,7 +43,9 @@ export const AIChatBlockPeekView = ({
       networkSearchConfig,
       reasoningConfig,
       affineFeatureFlagService,
-      affineWorkspaceDialogService
+      affineWorkspaceDialogService,
+      aiDraftService,
+      aiToolsConfigService
     );
     return toReactNode(template);
   }, [
@@ -49,5 +57,7 @@ export const AIChatBlockPeekView = ({
     reasoningConfig,
     affineFeatureFlagService,
     affineWorkspaceDialogService,
+    aiDraftService,
+    aiToolsConfigService,
   ]);
 };

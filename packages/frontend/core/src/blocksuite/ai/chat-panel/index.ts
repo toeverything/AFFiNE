@@ -1,4 +1,7 @@
-import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
@@ -118,6 +121,9 @@ export class ChatPanel extends SignalWatcher(
 
   @property({ attribute: false })
   accessor aiDraftService!: AIDraftService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @state()
   accessor session: CopilotChatHistoryFragment | null | undefined;
@@ -387,6 +393,7 @@ export class ChatPanel extends SignalWatcher(
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .session=${this.session}
         .status=${this.status}
         .embeddingProgress=${this.embeddingProgress}
@@ -413,6 +420,7 @@ export class ChatPanel extends SignalWatcher(
           .affineThemeService=${this.affineThemeService}
           .notificationService=${this.notificationService}
           .aiDraftService=${this.aiDraftService}
+          .aiToolsConfigService=${this.aiToolsConfigService}
           .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
           .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}

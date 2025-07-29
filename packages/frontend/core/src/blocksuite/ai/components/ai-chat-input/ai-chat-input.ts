@@ -1,4 +1,7 @@
-import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -353,7 +356,10 @@ export class AIChatInput extends SignalWatcher(
   accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
-  accessor aiDraftService!: AIDraftService;
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
   accessor isRootSession: boolean = true;
@@ -406,13 +412,15 @@ export class AIChatInput extends SignalWatcher(
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
     super.firstUpdated(changedProperties);
-    this.aiDraftService
-      .getDraft()
-      .then(draft => {
-        this.textarea.value = draft.input;
-        this.isInputEmpty = !this.textarea.value.trim();
-      })
-      .catch(console.error);
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.textarea.value = draft.input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        })
+        .catch(console.error);
+    }
   }
 
   protected override render() {
@@ -493,6 +501,7 @@ export class AIChatInput extends SignalWatcher(
           .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
           .isNetworkActive=${this._isNetworkActive}
           .onNetworkActiveChange=${this._toggleNetworkSearch}
+          .toolsConfigService=${this.aiToolsConfigService}
         ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
           ? html`<button
@@ -536,9 +545,11 @@ export class AIChatInput extends SignalWatcher(
       textarea.style.overflowY = 'scroll';
     }
 
-    await this.aiDraftService.setDraft({
-      input: value,
-    });
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: value,
+      });
+    }
   };
 
   private readonly _handleKeyDown = async (evt: KeyboardEvent) => {
@@ -593,9 +604,11 @@ export class AIChatInput extends SignalWatcher(
     this.isInputEmpty = true;
     this.textarea.style.height = 'unset';
 
-    await this.aiDraftService.setDraft({
-      input: '',
-    });
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: '',
+      });
+    }
     await this.send(value);
   };
 
@@ -647,6 +660,7 @@ export class AIChatInput extends SignalWatcher(
         control: this.trackOptions?.control,
         webSearch: this._isNetworkActive,
         reasoning: this._isReasoningActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
         modelId: this.modelId,
       });
 

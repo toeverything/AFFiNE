@@ -1,3 +1,4 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import {
   menu,
@@ -7,6 +8,7 @@ import {
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   ArrowDownSmallIcon,
+  CloudWorkspaceIcon,
   ThinkingIcon,
   WebIcon,
 } from '@blocksuite/icons/lit';
@@ -81,6 +83,9 @@ export class ChatInputPreference extends SignalWatcher(
     | undefined;
   // --------- search props end ---------
 
+  @property({ attribute: false })
+  accessor toolsConfigService!: AIToolsConfigService;
+
   // private readonly _onModelChange = (modelId: string) => {
   //   this.onModelChange?.(modelId);
   // };
@@ -126,6 +131,19 @@ export class ChatInputPreference extends SignalWatcher(
           onChange: (value: boolean) => this.onNetworkActiveChange?.(value),
           class: { 'preference-action': true },
           testId: 'chat-network-search',
+        }),
+        menu.toggleSwitch({
+          name: 'Workspace All Docs',
+          prefix: CloudWorkspaceIcon(),
+          on:
+            !!this.toolsConfigService.config.value.searchWorkspace &&
+            !!this.toolsConfigService.config.value.readingDocs,
+          onChange: (value: boolean) =>
+            this.toolsConfigService.setConfig({
+              searchWorkspace: value,
+              readingDocs: value,
+            }),
+          class: { 'preference-action': true },
         })
       );
     }

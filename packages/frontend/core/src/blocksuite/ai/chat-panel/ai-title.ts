@@ -1,3 +1,4 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
@@ -106,6 +107,9 @@ export class AIChatPanelTitle extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
@@ -142,6 +146,7 @@ export class AIChatPanelTitle extends SignalWatcher(
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
       ></playground-content>
     `;
 

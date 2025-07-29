@@ -1,6 +1,9 @@
 import './ai-chat-composer-tip';
 
-import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type {
   ContextEmbedStatus,
@@ -118,7 +121,10 @@ export class AIChatComposer extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor aiDraftService!: AIDraftService;
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @state()
   accessor chips: ChatChip[] = [];
@@ -166,6 +172,7 @@ export class AIChatComposer extends SignalWatcher(
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .aiDraftService=${this.aiDraftService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .portalContainer=${this.portalContainer}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
