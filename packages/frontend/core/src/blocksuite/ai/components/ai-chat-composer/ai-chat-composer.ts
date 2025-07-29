@@ -6,17 +6,20 @@ import type {
 } from '@affine/core/modules/ai-button';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type {
-  ContextEmbedStatus,
   ContextWorkspaceEmbeddingStatus,
   CopilotChatHistoryFragment,
   CopilotContextDoc,
   CopilotContextFile,
 } from '@affine/graphql';
+import { ContextEmbedStatus } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { uuidv4 } from '@blocksuite/affine/store';
-import type { NotificationService } from '@blocksuite/affine-shared/services';
+import type {
+  FeatureFlagService,
+  NotificationService,
+} from '@blocksuite/affine-shared/services';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
@@ -128,6 +131,9 @@ export class AIChatComposer extends SignalWatcher(
   @property({ attribute: false })
   accessor aiToolsConfigService!: AIToolsConfigService;
 
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
+
   @state()
   accessor chips: ChatChip[] = [];
 
@@ -165,8 +171,6 @@ export class AIChatComposer extends SignalWatcher(
         .session=${this.session}
         .chips=${this.chips}
         .addChip=${this.addChip}
-        .addSelectedContextChip=${this.addSelectedContextChip} 
-        .waitForSelectedContextChipsFinished=${this.waitForSelectedContextChipsFinished}
         .addImages=${this.addImages}
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
@@ -175,6 +179,7 @@ export class AIChatComposer extends SignalWatcher(
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
         .portalContainer=${this.portalContainer}
@@ -388,24 +393,17 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly addSelectedContextChip = async () => {
-    const { attachments, snapshot, markdownSummary } = this.chatContextValue;
+    const { attachments, snapshot, combinedElementsMarkdown } =
+      this.chatContextValue;
     await this.removeSelectedContextChip();
     const chip: SelectedContextChip = {
       uuid: uuidv4(),
       attachments,
       snapshot,
-      markdownSummary,
+      combinedElementsMarkdown,
       state: 'processing',
     };
     await this.addChip(chip, true);
-    try {
-      await this.waitForSelectedContextChipsFinished();
-    } catch (e) {
-      this.updateChip(chip, {
-        state: 'failed',
-        tooltip: e instanceof Error ? e.message : 'Add selected context error',
-      });
-    }
   };
 
   private readonly removeSelectedContextChip = async () => {
@@ -427,6 +425,9 @@ export class AIChatComposer extends SignalWatcher(
     }
     if (isCollectionChip(chip)) {
       return await this.addCollectionToContext(chip);
+    }
+    if (isSelectedContextChip(chip)) {
+      return await this.addSelectedContextChipToContext(chip);
     }
     return null;
   };
@@ -522,6 +523,20 @@ export class AIChatComposer extends SignalWatcher(
     }
   };
 
+  private readonly addSelectedContextChipToContext = async (
+    chip: SelectedContextChip
+  ) => {
+    const { attachments } = chip;
+    const contextId = await this.createContextId();
+    if (!contextId || !AIProvider.context) {
+      throw new Error('Context not found');
+    }
+    await AIProvider.context.addContextBlobs({
+      blobIds: attachments.map(attachment => attachment.sourceId),
+      contextId,
+    });
+  };
+
   private readonly removeFromContext = async (
     chip: ChatChip
   ): Promise<boolean> => {
@@ -552,6 +567,13 @@ export class AIChatComposer extends SignalWatcher(
         return await AIProvider.context.removeContextCollection({
           contextId,
           collectionId: chip.collectionId,
+        });
+      }
+      if (isSelectedContextChip(chip)) {
+        const { attachments } = chip;
+        return await AIProvider.context.removeContextBlobs({
+          contextId,
+          blobIds: attachments.map(attachment => attachment.sourceId),
         });
       }
       return true;
@@ -637,13 +659,17 @@ export class AIChatComposer extends SignalWatcher(
       files = [],
       tags = [],
       collections = [],
+      blobs = [],
     } = result;
     const docs = [
       ...sDocs,
       ...tags.flatMap(tag => tag.docs),
       ...collections.flatMap(collection => collection.docs),
     ];
-    const hashMap = new Map<string, CopilotContextDoc | CopilotContextFile>();
+    const hashMap = new Map<
+      string,
+      CopilotContextDoc | CopilotContextFile | { status: ContextEmbedStatus }
+    >();
     const count: Record<ContextEmbedStatus, number> = {
       finished: 0,
       processing: 0,
@@ -657,6 +683,18 @@ export class AIChatComposer extends SignalWatcher(
       hashMap.set(file.id, file);
       file.status && count[file.status]++;
     });
+    const selectedChip = this.chips.find(c => isSelectedContextChip(c));
+    if (selectedChip) {
+      const status: ContextEmbedStatus = blobs.every(
+        blob => blob.status === 'finished'
+      )
+        ? ContextEmbedStatus.finished
+        : ContextEmbedStatus.processing;
+      hashMap.set(selectedChip.uuid, {
+        status,
+      });
+      count[status]++;
+    }
     const nextChips = this.chips.map(chip => {
       if (isTagChip(chip) || isCollectionChip(chip)) {
         return chip;
@@ -706,28 +744,5 @@ export class AIChatComposer extends SignalWatcher(
       await this.pollContextDocsAndFiles();
     }
     await this.pollEmbeddingStatus();
-  };
-
-  private readonly waitForSelectedContextChipsFinished = async (
-    timeout = 10000,
-    interval = 500
-  ): Promise<void> => {
-    const start = Date.now();
-    return new Promise((resolve, reject) => {
-      const check = () => {
-        const selectedChip = this.chips.find(c => isSelectedContextChip(c));
-        const finished = selectedChip?.state === 'finished';
-        if (finished) {
-          resolve();
-        } else if (Date.now() - start >= timeout) {
-          reject(
-            new Error('Timeout waiting for selected context chips to finish')
-          );
-        } else {
-          setTimeout(check, interval);
-        }
-      };
-      check();
-    });
   };
 }

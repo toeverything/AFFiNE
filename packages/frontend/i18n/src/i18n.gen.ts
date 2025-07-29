@@ -5965,6 +5965,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-adapter-panel.description"](): string;
     /**
+      * `Send detailed object information to AI`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.name"](): string;
+    /**
+      * `When toggled off, every time you choose "Continue with AI", AI only got a screenshot.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.description"](): string;
+    /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
     ["com.affine.settings.workspace.not-owner"](): string;

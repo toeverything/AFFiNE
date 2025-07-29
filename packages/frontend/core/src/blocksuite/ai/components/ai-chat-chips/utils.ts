@@ -67,7 +67,9 @@ export function isSelectedContextChip(
   chip: ChatChip
 ): chip is SelectedContextChip {
   return (
-    'attachments' in chip && 'snapshot' in chip && 'markdownSummary' in chip
+    'attachments' in chip &&
+    'snapshot' in chip &&
+    'combinedElementsMarkdown' in chip
   );
 }
 

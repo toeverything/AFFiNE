@@ -434,6 +434,7 @@ export class AIChatContent extends SignalWatcher(
           [this.onboardingOffsetY > 0 ? 'paddingTop' : 'paddingBottom']:
             `${this.messages.length === 0 ? Math.abs(this.onboardingOffsetY) * 2 : 0}px`,
         })}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .independentMode=${this.independentMode}
         .host=${this.host}
         .workspaceId=${this.workspaceId}

@@ -40,7 +40,7 @@ export interface SelectedContextChip extends BaseChip {
   uuid: string;
   attachments: { sourceId: string; name: string }[];
   snapshot: string | null;
-  markdownSummary: string | null;
+  combinedElementsMarkdown: string | null;
 }
 
 export type ChatChip =

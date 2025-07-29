@@ -1491,6 +1491,8 @@
   "com.affine.settings.workspace.experimental-features.enable-code-block-html-preview.description": "Once enabled, you can preview HTML in code block.",
   "com.affine.settings.workspace.experimental-features.enable-adapter-panel.name": "Adapter Panel",
   "com.affine.settings.workspace.experimental-features.enable-adapter-panel.description": "Once enabled, you can preview adapter export content in the right side bar.",
+  "com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.name": "Send detailed object information to AI",
+  "com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.description": "When toggled off, every time you choose \"Continue with AI\", AI only got a screenshot.",
   "com.affine.settings.workspace.not-owner": "Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.",
   "com.affine.settings.workspace.preferences": "Preference",
   "com.affine.settings.workspace.billing": "Team's Billing",

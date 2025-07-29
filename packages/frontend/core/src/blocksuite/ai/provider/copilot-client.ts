@@ -2,6 +2,7 @@ import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type { UserFriendlyError } from '@affine/error';
 import {
+  addContextBlobMutation,
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
@@ -24,6 +25,7 @@ import {
   type PaginationInput,
   type QueryOptions,
   type QueryResponse,
+  removeContextBlobMutation,
   removeContextCategoryMutation,
   removeContextDocMutation,
   removeContextFileMutation,
@@ -533,5 +535,23 @@ export class CopilotClient {
         updates,
       },
     }).then(res => res.applyDocUpdates);
+  }
+
+  addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {
+    return this.gql({
+      query: addContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.addContextBlob);
+  }
+
+  removeContextBlob(options: OptionsField<typeof removeContextBlobMutation>) {
+    return this.gql({
+      query: removeContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.removeContextBlob);
   }
 }
