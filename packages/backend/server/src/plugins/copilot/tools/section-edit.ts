@@ -14,20 +14,25 @@ export const createSectionEditTool = (
 ) => {
   return tool({
     description:
-      'Intelligently edit and modify a specific section of a document based on user instructions. This tool can refine, rewrite, translate, restructure, or enhance any part of markdown content while preserving formatting and maintaining contextual coherence. Perfect for targeted improvements without affecting the entire document.',
+      'Intelligently edit and modify a specific section of a document based on user instructions, with full document context awareness. This tool can refine, rewrite, translate, restructure, or enhance any part of markdown content while preserving formatting, maintaining contextual coherence, and ensuring consistency with the entire document. Perfect for targeted improvements that consider the broader document context.',
     parameters: z.object({
       section: z
         .string()
         .describe(
-          'The section of the document to be modified (in markdown format)'
+          'The specific section or text snippet to be modified (in markdown format). This is the target content that will be edited and replaced.'
         ),
       instructions: z
         .string()
         .describe(
-          'Clear instructions from the user describing the desired changes (e.g., "make this more formal", "translate to Chinese", "add more details", "fix grammar errors")'
+          'Clear and specific instructions describing the desired changes. Examples: "make this more formal and professional", "translate to Chinese while keeping technical terms", "add more technical details and examples", "fix grammar and improve clarity", "restructure for better readability"'
+        ),
+      document: z
+        .string()
+        .describe(
+          "The complete document content (in markdown format) that provides context for the section being edited. This ensures the edited section maintains consistency with the document's overall tone, style, terminology, and structure."
         ),
     }),
-    execute: async ({ section, instructions }) => {
+    execute: async ({ section, instructions, document }) => {
       try {
         const prompt = await promptService.get('Section Edit');
         if (!prompt) {
@@ -45,6 +50,7 @@ export const createSectionEditTool = (
           prompt.finish({
             content: section,
             instructions,
+            document,
           })
         );
 

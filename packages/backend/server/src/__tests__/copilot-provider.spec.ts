@@ -384,12 +384,12 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
         role: 'user' as const,
         content: 'what is ssot',
         params: {
-          files: [
+          docs: [
             {
-              blobId: 'SSOT',
-              fileName: 'Single source of truth - Wikipedia',
+              docId: 'SSOT',
+              docTitle: 'Single source of truth - Wikipedia',
               fileType: 'text/markdown',
-              fileContent: TestAssets.SSOT,
+              docContent: TestAssets.SSOT,
             },
           ],
         },

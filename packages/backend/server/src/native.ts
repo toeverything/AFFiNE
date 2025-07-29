@@ -16,16 +16,24 @@ export const mintChallengeResponse = async (resource: string, bits: number) => {
   return serverNativeModule.mintChallengeResponse(resource, bits);
 };
 
+const ENCODER_CACHE = new Map<string, Tokenizer>();
+
 export function getTokenEncoder(model?: string | null): Tokenizer | null {
   if (!model) return null;
+  const cached = ENCODER_CACHE.get(model);
+  if (cached) return cached;
   if (model.startsWith('gpt')) {
-    return serverNativeModule.fromModelName(model);
+    const encoder = serverNativeModule.fromModelName(model);
+    if (encoder) ENCODER_CACHE.set(model, encoder);
+    return encoder;
   } else if (model.startsWith('dall')) {
     // dalle don't need to calc the token
     return null;
   } else {
     // c100k based model
-    return serverNativeModule.fromModelName('gpt-4');
+    const encoder = serverNativeModule.fromModelName('gpt-4');
+    if (encoder) ENCODER_CACHE.set('gpt-4', encoder);
+    return encoder;
   }
 }
 

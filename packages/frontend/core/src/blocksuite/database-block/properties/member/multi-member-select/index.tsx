@@ -48,10 +48,24 @@ class MemberManager {
   selectedMemberId = signal<string | null>(null);
 
   filteredMembers = computed(() => {
-    return this.ops.userListService.users$.value.filter(
-      member =>
-        !member.removed && !this.selectedMembers.value.includes(member.id)
-    );
+    const isSearching = this.userListService.searchText$.value !== '';
+    if (isSearching) {
+      return this.ops.userListService.users$.value.filter(
+        member =>
+          !member.removed && !this.selectedMembers.value.includes(member.id)
+      );
+    } else {
+      const currentUser = this.ops.userService.currentUserInfo$.value;
+      return [
+        ...(currentUser ? [currentUser] : []),
+        ...this.ops.userListService.users$.value.filter(
+          member => member.id !== currentUser?.id
+        ),
+      ].filter(
+        member =>
+          !member.removed && !this.selectedMembers.value.includes(member.id)
+      );
+    }
   });
 
   constructor(private readonly ops: MemberManagerOptions) {}

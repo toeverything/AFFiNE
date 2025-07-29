@@ -12,6 +12,7 @@ public struct CreateChatMessageInput: InputObject {
 
   public init(
     attachments: GraphQLNullable<[String]> = nil,
+    blob: GraphQLNullable<Upload> = nil,
     blobs: GraphQLNullable<[Upload]> = nil,
     content: GraphQLNullable<String> = nil,
     params: GraphQLNullable<JSON> = nil,
@@ -19,6 +20,7 @@ public struct CreateChatMessageInput: InputObject {
   ) {
     __data = InputDict([
       "attachments": attachments,
+      "blob": blob,
       "blobs": blobs,
       "content": content,
       "params": params,
@@ -29,6 +31,11 @@ public struct CreateChatMessageInput: InputObject {
   public var attachments: GraphQLNullable<[String]> {
     get { __data["attachments"] }
     set { __data["attachments"] = newValue }
+  }
+
+  public var blob: GraphQLNullable<Upload> {
+    get { __data["blob"] }
+    set { __data["blob"] = newValue }
   }
 
   public var blobs: GraphQLNullable<[Upload]> {
