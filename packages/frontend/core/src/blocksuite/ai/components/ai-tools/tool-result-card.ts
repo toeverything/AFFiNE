@@ -111,30 +111,6 @@ export class ToolResultCard extends SignalWatcher(
         flex: 1;
       }
 
-      .result-icon {
-        width: 18px;
-        height: 18px;
-
-        &:has(img) {
-          background-color: ${unsafeCSSVarV2('layer/background/primary')};
-          border-radius: 100%;
-          border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
-        }
-
-        img {
-          width: inherit;
-          height: inherit;
-          border-radius: 100%;
-          border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
-        }
-
-        svg {
-          width: inherit;
-          height: inherit;
-          color: ${unsafeCSSVarV2('icon/primary')};
-        }
-      }
-
       .result-content {
         font-size: 12px;
         line-height: 20px;
@@ -147,6 +123,27 @@ export class ToolResultCard extends SignalWatcher(
         text-overflow: ellipsis;
       }
 
+      .result-icon,
+      .footer-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 100%;
+        background-color: ${unsafeCSSVarV2('layer/background/primary')};
+
+        img {
+          width: 18px;
+          height: 18px;
+          border-radius: 100%;
+          border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
+      }
+
       .footer-icons {
         display: flex;
         position: relative;
@@ -155,26 +152,6 @@ export class ToolResultCard extends SignalWatcher(
         opacity: 0.5;
         transition: opacity 0.23s ease;
         user-select: none;
-      }
-
-      .footer-icon {
-        width: 18px;
-        height: 18px;
-        background-color: ${unsafeCSSVarV2('layer/background/primary')};
-        border-radius: 100%;
-        border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
-
-        img {
-          width: 18px;
-          height: 18px;
-          border-radius: 100%;
-        }
-
-        svg {
-          width: 18px;
-          height: 18px;
-          color: ${unsafeCSSVarV2('icon/primary')};
-        }
       }
 
       .footer-icon:not(:first-child) {
@@ -194,7 +171,7 @@ export class ToolResultCard extends SignalWatcher(
   accessor name: string = 'Tool result';
 
   @property({ attribute: false })
-  accessor icon: TemplateResult<1> | string = ToolIcon();
+  accessor icon: TemplateResult<1> = ToolIcon();
 
   @property({ attribute: false })
   accessor footerIcons: TemplateResult<1>[] | string[] = [];
@@ -214,7 +191,7 @@ export class ToolResultCard extends SignalWatcher(
     return html`
       <div class="ai-tool-result-wrapper">
         <div class="ai-tool-header" @click=${this.toggleCard}>
-          <div class="ai-icon">${this.renderIcon(this.icon)}</div>
+          <div class="ai-icon">${this.icon}</div>
           <div class="ai-tool-name">${this.name}</div>
           ${this.isCollapsed
             ? this.renderFooterIcons()
@@ -284,7 +261,18 @@ export class ToolResultCard extends SignalWatcher(
     }
 
     if (typeof icon === 'string') {
-      return html`<img src=${this.buildUrl(icon)} />`;
+      return html`<div class="image-icon">
+        <img
+          src=${this.buildUrl(icon)}
+          @error=${(e: Event) => {
+            const img = e.target as HTMLImageElement;
+            img.style.display = 'none';
+            const iconElement = img.nextElementSibling as HTMLDivElement;
+            iconElement.style.display = 'block';
+          }}
+        />
+        <div style="display: none;">${this.icon}</div>
+      </div>`;
     }
     return html`${icon}`;
   }
