@@ -399,6 +399,7 @@ export class AIChatInput extends SignalWatcher(
               this.send(input).catch(console.error);
             }, 0);
           }
+          AIProvider.slots.requestSendWithChat.next(null);
         }
       )
     );

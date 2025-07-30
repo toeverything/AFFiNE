@@ -92,14 +92,20 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
     const pinned = this.session?.pinned;
     return html`
       <div class="ai-chat-toolbar">
-        <div class="chat-toolbar-icon" @click=${this.onPlusClick}>
+        <div
+          class="chat-toolbar-icon"
+          @click=${this.onPlusClick}
+          data-testid="ai-panel-new-chat"
+        >
           ${PlusIcon()}
           <affine-tooltip>New Chat</affine-tooltip>
         </div>
         <div
           class="chat-toolbar-icon"
           @click=${this.onPinClick}
+          data-pinned=${!!pinned}
           data-disabled=${this.isGenerating}
+          data-testid="ai-panel-pin-chat"
         >
           ${pinned ? PinedIcon() : PinIcon()}
           <affine-tooltip>

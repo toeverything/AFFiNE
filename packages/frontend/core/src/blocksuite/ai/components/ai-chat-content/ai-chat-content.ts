@@ -380,6 +380,7 @@ export class AIChatContent extends SignalWatcher(
               })
               .catch(console.error);
           }
+          AIProvider.slots.requestOpenWithChat.next(null);
         }
       )
     );
