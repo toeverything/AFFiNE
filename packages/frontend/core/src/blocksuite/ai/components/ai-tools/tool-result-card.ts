@@ -179,6 +179,11 @@ export class ToolResultCard extends SignalWatcher(
         }
       }
 
+      .result-item[href]:hover .result-title,
+      .result-item[href]:hover .result-content {
+        color: ${unsafeCSSVarV2('text/primary')};
+      }
+
       .footer-icons {
         display: flex;
         position: relative;
