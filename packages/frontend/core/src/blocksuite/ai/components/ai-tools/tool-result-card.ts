@@ -158,6 +158,27 @@ export class ToolResultCard extends SignalWatcher(
         color: ${unsafeCSSVarV2('text/primary')};
       }
 
+      .result-icon,
+      .footer-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 100%;
+        background-color: ${unsafeCSSVarV2('layer/background/primary')};
+
+        img {
+          width: 18px;
+          height: 18px;
+          border-radius: 100%;
+          border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
+      }
+
       .footer-icons {
         display: flex;
         position: relative;
