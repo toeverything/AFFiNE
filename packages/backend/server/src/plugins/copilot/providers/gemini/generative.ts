@@ -102,7 +102,7 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
     });
   }
 
-  override async getAvailableModels() {
+  override async refreshOnlineModels() {
     try {
       const baseUrl =
         this.config.baseUrl ||
@@ -122,6 +122,5 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);
     }
-    return this.onlineModelList;
   }
 }

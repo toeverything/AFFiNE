@@ -64,7 +64,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
     this.instance = createVertexAnthropic(this.config);
   }
 
-  override async getAvailableModels() {
+  override async refreshOnlineModels() {
     try {
       const { baseUrl, headers } = await getGoogleAuth(
         this.config,
@@ -85,6 +85,5 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);
     }
-    return this.onlineModelList;
   }
 }

@@ -275,7 +275,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     }
   }
 
-  override async getAvailableModels() {
+  override async refreshOnlineModels() {
     try {
       const baseUrl = this.config.baseUrl || 'https://api.openai.com/v1';
       if (baseUrl && !this.onlineModelList.length) {
@@ -292,7 +292,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);
     }
-    return this.onlineModelList;
   }
 
   override getProviderSpecificTools(

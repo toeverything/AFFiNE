@@ -81,14 +81,17 @@ export abstract class CopilotProvider<C = any> {
   protected setup() {
     if (this.configured()) {
       this.factory.register(this);
+      if (env.selfhosted) {
+        this.refreshOnlineModels().catch(e =>
+          this.logger.error('Failed to refresh online models', e)
+        );
+      }
     } else {
       this.factory.unregister(this);
     }
   }
 
-  async getAvailableModels() {
-    return this.onlineModelList;
-  }
+  async refreshOnlineModels() {}
 
   private findValidModel(
     cond: ModelFullConditions
@@ -100,9 +103,14 @@ export abstract class CopilotProvider<C = any> {
         inputTypes.every(type => cap.input.includes(type)));
 
     if (modelId) {
-      return this.models.find(
+      const model = this.models.find(
         m => m.id === modelId && m.capabilities.some(matcher)
       );
+      if (model) return model;
+      const onlineModel = this.onlineModelList.find(m => m === modelId);
+      // allow online model without capabilities check
+      if (onlineModel) return { id: onlineModel, capabilities: [] };
+      return undefined;
     }
     if (!outputType) return undefined;
 

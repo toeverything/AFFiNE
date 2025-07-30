@@ -74,7 +74,7 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
     this.instance = createVertex(this.config);
   }
 
-  override async getAvailableModels() {
+  override async refreshOnlineModels() {
     try {
       const { baseUrl, headers } = await getGoogleAuth(this.config, 'google');
       if (baseUrl && !this.onlineModelList.length) {
@@ -90,6 +90,5 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);
     }
-    return this.onlineModelList;
   }
 }
