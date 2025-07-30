@@ -53,6 +53,7 @@ import {
 @Injectable()
 export abstract class CopilotProvider<C = any> {
   protected readonly logger = new Logger(this.constructor.name);
+  protected onlineModelList: string[] = [];
   abstract readonly type: CopilotProviderType;
   abstract readonly models: CopilotProviderModel[];
   abstract configured(): boolean;
@@ -83,6 +84,10 @@ export abstract class CopilotProvider<C = any> {
     } else {
       this.factory.unregister(this);
     }
+  }
+
+  async getAvailableModels() {
+    return this.onlineModelList;
   }
 
   private findValidModel(

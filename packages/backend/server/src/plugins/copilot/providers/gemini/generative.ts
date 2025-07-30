@@ -2,6 +2,7 @@ import {
   createGoogleGenerativeAI,
   type GoogleGenerativeAIProvider,
 } from '@ai-sdk/google';
+import z from 'zod';
 
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import { GeminiProvider } from './gemini';
@@ -10,6 +11,10 @@ export type GeminiGenerativeConfig = {
   apiKey: string;
   baseUrl?: string;
 };
+
+const ModelListSchema = z.object({
+  models: z.array(z.object({ name: z.string() })),
+});
 
 export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeConfig> {
   override readonly type = CopilotProviderType.Gemini;
@@ -71,27 +76,16 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
       ],
     },
     {
-      name: 'Text Embedding 005',
-      id: 'text-embedding-005',
+      name: 'Gemini Embedding',
+      id: 'gemini-embedding-001',
       capabilities: [
         {
           input: [ModelInputType.Text],
           output: [ModelOutputType.Embedding],
+          defaultForOutputType: true,
         },
       ],
     },
-    // not exists yet
-    // {
-    //   name: 'Gemini Embedding',
-    //   id: 'gemini-embedding-001',
-    //   capabilities: [
-    //     {
-    //       input: [ModelInputType.Text],
-    //       output: [ModelOutputType.Embedding],
-    //       defaultForOutputType: true,
-    //     },
-    //   ],
-    // },
   ];
 
   protected instance!: GoogleGenerativeAIProvider;
@@ -106,5 +100,28 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
       apiKey: this.config.apiKey,
       baseURL: this.config.baseUrl,
     });
+  }
+
+  override async getAvailableModels() {
+    try {
+      const baseUrl =
+        this.config.baseUrl ||
+        'https://generativelanguage.googleapis.com/v1beta';
+      if (baseUrl && !this.onlineModelList.length) {
+        const { models } = await fetch(
+          `${baseUrl}/models?key=${this.config.apiKey}`
+        )
+          .then(r => r.json())
+          .then(
+            r => (console.log(JSON.stringify(r)), ModelListSchema.parse(r))
+          );
+        this.onlineModelList = models.map(model =>
+          model.name.replace('models/', '')
+        );
+      }
+    } catch (e) {
+      this.logger.error('Failed to fetch available models', e);
+    }
+    return this.onlineModelList;
   }
 }

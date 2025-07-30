@@ -48,6 +48,10 @@ export type OpenAIConfig = {
   baseUrl?: string;
 };
 
+const ModelListSchema = z.object({
+  data: z.array(z.object({ id: z.string() })),
+});
+
 const ImageResponseSchema = z.union([
   z.object({
     data: z.array(z.object({ b64_json: z.string() })),
@@ -269,6 +273,26 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         message: e?.message || 'Unexpected openai response',
       });
     }
+  }
+
+  override async getAvailableModels() {
+    try {
+      const baseUrl = this.config.baseUrl || 'https://api.openai.com/v1';
+      if (baseUrl && !this.onlineModelList.length) {
+        const { data } = await fetch(`${baseUrl}/models`, {
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        })
+          .then(r => r.json())
+          .then(r => ModelListSchema.parse(r));
+        this.onlineModelList = data.map(model => model.id);
+      }
+    } catch (e) {
+      this.logger.error('Failed to fetch available models', e);
+    }
+    return this.onlineModelList;
   }
 
   override getProviderSpecificTools(

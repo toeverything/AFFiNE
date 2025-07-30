@@ -237,6 +237,7 @@ export interface ModelCapability {
 
 export interface CopilotProviderModel {
   id: string;
+  name?: string;
   capabilities: ModelCapability[];
 }
 
