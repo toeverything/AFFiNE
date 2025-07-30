@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 import {
+  ContextBlob,
   ContextConfigSchema,
   ContextDoc,
   ContextEmbedStatus,
@@ -87,8 +88,8 @@ export class CopilotContextModel extends BaseModel {
 
   async mergeBlobStatus(
     workspaceId: string,
-    blobs: ContextDoc[]
-  ): Promise<ContextDoc[]> {
+    blobs: ContextBlob[]
+  ): Promise<ContextBlob[]> {
     const canEmbedding = await this.checkEmbeddingAvailable();
     const finishedBlobs = canEmbedding
       ? await this.listWorkspaceBlobEmbedding(

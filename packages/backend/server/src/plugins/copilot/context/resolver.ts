@@ -789,8 +789,10 @@ export class CopilotContextResolver {
       throw new TooManyRequest('Server is busy');
     }
 
+    const contextSession = await this.context.get(options.contextId);
+
     try {
-      return true;
+      return await contextSession.removeBlobRecord(options.blobId);
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,
