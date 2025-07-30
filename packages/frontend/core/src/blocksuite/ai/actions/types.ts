@@ -1,3 +1,4 @@
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type {
   AddContextFileInput,
   ContextMatchedDocChunk,
@@ -142,6 +143,7 @@ declare global {
       webSearch?: boolean;
       reasoning?: boolean;
       modelId?: string;
+      toolsConfig?: AIToolsConfig | undefined;
       contexts?: {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];

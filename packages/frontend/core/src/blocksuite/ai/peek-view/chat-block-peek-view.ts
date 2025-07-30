@@ -1,3 +1,7 @@
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type {
@@ -393,6 +397,7 @@ export class AIChatBlockPeekView extends LitElement {
         control: 'chat-send',
         reasoning: this._isReasoningActive,
         webSearch: this._isNetworkActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
       });
 
       for await (const text of stream) {
@@ -608,6 +613,7 @@ export class AIChatBlockPeekView extends LitElement {
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .onChatSuccess=${this._onChatSuccess}
         .trackOptions=${{
           where: 'ai-chat-block',
@@ -646,6 +652,12 @@ export class AIChatBlockPeekView extends LitElement {
   @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
+  @property({ attribute: false })
+  accessor aiDraftService!: AIDraftService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
   @state()
   accessor _historyMessages: ChatMessage[] = [];
 
@@ -682,7 +694,9 @@ export const AIChatBlockPeekViewTemplate = (
   networkSearchConfig: AINetworkSearchConfig,
   reasoningConfig: AIReasoningConfig,
   affineFeatureFlagService: FeatureFlagService,
-  affineWorkspaceDialogService: WorkspaceDialogService
+  affineWorkspaceDialogService: WorkspaceDialogService,
+  aiDraftService: AIDraftService,
+  aiToolsConfigService: AIToolsConfigService
 ) => {
   return html`<ai-chat-block-peek-view
     .blockModel=${blockModel}
@@ -693,5 +707,7 @@ export const AIChatBlockPeekViewTemplate = (
     .reasoningConfig=${reasoningConfig}
     .affineFeatureFlagService=${affineFeatureFlagService}
     .affineWorkspaceDialogService=${affineWorkspaceDialogService}
+    .aiDraftService=${aiDraftService}
+    .aiToolsConfigService=${aiToolsConfigService}
   ></ai-chat-block-peek-view>`;
 };

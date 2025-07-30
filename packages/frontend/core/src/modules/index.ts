@@ -7,6 +7,7 @@ import {
   configureAINetworkSearchModule,
   configureAIPlaygroundModule,
   configureAIReasoningModule,
+  configureAIToolsConfigModule,
 } from './ai-button';
 import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
@@ -112,6 +113,7 @@ export function configureCommonModules(framework: Framework) {
   configureAIPlaygroundModule(framework);
   configureAIButtonModule(framework);
   configureAIDraftModule(framework);
+  configureAIToolsConfigModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
   configureMediaModule(framework);

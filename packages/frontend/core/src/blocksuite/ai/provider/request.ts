@@ -1,3 +1,4 @@
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import { partition } from 'lodash-es';
 
 import { AIProvider } from './ai-provider';
@@ -22,6 +23,7 @@ export type TextToTextOptions = {
   reasoning?: boolean;
   webSearch?: boolean;
   modelId?: string;
+  toolsConfig?: AIToolsConfig;
 };
 
 export type ToImageOptions = TextToTextOptions & {
@@ -119,6 +121,7 @@ export function textToText({
   reasoning,
   webSearch,
   modelId,
+  toolsConfig,
 }: TextToTextOptions) {
   let messageId: string | undefined;
 
@@ -141,6 +144,7 @@ export function textToText({
             reasoning,
             webSearch,
             modelId,
+            toolsConfig,
           },
           endpoint
         );

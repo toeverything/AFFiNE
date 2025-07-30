@@ -56,7 +56,7 @@ import { StreamObjectParser } from './providers/utils';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { ChatMessage, ChatQuerySchema } from './types';
-import { getSignal } from './utils';
+import { getSignal, getTools } from './utils';
 import { CopilotWorkflowService, GraphExecutorState } from './workflow';
 
 export interface ChatEvent {
@@ -244,7 +244,8 @@ export class CopilotController implements BeforeApplicationShutdown {
       info.finalMessage = finalMessage.filter(m => m.role !== 'system');
       metrics.ai.counter('chat_calls').add(1, { model });
 
-      const { reasoning, webSearch } = ChatQuerySchema.parse(query);
+      const { reasoning, webSearch, toolsConfig } =
+        ChatQuerySchema.parse(query);
       const content = await provider.text({ modelId: model }, finalMessage, {
         ...session.config.promptConfig,
         signal: getSignal(req).signal,
@@ -253,6 +254,7 @@ export class CopilotController implements BeforeApplicationShutdown {
         workspace: session.config.workspaceId,
         reasoning,
         webSearch,
+        tools: getTools(session.config.promptConfig?.tools, toolsConfig),
       });
 
       session.push({
@@ -306,7 +308,8 @@ export class CopilotController implements BeforeApplicationShutdown {
         }
       });
 
-      const { messageId, reasoning, webSearch } = ChatQuerySchema.parse(query);
+      const { messageId, reasoning, webSearch, toolsConfig } =
+        ChatQuerySchema.parse(query);
 
       const source$ = from(
         provider.streamText({ modelId: model }, finalMessage, {
@@ -317,6 +320,7 @@ export class CopilotController implements BeforeApplicationShutdown {
           workspace: session.config.workspaceId,
           reasoning,
           webSearch,
+          tools: getTools(session.config.promptConfig?.tools, toolsConfig),
         })
       ).pipe(
         connect(shared$ =>
@@ -398,7 +402,8 @@ export class CopilotController implements BeforeApplicationShutdown {
         }
       });
 
-      const { messageId, reasoning, webSearch } = ChatQuerySchema.parse(query);
+      const { messageId, reasoning, webSearch, toolsConfig } =
+        ChatQuerySchema.parse(query);
 
       const source$ = from(
         provider.streamObject({ modelId: model }, finalMessage, {
@@ -409,6 +414,7 @@ export class CopilotController implements BeforeApplicationShutdown {
           workspace: session.config.workspaceId,
           reasoning,
           webSearch,
+          tools: getTools(session.config.promptConfig?.tools, toolsConfig),
         })
       ).pipe(
         connect(shared$ =>
