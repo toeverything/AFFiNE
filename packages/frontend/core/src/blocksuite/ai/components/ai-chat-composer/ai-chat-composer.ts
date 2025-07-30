@@ -8,7 +8,6 @@ import type {
   CopilotChatHistoryFragment,
   CopilotContextDoc,
   CopilotContextFile,
-  CopilotDocType,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -263,7 +262,6 @@ export class AIChatComposer extends SignalWatcher(
     const docChips: DocChip[] = docs.map(doc => ({
       docId: doc.id,
       state: doc.status || 'processing',
-      tooltip: doc.error,
       createdAt: doc.createdAt,
     }));
 
@@ -576,10 +574,7 @@ export class AIChatComposer extends SignalWatcher(
       ...tags.flatMap(tag => tag.docs),
       ...collections.flatMap(collection => collection.docs),
     ];
-    const hashMap = new Map<
-      string,
-      CopilotContextDoc | CopilotDocType | CopilotContextFile
-    >();
+    const hashMap = new Map<string, CopilotContextDoc | CopilotContextFile>();
     const count: Record<ContextEmbedStatus, number> = {
       finished: 0,
       processing: 0,

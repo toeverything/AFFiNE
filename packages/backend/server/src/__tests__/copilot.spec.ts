@@ -1519,7 +1519,7 @@ test('TextStreamParser should process a sequence of message chunks', t => {
 });
 
 // ==================== context ====================
-test.only('should be able to manage context', async t => {
+test('should be able to manage context', async t => {
   const { context, db, event, jobs, prompt, session, storage, workspace } =
     t.context;
 

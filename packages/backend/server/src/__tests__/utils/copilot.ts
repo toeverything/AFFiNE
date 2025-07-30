@@ -369,7 +369,6 @@ export async function listContextDocAndFiles(
                 docs {
                   id
                   status
-                  error
                   createdAt
                 }
                 files {

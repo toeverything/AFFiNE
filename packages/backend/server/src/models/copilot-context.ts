@@ -39,6 +39,7 @@ export class CopilotContextModel extends BaseModel {
         sessionId,
         config: {
           workspaceId: session.workspaceId,
+          blobs: [],
           docs: [],
           files: [],
           categories: [],
