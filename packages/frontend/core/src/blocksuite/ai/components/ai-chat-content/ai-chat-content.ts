@@ -5,6 +5,7 @@ import type {
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type {
   ContextEmbedStatus,
@@ -174,6 +175,9 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
 
   @state()
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
@@ -424,6 +428,7 @@ export class AIChatContent extends SignalWatcher(
         .independentMode=${this.independentMode}
         .messages=${this.messages}
         .docDisplayService=${this.docDisplayConfig}
+        .peekViewService=${this.peekViewService}
         .onOpenDoc=${this.onOpenDoc}
       ></ai-chat-messages>
       <ai-chat-composer

@@ -4,6 +4,7 @@ import type {
 } from '@affine/core/modules/ai-button';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { WorkbenchService } from '@affine/core/modules/workbench';
 import type {
@@ -124,6 +125,9 @@ export class ChatPanel extends SignalWatcher(
 
   @property({ attribute: false })
   accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
 
   @state()
   accessor session: CopilotChatHistoryFragment | null | undefined;
@@ -421,6 +425,7 @@ export class ChatPanel extends SignalWatcher(
           .notificationService=${this.notificationService}
           .aiDraftService=${this.aiDraftService}
           .aiToolsConfigService=${this.aiToolsConfigService}
+          .peekViewService=${this.peekViewService}
           .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
           .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}

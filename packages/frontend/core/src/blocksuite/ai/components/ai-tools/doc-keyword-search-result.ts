@@ -1,3 +1,4 @@
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { PageIcon, SearchIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
@@ -41,6 +42,9 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
   renderToolCall() {
     return html`<tool-call-card
       .name=${`Searching workspace documents for "${this.data.args.query}"`}
@@ -63,6 +67,14 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
           ${item.title}
         </span>`,
         icon: PageIcon(),
+        onClick: () => {
+          this.peekViewService.peekView
+            .open({
+              type: 'doc',
+              docRef: { docId: item.docId },
+            })
+            .catch(console.error);
+        },
       }));
     } catch (err) {
       console.error('Failed to parse result', err);

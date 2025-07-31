@@ -13,6 +13,7 @@ export interface ToolResult {
   icon?: string | TemplateResult<1>;
   content?: string;
   href?: string;
+  onClick?: () => void;
 }
 
 export class ToolResultCard extends SignalWatcher(
@@ -95,7 +96,8 @@ export class ToolResultCard extends SignalWatcher(
         cursor: default;
       }
 
-      .result-item[href] {
+      .result-item[href],
+      .result-item[data-clickable] {
         cursor: pointer;
       }
 
@@ -154,7 +156,9 @@ export class ToolResultCard extends SignalWatcher(
       }
 
       .result-item[href]:hover .result-title,
-      .result-item[href]:hover .result-content {
+      .result-item[href]:hover .result-content,
+      .result-item[data-clickable]:hover .result-title,
+      .result-item[data-clickable]:hover .result-content {
         color: ${unsafeCSSVarV2('text/primary')};
       }
 
@@ -182,6 +186,27 @@ export class ToolResultCard extends SignalWatcher(
       .result-item[href]:hover .result-title,
       .result-item[href]:hover .result-content {
         color: ${unsafeCSSVarV2('text/primary')};
+      }
+
+      .result-icon,
+      .footer-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 100%;
+        background-color: ${unsafeCSSVarV2('layer/background/primary')};
+
+        img {
+          width: 18px;
+          height: 18px;
+          border-radius: 100%;
+          border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
       }
 
       .footer-icons {
@@ -244,11 +269,13 @@ export class ToolResultCard extends SignalWatcher(
                 result => html`
                   <a
                     class="result-item"
+                    data-clickable=${!!result.onClick}
                     href=${ifDefined(result.href)}
                     target=${ifDefined(result.href ? '_blank' : undefined)}
                     rel=${ifDefined(
                       result.href ? 'noopener noreferrer' : undefined
                     )}
+                    @click=${result.onClick}
                   >
                     <div class="result-header">
                       <div class="result-title">${result.title}</div>

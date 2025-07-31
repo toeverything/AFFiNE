@@ -1,4 +1,5 @@
 import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
@@ -211,6 +212,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   @query('.chat-panel-messages-container')
@@ -340,6 +344,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .width=${this.width}
                     .independentMode=${this.independentMode}
                     .docDisplayService=${this.docDisplayService}
+                    .peekViewService=${this.peekViewService}
                     .onOpenDoc=${this.onOpenDoc}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item) && this.host) {

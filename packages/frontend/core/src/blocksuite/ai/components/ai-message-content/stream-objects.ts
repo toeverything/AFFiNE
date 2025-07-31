@@ -1,4 +1,5 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { ColorScheme } from '@blocksuite/affine/model';
 import {
@@ -62,6 +63,9 @@ export class ChatContentStreamObjects extends WithDisposable(
   accessor docDisplayService!: DocDisplayConfig;
 
   @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   private renderToolCall(streamObject: StreamObject) {
@@ -115,6 +119,7 @@ export class ChatContentStreamObjects extends WithDisposable(
         return html`<doc-semantic-search-result
           .data=${streamObject}
           .width=${this.width}
+          .peekViewService=${this.peekViewService}
         ></doc-semantic-search-result>`;
       case 'doc_keyword_search':
         return html`<doc-keyword-search-result
@@ -201,12 +206,14 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
           .docDisplayService=${this.docDisplayService}
+          .peekViewService=${this.peekViewService}
           .onOpenDoc=${this.onOpenDoc}
         ></doc-semantic-search-result>`;
       case 'doc_keyword_search':
         return html`<doc-keyword-search-result
           .data=${streamObject}
           .width=${this.width}
+          .peekViewService=${this.peekViewService}
           .onOpenDoc=${this.onOpenDoc}
         ></doc-keyword-search-result>`;
       case 'doc_read':

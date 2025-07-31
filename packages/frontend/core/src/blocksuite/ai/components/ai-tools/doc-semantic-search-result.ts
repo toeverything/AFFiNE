@@ -1,3 +1,4 @@
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { AiEmbeddingIcon, PageIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
@@ -72,6 +73,9 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
   renderToolCall() {
     return html`<tool-call-card
       .name=${`Finding semantically related pages for "${this.data.args.query}"`}
@@ -97,6 +101,16 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
           >
             ${this.docDisplayService.getTitle(result.docId)}
           </span>`,
+          onClick: () => {
+            this.peekViewService.peekView
+              .open({
+                type: 'doc',
+                docRef: {
+                  docId: result.docId,
+                },
+              })
+              .catch(console.error);
+          },
         }))
         .filter(Boolean)}
     ></tool-result-card>`;
