@@ -47,6 +47,13 @@ defineModuleConfig('copilot', {
     desc: 'The config for the openai provider.',
     default: {
       apiKey: '',
+      baseUrl: '',
+      fallback: {
+        text: '',
+        structured: '',
+        image: '',
+        embedding: '',
+      },
     },
     link: 'https://github.com/openai/openai-node',
   },
@@ -60,28 +67,54 @@ defineModuleConfig('copilot', {
     desc: 'The config for the gemini provider.',
     default: {
       apiKey: '',
+      baseUrl: '',
+      fallback: {
+        text: '',
+        structured: '',
+        image: '',
+        embedding: '',
+      },
     },
   },
   'providers.geminiVertex': {
     desc: 'The config for the gemini provider in Google Vertex AI.',
-    default: {},
+    default: {
+      baseURL: '',
+      fallback: {
+        text: '',
+        structured: '',
+        image: '',
+        embedding: '',
+      },
+    },
     schema: VertexSchema,
   },
   'providers.perplexity': {
     desc: 'The config for the perplexity provider.',
     default: {
       apiKey: '',
+      fallback: {
+        text: '',
+      },
     },
   },
   'providers.anthropic': {
     desc: 'The config for the anthropic provider.',
     default: {
       apiKey: '',
+      fallback: {
+        text: '',
+      },
     },
   },
   'providers.anthropicVertex': {
     desc: 'The config for the anthropic provider in Google Vertex AI.',
-    default: {},
+    default: {
+      baseURL: '',
+      fallback: {
+        text: '',
+      },
+    },
     schema: VertexSchema,
   },
   'providers.morph': {

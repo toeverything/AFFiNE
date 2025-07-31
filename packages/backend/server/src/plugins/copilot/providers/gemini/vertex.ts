@@ -22,7 +22,7 @@ export type GeminiVertexConfig = GoogleVertexProviderSettings & {
     text?: string;
     structured?: string;
     image?: string;
-    embedding?: number;
+    embedding?: string;
   };
 };
 

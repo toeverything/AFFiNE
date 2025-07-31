@@ -23,7 +23,7 @@ export type GeminiGenerativeConfig = {
     text?: string;
     structured?: string;
     image?: string;
-    embedding?: number;
+    embedding?: string;
   };
 };
 

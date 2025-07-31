@@ -634,9 +634,16 @@
         },
         "providers.openai": {
           "type": "object",
-          "description": "The config for the openai provider.\n@default {\"apiKey\":\"\"}\n@link https://github.com/openai/openai-node",
+          "description": "The config for the openai provider.\n@default {\"apiKey\":\"\",\"baseUrl\":\"\",\"fallback\":{\"text\":\"\",\"structured\":\"\",\"image\":\"\",\"embedding\":\"\"}}\n@link https://github.com/openai/openai-node",
           "default": {
-            "apiKey": ""
+            "apiKey": "",
+            "baseUrl": "",
+            "fallback": {
+              "text": "",
+              "structured": "",
+              "image": "",
+              "embedding": ""
+            }
           }
         },
         "providers.fal": {
@@ -648,14 +655,21 @@
         },
         "providers.gemini": {
           "type": "object",
-          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\"}",
+          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\",\"baseUrl\":\"\",\"fallback\":{\"text\":\"\",\"structured\":\"\",\"image\":\"\",\"embedding\":\"\"}}",
           "default": {
-            "apiKey": ""
+            "apiKey": "",
+            "baseUrl": "",
+            "fallback": {
+              "text": "",
+              "structured": "",
+              "image": "",
+              "embedding": ""
+            }
           }
         },
         "providers.geminiVertex": {
           "type": "object",
-          "description": "The config for the google vertex provider.\n@default {}",
+          "description": "The config for the google vertex provider.\n@default {\"baseURL\":\"\",\"fallback\":{\"text\":\"\",\"structured\":\"\",\"image\":\"\",\"embedding\":\"\"}}",
           "properties": {
             "location": {
               "type": "string",
@@ -686,25 +700,39 @@
               }
             }
           },
-          "default": {}
+          "default": {
+            "baseURL": "",
+            "fallback": {
+              "text": "",
+              "structured": "",
+              "image": "",
+              "embedding": ""
+            }
+          }
         },
         "providers.perplexity": {
           "type": "object",
-          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\"}",
+          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\",\"fallback\":{\"text\":\"\"}}",
           "default": {
-            "apiKey": ""
+            "apiKey": "",
+            "fallback": {
+              "text": ""
+            }
           }
         },
         "providers.anthropic": {
           "type": "object",
-          "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\"}",
+          "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\",\"fallback\":{\"text\":\"\"}}",
           "default": {
-            "apiKey": ""
+            "apiKey": "",
+            "fallback": {
+              "text": ""
+            }
           }
         },
         "providers.anthropicVertex": {
           "type": "object",
-          "description": "The config for the google vertex provider.\n@default {}",
+          "description": "The config for the google vertex provider.\n@default {\"baseURL\":\"\",\"fallback\":{\"text\":\"\"}}",
           "properties": {
             "location": {
               "type": "string",
@@ -735,7 +763,12 @@
               }
             }
           },
-          "default": {}
+          "default": {
+            "baseURL": "",
+            "fallback": {
+              "text": ""
+            }
+          }
         },
         "providers.morph": {
           "type": "object",
