@@ -3,12 +3,23 @@ import {
   createAnthropic,
 } from '@ai-sdk/anthropic';
 
-import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
+import {
+  CopilotChatOptions,
+  CopilotProviderType,
+  ModelConditions,
+  ModelInputType,
+  ModelOutputType,
+  PromptMessage,
+  StreamObject,
+} from '../types';
 import { AnthropicProvider } from './anthropic';
 
 export type AnthropicOfficialConfig = {
   apiKey: string;
   baseUrl?: string;
+  fallback?: {
+    text?: string;
+  };
 };
 
 export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOfficialConfig> {
@@ -66,5 +77,32 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
       apiKey: this.config.apiKey,
       baseURL: this.config.baseUrl,
     });
+  }
+
+  override async text(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): Promise<string> {
+    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
+    return super.text(fullCond, messages, options);
+  }
+
+  override async *streamText(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<string> {
+    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
+    yield* super.streamText(fullCond, messages, options);
+  }
+
+  override async *streamObject(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<StreamObject> {
+    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
+    yield* super.streamObject(fullCond, messages, options);
   }
 }

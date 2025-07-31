@@ -37,11 +37,6 @@ import {
 
 export const DEFAULT_DIMENSIONS = 256;
 
-export type GeminiConfig = {
-  apiKey: string;
-  baseUrl?: string;
-};
-
 export abstract class GeminiProvider<T> extends CopilotProvider<T> {
   private readonly MAX_STEPS = 20;
 

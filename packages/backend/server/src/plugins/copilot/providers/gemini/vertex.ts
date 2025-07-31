@@ -4,11 +4,27 @@ import {
   type GoogleVertexProviderSettings,
 } from '@ai-sdk/google-vertex';
 
-import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
+import {
+  CopilotChatOptions,
+  CopilotEmbeddingOptions,
+  CopilotProviderType,
+  ModelConditions,
+  ModelInputType,
+  ModelOutputType,
+  PromptMessage,
+  StreamObject,
+} from '../types';
 import { getGoogleAuth, VertexModelListSchema } from '../utils';
 import { GeminiProvider } from './gemini';
 
-export type GeminiVertexConfig = GoogleVertexProviderSettings;
+export type GeminiVertexConfig = GoogleVertexProviderSettings & {
+  fallback?: {
+    text?: string;
+    structured?: string;
+    image?: string;
+    embedding?: number;
+  };
+};
 
 export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
   override readonly type = CopilotProviderType.GeminiVertex;
@@ -72,6 +88,57 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
   protected override setup() {
     super.setup();
     this.instance = createVertex(this.config);
+  }
+
+  override async text(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): Promise<string> {
+    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
+    return super.text(fullCond, messages, options);
+  }
+
+  override async structure(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options?: CopilotChatOptions
+  ): Promise<string> {
+    const fullCond = {
+      ...cond,
+      fallbackModel: this.config.fallback?.structured,
+    };
+    return super.structure(fullCond, messages, options);
+  }
+
+  override async *streamText(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<string> {
+    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
+    yield* super.streamText(fullCond, messages, options);
+  }
+
+  override async *streamObject(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<StreamObject> {
+    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
+    yield* super.streamObject(fullCond, messages, options);
+  }
+
+  override async embedding(
+    cond: ModelConditions,
+    messages: string | string[],
+    options?: CopilotEmbeddingOptions
+  ): Promise<number[][]> {
+    const fullCond = {
+      ...cond,
+      fallbackModel: this.config.fallback?.embedding,
+    };
+    return super.embedding(fullCond, messages, options);
   }
 
   override async refreshOnlineModels() {

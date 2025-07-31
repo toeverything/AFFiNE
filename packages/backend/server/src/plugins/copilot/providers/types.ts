@@ -248,4 +248,5 @@ export type ModelConditions = {
 
 export type ModelFullConditions = ModelConditions & {
   outputType?: ModelOutputType;
+  fallbackModel?: string;
 };
