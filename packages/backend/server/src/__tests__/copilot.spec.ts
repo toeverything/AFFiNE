@@ -1624,11 +1624,7 @@ test('should be able to manage context', async t => {
         },
       });
 
-      await jobs.embedPendingBlob({
-        userId,
-        workspaceId: session.workspaceId,
-        blobId,
-      });
+      await jobs.embedPendingBlob({ workspaceId: session.workspaceId, blobId });
 
       const result = await t.context.context.matchWorkspaceBlobs(
         session.workspaceId,
