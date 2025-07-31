@@ -337,8 +337,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const isEmpty = isEmptyUpdate(localData) && isEmptyUpdate(cloudData);
 
-    console.log('isEmpty', isEmpty, localData, cloudData);
-
     docStorage.connection.disconnect();
 
     const info = await this.getWorkspaceInfo(id, signal);

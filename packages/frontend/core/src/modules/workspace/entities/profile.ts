@@ -62,7 +62,6 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
   }
 
   private setProfile(info: WorkspaceProfileInfo) {
-    console.log('setProfile', info, isEqual(this.profile$.value, info));
     if (isEqual(this.profile$.value, info)) {
       return;
     }

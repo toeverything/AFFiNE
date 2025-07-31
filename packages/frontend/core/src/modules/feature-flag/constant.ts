@@ -281,6 +281,13 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: true,
   },
+  enable_battery_save_mode: {
+    category: 'affine',
+    displayName: 'Enable Battery Save Mode (Require Restart)',
+    description: 'Enable battery save mode',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

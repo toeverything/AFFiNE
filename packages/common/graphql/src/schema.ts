@@ -5077,6 +5077,19 @@ export type GetDocDefaultRoleQuery = {
   };
 };
 
+export type GetDocSummaryQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}>;
+
+export type GetDocSummaryQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: { __typename?: 'DocType'; summary: string | null };
+  };
+};
+
 export type GetInviteInfoQueryVariables = Exact<{
   inviteId: Scalars['String']['input'];
 }>;
@@ -6431,6 +6444,11 @@ export type Queries =
       name: 'getDocDefaultRoleQuery';
       variables: GetDocDefaultRoleQueryVariables;
       response: GetDocDefaultRoleQuery;
+    }
+  | {
+      name: 'getDocSummaryQuery';
+      variables: GetDocSummaryQueryVariables;
+      response: GetDocSummaryQuery;
     }
   | {
       name: 'getInviteInfoQuery';

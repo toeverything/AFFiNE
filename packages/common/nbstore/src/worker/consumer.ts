@@ -135,32 +135,42 @@ class StoreConsumer {
   }
 
   private readonly ENABLE_BATTERY_SAVE_MODE_DELAY = 1000;
-  private enableBatterySaveModeTimeout: NodeJS.Timeout | null = null;
-  private enabledBatterySaveMode = false;
+  private syncPauseTimeout: NodeJS.Timeout | null = null;
+  private syncPaused = false;
 
-  enableBatterySaveMode() {
-    if (this.enableBatterySaveModeTimeout || this.enabledBatterySaveMode) {
+  private pauseSync() {
+    if (this.syncPauseTimeout || this.syncPaused) {
       return;
     }
-    this.enableBatterySaveModeTimeout = setTimeout(() => {
-      if (!this.enabledBatterySaveMode) {
-        this.indexerSync.enableBatterySaveMode();
-        this.enabledBatterySaveMode = true;
-        console.log('[BatterySaveMode] enabled');
+    this.syncPauseTimeout = setTimeout(() => {
+      if (!this.syncPaused) {
+        this.indexerSync.pauseSync();
+        this.syncPaused = true;
+        console.log('[IndexerSync] paused');
       }
     }, this.ENABLE_BATTERY_SAVE_MODE_DELAY);
   }
 
-  disableBatterySaveMode() {
-    if (this.enableBatterySaveModeTimeout) {
-      clearTimeout(this.enableBatterySaveModeTimeout);
-      this.enableBatterySaveModeTimeout = null;
+  private resumeSync() {
+    if (this.syncPauseTimeout) {
+      clearTimeout(this.syncPauseTimeout);
+      this.syncPauseTimeout = null;
     }
-    if (this.enabledBatterySaveMode) {
-      this.indexerSync.disableBatterySaveMode();
-      this.enabledBatterySaveMode = false;
-      console.log('[BatterySaveMode] disabled');
+    if (this.syncPaused) {
+      this.indexerSync.resumeSync();
+      this.syncPaused = false;
+      console.log('[IndexerSync] resumed');
     }
+  }
+
+  private enableBatterySaveMode() {
+    console.log('[IndexerSync] enable battery save mode');
+    this.indexerSync.enableBatterySaveMode();
+  }
+
+  private disableBatterySaveMode() {
+    console.log('[IndexerSync] disable battery save mode');
+    this.indexerSync.disableBatterySaveMode();
   }
 
   private registerHandlers(consumer: OpConsumer<WorkerOps>) {
@@ -316,6 +326,8 @@ class StoreConsumer {
         this.indexerSync.aggregate$(table, query, field, options),
       'sync.enableBatterySaveMode': () => this.enableBatterySaveMode(),
       'sync.disableBatterySaveMode': () => this.disableBatterySaveMode(),
+      'sync.pauseSync': () => this.pauseSync(),
+      'sync.resumeSync': () => this.resumeSync(),
     });
   }
 }

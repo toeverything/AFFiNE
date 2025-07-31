@@ -1454,6 +1454,18 @@ export const getDocDefaultRoleQuery = {
 }`,
 };
 
+export const getDocSummaryQuery = {
+  id: 'getDocSummaryQuery' as const,
+  op: 'getDocSummary',
+  query: `query getDocSummary($workspaceId: String!, $docId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      summary
+    }
+  }
+}`,
+};
+
 export const getInviteInfoQuery = {
   id: 'getInviteInfoQuery' as const,
   op: 'getInviteInfo',

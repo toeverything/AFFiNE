@@ -312,8 +312,6 @@ export const WorkspaceCard = forwardRef<
       onClickOpenSettings?.(workspaceMetadata);
     }, [onClickOpenSettings, workspaceMetadata]);
 
-    console.log(information);
-
     return (
       <div
         className={clsx(

@@ -1,4 +1,10 @@
-import { Button, Divider, useLitPortalFactory } from '@affine/component';
+import {
+  Button,
+  Divider,
+  observeIntersection,
+  Skeleton,
+  useLitPortalFactory,
+} from '@affine/component';
 import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import {
   patchReferenceRenderer,
@@ -30,11 +36,14 @@ import {
   useLiveData,
   useServices,
 } from '@toeverything/infra';
+import { debounce } from 'lodash-es';
 import {
   Fragment,
   type ReactNode,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -177,14 +186,22 @@ const usePreviewExtensions = () => {
   return [extensions, portals] as const;
 };
 
-const useBacklinkGroups: () => BacklinkGroups[] = () => {
+export const BacklinkGroups = () => {
+  const [extensions, portals] = usePreviewExtensions();
+  const { workspaceService, docService } = useServices({
+    WorkspaceService,
+    DocService,
+  });
+
   const { docLinksService } = useServices({
     DocLinksService,
   });
 
   const backlinkGroups = useLiveData(
-    LiveData.computed(get => {
-      const links = get(docLinksService.backlinks.backlinks$);
+    docLinksService.backlinks.backlinks$.map(links => {
+      if (links === undefined) {
+        return undefined;
+      }
 
       // group by docId
       const groupedLinks = links.reduce(
@@ -203,17 +220,10 @@ const useBacklinkGroups: () => BacklinkGroups[] = () => {
     })
   );
 
-  return backlinkGroups;
-};
+  useEffect(() => {
+    docLinksService.backlinks.revalidateFromCloud();
+  }, [docLinksService]);
 
-export const BacklinkGroups = () => {
-  const [extensions, portals] = usePreviewExtensions();
-  const { workspaceService, docService } = useServices({
-    WorkspaceService,
-    DocService,
-  });
-
-  const backlinkGroups = useBacklinkGroups();
   const textRendererOptions = useMemo(() => {
     const docLinkBaseURLMiddleware: TransformerMiddleware = ({
       adapterConfigs,
@@ -233,33 +243,84 @@ export const BacklinkGroups = () => {
 
   return (
     <>
-      {backlinkGroups.map(linkGroup => (
-        <CollapsibleSection
-          key={linkGroup.docId}
-          title={
-            <AffinePageReference
-              pageId={linkGroup.docId}
-              onClick={() => {
-                track.doc.biDirectionalLinksPanel.backlinkTitle.navigate();
-              }}
+      {backlinkGroups === undefined ? (
+        <Skeleton />
+      ) : (
+        backlinkGroups.map(linkGroup => (
+          <CollapsibleSection
+            key={linkGroup.docId}
+            title={
+              <AffinePageReference
+                pageId={linkGroup.docId}
+                onClick={() => {
+                  track.doc.biDirectionalLinksPanel.backlinkTitle.navigate();
+                }}
+              />
+            }
+            length={linkGroup.links.length}
+            docId={docService.doc.id}
+            linkDocId={linkGroup.docId}
+          >
+            <LinkPreview
+              textRendererOptions={textRendererOptions}
+              linkGroup={linkGroup}
             />
-          }
-          length={linkGroup.links.length}
-          docId={docService.doc.id}
-          linkDocId={linkGroup.docId}
-        >
-          <LinkPreview
-            textRendererOptions={textRendererOptions}
-            linkGroup={linkGroup}
-          />
-        </CollapsibleSection>
+          </CollapsibleSection>
+        ))
+      )}
+      {portals.map(p => (
+        <Fragment key={p.id}>{p.portal}</Fragment>
       ))}
-      <>
-        {portals.map(p => (
-          <Fragment key={p.id}>{p.portal}</Fragment>
-        ))}
-      </>
     </>
+  );
+};
+
+const BacklinkLinks = () => {
+  const t = useI18n();
+
+  const [visibility, setVisibility] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    return observeIntersection(
+      container,
+      debounce(
+        entry => {
+          setVisibility(entry.isIntersecting);
+        },
+        500,
+        {
+          trailing: true,
+        }
+      )
+    );
+  }, []);
+
+  const { docLinksService } = useServices({
+    DocLinksService,
+  });
+
+  const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
+
+  useEffect(() => {
+    if (visibility) {
+      docLinksService.backlinks.revalidateFromCloud();
+    }
+  }, [docLinksService, visibility]);
+
+  const backlinkCount = backlinks?.length;
+
+  return (
+    <div className={styles.linksContainer} ref={containerRef}>
+      <div className={styles.linksTitles}>
+        {t['com.affine.page-properties.backlinks']()}{' '}
+        {backlinkCount !== undefined ? `· ${backlinkCount}` : ''}
+      </div>
+      <BacklinkGroups />
+    </div>
   );
 };
 
@@ -361,18 +422,13 @@ export const BiDirectionalLinkPanel = () => {
     show ? docLinksService.links.links$ : new LiveData([] as Link[])
   );
 
-  const backlinkGroups = useBacklinkGroups();
-
-  const backlinkCount = useMemo(() => {
-    return backlinkGroups.reduce((acc, link) => acc + link.links.length, 0);
-  }, [backlinkGroups]);
-
   const handleClickShow = useCallback(() => {
     setShow(!show);
     track.doc.biDirectionalLinksPanel.$.toggle({
       type: show ? 'collapse' : 'expand',
     });
   }, [show, setShow]);
+
   return (
     <div className={styles.container}>
       {!show && <Divider size="thinner" />}
@@ -390,12 +446,7 @@ export const BiDirectionalLinkPanel = () => {
         <>
           <Divider size="thinner" />
 
-          <div className={styles.linksContainer}>
-            <div className={styles.linksTitles}>
-              {t['com.affine.page-properties.backlinks']()} · {backlinkCount}
-            </div>
-            <BacklinkGroups />
-          </div>
+          <BacklinkLinks />
           <div className={styles.linksContainer}>
             <div className={styles.linksTitles}>
               {t['com.affine.page-properties.outgoing-links']()} ·{' '}

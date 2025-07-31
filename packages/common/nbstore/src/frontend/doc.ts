@@ -249,7 +249,7 @@ export class DocFrontend {
       while (true) {
         throwIfAborted(signal);
 
-        const docId = await this.status.jobDocQueue.asyncPop(signal);
+        const docId = await this.status.jobDocQueue.asyncPop(undefined, signal);
         const jobs = this.status.jobMap.get(docId);
         this.status.jobMap.delete(docId);
 

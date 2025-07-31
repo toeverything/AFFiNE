@@ -42,13 +42,13 @@ window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
 window.addEventListener('focus', () => {
-  storeManagerClient.disableBatterySaveMode();
+  storeManagerClient.resume();
 });
 window.addEventListener('click', () => {
-  storeManagerClient.disableBatterySaveMode();
+  storeManagerClient.resume();
 });
 window.addEventListener('blur', () => {
-  storeManagerClient.enableBatterySaveMode();
+  storeManagerClient.pause();
 });
 
 const future = {
