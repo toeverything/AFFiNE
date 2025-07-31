@@ -70,6 +70,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 
     if (this._resetPanelIndexTimeoutId) {
       clearTimeout(this._resetPanelIndexTimeoutId);
+      this._resetPanelIndexTimeoutId = null;
     }
     this._resetPanelIndexTimeoutId = setTimeout(() => {
       this._currentPanelIndex$.value = -1;
@@ -102,6 +103,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       } else {
         if (this._resetPanelIndexTimeoutId) {
           clearTimeout(this._resetPanelIndexTimeoutId);
+          this._resetPanelIndexTimeoutId = null;
         }
         this._currentPanelIndex$.value = index;
         this.keyboard.hide();
@@ -306,6 +308,13 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     );
 
     this._watchAutoShow();
+
+    this.disposables.add(() => {
+      if (this._resetPanelIndexTimeoutId) {
+        clearTimeout(this._resetPanelIndexTimeoutId);
+        this._resetPanelIndexTimeoutId = null;
+      }
+    });
   }
 
   private _watchAutoShow() {
