@@ -76,7 +76,6 @@ declare global {
 
     'copilot.embedding.blobs': {
       contextId?: string;
-      userId: string;
       workspaceId: string;
       blobId: string;
     };

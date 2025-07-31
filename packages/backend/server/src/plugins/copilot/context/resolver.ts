@@ -742,6 +742,12 @@ export class CopilotContextResolver {
 
     const contextSession = await this.context.get(options.contextId);
 
+    await this.ac
+      .user(user.id)
+      .workspace(contextSession.workspaceId)
+      .allowLocal()
+      .assert('Workspace.Copilot');
+
     try {
       const blob = await contextSession.addBlobRecord(options.blobId);
       if (!blob) {
@@ -752,7 +758,6 @@ export class CopilotContextResolver {
       }
 
       await this.jobs.addBlobEmbeddingQueue({
-        userId: user.id,
         workspaceId: contextSession.workspaceId,
         contextId: contextSession.id,
         blobId: options.blobId,

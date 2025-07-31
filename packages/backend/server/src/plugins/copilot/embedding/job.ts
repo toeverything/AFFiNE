@@ -12,6 +12,7 @@ import {
   OnJob,
 } from '../../../base';
 import { DocReader } from '../../../core/doc';
+import { WorkspaceBlobStorage } from '../../../core/storage';
 import { readAllDocIdsFromWorkspaceSnapshot } from '../../../core/utils/blocksuite';
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
@@ -224,6 +225,18 @@ export class CopilotEmbeddingJob {
     return new File([buffer], fileName);
   }
 
+  private async readWorkspaceBlob(
+    workspaceId: string,
+    blobId: string,
+    fileName: string
+  ) {
+    const workspaceStorage = this.moduleRef.get(WorkspaceBlobStorage);
+    const { body } = await workspaceStorage.get(workspaceId, blobId);
+    if (!body) throw new BlobNotFound({ spaceId: workspaceId, blobId });
+    const buffer = await readStream(body);
+    return new File([buffer], fileName);
+  }
+
   @OnJob('copilot.embedding.files')
   async embedPendingFile({
     userId,
@@ -289,7 +302,6 @@ export class CopilotEmbeddingJob {
 
   @OnJob('copilot.embedding.blobs')
   async embedPendingBlob({
-    userId,
     workspaceId,
     contextId,
     blobId,
@@ -297,12 +309,7 @@ export class CopilotEmbeddingJob {
     if (!this.supportEmbedding || !this.embeddingClient) return;
 
     try {
-      const file = await this.readCopilotBlob(
-        userId,
-        workspaceId,
-        blobId,
-        'blob'
-      );
+      const file = await this.readWorkspaceBlob(workspaceId, blobId, 'blob');
 
       const chunks = await this.embeddingClient.getFileChunks(file);
       const total = chunks.reduce((acc, c) => acc + c.length, 0);
