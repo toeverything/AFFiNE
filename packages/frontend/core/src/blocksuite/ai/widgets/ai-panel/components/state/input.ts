@@ -3,15 +3,13 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { stopPropagation } from '@blocksuite/affine/shared/utils';
-import { PublishIcon, SendIcon } from '@blocksuite/icons/lit';
+import { SendIcon } from '@blocksuite/icons/lit';
 import {
   darkCssVariablesV2,
   lightCssVariablesV2,
 } from '@toeverything/theme/v2';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
-
-import type { AINetworkSearchConfig } from '../../type';
 
 export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
   static override styles = css`
@@ -217,14 +215,6 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
     this.remove();
   };
 
-  private readonly _toggleNetworkSearch = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const enable = this.networkSearchConfig.enabled.value;
-    this.networkSearchConfig.setEnabled(!enable);
-  };
-
   override render() {
     return html`<div class="root">
       <div class="star">${AIStarIcon}</div>
@@ -242,21 +232,6 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           @paste=${stopPropagation}
           @keyup=${stopPropagation}
         ></textarea>
-        ${this.networkSearchConfig.visible.value
-          ? html`
-              <div
-                class="network"
-                data-active=${!!this.networkSearchConfig.enabled.value}
-                @click=${this._toggleNetworkSearch}
-                @pointerdown=${stopPropagation}
-              >
-                ${PublishIcon()}
-                <affine-tooltip .offsetY=${12}>
-                  Toggle Network Search
-                </affine-tooltip>
-              </div>
-            `
-          : nothing}
         <div
           class="arrow"
           data-testid="ai-panel-input-send"
@@ -283,9 +258,6 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
 
   @state()
   private accessor _hasContent = false;
-
-  @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor onFinish: ((input: string) => void) | undefined = undefined;

@@ -6,11 +6,13 @@ import { ToggleDownIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
 export interface ToolResult {
   title: string | TemplateResult<1>;
   icon?: string | TemplateResult<1>;
   content?: string;
+  href?: string;
 }
 
 export class ToolResultCard extends SignalWatcher(
@@ -18,6 +20,7 @@ export class ToolResultCard extends SignalWatcher(
 ) {
   static override styles = css`
     .ai-tool-result-wrapper {
+      display: block;
       padding: 12px;
       margin: 8px 0;
       border-radius: 8px;
@@ -88,6 +91,12 @@ export class ToolResultCard extends SignalWatcher(
 
       .result-item {
         margin-top: 16px;
+        display: block;
+        cursor: default;
+      }
+
+      .result-item[href] {
+        cursor: pointer;
       }
 
       .result-item:first-child {
@@ -142,6 +151,37 @@ export class ToolResultCard extends SignalWatcher(
           height: 18px;
           color: ${unsafeCSSVarV2('icon/primary')};
         }
+      }
+
+      .result-item[href]:hover .result-title,
+      .result-item[href]:hover .result-content {
+        color: ${unsafeCSSVarV2('text/primary')};
+      }
+
+      .result-icon,
+      .footer-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 100%;
+        background-color: ${unsafeCSSVarV2('layer/background/primary')};
+
+        img {
+          width: 18px;
+          height: 18px;
+          border-radius: 100%;
+          border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
+      }
+
+      .result-item[href]:hover .result-title,
+      .result-item[href]:hover .result-content {
+        color: ${unsafeCSSVarV2('text/primary')};
       }
 
       .footer-icons {
@@ -202,7 +242,14 @@ export class ToolResultCard extends SignalWatcher(
             <div class="ai-tool-results-content">
               ${this.results.map(
                 result => html`
-                  <div class="result-item">
+                  <a
+                    class="result-item"
+                    href=${ifDefined(result.href)}
+                    target=${ifDefined(result.href ? '_blank' : undefined)}
+                    rel=${ifDefined(
+                      result.href ? 'noopener noreferrer' : undefined
+                    )}
+                  >
                     <div class="result-header">
                       <div class="result-title">${result.title}</div>
                       <div class="result-icon">
@@ -214,7 +261,7 @@ export class ToolResultCard extends SignalWatcher(
                           ${result.content}
                         </div>`
                       : nothing}
-                  </div>
+                  </a>
                 `
               )}
             </div>
