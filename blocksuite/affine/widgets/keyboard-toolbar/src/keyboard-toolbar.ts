@@ -60,9 +60,20 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       : this.keyboard.appTabSafeArea$.value;
   }
 
+  /**
+   * Prevent flickering during keyboard opening
+   */
+  private _resetPanelIndexTimeoutId: ReturnType<typeof setTimeout> | null =
+    null;
   private readonly _closeToolPanel = () => {
-    this._currentPanelIndex$.value = -1;
     if (!this.keyboard.visible$.peek()) this.keyboard.show();
+
+    if (this._resetPanelIndexTimeoutId) {
+      clearTimeout(this._resetPanelIndexTimeoutId);
+    }
+    this._resetPanelIndexTimeoutId = setTimeout(() => {
+      this._currentPanelIndex$.value = -1;
+    }, 100);
   };
 
   private readonly _currentPanelIndex$ = signal(-1);
@@ -89,6 +100,9 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       if (this._currentPanelIndex$.value === index) {
         this._closeToolPanel();
       } else {
+        if (this._resetPanelIndexTimeoutId) {
+          clearTimeout(this._resetPanelIndexTimeoutId);
+        }
         this._currentPanelIndex$.value = index;
         this.keyboard.hide();
         this._scrollCurrentBlockIntoView();
