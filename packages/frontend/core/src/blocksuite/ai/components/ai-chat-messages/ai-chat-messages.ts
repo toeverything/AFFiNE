@@ -12,7 +12,7 @@ import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
@@ -124,10 +124,10 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     }
 
     .down-indicator {
-      position: absolute;
+      position: fixed;
       left: 50%;
       transform: translate(-50%, 0);
-      bottom: 24px;
+      bottom: 166px;
       z-index: 1;
       border-radius: 50%;
       width: 32px;
@@ -213,19 +213,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
-  @query('.chat-panel-messages-container')
-  accessor messagesContainer: HTMLDivElement | null = null;
-
   @property({
     type: String,
     attribute: 'data-testid',
     reflect: true,
   })
   accessor testId = 'chat-panel-messages';
-
-  getScrollContainer(): HTMLDivElement | null {
-    return this.messagesContainer;
-  }
 
   private get _isNetworkActive() {
     return (
@@ -260,8 +253,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   }
 
   private readonly _onScroll = () => {
-    if (!this.messagesContainer) return;
-    const { clientHeight, scrollTop, scrollHeight } = this.messagesContainer;
+    const { clientHeight, scrollTop, scrollHeight } = this;
     this.canScrollDown = scrollHeight - scrollTop - clientHeight > 200;
   };
 
@@ -289,7 +281,6 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
           'independent-mode': !!this.independentMode,
         })}
         data-testid="chat-panel-messages-container"
-        @scroll=${() => this._debouncedOnScroll()}
       >
         ${filteredItems.length === 0
           ? html`<div
@@ -406,6 +397,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         )
       );
     }
+
+    // Add scroll event listener to the host element
+    this.addEventListener('scroll', this._debouncedOnScroll);
+    disposables.add(() => {
+      this.removeEventListener('scroll', this._debouncedOnScroll);
+    });
   }
 
   protected override updated(_changedProperties: PropertyValues) {
@@ -423,9 +420,8 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   scrollToEnd() {
     requestAnimationFrame(() => {
-      if (!this.messagesContainer) return;
-      this.messagesContainer.scrollTo({
-        top: this.messagesContainer.scrollHeight,
+      this.scrollTo({
+        top: this.scrollHeight,
         behavior: 'smooth',
       });
     });
@@ -433,8 +429,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   scrollToPos(top: number) {
     requestAnimationFrame(() => {
-      if (!this.messagesContainer) return;
-      this.messagesContainer.scrollTo({ top });
+      this.scrollTo({ top });
     });
   }
 

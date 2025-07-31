@@ -307,9 +307,8 @@ export class AIChatContent extends SignalWatcher(
     if (chatMessages) {
       chatMessages.updateComplete
         .then(() => {
-          const scrollContainer = chatMessages.getScrollContainer();
-          scrollContainer?.addEventListener('scrollend', () => {
-            this.lastScrollTop = scrollContainer.scrollTop;
+          chatMessages.addEventListener('scrollend', () => {
+            this.lastScrollTop = chatMessages.scrollTop;
           });
           this._scrollListenersInitialized = true;
         })
