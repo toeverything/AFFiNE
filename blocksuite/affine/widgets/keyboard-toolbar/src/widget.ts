@@ -20,18 +20,6 @@ import {
 export const AFFINE_KEYBOARD_TOOLBAR_WIDGET = 'affine-keyboard-toolbar-widget';
 
 export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel> {
-  private readonly _close = (blur: boolean) => {
-    if (blur) {
-      if (document.activeElement === this._docTitle?.inlineEditorContainer) {
-        this._docTitle?.inlineEditor?.setInlineRange(null);
-        this._docTitle?.inlineEditor?.eventSource?.blur();
-      } else if (document.activeElement === this.block?.rootComponent) {
-        this.std.selection.clear();
-      }
-    }
-    this._show$.value = false;
-  };
-
   private readonly _show$ = signal(false);
 
   private _initialInputMode: string = '';
@@ -129,7 +117,6 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel>
         .keyboard=${this.keyboard}
         .config=${this.config}
         .rootComponent=${this.block.rootComponent}
-        .close=${this._close}
       ></affine-keyboard-toolbar>`}
     ></blocksuite-portal>`;
   }

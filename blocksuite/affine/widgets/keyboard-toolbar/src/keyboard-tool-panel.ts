@@ -71,21 +71,18 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
       .map(group => (typeof group === 'function' ? group(this.context) : group))
       .filter((group): group is KeyboardToolPanelGroup => group !== null);
 
-    return repeat(
-      groups,
-      group => group.name,
-      group => this._renderGroup(group)
-    );
+    return html`<div class="affine-keyboard-tool-panel-container">
+      ${repeat(
+        groups,
+        group => group.name,
+        group => this._renderGroup(group)
+      )}
+    </div>`;
   }
 
   protected override willUpdate(changedProperties: PropertyValues<this>) {
     if (changedProperties.has('height')) {
-      this.style.height = `${this.height}px`;
-      if (this.height === 0) {
-        this.style.padding = '0';
-      } else {
-        this.style.padding = '';
-      }
+      this.style.height = this.height;
     }
   }
 
@@ -96,5 +93,5 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
   accessor context!: KeyboardToolbarContext;
 
   @property({ attribute: false })
-  accessor height = 0;
+  accessor height = '';
 }
