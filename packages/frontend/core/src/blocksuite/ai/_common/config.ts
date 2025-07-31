@@ -145,8 +145,8 @@ const imageBlockShowWhen = (chain: Chain<InitCommandCtx>) => {
   return matchModels(model, [ImageBlockModel]);
 };
 
-const EditAIGroup: AIItemGroupConfig = {
-  name: 'edit with ai',
+const EditTextAIGroup: AIItemGroupConfig = {
+  name: 'edit text',
   items: [
     {
       name: 'Translate to',
@@ -193,8 +193,8 @@ const EditAIGroup: AIItemGroupConfig = {
   ],
 };
 
-const DraftAIGroup: AIItemGroupConfig = {
-  name: 'draft with ai',
+const DraftFromTextAIGroup: AIItemGroupConfig = {
+  name: 'draft from text',
   items: [
     {
       name: 'Write an article about this',
@@ -234,8 +234,41 @@ const DraftAIGroup: AIItemGroupConfig = {
   ],
 };
 
-const ReviewWIthAIGroup: AIItemGroupConfig = {
-  name: 'review with ai',
+const ReviewImageAIGroup: AIItemGroupConfig = {
+  name: 'review image',
+  items: [
+    {
+      name: 'Explain this image',
+      testId: 'action-explain-image',
+      icon: PenIcon(),
+      showWhen: imageBlockShowWhen,
+      handler: actionToHandler('explainImage', AIStarIconWithAnimation),
+    },
+  ],
+};
+
+const ReviewCodeAIGroup: AIItemGroupConfig = {
+  name: 'review code',
+  items: [
+    {
+      name: 'Explain this code',
+      testId: 'action-explain-code',
+      icon: ExplainIcon(),
+      showWhen: codeBlockShowWhen,
+      handler: actionToHandler('explainCode', AIStarIconWithAnimation),
+    },
+    {
+      name: 'Check code error',
+      testId: 'action-check-code-error',
+      icon: ExplainIcon(),
+      showWhen: codeBlockShowWhen,
+      handler: actionToHandler('checkCodeErrors', AIStarIconWithAnimation),
+    },
+  ],
+};
+
+const ReviewTextAIGroup: AIItemGroupConfig = {
+  name: 'review text',
   items: [
     {
       name: 'Fix spelling',
@@ -251,27 +284,7 @@ const ReviewWIthAIGroup: AIItemGroupConfig = {
       showWhen: textBlockShowWhen,
       handler: actionToHandler('improveGrammar', AIStarIconWithAnimation),
     },
-    {
-      name: 'Explain this image',
-      testId: 'action-explain-image',
-      icon: PenIcon(),
-      showWhen: imageBlockShowWhen,
-      handler: actionToHandler('explainImage', AIStarIconWithAnimation),
-    },
-    {
-      name: 'Explain this code',
-      testId: 'action-explain-code',
-      icon: ExplainIcon(),
-      showWhen: codeBlockShowWhen,
-      handler: actionToHandler('explainCode', AIStarIconWithAnimation),
-    },
-    {
-      name: 'Check code error',
-      testId: 'action-check-code-error',
-      icon: ExplainIcon(),
-      showWhen: codeBlockShowWhen,
-      handler: actionToHandler('checkCodeErrors', AIStarIconWithAnimation),
-    },
+
     {
       name: 'Explain selection',
       testId: 'action-explain-selection',
@@ -282,8 +295,21 @@ const ReviewWIthAIGroup: AIItemGroupConfig = {
   ],
 };
 
-const GenerateWithAIGroup: AIItemGroupConfig = {
-  name: 'generate with ai',
+const TouchUpImageAIGroup: AIItemGroupConfig = {
+  name: 'touch up image',
+  items: [
+    {
+      name: 'Generate an image',
+      testId: 'action-generate-image',
+      icon: ImageIcon(),
+      showWhen: textBlockShowWhen,
+      handler: actionToHandler('createImage', AIImageIconWithAnimation),
+    },
+  ],
+};
+
+const GenerateFromTextAIGroup: AIItemGroupConfig = {
+  name: 'generate from text',
   items: [
     {
       name: 'Summarize',
@@ -313,13 +339,6 @@ const GenerateWithAIGroup: AIItemGroupConfig = {
             !model.props.type.startsWith('h')
         );
       },
-    },
-    {
-      name: 'Generate an image',
-      testId: 'action-generate-image',
-      icon: ImageIcon(),
-      showWhen: textBlockShowWhen,
-      handler: actionToHandler('createImage', AIImageIconWithAnimation),
     },
     {
       name: 'Generate outline',
@@ -366,7 +385,7 @@ const OthersAIGroup: AIItemGroupConfig = {
   name: 'Others',
   items: [
     {
-      name: 'Continue with AI',
+      name: 'Continue in AI Chat',
       testId: 'action-continue-with-ai',
       icon: CommentIcon(),
       handler: host => {
@@ -382,17 +401,20 @@ const OthersAIGroup: AIItemGroupConfig = {
 };
 
 export const pageAIGroups: AIItemGroupConfig[] = [
-  ReviewWIthAIGroup,
-  EditAIGroup,
-  GenerateWithAIGroup,
-  DraftAIGroup,
+  ReviewTextAIGroup,
+  ReviewCodeAIGroup,
+  ReviewImageAIGroup,
+  EditTextAIGroup,
+  TouchUpImageAIGroup,
+  GenerateFromTextAIGroup,
+  DraftFromTextAIGroup,
   OthersAIGroup,
 ];
 
 export function buildAIImageItemGroups(): AIItemGroupConfig[] {
   return [
     {
-      name: 'edit with ai',
+      name: 'review image',
       items: [
         {
           name: 'Explain this image',
@@ -409,7 +431,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
       ],
     },
     {
-      name: 'generate with ai',
+      name: 'touch up image',
       items: [
         {
           name: 'Generate an image',
@@ -463,7 +485,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
 export function buildAICodeItemGroups(): AIItemGroupConfig[] {
   return [
     {
-      name: 'edit with ai',
+      name: 'review code',
       items: [
         {
           name: 'Explain this code',

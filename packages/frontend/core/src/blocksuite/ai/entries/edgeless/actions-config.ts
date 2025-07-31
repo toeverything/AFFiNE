@@ -108,7 +108,7 @@ const othersGroup: AIItemGroupConfig = {
   name: 'others',
   items: [
     {
-      name: 'Continue with AI',
+      name: 'Continue in AI Chat',
       testId: 'action-continue-with-ai',
       icon: CommentIcon({ width: '20px', height: '20px' }),
       showWhen: () => true,
@@ -125,8 +125,8 @@ const othersGroup: AIItemGroupConfig = {
   ],
 };
 
-const editGroup: AIItemGroupConfig = {
-  name: 'edit with ai',
+const editTextGroup: AIItemGroupConfig = {
+  name: 'edit text',
   items: [
     {
       name: 'Translate to',
@@ -174,8 +174,8 @@ const editGroup: AIItemGroupConfig = {
   ],
 };
 
-const draftGroup: AIItemGroupConfig = {
-  name: 'draft with ai',
+const draftFromTextGroup: AIItemGroupConfig = {
+  name: 'draft from text',
   items: [
     {
       name: 'Write an article about this',
@@ -215,8 +215,46 @@ const draftGroup: AIItemGroupConfig = {
   ],
 };
 
-const reviewGroup: AIItemGroupConfig = {
-  name: 'review with ai',
+const reviewImageGroup: AIItemGroupConfig = {
+  name: 'review image',
+  items: [
+    {
+      name: 'Explain this image',
+      icon: PenIcon(),
+      testId: 'action-explain-image',
+      showWhen: imageOnlyShowWhen,
+      handler: actionToHandler(
+        'explainImage',
+        AIStarIconWithAnimation,
+        undefined,
+        imageCustomInput
+      ),
+    },
+  ],
+};
+
+const reviewCodeGroup: AIItemGroupConfig = {
+  name: 'review code',
+  items: [
+    {
+      name: 'Explain this code',
+      icon: ExplainIcon(),
+      testId: 'action-explain-code',
+      showWhen: noteWithCodeBlockShowWen,
+      handler: actionToHandler('explainCode', AIStarIconWithAnimation),
+    },
+    {
+      name: 'Check code error',
+      icon: ExplainIcon(),
+      testId: 'action-check-code-error',
+      showWhen: noteWithCodeBlockShowWen,
+      handler: actionToHandler('checkCodeErrors', AIStarIconWithAnimation),
+    },
+  ],
+};
+
+const reviewTextGroup: AIItemGroupConfig = {
+  name: 'review text',
   items: [
     {
       name: 'Fix spelling',
@@ -232,32 +270,7 @@ const reviewGroup: AIItemGroupConfig = {
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('improveGrammar', AIStarIconWithAnimation),
     },
-    {
-      name: 'Explain this image',
-      icon: PenIcon(),
-      testId: 'action-explain-image',
-      showWhen: imageOnlyShowWhen,
-      handler: actionToHandler(
-        'explainImage',
-        AIStarIconWithAnimation,
-        undefined,
-        imageCustomInput
-      ),
-    },
-    {
-      name: 'Explain this code',
-      icon: ExplainIcon(),
-      testId: 'action-explain-code',
-      showWhen: noteWithCodeBlockShowWen,
-      handler: actionToHandler('explainCode', AIStarIconWithAnimation),
-    },
-    {
-      name: 'Check code error',
-      icon: ExplainIcon(),
-      testId: 'action-check-code-error',
-      showWhen: noteWithCodeBlockShowWen,
-      handler: actionToHandler('checkCodeErrors', AIStarIconWithAnimation),
-    },
+
     {
       name: 'Explain selection',
       icon: SelectionIcon({ width: '20px', height: '20px' }),
@@ -268,24 +281,9 @@ const reviewGroup: AIItemGroupConfig = {
   ],
 };
 
-const generateGroup: AIItemGroupConfig = {
-  name: 'generate with ai',
+const touchUpImageGroup: AIItemGroupConfig = {
+  name: 'touch up image',
   items: [
-    {
-      name: 'Summarize',
-      icon: PenIcon(),
-      testId: 'action-summarize',
-      showWhen: noteBlockOrTextShowWhen,
-      handler: actionToHandler('summary', AIPenIconWithAnimation),
-    },
-    {
-      name: 'Generate headings',
-      icon: PenIcon(),
-      testId: 'action-generate-headings',
-      showWhen: noteBlockOrTextShowWhen,
-      handler: actionToHandler('createHeadings', AIPenIconWithAnimation),
-      beta: true,
-    },
     {
       name: 'Generate an image',
       icon: ImageIcon(),
@@ -361,6 +359,28 @@ const generateGroup: AIItemGroupConfig = {
         }
       ),
     },
+  ],
+};
+
+const generateFromTextGroup: AIItemGroupConfig = {
+  name: 'generate from text',
+  items: [
+    {
+      name: 'Summarize',
+      icon: PenIcon(),
+      testId: 'action-summarize',
+      showWhen: noteBlockOrTextShowWhen,
+      handler: actionToHandler('summary', AIPenIconWithAnimation),
+    },
+    {
+      name: 'Generate headings',
+      icon: PenIcon(),
+      testId: 'action-generate-headings',
+      showWhen: noteBlockOrTextShowWhen,
+      handler: actionToHandler('createHeadings', AIPenIconWithAnimation),
+      beta: true,
+    },
+
     {
       name: 'Generate outline',
       icon: PenIcon(),
@@ -547,9 +567,12 @@ const generateGroup: AIItemGroupConfig = {
 };
 
 export const edgelessAIGroups: AIItemGroupConfig[] = [
-  reviewGroup,
-  editGroup,
-  generateGroup,
-  draftGroup,
+  reviewTextGroup,
+  reviewCodeGroup,
+  reviewImageGroup,
+  editTextGroup,
+  touchUpImageGroup,
+  generateFromTextGroup,
+  draftFromTextGroup,
   othersGroup,
 ];

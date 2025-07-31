@@ -19,7 +19,7 @@ export interface AIUserInfo {
 export interface AIChatParams {
   host: EditorHost;
   mode?: 'page' | 'edgeless';
-  // Auto select and append selection to input via `Continue with AI` action.
+  // Auto select and append selection to input via `Continue in AI Chat` action.
   autoSelect?: boolean;
 }
 
