@@ -230,7 +230,9 @@ export class CopilotEmbeddingJob {
     blobId: string,
     fileName: string
   ) {
-    const workspaceStorage = this.moduleRef.get(WorkspaceBlobStorage);
+    const workspaceStorage = this.moduleRef.get(WorkspaceBlobStorage, {
+      strict: false,
+    });
     const { body } = await workspaceStorage.get(workspaceId, blobId);
     if (!body) throw new BlobNotFound({ spaceId: workspaceId, blobId });
     const buffer = await readStream(body);

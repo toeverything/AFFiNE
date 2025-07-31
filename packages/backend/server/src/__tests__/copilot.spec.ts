@@ -11,6 +11,7 @@ import { EventBus, JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
+import { StorageModule, WorkspaceBlobStorage } from '../core/storage';
 import {
   ContextCategories,
   CopilotSessionModel,
@@ -68,6 +69,7 @@ type Context = {
   db: PrismaClient;
   event: EventBus;
   workspace: WorkspaceModel;
+  workspaceStorage: WorkspaceBlobStorage;
   copilotSession: CopilotSessionModel;
   context: CopilotContextService;
   prompt: PromptService;
@@ -114,6 +116,7 @@ test.before(async t => {
         },
       }),
       QuotaModule,
+      StorageModule,
       CopilotModule,
     ],
     tapModule: builder => {
@@ -127,6 +130,7 @@ test.before(async t => {
   const db = module.get(PrismaClient);
   const event = module.get(EventBus);
   const workspace = module.get(WorkspaceModel);
+  const workspaceStorage = module.get(WorkspaceBlobStorage);
   const copilotSession = module.get(CopilotSessionModel);
   const prompt = module.get(PromptService);
   const factory = module.get(CopilotProviderFactory);
@@ -146,6 +150,7 @@ test.before(async t => {
   t.context.db = db;
   t.context.event = event;
   t.context.workspace = workspace;
+  t.context.workspaceStorage = workspaceStorage;
   t.context.copilotSession = copilotSession;
   t.context.prompt = prompt;
   t.context.factory = factory;
@@ -1520,8 +1525,16 @@ test('TextStreamParser should process a sequence of message chunks', t => {
 
 // ==================== context ====================
 test('should be able to manage context', async t => {
-  const { context, db, event, jobs, prompt, session, storage, workspace } =
-    t.context;
+  const {
+    context,
+    event,
+    jobs,
+    prompt,
+    session,
+    storage,
+    workspace,
+    workspaceStorage,
+  } = t.context;
 
   const ws = await workspace.create(userId);
 
@@ -1614,15 +1627,7 @@ test('should be able to manage context', async t => {
     // blob record
     {
       const blobId = 'test-blob';
-      await storage.put(userId, session.workspaceId, blobId, buffer);
-      await db.blob.create({
-        data: {
-          workspaceId: session.workspaceId,
-          key: blobId,
-          size: buffer.length,
-          mime: 'application/pdf',
-        },
-      });
+      await workspaceStorage.put(session.workspaceId, blobId, buffer);
 
       await jobs.embedPendingBlob({ workspaceId: session.workspaceId, blobId });
 
