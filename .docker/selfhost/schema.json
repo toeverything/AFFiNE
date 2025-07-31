@@ -219,6 +219,41 @@
           "type": "boolean",
           "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
           "default": false
+        },
+        "fallbackDomains": {
+          "type": "array",
+          "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
+          "default": []
+        },
+        "fallbackSMTP.host": {
+          "type": "string",
+          "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.port": {
+          "type": "number",
+          "description": "Port of the email server (they commonly are 25, 465 or 587)\n@default 465",
+          "default": 465
+        },
+        "fallbackSMTP.username": {
+          "type": "string",
+          "description": "Username used to authenticate the email server\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.password": {
+          "type": "string",
+          "description": "Password used to authenticate the email server\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.sender": {
+          "type": "string",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.ignoreTLS": {
+          "type": "boolean",
+          "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false",
+          "default": false
         }
       }
     },

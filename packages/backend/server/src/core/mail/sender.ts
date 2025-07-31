@@ -36,6 +36,8 @@ function configToSMTPOptions(
 export class MailSender {
   private readonly logger = new Logger(MailSender.name);
   private smtp: Transporter<SMTPTransport.SentMessageInfo> | null = null;
+  private fallbackSMTP: Transporter<SMTPTransport.SentMessageInfo> | null =
+    null;
   private usingTestAccount = false;
   constructor(private readonly config: Config) {}
 
@@ -61,11 +63,17 @@ export class MailSender {
   }
 
   private setup() {
-    const { SMTP } = this.config.mailer;
+    const { SMTP, fallbackDomains, fallbackSMTP } = this.config.mailer;
     const opts = configToSMTPOptions(SMTP);
 
     if (SMTP.host) {
       this.smtp = createTransport(opts);
+      if (fallbackDomains.length > 0 && fallbackSMTP?.host) {
+        this.logger.warn(
+          `Fallback SMTP is configured for domains: ${fallbackDomains.join(', ')}`
+        );
+        this.fallbackSMTP = createTransport(configToSMTPOptions(fallbackSMTP));
+      }
     } else if (env.dev) {
       createTestAccount((err, account) => {
         if (!err) {
@@ -83,21 +91,34 @@ export class MailSender {
     } else {
       this.logger.warn('Mailer SMTP transport is not configured.');
       this.smtp = null;
+      this.fallbackSMTP = null;
     }
   }
 
+  private getSender(domain: string) {
+    const { SMTP, fallbackSMTP, fallbackDomains } = this.config.mailer;
+    if (this.fallbackSMTP && fallbackDomains.includes(domain)) {
+      return [this.fallbackSMTP, fallbackSMTP.sender] as const;
+    }
+    return [this.smtp, SMTP.sender] as const;
+  }
+
   async send(name: string, options: SendOptions) {
-    if (!this.smtp) {
+    const [, domain, ...rest] = options.to.split('@');
+    if (rest.length || !domain) {
+      this.logger.error(`Invalid email address: ${options.to}`);
+      return null;
+    }
+
+    const [smtpClient, from] = this.getSender(domain);
+    if (!smtpClient) {
       this.logger.warn(`Mailer SMTP transport is not configured to send mail.`);
       return null;
     }
 
     metrics.mail.counter('send_total').add(1, { name });
     try {
-      const result = await this.smtp.sendMail({
-        from: this.config.mailer.SMTP.sender,
-        ...options,
-      });
+      const result = await smtpClient.sendMail({ from, ...options });
 
       if (result.rejected.length > 0) {
         metrics.mail.counter('rejected_total').add(1, { name });
