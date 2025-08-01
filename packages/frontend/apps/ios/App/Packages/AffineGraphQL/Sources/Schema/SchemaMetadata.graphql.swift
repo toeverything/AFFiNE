@@ -20,6 +20,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
 
   public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
     switch typename {
+    case "AccessToken": return AffineGraphQL.Objects.AccessToken
     case "AggregateBucketHitsObjectType": return AffineGraphQL.Objects.AggregateBucketHitsObjectType
     case "AggregateBucketObjectType": return AffineGraphQL.Objects.AggregateBucketObjectType
     case "AggregateResultObjectType": return AffineGraphQL.Objects.AggregateResultObjectType
@@ -34,10 +35,10 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "ContextWorkspaceEmbeddingStatus": return AffineGraphQL.Objects.ContextWorkspaceEmbeddingStatus
     case "Copilot": return AffineGraphQL.Objects.Copilot
     case "CopilotContext": return AffineGraphQL.Objects.CopilotContext
+    case "CopilotContextBlob": return AffineGraphQL.Objects.CopilotContextBlob
     case "CopilotContextCategory": return AffineGraphQL.Objects.CopilotContextCategory
     case "CopilotContextDoc": return AffineGraphQL.Objects.CopilotContextDoc
     case "CopilotContextFile": return AffineGraphQL.Objects.CopilotContextFile
-    case "CopilotDocType": return AffineGraphQL.Objects.CopilotDocType
     case "CopilotHistories": return AffineGraphQL.Objects.CopilotHistories
     case "CopilotHistoriesTypeEdge": return AffineGraphQL.Objects.CopilotHistoriesTypeEdge
     case "CopilotPromptConfigType": return AffineGraphQL.Objects.CopilotPromptConfigType
@@ -85,6 +86,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "ReleaseVersionType": return AffineGraphQL.Objects.ReleaseVersionType
     case "RemoveAvatar": return AffineGraphQL.Objects.RemoveAvatar
     case "ReplyObjectType": return AffineGraphQL.Objects.ReplyObjectType
+    case "RevealedAccessToken": return AffineGraphQL.Objects.RevealedAccessToken
     case "SearchDocObjectType": return AffineGraphQL.Objects.SearchDocObjectType
     case "SearchNodeObjectType": return AffineGraphQL.Objects.SearchNodeObjectType
     case "SearchResultObjectType": return AffineGraphQL.Objects.SearchResultObjectType

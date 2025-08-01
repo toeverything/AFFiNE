@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let CopilotDocType = ApolloAPI.Object(
-    typename: "CopilotDocType",
+  static let AccessToken = ApolloAPI.Object(
+    typename: "AccessToken",
     implementedInterfaces: [],
     keyFields: nil
   )

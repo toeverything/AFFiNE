@@ -3,16 +3,16 @@
 
 @_exported import ApolloAPI
 
-public class AddContextDocMutation: GraphQLMutation {
-  public static let operationName: String = "addContextDoc"
+public class AddContextBlobMutation: GraphQLMutation {
+  public static let operationName: String = "addContextBlob"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation addContextDoc($options: AddContextDocInput!) { addContextDoc(options: $options) { __typename id createdAt status } }"#
+      #"mutation addContextBlob($options: AddContextBlobInput!) { addContextBlob(options: $options) { __typename id createdAt status } }"#
     ))
 
-  public var options: AddContextDocInput
+  public var options: AddContextBlobInput
 
-  public init(options: AddContextDocInput) {
+  public init(options: AddContextBlobInput) {
     self.options = options
   }
 
@@ -24,20 +24,20 @@ public class AddContextDocMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("addContextDoc", AddContextDoc.self, arguments: ["options": .variable("options")]),
+      .field("addContextBlob", AddContextBlob.self, arguments: ["options": .variable("options")]),
     ] }
 
-    /// add a doc to context
-    public var addContextDoc: AddContextDoc { __data["addContextDoc"] }
+    /// add a blob to context
+    public var addContextBlob: AddContextBlob { __data["addContextBlob"] }
 
-    /// AddContextDoc
+    /// AddContextBlob
     ///
-    /// Parent Type: `CopilotContextDoc`
-    public struct AddContextDoc: AffineGraphQL.SelectionSet {
+    /// Parent Type: `CopilotContextBlob`
+    public struct AddContextBlob: AffineGraphQL.SelectionSet {
       public let __data: DataDict
       public init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContextDoc }
+      public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContextBlob }
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
