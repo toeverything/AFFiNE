@@ -35,6 +35,9 @@ resources:
   limits:
     memory: "1Gi"
     cpu: "1"
+  requests:
+    memory: "512Mi"
+    cpu: "100m"
 
 volumes: []
 volumeMounts: []
