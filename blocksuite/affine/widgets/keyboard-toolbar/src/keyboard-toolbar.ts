@@ -221,7 +221,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   }
 
   private _renderItems() {
-    if (document.activeElement !== this.rootComponent)
+    if (!this.std.event.active$.value)
       return html`<div class="item-container"></div>`;
 
     const goPrevToolbarAction = when(

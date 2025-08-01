@@ -61,29 +61,26 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel>
   override connectedCallback(): void {
     super.connectedCallback();
 
-    const rootComponent = this.block?.rootComponent;
-    if (rootComponent) {
-      this.disposables.addFromEvent(rootComponent, 'focus', () => {
-        this._show$.value = true;
-      });
-      this.disposables.addFromEvent(rootComponent, 'blur', () => {
-        this._show$.value = false;
-      });
+    this.disposables.add(
+      effect(() => {
+        this._show$.value = this.std.event.active$.value;
+      })
+    );
 
-      if (this.keyboard.fallback) {
-        this._initialInputMode = rootComponent.inputMode;
-        this.disposables.add(() => {
-          rootComponent.inputMode = this._initialInputMode;
-        });
-        this.disposables.add(
-          effect(() => {
-            // recover input mode when keyboard toolbar is hidden
-            if (!this._show$.value) {
-              rootComponent.inputMode = this._initialInputMode;
-            }
-          })
-        );
-      }
+    const rootComponent = this.block?.rootComponent;
+    if (rootComponent && this.keyboard.fallback) {
+      this._initialInputMode = rootComponent.inputMode;
+      this.disposables.add(() => {
+        rootComponent.inputMode = this._initialInputMode;
+      });
+      this.disposables.add(
+        effect(() => {
+          // recover input mode when keyboard toolbar is hidden
+          if (!this._show$.value) {
+            rootComponent.inputMode = this._initialInputMode;
+          }
+        })
+      );
     }
 
     if (this._docTitle) {
