@@ -280,7 +280,7 @@ private extension ChatManager {
     vmId: UUID
   ) {
     let result = MarkdownParser().parse(document)
-    let content = MarkdownTextView.PreprocessContent(parserResult: result, theme: .default)
+    let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: .default)
 
     with(sessionId: sessionId, vmId: vmId) { (viewModel: inout AssistantMessageCellViewModel) in
       viewModel.content = document

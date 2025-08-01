@@ -38,7 +38,7 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
   var citations: [CitationViewModel]?
   var actions: [MessageActionViewModel]?
 
-  var preprocessedContent: MarkdownTextView.PreprocessContent
+  var preprocessedContent: MarkdownTextView.PreprocessedContent
 
   init(
     id: UUID,
@@ -66,7 +66,7 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
 
     let parser = MarkdownParser()
     let parserResult = parser.parse(content)
-    preprocessedContent = MarkdownTextView.PreprocessContent(
+    preprocessedContent = MarkdownTextView.PreprocessedContent(
       parserResult: parserResult,
       theme: .default,
     )
