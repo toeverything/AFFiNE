@@ -68,6 +68,10 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
       }
     }
   }
+  
+  public func delete(sessionId: String, vmId: UUID) {
+    with(sessionId: sessionId) { $0.removeValue(forKey: vmId) }
+  }
 
   @discardableResult
   public func append(sessionId: String, _ viewModel: any ChatCellViewModel) -> UUID {

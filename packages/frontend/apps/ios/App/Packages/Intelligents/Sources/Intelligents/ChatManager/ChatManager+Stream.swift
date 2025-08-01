@@ -160,6 +160,7 @@ private extension ChatManager {
     viewModelId: UUID
   ) {
     assert(!Thread.isMainThread)
+    print("[+] starting copilot response for session: \(sessionId)")
 
     let messageParameters: [String: AnyHashable] = [
       // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
@@ -167,11 +168,11 @@ private extension ChatManager {
       "files": [String](), // attachment in context, keep nil for now
       "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
     ]
-    let hasMultipleAttachmentBlobs = [
+    let attachmentCount = [
       editorData.fileAttachments.count,
       editorData.documentAttachments.count,
-    ].reduce(0, +) > 1
-    let attachmentFieldName = hasMultipleAttachmentBlobs ? "options.blobs" : "options.blob"
+    ].reduce(0, +)
+    let attachmentFieldName = attachmentCount > 1 && attachmentCount != 0 ? "options.blobs" : "options.blob"
     let uploadableAttachments: [GraphQLFile] = [
       editorData.fileAttachments.map { file -> GraphQLFile in
         .init(fieldName: attachmentFieldName, originalName: file.name, data: file.data ?? .init())
@@ -183,8 +184,8 @@ private extension ChatManager {
     assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
     guard let input = try? CreateChatMessageInput(
       attachments: [],
-      blob: hasMultipleAttachmentBlobs ? .none : "",
-      blobs: hasMultipleAttachmentBlobs ? .some([]) : .none,
+      blob: .none,
+      blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
       content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
       params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
       sessionId: sessionId
@@ -195,11 +196,13 @@ private extension ChatManager {
     }
     let mutation = CreateCopilotMessageMutation(options: input)
     QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
+      print("[*] createCopilotMessage result: \(result)")
       DispatchQueue.main.async {
         switch result {
         case let .success(graphQLResult):
           guard let messageIdentifier = graphQLResult.data?.createCopilotMessage else {
             self.report(sessionId, ChatError.invalidResponse)
+            self.delete(sessionId: sessionId, vmId: viewModelId)
             return
           }
           self.startStreamingResponse(
@@ -217,6 +220,7 @@ private extension ChatManager {
 
 private extension ChatManager {
   func startStreamingResponse(sessionId: String, messageId: String, applyingTo vmId: UUID) {
+    print("[+] starting streaming response for session: \(sessionId), message: \(messageId)")
     let base = IntelligentContext.shared.webViewMetadata[.currentServerBaseUrl] as? String
     guard let base, let url = URL(string: base) else {
       report(sessionId, ChatError.invalidServerConfiguration)
