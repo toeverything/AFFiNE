@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { Config, OnEvent } from '../../../base';
 import {
@@ -52,7 +52,11 @@ export class PromptService implements OnApplicationBootstrap {
         for (const name of promptNames) {
           const prompt = prompts.find(p => p.name === name);
           if (prompt && model) {
-            await this.update(prompt.name, { model, modified: true });
+            await this.update(
+              prompt.name,
+              { model, modified: true },
+              { model: { not: model } }
+            );
           }
         }
       }
@@ -173,11 +177,12 @@ export class PromptService implements OnApplicationBootstrap {
       model?: string;
       modified?: boolean;
       config?: PromptConfig;
-    }
+    },
+    where?: Prisma.AiPromptWhereInput
   ) {
     const { config, messages, model, modified } = data;
     const existing = await this.db.aiPrompt
-      .count({ where: { name, model: model ? { not: model } : undefined } })
+      .count({ where: { ...where, name } })
       .then(count => count > 0);
     if (existing) {
       await this.db.aiPrompt.update({
