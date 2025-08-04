@@ -29,7 +29,7 @@ import {
 } from '../../../base';
 import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { Editor } from '../../doc';
+import { DocReader, Editor } from '../../doc';
 import {
   AccessController,
   DOC_ACTIONS,
@@ -204,6 +204,7 @@ export class WorkspaceDocResolver {
      */
     private readonly prisma: PrismaClient,
     private readonly ac: AccessController,
+    private readonly reader: DocReader,
     private readonly models: Models,
     private readonly cache: Cache
   ) {}
@@ -306,6 +307,16 @@ export class WorkspaceDocResolver {
     if (doc) {
       // check if doc is readable
       await this.ac.user(me.id).doc(workspace.id, docId).assert('Doc.Read');
+      // get summary from doc snapshot if summary is null on database
+      if (doc.summary === null) {
+        const docContent = await this.reader.getDocContent(workspace.id, docId);
+        if (docContent) {
+          doc.summary = docContent.summary;
+          doc.title = docContent.title;
+          // update doc summary and title to database
+          await this.models.doc.upsertMeta(workspace.id, docId, docContent);
+        }
+      }
       return doc;
     }
 
