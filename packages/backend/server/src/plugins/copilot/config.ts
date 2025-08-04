@@ -3,6 +3,7 @@ import {
   StorageJSONSchema,
   StorageProviderConfig,
 } from '../../base';
+import { CopilotPromptScenario } from './prompt/prompts';
 import {
   AnthropicOfficialConfig,
   AnthropicVertexConfig,
@@ -24,6 +25,7 @@ declare global {
         key: string;
       }>;
       storage: ConfigItem<StorageProviderConfig>;
+      scenarios: ConfigItem<CopilotPromptScenario>;
       providers: {
         openai: ConfigItem<OpenAIConfig>;
         fal: ConfigItem<FalConfig>;
@@ -43,17 +45,29 @@ defineModuleConfig('copilot', {
     desc: 'Whether to enable the copilot plugin.',
     default: false,
   },
+  scenarios: {
+    desc: 'The models used in the scene for the copilot, will use this config if enabled.',
+    default: {
+      enabled: false,
+      scenarios: {
+        audio: 'gemini-2.5-flash',
+        chat: 'claude-sonnet-4@20250514',
+        embedding: 'gemini-embedding-001',
+        image: 'gpt-image-1',
+        rerank: 'gpt-4.1',
+        brainstorm: 'gpt-4o-2024-08-06',
+        coding: 'claude-sonnet-4@20250514',
+        quick_decision: 'gpt-4.1-mini',
+        quick_written: 'gemini-2.5-flash',
+        summary_inspection: 'gemini-2.5-flash',
+      },
+    },
+  },
   'providers.openai': {
     desc: 'The config for the openai provider.',
     default: {
       apiKey: '',
-      baseUrl: '',
-      fallback: {
-        text: '',
-        structured: '',
-        image: '',
-        embedding: '',
-      },
+      baseURL: 'https://api.openai.com/v1',
     },
     link: 'https://github.com/openai/openai-node',
   },
@@ -67,54 +81,30 @@ defineModuleConfig('copilot', {
     desc: 'The config for the gemini provider.',
     default: {
       apiKey: '',
-      baseUrl: '',
-      fallback: {
-        text: '',
-        structured: '',
-        image: '',
-        embedding: '',
-      },
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta',
     },
   },
   'providers.geminiVertex': {
     desc: 'The config for the gemini provider in Google Vertex AI.',
-    default: {
-      baseURL: '',
-      fallback: {
-        text: '',
-        structured: '',
-        image: '',
-        embedding: '',
-      },
-    },
+    default: {},
     schema: VertexSchema,
   },
   'providers.perplexity': {
     desc: 'The config for the perplexity provider.',
     default: {
       apiKey: '',
-      fallback: {
-        text: '',
-      },
     },
   },
   'providers.anthropic': {
     desc: 'The config for the anthropic provider.',
     default: {
       apiKey: '',
-      fallback: {
-        text: '',
-      },
+      baseURL: 'https://api.anthropic.com/v1',
     },
   },
   'providers.anthropicVertex': {
     desc: 'The config for the anthropic provider in Google Vertex AI.',
-    default: {
-      baseURL: '',
-      fallback: {
-        text: '',
-      },
-    },
+    default: {},
     schema: VertexSchema,
   },
   'providers.morph': {

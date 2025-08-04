@@ -104,22 +104,12 @@ export abstract class CopilotProvider<C = any> {
 
     if (modelId) {
       const hasOnlineModel = this.onlineModelList.includes(modelId);
-      const hasFallbackModel = cond.fallbackModel
-        ? this.onlineModelList.includes(cond.fallbackModel)
-        : undefined;
 
       const model = this.models.find(
         m => m.id === modelId && m.capabilities.some(matcher)
       );
 
-      if (model) {
-        // return fallback model if current model is not alive
-        if (!hasOnlineModel && hasFallbackModel) {
-          // oxlint-disable-next-line typescript-eslint(no-non-null-assertion)
-          return { id: cond.fallbackModel!, capabilities: [] };
-        }
-        return model;
-      }
+      if (model) return model;
       // allow online model without capabilities check
       if (hasOnlineModel) return { id: modelId, capabilities: [] };
       return undefined;

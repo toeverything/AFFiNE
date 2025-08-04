@@ -19,6 +19,83 @@ type Prompt = Omit<
   config?: PromptConfig;
 };
 
+export const Scenario: Record<string, string[]> = {
+  audio: ['Transcript audio'],
+  brainstorm: [
+    'Brainstorm mindmap',
+    'Create a presentation',
+    'Expand mind map',
+    'workflow:brainstorm:step2',
+    'workflow:presentation:step2',
+    'workflow:presentation:step4',
+  ],
+  chat: ['Chat With AFFiNE AI'],
+  coding: [
+    'Apply Updates',
+    'Code Artifact',
+    'Make it real',
+    'Make it real with text',
+    'Section Edit',
+  ],
+  // no prompt needed, just a placeholder
+  embedding: [],
+  image: [
+    'Convert to Anime style',
+    'Convert to Clay style',
+    'Convert to Pixel style',
+    'Convert to Sketch style',
+    'Convert to sticker',
+    'Generate image',
+    'Remove background',
+    'Upscale image',
+  ],
+  quick_decision: [
+    'Create headings',
+    'Generate a caption',
+    'Translate to',
+    'workflow:brainstorm:step1',
+    'workflow:presentation:step1',
+    'workflow:image-anime:step2',
+    'workflow:image-clay:step2',
+    'workflow:image-pixel:step2',
+    'workflow:image-sketch:step2',
+  ],
+  quick_written: [
+    'Brainstorm ideas about this',
+    'Continue writing',
+    'Explain this code',
+    'Fix spelling for it',
+    'Improve writing for it',
+    'Make it longer',
+    'Make it shorter',
+    'Write a blog post about this',
+    'Write a poem about this',
+    'Write an article about this',
+    'Write outline',
+  ],
+  rerank: ['Rerank results'],
+  summary_inspection: [
+    'Change tone to',
+    'Check code error',
+    'Conversation Summary',
+    'Explain this',
+    'Explain this image',
+    'Find action for summary',
+    'Find action items from it',
+    'Improve grammar for it',
+    'Summarize the meeting',
+    'Summary',
+    'Summary as title',
+    'Summary the webpage',
+    'Write a twitter about this',
+  ],
+};
+
+export type CopilotPromptScenario = {
+  enabled?: boolean;
+  scenarios?: Partial<Record<keyof typeof Scenario, string>>;
+};
+
 const workflows: Prompt[] = [
   {
     name: 'workflow:presentation',
@@ -1613,31 +1690,6 @@ const imageActions: Prompt[] = [
     messages: [{ role: 'user', content: '{{content}}' }],
   },
   {
-    name: 'debug:action:dalle3',
-    action: 'image',
-    model: 'dall-e-3',
-    messages: [
-      {
-        role: 'user',
-        content: '{{content}}',
-      },
-    ],
-  },
-  {
-    name: 'debug:action:gpt-image-1',
-    action: 'image',
-    model: 'gpt-image-1',
-    messages: [
-      {
-        role: 'user',
-        content: '{{content}}',
-      },
-    ],
-    config: {
-      requireContent: false,
-    },
-  },
-  {
     name: 'debug:action:fal-sd15',
     action: 'image',
     model: 'lcm-sd15-i2i',
@@ -1814,6 +1866,65 @@ Now apply the \`updates\` to the \`content\`, following the intent in \`op\`, an
       },
     ],
   },
+  {
+    name: 'Code Artifact',
+    model: 'claude-sonnet-4@20250514',
+    messages: [
+      {
+        role: 'system',
+        content: `
+        When sent new notes, respond ONLY with the contents of the html file.
+        DO NOT INCLUDE ANY OTHER TEXT, EXPLANATIONS, APOLOGIES, OR INTRODUCTORY/CLOSING PHRASES.
+        IF USER DOES NOT SPECIFY A STYLE, FOLLOW THE DEFAULT STYLE.
+        <generate_guide>
+        - The results should be a single HTML file.
+        - Use tailwindcss to style the website
+        - Put any additional CSS styles in a style tag and any JavaScript in a script tag.
+        - Use unpkg or skypack to import any required dependencies.
+        - Use Google fonts to pull in any open source fonts you require.
+        - Use lucide icons for any icons.
+        - If you have any images, load them from Unsplash or use solid colored rectangles.
+        </generate_guide>
+        
+        <DO_NOT_USE_COLORS>
+        - DO NOT USE ANY COLORS
+        </DO_NOT_USE_COLORS>
+        <DO_NOT_USE_GRADIENTS>
+        - DO NOT USE ANY GRADIENTS
+        </DO_NOT_USE_GRADIENTS>
+        
+        <COLOR_THEME>
+          - --affine-blue-300: #93e2fd
+          - --affine-blue-400: #60cffa
+          - --affine-blue-500: #3ab5f7
+          - --affine-blue-600: #1e96eb
+          - --affine-blue-700: #1e67af
+          - --affine-text-primary-color: #121212
+          - --affine-text-secondary-color: #8e8d91
+          - --affine-text-disable-color: #a9a9ad
+          - --affine-background-overlay-panel-color: #fbfbfc
+          - --affine-background-secondary-color: #f4f4f5
+          - --affine-background-primary-color: #fff
+        </COLOR_THEME>
+        <default_style_guide>
+        - MUST USE White and Blue(#1e96eb) as the primary color
+        - KEEP THE DEFAULT STYLE SIMPLE AND CLEAN
+        - DO NOT USE ANY COMPLEX STYLES
+        - DO NOT USE ANY GRADIENTS
+        - USE LESS SHADOWS
+        - USE RADIUS 4px or 8px for rounded corners
+        - USE 12px or 16px for padding
+        - Use the tailwind color gray, zinc, slate, neutral much more.
+        - Use 0.5px border should be better 
+        </default_style_guide>
+        `,
+      },
+      {
+        role: 'user',
+        content: '{{content}}',
+      },
+    ],
+  },
 ];
 
 const CHAT_PROMPT: Omit<Prompt, 'name'> = {
@@ -1973,84 +2084,6 @@ const chat: Prompt[] = [
     name: 'Chat With AFFiNE AI',
     ...CHAT_PROMPT,
   },
-  {
-    name: 'Search With AFFiNE AI',
-    ...CHAT_PROMPT,
-  },
-  // use for believer plan
-  {
-    name: 'Chat With AFFiNE AI - Believer',
-    model: 'gpt-o1',
-    messages: [
-      {
-        role: 'system',
-        content:
-          "You are AFFiNE AI, a professional and humorous copilot within AFFiNE. You are powered by latest GPT model from OpenAI and AFFiNE. AFFiNE is an open source general purposed productivity tool that contains unified building blocks that users can use on any interfaces, including block-based docs editor, infinite canvas based edgeless graphic mode, or multi-dimensional table with multiple transformable views. Your mission is always to try your very best to assist users to use AFFiNE to write docs, draw diagrams or plan things with these abilities. You always think step-by-step and describe your plan for what to build, using well-structured and clear markdown, written out in great detail. Unless otherwise specified, where list, JSON, or code blocks are required for giving the output. Minimize any other prose so that your responses can be directly used and inserted into the docs. You are able to access to API of AFFiNE to finish your job. You always respect the users' privacy and would not leak their info to anyone else. AFFiNE is made by Toeverything .Pte .Ltd, a company registered in Singapore with a diverse and international team. The company also open sourced blocksuite and octobase for building tools similar to Affine. The name AFFiNE comes from the idea of AFFiNE transform, as blocks in affine can all transform in page, edgeless or database mode. AFFiNE team is now having 25 members, an open source company driven by engineers.",
-      },
-    ],
-  },
-];
-
-const artifactActions: Prompt[] = [
-  {
-    name: 'Code Artifact',
-    model: 'claude-sonnet-4@20250514',
-    messages: [
-      {
-        role: 'system',
-        content: `
-        When sent new notes, respond ONLY with the contents of the html file.
-        DO NOT INCLUDE ANY OTHER TEXT, EXPLANATIONS, APOLOGIES, OR INTRODUCTORY/CLOSING PHRASES.
-        IF USER DOES NOT SPECIFY A STYLE, FOLLOW THE DEFAULT STYLE.
-        <generate_guide>
-        - The results should be a single HTML file.
-        - Use tailwindcss to style the website
-        - Put any additional CSS styles in a style tag and any JavaScript in a script tag.
-        - Use unpkg or skypack to import any required dependencies.
-        - Use Google fonts to pull in any open source fonts you require.
-        - Use lucide icons for any icons.
-        - If you have any images, load them from Unsplash or use solid colored rectangles.
-        </generate_guide>
-        
-        <DO_NOT_USE_COLORS>
-        - DO NOT USE ANY COLORS
-        </DO_NOT_USE_COLORS>
-        <DO_NOT_USE_GRADIENTS>
-        - DO NOT USE ANY GRADIENTS
-        </DO_NOT_USE_GRADIENTS>
-        
-        <COLOR_THEME>
-          - --affine-blue-300: #93e2fd
-          - --affine-blue-400: #60cffa
-          - --affine-blue-500: #3ab5f7
-          - --affine-blue-600: #1e96eb
-          - --affine-blue-700: #1e67af
-          - --affine-text-primary-color: #121212
-          - --affine-text-secondary-color: #8e8d91
-          - --affine-text-disable-color: #a9a9ad
-          - --affine-background-overlay-panel-color: #fbfbfc
-          - --affine-background-secondary-color: #f4f4f5
-          - --affine-background-primary-color: #fff
-        </COLOR_THEME>
-        <default_style_guide>
-        - MUST USE White and Blue(#1e96eb) as the primary color
-        - KEEP THE DEFAULT STYLE SIMPLE AND CLEAN
-        - DO NOT USE ANY COMPLEX STYLES
-        - DO NOT USE ANY GRADIENTS
-        - USE LESS SHADOWS
-        - USE RADIUS 4px or 8px for rounded corners
-        - USE 12px or 16px for padding
-        - Use the tailwind color gray, zinc, slate, neutral much more.
-        - Use 0.5px border should be better 
-        </default_style_guide>
-        `,
-      },
-      {
-        role: 'user',
-        content: '{{content}}',
-      },
-    ],
-  },
 ];
 
 export const prompts: Prompt[] = [
@@ -2059,7 +2092,6 @@ export const prompts: Prompt[] = [
   ...modelActions,
   ...chat,
   ...workflows,
-  ...artifactActions,
 ];
 
 export async function refreshPrompts(db: PrismaClient) {

@@ -4,27 +4,12 @@ import {
 } from '@ai-sdk/google';
 import z from 'zod';
 
-import {
-  CopilotChatOptions,
-  CopilotEmbeddingOptions,
-  CopilotProviderType,
-  ModelConditions,
-  ModelInputType,
-  ModelOutputType,
-  PromptMessage,
-  StreamObject,
-} from '../types';
+import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import { GeminiProvider } from './gemini';
 
 export type GeminiGenerativeConfig = {
   apiKey: string;
-  baseUrl?: string;
-  fallback?: {
-    text?: string;
-    structured?: string;
-    image?: string;
-    embedding?: string;
-  };
+  baseURL?: string;
 };
 
 const ModelListSchema = z.object({
@@ -113,65 +98,14 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
     super.setup();
     this.instance = createGoogleGenerativeAI({
       apiKey: this.config.apiKey,
-      baseURL: this.config.baseUrl,
+      baseURL: this.config.baseURL,
     });
-  }
-
-  override async text(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): Promise<string> {
-    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
-    return super.text(fullCond, messages, options);
-  }
-
-  override async structure(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options?: CopilotChatOptions
-  ): Promise<string> {
-    const fullCond = {
-      ...cond,
-      fallbackModel: this.config.fallback?.structured,
-    };
-    return super.structure(fullCond, messages, options);
-  }
-
-  override async *streamText(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): AsyncIterable<string> {
-    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
-    yield* super.streamText(fullCond, messages, options);
-  }
-
-  override async *streamObject(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): AsyncIterable<StreamObject> {
-    const fullCond = { ...cond, fallbackModel: this.config.fallback?.text };
-    yield* super.streamObject(fullCond, messages, options);
-  }
-
-  override async embedding(
-    cond: ModelConditions,
-    messages: string | string[],
-    options?: CopilotEmbeddingOptions
-  ): Promise<number[][]> {
-    const fullCond = {
-      ...cond,
-      fallbackModel: this.config.fallback?.embedding,
-    };
-    return super.embedding(fullCond, messages, options);
   }
 
   override async refreshOnlineModels() {
     try {
       const baseUrl =
-        this.config.baseUrl ||
+        this.config.baseURL ||
         'https://generativelanguage.googleapis.com/v1beta';
       if (baseUrl && !this.onlineModelList.length) {
         const { models } = await fetch(

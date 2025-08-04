@@ -142,6 +142,7 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'copilot',
     fields: [
       'enabled',
+      'scenarios',
       'providers.openai',
       'providers.gemini',
       'providers.perplexity',

@@ -211,7 +211,9 @@ test('should be able to manage prompt', async t => {
     'should have two messages'
   );
 
-  await prompt.update(promptName, [{ role: 'system', content: 'hello' }]);
+  await prompt.update(promptName, {
+    messages: [{ role: 'system', content: 'hello' }],
+  });
   t.is(
     (await prompt.get(promptName))!.finish({}).length,
     1,
@@ -370,7 +372,7 @@ test('should be able to update chat session prompt', async t => {
   // Update the session
   const updatedSessionId = await session.update({
     sessionId,
-    promptName: 'Search With AFFiNE AI',
+    promptName: 'Summary',
     userId,
   });
   t.is(updatedSessionId, sessionId, 'should update session with same id');
@@ -380,7 +382,7 @@ test('should be able to update chat session prompt', async t => {
   t.truthy(updatedSession, 'should retrieve updated session');
   t.is(
     updatedSession?.config.promptName,
-    'Search With AFFiNE AI',
+    'Summary',
     'should have updated prompt name'
   );
 });

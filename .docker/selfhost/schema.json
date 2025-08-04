@@ -667,18 +667,31 @@
           "description": "Whether to enable the copilot plugin.\n@default false",
           "default": false
         },
+        "scenarios": {
+          "type": "object",
+          "description": "The models used in the scene for the copilot, will use this config if enabled.\n@default {\"enabled\":false,\"scenarios\":{\"audio\":\"gemini-2.5-flash\",\"chat\":\"claude-sonnet-4@20250514\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"rerank\":\"gpt-4.1\",\"brainstorm\":\"gpt-4o-2024-08-06\",\"coding\":\"claude-sonnet-4@20250514\",\"quick_decision\":\"gpt-4.1-mini\",\"quick_written\":\"gemini-2.5-flash\",\"summary_inspection\":\"gemini-2.5-flash\"}}",
+          "default": {
+            "enabled": false,
+            "scenarios": {
+              "audio": "gemini-2.5-flash",
+              "chat": "claude-sonnet-4@20250514",
+              "embedding": "gemini-embedding-001",
+              "image": "gpt-image-1",
+              "rerank": "gpt-4.1",
+              "brainstorm": "gpt-4o-2024-08-06",
+              "coding": "claude-sonnet-4@20250514",
+              "quick_decision": "gpt-4.1-mini",
+              "quick_written": "gemini-2.5-flash",
+              "summary_inspection": "gemini-2.5-flash"
+            }
+          }
+        },
         "providers.openai": {
           "type": "object",
-          "description": "The config for the openai provider.\n@default {\"apiKey\":\"\",\"baseUrl\":\"\",\"fallback\":{\"text\":\"\",\"structured\":\"\",\"image\":\"\",\"embedding\":\"\"}}\n@link https://github.com/openai/openai-node",
+          "description": "The config for the openai provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://api.openai.com/v1\"}\n@link https://github.com/openai/openai-node",
           "default": {
             "apiKey": "",
-            "baseUrl": "",
-            "fallback": {
-              "text": "",
-              "structured": "",
-              "image": "",
-              "embedding": ""
-            }
+            "baseURL": "https://api.openai.com/v1"
           }
         },
         "providers.fal": {
@@ -690,21 +703,15 @@
         },
         "providers.gemini": {
           "type": "object",
-          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\",\"baseUrl\":\"\",\"fallback\":{\"text\":\"\",\"structured\":\"\",\"image\":\"\",\"embedding\":\"\"}}",
+          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://generativelanguage.googleapis.com/v1beta\"}",
           "default": {
             "apiKey": "",
-            "baseUrl": "",
-            "fallback": {
-              "text": "",
-              "structured": "",
-              "image": "",
-              "embedding": ""
-            }
+            "baseURL": "https://generativelanguage.googleapis.com/v1beta"
           }
         },
         "providers.geminiVertex": {
           "type": "object",
-          "description": "The config for the google vertex provider.\n@default {\"baseURL\":\"\",\"fallback\":{\"text\":\"\",\"structured\":\"\",\"image\":\"\",\"embedding\":\"\"}}",
+          "description": "The config for the google vertex provider.\n@default {}",
           "properties": {
             "location": {
               "type": "string",
@@ -735,39 +742,26 @@
               }
             }
           },
-          "default": {
-            "baseURL": "",
-            "fallback": {
-              "text": "",
-              "structured": "",
-              "image": "",
-              "embedding": ""
-            }
-          }
+          "default": {}
         },
         "providers.perplexity": {
           "type": "object",
-          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\",\"fallback\":{\"text\":\"\"}}",
+          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\"}",
           "default": {
-            "apiKey": "",
-            "fallback": {
-              "text": ""
-            }
+            "apiKey": ""
           }
         },
         "providers.anthropic": {
           "type": "object",
-          "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\",\"fallback\":{\"text\":\"\"}}",
+          "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://api.anthropic.com/v1\"}",
           "default": {
             "apiKey": "",
-            "fallback": {
-              "text": ""
-            }
+            "baseURL": "https://api.anthropic.com/v1"
           }
         },
         "providers.anthropicVertex": {
           "type": "object",
-          "description": "The config for the google vertex provider.\n@default {\"baseURL\":\"\",\"fallback\":{\"text\":\"\"}}",
+          "description": "The config for the google vertex provider.\n@default {}",
           "properties": {
             "location": {
               "type": "string",
@@ -798,12 +792,7 @@
               }
             }
           },
-          "default": {
-            "baseURL": "",
-            "fallback": {
-              "text": ""
-            }
-          }
+          "default": {}
         },
         "providers.morph": {
           "type": "object",

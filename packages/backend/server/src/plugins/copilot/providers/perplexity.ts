@@ -20,9 +20,6 @@ import { chatToGPTMessage, CitationParser } from './utils';
 export type PerplexityConfig = {
   apiKey: string;
   endpoint?: string;
-  fallback?: {
-    text?: string;
-  };
 };
 
 const PerplexityErrorSchema = z.union([
@@ -112,11 +109,7 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-      fallbackModel: this.config.fallback?.text,
-    };
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
     await this.checkParams({ cond: fullCond, messages, options });
     const model = this.selectModel(fullCond);
 
@@ -156,11 +149,7 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-      fallbackModel: this.config.fallback?.text,
-    };
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
     await this.checkParams({ cond: fullCond, messages, options });
     const model = this.selectModel(fullCond);
 

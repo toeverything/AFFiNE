@@ -532,7 +532,6 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
       'Make it shorter',
       'Section Edit',
       'Chat With AFFiNE AI',
-      'Search With AFFiNE AI',
     ],
     messages: [{ role: 'user' as const, content: TestAssets.AFFiNE }],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
@@ -645,20 +644,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     type: 'image' as const,
   },
   {
-    promptName: ['debug:action:dalle3'],
-    messages: [
-      {
-        role: 'user' as const,
-        content: 'Panda',
-      },
-    ],
-    verifier: (t: ExecutionContext<Tester>, link: string) => {
-      t.truthy(checkUrl(link), 'should be a valid url');
-    },
-    type: 'image' as const,
-  },
-  {
-    promptName: ['debug:action:gpt-image-1'],
+    promptName: ['Generate image'],
     messages: [
       {
         role: 'user' as const,

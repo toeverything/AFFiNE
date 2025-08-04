@@ -256,6 +256,10 @@
       "type": "Boolean",
       "desc": "Whether to enable the copilot plugin."
     },
+    "scenarios": {
+      "type": "Object",
+      "desc": "The models used in the scene for the copilot, will use this config if enabled."
+    },
     "providers.openai": {
       "type": "Object",
       "desc": "The config for the openai provider.",
