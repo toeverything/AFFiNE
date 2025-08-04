@@ -99,7 +99,7 @@ export class ServerService implements OnApplicationBootstrap {
       }
     });
     this.configFactory.override(overrides);
-    this.event.emit('config.changed', { updates: overrides });
+    await this.event.emitAsync('config.changed', { updates: overrides });
     this.event.broadcast('config.changed.broadcast', { updates: overrides });
     return overrides;
   }

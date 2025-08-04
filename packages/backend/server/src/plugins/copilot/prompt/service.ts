@@ -39,7 +39,7 @@ export class PromptService implements OnApplicationBootstrap {
 
   @OnEvent('config.changed')
   async onConfigChanged(event: Events['config.changed']) {
-    if ('scenarios' in event.updates) {
+    if ('copilot' in event.updates) {
       await this.setup(event.updates.copilot?.scenarios);
     }
   }

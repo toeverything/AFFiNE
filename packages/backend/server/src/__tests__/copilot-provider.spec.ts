@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import { z } from 'zod';
@@ -5,6 +7,7 @@ import { z } from 'zod';
 import { ServerFeature, ServerService } from '../core';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
+import { Models } from '../models';
 import { CopilotModule } from '../plugins/copilot';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
@@ -30,6 +33,8 @@ import { TestAssets } from './utils/copilot';
 type Tester = {
   auth: AuthService;
   module: TestingModule;
+  models: Models;
+  service: ServerService;
   prompt: PromptService;
   factory: CopilotProviderFactory;
   workflow: CopilotWorkflowService;
@@ -66,12 +71,15 @@ test.serial.before(async t => {
   isCopilotConfigured = service.features.includes(ServerFeature.Copilot);
 
   const auth = module.get(AuthService);
+  const models = module.get(Models);
   const prompt = module.get(PromptService);
   const factory = module.get(CopilotProviderFactory);
   const workflow = module.get(CopilotWorkflowService);
 
   t.context.module = module;
   t.context.auth = auth;
+  t.context.service = service;
+  t.context.models = models;
   t.context.prompt = prompt;
   t.context.factory = factory;
   t.context.workflow = workflow;
@@ -84,7 +92,7 @@ test.serial.before(async t => {
 });
 
 test.serial.before(async t => {
-  const { prompt, executors } = t.context;
+  const { prompt, executors, models, service } = t.context;
 
   executors.image.register();
   executors.text.register();
@@ -98,6 +106,28 @@ test.serial.before(async t => {
   for (const p of prompts) {
     await prompt.set(p.name, p.model, p.messages, p.config);
   }
+
+  const user = await models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await service.updateConfig(user.id, [
+    {
+      module: 'copilot',
+      key: 'scenarios',
+      value: {
+        enabled: true,
+        scenarios: {
+          image: 'lcm',
+          rerank: 'gpt-4.1-mini',
+          brainstorm: 'gpt-4.1-mini',
+          coding: 'gpt-4.1-mini',
+          quick_decision: 'gpt-4.1-mini',
+          quick_written: 'gpt-4.1-mini',
+          summary_inspection: 'gpt-4.1-mini',
+        },
+      },
+    },
+  ]);
 });
 
 test.after(async t => {
