@@ -42,12 +42,14 @@ export const buildDocSearchGetter = (
         chunks.filter(c => 'docId' in c),
         'Doc.Read'
       );
+    const blobChunks = chunks.filter(c => 'blobId' in c);
     const fileChunks = chunks.filter(c => 'fileId' in c);
     if (contextChunks.length) {
       fileChunks.push(...contextChunks);
     }
-    if (!docChunks.length && !fileChunks.length)
+    if (!blobChunks.length && !docChunks.length && !fileChunks.length) {
       return `No results found for "${query}".`;
+    }
 
     const docIds = docChunks.map(c => ({
       // oxlint-disable-next-line no-non-null-assertion
@@ -80,6 +82,7 @@ export const buildDocSearchGetter = (
 
     return [
       ...fileChunks.map(clearEmbeddingChunk),
+      ...blobChunks.map(clearEmbeddingChunk),
       ...docChunks.map(c => ({
         ...c,
         ...docMetas.get(c.docId),
