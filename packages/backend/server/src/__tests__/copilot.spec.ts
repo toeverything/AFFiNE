@@ -372,7 +372,7 @@ test('should be able to update chat session prompt', async t => {
   // Update the session
   const updatedSessionId = await session.update({
     sessionId,
-    promptName: 'Summary',
+    promptName: 'Chat With AFFiNE AI',
     userId,
   });
   t.is(updatedSessionId, sessionId, 'should update session with same id');
@@ -382,7 +382,7 @@ test('should be able to update chat session prompt', async t => {
   t.truthy(updatedSession, 'should retrieve updated session');
   t.is(
     updatedSession?.config.promptName,
-    'Summary',
+    'Chat With AFFiNE AI',
     'should have updated prompt name'
   );
 });
