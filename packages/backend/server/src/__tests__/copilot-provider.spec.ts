@@ -123,7 +123,7 @@ test.serial.before(async t => {
           coding: 'gpt-4.1-mini',
           quick_decision: 'gpt-4.1-mini',
           quick_written: 'gpt-4.1-mini',
-          summary_inspection: 'gpt-4.1-mini',
+          summary_inspection: 'gemini-2.5-flash',
         },
       },
     },
