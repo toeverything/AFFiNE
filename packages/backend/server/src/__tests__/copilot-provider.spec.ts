@@ -534,10 +534,16 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
       'Chat With AFFiNE AI',
       'Search With AFFiNE AI',
     ],
-    messages: [{ role: 'user' as const, content: TestAssets.AFFiNE }],
+    messages: [{ role: 'user' as const, content: TestAssets.SSOT }],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
-      t.assert(result.includes('AFFiNE'), 'should include original keyword');
+      const cleared = result.toLowerCase();
+      t.assert(
+        cleared.includes('single source of truth') ||
+          /single.*source/.test(cleared) ||
+          cleared.includes('ssot'),
+        'should include original keyword'
+      );
     },
     type: 'text' as const,
   },
@@ -595,13 +601,17 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     messages: [
       {
         role: 'user' as const,
-        content: TestAssets.AFFiNE,
+        content: TestAssets.SSOT,
         params: { language: 'Simplified Chinese' },
       },
     ],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
-      t.assert(result.includes('AFFiNE'), 'should include keyword');
+      const cleared = result.toLowerCase();
+      t.assert(
+        cleared.includes('单一') || cleared.includes('SSOT'),
+        'explain code result should include keyword'
+      );
     },
     type: 'text' as const,
   },
@@ -623,7 +633,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
         content.includes('classroom') ||
           content.includes('school') ||
           content.includes('sky'),
-        'should include keyword'
+        'explain code result should include keyword'
       );
     },
     type: 'text' as const,
