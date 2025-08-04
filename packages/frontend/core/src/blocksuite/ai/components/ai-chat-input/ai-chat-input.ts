@@ -700,7 +700,7 @@ export class AIChatInput extends SignalWatcher(
               : undefined,
         },
         docId: this.docId,
-        attachments: [],
+        attachments: images,
         workspaceId: this.workspaceId,
         stream: true,
         signal: abortController.signal,
