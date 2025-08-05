@@ -19,24 +19,9 @@ type Prompt = Omit<
   config?: PromptConfig;
 };
 
-export const Scenario: Record<string, string[]> = {
-  audio: ['Transcript audio'],
-  brainstorm: [
-    'Brainstorm mindmap',
-    'Create a presentation',
-    'Expand mind map',
-    'workflow:brainstorm:step2',
-    'workflow:presentation:step2',
-    'workflow:presentation:step4',
-  ],
+export const Scenario = {
+  audio_transcribing: ['Transcript audio'],
   chat: ['Chat With AFFiNE AI'],
-  coding: [
-    'Apply Updates',
-    'Code Artifact',
-    'Make it real',
-    'Make it real with text',
-    'Section Edit',
-  ],
   // no prompt needed, just a placeholder
   embedding: [],
   image: [
@@ -49,7 +34,23 @@ export const Scenario: Record<string, string[]> = {
     'Remove background',
     'Upscale image',
   ],
-  quick_decision: [
+  rerank: ['Rerank results'],
+  coding: [
+    'Apply Updates',
+    'Code Artifact',
+    'Make it real',
+    'Make it real with text',
+    'Section Edit',
+  ],
+  complex_text_generation: [
+    'Brainstorm mindmap',
+    'Create a presentation',
+    'Expand mind map',
+    'workflow:brainstorm:step2',
+    'workflow:presentation:step2',
+    'workflow:presentation:step4',
+  ],
+  quick_decision_making: [
     'Create headings',
     'Generate a caption',
     'Translate to',
@@ -60,7 +61,7 @@ export const Scenario: Record<string, string[]> = {
     'workflow:image-pixel:step2',
     'workflow:image-sketch:step2',
   ],
-  quick_written: [
+  quick_text_generation: [
     'Brainstorm ideas about this',
     'Continue writing',
     'Explain this code',
@@ -73,8 +74,7 @@ export const Scenario: Record<string, string[]> = {
     'Write an article about this',
     'Write outline',
   ],
-  rerank: ['Rerank results'],
-  summary_inspection: [
+  polish_and_summarize: [
     'Change tone to',
     'Check code error',
     'Conversation Summary',

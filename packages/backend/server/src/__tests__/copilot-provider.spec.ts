@@ -117,13 +117,13 @@ test.serial.before(async t => {
       value: {
         enabled: true,
         scenarios: {
-          image: 'lcm',
+          image: 'flux-1/schnell',
           rerank: 'gpt-4.1-mini',
-          brainstorm: 'gpt-4.1-mini',
+          complex_text_generation: 'gpt-4.1-mini',
           coding: 'gpt-4.1-mini',
-          quick_decision: 'gpt-4.1-mini',
-          quick_written: 'gpt-4.1-mini',
-          summary_inspection: 'gemini-2.5-flash',
+          quick_decision_making: 'gpt-4.1-mini',
+          quick_text_generation: 'gpt-4.1-mini',
+          polish_and_summarize: 'gemini-2.5-flash',
         },
       },
     },

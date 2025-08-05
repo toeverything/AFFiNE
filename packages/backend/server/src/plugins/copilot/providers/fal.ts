@@ -75,7 +75,7 @@ export class FalProvider extends CopilotProvider<FalConfig> {
 
   override readonly models = [
     {
-      id: 'lcm',
+      id: 'flux-1/schnell',
       capabilities: [
         {
           input: [ModelInputType.Text],
