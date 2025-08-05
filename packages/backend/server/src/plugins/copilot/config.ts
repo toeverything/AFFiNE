@@ -46,9 +46,9 @@ defineModuleConfig('copilot', {
     default: false,
   },
   scenarios: {
-    desc: 'The models used in the scene for the copilot, will use this config if enabled.',
+    desc: 'Use custom models in scenarios and override default settings.',
     default: {
-      enabled: false,
+      override_enabled: false,
       scenarios: {
         audio_transcribing: 'gemini-2.5-flash',
         chat: 'claude-sonnet-4@20250514',

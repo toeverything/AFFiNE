@@ -92,7 +92,7 @@ export const Scenario = {
 };
 
 export type CopilotPromptScenario = {
-  enabled?: boolean;
+  override_enabled?: boolean;
   scenarios?: Partial<Record<keyof typeof Scenario, string>>;
 };
 

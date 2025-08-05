@@ -258,7 +258,7 @@
     },
     "scenarios": {
       "type": "Object",
-      "desc": "The models used in the scene for the copilot, will use this config if enabled."
+      "desc": "Use custom models in scenarios and override default settings."
     },
     "providers.openai": {
       "type": "Object",

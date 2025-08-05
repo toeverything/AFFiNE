@@ -38,7 +38,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
   override async configured(): Promise<boolean> {
     const embedding = await this.providerFactory.getProvider({
-      modelId: this.config.copilot?.scenarios?.enabled
+      modelId: this.config.copilot?.scenarios?.override_enabled
         ? this.config.copilot.scenarios.scenarios?.embedding || EMBEDDING_MODEL
         : EMBEDDING_MODEL,
       outputType: ModelOutputType.Embedding,

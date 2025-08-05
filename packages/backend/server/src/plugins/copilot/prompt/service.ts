@@ -45,10 +45,11 @@ export class PromptService implements OnApplicationBootstrap {
   }
 
   protected async setup(scenarios?: CopilotPromptScenario) {
-    if (!!scenarios && scenarios.enabled && scenarios.scenarios) {
+    if (!!scenarios && scenarios.override_enabled && scenarios.scenarios) {
       this.logger.log('Updating prompts based on scenarios...');
       for (const [scenario, model] of Object.entries(scenarios.scenarios)) {
-        const promptNames = Scenario[scenario];
+        const promptNames = Scenario[scenario as keyof typeof Scenario] || [];
+        if (!promptNames.length) continue;
         for (const name of promptNames) {
           const prompt = prompts.find(p => p.name === name);
           if (prompt && model) {
