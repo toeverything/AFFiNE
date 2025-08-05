@@ -170,7 +170,7 @@ private extension ChatManager {
     ]
     let attachmentCount = [
       editorData.fileAttachments.count,
-      editorData.documentAttachments.count,
+      editorData.imageAttachments.count,
     ].reduce(0, +)
     let attachmentFieldName = attachmentCount > 1 && attachmentCount != 0 ? "options.blobs" : "options.blob"
     let uploadableAttachments: [GraphQLFile] = [
