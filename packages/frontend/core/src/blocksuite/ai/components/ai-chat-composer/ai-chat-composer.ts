@@ -211,13 +211,32 @@ export class AIChatComposer extends SignalWatcher(
         if (!params) return;
 
         const { context, host } = params;
-        if (this.host !== host) return;
+        if (this.host !== host || !context) return;
 
-        if (context) {
-          this.updateContext(context);
+        if (
+          context.attachments ||
+          context.snapshot ||
+          context.combinedElementsMarkdown
+        ) {
+          // Wait for context value updated next frame
+          setTimeout(() => {
+            this.addSelectedContextChip().catch(console.error);
+          }, 0);
         }
+      })
+    );
+    this._disposables.add(
+      AIProvider.slots.requestSendWithChat.subscribe(params => {
+        if (!params) return;
 
-        if (context?.attachments) {
+        const { context, host } = params;
+        if (this.host !== host || !context) return;
+
+        if (
+          context.attachments ||
+          context.snapshot ||
+          context.combinedElementsMarkdown
+        ) {
           // Wait for context value updated next frame
           setTimeout(() => {
             this.addSelectedContextChip().catch(console.error);

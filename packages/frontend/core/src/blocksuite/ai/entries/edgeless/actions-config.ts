@@ -52,6 +52,7 @@ import type { AIItemGroupConfig } from '../../components/ai-item/types';
 import { AIProvider } from '../../provider';
 import { getAIPanelWidget } from '../../utils/ai-widgets';
 import { mindMapToMarkdown } from '../../utils/edgeless';
+import { extractSelectedContent } from '../../utils/extract';
 import { canvasToBlob, randomSeed } from '../../utils/image';
 import {
   getCopilotSelectedElems,
@@ -114,11 +115,16 @@ const othersGroup: AIItemGroupConfig = {
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanelWidget(host);
-        AIProvider.slots.requestOpenWithChat.next({
-          host,
-          mode: 'edgeless',
-          autoSelect: true,
-        });
+        extractSelectedContent(host)
+          .then(context => {
+            AIProvider.slots.requestOpenWithChat.next({
+              host,
+              mode: 'edgeless',
+              autoSelect: true,
+              context,
+            });
+          })
+          .catch(console.error);
         panel.hide();
       },
     },
