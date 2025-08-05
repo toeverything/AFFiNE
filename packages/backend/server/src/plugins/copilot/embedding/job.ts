@@ -521,6 +521,7 @@ export class CopilotEmbeddingJob {
       this.logger.warn(`workspace snapshot ${workspaceId} not found`);
       return;
     } else if (
+      // always check if never cleared
       workspace.lastCheckEmbedding > new Date(0) &&
       snapshot.updatedAt < oneMonthAgo
     ) {
