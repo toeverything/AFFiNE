@@ -522,14 +522,14 @@ export class CopilotEmbeddingJob {
       return;
     } else if (
       // always check if never cleared
-      workspace.lastCheckEmbedding > new Date(0) &&
+      workspace.lastCheckEmbeddings > new Date(0) &&
       snapshot.updatedAt < oneMonthAgo
     ) {
       this.logger.verbose(
         `workspace ${workspaceId} is too old, skipping embeddings cleanup`
       );
       await this.models.workspace.update(workspaceId, {
-        lastCheckEmbedding: new Date(),
+        lastCheckEmbeddings: new Date(),
       });
       return;
     }
@@ -541,7 +541,7 @@ export class CopilotEmbeddingJob {
         `No doc embeddings found in workspace ${workspaceId}, skipping cleanup`
       );
       await this.models.workspace.update(workspaceId, {
-        lastCheckEmbedding: new Date(),
+        lastCheckEmbeddings: new Date(),
       });
       return;
     }
@@ -560,7 +560,7 @@ export class CopilotEmbeddingJob {
     }
 
     await this.models.workspace.update(workspaceId, {
-      lastCheckEmbedding: new Date(),
+      lastCheckEmbeddings: new Date(),
     });
   }
 

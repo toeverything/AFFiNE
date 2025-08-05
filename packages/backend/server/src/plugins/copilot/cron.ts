@@ -96,7 +96,7 @@ export class CopilotCronJobs {
     // only consider workspaces that cleared their embeddings more than 24 hours ago
     const oneDayAgo = new Date(Date.now() - OneDay);
     const workspaces = await this.models.workspace.list(
-      { sid: { gt: nextSid }, lastCheckEmbedding: { lt: oneDayAgo } },
+      { sid: { gt: nextSid }, lastCheckEmbeddings: { lt: oneDayAgo } },
       { id: true, sid: true },
       CLEANUP_EMBEDDING_JOB_BATCH_SIZE
     );
