@@ -528,6 +528,9 @@ export class CopilotEmbeddingJob {
       this.logger.verbose(
         `workspace ${workspaceId} is too old, skipping embeddings cleanup`
       );
+      await this.models.workspace.update(workspaceId, {
+        lastCheckEmbedding: new Date(),
+      });
       return;
     }
 
@@ -537,6 +540,9 @@ export class CopilotEmbeddingJob {
       this.logger.verbose(
         `No doc embeddings found in workspace ${workspaceId}, skipping cleanup`
       );
+      await this.models.workspace.update(workspaceId, {
+        lastCheckEmbedding: new Date(),
+      });
       return;
     }
 
