@@ -295,19 +295,6 @@ const ReviewTextAIGroup: AIItemGroupConfig = {
   ],
 };
 
-const TouchUpImageAIGroup: AIItemGroupConfig = {
-  name: 'touch up image',
-  items: [
-    {
-      name: 'Generate an image',
-      testId: 'action-generate-image',
-      icon: ImageIcon(),
-      showWhen: textBlockShowWhen,
-      handler: actionToHandler('createImage', AIImageIconWithAnimation),
-    },
-  ],
-};
-
 const GenerateFromTextAIGroup: AIItemGroupConfig = {
   name: 'generate from text',
   items: [
@@ -346,6 +333,13 @@ const GenerateFromTextAIGroup: AIItemGroupConfig = {
       icon: PenIcon(),
       showWhen: textBlockShowWhen,
       handler: actionToHandler('writeOutline', AIPenIconWithAnimation),
+    },
+    {
+      name: 'Generate an image',
+      testId: 'action-generate-image',
+      icon: ImageIcon(),
+      showWhen: textBlockShowWhen,
+      handler: actionToHandler('createImage', AIImageIconWithAnimation),
     },
     {
       name: 'Brainstorm ideas with mind map',
@@ -405,7 +399,6 @@ export const pageAIGroups: AIItemGroupConfig[] = [
   ReviewCodeAIGroup,
   ReviewImageAIGroup,
   EditTextAIGroup,
-  TouchUpImageAIGroup,
   GenerateFromTextAIGroup,
   DraftFromTextAIGroup,
   OthersAIGroup,
@@ -431,7 +424,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
       ],
     },
     {
-      name: 'touch up image',
+      name: 'generate from text',
       items: [
         {
           name: 'Generate an image',
@@ -445,6 +438,11 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
             blockActionTrackerOptions
           ),
         },
+      ],
+    },
+    {
+      name: 'touch up image',
+      items: [
         {
           name: 'Image processing',
           testId: 'action-image-processing',
