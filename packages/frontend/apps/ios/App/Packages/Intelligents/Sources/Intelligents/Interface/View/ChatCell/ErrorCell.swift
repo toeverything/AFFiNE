@@ -12,7 +12,7 @@ import UIKit
 
 class ErrorCell: ChatBaseCell {
   let label = UILabel()
-  
+
   override func prepareContentView(inside contentView: UIView) {
     super.prepareContentView(inside: contentView)
     contentView.addSubview(label)
@@ -33,7 +33,7 @@ class ErrorCell: ChatBaseCell {
       height: bounds.height
     )
   }
-  
+
   override func configure(with viewModel: any ChatCellViewModel) {
     super.configure(with: viewModel)
     guard let vm = viewModel as? ErrorCellViewModel else {
@@ -44,16 +44,16 @@ class ErrorCell: ChatBaseCell {
   }
 
   static func attributeText(for text: String) -> NSAttributedString {
-    return .init(string: text, attributes: [
+    .init(string: text, attributes: [
       .font: UIFont.preferredFont(forTextStyle: .footnote),
       .foregroundColor: UIColor.affineTextSecondary,
       .paragraphStyle: NSMutableParagraphStyle().then {
         $0.lineBreakMode = .byWordWrapping
         $0.alignment = .center
-      }
+      },
     ])
   }
-  
+
   override class func heightForContent(
     for viewModel: any ChatCellViewModel,
     width: CGFloat

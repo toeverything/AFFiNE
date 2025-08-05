@@ -9,9 +9,9 @@ import Intelligents
 import UIKit
 
 extension AFFiNEViewController: IntelligentsButtonDelegate {
-  func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
+  func onIntelligentsButtonTapped(_: IntelligentsButton) {
     // if it shows up then we are ready to go
     let controller = IntelligentsController()
-    self.present(controller, animated: true)
+    present(controller, animated: true)
   }
 }

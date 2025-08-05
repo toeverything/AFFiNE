@@ -6,7 +6,7 @@ import UIKit
 class InputBox: UIView {
   weak var delegate: InputBoxDelegate?
 
-  public let viewModel = InputBoxViewModel()
+  let viewModel = InputBoxViewModel()
   var cancellables = Set<AnyCancellable>()
 
   lazy var containerView = UIView().then {
@@ -257,7 +257,7 @@ class InputBox: UIView {
 
   // MARK: - Public Methods
 
-  public func addImageAttachment(_ image: UIImage) {
+  func addImageAttachment(_ image: UIImage) {
     let attachment = ImageAttachment(image: image)
 
     performWithAnimation { [self] in
@@ -266,7 +266,7 @@ class InputBox: UIView {
     }
   }
 
-  public func addFileAttachment(_ url: URL) throws {
+  func addFileAttachment(_ url: URL) throws {
     // check less then 15mb
     let fileSizeLimit: Int64 = 15 * 1024 * 1024 // 15 MB
     let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
@@ -292,14 +292,14 @@ class InputBox: UIView {
     }
   }
 
-  public func addDocumentAttachment(_ documentAttachment: DocumentAttachment) {
+  func addDocumentAttachment(_ documentAttachment: DocumentAttachment) {
     performWithAnimation { [self] in
       viewModel.addDocumentAttachment(documentAttachment)
       layoutIfNeeded()
     }
   }
 
-  public var inputBoxData: InputBoxData {
+  var inputBoxData: InputBoxData {
     viewModel.prepareSendData()
   }
 }
