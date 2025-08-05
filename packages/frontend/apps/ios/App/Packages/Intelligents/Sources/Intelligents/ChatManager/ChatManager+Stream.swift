@@ -195,7 +195,7 @@ private extension ChatManager {
     assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
     guard let input = try? CreateChatMessageInput(
       attachments: [],
-      blob: .none,
+      blob: attachmentCount == 1 ? "" : .none,
       blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
       content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
       params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
