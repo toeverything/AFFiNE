@@ -134,6 +134,7 @@ model Workspace {
   comments           Comment[]
   commentAttachments CommentAttachment[]
 
+  @@index([lastCheckEmbeddings])
   @@map("workspaces")
 }
 
