@@ -111,17 +111,18 @@ model VerificationToken {
 
 model Workspace {
   // NOTE: manually set this column type to identity in migration file
-  sid                Int      @unique @default(autoincrement())
-  id                 String   @id @default(uuid()) @db.VarChar
-  public             Boolean
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  sid                 Int      @unique @default(autoincrement())
+  id                  String   @id @default(uuid()) @db.VarChar
+  public              Boolean
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
-  enableAi           Boolean  @default(true) @map("enable_ai")
-  enableUrlPreview   Boolean  @default(false) @map("enable_url_preview")
-  enableDocEmbedding Boolean  @default(true) @map("enable_doc_embedding")
-  name               String?  @db.VarChar
-  avatarKey          String?  @map("avatar_key") @db.VarChar
-  indexed            Boolean  @default(false)
+  enableAi            Boolean  @default(true) @map("enable_ai")
+  enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
+  enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
+  name                String?  @db.VarChar
+  avatarKey           String?  @map("avatar_key") @db.VarChar
+  indexed             Boolean  @default(false)
+  lastCheckEmbeddings DateTime @default("1970-01-01T00:00:00-00:00") @map("last_check_embeddings") @db.Timestamptz(3)
 
   features           WorkspaceFeature[]
   docs               WorkspaceDoc[]

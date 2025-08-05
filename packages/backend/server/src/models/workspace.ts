@@ -24,6 +24,7 @@ export type UpdateWorkspaceInput = Pick<
   | 'name'
   | 'avatarKey'
   | 'indexed'
+  | 'lastCheckEmbedding'
 >;
 
 @Injectable()
@@ -81,25 +82,15 @@ export class WorkspaceModel extends BaseModel {
     });
   }
 
-  async listAfterSid(sid: number, limit: number) {
-    return await this.db.workspace.findMany({
-      where: {
-        sid: { gt: sid },
-      },
-      take: limit,
-      orderBy: {
-        sid: 'asc',
-      },
-    });
-  }
-
   async list<S extends Prisma.WorkspaceSelect>(
     where: Prisma.WorkspaceWhereInput = {},
-    select?: S
+    select?: S,
+    limit?: number
   ) {
     return (await this.db.workspace.findMany({
       where,
       select,
+      take: limit,
       orderBy: {
         sid: 'asc',
       },

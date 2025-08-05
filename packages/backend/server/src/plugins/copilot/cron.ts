@@ -93,8 +93,11 @@ export class CopilotCronJobs {
     params: Jobs['copilot.workspace.cleanupTrashedDocEmbeddings']
   ) {
     const nextSid = params.nextSid ?? 0;
-    let workspaces = await this.models.workspace.listAfterSid(
-      nextSid,
+    // only consider workspaces that cleared their embeddings more than 24 hours ago
+    const oneDayAgo = new Date(Date.now() - OneDay);
+    const workspaces = await this.models.workspace.list(
+      { sid: { gt: nextSid }, lastCheckEmbedding: { lt: oneDayAgo } },
+      { id: true, sid: true },
       CLEANUP_EMBEDDING_JOB_BATCH_SIZE
     );
     if (!workspaces.length) {

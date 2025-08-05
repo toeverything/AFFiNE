@@ -8,6 +8,7 @@ import {
   EventBus,
   JobQueue,
   mapAnyError,
+  OneDay,
   OnEvent,
   OnJob,
 } from '../../../base';
@@ -511,6 +512,7 @@ export class CopilotEmbeddingJob {
       return;
     }
 
+    const oneMonthAgo = new Date(Date.now() - OneDay * 30);
     const snapshot = await this.models.doc.getSnapshot(
       workspaceId,
       workspaceId
@@ -518,11 +520,26 @@ export class CopilotEmbeddingJob {
     if (!snapshot) {
       this.logger.warn(`workspace snapshot ${workspaceId} not found`);
       return;
+    } else if (
+      workspace.lastCheckEmbedding > new Date(0) &&
+      snapshot.updatedAt < oneMonthAgo
+    ) {
+      this.logger.verbose(
+        `workspace ${workspaceId} is too old, skipping embeddings cleanup`
+      );
+      return;
+    }
+
+    const docIdsInEmbedding =
+      await this.models.copilotContext.listWorkspaceDocEmbedding(workspaceId);
+    if (!docIdsInEmbedding.length) {
+      this.logger.verbose(
+        `No doc embeddings found in workspace ${workspaceId}, skipping cleanup`
+      );
+      return;
     }
 
     const docIdsInWorkspace = readAllDocIdsFromWorkspaceSnapshot(snapshot.blob);
-    const docIdsInEmbedding =
-      await this.models.copilotContext.listWorkspaceDocEmbedding(workspaceId);
     const docIdsInWorkspaceSet = new Set(docIdsInWorkspace);
 
     const deletedDocIds = docIdsInEmbedding.filter(
@@ -534,5 +551,18 @@ export class CopilotEmbeddingJob {
         docId
       );
     }
+
+    await this.models.workspace.update(workspaceId, {
+      lastCheckEmbedding: new Date(),
+    });
+  }
+
+  @OnEvent('workspace.updated')
+  async onWorkspaceUpdated({ id }: Events['workspace.updated']) {
+    if (!this.supportEmbedding) return;
+
+    await this.queue.add('copilot.embedding.cleanupTrashedDocEmbeddings', {
+      workspaceId: id,
+    });
   }
 }
