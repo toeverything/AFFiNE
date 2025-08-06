@@ -2,7 +2,9 @@ import type { FlagInfo } from './types';
 
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
+const isBetaBuild = BUILD_CONFIG.appBuildType === 'beta';
 const isMobile = BUILD_CONFIG.isMobileEdition;
+const isIOS = BUILD_CONFIG.isIOS;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -209,8 +211,8 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable AI Button',
     description: 'Enable AI Button on mobile',
-    configurable: BUILD_CONFIG.isMobileEdition && BUILD_CONFIG.isIOS,
-    defaultState: BUILD_CONFIG.isMobileEdition && BUILD_CONFIG.isIOS,
+    configurable: isMobile && isIOS,
+    defaultState: isMobile && isIOS,
   },
   enable_turbo_renderer: {
     category: 'blocksuite',
@@ -225,8 +227,8 @@ export const AFFINE_FLAGS = {
     bsFlag: 'enable_dom_renderer',
     displayName: 'Enable DOM Renderer',
     description: 'Enable DOM renderer for graphics elements',
-    configurable: isCanaryBuild,
-    defaultState: false,
+    configurable: isCanaryBuild || isBetaBuild,
+    defaultState: isIOS,
   },
   enable_edgeless_scribbled_style: {
     category: 'blocksuite',
