@@ -412,15 +412,16 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly addSelectedContextChip = async () => {
-    const { attachments, snapshot, combinedElementsMarkdown } =
+    const { attachments, snapshot, combinedElementsMarkdown, docs } =
       this.chatContextValue;
     await this.removeSelectedContextChip();
     const chip: SelectedContextChip = {
       uuid: uuidv4(),
       attachments,
+      docs,
       snapshot,
       combinedElementsMarkdown,
-      state: 'processing',
+      state: attachments.length > 0 ? 'processing' : 'finished',
     };
     await this.addChip(chip, true);
   };
@@ -545,7 +546,7 @@ export class AIChatComposer extends SignalWatcher(
   private readonly addSelectedContextChipToContext = async (
     chip: SelectedContextChip
   ) => {
-    const { attachments } = chip;
+    const { attachments, docs } = chip;
     const contextId = await this.createContextId();
     if (!contextId || !AIProvider.context) {
       throw new Error('Context not found');
@@ -554,6 +555,14 @@ export class AIChatComposer extends SignalWatcher(
       blobIds: attachments.map(attachment => attachment.sourceId),
       contextId,
     });
+    await Promise.all(
+      docs.map(docId =>
+        AIProvider.context?.addContextDoc({
+          contextId,
+          docId,
+        })
+      )
+    );
   };
 
   private readonly removeFromContext = async (
@@ -589,11 +598,19 @@ export class AIChatComposer extends SignalWatcher(
         });
       }
       if (isSelectedContextChip(chip)) {
-        const { attachments } = chip;
-        return await AIProvider.context.removeContextBlobs({
+        const { attachments, docs } = chip;
+        await AIProvider.context.removeContextBlobs({
           contextId,
           blobIds: attachments.map(attachment => attachment.sourceId),
         });
+        await Promise.all(
+          docs.map(docId =>
+            AIProvider.context?.removeContextDoc({
+              contextId,
+              docId,
+            })
+          )
+        );
       }
       return true;
     } catch {

@@ -18,5 +18,7 @@ export type ChatContextValue = {
   attachments: { sourceId: string; name: string }[];
   // combined markdown of the selected elements
   combinedElementsMarkdown: string | null;
+  // docs of the selected content
+  docs: string[];
   abortController: AbortController | null;
 };

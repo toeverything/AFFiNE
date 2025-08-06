@@ -2,6 +2,8 @@ import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
 import { getSurfaceBlock } from '@blocksuite/affine/blocks/surface';
 import {
   DatabaseBlockModel,
+  EmbedLinkedDocModel,
+  EmbedSyncedDocModel,
   ImageBlockModel,
   NoteBlockModel,
   NoteDisplayMode,
@@ -65,6 +67,7 @@ async function extractEdgelessSelected(
   let markdown = '';
   const attachments: ChatContextValue['attachments'] = [];
   const images: File[] = [];
+  const docs: ChatContextValue['docs'] = [];
 
   if (selectedElements.length) {
     const transformer = host.store.getTransformer();
@@ -117,6 +120,12 @@ async function extractEdgelessSelected(
           needSnapshot = true;
           const props = getElementProps(element, new Map());
           surface.addElement(props);
+        } else if (
+          element instanceof EmbedSyncedDocModel ||
+          element instanceof EmbedLinkedDocModel
+        ) {
+          const docId = element.props.pageId;
+          docs.push(docId);
         }
       }
 
@@ -144,6 +153,7 @@ async function extractEdgelessSelected(
     snapshot: snapshot ? JSON.stringify(snapshot) : null,
     combinedElementsMarkdown: markdown.length ? markdown : null,
     attachments,
+    docs,
   };
 }
 

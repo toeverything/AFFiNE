@@ -39,6 +39,7 @@ export interface CollectionChip extends BaseChip {
 export interface SelectedContextChip extends BaseChip {
   uuid: string;
   attachments: { sourceId: string; name: string }[];
+  docs: string[];
   snapshot: string | null;
   combinedElementsMarkdown: string | null;
 }

@@ -52,6 +52,7 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   snapshot: null,
   attachments: [],
   combinedElementsMarkdown: null,
+  docs: [],
 };
 
 export class AIChatContent extends SignalWatcher(
