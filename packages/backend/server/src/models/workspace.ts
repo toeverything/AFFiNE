@@ -50,7 +50,11 @@ export class WorkspaceModel extends BaseModel {
   /**
    * Update the workspace with the given data.
    */
-  async update(workspaceId: string, data: UpdateWorkspaceInput) {
+  async update(
+    workspaceId: string,
+    data: UpdateWorkspaceInput,
+    notifyUpdate = true
+  ) {
     const workspace = await this.db.workspace.update({
       where: {
         id: workspaceId,
@@ -61,7 +65,9 @@ export class WorkspaceModel extends BaseModel {
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
 
-    this.event.emit('workspace.updated', workspace);
+    if (notifyUpdate) {
+      this.event.emit('workspace.updated', workspace);
+    }
 
     return workspace;
   }
