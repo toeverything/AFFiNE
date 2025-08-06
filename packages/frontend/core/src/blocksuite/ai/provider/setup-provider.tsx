@@ -101,6 +101,7 @@ export function setupAIProvider(
         files: contexts?.files,
         selectedSnapshot: contexts?.selectedSnapshot,
         selectedMarkdown: contexts?.selectedMarkdown,
+        html: contexts?.html,
         searchMode: webSearch ? 'MUST' : 'AUTO',
       },
       endpoint: Endpoint.StreamObject,

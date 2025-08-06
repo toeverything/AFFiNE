@@ -20,5 +20,7 @@ export type ChatContextValue = {
   combinedElementsMarkdown: string | null;
   // docs of the selected content
   docs: string[];
+  // html of make it real
+  html: string | null;
   abortController: AbortController | null;
 };

@@ -23,6 +23,7 @@ export interface AIChatParams {
   // Auto select and append selection to input via `Continue in AI Chat` action.
   autoSelect?: boolean;
   context?: Partial<ChatContextValue | null>;
+  fromAnswer?: boolean;
 }
 
 export interface AISendParams {

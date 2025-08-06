@@ -49,6 +49,7 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   attachments: [],
   combinedElementsMarkdown: null,
   docs: [],
+  html: null,
 };
 
 export class PlaygroundChat extends SignalWatcher(

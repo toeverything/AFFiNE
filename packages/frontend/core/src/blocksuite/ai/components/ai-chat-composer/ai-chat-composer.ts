@@ -216,7 +216,8 @@ export class AIChatComposer extends SignalWatcher(
         if (
           context.attachments ||
           context.snapshot ||
-          context.combinedElementsMarkdown
+          context.combinedElementsMarkdown ||
+          context.html
         ) {
           // Wait for context value updated next frame
           setTimeout(() => {
@@ -235,7 +236,8 @@ export class AIChatComposer extends SignalWatcher(
         if (
           context.attachments ||
           context.snapshot ||
-          context.combinedElementsMarkdown
+          context.combinedElementsMarkdown ||
+          context.html
         ) {
           // Wait for context value updated next frame
           setTimeout(() => {
@@ -412,7 +414,7 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly addSelectedContextChip = async () => {
-    const { attachments, snapshot, combinedElementsMarkdown, docs } =
+    const { attachments, snapshot, combinedElementsMarkdown, docs, html } =
       this.chatContextValue;
     await this.removeSelectedContextChip();
     const chip: SelectedContextChip = {
@@ -421,6 +423,7 @@ export class AIChatComposer extends SignalWatcher(
       docs,
       snapshot,
       combinedElementsMarkdown,
+      html,
       state: attachments.length > 0 ? 'processing' : 'finished',
     };
     await this.addChip(chip, true);

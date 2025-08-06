@@ -150,6 +150,7 @@ declare global {
         files: AIFileContextOption[];
         selectedSnapshot?: string;
         selectedMarkdown?: string;
+        html?: string;
       };
       postfix?: (text: string) => string;
     }

@@ -30,5 +30,5 @@ export type AIChatInputContext = {
   abortController: AbortController | null;
 } & Pick<
   ChatContextValue,
-  'snapshot' | 'combinedElementsMarkdown' | 'attachments' | 'docs'
+  'snapshot' | 'combinedElementsMarkdown' | 'attachments' | 'docs' | 'html'
 >;

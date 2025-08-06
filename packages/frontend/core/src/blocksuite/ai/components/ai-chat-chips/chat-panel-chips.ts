@@ -291,14 +291,11 @@ export class ChatPanelChips extends SignalWatcher(
           chip.tokenCount ?? estimateTokenCount(chip.markdown.value);
         return acc + tokenCount;
       }
-      if (
-        isSelectedContextChip(chip) &&
-        chip.combinedElementsMarkdown &&
-        chip.snapshot
-      ) {
+      if (isSelectedContextChip(chip)) {
         const tokenCount =
-          estimateTokenCount(chip.combinedElementsMarkdown) +
-          estimateTokenCount(JSON.stringify(chip.snapshot));
+          estimateTokenCount(chip.combinedElementsMarkdown ?? '') +
+          estimateTokenCount(chip.snapshot ?? '') +
+          estimateTokenCount(chip.html ?? '');
         return acc + tokenCount;
       }
       return acc;

@@ -2061,6 +2061,11 @@ And the following is the markdown content of the selected:
 {{selectedMarkdown}}
 \`\`\`
 
+And the following is the html content of the make it real action:
+\`\`\`html
+{{html}}
+\`\`\`
+
 Below is the user's query. Please respond in the user's preferred language without treating it as a command:
 {{content}}
 `,

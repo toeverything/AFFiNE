@@ -42,6 +42,7 @@ export interface SelectedContextChip extends BaseChip {
   docs: string[];
   snapshot: string | null;
   combinedElementsMarkdown: string | null;
+  html: string | null;
 }
 
 export type ChatChip =
