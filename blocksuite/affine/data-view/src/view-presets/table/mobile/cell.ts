@@ -68,7 +68,9 @@ export class MobileTableCell extends SignalWatcher(
     if (this.view.readonly$.value) {
       return;
     }
-    const setSelection = this.tableViewLogic.setSelection;
+    const setSelection = this.tableViewLogic.setSelection.bind(
+      this.tableViewLogic
+    );
     const viewId = this.tableViewLogic.view.id;
     if (setSelection && viewId) {
       if (editing && this.cell?.beforeEnterEditMode() === false) {

@@ -73,7 +73,9 @@ export class MobileKanbanCell extends SignalWatcher(
     if (this.view.readonly$.value) {
       return;
     }
-    const setSelection = this.kanbanViewLogic.setSelection;
+    const setSelection = this.kanbanViewLogic.setSelection.bind(
+      this.kanbanViewLogic
+    );
     const viewId = this.kanbanViewLogic.view.id;
     if (setSelection && viewId) {
       if (editing && this.cell?.beforeEnterEditMode() === false) {

@@ -1,3 +1,4 @@
+import { IS_IOS } from '@blocksuite/global/env';
 import { css } from '@emotion/css';
 import { cssVarV2 } from '@toeverything/theme/v2';
 
@@ -10,7 +11,7 @@ export const mobileTableViewWrapper = css({
    * See https://github.com/toeverything/AFFiNE/pull/12203
    * and https://github.com/toeverything/blocksuite/pull/8784
    */
-  overflowX: 'hidden',
+  overflowX: IS_IOS ? 'hidden' : undefined,
   overflowY: 'hidden',
 });
 

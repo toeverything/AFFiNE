@@ -4,7 +4,7 @@ import {
   requiredProperties,
   ShadowlessElement,
 } from '@blocksuite/std';
-import { html, nothing, type PropertyValues } from 'lit';
+import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
@@ -80,18 +80,9 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
     </div>`;
   }
 
-  protected override willUpdate(changedProperties: PropertyValues<this>) {
-    if (changedProperties.has('height')) {
-      this.style.height = this.height;
-    }
-  }
-
   @property({ attribute: false })
   accessor config: KeyboardToolPanelConfig | null = null;
 
   @property({ attribute: false })
   accessor context!: KeyboardToolbarContext;
-
-  @property({ attribute: false })
-  accessor height = '';
 }

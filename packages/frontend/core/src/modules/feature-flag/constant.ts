@@ -288,6 +288,14 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
+  enable_mobile_database_editing: {
+    category: 'blocksuite',
+    bsFlag: 'enable_mobile_database_editing',
+    displayName: 'Enable Mobile Database Editing',
+    description: 'Enable mobile database editing',
+    configurable: isMobile,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

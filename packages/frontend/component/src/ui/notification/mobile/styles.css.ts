@@ -26,7 +26,7 @@ globalStyle(`${sonner} li[data-sonner-toast]`, {
 
 export const toastRoot = style({
   width: 'fit-content',
-  height: 44,
+  minHeight: 44,
   borderRadius: 22,
   margin: '0px auto',
   padding: 10,
