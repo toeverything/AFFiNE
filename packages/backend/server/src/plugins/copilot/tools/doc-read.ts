@@ -57,6 +57,7 @@ export const buildDocContentGetter = (
     }
 
     return {
+      docId,
       title: content.title,
       markdown: content.markdown,
       createdAt: docMeta.createdAt,

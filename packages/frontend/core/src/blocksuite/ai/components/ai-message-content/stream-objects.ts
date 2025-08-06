@@ -220,6 +220,8 @@ export class ChatContentStreamObjects extends WithDisposable(
         return html`<doc-read-result
           .data=${streamObject}
           .width=${this.width}
+          .peekViewService=${this.peekViewService}
+          .onOpenDoc=${this.onOpenDoc}
         ></doc-read-result>`;
       case 'section_edit':
         return html`
