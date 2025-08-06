@@ -664,7 +664,7 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Whether to enable the copilot plugin.\n@default false",
+          "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
           "default": false
         },
         "scenarios": {
