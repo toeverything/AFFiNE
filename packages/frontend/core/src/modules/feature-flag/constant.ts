@@ -209,8 +209,8 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable AI Button',
     description: 'Enable AI Button on mobile',
-    configurable: BUILD_CONFIG.isMobileEdition && isCanaryBuild,
-    defaultState: false,
+    configurable: BUILD_CONFIG.isMobileEdition && BUILD_CONFIG.isIOS,
+    defaultState: BUILD_CONFIG.isMobileEdition && BUILD_CONFIG.isIOS,
   },
   enable_turbo_renderer: {
     category: 'blocksuite',
