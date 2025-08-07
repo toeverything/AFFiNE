@@ -1,3 +1,4 @@
+import { cleanupWorkspace } from '@affine-test/kit/utils/cloud';
 import { expect, type Page } from '@playwright/test';
 
 const WORKSPACE_EMBEDDING_SWITCH_TEST_ID = 'workspace-embedding-setting-switch';
@@ -214,6 +215,7 @@ export class SettingsPanelUtils {
     status = 'synced'
   ) {
     await expect(async () => {
+      await cleanupWorkspace(page.url().split('/').slice(-2)[0] || '');
       await this.openSettingsPanel(page);
       const title = page.getByTestId('embedding-progress-title');
       // oxlint-disable-next-line prefer-dom-node-dataset
