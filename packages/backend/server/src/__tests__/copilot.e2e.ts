@@ -111,7 +111,7 @@ test.before(async t => {
       m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
       m.overrideProvider(GeminiGenerativeProvider).useClass(
         class MockGenerativeProvider extends MockCopilotProvider {
-          // @ts-expect-error
+          // @ts-expect-error type not typed
           override type: CopilotProviderType = CopilotProviderType.Gemini;
         }
       );

@@ -411,7 +411,7 @@ test('should be able to fork chat session', async t => {
 
   // fork session
   const s1 = (await session.get(sessionId))!;
-  // @ts-expect-error
+  // @ts-expect-error find maybe return undefined
   const latestMessageId = s1.finish({}).find(m => m.role === 'assistant')!.id;
   const forkedSessionId1 = await session.fork({
     userId,

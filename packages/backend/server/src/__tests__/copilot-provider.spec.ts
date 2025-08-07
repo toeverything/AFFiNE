@@ -732,7 +732,7 @@ for (const {
                 [
                   ...prompt.finish(
                     messages.reduce(
-                      // @ts-expect-error
+                      // @ts-expect-error params not typed
                       (acc, m) => Object.assign(acc, m.params),
                       {}
                     )
@@ -802,7 +802,7 @@ for (const {
                 [
                   ...prompt.finish(
                     finalMessage.reduce(
-                      // @ts-expect-error
+                      // @ts-expect-error params not typed
                       (acc, m) => Object.assign(acc, m.params),
                       params
                     )
