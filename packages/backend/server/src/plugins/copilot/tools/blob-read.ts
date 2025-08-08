@@ -51,7 +51,7 @@ export const createBlobReadTool = (
 ) => {
   return tool({
     description:
-      'Return the complete text and basic metadata of a single attachment identified by blobId; use this when the user needs the content of a specific attachment in chat context.',
+      'Return the content and basic metadata of a single attachment identified by blobId; more inclined to use search tools rather than this tool.',
     parameters: z.object({
       blob_id: z.string().describe('The target blob in context to read'),
       chunk: z
