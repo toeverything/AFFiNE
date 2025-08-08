@@ -2051,7 +2051,7 @@ The following are some content fragments I provide for you:
 {{/affine::hasDocsRef}}
 
 {{#affine::hasFilesRef}}
-The following are the attachment included in this conversation context:
+The following attachments are included in this conversation context:
 
 {{#contextFiles}}
 ==========
