@@ -2059,6 +2059,7 @@ The following attachments are included in this conversation context:
 - file_id: {{id}}
 - file_name: {{name}}
 - file_type: {{mimeType}}
+- chunk_size: {{chunkSize}}
 ==========
 {{/contextFiles}}
 {{/affine::hasFilesRef}}
