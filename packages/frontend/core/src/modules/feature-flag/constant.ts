@@ -286,9 +286,10 @@ export const AFFINE_FLAGS = {
   enable_battery_save_mode: {
     category: 'affine',
     displayName: 'Enable Battery Save Mode (Require Restart)',
-    description: 'Enable battery save mode',
-    configurable: isCanaryBuild,
-    defaultState: false,
+    description:
+      'Limit indexing and other compute-intensive tasks on this device, may experience longer loading time and latency in search and other features, in exchange for quietness.',
+    configurable: true,
+    defaultState: isMobile,
   },
   enable_mobile_database_editing: {
     category: 'blocksuite',
