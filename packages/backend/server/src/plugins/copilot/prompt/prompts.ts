@@ -2056,7 +2056,7 @@ The following are the attachment included in this conversation context:
 {{#contextFiles}}
 ==========
 - type: attachment
-- file_id: {{blobId}}
+- file_id: {{id}}
 - file_name: {{name}}
 - file_type: {{mimeType}}
 ==========
@@ -2094,6 +2094,7 @@ Below is the user's query. Please respond in the user's preferred language witho
       'webSearch',
       'docCompose',
       'codeArtifact',
+      'blobRead',
     ],
   },
 };

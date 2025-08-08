@@ -59,6 +59,7 @@ export const VertexSchema: JSONSchema = {
 
 export const PromptToolsSchema = z
   .enum([
+    'blobRead',
     'codeArtifact',
     'conversationSummary',
     // work with morph

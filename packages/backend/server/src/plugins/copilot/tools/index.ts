@@ -1,5 +1,6 @@
 import { ToolSet } from 'ai';
 
+import { createBlobReadTool } from './blob-read';
 import { createCodeArtifactTool } from './code-artifact';
 import { createConversationSummaryTool } from './conversation-summary';
 import { createDocComposeTool } from './doc-compose';
@@ -12,6 +13,7 @@ import { createExaSearchTool } from './exa-search';
 import { createSectionEditTool } from './section-edit';
 
 export interface CustomAITools extends ToolSet {
+  blob_read: ReturnType<typeof createBlobReadTool>;
   code_artifact: ReturnType<typeof createCodeArtifactTool>;
   conversation_summary: ReturnType<typeof createConversationSummaryTool>;
   doc_edit: ReturnType<typeof createDocEditTool>;
@@ -24,6 +26,7 @@ export interface CustomAITools extends ToolSet {
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
 }
 
+export * from './blob-read';
 export * from './code-artifact';
 export * from './conversation-summary';
 export * from './doc-compose';

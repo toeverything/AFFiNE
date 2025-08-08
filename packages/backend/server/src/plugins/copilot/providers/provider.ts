@@ -16,10 +16,12 @@ import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
 import { PromptService } from '../prompt';
 import {
+  buildBlobContentGetter,
   buildContentGetter,
   buildDocContentGetter,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  createBlobReadTool,
   createCodeArtifactTool,
   createConversationSummaryTool,
   createDocComposeTool,
@@ -156,6 +158,9 @@ export abstract class CopilotProvider<C = any> {
     if (options?.tools?.length) {
       this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
       const ac = this.moduleRef.get(AccessController, { strict: false });
+      const context = this.moduleRef.get(CopilotContextService, {
+        strict: false,
+      });
       const docReader = this.moduleRef.get(DocReader, { strict: false });
       const models = this.moduleRef.get(Models, { strict: false });
       const prompt = this.moduleRef.get(PromptService, {
@@ -172,6 +177,16 @@ export abstract class CopilotProvider<C = any> {
           continue;
         }
         switch (tool) {
+          case 'blobRead': {
+            const docContext = options.session
+              ? await context.getBySessionId(options.session)
+              : null;
+            const getBlobContent = buildBlobContentGetter(ac, docContext);
+            tools.blob_read = createBlobReadTool(
+              getBlobContent.bind(null, options)
+            );
+            break;
+          }
           case 'codeArtifact': {
             tools.code_artifact = createCodeArtifactTool(prompt, this.factory);
             break;
@@ -194,9 +209,6 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'docSemanticSearch': {
-            const context = this.moduleRef.get(CopilotContextService, {
-              strict: false,
-            });
             const docContext = options.session
               ? await context.getBySessionId(options.session)
               : null;

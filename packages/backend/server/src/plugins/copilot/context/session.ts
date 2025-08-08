@@ -203,6 +203,19 @@ export class ContextSession implements AsyncDisposable {
     return this.config.files.find(f => f.id === fileId);
   }
 
+  async getFileContent(
+    fileId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = this.getFile(fileId);
+    if (!file) return undefined;
+    return this.models.copilotContext.getFileContent(
+      this.contextId,
+      fileId,
+      chunk
+    );
+  }
+
   async removeFile(fileId: string): Promise<boolean> {
     await this.models.copilotContext.deleteFileEmbedding(
       this.contextId,

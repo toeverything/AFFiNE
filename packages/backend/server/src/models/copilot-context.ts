@@ -203,6 +203,18 @@ export class CopilotContextModel extends BaseModel {
     return Prisma.join(groups.map(row => Prisma.sql`(${Prisma.join(row)})`));
   }
 
+  async getFileContent(
+    contextId: string,
+    fileId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = await this.db.aiContextEmbedding.findMany({
+      where: { contextId, fileId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return file?.map(f => f.content).join('\n');
+  }
   async insertFileEmbedding(
     contextId: string,
     fileId: string,
