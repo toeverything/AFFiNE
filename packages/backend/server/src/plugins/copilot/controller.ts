@@ -45,6 +45,7 @@ import {
   UnsplashIsNotConfigured,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
+import { CopilotContextService } from './context';
 import {
   CopilotProvider,
   CopilotProviderFactory,
@@ -75,6 +76,7 @@ export class CopilotController implements BeforeApplicationShutdown {
   constructor(
     private readonly config: Config,
     private readonly chatSession: ChatSessionService,
+    private readonly context: CopilotContextService,
     private readonly provider: CopilotProviderFactory,
     private readonly workflow: CopilotWorkflowService,
     private readonly storage: CopilotStorage
@@ -204,11 +206,16 @@ export class CopilotController implements BeforeApplicationShutdown {
       retry
     );
 
+    const context = await this.context.getBySessionId(sessionId);
+
     if (latestMessage) {
       params = Object.assign({}, params, latestMessage.params, {
         content: latestMessage.content,
         attachments: latestMessage.attachments,
+        contextFiles: context?.files,
       });
+    } else {
+      params = Object.assign({}, params, { contextFiles: context?.files });
     }
 
     const finalMessage = session.finish(params);
