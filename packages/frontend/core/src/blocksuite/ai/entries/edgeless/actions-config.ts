@@ -51,7 +51,10 @@ import {
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
 import { AIProvider } from '../../provider';
 import { getAIPanelWidget } from '../../utils/ai-widgets';
-import { mindMapToMarkdown } from '../../utils/edgeless';
+import {
+  getEdgelessCopilotWidget,
+  mindMapToMarkdown,
+} from '../../utils/edgeless';
 import { extractSelectedContent } from '../../utils/extract';
 import { canvasToBlob, randomSeed } from '../../utils/image';
 import {
@@ -115,6 +118,7 @@ const othersGroup: AIItemGroupConfig = {
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanelWidget(host);
+        const edgelessCopilot = getEdgelessCopilotWidget(host);
         extractSelectedContent(host)
           .then(context => {
             AIProvider.slots.requestOpenWithChat.next({
@@ -125,6 +129,7 @@ const othersGroup: AIItemGroupConfig = {
             });
           })
           .catch(console.error);
+        edgelessCopilot.hideCopilotPanel();
         panel.hide();
       },
     },

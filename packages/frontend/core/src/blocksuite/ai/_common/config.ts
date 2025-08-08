@@ -38,6 +38,7 @@ import type {
 } from '../components/ai-item/types';
 import { AIProvider } from '../provider';
 import { getAIPanelWidget } from '../utils/ai-widgets';
+import { getEdgelessCopilotWidget } from '../utils/get-edgeless-copilot-widget';
 import {
   AIImageIconWithAnimation,
   AIPenIconWithAnimation,
@@ -384,10 +385,12 @@ const OthersAIGroup: AIItemGroupConfig = {
       icon: CommentIcon(),
       handler: host => {
         const panel = getAIPanelWidget(host);
+        const edgelessCopilot = getEdgelessCopilotWidget(host);
         AIProvider.slots.requestOpenWithChat.next({
           host,
           autoSelect: true,
         });
+        edgelessCopilot.hideCopilotPanel();
         panel.hide();
       },
     },
