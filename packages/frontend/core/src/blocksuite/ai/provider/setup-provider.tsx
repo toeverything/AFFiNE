@@ -748,31 +748,20 @@ Could you make a new website based on these notes and send back just the html fi
     ) => {
       return client.applyDocUpdates(workspaceId, docId, op, updates);
     },
-    addContextBlobs: async (options: {
-      blobIds: string[];
-      contextId: string;
-    }) => {
-      return Promise.all(
-        options.blobIds.map(blobId =>
-          client.addContextBlob({
-            contextId: options.contextId,
-            blobId,
-          })
-        )
-      );
+    addContextBlob: async (options: { blobId: string; contextId: string }) => {
+      return client.addContextBlob({
+        contextId: options.contextId,
+        blobId: options.blobId,
+      });
     },
-    removeContextBlobs: async (options: {
-      blobIds: string[];
+    removeContextBlob: async (options: {
+      blobId: string;
       contextId: string;
     }) => {
-      return Promise.all(
-        options.blobIds.map(blobId =>
-          client.removeContextBlob({
-            contextId: options.contextId,
-            blobId,
-          })
-        )
-      ).then(results => results.every(Boolean));
+      return client.removeContextBlob({
+        contextId: options.contextId,
+        blobId: options.blobId,
+      });
     },
   });
 

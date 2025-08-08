@@ -3,6 +3,7 @@ import { WarningIcon } from '@blocksuite/icons/lit';
 import { type TemplateResult } from 'lit';
 
 import type {
+  AttachmentChip,
   ChatChip,
   ChipState,
   CollectionChip,
@@ -66,11 +67,11 @@ export function isCollectionChip(chip: ChatChip): chip is CollectionChip {
 export function isSelectedContextChip(
   chip: ChatChip
 ): chip is SelectedContextChip {
-  return (
-    'attachments' in chip &&
-    'snapshot' in chip &&
-    'combinedElementsMarkdown' in chip
-  );
+  return 'snapshot' in chip && 'combinedElementsMarkdown' in chip;
+}
+
+export function isAttachmentChip(chip: ChatChip): chip is AttachmentChip {
+  return 'sourceId' in chip && 'name' in chip;
 }
 
 export function getChipKey(chip: ChatChip) {
@@ -129,6 +130,9 @@ export function findChipIndex(chips: ChatChip[], chip: ChatChip) {
     }
     if (isSelectedContextChip(chip)) {
       return isSelectedContextChip(item) && item.uuid === chip.uuid;
+    }
+    if (isAttachmentChip(chip)) {
+      return isAttachmentChip(item) && item.sourceId === chip.sourceId;
     }
     return -1;
   });

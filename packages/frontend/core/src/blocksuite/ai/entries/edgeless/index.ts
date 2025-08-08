@@ -57,7 +57,7 @@ export function edgelessToolbarAIEntryConfig(): ToolbarModuleConfig {
                 aiPanel.hide();
                 extractSelectedContent(host)
                   .then(context => {
-                    if (context?.attachments?.length) {
+                    if (context?.attachments?.length || context?.docs?.length) {
                       AIProvider.slots.requestOpenWithChat.next({
                         input,
                         host,

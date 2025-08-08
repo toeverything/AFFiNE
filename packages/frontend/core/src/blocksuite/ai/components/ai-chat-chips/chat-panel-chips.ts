@@ -15,6 +15,7 @@ import type { ChatChip, DocChip, DocDisplayConfig, FileChip } from './type';
 import {
   estimateTokenCount,
   getChipKey,
+  isAttachmentChip,
   isCollectionChip,
   isDocChip,
   isFileChip,
@@ -159,6 +160,12 @@ export class ChatPanelChips extends SignalWatcher(
               .chip=${chip}
               .removeChip=${this.removeChip}
             ></chat-panel-file-chip>`;
+          }
+          if (isAttachmentChip(chip)) {
+            return html`<chat-panel-attachment-chip
+              .chip=${chip}
+              .removeChip=${this.removeChip}
+            ></chat-panel-attachment-chip>`;
           }
           if (isTagChip(chip)) {
             const tag = this._tags.value.find(tag => tag.id === chip.tagId);

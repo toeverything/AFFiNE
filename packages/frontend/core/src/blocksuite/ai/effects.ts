@@ -30,6 +30,7 @@ import { ChatPanelSplitView } from './chat-panel/split-view';
 import { ArtifactSkeleton } from './components/ai-artifact-skeleton';
 import { AIChatAddContext } from './components/ai-chat-add-context';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
+import { ChatPanelAttachmentChip } from './components/ai-chat-chips/attachment-chip';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
 import { ChatPanelChip } from './components/ai-chat-chips/chip';
@@ -166,6 +167,7 @@ export function registerAIEffects() {
   customElements.define('chat-panel-tag-chip', ChatPanelTagChip);
   customElements.define('chat-panel-collection-chip', ChatPanelCollectionChip);
   customElements.define('chat-panel-selected-chip', ChatPanelSelectedChip);
+  customElements.define('chat-panel-attachment-chip', ChatPanelAttachmentChip);
   customElements.define('chat-panel-chip', ChatPanelChip);
   customElements.define('ai-error-wrapper', AIErrorWrapper);
   customElements.define('ai-slides-renderer', AISlidesRenderer);

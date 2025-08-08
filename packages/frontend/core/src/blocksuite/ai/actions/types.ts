@@ -361,12 +361,12 @@ declare global {
         op: string,
         updates: string
       ) => Promise<string>;
-      addContextBlobs: (options: {
-        blobIds: string[];
+      addContextBlob: (options: {
+        blobId: string;
         contextId: string;
-      }) => Promise<CopilotContextBlob[]>;
-      removeContextBlobs: (options: {
-        blobIds: string[];
+      }) => Promise<CopilotContextBlob>;
+      removeContextBlob: (options: {
+        blobId: string;
         contextId: string;
       }) => Promise<boolean>;
     }
