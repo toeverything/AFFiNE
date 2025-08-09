@@ -74,7 +74,7 @@ jobs:
         name: Wait for approval
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: forehalo,fengmk2
+          approvers: forehalo,fengmk2,darkskygit
           minimum-approvals: 1
           fail-on-denial: true
           issue-title: Please confirm to release docker image
@@ -84,7 +84,7 @@ jobs:
             Tag: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}
 
             > comment with "approve", "approved", "lgtm", "yes" to approve
-            > comment with "deny", "deny", "no" to deny
+            > comment with "deny", "denied", "no" to deny
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
