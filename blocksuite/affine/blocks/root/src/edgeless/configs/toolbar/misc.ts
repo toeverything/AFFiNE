@@ -39,289 +39,239 @@ import { html } from 'lit';
 import { renderAlignmentMenu } from './alignment';
 import { moreActions } from './more';
 
-export const builtinMiscToolbarConfig = {
+export const builtinMiscToolbarConfig: ToolbarModuleConfig = {
   actions: [
     {
-      placement: ActionPlacement.Start,
-      id: 'a.release-from-group',
-      tooltip: 'Release from group',
-      icon: ReleaseFromGroupIcon(),
-      when(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length !== 1) return false;
-        return ctx.matchModel(models[0].group, GroupElementModel);
-      },
-      run(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length !== 1) return;
+      import { moreActions } from './more';
 
-        const firstModel = models[0];
-        if (firstModel.isLocked()) return;
-        if (!ctx.matchModel(firstModel.group, GroupElementModel)) return;
-
-        const group = firstModel.group;
-
-        // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-        group.removeChild(firstModel);
-
-        firstModel.index = ctx.gfx.layer.generateIndex();
-
-        const parent = group.group;
-        if (parent && parent instanceof GroupElementModel) {
-          parent.addChild(firstModel);
+      export const builtinMiscToolbarConfig = {
+        actions: [
+          // Release from group
+          {
+            placement: ActionPlacement.Start,
+            id: 'a.release-from-group',
+            tooltip: 'Release from group',
+            icon: ReleaseFromGroupIcon(),
+            when(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length !== 1) return false;
+              return ctx.matchModel(models[0].group, GroupElementModel);
+            },
+            run(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length !== 1) return;
+              const firstModel = models[0];
+              if (firstModel.isLocked()) return;
+              if (!ctx.matchModel(firstModel.group, GroupElementModel)) return;
+              const group = firstModel.group;
+              group.removeChild(firstModel);
+              firstModel.index = ctx.gfx.layer.generateIndex();
+              const parent = group.group;
+              if (parent && parent instanceof GroupElementModel) {
+                parent.addChild(firstModel);
+              }
+            },
+          },
+          // Add frame
+          {
+            placement: ActionPlacement.Start,
+            id: 'b.add-frame',
+            label: 'Frame',
+            showLabel: true,
+            tooltip: 'Frame',
+            icon: FrameIcon(),
+            when(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length < 2) return false;
+              if (models.some(model => ctx.matchModel(model.group, MindmapElementModel))) return false;
+              if (models.length === models.filter(model => model instanceof ConnectorElementModel).length) return false;
+              return true;
+            },
+            run(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length < 2) return;
+              const surface = getSurfaceComponent(ctx.std);
+              if (!surface) return;
+              const frameManager = ctx.std.get(EdgelessFrameManagerIdentifier);
+              const frame = frameManager.createFrameOnSelected();
+              if (!frame) return;
+              surface.fitToViewport(Bound.deserialize(frame.xywh));
+              ctx.track('CanvasElementAdded', {
+                control: 'context-menu',
+                type: 'frame',
+              });
+            },
+          },
+          // Add group
+          {
+            placement: ActionPlacement.Start,
+            id: 'c.add-group',
+            label: 'Group',
+            showLabel: true,
+            tooltip: 'Group',
+            icon: GroupingIcon(),
+            when(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length < 2) return false;
+              if (ctx.matchModel(models[0], GroupElementModel)) return false;
+              if (models.some(model => ctx.matchModel(model.group, MindmapElementModel))) return false;
+              if (models.length === models.filter(model => ctx.matchModel(model, ConnectorElementModel)).length) return false;
+              return true;
+            },
+            run(ctx) {
+              const models = ctx.getSurfaceModels();
+              if (models.length < 2) return;
+              ctx.command.exec(createGroupFromSelectedCommand);
+            },
+          },
+          // Alignment
+          {
+            placement: ActionPlacement.Start,
+            id: 'd.alignment',
+            when(ctx) {
+              const models = ctx.getSurfaceModels();
+              if (models.length < 2) return false;
+              if (models.some(model => model.group instanceof MindmapElementModel)) return false;
+              if (models.length === models.filter(model => model instanceof ConnectorElementModel).length) return false;
+              return true;
+            },
+            content(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length < 2) return null;
+              return renderAlignmentMenu(ctx, models, {
+                icon: AlignLeftIcon(),
+                label: 'Align objects',
+                tooltip: 'Align objects',
+              });
+            },
+          },
+          // Draw connector
+          {
+            placement: ActionPlacement.End,
+            id: 'a.draw-connector',
+            label: 'Draw connector',
+            tooltip: 'Draw connector',
+            icon: ConnectorCIcon(),
+            when(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (models.length !== 1) return false;
+              return !ctx.matchModel(models[0], ConnectorElementModel);
+            },
+            content(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (!models.length) return null;
+              const { label, icon, tooltip } = this;
+              const quickConnect = (e: MouseEvent) => {
+                e.stopPropagation();
+                const { x, y } = e;
+                const point = ctx.gfx.viewport.toViewCoordFromClientCoord([x, y]);
+                ctx.store.captureSync();
+                ctx.gfx.tool.setTool(ConnectorTool, { mode: DEFAULT_CONNECTOR_MODE });
+                const ctc = ctx.gfx.tool.get(ConnectorTool);
+                ctc.quickConnect(point, models[0]);
+              };
+              return html`
+                <editor-icon-button
+                  data-testid="${'draw-connector'}"
+                  aria-label=${label}
+                  .tooltip=${tooltip}
+                  @click=${quickConnect}
+                >
+                  ${icon}
+                </editor-icon-button>
+              `;
+            },
+          },
+          // Lock
+          {
+            placement: ActionPlacement.End,
+            id: 'b.lock',
+            tooltip: 'Lock',
+            icon: LockIcon(),
+            run(ctx: ToolbarContext) {
+              const models = ctx.getSurfaceModels();
+              if (!models.length) return;
+              const elements = Array.from(new Set(models.map(model => ctx.matchModel(model.group, MindmapElementModel) ? model.group : model)));
+              const levels = elements.map(element => element.groups.length);
+              const topElement = elements[levels.indexOf(Math.min(...levels))];
+              const otherElements = elements.filter(element => element !== topElement);
+              ctx.store.captureSync();
+              otherElements.forEach(element => {
+                element.group?.removeChild(element);
+                topElement.group?.addChild(element);
+              });
+              if (otherElements.length === 0) {
+                topElement.lock();
+                ctx.gfx.selection.set({ editing: false, elements: [topElement.id] });
+                track(ctx, topElement, 'lock');
+                return;
+              }
+              const [_, { groupId }] = ctx.command.exec(createGroupCommand, { elements: [topElement, ...otherElements] });
+              if (groupId) {
+                const element = ctx.std.get(EdgelessCRUDIdentifier).getElementById(groupId);
+                if (element) {
+                  element.lock();
+                  ctx.gfx.selection.set({ editing: false, elements: [groupId] });
+                  track(ctx, element, 'group-lock');
+                  return;
+                }
+              }
+              for (const element of elements) {
+                element.lock();
+                track(ctx, element, 'lock');
+              }
+              ctx.gfx.selection.set({ editing: false, elements: elements.map(e => e.id) });
+            },
+          },
+          // Comment
+          {
+            placement: ActionPlacement.End,
+            id: 'c.comment',
+            ...blockCommentToolbarButton,
+          },
+          // Export as Image
+          {
+            placement: ActionPlacement.End,
+            id: 'export-as-image',
+            label: 'Export as Image',
+            tooltip: 'Export canvas/frame/selection as PNG or SVG',
+            icon: html`<svg width="20" height="20" viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 13l2-2 2 2 3-3" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
+            async run(ctx) {
+              const dialog = document.createElement('edgeless-export-dialog');
+              dialog.addEventListener('export', async (e) => {
+                document.body.removeChild(dialog);
+                const options = e.detail;
+                const { exportEdgelessImage } = await import('../utils/exportEdgelessImage');
+                await exportEdgelessImage(ctx, options);
+              });
+              dialog.addEventListener('cancel', () => {
+                document.body.removeChild(dialog);
+              });
+              document.body.appendChild(dialog);
+            },
+          },
+          // More actions
+          ...moreActions.map(action => ({
+            ...action,
+            placement: ActionPlacement.More,
+          }))
+        ],
+        when(ctx) {
+          const models = ctx.getSurfaceModels();
+          return models.length > 0 && !models.some(model => model.isLocked());
         }
-      },
-    },
-    {
-      placement: ActionPlacement.Start,
-      id: 'b.add-frame',
-      label: 'Frame',
-      showLabel: true,
-      tooltip: 'Frame',
-      icon: FrameIcon(),
-      when(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length < 2) return false;
-        if (
-          models.some(model => ctx.matchModel(model.group, MindmapElementModel))
-        )
-          return false;
-        if (
-          models.length ===
-          models.filter(model => model instanceof ConnectorElementModel).length
-        )
-          return false;
-
-        return true;
-      },
-      run(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length < 2) return;
-
-        const surface = getSurfaceComponent(ctx.std);
-        if (!surface) return;
-
-        const frameManager = ctx.std.get(EdgelessFrameManagerIdentifier);
-
-        const frame = frameManager.createFrameOnSelected();
-        if (!frame) return;
-
-        // TODO(@fundon): should be a command
-        surface.fitToViewport(Bound.deserialize(frame.xywh));
-
-        ctx.track('CanvasElementAdded', {
-          control: 'context-menu',
-          type: 'frame',
-        });
-      },
-    },
-    {
-      placement: ActionPlacement.Start,
-      id: 'c.add-group',
-      label: 'Group',
-      showLabel: true,
-      tooltip: 'Group',
-      icon: GroupingIcon(),
-      when(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length < 2) return false;
-        if (ctx.matchModel(models[0], GroupElementModel)) return false;
-        if (
-          models.some(model => ctx.matchModel(model.group, MindmapElementModel))
-        )
-          return false;
-        if (
-          models.length ===
-          models.filter(model => ctx.matchModel(model, ConnectorElementModel))
-            .length
-        )
-          return false;
-
-        return true;
-      },
-      run(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length < 2) return;
-
-        // TODO(@fundon): should be a command
-        ctx.command.exec(createGroupFromSelectedCommand);
-      },
-    },
-    {
-      placement: ActionPlacement.Start,
-      id: 'd.alignment',
-      when(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length < 2) return false;
-        if (models.some(model => model.group instanceof MindmapElementModel))
-          return false;
-        if (
-          models.length ===
-          models.filter(model => model instanceof ConnectorElementModel).length
-        )
-          return false;
-
-        return true;
-      },
-      content(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length < 2) return null;
-
-        return renderAlignmentMenu(ctx, models, {
-          icon: AlignLeftIcon(),
-          label: 'Align objects',
-          tooltip: 'Align objects',
-        });
-      },
-    },
-    {
-      placement: ActionPlacement.End,
-      id: 'a.draw-connector',
-      label: 'Draw connector',
-      tooltip: 'Draw connector',
-      icon: ConnectorCIcon(),
-      when(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (models.length !== 1) return false;
-        return !ctx.matchModel(models[0], ConnectorElementModel);
-      },
-      content(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (!models.length) return null;
-
-        const { label, icon, tooltip } = this;
-
-        const quickConnect = (e: MouseEvent) => {
-          e.stopPropagation();
-
-          const { x, y } = e;
-          const point = ctx.gfx.viewport.toViewCoordFromClientCoord([x, y]);
-
-          ctx.store.captureSync();
-          ctx.gfx.tool.setTool(ConnectorTool, { mode: DEFAULT_CONNECTOR_MODE });
-
-          const ctc = ctx.gfx.tool.get(ConnectorTool);
-          ctc.quickConnect(point, models[0]);
-        };
-
-        return html`
-          <editor-icon-button
-            data-testid="${'draw-connector'}"
-            aria-label=${label}
-            .tooltip=${tooltip}
-            @click=${quickConnect}
-          >
-            ${icon}
-          </editor-icon-button>
-        `;
-      },
-    } satisfies ToolbarAction,
-    {
-      placement: ActionPlacement.End,
-      id: 'b.lock',
-      tooltip: 'Lock',
-      icon: LockIcon(),
-      run(ctx) {
-        const models = ctx.getSurfaceModels();
-        if (!models.length) return;
-
-        // get most top selected elements(*) from tree, like in a tree below
-        //         G0
-        //        /  \
-        //      E1*  G1
-        //          /  \
-        //        E2*  E3*
-        //
-        // (*) selected elements, [E1, E2, E3]
-        // return [E1]
-
-        const elements = Array.from(
-          new Set(
-            models.map(model =>
-              ctx.matchModel(model.group, MindmapElementModel)
-                ? model.group
-                : model
-            )
-          )
-        );
-
-        const levels = elements.map(element => element.groups.length);
-        const topElement = elements[levels.indexOf(Math.min(...levels))];
-        const otherElements = elements.filter(
-          element => element !== topElement
-        );
-
-        ctx.store.captureSync();
-
-        // release other elements from their groups and group with top element
-        otherElements.forEach(element => {
-          // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-          element.group?.removeChild(element);
-          topElement.group?.addChild(element);
-        });
-
-        if (otherElements.length === 0) {
-          topElement.lock();
-
-          ctx.gfx.selection.set({
-            editing: false,
-            elements: [topElement.id],
-          });
-
-          track(ctx, topElement, 'lock');
-          return;
-        }
-
-        const [_, { groupId }] = ctx.command.exec(createGroupCommand, {
-          elements: [topElement, ...otherElements],
-        });
-
-        if (groupId) {
-          const element = ctx.std
-            .get(EdgelessCRUDIdentifier)
-            .getElementById(groupId);
-
-          if (element) {
-            element.lock();
-            ctx.gfx.selection.set({
-              editing: false,
-              elements: [groupId],
-            });
-
-            track(ctx, element, 'group-lock');
-            return;
-          }
-        }
-
-        for (const element of elements) {
-          element.lock();
-
-          track(ctx, element, 'lock');
-        }
-
-        ctx.gfx.selection.set({
-          editing: false,
-          elements: elements.map(e => e.id),
-        });
-      },
-    },
-
-    {
-      placement: ActionPlacement.End,
-      id: 'c.comment',
-      ...blockCommentToolbarButton,
-    },
+      } as const satisfies ToolbarModuleConfig;
 
     // More actions
     ...moreActions.map(action => ({
       ...action,
       placement: ActionPlacement.More,
-    })),
-  ],
+    }))
+  ]
   when(ctx) {
     const models = ctx.getSurfaceModels();
     return models.length > 0 && !models.some(model => model.isLocked());
-  },
+  }
 } as const satisfies ToolbarModuleConfig;
 
 export const builtinLockedToolbarConfig = {
@@ -332,7 +282,7 @@ export const builtinLockedToolbarConfig = {
       label: 'Click to unlock',
       showLabel: true,
       icon: UnlockIcon(),
-      run(ctx) {
+            run(ctx: ToolbarContext) {
         const models = ctx.getSurfaceModels();
         if (!models.length) return;
 
