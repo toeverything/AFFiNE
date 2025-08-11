@@ -21,7 +21,7 @@ import {
   GROUP_TITLE_FONT_SIZE,
   GROUP_TITLE_OFFSET,
   GROUP_TITLE_PADDING,
-} from '../element-renderer/consts';
+} from '../renderer/consts';
 
 export function mountGroupTitleEditor(
   group: GroupElementModel,
