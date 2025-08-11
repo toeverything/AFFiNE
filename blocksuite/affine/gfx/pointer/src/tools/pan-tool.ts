@@ -100,8 +100,8 @@ export class PanTool extends BaseTool<PanToolOption> {
       const dispose = on(document, 'pointerup', evt => {
         if (evt.button === MouseButton.MIDDLE) {
           restoreToPrevious();
-          dispose();
         }
+        dispose();
       });
 
       return false;
