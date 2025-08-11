@@ -429,6 +429,22 @@ export class CopilotEmbeddingJob {
         if (!hasNewDoc && fragment) {
           // fast fall for empty doc, journal is easily to create a empty doc
           if (fragment.summary.trim()) {
+            const existsContent =
+              await this.models.copilotContext.getWorkspaceContent(
+                workspaceId,
+                docId
+              );
+            if (
+              existsContent &&
+              existsContent.replaceAll('\n', '') ===
+                fragment.summary.replaceAll('\n', '')
+            ) {
+              this.logger.log(
+                `Doc ${docId} in workspace ${workspaceId} has no content change, skipping embedding.`
+              );
+              return;
+            }
+
             const embeddings = await this.embeddingClient.getFileEmbeddings(
               new File(
                 [fragment.summary],

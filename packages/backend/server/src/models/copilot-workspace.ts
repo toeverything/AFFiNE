@@ -206,10 +206,9 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
   @Transactional()
   async checkDocNeedEmbedded(workspaceId: string, docId: string) {
     // NOTE: check if the document needs re-embedding.
-    // 1. check if there have been any recent updates to the document snapshot and update
-    // 2. check if the embedding is older than the snapshot and update
-    // 3. check if the embedding is older than 10 minutes (avoid frequent updates)
-    // if all conditions are met, re-embedding is required.
+    // 1. first-time embedding when no embedding exists
+    // 2. re-embedding only when the doc has updates newer than the last embedding
+    //    AND the last embedding is older than 10 minutes (avoid frequent updates)
     const result = await this.db.$queryRaw<{ needs_embedding: boolean }[]>`
       SELECT
         EXISTS (
@@ -244,8 +243,7 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
               AND e.doc_id = docs.doc_id
           WHERE
             e.updated_at IS NULL
-            OR docs.updated_at > e.updated_at
-            OR e.updated_at < NOW() - INTERVAL '10 minutes'
+            OR (docs.updated_at > e.updated_at AND e.updated_at < NOW() - INTERVAL '10 minutes')
         ) AS needs_embedding;
     `;
 
