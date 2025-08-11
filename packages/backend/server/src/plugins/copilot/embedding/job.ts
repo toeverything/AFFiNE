@@ -20,7 +20,7 @@ import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
 import { getEmbeddingClient } from './client';
 import type { Chunk, DocFragment } from './types';
-import { EMBEDDING_DIMENSIONS, EmbeddingClient } from './types';
+import { EmbeddingClient } from './types';
 
 @Injectable()
 export class CopilotEmbeddingJob {
@@ -392,19 +392,6 @@ export class CopilotEmbeddingJob {
     return controller.signal;
   }
 
-  private async fulfillEmptyEmbedding(workspaceId: string, docId: string) {
-    const emptyEmbedding = {
-      index: 0,
-      content: '',
-      embedding: Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0),
-    };
-    await this.models.copilotContext.insertWorkspaceEmbedding(
-      workspaceId,
-      docId,
-      [emptyEmbedding]
-    );
-  }
-
   @OnJob('copilot.embedding.docs')
   async embedPendingDocs({
     contextId,
@@ -466,13 +453,19 @@ export class CopilotEmbeddingJob {
             this.logger.warn(
               `Doc ${docId} in workspace ${workspaceId} has no summary, fulfilling empty embedding.`
             );
-            await this.fulfillEmptyEmbedding(workspaceId, docId);
+            await this.models.copilotContext.fulfillEmptyEmbedding(
+              workspaceId,
+              docId
+            );
           }
         } else {
           this.logger.warn(
             `Doc ${docId} in workspace ${workspaceId} has no fragment, fulfilling empty embedding.`
           );
-          await this.fulfillEmptyEmbedding(workspaceId, docId);
+          await this.models.copilotContext.fulfillEmptyEmbedding(
+            workspaceId,
+            docId
+          );
         }
       }
     } catch (error: any) {
@@ -490,7 +483,10 @@ export class CopilotEmbeddingJob {
           `Doc ${docId} in workspace ${workspaceId} has no content, fulfilling empty embedding.`
         );
         // if the doc is empty, we still need to fulfill the embedding
-        await this.fulfillEmptyEmbedding(workspaceId, docId);
+        await this.models.copilotContext.fulfillEmptyEmbedding(
+          workspaceId,
+          docId
+        );
         return;
       }
 

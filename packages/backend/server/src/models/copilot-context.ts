@@ -19,6 +19,8 @@ import {
 
 type UpdateCopilotContextInput = Pick<CopilotContext, 'config'>;
 
+export const EMBEDDING_DIMENSIONS = 1024;
+
 /**
  * Copilot Job Model
  */
@@ -290,10 +292,24 @@ export class CopilotContextModel extends BaseModel {
     `;
   }
 
+  async fulfillEmptyEmbedding(workspaceId: string, docId: string) {
+    const emptyEmbedding = {
+      index: 0,
+      content: '',
+      embedding: Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0),
+    };
+    await this.models.copilotContext.insertWorkspaceEmbedding(
+      workspaceId,
+      docId,
+      [emptyEmbedding]
+    );
+  }
+
   async deleteWorkspaceEmbedding(workspaceId: string, docId: string) {
     await this.db.aiWorkspaceEmbedding.deleteMany({
       where: { workspaceId, docId },
     });
+    await this.fulfillEmptyEmbedding(workspaceId, docId);
   }
 
   async matchWorkspaceEmbedding(
