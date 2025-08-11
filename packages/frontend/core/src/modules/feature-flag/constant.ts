@@ -227,7 +227,7 @@ export const AFFINE_FLAGS = {
     displayName: 'Enable DOM Renderer',
     description: 'Enable DOM renderer for graphics elements',
     configurable: true,
-    defaultState: isIOS,
+    defaultState: false,
   },
   enable_edgeless_scribbled_style: {
     category: 'blocksuite',
