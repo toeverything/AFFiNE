@@ -13,7 +13,6 @@ export const HighlighterDomRendererExtension = DomElementRendererExtension(
     renderer: DomRenderer
   ) => {
     const { zoom } = renderer.viewport;
-    const { rotate } = model;
     const [, , w, h] = model.deserializedXYWH;
 
     // Early return if invalid dimensions
@@ -25,9 +24,6 @@ export const HighlighterDomRendererExtension = DomElementRendererExtension(
     if (!model.commands) {
       return;
     }
-
-    const cx = w / 2;
-    const cy = h / 2;
 
     // Clear previous content
     domElement.innerHTML = '';
@@ -51,9 +47,9 @@ export const HighlighterDomRendererExtension = DomElementRendererExtension(
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
     // Apply rotation transform
-    if (rotate !== 0) {
-      const transform = `translate(${cx}, ${cy}) rotate(${rotate}deg) translate(${-cx}, ${-cy})`;
-      svg.setAttribute('transform', transform);
+    if (model.rotate !== 0) {
+      svg.style.transform = `rotate(${model.rotate}deg)`;
+      svg.style.transformOrigin = 'center';
     }
 
     // Create path element for the highlighter stroke
