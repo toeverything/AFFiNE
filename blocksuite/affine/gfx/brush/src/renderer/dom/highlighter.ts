@@ -69,8 +69,5 @@ export const HighlighterDomRendererExtension = DomElementRendererExtension(
     domElement.style.height = `${h * zoom}px`;
     domElement.style.overflow = 'visible';
     domElement.style.pointerEvents = 'none';
-
-    // Set z-index for layering
-    domElement.style.zIndex = renderer.layerManager.getZIndex(model).toString();
   }
 );

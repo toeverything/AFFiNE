@@ -298,7 +298,10 @@ export class DomRenderer {
       viewportBounds,
       zoom
     );
-    Object.assign(domElement.style, geometricStyles);
+    const zIndexStyle = {
+      'z-index': this.layerManager.getZIndex(elementModel),
+    };
+    Object.assign(domElement.style, geometricStyles, zIndexStyle);
     Object.assign(domElement.style, PLACEHOLDER_RESET_STYLES);
 
     // Clear classes specific to shapes, if applicable
@@ -335,7 +338,10 @@ export class DomRenderer {
       zoom
     );
     const opacityStyle = getOpacity(elementModel);
-    Object.assign(domElement.style, geometricStyles, opacityStyle);
+    const zIndexStyle = {
+      'z-index': this.layerManager.getZIndex(elementModel),
+    };
+    Object.assign(domElement.style, geometricStyles, opacityStyle, zIndexStyle);
 
     this._renderElement(elementModel, domElement);
   }

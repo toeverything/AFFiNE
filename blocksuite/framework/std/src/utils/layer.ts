@@ -27,7 +27,7 @@ export function updateLayersZIndex(layers: Layer[], startIdx: number) {
     const curLayer = layers[i];
 
     curLayer.zIndex = curIndex;
-    curIndex += curLayer.type === 'block' ? curLayer.elements.length : 1;
+    curIndex += curLayer.elements.length;
   }
 }
 

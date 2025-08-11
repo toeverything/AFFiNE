@@ -359,9 +359,6 @@ export const connectorDomRenderer = (
   element.style.overflow = 'visible';
   element.style.pointerEvents = 'none';
 
-  // Set z-index for layering
-  element.style.zIndex = renderer.layerManager.getZIndex(model).toString();
-
   // Render label if present
   renderConnectorLabel(model, element, renderer, zoom);
 };

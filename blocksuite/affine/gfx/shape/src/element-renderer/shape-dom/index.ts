@@ -181,8 +181,6 @@ export const shapeDomRenderer = (
 
   applyTransformStyles(model, element);
 
-  element.style.zIndex = renderer.layerManager.getZIndex(model).toString();
-
   manageClassNames(model, element);
   applyShadowStyles(model, element, renderer);
 };
