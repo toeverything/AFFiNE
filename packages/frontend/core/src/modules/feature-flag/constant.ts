@@ -2,7 +2,6 @@ import type { FlagInfo } from './types';
 
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
-const isBetaBuild = BUILD_CONFIG.appBuildType === 'beta';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 const isIOS = BUILD_CONFIG.isIOS;
 
@@ -227,7 +226,7 @@ export const AFFINE_FLAGS = {
     bsFlag: 'enable_dom_renderer',
     displayName: 'Enable DOM Renderer',
     description: 'Enable DOM renderer for graphics elements',
-    configurable: isCanaryBuild || isBetaBuild,
+    configurable: true,
     defaultState: isIOS,
   },
   enable_edgeless_scribbled_style: {
