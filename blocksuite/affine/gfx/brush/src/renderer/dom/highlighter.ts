@@ -62,7 +62,7 @@ export const HighlighterDomRendererExtension = DomElementRendererExtension(
     pathElement.setAttribute('stroke', 'none');
 
     svg.append(pathElement);
-    domElement.append(svg);
+    domElement.replaceChildren(svg);
 
     // Set element size and position
     domElement.style.width = `${w * zoom}px`;
