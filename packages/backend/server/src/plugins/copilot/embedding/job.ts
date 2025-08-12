@@ -392,6 +392,15 @@ export class CopilotEmbeddingJob {
     return controller.signal;
   }
 
+  private normalize(s: string) {
+    return s
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '\n')
+      .split('\n')
+      .join('')
+      .trim();
+  }
+
   @OnJob('copilot.embedding.docs')
   async embedPendingDocs({
     contextId,
@@ -436,8 +445,7 @@ export class CopilotEmbeddingJob {
               );
             if (
               existsContent &&
-              existsContent.replaceAll('\n', '') ===
-                fragment.summary.replaceAll('\n', '')
+              this.normalize(existsContent) === this.normalize(fragment.summary)
             ) {
               this.logger.log(
                 `Doc ${docId} in workspace ${workspaceId} has no content change, skipping embedding.`
