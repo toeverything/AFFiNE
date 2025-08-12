@@ -54,7 +54,7 @@ defineModuleConfig('copilot', {
         chat: 'claude-sonnet-4@20250514',
         embedding: 'gemini-embedding-001',
         image: 'gpt-image-1',
-        rerank: 'gpt-5',
+        rerank: 'gpt-4.1',
         coding: 'claude-sonnet-4@20250514',
         complex_text_generation: 'gpt-4o-2024-08-06',
         quick_decision_making: 'gpt-5-mini',

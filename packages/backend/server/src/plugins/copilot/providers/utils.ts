@@ -608,7 +608,8 @@ export class StreamObjectParser {
       case 'tool-call':
       case 'tool-result': {
         const { type, toolCallId, toolName, input: args } = chunk;
-        return { type, toolCallId, toolName, args } as StreamObject;
+        const result = 'output' in chunk ? chunk.output : undefined;
+        return { type, toolCallId, toolName, args, result } as StreamObject;
       }
       case 'error': {
         throw toError(chunk.error);
