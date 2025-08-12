@@ -532,11 +532,14 @@ export class CopilotEmbeddingJob {
       return;
     }
 
-    const docIdsInEmbedding =
-      await this.models.copilotContext.listWorkspaceDocEmbedding(workspaceId);
-    if (!docIdsInEmbedding.length) {
+    const [docIdsInEmbedding, docIdsInSnapshots] = await Promise.all([
+      this.models.copilotContext.listWorkspaceDocEmbedding(workspaceId),
+      this.models.copilotWorkspace.listEmbeddableDocIds(workspaceId),
+    ]);
+
+    if (!docIdsInEmbedding.length && !docIdsInSnapshots.length) {
       this.logger.verbose(
-        `No doc embeddings found in workspace ${workspaceId}, skipping cleanup`
+        `No doc embeddings and snapshots found in workspace ${workspaceId}, skipping cleanup`
       );
       await this.models.workspace.update(
         workspaceId,
@@ -549,10 +552,17 @@ export class CopilotEmbeddingJob {
     const docIdsInWorkspace = readAllDocIdsFromWorkspaceSnapshot(snapshot.blob);
     const docIdsInWorkspaceSet = new Set(docIdsInWorkspace);
 
-    const deletedDocIds = docIdsInEmbedding.filter(
-      docId => !docIdsInWorkspaceSet.has(docId)
+    const deletedDocIds = new Set(
+      [...docIdsInEmbedding, ...docIdsInSnapshots].filter(
+        docId => !docIdsInWorkspaceSet.has(docId)
+      )
     );
     for (const docId of deletedDocIds) {
+      const isPlaceholder = await this.models.copilotWorkspace.hasPlaceholder(
+        workspaceId,
+        docId
+      );
+      if (isPlaceholder) continue;
       await this.models.copilotContext.deleteWorkspaceEmbedding(
         workspaceId,
         docId
