@@ -7,6 +7,7 @@ import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import type { Mermaid } from 'mermaid';
 
 export const CodeBlockMermaidPreview = CodeBlockPreviewExtension(
   'mermaid',
@@ -150,10 +151,10 @@ export class MermaidPreview extends SignalWatcher(
   @query('.mermaid-preview-container')
   accessor container!: HTMLDivElement;
 
-  private mermaid: any = null;
+  private mermaid: Mermaid | null = null;
   private retryCount = 0;
   private readonly maxRetries = 3;
-  private renderTimeout: number | null = null;
+  private renderTimeout: ReturnType<typeof setTimeout> | null = null;
   private isRendering = false;
 
   // zoom and pan
@@ -165,8 +166,6 @@ export class MermaidPreview extends SignalWatcher(
   private lastMouseY = 0;
 
   override firstUpdated(_changedProperties: PropertyValues): void {
-    const result = super.firstUpdated(_changedProperties);
-
     this._loadMermaid().catch(error => {
       console.error('Failed to load mermaid in firstUpdated:', error);
     });
@@ -180,16 +179,12 @@ export class MermaidPreview extends SignalWatcher(
         })
       );
     }
-
-    return result;
   }
 
-  override updated(changedProperties: PropertyValues): void {
-    const result = super.updated(changedProperties);
+  override willUpdate(changedProperties: PropertyValues<this>) {
     if (changedProperties.has('mermaidCode')) {
       this._scheduleRender();
     }
-    return result;
   }
 
   override disconnectedCallback(): void {
@@ -212,7 +207,7 @@ export class MermaidPreview extends SignalWatcher(
     }
 
     // set debounce timeout
-    this.renderTimeout = window.setTimeout(() => {
+    this.renderTimeout = setTimeout(() => {
       this._render().catch(error => {
         console.error('Failed to render in timeout:', error);
       });
@@ -303,7 +298,7 @@ export class MermaidPreview extends SignalWatcher(
     this.disposables.addFromEvent(document, 'mouseup', this._handleMouseUp);
 
     // wheel events
-    // this.disposables.addFromEvent(this.container, 'wheel', this._handleWheel, { passive: false });
+    this.disposables.addFromEvent(this.container, 'wheel', this._handleWheel);
 
     // prevent text selection when dragging
     this.disposables.addFromEvent(this.container, 'selectstart', e =>
@@ -321,7 +316,7 @@ export class MermaidPreview extends SignalWatcher(
       this.mermaid.initialize({
         startOnLoad: false,
         theme: 'default',
-        securityLevel: 'loose',
+        securityLevel: 'strict',
         fontFamily: 'IBM Plex Mono',
         flowchart: {
           useMaxWidth: true,
@@ -366,6 +361,9 @@ export class MermaidPreview extends SignalWatcher(
 
     if (!this.mermaid) {
       await this._loadMermaid();
+    }
+    if (!this.mermaid) {
+      return;
     }
 
     try {
