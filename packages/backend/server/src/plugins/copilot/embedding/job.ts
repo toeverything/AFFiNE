@@ -393,13 +393,7 @@ export class CopilotEmbeddingJob {
   }
 
   private normalize(s: string) {
-    return s
-      .replaceAll('\r\n', '\n')
-      .replaceAll('\r', '\n')
-      .replaceAll(/\s+/g, '')
-      .split('\n')
-      .join('')
-      .trim();
+    return s.replaceAll(/[\p{White_Space}]+/gu, '');
   }
 
   @OnJob('copilot.embedding.docs')
