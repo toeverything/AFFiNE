@@ -396,6 +396,7 @@ export class CopilotEmbeddingJob {
     return s
       .replaceAll('\r\n', '\n')
       .replaceAll('\r', '\n')
+      .replaceAll(/\s+/g, '')
       .split('\n')
       .join('')
       .trim();
