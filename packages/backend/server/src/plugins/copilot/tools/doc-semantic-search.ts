@@ -3,11 +3,14 @@ import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
-import type { ChunkSimilarity, Models } from '../../../models';
+import {
+  type ChunkSimilarity,
+  clearEmbeddingChunk,
+  type Models,
+} from '../../../models';
 import type { CopilotContextService } from '../context';
 import type { ContextSession } from '../context/session';
 import type { CopilotChatOptions } from '../providers';
-import { clearEmbeddingChunk } from '../utils';
 import { toolError } from './error';
 
 export const buildDocSearchGetter = (

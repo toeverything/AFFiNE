@@ -148,3 +148,36 @@ export type IgnoredDoc = {
   createdByAvatar: string | undefined;
   updatedBy: string | undefined;
 };
+
+export const EMBEDDING_DIMENSIONS = 1024;
+
+const FILTER_PREFIX = [
+  'Title: ',
+  'Created at: ',
+  'Updated at: ',
+  'Created by: ',
+  'Updated by: ',
+];
+
+export function clearEmbeddingContent(content: string): string {
+  const lines = content.split('\n');
+  let maxLines = 5;
+  while (maxLines > 0 && lines.length > 0) {
+    if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
+      lines.shift();
+      maxLines--;
+    } else {
+      // only process consecutive metadata rows
+      break;
+    }
+  }
+  return lines.join('\n');
+}
+
+export function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
+  if (chunk.content) {
+    const content = clearEmbeddingContent(chunk.content);
+    return { ...chunk, content };
+  }
+  return chunk;
+}

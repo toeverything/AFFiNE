@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 import {
+  clearEmbeddingContent,
   ContextBlob,
   ContextConfigSchema,
   ContextDoc,
@@ -13,13 +14,12 @@ import {
   CopilotContext,
   DocChunkSimilarity,
   Embedding,
+  EMBEDDING_DIMENSIONS,
   FileChunkSimilarity,
   MinimalContextConfigSchema,
 } from './common/copilot';
 
 type UpdateCopilotContextInput = Pick<CopilotContext, 'config'>;
-
-export const EMBEDDING_DIMENSIONS = 1024;
 
 /**
  * Copilot Job Model
@@ -215,7 +215,7 @@ export class CopilotContextModel extends BaseModel {
       select: { content: true },
       orderBy: { chunk: 'asc' },
     });
-    return file?.map(f => f.content).join('\n');
+    return file?.map(f => clearEmbeddingContent(f.content)).join('\n');
   }
 
   async insertFileEmbedding(
@@ -274,7 +274,7 @@ export class CopilotContextModel extends BaseModel {
       select: { content: true },
       orderBy: { chunk: 'asc' },
     });
-    return file?.map(f => f.content).join('\n');
+    return file?.map(f => clearEmbeddingContent(f.content)).join('\n');
   }
 
   async insertWorkspaceEmbedding(
