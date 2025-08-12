@@ -65,6 +65,18 @@ const ImageResponseSchema = z.union([
     }),
   }),
 ]);
+const LogProbsSchema = z.array(
+  z.object({
+    token: z.string(),
+    logprob: z.number(),
+    top_logprobs: z.array(
+      z.object({
+        token: z.string(),
+        logprob: z.number(),
+      })
+    ),
+  })
+);
 
 export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   readonly type = CopilotProviderType.OpenAI;
@@ -283,8 +295,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
   ];
 
-  private readonly MAX_STEPS = 20;
-
   #instance!: VercelOpenAIProvider;
 
   override configured(): boolean {
@@ -351,7 +361,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     model: string
   ): [string, Tool?] | undefined {
     if (toolName === 'webSearch' && !this.isReasoningModel(model)) {
-      return ['web_search_preview', openai.tools.webSearchPreview()];
+      return ['web_search_preview', openai.tools.webSearchPreview({})];
     } else if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
     }
@@ -382,12 +392,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         system,
         messages: msgs,
         temperature: options.temperature ?? 0,
-        maxTokens: options.maxTokens ?? 4096,
+        maxOutputTokens: options.maxTokens ?? 4096,
         providerOptions: {
           openai: this.getOpenAIOptions(options, model.id),
         },
         tools: await this.getTools(options, model.id),
-        maxSteps: this.MAX_STEPS,
         abortSignal: options.signal,
       });
 
@@ -503,7 +512,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         system,
         messages: msgs,
         temperature: options.temperature ?? 0,
-        maxTokens: options.maxTokens ?? 4096,
+        maxOutputTokens: options.maxTokens ?? 4096,
         maxRetries: options.maxRetries ?? 3,
         schema,
         providerOptions: {
@@ -528,36 +537,37 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     await this.checkParams({ messages: [], cond: fullCond, options });
     const model = this.selectModel(fullCond);
     // get the log probability of "yes"/"no"
-    const instance = this.#instance(model.id, { logprobs: 16 });
+    const instance = this.#instance.chat(model.id);
 
     const scores = await Promise.all(
       chunkMessages.map(async messages => {
         const [system, msgs] = await chatToGPTMessage(messages);
 
-        const { logprobs } = await generateText({
+        const result = await generateText({
           model: instance,
           system,
           messages: msgs,
           temperature: 0,
-          maxTokens: 16,
+          maxOutputTokens: 128,
           providerOptions: {
             openai: {
               ...this.getOpenAIOptions(options, model.id),
+              logprobs: 16,
             },
           },
           abortSignal: options.signal,
         });
 
-        const topMap: Record<string, number> = (
-          logprobs?.[0]?.topLogprobs ?? []
-        ).reduce<Record<string, number>>(
+        const topMap: Record<string, number> = LogProbsSchema.parse(
+          result.providerMetadata?.openai?.logprobs
+        )[0].top_logprobs.reduce<Record<string, number>>(
           (acc, { token, logprob }) => ({ ...acc, [token]: logprob }),
           {}
         );
 
         const findLogProb = (token: string): number => {
           // OpenAI often includes a leading space, so try matching '.yes', '_yes', ' yes' and 'yes'
-          return [`.${token}`, `_${token}`, ` ${token}`, token]
+          return [...'_:. "-\t,(=_“'.split('').map(c => c + token), token]
             .flatMap(v => [v, v.toLowerCase(), v.toUpperCase()])
             .reduce<number>(
               (best, key) =>
@@ -596,12 +606,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       frequencyPenalty: options.frequencyPenalty ?? 0,
       presencePenalty: options.presencePenalty ?? 0,
       temperature: options.temperature ?? 0,
-      maxTokens: options.maxTokens ?? 4096,
+      maxOutputTokens: options.maxTokens ?? 4096,
       providerOptions: {
         openai: this.getOpenAIOptions(options, model.id),
       },
       tools: await this.getTools(options, model.id),
-      maxSteps: this.MAX_STEPS,
       abortSignal: options.signal,
     });
     return fullStream;
@@ -728,14 +737,16 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .counter('generate_embedding_calls')
         .add(1, { model: model.id });
 
-      const modelInstance = this.#instance.embedding(model.id, {
-        dimensions: options.dimensions || DEFAULT_DIMENSIONS,
-        user: options.user,
-      });
+      const modelInstance = this.#instance.embedding(model.id);
 
       const { embeddings } = await embedMany({
         model: modelInstance,
         values: messages,
+        providerOptions: {
+          openai: {
+            dimensions: options.dimensions || DEFAULT_DIMENSIONS,
+          },
+        },
       });
 
       return embeddings.filter(v => v && Array.isArray(v));
