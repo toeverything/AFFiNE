@@ -89,13 +89,13 @@ export const ProPlanCard = ({
                 }}
               />
               <CloudExpirationInfo />
+              <PlanAction
+                plan={currentPlan}
+                subscriptionStatus={proSubscription?.status}
+                gotoPlansSetting={gotoCloudPlansSetting}
+              />
             </>
           }
-        />
-        <PlanAction
-          plan={currentPlan}
-          subscriptionStatus={proSubscription?.status}
-          gotoPlansSetting={gotoCloudPlansSetting}
         />
       </div>
       <p className={styles.planPrice}>
@@ -148,7 +148,6 @@ const CloudExpirationInfo = () => {
 
 const PlanAction = ({
   plan,
-  subscriptionStatus,
   gotoPlansSetting,
 }: {
   plan: string;
@@ -165,7 +164,7 @@ const PlanAction = ({
   }
 
   return (
-    <>
+    <div className={styles.planActionContainer}>
       <Button
         className={styles.planAction}
         variant="primary"
@@ -175,13 +174,11 @@ const PlanAction = ({
           ? t['com.affine.payment.billing-setting.change-plan']()
           : t['com.affine.payment.billing-setting.upgrade']()}
       </Button>
-      {subscriptionStatus === SubscriptionStatus.PastDue ? (
-        <PaymentMethodUpdater
-          inCardView
-          className={styles.manageMentInCard}
-          variant="primary"
-        />
-      ) : null}
-    </>
+      <PaymentMethodUpdater
+        inCardView
+        className={styles.managementInCard}
+        variant="primary"
+      />
+    </div>
   );
 };
