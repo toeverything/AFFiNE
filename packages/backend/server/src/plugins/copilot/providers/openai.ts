@@ -10,6 +10,7 @@ import {
   experimental_generateImage as generateImage,
   generateObject,
   generateText,
+  stepCountIs,
   streamText,
   Tool,
 } from 'ai';
@@ -295,6 +296,8 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
   ];
 
+  private readonly MAX_STEPS = 20;
+
   #instance!: VercelOpenAIProvider;
 
   override configured(): boolean {
@@ -397,6 +400,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
           openai: this.getOpenAIOptions(options, model.id),
         },
         tools: await this.getTools(options, model.id),
+        stopWhen: stepCountIs(this.MAX_STEPS),
         abortSignal: options.signal,
       });
 
@@ -611,6 +615,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         openai: this.getOpenAIOptions(options, model.id),
       },
       tools: await this.getTools(options, model.id),
+      stopWhen: stepCountIs(this.MAX_STEPS),
       abortSignal: options.signal,
     });
     return fullStream;

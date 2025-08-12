@@ -3,7 +3,7 @@ import {
   type AnthropicProviderOptions,
 } from '@ai-sdk/anthropic';
 import { type GoogleVertexAnthropicProvider } from '@ai-sdk/google-vertex/anthropic';
-import { AISDKError, generateText, streamText } from 'ai';
+import { AISDKError, generateText, stepCountIs, streamText } from 'ai';
 
 import {
   CopilotProviderSideError,
@@ -26,6 +26,8 @@ import {
 } from '../utils';
 
 export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
+  private readonly MAX_STEPS = 20;
+
   protected abstract instance:
     | AnthropicSDKProvider
     | GoogleVertexAnthropicProvider;
@@ -64,7 +66,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
       const [system, msgs] = await chatToGPTMessage(messages, true, true);
 
       const modelInstance = this.instance(model.id);
-      const { text, reasoningText } = await generateText({
+      const { text, reasoning } = await generateText({
         model: modelInstance,
         system,
         messages: msgs,
@@ -73,11 +75,12 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
           anthropic: this.getAnthropicOptions(options, model.id),
         },
         tools: await this.getTools(options, model.id),
+        stopWhen: stepCountIs(this.MAX_STEPS),
       });
 
       if (!text) throw new Error('Failed to generate text');
 
-      return reasoningText ? `${reasoningText}\n${text}` : text;
+      return reasoning ? `${reasoning}\n${text}` : text;
     } catch (e: any) {
       metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
       throw this.handleError(e);
@@ -165,6 +168,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         anthropic: this.getAnthropicOptions(options, model.id),
       },
       tools: await this.getTools(options, model.id),
+      stopWhen: stepCountIs(this.MAX_STEPS),
     });
     return fullStream;
   }
