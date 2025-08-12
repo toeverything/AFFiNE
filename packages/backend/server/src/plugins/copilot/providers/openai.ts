@@ -552,7 +552,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
           system,
           messages: msgs,
           temperature: 0,
-          maxOutputTokens: 128,
+          maxOutputTokens: 16,
           providerOptions: {
             openai: {
               ...this.getOpenAIOptions(options, model.id),
