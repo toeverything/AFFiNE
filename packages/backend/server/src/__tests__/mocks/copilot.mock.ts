@@ -58,6 +58,15 @@ export class MockCopilotProvider extends OpenAIProvider {
       ],
     },
     {
+      id: 'gpt-4.1-2025-04-14',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
+        },
+      ],
+    },
+    {
       id: 'gpt-5',
       capabilities: [
         {
