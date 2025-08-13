@@ -1,5 +1,5 @@
 import { cssVar } from '@toeverything/theme';
-import { globalStyle, keyframes, style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
 
 import {
   cardBorderColor,
@@ -17,11 +17,10 @@ const expandIn = keyframes({
   },
 });
 export const sonner = style({
-  left: '0 !important',
-});
-globalStyle(`${sonner} li[data-sonner-toast]`, {
-  width: 'fit-content !important',
-  margin: '0px auto',
+  vars: {
+    '--mobile-offset-left': '0px !important',
+    '--mobile-offset-right': '0px !important',
+  },
 });
 
 export const toastRoot = style({
