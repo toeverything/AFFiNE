@@ -148,6 +148,7 @@ const CloudExpirationInfo = () => {
 
 const PlanAction = ({
   plan,
+  subscriptionStatus,
   gotoPlansSetting,
 }: {
   plan: string;
@@ -167,18 +168,24 @@ const PlanAction = ({
     <div className={styles.planActionContainer}>
       <Button
         className={styles.planAction}
-        variant="primary"
+        variant={
+          subscriptionStatus === SubscriptionStatus.PastDue
+            ? 'secondary'
+            : 'primary'
+        }
         onClick={gotoPlansSetting}
       >
         {plan === SubscriptionPlan.Pro
           ? t['com.affine.payment.billing-setting.change-plan']()
           : t['com.affine.payment.billing-setting.upgrade']()}
       </Button>
-      <PaymentMethodUpdater
-        inCardView
-        className={styles.managementInCard}
-        variant="primary"
-      />
+      {subscriptionStatus === SubscriptionStatus.PastDue ? (
+        <PaymentMethodUpdater
+          inCardView
+          className={styles.managementInCard}
+          variant="primary"
+        />
+      ) : null}
     </div>
   );
 };

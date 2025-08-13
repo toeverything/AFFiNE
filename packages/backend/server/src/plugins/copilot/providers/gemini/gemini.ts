@@ -9,6 +9,7 @@ import {
   generateObject,
   generateText,
   JSONParseError,
+  stepCountIs,
   streamText,
 } from 'ai';
 
@@ -85,6 +86,7 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
           google: this.getGeminiOptions(options, model.id),
         },
         tools: await this.getTools(options, model.id),
+        stopWhen: stepCountIs(this.MAX_STEPS),
       });
 
       if (!text) throw new Error('Failed to generate text');
@@ -276,6 +278,7 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         google: this.getGeminiOptions(options, model.id),
       },
       tools: await this.getTools(options, model.id),
+      stopWhen: stepCountIs(this.MAX_STEPS),
     });
     return fullStream;
   }

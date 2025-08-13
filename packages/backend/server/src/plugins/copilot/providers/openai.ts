@@ -296,8 +296,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
   ];
 
-  private readonly MAX_STEPS = 20;
-
   #instance!: VercelOpenAIProvider;
 
   override configured(): boolean {

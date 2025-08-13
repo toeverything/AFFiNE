@@ -26,8 +26,6 @@ import {
 } from '../utils';
 
 export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
-  private readonly MAX_STEPS = 20;
-
   protected abstract instance:
     | AnthropicSDKProvider
     | GoogleVertexAnthropicProvider;
