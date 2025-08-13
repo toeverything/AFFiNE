@@ -97,11 +97,13 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
                     </AISubscribe>
                   )
                 ) : null}
-                <PaymentMethodUpdater
-                  inCardView
-                  className={styles.managementInCard}
-                  variant="primary"
-                />
+                {subscription?.status === SubscriptionStatus.PastDue ? (
+                  <PaymentMethodUpdater
+                    inCardView
+                    className={styles.managementInCard}
+                    variant="primary"
+                  />
+                ) : null}
               </div>
             </>
           }
