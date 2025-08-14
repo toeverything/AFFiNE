@@ -49,6 +49,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
 
     /* Container */
     .code-highlighter pre {
+      position: relative;
       margin: 0;
       display: flex;
       overflow: auto;
@@ -73,12 +74,23 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     }
 
     /* Code area */
-    .code-highlighter .code-container {
+    .code-highlighter :is(.code-container, .code-container-hidden) {
       flex: 1;
       white-space: pre;
       line-height: 20px;
       font-size: 12px;
       padding: 0 12px 12px 12px;
+    }
+
+    .code-highlighter .code-container {
+      user-select: none;
+    }
+
+    .code-highlighter .code-container-hidden {
+      color: transparent;
+      position: absolute;
+      top: 0;
+      left: 60px;
     }
 
     .code-highlighter .code-line {
@@ -209,6 +221,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     return html`<div class="code-highlighter">
       <pre>
         ${lineNumbersTemplate}
+        <div class="code-container-hidden">${this.code}</div>
         <div class="code-container">${renderedCode}</div>
       </pre>
     </div>`;
