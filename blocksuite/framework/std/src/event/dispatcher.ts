@@ -226,6 +226,13 @@ export class UIEventDispatcher extends LifeCycleWatcher {
         this._setActive(false);
       }
     });
+    // When the selection is outside the host, the event dispatcher should be inactive
+    this.disposables.addFromEvent(document, 'selectionchange', () => {
+      const domSelection = document.getSelection();
+      if (domSelection && !this.host.contains(domSelection.anchorNode)) {
+        this._setActive(false);
+      }
+    });
   }
 
   private _buildEventScopeBySelection(name: EventName) {
