@@ -25,7 +25,7 @@ import {
 } from '@blocksuite/global/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
 
-import { isConnectorWithLabel } from '../connector-manager.js';
+import { isConnectorWithLabel } from '../connector-manager';
 import {
   DEFAULT_ARROW_SIZE,
   getArrowOptions,
@@ -33,7 +33,7 @@ import {
   renderCircle,
   renderDiamond,
   renderTriangle,
-} from './utils.js';
+} from './utils';
 
 export const connector: ElementRenderer<
   ConnectorElementModel | LocalConnectorElementModel
