@@ -55,7 +55,7 @@ export class ContextSession implements AsyncDisposable {
     return this.config.docs.map(d => ({ ...d }));
   }
 
-  get files(): ContextFile[] {
+  get files(): Required<ContextFile>[] {
     return this.config.files.map(f => this.fulfillFile(f));
   }
 
