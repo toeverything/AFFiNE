@@ -33,7 +33,11 @@ export const buildBlobContentGetter = (
       return;
     }
 
-    const content = await context?.getFileContent(blobId, chunk);
+    const [file, blob] = await Promise.all([
+      context?.getFileContent(blobId, chunk),
+      context?.getBlobContent(blobId, chunk),
+    ]);
+    const content = file?.trim() || blob?.trim();
     if (!content) {
       return;
     }

@@ -6,13 +6,14 @@ import { Prisma, PrismaClient } from '@prisma/client';
 
 import { PaginationInput } from '../base';
 import { BaseModel } from './base';
-import type {
-  BlobChunkSimilarity,
-  CopilotWorkspaceFile,
-  CopilotWorkspaceFileMetadata,
-  Embedding,
-  FileChunkSimilarity,
-  IgnoredDoc,
+import {
+  type BlobChunkSimilarity,
+  clearEmbeddingContent,
+  type CopilotWorkspaceFile,
+  type CopilotWorkspaceFileMetadata,
+  type Embedding,
+  type FileChunkSimilarity,
+  type IgnoredDoc,
 } from './common';
 
 @Injectable()
@@ -411,6 +412,33 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
       LIMIT ${topK};
     `;
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
+  }
+
+  async getBlobContent(
+    workspaceId: string,
+    blobId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const blob = await this.db.aiWorkspaceBlobEmbedding.findMany({
+      where: { workspaceId, blobId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return blob?.map(f => clearEmbeddingContent(f.content)).join('\n');
+  }
+
+  async getBlobChunkSizes(workspaceId: string, blobIds: string[]) {
+    const sizes = await this.db.aiWorkspaceBlobEmbedding.groupBy({
+      by: ['blobId'],
+      _count: { chunk: true },
+      where: { workspaceId, blobId: { in: blobIds } },
+    });
+    return sizes.reduce((acc, cur) => {
+      if (cur._count.chunk) {
+        acc.set(cur.blobId, cur._count.chunk);
+      }
+      return acc;
+    }, new Map<string, number>());
   }
 
   @Transactional()

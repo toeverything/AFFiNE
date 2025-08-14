@@ -208,8 +208,14 @@ export class CopilotController implements BeforeApplicationShutdown {
 
     const context = await this.context.getBySessionId(sessionId);
     const contextParams =
-      Array.isArray(context?.files) && context.files.length > 0
-        ? { contextFiles: context.files }
+      (Array.isArray(context?.files) && context.files.length > 0) ||
+      (Array.isArray(context?.blobs) && context.blobs.length > 0)
+        ? {
+            contextFiles: [
+              ...context.files,
+              ...(await context.getBlobMetadata()),
+            ],
+          }
         : {};
     const lastParams = latestMessage
       ? {
