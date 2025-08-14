@@ -19,7 +19,7 @@ export const createCodeArtifactTool = (
   return tool({
     description:
       'Generate a single-file HTML snippet (with inline <style> and <script>) that accomplishes the requested functionality. The final HTML should be runnable when saved as an .html file and opened in a browser. Do NOT reference external resources (CSS, JS, images) except through data URIs.',
-    parameters: z.object({
+    inputSchema: z.object({
       /**
        * The <title> text that will appear in the browser tab.
        */

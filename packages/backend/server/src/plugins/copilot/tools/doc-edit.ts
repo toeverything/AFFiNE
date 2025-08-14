@@ -6,6 +6,25 @@ import { AccessController } from '../../../core/permission';
 import { type PromptService } from '../prompt';
 import type { CopilotChatOptions, CopilotProviderFactory } from '../providers';
 
+const CodeEditSchema = z
+  .array(
+    z.object({
+      op: z
+        .string()
+        .describe(
+          'A short description of the change, such as "Bold intro name"'
+        ),
+      updates: z
+        .string()
+        .describe(
+          'Markdown block fragments that represent the change, including the block_id and type'
+        ),
+    })
+  )
+  .describe(
+    'An array of independent semantic changes to apply to the document.'
+  );
+
 export const buildContentGetter = (ac: AccessController, doc: DocReader) => {
   const getDocContent = async (options: CopilotChatOptions, docId?: string) => {
     if (!options || !docId || !options.user || !options.workspace) {
@@ -129,7 +148,7 @@ Example response:
 You should specify the following arguments before the others: [doc_id], [origin_content]
 
     `,
-    parameters: z.object({
+    inputSchema: z.object({
       doc_id: z
         .string()
         .describe(
@@ -150,33 +169,13 @@ You should specify the following arguments before the others: [doc_id], [origin_
           'A short, first-person description of the intended edit, clearly summarizing what I will change. For example: "I will translate the steps into English and delete the paragraph explaining the delay." This helps the downstream system understand the purpose of the changes.'
         ),
 
-      code_edit: z.preprocess(
-        val => {
-          // BACKGROUND: LLM sometimes returns a JSON string instead of an array.
-          if (typeof val === 'string') {
-            return JSON.parse(val);
-          }
-          return val;
-        },
-        z
-          .array(
-            z.object({
-              op: z
-                .string()
-                .describe(
-                  'A short description of the change, such as "Bold intro name"'
-                ),
-              updates: z
-                .string()
-                .describe(
-                  'Markdown block fragments that represent the change, including the block_id and type'
-                ),
-            })
-          )
-          .describe(
-            'An array of independent semantic changes to apply to the document.'
-          )
-      ),
+      code_edit: z.preprocess(val => {
+        // BACKGROUND: LLM sometimes returns a JSON string instead of an array.
+        if (typeof val === 'string') {
+          return JSON.parse(val);
+        }
+        return val;
+      }, CodeEditSchema) as unknown as typeof CodeEditSchema,
     }),
     execute: async ({ doc_id, origin_content, code_edit }) => {
       try {

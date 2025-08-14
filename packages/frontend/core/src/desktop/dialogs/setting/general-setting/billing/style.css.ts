@@ -23,7 +23,6 @@ export const currentPlan = style({
 });
 export const planAction = style({
   width: 'auto !important',
-  marginTop: '8px',
 });
 export const planPrice = style({
   fontSize: cssVar('fontH6'),
@@ -35,6 +34,12 @@ export const billingFrequency = style({
 export const paymentMethod = style({
   marginTop: '24px',
 });
+export const planActionContainer = style({
+  display: 'flex',
+  gap: '12px',
+  marginTop: '12px',
+});
+
 globalStyle('.dangerous-setting .name', {
   color: cssVarV2('status/error'),
 });
@@ -129,7 +134,4 @@ export const cardLabelIcon = style({
   width: '14px',
   height: '14px',
 });
-export const manageMentInCard = style({
-  marginTop: '8px',
-  marginLeft: '12px',
-});
+export const managementInCard = style({});

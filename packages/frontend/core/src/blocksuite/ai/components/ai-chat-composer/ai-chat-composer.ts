@@ -427,9 +427,9 @@ export class AIChatComposer extends SignalWatcher(
       html,
       state: 'finished',
     };
-    await this.addChip(chip, true);
-    await Promise.all(
-      docs.map(docId =>
+    await Promise.all([
+      this.addChip(chip, true),
+      ...docs.map(docId =>
         this.addChip(
           {
             docId,
@@ -437,10 +437,8 @@ export class AIChatComposer extends SignalWatcher(
           },
           true
         )
-      )
-    );
-    await Promise.all(
-      attachments.map(attachment =>
+      ),
+      ...attachments.map(attachment =>
         this.addChip(
           {
             sourceId: attachment.sourceId,
@@ -449,8 +447,8 @@ export class AIChatComposer extends SignalWatcher(
           },
           true
         )
-      )
-    );
+      ),
+    ]);
   };
 
   private readonly removeSelectedContextChip = async () => {

@@ -11,6 +11,8 @@ import {
   type GfxModel,
   MouseButton,
 } from '@blocksuite/affine/std/gfx';
+import { on } from '@blocksuite/affine-shared/utils';
+import { isEqual } from 'lodash-es';
 import { Subject } from 'rxjs';
 
 import {
@@ -59,24 +61,24 @@ export class CopilotTool extends BaseTool {
     return this.gfx.selection.selectedElements;
   }
 
-  private _initDragState(e: PointerEventState) {
+  private initDragState(e: PointerEventState) {
     this.dragStartPoint = this.gfx.viewport.toModelCoord(e.x, e.y);
     this.dragLastPoint = this.dragStartPoint;
   }
 
-  abort() {
+  private clearDragState() {
     this._dragging = false;
     this.dragStartPoint = [0, 0];
     this.dragLastPoint = [0, 0];
+  }
+
+  abort() {
+    this.clearDragState();
     this.gfx.tool.setTool(DefaultTool);
   }
 
   override activate(): void {
     this.gfx.viewport.locked = true;
-
-    if (this.gfx.selection.lastSurfaceSelections) {
-      this.gfx.selection.set(this.gfx.selection.lastSurfaceSelections);
-    }
   }
 
   override deactivate(): void {
@@ -116,20 +118,25 @@ export class CopilotTool extends BaseTool {
   override dragStart(e: PointerEventState): void {
     if (this.processing) return;
 
-    this._initDragState(e);
+    this.initDragState(e);
     this._dragging = true;
     this.draggingAreaUpdated.next();
   }
 
   override mounted(): void {
-    this.addHook('pointerDown', evt => {
-      const useCopilot =
-        evt.raw.button === MouseButton.SECONDARY ||
-        (evt.raw.button === MouseButton.MAIN && IS_MAC
-          ? evt.raw.metaKey
-          : evt.raw.ctrlKey);
+    this.addHook('pointerDown', downEvent => {
+      const dispose = on(document, 'pointerup', upEvent => {
+        if (
+          this.isUseCopilot(upEvent) &&
+          isEqual(this.dragStartPoint, this.dragLastPoint)
+        ) {
+          this.abort();
+        }
+        dispose();
+      });
 
-      if (useCopilot) {
+      if (this.isUseCopilot(downEvent.raw)) {
+        this.clearDragState();
         this.controller.setTool(CopilotTool);
         return false;
       }
@@ -145,6 +152,15 @@ export class CopilotTool extends BaseTool {
     }
 
     this.gfx.tool.setTool(DefaultTool);
+  }
+
+  private isUseCopilot(event: PointerEvent) {
+    return (
+      event.button === MouseButton.SECONDARY ||
+      (event.button === MouseButton.MAIN && IS_MAC
+        ? event.metaKey
+        : event.ctrlKey)
+    );
   }
 
   updateDragPointsWith(selectedElements: GfxModel[], padding = 0) {
