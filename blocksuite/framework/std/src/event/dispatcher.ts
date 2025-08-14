@@ -228,8 +228,13 @@ export class UIEventDispatcher extends LifeCycleWatcher {
     });
     // When the selection is outside the host, the event dispatcher should be inactive
     this.disposables.addFromEvent(document, 'selectionchange', () => {
-      const domSelection = document.getSelection();
-      if (domSelection && !this.host.contains(domSelection.anchorNode)) {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const { anchorNode, focusNode } = sel;
+      if (
+        (anchorNode && !this.host.contains(anchorNode)) ||
+        (focusNode && !this.host.contains(focusNode))
+      ) {
         this._setActive(false);
       }
     });
