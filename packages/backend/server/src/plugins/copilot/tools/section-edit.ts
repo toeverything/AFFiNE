@@ -15,7 +15,7 @@ export const createSectionEditTool = (
   return tool({
     description:
       'Intelligently edit and modify a specific section of a document based on user instructions, with full document context awareness. This tool can refine, rewrite, translate, restructure, or enhance any part of markdown content while preserving formatting, maintaining contextual coherence, and ensuring consistency with the entire document. Perfect for targeted improvements that consider the broader document context.',
-    parameters: z.object({
+    inputSchema: z.object({
       section: z
         .string()
         .describe(

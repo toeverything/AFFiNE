@@ -89,13 +89,13 @@ export const ProPlanCard = ({
                 }}
               />
               <CloudExpirationInfo />
+              <PlanAction
+                plan={currentPlan}
+                subscriptionStatus={proSubscription?.status}
+                gotoPlansSetting={gotoCloudPlansSetting}
+              />
             </>
           }
-        />
-        <PlanAction
-          plan={currentPlan}
-          subscriptionStatus={proSubscription?.status}
-          gotoPlansSetting={gotoCloudPlansSetting}
         />
       </div>
       <p className={styles.planPrice}>
@@ -165,10 +165,14 @@ const PlanAction = ({
   }
 
   return (
-    <>
+    <div className={styles.planActionContainer}>
       <Button
         className={styles.planAction}
-        variant="primary"
+        variant={
+          subscriptionStatus === SubscriptionStatus.PastDue
+            ? 'secondary'
+            : 'primary'
+        }
         onClick={gotoPlansSetting}
       >
         {plan === SubscriptionPlan.Pro
@@ -178,10 +182,10 @@ const PlanAction = ({
       {subscriptionStatus === SubscriptionStatus.PastDue ? (
         <PaymentMethodUpdater
           inCardView
-          className={styles.manageMentInCard}
+          className={styles.managementInCard}
           variant="primary"
         />
       ) : null}
-    </>
+    </div>
   );
 };

@@ -5,6 +5,7 @@ import { ProjectRoot } from '@affine-tools/utils/path';
 import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
 import { EventBus, JobQueue } from '../base';
@@ -1340,16 +1341,16 @@ test('TextStreamParser should format different types of chunks correctly', t => 
     textDelta: {
       chunk: {
         type: 'text-delta' as const,
-        textDelta: 'Hello world',
-      } as any,
+        text: 'Hello world',
+      },
       expected: 'Hello world',
       description: 'should format text-delta correctly',
     },
     reasoning: {
       chunk: {
-        type: 'reasoning' as const,
-        textDelta: 'I need to think about this',
-      } as any,
+        type: 'reasoning-delta' as const,
+        text: 'I need to think about this',
+      },
       expected: '\n> [!]\n> I need to think about this',
       description: 'should format reasoning as callout',
     },
@@ -1358,8 +1359,8 @@ test('TextStreamParser should format different types of chunks correctly', t => 
         type: 'tool-call' as const,
         toolName: 'web_search_exa' as const,
         toolCallId: 'test-id-1',
-        args: { query: 'test query', mode: 'AUTO' as const },
-      } as any,
+        input: { query: 'test query', mode: 'AUTO' as const },
+      },
       expected: '\n> [!]\n> \n> Searching the web "test query"\n> ',
       description: 'should format web search tool call correctly',
     },
@@ -1368,8 +1369,8 @@ test('TextStreamParser should format different types of chunks correctly', t => 
         type: 'tool-call' as const,
         toolName: 'web_crawl_exa' as const,
         toolCallId: 'test-id-2',
-        args: { url: 'https://example.com' },
-      } as any,
+        input: { url: 'https://example.com' },
+      },
       expected: '\n> [!]\n> \n> Crawling the web "https://example.com"\n> ',
       description: 'should format web crawl tool call correctly',
     },
@@ -1378,8 +1379,8 @@ test('TextStreamParser should format different types of chunks correctly', t => 
         type: 'tool-result' as const,
         toolName: 'web_search_exa' as const,
         toolCallId: 'test-id-1',
-        args: { query: 'test query', mode: 'AUTO' as const },
-        result: [
+        input: { query: 'test query', mode: 'AUTO' as const },
+        output: [
           {
             title: 'Test Title',
             url: 'https://test.com',
@@ -1406,7 +1407,7 @@ test('TextStreamParser should format different types of chunks correctly', t => 
       chunk: {
         type: 'error' as const,
         error: { type: 'testError', message: 'Test error message' },
-      } as any,
+      },
       errorMessage: 'Test error message',
       description: 'should throw error for error chunks',
     },
@@ -1436,78 +1437,85 @@ test('TextStreamParser should process a sequence of message chunks', t => {
     chunks: [
       // Reasoning chunks
       {
-        type: 'reasoning' as const,
-        textDelta: 'The user is asking about',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: 'The user is asking about',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta: ' recent advances in quantum computing',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' recent advances in quantum computing',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta: ' and how it might impact',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' and how it might impact',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta: ' cryptography and data security.',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' cryptography and data security.',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta:
-          ' I should provide information on quantum supremacy achievements',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' I should provide information on quantum supremacy achievements',
+      },
 
       // Text delta
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta:
-          'Let me search for the latest breakthroughs in quantum computing and their ',
-      } as any,
+        text: 'Let me search for the latest breakthroughs in quantum computing and their ',
+      },
 
       // Tool call
       {
         type: 'tool-call' as const,
         toolCallId: 'toolu_01ABCxyz123456789',
         toolName: 'web_search_exa' as const,
-        args: {
+        input: {
           query: 'latest quantum computing breakthroughs cryptography impact',
         },
-      } as any,
+      },
 
       // Tool result
       {
         type: 'tool-result' as const,
         toolCallId: 'toolu_01ABCxyz123456789',
         toolName: 'web_search_exa' as const,
-        args: {
+        input: {
           query: 'latest quantum computing breakthroughs cryptography impact',
         },
-        result: [
+        output: [
           {
             title: 'IBM Unveils 1000-Qubit Quantum Processor',
             url: 'https://example.com/tech/quantum-computing-milestone',
           },
         ],
-      } as any,
+      },
 
       // More text deltas
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta: 'implications for security.',
-      } as any,
+        text: 'implications for security.',
+      },
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta: '\n\nQuantum computing has made ',
-      } as any,
+        text: '\n\nQuantum computing has made ',
+      },
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta: 'remarkable progress in the past year. ',
-      } as any,
+        text: 'remarkable progress in the past year. ',
+      },
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta:
-          'The development of more stable qubits has accelerated research significantly.',
-      } as any,
+        text: 'The development of more stable qubits has accelerated research significantly.',
+      },
     ],
     expected:
       '\n> [!]\n> The user is asking about recent advances in quantum computing and how it might impact cryptography and data security. I should provide information on quantum supremacy achievements\n\nLet me search for the latest breakthroughs in quantum computing and their \n> [!]\n> \n> Searching the web "latest quantum computing breakthroughs cryptography impact"\n> \n> \n> \n> [IBM Unveils 1000-Qubit Quantum Processor](https://example.com/tech/quantum-computing-milestone)\n> \n> \n> \n\nimplications for security.\n\nQuantum computing has made remarkable progress in the past year. The development of more stable qubits has accelerated research significantly.',

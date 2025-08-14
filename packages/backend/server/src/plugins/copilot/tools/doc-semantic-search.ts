@@ -3,11 +3,14 @@ import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
-import type { ChunkSimilarity, Models } from '../../../models';
+import {
+  type ChunkSimilarity,
+  clearEmbeddingChunk,
+  type Models,
+} from '../../../models';
 import type { CopilotContextService } from '../context';
 import type { ContextSession } from '../context/session';
 import type { CopilotChatOptions } from '../providers';
-import { clearEmbeddingChunk } from '../utils';
 import { toolError } from './error';
 
 export const buildDocSearchGetter = (
@@ -101,7 +104,7 @@ export const createDocSemanticSearchTool = (
   return tool({
     description:
       'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z
         .string()
         .describe(

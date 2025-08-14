@@ -52,7 +52,7 @@ export const createBlobReadTool = (
   return tool({
     description:
       'Return the content and basic metadata of a single attachment identified by blobId; more inclined to use search tools rather than this tool.',
-    parameters: z.object({
+    inputSchema: z.object({
       blob_id: z.string().describe('The target blob in context to read'),
       chunk: z
         .number()

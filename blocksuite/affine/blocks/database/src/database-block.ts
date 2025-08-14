@@ -372,6 +372,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
   handleMobileEditing() {
     if (!IS_MOBILE) return;
 
+    let notifyClosed = true;
     const handler = () => {
       if (
         !this.std
@@ -379,7 +380,8 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
           .getFlag('enable_mobile_database_editing')
       ) {
         const notification = this.std.getOptional(NotificationProvider);
-        if (notification) {
+        if (notification && notifyClosed) {
+          notifyClosed = false;
           notification.notify({
             title: html`<div
               style=${styleMap({
@@ -390,16 +392,15 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
               experimental features, or edit it in desktop mode.
             </div>`,
             accent: 'warning',
+            onClose: () => {
+              notifyClosed = true;
+            },
           });
         }
-        this.removeEventListener('click', handler);
       }
     };
 
-    this.addEventListener('click', handler);
-    this.disposables.add(() => {
-      this.removeEventListener('click', handler);
-    });
+    this.disposables.addFromEvent(this, 'click', handler);
   }
 
   private readonly dataViewRootLogic = lazy(

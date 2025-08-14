@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 import {
+  clearEmbeddingContent,
   ContextBlob,
   ContextConfigSchema,
   ContextDoc,
@@ -13,13 +14,12 @@ import {
   CopilotContext,
   DocChunkSimilarity,
   Embedding,
+  EMBEDDING_DIMENSIONS,
   FileChunkSimilarity,
   MinimalContextConfigSchema,
 } from './common/copilot';
 
 type UpdateCopilotContextInput = Pick<CopilotContext, 'config'>;
-
-export const EMBEDDING_DIMENSIONS = 1024;
 
 /**
  * Copilot Job Model
@@ -215,8 +215,9 @@ export class CopilotContextModel extends BaseModel {
       select: { content: true },
       orderBy: { chunk: 'asc' },
     });
-    return file?.map(f => f.content).join('\n');
+    return file?.map(f => clearEmbeddingContent(f.content)).join('\n');
   }
+
   async insertFileEmbedding(
     contextId: string,
     fileId: string,
@@ -263,6 +264,19 @@ export class CopilotContextModel extends BaseModel {
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
   }
 
+  async getWorkspaceContent(
+    workspaceId: string,
+    docId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = await this.db.aiWorkspaceEmbedding.findMany({
+      where: { workspaceId, docId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return file?.map(f => clearEmbeddingContent(f.content)).join('\n');
+  }
+
   async insertWorkspaceEmbedding(
     workspaceId: string,
     docId: string,
@@ -287,6 +301,7 @@ export class CopilotContextModel extends BaseModel {
       VALUES ${values}
       ON CONFLICT (workspace_id, doc_id, chunk)
       DO UPDATE SET
+        content = EXCLUDED.content,
         embedding = EXCLUDED.embedding,
         updated_at = excluded.updated_at;
     `;
