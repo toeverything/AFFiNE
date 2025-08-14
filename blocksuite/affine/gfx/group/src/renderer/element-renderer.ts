@@ -6,7 +6,7 @@ import {
 import type { GroupElementModel } from '@blocksuite/affine-model';
 import { Bound } from '@blocksuite/global/gfx';
 
-import { titleRenderParams } from './utils.js';
+import { titleRenderParams } from './utils';
 
 export const group: ElementRenderer<GroupElementModel> = (
   model,
