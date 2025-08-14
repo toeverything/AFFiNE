@@ -22,8 +22,6 @@ export const GroupDomRendererExtension = DomElementRendererExtension(
     domElement.style.outlineWidth = '';
     domElement.style.outlineStyle = '';
 
-    console.log('render');
-
     const elements = renderer.provider.selectedElements?.() || [];
 
     const renderTitle = () => {
