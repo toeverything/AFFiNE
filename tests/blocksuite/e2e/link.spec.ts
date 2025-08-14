@@ -241,6 +241,7 @@ test('should keyboard work in link popover', async ({ page }) => {
   const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
   const linkLocator = page.locator(`text="${linkText}"`);
 
+  await focusRichText(page);
   // hover link
   await linkLocator.hover();
   // wait for popover delay open
@@ -294,6 +295,7 @@ test('link bar should not be appear when the range is collapsed', async ({
   // create auto line-break in span element
   await type(page, 'd'.repeat(67));
   await page.mouse.click(1, 1);
+  await focusRichText(page);
   await waitNextFrame(page);
   await dragBetweenIndices(page, [1, 1], [1, 66]);
   await pressCreateLinkShortCut(page);
