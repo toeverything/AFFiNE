@@ -13,7 +13,7 @@ import {
   GROUP_TITLE_FONT_SIZE,
   GROUP_TITLE_OFFSET,
   GROUP_TITLE_PADDING,
-} from './consts.js';
+} from './consts';
 
 export function titleRenderParams(group: GroupElementModel, zoom: number) {
   let text = group.title.toString().trim();

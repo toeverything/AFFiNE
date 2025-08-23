@@ -57,7 +57,7 @@ defineModuleConfig('copilot', {
         rerank: 'gpt-4.1',
         coding: 'claude-sonnet-4@20250514',
         complex_text_generation: 'gpt-4o-2024-08-06',
-        quick_decision_making: 'gpt-4.1-mini',
+        quick_decision_making: 'gpt-5-mini',
         quick_text_generation: 'gemini-2.5-flash',
         polish_and_summarize: 'gemini-2.5-flash',
       },

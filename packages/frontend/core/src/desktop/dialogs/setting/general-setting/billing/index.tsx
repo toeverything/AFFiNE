@@ -4,7 +4,6 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { SubscriptionStatus } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -80,7 +79,7 @@ const SubscriptionSettings = ({
   return (
     <div className={styles.subscription}>
       <AIPlanCard onClick={gotoAiPlanSetting} />
-      {/* loaded  */}
+
       {proSubscription !== null ? (
         isBeliever ? (
           <BelieverIdentifier onOpenPlans={gotoCloudPlansSetting} />
@@ -94,9 +93,7 @@ const SubscriptionSettings = ({
       <TypeformLink />
 
       {proSubscription !== null ? (
-        proSubscription?.status === SubscriptionStatus.Active && (
-          <PaymentMethod />
-        )
+        proSubscription && <PaymentMethod />
       ) : (
         <SubscriptionSettingSkeleton />
       )}

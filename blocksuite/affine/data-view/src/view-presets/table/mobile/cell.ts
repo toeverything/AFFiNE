@@ -105,13 +105,13 @@ export class MobileTableCell extends SignalWatcher(
     this.disposables.add(
       effect(() => {
         const isEditing = this.isSelectionEditing$.value;
-        if (isEditing) {
+        if (isEditing && !this.isEditing$.peek()) {
           this.isEditing$.value = true;
           const cell = this._cell.value;
           requestAnimationFrame(() => {
             cell?.afterEnterEditingMode();
           });
-        } else {
+        } else if (!isEditing && this.isEditing$.peek()) {
           this._cell.value?.beforeExitEditingMode();
           this.isEditing$.value = false;
         }

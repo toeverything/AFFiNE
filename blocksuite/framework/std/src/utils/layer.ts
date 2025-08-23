@@ -12,11 +12,7 @@ import type { SurfaceBlockModel } from '../gfx/model/surface/surface-model.js';
 
 export function getLayerEndZIndex(layers: Layer[], layerIndex: number) {
   const layer = layers[layerIndex];
-  return layer
-    ? layer.type === 'block'
-      ? layer.zIndex + layer.elements.length - 1
-      : layer.zIndex
-    : 0;
+  return layer ? layer.zIndex + layer.elements.length - 1 : 0;
 }
 
 export function updateLayersZIndex(layers: Layer[], startIdx: number) {
@@ -27,7 +23,7 @@ export function updateLayersZIndex(layers: Layer[], startIdx: number) {
     const curLayer = layers[i];
 
     curLayer.zIndex = curIndex;
-    curIndex += curLayer.type === 'block' ? curLayer.elements.length : 1;
+    curIndex += curLayer.elements.length;
   }
 }
 

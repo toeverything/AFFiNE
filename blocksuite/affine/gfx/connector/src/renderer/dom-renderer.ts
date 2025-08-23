@@ -1,14 +1,18 @@
-import type { DomRenderer } from '@blocksuite/affine-block-surface';
+import {
+  DomElementRendererExtension,
+  type DomRenderer,
+} from '@blocksuite/affine-block-surface';
 import {
   type ConnectorElementModel,
   ConnectorMode,
   DefaultTheme,
+  type LocalConnectorElementModel,
   type PointStyle,
 } from '@blocksuite/affine-model';
 import { PointLocation, SVGPathBuilder } from '@blocksuite/global/gfx';
 
-import { isConnectorWithLabel } from '../../connector-manager.js';
-import { DEFAULT_ARROW_SIZE } from '../utils.js';
+import { isConnectorWithLabel } from '../connector-manager';
+import { DEFAULT_ARROW_SIZE } from './utils';
 
 interface PathBounds {
   minX: number;
@@ -221,8 +225,8 @@ function renderConnectorLabel(
  * @param element - The HTMLElement to apply the connector's styles to.
  * @param renderer - The main DOMRenderer instance, providing access to viewport and color utilities.
  */
-export const connectorDomRenderer = (
-  model: ConnectorElementModel,
+export const connectorBaseDomRenderer = (
+  model: ConnectorElementModel | LocalConnectorElementModel,
   element: HTMLElement,
   renderer: DomRenderer
 ): void => {
@@ -358,10 +362,21 @@ export const connectorDomRenderer = (
   element.style.height = `${model.h * zoom}px`;
   element.style.overflow = 'visible';
   element.style.pointerEvents = 'none';
-
-  // Set z-index for layering
-  element.style.zIndex = renderer.layerManager.getZIndex(model).toString();
-
-  // Render label if present
-  renderConnectorLabel(model, element, renderer, zoom);
 };
+
+export const connectorDomRenderer = (
+  model: ConnectorElementModel,
+  element: HTMLElement,
+  renderer: DomRenderer
+): void => {
+  connectorBaseDomRenderer(model, element, renderer);
+  renderConnectorLabel(model, element, renderer, renderer.viewport.zoom);
+};
+
+/**
+ * Extension to register the DOM-based renderer for 'connector' elements.
+ */
+export const ConnectorDomRendererExtension = DomElementRendererExtension(
+  'connector',
+  connectorDomRenderer
+);

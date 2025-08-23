@@ -614,6 +614,7 @@ export class AIChatBlockPeekView extends LitElement {
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${notificationService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .onChatSuccess=${this._onChatSuccess}
         .trackOptions=${{
           where: 'ai-chat-block',

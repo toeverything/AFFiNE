@@ -33,7 +33,11 @@ export const buildBlobContentGetter = (
       return;
     }
 
-    const content = await context?.getFileContent(blobId, chunk);
+    const [file, blob] = await Promise.all([
+      context?.getFileContent(blobId, chunk),
+      context?.getBlobContent(blobId, chunk),
+    ]);
+    const content = file?.trim() || blob?.trim();
     if (!content) {
       return;
     }
@@ -52,7 +56,7 @@ export const createBlobReadTool = (
   return tool({
     description:
       'Return the content and basic metadata of a single attachment identified by blobId; more inclined to use search tools rather than this tool.',
-    parameters: z.object({
+    inputSchema: z.object({
       blob_id: z.string().describe('The target blob in context to read'),
       chunk: z
         .number()

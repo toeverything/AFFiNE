@@ -8,7 +8,7 @@ import { toolError } from './error';
 export const createExaCrawlTool = (config: Config) => {
   return tool({
     description: 'Crawl the web url for information',
-    parameters: z.object({
+    inputSchema: z.object({
       url: z
         .string()
         .describe('The URL to crawl (including http:// or https://)'),

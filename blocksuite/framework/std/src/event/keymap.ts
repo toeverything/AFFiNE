@@ -103,25 +103,3 @@ export function bindKeymap(
     return false;
   };
 }
-
-// In Android, the keypress event  dose not contain
-// the information about what key is pressed. See
-// https://stackoverflow.com/a/68188679
-// https://stackoverflow.com/a/66724830
-export function androidBindKeymapPatch(
-  bindings: Record<string, UIEventHandler>
-): UIEventHandler {
-  return ctx => {
-    const event = ctx.get('defaultState').event;
-    if (!(event instanceof InputEvent)) return;
-
-    if (
-      event.inputType === 'deleteContentBackward' &&
-      'Backspace' in bindings
-    ) {
-      return bindings['Backspace'](ctx);
-    }
-
-    return false;
-  };
-}

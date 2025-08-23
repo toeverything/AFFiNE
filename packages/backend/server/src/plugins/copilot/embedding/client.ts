@@ -7,7 +7,11 @@ import {
   CopilotProviderNotSupported,
 } from '../../../base';
 import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
-import { ChunkSimilarity, Embedding } from '../../../models';
+import {
+  ChunkSimilarity,
+  Embedding,
+  EMBEDDING_DIMENSIONS,
+} from '../../../models';
 import { PromptService } from '../prompt';
 import {
   type CopilotProvider,
@@ -16,11 +20,7 @@ import {
   ModelInputType,
   ModelOutputType,
 } from '../providers';
-import {
-  EMBEDDING_DIMENSIONS,
-  EmbeddingClient,
-  type ReRankResult,
-} from './types';
+import { EmbeddingClient, type ReRankResult } from './types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const RERANK_PROMPT = 'Rerank results';

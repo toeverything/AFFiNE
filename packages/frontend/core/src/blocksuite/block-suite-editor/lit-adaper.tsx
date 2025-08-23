@@ -115,7 +115,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       .mobile(framework)
       .electron(framework)
       .linkPreview(framework)
-      .codeBlockHtmlPreview(framework)
+      .codeBlockPreview(framework)
       .comment(enableComment, framework).value;
 
     if (BUILD_CONFIG.isMobileEdition) {

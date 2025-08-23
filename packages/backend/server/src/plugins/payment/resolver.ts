@@ -461,7 +461,11 @@ export class UserSubscriptionResolver {
       where: {
         targetId: user.id,
         status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
         },
       },
     });

@@ -1,4 +1,3 @@
-import { IS_IOS } from '@blocksuite/global/env';
 import { css } from '@emotion/css';
 import { cssVarV2 } from '@toeverything/theme/v2';
 
@@ -6,12 +5,6 @@ export const mobileTableViewWrapper = css({
   position: 'relative',
   width: '100%',
   paddingBottom: '4px',
-  /**
-   * Disable horizontal scrolling to prevent crashes on iOS Safari
-   * See https://github.com/toeverything/AFFiNE/pull/12203
-   * and https://github.com/toeverything/blocksuite/pull/8784
-   */
-  overflowX: IS_IOS ? 'hidden' : undefined,
   overflowY: 'hidden',
 });
 
