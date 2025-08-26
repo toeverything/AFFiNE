@@ -1,3 +1,5 @@
+import { GoogleVertexProviderSettings } from '@ai-sdk/google-vertex';
+import { GoogleVertexAnthropicProviderSettings } from '@ai-sdk/google-vertex/anthropic';
 import { Logger } from '@nestjs/common';
 import {
   CoreAssistantMessage,
@@ -6,16 +8,11 @@ import {
   ImagePart,
   TextPart,
   TextStreamPart,
-  ToolSet,
 } from 'ai';
-import { ZodType } from 'zod';
+import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
+import z, { ZodType } from 'zod';
 
-import {
-  createDocKeywordSearchTool,
-  createDocSemanticSearchTool,
-  createExaCrawlTool,
-  createExaSearchTool,
-} from '../tools';
+import { CustomAITools } from '../tools';
 import { PromptMessage, StreamObject } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
@@ -97,24 +94,24 @@ export async function chatToGPTMessage(
 
       if (withAttachment) {
         for (let attachment of attachments) {
-          let mimeType: string;
+          let mediaType: string;
           if (typeof attachment === 'string') {
-            mimeType =
+            mediaType =
               typeof mimetype === 'string'
                 ? mimetype
                 : await inferMimeType(attachment);
           } else {
-            ({ attachment, mimeType } = attachment);
+            ({ attachment, mimeType: mediaType } = attachment);
           }
           if (SIMPLE_IMAGE_URL_REGEX.test(attachment)) {
             const data =
               attachment.startsWith('data:') || useBase64Attachment
                 ? await fetch(attachment).then(r => r.arrayBuffer())
                 : new URL(attachment);
-            if (mimeType.startsWith('image/')) {
-              contents.push({ type: 'image', image: data, mimeType });
+            if (mediaType.startsWith('image/')) {
+              contents.push({ type: 'image', image: data, mediaType });
             } else {
-              contents.push({ type: 'file' as const, data, mimeType });
+              contents.push({ type: 'file' as const, data, mediaType });
             }
           }
         }
@@ -381,31 +378,28 @@ export class CitationParser {
   }
 }
 
-export interface CustomAITools extends ToolSet {
-  doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
-  doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
-  web_search_exa: ReturnType<typeof createExaSearchTool>;
-  web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
-}
-
 type ChunkType = TextStreamPart<CustomAITools>['type'];
 
-export function parseUnknownError(error: unknown) {
+export function toError(error: unknown): Error {
   if (typeof error === 'string') {
-    throw new Error(error);
+    return new Error(error);
   } else if (error instanceof Error) {
-    throw error;
+    return error;
   } else if (
     typeof error === 'object' &&
     error !== null &&
     'message' in error
   ) {
-    throw new Error(String(error.message));
+    return new Error(String(error.message));
   } else {
-    throw new Error(JSON.stringify(error));
+    return new Error(JSON.stringify(error));
   }
 }
 
+type DocEditFootnote = {
+  intent: string;
+  result: string;
+};
 export class TextStreamParser {
   private readonly logger = new Logger(TextStreamParser.name);
   private readonly CALLOUT_PREFIX = '\n[!]\n';
@@ -414,6 +408,8 @@ export class TextStreamParser {
 
   private prefix: string | null = this.CALLOUT_PREFIX;
 
+  private readonly docEditFootnotes: DocEditFootnote[] = [];
+
   public parse(chunk: TextStreamPart<CustomAITools>) {
     let result = '';
     switch (chunk.type) {
@@ -421,12 +417,12 @@ export class TextStreamParser {
         if (!this.prefix) {
           this.resetPrefix();
         }
-        result = chunk.textDelta;
+        result = chunk.text;
         result = this.addNewline(chunk.type, result);
         break;
       }
-      case 'reasoning': {
-        result = chunk.textDelta;
+      case 'reasoning-delta': {
+        result = chunk.text;
         result = this.addPrefix(result);
         result = this.markAsCallout(result);
         break;
@@ -437,16 +433,35 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
+          case 'conversation_summary': {
+            result += `\nSummarizing context\n`;
+            break;
+          }
           case 'web_search_exa': {
-            result += `\nSearching the web "${chunk.args.query}"\n`;
+            result += `\nSearching the web "${chunk.input.query}"\n`;
             break;
           }
           case 'web_crawl_exa': {
-            result += `\nCrawling the web "${chunk.args.url}"\n`;
+            result += `\nCrawling the web "${chunk.input.url}"\n`;
             break;
           }
           case 'doc_keyword_search': {
-            result += `\nSearching the keyword "${chunk.args.query}"\n`;
+            result += `\nSearching the keyword "${chunk.input.query}"\n`;
+            break;
+          }
+          case 'doc_read': {
+            result += `\nReading the doc "${chunk.input.doc_id}"\n`;
+            break;
+          }
+          case 'doc_compose': {
+            result += `\nWriting document "${chunk.input.title}"\n`;
+            break;
+          }
+          case 'doc_edit': {
+            this.docEditFootnotes.push({
+              intent: chunk.input.instructions,
+              result: '',
+            });
             break;
           }
         }
@@ -459,22 +474,56 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
+          case 'doc_edit': {
+            const array =
+              chunk.output && typeof chunk.output === 'object'
+                ? chunk.output.result
+                : undefined;
+            if (Array.isArray(array)) {
+              result += array
+                .map(item => {
+                  return `\n${item.changedContent}\n`;
+                })
+                .join('');
+              this.docEditFootnotes[this.docEditFootnotes.length - 1].result =
+                result;
+            } else {
+              this.docEditFootnotes.pop();
+            }
+            break;
+          }
           case 'doc_semantic_search': {
-            if (Array.isArray(chunk.result)) {
-              result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+            const output = chunk.output;
+            if (Array.isArray(output)) {
+              result += `\nFound ${output.length} document${output.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
+            } else if (typeof output === 'string') {
+              result += `\n${output}\n`;
+            } else {
+              this.logger.warn(
+                `Unexpected result type for doc_semantic_search: ${output?.message || 'Unknown error'}`
+              );
             }
             break;
           }
           case 'doc_keyword_search': {
-            if (Array.isArray(chunk.result)) {
-              result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
-              result += `\n${this.getKeywordSearchLinks(chunk.result)}\n`;
+            const output = chunk.output;
+            if (Array.isArray(output)) {
+              result += `\nFound ${output.length} document${output.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
+              result += `\n${this.getKeywordSearchLinks(output)}\n`;
+            }
+            break;
+          }
+          case 'doc_compose': {
+            const output = chunk.output;
+            if (output && typeof output === 'object' && 'title' in output) {
+              result += `\nDocument "${output.title}" created successfully with ${output.wordCount} words.\n`;
             }
             break;
           }
           case 'web_search_exa': {
-            if (Array.isArray(chunk.result)) {
-              result += `\n${this.getWebSearchLinks(chunk.result)}\n`;
+            const output = chunk.output;
+            if (Array.isArray(output)) {
+              result += `\n${this.getWebSearchLinks(output)}\n`;
             }
             break;
           }
@@ -483,12 +532,18 @@ export class TextStreamParser {
         break;
       }
       case 'error': {
-        parseUnknownError(chunk.error);
-        break;
+        throw toError(chunk.error);
       }
     }
     this.lastType = chunk.type;
     return result;
+  }
+
+  public end() {
+    const footnotes = this.docEditFootnotes.map((footnote, index) => {
+      return `[^edit${index + 1}]: ${JSON.stringify({ type: 'doc-edit', ...footnote })}`;
+    });
+    return footnotes.join('\n');
   }
 
   private addPrefix(text: string) {
@@ -543,15 +598,21 @@ export class TextStreamParser {
 export class StreamObjectParser {
   public parse(chunk: TextStreamPart<CustomAITools>) {
     switch (chunk.type) {
-      case 'reasoning':
-      case 'text-delta':
+      case 'reasoning-delta': {
+        return { type: 'reasoning' as const, textDelta: chunk.text };
+      }
+      case 'text-delta': {
+        const { type, text: textDelta } = chunk;
+        return { type, textDelta };
+      }
       case 'tool-call':
       case 'tool-result': {
-        return chunk;
+        const { type, toolCallId, toolName, input: args } = chunk;
+        const result = 'output' in chunk ? chunk.output : undefined;
+        return { type, toolCallId, toolName, args, result } as StreamObject;
       }
       case 'error': {
-        parseUnknownError(chunk.error);
-        return null;
+        throw toError(chunk.error);
       }
       default: {
         return null;
@@ -603,4 +664,55 @@ export class StreamObjectParser {
       return acc;
     }, '');
   }
+}
+
+export const VertexModelListSchema = z.object({
+  publisherModels: z.array(
+    z.object({
+      name: z.string(),
+      versionId: z.string(),
+    })
+  ),
+});
+
+export async function getGoogleAuth(
+  options: GoogleVertexAnthropicProviderSettings | GoogleVertexProviderSettings,
+  publisher: 'anthropic' | 'google'
+) {
+  function getBaseUrl() {
+    const { baseURL, location } = options;
+    if (baseURL?.trim()) {
+      try {
+        const url = new URL(baseURL);
+        if (url.pathname.endsWith('/')) {
+          url.pathname = url.pathname.slice(0, -1);
+        }
+        return url.toString();
+      } catch {}
+    } else if (location) {
+      return `https://${location}-aiplatform.googleapis.com/v1beta1/publishers/${publisher}`;
+    }
+    return undefined;
+  }
+
+  async function generateAuthToken() {
+    if (!options.googleAuthOptions) {
+      return undefined;
+    }
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      ...(options.googleAuthOptions as GoogleAuthOptions),
+    });
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+    return token.token;
+  }
+
+  const token = await generateAuthToken();
+
+  return {
+    baseUrl: getBaseUrl(),
+    headers: () => ({ Authorization: `Bearer ${token}` }),
+    fetch: options.fetch,
+  };
 }

@@ -3,9 +3,11 @@ import { type Framework } from '@toeverything/infra';
 
 import {
   configureAIButtonModule,
-  configureAIModelSwitchModule,
+  configureAIDraftModule,
   configureAINetworkSearchModule,
+  configureAIPlaygroundModule,
   configureAIReasoningModule,
+  configureAIToolsConfigModule,
 } from './ai-button';
 import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
@@ -13,6 +15,7 @@ import { configureBlobManagementModule } from './blob-management';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureCollectionRulesModule } from './collection-rules';
+import { configureCommentModule } from './comment';
 import { configureWorkspaceDBModule } from './db';
 import { configureDialogModule } from './dialogs';
 import { configureDndModule } from './dnd';
@@ -20,6 +23,7 @@ import { configureDocModule } from './doc';
 import { configureDocDisplayMetaModule } from './doc-display-meta';
 import { configureDocInfoModule } from './doc-info';
 import { configureDocLinksModule } from './doc-link';
+import { configureDocSummaryModule } from './doc-summary';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
 import { configureEditorSettingModule } from './editor-setting';
@@ -107,8 +111,10 @@ export function configureCommonModules(framework: Framework) {
   configureCommonGlobalStorageImpls(framework);
   configureAINetworkSearchModule(framework);
   configureAIReasoningModule(framework);
-  configureAIModelSwitchModule(framework);
+  configureAIPlaygroundModule(framework);
   configureAIButtonModule(framework);
+  configureAIDraftModule(framework);
+  configureAIToolsConfigModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
   configureMediaModule(framework);
@@ -118,4 +124,6 @@ export function configureCommonModules(framework: Framework) {
   configureWorkspacePropertyModule(framework);
   configureCollectionRulesModule(framework);
   configureIndexerEmbeddingModule(framework);
+  configureCommentModule(framework);
+  configureDocSummaryModule(framework);
 }

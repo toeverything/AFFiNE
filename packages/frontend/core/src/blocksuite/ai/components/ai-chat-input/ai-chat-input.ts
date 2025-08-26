@@ -1,29 +1,34 @@
-import { toast } from '@affine/component';
-import type { CopilotSessionType } from '@affine/graphql';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import { ArrowUpBigIcon, CloseIcon, ImageIcon } from '@blocksuite/icons/lit';
-import { type Signal, signal } from '@preact/signals-core';
-import { css, html, nothing } from 'lit';
+import { ArrowUpBigIcon, CloseIcon } from '@blocksuite/icons/lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { ChatAbortIcon } from '../../_common/icons';
-import { type AIError, AIProvider } from '../../provider';
+import { type AIError, AIProvider, type AISendParams } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
 import { mergeStreamObjects } from '../../utils/stream-objects';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { ChatChip, DocDisplayConfig } from '../ai-chat-chips/type';
 import { isDocChip } from '../ai-chat-chips/utils';
-import { type ChatMessage, StreamObjectSchema } from '../ai-chat-messages';
-import { MAX_IMAGE_COUNT } from './const';
+import {
+  type ChatMessage,
+  isChatMessage,
+  StreamObjectSchema,
+} from '../ai-chat-messages';
 import type {
   AIChatInputContext,
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from './type';
@@ -47,11 +52,18 @@ export class AIChatInput extends SignalWatcher(
         0px 0px 0px 0px rgba(28, 158, 228, 0),
         0px 0px 0px 2px transparent;
     }
-    [data-theme='light'] .chat-panel-input {
+    [data-theme='light'] .chat-panel-input,
+    .chat-panel-input {
       box-shadow:
         var(--border-shadow),
         0px 0px 0px 3px transparent,
         0px 2px 3px rgba(0, 0, 0, 0.05);
+    }
+    .chat-panel-input[data-if-focused='true'] {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px transparent,
+        0px 4px 6px rgba(0, 0, 0, 0.05);
     }
     [data-theme='dark'] .chat-panel-input[data-if-focused='true'] {
       box-shadow:
@@ -76,6 +88,11 @@ export class AIChatInput extends SignalWatcher(
       box-sizing: border-box;
       transition: box-shadow 0.23s ease;
       background-color: var(--affine-v2-input-background);
+
+      &[data-independent-mode='true'] {
+        padding: 12px;
+        border-radius: 16px;
+      }
 
       .chat-selection-quote {
         padding: 4px 0px 8px 0px;
@@ -249,6 +266,9 @@ export class AIChatInput extends SignalWatcher(
       font-size: 20px;
       background: var(--affine-v2-icon-activated);
       color: var(--affine-v2-layer-pureWhite);
+      border: none;
+      padding: 0;
+      cursor: pointer;
     }
     .chat-panel-send[aria-disabled='true'] {
       cursor: not-allowed;
@@ -265,6 +285,9 @@ export class AIChatInput extends SignalWatcher(
       border-radius: 50%;
       font-size: 24px;
       color: var(--affine-v2-icon-activated);
+      border: none;
+      padding: 0;
+      background: transparent;
     }
     .chat-input-footer-spacer {
       flex: 1;
@@ -272,10 +295,22 @@ export class AIChatInput extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | undefined;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor workspaceId!: string;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
+
+  @property({ attribute: false })
+  accessor isContextProcessing!: boolean | undefined;
 
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
@@ -299,16 +334,18 @@ export class AIChatInput extends SignalWatcher(
   accessor chips: ChatChip[] = [];
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor createSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor getContextId!: () => Promise<string | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
+
+  @property({ attribute: false })
+  accessor addImages!: (images: File[]) => void;
+
+  @property({ attribute: false })
+  accessor addChip!: (chip: ChatChip, silent?: boolean) => Promise<void>;
 
   @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
@@ -317,10 +354,19 @@ export class AIChatInput extends SignalWatcher(
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig: AIModelSwitchConfig | undefined = undefined;
+  accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
-  accessor docDisplayConfig!: DocDisplayConfig;
+  accessor searchMenuConfig!: SearchMenuConfig;
+
+  @property({ attribute: false })
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
   accessor isRootSession: boolean = true;
@@ -335,10 +381,7 @@ export class AIChatInput extends SignalWatcher(
   accessor testId = 'chat-panel-input-container';
 
   @property({ attribute: false })
-  accessor panelWidth: Signal<number | undefined> = signal(undefined);
-
-  @property({ attribute: false })
-  accessor addImages!: (images: File[]) => void;
+  accessor portalContainer: HTMLElement | null = null;
 
   private get _isNetworkActive() {
     return (
@@ -351,24 +394,55 @@ export class AIChatInput extends SignalWatcher(
     return !!this.reasoningConfig.enabled.value;
   }
 
-  private get _isImageUploadDisabled() {
-    return this.chatContextValue.images.length >= MAX_IMAGE_COUNT;
-  }
-
   override connectedCallback() {
     super.connectedCallback();
+
     this._disposables.add(
       AIProvider.slots.requestSendWithChat.subscribe(
-        ({ input, context, host }) => {
+        (params: AISendParams | null) => {
+          if (!params) {
+            return;
+          }
+          const { input, context, host } = params;
           if (this.host === host) {
-            context && this.updateContext(context);
+            if (context) {
+              this.updateContext(context);
+            }
             setTimeout(() => {
               this.send(input).catch(console.error);
             }, 0);
           }
+          AIProvider.slots.requestSendWithChat.next(null);
         }
       )
     );
+
+    this._disposables.add(
+      AIProvider.slots.requestOpenWithChat.subscribe(params => {
+        if (!params) return;
+
+        const { input, host } = params;
+        if (this.host !== host) return;
+
+        if (input) {
+          this.textarea.value = input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        }
+      })
+    );
+  }
+
+  protected override firstUpdated(changedProperties: PropertyValues): void {
+    super.firstUpdated(changedProperties);
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.textarea.value = draft.input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        })
+        .catch(console.error);
+    }
   }
 
   protected override render() {
@@ -376,8 +450,9 @@ export class AIChatInput extends SignalWatcher(
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
 
-    return html` <div
+    return html`<div
       class="chat-panel-input"
+      data-independent-mode=${this.independentMode}
       data-if-focused=${this.focused}
       style=${styleMap({
         maxHeight: `${maxHeight}px !important`,
@@ -427,18 +502,19 @@ export class AIChatInput extends SignalWatcher(
         data-testid="chat-panel-input"
       ></textarea>
       <div class="chat-panel-input-actions">
-        <div
-          class="chat-input-icon"
-          data-testid="chat-panel-input-image-upload"
-          aria-disabled=${this._isImageUploadDisabled}
-          @click=${this._uploadImageFiles}
-        >
-          ${ImageIcon()}
-          <affine-tooltip>Upload</affine-tooltip>
+        <div class="chat-input-icon">
+          <ai-chat-add-context
+            .docId=${this.docId}
+            .independentMode=${this.independentMode}
+            .addChip=${this.addChip}
+            .addImages=${this.addImages}
+            .docDisplayConfig=${this.docDisplayConfig}
+            .searchMenuConfig=${this.searchMenuConfig}
+            .portalContainer=${this.portalContainer}
+          ></ai-chat-add-context>
         </div>
         <div class="chat-input-footer-spacer"></div>
         <chat-input-preference
-          .modelSwitchConfig=${this.modelSwitchConfig}
           .session=${this.session}
           .onModelChange=${this._handleModelChange}
           .modelId=${this.modelId}
@@ -447,6 +523,7 @@ export class AIChatInput extends SignalWatcher(
           .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
           .isNetworkActive=${this._isNetworkActive}
           .onNetworkActiveChange=${this._toggleNetworkSearch}
+          .toolsConfigService=${this.aiToolsConfigService}
         ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
           ? html`<button
@@ -459,13 +536,25 @@ export class AIChatInput extends SignalWatcher(
           : html`<button
               @click="${this._onTextareaSend}"
               class="chat-panel-send"
-              aria-disabled=${this.isInputEmpty}
+              aria-disabled=${this.isSendDisabled}
               data-testid="chat-panel-send"
             >
               ${ArrowUpBigIcon()}
             </button>`}
       </div>
     </div>`;
+  }
+
+  private get isSendDisabled() {
+    if (this.isInputEmpty) {
+      return true;
+    }
+
+    if (this.isContextProcessing) {
+      return true;
+    }
+
+    return false;
   }
 
   private readonly _handlePointerDown = (e: MouseEvent) => {
@@ -476,9 +565,11 @@ export class AIChatInput extends SignalWatcher(
     }
   };
 
-  private readonly _handleInput = () => {
+  private readonly _handleInput = async () => {
     const { textarea } = this;
-    this.isInputEmpty = !textarea.value.trim();
+    const value = textarea.value.trim();
+    this.isInputEmpty = !value;
+
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
     let imagesHeight = this.imagePreviewGrid?.scrollHeight ?? 0;
@@ -486,6 +577,12 @@ export class AIChatInput extends SignalWatcher(
     if (this.scrollHeight >= 200 + imagesHeight) {
       textarea.style.height = '148px';
       textarea.style.overflowY = 'scroll';
+    }
+
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: value,
+      });
     }
   };
 
@@ -530,18 +627,6 @@ export class AIChatInput extends SignalWatcher(
     this.updateContext({ images: newImages });
   };
 
-  private readonly _uploadImageFiles = async (_e: MouseEvent) => {
-    if (this._isImageUploadDisabled) return;
-
-    const images = await openFilesWith('Images');
-    if (!images) return;
-    if (this.chatContextValue.images.length + images.length > MAX_IMAGE_COUNT) {
-      toast(`You can only upload up to ${MAX_IMAGE_COUNT} images`);
-      return;
-    }
-    this.addImages(images);
-  };
-
   private readonly _onTextareaSend = async (e: MouseEvent | KeyboardEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -553,6 +638,11 @@ export class AIChatInput extends SignalWatcher(
     this.isInputEmpty = true;
     this.textarea.style.height = 'unset';
 
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: '',
+      });
+    }
     await this.send(value);
   };
 
@@ -562,7 +652,15 @@ export class AIChatInput extends SignalWatcher(
 
   send = async (text: string) => {
     try {
-      const { status, markdown, images } = this.chatContextValue;
+      const {
+        status,
+        markdown,
+        images,
+        snapshot,
+        combinedElementsMarkdown,
+        html,
+      } = this.chatContextValue;
+
       if (status === 'loading' || status === 'transmitting') return;
       if (!text) return;
       if (!AIProvider.actions.chat) return;
@@ -577,27 +675,40 @@ export class AIChatInput extends SignalWatcher(
         abortController,
       });
 
-      const attachments = await Promise.all(
+      const imageAttachments = await Promise.all(
         images?.map(image => readBlobAsURL(image))
       );
       const userInput = (markdown ? `${markdown}\n` : '') + text;
 
       // optimistic update messages
-      await this._preUpdateMessages(userInput, attachments);
+      await this._preUpdateMessages(userInput, imageAttachments);
 
-      const sessionId = await this.createSessionId();
-      let contexts = await this._getMatchedContexts(userInput);
+      const sessionId = (await this.createSession())?.sessionId;
+      let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
       }
+
+      const enableSendDetailedObject =
+        this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
+          .value;
+
       const stream = await AIProvider.actions.chat({
         sessionId,
         input: userInput,
-        contexts,
-        docId: this.host.store.id,
+        contexts: {
+          ...contexts,
+          selectedSnapshot:
+            snapshot && enableSendDetailedObject ? snapshot : undefined,
+          selectedMarkdown:
+            combinedElementsMarkdown && enableSendDetailedObject
+              ? combinedElementsMarkdown
+              : undefined,
+          html: html || undefined,
+        },
+        docId: this.docId,
         attachments: images,
-        workspaceId: this.host.store.workspace.id,
-        host: this.host,
+        workspaceId: this.workspaceId,
         stream: true,
         signal: abortController.signal,
         isRootSession: this.isRootSession,
@@ -605,26 +716,32 @@ export class AIChatInput extends SignalWatcher(
         control: this.trackOptions?.control,
         webSearch: this._isNetworkActive,
         reasoning: this._isReasoningActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
         modelId: this.modelId,
       });
 
       for await (const text of stream) {
-        const messages = [...this.chatContextValue.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        try {
-          const parsed = StreamObjectSchema.safeParse(JSON.parse(text));
-          if (parsed.success) {
-            last.streamObjects = mergeStreamObjects([
+        const messages = this.chatContextValue.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
               ...(last.streamObjects ?? []),
-              parsed.data,
+              parsed,
             ]);
-          } else {
-            last.content += text;
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
           }
-        } catch {
-          last.content += text;
+          this.updateContext({ messages, status: 'transmitting' });
         }
-        this.updateContext({ messages, status: 'transmitting' });
       }
 
       this.updateContext({ status: 'success' });
@@ -667,60 +784,27 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _postUpdateMessages = async () => {
+    const sessionId = this.session?.sessionId;
+    if (!sessionId || !AIProvider.histories) return;
+
     const { messages } = this.chatContextValue;
     const last = messages[messages.length - 1] as ChatMessage;
     if (!last.id) {
-      const sessionId = await this.getSessionId();
-      const historyIds = await AIProvider.histories?.ids(
-        this.host.store.workspace.id,
-        this.host.store.id,
-        { sessionId }
+      const historyIds = await AIProvider.histories.ids(
+        this.workspaceId,
+        this.docId,
+        { sessionId, withMessages: true }
       );
       if (!historyIds || !historyIds[0]) return;
       last.id = historyIds[0].messages.at(-1)?.id ?? '';
     }
   };
 
-  private async _getMatchedContexts(userInput: string) {
-    const contextId = await this.getContextId();
-    const workspaceId = this.host.store.workspace.id;
-
+  private async _getMatchedContexts() {
     const docContexts = new Map<
       string,
       { docId: string; docContent: string }
     >();
-    const fileContexts = new Map<
-      string,
-      BlockSuitePresets.AIFileContextOption
-    >();
-
-    const { files: matchedFiles = [], docs: matchedDocs = [] } =
-      (await AIProvider.context?.matchContext(
-        userInput,
-        contextId,
-        workspaceId
-      )) ?? {};
-
-    matchedDocs.forEach(doc => {
-      docContexts.set(doc.docId, {
-        docId: doc.docId,
-        docContent: doc.content,
-      });
-    });
-
-    matchedFiles.forEach(file => {
-      const context = fileContexts.get(file.fileId);
-      if (context) {
-        context.fileContent += `\n${file.content}`;
-      } else {
-        fileContexts.set(file.fileId, {
-          blobId: file.blobId,
-          fileName: file.name,
-          fileType: file.mimeType,
-          fileContent: file.content,
-        });
-      }
-    });
 
     this.chips.forEach(chip => {
       if (isDocChip(chip) && !!chip.markdown?.value) {
@@ -755,10 +839,7 @@ export class AIChatInput extends SignalWatcher(
       };
     });
 
-    return {
-      docs,
-      files: Array.from(fileContexts.values()),
-    };
+    return { docs, files: [] };
   }
 }
 

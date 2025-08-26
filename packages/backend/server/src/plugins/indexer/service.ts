@@ -322,6 +322,10 @@ export class IndexerService {
     );
 
     await this.deleteBlocksByDocId(workspaceId, docId, options);
+    await this.queue.add('copilot.session.deleteDoc', {
+      workspaceId,
+      docId,
+    });
     await this.queue.add('copilot.embedding.deleteDoc', {
       workspaceId,
       docId,

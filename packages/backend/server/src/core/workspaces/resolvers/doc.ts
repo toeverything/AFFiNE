@@ -79,6 +79,9 @@ class DocType {
 
   @Field(() => String, { nullable: true })
   title?: string | null;
+
+  @Field(() => String, { nullable: true })
+  summary?: string | null;
 }
 
 @InputType()
@@ -250,10 +253,11 @@ export class WorkspaceDocResolver {
     deprecationReason: 'use [WorkspaceType.doc] instead',
   })
   async publicPage(
+    @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
-    return this.doc(workspace, pageId);
+    return this.doc(me, workspace, pageId);
   }
 
   @ResolveField(() => PaginatedDocType)
@@ -294,21 +298,26 @@ export class WorkspaceDocResolver {
     complexity: 2,
   })
   async doc(
+    @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string
   ): Promise<DocType> {
     const doc = await this.models.doc.getDocInfo(workspace.id, docId);
     if (doc) {
+      // check if doc is readable
+      await this.ac.user(me.id).doc(workspace.id, docId).assert('Doc.Read');
       return doc;
     }
 
     await this.tryFixDocOwner(workspace.id, docId);
 
+    const isPublic = await this.models.doc.isPublic(workspace.id, docId);
+
     return {
       docId,
       workspaceId: workspace.id,
       mode: PublicDocMode.Page,
-      public: false,
+      public: isPublic,
       defaultRole: DocRole.Manager,
     };
   }

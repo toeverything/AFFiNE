@@ -1,9 +1,21 @@
+import z from 'zod';
+
 import { defineModuleConfig } from '../../base';
 
 declare global {
   interface AppConfigSchema {
     mailer: {
       SMTP: {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+        ignoreTLS: boolean;
+        sender: string;
+      };
+
+      fallbackDomains: ConfigItem<string[]>;
+      fallbackSMTP: {
         host: string;
         port: number;
         username: string;
@@ -45,5 +57,35 @@ defineModuleConfig('mailer', {
     desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
     default: false,
     env: ['MAILER_IGNORE_TLS', 'boolean'],
+  },
+
+  fallbackDomains: {
+    desc: 'The emails from these domains are always sent using the fallback SMTP server.',
+    default: [],
+    shape: z.array(z.string()),
+  },
+  'fallbackSMTP.host': {
+    desc: 'Host of the email server (e.g. smtp.gmail.com)',
+    default: '',
+  },
+  'fallbackSMTP.port': {
+    desc: 'Port of the email server (they commonly are 25, 465 or 587)',
+    default: 465,
+  },
+  'fallbackSMTP.username': {
+    desc: 'Username used to authenticate the email server',
+    default: '',
+  },
+  'fallbackSMTP.password': {
+    desc: 'Password used to authenticate the email server',
+    default: '',
+  },
+  'fallbackSMTP.sender': {
+    desc: 'Sender of all the emails (e.g. "AFFiNE Team <noreply@affine.pro>")',
+    default: '',
+  },
+  'fallbackSMTP.ignoreTLS': {
+    desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+    default: false,
   },
 });

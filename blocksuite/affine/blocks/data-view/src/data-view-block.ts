@@ -40,6 +40,7 @@ import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { Slice } from '@blocksuite/store';
 import { computed, signal } from '@preact/signals-core';
 import { css, nothing, unsafeCSS } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
 import { BlockQueryDataSource } from './data-source.js';
@@ -303,9 +304,15 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
     },
   });
   override renderBlock() {
+    const widgets = html`${repeat(
+      Object.entries(this.widgets),
+      ([id]) => id,
+      ([_, widget]) => widget
+    )}`;
+
     return html`
       <div contenteditable="false" style="position: relative">
-        ${this.dataViewRootLogic.render()}
+        ${this.dataViewRootLogic.render()} ${widgets}
       </div>
     `;
   }

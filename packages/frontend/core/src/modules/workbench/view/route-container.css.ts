@@ -19,11 +19,16 @@ export const header = style({
   alignItems: 'center',
   flexShrink: 0,
   background: cssVar('backgroundPrimaryColor'),
-  padding: '0 16px 0px 8px',
+  padding: '0 16px',
   contain: 'strict',
   '@media': {
     print: {
       display: 'none',
+    },
+  },
+  selectors: {
+    '&[data-show-switch=true]': {
+      paddingLeft: 8,
     },
   },
 });
@@ -52,6 +57,8 @@ export const rightSidebarButton = style({
       opacity: 0,
       maxWidth: 0,
       marginLeft: 0,
+      // prevent click event from being triggered
+      pointerEvents: 'none',
     },
   },
 });

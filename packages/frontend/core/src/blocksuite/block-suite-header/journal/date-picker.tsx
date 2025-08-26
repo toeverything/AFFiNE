@@ -1,11 +1,14 @@
 import type { WeekDatePickerHandle } from '@affine/component';
 import { WeekDatePicker } from '@affine/component';
-import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
-import { JournalService } from '@affine/core/modules/journal';
+import {
+  JOURNAL_DATE_FORMAT,
+  JournalService,
+} from '@affine/core/modules/journal';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Store } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface JournalWeekDatePickerProps {
   page: Store;
@@ -17,16 +20,28 @@ export const JournalWeekDatePicker = ({ page }: JournalWeekDatePickerProps) => {
   const journalService = useService(JournalService);
   const journalDateStr = useLiveData(journalService.journalDate$(page.id));
   const journalDate = journalDateStr ? dayjs(journalDateStr) : null;
-  const { openJournal } = useJournalRouteHelper();
   const [date, setDate] = useState(
-    (journalDate ?? dayjs()).format('YYYY-MM-DD')
+    (journalDate ?? dayjs()).format(JOURNAL_DATE_FORMAT)
   );
+  const workbench = useService(WorkbenchService).workbench;
 
   useEffect(() => {
     if (!journalDate) return;
-    setDate(journalDate.format('YYYY-MM-DD'));
+    setDate(journalDate.format(JOURNAL_DATE_FORMAT));
     handleRef.current?.setCursor?.(journalDate);
   }, [journalDate]);
+
+  const openJournal = useCallback(
+    (date: string) => {
+      const docs = journalService.journalsByDate$(date).value;
+      if (docs.length > 0) {
+        workbench.openDoc(docs[0].id, { at: 'active' });
+      } else {
+        workbench.open(`/journals?date=${date}`, { at: 'active' });
+      }
+    },
+    [journalService, workbench]
+  );
 
   return (
     <WeekDatePicker

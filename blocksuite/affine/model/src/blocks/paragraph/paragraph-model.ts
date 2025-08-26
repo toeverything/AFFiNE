@@ -21,6 +21,7 @@ export type ParagraphProps = {
   type: ParagraphType;
   text: Text;
   collapsed: boolean;
+  comments?: Record<string, boolean>;
 } & BlockMeta;
 
 export const ParagraphBlockSchema = defineBlockSchema({
@@ -29,6 +30,7 @@ export const ParagraphBlockSchema = defineBlockSchema({
     type: 'text',
     text: internal.Text(),
     collapsed: false,
+    comments: undefined,
     'meta:createdAt': undefined,
     'meta:createdBy': undefined,
     'meta:updatedAt': undefined,

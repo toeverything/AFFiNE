@@ -669,7 +669,10 @@ test('should get doc info', async t => {
   };
 
   await t.context.doc.upsert(snapshot);
-  await t.context.doc.upsertMeta(workspace.id, docId);
+  await t.context.doc.upsertMeta(workspace.id, docId, {
+    title: 'test title',
+    summary: 'test summary',
+  });
 
   const docInfo = await t.context.doc.getDocInfo(workspace.id, docId);
 
@@ -679,6 +682,8 @@ test('should get doc info', async t => {
     updatedAt: new Date(snapshot.timestamp),
     creatorId: user.id,
     lastUpdaterId: user.id,
+    title: 'test title',
+    summary: 'test summary',
   });
 });
 

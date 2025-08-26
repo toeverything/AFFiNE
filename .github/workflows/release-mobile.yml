@@ -12,6 +12,9 @@ on:
       build-type:
         type: string
         required: true
+      ios-app-version:
+        type: string
+        required: false
 
 env:
   BUILD_TYPE: ${{ inputs.build-type }}
@@ -78,11 +81,19 @@ jobs:
           path: packages/frontend/apps/android/dist
 
   ios:
-    runs-on: ${{ github.ref_name == 'canary' && 'macos-latest' || 'blaze/macos-14' }}
+    runs-on: 'macos-15'
     needs:
       - build-ios-web
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
+          ios-app-version: ${{ inputs.ios-app-version }}
+      - name: 'Update Code Sign Identity'
+        shell: bash
+        run: ./packages/frontend/apps/ios/update_code_sign_identity.sh
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
@@ -99,7 +110,7 @@ jobs:
           enableScripts: false
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.4
       - name: Install Swiftformat
         run: brew install swiftformat
       - name: Cap sync
@@ -117,7 +128,6 @@ jobs:
           package: 'affine_mobile_native'
           no-build: 'true'
       - name: Testflight
-        if: ${{ env.BUILD_TYPE != 'stable' }}
         working-directory: packages/frontend/apps/ios/App
         run: |
           echo -n "${{ env.BUILD_PROVISION_PROFILE }}" | base64 --decode -o $PP_PATH
@@ -125,6 +135,7 @@ jobs:
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
           fastlane beta
         env:
+          BUILD_TARGET: distribution
           BUILD_PROVISION_PROFILE: ${{ secrets.BUILD_PROVISION_PROFILE }}
           PP_PATH: ${{ runner.temp }}/build_pp.mobileprovision
           APPLE_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_STORE_CONNECT_API_KEY_ID }}

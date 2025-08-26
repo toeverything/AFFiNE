@@ -24,10 +24,17 @@ export class PriorityQueue {
     this.priorityMap.set(id, priority);
   }
 
-  pop() {
+  pop(minimumPriority?: number) {
     const node = this.tree.max();
 
     if (!node) {
+      return null;
+    }
+
+    if (
+      minimumPriority !== undefined &&
+      node.getValue().priority < minimumPriority
+    ) {
       return null;
     }
 

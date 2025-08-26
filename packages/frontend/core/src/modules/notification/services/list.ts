@@ -88,4 +88,23 @@ export class NotificationListService extends Service {
       Math.max(this.notificationCount.count$.value - 1, 0)
     );
   }
+
+  async readAllNotifications() {
+    // optimistic clear all notifications
+    this.reset();
+    this.notificationCount.setCount(0);
+    // avoid loading more notifications after clear all notifications
+    this.hasMore$.setValue(false);
+
+    try {
+      await this.store.readAllNotifications();
+    } catch (err) {
+      // rollback the optimistic clear all notifications
+      this.reset();
+      this.loadMore();
+
+      // rethrow the error to the caller, to notify the user
+      throw err;
+    }
+  }
 }

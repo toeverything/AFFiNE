@@ -2,19 +2,18 @@ import SnapKit
 import Then
 import UIKit
 
-protocol InputBoxFunctionBarDelegate: AnyObject {
-  func functionBarDidTapTakePhoto(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapPhotoLibrary(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapAttachFiles(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapEmbedDocs(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapTool(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapNetwork(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapDeepThinking(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapSend(_ functionBar: InputBoxFunctionBar)
-}
+private let unselectedColor: UIColor = .affineIconPrimary
+private let selectedColor: UIColor = .affineIconActivated
 
-private let unselectedColor: UIColor = UIColor.affineIconPrimary
-private let selectedColor: UIColor = UIColor.affineIconActivated
+private let configurableOptions: [ConfigurableOptions] = [
+//  .networking,
+//  .reasoning,
+]
+enum ConfigurableOptions {
+  case tool
+  case networking
+  case reasoning
+}
 
 class InputBoxFunctionBar: UIView {
   weak var delegate: InputBoxFunctionBarDelegate?
@@ -34,6 +33,7 @@ class InputBoxFunctionBar: UIView {
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(toolButtonTapped), for: .touchUpInside)
+    $0.isHidden = !configurableOptions.contains(.tool)
   }
 
   lazy var networkButton = UIButton(type: .system).then {
@@ -41,6 +41,7 @@ class InputBoxFunctionBar: UIView {
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(networkButtonTapped), for: .touchUpInside)
+    $0.isHidden = !configurableOptions.contains(.networking)
   }
 
   lazy var deepThinkingButton = UIButton(type: .system).then {
@@ -48,6 +49,7 @@ class InputBoxFunctionBar: UIView {
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(deepThinkingButtonTapped), for: .touchUpInside)
+    $0.isHidden = !configurableOptions.contains(.reasoning)
   }
 
   lazy var sendButton = UIButton(type: .system).then {
@@ -156,7 +158,7 @@ class InputBoxFunctionBar: UIView {
     }
 
     let attachFilesAction = UIAction(
-      title: "Attach Files (pdf, txt, csv)",
+      title: "Attach Files (.pdf, .txt, .csv)",
       image: UIImage.affineUpload
     ) { [weak self] _ in
       guard let self else { return }
@@ -164,7 +166,7 @@ class InputBoxFunctionBar: UIView {
     }
 
     let embedDocsAction = UIAction(
-      title: "Embed AFFINE Docs",
+      title: "Add AFFiNE Docs",
       image: UIImage.affinePage
     ) { [weak self] _ in
       guard let self else { return }

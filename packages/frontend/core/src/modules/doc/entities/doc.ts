@@ -34,6 +34,14 @@ export class Doc extends Entity {
       this.yDoc.off('afterTransaction', handleTransactionThrottled);
       handleTransactionThrottled.cancel();
     });
+
+    this.disposables.push(
+      this.workspaceService.workspace.engine.doc.addPriority(this.id, 100)
+    );
+
+    this.disposables.push(
+      this.workspaceService.workspace.engine.indexer.addPriority(this.id, 100)
+    );
   }
 
   /**

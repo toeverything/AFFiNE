@@ -305,7 +305,10 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
       );
 
       // make sure there is a block can be focused
-      if (notes.length === 0 || notes[notes.length - 1].children.length === 0) {
+      if (
+        !this.store.readonly$.value &&
+        (notes.length === 0 || notes[notes.length - 1].children.length === 0)
+      ) {
         this.std.command.exec(appendParagraphCommand);
         return;
       }
@@ -322,7 +325,7 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
         parseFloat(paddingLeft),
         parseFloat(paddingRight)
       );
-      if (!isClickOnBlankArea) {
+      if (!isClickOnBlankArea && !this.store.readonly$.value) {
         const lastBlock = notes[notes.length - 1].lastChild();
         if (
           !lastBlock ||

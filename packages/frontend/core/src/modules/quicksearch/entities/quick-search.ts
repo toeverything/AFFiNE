@@ -25,6 +25,11 @@ export class QuickSearch extends Entity {
     .flat()
     .map(items => items.flat());
 
+  readonly error$ = this.state$
+    .map(s => s?.sessions.map(session => session.error$) ?? [])
+    .flat()
+    .map(items => items.find(v => !!v) ?? null);
+
   readonly show$ = this.state$.map(s => !!s);
 
   readonly options$ = this.state$.map(s => s?.options);
@@ -105,6 +110,9 @@ export class QuickSearch extends Entity {
   }
 
   submit(result: QuickSearchItem | null) {
+    if (result && result.beforeSubmit && !result.beforeSubmit?.()) {
+      return;
+    }
     if (this.state$.value?.callback) {
       this.state$.value.sessions.forEach(session => session.dispose?.());
       this.state$.value.callback(result);

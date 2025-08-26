@@ -159,7 +159,7 @@ export class SubscriptionService {
     this.assertSubscriptionIdentity(identity);
 
     const manager = this.select(identity.plan);
-    const subscription = await manager.getSubscription(identity);
+    const subscription = await manager.getActiveSubscription(identity);
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
@@ -205,7 +205,7 @@ export class SubscriptionService {
 
     const manager = this.select(identity.plan);
 
-    const subscription = await manager.getSubscription(identity);
+    const subscription = await manager.getActiveSubscription(identity);
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
@@ -252,7 +252,7 @@ export class SubscriptionService {
     this.assertSubscriptionIdentity(identity);
 
     const manager = this.select(identity.plan);
-    const subscription = await manager.getSubscription(identity);
+    const subscription = await manager.getActiveSubscription(identity);
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
@@ -304,7 +304,7 @@ export class SubscriptionService {
   ) {
     this.assertSubscriptionIdentity(identity);
 
-    const subscription = await this.select(identity.plan).getSubscription(
+    const subscription = await this.select(identity.plan).getActiveSubscription(
       identity
     );
 

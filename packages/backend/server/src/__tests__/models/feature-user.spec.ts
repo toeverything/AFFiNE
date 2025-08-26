@@ -125,7 +125,7 @@ test('should not switch user quota if the new quota is the same as the current o
 });
 
 test('should use pro plan as free for selfhost instance', async t => {
-  // @ts-expect-error
+  // @ts-expect-error DEPLOYMENT_TYPE is readonly
   env.DEPLOYMENT_TYPE = 'selfhosted';
   await using module = await createTestingModule();
 

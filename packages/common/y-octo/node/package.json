@@ -43,7 +43,7 @@
     "test:coverage": "NODE_OPTIONS=\"--loader ts-node/esm\" c8 node ./scripts/run-test.mts all",
     "version": "napi version"
   },
-  "version": "0.0.1",
+  "version": "0.22.4",
   "sharedConfig": {
     "nodeArgs": [
       "--loader",

@@ -1,13 +1,16 @@
-import '../content/assistant-avatar';
-import '../content/rich-text';
-
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
+import type { AppThemeService } from '@affine/core/modules/theme';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -16,6 +19,7 @@ import {
   EdgelessEditorActions,
   PageEditorActions,
 } from '../../_common/chat-actions-handle';
+import type { DocDisplayConfig } from '../../components/ai-chat-chips';
 import {
   type ChatMessage,
   type ChatStatus,
@@ -33,24 +37,13 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       font-size: var(--affine-font-xs);
       font-weight: 400;
     }
-
-    .reasoning-wrapper {
-      padding: 16px 20px;
-      margin: 8px 0;
-      border-radius: 8px;
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .tool-wrapper {
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
-    }
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
 
   @property({ attribute: false })
   accessor item!: ChatMessage;
@@ -71,7 +64,10 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor retry!: () => void;
@@ -80,7 +76,31 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor testId = 'chat-message-assistant';
 
   @property({ attribute: false })
-  accessor panelWidth!: Signal<number | undefined>;
+  accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
+  get state() {
+    const { isLast, status } = this;
+    return isLast
+      ? status !== 'loading' && status !== 'transmitting'
+        ? 'finished'
+        : 'generating'
+      : 'finished';
+  }
 
   renderHeader() {
     const isWithDocs =
@@ -107,7 +127,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ${streamObjects?.length
         ? this.renderStreamObjects(streamObjects)
         : this.renderRichText(content)}
-      ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+      ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
       ${this.renderEditorActions()}
     `;
   }
@@ -122,109 +142,35 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   }
 
   private renderStreamObjects(answer: StreamObject[]) {
-    return html`<div>
-      ${answer.map(data => {
-        switch (data.type) {
-          case 'text-delta':
-            return this.renderRichText(data.textDelta);
-          case 'reasoning':
-            return html`
-              <div class="reasoning-wrapper">
-                ${this.renderRichText(data.textDelta)}
-              </div>
-            `;
-          case 'tool-call':
-            return this.renderToolCall(data);
-          case 'tool-result':
-            return this.renderToolResult(data);
-          default:
-            return nothing;
-        }
-      })}
-    </div>`;
-  }
-
-  private renderToolCall(streamObject: StreamObject) {
-    if (streamObject.type !== 'tool-call') {
-      return nothing;
-    }
-
-    switch (streamObject.toolName) {
-      case 'web_crawl_exa':
-        return html`
-          <web-crawl-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-crawl-tool>
-        `;
-      case 'web_search_exa':
-        return html`
-          <web-search-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-search-tool>
-        `;
-      default:
-        return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool calling...
-          </div>
-        `;
-    }
-  }
-
-  private renderToolResult(streamObject: StreamObject) {
-    if (streamObject.type !== 'tool-result') {
-      return nothing;
-    }
-
-    switch (streamObject.toolName) {
-      case 'web_crawl_exa':
-        return html`
-          <web-crawl-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-crawl-tool>
-        `;
-      case 'web_search_exa':
-        return html`
-          <web-search-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-search-tool>
-        `;
-      default:
-        return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool result...
-          </div>
-        `;
-    }
+    return html`<chat-content-stream-objects
+      .host=${this.host}
+      .std=${this.std}
+      .answer=${answer}
+      .state=${this.state}
+      .width=${this.width}
+      .extensions=${this.extensions}
+      .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .notificationService=${this.notificationService}
+      .theme=${this.affineThemeService.appTheme.themeSignal}
+      .independentMode=${this.independentMode}
+      .docDisplayService=${this.docDisplayService}
+      .peekViewService=${this.peekViewService}
+      .onOpenDoc=${this.onOpenDoc}
+    ></chat-content-stream-objects>`;
   }
 
   private renderRichText(text: string) {
-    const { host, isLast, status } = this;
-    const state = isLast
-      ? status !== 'loading' && status !== 'transmitting'
-        ? 'finished'
-        : 'generating'
-      : 'finished';
-
     return html`<chat-content-rich-text
-      .host=${host}
       .text=${text}
-      .state=${state}
+      .state=${this.state}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .theme=${this.affineThemeService.appTheme.themeSignal}
     ></chat-content-rich-text>`;
   }
 
   private renderEditorActions() {
-    const { item, isLast, status } = this;
+    const { item, isLast, status, host, session } = this;
 
     if (!isChatMessage(item) || item.role !== 'assistant') return nothing;
 
@@ -236,35 +182,40 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
     )
       return nothing;
 
-    const { host } = this;
     const { content, streamObjects, id: messageId } = item;
     const markdown = streamObjects?.length
       ? mergeStreamContent(streamObjects)
       : content;
 
-    const actions = isInsidePageEditor(host)
-      ? PageEditorActions
-      : EdgelessEditorActions;
+    const actions = host
+      ? isInsidePageEditor(host)
+        ? PageEditorActions
+        : EdgelessEditorActions
+      : null;
+
+    const showActions = host && !!markdown && !this.independentMode;
 
     return html`
       <chat-copy-more
         .host=${host}
-        .actions=${actions}
+        .session=${session}
+        .actions=${showActions ? actions : []}
         .content=${markdown}
         .isLast=${isLast}
-        .getSessionId=${this.getSessionId}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
+        .notificationService=${this.notificationService}
       ></chat-copy-more>
-      ${isLast && !!markdown
+      ${isLast && showActions
         ? html`<chat-action-list
             .actions=${actions}
             .host=${host}
+            .session=${session}
             .content=${markdown}
-            .getSessionId=${this.getSessionId}
             .messageId=${messageId ?? undefined}
             .withMargin=${true}
+            .notificationService=${this.notificationService}
           ></chat-action-list>`
         : nothing}
     `;

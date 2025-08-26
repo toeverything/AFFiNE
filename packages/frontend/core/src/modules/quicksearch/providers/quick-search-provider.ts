@@ -8,7 +8,7 @@ export type QuickSearchFunction<S, P> = (
 
 export interface QuickSearchSession<S, P> {
   items$: LiveData<QuickSearchItem<S, P>[]>;
-  isError$?: LiveData<boolean>;
+  error$?: LiveData<any>;
   isLoading$?: LiveData<boolean>;
   loadingProgress$?: LiveData<number>;
   hasMore$?: LiveData<boolean>;
@@ -16,6 +16,7 @@ export interface QuickSearchSession<S, P> {
   query?: (query: string) => void;
   loadMore?: () => void;
   dispose?: () => void;
+  beforeSubmit?: (item: QuickSearchItem<S, P>) => boolean;
 }
 
 export type QuickSearchSource<S, P> =

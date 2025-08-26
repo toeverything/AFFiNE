@@ -1,17 +1,29 @@
 query getCopilotHistoryIds(
   $workspaceId: String!
+  $pagination: PaginationInput!
   $docId: String
   $options: QueryChatHistoriesInput
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(docId: $docId, options: $options) {
-        sessionId
-        pinned
-        messages {
-          id
-          role
-          createdAt
+      chats(pagination: $pagination, docId: $docId, options: $options) {
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            sessionId
+            pinned
+            messages {
+              id
+              role
+              createdAt
+            }
+          }
         }
       }
     }

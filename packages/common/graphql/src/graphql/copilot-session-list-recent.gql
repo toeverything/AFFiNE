@@ -1,0 +1,23 @@
+#import "./fragments/copilot.gql"
+
+query getCopilotRecentSessions(
+  $workspaceId: String!
+  $limit: Int = 10
+  $offset: Int = 0
+) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      chats(
+        pagination: { first: $limit, offset: $offset }
+        options: {
+          action: false
+          fork: false
+          sessionOrder: desc
+          withMessages: false
+        }
+      ) {
+        ...PaginatedCopilotChats
+      }
+    }
+  }
+}

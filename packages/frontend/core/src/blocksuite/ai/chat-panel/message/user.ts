@@ -1,6 +1,3 @@
-import '../content/images';
-import '../content/pure-text';
-
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { css, html, nothing } from 'lit';
@@ -10,11 +7,16 @@ import { type ChatMessage } from '../../components/ai-chat-messages';
 
 export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
   static override styles = css`
+    chat-message-user {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
     .chat-message-user {
       display: flex;
       flex-direction: column;
-      max-width: 800px;
-      margin-left: 58px;
+      max-width: calc(100% - 58px);
     }
 
     .chat-content-images {

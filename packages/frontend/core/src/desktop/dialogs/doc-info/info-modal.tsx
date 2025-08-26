@@ -14,14 +14,14 @@ import type {
   DatabaseRow,
   DatabaseValueCell,
 } from '@affine/core/modules/doc-info/types';
-import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { DocLinksService } from '@affine/core/modules/doc-link';
 import { GuardService } from '@affine/core/modules/permissions';
 import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import { LiveData, useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useLiveData, useServices } from '@toeverything/infra';
+import { useCallback, useEffect, useState } from 'react';
 
 import * as styles from './info-modal.css';
 import { LinksRow } from './links-row';
@@ -34,11 +34,11 @@ export const InfoTable = ({
   onClose: () => void;
 }) => {
   const t = useI18n();
-  const { docsSearchService, workspacePropertyService, guardService } =
+  const { workspacePropertyService, guardService, docLinksService } =
     useServices({
-      DocsSearchService,
       WorkspacePropertyService,
       GuardService,
+      DocLinksService,
     });
   const canEditPropertyInfo = useLiveData(
     guardService.can$('Workspace_Properties_Update')
@@ -46,30 +46,9 @@ export const InfoTable = ({
   const canEditProperty = useLiveData(guardService.can$('Doc_Update', docId));
   const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
   const properties = useLiveData(workspacePropertyService.sortedProperties$);
-  const links = useLiveData(
-    useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
-      [docId, docsSearchService]
-    )
-  );
+  const links = useLiveData(docLinksService.links.links$);
 
-  const backlinks = useLiveData(
-    useMemo(() => {
-      return LiveData.from(docsSearchService.watchRefsTo(docId), []).map(
-        links => {
-          const visitedDoc = new Set<string>();
-          // for each doc, we only show the first block
-          return links.filter(link => {
-            if (visitedDoc.has(link.docId)) {
-              return false;
-            }
-            visitedDoc.add(link.docId);
-            return true;
-          });
-        }
-      );
-    }, [docId, docsSearchService])
-  );
+  const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
 
   const onBacklinkPropertyChange = useCallback(
     (_row: DatabaseRow, cell: DatabaseValueCell, _value: unknown) => {
@@ -110,6 +89,10 @@ export const InfoTable = ({
     },
     []
   );
+
+  useEffect(() => {
+    docLinksService.backlinks.revalidateFromCloud();
+  }, [docLinksService.backlinks]);
 
   return (
     <>

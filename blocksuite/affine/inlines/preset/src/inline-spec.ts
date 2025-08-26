@@ -12,7 +12,9 @@ export type AffineInlineRootElement = InlineRootElement<AffineTextAttributes>;
 export const BoldInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'bold',
-    schema: z.literal(true).optional().nullable().catch(undefined),
+    schema: z.object({
+      bold: z.literal(true).optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.bold;
     },
@@ -24,7 +26,9 @@ export const BoldInlineSpecExtension =
 export const ItalicInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'italic',
-    schema: z.literal(true).optional().nullable().catch(undefined),
+    schema: z.object({
+      italic: z.literal(true).optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.italic;
     },
@@ -36,7 +40,9 @@ export const ItalicInlineSpecExtension =
 export const UnderlineInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'underline',
-    schema: z.literal(true).optional().nullable().catch(undefined),
+    schema: z.object({
+      underline: z.literal(true).optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.underline;
     },
@@ -48,7 +54,9 @@ export const UnderlineInlineSpecExtension =
 export const StrikeInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'strike',
-    schema: z.literal(true).optional().nullable().catch(undefined),
+    schema: z.object({
+      strike: z.literal(true).optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.strike;
     },
@@ -60,7 +68,9 @@ export const StrikeInlineSpecExtension =
 export const CodeInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'inline-code',
-    schema: z.literal(true).optional().nullable().catch(undefined),
+    schema: z.object({
+      code: z.literal(true).optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.code;
     },
@@ -72,7 +82,9 @@ export const CodeInlineSpecExtension =
 export const BackgroundInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'background',
-    schema: z.string().optional().nullable().catch(undefined),
+    schema: z.object({
+      background: z.string().optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.background;
     },
@@ -84,7 +96,9 @@ export const BackgroundInlineSpecExtension =
 export const ColorInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'color',
-    schema: z.string().optional().nullable().catch(undefined),
+    schema: z.object({
+      color: z.string().optional().nullable().catch(undefined),
+    }),
     match: delta => {
       return !!delta.attributes?.color;
     },

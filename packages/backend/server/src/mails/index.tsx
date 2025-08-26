@@ -1,6 +1,6 @@
 import { render as rawRender } from '@react-email/components';
 
-import { Mention } from './docs';
+import { Comment, CommentMention, Mention } from './docs';
 import {
   TeamBecomeAdmin,
   TeamBecomeCollaborator,
@@ -124,6 +124,15 @@ export const Renderers = {
   Mention: make(
     Mention,
     props => `${props.user.email} mentioned you in ${props.doc.title}`
+  ),
+  Comment: make(
+    Comment,
+    props => `${props.user.email} commented on ${props.doc.title}`
+  ),
+  CommentMention: make(
+    CommentMention,
+    props =>
+      `${props.user.email} mentioned you in a comment on ${props.doc.title}`
   ),
   //#endregion
 

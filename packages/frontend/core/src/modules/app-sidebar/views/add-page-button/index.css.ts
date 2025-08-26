@@ -8,7 +8,7 @@ export const root = style({
   borderRadius: 8,
   boxShadow: cssVar('buttonShadow'),
   borderWidth: 0,
-  background: cssVarV2('button/siderbarPrimary/background'),
+  background: cssVarV2('button/iconButtonSolid'),
 });
 
 export const withAskRoot = style([

@@ -7,6 +7,7 @@ import {
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
 import { Guard } from '@affine/core/components/guard';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
@@ -56,6 +57,7 @@ export const useNavigationPanelDocNodeOperations = (
 
   const [addLinkedPageLoading, setAddLinkedPageLoading] = useState(false);
   const docRecord = useLiveData(docsService.list.doc$(docId));
+  const { appSettings } = useAppSettingHelper();
 
   const { createPage } = usePageHelper(
     workspaceService.workspace.docCollection
@@ -149,20 +151,26 @@ export const useNavigationPanelDocNodeOperations = (
 
   return useMemo(
     () => [
-      {
-        index: 0,
-        inline: true,
-        view: (
-          <IconButton
-            size="16"
-            icon={<PlusIcon />}
-            tooltip={t['com.affine.rootAppSidebar.explorer.doc-add-tooltip']()}
-            onClick={handleAddLinkedPage}
-            loading={addLinkedPageLoading}
-            disabled={addLinkedPageLoading}
-          />
-        ),
-      },
+      ...(appSettings.showLinkedDocInSidebar
+        ? [
+            {
+              index: 0,
+              inline: true,
+              view: (
+                <IconButton
+                  size="16"
+                  icon={<PlusIcon />}
+                  tooltip={t[
+                    'com.affine.rootAppSidebar.explorer.doc-add-tooltip'
+                  ]()}
+                  onClick={handleAddLinkedPage}
+                  loading={addLinkedPageLoading}
+                  disabled={addLinkedPageLoading}
+                />
+              ),
+            },
+          ]
+        : []),
       {
         index: 50,
         view: (
@@ -258,6 +266,7 @@ export const useNavigationPanelDocNodeOperations = (
     ],
     [
       addLinkedPageLoading,
+      appSettings.showLinkedDocInSidebar,
       docId,
       favorite,
       handleAddLinkedPage,

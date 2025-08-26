@@ -1,4 +1,5 @@
 import type { DomRenderer } from '@blocksuite/affine-block-surface';
+import { isRTL } from '@blocksuite/affine-gfx-text';
 import type { ShapeElementModel } from '@blocksuite/affine-model';
 import { DefaultTheme } from '@blocksuite/affine-model';
 import { SVGShapeBuilder } from '@blocksuite/global/gfx';
@@ -99,6 +100,8 @@ export const shapeDomRenderer = (
   const unscaledWidth = model.w;
   const unscaledHeight = model.h;
 
+  const newChildren: Element[] = [];
+
   const fillColor = renderer.getColorValue(
     model.fillColor,
     DefaultTheme.shapeFillColor,
@@ -170,8 +173,7 @@ export const shapeDomRenderer = (
     }
     svg.append(polygon);
 
-    // Replace existing children to avoid memory leaks
-    element.replaceChildren(svg);
+    newChildren.push(svg);
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     // innerHTML was already cleared by applyShapeSpecificStyles if necessary
@@ -179,9 +181,42 @@ export const shapeDomRenderer = (
     applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
   }
 
-  applyTransformStyles(model, element);
+  if (model.textDisplay && model.text) {
+    const str = model.text.toString();
+    const textElement = document.createElement('div');
+    if (isRTL(str)) {
+      textElement.dir = 'rtl';
+    }
+    textElement.style.position = 'absolute';
+    textElement.style.inset = '0';
+    textElement.style.display = 'flex';
+    textElement.style.flexDirection = 'column';
+    textElement.style.justifyContent =
+      model.textVerticalAlign === 'center'
+        ? 'center'
+        : model.textVerticalAlign === 'top'
+          ? 'flex-start'
+          : 'flex-end';
+    textElement.style.whiteSpace = 'pre-wrap';
+    textElement.style.wordBreak = 'break-word';
+    textElement.style.textAlign = model.textAlign;
+    textElement.style.alignmentBaseline = 'alphabetic';
+    textElement.style.fontFamily = model.fontFamily;
+    textElement.style.fontSize = `${model.fontSize * zoom}px`;
+    textElement.style.fontWeight = model.fontWeight;
+    textElement.style.color = renderer.getColorValue(
+      model.color,
+      DefaultTheme.shapeTextColor,
+      true
+    );
+    textElement.textContent = str;
+    newChildren.push(textElement);
+  }
 
-  element.style.zIndex = renderer.layerManager.getZIndex(model).toString();
+  // Replace existing children to avoid memory leaks
+  element.replaceChildren(...newChildren);
+
+  applyTransformStyles(model, element);
 
   manageClassNames(model, element);
   applyShadowStyles(model, element, renderer);

@@ -1,14 +1,20 @@
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type {
-  ChatHistoryOrder,
+  AddContextFileInput,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
   ContextWorkspaceEmbeddingStatus,
+  CopilotChatHistoryFragment,
+  CopilotContextBlob,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
-  CopilotSessionType,
+  CopilotHistories,
   getCopilotHistoriesQuery,
+  QueryChatHistoriesInput,
   RequestOptions,
+  StreamObject,
+  UpdateChatSessionInput,
 } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
@@ -80,11 +86,11 @@ declare global {
       retry?: boolean;
 
       // action's context
-      docId: string;
+      docId?: string;
       workspaceId: string;
 
       // internal context
-      host: EditorHost;
+      host?: EditorHost;
       models?: (BlockModel | GfxModel)[];
       control?: TrackerControl;
       where?: TrackerWhere;
@@ -138,10 +144,15 @@ declare global {
       webSearch?: boolean;
       reasoning?: boolean;
       modelId?: string;
+      toolsConfig?: AIToolsConfig | undefined;
       contexts?: {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];
+        selectedSnapshot?: string;
+        selectedMarkdown?: string;
+        html?: string;
       };
+      postfix?: (text: string) => string;
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -270,6 +281,7 @@ declare global {
       files: CopilotContextFile[];
       tags: CopilotContextCategory[];
       collections: CopilotContextCategory[];
+      blobs: CopilotContextBlob[];
     };
 
     interface AIContextService {
@@ -291,10 +303,7 @@ declare global {
       }) => Promise<boolean>;
       addContextFile: (
         file: File,
-        options: {
-          contextId: string;
-          blobId: string;
-        }
+        options: AddContextFileInput
       ) => Promise<CopilotContextFile>;
       removeContextFile: (options: {
         contextId: string;
@@ -346,20 +355,35 @@ declare global {
         files?: ContextMatchedFileChunk[];
         docs?: ContextMatchedDocChunk[];
       }>;
+      applyDocUpdates: (
+        workspaceId: string,
+        docId: string,
+        op: string,
+        updates: string
+      ) => Promise<string>;
+      addContextBlob: (options: {
+        blobId: string;
+        contextId: string;
+      }) => Promise<CopilotContextBlob>;
+      removeContextBlob: (options: {
+        blobId: string;
+        contextId: string;
+      }) => Promise<boolean>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
     interface AIHistory {
       sessionId: string;
       tokens: number;
-      action: string;
+      action: string | null;
       createdAt: string;
       messages: {
-        id: string; // message id
+        id: string | null; // message id
         content: string;
         createdAt: string;
         role: MessageRole;
-        attachments?: string[];
+        attachments?: string[] | null;
+        streamObjects?: StreamObject[] | null;
       }[];
     }
 
@@ -372,41 +396,48 @@ declare global {
       >[];
     };
 
-    interface CreateSessionOptions {
-      docId: string;
-      workspaceId: string;
+    interface AICreateSessionOptions {
       promptName: PromptKey;
+      workspaceId: string;
+      docId?: string;
       sessionId?: string;
       retry?: boolean;
+      pinned?: boolean;
+      // default value of reuseLatestChat is true at backend
+      reuseLatestChat?: boolean;
     }
 
+    type AIRecentSession = Omit<CopilotHistories, 'messages'>;
+
     interface AISessionService {
-      createSession: (options: CreateSessionOptions) => Promise<string>;
-      getSessions: (
-        workspaceId: string,
-        docId?: string,
-        options?: { action?: boolean }
-      ) => Promise<CopilotSessionType[] | undefined>;
+      createSession: (options: AICreateSessionOptions) => Promise<string>;
       getSession: (
         workspaceId: string,
         sessionId: string
-      ) => Promise<CopilotSessionType | undefined>;
-      updateSession: (sessionId: string, promptName: string) => Promise<string>;
+      ) => Promise<CopilotChatHistoryFragment | undefined>;
+      getSessions: (
+        workspaceId: string,
+        docId?: string,
+        options?: QueryChatHistoriesInput
+      ) => Promise<CopilotChatHistoryFragment[] | undefined>;
+      getRecentSessions: (
+        workspaceId: string,
+        limit?: number,
+        offset?: number
+      ) => Promise<AIRecentSession[] | undefined>;
+      updateSession: (options: UpdateChatSessionInput) => Promise<string>;
     }
 
     interface AIHistoryService {
       // non chat histories
       actions: (
         workspaceId: string,
-        docId?: string
+        docId: string
       ) => Promise<AIHistory[] | undefined>;
       chats: (
         workspaceId: string,
-        docId?: string,
-        options?: {
-          sessionId?: string;
-          messageOrder?: ChatHistoryOrder;
-        }
+        sessionId: string,
+        docId?: string
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,

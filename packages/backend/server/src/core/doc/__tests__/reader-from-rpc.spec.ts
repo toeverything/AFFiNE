@@ -389,7 +389,11 @@ test('should return doc markdown success', async t => {
     user,
   });
 
-  const result = await docReader.getDocMarkdown(workspace.id, docSnapshot.id);
+  const result = await docReader.getDocMarkdown(
+    workspace.id,
+    docSnapshot.id,
+    false
+  );
   t.snapshot(result);
 });
 
@@ -401,6 +405,10 @@ test('should read markdown return null when doc not exists', async t => {
     name: '',
   });
 
-  const result = await docReader.getDocMarkdown(workspace.id, randomUUID());
+  const result = await docReader.getDocMarkdown(
+    workspace.id,
+    randomUUID(),
+    false
+  );
   t.is(result, null);
 });

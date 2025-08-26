@@ -26,7 +26,7 @@ public class IntelligentsButton: UIView {
 
   lazy var activityIndicator = UIActivityIndicatorView()
 
-  public weak var delegate: (any IntelligentsButtonDelegate)? = nil {
+  public weak var delegate: (any IntelligentsButtonDelegate)? {
     didSet { assert(Thread.isMainThread) }
   }
 

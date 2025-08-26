@@ -24,6 +24,7 @@ import {
   getPrevContentBlock,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSelection, type EditorHost } from '@blocksuite/std';
 import type { BlockModel, Text } from '@blocksuite/store';
 
@@ -91,10 +92,17 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       ...EMBED_BLOCK_MODEL_LIST,
     ])
   ) {
-    const selection = editorHost.selection.create(BlockSelection, {
-      blockId: prevBlock.id,
-    });
-    editorHost.selection.setGroup('note', [selection]);
+    // due to create a block selection will clear text selection, which lead
+    // the virtual keyboard to be auto closed on mobile. This behavior breaks
+    // the user experience.
+    if (!IS_MOBILE) {
+      const selection = editorHost.selection.create(BlockSelection, {
+        blockId: prevBlock.id,
+      });
+      editorHost.selection.setGroup('note', [selection]);
+    } else {
+      doc.deleteBlock(prevBlock);
+    }
 
     if (model.text?.length === 0) {
       doc.deleteBlock(model, {

@@ -13,6 +13,7 @@ export enum CopilotProviderType {
   GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
   Perplexity = 'perplexity',
+  Morph = 'morph',
 }
 
 export const CopilotProviderSchema = z.object({
@@ -56,22 +57,29 @@ export const VertexSchema: JSONSchema = {
 
 // ========== prompt ==========
 
+export const PromptToolsSchema = z
+  .enum([
+    'blobRead',
+    'codeArtifact',
+    'conversationSummary',
+    // work with morph
+    'docEdit',
+    // work with indexer
+    'docRead',
+    'docKeywordSearch',
+    // work with embeddings
+    'docSemanticSearch',
+    // work with exa/model internal tools
+    'webSearch',
+    // artifact tools
+    'docCompose',
+    // section editing
+    'sectionEdit',
+  ])
+  .array();
+
 export const PromptConfigStrictSchema = z.object({
-  tools: z
-    .enum([
-      // work with morph
-      'docEdit',
-      // work with indexer
-      'docRead',
-      'docKeywordSearch',
-      // work with embeddings
-      'docSemanticSearch',
-      // work with exa/model internal tools
-      'webSearch',
-    ])
-    .array()
-    .nullable()
-    .optional(),
+  tools: PromptToolsSchema.nullable().optional(),
   // params requirements
   requireContent: z.boolean().nullable().optional(),
   requireAttachment: z.boolean().nullable().optional(),
@@ -99,6 +107,8 @@ export const PromptConfigSchema =
   PromptConfigStrictSchema.nullable().optional();
 
 export type PromptConfig = z.infer<typeof PromptConfigSchema>;
+
+export type PromptTools = z.infer<typeof PromptToolsSchema>;
 
 // ========== message ==========
 
@@ -161,6 +171,7 @@ export type StreamObject = z.infer<typeof StreamObjectSchema>;
 const CopilotProviderOptionsSchema = z.object({
   signal: z.instanceof(AbortSignal).optional(),
   user: z.string().optional(),
+  session: z.string().optional(),
   workspace: z.string().optional(),
 });
 
@@ -227,6 +238,7 @@ export interface ModelCapability {
 
 export interface CopilotProviderModel {
   id: string;
+  name?: string;
   capabilities: ModelCapability[];
 }
 

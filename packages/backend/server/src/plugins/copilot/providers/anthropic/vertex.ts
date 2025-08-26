@@ -5,6 +5,7 @@ import {
 } from '@ai-sdk/google-vertex/anthropic';
 
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
+import { getGoogleAuth, VertexModelListSchema } from '../utils';
 import { AnthropicProvider } from './anthropic';
 
 export type AnthropicVertexConfig = GoogleVertexAnthropicProviderSettings;
@@ -61,5 +62,28 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
   override setup() {
     super.setup();
     this.instance = createVertexAnthropic(this.config);
+  }
+
+  override async refreshOnlineModels() {
+    try {
+      const { baseUrl, headers } = await getGoogleAuth(
+        this.config,
+        'anthropic'
+      );
+      if (baseUrl && !this.onlineModelList.length) {
+        const { publisherModels } = await fetch(`${baseUrl}/models`, {
+          headers: headers(),
+        })
+          .then(r => r.json())
+          .then(r => VertexModelListSchema.parse(r));
+        this.onlineModelList = publisherModels.map(
+          model =>
+            model.name.replace('publishers/anthropic/models/', '') +
+            (model.versionId !== 'default' ? `@${model.versionId}` : '')
+        );
+      }
+    } catch (e) {
+      this.logger.error('Failed to fetch available models', e);
+    }
   }
 }

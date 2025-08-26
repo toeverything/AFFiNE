@@ -2,20 +2,27 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { PaginationInput } from '../base';
 import { BaseModel } from './base';
-import type {
-  CopilotWorkspaceFile,
-  CopilotWorkspaceFileMetadata,
-  Embedding,
-  FileChunkSimilarity,
-  IgnoredDoc,
+import {
+  type BlobChunkSimilarity,
+  clearEmbeddingContent,
+  type CopilotWorkspaceFile,
+  type CopilotWorkspaceFileMetadata,
+  type Embedding,
+  type FileChunkSimilarity,
+  type IgnoredDoc,
 } from './common';
 
 @Injectable()
 export class CopilotWorkspaceConfigModel extends BaseModel {
+  constructor(private readonly database: PrismaClient) {
+    super();
+  }
+
+  @Transactional()
   private async listIgnoredDocIds(
     workspaceId: string,
     options?: PaginationInput
@@ -40,28 +47,27 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
    * @param workspaceId id of the workspace
    * @returns docIds
    */
-  @Transactional()
   async findDocsToEmbed(workspaceId: string): Promise<string[]> {
-    const ignoredDocIds = (await this.listIgnoredDocIds(workspaceId)).map(
-      d => d.docId
-    );
+    // NOTE: for unknown reason, the transaction will timeout if call from event handler
+    // so we use an independent client here
+    const docIds = await this.database.$queryRaw<{ id: string }[]>`
+      SELECT s.guid as id
+        FROM snapshots AS s
+          LEFT JOIN ai_workspace_embeddings e
+            ON e.workspace_id = s.workspace_id
+               AND e.doc_id = s.guid
+          LEFT JOIN ai_workspace_ignored_docs id
+            ON id.workspace_id = s.workspace_id
+               AND id.doc_id = s.guid
+        WHERE s.workspace_id = ${workspaceId}
+          AND s.guid <> s.workspace_id
+          AND s.guid NOT LIKE '%$%'
+          AND s.guid NOT LIKE '%:settings:%'
+          AND e.doc_id IS NULL
+          AND id.doc_id IS NULL
+          AND s.blob <> E'\\\\x0000';`;
 
-    const docIds = await this.db.snapshot
-      .findMany({
-        where: {
-          workspaceId,
-          AND: [
-            { id: { notIn: ignoredDocIds } },
-            { id: { not: workspaceId } },
-            { id: { not: { contains: '$' } } },
-          ],
-          embedding: { none: {} },
-        },
-        select: { id: true },
-      })
-      .then(r => r.map(doc => doc.id));
-
-    return docIds;
+    return docIds.map(r => r.id);
   }
 
   @Transactional()
@@ -147,24 +153,66 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     return docIds.filter(id => ignored.has(id));
   }
 
+  // check if a docId has only placeholder embeddings
   @Transactional()
-  async getWorkspaceEmbeddingStatus(workspaceId: string) {
+  async hasPlaceholder(workspaceId: string, docId: string): Promise<boolean> {
+    const [total, nonPlaceholder] = await Promise.all([
+      this.db.aiWorkspaceEmbedding.count({ where: { workspaceId, docId } }),
+      this.db.aiWorkspaceEmbedding.count({
+        where: {
+          workspaceId,
+          docId,
+          NOT: { AND: [{ chunk: 0 }, { content: '' }] },
+        },
+      }),
+    ]);
+    return total > 0 && nonPlaceholder === 0;
+  }
+
+  private getEmbeddableCondition(
+    workspaceId: string,
+    ignoredDocIds?: string[]
+  ): Prisma.SnapshotWhereInput {
+    const condition: Prisma.SnapshotWhereInput['AND'] = [
+      { id: { not: workspaceId } },
+      { id: { not: { contains: '$' } } },
+      { id: { not: { contains: ':settings:' } } },
+      { blob: { not: new Uint8Array([0, 0]) } },
+    ];
+    if (ignoredDocIds && ignoredDocIds.length > 0) {
+      condition.push({ id: { notIn: ignoredDocIds } });
+    }
+    return { workspaceId, AND: condition };
+  }
+
+  @Transactional()
+  async listEmbeddableDocIds(workspaceId: string) {
+    const condition = this.getEmbeddableCondition(workspaceId);
+    const rows = await this.db.snapshot.findMany({
+      where: condition,
+      select: { id: true },
+    });
+    return rows.map(r => r.id);
+  }
+
+  @Transactional()
+  async getEmbeddingStatus(workspaceId: string) {
     const ignoredDocIds = (await this.listIgnoredDocIds(workspaceId)).map(
       d => d.docId
     );
-    const snapshotCondition = {
+    const snapshotCondition = this.getEmbeddableCondition(
       workspaceId,
-      AND: [
-        { id: { notIn: ignoredDocIds } },
-        { id: { not: workspaceId } },
-        { id: { not: { contains: '$' } } },
-      ],
-    };
+      ignoredDocIds
+    );
 
     const [docTotal, docEmbedded, fileTotal, fileEmbedded] = await Promise.all([
-      this.db.snapshot.count({ where: snapshotCondition }),
-      this.db.snapshot.count({
+      this.db.snapshot.findMany({
+        where: snapshotCondition,
+        select: { id: true },
+      }),
+      this.db.snapshot.findMany({
         where: { ...snapshotCondition, embedding: { some: {} } },
+        select: { id: true },
       }),
       this.db.aiWorkspaceFiles.count({ where: { workspaceId } }),
       this.db.aiWorkspaceFiles.count({
@@ -172,19 +220,32 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
       }),
     ]);
 
+    const docTotalIds = docTotal.map(d => d.id);
+    const docTotalSet = new Set(docTotalIds);
+    const outdatedDocPrefix = `${workspaceId}:space:`;
+    const duplicateOutdatedDocSet = new Set(
+      docTotalIds
+        .filter(id => id.startsWith(outdatedDocPrefix))
+        .filter(id => docTotalSet.has(id.slice(outdatedDocPrefix.length)))
+    );
+
     return {
-      total: docTotal + fileTotal,
-      embedded: docEmbedded + fileEmbedded,
+      total:
+        docTotalIds.filter(id => !duplicateOutdatedDocSet.has(id)).length +
+        fileTotal,
+      embedded:
+        docEmbedded
+          .map(d => d.id)
+          .filter(id => !duplicateOutdatedDocSet.has(id)).length + fileEmbedded,
     };
   }
 
   @Transactional()
   async checkDocNeedEmbedded(workspaceId: string, docId: string) {
     // NOTE: check if the document needs re-embedding.
-    // 1. check if there have been any recent updates to the document snapshot and update
-    // 2. check if the embedding is older than the snapshot and update
-    // 3. check if the embedding is older than 10 minutes (avoid frequent updates)
-    // if all conditions are met, re-embedding is required.
+    // 1. first-time embedding when no embedding exists
+    // 2. re-embedding only when the doc has updates newer than the last embedding
+    //    AND the last embedding is older than 10 minutes (avoid frequent updates)
     const result = await this.db.$queryRaw<{ needs_embedding: boolean }[]>`
       SELECT
         EXISTS (
@@ -219,8 +280,7 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
               AND e.doc_id = docs.doc_id
           WHERE
             e.updated_at IS NULL
-            OR docs.updated_at > e.updated_at
-            OR e.updated_at < NOW() - INTERVAL '10 minutes'
+            OR (docs.updated_at > e.updated_at AND e.updated_at < NOW() - INTERVAL '10 minutes')
         ) AS needs_embedding;
     `;
 
@@ -232,19 +292,19 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
   async checkEmbeddingAvailable(): Promise<boolean> {
     const [{ count }] = await this.db.$queryRaw<
       { count: number }[]
-    >`SELECT count(1) FROM pg_tables WHERE tablename in ('ai_workspace_embeddings', 'ai_workspace_file_embeddings')`;
-    return Number(count) === 2;
+    >`SELECT count(1) FROM pg_tables WHERE tablename in ('ai_workspace_embeddings', 'ai_workspace_file_embeddings', 'ai_workspace_blob_embeddings')`;
+    return Number(count) === 3;
   }
 
   private processEmbeddings(
     workspaceId: string,
-    fileId: string,
+    fileOrBlobId: string,
     embeddings: Embedding[]
   ) {
     const groups = embeddings.map(e =>
       [
         workspaceId,
-        fileId,
+        fileOrBlobId,
         e.index,
         e.content,
         Prisma.raw(`'[${e.embedding.join(',')}]'`),
@@ -281,6 +341,13 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     fileId: string,
     embeddings: Embedding[]
   ) {
+    if (embeddings.length === 0) {
+      this.logger.warn(
+        `No embeddings provided for workspaceId: ${workspaceId}, fileId: ${fileId}. Skipping insertion.`
+      );
+      return;
+    }
+
     const values = this.processEmbeddings(workspaceId, fileId, embeddings);
     await this.db.$executeRaw`
           INSERT INTO "ai_workspace_file_embeddings"
@@ -345,6 +412,88 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
       LIMIT ${topK};
     `;
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
+  }
+
+  async getBlobContent(
+    workspaceId: string,
+    blobId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const blob = await this.db.aiWorkspaceBlobEmbedding.findMany({
+      where: { workspaceId, blobId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return blob?.map(f => clearEmbeddingContent(f.content)).join('\n');
+  }
+
+  async getBlobChunkSizes(workspaceId: string, blobIds: string[]) {
+    const sizes = await this.db.aiWorkspaceBlobEmbedding.groupBy({
+      by: ['blobId'],
+      _count: { chunk: true },
+      where: { workspaceId, blobId: { in: blobIds } },
+    });
+    return sizes.reduce((acc, cur) => {
+      if (cur._count.chunk) {
+        acc.set(cur.blobId, cur._count.chunk);
+      }
+      return acc;
+    }, new Map<string, number>());
+  }
+
+  @Transactional()
+  async insertBlobEmbeddings(
+    workspaceId: string,
+    blobId: string,
+    embeddings: Embedding[]
+  ) {
+    if (embeddings.length === 0) {
+      this.logger.warn(
+        `No embeddings provided for workspaceId: ${workspaceId}, blobId: ${blobId}. Skipping insertion.`
+      );
+      return;
+    }
+
+    const values = this.processEmbeddings(workspaceId, blobId, embeddings);
+    await this.db.$executeRaw`
+          INSERT INTO "ai_workspace_blob_embeddings"
+          ("workspace_id", "blob_id", "chunk", "content", "embedding") VALUES ${values}
+          ON CONFLICT (workspace_id, blob_id, chunk) DO NOTHING;
+      `;
+  }
+
+  async matchBlobEmbedding(
+    workspaceId: string,
+    embedding: number[],
+    topK: number,
+    threshold: number
+  ): Promise<BlobChunkSimilarity[]> {
+    if (!(await this.allowEmbedding(workspaceId))) {
+      return [];
+    }
+
+    const similarityChunks = await this.db.$queryRaw<
+      Array<BlobChunkSimilarity>
+    >`
+      SELECT
+        e."blob_id" as "blobId",
+        e."chunk",
+        e."content",
+        e."embedding" <=> ${embedding}::vector as "distance" 
+      FROM "ai_workspace_blob_embeddings" e
+      WHERE e.workspace_id = ${workspaceId}
+      ORDER BY "distance" ASC
+      LIMIT ${topK};
+    `;
+    return similarityChunks.filter(c => Number(c.distance) <= threshold);
+  }
+
+  async removeBlob(workspaceId: string, blobId: string) {
+    await this.db.$executeRaw`
+      DELETE FROM "ai_workspace_blob_embeddings"
+      WHERE workspace_id = ${workspaceId} AND blob_id = ${blobId};
+    `;
+    return true;
   }
 
   async removeFile(workspaceId: string, fileId: string) {

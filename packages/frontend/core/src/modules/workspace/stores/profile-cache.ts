@@ -19,13 +19,7 @@ export class WorkspaceProfileCacheStore extends Store {
         }
 
         const info = data as WorkspaceProfileInfo;
-        return {
-          avatar: info.avatar,
-          name: info.name,
-          isOwner: info.isOwner,
-          isAdmin: info.isAdmin,
-          isTeam: info.isTeam,
-        };
+        return info;
       })
     );
   }

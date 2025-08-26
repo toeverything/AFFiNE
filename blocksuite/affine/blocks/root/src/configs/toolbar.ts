@@ -9,6 +9,7 @@ import {
   promptDocTitle,
 } from '@blocksuite/affine-block-embed';
 import { updateBlockType } from '@blocksuite/affine-block-note';
+import type { HighlightType } from '@blocksuite/affine-components/highlight-dropdown-menu';
 import { toast } from '@blocksuite/affine-components/toast';
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
 import {
@@ -19,6 +20,10 @@ import {
   isFormatSupported,
   textFormatConfigs,
 } from '@blocksuite/affine-inline-preset';
+import {
+  EmbedLinkedDocBlockSchema,
+  EmbedSyncedDocBlockSchema,
+} from '@blocksuite/affine-model';
 import { textConversionConfigs } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
@@ -37,8 +42,10 @@ import type {
   ToolbarActionGroup,
   ToolbarModuleConfig,
 } from '@blocksuite/affine-shared/services';
-import { ActionPlacement } from '@blocksuite/affine-shared/services';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import {
+  ActionPlacement,
+  blockCommentToolbarButton,
+} from '@blocksuite/affine-shared/services';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
   CopyIcon,
@@ -47,7 +54,11 @@ import {
   DuplicateIcon,
   LinkedPageIcon,
 } from '@blocksuite/icons/lit';
-import { type BlockComponent, BlockSelection } from '@blocksuite/std';
+import {
+  type BlockComponent,
+  BlockSelection,
+  BlockViewIdentifier,
+} from '@blocksuite/std';
 import { toDraftModel } from '@blocksuite/store';
 import { html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
@@ -140,7 +151,7 @@ const highlightActionGroup = {
   id: 'c.highlight',
   when: ({ chain }) => isFormatSupported(chain).run()[0],
   content({ chain }) {
-    const updateHighlight = (styles: AffineTextAttributes) => {
+    const updateHighlight = (styles: HighlightType) => {
       const payload = { styles };
       chain
         .try(chain => [
@@ -161,7 +172,7 @@ const highlightActionGroup = {
 } as const satisfies ToolbarAction;
 
 const turnIntoDatabase = {
-  id: 'd.convert-to-database',
+  id: 'e.convert-to-database',
   tooltip: 'Create Table',
   icon: DatabaseTableViewIcon(),
   when({ chain }) {
@@ -208,10 +219,21 @@ const turnIntoDatabase = {
 } as const satisfies ToolbarAction;
 
 const turnIntoLinkedDoc = {
-  id: 'e.convert-to-linked-doc',
+  id: 'f.convert-to-linked-doc',
   tooltip: 'Create Linked Doc',
   icon: LinkedPageIcon(),
-  when({ chain }) {
+  when({ chain, std }) {
+    const supportFlavours = [
+      EmbedLinkedDocBlockSchema,
+      EmbedSyncedDocBlockSchema,
+    ].map(schema => schema.model.flavour);
+    if (
+      supportFlavours.some(
+        flavour => !std.getOptional(BlockViewIdentifier(flavour))
+      )
+    )
+      return false;
+
     const [ok, { selectedModels }] = chain
       .pipe(getSelectedModelsCommand, {
         types: ['block', 'text'],
@@ -273,6 +295,10 @@ export const builtinToolbarConfig = {
     highlightActionGroup,
     turnIntoDatabase,
     turnIntoLinkedDoc,
+    {
+      id: 'g.comment',
+      ...blockCommentToolbarButton,
+    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

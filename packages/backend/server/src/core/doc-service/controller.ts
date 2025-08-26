@@ -47,9 +47,14 @@ export class DocRpcController {
   @Get('/workspaces/:workspaceId/docs/:docId/markdown')
   async getDocMarkdown(
     @Param('workspaceId') workspaceId: string,
-    @Param('docId') docId: string
+    @Param('docId') docId: string,
+    @Query('aiEditable') aiEditable?: string
   ) {
-    const result = await this.docReader.getDocMarkdown(workspaceId, docId);
+    const result = await this.docReader.getDocMarkdown(
+      workspaceId,
+      docId,
+      aiEditable === 'true'
+    );
     if (!result) {
       throw new NotFound('Doc not found');
     }

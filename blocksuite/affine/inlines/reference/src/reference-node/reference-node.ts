@@ -150,6 +150,9 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
 
   readonly open = (event?: Partial<DocLinkClickedEvent>) => {
     if (!this.config.interactable) return;
+    if (event?.event?.button === 2) {
+      return;
+    }
 
     this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.next({
       ...this.referenceInfo,

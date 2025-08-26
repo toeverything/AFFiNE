@@ -1,10 +1,11 @@
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import type { ImageSelection } from '@blocksuite/affine/shared/selection';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import type {
   BlockSelection,
   EditorHost,
   TextSelection,
 } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -81,7 +82,7 @@ export class ChatActionList extends LitElement {
   accessor content: string = '';
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor messageId: string | undefined = undefined;
@@ -94,6 +95,9 @@ export class ChatActionList extends LitElement {
 
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-action-list';
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
 
   override render() {
     const { actions } = this;
@@ -138,7 +142,7 @@ export class ChatActionList extends LitElement {
                   blocks: this._currentBlockSelections,
                   images: this._currentImageSelections,
                 };
-                const sessionId = await this.getSessionId();
+                const sessionId = this.session?.sessionId;
                 const success = await action.handler(
                   host,
                   content,
@@ -147,7 +151,7 @@ export class ChatActionList extends LitElement {
                   messageId
                 );
                 if (success) {
-                  this.host.std.getOptional(NotificationProvider)?.notify({
+                  this.notificationService.notify({
                     title: action.toast,
                     accent: 'success',
                     onClose: function (): void {},

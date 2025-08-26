@@ -3,7 +3,7 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { AuthService } from '@affine/core/modules/cloud';
+import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
 import { Trans, useI18n } from '@affine/i18n';
@@ -18,6 +18,7 @@ import * as styles from './style.css';
 export const DeleteAccount = () => {
   const t = useI18n();
 
+  const serverService = useService(ServerService);
   const workspacesService = useService(WorkspacesService);
   const workspaceProfiles = workspacesService.getAllWorkspaceProfile();
   const isTeamWorkspaceOwner = workspaceProfiles.some(
@@ -33,7 +34,9 @@ export const DeleteAccount = () => {
       <SettingRow
         name={
           <span style={{ color: cssVarV2('status/error') }}>
-            {t['com.affine.setting.account.delete']()}
+            {t['com.affine.setting.account.delete-from-server']({
+              server: serverService.server.config$.value.serverName,
+            })}
           </span>
         }
         desc={t['com.affine.setting.account.delete.message']()}
@@ -96,6 +99,7 @@ const DeleteAccountModal = ({
   const authService = useService(AuthService);
   const session = authService.session;
   const account = useLiveData(session.account$);
+  const serverService = useService(ServerService);
 
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -128,9 +132,22 @@ const DeleteAccountModal = ({
       onConfirm={onDeleteAccountConfirm}
       onOpenChange={onOpenChange}
       title={t['com.affine.setting.account.delete.confirm-title']()}
-      description={t[
-        'com.affine.setting.account.delete.confirm-description-1'
-      ]()}
+      description={
+        <Trans
+          i18nKey={
+            'com.affine.setting.account.delete.confirm-delete-description-1'
+          }
+          components={{
+            1: <strong />,
+          }}
+          values={{
+            server:
+              serverService.server.id !== 'affine-cloud'
+                ? `${serverService.server.config$.value.serverName} (${serverService.server.baseUrl})`
+                : serverService.server.config$.value.serverName,
+          }}
+        />
+      }
       confirmText={t['com.affine.setting.account.delete.confirm-button']()}
       confirmButtonOptions={{
         variant: 'error',
@@ -140,7 +157,7 @@ const DeleteAccountModal = ({
       childrenContentClassName={styles.confirmContent}
     >
       <Trans
-        i18nKey="com.affine.setting.account.delete.confirm-description-2"
+        i18nKey="com.affine.setting.account.delete.confirm-delete-description-2"
         components={{
           1: <strong />,
         }}

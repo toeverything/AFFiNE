@@ -65,6 +65,15 @@ const encode = (input: unknown) => {
 const decode = (base64String?: string | null) =>
   base64String ? Buffer.from(base64String, 'base64').toString('utf-8') : null;
 
+function encodeWithJson(input: unknown) {
+  return encode(JSON.stringify(input ?? null));
+}
+
+export function decodeWithJson<T>(base64String?: string | null): T | null {
+  const str = decode(base64String);
+  return str ? (JSON.parse(str) as T) : null;
+}
+
 export function paginate<T>(
   list: T[],
   cursorField: keyof T,
@@ -84,6 +93,31 @@ export function paginate<T>(
       hasPreviousPage: !!paginationInput.after || paginationInput.offset > 0,
       endCursor: edges.length ? edges[edges.length - 1].cursor : null,
       startCursor: edges.length ? edges[0].cursor : null,
+    },
+  };
+}
+
+export function paginateWithCustomCursor<T>(
+  list: T[],
+  total: number,
+  startCursor: unknown,
+  endCursor: unknown,
+  hasPreviousPage = false
+): PaginatedType<T> {
+  const edges = list.map(item => ({
+    node: item,
+    // set cursor to empty string for ignore it
+    cursor: '',
+  }));
+
+  return {
+    totalCount: total,
+    edges,
+    pageInfo: {
+      hasNextPage: list.length > 0,
+      hasPreviousPage,
+      endCursor: encodeWithJson(endCursor),
+      startCursor: encodeWithJson(startCursor),
     },
   };
 }

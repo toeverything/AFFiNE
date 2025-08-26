@@ -161,7 +161,7 @@ export function createLitPortal({
   }
 
   if (!positionConfigOrFn) {
-    return portalRoot;
+    return { portal: portalRoot, update: () => {} };
   }
 
   const visibility = portalRoot.style.visibility;
@@ -221,5 +221,5 @@ export function createLitPortal({
     });
   }
 
-  return portalRoot;
+  return { portal: portalRoot, update };
 }

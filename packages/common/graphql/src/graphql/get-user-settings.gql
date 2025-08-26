@@ -3,6 +3,7 @@ query getUserSettings {
     settings {
       receiveInvitationEmail
       receiveMentionEmail
+      receiveCommentEmail
     }
   }
 }

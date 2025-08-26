@@ -1,11 +1,12 @@
 import type { NodeOperation } from '@affine/core/desktop/components/navigation-panel';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { NavigationPanelTreeNode } from '../../tree/node';
@@ -19,18 +20,31 @@ import * as styles from './styles.css';
 export const NavigationPanelTagNode = ({
   tagId,
   operations: additionalOperations,
+  parentPath,
 }: {
   tagId: string;
   operations?: NodeOperation[];
+  parentPath: string[];
 }) => {
   const t = useI18n();
   const { tagService, globalContextService } = useServices({
     TagService,
     GlobalContextService,
   });
+  const navigationPanelService = useService(NavigationPanelService);
   const active =
     useLiveData(globalContextService.globalContext.tagId.$) === tagId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...parentPath, `tag-${tagId}`],
+    [parentPath, tagId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
 
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
   const tagColor = useLiveData(tagRecord?.color$);
@@ -57,7 +71,7 @@ export const NavigationPanelTagNode = ({
     () => ({
       openNodeCollapsed: () => setCollapsed(false),
     }),
-    []
+    [setCollapsed]
   );
   const operations = useNavigationPanelTagNodeOperationsMenu(tagId, option);
   const { handleNewDoc } = useNavigationPanelTagNodeOperations(tagId, option);
@@ -86,7 +100,11 @@ export const NavigationPanelTagNode = ({
       aria-label={tagName}
       data-role="navigation-panel-tag"
     >
-      <NavigationPanelTagNodeDocs tag={tagRecord} onNewDoc={handleNewDoc} />
+      <NavigationPanelTagNodeDocs
+        tag={tagRecord}
+        onNewDoc={handleNewDoc}
+        path={path}
+      />
     </NavigationPanelTreeNode>
   );
 };
@@ -99,9 +117,11 @@ export const NavigationPanelTagNode = ({
 export const NavigationPanelTagNodeDocs = ({
   tag,
   onNewDoc,
+  path,
 }: {
   tag: Tag;
   onNewDoc?: () => void;
+  path: string[];
 }) => {
   const t = useI18n();
   const tagDocIds = useLiveData(tag.pageIds$);
@@ -109,7 +129,7 @@ export const NavigationPanelTagNodeDocs = ({
   return (
     <>
       {tagDocIds.map(docId => (
-        <NavigationPanelDocNode key={docId} docId={docId} />
+        <NavigationPanelDocNode key={docId} docId={docId} parentPath={path} />
       ))}
       <AddItemPlaceholder label={t['New Page']()} onClick={onNewDoc} />
     </>

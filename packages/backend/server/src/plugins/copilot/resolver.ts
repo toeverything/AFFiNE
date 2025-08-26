@@ -23,30 +23,30 @@ import {
   CallMetric,
   CopilotDocNotFound,
   CopilotFailedToCreateMessage,
+  CopilotProviderSideError,
   CopilotSessionNotFound,
   type FileUpload,
+  paginate,
+  Paginated,
+  PaginationInput,
   RequestMutex,
   Throttle,
   TooManyRequest,
+  UserFriendlyError,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
-import { AccessController } from '../../core/permission';
+import { DocReader } from '../../core/doc';
+import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
+import { CopilotCronJobs } from './cron';
 import { PromptService } from './prompt';
 import { PromptMessage, StreamObject } from './providers';
+import { CopilotProviderFactory } from './providers/factory';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
-import {
-  AvailableModels,
-  type ChatHistory,
-  type ChatMessage,
-  type ChatSessionState,
-  SubmittedMessage,
-} from './types';
-
-registerEnumType(AvailableModels, { name: 'CopilotModel' });
+import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
 export const COPILOT_LOCKER = 'copilot';
 
@@ -67,10 +67,18 @@ class CreateChatSessionInput {
 
   @Field(() => Boolean, { nullable: true })
   pinned?: boolean;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    description: 'true by default, compliant for old version',
+  })
+  reuseLatestChat?: boolean;
 }
 
 @InputType()
-class UpdateChatSessionInput implements Omit<UpdateChatSession, 'userId'> {
+class UpdateChatSessionInput
+  implements Omit<UpdateChatSession, 'userId' | 'title'>
+{
   @Field(() => String)
   sessionId!: string;
 
@@ -135,6 +143,9 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   @Field(() => [String], { nullable: true, deprecationReason: 'use blobs' })
   attachments!: string[] | undefined;
 
+  @Field(() => GraphQLUpload, { nullable: true })
+  blob!: Promise<FileUpload> | undefined;
+
   @Field(() => [GraphQLUpload], { nullable: true })
   blobs!: Promise<FileUpload>[] | undefined;
 
@@ -180,6 +191,9 @@ class QueryChatHistoriesInput
 
   @Field(() => String, { nullable: true })
   sessionId: string | undefined;
+
+  @Field(() => Boolean, { nullable: true })
+  withMessages: boolean | undefined;
 
   @Field(() => Boolean, { nullable: true })
   withPrompt: boolean | undefined;
@@ -234,18 +248,39 @@ class ChatMessageType implements Partial<ChatMessage> {
 }
 
 @ObjectType('CopilotHistories')
-class CopilotHistoriesType implements Partial<ChatHistory> {
+class CopilotHistoriesType implements Omit<ChatHistory, 'userId'> {
   @Field(() => String)
   sessionId!: string;
 
-  @Field(() => Boolean)
-  pinned!: boolean;
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => String, { nullable: true })
+  docId!: string | null;
+
+  @Field(() => String, { nullable: true })
+  parentSessionId!: string | null;
+
+  @Field(() => String)
+  promptName!: string;
+
+  @Field(() => String)
+  model!: string;
+
+  @Field(() => [String])
+  optionalModels!: string[];
 
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
     nullable: true,
   })
   action!: string | null;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
+
+  @Field(() => String, { nullable: true })
+  title!: string | null;
 
   @Field(() => Number, {
     description: 'The number of tokens used in the session',
@@ -257,7 +292,15 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 
   @Field(() => Date)
   createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
 }
+
+@ObjectType()
+export class PaginatedCopilotHistoriesType extends Paginated(
+  CopilotHistoriesType
+) {}
 
 @ObjectType('CopilotQuota')
 class CopilotQuotaType {
@@ -301,8 +344,6 @@ class CopilotPromptMessageType {
   params!: Record<string, string> | null;
 }
 
-registerEnumType(AvailableModels, { name: 'CopilotModels' });
-
 @ObjectType()
 class CopilotPromptType {
   @Field(() => String)
@@ -332,6 +373,9 @@ export class CopilotSessionType {
   @Field(() => Boolean)
   pinned!: boolean;
 
+  @Field(() => String, { nullable: true })
+  title!: string | null;
+
   @Field(() => ID, { nullable: true })
   parentSessionId!: string | null;
 
@@ -360,7 +404,9 @@ export class CopilotResolver {
     private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
     private readonly chatSession: ChatSessionService,
-    private readonly storage: CopilotStorage
+    private readonly storage: CopilotStorage,
+    private readonly docReader: DocReader,
+    private readonly providerFactory: CopilotProviderFactory
   ) {}
 
   @ResolveField(() => CopilotQuotaType, {
@@ -372,6 +418,31 @@ export class CopilotResolver {
     return await this.chatSession.getQuota(user.id);
   }
 
+  private async assertPermission(
+    user: CurrentUser,
+    options: { workspaceId?: string | null; docId?: string | null },
+    fallbackAction?: DocAction
+  ) {
+    const { workspaceId, docId } = options;
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found');
+    }
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId, docId })
+        .allowLocal()
+        .assert(fallbackAction ?? 'Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+    return { userId: user.id, workspaceId, docId: docId || undefined };
+  }
+
   @ResolveField(() => CopilotSessionType, {
     description: 'Get the session by id',
     complexity: 2,
@@ -381,15 +452,8 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args('sessionId') sessionId: string
   ): Promise<CopilotSessionType> {
-    if (!copilot.workspaceId) {
-      throw new NotFoundException('Workspace not found');
-    }
-    await this.ac
-      .user(user.id)
-      .workspace(copilot.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
-    const session = await this.chatSession.getSession(sessionId);
+    await this.assertPermission(user, copilot);
+    const session = await this.chatSession.getSessionInfo(sessionId);
     if (!session) {
       throw new NotFoundException('Session not found');
     }
@@ -398,35 +462,44 @@ export class CopilotResolver {
 
   @ResolveField(() => [CopilotSessionType], {
     description: 'Get the session list in the workspace',
+    deprecationReason: 'use `chats` instead',
     complexity: 2,
   })
   async sessions(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
-    @Args('docId', { nullable: true }) docId?: string,
+    @Args('docId', { nullable: true }) maybeDocId?: string,
     @Args('options', { nullable: true }) options?: QueryChatSessionsInput
   ): Promise<CopilotSessionType[]> {
     if (!copilot.workspaceId) {
-      throw new NotFoundException('Workspace not found');
+      return [];
     }
-    await this.ac
-      .user(user.id)
-      .workspace(copilot.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
 
-    const sessions = await this.chatSession.listSessions(
-      Object.assign({}, options, {
-        userId: user.id,
-        workspaceId: copilot.workspaceId,
-        docId,
-      })
+    const appendOptions = await this.assertPermission(
+      user,
+      Object.assign({}, copilot, { docId: maybeDocId })
     );
 
-    return sessions.map(this.transformToSessionType);
+    const sessions = await this.chatSession.list(
+      Object.assign({}, options, appendOptions),
+      false
+    );
+    if (appendOptions.docId) {
+      type Session = ChatHistory & { docId: string };
+      const filtered = sessions.filter((s): s is Session => !!s.docId);
+      const accessible = await this.ac
+        .user(user.id)
+        .workspace(copilot.workspaceId)
+        .docs(filtered, 'Doc.Update');
+      return accessible.map(this.transformToSessionType);
+    } else {
+      return sessions.map(this.transformToSessionType);
+    }
   }
 
-  @ResolveField(() => [CopilotHistoriesType], {})
+  @ResolveField(() => [CopilotHistoriesType], {
+    deprecationReason: 'use `chats` instead',
+  })
   @CallMetric('ai', 'histories')
   async histories(
     @Parent() copilot: CopilotType,
@@ -437,22 +510,13 @@ export class CopilotResolver {
     const workspaceId = copilot.workspaceId;
     if (!workspaceId) {
       return [];
-    } else if (docId) {
-      await this.ac
-        .user(user.id)
-        .doc({ workspaceId, docId })
-        .allowLocal()
-        .assert('Doc.Read');
     } else {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
+      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
-    const histories = await this.chatSession.listHistories(
-      Object.assign({}, options, { userId: user.id, workspaceId, docId })
+    const histories = await this.chatSession.list(
+      Object.assign({}, options, { userId: user.id, workspaceId, docId }),
+      true
     );
 
     return histories.map(h => ({
@@ -462,6 +526,48 @@ export class CopilotResolver {
         m => m.content || m.attachments?.length
       ) as ChatMessageType[],
     }));
+  }
+
+  @ResolveField(() => PaginatedCopilotHistoriesType, {})
+  @CallMetric('ai', 'histories')
+  async chats(
+    @Parent() copilot: CopilotType,
+    @CurrentUser() user: CurrentUser,
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput,
+    @Args('docId', { nullable: true }) docId?: string,
+    @Args('options', { nullable: true }) options?: QueryChatHistoriesInput
+  ): Promise<PaginatedCopilotHistoriesType> {
+    const workspaceId = copilot.workspaceId;
+    if (!workspaceId) {
+      return paginate([], 'updatedAt', pagination, 0);
+    } else {
+      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
+    }
+
+    const finalOptions = Object.assign(
+      {},
+      options,
+      { userId: user.id, workspaceId, docId },
+      { skip: pagination.offset, limit: pagination.first }
+    );
+    const totalCount = await this.chatSession.count(finalOptions);
+    const histories = await this.chatSession.list(
+      finalOptions,
+      !!options?.withMessages
+    );
+
+    return paginate(
+      histories.map(h => ({
+        ...h,
+        // filter out empty messages
+        messages: h.messages?.filter(
+          m => m.content || m.attachments?.length
+        ) as ChatMessageType[],
+      })),
+      'updatedAt',
+      pagination,
+      totalCount
+    );
   }
 
   @Mutation(() => String, {
@@ -474,19 +580,7 @@ export class CopilotResolver {
     options: CreateChatSessionInput
   ): Promise<string> {
     // permission check based on session type
-    if (options.docId) {
-      await this.ac
-        .user(user.id)
-        .doc({ workspaceId: options.workspaceId, docId: options.docId })
-        .allowLocal()
-        .assert('Doc.Update');
-    } else {
-      await this.ac
-        .user(user.id)
-        .workspace(options.workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
-    }
+    await this.assertPermission(user, options);
 
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
@@ -517,20 +611,15 @@ export class CopilotResolver {
     if (!session) {
       throw new CopilotSessionNotFound();
     }
-    const { workspaceId, docId } = session.config;
-    if (docId) {
-      await this.ac
-        .user(user.id)
-        .doc(workspaceId, docId)
-        .allowLocal()
-        .assert('Doc.Update');
-    } else {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
+
+    const config = await this.assertPermission(user, session.config);
+    const { workspaceId, docId: currentDocId } = config;
+    const { docId: newDocId } = options;
+    // check permission if the docId is changed
+    if (newDocId !== undefined && newDocId !== currentDocId) {
+      await this.assertPermission(user, { workspaceId, docId: newDocId });
     }
+
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
@@ -538,7 +627,7 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
-    return await this.chatSession.updateSession({
+    return await this.chatSession.update({
       ...options,
       userId: user.id,
     });
@@ -618,10 +707,13 @@ export class CopilotResolver {
     }
 
     const attachments: PromptMessage['attachments'] = options.attachments || [];
-    if (options.blobs) {
+    if (options.blob || options.blobs) {
       const { workspaceId } = session.config;
 
-      const blobs = await Promise.all(options.blobs);
+      const blobs = await Promise.all(
+        options.blob ? [options.blob] : options.blobs || []
+      );
+      delete options.blob;
       delete options.blobs;
 
       for (const blob of blobs) {
@@ -646,18 +738,69 @@ export class CopilotResolver {
     }
   }
 
+  @Query(() => String, {
+    description:
+      'Apply updates to a doc using LLM and return the merged markdown.',
+  })
+  async applyDocUpdates(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'workspaceId', type: () => String })
+    workspaceId: string,
+    @Args({ name: 'docId', type: () => String })
+    docId: string,
+    @Args({ name: 'op', type: () => String })
+    op: string,
+    @Args({ name: 'updates', type: () => String })
+    updates: string
+  ): Promise<string> {
+    await this.assertPermission(user, { workspaceId, docId });
+
+    const docContent = await this.docReader.getDocMarkdown(
+      workspaceId,
+      docId,
+      true
+    );
+    if (!docContent || !docContent.markdown) {
+      throw new NotFoundException('Doc not found or empty');
+    }
+
+    const markdown = docContent.markdown.trim();
+
+    // Get LLM provider
+    const provider =
+      await this.providerFactory.getProviderByModel('morph-v3-large');
+    if (!provider) {
+      throw new BadRequestException('No LLM provider available');
+    }
+
+    try {
+      return await provider.text(
+        { modelId: 'morph-v3-large' },
+        [
+          {
+            role: 'user',
+            content: `<instruction>${op}</instruction>\n<code>${markdown}</code>\n<update>${updates}</update>`,
+          },
+        ],
+        { reasoning: false }
+      );
+    } catch (e: any) {
+      if (e instanceof UserFriendlyError) {
+        throw e;
+      } else {
+        throw new CopilotProviderSideError({
+          provider: provider.type,
+          kind: 'unexpected_response',
+          message: e?.message || 'Unexpected apply response',
+        });
+      }
+    }
+  }
+
   private transformToSessionType(
-    session: Omit<ChatSessionState, 'messages'>
+    session: Omit<ChatHistory, 'messages'>
   ): CopilotSessionType {
-    return {
-      id: session.sessionId,
-      parentSessionId: session.parentSessionId,
-      docId: session.docId,
-      pinned: session.pinned,
-      promptName: session.prompt.name,
-      model: session.prompt.model,
-      optionalModels: session.prompt.optionalModels,
-    };
+    return { id: session.sessionId, ...session };
   }
 }
 
@@ -687,8 +830,8 @@ class CreateCopilotPromptInput {
   @Field(() => String)
   name!: string;
 
-  @Field(() => AvailableModels)
-  model!: AvailableModels;
+  @Field(() => String)
+  model!: string;
 
   @Field(() => String, { nullable: true })
   action!: string | null;
@@ -703,7 +846,26 @@ class CreateCopilotPromptInput {
 @Admin()
 @Resolver(() => String)
 export class PromptsManagementResolver {
-  constructor(private readonly promptService: PromptService) {}
+  constructor(
+    private readonly cron: CopilotCronJobs,
+    private readonly promptService: PromptService
+  ) {}
+
+  @Mutation(() => Boolean, {
+    description: 'Trigger generate missing titles cron job',
+  })
+  async triggerGenerateTitleCron() {
+    await this.cron.triggerGenerateMissingTitles();
+    return true;
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'Trigger cleanup of trashed doc embeddings',
+  })
+  async triggerCleanupTrashedDocEmbeddings() {
+    await this.cron.triggerCleanupTrashedDocEmbeddings();
+    return true;
+  }
 
   @Query(() => [CopilotPromptType], {
     description: 'List all copilot prompts',
@@ -745,7 +907,7 @@ export class PromptsManagementResolver {
     @Args('messages', { type: () => [CopilotPromptMessageType] })
     messages: CopilotPromptMessageType[]
   ) {
-    await this.promptService.update(name, messages, true);
+    await this.promptService.update(name, { messages, modified: true });
     return this.promptService.get(name);
   }
 }

@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getLastBlockCommand } from '../../../commands/block-crud/get-last-content-block';
-import { affine } from '../../helpers/affine-template';
+import { affine } from '../../../test-utils';
 
 describe('commands/block-crud', () => {
   describe('getLastBlockCommand', () => {

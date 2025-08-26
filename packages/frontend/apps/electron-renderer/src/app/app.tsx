@@ -10,6 +10,7 @@ import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { setupEffects } from './effects';
+import { DesktopLanguageSync } from './language-sync';
 import { DesktopThemeSync } from './theme-sync';
 
 const { frameworkProvider } = setupEffects();
@@ -46,6 +47,7 @@ export function App() {
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <DesktopThemeSync />
+              <DesktopLanguageSync />
               <RouterProvider
                 fallbackElement={<AppContainer fallback />}
                 router={router}
