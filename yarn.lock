@@ -26700,8 +26700,8 @@ __metadata:
   linkType: hard
 
 "mermaid@npm:^10.9.1":
-  version: 10.9.3
-  resolution: "mermaid@npm:10.9.3"
+  version: 10.9.4
+  resolution: "mermaid@npm:10.9.4"
   dependencies:
     "@braintree/sanitize-url": "npm:^6.0.1"
     "@types/d3-scale": "npm:^4.0.3"
@@ -26723,7 +26723,7 @@ __metadata:
     ts-dedent: "npm:^2.2.0"
     uuid: "npm:^9.0.0"
     web-worker: "npm:^1.2.0"
-  checksum: 10/ca6ed9e6a24a7d8777ea9f145d7dc5b66e2070cfb7afa39b77532ebe6ebf6e7a1e9ae617ccc9b47ca493d862a27487ea13f841ccd1184107e4ac689d4b3d4c38
+  checksum: 10/1d51839345cbb3e54171be73549afa4dba77df56cf3693fb57dd7ff24c2806310dc7b829f2ab2e87b7beb15cf5a89c8029d8d7cfd206258ed97bddfa03b54a97
   languageName: node
   linkType: hard
 
