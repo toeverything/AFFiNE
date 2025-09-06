@@ -53,7 +53,7 @@ export const TrashPageFooter = () => {
         <Button
           tooltip={t['com.affine.trashOperation.restoreIt']()}
           data-testid="page-restore-button"
-          variant="primary"
+          variant="brand"
           onClick={onRestore}
           className={styles.buttonContainer}
           prefix={<ResetIcon />}
@@ -61,7 +61,7 @@ export const TrashPageFooter = () => {
         />
         <Button
           tooltip={t['com.affine.trashOperation.deletePermanently']()}
-          variant="error"
+          variant="default"
           onClick={onDelete}
           className={styles.buttonContainer}
           prefix={<DeleteIcon />}

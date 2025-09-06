@@ -36,7 +36,7 @@ const WorkspaceSettingPropertiesMain = () => {
     <div className={styles.main}>
       <div className={styles.listHeader}>
         <Menu items={<CreatePropertyMenuItems onCreated={onCreated} />}>
-          <Button variant="primary">
+          <Button variant="brand">
             {t['com.affine.settings.workspace.properties.add_property']()}
           </Button>
         </Menu>

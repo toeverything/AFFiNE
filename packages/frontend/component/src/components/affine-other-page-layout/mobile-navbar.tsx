@@ -41,7 +41,7 @@ export const MobileNavbar = () => {
           onOpenChange: setOpenMenu,
         }}
       >
-        <IconButton variant="plain" size="24" className={styles.iconButton}>
+        <IconButton variant="default" size="24" className={styles.iconButton}>
           {openMenu ? <CloseIcon /> : <PropertyIcon />}
         </IconButton>
       </Menu>

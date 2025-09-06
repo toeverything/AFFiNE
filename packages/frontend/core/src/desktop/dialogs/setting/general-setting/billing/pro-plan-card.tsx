@@ -161,7 +161,7 @@ const PlanAction = ({
   const isOnetimePro = useLiveData(subscription.isOnetimePro$);
 
   if (isOnetimePro) {
-    return <RedeemCode variant="primary" className={styles.planAction} />;
+    return <RedeemCode variant="brand" className={styles.planAction} />;
   }
 
   return (
@@ -183,7 +183,7 @@ const PlanAction = ({
         <PaymentMethodUpdater
           inCardView
           className={styles.managementInCard}
-          variant="primary"
+          variant="brand"
         />
       ) : null}
     </div>

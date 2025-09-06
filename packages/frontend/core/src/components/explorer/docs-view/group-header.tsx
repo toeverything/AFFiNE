@@ -86,7 +86,7 @@ export const DocGroupHeader = ({
       <Button
         size="custom"
         className={styles.selectAllButton}
-        variant="plain"
+        variant="default"
         onClick={handleSelectAll}
       >
         {t[

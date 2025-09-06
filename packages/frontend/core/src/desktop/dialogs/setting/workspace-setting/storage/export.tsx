@@ -69,7 +69,7 @@ export const DesktopExportPanel = ({ workspace }: ExportPanelProps) => {
         desc={t['Full Backup Description']()}
       >
         <Button
-          variant="primary"
+          variant="brand"
           data-testid="export-affine-backup"
           onClick={onExport}
           disabled={saving}
@@ -89,7 +89,7 @@ export const DesktopExportPanel = ({ workspace }: ExportPanelProps) => {
         }
       >
         <Button
-          variant="primary"
+          variant="brand"
           data-testid="export-affine-full-sync"
           onClick={fullSync}
           loading={fullSyncing}

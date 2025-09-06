@@ -174,7 +174,7 @@ export const Component = () => {
           />
           <NavigationBackButton>
             <Button
-              variant="plain"
+              variant="default"
               className={styles.searchCancel}
               onClick={transitionBack}
             >

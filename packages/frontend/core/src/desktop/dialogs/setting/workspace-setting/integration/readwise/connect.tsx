@@ -152,7 +152,7 @@ const ConnectDialog = ({
           {t['Cancel']()}
         </Button>
         <Button
-          variant="primary"
+          variant="brand"
           disabled={status === 'verifying' || !token || status === 'error'}
           loading={status === 'verifying'}
           onClick={() => handleConnect(token)}

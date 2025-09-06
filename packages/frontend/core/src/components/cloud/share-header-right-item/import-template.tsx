@@ -13,7 +13,7 @@ export const ImportTemplateButton = ({
   const { jumpToImportTemplate } = useNavigateHelper();
   return (
     <Button
-      variant="primary"
+      variant="brand"
       onClick={() => jumpToImportTemplate(name, snapshotUrl)}
     >
       {t['com.affine.share-page.header.import-template']()}

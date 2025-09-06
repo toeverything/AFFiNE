@@ -58,8 +58,8 @@ export const ChangeEmailPage = ({
           disabled={hasSetUp}
         />
         <Button
-          variant="primary"
-          size="large"
+          variant="brand"
+          size={500}
           onClick={onContinue}
           loading={loading}
           disabled={hasSetUp}

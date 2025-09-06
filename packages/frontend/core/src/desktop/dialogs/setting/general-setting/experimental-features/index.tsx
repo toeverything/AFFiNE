@@ -74,7 +74,7 @@ const ExperimentalFeaturesPrompt = ({
         <Button
           disabled={!checked}
           onClick={onConfirm}
-          variant="primary"
+          variant="brand"
           data-testid="experimental-confirm-button"
         >
           {t[

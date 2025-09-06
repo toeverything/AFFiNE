@@ -390,7 +390,7 @@ const SuccessStatus = ({ onComplete }: { onComplete: () => void }) => {
         .
       </p>
       <div className={style.importModalButtonContainer}>
-        <Button onClick={onComplete} variant="primary">
+        <Button onClick={onComplete} variant="brand">
           {t['Complete']()}
         </Button>
       </div>
@@ -420,11 +420,11 @@ const ErrorStatus = ({
           onClick={() => {
             urlService.openPopupWindow(BUILD_CONFIG.discordUrl);
           }}
-          variant="secondary"
+          variant="default"
         >
           {t['Feedback']()}
         </Button>
-        <Button onClick={onRetry} variant="primary">
+        <Button onClick={onRetry} variant="brand">
           {t['Retry']()}
         </Button>
       </div>

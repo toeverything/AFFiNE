@@ -10,7 +10,7 @@ export const ExpiredPage = ({ onOpenAffine }: { onOpenAffine: () => void }) => {
       title={t['com.affine.expired.page.title']()}
       subtitle={t['com.affine.expired.page.new-subtitle']()}
     >
-      <Button variant="primary" size="large" onClick={onOpenAffine}>
+      <Button variant="brand" size={500} onClick={onOpenAffine}>
         {t['com.affine.auth.open.affine']()}
       </Button>
     </AuthPageContainer>

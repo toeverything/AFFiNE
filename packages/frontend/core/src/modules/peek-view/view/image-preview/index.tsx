@@ -221,7 +221,7 @@ export const GenericImagePreviewModal = ({
             data-testid="reset-scale-button"
             tooltip="Reset scale"
             onClick={resetScale}
-            variant="plain"
+            variant="default"
           >
             {`${(currentScale * 100).toFixed(0)}%`}
           </Button>

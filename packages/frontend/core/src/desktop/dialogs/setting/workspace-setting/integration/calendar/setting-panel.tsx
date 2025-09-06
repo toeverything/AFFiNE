@@ -93,7 +93,7 @@ const AddSubscription = () => {
     <>
       <Button
         prefix={<PlusIcon />}
-        size="large"
+        size={500}
         onClick={handleOpen}
         className={styles.newButton}
       >
@@ -130,7 +130,7 @@ const AddSubscription = () => {
 
         <footer className={styles.newDialogFooter}>
           <Button onClick={handleClose}>{t['Cancel']()}</Button>
-          <Button variant="primary" onClick={handleAddSub} loading={verifying}>
+          <Button variant="brand" onClick={handleAddSub} loading={verifying}>
             {t['com.affine.integration.calendar.new-subscription']()}
           </Button>
         </footer>

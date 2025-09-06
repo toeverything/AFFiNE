@@ -246,7 +246,7 @@ export const GenericSelector = ({
         <div className={styles.actions}>
           <Button
             disabled={disableConfirm}
-            variant="primary"
+            variant="brand"
             className={styles.actionButton}
             onClick={handleConfirm}
           >

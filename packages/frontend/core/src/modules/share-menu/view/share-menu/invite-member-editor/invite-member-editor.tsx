@@ -254,7 +254,7 @@ export const InviteMemberEditor = ({
           </Button>
           <Button
             className={styles.button}
-            variant="primary"
+            variant="brand"
             disabled={!selectedMembers.length}
             onClick={onInvite}
           >
@@ -400,7 +400,7 @@ const RoleSelector = ({
       >
         <MenuTrigger
           className={styles.menuTriggerStyle}
-          variant="plain"
+          variant="default"
           contentStyle={{
             width: '100%',
           }}

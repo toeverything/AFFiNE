@@ -42,7 +42,7 @@ export const AcceptInvitePage = ({
         </div>
       }
     >
-      <Button variant="primary" size="large" onClick={onOpenWorkspace}>
+      <Button variant="brand" size={500} onClick={onOpenWorkspace}>
         {t['Visit Workspace']()}
       </Button>
     </AuthPageContainer>

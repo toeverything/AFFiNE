@@ -147,8 +147,8 @@ export const SignInWithPasswordStep = ({
         {!verifyToken && needCaptcha && <Captcha />}
         <Button
           data-testid="sign-in-button"
-          variant="primary"
-          size="extraLarge"
+          variant="brand"
+          size={500}
           style={{ width: '100%' }}
           disabled={isLoading || (!verifyToken && needCaptcha)}
           onClick={onSignIn}

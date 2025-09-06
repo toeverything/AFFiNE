@@ -370,7 +370,7 @@ const PageHistoryList = ({
                         </div>
                         {isLastGroup && isLastItem && onLoadMore ? (
                           <Button
-                            variant="plain"
+                            variant="default"
                             loading={loadingMore}
                             disabled={loadingMore}
                             className={styles.historyItemLoadMore}
@@ -515,7 +515,7 @@ const PageHistoryManager = ({
         </Button>
         <div className={styles.spacer} />
         <Button
-          variant="primary"
+          variant="brand"
           onClick={onConfirmRestore}
           disabled={isMutating || !activeVersion || !canEdit}
         >

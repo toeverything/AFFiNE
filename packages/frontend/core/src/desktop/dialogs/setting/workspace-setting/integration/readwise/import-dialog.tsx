@@ -280,7 +280,7 @@ const SelectStage = ({
             disabled={
               loading || (selected.length === 0 && highlights.length !== 0)
             }
-            variant="primary"
+            variant="brand"
             onClick={handleConfirmImport}
           >
             {t['Confirm']()}
@@ -477,7 +477,7 @@ const WritingStage = ({
       </main>
 
       <footer className={styles.importingFooter}>
-        <Button variant="error" onClick={onStop}>
+        <Button variant="default" onClick={onStop}>
           {t['com.affine.integration.readwise.import.importing-stop']()}
         </Button>
       </footer>

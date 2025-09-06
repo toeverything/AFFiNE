@@ -68,7 +68,7 @@ export const MeetingsWelcomePage = () => {
         </div>
         <Button
           onClick={getStartedClicked}
-          variant="primary"
+          variant="brand"
           className={styles.getStartedButton}
         >
           {t[

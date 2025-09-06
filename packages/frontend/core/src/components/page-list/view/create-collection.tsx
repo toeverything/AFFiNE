@@ -109,13 +109,13 @@ export const CreateCollection = ({
         ) : null}
       </div>
       <div className={styles.footer}>
-        <Button size="large" onClick={onCancel}>
+        <Button size={500} onClick={onCancel}>
           {t['com.affine.editCollection.button.cancel']()}
         </Button>
         <Button
-          size="large"
+          size={500}
           data-testid="save-collection"
-          variant="primary"
+          variant="brand"
           disabled={isNameEmpty}
           onClick={save}
         >

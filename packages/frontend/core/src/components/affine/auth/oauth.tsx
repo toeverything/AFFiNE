@@ -123,7 +123,7 @@ function OAuthProvider({ onContinue, provider }: OauthProviderProps) {
     <Button
       variant={provider === OAuthProviderType.Apple ? 'custom' : 'primary'}
       block
-      size="extraLarge"
+      size={500}
       style={{ width: '100%' }}
       prefix={icon}
       onClick={onClick}

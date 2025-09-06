@@ -40,7 +40,7 @@ const AuthorizedUserInfo = ({ account }: { account: AuthAccountInfo }) => {
     <Menu items={<OperationMenu />} contentOptions={menuContentOptions}>
       <IconButton
         data-testid="sidebar-user-avatar"
-        variant="plain"
+        variant="default"
         size="20"
         style={{ padding: 0 }}
         withoutHover
@@ -62,7 +62,7 @@ const UnauthorizedUserInfo = () => {
     <IconButton
       onClick={openSignInModal}
       data-testid="sidebar-user-avatar"
-      variant="plain"
+      variant="default"
       size="20"
     >
       <UnknownUserIcon />

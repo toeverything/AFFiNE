@@ -127,7 +127,7 @@ export const AudioPlayer = ({
               </>
             }
           >
-            <Button variant="plain" className={styles.playbackRateDisplay}>
+            <Button variant="default" className={styles.playbackRateDisplay}>
               {playbackRate}x
             </Button>
           </Menu>
@@ -220,7 +220,7 @@ export const MiniAudioPlayer = ({
         <IconButton
           icon={<RewindFifteenSecondsIcon />}
           size={18}
-          variant="plain"
+          variant="default"
           onClick={handleRewind}
         />
         <AnimatedPlayIcon
@@ -232,7 +232,7 @@ export const MiniAudioPlayer = ({
         <IconButton
           icon={<ForwardThirtySecondsIcon />}
           size={18}
-          variant="plain"
+          variant="default"
           onClick={handleForward}
         />
       </div>
@@ -240,7 +240,7 @@ export const MiniAudioPlayer = ({
         className={styles.miniCloseButton}
         icon={<CloseIcon />}
         size={16}
-        variant="plain"
+        variant="default"
         onClick={handleClose}
       />
       <div className={styles.miniProgressContainer}>

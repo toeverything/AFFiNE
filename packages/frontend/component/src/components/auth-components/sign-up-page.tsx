@@ -63,7 +63,7 @@ export const SignUpPage: FC<{
       }
     >
       {hasSetUp ? (
-        <Button variant="primary" size="large" onClick={onOpenAffine}>
+        <Button variant="brand" size={500} onClick={onOpenAffine}>
           {openButtonText ?? t['com.affine.auth.open.affine']()}
         </Button>
       ) : (

@@ -9,7 +9,7 @@ export const BackButton: FC<ButtonProps> = props => {
   const t = useI18n();
   return (
     <Button
-      variant="plain"
+      variant="default"
       style={{
         padding: '2px 8px 2px 0',
       }}

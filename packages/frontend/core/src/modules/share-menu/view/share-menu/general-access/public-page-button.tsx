@@ -133,7 +133,7 @@ export const PublicDoc = ({ disabled }: { disabled?: boolean }) => {
           <MenuTrigger
             className={styles.menuTriggerStyle}
             data-testid="share-link-menu-trigger"
-            variant="plain"
+            variant="default"
             suffixClassName={styles.suffixClassName}
             contentStyle={{
               width: '100%',

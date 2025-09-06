@@ -224,7 +224,7 @@ const Dialog = ({
       ) : (
         <Button
           className={styles.mainButton}
-          variant="primary"
+          variant="brand"
           loading={disabled}
           disabled={disabled}
           onClick={handleImportToNewWorkspace}

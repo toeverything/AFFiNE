@@ -94,7 +94,7 @@ export const DocInfoSheet = ({
               ))}
               {!canEditPropertyInfo ? (
                 <Button
-                  variant="plain"
+                  variant="default"
                   prefix={<PlusIcon />}
                   className={styles.addPropertyButton}
                 >
@@ -112,7 +112,7 @@ export const DocInfoSheet = ({
                   }}
                 >
                   <Button
-                    variant="plain"
+                    variant="default"
                     prefix={<PlusIcon />}
                     className={styles.addPropertyButton}
                   >

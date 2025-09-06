@@ -134,7 +134,7 @@ const OpenButton = ({
     <div>
       <Button
         className={styles.button}
-        variant="plain"
+        variant="default"
         size="custom"
         onClick={open}
         prefixStyle={{

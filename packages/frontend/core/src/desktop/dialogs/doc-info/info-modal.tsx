@@ -135,7 +135,7 @@ export const InfoTable = ({
           {!canEditPropertyInfo ? (
             <Button
               disabled
-              variant="plain"
+              variant="default"
               prefix={<PlusIcon />}
               className={styles.addPropertyButton}
             >
@@ -151,7 +151,7 @@ export const InfoTable = ({
               }}
             >
               <Button
-                variant="plain"
+                variant="default"
                 prefix={<PlusIcon />}
                 className={styles.addPropertyButton}
               >

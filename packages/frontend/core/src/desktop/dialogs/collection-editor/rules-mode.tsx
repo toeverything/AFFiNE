@@ -282,7 +282,7 @@ export const RulesMode = ({
           >
             {t['com.affine.editCollection.rules.preview']()}
           </Button>
-          <Button variant="plain" onClick={reset}>
+          <Button variant="default" onClick={reset}>
             {t['com.affine.editCollection.rules.reset']()}
           </Button>
           <div className={styles.previewCountTips}>

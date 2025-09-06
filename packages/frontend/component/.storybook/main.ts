@@ -21,8 +21,35 @@ export default {
   docs: {},
 
   async viteFinal(config, _options) {
-    const { getBuildConfig } = await import('@affine-tools/utils/build-config');
-    const { Package } = await import('@affine-tools/utils/workspace');
+    // Временно используем статическую конфигурацию для Storybook
+    const buildConfig = {
+      debug: true,
+      distribution: 'web',
+      isDesktopEdition: false,
+      isMobileEdition: false,
+      isElectron: false,
+      isWeb: true,
+      isMobileWeb: false,
+      isIOS: false,
+      isAndroid: false,
+      isNative: false,
+      isAdmin: false,
+      appBuildType: 'canary',
+      appVersion: '0.22.4',
+      editorVersion: '0.22.4',
+      githubUrl: 'https://github.com/toeverything/AFFiNE',
+      changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
+      downloadUrl: 'https://affine.pro/download',
+      pricingUrl: 'https://affine.pro/pricing',
+      discordUrl: 'https://affine.pro/redirect/discord',
+      requestLicenseUrl: 'https://affine.pro/redirect/license',
+      imageProxyUrl: '/api/worker/image-proxy',
+      linkPreviewUrl: '/api/worker/link-preview',
+      CAPTCHA_SITE_KEY: '',
+      SENTRY_DSN: '',
+      MIXPANEL_TOKEN: '',
+      DEBUG_JOTAI: '',
+    };
 
     return mergeConfig(config, {
       plugins: [
@@ -50,12 +77,7 @@ export default {
           inlineSourcesContent: true,
         }),
       ],
-      define: Object.entries(
-        getBuildConfig(new Package('@affine/web'), {
-          mode: 'development',
-          channel: 'canary',
-        })
-      ).reduce((envs, [key, value]) => {
+      define: Object.entries(buildConfig).reduce((envs, [key, value]) => {
         envs[`BUILD_CONFIG.${key}`] = JSON.stringify(value);
         return envs;
       }, {}),

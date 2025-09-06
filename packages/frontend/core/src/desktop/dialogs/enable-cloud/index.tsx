@@ -120,8 +120,8 @@ const Dialog = ({
       <Button
         className={styles.button}
         onClick={signInOrEnableCloud}
-        size="extraLarge"
-        variant="primary"
+        size={500}
+        variant="brand"
       >
         {t['com.affine.enableAffineCloudModal.custom-server.enable']()}
       </Button>

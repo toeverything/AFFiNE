@@ -102,7 +102,7 @@ export const AttachmentFallback = ({ model, ext }: ErrorProps) => {
       buttons={[
         <Button
           key="download"
-          variant="primary"
+          variant="brand"
           prefix={<ArrowDownBigIcon />}
           onClick={() => {
             download(model).catch(console.error);

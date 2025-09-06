@@ -210,7 +210,7 @@ export const SelfHostTeamCard = () => {
         >
           {!isTeam && !isLocalWorkspace ? (
             <Button
-              variant="plain"
+              variant="default"
               className={styles.uploadButton}
               onClick={handleOpenUploadModal}
             >
@@ -220,7 +220,7 @@ export const SelfHostTeamCard = () => {
             </Button>
           ) : null}
           <Button
-            variant="primary"
+            variant="brand"
             className={styles.activeButton}
             onClick={handleClick}
           >
@@ -353,7 +353,7 @@ const ActionModal = ({
       >
         <div className={styles.footer}>
           <Button
-            variant="secondary"
+            variant="default"
             onClick={update}
             loading={isMutating}
             disabled={isMutating}
@@ -363,10 +363,10 @@ const ActionModal = ({
             ]()}
           </Button>
           <div className={styles.rightActions}>
-            <Button variant="secondary" onClick={handleCancel}>
+            <Button variant="default" onClick={handleCancel}>
               {t['Cancel']()}
             </Button>
-            <Button variant="primary" onClick={handleConfirm}>
+            <Button variant="brand" onClick={handleConfirm}>
               {t['Confirm']()}
             </Button>
           </div>

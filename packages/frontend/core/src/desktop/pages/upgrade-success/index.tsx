@@ -49,7 +49,7 @@ export const Component = () => {
       title={t['com.affine.payment.upgrade-success-page.title']()}
       subtitle={subtitle}
     >
-      <Button variant="primary" size="extraLarge" onClick={openAFFiNE}>
+      <Button variant="brand" size={500} onClick={openAFFiNE}>
         {t['com.affine.other-page.nav.open-affine']()}
       </Button>
     </AuthPageContainer>

@@ -189,7 +189,7 @@ export const SignInWithEmailStep = ({
         <Button
           style={{ width: '100%' }}
           data-testid="continue-code-button"
-          size="extraLarge"
+          size={500}
           block={true}
           onClick={onContinue}
           disabled={!!otpError || isVerifying}
@@ -200,7 +200,7 @@ export const SignInWithEmailStep = ({
 
         <Button
           disabled={resendCountDown > 0}
-          variant="plain"
+          variant="default"
           onClick={sendEmail}
           style={{ padding: '4px' }}
         >

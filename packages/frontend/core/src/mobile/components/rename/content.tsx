@@ -54,8 +54,8 @@ export const RenameContent = ({
           className={clsx(styles.done, confirmButtonClassName)}
           onClick={handleDone}
           disabled={!value}
-          variant="primary"
-          size="extraLarge"
+          variant="brand"
+          size={500}
           data-testid="rename-confirm"
           {...restConfirmButtonProps}
         >

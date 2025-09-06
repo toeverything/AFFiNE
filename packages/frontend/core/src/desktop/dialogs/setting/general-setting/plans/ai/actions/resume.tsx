@@ -70,12 +70,7 @@ export const AIResume = (btnProps: ButtonProps) => {
   }, [subscription, openConfirmModal, t, idempotencyKey]);
 
   return (
-    <Button
-      loading={isMutating}
-      onClick={resume}
-      variant="primary"
-      {...btnProps}
-    >
+    <Button loading={isMutating} onClick={resume} variant="brand" {...btnProps}>
       {t['com.affine.payment.ai.action.resume.button-label']()}
     </Button>
   );

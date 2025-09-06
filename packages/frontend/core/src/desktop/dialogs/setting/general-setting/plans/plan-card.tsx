@@ -235,7 +235,7 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
         <div className={styles.planAction}>
           <Button
             className={styles.planAction}
-            variant="primary"
+            variant="brand"
             onClick={handleClick}
             disabled={disabled}
           >
@@ -267,7 +267,7 @@ const UpgradeToTeam = ({ recurring }: { recurring: SubscriptionRecurring }) => {
     >
       <Button
         className={styles.planAction}
-        variant="primary"
+        variant="brand"
         data-event-args-url={`${url}${urlParams.toString() ? `&${urlParams.toString()}` : ''}`}
       >
         {t['com.affine.payment.upgrade']()}
@@ -340,7 +340,7 @@ export const Upgrade = ({
       renderer={props => (
         <Button
           className={clsx(styles.planAction, className)}
-          variant="primary"
+          variant="brand"
           {...props}
           {...btnProps}
         >
@@ -401,7 +401,7 @@ const ChangeRecurring = ({
     <>
       <Button
         className={styles.planAction}
-        variant="primary"
+        variant="brand"
         onClick={onStartChange}
         disabled={disabled || isMutating}
         loading={isMutating}
@@ -435,7 +435,7 @@ export const SignUpAction = ({
     <Button
       onClick={onClickSignIn}
       className={clsx(styles.planAction, className)}
-      variant="primary"
+      variant="brand"
     >
       {children}
     </Button>

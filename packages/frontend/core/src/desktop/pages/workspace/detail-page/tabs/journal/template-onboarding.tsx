@@ -80,7 +80,7 @@ export const JournalTemplateOnboarding = () => {
             />
           }
         >
-          <Button variant="primary" prefix={<TemplateIcon />}>
+          <Button variant="brand" prefix={<TemplateIcon />}>
             {t['com.affine.template-journal-onboarding.select']()}
           </Button>
         </Menu>

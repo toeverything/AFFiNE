@@ -103,7 +103,7 @@ export const MemberItem = ({
           }}
         >
           <MenuTrigger
-            variant="plain"
+            variant="default"
             className={styles.menuTriggerStyle}
             contentStyle={{
               width: '100%',

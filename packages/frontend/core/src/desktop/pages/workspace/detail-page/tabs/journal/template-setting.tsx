@@ -68,7 +68,7 @@ export const JournalTemplateSetting = () => {
         }
       >
         <Button
-          variant="plain"
+          variant="default"
           prefix={
             <TemplateIcon
               className={clsx({ [styles.deletedIcon]: isDeleted })}

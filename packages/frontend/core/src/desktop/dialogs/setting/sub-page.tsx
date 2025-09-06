@@ -202,7 +202,7 @@ export const SubPageProvider = ({
             className={styles.backButton}
             onClick={onClose}
             prefix={<ArrowLeftBigIcon />}
-            variant="plain"
+            variant="default"
           >
             {backText}
           </Button>

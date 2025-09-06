@@ -82,7 +82,7 @@ export const OpenInAppCard = () => {
           <div className={styles.spacer} />
           <div className={styles.buttonGroup}>
             <Button
-              variant="secondary"
+              variant="default"
               size="custom"
               className={styles.button}
               onClick={onDismiss}
@@ -90,7 +90,7 @@ export const OpenInAppCard = () => {
               {t.t('com.affine.open-in-app.card.button.dismiss')}
             </Button>
             <Button
-              variant="primary"
+              variant="brand"
               size="custom"
               className={styles.button}
               onClick={onOpen}

@@ -101,7 +101,7 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
                   <PaymentMethodUpdater
                     inCardView
                     className={styles.managementInCard}
-                    variant="primary"
+                    variant="brand"
                   />
                 ) : null}
               </div>

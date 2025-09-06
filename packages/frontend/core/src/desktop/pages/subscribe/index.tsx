@@ -197,7 +197,7 @@ export const Component = () => {
         <>
           {error}
           <br />
-          <Button variant="primary" onClick={() => setRetryKey(i => i + 1)}>
+          <Button variant="brand" onClick={() => setRetryKey(i => i + 1)}>
             Retry
           </Button>
         </>

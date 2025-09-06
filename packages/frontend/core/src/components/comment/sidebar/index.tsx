@@ -158,7 +158,7 @@ const ActionMenu = ({
     >
       <IconButton
         className={styles.actionButton}
-        variant="solid"
+        variant="default"
         icon={<MoreHorizontalIcon />}
         disabled={disabled}
       />
@@ -493,7 +493,7 @@ const CommentItem = ({
         {canResolveComment && (
           <IconButton
             className={styles.actionButton}
-            variant="solid"
+            variant="default"
             onClick={handleResolve}
             icon={<DoneIcon />}
             disabled={isMutating}

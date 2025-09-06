@@ -54,7 +54,7 @@ export const EditCollection = ({
         <Button
           className={styles.actionButton}
           data-testid="save-collection"
-          variant="primary"
+          variant="brand"
           disabled={isNameEmpty}
           onClick={onSaveCollection}
         >

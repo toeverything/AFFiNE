@@ -161,13 +161,13 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     }
     const inner = (
       <Button
-        variant="plain"
+        variant="default"
         prefix={
           <AnimatedTranscribeIcon
             state={transcribing ? 'transcribing' : 'idle'}
           />
         }
-        size="large"
+        size={500}
         prefixClassName={styles.notesButtonIcon}
         className={styles.notesButton}
         onClick={handleNotesClick}

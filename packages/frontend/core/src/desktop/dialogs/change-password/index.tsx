@@ -133,8 +133,8 @@ export const ChangePasswordDialog = ({
           value={email}
         />
         <Button
-          variant="primary"
-          size="extraLarge"
+          variant="brand"
+          size={500}
           style={{ width: '100%' }}
           disabled={hasSentEmail}
           loading={loading}

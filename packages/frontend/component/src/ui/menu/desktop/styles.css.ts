@@ -24,6 +24,50 @@ const slideUp = keyframes({
   },
 });
 
+export const item = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  justifyContent: 'space-between',
+  borderRadius: 4,
+  fontSize: 14,
+  padding: '6px 12px',
+  lineHeight: '20px',
+  color: '#273035',
+  cursor: 'pointer',
+  selectors: {
+    '&[data-block]': {
+      padding: 0,
+    },
+    '&[data-disabled]': {
+      color: '#B0B6BD',
+      cursor: 'default',
+    },
+    '&[data-highlighted]': {
+      background: '#E5E9EC',
+    },
+  },
+});
+
+export const icon = style({
+  flexShrink: 0,
+  width: 16,
+  height: 16,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+export const label = style({
+  flex: 1,
+});
+
+export const shortcut = style({
+  marginLeft: 'auto',
+  color: '#7B828A',
+  fontSize: 12,
+});
+
 export const contentAnimation = style({
   animation: `${slideDown} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
   selectors: {

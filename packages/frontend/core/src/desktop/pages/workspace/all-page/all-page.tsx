@@ -387,7 +387,7 @@ export const AllPage = () => {
                   defaultDraftFilter={tempFiltersInitial}
                 />
                 <Button
-                  variant="plain"
+                  variant="default"
                   onClick={() => {
                     setTempFilters(null);
                   }}

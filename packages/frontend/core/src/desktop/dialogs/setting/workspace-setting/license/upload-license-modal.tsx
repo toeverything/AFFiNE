@@ -164,7 +164,7 @@ export const UploadLicenseModal = ({
               ]()}
             </div>
             <Button
-              variant="secondary"
+              variant="default"
               onClick={copyWorkspaceId}
               className={styles.copyButton}
             >
@@ -179,7 +179,7 @@ export const UploadLicenseModal = ({
         </div>
         <Upload accept=".lic, .license" fileChange={handleInstallLicense}>
           <Button
-            variant="primary"
+            variant="brand"
             className={styles.uploadButton}
             loading={isInstalling}
             disabled={isInstalling}

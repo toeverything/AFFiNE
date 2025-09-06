@@ -130,7 +130,7 @@ export const AIUsagePanel = ({
           </div>
 
           {hasPaymentFeature && (
-            <AISubscribe variant="primary">
+            <AISubscribe variant="brand">
               {t['com.affine.payment.ai.usage.purchase-button-label']()}
             </AISubscribe>
           )}

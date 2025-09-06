@@ -156,7 +156,7 @@ export const EditWorkspacePropertyMenuItems = ({
             onChange={handleNameChange}
             placeholder={t['unnamed']()}
             onKeyDown={onKeyDown}
-            size="large"
+            size={500}
             style={{ borderRadius: 4, height: 30 }}
           />
         )}

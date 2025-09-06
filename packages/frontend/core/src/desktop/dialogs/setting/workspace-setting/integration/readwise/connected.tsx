@@ -51,10 +51,10 @@ export const ReadwiseDisconnectDialog = ({
       <footer className={styles.footer}>
         <Button onClick={handleCancel}>{t['Cancel']()}</Button>
         <div className={styles.actions}>
-          <Button variant="error" onClick={handleDelete}>
+          <Button variant="default" onClick={handleDelete}>
             {t['com.affine.integration.readwise.disconnect.delete']()}
           </Button>
-          <Button variant="primary" onClick={handleKeep}>
+          <Button variant="brand" onClick={handleKeep}>
             {t['com.affine.integration.readwise.disconnect.keep']()}
           </Button>
         </div>
@@ -74,7 +74,7 @@ export const ReadwiseDisconnectButton = () => {
         />
       )}
       <Button
-        variant="error"
+        variant="default"
         className={actionButton}
         onClick={() => setShowDisconnectDialog(true)}
       >

@@ -97,7 +97,7 @@ const NotificationCardAction = ({
 
   return (
     <Button
-      variant="plain"
+      variant="default"
       data-testid={action.key}
       className={styles.actionButton}
       onClick={onActionClicked}

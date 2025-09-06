@@ -174,7 +174,7 @@ export const MobileMenu = ({
               >
                 <Button
                   data-testid="mobile-menu-back-button"
-                  variant="plain"
+                  variant="default"
                   className={styles.backButton}
                   prefix={<ArrowLeftSmallIcon />}
                   onClick={() => {

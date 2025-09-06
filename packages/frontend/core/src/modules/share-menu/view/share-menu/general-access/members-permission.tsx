@@ -169,7 +169,7 @@ export const MembersPermission = ({
         >
           <MenuTrigger
             className={styles.menuTriggerStyle}
-            variant="plain"
+            variant="default"
             suffixClassName={styles.suffixClassName}
             contentStyle={{
               width: '100%',

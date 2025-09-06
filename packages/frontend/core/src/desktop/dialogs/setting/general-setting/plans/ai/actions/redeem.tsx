@@ -43,7 +43,7 @@ export const AIRedeemCodeButton = (btnProps: ButtonProps) => {
       onBeforeCheckout={onBeforeCheckout}
       checkoutOptions={checkoutOptions}
       renderer={props => (
-        <Button variant="primary" {...btnProps} {...props}>
+        <Button variant="brand" {...btnProps} {...props}>
           {t['com.affine.payment.redeem-code']()}
         </Button>
       )}

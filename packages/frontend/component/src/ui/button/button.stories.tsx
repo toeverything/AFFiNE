@@ -18,14 +18,9 @@ export default {
 
 // const Template: StoryFn<ButtonProps> = args => <Button {...args} />;
 
-const types: ButtonProps['variant'][] = [
-  'primary',
-  'secondary',
-  'plain',
-  'error',
-  'success',
-];
-const sizes: ButtonProps['size'][] = ['default', 'large', 'extraLarge'];
+const types: ButtonProps['variant'][] = ['brand', 'default'];
+const importances: ButtonProps['importance'][] = ['primary', 'default'];
+const sizes: ButtonProps['size'][] = [300, 400, 500];
 
 const Groups = ({
   children,
@@ -35,25 +30,34 @@ const Groups = ({
     <table className={styles.table}>
       <thead>
         <tr>
-          <td>Type/Size</td>
+          <td>Type & Importance/Size</td>
           {sizes.map(size => (
             <td key={size}>{size}</td>
           ))}
         </tr>
       </thead>
       <tbody>
-        {types.map(type => (
-          <tr key={type}>
-            <td>{type}</td>
-            {sizes.map(size => (
-              <td key={size}>
-                <Button variant={type} size={size} {...props}>
-                  {children ?? `${size} - ${type}`}
-                </Button>
+        {types.map(type =>
+          importances.map(importance => (
+            <tr key={(type || '') + (importance || '')}>
+              <td>
+                {type} & {importance}
               </td>
-            ))}
-          </tr>
-        ))}
+              {sizes.map(size => (
+                <td key={size}>
+                  <Button
+                    variant={type}
+                    size={size}
+                    importance={importance}
+                    {...props}
+                  >
+                    {children ?? `${size} - ${type} & ${importance}`}
+                  </Button>
+                </td>
+              ))}
+            </tr>
+          ))
+        )}
       </tbody>
     </table>
   );

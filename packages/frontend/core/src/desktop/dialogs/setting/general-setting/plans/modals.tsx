@@ -120,7 +120,7 @@ export const DowngradeModal = ({
           <Button
             disabled={loading}
             onClick={() => onOpenChange?.(false)}
-            variant="primary"
+            variant="brand"
           >
             {t['com.affine.payment.modal.downgrade.confirm']()}
           </Button>
@@ -179,7 +179,7 @@ export const DowngradeTeamModal = ({
           <Button
             disabled={loading}
             onClick={() => onOpenChange?.(false)}
-            variant="primary"
+            variant="brand"
           >
             {t['com.affine.payment.modal.downgrade.team-confirm']()}
           </Button>

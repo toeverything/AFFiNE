@@ -124,7 +124,7 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
             onClick={onBtnClick}
             className={styles.actionButton}
             loading={isBtnLoading}
-            variant="primary"
+            variant="brand"
           >
             {props.buttonText ?? t['com.affine.error.reload']()}
           </ActionButton>

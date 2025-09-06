@@ -128,7 +128,7 @@ const UnsubscribeButton = ({ url, name }: { url: string; name: string }) => {
   }, [calendar, name, openConfirmModal, t, url]);
 
   return (
-    <Button variant="error" onClick={handleUnsubscribe}>
+    <Button variant="default" onClick={handleUnsubscribe}>
       {t['com.affine.integration.calendar.unsubscribe']()}
     </Button>
   );

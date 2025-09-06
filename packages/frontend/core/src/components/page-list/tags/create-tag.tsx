@@ -171,7 +171,7 @@ export const CreateOrEditTag = ({
         {t['Cancel']()}
       </Button>
       <Button
-        variant="primary"
+        variant="brand"
         onClick={onConfirm}
         disabled={!tagName}
         data-testid="save-tag"

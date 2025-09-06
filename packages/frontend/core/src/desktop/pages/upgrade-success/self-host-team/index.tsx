@@ -114,7 +114,7 @@ const Success = ({ licenseKey }: { licenseKey: string | null }) => {
         </div>
         <div>{t['com.affine.payment.license-success.hint']()}</div>
         <div>
-          <Button variant="primary" size="extraLarge" onClick={openAFFiNE}>
+          <Button variant="brand" size={500} onClick={openAFFiNE}>
             {t['com.affine.payment.license-success.open-affine']()}
           </Button>
         </div>

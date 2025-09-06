@@ -64,7 +64,7 @@ export const SelectorLayout = ({
             <span className={styles.selectedNum}>{selectedCount ?? 0}</span>
           </div>
           <Button
-            variant="plain"
+            variant="default"
             className={styles.clearButton}
             onClick={onClear}
           >
@@ -86,7 +86,7 @@ export const SelectorLayout = ({
                 data-testid="doc-selector-confirm-button"
                 onClick={onConfirm}
                 className={styles.actionButton}
-                variant="primary"
+                variant="brand"
               >
                 {t['Confirm']()}
               </Button>

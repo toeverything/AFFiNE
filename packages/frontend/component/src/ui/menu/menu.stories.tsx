@@ -1,10 +1,17 @@
-import { InformationIcon } from '@blocksuite/icons/rc';
+import {
+  AddTextIcon,
+  AlignLeftIcon,
+  GridIcon,
+  HeaderColumnIcon,
+  MailPanelIcon,
+  PenIcon,
+  SettingsIcon,
+} from '@blocksuite/icons/rc';
 import type { Meta, StoryFn } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 
 import { Button } from '../button';
-import { Tooltip } from '../tooltip';
 import type { MenuItemProps, MenuProps } from './index';
 import { Menu, MenuItem, MenuSeparator, MenuSub } from './index';
 
@@ -14,14 +21,7 @@ export default {
 } satisfies Meta<typeof Menu>;
 
 const Template: StoryFn<MenuProps> = args => (
-  <Menu
-    {...args}
-    contentOptions={{
-      style: {
-        width: '500px',
-      },
-    }}
-  >
+  <Menu {...args}>
     <Button>menu trigger</Button>
   </Menu>
 );
@@ -38,76 +38,64 @@ interface Items {
 
 const items: Items[] = [
   {
-    label: 'default menu item 1',
+    label: 'Значение 1',
+    prefixIcon: <MailPanelIcon />,
   },
   {
-    label: 'menu item with icon',
-    prefixIcon: <InformationIcon />,
+    label: 'Значение 2',
+    prefixIcon: <AlignLeftIcon />,
   },
   {
-    label: (
-      <Tooltip
-        align="start"
-        content="Write, Draw, and Plan All at Once Notion Open Source Alternative One
-          hyper-fused platform for wildly creative minds"
-      >
-        <span>
-          Write, Draw, and Plan All at Once Notion Open Source Alternative One
-          hyper-fused platform for wildly creative minds
-        </span>
-      </Tooltip>
-    ),
-    block: true,
-  },
-  {
-    label: 'default disabled menu item',
-    disabled: true,
-  },
-  {
-    label: 'danger menu item',
-    type: 'danger',
-    block: true,
-    prefixIcon: <InformationIcon />,
-  },
-  {
-    label: 'warning menu item',
-    type: 'warning',
-    divider: true,
-  },
-
-  {
-    label: 'menu item with sub menu',
+    label: 'Значение 3',
+    prefixIcon: <HeaderColumnIcon />,
     subItems: [
       {
-        label: 'sub menu item 1',
+        label: 'Настройки',
+        prefixIcon: <SettingsIcon />,
       },
       {
-        label: 'sub menu item 1',
-      },
-    ],
-  },
-
-  {
-    label: 'menu item with deep sub menu',
-    subItems: [
-      {
-        label: 'sub menu item 1',
-      },
-      {
-        label: 'sub menu with sub',
+        label: 'Шаблон',
+        prefixIcon: <PenIcon />,
         subItems: [
           {
-            label: 'sub menu item 2-1',
+            label: 'Нет иконок у всех',
           },
           {
-            label: 'sub menu item 2-2',
+            label: 'Значение 5',
+            divider: true,
           },
           {
-            label: 'sub menu item 2-3',
+            label: 'Значение 6',
+            disabled: true,
           },
         ],
       },
+      {
+        label: 'Нет иконок у одного',
+        prefixIcon: ' ',
+      },
     ],
+  },
+  {
+    label: 'Значение 4',
+    prefixIcon: <GridIcon />,
+  },
+  {
+    label: (
+      <Button
+        importance="primary"
+        size={500}
+        style={{
+          backgroundColor: '#FF6E44',
+          borderColor: '#FF6E44',
+          width: '100%',
+        }}
+        prefix={<AddTextIcon />}
+      >
+        Кнопка
+      </Button>
+    ),
+    block: true,
   },
 ];
 

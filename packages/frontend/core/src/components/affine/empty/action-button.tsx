@@ -15,7 +15,7 @@ export const ActionButton = ({
 }: ButtonProps) => {
   return (
     <Button
-      size="large"
+      size={500}
       className={clsx(
         BUILD_CONFIG.isMobileEdition ? mobileActionButton : actionButton,
         className

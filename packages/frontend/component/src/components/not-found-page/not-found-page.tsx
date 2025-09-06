@@ -40,8 +40,8 @@ export const NoPermissionOrNotFound = ({
               <p className={wrapper}>{t['404.hint']()}</p>
               <div className={wrapper}>
                 <Button
-                  variant="primary"
-                  size="extraLarge"
+                  variant="brand"
+                  size={500}
                   onClick={onBack}
                   className={largeButtonEffect}
                 >
@@ -91,8 +91,8 @@ export const NotFoundPage = ({
           <p className={wrapper}>{t['404.hint']()}</p>
           <div className={wrapper}>
             <Button
-              variant="primary"
-              size="extraLarge"
+              variant="brand"
+              size={500}
               onClick={onBack}
               className={largeButtonEffect}
             >

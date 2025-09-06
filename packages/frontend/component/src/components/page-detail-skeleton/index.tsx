@@ -49,7 +49,7 @@ export const EditorLoading = ({
             </div>
           </div>
           <Button
-            size="large"
+            size={500}
             className={clsx(
               BUILD_CONFIG.isMobileEdition
                 ? styles.mobileActionButton
@@ -61,7 +61,7 @@ export const EditorLoading = ({
                 : styles.actionContent
             )}
             onClick={reloadPage}
-            variant="primary"
+            variant="brand"
           >
             {t['com.affine.error.reload']()}
           </Button>

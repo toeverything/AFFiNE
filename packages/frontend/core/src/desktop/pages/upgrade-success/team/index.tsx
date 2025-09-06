@@ -43,7 +43,7 @@ export const Component = () => {
       title={t['com.affine.payment.upgrade-success-page.title']()}
       subtitle={subtitle}
     >
-      <Button variant="primary" size="extraLarge" onClick={openWorkspace}>
+      <Button variant="brand" size={500} onClick={openWorkspace}>
         {t['Visit Workspace']()}
       </Button>
     </AuthPageContainer>

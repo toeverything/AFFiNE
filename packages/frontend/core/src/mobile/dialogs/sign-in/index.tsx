@@ -41,7 +41,7 @@ export const SignInDialog = ({
       >
         <IconButton
           size="24"
-          variant="solid"
+          variant="default"
           icon={<CloseIcon />}
           style={{ borderRadius: 8, padding: 4 }}
           onClick={e => {

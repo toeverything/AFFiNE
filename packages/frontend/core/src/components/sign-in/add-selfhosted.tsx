@@ -106,8 +106,8 @@ export const AddSelfhostedStep = ({
         />
         <Button
           data-testid="connect-selfhosted-button"
-          variant="primary"
-          size="extraLarge"
+          variant="brand"
+          size={500}
           style={{ width: '100%', marginTop: '16px' }}
           disabled={!urlValid || isConnecting}
           loading={isConnecting}

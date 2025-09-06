@@ -360,7 +360,7 @@ const WorkspaceWorkspacePropertiesTableBody = forwardRef<
           <div className={styles.actionContainer}>
             {!canEditPropertyInfo ? (
               <Button
-                variant="plain"
+                variant="default"
                 prefix={<PlusIcon />}
                 className={styles.propertyActionButton}
                 data-testid="add-property-button"
@@ -383,7 +383,7 @@ const WorkspaceWorkspacePropertiesTableBody = forwardRef<
                 }}
               >
                 <Button
-                  variant="plain"
+                  variant="default"
                   prefix={<PlusIcon />}
                   className={styles.propertyActionButton}
                   data-testid="add-property-button"
@@ -394,7 +394,7 @@ const WorkspaceWorkspacePropertiesTableBody = forwardRef<
             )}
             {viewService ? (
               <Button
-                variant="plain"
+                variant="default"
                 prefix={<PropertyIcon />}
                 className={clsx(
                   styles.propertyActionButton,

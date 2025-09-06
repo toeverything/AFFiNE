@@ -118,7 +118,7 @@ export const TeamCard = () => {
           onOpenChange={setOpenCancelModal}
         >
           <Button
-            variant="secondary"
+            variant="default"
             className={styles.cancelPlanButton}
             onClick={handleClick}
           >

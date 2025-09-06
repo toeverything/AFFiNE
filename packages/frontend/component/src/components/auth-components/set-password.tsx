@@ -33,8 +33,8 @@ export const SetPassword: FC<{
         />
       </Wrapper>
       <Button
-        variant="primary"
-        size="large"
+        variant="brand"
+        size={500}
         disabled={!passwordPass}
         style={{ marginRight: 20 }}
         onClick={useCallback(() => {
@@ -44,7 +44,7 @@ export const SetPassword: FC<{
         {t['com.affine.auth.set.password.save']()}
       </Button>
       {showLater ? (
-        <Button variant="plain" size="large" onClick={onLater}>
+        <Button variant="default" size={500} onClick={onLater}>
           {t['com.affine.auth.later']()}
         </Button>
       ) : null}

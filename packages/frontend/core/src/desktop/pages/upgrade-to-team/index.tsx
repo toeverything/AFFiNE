@@ -154,8 +154,8 @@ export const UpgradeToTeam = ({ recurring }: { recurring: string | null }) => {
         </Menu>
         <div className={styles.upgradeButton}>
           <Button
-            variant="primary"
-            size="extraLarge"
+            variant="brand"
+            size={500}
             onClick={onUpgradeButtonClick}
             disabled={!selectedWorkspace}
           >
@@ -419,7 +419,7 @@ const CreateWorkspaceDialog = ({
       <div className={styles.dialogFooter}>
         <Button onClick={onClose}>{t['Cancel']()}</Button>
         <Button
-          variant="primary"
+          variant="brand"
           className={styles.upgradeButtonInDialog}
           onClick={onBeforeCheckout}
         >

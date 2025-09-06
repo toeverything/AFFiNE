@@ -272,7 +272,7 @@ export const BlobManagementPanel = () => {
           </div>
           <div className={styles.spacer} />
           {showSelectAll && (
-            <Button onClick={handleSelectAll} variant="primary">
+            <Button onClick={handleSelectAll} variant="brand">
               {t['com.affine.keyboardShortcuts.selectAll']()}
             </Button>
           )}

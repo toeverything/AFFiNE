@@ -81,7 +81,7 @@ const ResumeSubscription = ({ expirationDate }: { expirationDate: string }) => {
       )}
     >
       <TeamResumeAction open={open} onOpenChange={setOpen}>
-        <Button onClick={handleClick} variant="primary">
+        <Button onClick={handleClick} variant="brand">
           {t['com.affine.payment.billing-setting.resume-subscription']()}
         </Button>
       </TeamResumeAction>

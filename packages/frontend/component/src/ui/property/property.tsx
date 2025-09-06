@@ -187,7 +187,7 @@ export const PropertyCollapsibleContent = forwardRef<
           {children}
           {finalCollapsible && (
             <Button
-              variant="plain"
+              variant="default"
               prefix={
                 !finalShowAllHide ? (
                   <ArrowDownSmallIcon />

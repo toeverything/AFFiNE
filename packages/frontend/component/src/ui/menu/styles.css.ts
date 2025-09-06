@@ -4,12 +4,14 @@ import { createVar, style } from '@vanilla-extract/css';
 
 export const iconColor = createVar('iconColor');
 export const labelColor = createVar('labelColor');
+export const borderColor = createVar('borderColor');
+export const border = createVar('border');
 export const bgColor = createVar('bgColor');
 
 export const menuContent = style({
   minWidth: '180px',
   borderRadius: '8px',
-  padding: '8px',
+  padding: '4px',
   fontSize: cssVar('fontSm'),
   fontWeight: '400',
   backgroundColor: cssVarV2('layer/background/overlayPanel'),
@@ -18,7 +20,6 @@ export const menuContent = style({
   ['WebkitAppRegion' as string]: 'no-drag',
   display: 'flex',
   flexDirection: 'column',
-  gap: 4,
   selectors: {
     '&.mobile': {
       padding: 0,
@@ -35,21 +36,23 @@ export const menuItem = style({
   },
   color: labelColor,
   backgroundColor: bgColor,
+  border: '1px solid transparent',
 
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: 8,
-  padding: '4px',
+  padding: '4px 6px',
   borderRadius: 4,
   lineHeight: '22px',
-  border: 'none',
   outline: 'none',
   cursor: 'pointer',
   boxSizing: 'border-box',
   selectors: {
     '&.block': {
       maxWidth: '100%',
+      padding: 0,
+      borderRadius: 8,
     },
     '&[data-disabled], &.disabled': {
       vars: {
@@ -60,9 +63,9 @@ export const menuItem = style({
       cursor: 'default',
     },
     '&:hover': {
-      vars: {
-        [bgColor]: cssVar('hoverColor'),
-      },
+      backgroundColor: '#959CA51A',
+      border: '1px solid #959CA566',
+      boxSizing: 'border-box',
       outline: 'none !important',
     },
     '&:focus-visible': {
@@ -86,6 +89,10 @@ export const menuItem = style({
       vars: {
         [iconColor]: cssVar('primaryColor'),
       },
+    },
+    '&[data-state="open"]': {
+      backgroundColor: '#959CA533',
+      border: '1px solid #959CA566',
     },
   },
 });

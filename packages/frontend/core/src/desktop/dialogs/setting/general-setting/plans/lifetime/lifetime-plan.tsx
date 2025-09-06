@@ -39,7 +39,7 @@ export const LifetimePlan = () => {
           {t['com.affine.payment.sign-up-free']()}
         </SignUpAction>
       ) : isBeliever ? (
-        <Button className={styles.purchase} size="default" disabled>
+        <Button className={styles.purchase} size={400} disabled>
           {t['com.affine.payment.lifetime.purchased']()}
         </Button>
       ) : (

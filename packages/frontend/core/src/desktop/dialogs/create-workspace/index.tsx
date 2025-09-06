@@ -174,7 +174,7 @@ const CustomConfirmButton = ({
     <Button
       disabled={!workspaceName}
       data-testid="create-workspace-create-button"
-      variant="primary"
+      variant="brand"
       onClick={handleCheckSessionAndConfirm}
       loading={loading}
     >

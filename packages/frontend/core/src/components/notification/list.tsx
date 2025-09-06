@@ -452,7 +452,7 @@ const InvitationReviewApprovedNotificationItem = ({
         </span>
         {!workspaceInactived && (
           <Button
-            variant="secondary"
+            variant="default"
             className={styles.itemActionButton}
             onClick={handleClick}
           >
@@ -695,7 +695,7 @@ const InvitationNotificationItem = ({
         </span>
         {!workspaceInactived && (
           <Button
-            variant="secondary"
+            variant="default"
             className={styles.itemActionButton}
             onClick={handleAcceptInvite}
             loading={isAccepting}

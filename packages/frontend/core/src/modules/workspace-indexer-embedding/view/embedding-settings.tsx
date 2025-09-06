@@ -232,7 +232,7 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
         <Upload fileChange={handleAttachmentUpload}>
           <Button
             data-testid="workspace-embedding-setting-upload-button"
-            variant="primary"
+            variant="brand"
           >
             {t[
               'com.affine.settings.workspace.indexer-embedding.embedding.upload-file'
@@ -261,7 +261,7 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
       >
         <Button
           data-testid="workspace-embedding-setting-ignore-docs-button"
-          variant="primary"
+          variant="brand"
           onClick={handleSelectDoc}
         >
           {t[

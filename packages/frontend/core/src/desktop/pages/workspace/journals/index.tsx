@@ -65,7 +65,7 @@ export const JournalPlaceholder = ({ dateString }: { dateString: string }) => {
             {t['com.affine.journal.placeholder.title']()}
           </div>
           <Button
-            variant="primary"
+            variant="brand"
             onClick={createJournal}
             data-testid="confirm-create-journal-button"
           >

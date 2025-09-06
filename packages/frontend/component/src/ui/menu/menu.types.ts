@@ -26,7 +26,7 @@ export interface MenuProps {
 
 export interface MenuItemProps
   extends Omit<MenuItemPropsPrimitive, 'asChild' | 'textValue' | 'prefix'> {
-  type?: 'default' | 'warning' | 'danger';
+  type?: 'default' | 'warning' | 'danger' | 'button';
   prefix?: ReactNode;
   suffix?: ReactNode;
   prefixIcon?: ReactNode;

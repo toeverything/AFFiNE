@@ -166,7 +166,7 @@ export const SignInStep = ({
         <Button
           className={style.signInButton}
           style={{ width: '100%' }}
-          size="extraLarge"
+          size={500}
           data-testid="continue-login-button"
           block
           loading={isMutating}
@@ -194,7 +194,7 @@ export const SignInStep = ({
             <div className={style.skipSection}>
               {BUILD_CONFIG.isNative ? (
                 <Button
-                  variant="plain"
+                  variant="default"
                   className={style.addSelfhostedButton}
                   prefix={
                     <PublishIcon className={style.addSelfhostedButtonPrefix} />
@@ -209,7 +209,7 @@ export const SignInStep = ({
                 </div>
               )}
               <Button
-                variant="plain"
+                variant="default"
                 onClick={onSkip}
                 className={style.skipLink}
                 prefix={<LocalWorkspaceIcon className={style.skipLinkIcon} />}

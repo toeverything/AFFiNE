@@ -241,23 +241,15 @@ export const AIOnboardingGeneral = () => {
                 <ArrowLeftSmallIcon />
               </IconButton>
               {aiSubscription ? (
-                <Button
-                  size="large"
-                  onClick={closeAndDismiss}
-                  variant="primary"
-                >
+                <Button size={500} onClick={closeAndDismiss} variant="brand">
                   {t['com.affine.ai-onboarding.general.get-started']()}
                 </Button>
               ) : (
                 <div className={styles.subscribeActions}>
-                  <Button size="large" onClick={goToPricingPlans}>
+                  <Button size={500} onClick={goToPricingPlans}>
                     {t['com.affine.ai-onboarding.general.purchase']()}
                   </Button>
-                  <Button
-                    size="large"
-                    onClick={closeAndDismiss}
-                    variant="primary"
-                  >
+                  <Button size={500} onClick={closeAndDismiss} variant="brand">
                     {t['com.affine.ai-onboarding.general.try-for-free']()}
                   </Button>
                 </div>
@@ -266,15 +258,15 @@ export const AIOnboardingGeneral = () => {
           ) : (
             <>
               {isFirst ? (
-                <Button onClick={remindLater} size="large">
+                <Button onClick={remindLater} size={500}>
                   {t['com.affine.ai-onboarding.general.skip']()}
                 </Button>
               ) : (
                 <Button
                   prefix={<ArrowLeftSmallIcon />}
                   onClick={onPrev}
-                  size="large"
-                  variant="plain"
+                  size={500}
+                  variant="default"
                 >
                   {t['com.affine.ai-onboarding.general.prev']()}
                 </Button>
@@ -283,7 +275,7 @@ export const AIOnboardingGeneral = () => {
                 <div>
                   {index + 1} / {list.length}
                 </div>
-                <Button size="large" variant="primary" onClick={onNext}>
+                <Button size={500} variant="brand" onClick={onNext}>
                   {t['com.affine.ai-onboarding.general.next']()}
                 </Button>
               </div>

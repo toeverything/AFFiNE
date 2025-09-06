@@ -218,7 +218,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
               portalOptions: { container: removeButtonDom },
               ...removeTooltipOptions,
             }}
-            variant="solid"
+            variant="default"
             size="12"
             className={clsx(style.removeButton, removeButtonClassName)}
             onClick={onRemove}

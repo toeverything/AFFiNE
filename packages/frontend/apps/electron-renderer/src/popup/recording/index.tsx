@@ -231,12 +231,12 @@ export function Recording() {
     if (status.status === 'new') {
       return (
         <>
-          <Button variant="plain" onClick={handleDismiss}>
+          <Button variant="default" onClick={handleDismiss}>
             {t['com.affine.recording.dismiss']()}
           </Button>
           <Button
             onClick={handleStartRecording}
-            variant="primary"
+            variant="brand"
             prefix={<div className={styles.recordingIcon} />}
           >
             {t['com.affine.recording.start']()}
@@ -245,14 +245,14 @@ export function Recording() {
       );
     } else if (status.status === 'recording') {
       return (
-        <Button variant="error" onClick={handleStopRecording}>
+        <Button variant="default" onClick={handleStopRecording}>
           {t['com.affine.recording.stop']()}
         </Button>
       );
     } else if (status.status === 'stopped' || status.status === 'ready') {
       return (
         <Button
-          variant="error"
+          variant="default"
           onClick={handleDismiss}
           loading={true}
           disabled
@@ -260,17 +260,17 @@ export function Recording() {
       );
     } else if (status.status === 'create-block-success') {
       return (
-        <Button variant="primary" onClick={handleDismiss}>
+        <Button variant="brand" onClick={handleDismiss}>
           {t['com.affine.recording.success.button']()}
         </Button>
       );
     } else if (status.status === 'create-block-failed') {
       return (
         <>
-          <Button variant="plain" onClick={handleDismiss}>
+          <Button variant="default" onClick={handleDismiss}>
             {t['com.affine.recording.dismiss']()}
           </Button>
-          <Button variant="error" onClick={handleOpenFile}>
+          <Button variant="default" onClick={handleOpenFile}>
             {t['com.affine.recording.failed.button']()}
           </Button>
         </>

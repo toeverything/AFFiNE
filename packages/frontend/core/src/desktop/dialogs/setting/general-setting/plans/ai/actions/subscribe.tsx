@@ -75,7 +75,7 @@ export const AISubscribe = ({
       checkoutOptions={checkoutOptions}
       renderer={props => (
         <Button
-          variant="primary"
+          variant="brand"
           {...props}
           {...btnProps}
           data-testid="ai-subscribe-button"

@@ -45,7 +45,7 @@ export const ThemeEditorSetting = () => {
               color: cssVar('errorColor'),
             }}
             onClick={() => themeEditor.reset()}
-            variant="secondary"
+            variant="default"
             prefix={<DeleteIcon />}
           >
             {t['com.affine.appearanceSettings.customize-theme.reset']()}

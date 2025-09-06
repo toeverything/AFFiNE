@@ -62,7 +62,7 @@ export const ControlButton = ({
 
   return (
     <IconButton
-      variant="solid"
+      variant="default"
       tooltip={name}
       data-testid="peek-view-control"
       data-action-name={nameKey}

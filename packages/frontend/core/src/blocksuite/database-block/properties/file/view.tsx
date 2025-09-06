@@ -412,7 +412,7 @@ const FileCellComponent: ForwardRefRenderFunction<
                   console.error(e);
                 });
             }}
-            variant="primary"
+            variant="brand"
             className={styles.uploadButton}
           >
             Choose a file

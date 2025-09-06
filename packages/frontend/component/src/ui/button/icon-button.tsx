@@ -7,7 +7,7 @@ import {
   type SVGAttributes,
 } from 'react';
 
-import { Button, type ButtonProps } from './button';
+import { Button, type ButtonProps, type ButtonType } from './button';
 import { iconButton, iconSizeVar } from './button.css';
 
 export interface IconButtonProps
@@ -28,7 +28,7 @@ export interface IconButtonProps
   children?: ReactElement<SVGAttributes<SVGElement>>;
   /** Same as `children`, compatibility of the old API */
   icon?: ReactElement<SVGAttributes<SVGElement>>;
-  variant?: 'plain' | 'solid' | 'danger' | 'custom';
+  variant?: ButtonType;
   /**
    * Use preset size,
    * or use custom size(px) (default padding is `2px`, have to override yourself)
@@ -71,8 +71,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-icon-variant={variant}
         data-icon-size={validatedSize}
         className={clsx(iconButton, className)}
-        size={'custom'}
-        variant={'custom'}
+        size={400}
+        variant={'default'}
         prefix={children ?? icon}
         prefixClassName={iconClassName}
         prefixStyle={iconStyle}

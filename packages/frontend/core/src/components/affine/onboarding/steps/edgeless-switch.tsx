@@ -212,8 +212,13 @@ export const EdgelessSwitch = ({
               {
                 /* render blocks */
                 article.blocks.map((block, key) => {
-                  // eslint-disable-next-line react/no-array-index-key
-                  return <OnboardingBlock key={key} mode={mode} {...block} />;
+                  return (
+                    <OnboardingBlock
+                      key={key.toString()}
+                      mode={mode}
+                      {...block}
+                    />
+                  );
                 })
               }
             </div>
@@ -227,7 +232,7 @@ export const EdgelessSwitch = ({
                   borderColor: '#E3E2E4',
                   color: '#424149',
                 }}
-                size="extraLarge"
+                size={500}
                 onClick={onBack}
               >
                 Back
@@ -237,7 +242,7 @@ export const EdgelessSwitch = ({
                 onSwitchToPageMode={onSwitchToPageMode}
                 onSwitchToEdgelessMode={onSwitchToEdgelessMode}
               />
-              <Button size="extraLarge" variant="primary" onClick={onNextClick}>
+              <Button size={500} variant="brand" onClick={onNextClick}>
                 Next
               </Button>
             </header>
@@ -265,8 +270,8 @@ export const EdgelessSwitch = ({
           <Button
             className={styles.wellDoneEnterAnim}
             onClick={onNextClick}
-            variant="primary"
-            size="extraLarge"
+            variant="brand"
+            size={500}
             style={{ marginTop: 40 }}
           >
             Get Started

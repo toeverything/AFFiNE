@@ -13,22 +13,22 @@ import { Loading } from '../loading';
 import { Tooltip, type TooltipProps } from '../tooltip';
 import * as styles from './button.css';
 
-export type ButtonType =
-  | 'primary'
-  | 'secondary'
-  | 'plain'
-  | 'error'
-  | 'success'
-  | 'custom';
-export type ButtonSize = 'default' | 'large' | 'extraLarge' | 'custom';
+export type ButtonType = 'default' | 'brand';
+export type ButtonImportance = 'default' | 'primary';
+export type ButtonSize = 300 | 400 | 500;
 
 export interface ButtonProps
   extends Omit<HTMLAttributes<HTMLButtonElement>, 'type' | 'prefix'> {
   /**
    * Preset color scheme
-   * @default 'secondary'
+   * @default 'default'
    */
   variant?: ButtonType;
+  /**
+   * Preset importance color scheme
+   * @default 'default'
+   */
+  importance?: ButtonImportance;
   disabled?: boolean;
   /**
    * By default, the button is `inline-flex`, set to `true` to make it `flex`
@@ -90,8 +90,7 @@ const IconSlot = ({
 
   const loadingStrokeColor = useMemo(() => {
     const usePureWhite =
-      variant &&
-      (['primary', 'error', 'success'] as ButtonType[]).includes(variant);
+      variant && (['brand'] as ButtonType[]).includes(variant);
     return usePureWhite ? '#fff' : undefined;
   }, [variant]);
 
@@ -114,8 +113,9 @@ const IconSlot = ({
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      variant = 'secondary',
-      size = 'default',
+      variant = 'default',
+      importance = 'default',
+      size = 400,
       children,
       disabled,
       block,
@@ -175,32 +175,47 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           data-disabled={disabled || undefined}
           data-size={size}
           data-variant={variant}
+          data-importance={importance}
           data-no-hover={
             withoutHover || BUILD_CONFIG.isMobileEdition || undefined
           }
           data-mobile={BUILD_CONFIG.isMobileEdition}
           onClick={handleClick}
         >
-          <IconSlot
-            icon={prefix}
-            loading={loading}
-            className={prefixClassName}
-            style={prefixStyle}
-            variant={variant}
-          />
-          {children ? (
-            <span
-              className={clsx(styles.content, contentClassName)}
-              style={contentStyle}
-            >
-              {children}
+          <span
+            className={clsx(styles.contentWrapper, {
+              [styles.hiddenContent]: loading,
+            })}
+          >
+            <IconSlot
+              icon={prefix}
+              loading={loading}
+              className={prefixClassName}
+              style={prefixStyle}
+              variant={variant}
+            />
+            {children ? (
+              <span
+                className={clsx(styles.content, contentClassName)}
+                style={contentStyle}
+              >
+                {children}
+              </span>
+            ) : null}
+            <IconSlot
+              icon={suffix}
+              className={suffixClassName}
+              style={suffixStyle}
+            />
+          </span>
+          {loading && (
+            <span className={styles.loaderOverlay}>
+              <Loading
+                size="20px"
+                strokeColor={importance === 'primary' ? '#fff' : undefined}
+              />
             </span>
-          ) : null}
-          <IconSlot
-            icon={suffix}
-            className={suffixClassName}
-            style={suffixStyle}
-          />
+          )}
         </button>
       </Tooltip>
     );

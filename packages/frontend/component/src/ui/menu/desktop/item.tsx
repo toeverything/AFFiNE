@@ -12,7 +12,11 @@ export const DesktopMenuItem = (props: MenuItemProps) => {
 
   if (type === 'dropdown-menu') {
     return (
-      <DropdownMenu.Item className={className} {...otherProps}>
+      <DropdownMenu.Item
+        data-block={props.block}
+        className={className}
+        {...otherProps}
+      >
         {children}
       </DropdownMenu.Item>
     );
@@ -20,8 +24,12 @@ export const DesktopMenuItem = (props: MenuItemProps) => {
 
   if (type === 'context-menu') {
     return (
-      <ContextMenu.Item className={className} {...otherProps}>
-        {children}
+      <ContextMenu.Item
+        data-block={props.block}
+        className={className}
+        {...otherProps}
+      >
+        {children} {props.block}
       </ContextMenu.Item>
     );
   }

@@ -144,7 +144,7 @@ export const OnboardingPage = ({
               [styles.disableButton]: questionIdx === 0,
               [styles.windowsAppButton]: isWindowsDesktop,
             })}
-            size="extraLarge"
+            size={500}
             onClick={() => setQuestionIdx(questions.length)}
           >
             Skip
@@ -203,15 +203,15 @@ export const OnboardingPage = ({
               className={clsx(styles.button, {
                 [styles.disableButton]: questionIdx !== 0,
               })}
-              size="extraLarge"
+              size={500}
               onClick={() => setQuestionIdx(questions.length)}
             >
               Skip
             </Button>
             <Button
               className={styles.button}
-              variant="primary"
-              size="extraLarge"
+              variant="brand"
+              size={500}
               itemType="submit"
               onClick={() => {
                 if (question.id && user?.id) {
@@ -261,8 +261,8 @@ export const OnboardingPage = ({
         </p>
         <Button
           className={clsx(styles.button, styles.openAFFiNEButton)}
-          variant="primary"
-          size="extraLarge"
+          variant="brand"
+          size={500}
           onClick={() => {
             if (callbackUrl) {
               navigate(callbackUrl);

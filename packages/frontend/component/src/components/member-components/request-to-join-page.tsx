@@ -53,7 +53,7 @@ export const RequestToJoinPage = ({
         </div>
       }
     >
-      <Button variant="primary" size="large" onClick={requestToJoin}>
+      <Button variant="brand" size={500} onClick={requestToJoin}>
         {inviteInfo?.status === WorkspaceMemberStatus.Pending
           ? t['com.affine.notification.invitation.accept']()
           : t['com.affine.request-to-join-workspace.button']()}

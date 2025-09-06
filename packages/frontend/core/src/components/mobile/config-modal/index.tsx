@@ -62,7 +62,7 @@ export const ConfigModal = ({
                   fontWeight: 600,
                 }}
                 className={styles.doneButton}
-                variant="plain"
+                variant="default"
                 onClick={onDone}
               >
                 {t['Done']()}
@@ -85,7 +85,7 @@ export const ConfigModal = ({
         {variant === 'popup' && onDone ? (
           <div className={styles.bottomDoneButtonContainer}>
             <Button
-              variant="primary"
+              variant="brand"
               className={styles.bottomDoneButton}
               onClick={onDone}
             >
