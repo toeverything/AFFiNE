@@ -39,15 +39,20 @@ export class StripeFactory {
   }
 
   setup() {
-    // TODO@(@forehalo): use per-requests api key injection
-    this.#stripe = new Stripe(
-      this.config.payment.apiKey ||
-        // NOTE(@forehalo):
-        //   we always fake a key if not set because `new Stripe` will complain if it's empty string
-        //   this will make code cleaner than providing `Stripe` instance as optional one.
-        'stripe-api-key',
-      this.config.payment.stripe
-    );
+    // Prefer new keys under payment.stripe.*, fallback to legacy root keys for backward compatibility
+    const {
+      apiKey: nestedApiKey,
+      webhookKey: _,
+      ...config
+    } = this.config.payment.stripe || {};
+    // NOTE:
+    //   we always fake a key if not set because `new Stripe` will complain if it's empty string
+    //   this will make code cleaner than providing `Stripe` instance as optional one.
+    const apiKey =
+      nestedApiKey || this.config.payment.apiKey || 'stripe-api-key';
+
+    // TODO@(@darkskygit): use per-requests api key injection
+    this.#stripe = new Stripe(apiKey, config);
     if (this.config.payment.enabled) {
       this.server.enableFeature(ServerFeature.Payment);
     } else {

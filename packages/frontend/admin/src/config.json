@@ -391,17 +391,17 @@
     },
     "apiKey": {
       "type": "String",
-      "desc": "Stripe API key to enable payment service.",
+      "desc": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.",
       "env": "STRIPE_API_KEY"
     },
     "webhookKey": {
       "type": "String",
-      "desc": "Stripe webhook key to enable payment service.",
+      "desc": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.",
       "env": "STRIPE_WEBHOOK_KEY"
     },
     "stripe": {
       "type": "Object",
-      "desc": "Stripe sdk options",
+      "desc": "Stripe sdk options and credentials",
       "link": "https://docs.stripe.com/api"
     }
   },

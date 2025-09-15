@@ -1098,18 +1098,21 @@
         },
         "apiKey": {
           "type": "string",
-          "description": "Stripe API key to enable payment service.\n@default \"\"\n@environment `STRIPE_API_KEY`",
+          "description": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.\n@default \"\"\n@environment `STRIPE_API_KEY`",
           "default": ""
         },
         "webhookKey": {
           "type": "string",
-          "description": "Stripe webhook key to enable payment service.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
+          "description": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
           "default": ""
         },
         "stripe": {
           "type": "object",
-          "description": "Stripe sdk options\n@default {}\n@link https://docs.stripe.com/api",
-          "default": {}
+          "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\"}\n@link https://docs.stripe.com/api",
+          "default": {
+            "apiKey": "",
+            "webhookKey": ""
+          }
         }
       }
     },
