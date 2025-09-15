@@ -9,6 +9,7 @@ import {
   EventBus,
   InternalServerError,
   InvalidCheckoutParameters,
+  ManagedByAppStoreOrPlay,
   Mutex,
   OnEvent,
   SubscriptionAlreadyExists,
@@ -101,6 +102,17 @@ export class UserSubscriptionManager extends SubscriptionManager {
       lookupKey.plan !== SubscriptionPlan.AI
     ) {
       throw new InvalidCheckoutParameters();
+    }
+
+    const active = await this.getActiveSubscription({
+      plan: lookupKey.plan,
+      userId: user.id,
+    });
+    if (active) {
+      if (active.provider === 'revenuecat') {
+        throw new ManagedByAppStoreOrPlay();
+      }
+      throw new SubscriptionAlreadyExists({ plan: lookupKey.plan });
     }
 
     const subscription = await this.getSubscription({
@@ -256,7 +268,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       ]),
       create: {
         targetId: userId,
-        ...subscriptionData,
+        ...omit(subscriptionData, ['provider', 'iapStore']),
       },
     });
   }
