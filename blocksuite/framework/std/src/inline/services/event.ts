@@ -45,7 +45,6 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     const range = this.editor.rangeService.getNativeRange();
     if (
       this.editor.isReadonly ||
-      this._isComposing ||
       !range ||
       !this._isRangeCompletelyInRoot(range)
     )
@@ -53,6 +52,15 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
 
     let inlineRange = this.editor.toInlineRange(range);
     if (!inlineRange) return;
+
+    // see https://www.w3.org/TR/input-events-2/#interface-InputEvent-Attributes
+    // insertCompositionText : replace the current composition string,
+    // we set the inline range to the composition inline range,
+    // and it will be handled in the composition end event
+    if (this._isComposing && event.inputType === 'insertCompositionText') {
+      this._compositionInlineRange = inlineRange;
+      return;
+    }
 
     let ifHandleTargetRange = true;
 
@@ -97,7 +105,6 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
         }
       }
     }
-
     if (!inlineRange) return;
 
     event.preventDefault();
