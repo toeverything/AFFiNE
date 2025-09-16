@@ -1,4 +1,5 @@
-import { IS_MAC } from '@blocksuite/global/env';
+import { DisposableGroup } from '@blocksuite/global/disposable';
+import { IS_ANDROID, IS_MAC } from '@blocksuite/global/env';
 
 import {
   type UIEventHandler,
@@ -6,7 +7,7 @@ import {
   UIEventStateContext,
 } from '../base.js';
 import type { EventOptions, UIEventDispatcher } from '../dispatcher.js';
-import { bindKeymap } from '../keymap.js';
+import { androidBindKeymapPatch, bindKeymap } from '../keymap.js';
 import { KeyboardEventState } from '../state/index.js';
 import { EventScopeSourceType, EventSourceState } from '../state/source.js';
 
@@ -87,15 +88,29 @@ export class KeyboardControl {
   }
 
   bindHotkey(keymap: Record<string, UIEventHandler>, options?: EventOptions) {
-    return this._dispatcher.add(
-      'keyDown',
-      ctx => {
-        if (this.composition) return false;
-        const binding = bindKeymap(keymap);
-        return binding(ctx);
-      },
-      options
+    const disposables = new DisposableGroup();
+    if (IS_ANDROID) {
+      disposables.add(
+        this._dispatcher.add('beforeInput', ctx => {
+          if (this.composition) return false;
+          const binding = androidBindKeymapPatch(keymap);
+          return binding(ctx);
+        })
+      );
+    }
+
+    disposables.add(
+      this._dispatcher.add(
+        'keyDown',
+        ctx => {
+          if (this.composition) return false;
+          const binding = bindKeymap(keymap);
+          return binding(ctx);
+        },
+        options
+      )
     );
+    return () => disposables.dispose();
   }
 
   listen() {
