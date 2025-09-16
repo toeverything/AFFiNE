@@ -1,0 +1,1 @@
+export { RevenueCatWebhookHandler } from './webhook';
