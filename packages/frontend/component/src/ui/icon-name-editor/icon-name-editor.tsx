@@ -33,20 +33,23 @@ export interface IconAndNameEditorMenuProps
   onOpenChange?: (open: boolean) => void;
 
   width?: string | number;
+  skipIfNotChanged?: boolean;
 }
 
 const IconRenderer = ({
   iconType,
   icon,
+  fallback,
 }: {
   iconType: IconType;
   icon: string;
+  fallback?: ReactNode;
 }) => {
   switch (iconType) {
     case 'emoji':
-      return <div>{icon}</div>;
+      return <div>{icon ?? fallback}</div>;
     default:
-      throw new Error(`Unsupported icon type: ${iconType}`);
+      return <div>{fallback}</div>;
   }
 };
 
@@ -103,7 +106,11 @@ export const IconEditor = ({
         data-icon-type={iconType}
       >
         {icon ? (
-          <IconRenderer iconType={iconType} icon={icon} />
+          <IconRenderer
+            iconType={iconType}
+            icon={icon}
+            fallback={iconPlaceholder}
+          />
         ) : (
           iconPlaceholder
         )}
@@ -126,6 +133,8 @@ export const IconAndNameEditorContent = ({
         value={name}
         onChange={onNameChange}
         className={styles.input}
+        autoSelect
+        autoFocus
       />
     </div>
   );
@@ -140,6 +149,9 @@ export const IconAndNameEditorMenu = ({
   name: initialName,
   onIconChange,
   onNameChange,
+  contentOptions,
+  iconPlaceholder,
+  skipIfNotChanged = true,
   ...menuProps
 }: IconAndNameEditorMenuProps) => {
   const [iconType, setIconType] = useState(initialIconType);
@@ -150,7 +162,9 @@ export const IconAndNameEditorMenu = ({
     if (iconType !== initialIconType || icon !== initialIcon) {
       onIconChange?.(iconType, icon);
     }
-    if (name !== initialName) {
+    if (skipIfNotChanged) {
+      if (name !== initialName) onNameChange?.(name);
+    } else {
       onNameChange?.(name);
     }
   }, [
@@ -162,6 +176,7 @@ export const IconAndNameEditorMenu = ({
     name,
     onIconChange,
     onNameChange,
+    skipIfNotChanged,
   ]);
   const abort = useCallback(() => {
     setIconType(initialIconType);
@@ -205,11 +220,8 @@ export const IconAndNameEditorMenu = ({
         style: { width },
         onPointerDownOutside: commit,
         onEscapeKeyDown: abort,
-        ...menuProps.contentOptions,
-        className: clsx(
-          styles.menuContent,
-          menuProps.contentOptions?.className
-        ),
+        ...contentOptions,
+        className: clsx(styles.menuContent, contentOptions?.className),
       }}
       {...menuProps}
       items={
@@ -217,6 +229,7 @@ export const IconAndNameEditorMenu = ({
           iconType={iconType}
           icon={icon}
           name={name}
+          iconPlaceholder={iconPlaceholder}
           onIconChange={handleIconChange}
           onNameChange={handleNameChange}
         />

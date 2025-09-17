@@ -27,6 +27,7 @@ import { configureDocSummaryModule } from './doc-summary';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
 import { configureEditorSettingModule } from './editor-setting';
+import { configureExplorerIconModule } from './explorer-icon';
 import { configureFavoriteModule } from './favorite';
 import { configureFeatureFlagModule } from './feature-flag';
 import { configureGlobalContextModule } from './global-context';
@@ -126,4 +127,5 @@ export function configureCommonModules(framework: Framework) {
   configureIndexerEmbeddingModule(framework);
   configureCommentModule(framework);
   configureDocSummaryModule(framework);
+  configureExplorerIconModule(framework);
 }

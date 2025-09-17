@@ -128,7 +128,7 @@ export const useNavigationPanelCollectionNodeOperations = (
         ),
       },
       {
-        index: 99,
+        index: 103,
         view: (
           <MenuItem prefixIcon={<FilterIcon />} onClick={handleShowEdit}>
             {t['com.affine.collection.menu.edit']()}
@@ -136,7 +136,7 @@ export const useNavigationPanelCollectionNodeOperations = (
         ),
       },
       {
-        index: 99,
+        index: 102,
         view: (
           <MenuItem
             prefixIcon={<PlusIcon />}
@@ -147,7 +147,7 @@ export const useNavigationPanelCollectionNodeOperations = (
         ),
       },
       {
-        index: 99,
+        index: 101,
         view: (
           <MenuItem
             prefixIcon={<IsFavoriteIcon favorite={favorite} />}
@@ -160,7 +160,7 @@ export const useNavigationPanelCollectionNodeOperations = (
         ),
       },
       {
-        index: 99,
+        index: 100,
         view: (
           <MenuItem prefixIcon={<OpenInNewIcon />} onClick={handleOpenInNewTab}>
             {t['com.affine.workbench.tab.page-menu-open']()}

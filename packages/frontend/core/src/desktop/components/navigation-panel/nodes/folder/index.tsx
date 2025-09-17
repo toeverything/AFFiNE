@@ -811,6 +811,7 @@ const NavigationPanelFolderNodeFolder = ({
       }
       dropEffect={handleDropEffect}
       data-testid={`navigation-panel-folder-${node.id}`}
+      explorerIconConfig={node.id ? { where: 'folder', id: node.id } : null}
     >
       {children.map(child => (
         <NavigationPanelFolderNode

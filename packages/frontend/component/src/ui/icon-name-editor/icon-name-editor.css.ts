@@ -27,6 +27,9 @@ export const iconPicker = style({
     },
   },
 });
+globalStyle(`${iconPicker} span:has(svg)`, {
+  lineHeight: 0,
+});
 
 export const input = style({
   height: 32,
