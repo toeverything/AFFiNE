@@ -14,6 +14,7 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../AffineGraphQL"),
+    .package(path: "../AffineResources"),
     .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.22.0"),
     .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0"),
     .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
@@ -25,6 +26,7 @@ let package = Package(
   targets: [
     .target(name: "Intelligents", dependencies: [
       "AffineGraphQL",
+      "AffineResources",
       "SnapKit",
       "SwifterSwift",
       .product(name: "Apollo", package: "apollo-ios"),
@@ -33,6 +35,8 @@ let package = Package(
       "MarkdownView",
       "EventSource",
     ], resources: [
+      .process("Resources/main.metal"),
+      .process("Resources/Media.xcassets"),
       .process("Interface/View/InputBox/InputBox.xcassets"),
       .process("Interface/Controller/AttachmentManagementController/AttachmentIcon.xcassets"),
     ]),
