@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/MarkdownView",
       "state" : {
-        "revision" : "1b0267f115274260d7cc875c4e9043f976f003a2",
-        "version" : "3.4.1"
+        "revision" : "c052f57768436212c91e4369d76181c38eaa3ba3",
+        "version" : "3.4.2"
       }
     },
     {
@@ -106,15 +106,6 @@
       "state" : {
         "revision" : "cfd646dcac0c5553e21ebf1ee05f9078277518bc",
         "version" : "1.7.2"
-      }
-    },
-    {
-      "identity" : "then",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/devxoul/Then",
-      "state" : {
-        "revision" : "d41ef523faef0f911369f79c0b96815d9dbb6d7a",
-        "version" : "3.0.0"
       }
     }
   ],

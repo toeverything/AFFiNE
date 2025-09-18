@@ -19,6 +19,10 @@ CLI_BIN=$(find App/Packages/AffineGraphQL/apollo-ios-cli -type f -perm +111 -nam
 [ -z "$CLI_BIN" ] && { echo "❌ apollo-ios-cli executable not found"; exit 1; }
 echo "🔧 Using binary tool at: $CLI_BIN"
 
+echo "🧹 Cleaning old generated files..."
+rm -rf "App/Packages/AffineGraphQL/Sources"
+mkdir -p "App/Packages/AffineGraphQL/Sources"
+
 $CLI_BIN generate --path "apollo-codegen-config.json" --ignore-version-mismatch
 echo "✅ Code generated"
 
