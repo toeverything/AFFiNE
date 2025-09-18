@@ -2129,13 +2129,13 @@ test('should resolve model correctly based on subscription status and prompt con
     );
   }
 
-  // payment enabled + active: without requested -> first pro; requested pro should be honored
+  // payment enabled + active: without requested -> default model; requested pro should be honored
   {
     mockStatus(SubscriptionStatus.Active);
     const model6 = await s.resolveModel(true);
     t.snapshot(
       model6,
-      'should pick first pro model when no requested model during active'
+      'should pick default model when no requested model during active'
     );
 
     const model7 = await s.resolveModel(true, 'claude-sonnet-4@20250514');

@@ -363,6 +363,27 @@ class CopilotPromptType {
 }
 
 @ObjectType()
+class CopilotModelType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  name!: string;
+}
+
+@ObjectType()
+export class CopilotModelsType {
+  @Field(() => String)
+  defaultModel!: string;
+
+  @Field(() => [CopilotModelType])
+  optionalModels!: CopilotModelType[];
+
+  @Field(() => [CopilotModelType])
+  proModels!: CopilotModelType[];
+}
+
+@ObjectType()
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
@@ -400,9 +421,12 @@ export class CopilotType {
 @Throttle()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
+  private readonly modelNames = new Map<string, string>();
+
   constructor(
     private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
+    private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
     private readonly storage: CopilotStorage,
     private readonly docReader: DocReader,
@@ -441,6 +465,45 @@ export class CopilotResolver {
         .assert('Workspace.Copilot');
     }
     return { userId: user.id, workspaceId, docId: docId || undefined };
+  }
+
+  @ResolveField(() => CopilotModelsType, {
+    description: 'Get the title of the session',
+    complexity: 2,
+  })
+  async models(
+    @Args('promptName') promptName: string
+  ): Promise<CopilotModelsType> {
+    const prompt = await this.prompt.get(promptName);
+    if (!prompt) {
+      throw new NotFoundException('Prompt not found');
+    }
+    const proModels = prompt.config?.proModels || [];
+    const models = new Set([...prompt.optionalModels, ...proModels]);
+
+    for (const model of models) {
+      if (this.modelNames.has(model)) {
+        continue;
+      }
+      const provider = await this.providerFactory.getProviderByModel(
+        prompt.model
+      );
+      if (provider?.configured()) {
+        for (const m of provider.models) {
+          if (m.name) this.modelNames.set(m.id, m.name);
+        }
+      }
+    }
+
+    return {
+      defaultModel: prompt.model,
+      optionalModels: prompt.optionalModels
+        .map(id => ({ id, name: this.modelNames.get(id) }))
+        .filter(m => !!m.name) as CopilotModelType[],
+      proModels: proModels
+        .map(id => ({ id, name: this.modelNames.get(id) }))
+        .filter(m => !!m.name) as CopilotModelType[],
+    };
   }
 
   @ResolveField(() => CopilotSessionType, {
