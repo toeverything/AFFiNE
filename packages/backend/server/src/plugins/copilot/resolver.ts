@@ -478,13 +478,16 @@ export class CopilotResolver {
     if (!prompt) {
       throw new NotFoundException('Prompt not found');
     }
+    const convertModels = (ids: string[]) => {
+      return ids
+        .map(id => ({ id, name: this.modelNames.get(id) }))
+        .filter(m => !!m.name) as CopilotModelType[];
+    };
     const proModels = prompt.config?.proModels || [];
     const models = new Set([...prompt.optionalModels, ...proModels]);
 
     for (const model of models) {
-      if (this.modelNames.has(model)) {
-        continue;
-      }
+      if (this.modelNames.has(model)) continue;
       const provider = await this.providerFactory.getProviderByModel(
         prompt.model
       );
@@ -497,12 +500,8 @@ export class CopilotResolver {
 
     return {
       defaultModel: prompt.model,
-      optionalModels: prompt.optionalModels
-        .map(id => ({ id, name: this.modelNames.get(id) }))
-        .filter(m => !!m.name) as CopilotModelType[],
-      proModels: proModels
-        .map(id => ({ id, name: this.modelNames.get(id) }))
-        .filter(m => !!m.name) as CopilotModelType[],
+      optionalModels: convertModels(prompt.optionalModels),
+      proModels: convertModels(proModels),
     };
   }
 
