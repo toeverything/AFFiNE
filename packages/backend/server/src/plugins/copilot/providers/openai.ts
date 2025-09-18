@@ -91,6 +91,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   readonly models = [
     // Text to Text models
     {
+      name: 'GPT 4o',
       id: 'gpt-4o',
       capabilities: [
         {
@@ -101,6 +102,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
     // FIXME(@darkskygit): deprecated
     {
+      name: 'GPT 4o 2024-08-06',
       id: 'gpt-4o-2024-08-06',
       capabilities: [
         {
@@ -110,6 +112,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 4o Mini',
       id: 'gpt-4o-mini',
       capabilities: [
         {
@@ -120,6 +123,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
     // FIXME(@darkskygit): deprecated
     {
+      name: 'GPT 4o Mini 2024-07-18',
       id: 'gpt-4o-mini-2024-07-18',
       capabilities: [
         {
@@ -129,6 +133,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 4.1',
       id: 'gpt-4.1',
       capabilities: [
         {
@@ -143,6 +148,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 4.1 2025-04-14',
       id: 'gpt-4.1-2025-04-14',
       capabilities: [
         {
@@ -156,6 +162,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 4.1 Mini',
       id: 'gpt-4.1-mini',
       capabilities: [
         {
@@ -169,6 +176,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 4.1 Nano',
       id: 'gpt-4.1-nano',
       capabilities: [
         {
@@ -182,6 +190,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 5',
       id: 'gpt-5',
       capabilities: [
         {
@@ -195,6 +204,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 5 2025-08-07',
       id: 'gpt-5-2025-08-07',
       capabilities: [
         {
@@ -208,6 +218,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 5 Mini',
       id: 'gpt-5-mini',
       capabilities: [
         {
@@ -221,6 +232,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 5 Nano',
       id: 'gpt-5-nano',
       capabilities: [
         {
@@ -234,6 +246,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT O1',
       id: 'o1',
       capabilities: [
         {
@@ -243,6 +256,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT O3',
       id: 'o3',
       capabilities: [
         {
@@ -252,6 +266,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT O4 Mini',
       id: 'o4-mini',
       capabilities: [
         {

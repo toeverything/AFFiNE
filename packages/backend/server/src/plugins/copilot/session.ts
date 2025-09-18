@@ -130,15 +130,8 @@ export class ChatSession implements AsyncDisposable {
       paymentEnabled = false;
     }
 
-    if (paymentEnabled) {
-      if (isUserAIPro) {
-        if (!requestedModelId) {
-          const firstPro = this.proModels[0];
-          return normalize(firstPro);
-        }
-      } else if (isPro(requestedModelId)) {
-        return defaultModel;
-      }
+    if (paymentEnabled && !isUserAIPro && isPro(requestedModelId)) {
+      return defaultModel;
     }
 
     return normalize(requestedModelId);
