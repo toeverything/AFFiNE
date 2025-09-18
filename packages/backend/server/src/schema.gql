@@ -226,7 +226,7 @@ type Copilot {
   contexts(contextId: String, sessionId: String): [CopilotContext!]!
   histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]! @deprecated(reason: "use `chats` instead")
 
-  """Get the title of the session"""
+  """List available models for a prompt, with human-readable names"""
   models(promptName: String!): CopilotModelsType!
 
   """Get the quota of the user in the workspace"""

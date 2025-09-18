@@ -468,7 +468,8 @@ export class CopilotResolver {
   }
 
   @ResolveField(() => CopilotModelsType, {
-    description: 'Get the title of the session',
+    description:
+      'List available models for a prompt, with human-readable names',
     complexity: 2,
   })
   async models(
@@ -484,16 +485,19 @@ export class CopilotResolver {
         .filter(m => !!m.name) as CopilotModelType[];
     };
     const proModels = prompt.config?.proModels || [];
-    const models = new Set([...prompt.optionalModels, ...proModels]);
-
-    for (const model of models) {
-      if (this.modelNames.has(model)) continue;
-      const provider = await this.providerFactory.getProviderByModel(
-        prompt.model
-      );
-      if (provider?.configured()) {
-        for (const m of provider.models) {
-          if (m.name) this.modelNames.set(m.id, m.name);
+    const missing = new Set(
+      [...prompt.optionalModels, ...proModels].filter(
+        id => !this.modelNames.has(id)
+      )
+    );
+    if (missing.size) {
+      for (const model of missing) {
+        if (this.modelNames.has(model)) continue;
+        const provider = await this.providerFactory.getProviderByModel(model);
+        if (provider?.configured()) {
+          for (const m of provider.models) {
+            if (m.name) this.modelNames.set(m.id, m.name);
+          }
         }
       }
     }

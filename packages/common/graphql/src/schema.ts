@@ -263,7 +263,7 @@ export interface Copilot {
   contexts: Array<CopilotContext>;
   /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
-  /** Get the title of the session */
+  /** List available models for a prompt, with human-readable names */
   models: CopilotModelsType;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
