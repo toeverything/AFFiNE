@@ -86,6 +86,12 @@ declare global {
     'stripe.customer.subscription.created': Stripe.CustomerSubscriptionCreatedEvent;
     'stripe.customer.subscription.updated': Stripe.CustomerSubscriptionUpdatedEvent;
     'stripe.customer.subscription.deleted': Stripe.CustomerSubscriptionDeletedEvent;
+
+    // RevenueCat integration
+    'revenuecat.webhook': {
+      appUserId?: string;
+      payload: unknown;
+    };
   }
 }
 

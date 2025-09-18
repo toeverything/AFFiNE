@@ -9,6 +9,13 @@ export interface PaymentStartupConfig {
       webhookKey: string;
     };
   } & Stripe.StripeConfig;
+  revenuecat?: {
+    apiKey?: string;
+    webhookAuth?: string;
+    enabled?: boolean;
+    environment?: 'sandbox' | 'production';
+    productMap?: Record<string, { plan: string; recurring: string }>;
+  };
 }
 
 export interface PaymentRuntimeConfig {
@@ -36,6 +43,20 @@ declare global {
           webhookKey?: string;
         } & Stripe.StripeConfig
       >;
+      revenuecat: ConfigItem<{
+        /** Whether enable RevenueCat integration */
+        enabled?: boolean;
+        /** RevenueCat REST API Key */
+        apiKey?: string;
+        /** RevenueCat Project Id */
+        projectId?: string;
+        /** Authorization header value required by webhook */
+        webhookAuth?: string;
+        /** RC environment */
+        environment?: 'sandbox' | 'production';
+        /** Product whitelist mapping: productId -> { plan, recurring } */
+        productMap?: Record<string, { plan: string; recurring: string }>;
+      }>;
     };
   }
 }
@@ -66,5 +87,17 @@ defineModuleConfig('payment', {
       webhookKey: '',
     },
     link: 'https://docs.stripe.com/api',
+  },
+  revenuecat: {
+    desc: 'RevenueCat integration configs',
+    default: {
+      enabled: false,
+      apiKey: '',
+      projectId: '',
+      webhookAuth: '',
+      environment: 'production',
+      productMap: {},
+    },
+    link: 'https://www.revenuecat.com/docs/',
   },
 });
