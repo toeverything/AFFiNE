@@ -63,6 +63,10 @@
       "type": "Boolean",
       "desc": "Whether allow new registrations."
     },
+    "allowSignupForOauth": {
+      "type": "Boolean",
+      "desc": "Whether allow new registrations via configured oauth."
+    },
     "requireEmailDomainVerification": {
       "type": "Boolean",
       "desc": "Whether require email domain record verification before accessing restricted resources."
