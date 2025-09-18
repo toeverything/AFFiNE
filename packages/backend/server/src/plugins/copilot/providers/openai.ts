@@ -5,6 +5,10 @@ import {
   OpenAIResponsesProviderOptions,
 } from '@ai-sdk/openai';
 import {
+  createOpenAICompatible,
+  type OpenAICompatibleProvider as VercelOpenAICompatibleProvider,
+} from '@ai-sdk/openai-compatible';
+import {
   AISDKError,
   embedMany,
   experimental_generateImage as generateImage,
@@ -18,6 +22,7 @@ import { z } from 'zod';
 
 import {
   CopilotPromptInvalid,
+  CopilotProviderNotSupported,
   CopilotProviderSideError,
   metrics,
   UserFriendlyError,
@@ -47,6 +52,7 @@ export const DEFAULT_DIMENSIONS = 256;
 export type OpenAIConfig = {
   apiKey: string;
   baseURL?: string;
+  oldApiStyle?: boolean;
 };
 
 const ModelListSchema = z.object({
@@ -296,7 +302,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
   ];
 
-  #instance!: VercelOpenAIProvider;
+  #instance!: VercelOpenAIProvider | VercelOpenAICompatibleProvider;
 
   override configured(): boolean {
     return !!this.config.apiKey;
@@ -304,10 +310,17 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
   protected override setup() {
     super.setup();
-    this.#instance = createOpenAI({
-      apiKey: this.config.apiKey,
-      baseURL: this.config.baseURL,
-    });
+    this.#instance =
+      this.config.oldApiStyle && this.config.baseURL
+        ? createOpenAICompatible({
+            name: 'openai-compatible-old-style',
+            apiKey: this.config.apiKey,
+            baseURL: this.config.baseURL,
+          })
+        : createOpenAI({
+            apiKey: this.config.apiKey,
+            baseURL: this.config.baseURL,
+          });
   }
 
   private handleError(
@@ -341,7 +354,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   override async refreshOnlineModels() {
     try {
       const baseUrl = this.config.baseURL || 'https://api.openai.com/v1';
-      if (baseUrl && !this.onlineModelList.length) {
+      if (this.config.apiKey && baseUrl && !this.onlineModelList.length) {
         const { data } = await fetch(`${baseUrl}/models`, {
           headers: {
             Authorization: `Bearer ${this.config.apiKey}`,
@@ -361,7 +374,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     toolName: CopilotChatTools,
     model: string
   ): [string, Tool?] | undefined {
-    if (toolName === 'webSearch' && !this.isReasoningModel(model)) {
+    if (
+      toolName === 'webSearch' &&
+      'responses' in this.#instance &&
+      !this.isReasoningModel(model)
+    ) {
       return ['web_search_preview', openai.tools.webSearchPreview({})];
     } else if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
@@ -374,10 +391,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-    };
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
     await this.checkParams({ messages, cond: fullCond, options });
     const model = this.selectModel(fullCond);
 
@@ -386,7 +400,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
       const [system, msgs] = await chatToGPTMessage(messages);
 
-      const modelInstance = this.#instance.responses(model.id);
+      const modelInstance =
+        'responses' in this.#instance
+          ? this.#instance.responses(model.id)
+          : this.#instance(model.id);
 
       const { text } = await generateText({
         model: modelInstance,
@@ -507,7 +524,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         throw new CopilotPromptInvalid('Schema is required');
       }
 
-      const modelInstance = this.#instance.responses(model.id);
+      const modelInstance =
+        'responses' in this.#instance
+          ? this.#instance.responses(model.id)
+          : this.#instance(model.id);
 
       const { object } = await generateObject({
         model: modelInstance,
@@ -539,7 +559,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     await this.checkParams({ messages: [], cond: fullCond, options });
     const model = this.selectModel(fullCond);
     // get the log probability of "yes"/"no"
-    const instance = this.#instance.chat(model.id);
+    const instance =
+      'chat' in this.#instance
+        ? this.#instance.chat(model.id)
+        : this.#instance(model.id);
 
     const scores = await Promise.all(
       chunkMessages.map(async messages => {
@@ -600,7 +623,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotChatOptions = {}
   ) {
     const [system, msgs] = await chatToGPTMessage(messages);
-    const modelInstance = this.#instance.responses(model.id);
+    const modelInstance =
+      'responses' in this.#instance
+        ? this.#instance.responses(model.id)
+        : this.#instance(model.id);
     const { fullStream } = streamText({
       model: modelInstance,
       system,
@@ -685,6 +711,13 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     await this.checkParams({ messages, cond: fullCond, options });
     const model = this.selectModel(fullCond);
 
+    if (!('image' in this.#instance)) {
+      throw new CopilotProviderNotSupported({
+        provider: this.type,
+        kind: 'image',
+      });
+    }
+
     metrics.ai
       .counter('generate_images_stream_calls')
       .add(1, { model: model.id });
@@ -735,6 +768,13 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     await this.checkParams({ embeddings: messages, cond: fullCond, options });
     const model = this.selectModel(fullCond);
 
+    if (!('embedding' in this.#instance)) {
+      throw new CopilotProviderNotSupported({
+        provider: this.type,
+        kind: 'embedding',
+      });
+    }
+
     try {
       metrics.ai
         .counter('generate_embedding_calls')
@@ -775,6 +815,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
   private isReasoningModel(model: string) {
     // o series reasoning models
-    return model.startsWith('o');
+    return model.startsWith('o') || model.startsWith('gpt-5');
   }
 }
