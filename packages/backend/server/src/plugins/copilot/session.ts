@@ -105,9 +105,9 @@ export class ChatSession implements AsyncDisposable {
     requestedModelId?: string
   ): Promise<string> {
     const defaultModel = this.model;
-    const resolveModel = (m?: string) =>
+    const normalize = (m?: string) =>
       !!m && this.optionalModels.includes(m) ? m : defaultModel;
-    const isInPro = (m?: string) => !!m && this.proModels.includes(m);
+    const isPro = (m?: string) => !!m && this.proModels.includes(m);
 
     // try resolve payment subscription service lazily
     let paymentEnabled = hasPayment;
@@ -117,11 +117,13 @@ export class ChatSession implements AsyncDisposable {
         const sub = this.moduleRef.get(SubscriptionService, {
           strict: false,
         });
-        const active = await sub.select(SubscriptionPlan.AI).getSubscription({
-          userId: this.config.userId,
-          plan: SubscriptionPlan.AI,
-        } as any);
-        isUserAIPro = active?.status === SubscriptionStatus.Active;
+        const subscription = await sub
+          .select(SubscriptionPlan.AI)
+          .getSubscription({
+            userId: this.config.userId,
+            plan: SubscriptionPlan.AI,
+          } as any);
+        isUserAIPro = subscription?.status === SubscriptionStatus.Active;
       }
     } catch {
       // payment not available -> skip checks
@@ -132,14 +134,14 @@ export class ChatSession implements AsyncDisposable {
       if (isUserAIPro) {
         if (!requestedModelId) {
           const firstPro = this.proModels[0];
-          return resolveModel(firstPro);
+          return normalize(firstPro);
         }
-      } else if (isInPro(requestedModelId)) {
+      } else if (isPro(requestedModelId)) {
         return defaultModel;
       }
     }
 
-    return resolveModel(requestedModelId);
+    return normalize(requestedModelId);
   }
 
   push(message: ChatMessage) {
