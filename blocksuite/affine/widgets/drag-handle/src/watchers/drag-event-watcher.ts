@@ -272,14 +272,56 @@ export class DragEventWatcher {
             ? 'before'
             : 'after';
       const domRect = getRectByBlockComponent(dropBlock);
-      const y =
+      const lineHeight = 3 * scale;
+      let indicatorLeft = domRect.left;
+      let indicatorWidth = domRect.width;
+      let indicatorTop =
         placement === 'after'
           ? domRect.top + domRect.height
-          : domRect.top - 3 * scale;
+          : domRect.top - lineHeight;
+
+      if (placement === 'before' || placement === 'after') {
+        const parent = this.std.store.getParent(dropModel);
+
+        if (parent) {
+          const siblings = parent.children;
+          const index = siblings.findIndex(child => child.id === dropModel.id);
+          const adjacentModel =
+            placement === 'before' ? siblings[index - 1] : siblings[index + 1];
+
+          if (adjacentModel) {
+            const adjacentView = this.std.view.getBlock(adjacentModel.id);
+            const adjacentRect = adjacentView
+              ? getRectByBlockComponent(adjacentView)
+              : null;
+
+            if (adjacentRect) {
+              // Collapse before/after visuals onto the same gap by spanning both blocks.
+              const upperRect = placement === 'before' ? adjacentRect : domRect;
+              const lowerRect = placement === 'before' ? domRect : adjacentRect;
+
+              const left = Math.min(upperRect.left, lowerRect.left);
+              const right = Math.max(
+                upperRect.left + upperRect.width,
+                lowerRect.left + lowerRect.width
+              );
+
+              indicatorLeft = left;
+              indicatorWidth = right - left;
+              indicatorTop = lowerRect.top - lineHeight * 2;
+            }
+          }
+        }
+      }
 
       result = {
         placement,
-        rect: Rect.fromLWTH(domRect.left, domRect.width, y, 3 * scale),
+        rect: Rect.fromLWTH(
+          indicatorLeft,
+          indicatorWidth,
+          indicatorTop,
+          lineHeight
+        ),
         modelState: {
           model: dropModel,
           rect: domRect,
