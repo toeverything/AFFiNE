@@ -132,45 +132,38 @@ export class RevenueCatService {
       );
     }
 
-    const jsonUnknown: unknown = await res.json();
-
-    // Parse raw JSON with zod first
-    const envParsed = zRcV2RawEnvelope.safeParse(jsonUnknown);
-    let rawSubscriptions: z.infer<typeof zRcV2RawSubscription>[] = [];
-    let rawAppUser: string | undefined = undefined;
+    const envParsed = zRcV2RawEnvelope.safeParse(await res.json());
 
     if (envParsed.success) {
-      rawSubscriptions = envParsed.data.subscriptions ?? [];
-      rawAppUser = envParsed.data.app_user_id;
-    } else {
-      return null;
+      return envParsed.data.subscriptions
+        .flatMap(sub => {
+          const items = sub.entitlements.items ?? [];
+          return items.map(ent => {
+            const product = ent.products?.items?.[0];
+            if (!product) {
+              return null;
+            }
+            return {
+              identifier: ent.lookup_key,
+              isActive:
+                sub.gives_access === true ||
+                sub.status === 'active' ||
+                sub.status === 'trialing',
+              latestPurchaseDate: sub.starts_at
+                ? new Date(sub.starts_at)
+                : null,
+              expirationDate: sub.current_period_ends_at
+                ? new Date(sub.current_period_ends_at)
+                : null,
+              productId: product.store_identifier,
+              store: sub.store ?? product.app.type,
+              willRenew: sub.auto_renewal_status === 'will_renew',
+              duration: product.subscription?.duration ?? null,
+            };
+          });
+        })
+        .filter((s): s is Subscription => s !== null);
     }
-
-    return rawSubscriptions
-      .flatMap(sub => {
-        const items = sub.entitlements.items ?? [];
-        return items.map(ent => {
-          const product = ent.products?.items?.[0];
-          if (!product) {
-            return null;
-          }
-          return {
-            identifier: ent.lookup_key,
-            isActive:
-              sub.gives_access === true ||
-              sub.status === 'active' ||
-              sub.status === 'trialing',
-            latestPurchaseDate: sub.starts_at ? new Date(sub.starts_at) : null,
-            expirationDate: sub.current_period_ends_at
-              ? new Date(sub.current_period_ends_at)
-              : null,
-            productId: product.store_identifier,
-            store: sub.store ?? product.app.type,
-            willRenew: sub.auto_renewal_status === 'will_renew',
-            duration: product.subscription?.duration ?? null,
-          };
-        });
-      })
-      .filter((s): s is Subscription => s !== null);
+    return null;
   }
 }
