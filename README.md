@@ -81,11 +81,11 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 **Multimodal AI partner ready to kick in any work**
 
-- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination,just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind map for brainstorming.
+- Write up a professional work report? Turn an outline into expressive and presentable slides? Summarize an article into a well-structured mindmap? Sort your job plan and backlog tasks? Or... draw and code prototype apps and web pages directly, all with one prompt? With you, [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination, just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind maps for brainstorming.
 
 **Local-first & Real-time collaborative**
 
-- We love the idea of local-first that you always own your data on your disk, in spite of the cloud. Furthermore, AFFiNE supports real-time sync and collaborations on web and cross-platform clients.
+- We love the idea of local-first -- you always own your data on your disk, independent of the cloud. Furthermore, AFFiNE supports real-time sync and collaborations on web and cross-platform clients.
 
 **Self-host & Shape your own AFFiNE**
 
@@ -93,15 +93,15 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 ## Acknowledgement
 
-“We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us along the way, e.g.:
+“We shape our tools and thereafter our tools shape us.” A lot of pioneers have inspired us along the way, e.g.:
 
 - Quip & Notion with their great concept of “everything is a block”
 - Trello with their Kanban
 - Airtable & Miro with their no-code programmable datasheets
-- Miro & Whimiscal with their edgeless visual whiteboard
+- Miro & Whimsical with their edgeless visual whiteboard
 - Remote & Capacities with their object-based tag system
 
-There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step even further.
+There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step further.
 
 Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵 Checking https://affine.pro/ for more details ions.
 
