@@ -6,13 +6,14 @@ import { Prisma, PrismaClient } from '@prisma/client';
 
 import { PaginationInput } from '../base';
 import { BaseModel } from './base';
-import type {
-  BlobChunkSimilarity,
-  CopilotWorkspaceFile,
-  CopilotWorkspaceFileMetadata,
-  Embedding,
-  FileChunkSimilarity,
-  IgnoredDoc,
+import {
+  type BlobChunkSimilarity,
+  clearEmbeddingContent,
+  type CopilotWorkspaceFile,
+  type CopilotWorkspaceFileMetadata,
+  type Embedding,
+  type FileChunkSimilarity,
+  type IgnoredDoc,
 } from './common';
 
 @Injectable()
@@ -152,21 +153,57 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     return docIds.filter(id => ignored.has(id));
   }
 
+  // check if a docId has only placeholder embeddings
+  @Transactional()
+  async hasPlaceholder(workspaceId: string, docId: string): Promise<boolean> {
+    const [total, nonPlaceholder] = await Promise.all([
+      this.db.aiWorkspaceEmbedding.count({ where: { workspaceId, docId } }),
+      this.db.aiWorkspaceEmbedding.count({
+        where: {
+          workspaceId,
+          docId,
+          NOT: { AND: [{ chunk: 0 }, { content: '' }] },
+        },
+      }),
+    ]);
+    return total > 0 && nonPlaceholder === 0;
+  }
+
+  private getEmbeddableCondition(
+    workspaceId: string,
+    ignoredDocIds?: string[]
+  ): Prisma.SnapshotWhereInput {
+    const condition: Prisma.SnapshotWhereInput['AND'] = [
+      { id: { not: workspaceId } },
+      { id: { not: { contains: '$' } } },
+      { id: { not: { contains: ':settings:' } } },
+      { blob: { not: new Uint8Array([0, 0]) } },
+    ];
+    if (ignoredDocIds && ignoredDocIds.length > 0) {
+      condition.push({ id: { notIn: ignoredDocIds } });
+    }
+    return { workspaceId, AND: condition };
+  }
+
+  @Transactional()
+  async listEmbeddableDocIds(workspaceId: string) {
+    const condition = this.getEmbeddableCondition(workspaceId);
+    const rows = await this.db.snapshot.findMany({
+      where: condition,
+      select: { id: true },
+    });
+    return rows.map(r => r.id);
+  }
+
   @Transactional()
   async getEmbeddingStatus(workspaceId: string) {
     const ignoredDocIds = (await this.listIgnoredDocIds(workspaceId)).map(
       d => d.docId
     );
-    const snapshotCondition = {
+    const snapshotCondition = this.getEmbeddableCondition(
       workspaceId,
-      AND: [
-        { id: { notIn: ignoredDocIds } },
-        { id: { not: workspaceId } },
-        { id: { not: { contains: '$' } } },
-        { id: { not: { contains: ':settings:' } } },
-        { blob: { not: new Uint8Array([0, 0]) } },
-      ],
-    };
+      ignoredDocIds
+    );
 
     const [docTotal, docEmbedded, fileTotal, fileEmbedded] = await Promise.all([
       this.db.snapshot.findMany({
@@ -206,10 +243,9 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
   @Transactional()
   async checkDocNeedEmbedded(workspaceId: string, docId: string) {
     // NOTE: check if the document needs re-embedding.
-    // 1. check if there have been any recent updates to the document snapshot and update
-    // 2. check if the embedding is older than the snapshot and update
-    // 3. check if the embedding is older than 10 minutes (avoid frequent updates)
-    // if all conditions are met, re-embedding is required.
+    // 1. first-time embedding when no embedding exists
+    // 2. re-embedding only when the doc has updates newer than the last embedding
+    //    AND the last embedding is older than 10 minutes (avoid frequent updates)
     const result = await this.db.$queryRaw<{ needs_embedding: boolean }[]>`
       SELECT
         EXISTS (
@@ -244,8 +280,7 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
               AND e.doc_id = docs.doc_id
           WHERE
             e.updated_at IS NULL
-            OR docs.updated_at > e.updated_at
-            OR e.updated_at < NOW() - INTERVAL '10 minutes'
+            OR (docs.updated_at > e.updated_at AND e.updated_at < NOW() - INTERVAL '10 minutes')
         ) AS needs_embedding;
     `;
 
@@ -377,6 +412,33 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
       LIMIT ${topK};
     `;
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
+  }
+
+  async getBlobContent(
+    workspaceId: string,
+    blobId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const blob = await this.db.aiWorkspaceBlobEmbedding.findMany({
+      where: { workspaceId, blobId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return blob?.map(f => clearEmbeddingContent(f.content)).join('\n');
+  }
+
+  async getBlobChunkSizes(workspaceId: string, blobIds: string[]) {
+    const sizes = await this.db.aiWorkspaceBlobEmbedding.groupBy({
+      by: ['blobId'],
+      _count: { chunk: true },
+      where: { workspaceId, blobId: { in: blobIds } },
+    });
+    return sizes.reduce((acc, cur) => {
+      if (cur._count.chunk) {
+        acc.set(cur.blobId, cur._count.chunk);
+      }
+      return acc;
+    }, new Map<string, number>());
   }
 
   @Transactional()

@@ -7,7 +7,6 @@
 
 import Litext
 import SnapKit
-import Then
 import UIKit
 
 class LoadingCell: ChatBaseCell {

@@ -24,7 +24,7 @@ import {
   getPrevContentBlock,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
-import { IS_MOBILE } from '@blocksuite/global/env';
+import { IS_ANDROID, IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSelection, type EditorHost } from '@blocksuite/std';
 import type { BlockModel, Text } from '@blocksuite/store';
 
@@ -79,6 +79,28 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       index: lengthBeforeJoin,
       length: 0,
     }).catch(console.error);
+
+    // due to some IME like Microsoft Swift IME on Android will reset range after join text,
+    // for example:
+    //
+    // $ZERO_WIDTH_FOR_EMPTY_LINE     <--- p1
+    // |aaa                           <--- p2
+    //
+    // after pressing backspace, during beforeinput event, the native range is (p1, 1) -> (p2, 0)
+    // and after browser and IME handle the event, the native range is (p1, 1) -> (p1, 1)
+    //
+    // a|aa                            <--- p1
+    //
+    // so we need to set range again after join text.
+    if (IS_ANDROID) {
+      setTimeout(() => {
+        asyncSetInlineRange(editorHost.std, prevBlock, {
+          index: lengthBeforeJoin,
+          length: 0,
+        }).catch(console.error);
+      });
+    }
+
     return true;
   }
 

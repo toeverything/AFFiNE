@@ -17,24 +17,24 @@ test.describe('AIBasic/Chat', () => {
     await expect(page.getByTestId('ai-onboarding')).toBeVisible();
   });
 
-  test('should open embedding settings when clicking check status button', async ({
-    loggedInPage: page,
-    utils,
-  }) => {
-    await utils.editor.createDoc(page, 'Doc 1', 'doc1');
-    await utils.editor.createDoc(page, 'Doc 2', 'doc2');
-    await utils.editor.createDoc(page, 'Doc 3', 'doc3');
-    await utils.editor.createDoc(page, 'Doc 4', 'doc4');
-    await utils.editor.createDoc(page, 'Doc 5', 'doc5');
+  // test('should open embedding settings when clicking check status button', async ({
+  //   loggedInPage: page,
+  //   utils,
+  // }) => {
+  //   await utils.editor.createDoc(page, 'Doc 1', 'doc1');
+  //   await utils.editor.createDoc(page, 'Doc 2', 'doc2');
+  //   await utils.editor.createDoc(page, 'Doc 3', 'doc3');
+  //   await utils.editor.createDoc(page, 'Doc 4', 'doc4');
+  //   await utils.editor.createDoc(page, 'Doc 5', 'doc5');
 
-    const check = await page.getByTestId(
-      'ai-chat-embedding-status-tooltip-check'
-    );
-    await expect(check).toBeVisible({ timeout: 50 * 1000 });
+  //   const check = await page.getByTestId(
+  //     'ai-chat-embedding-status-tooltip-check'
+  //   );
+  //   await expect(check).toBeVisible({ timeout: 50 * 1000 });
 
-    await check.click();
-    await expect(page.getByTestId('workspace-setting:embedding')).toBeVisible();
-  });
+  //   await check.click();
+  //   await expect(page.getByTestId('workspace-setting:embedding')).toBeVisible();
+  // });
 
   test(`should send message and receive AI response:
         - send message

@@ -141,10 +141,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
       !this.contains(e.target as Node)
     ) {
       this._clickOutside();
-      return true;
     }
-
-    return false;
   };
 
   private readonly _onKeyDown = (event: KeyboardEvent) => {

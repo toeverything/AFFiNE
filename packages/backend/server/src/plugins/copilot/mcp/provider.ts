@@ -6,9 +6,9 @@ import z from 'zod';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
+import { clearEmbeddingChunk } from '../../../models';
 import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
-import { clearEmbeddingChunk } from '../utils';
 
 @Injectable()
 export class WorkspaceMcpProvider {

@@ -16,7 +16,7 @@ export const createConversationSummaryTool = (
   return tool({
     description:
       'Create a concise, AI-generated summary of the conversation so far—capturing key topics, decisions, and critical details. Use this tool whenever the context becomes lengthy to preserve essential information that might otherwise be lost to truncation in future turns.',
-    parameters: z.object({
+    inputSchema: z.object({
       focus: z
         .string()
         .optional()

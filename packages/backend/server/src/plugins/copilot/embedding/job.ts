@@ -392,6 +392,10 @@ export class CopilotEmbeddingJob {
     return controller.signal;
   }
 
+  private normalize(s: string) {
+    return s.replaceAll(/[\p{White_Space}]+/gu, '');
+  }
+
   @OnJob('copilot.embedding.docs')
   async embedPendingDocs({
     contextId,
@@ -429,6 +433,21 @@ export class CopilotEmbeddingJob {
         if (!hasNewDoc && fragment) {
           // fast fall for empty doc, journal is easily to create a empty doc
           if (fragment.summary.trim()) {
+            const existsContent =
+              await this.models.copilotContext.getWorkspaceContent(
+                workspaceId,
+                docId
+              );
+            if (
+              existsContent &&
+              this.normalize(existsContent) === this.normalize(fragment.summary)
+            ) {
+              this.logger.log(
+                `Doc ${docId} in workspace ${workspaceId} has no content change, skipping embedding.`
+              );
+              return;
+            }
+
             const embeddings = await this.embeddingClient.getFileEmbeddings(
               new File(
                 [fragment.summary],
@@ -532,11 +551,14 @@ export class CopilotEmbeddingJob {
       return;
     }
 
-    const docIdsInEmbedding =
-      await this.models.copilotContext.listWorkspaceDocEmbedding(workspaceId);
-    if (!docIdsInEmbedding.length) {
+    const [docIdsInEmbedding, docIdsInSnapshots] = await Promise.all([
+      this.models.copilotContext.listWorkspaceDocEmbedding(workspaceId),
+      this.models.copilotWorkspace.listEmbeddableDocIds(workspaceId),
+    ]);
+
+    if (!docIdsInEmbedding.length && !docIdsInSnapshots.length) {
       this.logger.verbose(
-        `No doc embeddings found in workspace ${workspaceId}, skipping cleanup`
+        `No doc embeddings and snapshots found in workspace ${workspaceId}, skipping cleanup`
       );
       await this.models.workspace.update(
         workspaceId,
@@ -549,10 +571,17 @@ export class CopilotEmbeddingJob {
     const docIdsInWorkspace = readAllDocIdsFromWorkspaceSnapshot(snapshot.blob);
     const docIdsInWorkspaceSet = new Set(docIdsInWorkspace);
 
-    const deletedDocIds = docIdsInEmbedding.filter(
-      docId => !docIdsInWorkspaceSet.has(docId)
+    const deletedDocIds = new Set(
+      [...docIdsInEmbedding, ...docIdsInSnapshots].filter(
+        docId => !docIdsInWorkspaceSet.has(docId)
+      )
     );
     for (const docId of deletedDocIds) {
+      const isPlaceholder = await this.models.copilotWorkspace.hasPlaceholder(
+        workspaceId,
+        docId
+      );
+      if (isPlaceholder) continue;
       await this.models.copilotContext.deleteWorkspaceEmbedding(
         workspaceId,
         docId

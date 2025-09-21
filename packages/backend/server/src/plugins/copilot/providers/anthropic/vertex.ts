@@ -15,6 +15,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
 
   override readonly models = [
     {
+      name: 'Claude Opus 4',
       id: 'claude-opus-4@20250514',
       capabilities: [
         {
@@ -24,6 +25,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       ],
     },
     {
+      name: 'Claude Sonnet 4',
       id: 'claude-sonnet-4@20250514',
       capabilities: [
         {
@@ -33,6 +35,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       ],
     },
     {
+      name: 'Claude 3.7 Sonnet',
       id: 'claude-3-7-sonnet@20250219',
       capabilities: [
         {
@@ -42,6 +45,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       ],
     },
     {
+      name: 'Claude 3.5 Sonnet',
       id: 'claude-3-5-sonnet-v2@20241022',
       capabilities: [
         {

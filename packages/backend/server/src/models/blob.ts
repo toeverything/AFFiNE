@@ -67,12 +67,17 @@ export class BlobModel extends BaseModel {
     });
   }
 
-  async list(workspaceId: string) {
+  async list(
+    workspaceId: string,
+    options?: { where: Prisma.BlobWhereInput; select?: Prisma.BlobSelect }
+  ) {
     return await this.db.blob.findMany({
       where: {
+        ...options?.where,
         workspaceId,
         deletedAt: null,
       },
+      select: options?.select,
     });
   }
 

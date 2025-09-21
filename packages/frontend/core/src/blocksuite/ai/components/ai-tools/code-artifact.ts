@@ -3,6 +3,11 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type BlockStdScope } from '@blocksuite/affine/std';
+import {
+  type BlockSnapshot,
+  nanoid,
+  type SliceSnapshot,
+} from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CodeBlockIcon,
@@ -49,6 +54,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
 
     /* Container */
     .code-highlighter pre {
+      position: relative;
       margin: 0;
       display: flex;
       overflow: auto;
@@ -73,12 +79,23 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     }
 
     /* Code area */
-    .code-highlighter .code-container {
+    .code-highlighter :is(.code-container, .code-container-hidden) {
       flex: 1;
       white-space: pre;
       line-height: 20px;
       font-size: 12px;
       padding: 0 12px 12px 12px;
+    }
+
+    .code-highlighter .code-container {
+      user-select: none;
+    }
+
+    .code-highlighter .code-container-hidden {
+      color: transparent;
+      position: absolute;
+      top: 0;
+      left: 60px;
     }
 
     .code-highlighter .code-line {
@@ -209,6 +226,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     return html`<div class="code-highlighter">
       <pre>
         ${lineNumbersTemplate}
+        <div class="code-container-hidden">${this.code}</div>
         <div class="code-container">${renderedCode}</div>
       </pre>
     </div>`;
@@ -483,6 +501,10 @@ export class CodeArtifactTool extends ArtifactTool<
     </div>`;
   }
 
+  get clipboard() {
+    return this.std?.clipboard;
+  }
+
   protected override getPreviewControls() {
     if (this.data.type !== 'tool-result' || !this.std || !this.data.result) {
       return undefined;
@@ -493,7 +515,39 @@ export class CodeArtifactTool extends ArtifactTool<
     const title = result.title;
 
     const copyHTML = async () => {
-      await navigator.clipboard.writeText(htmlContent).catch(console.error);
+      const codeBlock: BlockSnapshot = {
+        type: 'block',
+        id: nanoid(),
+        flavour: 'affine:code',
+        version: 1,
+        props: {
+          language: 'html',
+          wrap: false,
+          caption: '',
+          text: {
+            '$blocksuite:internal:text$': true,
+            delta: [{ insert: htmlContent }],
+          },
+        },
+        children: [],
+      };
+
+      const sliceSnapshot: SliceSnapshot = {
+        type: 'slice',
+        content: [codeBlock],
+        workspaceId: 'fake-workspace-id',
+        pageId: 'fake-page-id',
+      };
+
+      await this.clipboard?.writeToClipboard(items => ({
+        ...items,
+        'text/plain': htmlContent,
+        'text/html': htmlContent,
+        'BLOCKSUITE/SNAPSHOT': JSON.stringify({
+          snapshot: sliceSnapshot,
+          blobs: {},
+        }),
+      }));
       this.notificationService.toast('Copied HTML to clipboard');
     };
 
