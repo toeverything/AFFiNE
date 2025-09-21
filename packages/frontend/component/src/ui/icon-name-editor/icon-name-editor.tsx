@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useTheme } from 'next-themes';
 import { type ReactNode, useCallback, useState } from 'react';
 
-import { Button } from '../button';
+import { Button, type ButtonProps } from '../button';
 import Input from '../input';
 import { Menu, type MenuProps } from '../menu';
 import * as styles from './icon-name-editor.css';
@@ -12,11 +12,11 @@ import * as styles from './icon-name-editor.css';
 export type IconType = 'emoji' | 'affine-icon' | 'blob';
 
 export interface IconEditorProps {
-  iconType: IconType;
-  icon: string;
+  iconType?: IconType;
+  icon?: string;
   closeAfterSelect?: boolean;
   iconPlaceholder?: ReactNode;
-  onIconChange?: (type: IconType, icon: string) => void;
+  onIconChange?: (type?: IconType, icon?: string) => void;
   triggerClassName?: string;
 }
 
@@ -36,7 +36,7 @@ export interface IconAndNameEditorMenuProps
   skipIfNotChanged?: boolean;
 }
 
-const IconRenderer = ({
+export const IconRenderer = ({
   iconType,
   icon,
   fallback,
@@ -62,9 +62,11 @@ export const IconEditor = ({
   onIconChange,
   alignOffset,
   sideOffset = 4,
+  triggerVariant,
 }: IconEditorProps & {
   alignOffset?: number;
   sideOffset?: number;
+  triggerVariant?: ButtonProps['variant'];
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const { resolvedTheme } = useTheme();
@@ -102,10 +104,11 @@ export const IconEditor = ({
       }
     >
       <Button
+        variant={triggerVariant}
         className={clsx(styles.iconPicker, triggerClassName)}
         data-icon-type={iconType}
       >
-        {icon ? (
+        {icon && iconType ? (
           <IconRenderer
             iconType={iconType}
             icon={icon}
@@ -127,7 +130,12 @@ export const IconAndNameEditorContent = ({
 }: IconAndNameEditorContentProps) => {
   return (
     <div className={styles.contentRoot}>
-      <IconEditor {...iconEditorProps} alignOffset={-4} sideOffset={8} />
+      <IconEditor
+        {...iconEditorProps}
+        alignOffset={-4}
+        sideOffset={8}
+        triggerClassName={styles.iconNamePickerIcon}
+      />
       <Input
         placeholder={namePlaceholder}
         value={name}
@@ -183,7 +191,7 @@ export const IconAndNameEditorMenu = ({
     setIcon(initialIcon);
     setName(initialName);
   }, [initialIcon, initialIconType, initialName]);
-  const handleIconChange = useCallback((type: IconType, icon: string) => {
+  const handleIconChange = useCallback((type?: IconType, icon?: string) => {
     setIconType(type);
     setIcon(icon);
   }, []);

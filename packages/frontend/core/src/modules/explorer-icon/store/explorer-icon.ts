@@ -21,10 +21,15 @@ export class ExplorerIconStore extends Store {
   setIcon(options: {
     where: ExplorerType;
     id: string;
-    type: ExplorerIconType;
-    icon: string;
+    type?: ExplorerIconType;
+    icon?: string;
   }) {
     const { where, id, type, icon } = options;
+    // remove icon
+    if (!type || !icon) {
+      return this.dbService.db.explorerIcon.delete(`${where}:${id}`);
+    }
+    // upsert icon
     return this.dbService.db.explorerIcon.create({
       id: `${where}:${id}`,
       type,
