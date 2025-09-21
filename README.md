@@ -81,7 +81,7 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 **Multimodal AI partner ready to kick in any work**
 
-- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination,just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind map for brainstorming.
+- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination, just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind maps for brainstorming.
 
 **Local-first & Real-time collaborative**
 
@@ -103,7 +103,8 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step even further.
 
-Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵 Checking https://affine.pro/ for more details ions.
+Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵  
+Check https://affine.pro/ for more details.
 
 ## Contributing
 
@@ -112,7 +113,7 @@ Thanks for checking us out, we appreciate your interest and sincerely hope that 
 | [Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE) | [Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE) | [Check GitHub Discussion](https://github.com/toeverything/AFFiNE/discussions) | [Vist the AFFiNE Community](https://community.affine.pro) |
 | Something isn't working as expected                                                                                                                 | An idea for a new feature, or improvements                                                                                                                     | Discuss and ask questions                                                     | A place to ask, learn and engage with others              |
 
-Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
+Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to show us what you’re made of.
 
 **Before you start contributing, please make sure you have read and accepted our [Contributor License Agreement]. To indicate your agreement, simply edit this file and submit a pull request.**
 
@@ -126,7 +127,7 @@ If you have questions, you are welcome to contact us. One of the best places to 
 
 ## Templates
 
-AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our team. Following are the Top 10 most popular templates among AFFiNE users,if you want to contribute, you can contribute your own template so other people can use it too.
+AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our team. Following are the Top 10 most popular templates among AFFiNE users. You can contribute your own template so other people can use it too.
 
 - [vision board template](https://affine.pro/templates/category-vision-board-template)
 - [one pager template](https://affine.pro/templates/category-one-pager-template-free)
@@ -179,7 +180,7 @@ We would also like to give thanks to open-source projects that make AFFiNE possi
 - [Vite](https://github.com/vitejs/vite) - Next generation frontend tooling.
 - Other upstream [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
-Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
+Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide an easier-to-use knowledge base for everyone.
 
 ## Contributors
 
@@ -207,7 +208,7 @@ For feature requests, please see [community.affine.pro](https://community.affine
 
 ### Codespaces
 
-From the GitHub repo main page, click the green "Code" button and select "Create codespace on master". This will open a new Codespace with the (supposedly auto-forked
+From the GitHub repo main page, click the green "Code" button and select "Create codespace on master". This will open a new Codespace with the (supposedly auto-forked)
 AFFiNE repo cloned, built, and ready to go.
 
 ### Local
@@ -229,9 +230,9 @@ Thanks to [Chromatic](https://www.chromatic.com/) for providing the visual testi
 
 ### Editions
 
-- AFFiNE Community Edition (CE) is the current available version, it's free for self-host under the MIT license.
+- AFFiNE Community Edition (CE) is the currently available version. It's free for self-hosting under the MIT license.
 
-- AFFiNE Enterprise Edition (EE) is yet to be published, it will have more advanced features and enterprise-oriented offerings, including but not exclusive to rebranding and SSO, advanced admin and audit, etc., you may refer to https://affine.pro/pricing for more information
+- AFFiNE Enterprise Edition (EE) is yet to be published, it will have more advanced features and enterprise-oriented offerings, including but not exclusive to rebranding and SSO, advanced admin and audit, etc. You may refer to https://affine.pro/pricing for more information.
 
 See [LICENSE] for details.
 
