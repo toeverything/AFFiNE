@@ -224,7 +224,7 @@ export class OAuthController {
       return connectedAccount.user;
     }
 
-    if (!this.config.auth.allowSignup) {
+    if (!this.config.auth.allowSignupForOauth) {
       throw new SignUpForbidden();
     }
 

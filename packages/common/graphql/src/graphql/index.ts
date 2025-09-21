@@ -1059,6 +1059,28 @@ export const createCopilotMessageMutation = {
   file: true,
 };
 
+export const getPromptModelsQuery = {
+  id: 'getPromptModelsQuery' as const,
+  op: 'getPromptModels',
+  query: `query getPromptModels($promptName: String!) {
+  currentUser {
+    copilot {
+      models(promptName: $promptName) {
+        defaultModel
+        optionalModels {
+          id
+          name
+        }
+        proModels {
+          id
+          name
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const copilotQuotaQuery = {
   id: 'copilotQuotaQuery' as const,
   op: 'copilotQuota',

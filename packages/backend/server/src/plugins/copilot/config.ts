@@ -51,7 +51,7 @@ defineModuleConfig('copilot', {
       override_enabled: false,
       scenarios: {
         audio_transcribing: 'gemini-2.5-flash',
-        chat: 'claude-sonnet-4@20250514',
+        chat: 'gemini-2.5-flash',
         embedding: 'gemini-embedding-001',
         image: 'gpt-image-1',
         rerank: 'gpt-4.1',

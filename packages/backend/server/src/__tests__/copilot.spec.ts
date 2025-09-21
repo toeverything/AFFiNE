@@ -60,6 +60,9 @@ import {
 import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
 import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
 import { CopilotWorkspaceService } from '../plugins/copilot/workspace';
+import { PaymentModule } from '../plugins/payment';
+import { SubscriptionService } from '../plugins/payment/service';
+import { SubscriptionStatus } from '../plugins/payment/types';
 import { MockCopilotProvider } from './mocks';
 import { createTestingModule, TestingModule } from './utils';
 import { WorkflowTestCases } from './utils/copilot';
@@ -82,6 +85,7 @@ type Context = {
   storage: CopilotStorage;
   workflow: CopilotWorkflowService;
   cronJobs: CopilotCronJobs;
+  subscription: SubscriptionService;
   executors: {
     image: CopilotChatImageExecutor;
     text: CopilotChatTextExecutor;
@@ -116,6 +120,7 @@ test.before(async t => {
           },
         },
       }),
+      PaymentModule,
       QuotaModule,
       StorageModule,
       CopilotModule,
@@ -124,6 +129,13 @@ test.before(async t => {
       // use real JobQueue for testing
       builder.overrideProvider(JobQueue).useClass(JobQueue);
       builder.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
+      builder.overrideProvider(SubscriptionService).useClass(
+        class {
+          select() {
+            return { getSubscription: async () => undefined };
+          }
+        }
+      );
     },
   });
 
@@ -145,6 +157,7 @@ test.before(async t => {
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
   const cronJobs = module.get(CopilotCronJobs);
+  const subscription = module.get(SubscriptionService);
 
   t.context.module = module;
   t.context.auth = auth;
@@ -163,6 +176,7 @@ test.before(async t => {
   t.context.transcript = transcript;
   t.context.workspaceEmbedding = workspaceEmbedding;
   t.context.cronJobs = cronJobs;
+  t.context.subscription = subscription;
 
   t.context.executors = {
     image: module.get(CopilotChatImageExecutor),
@@ -2046,4 +2060,91 @@ test('should handle copilot cron jobs correctly', async t => {
   cleanupStub.restore();
   toBeGenerateStub.restore();
   jobAddStub.restore();
+});
+
+test('should resolve model correctly based on subscription status and prompt config', async t => {
+  const { db, session, subscription } = t.context;
+
+  // 1) Seed a prompt that has optionalModels and proModels in config
+  const promptName = 'resolve-model-test';
+  await db.aiPrompt.create({
+    data: {
+      name: promptName,
+      model: 'gemini-2.5-flash',
+      messages: {
+        create: [{ idx: 0, role: 'system', content: 'test' }],
+      },
+      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4@20250514'] },
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4@20250514',
+      ],
+    },
+  });
+
+  // 2) Create a chat session with this prompt
+  const sessionId = await session.create({
+    promptName,
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    pinned: false,
+  });
+  const s = (await session.get(sessionId))!;
+
+  const mockStatus = (status?: SubscriptionStatus) => {
+    Sinon.restore();
+    Sinon.stub(subscription, 'select').callsFake(() => ({
+      // @ts-expect-error mock
+      getSubscription: async () => (status ? { status } : null),
+    }));
+  };
+
+  // payment disabled -> allow requested if in optional; pro not blocked
+  {
+    const model1 = await s.resolveModel(false, 'gemini-2.5-pro');
+    t.snapshot(model1, 'should honor requested pro model');
+
+    const model2 = await s.resolveModel(false, 'not-in-optional');
+    t.snapshot(model2, 'should fallback to default model');
+  }
+
+  // payment enabled + trialing: requesting pro should fallback to default
+  {
+    mockStatus(SubscriptionStatus.Trialing);
+    const model3 = await s.resolveModel(true, 'gemini-2.5-pro');
+    t.snapshot(
+      model3,
+      'should fallback to default model when requesting pro model during trialing'
+    );
+
+    const model4 = await s.resolveModel(true, 'gemini-2.5-flash');
+    t.snapshot(model4, 'should honor requested non-pro model during trialing');
+
+    const model5 = await s.resolveModel(true);
+    t.snapshot(
+      model5,
+      'should pick default model when no requested model during trialing'
+    );
+  }
+
+  // payment enabled + active: without requested -> default model; requested pro should be honored
+  {
+    mockStatus(SubscriptionStatus.Active);
+    const model6 = await s.resolveModel(true);
+    t.snapshot(
+      model6,
+      'should pick default model when no requested model during active'
+    );
+
+    const model7 = await s.resolveModel(true, 'claude-sonnet-4@20250514');
+    t.snapshot(model7, 'should honor requested pro model during active');
+
+    const model8 = await s.resolveModel(true, 'not-in-optional');
+    t.snapshot(
+      model8,
+      'should fallback to default model when requesting non-optional model during active'
+    );
+  }
 });

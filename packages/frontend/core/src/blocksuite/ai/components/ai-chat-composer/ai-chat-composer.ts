@@ -198,12 +198,6 @@ export class AIChatComposer extends SignalWatcher(
         <ai-chat-composer-tip
           .tips=${[
             html`<span>AI outputs can be misleading or wrong</span>`,
-            this.embeddingCompleted
-              ? null
-              : html`<ai-chat-embedding-status-tooltip
-                  .affineWorkspaceDialogService=${this
-                    .affineWorkspaceDialogService}
-                />`,
           ].filter(Boolean)}
           .loop=${false}
         ></ai-chat-composer-tip>
