@@ -8,7 +8,6 @@
 import Litext
 import MarkdownView
 import SnapKit
-import Then
 import UIKit
 
 private let markdownViewForSizeCalculation: MarkdownTextView = .init()

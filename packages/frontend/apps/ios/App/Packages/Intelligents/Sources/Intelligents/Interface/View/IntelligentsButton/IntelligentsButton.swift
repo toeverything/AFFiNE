@@ -7,7 +7,6 @@
 
 import SnapKit
 import SwifterSwift
-import Then
 import UIKit
 
 // floating button to open intelligent panel
