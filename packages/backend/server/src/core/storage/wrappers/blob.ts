@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 import {
   autoMetadata,
@@ -13,6 +12,7 @@ import {
   StorageProviderFactory,
   URLHelper,
 } from '../../../base';
+import { Models } from '../../../models';
 
 declare global {
   interface Events {
@@ -40,7 +40,7 @@ export class WorkspaceBlobStorage {
     private readonly AFFiNEConfig: Config,
     private readonly event: EventBus,
     private readonly storageFactory: StorageProviderFactory,
-    private readonly db: PrismaClient,
+    private readonly models: Models,
     private readonly url: URLHelper
   ) {}
 
@@ -72,12 +72,7 @@ export class WorkspaceBlobStorage {
   }
 
   async list(workspaceId: string, syncBlobMeta = true) {
-    const blobsInDb = await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-    });
+    const blobsInDb = await this.models.blob.list(workspaceId);
 
     if (blobsInDb.length > 0) {
       return blobsInDb;
@@ -103,36 +98,12 @@ export class WorkspaceBlobStorage {
   async delete(workspaceId: string, key: string, permanently = false) {
     if (permanently) {
       await this.provider.delete(`${workspaceId}/${key}`);
-      await this.db.blob.deleteMany({
-        where: {
-          workspaceId,
-          key,
-        },
-      });
-    } else {
-      await this.db.blob.update({
-        where: {
-          workspaceId_key: {
-            workspaceId,
-            key,
-          },
-        },
-        data: {
-          deletedAt: new Date(),
-        },
-      });
     }
+    await this.models.blob.delete(workspaceId, key, permanently);
   }
 
   async release(workspaceId: string) {
-    const deletedBlobs = await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: {
-          not: null,
-        },
-      },
-    });
+    const deletedBlobs = await this.models.blob.listDeleted(workspaceId);
 
     deletedBlobs.forEach(blob => {
       this.event.emit('workspace.blob.delete', {
@@ -140,20 +111,14 @@ export class WorkspaceBlobStorage {
         key: blob.key,
       });
     });
+
+    this.logger.log(
+      `released ${deletedBlobs.length} blobs for workspace ${workspaceId}`
+    );
   }
 
   async totalSize(workspaceId: string) {
-    const sum = await this.db.blob.aggregate({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-      _sum: {
-        size: true,
-      },
-    });
-
-    return sum._sum.size ?? 0;
+    return await this.models.blob.totalSize(workspaceId);
   }
 
   getAvatarUrl(workspaceId: string, avatarKey: string | null) {
@@ -177,23 +142,11 @@ export class WorkspaceBlobStorage {
     key: string,
     meta: GetObjectMetadata
   ) {
-    await this.db.blob.upsert({
-      where: {
-        workspaceId_key: {
-          workspaceId,
-          key,
-        },
-      },
-      update: {
-        mime: meta.contentType,
-        size: meta.contentLength,
-      },
-      create: {
-        workspaceId,
-        key,
-        mime: meta.contentType,
-        size: meta.contentLength,
-      },
+    await this.models.blob.upsert({
+      workspaceId,
+      key,
+      mime: meta.contentType,
+      size: meta.contentLength,
     });
   }
 
@@ -205,12 +158,7 @@ export class WorkspaceBlobStorage {
       if (meta) {
         await this.upsert(workspaceId, key, meta);
       } else {
-        await this.db.blob.deleteMany({
-          where: {
-            workspaceId,
-            key,
-          },
-        });
+        await this.models.blob.delete(workspaceId, key, true);
       }
     } catch (e) {
       // never throw

@@ -9,6 +9,10 @@ import {
   CodeBlockHtmlPreview,
   effects as htmlPreviewEffects,
 } from './html-preview';
+import {
+  CodeBlockMermaidPreview,
+  effects as mermaidPreviewEffects,
+} from './mermaid-preview';
 
 const optionsSchema = z.object({
   framework: z.instanceof(FrameworkProvider).optional(),
@@ -23,6 +27,7 @@ export class CodeBlockPreviewViewExtension extends ViewExtensionProvider {
     super.effect();
 
     htmlPreviewEffects();
+    mermaidPreviewEffects();
   }
 
   override setup(
@@ -31,5 +36,6 @@ export class CodeBlockPreviewViewExtension extends ViewExtensionProvider {
   ) {
     super.setup(context, options);
     context.register(CodeBlockHtmlPreview);
+    context.register(CodeBlockMermaidPreview);
   }
 }

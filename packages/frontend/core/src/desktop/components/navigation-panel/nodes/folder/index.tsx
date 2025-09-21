@@ -13,6 +13,7 @@ import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/uti
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import {
   type FolderNode,
   OrganizeService,
@@ -31,7 +32,7 @@ import {
   RemoveFolderIcon,
   TagsIcon,
 } from '@blocksuite/icons/rc';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { difference } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -57,6 +58,7 @@ export const NavigationPanelFolderNode = ({
   dropEffect,
   canDrop,
   reorderable,
+  parentPath,
 }: {
   defaultRenaming?: boolean;
   nodeId: string;
@@ -104,6 +106,7 @@ export const NavigationPanelFolderNode = ({
         dropEffect={dropEffect}
         reorderable={reorderable}
         canDrop={canDrop}
+        parentPath={parentPath}
       />
     );
   } else if (type === 'doc') {
@@ -117,6 +120,7 @@ export const NavigationPanelFolderNode = ({
           canDrop={canDrop}
           dropEffect={dropEffect}
           operations={additionalOperations}
+          parentPath={parentPath}
         />
       )
     );
@@ -131,6 +135,7 @@ export const NavigationPanelFolderNode = ({
           reorderable={reorderable}
           dropEffect={dropEffect}
           operations={additionalOperations}
+          parentPath={parentPath}
         />
       )
     );
@@ -145,6 +150,7 @@ export const NavigationPanelFolderNode = ({
           reorderable
           dropEffect={dropEffect}
           operations={additionalOperations}
+          parentPath={parentPath}
         />
       )
     );
@@ -177,6 +183,7 @@ const NavigationPanelFolderNodeFolder = ({
   canDrop,
   dropEffect,
   reorderable,
+  parentPath,
 }: {
   defaultRenaming?: boolean;
   node: FolderNode;
@@ -189,11 +196,22 @@ const NavigationPanelFolderNodeFolder = ({
       FeatureFlagService,
       WorkspaceDialogService,
     });
+  const navigationPanelService = useService(NavigationPanelService);
   const name = useLiveData(node.name$);
   const enableEmojiIcon = useLiveData(
     featureFlagService.flags.enable_emoji_folder_icon.$
   );
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...(parentPath ?? []), `folder-${node.id}`],
+    [parentPath, node.id]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
 
   const { createPage } = usePageHelper(
@@ -575,7 +593,7 @@ const NavigationPanelFolderNodeFolder = ({
       target: 'doc',
     });
     setCollapsed(false);
-  }, [createPage, node]);
+  }, [createPage, node, setCollapsed]);
 
   const handleCreateSubfolder = useCallback(() => {
     const newFolderId = node.createFolder(
@@ -585,7 +603,7 @@ const NavigationPanelFolderNodeFolder = ({
     track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
     setCollapsed(false);
     setNewFolderId(newFolderId);
-  }, [node, t]);
+  }, [node, setCollapsed, t]);
 
   const handleAddToFolder = useCallback(
     (type: 'doc' | 'collection' | 'tag') => {
@@ -628,7 +646,7 @@ const NavigationPanelFolderNodeFolder = ({
         target: type,
       });
     },
-    [children, node, workspaceDialogService]
+    [children, node, setCollapsed, workspaceDialogService]
   );
 
   const folderOperations = useMemo(() => {
@@ -761,14 +779,17 @@ const NavigationPanelFolderNodeFolder = ({
     [t]
   );
 
-  const handleCollapsedChange = useCallback((collapsed: boolean) => {
-    if (collapsed) {
-      setNewFolderId(null); // reset new folder id to clear the renaming state
-      setCollapsed(true);
-    } else {
-      setCollapsed(false);
-    }
-  }, []);
+  const handleCollapsedChange = useCallback(
+    (collapsed: boolean) => {
+      if (collapsed) {
+        setNewFolderId(null); // reset new folder id to clear the renaming state
+        setCollapsed(true);
+      } else {
+        setCollapsed(false);
+      }
+    },
+    [setCollapsed]
+  );
 
   return (
     <NavigationPanelTreeNode
@@ -804,6 +825,7 @@ const NavigationPanelFolderNodeFolder = ({
             at: 'navigation-panel:organize:folder-node',
             nodeId: child.id as string,
           }}
+          parentPath={path}
         />
       ))}
     </NavigationPanelTreeNode>

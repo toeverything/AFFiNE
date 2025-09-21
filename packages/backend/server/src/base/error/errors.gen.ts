@@ -668,16 +668,31 @@ export class CopilotSessionDeleted extends UserFriendlyError {
     super('action_forbidden', 'copilot_session_deleted', message);
   }
 }
+@ObjectType()
+class NoCopilotProviderAvailableDataType {
+  @Field() modelId!: string
+}
 
 export class NoCopilotProviderAvailable extends UserFriendlyError {
-  constructor(message?: string) {
-    super('internal_server_error', 'no_copilot_provider_available', message);
+  constructor(args: NoCopilotProviderAvailableDataType, message?: string | ((args: NoCopilotProviderAvailableDataType) => string)) {
+    super('internal_server_error', 'no_copilot_provider_available', message, args);
   }
 }
 
 export class CopilotFailedToGenerateText extends UserFriendlyError {
   constructor(message?: string) {
     super('internal_server_error', 'copilot_failed_to_generate_text', message);
+  }
+}
+@ObjectType()
+class CopilotFailedToGenerateEmbeddingDataType {
+  @Field() provider!: string
+  @Field() message!: string
+}
+
+export class CopilotFailedToGenerateEmbedding extends UserFriendlyError {
+  constructor(args: CopilotFailedToGenerateEmbeddingDataType, message?: string | ((args: CopilotFailedToGenerateEmbeddingDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_generate_embedding', message, args);
   }
 }
 
@@ -1067,6 +1082,30 @@ export class InvalidIndexerInput extends UserFriendlyError {
     super('invalid_input', 'invalid_indexer_input', message, args);
   }
 }
+
+export class CommentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_not_found', message);
+  }
+}
+
+export class ReplyNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'reply_not_found', message);
+  }
+}
+
+export class CommentAttachmentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_attachment_not_found', message);
+  }
+}
+
+export class CommentAttachmentQuotaExceeded extends UserFriendlyError {
+  constructor(message?: string) {
+    super('quota_exceeded', 'comment_attachment_quota_exceeded', message);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   NETWORK_ERROR,
@@ -1155,6 +1194,7 @@ export enum ErrorNames {
   COPILOT_SESSION_DELETED,
   NO_COPILOT_PROVIDER_AVAILABLE,
   COPILOT_FAILED_TO_GENERATE_TEXT,
+  COPILOT_FAILED_TO_GENERATE_EMBEDDING,
   COPILOT_FAILED_TO_CREATE_MESSAGE,
   UNSPLASH_IS_NOT_CONFIGURED,
   COPILOT_ACTION_TAKEN,
@@ -1202,7 +1242,11 @@ export enum ErrorNames {
   INVALID_APP_CONFIG_INPUT,
   SEARCH_PROVIDER_NOT_FOUND,
   INVALID_SEARCH_PROVIDER_REQUEST,
-  INVALID_INDEXER_INPUT
+  INVALID_INDEXER_INPUT,
+  COMMENT_NOT_FOUND,
+  REPLY_NOT_FOUND,
+  COMMENT_ATTACHMENT_NOT_FOUND,
+  COMMENT_ATTACHMENT_QUOTA_EXCEEDED
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'
@@ -1211,5 +1255,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

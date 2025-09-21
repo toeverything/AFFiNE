@@ -1,0 +1,8 @@
+query listUserAccessTokens {
+  accessTokens {
+    id
+    name
+    createdAt
+    expiresAt
+  }
+}

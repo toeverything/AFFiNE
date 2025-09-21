@@ -27,18 +27,20 @@ export const ReferenceInlineSpecExtension =
     }
     return {
       name: 'reference',
-      schema: z
-        .object({
-          type: z.enum([
-            // @deprecated Subpage is deprecated, use LinkedPage instead
-            'Subpage',
-            'LinkedPage',
-          ]),
-        })
-        .merge(ReferenceInfoSchema)
-        .optional()
-        .nullable()
-        .catch(undefined),
+      schema: z.object({
+        reference: z
+          .object({
+            type: z.enum([
+              // @deprecated Subpage is deprecated, use LinkedPage instead
+              'Subpage',
+              'LinkedPage',
+            ]),
+          })
+          .merge(ReferenceInfoSchema)
+          .optional()
+          .nullable()
+          .catch(undefined),
+      }),
       match: delta => {
         return !!delta.attributes?.reference;
       },

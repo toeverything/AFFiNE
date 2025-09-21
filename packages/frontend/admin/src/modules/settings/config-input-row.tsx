@@ -132,7 +132,10 @@ export const ConfigRow = ({
       className={`flex justify-between flex-grow space-y-[10px]
          ${type === 'Boolean' ? 'flex-row' : 'flex-col'}`}
     >
-      <div className="text-base font-bold flex-3">{desc}</div>
+      <div
+        className="text-base font-bold flex-3"
+        dangerouslySetInnerHTML={{ __html: desc }}
+      />
       <div className="flex flex-col items-end relative flex-1">
         <Input
           defaultValue={defaultValue}

@@ -84,9 +84,14 @@ export abstract class SubscriptionManager {
     subscription: KnownStripeSubscription
   ): Promise<void>;
 
+  abstract getActiveSubscription(
+    identity: z.infer<typeof SubscriptionIdentity>
+  ): Promise<Subscription | null>;
+
   abstract getSubscription(
     identity: z.infer<typeof SubscriptionIdentity>
   ): Promise<Subscription | null>;
+
   abstract cancelSubscription(
     subscription: Subscription
   ): Promise<Subscription>;

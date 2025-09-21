@@ -41,9 +41,12 @@ export class FetchService extends Service {
     });
 
     const timeout = init?.timeout ?? 15000;
-    const timeoutId = setTimeout(() => {
-      abortController.abort('timeout');
-    }, timeout);
+    const timeoutId =
+      timeout > 0
+        ? setTimeout(() => {
+            abortController.abort(new Error('timeout after ' + timeout + 'ms'));
+          }, timeout)
+        : undefined;
 
     let res: Response;
 

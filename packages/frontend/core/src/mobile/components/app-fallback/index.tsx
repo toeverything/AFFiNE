@@ -52,11 +52,23 @@ const Section = () => {
 export const AppFallback = () => {
   return (
     <SafeArea top bottom style={{ height: '100dvh', overflow: 'hidden' }}>
-      {/* setting */}
-      <div style={{ padding: 10, display: 'flex', justifyContent: 'end' }}>
+      {/* notification and setting */}
+      <div
+        style={{
+          padding: 10,
+          paddingTop: 0,
+          display: 'flex',
+          justifyContent: 'end',
+          gap: 10,
+        }}
+      >
         <Skeleton
           animation="wave"
-          style={{ width: 23, height: 23, borderRadius: 4 }}
+          style={{ width: 28, height: 28, borderRadius: 4 }}
+        />
+        <Skeleton
+          animation="wave"
+          style={{ width: 28, height: 28, borderRadius: 4 }}
         />
       </div>
       {/* workspace card */}

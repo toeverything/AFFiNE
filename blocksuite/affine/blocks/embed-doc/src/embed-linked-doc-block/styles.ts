@@ -9,10 +9,14 @@ export const styles = css`
     width: 100%;
     height: 100%;
     border-radius: 8px;
-    border: 1px solid var(--affine-background-tertiary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
     background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
     position: relative;
+  }
+
+  .affine-embed-linked-doc-block.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
   }
 
   .affine-embed-linked-doc-block.in-canvas {
@@ -164,6 +168,7 @@ export const styles = css`
   .affine-embed-linked-doc-banner {
     margin: 12px 12px 0px 0px;
     width: 204px;
+    min-width: 204px;
     max-width: 100%;
     height: 102px;
     pointer-events: none;

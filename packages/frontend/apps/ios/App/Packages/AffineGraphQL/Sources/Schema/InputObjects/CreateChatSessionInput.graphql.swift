@@ -14,12 +14,14 @@ public struct CreateChatSessionInput: InputObject {
     docId: GraphQLNullable<String> = nil,
     pinned: GraphQLNullable<Bool> = nil,
     promptName: String,
+    reuseLatestChat: GraphQLNullable<Bool> = nil,
     workspaceId: String
   ) {
     __data = InputDict([
       "docId": docId,
       "pinned": pinned,
       "promptName": promptName,
+      "reuseLatestChat": reuseLatestChat,
       "workspaceId": workspaceId
     ])
   }
@@ -38,6 +40,12 @@ public struct CreateChatSessionInput: InputObject {
   public var promptName: String {
     get { __data["promptName"] }
     set { __data["promptName"] = newValue }
+  }
+
+  /// true by default, compliant for old version
+  public var reuseLatestChat: GraphQLNullable<Bool> {
+    get { __data["reuseLatestChat"] }
+    set { __data["reuseLatestChat"] = newValue }
   }
 
   public var workspaceId: String {

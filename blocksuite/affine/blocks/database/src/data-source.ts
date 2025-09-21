@@ -164,8 +164,10 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   readonly$: ReadonlySignal<boolean> = computed(() => {
     return (
       this._model.store.readonly ||
-      // TODO(@L-Sun): use block level readonly
-      IS_MOBILE
+      (IS_MOBILE &&
+        !this._model.store.provider
+          .get(FeatureFlagService)
+          .getFlag('enable_mobile_database_editing'))
     );
   });
 

@@ -142,7 +142,7 @@ export class OAuthController {
           provider: rawState.provider,
         })
       );
-      clientUrl.searchParams.set('server', this.url.origin);
+      clientUrl.searchParams.set('server', this.url.requestOrigin);
 
       return res.redirect(
         this.url.link('/open-app/url?', {

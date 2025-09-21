@@ -24,6 +24,7 @@ import {
   getPrevContentBlock,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
+import { IS_ANDROID, IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSelection, type EditorHost } from '@blocksuite/std';
 import type { BlockModel, Text } from '@blocksuite/store';
 
@@ -78,6 +79,28 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       index: lengthBeforeJoin,
       length: 0,
     }).catch(console.error);
+
+    // due to some IME like Microsoft Swift IME on Android will reset range after join text,
+    // for example:
+    //
+    // $ZERO_WIDTH_FOR_EMPTY_LINE     <--- p1
+    // |aaa                           <--- p2
+    //
+    // after pressing backspace, during beforeinput event, the native range is (p1, 1) -> (p2, 0)
+    // and after browser and IME handle the event, the native range is (p1, 1) -> (p1, 1)
+    //
+    // a|aa                            <--- p1
+    //
+    // so we need to set range again after join text.
+    if (IS_ANDROID) {
+      setTimeout(() => {
+        asyncSetInlineRange(editorHost.std, prevBlock, {
+          index: lengthBeforeJoin,
+          length: 0,
+        }).catch(console.error);
+      });
+    }
+
     return true;
   }
 
@@ -91,10 +114,17 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       ...EMBED_BLOCK_MODEL_LIST,
     ])
   ) {
-    const selection = editorHost.selection.create(BlockSelection, {
-      blockId: prevBlock.id,
-    });
-    editorHost.selection.setGroup('note', [selection]);
+    // due to create a block selection will clear text selection, which lead
+    // the virtual keyboard to be auto closed on mobile. This behavior breaks
+    // the user experience.
+    if (!IS_MOBILE) {
+      const selection = editorHost.selection.create(BlockSelection, {
+        blockId: prevBlock.id,
+      });
+      editorHost.selection.setGroup('note', [selection]);
+    } else {
+      doc.deleteBlock(prevBlock);
+    }
 
     if (model.text?.length === 0) {
       doc.deleteBlock(model, {

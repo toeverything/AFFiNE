@@ -1,5 +1,8 @@
 import { test } from '@affine-test/kit/playwright';
-import { openHomePage } from '@affine-test/kit/utils/load-page';
+import {
+  confirmCreateJournal,
+  openHomePage,
+} from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import { expect, type Locator, type Page } from '@playwright/test';
 
@@ -84,6 +87,7 @@ async function createPageAndTurnIntoJournal(page: Page) {
 test('Create a journal from sidebar', async ({ page }) => {
   await openHomePage(page);
   await page.getByTestId('slider-bar-journals-button').click();
+  await confirmCreateJournal(page);
   await waitForEditorLoad(page);
   await isJournalEditor(page);
 });

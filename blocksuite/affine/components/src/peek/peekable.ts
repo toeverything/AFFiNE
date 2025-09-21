@@ -1,7 +1,14 @@
+import { NoteBlockModel } from '@blocksuite/affine-model';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
-import { isInsideEdgelessEditor } from '@blocksuite/affine-shared/utils';
+import {
+  isInsideEdgelessEditor,
+  matchModels,
+} from '@blocksuite/affine-shared/utils';
 import type { Constructor } from '@blocksuite/global/utils';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  GfxBlockElementModel,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 import type { LitElement, TemplateResult } from 'lit';
 
@@ -72,6 +79,20 @@ export const Peekable =
         );
 
         if (hitTarget && hitTarget !== model) {
+          // Check if hitTarget is a GfxBlockElementModel (which extends BlockModel)
+          // and if it's a NoteBlockModel, then check if current model is inside it
+          if (
+            hitTarget instanceof GfxBlockElementModel &&
+            matchModels(hitTarget, [NoteBlockModel])
+          ) {
+            let curModel: BlockModel | null = model;
+            while (curModel) {
+              if (curModel === hitTarget) {
+                return true; // Model is inside the NoteBlockModel, allow peek
+              }
+              curModel = curModel.parent;
+            }
+          }
           return false;
         }
 

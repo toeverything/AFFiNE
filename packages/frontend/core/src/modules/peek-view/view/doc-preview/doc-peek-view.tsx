@@ -1,6 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import { AIProvider } from '@affine/core/blocksuite/ai';
+import { type AIChatParams, AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -127,7 +127,10 @@ function DocPeekPreviewEditor({
 
   useEffect(() => {
     const disposables: Subscription[] = [];
-    const openHandler = () => {
+    const openHandler = (params: AIChatParams | null) => {
+      if (!params) {
+        return;
+      }
       if (doc) {
         workbench.openDoc(doc.id);
         peekView.close();

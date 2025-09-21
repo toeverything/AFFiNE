@@ -18,15 +18,23 @@ services:
     ports:
       - 6379:6379
 
-  mailhog:
-    image: mailhog/mailhog:latest
+  # https://mailpit.axllent.org/docs/install/docker/
+  mailpit:
+    image: axllent/mailpit:latest
     ports:
       - 1025:1025
       - 8025:8025
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit_data:/data
 
   # https://manual.manticoresearch.com/Starting_the_server/Docker
   manticoresearch:
-    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.3.2}
+    image: manticoresearch/manticore:${MANTICORE_VERSION:-10.1.0}
     ports:
       - 9308:9308
     ulimits:
@@ -73,17 +81,6 @@ services:
   #     timeout: 10s
   #     retries: 120
 
-  # dns:
-  #   image: strm/dnsmasq
-  #   volumes:
-  #     - ./dnsmasq.conf:/etc/dnsmasq.d/local.conf
-  #   ports:
-  #     - "53:53/udp"
-  #   cap_add:
-  #     - NET_ADMIN
-  #   depends_on:
-  #     - nginx
-
   # nginx:
   #   image: nginx:alpine
   #   volumes:
@@ -98,4 +95,5 @@ networks:
 volumes:
   postgres_data:
   manticoresearch_data:
+  mailpit_data:
   elasticsearch_data:

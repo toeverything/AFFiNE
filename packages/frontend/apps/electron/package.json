@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.21.0",
+  "version": "0.22.4",
   "main": "./dist/main.js",
   "author": "toeverything",
   "repository": {
@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
+    "@affine/i18n": "workspace:*",
     "@affine/native": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@electron-forge/cli": "^7.6.0",
@@ -44,6 +45,7 @@
     "@electron-forge/maker-squirrel": "^7.6.0",
     "@electron-forge/maker-zip": "^7.6.0",
     "@electron-forge/plugin-auto-unpack-natives": "^7.6.0",
+    "@electron-forge/plugin-fuses": "^7.8.2",
     "@electron-forge/shared-types": "^7.6.0",
     "@pengx17/electron-forge-maker-appimage": "^1.2.1",
     "@sentry/electron": "^6.1.0",

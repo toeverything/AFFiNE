@@ -57,6 +57,9 @@ export const blockStyles = css`
     border-radius: 8px;
     overflow: hidden;
   }
+  .affine-embed-synced-doc-container.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
   .affine-embed-synced-doc-container.show-hover-border:hover {
     border-color: var(--affine-border-color);
   }
@@ -194,8 +197,8 @@ export const cardStyles = css`
     width: 100%;
     height: ${EMBED_CARD_HEIGHT.horizontal}px;
     border-radius: 8px;
-    border: 1px solid var(--affine-background-tertiary-color);
-    background: var(--affine-background-primary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
+    background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
   }
 

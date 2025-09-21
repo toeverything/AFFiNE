@@ -187,6 +187,14 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
 
   getSubscription(identity: z.infer<typeof SelfhostTeamSubscriptionIdentity>) {
     return this.db.subscription.findFirst({
+      where: { targetId: identity.key },
+    });
+  }
+
+  getActiveSubscription(
+    identity: z.infer<typeof SelfhostTeamSubscriptionIdentity>
+  ) {
+    return this.db.subscription.findFirst({
       where: {
         targetId: identity.key,
         plan: identity.plan,

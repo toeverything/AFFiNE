@@ -202,6 +202,15 @@ export class UserSubscriptionManager extends SubscriptionManager {
       where: {
         targetId: args.userId,
         plan: args.plan,
+      },
+    });
+  }
+
+  async getActiveSubscription(args: z.infer<typeof UserSubscriptionIdentity>) {
+    return this.db.subscription.findFirst({
+      where: {
+        targetId: args.userId,
+        plan: args.plan,
         status: {
           in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
         },

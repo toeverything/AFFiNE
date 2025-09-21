@@ -82,9 +82,11 @@ export class ServerConfigResolver {
               ? 'AFFiNE Beta Cloud'
               : 'AFFiNE Cloud'),
       version: env.version,
-      baseUrl: this.url.home,
+      baseUrl: this.url.requestBaseUrl,
       type: env.DEPLOYMENT_TYPE,
       features: this.server.features,
+      // TODO(@fengmk2): remove this field after the feature 0.25.0 is released
+      allowGuestDemoWorkspace: this.config.flags.allowGuestDemoWorkspace,
     };
   }
 

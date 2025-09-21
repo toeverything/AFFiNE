@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { ipcMain } from 'electron';
 
 import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
@@ -21,6 +22,12 @@ export const debugHandlers = {
   },
 };
 
+export const i18nHandlers = {
+  changeLanguage: async (_: Electron.IpcMainInvokeEvent, language: string) => {
+    return I18n.changeLanguage(language);
+  },
+};
+
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
   debug: debugHandlers,
@@ -33,6 +40,7 @@ export const allHandlers = {
   worker: workerHandlers,
   recording: recordingHandlers,
   popup: popupHandlers,
+  i18n: i18nHandlers,
 };
 
 export const registerHandlers = () => {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { getStreamAsBuffer } from 'get-stream';
 
-import { JOB_SIGNAL, OnJob } from '../../base';
+import { JOB_SIGNAL, OnJob, sleep } from '../../base';
 import { type MailName, MailProps, Renderers } from '../../mails';
 import { UserProps, WorkspaceProps } from '../../mails/components';
 import { Models } from '../../models';
@@ -34,7 +34,7 @@ type SendMailJob<Mail extends MailName = MailName, Props = MailProps<Mail>> = {
 
 declare global {
   interface Jobs {
-    'notification.sendMail': {
+    'notification.sendMail': { startTime: number } & {
       [K in MailName]: SendMailJob<K>;
     }[MailName];
   }
@@ -50,7 +50,12 @@ export class MailJob {
   ) {}
 
   @OnJob('notification.sendMail')
-  async sendMail({ name, to, props }: Jobs['notification.sendMail']) {
+  async sendMail({
+    startTime,
+    name,
+    to,
+    props,
+  }: Jobs['notification.sendMail']) {
     let options: Partial<SendOptions> = {};
 
     for (const key in props) {
@@ -100,8 +105,15 @@ export class MailJob {
       )),
       ...options,
     });
+    if (result === false) {
+      // wait for a while before retrying
+      const elapsed = Date.now() - startTime;
+      const retryDelay = Math.min(30 * 1000, Math.round(elapsed / 2000) * 1000);
+      await sleep(retryDelay);
+      return JOB_SIGNAL.Retry;
+    }
 
-    return result === false ? JOB_SIGNAL.Retry : undefined;
+    return undefined;
   }
 
   private async fetchWorkspaceProps(workspaceId: string) {

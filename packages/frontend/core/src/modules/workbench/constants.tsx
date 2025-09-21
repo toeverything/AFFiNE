@@ -1,4 +1,5 @@
 import {
+  AiIcon,
   AllDocsIcon,
   AttachmentIcon,
   DeleteIcon,
@@ -22,6 +23,7 @@ export const iconNameToIcon = {
   trash: <DeleteIcon />,
   attachment: <AttachmentIcon />,
   pdf: <ExportToPdfIcon />,
+  ai: <AiIcon />,
 } satisfies Record<string, ReactNode>;
 
 export type ViewIconName = keyof typeof iconNameToIcon;

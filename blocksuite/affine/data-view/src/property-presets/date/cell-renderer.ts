@@ -78,7 +78,7 @@ export class DateCell extends BaseCellRenderer<number, number> {
         },
       });
     } else {
-      const root = createLitPortal({
+      const { portal } = createLitPortal({
         abortController,
         closeOnClickAway: true,
         computePosition: {
@@ -107,7 +107,7 @@ export class DateCell extends BaseCellRenderer<number, number> {
       //       for now the slide-layout-modal's z-index is `1001`
       //       the z-index of popover should be higher than it
       // root.style.zIndex = 'var(--affine-z-index-popover)';
-      root.style.zIndex = '1002';
+      portal.style.zIndex = '1002';
     }
   };
 

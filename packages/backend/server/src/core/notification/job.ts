@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { JobQueue, OnJob } from '../../base';
-import { Models } from '../../models';
+import { CommentNotificationBody, Models } from '../../models';
 import { NotificationService } from './service';
 
 declare global {
@@ -28,6 +28,11 @@ declare global {
       reviewerId: string;
       userId: string;
       workspaceId: string;
+    };
+    'notification.sendComment': {
+      userId: string;
+      isMention?: boolean;
+      body: CommentNotificationBody;
     };
   }
 }
@@ -145,5 +150,20 @@ export class NotificationJob {
         createdByUserId: reviewerId,
       },
     });
+  }
+
+  @OnJob('notification.sendComment')
+  async sendComment({
+    userId,
+    isMention,
+    body,
+  }: Jobs['notification.sendComment']) {
+    await this.service.createComment(
+      {
+        userId,
+        body,
+      },
+      isMention
+    );
   }
 }

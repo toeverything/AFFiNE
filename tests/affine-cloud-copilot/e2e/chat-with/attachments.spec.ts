@@ -2,9 +2,14 @@ import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('AIChatWith/Attachments', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(page);
+    await utils.testUtils.setupTestEnvironment(
+      page,
+      'claude-sonnet-4@20250514'
+    );
     await utils.chatPanel.openChatPanel(page);
   });
 
@@ -48,8 +53,10 @@ test.describe('AIChatWith/Attachments', () => {
     loggedInPage: page,
     utils,
   }) => {
-    const textContent1 = 'AttachmentEEee is a cute cat';
-    const textContent2 = 'AttachmentFFff is a cute dog';
+    const randomStr1 = Math.random().toString(36).substring(2, 6);
+    const randomStr2 = Math.random().toString(36).substring(2, 6);
+    const textContent1 = `Attachment${randomStr1} is a cute cat`;
+    const textContent2 = `Attachment${randomStr2} is a cute dog`;
     const buffer1 = Buffer.from(textContent1);
     const buffer2 = Buffer.from(textContent2);
 
@@ -67,13 +74,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer2,
         },
       ],
-      'What is AttachmentEEee? What is AttachmentFFff?'
+      `What is Attachment${randomStr1}? What is Attachment${randomStr2}?`
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is AttachmentEEee? What is AttachmentFFff?',
+        content: `What is Attachment${randomStr1}? What is Attachment${randomStr2}?`,
       },
       {
         role: 'assistant',
@@ -84,8 +91,8 @@ test.describe('AIChatWith/Attachments', () => {
     await expect(async () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/AttachmentEEee/);
-      expect(content).toMatch(/AttachmentFFff/);
+      expect(content).toMatch(new RegExp(`Attachment${randomStr1}`));
+      expect(content).toMatch(new RegExp(`Attachment${randomStr2}`));
       expect(await message.locator('affine-footnote-node').count()).toBe(2);
     }).toPass({ timeout: 20000 });
   });

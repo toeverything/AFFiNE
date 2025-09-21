@@ -8,15 +8,15 @@
 import Foundation
 
 final class Mutex<Wrapped>: @unchecked Sendable {
-  private let lock = NSLock.init()
+  private let lock = NSLock()
   private var wrapped: Wrapped
-  
+
   init(_ wrapped: Wrapped) {
     self.wrapped = wrapped
   }
-  
+
   func withLock<R>(_ body: @Sendable (inout Wrapped) throws -> R) rethrows -> R {
-    self.lock.lock()
+    lock.lock()
     defer { self.lock.unlock() }
     return try body(&wrapped)
   }

@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css } from 'lit';
 
 export const paragraphBlockStyles = css`
@@ -13,6 +14,11 @@ export const paragraphBlockStyles = css`
   }
   .affine-paragraph-rich-text-wrapper {
     position: relative;
+  }
+
+  .affine-paragraph-block-container.highlight-comment {
+    background-color: ${unsafeCSSVarV2('block/comment/highlightActive')};
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
   }
 
   affine-paragraph code {

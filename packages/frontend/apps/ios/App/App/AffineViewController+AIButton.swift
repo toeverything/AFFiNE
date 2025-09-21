@@ -9,14 +9,9 @@ import Intelligents
 import UIKit
 
 extension AFFiNEViewController: IntelligentsButtonDelegate {
-  func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
-    IntelligentContext.shared.webView = webView!
-    button.beginProgress()
-    
-    IntelligentContext.shared.preparePresent() {
-      button.stopProgress()
-      let controller = IntelligentsController()
-      self.present(controller, animated: true)
-    }
+  func onIntelligentsButtonTapped(_: IntelligentsButton) {
+    // if it shows up then we are ready to go
+    let controller = IntelligentsController()
+    present(controller, animated: true)
   }
 }

@@ -7,7 +7,7 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
   public static let operationName: String = "getDocRolePermissions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getDocRolePermissions($workspaceId: String!, $docId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $docId) { __typename permissions { __typename Doc_Copy Doc_Delete Doc_Duplicate Doc_Properties_Read Doc_Properties_Update Doc_Publish Doc_Read Doc_Restore Doc_TransferOwner Doc_Trash Doc_Update Doc_Users_Manage Doc_Users_Read } } } }"#
+      #"query getDocRolePermissions($workspaceId: String!, $docId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $docId) { __typename permissions { __typename Doc_Copy Doc_Delete Doc_Duplicate Doc_Properties_Read Doc_Properties_Update Doc_Publish Doc_Read Doc_Restore Doc_TransferOwner Doc_Trash Doc_Update Doc_Users_Manage Doc_Users_Read Doc_Comments_Create Doc_Comments_Delete Doc_Comments_Read Doc_Comments_Resolve } } } }"#
     ))
 
   public var workspaceId: String
@@ -92,6 +92,10 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
             .field("Doc_Update", Bool.self),
             .field("Doc_Users_Manage", Bool.self),
             .field("Doc_Users_Read", Bool.self),
+            .field("Doc_Comments_Create", Bool.self),
+            .field("Doc_Comments_Delete", Bool.self),
+            .field("Doc_Comments_Read", Bool.self),
+            .field("Doc_Comments_Resolve", Bool.self),
           ] }
 
           public var doc_Copy: Bool { __data["Doc_Copy"] }
@@ -107,6 +111,10 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
           public var doc_Update: Bool { __data["Doc_Update"] }
           public var doc_Users_Manage: Bool { __data["Doc_Users_Manage"] }
           public var doc_Users_Read: Bool { __data["Doc_Users_Read"] }
+          public var doc_Comments_Create: Bool { __data["Doc_Comments_Create"] }
+          public var doc_Comments_Delete: Bool { __data["Doc_Comments_Delete"] }
+          public var doc_Comments_Read: Bool { __data["Doc_Comments_Read"] }
+          public var doc_Comments_Resolve: Bool { __data["Doc_Comments_Resolve"] }
         }
       }
     }

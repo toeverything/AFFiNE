@@ -3,7 +3,7 @@ import {
   type AnthropicProviderOptions,
 } from '@ai-sdk/anthropic';
 import { type GoogleVertexAnthropicProvider } from '@ai-sdk/google-vertex/anthropic';
-import { AISDKError, generateText, streamText } from 'ai';
+import { AISDKError, generateText, stepCountIs, streamText } from 'ai';
 
 import {
   CopilotProviderSideError,
@@ -26,8 +26,6 @@ import {
 } from '../utils';
 
 export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
-  private readonly MAX_STEPS = 20;
-
   protected abstract instance:
     | AnthropicSDKProvider
     | GoogleVertexAnthropicProvider;
@@ -62,6 +60,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
+
       const [system, msgs] = await chatToGPTMessage(messages, true, true);
 
       const modelInstance = this.instance(model.id);
@@ -74,8 +73,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
           anthropic: this.getAnthropicOptions(options, model.id),
         },
         tools: await this.getTools(options, model.id),
-        maxSteps: this.MAX_STEPS,
-        experimental_continueSteps: true,
+        stopWhen: stepCountIs(this.MAX_STEPS),
       });
 
       if (!text) throw new Error('Failed to generate text');
@@ -106,6 +104,12 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         if (options.signal?.aborted) {
           await fullStream.cancel();
           break;
+        }
+      }
+      if (!options.signal?.aborted) {
+        const footnotes = parser.end();
+        if (footnotes.length) {
+          yield `\n\n${footnotes}`;
         }
       }
     } catch (e: any) {
@@ -162,8 +166,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         anthropic: this.getAnthropicOptions(options, model.id),
       },
       tools: await this.getTools(options, model.id),
-      maxSteps: this.MAX_STEPS,
-      experimental_continueSteps: true,
+      stopWhen: stepCountIs(this.MAX_STEPS),
     });
     return fullStream;
   }

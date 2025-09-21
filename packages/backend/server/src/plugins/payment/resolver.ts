@@ -461,7 +461,11 @@ export class UserSubscriptionResolver {
       where: {
         targetId: user.id,
         status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
         },
       },
     });
@@ -528,7 +532,7 @@ export class WorkspaceSubscriptionResolver {
     description: 'The team subscription of the workspace, if exists.',
   })
   async subscription(@Parent() workspace: WorkspaceType) {
-    return this.service.getSubscription({
+    return this.service.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId: workspace.id,
     });

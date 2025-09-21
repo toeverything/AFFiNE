@@ -1,6 +1,6 @@
 import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
-import { AccountIcon, AiOutlineIcon, SelfhostIcon } from '@blocksuite/icons/rc';
+import { AccountIcon, SelfhostIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { NavLink } from 'react-router-dom';
 
@@ -90,12 +90,12 @@ export function Nav({ isCollapsed = false }: NavProps) {
           label="Accounts"
           isCollapsed={isCollapsed}
         />
-        <NavItem
+        {/* <NavItem
           to="/admin/ai"
           icon={<AiOutlineIcon fontSize={20} />}
           label="AI"
           isCollapsed={isCollapsed}
-        />
+        /> */}
         <SettingsItem isCollapsed={isCollapsed} />
         <NavItem
           to="/admin/about"

@@ -93,7 +93,7 @@ tree-sitter-javascript = { version = "0.23" }
 tree-sitter-kotlin-ng  = { version = "1.1" }
 tree-sitter-python     = { version = "0.23" }
 tree-sitter-rust       = { version = "0.24" }
-tree-sitter-scala      = { version = "0.23" }
+tree-sitter-scala      = { version = "0.24" }
 tree-sitter-typescript = { version = "0.23" }
 uniffi                 = "0.29"
 url                    = { version = "2.5" }

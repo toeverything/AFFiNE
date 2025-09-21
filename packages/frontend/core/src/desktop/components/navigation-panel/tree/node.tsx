@@ -1,4 +1,5 @@
 import {
+  ContextMenu,
   DropIndicator,
   type DropTargetDropEvent,
   type DropTargetOptions,
@@ -466,47 +467,54 @@ export const NavigationPanelTreeNode = ({
       ref={rootRef}
       {...otherProps}
     >
-      <div
-        className={clsx(styles.contentContainer, styles.draggedOverEffect)}
-        data-open={!collapsed}
-        data-self-dragged-over={isSelfDraggedOver}
-        ref={dropTargetRef}
+      <ContextMenu
+        asChild
+        items={menuOperations.map(({ view, index }) => (
+          <Fragment key={index}>{view}</Fragment>
+        ))}
       >
-        {to ? (
-          <LinkComponent
-            to={to}
-            className={styles.linkItemRoot}
-            ref={dragRef}
-            draggable={false}
-          >
-            {content}
-          </LinkComponent>
-        ) : (
-          <div ref={dragRef}>{content}</div>
-        )}
-        <CustomDragPreview>
-          <div className={styles.draggingContainer}>{content}</div>
-        </CustomDragPreview>
-        {treeInstruction &&
-          // Do not show drop indicator for self dragged over
-          !(treeInstruction.type !== 'reparent' && isSelfDraggedOver) &&
-          treeInstruction.type !== 'instruction-blocked' && (
-            <DropIndicator instruction={treeInstruction} />
+        <div
+          className={clsx(styles.contentContainer, styles.draggedOverEffect)}
+          data-open={!collapsed}
+          data-self-dragged-over={isSelfDraggedOver}
+          ref={dropTargetRef}
+        >
+          {to ? (
+            <LinkComponent
+              to={to}
+              className={styles.linkItemRoot}
+              ref={dragRef}
+              draggable={false}
+            >
+              {content}
+            </LinkComponent>
+          ) : (
+            <div ref={dragRef}>{content}</div>
           )}
-        {draggedOver &&
-          dropEffect &&
-          draggedOverPosition &&
-          !isSelfDraggedOver &&
-          draggedOverDraggable && (
-            <DropEffect
-              dropEffect={dropEffect({
-                source: draggedOverDraggable,
-                treeInstruction: treeInstruction,
-              })}
-              position={draggedOverPosition}
-            />
-          )}
-      </div>
+          <CustomDragPreview>
+            <div className={styles.draggingContainer}>{content}</div>
+          </CustomDragPreview>
+          {treeInstruction &&
+            // Do not show drop indicator for self dragged over
+            !(treeInstruction.type !== 'reparent' && isSelfDraggedOver) &&
+            treeInstruction.type !== 'instruction-blocked' && (
+              <DropIndicator instruction={treeInstruction} />
+            )}
+          {draggedOver &&
+            dropEffect &&
+            draggedOverPosition &&
+            !isSelfDraggedOver &&
+            draggedOverDraggable && (
+              <DropEffect
+                dropEffect={dropEffect({
+                  source: draggedOverDraggable,
+                  treeInstruction: treeInstruction,
+                })}
+                position={draggedOverPosition}
+              />
+            )}
+        </div>
+      </ContextMenu>
       <Collapsible.Content style={{ display: dragging ? 'none' : undefined }}>
         {/* For lastInGroup check, the placeholder must be placed above all children in the dom */}
         <div className={styles.collapseContentPlaceholder}>

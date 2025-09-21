@@ -48,7 +48,7 @@ export const KNOWN_CONFIG_GROUPS = [
   {
     name: 'Server',
     module: 'server',
-    fields: ['externalUrl', 'name'],
+    fields: ['externalUrl', 'name', 'hosts'],
   } as ConfigGroup<'server'>,
   {
     name: 'Auth',
@@ -142,6 +142,7 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'copilot',
     fields: [
       'enabled',
+      'scenarios',
       'providers.openai',
       'providers.gemini',
       'providers.perplexity',
