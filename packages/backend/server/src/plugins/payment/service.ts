@@ -89,7 +89,7 @@ export class SubscriptionService {
     return this.stripeProvider.stripe;
   }
 
-  private select(plan: SubscriptionPlan): SubscriptionManager {
+  select(plan: SubscriptionPlan): SubscriptionManager {
     switch (plan) {
       case SubscriptionPlan.Team:
         return this.workspaceManager;
