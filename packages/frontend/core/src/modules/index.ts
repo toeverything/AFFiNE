@@ -86,6 +86,7 @@ export function configureCommonModules(framework: Framework) {
   configureTelemetryModule(framework);
   configurePDFModule(framework);
   configurePeekViewModule(framework);
+  configureExplorerIconModule(framework);
   configureDocDisplayMetaModule(framework);
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
@@ -127,5 +128,4 @@ export function configureCommonModules(framework: Framework) {
   configureIndexerEmbeddingModule(framework);
   configureCommentModule(framework);
   configureDocSummaryModule(framework);
-  configureExplorerIconModule(framework);
 }

@@ -256,7 +256,7 @@ export const BlocksuiteDocEditor = forwardRef<
     <>
       <div className={styles.affineDocViewport}>
         {!BUILD_CONFIG.isMobileEdition ? (
-          <DocIconPicker docId={page.id} />
+          <DocIconPicker docId={page.id} readonly={readonly || shared} />
         ) : null}
         {!isJournal ? (
           <LitDocTitle doc={page} ref={onTitleRef} />

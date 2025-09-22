@@ -1,4 +1,4 @@
-import { IconEditor } from '@affine/component';
+import { IconEditor, IconRenderer } from '@affine/component';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
 import { useI18n } from '@affine/i18n';
 import { SmileSolidIcon } from '@blocksuite/icons/rc';
@@ -6,14 +6,13 @@ import { useLiveData, useService } from '@toeverything/infra';
 
 import * as styles from './doc-icon-picker.css';
 
-export const DocIconPicker = ({ docId }: { docId: string }) => {
-  const t = useI18n();
-  const explorerIconService = useService(ExplorerIconService);
-
-  const icon = useLiveData(explorerIconService.icon$('doc', docId));
-
-  const isPlaceholder = !icon?.type && !icon?.icon;
-
+const TitleContainer = ({
+  children,
+  isPlaceholder,
+}: {
+  children: React.ReactNode;
+  isPlaceholder: boolean;
+}) => {
   return (
     <div
       className="doc-title-container"
@@ -24,6 +23,35 @@ export const DocIconPicker = ({ docId }: { docId: string }) => {
         transform: isPlaceholder ? 'translateY(80%)' : 'translateY(50%)',
       }}
     >
+      {children}
+    </div>
+  );
+};
+
+export const DocIconPicker = ({
+  docId,
+  readonly,
+}: {
+  docId: string;
+  readonly?: boolean;
+}) => {
+  const t = useI18n();
+  const explorerIconService = useService(ExplorerIconService);
+
+  const icon = useLiveData(explorerIconService.icon$('doc', docId));
+
+  const isPlaceholder = !icon?.type || !icon?.icon;
+
+  if (readonly) {
+    return isPlaceholder ? null : (
+      <div className={styles.docIconPickerTrigger} data-icon-type={icon?.type}>
+        <IconRenderer iconType={icon.type} icon={icon.icon} />
+      </div>
+    );
+  }
+
+  return (
+    <TitleContainer isPlaceholder={isPlaceholder}>
       <IconEditor
         iconType={icon?.type}
         icon={icon?.icon}
@@ -49,6 +77,6 @@ export const DocIconPicker = ({ docId }: { docId: string }) => {
           </div>
         }
       />
-    </div>
+    </TitleContainer>
   );
 };

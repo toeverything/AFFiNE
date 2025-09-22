@@ -107,6 +107,8 @@ export const IconEditor = ({
         variant={triggerVariant}
         className={clsx(styles.iconPicker, triggerClassName)}
         data-icon-type={iconType}
+        aria-label={icon ? 'Change Icon' : 'Select Icon'}
+        title={icon ? 'Change Icon' : 'Select Icon'}
       >
         {icon && iconType ? (
           <IconRenderer
