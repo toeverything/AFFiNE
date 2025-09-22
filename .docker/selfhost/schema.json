@@ -148,6 +148,11 @@
           "description": "Whether allow new registrations.\n@default true",
           "default": true
         },
+        "allowSignupForOauth": {
+          "type": "boolean",
+          "description": "Whether allow new registrations via configured oauth.\n@default true",
+          "default": true
+        },
         "requireEmailDomainVerification": {
           "type": "boolean",
           "description": "Whether require email domain record verification before accessing restricted resources.\n@default false",
