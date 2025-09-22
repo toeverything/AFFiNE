@@ -46,9 +46,8 @@ export class RevenueCatWebhookHandler {
     const productOverride = this.config.payment.revenuecat?.productMap;
 
     for (const sub of subscriptions) {
-      const productId = sub.productId;
-      const mapping = resolveProductMapping(productId, productOverride);
-      // ignore non-whitelisted products
+      const mapping = resolveProductMapping(sub, productOverride);
+      // ignore non-whitelisted and non-fallbackable products
       if (!mapping) continue;
 
       const { status, deleteInstead, canceledAt, iapStore } = this.mapStatus(
@@ -113,7 +112,7 @@ export class RevenueCatWebhookHandler {
           provider: Provider.revenuecat,
           iapStore: iapStore,
           rcEntitlement: sub.identifier ?? null,
-          rcProductId: productId || null,
+          rcProductId: sub.productId || null,
           rcExternalRef: rcExternalRef,
           status: status,
           start,
@@ -134,7 +133,7 @@ export class RevenueCatWebhookHandler {
           provider: Provider.revenuecat,
           iapStore: iapStore,
           rcEntitlement: sub.identifier ?? null,
-          rcProductId: productId || null,
+          rcProductId: sub.productId || null,
           rcExternalRef: rcExternalRef,
           status: status,
           start,
@@ -155,7 +154,8 @@ export class RevenueCatWebhookHandler {
           plan: mapping.plan,
           recurring: mapping.recurring,
         });
-      } else {
+      } else if (status !== SubscriptionStatus.PastDue) {
+        // Do not emit canceled for PastDue (still within retry/grace window)
         this.event.emit('user.subscription.canceled', {
           userId: appUserId,
           plan: mapping.plan,
@@ -196,8 +196,27 @@ export class RevenueCatWebhookHandler {
       .toString()
       .toLowerCase();
 
+    const eventType = (payload?.event?.type || payload?.type || '')
+      .toString()
+      .toLowerCase();
+
     // Determine iap store and external reference for observability
     const iapStore = this.mapIapStore(sub.store, payload);
+
+    // Refund/chargeback/revocation should be treated as immediate expiration
+    // Prioritize these event types regardless of current sub.isActive flag
+    if (
+      eventType.includes('refund') ||
+      eventType.includes('chargeback') ||
+      eventType.includes('revocation') ||
+      eventType.includes('revoke')
+    ) {
+      return {
+        iapStore,
+        status: SubscriptionStatus.Canceled,
+        deleteInstead: true,
+      };
+    }
 
     if (sub.isActive) {
       if (periodType === 'trial') {

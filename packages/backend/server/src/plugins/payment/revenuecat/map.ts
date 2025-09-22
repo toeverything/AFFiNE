@@ -1,4 +1,5 @@
 import { SubscriptionPlan, SubscriptionRecurring } from '../types';
+import { Subscription } from './service';
 
 export interface ProductMapping {
   plan: SubscriptionPlan;
@@ -21,11 +22,33 @@ export const DEFAULT_PRODUCT_MAP: Record<string, ProductMapping> = {
   },
 };
 
+function resolveFallbackFromEntitlement(
+  entitlement: string | null | undefined,
+  duration: string | null | undefined
+): ProductMapping | null {
+  const ent = (entitlement || '').toLowerCase();
+  const dur = (duration || '').toUpperCase();
+  const isPro = ent === 'pro';
+  const isAI = ent === 'ai';
+  const isM = dur === 'P1M';
+  const isY = dur === 'P1Y';
+  if ((isPro || isAI) && (isM || isY)) {
+    return {
+      plan: isPro ? SubscriptionPlan.Pro : SubscriptionPlan.AI,
+      recurring: isM
+        ? SubscriptionRecurring.Monthly
+        : SubscriptionRecurring.Yearly,
+    };
+  }
+  return null;
+}
+
 export function resolveProductMapping(
-  productId: string,
+  sub: Partial<Subscription>,
   override?: Record<string, { plan: string; recurring: string }>
 ): ProductMapping | null {
-  if (override && productId in override) {
+  const { productId, identifier, duration } = sub;
+  if (override && productId && productId in override) {
     const m = override[productId];
     const plan = m.plan as SubscriptionPlan;
     const recurring = m.recurring as SubscriptionRecurring;
@@ -38,5 +61,9 @@ export function resolveProductMapping(
       return { plan, recurring };
     }
   }
-  return DEFAULT_PRODUCT_MAP[productId] || null;
+  return (
+    (productId && DEFAULT_PRODUCT_MAP[productId]) ||
+    resolveFallbackFromEntitlement(identifier, duration) ||
+    null
+  );
 }

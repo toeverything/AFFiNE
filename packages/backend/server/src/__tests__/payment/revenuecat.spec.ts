@@ -142,14 +142,21 @@ test('should resolve product mapping consistently (whitelist, override, unknown)
 
   const actual = {
     whitelist: {
-      proMonthly: resolveProductMapping('app.affine.pro.Monthly'),
-      proAnnual: resolveProductMapping('app.affine.pro.Annual'),
-      aiAnnual: resolveProductMapping('app.affine.pro.ai.Annual'),
+      proMonthly: resolveProductMapping({
+        productId: 'app.affine.pro.Monthly',
+      }),
+      proAnnual: resolveProductMapping({ productId: 'app.affine.pro.Annual' }),
+      aiAnnual: resolveProductMapping({
+        productId: 'app.affine.pro.ai.Annual',
+      }),
     },
     override: {
-      customMonthly: resolveProductMapping('custom.sku.monthly', override),
+      customMonthly: resolveProductMapping(
+        { productId: 'custom.sku.monthly' },
+        override
+      ),
     },
-    unknown: resolveProductMapping('unknown.sku'),
+    unknown: resolveProductMapping({ productId: 'unknown.sku' }),
   };
 
   t.snapshot(actual, 'should map product for whitelist/override/unknown');
@@ -531,7 +538,7 @@ test('should set canceledAt and keep active until expiration when will_renew is 
   );
 });
 
-test('should retain record as past_due (inactive but not expired) and emit canceled event per current implementation', async t => {
+test('should retain record as past_due (inactive but not expired) and NOT emit canceled event', async t => {
   const { db, collectEvents, mockSub, triggerWebhook } = t.context;
   mockSub([
     {
@@ -558,7 +565,7 @@ test('should retain record as past_due (inactive but not expired) and emit cance
   const { canceledCount } = collectEvents();
   t.snapshot(
     { status: rec?.status, canceledCount },
-    'should retain past_due record and emit canceled event'
+    'should retain past_due record and NOT emit canceled event'
   );
 });
 
@@ -724,6 +731,50 @@ test('should reconcile and fix missing or out-of-order states for revenuecat Act
   );
 });
 
+test('should treat refund as early expiration and revoke immediately', async t => {
+  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+
+  await db.subscription.create({
+    data: {
+      targetId: user.id,
+      plan: 'pro',
+      status: 'active',
+      provider: 'revenuecat',
+      recurring: 'monthly',
+      start: new Date('2025-01-01T00:00:00.000Z'),
+    },
+  });
+
+  mockSub([
+    {
+      identifier: 'Pro',
+      isActive: false,
+      latestPurchaseDate: new Date('2025-01-01T00:00:00.000Z'),
+      expirationDate: new Date('2025-01-15T00:00:00.000Z'),
+      productId: 'app.affine.pro.Monthly',
+      store: 'app_store',
+      willRenew: false,
+      duration: null,
+    },
+  ]);
+
+  await triggerWebhook(user.id, {
+    id: 'evt_refund',
+    type: 'REFUND',
+    store: 'app_store',
+  });
+
+  const count = await db.subscription.count({
+    where: { targetId: user.id, plan: 'pro' },
+  });
+  const { canceledCount } = collectEvents();
+  t.snapshot(
+    { finalDBCount: count, canceledCount },
+    'should delete record and emit canceled on refund'
+  );
+});
+test.todo('should retain PastDue status during the retry window');
+
 test('should ignore non-whitelisted productId and not write to DB', async t => {
   const { db, collectEvents, mockSub, triggerWebhook } = t.context;
   mockSub([
@@ -748,6 +799,96 @@ test('should ignore non-whitelisted productId and not write to DB', async t => {
   t.snapshot(
     { dbCount, activatedCount, canceledCount },
     'should ignore non-whitelisted productId and not write to DB'
+  );
+});
+
+test('should map via entitlement+duration when productId not whitelisted (P1M/P1Y only)', async t => {
+  const { db, collectEvents, mockSubSeq, triggerWebhook } = t.context;
+
+  mockSubSeq([
+    [
+      {
+        identifier: 'Pro',
+        isActive: true,
+        latestPurchaseDate: new Date('2025-08-01T00:00:00.000Z'),
+        expirationDate: new Date('2025-09-01T00:00:00.000Z'),
+        productId: 'unknown.sku',
+        store: 'app_store',
+        willRenew: true,
+        duration: 'P1M',
+      },
+    ],
+    [
+      {
+        identifier: 'AI',
+        isActive: true,
+        latestPurchaseDate: new Date('2025-10-01T00:00:00.000Z'),
+        expirationDate: new Date('2026-10-01T00:00:00.000Z'),
+        productId: 'unknown.sku',
+        store: 'play_store',
+        willRenew: true,
+        duration: 'P1Y',
+      },
+    ],
+    [
+      {
+        identifier: 'Pro',
+        isActive: true,
+        latestPurchaseDate: new Date('2025-11-01T00:00:00.000Z'),
+        expirationDate: new Date('2026-02-01T00:00:00.000Z'),
+        productId: 'unknown.sku',
+        store: 'app_store',
+        willRenew: true,
+        duration: 'P3M', // not supported -> ignore
+      },
+    ],
+  ]);
+
+  // pro monthly via fallback
+  await triggerWebhook(user.id, {
+    id: 'evt_fb1',
+    type: 'INITIAL_PURCHASE',
+    store: 'app_store',
+  });
+  const r1 = await db.subscription.findUnique({
+    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
+    select: { plan: true, recurring: true, provider: true },
+  });
+  const s1 = collectEvents();
+
+  // ai yearly via fallback
+  await triggerWebhook(user.id, {
+    id: 'evt_fb2',
+    type: 'INITIAL_PURCHASE',
+    store: 'play_store',
+  });
+  const r2 = await db.subscription.findUnique({
+    where: { targetId_plan: { targetId: user.id, plan: 'ai' } },
+    select: { plan: true, recurring: true, provider: true },
+  });
+  const s2 = collectEvents();
+
+  // unsupported duration ignored
+  await triggerWebhook(user.id, {
+    id: 'evt_fb3',
+    type: 'INITIAL_PURCHASE',
+    store: 'app_store',
+  });
+  const count = await db.subscription.count({ where: { targetId: user.id } });
+  const s3 = collectEvents();
+
+  t.snapshot(
+    {
+      proViaFallback: r1,
+      aiViaFallback: r2,
+      totalCount: count,
+      eventsCounts: {
+        afterFirst: { a: s1.activatedCount, c: s1.canceledCount },
+        afterSecond: { a: s2.activatedCount, c: s2.canceledCount },
+        afterThird: { a: s3.activatedCount, c: s3.canceledCount },
+      },
+    },
+    'should map via entitlement+duration fallback and ignore unsupported durations'
   );
 });
 
