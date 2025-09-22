@@ -1,9 +1,47 @@
 import type { RawBodyRequest } from '@nestjs/common';
 import { Controller, Headers, Logger, Post, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { z } from 'zod';
 
 import { Config, EventBus } from '../../../base';
 import { Public } from '../../../core/auth';
+
+const RcEventSchema = z
+  .object({
+    type: z.enum([
+      'TEST',
+      'INITIAL_PURCHASE',
+      'NON_RENEWING_PURCHASE',
+      'RENEWAL',
+      'PRODUCT_CHANGE',
+      'CANCELLATION',
+      'BILLING_ISSUE',
+      'SUBSCRIBER_ALIAS',
+      'SUBSCRIPTION_PAUSED',
+      'UNCANCELLATION',
+      'TRANSFER',
+      'SUBSCRIPTION_EXTENDED',
+      'EXPIRATION',
+      'TEMPORARY_ENTITLEMENT_GRANT',
+      'INVOICE_ISSUANCE',
+      'VIRTUAL_CURRENCY_TRANSACTION',
+    ]),
+    id: z.string(),
+    app_id: z.string(),
+    environment: z.enum(['PRODUCTION', 'SANDBOX']),
+
+    app_user_id: z.string().optional(),
+    store: z.string().optional(),
+    is_family_share: z.boolean().optional(),
+    period_type: z.string().optional(),
+    original_transaction_id: z.string().optional(),
+    transaction_id: z.string().optional(),
+    purchase_token: z.string().optional(),
+  })
+  .passthrough();
+
+const RcWebhookPayloadSchema = z.object({ event: RcEventSchema }).passthrough();
+
+export type RcEvent = z.infer<typeof RcEventSchema>;
 
 @Controller('/api/revenuecat')
 export class RevenueCatWebhookController {
@@ -20,33 +58,46 @@ export class RevenueCatWebhookController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('authorization') authorization?: string
   ) {
-    const expected = this.config.payment.revenuecat?.webhookAuth || '';
-    if (!expected || authorization !== expected) {
-      this.logger.warn('RevenueCat webhook unauthorized.');
-      return { ok: true };
-    }
+    const { enabled, webhookAuth, environment } =
+      this.config.payment.revenuecat || {};
+    if (enabled) {
+      if (webhookAuth && authorization === webhookAuth) {
+        try {
+          const parsed = RcWebhookPayloadSchema.safeParse(await req.json());
+          if (parsed.success) {
+            const event = parsed.data.event;
+            const { id, app_user_id: appUserId, type } = event;
+            if (
+              event.environment.toLowerCase() === environment?.toLowerCase()
+            ) {
+              this.logger.log(
+                `[${id}] RevenueCat Webhook {${type}} received for appUserId=${appUserId}.`
+              );
 
-    try {
-      const payload = req.body as any;
-      const eventId = payload?.event?.id || 'unknown';
-      const appUserId = payload?.event?.app_user_id || payload?.app_user_id;
-      const eventType = payload?.event?.type || payload?.type;
-
-      this.logger.log(
-        `[${eventId}] RevenueCat Webhook {${eventType}} received for appUserId=${appUserId}.`
-      );
-
-      // immediately ack and process asynchronously
-      this.event
-        .emitAsync('revenuecat.webhook' as any, { appUserId, payload })
-        .catch((e: unknown) => {
-          this.logger.error(
-            'Failed to handle RevenueCat Webhook event.',
-            e as Error
-          );
-        });
-    } catch (e) {
-      this.logger.error('RevenueCat webhook error', e as Error);
+              if (appUserId && !event.is_family_share) {
+                // immediately ack and process asynchronously
+                this.event
+                  .emitAsync('revenuecat.webhook', { appUserId, event })
+                  .catch((e: Error) => {
+                    this.logger.error(
+                      'Failed to handle RevenueCat Webhook event.',
+                      e
+                    );
+                  });
+              }
+            }
+          } else {
+            this.logger.warn(
+              'RevenueCat webhook invalid payload received.',
+              parsed.error
+            );
+          }
+        } catch (e) {
+          this.logger.error('RevenueCat webhook error', e as Error);
+        }
+      } else {
+        this.logger.warn('RevenueCat webhook unauthorized.');
+      }
     }
 
     return { ok: true };

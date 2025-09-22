@@ -3,6 +3,7 @@ import { IapStore, PrismaClient, Provider } from '@prisma/client';
 
 import { Config, EventBus, OnEvent } from '../../../base';
 import { SubscriptionStatus } from '../types';
+import { RcEvent } from './controller';
 import { resolveProductMapping } from './map';
 import { RevenueCatService, Subscription } from './service';
 
@@ -18,7 +19,7 @@ export class RevenueCatWebhookHandler {
   ) {}
 
   @OnEvent('revenuecat.webhook')
-  async onWebhook(evt: { appUserId?: string; payload: any }) {
+  async onWebhook(evt: { appUserId?: string; event: RcEvent }) {
     if (!this.config.payment.revenuecat?.enabled) return;
 
     const appUserId = evt.appUserId;
@@ -26,11 +27,11 @@ export class RevenueCatWebhookHandler {
       this.logger.warn('RevenueCat webhook missing appUserId');
       return;
     }
-    await this.syncAppUser(appUserId, evt.payload);
+    await this.syncAppUser(appUserId, evt.event);
   }
 
   // Exposed for reuse by reconcile job
-  async syncAppUser(appUserId: string, payload?: any) {
+  async syncAppUser(appUserId: string, event?: RcEvent) {
     // Pull latest state to be resilient to reorder/duplicate events
     let subscriptions: Awaited<
       ReturnType<RevenueCatService['getSubscriptions']>
@@ -52,10 +53,10 @@ export class RevenueCatWebhookHandler {
 
       const { status, deleteInstead, canceledAt, iapStore } = this.mapStatus(
         sub,
-        payload
+        event
       );
 
-      const rcExternalRef = this.pickExternalRef(payload);
+      const rcExternalRef = this.pickExternalRef(event);
 
       // Mutual exclusion: skip if Stripe already active for the same plan
       const conflict = await this.db.subscription.findFirst({
@@ -165,21 +166,17 @@ export class RevenueCatWebhookHandler {
     }
   }
 
-  private pickExternalRef(payload?: any): string | null {
-    const p = payload?.event ?? payload ?? {};
+  private pickExternalRef(e?: RcEvent): string | null {
     return (
-      p.original_transaction_id ||
-      p.originalTransactionId ||
-      p.purchase_token ||
-      p.purchaseToken ||
-      p.transaction_id ||
+      (e &&
+        (e.original_transaction_id || e.purchase_token || e.transaction_id)) ||
       null
     );
   }
 
   private mapStatus(
     sub: Subscription,
-    payload?: any
+    event?: RcEvent
   ): {
     status: SubscriptionStatus;
     iapStore: IapStore | null;
@@ -188,20 +185,11 @@ export class RevenueCatWebhookHandler {
   } {
     const now = Date.now();
     const exp = sub.expirationDate?.getTime();
-    const periodType = (
-      payload?.event?.period_type ||
-      payload?.period_type ||
-      ''
-    )
-      .toString()
-      .toLowerCase();
-
-    const eventType = (payload?.event?.type || payload?.type || '')
-      .toString()
-      .toLowerCase();
+    const periodType = (event?.period_type || '').toLowerCase();
+    const eventType = (event?.type || '').toString().toLowerCase();
 
     // Determine iap store and external reference for observability
-    const iapStore = this.mapIapStore(sub.store, payload);
+    const iapStore = this.mapIapStore(sub.store, event);
 
     // Refund/chargeback/revocation should be treated as immediate expiration
     // Prioritize these event types regardless of current sub.isActive flag
@@ -254,10 +242,8 @@ export class RevenueCatWebhookHandler {
     };
   }
 
-  private mapIapStore(store?: string, payload?: any): IapStore | null {
-    const s = (store || payload?.event?.store || payload?.store || '')
-      .toString()
-      .toLowerCase();
+  private mapIapStore(store?: string, event?: RcEvent): IapStore | null {
+    const s = (store || event?.store || '').toString().toLowerCase();
     if (!s) return null;
     if (s.includes('app') || s.includes('ios')) return IapStore.app_store;
     if (s.includes('play') || s.includes('android') || s.includes('google'))

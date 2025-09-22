@@ -15,6 +15,7 @@ import { PaymentModule } from '../../plugins/payment';
 import { SubscriptionCronJobs } from '../../plugins/payment/cron';
 import { UserSubscriptionManager } from '../../plugins/payment/manager';
 import {
+  RcEvent,
   resolveProductMapping,
   RevenueCatService,
   RevenueCatWebhookController,
@@ -96,14 +97,14 @@ test.beforeEach(async t => {
   t.context.mockSubSeq = sequences => {
     const stub = Sinon.stub(rc, 'getSubscriptions');
     sequences.forEach((seq, idx) => {
-      if (idx === 0) stub.onFirstCall().resolves(seq as any);
-      else if (idx === 1) stub.onSecondCall().resolves(seq as any);
+      if (idx === 0) stub.onFirstCall().resolves(seq);
+      else if (idx === 1) stub.onSecondCall().resolves(seq);
       else stub.onCall(idx).resolves(seq);
     });
     return stub;
   };
-  t.context.triggerWebhook = async (appUserId: string, event: any) => {
-    await webhook.onWebhook({ appUserId, payload: { event } });
+  t.context.triggerWebhook = async (appUserId: string, event: RcEvent) => {
+    await webhook.onWebhook({ appUserId, event });
   };
 
   t.context.collectEvents = () => {
@@ -180,13 +181,12 @@ test('should standardize RC subscriber response and upsert subscription with obs
 
   await webhook.onWebhook({
     appUserId: user.id,
-    payload: {
-      event: {
-        id: 'evt_1',
-        type: 'INITIAL_PURCHASE',
-        store: 'app_store',
-        original_transaction_id: 'orig-tx-1',
-      },
+    event: {
+      id: 'evt_1',
+      app_id: 'app.affine.pro',
+      type: 'INITIAL_PURCHASE',
+      store: 'app_store',
+      original_transaction_id: 'orig-tx-1',
     },
   });
   const { activatedCount, canceledCount, events } = collectEvents();
@@ -773,7 +773,6 @@ test('should treat refund as early expiration and revoke immediately', async t =
     'should delete record and emit canceled on refund'
   );
 });
-test.todo('should retain PastDue status during the retry window');
 
 test('should ignore non-whitelisted productId and not write to DB', async t => {
   const { db, collectEvents, mockSub, triggerWebhook } = t.context;
