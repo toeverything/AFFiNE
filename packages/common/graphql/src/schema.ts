@@ -2165,6 +2165,7 @@ export interface Query {
   publicUserById: Maybe<PublicUserType>;
   /** query workspace embedding status */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
+  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -3084,12 +3085,13 @@ export type ListUserAccessTokensQueryVariables = Exact<{
 
 export type ListUserAccessTokensQuery = {
   __typename?: 'Query';
-  accessTokens: Array<{
-    __typename?: 'AccessToken';
+  revealedAccessTokens: Array<{
+    __typename?: 'RevealedAccessToken';
     id: string;
     name: string;
     createdAt: string;
     expiresAt: string | null;
+    token: string;
   }>;
 };
 

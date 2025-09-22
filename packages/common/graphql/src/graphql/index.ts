@@ -88,11 +88,12 @@ export const listUserAccessTokensQuery = {
   id: 'listUserAccessTokensQuery' as const,
   op: 'listUserAccessTokens',
   query: `query listUserAccessTokens {
-  accessTokens {
+  revealedAccessTokens {
     id
     name
     createdAt
     expiresAt
+    token
   }
 }`,
 };

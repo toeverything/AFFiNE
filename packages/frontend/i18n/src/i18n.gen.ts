@@ -100,6 +100,10 @@ export function useAFFiNEI18N(): {
       */
     ["Copied link to clipboard"](): string;
     /**
+      * `Copied to clipboard`
+      */
+    ["Copied to clipboard"](): string;
+    /**
       * `Copy`
       */
     Copy(): string;
@@ -8180,6 +8184,14 @@ export function useAFFiNEI18N(): {
     ["com.affine.integration.calendar.unsubscribe-content"](options: {
         readonly name: string;
     }): string;
+    /**
+      * `MCP Server`
+      */
+    ["com.affine.integration.mcp-server.name"](): string;
+    /**
+      * `Enable other MCP Client to search and read the doc of AFFiNE.`
+      */
+    ["com.affine.integration.mcp-server.desc"](): string;
     /**
       * `Notes`
       */
