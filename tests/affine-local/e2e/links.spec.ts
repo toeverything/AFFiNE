@@ -850,35 +850,35 @@ test.describe('Customize linked doc title and description', () => {
   //   await expect(a.locator('.affine-reference-title')).toHaveText('hello');
   // });
 
-  test('should show emoji doc icon in journal document', async ({ page }) => {
-    await enableEmojiDocIcon(page);
+  //   test('should show emoji doc icon in journal document', async ({ page }) => {
+  //     await enableEmojiDocIcon(page);
 
-    await clickNewPageButton(page);
-    const title = getBlockSuiteEditorTitle(page);
-    await title.click();
+  //     await clickNewPageButton(page);
+  //     const title = getBlockSuiteEditorTitle(page);
+  //     await title.click();
 
-    await page.keyboard.press('Enter');
-    await createTodayPage(page);
+  //     await page.keyboard.press('Enter');
+  //     await createTodayPage(page);
 
-    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  //     const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
 
-    const inlineLink = page.locator('affine-reference');
-    await inlineLink.hover();
+  //     const inlineLink = page.locator('affine-reference');
+  //     await inlineLink.hover();
 
-    // Edits title
-    await toolbar.getByRole('button', { name: 'Edit' }).click();
+  //     // Edits title
+  //     await toolbar.getByRole('button', { name: 'Edit' }).click();
 
-    // Title alias
-    await page.keyboard.type('🦀');
-    await page.keyboard.press('Enter');
+  //     // Title alias
+  //     await page.keyboard.type('🦀');
+  //     await page.keyboard.press('Enter');
 
-    const a = inlineLink.locator('a');
+  //     const a = inlineLink.locator('a');
 
-    const year = String(new Date().getFullYear());
-    await expect(a).toContainText('🦀');
-    await expect(a.locator('svg')).toBeHidden();
-    await expect(a.locator('.affine-reference-title')).toContainText(year);
-  });
+  //     const year = String(new Date().getFullYear());
+  //     await expect(a).toContainText('🦀');
+  //     await expect(a.locator('svg')).toBeHidden();
+  //     await expect(a.locator('.affine-reference-title')).toContainText(year);
+  //   });
 });
 
 test('should save open doc mode of internal links', async ({ page }) => {

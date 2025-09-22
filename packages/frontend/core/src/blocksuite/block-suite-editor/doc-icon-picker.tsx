@@ -15,7 +15,7 @@ const TitleContainer = ({
 }) => {
   return (
     <div
-      className="doc-title-container"
+      className="doc-icon-container"
       style={{
         paddingTop: 0,
         paddingBottom: 0,

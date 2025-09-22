@@ -168,6 +168,7 @@ export const NavigationPanelTreeNodeRenameModal = ({
         sideOffset: 36,
       }}
       iconPlaceholder={fallbackIcon}
+      inputTestId="rename-modal-input"
     >
       <div className={clsx(styles.itemRenameAnchor, className)} />
     </IconAndNameEditorMenu>

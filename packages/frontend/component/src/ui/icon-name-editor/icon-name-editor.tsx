@@ -24,6 +24,7 @@ export interface IconAndNameEditorContentProps extends IconEditorProps {
   name: string;
   namePlaceholder?: string;
   onNameChange?: (name: string) => void;
+  inputTestId?: string;
 }
 
 export interface IconAndNameEditorMenuProps
@@ -127,6 +128,7 @@ export const IconEditor = ({
 export const IconAndNameEditorContent = ({
   name,
   namePlaceholder,
+  inputTestId,
   onNameChange,
   ...iconEditorProps
 }: IconAndNameEditorContentProps) => {
@@ -145,6 +147,7 @@ export const IconAndNameEditorContent = ({
         className={styles.input}
         autoSelect
         autoFocus
+        data-testid={inputTestId}
       />
     </div>
   );
@@ -162,6 +165,7 @@ export const IconAndNameEditorMenu = ({
   contentOptions,
   iconPlaceholder,
   skipIfNotChanged = true,
+  inputTestId,
   ...menuProps
 }: IconAndNameEditorMenuProps) => {
   const [iconType, setIconType] = useState(initialIconType);
@@ -242,6 +246,7 @@ export const IconAndNameEditorMenu = ({
           iconPlaceholder={iconPlaceholder}
           onIconChange={handleIconChange}
           onNameChange={handleNameChange}
+          inputTestId={inputTestId}
         />
       }
     />
