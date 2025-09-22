@@ -41,6 +41,8 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "CopilotContextFile": return AffineGraphQL.Objects.CopilotContextFile
     case "CopilotHistories": return AffineGraphQL.Objects.CopilotHistories
     case "CopilotHistoriesTypeEdge": return AffineGraphQL.Objects.CopilotHistoriesTypeEdge
+    case "CopilotModelType": return AffineGraphQL.Objects.CopilotModelType
+    case "CopilotModelsType": return AffineGraphQL.Objects.CopilotModelsType
     case "CopilotPromptConfigType": return AffineGraphQL.Objects.CopilotPromptConfigType
     case "CopilotPromptMessageType": return AffineGraphQL.Objects.CopilotPromptMessageType
     case "CopilotPromptType": return AffineGraphQL.Objects.CopilotPromptType
