@@ -1113,6 +1113,18 @@
             "apiKey": "",
             "webhookKey": ""
           }
+        },
+        "revenuecat": {
+          "type": "object",
+          "description": "RevenueCat integration configs\n@default {\"enabled\":false,\"apiKey\":\"\",\"projectId\":\"\",\"webhookAuth\":\"\",\"environment\":\"production\",\"productMap\":{}}\n@link https://www.revenuecat.com/docs/",
+          "default": {
+            "enabled": false,
+            "apiKey": "",
+            "projectId": "",
+            "webhookAuth": "",
+            "environment": "production",
+            "productMap": {}
+          }
         }
       }
     },

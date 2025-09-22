@@ -403,6 +403,11 @@
       "type": "Object",
       "desc": "Stripe sdk options and credentials",
       "link": "https://docs.stripe.com/api"
+    },
+    "revenuecat": {
+      "type": "Object",
+      "desc": "RevenueCat integration configs",
+      "link": "https://www.revenuecat.com/docs/"
     }
   },
   "worker": {

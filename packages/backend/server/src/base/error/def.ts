@@ -640,7 +640,7 @@ export const USER_FRIENDLY_ERRORS = {
   managed_by_app_store_or_play: {
     type: 'action_forbidden',
     message:
-      'This subscription is managed by App Store or Google Play. Please manage it in the app store.',
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
   },
 
   // Copilot errors

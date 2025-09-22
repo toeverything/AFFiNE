@@ -1,5 +1,4 @@
-import type { RawBodyRequest } from '@nestjs/common';
-import { Controller, Headers, Logger, Post, Req } from '@nestjs/common';
+import { Body, Controller, Headers, Logger, Post } from '@nestjs/common';
 import { z } from 'zod';
 
 import { Config, EventBus } from '../../../base';
@@ -42,6 +41,7 @@ const RcEventSchema = z
 const RcWebhookPayloadSchema = z.object({ event: RcEventSchema }).passthrough();
 
 export type RcEvent = z.infer<typeof RcEventSchema>;
+type RcPayload = z.infer<typeof RcWebhookPayloadSchema>;
 
 @Controller('/api/revenuecat')
 export class RevenueCatWebhookController {
@@ -55,7 +55,7 @@ export class RevenueCatWebhookController {
   @Public()
   @Post('/webhook')
   async handleWebhook(
-    @Req() req: RawBodyRequest<Request>,
+    @Body() body: RcPayload,
     @Headers('authorization') authorization?: string
   ) {
     const { enabled, webhookAuth, environment } =
@@ -63,7 +63,7 @@ export class RevenueCatWebhookController {
     if (enabled) {
       if (webhookAuth && authorization === webhookAuth) {
         try {
-          const parsed = RcWebhookPayloadSchema.safeParse(await req.json());
+          const parsed = RcWebhookPayloadSchema.safeParse(body);
           if (parsed.success) {
             const event = parsed.data.event;
             const { id, app_user_id: appUserId, type } = event;

@@ -150,10 +150,10 @@ export class RevenueCatService {
                 sub.status === 'active' ||
                 sub.status === 'trialing',
               latestPurchaseDate: sub.starts_at
-                ? new Date(sub.starts_at)
+                ? new Date(sub.starts_at * 1000)
                 : null,
               expirationDate: sub.current_period_ends_at
-                ? new Date(sub.current_period_ends_at)
+                ? new Date(sub.current_period_ends_at * 1000)
                 : null,
               productId: product.store_identifier,
               store: sub.store ?? product.app.type,

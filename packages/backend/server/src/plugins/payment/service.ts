@@ -328,6 +328,10 @@ export class SubscriptionService {
       throw new SubscriptionNotExists({ plan: identity.plan });
     }
 
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
+    }
+
     if (!subscription.stripeSubscriptionId) {
       throw new CantUpdateOnetimePaymentSubscription();
     }

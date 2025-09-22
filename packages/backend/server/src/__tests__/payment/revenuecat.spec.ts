@@ -183,6 +183,7 @@ test('should standardize RC subscriber response and upsert subscription with obs
     appUserId: user.id,
     event: {
       id: 'evt_1',
+      environment: 'PRODUCTION',
       app_id: 'app.affine.pro',
       type: 'INITIAL_PURCHASE',
       store: 'app_store',

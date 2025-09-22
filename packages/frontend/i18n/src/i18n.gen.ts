@@ -8720,6 +8720,10 @@ export function useAFFiNEI18N(): {
       */
     ["error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION"](): string;
     /**
+      * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
+      */
+    ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
+    /**
       * `Copilot session not found.`
       */
     ["error.COPILOT_SESSION_NOT_FOUND"](): string;
