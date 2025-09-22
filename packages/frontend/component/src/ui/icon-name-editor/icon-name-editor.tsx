@@ -24,6 +24,7 @@ export interface IconAndNameEditorContentProps extends IconEditorProps {
   name: string;
   namePlaceholder?: string;
   onNameChange?: (name: string) => void;
+  onEnter?: () => void;
   inputTestId?: string;
 }
 
@@ -130,6 +131,7 @@ export const IconAndNameEditorContent = ({
   namePlaceholder,
   inputTestId,
   onNameChange,
+  onEnter,
   ...iconEditorProps
 }: IconAndNameEditorContentProps) => {
   return (
@@ -144,6 +146,7 @@ export const IconAndNameEditorContent = ({
         placeholder={namePlaceholder}
         value={name}
         onChange={onNameChange}
+        onEnter={onEnter}
         className={styles.input}
         autoSelect
         autoFocus
@@ -247,6 +250,10 @@ export const IconAndNameEditorMenu = ({
           onIconChange={handleIconChange}
           onNameChange={handleNameChange}
           inputTestId={inputTestId}
+          onEnter={() => {
+            commit();
+            onOpenChange?.(false);
+          }}
         />
       }
     />
