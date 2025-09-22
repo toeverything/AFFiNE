@@ -108,11 +108,8 @@ export class UserSubscriptionManager extends SubscriptionManager {
       plan: lookupKey.plan,
       userId: user.id,
     });
-    if (active) {
-      if (active.provider === 'revenuecat') {
-        throw new ManagedByAppStoreOrPlay();
-      }
-      throw new SubscriptionAlreadyExists({ plan: lookupKey.plan });
+    if (active?.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     const subscription = await this.getSubscription({
