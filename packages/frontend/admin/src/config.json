@@ -89,6 +89,11 @@
     }
   },
   "mailer": {
+    "SMTP.name": {
+      "type": "String",
+      "desc": "Name of the email server (e.g. your domain name)",
+      "env": "MAILER_SERVERNAME"
+    },
     "SMTP.host": {
       "type": "String",
       "desc": "Host of the email server (e.g. smtp.gmail.com)",
@@ -122,6 +127,10 @@
     "fallbackDomains": {
       "type": "Array",
       "desc": "The emails from these domains are always sent using the fallback SMTP server."
+    },
+    "fallbackSMTP.name": {
+      "type": "String",
+      "desc": "Name of the fallback email server (e.g. your domain name)"
     },
     "fallbackSMTP.host": {
       "type": "String",

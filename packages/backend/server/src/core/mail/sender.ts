@@ -20,6 +20,7 @@ function configToSMTPOptions(
   config: AppConfig['mailer']['SMTP']
 ): SMTPTransport.Options {
   return {
+    name: config.name,
     host: config.host,
     port: config.port,
     tls: {
