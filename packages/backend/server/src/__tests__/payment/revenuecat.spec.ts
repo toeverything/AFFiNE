@@ -42,7 +42,10 @@ type Ctx = {
 
   mockSub: (subs: Subscription[]) => Sinon.SinonStub;
   mockSubSeq: (sequences: Subscription[][]) => Sinon.SinonStub;
-  triggerWebhook: (userId: string, event: any) => Promise<void>;
+  triggerWebhook: (
+    userId: string,
+    event: Omit<RcEvent, 'app_id' | 'environment'>
+  ) => Promise<void>;
   collectEvents: () => {
     activatedCount: number;
     canceledCount: number;
@@ -103,8 +106,15 @@ test.beforeEach(async t => {
     });
     return stub;
   };
-  t.context.triggerWebhook = async (appUserId: string, event: RcEvent) => {
-    await webhook.onWebhook({ appUserId, event });
+  t.context.triggerWebhook = async (appUserId, event) => {
+    await webhook.onWebhook({
+      appUserId,
+      event: {
+        ...event,
+        app_id: 'app.affine.pro',
+        environment: 'SANDBOX',
+      } as RcEvent,
+    });
   };
 
   t.context.collectEvents = () => {
@@ -761,7 +771,7 @@ test('should treat refund as early expiration and revoke immediately', async t =
 
   await triggerWebhook(user.id, {
     id: 'evt_refund',
-    type: 'REFUND',
+    type: 'CANCELLATION',
     store: 'app_store',
   });
 
