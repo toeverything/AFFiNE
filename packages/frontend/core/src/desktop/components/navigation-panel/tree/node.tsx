@@ -142,7 +142,7 @@ export const NavigationPanelTreeNodeRenameModal = ({
   );
 
   const onIconChange = useCallback(
-    (type: ExplorerIconType, icon: string) => {
+    (type?: ExplorerIconType, icon?: string) => {
       if (!explorerIconConfig) return;
       explorerIconService.setIcon({
         where: explorerIconConfig.where,

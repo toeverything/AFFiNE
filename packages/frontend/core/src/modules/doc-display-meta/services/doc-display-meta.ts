@@ -27,7 +27,6 @@ import dayjs from 'dayjs';
 
 import type { DocRecord, DocsService } from '../../doc';
 import type { ExplorerIconService } from '../../explorer-icon/services/explorer-icon';
-import type { FeatureFlagService } from '../../feature-flag';
 import type { I18nService } from '../../i18n';
 import type { JournalService } from '../../journal';
 
@@ -87,7 +86,6 @@ export class DocDisplayMetaService extends Service {
   constructor(
     private readonly journalService: JournalService,
     private readonly docsService: DocsService,
-    private readonly featureFlagService: FeatureFlagService,
     private readonly i18nService: I18nService,
     private readonly explorerIconService: ExplorerIconService
   ) {
