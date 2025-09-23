@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder,SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
@@ -61,14 +60,18 @@ export async function run() {
   app.useWebSocketAdapter(adapter);
 
   if (env.dev) {
+    const { SwaggerModule, DocumentBuilder } = await import('@nestjs/swagger');
     // Swagger API Docs
     const docConfig = new DocumentBuilder()
       .setTitle('AFFiNE API')
-      .setDescription(`AFFiNE ${env.version} Server`)
+      .setDescription(`AFFiNE Server ${env.version} API documentation`)
       .setVersion(`${env.version}`)
       .build();
     const documentFactory = () => SwaggerModule.createDocument(app, docConfig);
-    SwaggerModule.setup('api_docs', app, documentFactory);
+    SwaggerModule.setup('/api/docs', app, documentFactory, {
+      useGlobalPrefix: true,
+      swaggerOptions: { persistAuthorization: true },
+    });
   }
 
   const url = app.get(URLHelper);
