@@ -20,6 +20,10 @@ struct SKUnitPricingOption: Identifiable, Equatable {
   var primaryTitle: String
   var secondaryTitle: String
 
+  // product identifiers
+  var productIdentifier: String
+  var revenueCatIdentifier: String
+
   init(
     id: UUID = UUID(),
     price: String,
@@ -27,7 +31,9 @@ struct SKUnitPricingOption: Identifiable, Equatable {
     badge: String? = nil,
     isDefaultSelected: Bool = false,
     primaryTitle: String,
-    secondaryTitle: String
+    secondaryTitle: String,
+    productIdentifier: String,
+    revenueCatIdentifier: String
   ) {
     self.id = id
     self.price = price
@@ -36,5 +42,7 @@ struct SKUnitPricingOption: Identifiable, Equatable {
     self.isDefaultSelected = isDefaultSelected
     self.primaryTitle = primaryTitle
     self.secondaryTitle = secondaryTitle
+    self.productIdentifier = productIdentifier
+    self.revenueCatIdentifier = revenueCatIdentifier
   }
 }

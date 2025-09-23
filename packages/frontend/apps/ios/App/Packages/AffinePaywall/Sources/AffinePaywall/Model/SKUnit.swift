@@ -34,7 +34,6 @@ extension SKUnit {
   static let allUnits: [SKUnit] = [
     proUnits,
     aiUnits,
-    believerUnits,
   ].flatMap(\.self)
 
   static func units(for category: SKUnitCategory) -> [SKUnit] {

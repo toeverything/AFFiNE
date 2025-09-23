@@ -12,7 +12,6 @@ enum SKUnitCategory: Int, CaseIterable, Equatable, Identifiable {
 
   case pro
   case ai
-  case believer
 }
 
 extension SKUnitCategory {
@@ -20,7 +19,6 @@ extension SKUnitCategory {
     switch self {
     case .pro: "AFFINE.Pro"
     case .ai: "AI"
-    case .believer: "Believer"
     }
   }
 }

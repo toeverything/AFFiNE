@@ -19,7 +19,9 @@ extension SKUnit {
           description: "",
           isDefaultSelected: true,
           primaryTitle: "$8.9 per month",
-          secondaryTitle: "billed annually"
+          secondaryTitle: "billed annually",
+          productIdentifier: "app.affine.pro.ai.Annual",
+          revenueCatIdentifier: "app.affine.pro.ai.Annual"
         ),
       ]
     ),

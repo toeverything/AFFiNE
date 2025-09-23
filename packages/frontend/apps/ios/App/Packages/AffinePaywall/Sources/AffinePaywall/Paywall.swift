@@ -1,12 +1,12 @@
 //
-//  File.swift
+//  Paywall.swift
 //  AffinePaywall
 //
 //  Created by qaq on 9/18/25.
 //
 
-import UIKit
 import SwiftUI
+import UIKit
 
 public enum Paywall {
   @MainActor

@@ -61,7 +61,6 @@ struct CategorySelectionView: View {
   return VStack(alignment: .leading, spacing: 12) {
     CategorySelectionView(selectedTab: .pro, onSelect: { _ in })
     CategorySelectionView(selectedTab: .ai, onSelect: { _ in })
-    CategorySelectionView(selectedTab: .believer, onSelect: { _ in })
     Divider()
     PreviewWrapper()
   }

@@ -13,7 +13,7 @@ struct HeadlineView: View {
   var body: some View {
     VStack(spacing: 8) {
       Text(viewModel.selectedUnit.primaryText)
-        .font(.system(size: 24, weight: .heavy))
+        .font(.system(size: 24, weight: .semibold))
         .contentTransition(.numericText())
         .animation(.spring.speed(2), value: viewModel.category)
         .padding(.top, 8)

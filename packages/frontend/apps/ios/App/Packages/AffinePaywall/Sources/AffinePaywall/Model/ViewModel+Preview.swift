@@ -20,10 +20,4 @@ extension ViewModel {
     vm.select(category: .ai)
     return vm
   }()
-
-  static let vmPreviewForBeliever: ViewModel = {
-    let vm = ViewModel()
-    vm.select(category: .believer)
-    return vm
-  }()
 }

@@ -15,14 +15,16 @@ struct SKUnitProDetailView: View {
 
   var body: some View {
     VStack(spacing: 24) {
-      Picker("Plan", selection: $selection) {
-        ForEach(SKUnitSubcategoryProPlan.allCases) { plan in
-          Text(plan.title).tag(plan)
+      if SKUnitSubcategoryProPlan.allCases.count > 1 {
+        Picker("Plan", selection: $selection) {
+          ForEach(SKUnitSubcategoryProPlan.allCases) { plan in
+            Text(plan.title).tag(plan)
+          }
         }
-      }
-      .pickerStyle(.segmented)
-      .onChange(of: selection) { _ in
-        viewModel.select(subcategory: selection)
+        .pickerStyle(.segmented)
+        .onChange(of: selection) { _ in
+          viewModel.select(subcategory: selection)
+        }
       }
 
       HeadlineView(viewModel: viewModel)

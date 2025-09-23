@@ -13,6 +13,8 @@ struct AffinePaywallPageView: View {
 
   @Environment(\.dismiss) var dismiss
 
+  @State private var showCloseButton = false
+
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       HStack {
@@ -28,6 +30,9 @@ struct AffinePaywallPageView: View {
         }
         .buttonStyle(.plain)
         .foregroundColor(AffineColors.textSecondary.color)
+        .disabled(!showCloseButton)
+        .opacity(showCloseButton ? 1 : 0)
+        .animation(.spring, value: showCloseButton)
       }
       ZStack(alignment: .topLeading) {
         Spacer()
@@ -51,6 +56,11 @@ struct AffinePaywallPageView: View {
     .background(
       AffineColors.layerBackgroundSecondary.color
     )
+    .onAppear {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        showCloseButton = true
+      }
+    }
   }
 
   @ViewBuilder
@@ -60,8 +70,6 @@ struct AffinePaywallPageView: View {
       SKUnitProDetailView(viewModel: viewModel)
     case .ai:
       SKUnitIntelligentDetailView(viewModel: viewModel)
-    case .believer:
-      SKUnitBelieverDetailView(viewModel: viewModel)
     }
   }
 }

@@ -20,7 +20,9 @@ extension SKUnit {
           description: "Monthly",
           isDefaultSelected: false,
           primaryTitle: "Upgrade for $7.99/month",
-          secondaryTitle: ""
+          secondaryTitle: "",
+          productIdentifier: "app.affine.pro.Monthly",
+          revenueCatIdentifier: "app.affine.pro.Monthly"
         ),
         SKUnitPricingOption(
           price: "$6.75",
@@ -28,53 +30,9 @@ extension SKUnit {
           badge: "Save 15%",
           isDefaultSelected: true,
           primaryTitle: "Upgrade for $6.75/month",
-          secondaryTitle: ""
-        ),
-      ]
-    ),
-    SKUnit(
-      category: SKUnitCategory.pro,
-      subcategory: SKUnitSubcategoryProPlan.team,
-      primaryText: "Pro team",
-      secondaryText: "Best for scalable teams.",
-      pricing: [
-        SKUnitPricingOption(
-          price: "$12",
-          description: "Per seat monthly",
-          isDefaultSelected: false,
-          primaryTitle: "Upgrade for $12/month",
-          secondaryTitle: ""
-        ),
-        SKUnitPricingOption(
-          price: "$10",
-          description: "Annual",
-          badge: "Save 15%",
-          isDefaultSelected: true,
-          primaryTitle: "Upgrade for $10/month",
-          secondaryTitle: ""
-        ),
-      ]
-    ),
-    SKUnit(
-      category: SKUnitCategory.pro,
-      subcategory: SKUnitSubcategoryProPlan.selfHost,
-      primaryText: "Self Hosted team",
-      secondaryText: "Best for scalable teams.",
-      pricing: [
-        SKUnitPricingOption(
-          price: "$12",
-          description: "Per seat monthly",
-          isDefaultSelected: false,
-          primaryTitle: "Upgrade for $12/month",
-          secondaryTitle: ""
-        ),
-        SKUnitPricingOption(
-          price: "$10",
-          description: "Annual",
-          badge: "Save 15%",
-          isDefaultSelected: true,
-          primaryTitle: "Upgrade for $10/month",
-          secondaryTitle: ""
+          secondaryTitle: "",
+          productIdentifier: "app.affine.pro.Annual",
+          revenueCatIdentifier: "app.affine.pro.Annual"
         ),
       ]
     ),
