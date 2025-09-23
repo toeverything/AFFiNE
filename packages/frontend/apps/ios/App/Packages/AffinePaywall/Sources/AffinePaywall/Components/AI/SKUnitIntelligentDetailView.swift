@@ -10,11 +10,14 @@ import SwiftUI
 
 struct SKUnitIntelligentDetailView: View {
   @StateObject var viewModel: ViewModel
+
+  @State var detailIndexInSwitching: UUID? = nil
   @State var detailIndex: Int = 0 {
     didSet { lastInteractionDate = Date() }
   }
 
   @State var lastInteractionDate: Date = .init()
+  @State var scrollOffset: CGPoint = .zero
 
   let timer = Timer
     .publish(every: 5, on: .main, in: .common)
@@ -28,15 +31,11 @@ struct SKUnitIntelligentDetailView: View {
         let height = r.size.height
         let width = r.size.width
         ScrollViewReader { scrollView in
-          ScrollView(.horizontal, showsIndicators: false) {
-            GeometryReader { geometry in
-              Color.clear
-                .preference(
-                  key: ViewOffsetKey.self,
-                  value: geometry.frame(in: .named("scrollView")).origin
-                )
-            }
-            .frame(width: 0, height: 0)
+          OffsetObservingScrollView(
+            axes: .horizontal,
+            showsIndicators: false,
+            offset: $scrollOffset
+          ) {
             HStack(spacing: 0) {
               ForEach(0 ..< Self.features.count, id: \.self) { featureIndex in
                 let feature = Self.features[featureIndex]
@@ -47,19 +46,20 @@ struct SKUnitIntelligentDetailView: View {
               }
             }
           }
-          .coordinateSpace(name: "scrollView")
-          .onPreferenceChange(ViewOffsetKey.self) { newValue in
-            let page = Int(round(-newValue.x / width))
-            guard page != detailIndex else { return }
-            guard page >= 0, page < Self.features.count else { return }
-            detailIndex = page
-          }
           .frame(height: height)
           .onChange(of: detailIndex) { newValue in
-            withAnimation(.spring) {
+            withAnimation(.spring.speed(1.5)) {
               scrollView.scrollTo(newValue)
             }
           }
+        }
+        .onChange(of: scrollOffset) { _ in
+          guard detailIndexInSwitching == nil else { return }
+          let offset = scrollOffset.x
+          let newIndex = Int((offset + width / 2) / width)
+          if newIndex != detailIndex,
+             (0 ..< Self.features.count).contains(newIndex)
+          { detailIndex = newIndex }
         }
       }
 
@@ -68,6 +68,12 @@ struct SKUnitIntelligentDetailView: View {
         total: Self.features.count
       ) { index in
         detailIndex = index
+        let token = UUID()
+        detailIndexInSwitching = token
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          guard detailIndexInSwitching == token else { return }
+          detailIndexInSwitching = nil
+        }
       }
     }
     .onReceive(timer) { _ in
