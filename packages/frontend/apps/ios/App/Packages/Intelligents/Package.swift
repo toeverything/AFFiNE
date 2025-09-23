@@ -10,7 +10,8 @@ let package = Package(
     .iOS(.v16),
   ],
   products: [
-    .library(name: "Intelligents", type: .dynamic, targets: ["Intelligents"]),
+    // static linking is required or GraphQL (ApolloAPI) will crash
+    .library(name: "Intelligents", type: .static, targets: ["Intelligents"]),
   ],
   dependencies: [
     .package(path: "../AffineGraphQL"),
