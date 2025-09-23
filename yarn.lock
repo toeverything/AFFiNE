@@ -312,7 +312,7 @@ __metadata:
     "@atlaskit/pragmatic-drag-and-drop": "npm:^1.4.0"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.0.3"
     "@blocksuite/affine": "workspace:*"
-    "@blocksuite/icons": "npm:^2.2.12"
+    "@blocksuite/icons": "npm:^2.2.15"
     "@chromatic-com/storybook": "npm:^4.0.0"
     "@emoji-mart/data": "npm:^1.2.1"
     "@emoji-mart/react": "npm:^1.1.1"
@@ -348,6 +348,7 @@ __metadata:
     clsx: "npm:^2.1.1"
     dayjs: "npm:^1.11.13"
     emoji-mart: "npm:^5.6.0"
+    emojibase-data: "npm:^16.0.3"
     foxact: "npm:^0.2.45"
     jotai: "npm:^2.10.3"
     lit: "npm:^3.2.1"
@@ -4333,7 +4334,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@blocksuite/icons@npm:^2.2.12, @blocksuite/icons@npm:^2.2.13":
+"@blocksuite/icons@npm:^2.2.12, @blocksuite/icons@npm:^2.2.13, @blocksuite/icons@npm:^2.2.15":
   version: 2.2.15
   resolution: "@blocksuite/icons@npm:2.2.15"
   peerDependencies:
@@ -20947,6 +20948,15 @@ __metadata:
   version: 9.2.2
   resolution: "emoji-regex@npm:9.2.2"
   checksum: 10/915acf859cea7131dac1b2b5c9c8e35c4849e325a1d114c30adb8cd615970f6dca0e27f64f3a4949d7d6ed86ecd79a1c5c63f02e697513cddd7b5835c90948b8
+  languageName: node
+  linkType: hard
+
+"emojibase-data@npm:^16.0.3":
+  version: 16.0.3
+  resolution: "emojibase-data@npm:16.0.3"
+  peerDependencies:
+    emojibase: "*"
+  checksum: 10/d9cd4b961ea5bca483b857bc84e670e77c3dcbeac41ce3b672086a9256a43bc027b34d4adc9f9a2be85e2b76c85a2b5e91280b6518335432bdbd4c671eeba1ec
   languageName: node
   linkType: hard
 
