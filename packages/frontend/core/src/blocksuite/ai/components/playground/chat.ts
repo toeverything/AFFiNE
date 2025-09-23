@@ -90,7 +90,7 @@ export class PlaygroundChat extends SignalWatcher(
 
       ai-chat-messages {
         flex: 1;
-        overflow-y: hidden;
+        overflow-y: auto;
       }
 
       .chat-panel-hints {
@@ -211,6 +211,10 @@ export class PlaygroundChat extends SignalWatcher(
     });
   }
 
+  get showActions() {
+    return false;
+  }
+
   private readonly _initPanel = async () => {
     const userId = (await AIProvider.userInfo)?.id;
     if (!userId) return;
@@ -240,7 +244,7 @@ export class PlaygroundChat extends SignalWatcher(
             this.doc.id
           )
         : Promise.resolve([]),
-      this.doc.id
+      this.doc.id && this.showActions
         ? AIProvider.histories.actions(this.doc.workspace.id, this.doc.id)
         : Promise.resolve([]),
     ]);
@@ -369,6 +373,7 @@ export class PlaygroundChat extends SignalWatcher(
         .notificationService=${this.notificationService}
         .aiToolsConfigService=${this.aiToolsConfigService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
       ></ai-chat-composer>
     </div>`;
   }

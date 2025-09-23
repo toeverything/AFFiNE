@@ -24,6 +24,6 @@ export function useAsyncCallback<T extends any[]>(
     (...args: any) => {
       callback(...args).catch(e => handleAsyncError(e));
     },
-    [...deps] // eslint-disable-line react-hooks/exhaustive-deps
+    [callback, handleAsyncError, ...deps] // eslint-disable-line react-hooks/exhaustive-deps
   );
 }

@@ -57,7 +57,7 @@ type Configure = {
   ai: (enable?: boolean, framework?: FrameworkProvider) => Configure;
   electron: (framework?: FrameworkProvider) => Configure;
   linkPreview: (framework?: FrameworkProvider) => Configure;
-  codeBlockHtmlPreview: (framework?: FrameworkProvider) => Configure;
+  codeBlockPreview: (framework?: FrameworkProvider) => Configure;
   comment: (
     enableComment?: boolean,
     framework?: FrameworkProvider
@@ -122,7 +122,7 @@ class ViewProvider {
       ai: this._configureAI,
       electron: this._configureElectron,
       linkPreview: this._configureLinkPreview,
-      codeBlockHtmlPreview: this._configureCodeBlockHtmlPreview,
+      codeBlockPreview: this._configureCodeBlockHtmlPreview,
       comment: this._configureComment,
       value: this._manager,
     };
@@ -145,7 +145,7 @@ class ViewProvider {
       .ai()
       .electron()
       .linkPreview()
-      .codeBlockHtmlPreview()
+      .codeBlockPreview()
       .comment();
 
     return this.config;

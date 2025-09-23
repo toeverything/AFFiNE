@@ -55,7 +55,7 @@ export class ContextSession implements AsyncDisposable {
     return this.config.docs.map(d => ({ ...d }));
   }
 
-  get files() {
+  get files(): Required<ContextFile>[] {
     return this.config.files.map(f => this.fulfillFile(f));
   }
 
@@ -133,6 +133,36 @@ export class ContextSession implements AsyncDisposable {
     this.config.blobs.push(record);
     await this.save();
     return record;
+  }
+
+  async getBlobMetadata() {
+    const blobIds = this.blobs.map(b => b.id);
+    const blobs = await this.models.blob.list(this.config.workspaceId, {
+      where: { key: { in: blobIds } },
+      select: { key: true, mime: true },
+    });
+    const blobChunkSizes = await this.models.copilotWorkspace.getBlobChunkSizes(
+      this.config.workspaceId,
+      blobIds
+    );
+    return blobs
+      .filter(b => !!blobChunkSizes.get(b.key))
+      .map(b => ({
+        id: b.key,
+        mimeType: b.mime,
+        chunkSize: blobChunkSizes.get(b.key),
+      }));
+  }
+
+  async getBlobContent(
+    blobId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    return this.models.copilotWorkspace.getBlobContent(
+      this.config.workspaceId,
+      blobId,
+      chunk
+    );
   }
 
   async removeBlobRecord(blobId: string): Promise<boolean> {

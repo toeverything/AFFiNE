@@ -1,6 +1,5 @@
 import Combine
 import SnapKit
-import Then
 import UIKit
 
 class InputBox: UIView {

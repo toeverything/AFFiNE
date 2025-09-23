@@ -108,7 +108,10 @@ export function omitChip(chips: ChatChip[], chip: ChatChip) {
       return !isCollectionChip(item) || item.collectionId !== chip.collectionId;
     }
     if (isSelectedContextChip(chip)) {
-      return !isSelectedContextChip(chip);
+      return !isSelectedContextChip(item) || item.uuid !== chip.uuid;
+    }
+    if (isAttachmentChip(chip)) {
+      return !isAttachmentChip(item) || item.sourceId !== chip.sourceId;
     }
     return true;
   });

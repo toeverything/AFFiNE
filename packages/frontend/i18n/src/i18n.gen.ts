@@ -8315,6 +8315,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.context-menu.cut"](): string;
     /**
+      * `Add icon`
+      */
+    ["com.affine.docIconPicker.placeholder"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;

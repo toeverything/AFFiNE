@@ -263,6 +263,8 @@ export interface Copilot {
   contexts: Array<CopilotContext>;
   /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
+  /** List available models for a prompt, with human-readable names */
+  models: CopilotModelsType;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
   /** Get the session by id */
@@ -294,6 +296,10 @@ export interface CopilotContextsArgs {
 export interface CopilotHistoriesArgs {
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
+}
+
+export interface CopilotModelsArgs {
+  promptName: Scalars['String']['input'];
 }
 
 export interface CopilotSessionArgs {
@@ -449,6 +455,19 @@ export interface CopilotInvalidContextDataType {
 export interface CopilotMessageNotFoundDataType {
   __typename?: 'CopilotMessageNotFoundDataType';
   messageId: Scalars['String']['output'];
+}
+
+export interface CopilotModelType {
+  __typename?: 'CopilotModelType';
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
+export interface CopilotModelsType {
+  __typename?: 'CopilotModelsType';
+  defaultModel: Scalars['String']['output'];
+  optionalModels: Array<CopilotModelType>;
+  proModels: Array<CopilotModelType>;
 }
 
 export interface CopilotPromptConfigInput {
@@ -4343,6 +4362,34 @@ export type CreateCopilotMessageMutation = {
   createCopilotMessage: string;
 };
 
+export type GetPromptModelsQueryVariables = Exact<{
+  promptName: Scalars['String']['input'];
+}>;
+
+export type GetPromptModelsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      models: {
+        __typename?: 'CopilotModelsType';
+        defaultModel: string;
+        optionalModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+        proModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+      };
+    };
+  } | null;
+};
+
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CopilotQuotaQuery = {
@@ -6379,6 +6426,11 @@ export type Queries =
       name: 'getAudioTranscriptionQuery';
       variables: GetAudioTranscriptionQueryVariables;
       response: GetAudioTranscriptionQuery;
+    }
+  | {
+      name: 'getPromptModelsQuery';
+      variables: GetPromptModelsQueryVariables;
+      response: GetPromptModelsQuery;
     }
   | {
       name: 'copilotQuotaQuery';

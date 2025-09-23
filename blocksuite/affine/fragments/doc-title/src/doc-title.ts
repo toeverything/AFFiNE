@@ -19,6 +19,7 @@ const DOC_BLOCK_CHILD_PADDING = 24;
 
 export class DocTitle extends WithDisposable(ShadowlessElement) {
   static override styles = css`
+    .doc-icon-container,
     .doc-title-container {
       box-sizing: border-box;
       font-family: var(--affine-font-family);
@@ -49,6 +50,7 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
 
     /* Extra small devices (phones, 640px and down) */
     @container viewport (width <= 640px) {
+      .doc-icon-container,
       .doc-title-container {
         padding-left: ${DOC_BLOCK_CHILD_PADDING}px;
         padding-right: ${DOC_BLOCK_CHILD_PADDING}px;
