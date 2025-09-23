@@ -13,6 +13,7 @@ struct AffinePaywallPageView: View {
 
   @Environment(\.dismiss) var dismiss
 
+  @State private var presentAnimation = false
   @State private var showCloseButton = false
 
   var body: some View {
@@ -57,14 +58,20 @@ struct AffinePaywallPageView: View {
         .animation(.spring.speed(2), value: viewModel.selectedPricingIdentifier)
     }
     .padding()
-    .background(
-      AffineColors.layerBackgroundSecondary.color
-    )
+    .opacity(presentAnimation ? 1 : 0)
+    .scaleEffect(presentAnimation ? 1 : 0.95, anchor: .top)
+    .animation(.spring, value: presentAnimation)
     .onAppear {
+      presentAnimation = true
       DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
         showCloseButton = true
       }
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(
+      AffineColors.layerBackgroundSecondary.color
+        .ignoresSafeArea()
+    )
   }
 
   @ViewBuilder

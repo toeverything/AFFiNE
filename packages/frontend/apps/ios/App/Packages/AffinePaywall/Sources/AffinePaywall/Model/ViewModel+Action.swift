@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 extension ViewModel {
   func purchase() {
@@ -13,6 +14,16 @@ extension ViewModel {
     let option = selectedPricingOption
 
     print(#function, unit, option)
+
+    #if DEBUG
+      let alert = UIAlertController(
+        title: "Purchase",
+        message: "You have selected \(unit.primaryText) - \(option.price).",
+        preferredStyle: .alert
+      )
+      alert.addAction(.init(title: "OK", style: .default))
+      associatedController?.present(alert, animated: true)
+    #endif
   }
 
   func restore() {
@@ -20,6 +31,16 @@ extension ViewModel {
     let option = selectedPricingOption
 
     print(#function, unit, option)
+
+    #if DEBUG
+      let alert = UIAlertController(
+        title: "Restore",
+        message: "You have selected \(unit.primaryText) - \(option.price).",
+        preferredStyle: .alert
+      )
+      alert.addAction(.init(title: "OK", style: .default))
+      associatedController?.present(alert, animated: true)
+    #endif
   }
 
   func dismiss() {

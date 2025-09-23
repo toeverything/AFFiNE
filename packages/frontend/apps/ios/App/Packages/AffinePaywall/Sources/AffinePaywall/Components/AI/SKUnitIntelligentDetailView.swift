@@ -48,7 +48,7 @@ struct SKUnitIntelligentDetailView: View {
           }
           .frame(height: height)
           .onChange(of: detailIndex) { newValue in
-            withAnimation(.spring.speed(1.5)) {
+            withAnimation(.spring) {
               scrollView.scrollTo(newValue)
             }
           }
