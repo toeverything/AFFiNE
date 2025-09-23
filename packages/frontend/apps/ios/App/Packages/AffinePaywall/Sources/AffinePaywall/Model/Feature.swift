@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Feature: Identifiable, Equatable {
+struct Feature: Identifiable, Equatable, Hashable {
   var id = UUID()
   var text: String
   var isHighlighted: Bool // For text like "Everything in AFFINE Pro"

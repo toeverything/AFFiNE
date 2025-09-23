@@ -20,15 +20,14 @@ class ViewModel: ObservableObject {
     subcategory: SKUnitSubcategoryProPlan.default
   )!.pricing.first { $0.isDefaultSelected }!.id
 
-  private(set) weak
-  var associatedController: UIViewController? = nil
-  
+  private(set) weak var associatedController: UIViewController?
+
   init() {}
 
   func bind(controller: UIViewController) {
     associatedController = controller
   }
-  
+
   func select(category: SKUnitCategory) {
     self.category = category
     let units = SKUnit.units(for: category)
