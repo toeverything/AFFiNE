@@ -55,6 +55,7 @@ struct SKUnitIntelligentDetailView: View {
         }
         .onChange(of: scrollOffset) { _ in
           guard detailIndexInSwitching == nil else { return }
+          guard width > 0 else { return }
           let offset = scrollOffset.x
           let newIndex = Int((offset + width / 2) / width)
           if newIndex != detailIndex,
