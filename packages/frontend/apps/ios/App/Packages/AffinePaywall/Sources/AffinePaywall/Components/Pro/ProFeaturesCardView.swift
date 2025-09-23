@@ -49,17 +49,17 @@ struct ProFeaturesCardView: View {
     .background(Color.gray.ignoresSafeArea())
 }
 
-#Preview("Pro team") {
-  ProFeaturesCardView(
-    features: SKUnitSubcategoryProPlan.team.features,
-    headerText: SKUnitSubcategoryProPlan.team.headerText
-  )
-  .padding()
-  .background(Color.gray.ignoresSafeArea())
-}
-
-#Preview("Self Hosted") {
-  ProFeaturesCardView(features: SKUnitSubcategoryProPlan.selfHost.features, headerText: SKUnitSubcategoryProPlan.selfHost.headerText)
-    .padding()
-    .background(Color.gray.ignoresSafeArea())
-}
+// #Preview("Pro team") {
+//  ProFeaturesCardView(
+//    features: SKUnitSubcategoryProPlan.team.features,
+//    headerText: SKUnitSubcategoryProPlan.team.headerText
+//  )
+//  .padding()
+//  .background(Color.gray.ignoresSafeArea())
+// }
+//
+// #Preview("Self Hosted") {
+//  ProFeaturesCardView(features: SKUnitSubcategoryProPlan.selfHost.features, headerText: SKUnitSubcategoryProPlan.selfHost.headerText)
+//    .padding()
+//    .background(Color.gray.ignoresSafeArea())
+// }

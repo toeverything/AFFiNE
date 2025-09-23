@@ -74,4 +74,29 @@ class AFFiNEViewController: CAPBridgeViewController {
     super.viewDidDisappear(animated)
     intelligentsButtonTimer?.invalidate()
   }
+
+  #if DEBUG
+  override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+    if motion == .motionShake {
+      showDebugMenu()
+    }
+  }
+  #endif
 }
+
+#if DEBUG
+import AffinePaywall
+extension AFFiNEViewController {
+  @objc private func showDebugMenu() {
+    let alert = UIAlertController(title: "Debug Menu", message: nil, preferredStyle: .alert)
+    alert.addAction(UIAlertAction(title: "Show Paywall - Pro", style: .default) { _ in
+      Paywall.presentWall(toController: self, type: "Pro")
+    })
+    alert.addAction(UIAlertAction(title: "Show Paywall - AI", style: .default) { _ in
+      Paywall.presentWall(toController: self, type: "AI")
+    })
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    present(alert, animated: true)
+  }
+}
+#endif

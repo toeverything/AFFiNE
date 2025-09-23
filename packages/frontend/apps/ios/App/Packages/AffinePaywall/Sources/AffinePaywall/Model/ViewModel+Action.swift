@@ -23,9 +23,7 @@ extension ViewModel {
   }
 
   func dismiss() {
-    let unit = selectedUnit
-    let option = selectedPricingOption
-
-    print(#function, unit, option)
+    print(#function)
+    associatedController?.dismiss(animated: true)
   }
 }

@@ -26,12 +26,16 @@ struct AffinePaywallPageView: View {
         Button {
           viewModel.dismiss()
         } label: {
-          Image(AffineIcons.close.rawValue)
+          AffineIcons.close.image
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
+            .foregroundStyle(.primary)
         }
         .buttonStyle(.plain)
         .foregroundColor(AffineColors.textSecondary.color)
-        .disabled(!showCloseButton)
         .opacity(showCloseButton ? 1 : 0)
+        .disabled(!showCloseButton)
         .animation(.spring, value: showCloseButton)
       }
       ZStack(alignment: .topLeading) {

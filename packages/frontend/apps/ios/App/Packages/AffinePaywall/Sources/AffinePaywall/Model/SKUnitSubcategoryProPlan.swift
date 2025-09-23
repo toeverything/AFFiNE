@@ -9,14 +9,10 @@ import Foundation
 
 enum SKUnitSubcategoryProPlan: String, SKUnitSubcategorizable {
   case `default`
-  case team
-  case selfHost
 
   var title: String {
     switch self {
     case .default: "Pro"
-    case .team: "Pro team"
-    case .selfHost: "Self Hosted"
     }
   }
 
@@ -24,10 +20,6 @@ enum SKUnitSubcategoryProPlan: String, SKUnitSubcategorizable {
     switch self {
     case .default:
       "For family and small teams."
-    case .team:
-      "Best for scalable teams."
-    case .selfHost:
-      "Best for scalable teams."
     }
   }
 }
@@ -37,10 +29,6 @@ extension SKUnitSubcategoryProPlan {
     switch self {
     case .default:
       "Include in Pro"
-    case .team:
-      "Include in Team Workspace"
-    case .selfHost:
-      "Both in Teams & Enterprise"
     }
   }
 
@@ -55,24 +43,6 @@ extension SKUnitSubcategoryProPlan {
         Feature("30-days Cloud Time Machine file version history"),
         Feature("Community Support"),
         Feature("Real-time Syncing & Collaboration for more people"),
-      ]
-    case .team:
-      [
-        Feature("Everything in AFFINE Pro", isHighlighted: true),
-        Feature("100 GB initial storage + 20 GB per seat"),
-        Feature("500 MB of maximum file size"),
-        Feature("Unlimited team members (10+ seats)"),
-        Feature("Multiple admin roles"),
-        Feature("Priority customer support"),
-      ]
-    case .selfHost:
-      [
-        Feature("Everything in Self Hosted FOSS"),
-        Feature("100 GB initial storage + 20 GB per seat"),
-        Feature("500 MB of maximum file size"),
-        Feature("Unlimited team members (10+ seats)"),
-        Feature("Multiple admin roles"),
-        Feature("Priority customer support"),
       ]
     }
   }
