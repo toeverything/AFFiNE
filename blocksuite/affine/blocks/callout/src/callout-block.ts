@@ -2,6 +2,7 @@ import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { createLitPortal } from '@blocksuite/affine-components/portal';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import { type CalloutBlockModel } from '@blocksuite/affine-model';
+import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
   DocModeProvider,
@@ -22,14 +23,13 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
 
     .affine-callout-block-container {
       display: flex;
+      align-items: flex-start;
       padding: 5px 10px;
       border-radius: 8px;
       background-color: ${unsafeCSSVarV2('block/callout/background/grey')};
     }
 
     .affine-callout-emoji-container {
-      margin-right: 10px;
-      margin-top: 14px;
       user-select: none;
       font-size: 1.2em;
       width: 24px;
@@ -37,6 +37,9 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
     }
     .affine-callout-emoji:hover {
       cursor: pointer;
@@ -62,7 +65,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     createLitPortal({
       template: html`<affine-emoji-menu
         .theme=${theme}
-        .onEmojiSelect=${(data: any) => {
+        .onEmojiSelect=${(data: { native: string }) => {
           this.model.props.emoji = data.native;
         }}
       ></affine-emoji-menu>`,
@@ -79,6 +82,31 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       abortController: this._emojiMenuAbortController,
       closeOnClickAway: true,
     });
+  };
+
+  private readonly _handleBlockClick = (event: MouseEvent) => {
+    // Check if the click target is emoji related element
+    const target = event.target as HTMLElement;
+    if (
+      target.closest('.affine-callout-emoji-container') ||
+      target.classList.contains('affine-callout-emoji')
+    ) {
+      return;
+    }
+
+    // Only handle clicks when there are no children
+    if (this.model.children.length > 0) {
+      return;
+    }
+
+    // Prevent event bubbling
+    event.stopPropagation();
+
+    // Create a new paragraph block
+    const paragraphId = this.store.addBlock('affine:paragraph', {}, this.model);
+
+    // Focus the new paragraph
+    focusTextModel(this.std, paragraphId);
   };
 
   get attributeRenderer() {
@@ -112,7 +140,10 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
   override renderBlock() {
     const emoji = this.model.props.emoji$.value;
     return html`
-      <div class="affine-callout-block-container">
+      <div
+        class="affine-callout-block-container"
+        @click=${this._handleBlockClick}
+      >
         <div
           @click=${this._toggleEmojiMenu}
           contenteditable="false"

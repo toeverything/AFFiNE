@@ -4,6 +4,7 @@ import { type Framework } from '@toeverything/infra';
 import {
   configureAIButtonModule,
   configureAIDraftModule,
+  configureAIModelModule,
   configureAINetworkSearchModule,
   configureAIPlaygroundModule,
   configureAIReasoningModule,
@@ -27,6 +28,7 @@ import { configureDocSummaryModule } from './doc-summary';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
 import { configureEditorSettingModule } from './editor-setting';
+import { configureExplorerIconModule } from './explorer-icon';
 import { configureFavoriteModule } from './favorite';
 import { configureFeatureFlagModule } from './feature-flag';
 import { configureGlobalContextModule } from './global-context';
@@ -85,6 +87,7 @@ export function configureCommonModules(framework: Framework) {
   configureTelemetryModule(framework);
   configurePDFModule(framework);
   configurePeekViewModule(framework);
+  configureExplorerIconModule(framework);
   configureDocDisplayMetaModule(framework);
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
@@ -115,6 +118,7 @@ export function configureCommonModules(framework: Framework) {
   configureAIButtonModule(framework);
   configureAIDraftModule(framework);
   configureAIToolsConfigModule(framework);
+  configureAIModelModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
   configureMediaModule(framework);

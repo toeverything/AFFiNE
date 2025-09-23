@@ -16,10 +16,10 @@ export default {
 } satisfies Meta<typeof IconAndNameEditorMenu>;
 
 export const Basic: StoryFn<IconAndNameEditorMenuProps> = () => {
-  const [icon, setIcon] = useState<string>('👋');
+  const [icon, setIcon] = useState<string | undefined>('👋');
   const [name, setName] = useState<string>('Hello');
 
-  const handleIconChange = useCallback((_: IconType, icon: string) => {
+  const handleIconChange = useCallback((_?: IconType, icon?: string) => {
     setIcon(icon);
   }, []);
   const handleNameChange = useCallback((name: string) => {

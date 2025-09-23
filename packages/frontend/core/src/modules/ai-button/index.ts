@@ -8,12 +8,14 @@ export {
 
 import type { Framework } from '@toeverything/infra';
 
+import { GraphQLService, ServerScope, SubscriptionService } from '../cloud';
 import { FeatureFlagService } from '../feature-flag';
 import { CacheStorage, GlobalStateService } from '../storage';
 import { WorkspaceScope } from '../workspace';
 import { AIButtonProvider } from './provider/ai-button';
 import { AIButtonService } from './services/ai-button';
 import { AIDraftService } from './services/ai-draft';
+import { AIModelService } from './services/models';
 import { AINetworkSearchService } from './services/network-search';
 import { AIPlaygroundService } from './services/playground';
 import { AIReasoningService } from './services/reasoning';
@@ -48,4 +50,14 @@ export function configureAIDraftModule(framework: Framework) {
 
 export function configureAIToolsConfigModule(framework: Framework) {
   framework.service(AIToolsConfigService, [GlobalStateService]);
+}
+
+export function configureAIModelModule(framework: Framework) {
+  framework
+    .scope(ServerScope)
+    .service(AIModelService, [
+      GlobalStateService,
+      GraphQLService,
+      SubscriptionService,
+    ]);
 }

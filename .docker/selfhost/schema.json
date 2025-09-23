@@ -195,6 +195,11 @@
       "type": "object",
       "description": "Configuration for mailer module",
       "properties": {
+        "SMTP.name": {
+          "type": "string",
+          "description": "Name of the email server (e.g. your domain name)\n@default \"AFFiNE Server\"\n@environment `MAILER_SERVERNAME`",
+          "default": "AFFiNE Server"
+        },
         "SMTP.host": {
           "type": "string",
           "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"\n@environment `MAILER_HOST`",
@@ -229,6 +234,11 @@
           "type": "array",
           "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
           "default": []
+        },
+        "fallbackSMTP.name": {
+          "type": "string",
+          "description": "Name of the fallback email server (e.g. your domain name)\n@default \"AFFiNE Server\"",
+          "default": "AFFiNE Server"
         },
         "fallbackSMTP.host": {
           "type": "string",

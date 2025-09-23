@@ -3,6 +3,8 @@ import type {
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type { SubscriptionService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -168,6 +170,9 @@ export class AIChatContent extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor onEmbeddingProgressChange:
     | ((count: Record<ContextEmbedStatus, number>) => void)
     | undefined;
@@ -183,6 +188,9 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
 
   @state()
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
@@ -462,6 +470,8 @@ export class AIChatContent extends SignalWatcher(
         .notificationService=${this.notificationService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',
