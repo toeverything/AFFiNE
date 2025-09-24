@@ -1,6 +1,6 @@
-import type { HTMLAttributes } from 'react';
+import type { SVGProps } from 'react';
 
-export const FlagIcon = (attrs: HTMLAttributes<SVGSVGElement>) => {
+export const FlagIcon = (attrs: SVGProps<SVGSVGElement>) => {
   return (
     <svg
       width="1em"

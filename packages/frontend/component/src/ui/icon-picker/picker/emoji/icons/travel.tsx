@@ -1,6 +1,6 @@
-import type { HTMLAttributes } from 'react';
+import type { SVGProps } from 'react';
 
-export const TravelIcon = (attrs: HTMLAttributes<SVGSVGElement>) => {
+export const TravelIcon = (attrs: SVGProps<SVGSVGElement>) => {
   return (
     <svg
       width="1em"

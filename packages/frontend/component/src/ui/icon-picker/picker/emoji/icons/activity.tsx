@@ -1,6 +1,6 @@
-import type { HTMLAttributes } from 'react';
+import type { SVGProps } from 'react';
 
-export const ActivityIcon = (attrs: HTMLAttributes<SVGSVGElement>) => {
+export const ActivityIcon = (attrs: SVGProps<SVGSVGElement>) => {
   return (
     <svg
       width="1em"

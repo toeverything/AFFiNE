@@ -1,6 +1,6 @@
-import type { SVGProps } from 'react';
+import type { ComponentType, SVGProps } from 'react';
 
-import { ActivityIcon } from './icons/acticity';
+import { ActivityIcon } from './icons/activity';
 import { AnimalIcon } from './icons/animal';
 import { FlagIcon } from './icons/flag';
 import { FoodIcon } from './icons/food';
@@ -30,7 +30,7 @@ export const GROUPS: GroupName[] = [
 ];
 export const GROUP_ICON_MAP: Record<
   GroupName,
-  React.ComponentType<SVGProps<SVGSVGElement>>
+  ComponentType<SVGProps<SVGSVGElement>>
 > = {
   'Smileys & People': SmileIcon,
   'Animals & Nature': AnimalIcon,
