@@ -55,7 +55,7 @@ struct AffinePaywallPageView: View {
       .animation(.spring.speed(2), value: viewModel.category)
 
       PurchaseFooterView(viewModel: viewModel)
-        .animation(.spring.speed(2), value: viewModel.selectedPricingIdentifier)
+        .animation(.spring.speed(2), value: viewModel.selectedPackageIdentifier)
     }
     .padding()
     .opacity(presentAnimation ? 1 : 0)

@@ -1,5 +1,5 @@
 //
-//  SKUnitPricingOption.swift
+//  SKUnitPackageOption.swift
 //  AffinePaywall
 //
 //  Created by qaq on 9/18/25.
@@ -7,10 +7,10 @@
 
 import Foundation
 
-struct SKUnitPricingOption: Identifiable, Equatable {
+struct SKUnitPackageOption: Identifiable, Equatable {
   var id: UUID
 
-  // pricing selection button
+  // package selection button
   var price: String
   var description: String
   var badge: String?

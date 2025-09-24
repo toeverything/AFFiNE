@@ -5,6 +5,7 @@
 //  Created by qaq on 9/18/25.
 //
 
+import StoreKit
 import SwiftUI
 
 @MainActor
@@ -15,14 +16,31 @@ class ViewModel: ObservableObject {
 
   @Published private(set) var category: SKUnitCategory = .pro
   @Published private(set) var subcategory: any SKUnitSubcategorizable = SKUnitSubcategoryProPlan.default
-  @Published private(set) var selectedPricingIdentifier: UUID = SKUnit.unit(
+  @Published private(set) var selectedPackageIdentifier: UUID = SKUnit.unit(
     for: .pro,
     subcategory: SKUnitSubcategoryProPlan.default
-  )!.pricing.first { $0.isDefaultSelected }!.id
+  )!.package.first { $0.isDefaultSelected }!.id
+
+  @Published private(set) var products: [Product] = []
+  @Published private(set) var productsUpdatingError: Error?
+  @Published var operationInProgress = false
 
   private(set) weak var associatedController: UIViewController?
 
-  init() {}
+  let store = Store()
+
+  init() {
+    store.fetchProducts { result in // will called from MainActor
+      switch result {
+      case let .success(products):
+        self.products = products
+        print("fetched products: \(products.map(\.id))")
+      case let .failure(error):
+        self.productsUpdatingError = error
+        print("failed to fetch products: \(error)")
+      }
+    }
+  }
 
   func bind(controller: UIViewController) {
     associatedController = controller
@@ -36,7 +54,7 @@ class ViewModel: ObservableObject {
     if !subcategoryExists {
       subcategory = units.first!.subcategory
     }
-    _ = selectedPricingOption // ensure selectedPricingIdentifier is valid
+    _ = selectePackageOption // ensure selectePackageOption is valid
   }
 
   func select(subcategory: any SKUnitSubcategorizable) {
@@ -51,20 +69,20 @@ class ViewModel: ObservableObject {
     } else {
       self.subcategory = subcategory
     }
-    _ = selectedPricingOption // ensure selectedPricingIdentifier is valid
+    _ = selectePackageOption // ensure selectePackageOption is valid
   }
 
-  func select(pricingOption option: SKUnitPricingOption) {
-    selectedPricingIdentifier = option.id
+  func select(packageOption option: SKUnitPackageOption) {
+    selectedPackageIdentifier = option.id
 
     let unit = availableUnits
       .first { unit in
-        unit.pricing.contains { $0.id == option.id }
+        unit.package.contains { $0.id == option.id }
       }!
     category = unit.category
     subcategory = unit.subcategory
 
-    _ = selectedPricingOption // ensure selectedPricingIdentifier is valid
+    _ = selectePackageOption // ensure selectePackageOption is valid
   }
 }
 
@@ -85,21 +103,21 @@ extension ViewModel {
     return item
   }
 
-  var selectedPricingOption: SKUnitPricingOption {
-    let item = selectedUnit.pricing
-      .first { $0.id == selectedPricingIdentifier }
+  var selectePackageOption: SKUnitPackageOption {
+    let item = selectedUnit.package
+      .first { $0.id == selectedPackageIdentifier }
     if let item { return item }
-    let defaultItem = selectedUnit.pricing.first { $0.isDefaultSelected }
+    let defaultItem = selectedUnit.package.first { $0.isDefaultSelected }
     if let defaultItem {
-      selectedPricingIdentifier = defaultItem.id
+      selectedPackageIdentifier = defaultItem.id
       return defaultItem
     }
-    let lastItem = selectedUnit.pricing.last!
-    selectedPricingIdentifier = lastItem.id
+    let lastItem = selectedUnit.package.last!
+    selectedPackageIdentifier = lastItem.id
     return lastItem
   }
 
-  var availablePricingOptions: [SKUnitPricingOption] {
-    selectedUnit.pricing
+  var availablePackageOptions: [SKUnitPackageOption] {
+    selectedUnit.package
   }
 }

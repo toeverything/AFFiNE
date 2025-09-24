@@ -13,20 +13,20 @@ struct SKUnit: Identifiable, Sendable {
   let subcategory: any SKUnitSubcategorizable
   let primaryText: String
   let secondaryText: String
-  let pricing: [SKUnitPricingOption]
+  let package: [SKUnitPackageOption]
 
   init(
     category: SKUnitCategory,
     subcategory: (any SKUnitSubcategorizable) = SKUnitSingleSubcategory.single,
     primaryText: String,
     secondaryText: String,
-    pricing: [SKUnitPricingOption]
+    package: [SKUnitPackageOption]
   ) {
     self.category = category
     self.subcategory = subcategory
     self.primaryText = primaryText
     self.secondaryText = secondaryText
-    self.pricing = pricing
+    self.package = package
   }
 }
 

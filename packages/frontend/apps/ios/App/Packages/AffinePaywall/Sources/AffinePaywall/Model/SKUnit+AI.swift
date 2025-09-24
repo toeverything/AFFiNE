@@ -13,8 +13,8 @@ extension SKUnit {
       category: SKUnitCategory.ai,
       primaryText: "AFFINE AI",
       secondaryText: "A true multimodal AI copilot.",
-      pricing: [
-        SKUnitPricingOption(
+      package: [
+        SKUnitPackageOption(
           price: "$8.9 per month",
           description: "",
           isDefaultSelected: true,

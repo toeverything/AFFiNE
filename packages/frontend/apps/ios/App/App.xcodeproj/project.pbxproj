@@ -16,6 +16,7 @@
 		5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507513692D1924C600AD60C0 /* RootViewController.swift */; };
 		50A285D72D112A5E000D5A6D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D62D112A5E000D5A6D /* Localizable.xcstrings */; };
 		50A285D82D112A5E000D5A6D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */; };
+		50A485DE2E840A8000F220CE /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A485DD2E840A8000F220CE /* StoreKit.framework */; };
 		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
 		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
@@ -57,6 +58,8 @@
 		50802D5E2D112F7D00694021 /* Intelligents */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Intelligents; sourceTree = "<group>"; };
 		50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		50A285D62D112A5E000D5A6D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		50A485DD2E840A8000F220CE /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		50BBC54E2E840DBC0067C5E2 /* InAppPurchases.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = InAppPurchases.storekit; sourceTree = "<group>"; };
 		50CECF1E2E7C1084004487AA /* AffineResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineResources; sourceTree = "<group>"; };
 		50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationBridgedWindowScript.swift; sourceTree = "<group>"; };
 		50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AffineViewController+AIButton.swift"; sourceTree = "<group>"; };
@@ -96,6 +99,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5027D47A2E7C5FC100ADD25A /* AffineResources in Frameworks */,
+				50A485DE2E840A8000F220CE /* StoreKit.framework in Frameworks */,
 				5027D4782E7C5FBD00ADD25A /* AffinePaywall in Frameworks */,
 				9DFCD1462D27D1D70028C92B /* libaffine_mobile_native.a in Frameworks */,
 				5027D47C2E7C5FC400ADD25A /* AffineGraphQL in Frameworks */,
@@ -110,6 +114,7 @@
 		27E2DDA53C4D2A4D1A88CE4A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				50A485DD2E840A8000F220CE /* StoreKit.framework */,
 				C4C97C6B2D03027900BC2AD1 /* libaffine_mobile_native.a */,
 				9DFCD1452D27D1D70028C92B /* libaffine_mobile_native.a */,
 				BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */,
@@ -174,6 +179,7 @@
 				50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */,
 				50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */,
 				5027D47F2E7C611900ADD25A /* Tools.swift */,
+				50BBC54E2E840DBC0067C5E2 /* InAppPurchases.storekit */,
 				9D90BE1D2CCB9876006677DB /* Assets.xcassets */,
 				9D90BE1E2CCB9876006677DB /* capacitor.config.json */,
 				9D90BE1F2CCB9876006677DB /* config.xml */,
@@ -501,7 +507,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = 964G86XT2P;
+				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.5;
@@ -537,7 +543,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = 964G86XT2P;
+				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.5;

@@ -11,28 +11,62 @@ import SwiftUI
 struct PurchaseFooterView: View {
   @StateObject var viewModel: ViewModel
 
+  var isFetchingProducts: Bool {
+    //
+    // This logic might seem confusing, but we treat a product update error the same as a fetching state.
+    // An alert will appear if an error occurs, and tapping OK will dismiss the entire paywall.
+    //
+    // Considering that, we simplify the logic here:
+    //
+    // -> if an error occurs, we keep the button disabled.
+    //
+    if viewModel.products.isEmpty { return true }
+    if viewModel.productsUpdatingError != nil { return true }
+    if viewModel.operationInProgress { return true }
+    return false
+  }
+
+  @State var presentErrorAlert: Bool = false
+  @State var presentedError: LocalizedError? = nil
+
   var body: some View {
     VStack(spacing: 16) {
-      if viewModel.availablePricingOptions.count > 1 {
+      if viewModel.availablePackageOptions.count > 1 {
         HStack(spacing: 8) {
-          ForEach(viewModel.availablePricingOptions) { option in
-            PricingOptionView(
+          ForEach(viewModel.availablePackageOptions) { option in
+            PackageOptionView(
               price: option.price,
               description: option.description,
               badge: option.badge ?? "",
-              isSelected: option.id == viewModel.selectedPricingIdentifier
+              isSelected: option.id == viewModel.selectedPackageIdentifier
             ) {
-              viewModel.select(pricingOption: option)
+              viewModel.select(packageOption: option)
             }
           }
         }
       }
 
-      TheGiveMeMoneyButtonView(
-        primaryTitle: viewModel.selectedPricingOption.primaryTitle,
-        secondaryTitle: viewModel.selectedPricingOption.secondaryTitle,
-        callback: viewModel.purchase
-      )
+      if isFetchingProducts {
+        TheGiveMeMoneyButtonView(
+          primaryTitle: "Height Placeholder",
+          secondaryTitle: ""
+        ) {}
+          .hidden()
+          .background(AffineColors.buttonPrimary.color)
+          .clipShape(RoundedRectangle(cornerRadius: 8))
+          .overlay {
+            ProgressView()
+              .progressViewStyle(.circular)
+          }
+          .transition(.opacity)
+      } else {
+        TheGiveMeMoneyButtonView(
+          primaryTitle: viewModel.selectePackageOption.primaryTitle,
+          secondaryTitle: viewModel.selectePackageOption.secondaryTitle,
+          callback: viewModel.purchase
+        )
+        .transition(.opacity)
+      }
 
       Button(action: viewModel.restore) {
         Text("Restore Purchase")
@@ -40,7 +74,23 @@ struct PurchaseFooterView: View {
       .font(.system(size: 12))
       .buttonStyle(.plain)
       .foregroundStyle(AffineColors.textSecondary.color)
+      .opacity(viewModel.products.isEmpty ? 0 : 1)
     }
+    .alert(isPresented: .init(
+      get: { viewModel.productsUpdatingError != nil },
+      set: { _ in }
+    )) {
+      Alert(
+        title: Text("Error"),
+        message: Text(viewModel.productsUpdatingError?.localizedDescription ?? "Unknown error"),
+        dismissButton: .default(Text("OK")) {
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            viewModel.dismiss()
+          }
+        }
+      )
+    }
+    .animation(.spring, value: isFetchingProducts)
   }
 }
 

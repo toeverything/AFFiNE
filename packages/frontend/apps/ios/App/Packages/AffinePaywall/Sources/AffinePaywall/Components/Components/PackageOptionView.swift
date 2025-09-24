@@ -1,5 +1,5 @@
 //
-//  PricingOptionView.swift
+//  PackageOptionView.swift
 //  AffinePaywall
 //
 //  Created by qaq on 9/18/25.
@@ -8,7 +8,7 @@
 import AffineResources
 import SwiftUI
 
-struct PricingOptionView: View {
+struct PackageOptionView: View {
   let price: String
   let description: String
   var badge: String
@@ -102,12 +102,12 @@ struct PricingOptionView: View {
 #Preview {
   VStack(spacing: 16) {
     HStack(spacing: 16) {
-      PricingOptionView(
+      PackageOptionView(
         price: "$7.99",
         description: "Monthly",
         isSelected: false
       ) {}
-      PricingOptionView(
+      PackageOptionView(
         price: "$6.75",
         description: "Annually",
         badge: "Save 15%",
@@ -115,13 +115,13 @@ struct PricingOptionView: View {
       ) {}
     }
     HStack(spacing: 16) {
-      PricingOptionView(
+      PackageOptionView(
         price: "$114514",
         description: "Monthly",
         badge: "Most Popular",
         isSelected: true
       ) {}
-      PricingOptionView(
+      PackageOptionView(
         price: "$6.75",
         description: "Annually",
         badge: "Save 15%",

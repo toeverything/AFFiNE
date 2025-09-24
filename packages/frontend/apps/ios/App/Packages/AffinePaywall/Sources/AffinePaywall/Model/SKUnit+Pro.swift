@@ -14,8 +14,8 @@ extension SKUnit {
       subcategory: SKUnitSubcategoryProPlan.default,
       primaryText: "Pro",
       secondaryText: "For family and small teams.",
-      pricing: [
-        SKUnitPricingOption(
+      package: [
+        SKUnitPackageOption(
           price: "$7.99",
           description: "Monthly",
           isDefaultSelected: false,
@@ -24,7 +24,7 @@ extension SKUnit {
           productIdentifier: "app.affine.pro.Monthly",
           revenueCatIdentifier: "app.affine.pro.Monthly"
         ),
-        SKUnitPricingOption(
+        SKUnitPackageOption(
           price: "$6.75",
           description: "Annual",
           badge: "Save 15%",
