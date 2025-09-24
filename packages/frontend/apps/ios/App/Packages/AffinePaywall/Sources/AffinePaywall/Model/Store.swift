@@ -7,34 +7,53 @@
 
 import StoreKit
 
-final nonisolated class Store: ObservableObject, Sendable {
-  init() {}
+let store = Store.shared
 
-  func restore() async {
-    try? await AppStore.sync()
+final nonisolated class Store: ObservableObject, Sendable {
+  static let shared = Store()
+
+  private init() {}
+
+  func fetchAppStoreContents() async throws {
+    try await AppStore.sync()
   }
 
-  typealias FetchProductCallback = @MainActor @Sendable (Result<[Product], Error>) -> Void
-  func fetchProducts(_ completion: @escaping FetchProductCallback) {
+  func fetchProducts() async throws -> [Product] {
     let identifiers = SKUnit.allUnits
       .flatMap(\.package)
       .map(\.productIdentifier)
     print("fetching products for identifiers: \(identifiers)")
-    let callback = completion
-    Task.detached {
-      do {
-        let products = try await Product.products(
-          for: identifiers.map { .init($0) }
-        )
-        if products.count != identifiers.count {
-          throw NSError(domain: "AffinePaywall", code: -1, userInfo: [
-            NSLocalizedDescriptionKey: String(localized: "Failed to fetch all products from App Store."),
-          ])
+    let products = try await Product.products(
+      for: identifiers.map { .init($0) }
+    )
+    if products.count != identifiers.count {
+      throw NSError(domain: "AffinePaywall", code: -1, userInfo: [
+        NSLocalizedDescriptionKey: String(localized: "Failed to fetch all products from App Store."),
+      ])
+    }
+    return products
+  }
+
+  func fetchEntitlements() async throws -> Set<String> {
+    var purchasedItems: Set<String> = []
+
+    for await result in Transaction.currentEntitlements {
+      if case let .verified(transaction) = result {
+        guard transaction.revocationDate == nil else { continue }
+
+        switch transaction.productType {
+        case .nonConsumable, .consumable:
+          purchasedItems.insert(transaction.productID)
+        case .autoRenewable, .nonRenewable:
+          if let status = await transaction.subscriptionStatus,
+             status.state == .subscribed
+          { purchasedItems.insert(transaction.productID) }
+        default:
+          break
         }
-        await MainActor.run { callback(.success(products)) }
-      } catch {
-        await MainActor.run { callback(.failure(error)) }
       }
     }
+
+    return purchasedItems
   }
 }

@@ -21,24 +21,19 @@ class ViewModel: ObservableObject {
     subcategory: SKUnitSubcategoryProPlan.default
   )!.package.first { $0.isDefaultSelected }!.id
 
-  @Published private(set) var products: [Product] = []
-  @Published private(set) var productsUpdatingError: Error?
-  @Published var operationInProgress = false
+  @Published var updating = false
+  @Published var products: [Product] = []
+  @Published var purchasedItems: Set<String> = []
 
   private(set) weak var associatedController: UIViewController?
 
-  let store = Store()
-
   init() {
-    store.fetchProducts { result in // will called from MainActor
-      switch result {
-      case let .success(products):
-        self.products = products
-        print("fetched products: \(products.map(\.id))")
-      case let .failure(error):
-        self.productsUpdatingError = error
-        print("failed to fetch products: \(error)")
-      }
+    updateAppStoreStatus(initial: true)
+  }
+
+  func updateAppStoreStatus(initial: Bool) {
+    Task.detached {
+      await self.updateAppStoreStatusExecute(initial: initial)
     }
   }
 

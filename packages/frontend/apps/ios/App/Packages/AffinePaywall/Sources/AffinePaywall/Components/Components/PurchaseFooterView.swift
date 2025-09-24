@@ -11,23 +11,10 @@ import SwiftUI
 struct PurchaseFooterView: View {
   @StateObject var viewModel: ViewModel
 
-  var isFetchingProducts: Bool {
-    //
-    // This logic might seem confusing, but we treat a product update error the same as a fetching state.
-    // An alert will appear if an error occurs, and tapping OK will dismiss the entire paywall.
-    //
-    // Considering that, we simplify the logic here:
-    //
-    // -> if an error occurs, we keep the button disabled.
-    //
-    if viewModel.products.isEmpty { return true }
-    if viewModel.productsUpdatingError != nil { return true }
-    if viewModel.operationInProgress { return true }
-    return false
+  var isPurchased: Bool {
+    let package = viewModel.selectePackageOption
+    return viewModel.purchasedItems.contains(package.productIdentifier)
   }
-
-  @State var presentErrorAlert: Bool = false
-  @State var presentedError: LocalizedError? = nil
 
   var body: some View {
     VStack(spacing: 16) {
@@ -44,12 +31,14 @@ struct PurchaseFooterView: View {
             }
           }
         }
+        .disabled(isPurchased)
       }
 
-      if isFetchingProducts {
+      if viewModel.updating {
         TheGiveMeMoneyButtonView(
           primaryTitle: "Height Placeholder",
-          secondaryTitle: ""
+          secondaryTitle: "",
+          isPurchased: false
         ) {}
           .hidden()
           .background(AffineColors.buttonPrimary.color)
@@ -63,34 +52,26 @@ struct PurchaseFooterView: View {
         TheGiveMeMoneyButtonView(
           primaryTitle: viewModel.selectePackageOption.primaryTitle,
           secondaryTitle: viewModel.selectePackageOption.secondaryTitle,
+          isPurchased: isPurchased,
           callback: viewModel.purchase
         )
         .transition(.opacity)
       }
 
       Button(action: viewModel.restore) {
-        Text("Restore Purchase")
+        if isPurchased {
+          Text("Already Purchased")
+        } else {
+          Text("Restore Purchase")
+        }
       }
       .font(.system(size: 12))
       .buttonStyle(.plain)
       .foregroundStyle(AffineColors.textSecondary.color)
       .opacity(viewModel.products.isEmpty ? 0 : 1)
+      .disabled(isPurchased)
     }
-    .alert(isPresented: .init(
-      get: { viewModel.productsUpdatingError != nil },
-      set: { _ in }
-    )) {
-      Alert(
-        title: Text("Error"),
-        message: Text(viewModel.productsUpdatingError?.localizedDescription ?? "Unknown error"),
-        dismissButton: .default(Text("OK")) {
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            viewModel.dismiss()
-          }
-        }
-      )
-    }
-    .animation(.spring, value: isFetchingProducts)
+    .animation(.spring, value: viewModel.updating)
   }
 }
 
