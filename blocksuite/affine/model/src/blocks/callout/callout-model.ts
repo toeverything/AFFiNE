@@ -5,11 +5,14 @@ import {
   type Text,
 } from '@blocksuite/store';
 
+import type { Color } from '../../themes/index.js';
+import { DefaultTheme } from '../../themes/index.js';
 import type { BlockMeta } from '../../utils/types';
 
 export type CalloutProps = {
   emoji: string;
   text: Text;
+  background: Color;
 } & BlockMeta;
 
 export const CalloutBlockSchema = defineBlockSchema({
@@ -17,6 +20,7 @@ export const CalloutBlockSchema = defineBlockSchema({
   props: (internal): CalloutProps => ({
     emoji: '😀',
     text: internal.Text(),
+    background: DefaultTheme.NoteBackgroundColorMap.White,
     'meta:createdAt': undefined,
     'meta:updatedAt': undefined,
     'meta:createdBy': undefined,

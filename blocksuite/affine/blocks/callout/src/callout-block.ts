@@ -1,14 +1,13 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { createLitPortal } from '@blocksuite/affine-components/portal';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
-import { type CalloutBlockModel } from '@blocksuite/affine-model';
+import { type CalloutBlockModel, DefaultTheme } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
   DocModeProvider,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
-import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { BlockComponent } from '@blocksuite/std';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html } from 'lit';
@@ -26,7 +25,6 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       align-items: flex-start;
       padding: 5px 10px;
       border-radius: 8px;
-      background-color: ${unsafeCSSVarV2('block/callout/background/grey')};
     }
 
     .affine-callout-emoji-container {
@@ -139,10 +137,23 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
 
   override renderBlock() {
     const emoji = this.model.props.emoji$.value;
+    const background = this.model.props.background$.value;
+
+    const themeProvider = this.std.get(ThemeProvider);
+    const theme = themeProvider.theme$.value;
+    const backgroundColor = themeProvider.generateColorProperty(
+      background,
+      DefaultTheme.NoteBackgroundColorMap.White,
+      theme
+    );
+
     return html`
       <div
         class="affine-callout-block-container"
         @click=${this._handleBlockClick}
+        style=${styleMap({
+          backgroundColor: backgroundColor,
+        })}
       >
         <div
           @click=${this._toggleEmojiMenu}
