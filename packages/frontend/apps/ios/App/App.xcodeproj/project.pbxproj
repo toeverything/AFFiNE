@@ -59,7 +59,7 @@
 		50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		50A285D62D112A5E000D5A6D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		50A485DD2E840A8000F220CE /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
-		50BBC54E2E840DBC0067C5E2 /* InAppPurchases.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = InAppPurchases.storekit; sourceTree = "<group>"; };
+		50BBC54E2E840DBC0067C5E2 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		50CECF1E2E7C1084004487AA /* AffineResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineResources; sourceTree = "<group>"; };
 		50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationBridgedWindowScript.swift; sourceTree = "<group>"; };
 		50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AffineViewController+AIButton.swift"; sourceTree = "<group>"; };
@@ -179,7 +179,7 @@
 				50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */,
 				50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */,
 				5027D47F2E7C611900ADD25A /* Tools.swift */,
-				50BBC54E2E840DBC0067C5E2 /* InAppPurchases.storekit */,
+				50BBC54E2E840DBC0067C5E2 /* Products.storekit */,
 				9D90BE1D2CCB9876006677DB /* Assets.xcassets */,
 				9D90BE1E2CCB9876006677DB /* capacitor.config.json */,
 				9D90BE1F2CCB9876006677DB /* config.xml */,
