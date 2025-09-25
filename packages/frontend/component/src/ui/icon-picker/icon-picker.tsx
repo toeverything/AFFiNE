@@ -7,6 +7,7 @@ import { RadioGroup, type RadioItem } from '../radio';
 import * as styles from './icon-picker.css';
 import { AffineIconPicker } from './picker/affine-icon/affine-icon-picker';
 import { EmojiPicker } from './picker/emoji/emoji-picker';
+import { type IconData, IconType } from './type';
 
 const panels: Array<RadioItem> = [
   { value: 'Emoji', className: styles.headerNavItem },
@@ -16,17 +17,11 @@ const panels: Array<RadioItem> = [
 export const IconPicker = ({
   className,
   style,
-}: HTMLAttributes<HTMLDivElement> & {
-  onSelect?: (
-    type: 'emoji' | 'affine-icon',
-    data: { icon?: string; color?: string }
-  ) => void;
+  onSelect,
+}: Omit<HTMLAttributes<HTMLDivElement>, 'onSelect'> & {
+  onSelect?: (data?: IconData) => void;
 }) => {
-  const [activePanel, setActivePanel] = useState<string>('Icons');
-
-  // const ActivePanel = panels.find(
-  //   panel => panel.value === activePanel
-  // )?.component;
+  const [activePanel, setActivePanel] = useState<string>('Emoji');
 
   return (
     <div className={clsx(styles.container, className)} style={{ ...style }}>
@@ -53,7 +48,7 @@ export const IconPicker = ({
           <Button
             variant="plain"
             style={{ color: cssVarV2.text.secondary, fontWeight: 500 }}
-            onClick={() => void 0}
+            onClick={() => onSelect?.()}
           >
             Remove
           </Button>
@@ -61,9 +56,17 @@ export const IconPicker = ({
       </header>
       <main className={styles.main}>
         {activePanel === 'Emoji' ? (
-          <EmojiPicker />
+          <EmojiPicker
+            onSelect={emoji => {
+              onSelect?.({ type: IconType.Emoji, unicode: emoji });
+            }}
+          />
         ) : activePanel === 'Icons' ? (
-          <AffineIconPicker />
+          <AffineIconPicker
+            onSelect={(icon, color) => {
+              onSelect?.({ type: IconType.AffineIcon, name: icon, color });
+            }}
+          />
         ) : null}
       </main>
     </div>

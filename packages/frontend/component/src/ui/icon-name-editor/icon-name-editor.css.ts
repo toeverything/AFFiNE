@@ -15,6 +15,7 @@ export const contentRoot = style({
 
 export const iconPicker = style({
   padding: 0,
+  lineHeight: 1,
 });
 globalStyle(`${iconPicker} span:has(svg)`, {
   lineHeight: 0,
