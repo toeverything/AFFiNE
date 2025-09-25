@@ -867,7 +867,7 @@ __metadata:
   dependencies:
     "@affine-tools/cli": "workspace:*"
     "@affine-tools/utils": "workspace:*"
-    "@googleapis/androidpublisher": "npm:^28.0.0"
+    "@googleapis/androidpublisher": "npm:^31.0.0"
     "@types/node": "npm:^22.0.0"
     typescript: "npm:^5.7.2"
   languageName: unknown
@@ -6181,12 +6181,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@googleapis/androidpublisher@npm:^28.0.0":
-  version: 28.0.1
-  resolution: "@googleapis/androidpublisher@npm:28.0.1"
+"@googleapis/androidpublisher@npm:^31.0.0":
+  version: 31.0.0
+  resolution: "@googleapis/androidpublisher@npm:31.0.0"
   dependencies:
-    googleapis-common: "npm:^8.0.2-rc.0"
-  checksum: 10/6fffeb8c918bc9ac4ca370f0468803cb0d0ede8cc794efd045fdbdb353bedc5007098f22a896a5804bf819edd2d6b74e6059d2e9b37332b14facf9db560e6eee
+    googleapis-common: "npm:^8.0.0"
+  checksum: 10/85cfc9b9e1f1211939bad0349d4d893d004c8c5491824892b631b9d55011b23d1200c7c3186ac38da86b53f46e6d1de34a056a872867fb86832c38586a092402
   languageName: node
   linkType: hard
 
@@ -23073,9 +23073,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^10.0.0-rc.1, google-auth-library@npm:^10.2.0":
-  version: 10.2.0
-  resolution: "google-auth-library@npm:10.2.0"
+"google-auth-library@npm:^10.1.0, google-auth-library@npm:^10.2.0":
+  version: 10.3.0
+  resolution: "google-auth-library@npm:10.3.0"
   dependencies:
     base64-js: "npm:^1.3.0"
     ecdsa-sig-formatter: "npm:^1.0.11"
@@ -23084,7 +23084,7 @@ __metadata:
     google-logging-utils: "npm:^1.0.0"
     gtoken: "npm:^8.0.0"
     jws: "npm:^4.0.0"
-  checksum: 10/dfa6ad7240da3915b7e15d1f39cd6906e6714502b09957be07d2429665a44c6b46d8ca7a077cec7fcb83f82ed2c3cb5a9b7c1ba79ebb3e8920eba286a24bdd63
+  checksum: 10/c6fc50b90d9de8faf6c02388671255d4cce86ac9065b2c3bddef109e226fc975988e155a501bc3a77191da4a717dc030871bbcaad61506f51b7c13923f6c9de0
   languageName: node
   linkType: hard
 
@@ -23116,16 +23116,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis-common@npm:^8.0.2-rc.0":
-  version: 8.0.2-rc.0
-  resolution: "googleapis-common@npm:8.0.2-rc.0"
+"googleapis-common@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "googleapis-common@npm:8.0.0"
   dependencies:
     extend: "npm:^3.0.2"
     gaxios: "npm:^7.0.0-rc.4"
-    google-auth-library: "npm:^10.0.0-rc.1"
+    google-auth-library: "npm:^10.1.0"
     qs: "npm:^6.7.0"
     url-template: "npm:^2.0.8"
-  checksum: 10/f630e8f37b2baa4980e3a66fb7736caa2a47f1f915bc6082ef844aa24be776ad2fbff39631346dcccc01c99dd5707fca02c786c6ba23ae459bcb23b125b4fb63
+  checksum: 10/3cedceb555e46fe5d9a7135c557a1b8b05933f947ab87f1b46f2ebd8fbbfd187723e1382a804fc07215bea2f4d53883df5eedd24ba45af848f8b18544f8fec5b
   languageName: node
   linkType: hard
 
