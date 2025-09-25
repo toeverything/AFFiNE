@@ -79,8 +79,8 @@ export class RevenueCatWebhookController {
 
               if (
                 appUserId &&
-                typeof event.is_family_share === 'boolean' &&
-                !event.is_family_share
+                (typeof event.is_family_share !== 'boolean' ||
+                  !event.is_family_share)
               ) {
                 // immediately ack and process asynchronously
                 this.event
