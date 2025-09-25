@@ -182,7 +182,11 @@ export class RevenueCatWebhookHandler {
     const exp = sub.expirationDate?.getTime();
 
     // Determine iap store and external reference for observability
-    const iapStore = this.mapIapStore(sub.store);
+    const iapStore = ['app_store', 'mac_app_store'].includes(sub.store)
+      ? IapStore.app_store
+      : ['play_store'].includes(sub.store)
+        ? IapStore.play_store
+        : null;
 
     if (sub.isActive) {
       if (sub.isTrial) {
@@ -218,14 +222,5 @@ export class RevenueCatWebhookHandler {
       status: SubscriptionStatus.Canceled,
       deleteInstead: true,
     };
-  }
-
-  private mapIapStore(store?: string): IapStore | null {
-    const s = store?.toLowerCase();
-    if (!s) return null;
-    if (s.includes('app') || s.includes('ios')) return IapStore.app_store;
-    if (s.includes('play') || s.includes('android') || s.includes('google'))
-      return IapStore.play_store;
-    return null;
   }
 }
