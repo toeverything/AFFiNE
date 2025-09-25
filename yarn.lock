@@ -1034,7 +1034,7 @@ __metadata:
     ses: "npm:^1.10.0"
     sinon: "npm:^21.0.0"
     socket.io: "npm:^4.8.1"
-    stripe: "npm:^17.4.0"
+    stripe: "npm:^18.0.0"
     supertest: "npm:^7.0.0"
     tldts: "npm:^7.0.0"
     ts-node: "npm:^10.9.2"
@@ -15316,7 +15316,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=18.0.0, @types/node@npm:>=8.1.0, @types/node@npm:^22.0.0, @types/node@npm:^22.14.1, @types/node@npm:^22.7.7":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=18.0.0, @types/node@npm:^22.0.0, @types/node@npm:^22.14.1, @types/node@npm:^22.7.7":
   version: 22.15.21
   resolution: "@types/node@npm:22.15.21"
   dependencies:
@@ -32961,13 +32961,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stripe@npm:^17.4.0":
-  version: 17.7.0
-  resolution: "stripe@npm:17.7.0"
+"stripe@npm:^18.0.0":
+  version: 18.5.0
+  resolution: "stripe@npm:18.5.0"
   dependencies:
-    "@types/node": "npm:>=8.1.0"
     qs: "npm:^6.11.0"
-  checksum: 10/376f945f9c194c8ea2d47d1fda50d141ed985cbb6f94041e11880084f830e502962d434967f1c90a3cb27a9b6e26c606f2830d9448bde636ebd6c067d5cbfecc
+  peerDependencies:
+    "@types/node": ">=12.x.x"
+  peerDependenciesMeta:
+    "@types/node":
+      optional: true
+  checksum: 10/cab62e73580da30bf2de6b7da3fe36136938cd747813cb6968cb8f454d16df16423659dfcaa2f1fb55af594c983363363ac57caff941bcfd36660eaad1e45e5d
   languageName: node
   linkType: hard
 
