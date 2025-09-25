@@ -51,10 +51,8 @@ export class RevenueCatWebhookHandler {
       // ignore non-whitelisted and non-fallbackable products
       if (!mapping) continue;
 
-      const { status, deleteInstead, canceledAt, iapStore } = this.mapStatus(
-        sub,
-        event
-      );
+      const { status, deleteInstead, canceledAt, iapStore } =
+        this.mapStatus(sub);
 
       const rcExternalRef = this.pickExternalRef(event);
 
@@ -174,10 +172,7 @@ export class RevenueCatWebhookHandler {
     );
   }
 
-  private mapStatus(
-    sub: Subscription,
-    event?: RcEvent
-  ): {
+  private mapStatus(sub: Subscription): {
     status: SubscriptionStatus;
     iapStore: IapStore | null;
     deleteInstead: boolean;
@@ -185,29 +180,12 @@ export class RevenueCatWebhookHandler {
   } {
     const now = Date.now();
     const exp = sub.expirationDate?.getTime();
-    const periodType = (event?.period_type || '').toLowerCase();
-    const eventType = (event?.type || '').toString().toLowerCase();
 
     // Determine iap store and external reference for observability
-    const iapStore = this.mapIapStore(sub.store, event);
-
-    // Refund/chargeback/revocation should be treated as immediate expiration
-    // Prioritize these event types regardless of current sub.isActive flag
-    if (
-      eventType.includes('refund') ||
-      eventType.includes('chargeback') ||
-      eventType.includes('revocation') ||
-      eventType.includes('revoke')
-    ) {
-      return {
-        iapStore,
-        status: SubscriptionStatus.Canceled,
-        deleteInstead: true,
-      };
-    }
+    const iapStore = this.mapIapStore(sub.store);
 
     if (sub.isActive) {
-      if (periodType === 'trial') {
+      if (sub.isTrial) {
         return {
           iapStore,
           status: SubscriptionStatus.Trialing,
@@ -242,8 +220,8 @@ export class RevenueCatWebhookHandler {
     };
   }
 
-  private mapIapStore(store?: string, event?: RcEvent): IapStore | null {
-    const s = (store || event?.store || '').toString().toLowerCase();
+  private mapIapStore(store?: string): IapStore | null {
+    const s = store?.toLowerCase();
     if (!s) return null;
     if (s.includes('app') || s.includes('ios')) return IapStore.app_store;
     if (s.includes('play') || s.includes('android') || s.includes('google'))

@@ -83,6 +83,7 @@ const zRcV2RawEnvelope = z
 // v2 minimal, simplified structure exposed to callers
 export const Subscription = z.object({
   identifier: z.string(),
+  isTrial: z.boolean(),
   isActive: z.boolean(),
   latestPurchaseDate: z.date().nullable(),
   expirationDate: z.date().nullable(),
@@ -145,6 +146,7 @@ export class RevenueCatService {
             }
             return {
               identifier: ent.lookup_key,
+              isTrial: sub.status === 'trialing',
               isActive:
                 sub.gives_access === true ||
                 sub.status === 'active' ||
