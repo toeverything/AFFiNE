@@ -1,3 +1,4 @@
+import { updateBlockAlign } from '@blocksuite/affine-block-note';
 import { ImageBlockModel, TextAlign } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
