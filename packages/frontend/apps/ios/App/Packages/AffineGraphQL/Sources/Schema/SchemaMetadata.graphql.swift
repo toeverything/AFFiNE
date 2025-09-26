@@ -20,7 +20,6 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
 
   public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
     switch typename {
-    case "AccessToken": return AffineGraphQL.Objects.AccessToken
     case "AggregateBucketHitsObjectType": return AffineGraphQL.Objects.AggregateBucketHitsObjectType
     case "AggregateBucketObjectType": return AffineGraphQL.Objects.AggregateBucketObjectType
     case "AggregateResultObjectType": return AffineGraphQL.Objects.AggregateResultObjectType
