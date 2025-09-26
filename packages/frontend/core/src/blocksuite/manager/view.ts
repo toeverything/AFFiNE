@@ -16,6 +16,7 @@ import {
   type AffineEditorViewOptions,
 } from '@affine/core/blocksuite/view-extensions/editor-view/editor-view';
 import { ElectronViewExtension } from '@affine/core/blocksuite/view-extensions/electron';
+import { AffineIconPickerExtension } from '@affine/core/blocksuite/view-extensions/icon-picker';
 import { AffineLinkPreviewExtension } from '@affine/core/blocksuite/view-extensions/link-preview-service';
 import { MobileViewExtension } from '@affine/core/blocksuite/view-extensions/mobile';
 import { PdfViewExtension } from '@affine/core/blocksuite/view-extensions/pdf';
@@ -58,6 +59,7 @@ type Configure = {
   electron: (framework?: FrameworkProvider) => Configure;
   linkPreview: (framework?: FrameworkProvider) => Configure;
   codeBlockPreview: (framework?: FrameworkProvider) => Configure;
+  iconPicker: (framework?: FrameworkProvider) => Configure;
   comment: (
     enableComment?: boolean,
     framework?: FrameworkProvider
@@ -86,6 +88,7 @@ class ViewProvider {
       AffineThemeViewExtension,
       AffineEditorViewExtension,
       AffineEditorConfigViewExtension,
+      AffineIconPickerExtension,
       CodeBlockPreviewViewExtension,
       EdgelessBlockHeaderConfigViewExtension,
       TurboRendererViewExtension,
@@ -123,6 +126,7 @@ class ViewProvider {
       electron: this._configureElectron,
       linkPreview: this._configureLinkPreview,
       codeBlockPreview: this._configureCodeBlockHtmlPreview,
+      iconPicker: this._configureIconPicker,
       comment: this._configureComment,
       value: this._manager,
     };
@@ -146,6 +150,7 @@ class ViewProvider {
       .electron()
       .linkPreview()
       .codeBlockPreview()
+      .iconPicker()
       .comment();
 
     return this.config;
@@ -330,6 +335,11 @@ class ViewProvider {
     framework?: FrameworkProvider
   ) => {
     this._manager.configure(CodeBlockPreviewViewExtension, { framework });
+    return this.config;
+  };
+
+  private readonly _configureIconPicker = (framework?: FrameworkProvider) => {
+    this._manager.configure(AffineIconPickerExtension, { framework });
     return this.config;
   };
 

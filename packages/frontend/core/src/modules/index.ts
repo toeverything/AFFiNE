@@ -33,6 +33,7 @@ import { configureFavoriteModule } from './favorite';
 import { configureFeatureFlagModule } from './feature-flag';
 import { configureGlobalContextModule } from './global-context';
 import { configureI18nModule } from './i18n';
+import { configureIconPickerModule } from './icon-picker';
 import { configureImportClipperModule } from './import-clipper';
 import { configureImportTemplateModule } from './import-template';
 import { configureIntegrationModule } from './integration';
@@ -132,4 +133,5 @@ export function configureCommonModules(framework: Framework) {
   configureCommentModule(framework);
   configureDocSummaryModule(framework);
   configurePaywallModule(framework);
+  configureIconPickerModule(framework);
 }

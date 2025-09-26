@@ -1,18 +1,54 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
-import { createLitPortal } from '@blocksuite/affine-components/portal';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import { type CalloutBlockModel, DefaultTheme } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
   DocModeProvider,
+  type IconData,
+  IconPickerServiceIdentifier,
+  IconType,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import type { UniComponent } from '@blocksuite/affine-shared/types';
+import * as icons from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
-import { flip, offset } from '@floating-ui/dom';
+import { type Signal, signal } from '@preact/signals-core';
+import type { TemplateResult } from 'lit';
 import { css, html } from 'lit';
-import { query } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
+import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
+// Copy of renderUniLit and UniLit from affine-data-view
+export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
+  uni: UniComponent<Props, Expose> | undefined,
+  props?: Props,
+  options?: {
+    ref?: Signal<Expose | undefined>;
+    style?: Readonly<StyleInfo>;
+    class?: string;
+  }
+): TemplateResult => {
+  return html` <uni-lit
+    .uni="${uni}"
+    .props="${props}"
+    .ref="${options?.ref}"
+    style=${options?.style ? styleMap(options?.style) : ''}
+  ></uni-lit>`;
+};
+const getIcon = (icon?: IconData) => {
+  console.log(icon);
+  if (!icon) {
+    return '💡';
+  }
+  if (icon.type === IconType.Emoji) {
+    return icon.unicode;
+  }
+  if (icon.type === IconType.AffineIcon) {
+    return (
+      icons as Record<string, (props: { style: string }) => TemplateResult>
+    )[`${icon.name}Icon`]?.({ style: `color:${icon.color}` });
+  }
+  return '💡';
+};
 export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockModel> {
   static override styles = css`
     :host {
@@ -38,6 +74,12 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       margin-top: 10px;
       margin-bottom: 10px;
       flex-shrink: 0;
+      position: relative;
+    }
+    .affine-callout-emoji {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .affine-callout-emoji:hover {
       cursor: pointer;
@@ -49,38 +91,68 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       min-width: 0;
       padding-left: 10px;
     }
+
+    .icon-picker-container {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 1000;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      width: 300px;
+      height: 400px;
+    }
   `;
 
-  private _emojiMenuAbortController: AbortController | null = null;
-  private readonly _toggleEmojiMenu = () => {
-    if (this._emojiMenuAbortController) {
-      this._emojiMenuAbortController.abort();
+  private readonly showIconPicker$ = signal(false);
+
+  private _closeEmojiMenu() {
+    this.showIconPicker$.value = false;
+  }
+
+  private _toggleIconPicker() {
+    this.showIconPicker$.value = !this.showIconPicker$.value;
+  }
+
+  private _renderIconPicker() {
+    if (!this.showIconPicker$.value) {
+      return html``;
     }
-    this._emojiMenuAbortController = new AbortController();
 
-    const theme = this.std.get(ThemeProvider).theme$.value;
+    // Get IconPickerService from the framework
+    const iconPickerService = this.std.getOptional(IconPickerServiceIdentifier);
+    if (!iconPickerService) {
+      console.warn('IconPickerService not found');
+      return html``;
+    }
 
-    createLitPortal({
-      template: html`<affine-emoji-menu
-        .theme=${theme}
-        .onEmojiSelect=${(data: { native: string }) => {
-          this.model.props.emoji = data.native;
+    // Get the uni-component from the service
+    const iconPickerComponent = iconPickerService.iconPickerComponent;
+
+    // Create props for the icon picker
+    const props = {
+      onSelect: (iconData?: IconData) => {
+        this.model.props.icon$.value = iconData;
+        this._closeEmojiMenu(); // Close the picker after selection
+      },
+      onClose: () => {
+        this._closeEmojiMenu();
+      },
+    };
+
+    return html`
+      <div
+        @click=${(e: MouseEvent) => {
+          e.stopPropagation();
         }}
-      ></affine-emoji-menu>`,
-      portalStyles: {
-        zIndex: 'var(--affine-z-index-popover)',
-      },
-      container: this.host,
-      computePosition: {
-        referenceElement: this._emojiButton,
-        placement: 'bottom-start',
-        middleware: [flip(), offset(4)],
-        autoUpdate: { animationFrame: true },
-      },
-      abortController: this._emojiMenuAbortController,
-      closeOnClickAway: true,
-    });
-  };
+        class="icon-picker-container"
+      >
+        ${renderUniLit(iconPickerComponent, props)}
+      </div>
+    `;
+  }
 
   private readonly _handleBlockClick = (event: MouseEvent) => {
     // Check if the click target is emoji related element
@@ -123,9 +195,6 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     return this.std.get(DefaultInlineManagerExtension.identifier);
   }
 
-  @query('.affine-callout-emoji')
-  private accessor _emojiButton!: HTMLElement;
-
   override get topContenteditableElement() {
     if (this.std.get(DocModeProvider).getEditorMode() === 'edgeless') {
       return this.closest<BlockComponent>(
@@ -136,7 +205,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
   }
 
   override renderBlock() {
-    const emoji = this.model.props.emoji$.value;
+    const icon = this.model.props.icon$.value;
     const background = this.model.props.background$.value;
 
     const themeProvider = this.std.get(ThemeProvider);
@@ -156,14 +225,12 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
         })}
       >
         <div
-          @click=${this._toggleEmojiMenu}
+          @click=${this._toggleIconPicker}
           contenteditable="false"
           class="affine-callout-emoji-container"
-          style=${styleMap({
-            display: emoji.length === 0 ? 'none' : undefined,
-          })}
         >
-          <span class="affine-callout-emoji">${emoji}</span>
+          <span class="affine-callout-emoji">${getIcon(icon)}</span>
+          ${this._renderIconPicker()}
         </div>
         <div class="affine-callout-children">
           ${this.renderChildren(this.model)}
