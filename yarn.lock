@@ -19380,7 +19380,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"confbox@npm:^0.2.1, confbox@npm:^0.2.2":
+"confbox@npm:^0.2.2":
   version: 0.2.2
   resolution: "confbox@npm:0.2.2"
   checksum: 10/988c7216f9b5aee5d8a8f32153a9164e1b58d92d8335c5daa323fd3fdee91f742ffc25f6c28b059474b6319204085eca985ab14c5a246988dc7ef1fe29414108
@@ -20445,14 +20445,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dayjs@npm:^1.11.13":
-  version: 1.11.13
-  resolution: "dayjs@npm:1.11.13"
-  checksum: 10/7374d63ab179b8d909a95e74790def25c8986e329ae989840bacb8b1888be116d20e1c4eee75a69ea0dfbae13172efc50ef85619d304ee7ca3c01d5878b704f5
-  languageName: node
-  linkType: hard
-
-"dayjs@npm:^1.11.18":
+"dayjs@npm:^1.11.13, dayjs@npm:^1.11.18":
   version: 1.11.18
   resolution: "dayjs@npm:1.11.18"
   checksum: 10/7d29a90834cf4da2feb437c2f34b8235c3f94493a06d2f1bf9f506f1fa49eadf796f26e1d685b9fe8cb5e75ce6ee067825115e196f1af3d07b3552ff857bfc39
@@ -22230,14 +22223,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"exsolve@npm:^1.0.1, exsolve@npm:^1.0.5":
-  version: 1.0.5
-  resolution: "exsolve@npm:1.0.5"
-  checksum: 10/5bcdad5685f3435e3f1f0326cfccf727418752cb5945d7c030d48c0aaff9dd5ebd8b082ab498e576f34c391aaba7b32d35632f2f708c1ca1cdfe714aa66902bc
-  languageName: node
-  linkType: hard
-
-"exsolve@npm:^1.0.7":
+"exsolve@npm:^1.0.5, exsolve@npm:^1.0.7":
   version: 1.0.7
   resolution: "exsolve@npm:1.0.7"
   checksum: 10/0c9fc0964da0154f38b55e612ed29bf5040f753d5d2db3a63559762237d0a86290e2f18997973343bb9900c07ab1e48596321de9d9d338e373b1f3f1a015e4c9
@@ -29626,18 +29612,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pkg-types@npm:^2.0.0, pkg-types@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "pkg-types@npm:2.1.0"
-  dependencies:
-    confbox: "npm:^0.2.1"
-    exsolve: "npm:^1.0.1"
-    pathe: "npm:^2.0.3"
-  checksum: 10/10c9038113d2ada3cfc1fde19b6f367d50d80990f27337e78d86583c96ff2b2ce13fd19cca6bf57a59aa5230ed23e384ec92a4da4c1995c80ea75abe9a8e5dbd
-  languageName: node
-  linkType: hard
-
-"pkg-types@npm:^2.3.0":
+"pkg-types@npm:^2.0.0, pkg-types@npm:^2.1.0, pkg-types@npm:^2.3.0":
   version: 2.3.0
   resolution: "pkg-types@npm:2.3.0"
   dependencies:
