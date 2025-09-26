@@ -1,6 +1,7 @@
 import type { TextAlign } from '@blocksuite/affine-model';
 import {
   getBlockSelectionsCommand,
+  getImageSelectionsCommand,
   getSelectedBlocksCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
@@ -21,14 +22,15 @@ export const updateBlockAlign: Command<UpdateBlockAlignConfig> = (
 ) => {
   let { std, textAlign, selectedBlocks } = ctx;
 
-  if (selectedBlocks == null) {
+  if (selectedBlocks === null) {
     const [result, ctx] = std.command
       .chain()
       .tryAll(chain => [
         chain.pipe(getTextSelectionCommand),
         chain.pipe(getBlockSelectionsCommand),
+        chain.pipe(getImageSelectionsCommand),
       ])
-      .pipe(getSelectedBlocksCommand, { types: ['text', 'block'] })
+      .pipe(getSelectedBlocksCommand, { types: ['text', 'block', 'image'] })
       .run();
     if (result) {
       selectedBlocks = ctx.selectedBlocks;

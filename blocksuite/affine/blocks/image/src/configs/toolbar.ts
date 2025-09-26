@@ -61,10 +61,12 @@ const builtinToolbarConfig = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(ImageBlockComponent);
         if (block) {
-          ctx.chain.pipe(updateBlockAlign, {
-            textAlign: TextAlign.Left,
-            selectedBlocks: [block],
-          });
+          ctx.chain
+            .pipe(updateBlockAlign, {
+              textAlign: TextAlign.Left,
+              selectedBlocks: [block],
+            })
+            .run();
         }
       },
     },
@@ -75,10 +77,12 @@ const builtinToolbarConfig = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(ImageBlockComponent);
         if (block) {
-          ctx.chain.pipe(updateBlockAlign, {
-            textAlign: TextAlign.Center,
-            selectedBlocks: [block],
-          });
+          ctx.chain
+            .pipe(updateBlockAlign, {
+              textAlign: TextAlign.Center,
+              selectedBlocks: [block],
+            })
+            .run();
         }
       },
     },
@@ -89,10 +93,12 @@ const builtinToolbarConfig = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(ImageBlockComponent);
         if (block) {
-          ctx.chain.pipe(updateBlockAlign, {
-            textAlign: TextAlign.Right,
-            selectedBlocks: [block],
-          });
+          ctx.chain
+            .pipe(updateBlockAlign, {
+              textAlign: TextAlign.Right,
+              selectedBlocks: [block],
+            })
+            .run();
         }
       },
     },
