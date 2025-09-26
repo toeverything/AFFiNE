@@ -55,6 +55,7 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'auth',
     fields: [
       'allowSignup',
+      'allowSignupForOauth',
       // nested json object
       {
         key: 'passwordRequirements',

@@ -100,6 +100,10 @@ export function useAFFiNEI18N(): {
       */
     ["Copied link to clipboard"](): string;
     /**
+      * `Copied to clipboard`
+      */
+    ["Copied to clipboard"](): string;
+    /**
       * `Copy`
       */
     Copy(): string;
@@ -8181,6 +8185,14 @@ export function useAFFiNEI18N(): {
         readonly name: string;
     }): string;
     /**
+      * `MCP Server`
+      */
+    ["com.affine.integration.mcp-server.name"](): string;
+    /**
+      * `Enable other MCP Client to search and read the doc of AFFiNE.`
+      */
+    ["com.affine.integration.mcp-server.desc"](): string;
+    /**
       * `Notes`
       */
     ["com.affine.audio.notes"](): string;
@@ -8314,6 +8326,10 @@ export function useAFFiNEI18N(): {
       * `Cut`
       */
     ["com.affine.context-menu.cut"](): string;
+    /**
+      * `Add icon`
+      */
+    ["com.affine.docIconPicker.placeholder"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -8719,6 +8735,10 @@ export function useAFFiNEI18N(): {
       * `Workspace id is required to update team subscription.`
       */
     ["error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION"](): string;
+    /**
+      * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
+      */
+    ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
     /**
       * `Copilot session not found.`
       */

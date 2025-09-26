@@ -8,6 +8,8 @@ import {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
+import { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import { SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewService } from '@affine/core/modules/peek-view';
@@ -104,6 +106,9 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       chatPanelRef.current.aiDraftService = framework.get(AIDraftService);
       chatPanelRef.current.aiToolsConfigService =
         framework.get(AIToolsConfigService);
+      chatPanelRef.current.subscriptionService =
+        framework.get(SubscriptionService);
+      chatPanelRef.current.aiModelService = framework.get(AIModelService);
 
       containerRef.current?.append(chatPanelRef.current);
     } else {

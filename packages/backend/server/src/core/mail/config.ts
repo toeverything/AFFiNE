@@ -6,6 +6,7 @@ declare global {
   interface AppConfigSchema {
     mailer: {
       SMTP: {
+        name: string;
         host: string;
         port: number;
         username: string;
@@ -16,6 +17,7 @@ declare global {
 
       fallbackDomains: ConfigItem<string[]>;
       fallbackSMTP: {
+        name: string;
         host: string;
         port: number;
         username: string;
@@ -28,6 +30,11 @@ declare global {
 }
 
 defineModuleConfig('mailer', {
+  'SMTP.name': {
+    desc: 'Name of the email server (e.g. your domain name)',
+    default: 'AFFiNE Server',
+    env: 'MAILER_SERVERNAME',
+  },
   'SMTP.host': {
     desc: 'Host of the email server (e.g. smtp.gmail.com)',
     default: '',
@@ -63,6 +70,10 @@ defineModuleConfig('mailer', {
     desc: 'The emails from these domains are always sent using the fallback SMTP server.',
     default: [],
     shape: z.array(z.string()),
+  },
+  'fallbackSMTP.name': {
+    desc: 'Name of the fallback email server (e.g. your domain name)',
+    default: 'AFFiNE Server',
   },
   'fallbackSMTP.host': {
     desc: 'Host of the email server (e.g. smtp.gmail.com)',

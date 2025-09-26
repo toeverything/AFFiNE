@@ -1928,18 +1928,11 @@ Now apply the \`updates\` to the \`content\`, following the intent in \`op\`, an
 ];
 
 const CHAT_PROMPT: Omit<Prompt, 'name'> = {
-  model: 'claude-sonnet-4@20250514',
+  model: 'gemini-2.5-flash',
   optionalModels: [
-    'gpt-4.1',
-    'gpt-5',
-    'o3',
-    'o4-mini',
     'gemini-2.5-flash',
     'gemini-2.5-pro',
-    'claude-opus-4@20250514',
     'claude-sonnet-4@20250514',
-    'claude-3-7-sonnet@20250219',
-    'claude-3-5-sonnet-v2@20241022',
   ],
   messages: [
     {
@@ -2099,6 +2092,7 @@ Below is the user's query. Please respond in the user's preferred language witho
       'codeArtifact',
       'blobRead',
     ],
+    proModels: ['gemini-2.5-pro', 'claude-sonnet-4@20250514'],
   },
 };
 

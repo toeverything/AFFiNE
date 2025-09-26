@@ -50,6 +50,13 @@ export class AccessTokenResolver {
     return await this.models.accessToken.list(user.id);
   }
 
+  @Query(() => [RevealedAccessToken])
+  async revealedAccessTokens(
+    @CurrentUser() user: CurrentUser
+  ): Promise<RevealedAccessToken[]> {
+    return await this.models.accessToken.list(user.id, true);
+  }
+
   @Mutation(() => RevealedAccessToken)
   async generateUserAccessToken(
     @CurrentUser() user: CurrentUser,

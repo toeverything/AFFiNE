@@ -2,12 +2,15 @@ import type {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type { SubscriptionService } from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { ArrowUpBigIcon, CloseIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -324,9 +327,6 @@ export class AIChatInput extends SignalWatcher(
   @state()
   accessor focused = false;
 
-  @state()
-  accessor modelId: string | undefined = undefined;
-
   @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
 
@@ -367,6 +367,15 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
   accessor isRootSession: boolean = true;
@@ -516,14 +525,15 @@ export class AIChatInput extends SignalWatcher(
         <div class="chat-input-footer-spacer"></div>
         <chat-input-preference
           .session=${this.session}
-          .onModelChange=${this._handleModelChange}
-          .modelId=${this.modelId}
           .extendedThinking=${this._isReasoningActive}
           .onExtendedThinkingChange=${this._toggleReasoning}
           .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
           .isNetworkActive=${this._isNetworkActive}
           .onNetworkActiveChange=${this._toggleNetworkSearch}
           .toolsConfigService=${this.aiToolsConfigService}
+          .notificationService=${this.notificationService}
+          .subscriptionService=${this.subscriptionService}
+          .aiModelService=${this.aiModelService}
         ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
           ? html`<button
@@ -646,10 +656,6 @@ export class AIChatInput extends SignalWatcher(
     await this.send(value);
   };
 
-  private readonly _handleModelChange = (modelId: string) => {
-    this.modelId = modelId;
-  };
-
   send = async (text: string) => {
     try {
       const {
@@ -693,6 +699,7 @@ export class AIChatInput extends SignalWatcher(
         this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
           .value;
 
+      const modelId = this.aiModelService.modelId.value;
       const stream = await AIProvider.actions.chat({
         sessionId,
         input: userInput,
@@ -717,7 +724,7 @@ export class AIChatInput extends SignalWatcher(
         webSearch: this._isNetworkActive,
         reasoning: this._isReasoningActive,
         toolsConfig: this.aiToolsConfigService.config.value,
-        modelId: this.modelId,
+        modelId,
       });
 
       for await (const text of stream) {

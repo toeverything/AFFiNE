@@ -88,11 +88,12 @@ export const listUserAccessTokensQuery = {
   id: 'listUserAccessTokensQuery' as const,
   op: 'listUserAccessTokens',
   query: `query listUserAccessTokens {
-  accessTokens {
+  revealedAccessTokens {
     id
     name
     createdAt
     expiresAt
+    token
   }
 }`,
 };
@@ -1057,6 +1058,28 @@ export const createCopilotMessageMutation = {
   createCopilotMessage(options: $options)
 }`,
   file: true,
+};
+
+export const getPromptModelsQuery = {
+  id: 'getPromptModelsQuery' as const,
+  op: 'getPromptModels',
+  query: `query getPromptModels($promptName: String!) {
+  currentUser {
+    copilot {
+      models(promptName: $promptName) {
+        defaultModel
+        optionalModels {
+          id
+          name
+        }
+        proModels {
+          id
+          name
+        }
+      }
+    }
+  }
+}`,
 };
 
 export const copilotQuotaQuery = {

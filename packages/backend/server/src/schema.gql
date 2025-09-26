@@ -226,6 +226,9 @@ type Copilot {
   contexts(contextId: String, sessionId: String): [CopilotContext!]!
   histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]! @deprecated(reason: "use `chats` instead")
 
+  """List available models for a prompt, with human-readable names"""
+  models(promptName: String!): CopilotModelsType!
+
   """Get the quota of the user in the workspace"""
   quota: CopilotQuota!
 
@@ -358,6 +361,17 @@ type CopilotInvalidContextDataType {
 
 type CopilotMessageNotFoundDataType {
   messageId: String!
+}
+
+type CopilotModelType {
+  id: String!
+  name: String!
+}
+
+type CopilotModelsType {
+  defaultModel: String!
+  optionalModels: [CopilotModelType!]!
+  proModels: [CopilotModelType!]!
 }
 
 input CopilotPromptConfigInput {
@@ -730,6 +744,7 @@ enum ErrorNames {
   LICENSE_REVEALED
   LINK_EXPIRED
   MAILER_SERVICE_IS_NOT_CONFIGURED
+  MANAGED_BY_APP_STORE_OR_PLAY
   MEMBER_NOT_FOUND_IN_SPACE
   MEMBER_QUOTA_EXCEEDED
   MENTION_USER_DOC_ACCESS_DENIED
@@ -1581,6 +1596,7 @@ type Query {
 
   """query workspace embedding status"""
   queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
+  revealedAccessTokens: [RevealedAccessToken!]!
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -1948,6 +1964,11 @@ type SubscriptionType {
   canceledAt: DateTime
   createdAt: DateTime!
   end: DateTime
+
+  """
+  If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store
+  """
+  iapStore: String
   id: String @deprecated(reason: "removed")
   nextBillAt: DateTime
 
@@ -1956,6 +1977,11 @@ type SubscriptionType {
   There won't actually be a subscription with plan 'Free'
   """
   plan: SubscriptionPlan!
+
+  """
+  Payment provider of this subscription. Read-only. One of: stripe | revenuecat
+  """
+  provider: String
   recurring: SubscriptionRecurring!
   start: DateTime!
   status: SubscriptionStatus!

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Provider } from '@prisma/client';
 
 import { EventBus, JobQueue, OnJob } from '../../base';
+import { RevenueCatWebhookHandler } from './revenuecat';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
   SubscriptionVariant,
 } from './types';
 
@@ -13,6 +15,8 @@ declare global {
   interface Jobs {
     'nightly.cleanExpiredOnetimeSubscriptions': {};
     'nightly.notifyAboutToExpireWorkspaceSubscriptions': {};
+    'nightly.reconcileRevenueCatSubscriptions': {};
+    'nightly.revenuecat.syncUser': { userId: string };
   }
 }
 
@@ -21,7 +25,8 @@ export class SubscriptionCronJobs {
   constructor(
     private readonly db: PrismaClient,
     private readonly event: EventBus,
-    private readonly queue: JobQueue
+    private readonly queue: JobQueue,
+    private readonly rcHandler: RevenueCatWebhookHandler
   ) {}
 
   private getDateRange(after: number, base: number | Date = Date.now()) {
@@ -43,6 +48,12 @@ export class SubscriptionCronJobs {
       {
         jobId: 'nightly-payment-clean-expired-onetime-subscriptions',
       }
+    );
+
+    await this.queue.add(
+      'nightly.reconcileRevenueCatSubscriptions',
+      {},
+      { jobId: 'nightly-payment-reconcile-revenuecat-subscriptions' }
     );
 
     // FIXME(@forehalo): the strategy is totally wrong, for monthly plan. redesign required
@@ -141,5 +152,42 @@ export class SubscriptionCronJobs {
         recurring: subscription.variant as SubscriptionRecurring,
       });
     }
+  }
+
+  @OnJob('nightly.reconcileRevenueCatSubscriptions')
+  async reconcileRevenueCatSubscriptions() {
+    // Find active/trialing/past_due RC subscriptions and resync via RC REST
+    const subs = await this.db.subscription.findMany({
+      where: {
+        provider: Provider.revenuecat,
+        status: {
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
+        },
+      },
+      select: { targetId: true },
+    });
+
+    // de-duplicate targetIds
+    const userIds = Array.from(new Set(subs.map(s => s.targetId)));
+    for (const userId of userIds) {
+      await this.queue.add(
+        'nightly.revenuecat.syncUser',
+        { userId },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 60_000 },
+          jobId: `nightly-rc-sync-${userId}`,
+        }
+      );
+    }
+  }
+
+  @OnJob('nightly.revenuecat.syncUser')
+  async reconcileRevenueCatSubscriptionOfUser(payload: { userId: string }) {
+    await this.rcHandler.syncAppUser(payload.userId);
   }
 }

@@ -24,7 +24,7 @@
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.13",
+    "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@dotlottie/player-component": "^2.7.12",
     "@emotion/cache": "^11.14.0",

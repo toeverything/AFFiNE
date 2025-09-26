@@ -59,27 +59,9 @@ test.describe('comments', () => {
       { delay: 50 }
     );
 
-    // Select some text using triple-click and then refine selection
-    // Triple-click to select the entire paragraph
-    await page.locator('affine-paragraph').first().click({ clickCount: 3 });
-
-    // Wait for selection
-    await page.waitForTimeout(100);
-
-    // Now we have the whole paragraph selected, let's use mouse to select just "some text"
-    const paragraph = page.locator('affine-paragraph').first();
-    const bbox = await paragraph.boundingBox();
-    if (!bbox) throw new Error('Paragraph not found');
-
-    // Click and drag to select "some text" portion
-    // Start roughly where "some" begins (estimated position)
-    await page.mouse.move(bbox.x + bbox.width * 0.45, bbox.y + bbox.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(bbox.x + bbox.width * 0.58, bbox.y + bbox.height / 2);
-    await page.mouse.up();
-
-    // Wait a bit for selection to stabilize
-    await page.waitForTimeout(200);
+    for (let i = 0; i < 11; i++) {
+      await page.keyboard.press('Shift+ArrowLeft');
+    }
 
     // Wait for the toolbar to appear after text selection
     const toolbar = page.locator('editor-toolbar');
@@ -97,11 +79,14 @@ test.describe('comments', () => {
     await page.waitForTimeout(300); // Wait for sidebar animation
 
     // Find the comment editor
-    const commentEditor = page.locator('.comment-editor-viewport');
+    const commentEditor = page.locator(
+      '.comment-editor-viewport .page-editor-container'
+    );
     await expect(commentEditor).toBeVisible();
 
     // Enter comment text
     await commentEditor.click();
+    await commentEditor.focus();
     await page.keyboard.type('This is my first comment on this text', {
       delay: 50,
     });
@@ -125,11 +110,7 @@ test.describe('comments', () => {
     // The preview should show the selected text that was commented on
     // Target specifically the sidebar tab content to avoid conflicts with editor content
     const sidebarTab = page.getByTestId('sidebar-tab-content-comment');
-    await expect(
-      sidebarTab.locator(
-        'text=This is a test paragraph with some text that we will comment on.'
-      )
-    ).toBeVisible();
+    await expect(sidebarTab.locator('text=comment on.')).toBeVisible();
 
     // This text should appear in the sidebar as the preview of what was commented on
 

@@ -108,6 +108,23 @@ export class SubscriptionType implements Partial<Subscription> {
   @Field(() => Date)
   updatedAt!: Date;
 
+  // read-only fields for display purpose
+  // provider: 'stripe' | 'revenuecat'
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'Payment provider of this subscription. Read-only. One of: stripe | revenuecat',
+  })
+  provider?: string | null;
+
+  // iapStore: 'app_store' | 'play_store' | null when provider is stripe
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store',
+  })
+  iapStore?: string | null;
+
   // deprecated fields
   @Field(() => String, {
     name: 'id',

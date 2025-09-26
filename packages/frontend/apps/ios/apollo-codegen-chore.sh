@@ -4,8 +4,7 @@ cd "$(dirname "$0")"
 
 set -euo pipefail
 
-VERSION=$(grep -o 'apollo-ios", exact: "[^"]*"' "App/Packages/AffineGraphQL/Package.swift" | sed 's/.*exact: "\([^"]*\)".*/\1/')
-[ -z "$VERSION" ] && { echo "❌ Failed to extract version"; exit 1; }
+VERSION=${1:-"1.23.0"}  # Use first argument or default to 1.23.0
 echo "📦 Apollo Version: $VERSION"
 
 sed -i '' "s|apollo-ios\.git\", from: \"[^\"]*\"|apollo-ios.git\", from: \"$VERSION\"|" "App/Packages/Intelligents/Package.swift"

@@ -80,6 +80,7 @@ export const PromptToolsSchema = z
 
 export const PromptConfigStrictSchema = z.object({
   tools: PromptToolsSchema.nullable().optional(),
+  proModels: z.array(z.string()).nullable().optional(),
   // params requirements
   requireContent: z.boolean().nullable().optional(),
   requireAttachment: z.boolean().nullable().optional(),
