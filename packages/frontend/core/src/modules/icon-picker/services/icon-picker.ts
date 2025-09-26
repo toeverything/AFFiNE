@@ -6,7 +6,6 @@ import { Service } from '@toeverything/infra';
 // Re-export types from BlockSuite shared services
 export type {
   IconData,
-  IconPickerOptions,
   IconPickerService as IIconPickerService,
 } from '@blocksuite/affine-shared/services';
 export { IconPickerServiceIdentifier } from '@blocksuite/affine-shared/services';
