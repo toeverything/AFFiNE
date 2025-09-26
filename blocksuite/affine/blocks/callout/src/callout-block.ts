@@ -143,12 +143,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     };
 
     return html`
-      <div
-        @click=${(e: MouseEvent) => {
-          e.stopPropagation();
-        }}
-        class="icon-picker-container"
-      >
+      <div class="icon-picker-container">
         ${renderUniLit(iconPickerComponent, props)}
       </div>
     `;
