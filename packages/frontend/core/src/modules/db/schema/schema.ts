@@ -1,3 +1,4 @@
+import type { IconData } from '@affine/component';
 import {
   type DBSchemaBuilder,
   f,
@@ -51,8 +52,7 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
      * ${doc|collection|folder|tag}:${id}
      */
     id: f.string().primaryKey(),
-    type: f.enum('emoji', 'affine-icon', 'blob'),
-    icon: f.string(),
+    icon: f.json<IconData>(),
   },
 } as const satisfies DBSchemaBuilder;
 export type AFFiNEWorkspaceDbSchema = typeof AFFiNE_WORKSPACE_DB_SCHEMA;
@@ -61,10 +61,6 @@ export type DocProperties = ORMEntity<AFFiNEWorkspaceDbSchema['docProperties']>;
 export type DocCustomPropertyInfo = ORMEntity<
   AFFiNEWorkspaceDbSchema['docCustomPropertyInfo']
 >;
-export type ExplorerIcon = ORMEntity<AFFiNEWorkspaceDbSchema['explorerIcon']>;
-export type ExplorerIconType = ORMEntity<
-  AFFiNEWorkspaceDbSchema['explorerIcon']
->['type'];
 
 export const AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA = {
   favorite: {

@@ -1,5 +1,5 @@
 export interface PayWallPlugin {
   showPayWall(options: {
-    type: string;
+    type: 'Pro' | 'AI';
   }): Promise<{ success: boolean; type: string }>;
 }

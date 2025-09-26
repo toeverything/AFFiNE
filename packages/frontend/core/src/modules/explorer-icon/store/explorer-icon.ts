@@ -1,7 +1,7 @@
+import type { IconData } from '@affine/component';
 import { Store } from '@toeverything/infra';
 
 import type { WorkspaceDBService } from '../../db';
-import type { ExplorerIconType } from '../../db/schema/schema';
 
 export type ExplorerType = 'doc' | 'collection' | 'folder' | 'tag';
 
@@ -18,21 +18,15 @@ export class ExplorerIconStore extends Store {
     return this.dbService.db.explorerIcon.get(`${type}:${id}`);
   }
 
-  setIcon(options: {
-    where: ExplorerType;
-    id: string;
-    type?: ExplorerIconType;
-    icon?: string;
-  }) {
-    const { where, id, type, icon } = options;
+  setIcon(options: { where: ExplorerType; id: string; icon?: IconData }) {
+    const { where, id, icon } = options;
     // remove icon
-    if (!type || !icon) {
+    if (!icon) {
       return this.dbService.db.explorerIcon.delete(`${where}:${id}`);
     }
     // upsert icon
     return this.dbService.db.explorerIcon.create({
       id: `${where}:${id}`,
-      type,
       icon,
     });
   }

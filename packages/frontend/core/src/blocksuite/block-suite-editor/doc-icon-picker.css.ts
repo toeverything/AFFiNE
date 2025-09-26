@@ -6,7 +6,7 @@ export const docIconPickerTrigger = style({
   height: 64,
   padding: 2,
   selectors: {
-    '&[data-icon-type="emoji"]': {
+    '&[data-icon-type="emoji"], &[data-icon-type="affine-icon"]': {
       fontSize: 60,
       lineHeight: 1,
     },

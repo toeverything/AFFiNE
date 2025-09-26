@@ -459,27 +459,19 @@ export class CopilotSessionModel extends BaseModel {
         docId: options.docId,
         deletedAt: null,
       },
-      select: { id: true, prompt: true },
+      select: { id: true },
     });
+
     const sessionIds = sessions.map(({ id }) => id);
     // cleanup all messages
     await this.db.aiSessionMessage.deleteMany({
       where: { sessionId: { in: sessionIds } },
     });
 
-    // only mark action session as deleted
-    // chat session always can be reuse
-    const actionIds = sessions
-      .filter(({ prompt }) => !!prompt.action)
-      .map(({ id }) => id);
-
-    // 标记 action session 为已删除
-    if (actionIds.length > 0) {
-      await this.db.aiSession.updateMany({
-        where: { id: { in: actionIds } },
-        data: { pinned: false, deletedAt: new Date() },
-      });
-    }
+    await this.db.aiSession.updateMany({
+      where: { id: { in: sessionIds } },
+      data: { pinned: false, deletedAt: new Date() },
+    });
 
     return sessionIds;
   }

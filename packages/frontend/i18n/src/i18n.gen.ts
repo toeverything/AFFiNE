@@ -8307,6 +8307,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.filter.only-current-mode"](): string;
     /**
+      * `Unlock more features`
+      */
+    ["com.affine.payment.subscription.title"](): string;
+    /**
+      * `The universal editor that lets you work, play, present or create just about anything.`
+      */
+    ["com.affine.payment.subscription.description"](): string;
+    /**
+      * `Upgrade`
+      */
+    ["com.affine.payment.subscription.button"](): string;
+    /**
       * `Reply`
       */
     ["com.affine.comment.reply"](): string;
