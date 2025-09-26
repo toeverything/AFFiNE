@@ -125,8 +125,8 @@ class DeleteSessionInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => String)
-  docId!: string;
+  @Field(() => String, { nullable: true })
+  docId!: string | undefined;
 
   @Field(() => [String])
   sessionIds!: string[];
@@ -737,11 +737,24 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => DeleteSessionInput })
     options: DeleteSessionInput
   ): Promise<string[]> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
-    if (!options.sessionIds.length) {
+    const { workspaceId, docId, sessionIds } = options;
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId, docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+    if (!sessionIds.length) {
       throw new NotFoundException('Session not found');
     }
-    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
+    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');

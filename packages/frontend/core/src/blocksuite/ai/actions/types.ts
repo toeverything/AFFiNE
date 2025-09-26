@@ -441,7 +441,7 @@ declare global {
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,
-        docId: string,
+        docId: string | undefined,
         sessionIds: string[]
       ) => Promise<void>;
       ids: (

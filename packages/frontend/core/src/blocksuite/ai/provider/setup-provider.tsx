@@ -794,7 +794,7 @@ Could you make a new website based on these notes and send back just the html fi
     },
     cleanup: async (
       workspaceId: string,
-      docId: string,
+      docId: string | undefined,
       sessionIds: string[]
     ) => {
       await client.cleanupSessions({ workspaceId, docId, sessionIds });
