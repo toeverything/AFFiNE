@@ -2497,7 +2497,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-block-callout@workspace:blocksuite/affine/blocks/callout"
   dependencies:
-    "@affine/component": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-ext-loader": "workspace:*"
     "@blocksuite/affine-inline-preset": "workspace:*"
