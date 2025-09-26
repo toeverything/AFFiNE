@@ -179,6 +179,7 @@ test('should standardize RC subscriber response and upsert subscription with obs
   const subscriber = mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: true,
       latestPurchaseDate: new Date('2025-01-01T00:00:00.000Z'),
       expirationDate: new Date('2026-01-01T00:00:00.000Z'),
@@ -245,6 +246,7 @@ test('should process expiration/refund by deleting subscription and emitting can
   const subscriber = mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: false,
       latestPurchaseDate: new Date('2024-01-01T00:00:00.000Z'),
       expirationDate: new Date('2024-02-01T00:00:00.000Z'),
@@ -341,11 +343,12 @@ test('should activate subscriptions via webhook for whitelisted products across 
       stub: [
         {
           identifier: 'Pro',
+          isTrial: false,
           isActive: true,
           latestPurchaseDate: new Date('2025-01-10T00:00:00.000Z'),
           expirationDate: new Date('2025-02-10T00:00:00.000Z'),
           productId: 'app.affine.pro.Monthly',
-          store: 'app_store',
+          store: 'app_store' as const,
           willRenew: true,
           duration: null,
         },
@@ -363,11 +366,12 @@ test('should activate subscriptions via webhook for whitelisted products across 
       stub: [
         {
           identifier: 'AI',
+          isTrial: false,
           isActive: true,
           latestPurchaseDate: new Date('2025-03-01T00:00:00.000Z'),
           expirationDate: new Date('2026-03-01T00:00:00.000Z'),
           productId: 'app.affine.pro.ai.Annual',
-          store: 'play_store',
+          store: 'play_store' as const,
           willRenew: true,
           duration: null,
         },
@@ -419,6 +423,7 @@ test('should keep active and advance period dates when a trialing subscription r
     [
       {
         identifier: 'Pro',
+        isTrial: false,
         isActive: true,
         latestPurchaseDate: new Date('2025-04-01T00:00:00.000Z'),
         expirationDate: new Date('2025-04-08T00:00:00.000Z'),
@@ -431,6 +436,7 @@ test('should keep active and advance period dates when a trialing subscription r
     [
       {
         identifier: 'Pro',
+        isTrial: false,
         isActive: true,
         latestPurchaseDate: new Date('2025-04-08T00:00:00.000Z'),
         expirationDate: new Date('2026-04-08T00:00:00.000Z'),
@@ -471,6 +477,7 @@ test('should remove or cancel the record and revoke entitlement when a trialing 
     [
       {
         identifier: 'Pro',
+        isTrial: false,
         isActive: true,
         latestPurchaseDate: new Date('2025-04-01T00:00:00.000Z'),
         expirationDate: new Date('2025-04-08T00:00:00.000Z'),
@@ -483,6 +490,7 @@ test('should remove or cancel the record and revoke entitlement when a trialing 
     [
       {
         identifier: 'Pro',
+        isTrial: false,
         isActive: false,
         latestPurchaseDate: new Date('2025-04-01T00:00:00.000Z'),
         expirationDate: new Date('2024-01-01T00:00:00.000Z'),
@@ -518,6 +526,7 @@ test('should set canceledAt and keep active until expiration when will_renew is 
   mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: true,
       latestPurchaseDate: new Date('2025-05-01T00:00:00.000Z'),
       expirationDate: new Date('2025-06-01T00:00:00.000Z'),
@@ -554,6 +563,7 @@ test('should retain record as past_due (inactive but not expired) and NOT emit c
   mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: false,
       latestPurchaseDate: new Date('2025-05-01T00:00:00.000Z'),
       expirationDate: new Date('2999-01-01T00:00:00.000Z'),
@@ -657,6 +667,7 @@ test('should skip RC upsert when Stripe active already exists for same plan', as
   mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: true,
       latestPurchaseDate: new Date('2025-06-01T00:00:00.000Z'),
       expirationDate: new Date('2025-07-01T00:00:00.000Z'),
@@ -722,6 +733,7 @@ test('should reconcile and fix missing or out-of-order states for revenuecat Act
   const subscriber = mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: true,
       latestPurchaseDate: new Date('2025-03-01T00:00:00.000Z'),
       expirationDate: new Date('2026-03-01T00:00:00.000Z'),
@@ -759,6 +771,7 @@ test('should treat refund as early expiration and revoke immediately', async t =
   mockSub([
     {
       identifier: 'Pro',
+      isTrial: false,
       isActive: false,
       latestPurchaseDate: new Date('2025-01-01T00:00:00.000Z'),
       expirationDate: new Date('2025-01-15T00:00:00.000Z'),
@@ -790,6 +803,7 @@ test('should ignore non-whitelisted productId and not write to DB', async t => {
   mockSub([
     {
       identifier: 'Weird',
+      isTrial: false,
       isActive: true,
       latestPurchaseDate: new Date('2025-07-01T00:00:00.000Z'),
       expirationDate: new Date('2026-07-01T00:00:00.000Z'),
@@ -819,6 +833,7 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     [
       {
         identifier: 'Pro',
+        isTrial: false,
         isActive: true,
         latestPurchaseDate: new Date('2025-08-01T00:00:00.000Z'),
         expirationDate: new Date('2025-09-01T00:00:00.000Z'),
@@ -831,6 +846,7 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     [
       {
         identifier: 'AI',
+        isTrial: false,
         isActive: true,
         latestPurchaseDate: new Date('2025-10-01T00:00:00.000Z'),
         expirationDate: new Date('2026-10-01T00:00:00.000Z'),
@@ -843,6 +859,7 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     [
       {
         identifier: 'Pro',
+        isTrial: false,
         isActive: true,
         latestPurchaseDate: new Date('2025-11-01T00:00:00.000Z'),
         expirationDate: new Date('2026-02-01T00:00:00.000Z'),

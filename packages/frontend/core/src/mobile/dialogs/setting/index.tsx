@@ -12,6 +12,7 @@ import { AppearanceGroup } from './appearance';
 import { ExperimentalFeatureSetting } from './experimental';
 import { OthersGroup } from './others';
 import * as styles from './style.css';
+import { UserSubscription } from './subscription';
 import { SwipeDialog } from './swipe-dialog';
 import { UserProfile } from './user-profile';
 import { UserUsage } from './user-usage';
@@ -23,6 +24,7 @@ const MobileSetting = () => {
   return (
     <div className={styles.root}>
       <UserProfile />
+      <UserSubscription />
       <UserUsage />
       <AppearanceGroup />
       <AboutGroup />

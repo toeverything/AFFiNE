@@ -40,12 +40,15 @@ export const DocIconPicker = ({
 
   const icon = useLiveData(explorerIconService.icon$('doc', docId));
 
-  const isPlaceholder = !icon?.type || !icon?.icon;
+  const isPlaceholder = !icon?.icon;
 
   if (readonly) {
     return isPlaceholder ? null : (
-      <div className={styles.docIconPickerTrigger} data-icon-type={icon?.type}>
-        <IconRenderer iconType={icon.type} icon={icon.icon} />
+      <div
+        className={styles.docIconPickerTrigger}
+        data-icon-type={icon?.icon?.type}
+      >
+        <IconRenderer data={icon.icon} />
       </div>
     );
   }
@@ -53,14 +56,12 @@ export const DocIconPicker = ({
   return (
     <TitleContainer isPlaceholder={isPlaceholder}>
       <IconEditor
-        iconType={icon?.type}
         icon={icon?.icon}
-        onIconChange={(type, icon) => {
+        onIconChange={data => {
           explorerIconService.setIcon({
             where: 'doc',
             id: docId,
-            type,
-            icon,
+            icon: data,
           });
         }}
         closeAfterSelect={true}

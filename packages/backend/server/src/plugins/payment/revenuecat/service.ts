@@ -3,6 +3,18 @@ import { z } from 'zod';
 
 import { Config } from '../../../base';
 
+const Store = z.enum([
+  'amazon',
+  'app_store',
+  'mac_app_store',
+  'play_store',
+  'promotional',
+  'stripe',
+  'rc_billing',
+  'roku',
+  'paddle',
+]);
+
 const zRcV2RawProduct = z
   .object({
     id: z.string().nonempty(),
@@ -11,20 +23,7 @@ const zRcV2RawProduct = z
       .object({ duration: z.string().nullable() })
       .partial()
       .nullable(),
-    app: z
-      .object({
-        type: z.enum([
-          'amazon',
-          'app_store',
-          'mac_app_store',
-          'play_store',
-          'stripe',
-          'rc_billing',
-          'roku',
-          'paddle',
-        ]),
-      })
-      .partial(),
+    app: z.object({ type: Store }).partial(),
   })
   .passthrough();
 
@@ -49,7 +48,7 @@ const zRcV2RawSubscription = z
     entitlements: zRcV2RawEntitlements,
     starts_at: z.number(),
     current_period_ends_at: z.number().nullable(),
-    store: z.string(),
+    store: Store,
     auto_renewal_status: z.enum([
       'will_renew',
       'will_not_renew',
@@ -83,11 +82,12 @@ const zRcV2RawEnvelope = z
 // v2 minimal, simplified structure exposed to callers
 export const Subscription = z.object({
   identifier: z.string(),
+  isTrial: z.boolean(),
   isActive: z.boolean(),
   latestPurchaseDate: z.date().nullable(),
   expirationDate: z.date().nullable(),
   productId: z.string(),
-  store: z.string(),
+  store: Store,
   willRenew: z.boolean(),
   duration: z.string().nullable(),
 });
@@ -145,6 +145,7 @@ export class RevenueCatService {
             }
             return {
               identifier: ent.lookup_key,
+              isTrial: sub.status === 'trialing',
               isActive:
                 sub.gives_access === true ||
                 sub.status === 'active' ||

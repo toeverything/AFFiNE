@@ -21,6 +21,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
+import { NativePaywallProvider } from '@affine/core/modules/paywall';
 import {
   configureLocalStorageStateStorageImpls,
   NbstoreProvider,
@@ -63,6 +64,7 @@ import { ModalConfigProvider } from './modal-config';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { PayWall } from './plugins/paywall';
 import { writeEndpointToken } from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
 
@@ -197,6 +199,11 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
       });
     },
   };
+});
+framework.impl(NativePaywallProvider, {
+  showPaywall: async (type: 'Pro' | 'AI') => {
+    await PayWall.showPayWall({ type });
+  },
 });
 
 const frameworkProvider = framework.provider();

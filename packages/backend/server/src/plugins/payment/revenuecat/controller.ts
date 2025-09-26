@@ -30,11 +30,14 @@ const RcEventSchema = z
 
     app_user_id: z.string().optional(),
     store: z.string().optional(),
-    is_family_share: z.boolean().optional(),
-    period_type: z.string().optional(),
-    original_transaction_id: z.string().optional(),
-    transaction_id: z.string().optional(),
-    purchase_token: z.string().optional(),
+    is_family_share: z.boolean().nullable().optional(),
+    period_type: z
+      .enum(['TRIAL', 'INTRO', 'NORMAL', 'PROMOTIONAL', 'PREPAID'])
+      .nullable()
+      .optional(),
+    original_transaction_id: z.string().nullable().optional(),
+    transaction_id: z.string().nullable().optional(),
+    purchase_token: z.string().nullable().optional(),
   })
   .passthrough();
 
@@ -74,7 +77,11 @@ export class RevenueCatWebhookController {
                 `[${id}] RevenueCat Webhook {${type}} received for appUserId=${appUserId}.`
               );
 
-              if (appUserId && !event.is_family_share) {
+              if (
+                appUserId &&
+                (typeof event.is_family_share !== 'boolean' ||
+                  !event.is_family_share)
+              ) {
                 // immediately ack and process asynchronously
                 this.event
                   .emitAsync('revenuecat.webhook', { appUserId, event })

@@ -6,6 +6,8 @@ import {
   type DropTargetTreeInstruction,
   IconAndNameEditorMenu,
   IconButton,
+  type IconData,
+  IconRenderer,
   Menu,
   MenuItem,
   useDraggable,
@@ -13,7 +15,6 @@ import {
 } from '@affine/component';
 import { Guard } from '@affine/core/components/guard';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
-import type { ExplorerIconType } from '@affine/core/modules/db/schema/schema';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
 import type { ExplorerType } from '@affine/core/modules/explorer-icon/store/explorer-icon';
 import type { DocPermissionActions } from '@affine/core/modules/permissions';
@@ -142,13 +143,12 @@ export const NavigationPanelTreeNodeRenameModal = ({
   );
 
   const onIconChange = useCallback(
-    (type?: ExplorerIconType, icon?: string) => {
+    (data?: IconData) => {
       if (!explorerIconConfig) return;
       explorerIconService.setIcon({
         where: explorerIconConfig.where,
         id: explorerIconConfig.id,
-        type,
-        icon,
+        icon: data,
       });
     },
     [explorerIconConfig, explorerIconService]
@@ -161,8 +161,7 @@ export const NavigationPanelTreeNodeRenameModal = ({
       onIconChange={onIconChange}
       onNameChange={handleRename}
       name={rawName ?? ''}
-      iconType={explorerIcon?.type ?? 'emoji'}
-      icon={explorerIcon?.icon ?? ''}
+      icon={explorerIcon?.icon}
       width={sidebarWidth - 16}
       contentOptions={{
         sideOffset: 36,
@@ -461,10 +460,7 @@ export const NavigationPanelTreeNode = ({
           />
         </div>
         <div className={styles.iconContainer}>
-          {/* Only emoji icon is supported for now */}
-          {explorerIcon && explorerIcon.type === 'emoji'
-            ? explorerIcon.icon
-            : fallbackIcon}
+          <IconRenderer data={explorerIcon?.icon} fallback={fallbackIcon} />
         </div>
       </div>
 

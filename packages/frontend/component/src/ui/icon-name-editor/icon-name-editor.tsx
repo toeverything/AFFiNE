@@ -1,22 +1,18 @@
-import data from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
 import clsx from 'clsx';
-import { useTheme } from 'next-themes';
 import { type ReactNode, useCallback, useState } from 'react';
 
 import { Button, type ButtonProps } from '../button';
+import { type IconData, IconPicker } from '../icon-picker';
+import { IconRenderer } from '../icon-picker/renderer';
 import Input from '../input';
 import { Menu, type MenuProps } from '../menu';
 import * as styles from './icon-name-editor.css';
 
-export type IconType = 'emoji' | 'affine-icon' | 'blob';
-
 export interface IconEditorProps {
-  iconType?: IconType;
-  icon?: string;
+  icon?: IconData;
   closeAfterSelect?: boolean;
   iconPlaceholder?: ReactNode;
-  onIconChange?: (type?: IconType, icon?: string) => void;
+  onIconChange?: (data?: IconData) => void;
   triggerClassName?: string;
 }
 
@@ -38,25 +34,7 @@ export interface IconAndNameEditorMenuProps
   skipIfNotChanged?: boolean;
 }
 
-export const IconRenderer = ({
-  iconType,
-  icon,
-  fallback,
-}: {
-  iconType: IconType;
-  icon: string;
-  fallback?: ReactNode;
-}) => {
-  switch (iconType) {
-    case 'emoji':
-      return <div>{icon ?? fallback}</div>;
-    default:
-      return <div>{fallback}</div>;
-  }
-};
-
 export const IconEditor = ({
-  iconType,
   icon,
   closeAfterSelect,
   iconPlaceholder,
@@ -71,16 +49,17 @@ export const IconEditor = ({
   triggerVariant?: ButtonProps['variant'];
 }) => {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const { resolvedTheme } = useTheme();
-  const handleEmojiClick = useCallback(
-    (emoji: any) => {
-      onIconChange?.('emoji', emoji.native);
+
+  const handleSelect = useCallback(
+    (data?: IconData) => {
+      onIconChange?.(data);
       if (closeAfterSelect) {
         setIsPickerOpen(false);
       }
     },
     [closeAfterSelect, onIconChange]
   );
+
   return (
     <Menu
       rootOptions={{
@@ -97,30 +76,18 @@ export const IconEditor = ({
       }}
       items={
         <div onWheel={e => e.stopPropagation()}>
-          <Picker
-            data={data}
-            theme={resolvedTheme}
-            onEmojiSelect={handleEmojiClick}
-          />
+          <IconPicker onSelect={handleSelect} />
         </div>
       }
     >
       <Button
         variant={triggerVariant}
         className={clsx(styles.iconPicker, triggerClassName)}
-        data-icon-type={iconType}
+        data-icon-type={icon?.type}
         aria-label={icon ? 'Change Icon' : 'Select Icon'}
         title={icon ? 'Change Icon' : 'Select Icon'}
       >
-        {icon && iconType ? (
-          <IconRenderer
-            iconType={iconType}
-            icon={icon}
-            fallback={iconPlaceholder}
-          />
-        ) : (
-          iconPlaceholder
-        )}
+        <IconRenderer data={icon} fallback={iconPlaceholder} />
       </Button>
     </Menu>
   );
@@ -160,7 +127,6 @@ export const IconAndNameEditorMenu = ({
   open,
   onOpenChange,
   width = 300,
-  iconType: initialIconType,
   icon: initialIcon,
   name: initialName,
   onIconChange,
@@ -169,15 +135,15 @@ export const IconAndNameEditorMenu = ({
   iconPlaceholder,
   skipIfNotChanged = true,
   inputTestId,
+  closeAfterSelect,
   ...menuProps
 }: IconAndNameEditorMenuProps) => {
-  const [iconType, setIconType] = useState(initialIconType);
   const [icon, setIcon] = useState(initialIcon);
   const [name, setName] = useState(initialName);
 
   const commit = useCallback(() => {
-    if (iconType !== initialIconType || icon !== initialIcon) {
-      onIconChange?.(iconType, icon);
+    if (icon !== initialIcon) {
+      onIconChange?.(icon);
     }
     if (skipIfNotChanged) {
       if (name !== initialName) onNameChange?.(name);
@@ -186,9 +152,7 @@ export const IconAndNameEditorMenu = ({
     }
   }, [
     icon,
-    iconType,
     initialIcon,
-    initialIconType,
     initialName,
     name,
     onIconChange,
@@ -196,13 +160,11 @@ export const IconAndNameEditorMenu = ({
     skipIfNotChanged,
   ]);
   const abort = useCallback(() => {
-    setIconType(initialIconType);
     setIcon(initialIcon);
     setName(initialName);
-  }, [initialIcon, initialIconType, initialName]);
-  const handleIconChange = useCallback((type?: IconType, icon?: string) => {
-    setIconType(type);
-    setIcon(icon);
+  }, [initialIcon, initialName]);
+  const handleIconChange = useCallback((data?: IconData) => {
+    setIcon(data);
   }, []);
   const handleNameChange = useCallback((name: string) => {
     setName(name);
@@ -210,13 +172,12 @@ export const IconAndNameEditorMenu = ({
   const handleMenuOpenChange = useCallback(
     (open: boolean) => {
       if (open) {
-        setIconType(initialIconType);
         setIcon(initialIcon);
         setName(initialName);
       }
       onOpenChange?.(open);
     },
-    [initialIcon, initialIconType, initialName, onOpenChange]
+    [initialIcon, initialName, onOpenChange]
   );
 
   return (
@@ -243,10 +204,10 @@ export const IconAndNameEditorMenu = ({
       {...menuProps}
       items={
         <IconAndNameEditorContent
-          iconType={iconType}
           icon={icon}
           name={name}
           iconPlaceholder={iconPlaceholder}
+          closeAfterSelect={closeAfterSelect}
           onIconChange={handleIconChange}
           onNameChange={handleNameChange}
           inputTestId={inputTestId}
