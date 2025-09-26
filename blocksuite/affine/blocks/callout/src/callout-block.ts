@@ -142,7 +142,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     const themeProvider = this.std.get(ThemeProvider);
     const theme = themeProvider.theme$.value;
     const backgroundColor = themeProvider.generateColorProperty(
-      background,
+      background || DefaultTheme.NoteBackgroundColorMap.White,
       DefaultTheme.NoteBackgroundColorMap.White,
       theme
     );

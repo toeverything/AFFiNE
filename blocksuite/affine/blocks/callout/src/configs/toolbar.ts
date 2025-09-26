@@ -1,3 +1,4 @@
+import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
 import { CalloutBlockModel, DefaultTheme } from '@blocksuite/affine-model';
 import {
   type ToolbarAction,
@@ -9,6 +10,20 @@ import { PaletteIcon } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 import { html } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
+
+const colors = [
+  'default',
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'teal',
+  'blue',
+  'purple',
+  'grey',
+] as const;
 
 const backgroundColorAction = {
   id: 'background-color',
@@ -22,28 +37,68 @@ const backgroundColorAction = {
     const model = ctx.getCurrentModelByType(CalloutBlockModel);
     if (!model) return null;
 
-    const currentBackground = model.props.background;
-    const colors = DefaultTheme.NoteBackgroundColorPalettes;
+    const updateBackground = (color: string) => {
+      // Map text highlight colors to note background colors
+      const colorMap: Record<
+        string,
+        keyof typeof DefaultTheme.NoteBackgroundColorMap | null
+      > = {
+        default: null,
+        red: 'Red',
+        orange: 'Orange',
+        yellow: 'Yellow',
+        green: 'Green',
+        teal: 'Green', // Map teal to green as it's not available in NoteBackgroundColorMap
+        blue: 'Blue',
+        purple: 'Purple',
+        grey: 'White', // Map grey to white as it's the closest available
+      };
+
+      const mappedColor = colorMap[color];
+      const backgroundValue = mappedColor
+        ? DefaultTheme.NoteBackgroundColorMap[mappedColor]
+        : null;
+      ctx.store.updateBlock(model, { background: backgroundValue });
+    };
 
     return html`
-      <div
-        style="display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; max-width: 200px;"
+      <editor-menu-button
+        .contentPadding=${'8px'}
+        .button=${html`
+          <editor-icon-button
+            aria-label="background"
+            .tooltip=${'Background Color'}
+          >
+            ${PaletteIcon()} ${EditorChevronDown}
+          </editor-icon-button>
+        `}
       >
-        ${colors.map(
-          color => html`
-            <button
-              style="width: 24px; height: 24px; border-radius: 4px; border: 2px solid ${currentBackground ===
-              color.value
-                ? 'var(--affine-primary-color)'
-                : 'transparent'}; background-color: ${color.value}; cursor: pointer; padding: 0; margin: 0;"
-              @click=${() => {
-                ctx.store.updateBlock(model, { background: color.value });
-              }}
-              title=${color.key}
-            ></button>
-          `
-        )}
-      </div>
+        <div data-size="large" data-orientation="vertical">
+          <div class="highlight-heading">Background</div>
+          ${repeat(colors, color => {
+            const isDefault = color === 'default';
+            const value = isDefault
+              ? null
+              : `var(--affine-text-highlight-${color})`;
+            const displayName = `${color} Background`;
+
+            return html`
+              <editor-menu-action
+                data-testid="background-${color}"
+                @click=${() => updateBackground(color)}
+              >
+                <affine-text-duotone-icon
+                  style=${styleMap({
+                    '--color': 'var(--affine-text-primary-color)',
+                    '--background': value ?? 'transparent',
+                  })}
+                ></affine-text-duotone-icon>
+                <span class="label capitalize">${displayName}</span>
+              </editor-menu-action>
+            `;
+          })}
+        </div>
+      </editor-menu-button>
     `;
   },
 } satisfies ToolbarAction;
