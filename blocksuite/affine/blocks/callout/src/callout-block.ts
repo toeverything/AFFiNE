@@ -35,7 +35,6 @@ export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
   ></uni-lit>`;
 };
 const getIcon = (icon?: IconData) => {
-  console.log(icon);
   if (!icon) {
     return '😀';
   }
