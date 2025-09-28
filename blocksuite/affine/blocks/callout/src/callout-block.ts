@@ -37,7 +37,7 @@ export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
 const getIcon = (icon?: IconData) => {
   console.log(icon);
   if (!icon) {
-    return '💡';
+    return '😀';
   }
   if (icon.type === IconType.Emoji) {
     return icon.unicode;
@@ -47,7 +47,7 @@ const getIcon = (icon?: IconData) => {
       icons as Record<string, (props: { style: string }) => TemplateResult>
     )[`${icon.name}Icon`]?.({ style: `color:${icon.color}` });
   }
-  return '💡';
+  return '😀';
 };
 export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockModel> {
   static override styles = css`
