@@ -88,7 +88,10 @@ nonisolated extension ViewModel {
     do {
       // now we fetch records from app store
       let products = try await store.fetchProducts()
-      await MainActor.run { self.products = products }
+      await MainActor.run {
+        self.products = products
+        self.updatePackageOptions(with: products)
+      }
 
       // fetch purchased items if signed in
       do {

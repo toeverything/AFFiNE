@@ -16,23 +16,23 @@ extension SKUnit {
       secondaryText: "For family and small teams.",
       package: [
         SKUnitPackageOption(
-          price: "$7.99",
-          description: "Monthly",
-          isDefaultSelected: false,
-          primaryTitle: "Upgrade for $7.99/month",
+          price: "...", // Will be populated from App Store
+          description: PricingConfiguration.proMonthly.description,
+          isDefaultSelected: PricingConfiguration.proMonthly.isDefaultSelected,
+          primaryTitle: "...", // Will be populated from App Store
           secondaryTitle: "",
-          productIdentifier: "app.affine.pro.Monthly",
-          revenueCatIdentifier: "app.affine.pro.Monthly"
+          productIdentifier: PricingConfiguration.proMonthly.productIdentifier,
+          revenueCatIdentifier: PricingConfiguration.proMonthly.revenueCatIdentifier
         ),
         SKUnitPackageOption(
-          price: "$6.75",
-          description: "Annual",
-          badge: "Save 15%",
-          isDefaultSelected: true,
-          primaryTitle: "Upgrade for $6.75/month",
+          price: "...", // Will be populated from App Store
+          description: PricingConfiguration.proAnnual.description,
+          badge: PricingConfiguration.proAnnual.badge,
+          isDefaultSelected: PricingConfiguration.proAnnual.isDefaultSelected,
+          primaryTitle: "...", // Will be populated from App Store
           secondaryTitle: "",
-          productIdentifier: "app.affine.pro.Annual",
-          revenueCatIdentifier: "app.affine.pro.Annual"
+          productIdentifier: PricingConfiguration.proAnnual.productIdentifier,
+          revenueCatIdentifier: PricingConfiguration.proAnnual.revenueCatIdentifier
         ),
       ]
     ),

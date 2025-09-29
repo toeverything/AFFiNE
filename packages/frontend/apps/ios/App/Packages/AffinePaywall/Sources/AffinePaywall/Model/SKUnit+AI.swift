@@ -15,11 +15,11 @@ extension SKUnit {
       secondaryText: "A true multimodal AI copilot.",
       package: [
         SKUnitPackageOption(
-          price: "$8.9 per month",
+          price: "...", // Will be populated from App Store
           description: "",
           isDefaultSelected: true,
-          primaryTitle: "$8.9 per month",
-          secondaryTitle: "billed annually",
+          primaryTitle: "...", // Will be populated from App Store
+          secondaryTitle: "",
           productIdentifier: "app.affine.pro.ai.Annual",
           revenueCatIdentifier: "app.affine.pro.ai.Annual"
         ),

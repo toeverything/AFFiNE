@@ -16,6 +16,7 @@ This is the AFFiNE iOS application built with Capacitor, React, and TypeScript. 
 - `yarn sync:dev` - Sync with development server (CAP_SERVER_URL=http://localhost:8080)
 - `yarn xcode` - Open Xcode project
 - `yarn codegen` - Generate GraphQL and Rust bindings
+- `xcodebuild -workspace App.xcworkspace -scheme App -destination 'platform=iOS Simulator,name=iPhone 15' build | xcbeautify` - Build iOS project with xcbeautify
 
 ### iOS Build Process
 
