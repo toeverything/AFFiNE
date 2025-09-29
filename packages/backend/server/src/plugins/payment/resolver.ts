@@ -468,6 +468,18 @@ export class UserSubscriptionResolver {
     private readonly rcHandler: RevenueCatWebhookHandler
   ) {}
 
+  private normalizeSubscription(s: Subscription) {
+    if (
+      s.variant &&
+      ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
+        s.variant as SubscriptionVariant
+      )
+    ) {
+      s.variant = null;
+    }
+    return s;
+  }
+
   @ResolveField(() => [SubscriptionType])
   async subscriptions(
     @CurrentUser() me: User,
@@ -490,16 +502,9 @@ export class UserSubscriptionResolver {
       },
     });
 
-    subscriptions.forEach(subscription => {
-      if (
-        subscription.variant &&
-        ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
-          subscription.variant as SubscriptionVariant
-        )
-      ) {
-        subscription.variant = null;
-      }
-    });
+    subscriptions.forEach(subscription =>
+      this.normalizeSubscription(subscription)
+    );
 
     return subscriptions;
   }
@@ -586,16 +591,7 @@ export class UserSubscriptionResolver {
       } catch {}
     }
 
-    current.forEach(subscription => {
-      if (
-        subscription.variant &&
-        ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
-          subscription.variant as SubscriptionVariant
-        )
-      ) {
-        subscription.variant = null;
-      }
-    });
+    current.forEach(subscription => this.normalizeSubscription(subscription));
 
     return current;
   }
