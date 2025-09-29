@@ -205,7 +205,9 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
                 contenteditable="false"
                 class="${calloutEmojiContainerStyles}"
               >
-                <span class="${calloutEmojiStyles}">${iconContent}</span>
+                <span class="${calloutEmojiStyles}" data-testid="callout-emoji"
+                  >${iconContent}</span
+                >
               </div>
             `
           : ''}

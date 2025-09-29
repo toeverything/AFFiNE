@@ -24,7 +24,7 @@ test('add callout block using slash menu and change emoji', async ({
 }) => {
   await type(page, '/callout\naaaa\nbbbb');
   const callout = page.locator('affine-callout');
-  const emoji = page.locator('affine-callout .affine-callout-emoji');
+  const emoji = page.locator('affine-callout').getByTestId('callout-emoji');
   await expect(callout).toBeVisible();
   await expect(emoji).toContainText('💡');
 
