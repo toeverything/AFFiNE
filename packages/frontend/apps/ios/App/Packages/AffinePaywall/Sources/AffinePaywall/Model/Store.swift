@@ -24,7 +24,7 @@ final nonisolated class Store: ObservableObject, Sendable {
       .map(\.productIdentifier)
     print("fetching products for identifiers: \(identifiers)")
     #if DEBUG
-    try await Task.sleep(for: .seconds(1)) // simulate network delay
+      try await Task.sleep(for: .seconds(1)) // simulate network delay
     #endif
     let products = try await Product.products(
       for: identifiers.map { .init($0) }

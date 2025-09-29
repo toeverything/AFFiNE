@@ -58,7 +58,7 @@ extension ViewModel {
     assert(!updating)
     guard !updating else { return }
     print(#function, unit, option)
-    
+
     Task.detached {
       // before we continue, sync any changes from App Store
       // this will ask user to sign in if needed
@@ -68,7 +68,7 @@ extension ViewModel {
         // ignore user's cancellation on restore, not a huge deal
         print("updateAppStoreItems error:", error)
       }
-      
+
       await MainActor.run { self.updateAppStoreStatus(initial: false) }
     }
   }

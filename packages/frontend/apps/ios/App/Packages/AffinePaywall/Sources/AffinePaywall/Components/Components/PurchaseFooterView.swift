@@ -63,6 +63,7 @@ struct PurchaseFooterView: View {
           Text("Already Purchased")
         } else {
           Text("Restore Purchase")
+            .underline()
         }
       }
       .font(.system(size: 12))
@@ -70,6 +71,12 @@ struct PurchaseFooterView: View {
       .foregroundStyle(AffineColors.textSecondary.color)
       .opacity(viewModel.products.isEmpty ? 0 : 1)
       .disabled(isPurchased)
+
+      Text("The Monthly and Annual plans renew automatically, but you’re free to cancel at any time if it’s not right for you.")
+        .font(.system(size: 12))
+        .foregroundStyle(AffineColors.textSecondary.color)
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
     }
     .animation(.spring, value: viewModel.updating)
   }

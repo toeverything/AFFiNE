@@ -24,7 +24,7 @@ class ViewModel: ObservableObject {
   @Published var updating = false
   @Published var products: [Product] = []
   @Published var purchasedItems: Set<String> = []
-  @Published var packageOptions: [SKUnitPackageOption] = SKUnit.allUnits.flatMap { $0.package }
+  @Published var packageOptions: [SKUnitPackageOption] = SKUnit.allUnits.flatMap(\.package)
 
   private(set) weak var associatedController: UIViewController?
 
@@ -89,9 +89,10 @@ class ViewModel: ObservableObject {
         let price = product.displayPrice
         let description = product.description
 
-        // For purchase button: primary title is price, secondary title is payment cycle
-        let purchasePrimaryTitle = price
-        let purchaseSecondaryTitle = option.description.isEmpty ? description : option.description
+        let (purchasePrimaryTitle, purchaseSecondaryTitle) = purchaseButtonText(
+          for: product,
+          option: option
+        )
 
         updatedOptions[index] = SKUnitPackageOption(
           id: option.id,
@@ -108,6 +109,49 @@ class ViewModel: ObservableObject {
     }
 
     packageOptions = updatedOptions
+  }
+
+  private func purchaseButtonText(for product: Product, option: SKUnitPackageOption) -> (String, String) {
+    let monthlyPrice = calculateMonthlyPrice(for: product, option: option)
+
+    if option.productIdentifier.contains(".ai.") {
+      return ("\(monthlyPrice) per month", "billed annually")
+    } else {
+      return ("Upgrade for \(monthlyPrice) per month", "")
+    }
+  }
+
+  private func calculateMonthlyPrice(for product: Product, option _: SKUnitPackageOption) -> String {
+    guard let subscription = product.subscription else {
+      preconditionFailure("Product must have subscription information")
+    }
+
+    switch subscription.subscriptionPeriod.unit {
+    case .year:
+      let yearlyPrice = product.price
+      let monthlyPrice = yearlyPrice / 12.0
+
+      let formatter = NumberFormatter()
+      formatter.numberStyle = .currency
+      formatter.currencyCode = product.priceFormatStyle.currencyCode
+      formatter.minimumFractionDigits = 2
+      formatter.maximumFractionDigits = 2
+
+      if let formattedMonthlyPrice = formatter.string(from: NSDecimalNumber(decimal: monthlyPrice)) {
+        return formattedMonthlyPrice
+      }
+
+    case .month:
+      return product.displayPrice
+
+    case .week, .day:
+      preconditionFailure("Unsupported subscription period: \(subscription.subscriptionPeriod.unit)")
+
+    @unknown default:
+      preconditionFailure("Unknown subscription period")
+    }
+
+    return product.displayPrice
   }
 }
 
@@ -129,7 +173,7 @@ extension ViewModel {
   }
 
   var selectePackageOption: SKUnitPackageOption {
-    let unitPackageIds = selectedUnit.package.map { $0.id }
+    let unitPackageIds = selectedUnit.package.map(\.id)
     let item = packageOptions
       .first { $0.id == selectedPackageIdentifier && unitPackageIds.contains($0.id) }
     if let item { return item }
@@ -146,7 +190,7 @@ extension ViewModel {
   }
 
   var availablePackageOptions: [SKUnitPackageOption] {
-    let unitPackageIds = selectedUnit.package.map { $0.id }
+    let unitPackageIds = selectedUnit.package.map(\.id)
     return packageOptions.filter { unitPackageIds.contains($0.id) }
   }
 }

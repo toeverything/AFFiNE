@@ -21,7 +21,7 @@ let package = Package(
   targets: [
     .target(
       name: "AffinePaywall",
-      dependencies: ["AffineResources"],
+      dependencies: ["AffineResources"]
     ),
   ]
 )
