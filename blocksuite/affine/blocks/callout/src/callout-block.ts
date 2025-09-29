@@ -49,7 +49,7 @@ export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
 };
 const getIcon = (icon?: IconData) => {
   if (!icon) {
-    return '😀';
+    return null;
   }
   if (icon.type === IconType.Emoji) {
     return icon.unicode;
@@ -59,7 +59,7 @@ const getIcon = (icon?: IconData) => {
       icons as Record<string, (props: { style: string }) => TemplateResult>
     )[`${icon.name}Icon`]?.({ style: `color:${icon.color}` });
   }
-  return '😀';
+  return null;
 };
 export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockModel> {
   private _popupCloseHandler: (() => void) | null = null;
@@ -134,6 +134,13 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       return;
     }
 
+    // If there's no icon, open icon picker on click
+    const icon = this.model.props.icon$.value;
+    if (!icon) {
+      this._toggleIconPicker(event);
+      return;
+    }
+
     // Only handle clicks when there are no children
     if (this.model.children.length > 0) {
       return;
@@ -181,6 +188,8 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       cssVarV2.block.callout.background as Record<string, string>
     )[backgroundColorName ?? ''];
 
+    const iconContent = getIcon(icon);
+
     return html`
       <div
         class="${calloutBlockContainerStyles}"
@@ -189,17 +198,20 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
           backgroundColor: backgroundColor ?? 'transparent',
         })}
       >
-        <div
-          @click=${this._toggleIconPicker}
-          contenteditable="false"
-          class="${calloutEmojiContainerStyles}"
-        >
-          <span class="${calloutEmojiStyles}">${getIcon(icon)}</span>
-        </div>
+        ${iconContent
+          ? html`
+              <div
+                @click=${this._toggleIconPicker}
+                contenteditable="false"
+                class="${calloutEmojiContainerStyles}"
+              >
+                <span class="${calloutEmojiStyles}">${iconContent}</span>
+              </div>
+            `
+          : ''}
         <div class="${calloutChildrenStyles}">
           ${this.renderChildren(this.model)}
         </div>
-      </div>
       </div>
     `;
   }

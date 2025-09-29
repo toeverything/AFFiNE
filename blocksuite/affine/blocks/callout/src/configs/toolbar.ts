@@ -121,6 +121,7 @@ const iconPickerAction = {
       // Create props for the icon picker
       const props = {
         onSelect: (iconData?: IconData) => {
+          // When iconData is undefined (delete icon), set icon to undefined
           ctx.store.updateBlock(model, { icon: iconData });
           closeHandler(); // Close the picker after selection
         },
