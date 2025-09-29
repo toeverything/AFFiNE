@@ -567,10 +567,21 @@ export class UserSubscriptionResolver {
       },
     });
 
+    const subscriptions = current.reduce(
+      (r, s) => {
+        if (s.plan in SubscriptionPlan) {
+          r[s.plan as SubscriptionPlan] = s.provider;
+        }
+        return r;
+      },
+      {} as Record<SubscriptionPlan, Provider>
+    );
+
     // has revenuecat subscription or no subscription at all
     const shouldSync =
       current.length === 0 ||
-      current.some(s => s.provider === Provider.revenuecat);
+      subscriptions.pro === Provider.revenuecat ||
+      subscriptions.ai === Provider.revenuecat;
 
     if (shouldSync) {
       try {
