@@ -30,36 +30,6 @@ export const EmojiPicker = ({
   const [skin, setSkin] = useState<number | undefined>(undefined);
   const { add: addRecent, recentEmojis } = useRecentEmojis();
 
-  // const checkActiveGroup = useCallback(() => {
-  //   const scrollable = scrollableRef.current;
-  //   if (!scrollable) return;
-
-  //   // get actual scrollable element
-  //   const viewport = scrollable.querySelector(
-  //     '[data-radix-scroll-area-viewport]'
-  //   ) as HTMLElement;
-  //   if (!viewport) return;
-
-  //   const scrollTop = viewport.scrollTop;
-
-  //   // find the first group that is at the top of the scrollable element
-  //   for (let i = emojiGroupList.length - 1; i >= 0; i--) {
-  //     const group = emojiGroupList[i];
-  //     const groupElement = viewport.querySelector(
-  //       `[data-group-name="${group.name}"]`
-  //     ) as HTMLElement;
-  //     if (!groupElement) continue;
-
-  //     // use offsetTop to get the position of the element relative to the scrollable element
-  //     const elementTop = groupElement.offsetTop;
-
-  //     if (elementTop <= scrollTop + 50) {
-  //       setActiveGroupId(group.name);
-  //       return;
-  //     }
-  //   }
-  // }, []);
-
   const handleEmojiSelect = useCallback(
     (emoji: string) => {
       addRecent(emoji);
@@ -123,28 +93,6 @@ export const EmojiPicker = ({
           />
         </Menu>
       </header>
-      {/* <Scrollable.Root className={pickerStyles.scrollRoot} ref={scrollableRef}>
-        <Scrollable.Viewport
-          onScrollEnd={checkActiveGroup}
-          className={pickerStyles.scrollViewport}
-        > */}
-      {/* Recent */}
-      {/* {recentEmojis.length ? (
-        <div className={pickerStyles.group}>
-          <div className={pickerStyles.groupName} data-group-name="Recent">
-            Recent
-          </div>
-          <div className={pickerStyles.groupGrid}>
-            {recentEmojis.map(emoji => (
-              <EmojiButton
-                key={emoji}
-                emoji={emoji}
-                onSelect={handleEmojiSelect}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null} */}
 
       {/* Groups */}
       <EmojiGroups
@@ -153,9 +101,6 @@ export const EmojiPicker = ({
         keyword={keyword}
         skin={skin}
       />
-      {/* </Scrollable.Viewport>
-        <Scrollable.Scrollbar />
-      </Scrollable.Root> */}
     </div>
   );
 };
