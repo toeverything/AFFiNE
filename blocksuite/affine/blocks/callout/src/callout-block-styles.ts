@@ -51,6 +51,6 @@ export const iconPickerContainerStyles = css({
   border: '1px solid #ccc',
   borderRadius: '8px',
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-  width: '300px',
+  width: '390px',
   height: '400px',
 });

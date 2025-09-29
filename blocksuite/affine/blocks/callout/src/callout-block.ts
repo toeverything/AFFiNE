@@ -99,11 +99,12 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       },
     };
 
-    return html`
-      <div class="${iconPickerContainerStyles}">
-        ${renderUniLit(iconPickerComponent, props)}
-      </div>
-    `;
+    // Create IconPickerWrapper instance using new
+    const wrapper = new (customElements.get('icon-picker-wrapper') as any)();
+    wrapper.iconPickerComponent = iconPickerComponent;
+    wrapper.props = props;
+
+    return html` <div class="${iconPickerContainerStyles}">${wrapper}</div> `;
   }
 
   private readonly _handleBlockClick = (event: MouseEvent) => {
