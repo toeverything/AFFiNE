@@ -42,7 +42,11 @@ extension ViewModel {
 
       await MainActor.run {
         self.updating = false
-        if shouldDismiss { self.dismiss() }
+      }
+      if shouldDismiss {
+        await MainActor.run {
+          self.dismiss()
+        }
       }
     }
   }
@@ -54,8 +58,19 @@ extension ViewModel {
     assert(!updating)
     guard !updating else { return }
     print(#function, unit, option)
-
-    updateAppStoreStatus(initial: false)
+    
+    Task.detached {
+      // before we continue, sync any changes from App Store
+      // this will ask user to sign in if needed
+      do {
+        try await store.fetchAppStoreContents()
+      } catch {
+        // ignore user's cancellation on restore, not a huge deal
+        print("updateAppStoreItems error:", error)
+      }
+      
+      await MainActor.run { self.updateAppStoreStatus(initial: false) }
+    }
   }
 
   func dismiss() {
@@ -71,15 +86,6 @@ nonisolated extension ViewModel {
     await MainActor.run { self.updating = true }
 
     do {
-      // before we continue, sync any changes from App Store
-      // this will ask user to sign in if needed
-      do {
-        try await store.fetchAppStoreContents()
-      } catch {
-        // ignore user's cancellation on restore, not a huge deal
-        print("updateAppStoreItems error:", error)
-      }
-
       // now we fetch records from app store
       let products = try await store.fetchProducts()
       await MainActor.run { self.products = products }
