@@ -1,4 +1,8 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
+import {
+  createPopup,
+  popupTargetFromElement,
+} from '@blocksuite/affine-components/context-menu';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import { type CalloutBlockModel } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
@@ -12,7 +16,7 @@ import {
 import type { UniComponent } from '@blocksuite/affine-shared/types';
 import * as icons from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
-import { type Signal, signal } from '@preact/signals-core';
+import { type Signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import type { TemplateResult } from 'lit';
 import { html } from 'lit';
@@ -24,7 +28,6 @@ import {
   calloutEmojiContainerStyles,
   calloutEmojiStyles,
   calloutHostStyles,
-  iconPickerContainerStyles,
 } from './callout-block-styles.js';
 import { IconPickerWrapper } from './icon-picker-wrapper.js';
 // Copy of renderUniLit and UniLit from affine-data-view
@@ -59,31 +62,32 @@ const getIcon = (icon?: IconData) => {
   return '😀';
 };
 export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockModel> {
+  private _popupCloseHandler: (() => void) | null = null;
+
   override connectedCallback() {
     super.connectedCallback();
     this.classList.add(calloutHostStyles);
   }
 
-  private readonly showIconPicker$ = signal(false);
-
-  private _closeEmojiMenu() {
-    this.showIconPicker$.value = false;
+  private _closeIconPicker() {
+    if (this._popupCloseHandler) {
+      this._popupCloseHandler();
+      this._popupCloseHandler = null;
+    }
   }
 
-  private _toggleIconPicker() {
-    this.showIconPicker$.value = !this.showIconPicker$.value;
-  }
-
-  private _renderIconPicker() {
-    if (!this.showIconPicker$.value) {
-      return html``;
+  private _toggleIconPicker(event: MouseEvent) {
+    // If popup is already open, close it
+    if (this._popupCloseHandler) {
+      this._closeIconPicker();
+      return;
     }
 
     // Get IconPickerService from the framework
     const iconPickerService = this.std.getOptional(IconPickerServiceIdentifier);
     if (!iconPickerService) {
       console.warn('IconPickerService not found');
-      return html``;
+      return;
     }
 
     // Get the uni-component from the service
@@ -93,19 +97,31 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     const props = {
       onSelect: (iconData?: IconData) => {
         this.model.props.icon$.value = iconData;
-        this._closeEmojiMenu(); // Close the picker after selection
+        this._closeIconPicker(); // Close the picker after selection
       },
       onClose: () => {
-        this._closeEmojiMenu();
+        this._closeIconPicker();
       },
     };
 
-    // Create IconPickerWrapper instance using new
+    // Create IconPickerWrapper instance
     const wrapper = new IconPickerWrapper();
     wrapper.iconPickerComponent = iconPickerComponent;
     wrapper.props = props;
+    wrapper.style.position = 'absolute';
+    wrapper.style.backgroundColor = cssVarV2.layer.background.overlayPanel;
+    wrapper.style.boxShadow = 'var(--affine-menu-shadow)';
+    wrapper.style.borderRadius = '8px';
 
-    return html` <div class="${iconPickerContainerStyles}">${wrapper}</div> `;
+    // Create popup target from the clicked element
+    const target = popupTargetFromElement(event.currentTarget as HTMLElement);
+
+    // Create popup
+    this._popupCloseHandler = createPopup(target, wrapper, {
+      onClose: () => {
+        this._popupCloseHandler = null;
+      },
+    });
   }
 
   private readonly _handleBlockClick = (event: MouseEvent) => {
@@ -179,11 +195,11 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
           class="${calloutEmojiContainerStyles}"
         >
           <span class="${calloutEmojiStyles}">${getIcon(icon)}</span>
-          ${this._renderIconPicker()}
         </div>
         <div class="${calloutChildrenStyles}">
           ${this.renderChildren(this.model)}
         </div>
+      </div>
       </div>
     `;
   }
