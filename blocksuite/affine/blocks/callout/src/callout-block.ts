@@ -26,6 +26,7 @@ import {
   calloutHostStyles,
   iconPickerContainerStyles,
 } from './callout-block-styles.js';
+import { IconPickerWrapper } from './icon-picker-wrapper.js';
 // Copy of renderUniLit and UniLit from affine-data-view
 export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
   uni: UniComponent<Props, Expose> | undefined,
@@ -100,7 +101,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     };
 
     // Create IconPickerWrapper instance using new
-    const wrapper = new (customElements.get('icon-picker-wrapper') as any)();
+    const wrapper = new IconPickerWrapper();
     wrapper.iconPickerComponent = iconPickerComponent;
     wrapper.props = props;
 
