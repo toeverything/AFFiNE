@@ -2509,6 +2509,7 @@ __metadata:
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
     "@emoji-mart/data": "npm:^1.2.1"
+    "@emotion/css": "npm:^11.13.5"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
