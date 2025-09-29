@@ -1,19 +1,19 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
-import { type CalloutBlockModel, DefaultTheme } from '@blocksuite/affine-model';
+import { type CalloutBlockModel } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
   DocModeProvider,
   type IconData,
   IconPickerServiceIdentifier,
-  IconType,
-  ThemeProvider,
+  IconType
 } from '@blocksuite/affine-shared/services';
 import type { UniComponent } from '@blocksuite/affine-shared/types';
 import * as icons from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import { type Signal, signal } from '@preact/signals-core';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import type { TemplateResult } from 'lit';
 import { css, html } from 'lit';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
@@ -200,23 +200,18 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
 
   override renderBlock() {
     const icon = this.model.props.icon$.value;
-    const background = this.model.props.background$.value;
-
-    const themeProvider = this.std.get(ThemeProvider);
-    const theme = themeProvider.theme$.value;
-    const backgroundColor = themeProvider.generateColorProperty(
-      background || DefaultTheme.NoteBackgroundColorMap.White,
-      DefaultTheme.NoteBackgroundColorMap.White,
-      theme
-    );
+    const backgroundColorName = this.model.props.backgroundColorName$.value;
+    const backgroundColor = (
+      cssVarV2.block.callout.background as Record<string, string>
+    )[backgroundColorName ?? ''];
 
     return html`
       <div
         class="affine-callout-block-container"
         @click=${this._handleBlockClick}
         style=${styleMap({
-          backgroundColor: backgroundColor,
-        })}
+      backgroundColor: backgroundColor ?? 'transparent',
+    })}
       >
         <div
           @click=${this._toggleIconPicker}

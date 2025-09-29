@@ -1,5 +1,5 @@
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
-import { CalloutBlockModel, DefaultTheme } from '@blocksuite/affine-model';
+import { CalloutBlockModel } from '@blocksuite/affine-model';
 import {
   type ToolbarAction,
   type ToolbarActionGroup,
@@ -38,27 +38,7 @@ const backgroundColorAction = {
     if (!model) return null;
 
     const updateBackground = (color: string) => {
-      // Map text highlight colors to note background colors
-      const colorMap: Record<
-        string,
-        keyof typeof DefaultTheme.NoteBackgroundColorMap | null
-      > = {
-        default: null,
-        red: 'Red',
-        orange: 'Orange',
-        yellow: 'Yellow',
-        green: 'Green',
-        teal: 'Green', // Map teal to green as it's not available in NoteBackgroundColorMap
-        blue: 'Blue',
-        purple: 'Purple',
-        grey: 'White', // Map grey to white as it's the closest available
-      };
-
-      const mappedColor = colorMap[color];
-      const backgroundValue = mappedColor
-        ? DefaultTheme.NoteBackgroundColorMap[mappedColor]
-        : null;
-      ctx.store.updateBlock(model, { background: backgroundValue });
+      ctx.store.updateBlock(model, { backgroundColorName: color });
     };
 
     return html`

@@ -6,14 +6,12 @@ import {
   type Text,
 } from '@blocksuite/store';
 
-import type { Color } from '../../themes/index.js';
-import { DefaultTheme } from '../../themes/index.js';
 import type { BlockMeta } from '../../utils/types';
 
 export type CalloutProps = {
   icon?: IconData;
   text: Text;
-  background: Color;
+  backgroundColorName?: string;
 } & BlockMeta;
 
 export const CalloutBlockSchema = defineBlockSchema({
@@ -21,7 +19,7 @@ export const CalloutBlockSchema = defineBlockSchema({
   props: (internal): CalloutProps => ({
     icon: undefined,
     text: internal.Text(),
-    background: DefaultTheme.NoteBackgroundColorMap.White,
+    backgroundColorName: undefined,
     'meta:createdAt': undefined,
     'meta:updatedAt': undefined,
     'meta:createdBy': undefined,
