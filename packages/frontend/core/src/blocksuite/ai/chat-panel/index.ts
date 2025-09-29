@@ -237,6 +237,31 @@ export class ChatPanel extends SignalWatcher(
     return this.session;
   };
 
+  private readonly deleteSession = async (
+    session: BlockSuitePresets.AIRecentSession
+  ) => {
+    if (!AIProvider.histories) {
+      return;
+    }
+    const confirm = await this.notificationService.confirm({
+      title: 'Delete this history?',
+      message:
+        'Do you want to delete this AI conversation history? Once deleted, it cannot be recovered.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (confirm) {
+      await AIProvider.histories.cleanup(
+        session.workspaceId,
+        session.docId || undefined,
+        [session.sessionId]
+      );
+      if (session.sessionId === this.session?.sessionId) {
+        this.newSession();
+      }
+    }
+  };
+
   private readonly updateSession = async (options: UpdateChatSessionInput) => {
     await AIProvider.session?.updateSession(options);
     const session = await AIProvider.session?.getSession(
@@ -413,6 +438,7 @@ export class ChatPanel extends SignalWatcher(
         .togglePin=${this.togglePin}
         .openSession=${this.openSession}
         .openDoc=${this.openDoc}
+        .deleteSession=${this.deleteSession}
       ></ai-chat-panel-title>
       ${keyed(
         this.hasPinned ? this.session?.sessionId : this.doc.id,

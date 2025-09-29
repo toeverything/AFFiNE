@@ -654,7 +654,7 @@ export interface DeleteAccount {
 }
 
 export interface DeleteSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
   sessionIds: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }

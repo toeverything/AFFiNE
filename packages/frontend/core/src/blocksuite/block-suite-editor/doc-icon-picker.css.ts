@@ -10,6 +10,9 @@ export const docIconPickerTrigger = style({
       fontSize: 60,
       lineHeight: 1,
     },
+    '&[data-icon-type="emoji"]': {
+      fontFamily: 'emoji',
+    },
   },
 });
 

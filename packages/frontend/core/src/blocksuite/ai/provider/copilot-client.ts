@@ -261,7 +261,7 @@ export class CopilotClient {
 
   async cleanupSessions(input: {
     workspaceId: string;
-    docId: string;
+    docId: string | undefined;
     sessionIds: string[];
   }) {
     try {
