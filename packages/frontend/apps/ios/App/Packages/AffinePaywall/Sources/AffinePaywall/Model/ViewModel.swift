@@ -131,13 +131,18 @@ class ViewModel: ObservableObject {
       let yearlyPrice = product.price
       let monthlyPrice = yearlyPrice / 12.0
 
+      // Round up to ensure total price is slightly lower than yearly price
+      var roundedMonthlyPrice = monthlyPrice
+      var rounded = Decimal()
+      NSDecimalRound(&rounded, &roundedMonthlyPrice, 2, .up)
+
       let formatter = NumberFormatter()
       formatter.numberStyle = .currency
       formatter.currencyCode = product.priceFormatStyle.currencyCode
       formatter.minimumFractionDigits = 2
       formatter.maximumFractionDigits = 2
 
-      if let formattedMonthlyPrice = formatter.string(from: NSDecimalNumber(decimal: monthlyPrice)) {
+      if let formattedMonthlyPrice = formatter.string(from: NSDecimalNumber(decimal: rounded)) {
         return formattedMonthlyPrice
       }
 
