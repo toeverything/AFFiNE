@@ -5,6 +5,7 @@ import {
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
 import { CalloutBlockModel } from '@blocksuite/affine-model';
 import {
+  ActionPlacement,
   type IconData,
   IconPickerServiceIdentifier,
   type ToolbarAction,
@@ -12,7 +13,7 @@ import {
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
 } from '@blocksuite/affine-shared/services';
-import { PaletteIcon, SmileIcon } from '@blocksuite/icons/lit';
+import { DeleteIcon, PaletteIcon, SmileIcon } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 import { cssVarV2 } from '@toeverything/theme/v2';
@@ -170,6 +171,23 @@ const builtinToolbarConfig = {
       id: 'icon',
       actions: [iconPickerAction],
     } satisfies ToolbarActionGroup<ToolbarAction>,
+    {
+      placement: ActionPlacement.More,
+      id: 'c.delete',
+      label: 'Delete',
+      icon: DeleteIcon(),
+      variant: 'destructive',
+      run(ctx) {
+        const model = ctx.getCurrentModelByType(CalloutBlockModel);
+        if (!model) return;
+
+        ctx.store.deleteBlock(model);
+
+        // Clears
+        ctx.select('note');
+        ctx.reset();
+      },
+    } satisfies ToolbarAction,
   ],
 } as const satisfies ToolbarModuleConfig;
 
