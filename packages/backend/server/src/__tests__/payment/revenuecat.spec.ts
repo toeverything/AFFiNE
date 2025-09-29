@@ -1,4 +1,4 @@
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, type User } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import { omit } from 'lodash-es';
 import Sinon from 'sinon';
@@ -14,6 +14,7 @@ import { Models } from '../../models';
 import { PaymentModule } from '../../plugins/payment';
 import { SubscriptionCronJobs } from '../../plugins/payment/cron';
 import { UserSubscriptionManager } from '../../plugins/payment/manager';
+import { UserSubscriptionResolver } from '../../plugins/payment/resolver';
 import {
   RcEvent,
   resolveProductMapping,
@@ -39,6 +40,7 @@ type Ctx = {
   rc: RevenueCatService;
   webhook: RevenueCatWebhookHandler;
   controller: RevenueCatWebhookController;
+  subResolver: UserSubscriptionResolver;
 
   mockSub: (subs: Subscription[]) => Sinon.SinonStub;
   mockSubSeq: (sequences: Subscription[][]) => Sinon.SinonStub;
@@ -85,6 +87,7 @@ test.beforeEach(async t => {
   const rc = app.get(RevenueCatService);
   const webhook = app.get(RevenueCatWebhookHandler);
   const controller = app.get(RevenueCatWebhookController);
+  const subResolver = app.get(UserSubscriptionResolver);
 
   t.context.module = app;
   t.context.db = db;
@@ -95,6 +98,7 @@ test.beforeEach(async t => {
   t.context.rc = rc;
   t.context.webhook = webhook;
   t.context.controller = controller;
+  t.context.subResolver = subResolver;
 
   t.context.mockSub = subs => Sinon.stub(rc, 'getSubscriptions').resolves(subs);
   t.context.mockSubSeq = sequences => {
@@ -926,4 +930,91 @@ test('should not dispatch webhook event when authorization header is missing or 
   await controller.handleWebhook({ body: { event: e } } as any, undefined);
   const after = event.emitAsync.getCalls()?.length || 0;
   t.is(after - before, 0, 'should not emit event');
+});
+
+test('should refresh user subscriptions (empty / revenuecat / stripe-only)', async t => {
+  const { subResolver, db, mockSubSeq } = t.context;
+
+  const currentUser = {
+    id: user.id,
+    email: user.email,
+    avatarUrl: '',
+    name: '',
+    disabled: false,
+    hasPassword: true,
+    emailVerified: true,
+  };
+
+  // prepare mocks:
+  // first call returns Pro subscription
+  // second call returns AI subscription.
+  const stub = mockSubSeq([
+    [
+      {
+        identifier: 'Pro',
+        isTrial: false,
+        isActive: true,
+        latestPurchaseDate: new Date('2025-09-01T00:00:00.000Z'),
+        expirationDate: new Date('2026-09-01T00:00:00.000Z'),
+        productId: 'app.affine.pro.Annual',
+        store: 'app_store',
+        willRenew: true,
+        duration: null,
+      },
+    ],
+    [
+      {
+        identifier: 'AI',
+        isTrial: false,
+        isActive: true,
+        latestPurchaseDate: new Date('2025-09-02T00:00:00.000Z'),
+        expirationDate: new Date('2026-09-02T00:00:00.000Z'),
+        productId: 'app.affine.pro.ai.Annual',
+        store: 'play_store',
+        willRenew: true,
+        duration: null,
+      },
+    ],
+  ]);
+
+  // case1: empty -> should sync (first sequence)
+  {
+    const subs = await subResolver.refreshUserSubscriptions(currentUser);
+    t.is(stub.callCount, 1, 'Scenario1: RC API called once');
+    t.truthy(
+      subs.find(s => s.plan === 'pro'),
+      'case1: pro saved'
+    );
+  }
+
+  // case2: existing revenuecat -> should sync again (second sequence)
+  {
+    const subs = await subResolver.refreshUserSubscriptions(currentUser);
+    t.is(stub.callCount, 2, 'Scenario2: RC API called second time');
+    t.truthy(
+      subs.find(s => s.plan === 'ai'),
+      'case2: ai saved'
+    );
+  }
+
+  // case3: only stripe subscription -> should NOT sync (call count remains 2)
+  {
+    await db.subscription.deleteMany({
+      where: { targetId: user.id, provider: 'revenuecat' },
+    });
+    await db.subscription.create({
+      data: {
+        targetId: user.id,
+        plan: 'pro',
+        provider: 'stripe',
+        status: 'active',
+        recurring: 'monthly',
+        start: new Date('2025-01-01T00:00:00.000Z'),
+        stripeSubscriptionId: 'sub_123',
+      },
+    });
+    const subs = await subResolver.refreshUserSubscriptions(currentUser);
+    t.is(stub.callCount, 2, 'case3: RC API not called again');
+    t.is(subs.length, 1, 'case3: only stripe subscription returned');
+  }
 });

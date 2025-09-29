@@ -12,8 +12,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User } from '@prisma/client';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Provider, type User } from '@prisma/client';
 import { GraphQLJSONObject } from 'graphql-scalars';
 import { groupBy } from 'lodash-es';
 import Stripe from 'stripe';
@@ -31,6 +30,7 @@ import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
 import { Invoice, Subscription, WorkspaceSubscriptionManager } from './manager';
+import { RevenueCatWebhookHandler } from './revenuecat';
 import { CheckoutParams, SubscriptionService } from './service';
 import {
   InvoiceStatus,
@@ -463,7 +463,10 @@ export class SubscriptionResolver {
 
 @Resolver(() => UserType)
 export class UserSubscriptionResolver {
-  constructor(private readonly db: PrismaClient) {}
+  constructor(
+    private readonly db: PrismaClient,
+    private readonly rcHandler: RevenueCatWebhookHandler
+  ) {}
 
   @ResolveField(() => [SubscriptionType])
   async subscriptions(
@@ -533,6 +536,68 @@ export class UserSubscriptionResolver {
         createdAt: 'desc',
       },
     });
+  }
+
+  @Throttle('strict')
+  @Mutation(() => [SubscriptionType], {
+    description: 'Refresh current user subscriptions and return latest.',
+  })
+  async refreshUserSubscriptions(
+    @CurrentUser() user: CurrentUser
+  ): Promise<Subscription[]> {
+    if (!user) {
+      throw new AuthenticationRequired();
+    }
+
+    let current = await this.db.subscription.findMany({
+      where: {
+        targetId: user.id,
+        status: {
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
+        },
+      },
+    });
+
+    // has revenuecat subscription or no subscription at all
+    const shouldSync =
+      current.length === 0 ||
+      current.some(s => s.provider === Provider.revenuecat);
+
+    if (shouldSync) {
+      try {
+        await this.rcHandler.syncAppUser(user.id);
+        current = await this.db.subscription.findMany({
+          where: {
+            targetId: user.id,
+            status: {
+              in: [
+                SubscriptionStatus.Active,
+                SubscriptionStatus.Trialing,
+                SubscriptionStatus.PastDue,
+              ],
+            },
+          },
+        });
+        // ignore errors
+      } catch {}
+    }
+
+    current.forEach(subscription => {
+      if (
+        subscription.variant &&
+        ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
+          subscription.variant as SubscriptionVariant
+        )
+      ) {
+        subscription.variant = null;
+      }
+    });
+
+    return current;
   }
 }
 
