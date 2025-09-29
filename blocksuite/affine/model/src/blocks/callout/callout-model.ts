@@ -1,4 +1,4 @@
-import type { IconData } from '@blocksuite/affine-shared/services';
+import { type IconData } from '@blocksuite/affine-shared/services';
 import {
   BlockModel,
   BlockSchemaExtension,
@@ -17,9 +17,9 @@ export type CalloutProps = {
 export const CalloutBlockSchema = defineBlockSchema({
   flavour: 'affine:callout',
   props: (internal): CalloutProps => ({
-    icon: undefined,
+    icon: { type: 'emoji', unicode: '💡' } as IconData,
     text: internal.Text(),
-    backgroundColorName: undefined,
+    backgroundColorName: 'grey',
     'meta:createdAt': undefined,
     'meta:updatedAt': undefined,
     'meta:createdBy': undefined,

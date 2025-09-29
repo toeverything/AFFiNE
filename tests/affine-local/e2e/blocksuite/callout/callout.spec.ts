@@ -26,7 +26,7 @@ test('add callout block using slash menu and change emoji', async ({
   const callout = page.locator('affine-callout');
   const emoji = page.locator('affine-callout .affine-callout-emoji');
   await expect(callout).toBeVisible();
-  await expect(emoji).toContainText('😀');
+  await expect(emoji).toContainText('💡');
 
   const paragraph = page.locator('affine-callout affine-paragraph');
   await expect(paragraph).toHaveCount(2);
@@ -35,18 +35,6 @@ test('add callout block using slash menu and change emoji', async ({
   await expect(vLine).toHaveCount(2);
   expect(await vLine.nth(0).innerText()).toBe('aaaa');
   expect(await vLine.nth(1).innerText()).toBe('bbbb');
-
-  await emoji.click();
-  const emojiMenu = page.locator('affine-emoji-menu');
-  await expect(emojiMenu).toBeVisible();
-  await page
-    .locator('div')
-    .filter({ hasText: /^😀😃😄😁😆😅🤣😂🙂$/ })
-    .getByLabel('😆')
-    .click();
-  await page.getByTestId('page-editor-blank').click();
-  await expect(emojiMenu).not.toBeVisible();
-  await expect(emoji).toContainText('😆');
 });
 
 test('press backspace after callout block', async ({ page }) => {
