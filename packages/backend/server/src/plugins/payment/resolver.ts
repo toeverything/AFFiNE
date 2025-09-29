@@ -567,9 +567,10 @@ export class UserSubscriptionResolver {
       },
     });
 
+    const existsPlans = Object.values(SubscriptionPlan);
     const subscriptions = current.reduce(
       (r, s) => {
-        if (s.plan in SubscriptionPlan) {
+        if (existsPlans.includes(s.plan as SubscriptionPlan)) {
           r[s.plan as SubscriptionPlan] = s.provider;
         }
         return r;
