@@ -1,4 +1,4 @@
-import { type IconData } from '@blocksuite/affine-shared/services';
+import type { IconData } from '@blocksuite/affine-shared/services';
 import {
   BlockModel,
   BlockSchemaExtension,
