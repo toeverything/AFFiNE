@@ -542,7 +542,7 @@ type DeleteAccount {
 }
 
 input DeleteSessionInput {
-  docId: String!
+  docId: String
   sessionIds: [String!]!
   workspaceId: String!
 }
