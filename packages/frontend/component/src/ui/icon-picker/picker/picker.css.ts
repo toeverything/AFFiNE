@@ -27,8 +27,19 @@ export const searchInput = style({
 export const scrollRoot = style({
   height: 0,
   flexGrow: 1,
-  padding: '0px 12px',
 });
+export const emojiScrollRoot = style([
+  scrollRoot,
+  {
+    paddingTop: '8px',
+  },
+]);
+export const iconScrollRoot = style([
+  scrollRoot,
+  {
+    padding: '0px 12px',
+  },
+]);
 
 export const scrollViewport = style({
   padding: '8px 0px',
@@ -52,6 +63,7 @@ export const groupName = style({
   display: 'flex',
   alignItems: 'center',
   padding: '0px 4px',
+  backgroundColor: cssVarV2.layer.background.overlayPanel,
 });
 
 export const groupGrid = style({
