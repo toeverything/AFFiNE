@@ -1299,6 +1299,9 @@ type Mutation {
   """mark notification as read"""
   readNotification(id: String!): Boolean!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
+
+  """Refresh current user subscriptions and return latest."""
+  refreshUserSubscriptions: [SubscriptionType!]!
   releaseDeletedBlobs(workspaceId: String!): Boolean!
 
   """Remove user avatar"""

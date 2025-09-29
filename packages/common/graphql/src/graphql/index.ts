@@ -2218,6 +2218,25 @@ export const setWorkspacePublicByIdMutation = {
 }`,
 };
 
+export const refreshSubscriptionMutation = {
+  id: 'refreshSubscriptionMutation' as const,
+  op: 'refreshSubscription',
+  query: `mutation refreshSubscription {
+  refreshUserSubscriptions {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}`,
+  deprecations: ["'id' is deprecated: removed"],
+};
+
 export const subscriptionQuery = {
   id: 'subscriptionQuery' as const,
   op: 'subscription',

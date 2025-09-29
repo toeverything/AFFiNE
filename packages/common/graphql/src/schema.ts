@@ -1451,6 +1451,8 @@ export interface Mutation {
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
+  /** Refresh current user subscriptions and return latest. */
+  refreshUserSubscriptions: Array<SubscriptionType>;
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
@@ -5996,6 +5998,26 @@ export type SetWorkspacePublicByIdMutation = {
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type RefreshSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RefreshSubscriptionMutation = {
+  __typename?: 'Mutation';
+  refreshUserSubscriptions: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
 export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
 
 export type SubscriptionQuery = {
@@ -7080,6 +7102,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'refreshSubscriptionMutation';
+      variables: RefreshSubscriptionMutationVariables;
+      response: RefreshSubscriptionMutation;
     }
   | {
       name: 'updateDocDefaultRoleMutation';
