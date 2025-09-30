@@ -2074,11 +2074,11 @@ test('should resolve model correctly based on subscription status and prompt con
       messages: {
         create: [{ idx: 0, role: 'system', content: 'test' }],
       },
-      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4@20250514'] },
+      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
       optionalModels: [
         'gemini-2.5-flash',
         'gemini-2.5-pro',
-        'claude-sonnet-4@20250514',
+        'claude-sonnet-4-5@20250929',
       ],
     },
   });
@@ -2138,7 +2138,7 @@ test('should resolve model correctly based on subscription status and prompt con
       'should pick default model when no requested model during active'
     );
 
-    const model7 = await s.resolveModel(true, 'claude-sonnet-4@20250514');
+    const model7 = await s.resolveModel(true, 'claude-sonnet-4-5@20250929');
     t.snapshot(model7, 'should honor requested pro model during active');
 
     const model8 = await s.resolveModel(true, 'not-in-optional');
