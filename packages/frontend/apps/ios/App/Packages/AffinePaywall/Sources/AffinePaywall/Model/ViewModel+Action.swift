@@ -75,6 +75,21 @@ extension ViewModel {
 
   func dismiss() {
     print(#function)
+
+    if let context = associatedWebContext {
+      Task.detached {
+        do {
+          _ = try await context.callAsyncJavaScript(
+            "return await window.updateSubscriptionState();",
+            contentWorld: .page
+          )
+          print("updateSubscriptionState success")
+        } catch {
+          print("updateSubscriptionState error:", error.localizedDescription)
+        }
+      }
+    }
+
     associatedController?.dismiss(animated: true)
   }
 }
