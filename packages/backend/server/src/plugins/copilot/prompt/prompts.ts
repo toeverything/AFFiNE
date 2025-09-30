@@ -1548,7 +1548,7 @@ When sent new notes, respond ONLY with the contents of the html file.`,
   {
     name: 'Section Edit',
     action: 'Section Edit',
-    model: 'claude-sonnet-4-5@20250929',
+    model: 'claude-sonnet-4@20250514',
     messages: [
       {
         role: 'system',
