@@ -14,6 +14,7 @@ import type {
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import {
   type FolderNode,
   OrganizeService,
@@ -31,9 +32,9 @@ import {
   RemoveFolderIcon,
   TagsIcon,
 } from '@blocksuite/icons/rc';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { difference } from 'lodash-es';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { NavigationPanelTreeNode } from '../../tree/node';
@@ -46,11 +47,13 @@ import { FavoriteFolderOperation } from './operations';
 export const NavigationPanelFolderNode = ({
   nodeId,
   operations,
+  parentPath,
 }: {
   nodeId: string;
   operations?:
     | NodeOperation[]
     | ((type: string, node: FolderNode) => NodeOperation[]);
+  parentPath: string[];
 }) => {
   const { organizeService } = useServices({
     OrganizeService,
@@ -78,24 +81,34 @@ export const NavigationPanelFolderNode = ({
       <NavigationPanelFolderNodeFolder
         node={node}
         operations={additionalOperations}
+        parentPath={parentPath}
       />
     );
   }
   if (!data) return null;
   if (type === 'doc') {
     return (
-      <NavigationPanelDocNode docId={data} operations={additionalOperations} />
+      <NavigationPanelDocNode
+        docId={data}
+        operations={additionalOperations}
+        parentPath={parentPath}
+      />
     );
   } else if (type === 'collection') {
     return (
       <NavigationPanelCollectionNode
         collectionId={data}
         operations={additionalOperations}
+        parentPath={parentPath}
       />
     );
   } else if (type === 'tag') {
     return (
-      <NavigationPanelTagNode tagId={data} operations={additionalOperations} />
+      <NavigationPanelTagNode
+        tagId={data}
+        operations={additionalOperations}
+        parentPath={parentPath}
+      />
     );
   }
 
@@ -119,9 +132,11 @@ const NavigationPanelFolderIcon: NavigationPanelTreeNodeIcon = ({
 const NavigationPanelFolderNodeFolder = ({
   node,
   operations: additionalOperations,
+  parentPath,
 }: {
   node: FolderNode;
   operations?: NodeOperation[];
+  parentPath: string[];
 }) => {
   const t = useI18n();
   const { workspaceService, featureFlagService, workspaceDialogService } =
@@ -135,7 +150,18 @@ const NavigationPanelFolderNodeFolder = ({
   const enableEmojiIcon = useLiveData(
     featureFlagService.flags.enable_emoji_folder_icon.$
   );
-  const [collapsed, setCollapsed] = useState(true);
+  const navigationPanelService = useService(NavigationPanelService);
+  const path = useMemo(
+    () => [...parentPath, `folder-${node.id}`],
+    [parentPath, node.id]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
 
   const { createPage } = usePageHelper(
     workspaceService.workspace.docCollection
@@ -171,7 +197,7 @@ const NavigationPanelFolderNodeFolder = ({
       target: 'doc',
     });
     setCollapsed(false);
-  }, [createPage, node]);
+  }, [createPage, node, setCollapsed]);
 
   const handleCreateSubfolder = useCallback(
     (name: string) => {
@@ -179,7 +205,7 @@ const NavigationPanelFolderNodeFolder = ({
       track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
       setCollapsed(false);
     },
-    [node]
+    [node, setCollapsed]
   );
 
   const handleAddToFolder = useCallback(
@@ -223,7 +249,7 @@ const NavigationPanelFolderNodeFolder = ({
         target: type,
       });
     },
-    [children, node, workspaceDialogService]
+    [children, node, setCollapsed, workspaceDialogService]
   );
 
   const createSubTipRenderer = useCallback(
@@ -388,13 +414,16 @@ const NavigationPanelFolderNodeFolder = ({
     [t]
   );
 
-  const handleCollapsedChange = useCallback((collapsed: boolean) => {
-    if (collapsed) {
-      setCollapsed(true);
-    } else {
-      setCollapsed(false);
-    }
-  }, []);
+  const handleCollapsedChange = useCallback(
+    (collapsed: boolean) => {
+      if (collapsed) {
+        setCollapsed(true);
+      } else {
+        setCollapsed(false);
+      }
+    },
+    [setCollapsed]
+  );
 
   return (
     <NavigationPanelTreeNode
@@ -413,6 +442,7 @@ const NavigationPanelFolderNodeFolder = ({
           key={child.id}
           nodeId={child.id as string}
           operations={childrenOperations}
+          parentPath={path}
         />
       ))}
       <AddItemPlaceholder

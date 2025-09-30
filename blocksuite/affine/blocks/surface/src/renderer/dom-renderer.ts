@@ -11,7 +11,7 @@ import {
   getBoundWithRotation,
   intersects,
 } from '@blocksuite/global/gfx';
-import type { BlockStdScope } from '@blocksuite/std';
+import { type BlockStdScope, SurfaceSelection } from '@blocksuite/std';
 import type {
   GfxCompatibleInterface,
   GridManager,
@@ -298,7 +298,10 @@ export class DomRenderer {
       viewportBounds,
       zoom
     );
-    Object.assign(domElement.style, geometricStyles);
+    const zIndexStyle = {
+      'z-index': this.layerManager.getZIndex(elementModel),
+    };
+    Object.assign(domElement.style, geometricStyles, zIndexStyle);
     Object.assign(domElement.style, PLACEHOLDER_RESET_STYLES);
 
     // Clear classes specific to shapes, if applicable
@@ -335,7 +338,10 @@ export class DomRenderer {
       zoom
     );
     const opacityStyle = getOpacity(elementModel);
-    Object.assign(domElement.style, geometricStyles, opacityStyle);
+    const zIndexStyle = {
+      'z-index': this.layerManager.getZIndex(elementModel),
+    };
+    Object.assign(domElement.style, geometricStyles, opacityStyle, zIndexStyle);
 
     this._renderElement(elementModel, domElement);
   }
@@ -382,6 +388,36 @@ export class DomRenderer {
         if (payload.props['externalXYWH']) return;
         this._markElementDirty(payload.id, UpdateType.ELEMENT_UPDATED);
         this.refresh();
+      })
+    );
+
+    // Workaround for the group rendering reactive update when selection changed
+    let lastSet = new Set<string>();
+    this._disposables.add(
+      this.std.selection.filter$(SurfaceSelection).subscribe(selections => {
+        const groupRelatedSelection = new Set(
+          selections.flatMap(s =>
+            s.elements.flatMap(e => {
+              const element = surfaceModel.getElementById(e);
+              if (
+                element &&
+                (element.type === 'group' || element.groups.length !== 0)
+              ) {
+                return [element.id, ...element.groups.map(g => g.id)];
+              }
+              return [];
+            })
+          )
+        );
+
+        if (lastSet.symmetricDifference(groupRelatedSelection).size !== 0) {
+          lastSet.union(groupRelatedSelection).forEach(g => {
+            this._markElementDirty(g, UpdateType.ELEMENT_UPDATED);
+          });
+          this.refresh();
+        }
+
+        lastSet = groupRelatedSelection;
       })
     );
   }

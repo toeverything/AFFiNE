@@ -1,13 +1,12 @@
 import SnapKit
-import Then
 import UIKit
 
 private let unselectedColor: UIColor = .affineIconPrimary
 private let selectedColor: UIColor = .affineIconActivated
 
 private let configurableOptions: [ConfigurableOptions] = [
-  .networking,
-  .reasoning,
+//  .networking,
+//  .reasoning,
 ]
 enum ConfigurableOptions {
   case tool

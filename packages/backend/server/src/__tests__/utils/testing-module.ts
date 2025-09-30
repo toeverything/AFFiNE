@@ -66,7 +66,7 @@ export async function createTestingModule(
   // setting up
   let imports = moduleDef.imports ?? [buildAppModule(globalThis.env)];
   imports =
-    // @ts-expect-error
+    // @ts-expect-error ignore the type error
     imports[0].module?.name === 'AppModule'
       ? imports
       : dedupeModules([

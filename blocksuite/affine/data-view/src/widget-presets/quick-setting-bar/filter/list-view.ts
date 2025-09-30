@@ -88,6 +88,9 @@ export class FilterBar extends SignalWatcher(ShadowlessElement) {
   };
 
   private readonly addFilter = (e: MouseEvent) => {
+    if (this.dataViewLogic.root.config.dataSource.readonly$.peek()) {
+      return;
+    }
     const element = popupTargetFromElement(e.target as HTMLElement);
     popCreateFilter(element, {
       vars: this.vars,

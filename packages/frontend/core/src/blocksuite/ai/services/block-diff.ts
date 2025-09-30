@@ -1,14 +1,10 @@
+import { parsePageDoc } from '@affine/reader';
 import { LifeCycleWatcher } from '@blocksuite/affine/std';
 import { Extension, type Store } from '@blocksuite/affine/store';
-import {
-  BlockMarkdownAdapterMatcherIdentifier,
-  MarkdownAdapter,
-} from '@blocksuite/affine-shared/adapters';
 import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { LiveData } from '@toeverything/infra';
 import type { Subscription } from 'rxjs';
 
-import { blockTagMarkdownAdapterMatcher } from '../adapters/block-tag';
 import { applyPatchToDoc } from '../utils/apply-model/apply-patch-to-doc';
 import {
   generateRenderDiff,
@@ -381,24 +377,25 @@ export class BlockDiffService extends Extension implements BlockDiffProvider {
   }
 
   getMarkdownFromDoc = async (doc: Store) => {
-    const cloned = doc.provider.container.clone();
-    cloned.addImpl(
-      BlockMarkdownAdapterMatcherIdentifier,
-      blockTagMarkdownAdapterMatcher
-    );
     const job = doc.getTransformer();
     const snapshot = job.docToSnapshot(doc);
-    const adapter = new MarkdownAdapter(job, cloned.provider());
+    const spaceDoc = doc.doc.spaceDoc;
     if (!snapshot) {
-      return 'Failed to get markdown from doc';
+      throw new Error('Failed to get snapshot');
     }
-    // FIXME: reverse the block matchers to make the block tag adapter the first one
-    adapter.blockMatchers.reverse();
-    const markdown = await adapter.fromDocSnapshot({
-      snapshot,
-      assets: job.assetsManager,
+    const parsed = parsePageDoc({
+      doc: spaceDoc,
+      workspaceId: doc.workspace.id,
+      buildBlobUrl: (blobId: string) => {
+        return `/${doc.workspace.id}/blobs/${blobId}`;
+      },
+      buildDocUrl: (docId: string) => {
+        return `/workspace/${doc.workspace.id}/${docId}`;
+      },
+      aiEditable: true,
     });
-    return markdown.file;
+
+    return parsed.md;
   };
 }
 

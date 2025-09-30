@@ -28,6 +28,7 @@ import { RedisModule } from './base/redis';
 import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
+import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
 import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
@@ -187,7 +188,8 @@ export function buildAppModule(env: Env) {
       CaptchaModule,
       OAuthModule,
       CustomerIoModule,
-      CommentModule
+      CommentModule,
+      AccessTokenModule
     )
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)

@@ -2,8 +2,11 @@ import { Readable } from 'node:stream';
 
 import type { Request } from 'express';
 
-import { readBufferWithLimit } from '../../base';
-import { MAX_EMBEDDABLE_SIZE } from './types';
+import { OneMB, readBufferWithLimit } from '../../base';
+import type { PromptTools } from './providers';
+import type { ToolsConfig } from './types';
+
+export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;
 
 export function readStream(
   readable: Readable,
@@ -48,4 +51,34 @@ export function getSignal(req: Request): SignalReturnType {
     signal: controller.signal,
     onConnectionClosed: cb => (callback = cb),
   };
+}
+
+export function getTools(
+  tools?: PromptTools | null,
+  toolsConfig?: ToolsConfig
+) {
+  if (!tools || !toolsConfig) {
+    return tools;
+  }
+  let result: PromptTools = tools;
+  (Object.keys(toolsConfig) as Array<keyof ToolsConfig>).forEach(key => {
+    const value = toolsConfig[key];
+    switch (key) {
+      case 'searchWorkspace':
+        if (value === false) {
+          result = result.filter(tool => {
+            return tool !== 'docKeywordSearch' && tool !== 'docSemanticSearch';
+          });
+        }
+        break;
+      case 'readingDocs':
+        if (value === false) {
+          result = result.filter(tool => {
+            return tool !== 'docRead';
+          });
+        }
+        break;
+    }
+  });
+  return result;
 }

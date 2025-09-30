@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apollographql/apollo-ios",
       "state" : {
-        "revision" : "39fea7617346c0731be25f61afd537e7032fb562",
-        "version" : "1.22.0"
+        "revision" : "d591c1dd55824867877cff4f6551fe32983d7f51",
+        "version" : "1.23.0"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Recouse/EventSource",
       "state" : {
-        "revision" : "d783b1cf60599dbcec6396c55a6bab33a1c92dc3",
-        "version" : "0.1.4"
+        "revision" : "7b2f4f585d3927876bd76eaede9fdff779eff102",
+        "version" : "0.1.5"
       }
     },
     {
@@ -25,15 +25,6 @@
       "state" : {
         "revision" : "a4372d7f90c846d834c1f1575d1af0050d70fa0f",
         "version" : "1.1.6"
-      }
-    },
-    {
-      "identity" : "litext",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/Litext",
-      "state" : {
-        "revision" : "c37f3ab5826659854311e20d6c3942d4905b00b6",
-        "version" : "0.5.0"
       }
     },
     {
@@ -50,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/MarkdownView",
       "state" : {
-        "revision" : "29a9da19d6dc21af4e629c423961b0f453ffe192",
-        "version" : "2.3.8"
+        "revision" : "c052f57768436212c91e4369d76181c38eaa3ba3",
+        "version" : "3.4.2"
       }
     },
     {
@@ -68,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/Splash",
       "state" : {
-        "revision" : "4d997712fe07f75695aacdf287aeb3b1f2c6ab88",
-        "version" : "0.17.0"
+        "revision" : "de9cde249fdb7a173a6e6b950ab18b11f6c2a557",
+        "version" : "0.18.0"
       }
     },
     {
@@ -95,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "c1805596154bb3a265fd91b8ac0c4433b4348fb0",
-        "version" : "1.2.0"
+        "revision" : "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
+        "version" : "1.2.1"
       }
     },
     {
@@ -115,15 +106,6 @@
       "state" : {
         "revision" : "cfd646dcac0c5553e21ebf1ee05f9078277518bc",
         "version" : "1.7.2"
-      }
-    },
-    {
-      "identity" : "then",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/devxoul/Then",
-      "state" : {
-        "revision" : "d41ef523faef0f911369f79c0b96815d9dbb6d7a",
-        "version" : "3.0.0"
       }
     }
   ],

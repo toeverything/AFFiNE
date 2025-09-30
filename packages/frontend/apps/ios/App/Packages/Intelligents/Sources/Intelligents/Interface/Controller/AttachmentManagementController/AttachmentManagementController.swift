@@ -6,7 +6,6 @@
 //
 
 import SnapKit
-import Then
 import UIKit
 
 class AttachmentManagementController: UINavigationController {

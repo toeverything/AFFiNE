@@ -147,9 +147,10 @@ export const Component = ({
   }, [desktopApi]);
 
   useEffect(() => {
-    if (listIsLoading || list.length > 0) {
+    if (listIsLoading || list.length > 0 || !enableLocalWorkspace) {
       return;
     }
+
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
         if (createdWorkspace) {
@@ -177,6 +178,7 @@ export const Component = ({
     loggedIn,
     listIsLoading,
     list,
+    enableLocalWorkspace,
   ]);
 
   if (navigating || creating) {

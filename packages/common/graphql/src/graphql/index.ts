@@ -70,6 +70,42 @@ export const licenseBodyFragment = `fragment licenseBody on License {
   validatedAt
   variant
 }`;
+export const generateUserAccessTokenMutation = {
+  id: 'generateUserAccessTokenMutation' as const,
+  op: 'generateUserAccessToken',
+  query: `mutation generateUserAccessToken($input: GenerateAccessTokenInput!) {
+  generateUserAccessToken(input: $input) {
+    id
+    name
+    token
+    createdAt
+    expiresAt
+  }
+}`,
+};
+
+export const listUserAccessTokensQuery = {
+  id: 'listUserAccessTokensQuery' as const,
+  op: 'listUserAccessTokens',
+  query: `query listUserAccessTokens {
+  revealedAccessTokens {
+    id
+    name
+    createdAt
+    expiresAt
+    token
+  }
+}`,
+};
+
+export const revokeUserAccessTokenMutation = {
+  id: 'revokeUserAccessTokenMutation' as const,
+  op: 'revokeUserAccessToken',
+  query: `mutation revokeUserAccessToken($id: String!) {
+  revokeUserAccessToken(id: $id)
+}`,
+};
+
 export const adminServerConfigQuery = {
   id: 'adminServerConfigQuery' as const,
   op: 'adminServerConfig',
@@ -568,6 +604,26 @@ export const applyDocUpdatesQuery = {
 }`,
 };
 
+export const addContextBlobMutation = {
+  id: 'addContextBlobMutation' as const,
+  op: 'addContextBlob',
+  query: `mutation addContextBlob($options: AddContextBlobInput!) {
+  addContextBlob(options: $options) {
+    id
+    createdAt
+    status
+  }
+}`,
+};
+
+export const removeContextBlobMutation = {
+  id: 'removeContextBlobMutation' as const,
+  op: 'removeContextBlob',
+  query: `mutation removeContextBlob($options: RemoveContextBlobInput!) {
+  removeContextBlob(options: $options)
+}`,
+};
+
 export const addContextCategoryMutation = {
   id: 'addContextCategoryMutation' as const,
   op: 'addContextCategory',
@@ -609,7 +665,6 @@ export const addContextDocMutation = {
     id
     createdAt
     status
-    error
   }
 }`,
 };
@@ -655,10 +710,14 @@ export const listContextObjectQuery = {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       contexts(sessionId: $sessionId, contextId: $contextId) {
+        blobs {
+          id
+          status
+          createdAt
+        }
         docs {
           id
           status
-          error
           createdAt
         }
         files {
@@ -999,6 +1058,28 @@ export const createCopilotMessageMutation = {
   createCopilotMessage(options: $options)
 }`,
   file: true,
+};
+
+export const getPromptModelsQuery = {
+  id: 'getPromptModelsQuery' as const,
+  op: 'getPromptModels',
+  query: `query getPromptModels($promptName: String!) {
+  currentUser {
+    copilot {
+      models(promptName: $promptName) {
+        defaultModel
+        optionalModels {
+          id
+          name
+        }
+        proModels {
+          id
+          name
+        }
+      }
+    }
+  }
+}`,
 };
 
 export const copilotQuotaQuery = {
@@ -1391,6 +1472,18 @@ export const getDocDefaultRoleQuery = {
   workspace(id: $workspaceId) {
     doc(docId: $docId) {
       defaultRole
+    }
+  }
+}`,
+};
+
+export const getDocSummaryQuery = {
+  id: 'getDocSummaryQuery' as const,
+  op: 'getDocSummary',
+  query: `query getDocSummary($workspaceId: String!, $docId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      summary
     }
   }
 }`,
@@ -2123,6 +2216,25 @@ export const setWorkspacePublicByIdMutation = {
     id
   }
 }`,
+};
+
+export const refreshSubscriptionMutation = {
+  id: 'refreshSubscriptionMutation' as const,
+  op: 'refreshSubscription',
+  query: `mutation refreshSubscription {
+  refreshUserSubscriptions {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const subscriptionQuery = {

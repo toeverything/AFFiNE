@@ -1,4 +1,7 @@
+import { ImageBlockModel } from '@blocksuite/affine/model';
 import { FetchUtils } from '@blocksuite/affine/shared/adapters';
+import type { BlockModel } from '@blocksuite/affine/store';
+import type { GfxModel } from '@blocksuite/std/gfx';
 
 export async function fetchImageToFile(
   url: string,
@@ -106,4 +109,10 @@ export function canvasToBlob(
 
 export function randomSeed(min = 0, max = Date.now()) {
   return Math.round(Math.random() * (max - min)) + min;
+}
+
+export function isImage(
+  model: GfxModel | BlockModel
+): model is ImageBlockModel {
+  return model instanceof ImageBlockModel;
 }

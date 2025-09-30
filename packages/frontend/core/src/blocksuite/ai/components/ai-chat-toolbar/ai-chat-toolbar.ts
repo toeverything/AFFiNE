@@ -43,6 +43,11 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   accessor onOpenDoc!: (docId: string, sessionId: string) => void;
 
   @property({ attribute: false })
+  accessor onSessionDelete!: (
+    session: BlockSuitePresets.AIRecentSession
+  ) => void;
+
+  @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
@@ -92,14 +97,20 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
     const pinned = this.session?.pinned;
     return html`
       <div class="ai-chat-toolbar">
-        <div class="chat-toolbar-icon" @click=${this.onPlusClick}>
+        <div
+          class="chat-toolbar-icon"
+          @click=${this.onPlusClick}
+          data-testid="ai-panel-new-chat"
+        >
           ${PlusIcon()}
           <affine-tooltip>New Chat</affine-tooltip>
         </div>
         <div
           class="chat-toolbar-icon"
           @click=${this.onPinClick}
+          data-pinned=${!!pinned}
           data-disabled=${this.isGenerating}
+          data-testid="ai-panel-pin-chat"
         >
           ${pinned ? PinedIcon() : PinIcon()}
           <affine-tooltip>
@@ -192,7 +203,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
           .workspaceId=${this.workspaceId}
           .docDisplayConfig=${this.docDisplayConfig}
           .onSessionClick=${this.onSessionClick}
+          .onSessionDelete=${this.onSessionDelete}
           .onDocClick=${this.onDocClick}
+          .notificationService=${this.notificationService}
         ></ai-session-history>
       `,
       portalStyles: {

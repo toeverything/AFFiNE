@@ -152,6 +152,15 @@ export async function createRandomUser(): Promise<{
   } as any;
 }
 
+export async function cleanupWorkspace(workspaceId: string): Promise<void> {
+  await runPrisma(async client => {
+    const ret = await client.snapshot.deleteMany({
+      where: { workspaceId, id: { not: workspaceId } },
+    });
+    console.error(ret);
+  });
+}
+
 export async function switchDefaultChatModel(model: string) {
   await runPrisma(async client => {
     const promptId = await client.aiPrompt

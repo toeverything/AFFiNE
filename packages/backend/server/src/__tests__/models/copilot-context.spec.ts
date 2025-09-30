@@ -48,7 +48,7 @@ let docId = 'doc1';
 
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
-  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-4.1');
+  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-5-mini');
   user = await t.context.user.create({
     email: 'test@affine.pro',
   });
@@ -89,13 +89,14 @@ test('should get null for non-exist job', async t => {
 
 test('should update context', async t => {
   const { id: contextId } = await t.context.copilotContext.create(sessionId);
-  const config = await t.context.copilotContext.getConfig(contextId);
+  const config = (await t.context.copilotContext.getConfig(contextId))!;
+  t.assert(config, 'should get context config');
 
   const doc = {
     id: docId,
     createdAt: Date.now(),
   };
-  config?.docs.push(doc);
+  config.docs.push(doc);
   await t.context.copilotContext.update(contextId, { config });
 
   const config1 = await t.context.copilotContext.getConfig(contextId);
@@ -164,7 +165,7 @@ test('should insert embedding by doc id', async t => {
     );
 
     {
-      const ret = await t.context.copilotContext.listWorkspaceEmbedding(
+      const ret = await t.context.copilotContext.listWorkspaceDocEmbedding(
         workspace.id,
         [docId]
       );
@@ -320,7 +321,7 @@ test('should merge doc status correctly', async t => {
 
     const hasEmbeddingStub = Sinon.stub(
       t.context.copilotContext,
-      'listWorkspaceEmbedding'
+      'listWorkspaceDocEmbedding'
     ).resolves([]);
 
     const stubResult = await t.context.copilotContext.mergeDocStatus(

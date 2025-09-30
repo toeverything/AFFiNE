@@ -1,3 +1,4 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
@@ -91,6 +92,9 @@ export class PlaygroundContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @state()
   accessor sessions: CopilotChatHistoryFragment[] = [];
@@ -347,6 +351,7 @@ export class PlaygroundContent extends SignalWatcher(
                 .affineFeatureFlagService=${this.affineFeatureFlagService}
                 .affineThemeService=${this.affineThemeService}
                 .notificationService=${this.notificationService}
+                .aiToolsConfigService=${this.aiToolsConfigService}
                 .addChat=${this.addChat}
               ></playground-chat>
             </div>

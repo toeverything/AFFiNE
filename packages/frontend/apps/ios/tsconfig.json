@@ -10,6 +10,7 @@
     { "path": "../../component" },
     { "path": "../../core" },
     { "path": "../../../common/env" },
+    { "path": "../../../common/graphql" },
     { "path": "../../i18n" },
     { "path": "../../../common/nbstore" },
     { "path": "../../../../blocksuite/affine/all" },

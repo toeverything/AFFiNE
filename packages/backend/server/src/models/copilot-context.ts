@@ -6,12 +6,15 @@ import { Prisma } from '@prisma/client';
 import { CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 import {
+  clearEmbeddingContent,
+  ContextBlob,
   ContextConfigSchema,
   ContextDoc,
   ContextEmbedStatus,
   CopilotContext,
   DocChunkSimilarity,
   Embedding,
+  EMBEDDING_DIMENSIONS,
   FileChunkSimilarity,
   MinimalContextConfigSchema,
 } from './common/copilot';
@@ -39,6 +42,7 @@ export class CopilotContextModel extends BaseModel {
         sessionId,
         config: {
           workspaceId: session.workspaceId,
+          blobs: [],
           docs: [],
           files: [],
           categories: [],
@@ -66,10 +70,11 @@ export class CopilotContextModel extends BaseModel {
       if (minimalConfig.success) {
         // fulfill the missing fields
         return {
-          ...minimalConfig.data,
+          blobs: [],
           docs: [],
           files: [],
           categories: [],
+          ...minimalConfig.data,
         };
       }
     }
@@ -83,10 +88,35 @@ export class CopilotContextModel extends BaseModel {
     return row;
   }
 
+  async mergeBlobStatus(
+    workspaceId: string,
+    blobs: ContextBlob[]
+  ): Promise<ContextBlob[]> {
+    const canEmbedding = await this.checkEmbeddingAvailable();
+    const finishedBlobs = canEmbedding
+      ? await this.listWorkspaceBlobEmbedding(
+          workspaceId,
+          Array.from(new Set(blobs.map(blob => blob.id)))
+        )
+      : [];
+    const finishedBlobSet = new Set(finishedBlobs);
+
+    for (const blob of blobs) {
+      const status = finishedBlobSet.has(blob.id)
+        ? ContextEmbedStatus.finished
+        : undefined;
+      // NOTE: when the blob has not been synchronized to the server or is in the embedding queue
+      // the status will be empty, fallback to processing if no status is provided
+      blob.status = status || blob.status || ContextEmbedStatus.processing;
+    }
+
+    return blobs;
+  }
+
   async mergeDocStatus(workspaceId: string, docs: ContextDoc[]) {
     const canEmbedding = await this.checkEmbeddingAvailable();
     const finishedDoc = canEmbedding
-      ? await this.listWorkspaceEmbedding(
+      ? await this.listWorkspaceDocEmbedding(
           workspaceId,
           Array.from(new Set(docs.map(doc => doc.id)))
         )
@@ -126,7 +156,23 @@ export class CopilotContextModel extends BaseModel {
     return Number(count) === 2;
   }
 
-  async listWorkspaceEmbedding(workspaceId: string, docIds?: string[]) {
+  async listWorkspaceBlobEmbedding(
+    workspaceId: string,
+    blobIds?: string[]
+  ): Promise<string[]> {
+    const existsIds = await this.db.aiWorkspaceBlobEmbedding
+      .groupBy({
+        where: {
+          workspaceId,
+          blobId: blobIds ? { in: blobIds } : undefined,
+        },
+        by: ['blobId'],
+      })
+      .then(r => r.map(r => r.blobId));
+    return existsIds;
+  }
+
+  async listWorkspaceDocEmbedding(workspaceId: string, docIds?: string[]) {
     const existsIds = await this.db.aiWorkspaceEmbedding
       .groupBy({
         where: {
@@ -157,6 +203,19 @@ export class CopilotContextModel extends BaseModel {
       ].filter(v => v !== undefined)
     );
     return Prisma.join(groups.map(row => Prisma.sql`(${Prisma.join(row)})`));
+  }
+
+  async getFileContent(
+    contextId: string,
+    fileId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = await this.db.aiContextEmbedding.findMany({
+      where: { contextId, fileId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return file?.map(f => clearEmbeddingContent(f.content)).join('\n');
   }
 
   async insertFileEmbedding(
@@ -205,6 +264,19 @@ export class CopilotContextModel extends BaseModel {
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
   }
 
+  async getWorkspaceContent(
+    workspaceId: string,
+    docId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = await this.db.aiWorkspaceEmbedding.findMany({
+      where: { workspaceId, docId, chunk },
+      select: { content: true },
+      orderBy: { chunk: 'asc' },
+    });
+    return file?.map(f => clearEmbeddingContent(f.content)).join('\n');
+  }
+
   async insertWorkspaceEmbedding(
     workspaceId: string,
     docId: string,
@@ -229,15 +301,30 @@ export class CopilotContextModel extends BaseModel {
       VALUES ${values}
       ON CONFLICT (workspace_id, doc_id, chunk)
       DO UPDATE SET
+        content = EXCLUDED.content,
         embedding = EXCLUDED.embedding,
         updated_at = excluded.updated_at;
     `;
+  }
+
+  async fulfillEmptyEmbedding(workspaceId: string, docId: string) {
+    const emptyEmbedding = {
+      index: 0,
+      content: '',
+      embedding: Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0),
+    };
+    await this.models.copilotContext.insertWorkspaceEmbedding(
+      workspaceId,
+      docId,
+      [emptyEmbedding]
+    );
   }
 
   async deleteWorkspaceEmbedding(workspaceId: string, docId: string) {
     await this.db.aiWorkspaceEmbedding.deleteMany({
       where: { workspaceId, docId },
     });
+    await this.fulfillEmptyEmbedding(workspaceId, docId);
   }
 
   async matchWorkspaceEmbedding(

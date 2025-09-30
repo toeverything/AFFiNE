@@ -49,7 +49,17 @@ export class CopilotTranscriptionService {
     private readonly providerFactory: CopilotProviderFactory
   ) {}
 
-  async submitTranscriptionJob(
+  private async getModel(userId: string) {
+    const prompt = await this.prompt.get('Transcript audio');
+    const hasAccess = await this.models.userFeature.has(
+      userId,
+      'unlimited_copilot'
+    );
+    // choose the pro model if user has copilot plan
+    return prompt?.optionalModels[hasAccess ? 1 : 0];
+  }
+
+  async submitJob(
     userId: string,
     workspaceId: string,
     blobId: string,
@@ -78,12 +88,26 @@ export class CopilotTranscriptionService {
       infos.push({ url, mimeType: blob.mimetype });
     }
 
-    return await this.executeTranscriptionJob(jobId, infos);
+    const model = await this.getModel(userId);
+    return await this.executeJob(jobId, infos, model);
   }
 
-  async executeTranscriptionJob(
+  async retryJob(userId: string, workspaceId: string, jobId: string) {
+    const job = await this.queryJob(userId, workspaceId, jobId);
+    if (!job || !job.infos) {
+      throw new CopilotTranscriptionJobNotFound();
+    }
+
+    const model = await this.getModel(userId);
+    const jobResult = await this.executeJob(job.id, job.infos, model);
+
+    return jobResult;
+  }
+
+  async executeJob(
     jobId: string,
-    infos: AudioBlobInfos
+    infos: AudioBlobInfos,
+    modelId?: string
   ): Promise<TranscriptionJob> {
     const status = AiJobStatus.running;
     const success = await this.models.copilotJob.update(jobId, {
@@ -98,12 +122,13 @@ export class CopilotTranscriptionService {
     await this.job.add('copilot.transcript.submit', {
       jobId,
       infos,
+      modelId,
     });
 
     return { id: jobId, status };
   }
 
-  async claimTranscriptionJob(
+  async claimJob(
     userId: string,
     jobId: string
   ): Promise<TranscriptionJob | null> {
@@ -118,7 +143,7 @@ export class CopilotTranscriptionService {
     return null;
   }
 
-  async queryTranscriptionJob(
+  async queryJob(
     userId: string,
     workspaceId: string,
     jobId?: string,
@@ -181,14 +206,20 @@ export class CopilotTranscriptionService {
     promptName: string,
     message: Partial<PromptMessage>,
     schema?: ZodType<any>,
-    prefer?: CopilotProviderType
+    prefer?: CopilotProviderType,
+    modelId?: string
   ): Promise<string> {
     const prompt = await this.prompt.get(promptName);
     if (!prompt) {
       throw new CopilotPromptNotFound({ name: promptName });
     }
 
-    const cond = { modelId: prompt.model };
+    const cond = {
+      modelId:
+        modelId && prompt.optionalModels.includes(modelId)
+          ? modelId
+          : prompt.model,
+    };
     const msg = { role: 'user' as const, content: '', ...message };
     const config = Object.assign({}, prompt.config);
     if (schema) {
@@ -231,13 +262,19 @@ export class CopilotTranscriptionService {
     return `${hoursStr}:${minutesStr}:${secondsStr}`;
   }
 
-  private async callTranscript(url: string, mimeType: string, offset: number) {
+  private async callTranscript(
+    url: string,
+    mimeType: string,
+    offset: number,
+    modelId?: string
+  ) {
     // NOTE: Vertex provider not support transcription yet, we always use Gemini here
     const result = await this.chatWithPrompt(
       'Transcript audio',
       { attachments: [url], params: { mimetype: mimeType } },
       TranscriptionResponseSchema,
-      CopilotProviderType.Gemini
+      CopilotProviderType.Gemini,
+      modelId
     );
 
     const transcription = TranscriptionResponseSchema.parse(
@@ -256,6 +293,7 @@ export class CopilotTranscriptionService {
   async transcriptAudio({
     jobId,
     infos,
+    modelId,
     // @deprecated
     url,
     mimeType,
@@ -264,7 +302,7 @@ export class CopilotTranscriptionService {
       const blobInfos = this.mergeInfos(infos, url, mimeType);
       const transcriptions = await Promise.all(
         Array.from(blobInfos.entries()).map(([idx, { url, mimeType }]) =>
-          this.callTranscript(url, mimeType, idx * 10 * 60)
+          this.callTranscript(url, mimeType, idx * 10 * 60, modelId)
         )
       );
 

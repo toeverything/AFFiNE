@@ -1,6 +1,8 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type { UserFriendlyError } from '@affine/error';
 import {
+  addContextBlobMutation,
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
@@ -23,6 +25,7 @@ import {
   type PaginationInput,
   type QueryOptions,
   type QueryResponse,
+  removeContextBlobMutation,
   removeContextCategoryMutation,
   removeContextDocMutation,
   removeContextFileMutation,
@@ -258,7 +261,7 @@ export class CopilotClient {
 
   async cleanupSessions(input: {
     workspaceId: string;
-    docId: string;
+    docId: string | undefined;
     sessionIds: string[];
   }) {
     try {
@@ -415,6 +418,7 @@ export class CopilotClient {
     reasoning,
     webSearch,
     modelId,
+    toolsConfig,
     signal,
   }: {
     sessionId: string;
@@ -422,6 +426,7 @@ export class CopilotClient {
     reasoning?: boolean;
     webSearch?: boolean;
     modelId?: string;
+    toolsConfig?: AIToolsConfig;
     signal?: AbortSignal;
   }) {
     let url = `/api/copilot/chat/${sessionId}`;
@@ -430,6 +435,7 @@ export class CopilotClient {
       reasoning,
       webSearch,
       modelId,
+      toolsConfig,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -446,12 +452,14 @@ export class CopilotClient {
       reasoning,
       webSearch,
       modelId,
+      toolsConfig,
     }: {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
       webSearch?: boolean;
       modelId?: string;
+      toolsConfig?: AIToolsConfig;
     },
     endpoint = Endpoint.Stream
   ) {
@@ -461,6 +469,7 @@ export class CopilotClient {
       reasoning,
       webSearch,
       modelId,
+      toolsConfig,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -486,7 +495,9 @@ export class CopilotClient {
     return this.eventSource(url);
   }
 
-  paramsToQueryString(params: Record<string, string | boolean | undefined>) {
+  paramsToQueryString(
+    params: Record<string, string | boolean | undefined | Record<string, any>>
+  ) {
     const queryString = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (typeof value === 'boolean') {
@@ -495,6 +506,8 @@ export class CopilotClient {
         }
       } else if (typeof value === 'string') {
         queryString.append(key, value);
+      } else if (typeof value === 'object' && value !== null) {
+        queryString.append(key, JSON.stringify(value));
       }
     });
     return queryString.toString();
@@ -522,5 +535,23 @@ export class CopilotClient {
         updates,
       },
     }).then(res => res.applyDocUpdates);
+  }
+
+  addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {
+    return this.gql({
+      query: addContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.addContextBlob);
+  }
+
+  removeContextBlob(options: OptionsField<typeof removeContextBlobMutation>) {
+    return this.gql({
+      query: removeContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.removeContextBlob);
   }
 }

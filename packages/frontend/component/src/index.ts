@@ -13,6 +13,7 @@ export * from './ui/editable';
 export * from './ui/empty';
 export * from './ui/error-message';
 export * from './ui/icon-name-editor';
+export * from './ui/icon-picker';
 export * from './ui/input';
 export * from './ui/layout';
 export * from './ui/loading';

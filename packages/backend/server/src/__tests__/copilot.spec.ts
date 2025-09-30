@@ -5,12 +5,14 @@ import { ProjectRoot } from '@affine-tools/utils/path';
 import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
 import { EventBus, JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
+import { StorageModule, WorkspaceBlobStorage } from '../core/storage';
 import {
   ContextCategories,
   CopilotSessionModel,
@@ -58,6 +60,9 @@ import {
 import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
 import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
 import { CopilotWorkspaceService } from '../plugins/copilot/workspace';
+import { PaymentModule } from '../plugins/payment';
+import { SubscriptionService } from '../plugins/payment/service';
+import { SubscriptionStatus } from '../plugins/payment/types';
 import { MockCopilotProvider } from './mocks';
 import { createTestingModule, TestingModule } from './utils';
 import { WorkflowTestCases } from './utils/copilot';
@@ -68,6 +73,7 @@ type Context = {
   db: PrismaClient;
   event: EventBus;
   workspace: WorkspaceModel;
+  workspaceStorage: WorkspaceBlobStorage;
   copilotSession: CopilotSessionModel;
   context: CopilotContextService;
   prompt: PromptService;
@@ -79,6 +85,7 @@ type Context = {
   storage: CopilotStorage;
   workflow: CopilotWorkflowService;
   cronJobs: CopilotCronJobs;
+  subscription: SubscriptionService;
   executors: {
     image: CopilotChatImageExecutor;
     text: CopilotChatTextExecutor;
@@ -113,13 +120,22 @@ test.before(async t => {
           },
         },
       }),
+      PaymentModule,
       QuotaModule,
+      StorageModule,
       CopilotModule,
     ],
     tapModule: builder => {
       // use real JobQueue for testing
       builder.overrideProvider(JobQueue).useClass(JobQueue);
       builder.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
+      builder.overrideProvider(SubscriptionService).useClass(
+        class {
+          select() {
+            return { getSubscription: async () => undefined };
+          }
+        }
+      );
     },
   });
 
@@ -127,6 +143,7 @@ test.before(async t => {
   const db = module.get(PrismaClient);
   const event = module.get(EventBus);
   const workspace = module.get(WorkspaceModel);
+  const workspaceStorage = module.get(WorkspaceBlobStorage);
   const copilotSession = module.get(CopilotSessionModel);
   const prompt = module.get(PromptService);
   const factory = module.get(CopilotProviderFactory);
@@ -140,12 +157,14 @@ test.before(async t => {
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
   const cronJobs = module.get(CopilotCronJobs);
+  const subscription = module.get(SubscriptionService);
 
   t.context.module = module;
   t.context.auth = auth;
   t.context.db = db;
   t.context.event = event;
   t.context.workspace = workspace;
+  t.context.workspaceStorage = workspaceStorage;
   t.context.copilotSession = copilotSession;
   t.context.prompt = prompt;
   t.context.factory = factory;
@@ -157,6 +176,7 @@ test.before(async t => {
   t.context.transcript = transcript;
   t.context.workspaceEmbedding = workspaceEmbedding;
   t.context.cronJobs = cronJobs;
+  t.context.subscription = subscription;
 
   t.context.executors = {
     image: module.get(CopilotChatImageExecutor),
@@ -206,7 +226,9 @@ test('should be able to manage prompt', async t => {
     'should have two messages'
   );
 
-  await prompt.update(promptName, [{ role: 'system', content: 'hello' }]);
+  await prompt.update(promptName, {
+    messages: [{ role: 'system', content: 'hello' }],
+  });
   t.is(
     (await prompt.get(promptName))!.finish({}).length,
     1,
@@ -365,7 +387,7 @@ test('should be able to update chat session prompt', async t => {
   // Update the session
   const updatedSessionId = await session.update({
     sessionId,
-    promptName: 'Search With AFFiNE AI',
+    promptName: 'Chat With AFFiNE AI',
     userId,
   });
   t.is(updatedSessionId, sessionId, 'should update session with same id');
@@ -375,7 +397,7 @@ test('should be able to update chat session prompt', async t => {
   t.truthy(updatedSession, 'should retrieve updated session');
   t.is(
     updatedSession?.config.promptName,
-    'Search With AFFiNE AI',
+    'Chat With AFFiNE AI',
     'should have updated prompt name'
   );
 });
@@ -404,7 +426,7 @@ test('should be able to fork chat session', async t => {
 
   // fork session
   const s1 = (await session.get(sessionId))!;
-  // @ts-expect-error
+  // @ts-expect-error find maybe return undefined
   const latestMessageId = s1.finish({}).find(m => m.role === 'assistant')!.id;
   const forkedSessionId1 = await session.fork({
     userId,
@@ -1333,16 +1355,16 @@ test('TextStreamParser should format different types of chunks correctly', t => 
     textDelta: {
       chunk: {
         type: 'text-delta' as const,
-        textDelta: 'Hello world',
-      } as any,
+        text: 'Hello world',
+      },
       expected: 'Hello world',
       description: 'should format text-delta correctly',
     },
     reasoning: {
       chunk: {
-        type: 'reasoning' as const,
-        textDelta: 'I need to think about this',
-      } as any,
+        type: 'reasoning-delta' as const,
+        text: 'I need to think about this',
+      },
       expected: '\n> [!]\n> I need to think about this',
       description: 'should format reasoning as callout',
     },
@@ -1351,8 +1373,8 @@ test('TextStreamParser should format different types of chunks correctly', t => 
         type: 'tool-call' as const,
         toolName: 'web_search_exa' as const,
         toolCallId: 'test-id-1',
-        args: { query: 'test query', mode: 'AUTO' as const },
-      } as any,
+        input: { query: 'test query', mode: 'AUTO' as const },
+      },
       expected: '\n> [!]\n> \n> Searching the web "test query"\n> ',
       description: 'should format web search tool call correctly',
     },
@@ -1361,8 +1383,8 @@ test('TextStreamParser should format different types of chunks correctly', t => 
         type: 'tool-call' as const,
         toolName: 'web_crawl_exa' as const,
         toolCallId: 'test-id-2',
-        args: { url: 'https://example.com' },
-      } as any,
+        input: { url: 'https://example.com' },
+      },
       expected: '\n> [!]\n> \n> Crawling the web "https://example.com"\n> ',
       description: 'should format web crawl tool call correctly',
     },
@@ -1371,8 +1393,8 @@ test('TextStreamParser should format different types of chunks correctly', t => 
         type: 'tool-result' as const,
         toolName: 'web_search_exa' as const,
         toolCallId: 'test-id-1',
-        args: { query: 'test query', mode: 'AUTO' as const },
-        result: [
+        input: { query: 'test query', mode: 'AUTO' as const },
+        output: [
           {
             title: 'Test Title',
             url: 'https://test.com',
@@ -1399,7 +1421,7 @@ test('TextStreamParser should format different types of chunks correctly', t => 
       chunk: {
         type: 'error' as const,
         error: { type: 'testError', message: 'Test error message' },
-      } as any,
+      },
       errorMessage: 'Test error message',
       description: 'should throw error for error chunks',
     },
@@ -1429,78 +1451,85 @@ test('TextStreamParser should process a sequence of message chunks', t => {
     chunks: [
       // Reasoning chunks
       {
-        type: 'reasoning' as const,
-        textDelta: 'The user is asking about',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: 'The user is asking about',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta: ' recent advances in quantum computing',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' recent advances in quantum computing',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta: ' and how it might impact',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' and how it might impact',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta: ' cryptography and data security.',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' cryptography and data security.',
+      },
       {
-        type: 'reasoning' as const,
-        textDelta:
-          ' I should provide information on quantum supremacy achievements',
-      } as any,
+        id: nanoid(),
+        type: 'reasoning-delta' as const,
+        text: ' I should provide information on quantum supremacy achievements',
+      },
 
       // Text delta
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta:
-          'Let me search for the latest breakthroughs in quantum computing and their ',
-      } as any,
+        text: 'Let me search for the latest breakthroughs in quantum computing and their ',
+      },
 
       // Tool call
       {
         type: 'tool-call' as const,
         toolCallId: 'toolu_01ABCxyz123456789',
         toolName: 'web_search_exa' as const,
-        args: {
+        input: {
           query: 'latest quantum computing breakthroughs cryptography impact',
         },
-      } as any,
+      },
 
       // Tool result
       {
         type: 'tool-result' as const,
         toolCallId: 'toolu_01ABCxyz123456789',
         toolName: 'web_search_exa' as const,
-        args: {
+        input: {
           query: 'latest quantum computing breakthroughs cryptography impact',
         },
-        result: [
+        output: [
           {
             title: 'IBM Unveils 1000-Qubit Quantum Processor',
             url: 'https://example.com/tech/quantum-computing-milestone',
           },
         ],
-      } as any,
+      },
 
       // More text deltas
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta: 'implications for security.',
-      } as any,
+        text: 'implications for security.',
+      },
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta: '\n\nQuantum computing has made ',
-      } as any,
+        text: '\n\nQuantum computing has made ',
+      },
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta: 'remarkable progress in the past year. ',
-      } as any,
+        text: 'remarkable progress in the past year. ',
+      },
       {
+        id: nanoid(),
         type: 'text-delta' as const,
-        textDelta:
-          'The development of more stable qubits has accelerated research significantly.',
-      } as any,
+        text: 'The development of more stable qubits has accelerated research significantly.',
+      },
     ],
     expected:
       '\n> [!]\n> The user is asking about recent advances in quantum computing and how it might impact cryptography and data security. I should provide information on quantum supremacy achievements\n\nLet me search for the latest breakthroughs in quantum computing and their \n> [!]\n> \n> Searching the web "latest quantum computing breakthroughs cryptography impact"\n> \n> \n> \n> [IBM Unveils 1000-Qubit Quantum Processor](https://example.com/tech/quantum-computing-milestone)\n> \n> \n> \n\nimplications for security.\n\nQuantum computing has made remarkable progress in the past year. The development of more stable qubits has accelerated research significantly.',
@@ -1520,14 +1549,25 @@ test('TextStreamParser should process a sequence of message chunks', t => {
 
 // ==================== context ====================
 test('should be able to manage context', async t => {
-  const { context, prompt, session, event, jobs, storage } = t.context;
+  const {
+    context,
+    event,
+    jobs,
+    prompt,
+    session,
+    storage,
+    workspace,
+    workspaceStorage,
+  } = t.context;
+
+  const ws = await workspace.create(userId);
 
   await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
   const chatSession = await session.create({
     docId: 'test',
-    workspaceId: 'test',
+    workspaceId: ws.id,
     userId,
     promptName,
     pinned: false,
@@ -1606,6 +1646,24 @@ test('should be able to manage context', async t => {
       const result = await session.matchFiles('test', 1, undefined, 1);
       t.is(result.length, 1, 'should match context');
       t.is(result[0].fileId, file.id, 'should match file id');
+    }
+
+    // blob record
+    {
+      const blobId = 'test-blob';
+      await workspaceStorage.put(session.workspaceId, blobId, buffer);
+
+      await jobs.embedPendingBlob({ workspaceId: session.workspaceId, blobId });
+
+      const result = await t.context.context.matchWorkspaceBlobs(
+        session.workspaceId,
+        'test',
+        1,
+        undefined,
+        1
+      );
+      t.is(result.length, 1, 'should match blob embedding');
+      t.is(result[0].blobId, blobId, 'should match blob id');
     }
 
     // doc record
@@ -2002,4 +2060,91 @@ test('should handle copilot cron jobs correctly', async t => {
   cleanupStub.restore();
   toBeGenerateStub.restore();
   jobAddStub.restore();
+});
+
+test('should resolve model correctly based on subscription status and prompt config', async t => {
+  const { db, session, subscription } = t.context;
+
+  // 1) Seed a prompt that has optionalModels and proModels in config
+  const promptName = 'resolve-model-test';
+  await db.aiPrompt.create({
+    data: {
+      name: promptName,
+      model: 'gemini-2.5-flash',
+      messages: {
+        create: [{ idx: 0, role: 'system', content: 'test' }],
+      },
+      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+    },
+  });
+
+  // 2) Create a chat session with this prompt
+  const sessionId = await session.create({
+    promptName,
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    pinned: false,
+  });
+  const s = (await session.get(sessionId))!;
+
+  const mockStatus = (status?: SubscriptionStatus) => {
+    Sinon.restore();
+    Sinon.stub(subscription, 'select').callsFake(() => ({
+      // @ts-expect-error mock
+      getSubscription: async () => (status ? { status } : null),
+    }));
+  };
+
+  // payment disabled -> allow requested if in optional; pro not blocked
+  {
+    const model1 = await s.resolveModel(false, 'gemini-2.5-pro');
+    t.snapshot(model1, 'should honor requested pro model');
+
+    const model2 = await s.resolveModel(false, 'not-in-optional');
+    t.snapshot(model2, 'should fallback to default model');
+  }
+
+  // payment enabled + trialing: requesting pro should fallback to default
+  {
+    mockStatus(SubscriptionStatus.Trialing);
+    const model3 = await s.resolveModel(true, 'gemini-2.5-pro');
+    t.snapshot(
+      model3,
+      'should fallback to default model when requesting pro model during trialing'
+    );
+
+    const model4 = await s.resolveModel(true, 'gemini-2.5-flash');
+    t.snapshot(model4, 'should honor requested non-pro model during trialing');
+
+    const model5 = await s.resolveModel(true);
+    t.snapshot(
+      model5,
+      'should pick default model when no requested model during trialing'
+    );
+  }
+
+  // payment enabled + active: without requested -> default model; requested pro should be honored
+  {
+    mockStatus(SubscriptionStatus.Active);
+    const model6 = await s.resolveModel(true);
+    t.snapshot(
+      model6,
+      'should pick default model when no requested model during active'
+    );
+
+    const model7 = await s.resolveModel(true, 'claude-sonnet-4-5@20250929');
+    t.snapshot(model7, 'should honor requested pro model during active');
+
+    const model8 = await s.resolveModel(true, 'not-in-optional');
+    t.snapshot(
+      model8,
+      'should fallback to default model when requesting non-optional model during active'
+    );
+  }
 });

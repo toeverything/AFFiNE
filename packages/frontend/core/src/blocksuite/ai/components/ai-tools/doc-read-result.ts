@@ -1,3 +1,4 @@
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { PageIcon, ViewIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
@@ -18,6 +19,8 @@ interface DocReadToolResult {
   toolName: string;
   args: { doc_id: string };
   result: {
+    /** Old result may not have docId */
+    docId?: string;
     title: string;
     markdown: string;
   };
@@ -29,6 +32,9 @@ export class DocReadResult extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
 
   renderToolCall() {
     // TODO: get document name by doc_id
@@ -53,6 +59,18 @@ export class DocReadResult extends WithDisposable(ShadowlessElement) {
           title: this.data.result.title,
           icon: PageIcon(),
           content: this.data.result.markdown,
+          onClick: () => {
+            const docId = (this.data as DocReadToolResult).result.docId;
+            if (!docId) {
+              return;
+            }
+            this.peekViewService.peekView
+              .open({
+                type: 'doc',
+                docRef: { docId },
+              })
+              .catch(console.error);
+          },
         },
       ]}
     ></tool-result-card>`;

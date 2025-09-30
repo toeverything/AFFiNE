@@ -15,7 +15,6 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
   CopilotTranscriptionAudioNotProvided,
-  CopilotTranscriptionJobNotFound,
   type FileUpload,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
@@ -74,7 +73,7 @@ const FinishedStatus: Set<AiJobStatus> = new Set([
 export class CopilotTranscriptionResolver {
   constructor(
     private readonly ac: AccessController,
-    private readonly service: CopilotTranscriptionService
+    private readonly transcript: CopilotTranscriptionService
   ) {}
 
   private handleJobResult(
@@ -122,7 +121,7 @@ export class CopilotTranscriptionResolver {
       throw new CopilotTranscriptionAudioNotProvided();
     }
 
-    const jobResult = await this.service.submitTranscriptionJob(
+    const jobResult = await this.transcript.submitJob(
       user.id,
       workspaceId,
       blobId,
@@ -144,18 +143,10 @@ export class CopilotTranscriptionResolver {
       .allowLocal()
       .assert('Workspace.Copilot');
 
-    const job = await this.service.queryTranscriptionJob(
+    const jobResult = await this.transcript.retryJob(
       user.id,
       workspaceId,
       jobId
-    );
-    if (!job || !job.infos) {
-      throw new CopilotTranscriptionJobNotFound();
-    }
-
-    const jobResult = await this.service.executeTranscriptionJob(
-      job.id,
-      job.infos
     );
 
     return this.handleJobResult(jobResult);
@@ -166,7 +157,7 @@ export class CopilotTranscriptionResolver {
     @CurrentUser() user: CurrentUser,
     @Args('jobId') jobId: string
   ): Promise<TranscriptionResultType | null> {
-    const job = await this.service.claimTranscriptionJob(user.id, jobId);
+    const job = await this.transcript.claimJob(user.id, jobId);
     return this.handleJobResult(job);
   }
 
@@ -190,7 +181,7 @@ export class CopilotTranscriptionResolver {
       .allowLocal()
       .assert('Workspace.Copilot');
 
-    const job = await this.service.queryTranscriptionJob(
+    const job = await this.transcript.queryJob(
       user.id,
       copilot.workspaceId,
       jobId,

@@ -1,5 +1,13 @@
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type { SubscriptionService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type {
   ContextEmbedStatus,
@@ -15,6 +23,7 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { pick } from 'lodash-es';
 
 import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
@@ -42,6 +51,11 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   status: 'idle',
   error: null,
   markdown: '',
+  snapshot: null,
+  attachments: [],
+  combinedElementsMarkdown: null,
+  docs: [],
+  html: null,
 };
 
 export class AIChatContent extends SignalWatcher(
@@ -150,6 +164,15 @@ export class AIChatContent extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor onEmbeddingProgressChange:
     | ((count: Record<ContextEmbedStatus, number>) => void)
     | undefined;
@@ -162,6 +185,15 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
@@ -263,6 +295,22 @@ export class AIChatContent extends SignalWatcher(
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
     this.chatContextValue = { ...this.chatContextValue, ...context };
     this.onContextChange?.(context);
+    this.updateDraft(context).catch(console.error);
+  };
+
+  private readonly updateDraft = async (context: Partial<ChatContextValue>) => {
+    if (!this.aiDraftService) {
+      return;
+    }
+    const draft: Partial<AIDraftState> = pick(context, [
+      'quote',
+      'images',
+      'markdown',
+    ]);
+    if (!Object.keys(draft).length) {
+      return;
+    }
+    await this.aiDraftService.setDraft(draft);
   };
 
   private readonly initChatContent = async () => {
@@ -279,9 +327,8 @@ export class AIChatContent extends SignalWatcher(
     if (chatMessages) {
       chatMessages.updateComplete
         .then(() => {
-          const scrollContainer = chatMessages.getScrollContainer();
-          scrollContainer?.addEventListener('scrollend', () => {
-            this.lastScrollTop = scrollContainer.scrollTop;
+          chatMessages.addEventListener('scrollend', () => {
+            this.lastScrollTop = chatMessages.scrollTop;
           });
           this._scrollListenersInitialized = true;
         })
@@ -322,7 +369,23 @@ export class AIChatContent extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
+
     this.initChatContent().catch(console.error);
+
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.chatContextValue = {
+            ...this.chatContextValue,
+            ...draft,
+          };
+        })
+        .catch(console.error);
+    }
+
+    // revalidate subscription to get the latest status
+    this.subscriptionService.subscription.revalidate();
 
     this._disposables.add(
       AIProvider.slots.actions.subscribe(({ event }) => {
@@ -343,13 +406,18 @@ export class AIChatContent extends SignalWatcher(
             return;
           }
           if (this.host === params.host) {
-            extractSelectedContent(params.host)
-              .then(context => {
-                if (!context) return;
-                this.updateContext(context);
-              })
-              .catch(console.error);
+            if (params.fromAnswer && params.context) {
+              this.updateContext(params.context);
+            } else {
+              extractSelectedContent(params.host)
+                .then(context => {
+                  if (!context) return;
+                  this.updateContext(context);
+                })
+                .catch(console.error);
+            }
           }
+          AIProvider.slots.requestOpenWithChat.next(null);
         }
       )
     );
@@ -375,12 +443,14 @@ export class AIChatContent extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .width=${this.width}
         .independentMode=${this.independentMode}
         .messages=${this.messages}
         .docDisplayService=${this.docDisplayConfig}
+        .peekViewService=${this.peekViewService}
         .onOpenDoc=${this.onOpenDoc}
       ></ai-chat-messages>
       <ai-chat-composer
@@ -388,6 +458,7 @@ export class AIChatContent extends SignalWatcher(
           [this.onboardingOffsetY > 0 ? 'paddingTop' : 'paddingBottom']:
             `${this.messages.length === 0 ? Math.abs(this.onboardingOffsetY) * 2 : 0}px`,
         })}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .independentMode=${this.independentMode}
         .host=${this.host}
         .workspaceId=${this.workspaceId}
@@ -403,6 +474,11 @@ export class AIChatContent extends SignalWatcher(
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${this.notificationService}
+        .aiDraftService=${this.aiDraftService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

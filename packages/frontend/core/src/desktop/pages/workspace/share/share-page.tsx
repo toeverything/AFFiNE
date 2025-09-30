@@ -14,7 +14,11 @@ import {
   EditorsService,
 } from '@affine/core/modules/editor';
 import { PeekViewManagerModal } from '@affine/core/modules/peek-view';
-import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
+import {
+  ViewIcon,
+  ViewTitle,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import {
   type Workspace,
   WorkspacesService,
@@ -33,6 +37,17 @@ import { PageNotFound } from '../../404';
 import { ShareFooter } from './share-footer';
 import { ShareHeader } from './share-header';
 import * as styles from './share-page.css';
+
+const useUpdateBasename = (workspace: Workspace | null) => {
+  const location = useLocation();
+  const basename = location.pathname.match(/\/workspace\/[^/]+/g)?.[0] ?? '/';
+  useEffect(() => {
+    if (workspace) {
+      const workbench = workspace.scope.get(WorkbenchService).workbench;
+      workbench.updateBasename(basename);
+    }
+  }, [basename, workspace]);
+};
 
 export const SharePage = ({
   workspaceId,
@@ -187,6 +202,7 @@ const SharePageInner = ({
   const t = useI18n();
   const pageTitle = useLiveData(page?.title$);
   const { jumpToPageBlock, openPage } = useNavigateHelper();
+  useUpdateBasename(workspace);
 
   const onEditorLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {

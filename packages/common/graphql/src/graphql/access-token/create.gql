@@ -1,0 +1,9 @@
+mutation generateUserAccessToken($input: GenerateAccessTokenInput!) {
+  generateUserAccessToken(input: $input) {
+    id
+    name
+    token
+    createdAt
+    expiresAt
+  }
+}

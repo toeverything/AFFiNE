@@ -651,6 +651,12 @@ export class WorkspaceIdRequiredToUpdateTeamSubscription extends UserFriendlyErr
   }
 }
 
+export class ManagedByAppStoreOrPlay extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'managed_by_app_store_or_play', message);
+  }
+}
+
 export class CopilotSessionNotFound extends UserFriendlyError {
   constructor(message?: string) {
     super('resource_not_found', 'copilot_session_not_found', message);
@@ -1189,6 +1195,7 @@ export enum ErrorNames {
   CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION,
+  MANAGED_BY_APP_STORE_OR_PLAY,
   COPILOT_SESSION_NOT_FOUND,
   COPILOT_SESSION_INVALID_INPUT,
   COPILOT_SESSION_DELETED,

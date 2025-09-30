@@ -37,7 +37,7 @@ import {
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { DocReader } from '../../core/doc';
-import { AccessController } from '../../core/permission';
+import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { CopilotCronJobs } from './cron';
@@ -125,8 +125,8 @@ class DeleteSessionInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => String)
-  docId!: string;
+  @Field(() => String, { nullable: true })
+  docId!: string | undefined;
 
   @Field(() => [String])
   sessionIds!: string[];
@@ -142,6 +142,9 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
 
   @Field(() => [String], { nullable: true, deprecationReason: 'use blobs' })
   attachments!: string[] | undefined;
+
+  @Field(() => GraphQLUpload, { nullable: true })
+  blob!: Promise<FileUpload> | undefined;
 
   @Field(() => [GraphQLUpload], { nullable: true })
   blobs!: Promise<FileUpload>[] | undefined;
@@ -360,6 +363,27 @@ class CopilotPromptType {
 }
 
 @ObjectType()
+class CopilotModelType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  name!: string;
+}
+
+@ObjectType()
+export class CopilotModelsType {
+  @Field(() => String)
+  defaultModel!: string;
+
+  @Field(() => [CopilotModelType])
+  optionalModels!: CopilotModelType[];
+
+  @Field(() => [CopilotModelType])
+  proModels!: CopilotModelType[];
+}
+
+@ObjectType()
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
@@ -397,9 +421,12 @@ export class CopilotType {
 @Throttle()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
+  private readonly modelNames = new Map<string, string>();
+
   constructor(
     private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
+    private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
     private readonly storage: CopilotStorage,
     private readonly docReader: DocReader,
@@ -417,7 +444,8 @@ export class CopilotResolver {
 
   private async assertPermission(
     user: CurrentUser,
-    options: { workspaceId?: string | null; docId?: string | null }
+    options: { workspaceId?: string | null; docId?: string | null },
+    fallbackAction?: DocAction
   ) {
     const { workspaceId, docId } = options;
     if (!workspaceId) {
@@ -428,7 +456,7 @@ export class CopilotResolver {
         .user(user.id)
         .doc({ workspaceId, docId })
         .allowLocal()
-        .assert('Doc.Update');
+        .assert(fallbackAction ?? 'Doc.Update');
     } else {
       await this.ac
         .user(user.id)
@@ -437,6 +465,48 @@ export class CopilotResolver {
         .assert('Workspace.Copilot');
     }
     return { userId: user.id, workspaceId, docId: docId || undefined };
+  }
+
+  @ResolveField(() => CopilotModelsType, {
+    description:
+      'List available models for a prompt, with human-readable names',
+    complexity: 2,
+  })
+  async models(
+    @Args('promptName') promptName: string
+  ): Promise<CopilotModelsType> {
+    const prompt = await this.prompt.get(promptName);
+    if (!prompt) {
+      throw new NotFoundException('Prompt not found');
+    }
+    const convertModels = (ids: string[]) => {
+      return ids
+        .map(id => ({ id, name: this.modelNames.get(id) }))
+        .filter(m => !!m.name) as CopilotModelType[];
+    };
+    const proModels = prompt.config?.proModels || [];
+    const missing = new Set(
+      [...prompt.optionalModels, ...proModels].filter(
+        id => !this.modelNames.has(id)
+      )
+    );
+    if (missing.size) {
+      for (const model of missing) {
+        if (this.modelNames.has(model)) continue;
+        const provider = await this.providerFactory.getProviderByModel(model);
+        if (provider?.configured()) {
+          for (const m of provider.models) {
+            if (m.name) this.modelNames.set(m.id, m.name);
+          }
+        }
+      }
+    }
+
+    return {
+      defaultModel: prompt.model,
+      optionalModels: convertModels(prompt.optionalModels),
+      proModels: convertModels(proModels),
+    };
   }
 
   @ResolveField(() => CopilotSessionType, {
@@ -507,7 +577,7 @@ export class CopilotResolver {
     if (!workspaceId) {
       return [];
     } else {
-      await this.assertPermission(user, { workspaceId, docId });
+      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
     const histories = await this.chatSession.list(
@@ -537,7 +607,7 @@ export class CopilotResolver {
     if (!workspaceId) {
       return paginate([], 'updatedAt', pagination, 0);
     } else {
-      await this.assertPermission(user, { workspaceId, docId });
+      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
     const finalOptions = Object.assign(
@@ -667,11 +737,24 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => DeleteSessionInput })
     options: DeleteSessionInput
   ): Promise<string[]> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
-    if (!options.sessionIds.length) {
+    const { workspaceId, docId, sessionIds } = options;
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId, docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+    if (!sessionIds.length) {
       throw new NotFoundException('Session not found');
     }
-    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
+    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
@@ -703,10 +786,13 @@ export class CopilotResolver {
     }
 
     const attachments: PromptMessage['attachments'] = options.attachments || [];
-    if (options.blobs) {
+    if (options.blob || options.blobs) {
       const { workspaceId } = session.config;
 
-      const blobs = await Promise.all(options.blobs);
+      const blobs = await Promise.all(
+        options.blob ? [options.blob] : options.blobs || []
+      );
+      delete options.blob;
       delete options.blobs;
 
       for (const blob of blobs) {
@@ -900,7 +986,7 @@ export class PromptsManagementResolver {
     @Args('messages', { type: () => [CopilotPromptMessageType] })
     messages: CopilotPromptMessageType[]
   ) {
-    await this.promptService.update(name, messages, true);
+    await this.promptService.update(name, { messages, modified: true });
     return this.promptService.get(name);
   }
 }

@@ -4,8 +4,16 @@ import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
 import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
+import { useAISubscribe } from '@affine/core/components/hooks/affine/use-ai-subscribe';
+import {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import { SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { PeekViewService } from '@affine/core/modules/peek-view';
 import { AppThemeService } from '@affine/core/modules/theme';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
@@ -56,6 +64,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
   } = useAIChatConfig();
   const confirmModal = useConfirmModal();
   const specs = useAISpecs();
+  const handleAISubscribe = useAISubscribe();
 
   useEffect(() => {
     if (!editor || !editor.host) return;
@@ -91,10 +100,18 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       chatPanelRef.current.affineWorkbenchService =
         framework.get(WorkbenchService);
       chatPanelRef.current.affineThemeService = framework.get(AppThemeService);
+      chatPanelRef.current.peekViewService = framework.get(PeekViewService);
       chatPanelRef.current.notificationService = new NotificationServiceImpl(
         confirmModal.closeConfirmModal,
         confirmModal.openConfirmModal
       );
+      chatPanelRef.current.aiDraftService = framework.get(AIDraftService);
+      chatPanelRef.current.aiToolsConfigService =
+        framework.get(AIToolsConfigService);
+      chatPanelRef.current.subscriptionService =
+        framework.get(SubscriptionService);
+      chatPanelRef.current.aiModelService = framework.get(AIModelService);
+      chatPanelRef.current.onAISubscribe = handleAISubscribe;
 
       containerRef.current?.append(chatPanelRef.current);
     } else {
@@ -127,6 +144,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     playgroundConfig,
     confirmModal,
     specs,
+    handleAISubscribe,
   ]);
 
   const [autoResized, setAutoResized] = useState(false);

@@ -76,30 +76,38 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
               status={subscription?.status}
             />
           }
-          desc={billingTip}
+          desc={
+            <>
+              {billingTip}
+              <div className={styles.planActionContainer}>
+                {price?.yearlyAmount ? (
+                  subscription ? (
+                    isOnetime ? (
+                      <AIRedeemCodeButton className={styles.planAction} />
+                    ) : subscription.canceledAt ? (
+                      <AIResume className={styles.planAction} />
+                    ) : (
+                      <AICancel className={styles.planAction} />
+                    )
+                  ) : (
+                    <AISubscribe className={styles.planAction}>
+                      {t[
+                        'com.affine.payment.billing-setting.ai.start-free-trial'
+                      ]()}
+                    </AISubscribe>
+                  )
+                ) : null}
+                {subscription?.status === SubscriptionStatus.PastDue ? (
+                  <PaymentMethodUpdater
+                    inCardView
+                    className={styles.managementInCard}
+                    variant="primary"
+                  />
+                ) : null}
+              </div>
+            </>
+          }
         />
-        {price?.yearlyAmount ? (
-          subscription ? (
-            isOnetime ? (
-              <AIRedeemCodeButton className={styles.planAction} />
-            ) : subscription.canceledAt ? (
-              <AIResume className={styles.planAction} />
-            ) : (
-              <AICancel className={styles.planAction} />
-            )
-          ) : (
-            <AISubscribe className={styles.planAction}>
-              {t['com.affine.payment.billing-setting.ai.start-free-trial']()}
-            </AISubscribe>
-          )
-        ) : null}
-        {subscription?.status === SubscriptionStatus.PastDue ? (
-          <PaymentMethodUpdater
-            inCardView
-            className={styles.manageMentInCard}
-            variant="primary"
-          />
-        ) : null}
       </div>
       <p className={styles.planPrice}>
         {subscription ? priceReadable : '$0'}

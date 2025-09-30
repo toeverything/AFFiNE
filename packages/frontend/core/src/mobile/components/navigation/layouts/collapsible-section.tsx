@@ -1,7 +1,4 @@
-import {
-  type CollapsibleSectionName,
-  NavigationPanelService,
-} from '@affine/core/modules/navigation-panel';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { ToggleRightIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -22,7 +19,7 @@ import {
 } from './collapsible-section.css';
 
 interface CollapsibleSectionProps extends HTMLAttributes<HTMLDivElement> {
-  name: CollapsibleSectionName;
+  path: string[];
   title: string;
   actions?: ReactNode;
   testId?: string;
@@ -76,7 +73,7 @@ const CollapsibleSectionTrigger = forwardRef<
 });
 
 export const CollapsibleSection = ({
-  name,
+  path,
   title,
   actions,
   testId,
@@ -86,12 +83,12 @@ export const CollapsibleSection = ({
   children,
   ...attrs
 }: CollapsibleSectionProps) => {
-  const section = useService(NavigationPanelService).sections[name];
-  const collapsed = useLiveData(section.collapsed$);
+  const navigationPanelService = useService(NavigationPanelService);
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
 
   const setCollapsed = useCallback(
-    (v: boolean) => section.setCollapsed(v),
-    [section]
+    (v: boolean) => navigationPanelService.setCollapsed(path, v),
+    [navigationPanelService, path]
   );
 
   return (

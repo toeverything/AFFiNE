@@ -3,6 +3,7 @@ import type { FlagInfo } from './types';
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
+const isIOS = BUILD_CONFIG.isIOS;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -209,8 +210,8 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable AI Button',
     description: 'Enable AI Button on mobile',
-    configurable: BUILD_CONFIG.isMobileEdition && isCanaryBuild,
-    defaultState: false,
+    configurable: isMobile && isIOS,
+    defaultState: isMobile && isIOS,
   },
   enable_turbo_renderer: {
     category: 'blocksuite',
@@ -225,7 +226,7 @@ export const AFFINE_FLAGS = {
     bsFlag: 'enable_dom_renderer',
     displayName: 'Enable DOM Renderer',
     description: 'Enable DOM renderer for graphics elements',
-    configurable: isCanaryBuild,
+    configurable: true,
     defaultState: false,
   },
   enable_edgeless_scribbled_style: {
@@ -262,6 +263,39 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-adapter-panel.description',
     configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_two_step_journal_confirmation: {
+    category: 'affine',
+    displayName: 'Enable Two Step Journal Confirmation',
+    description:
+      'When enabled, you must confirm the journal before you can create a new journal.',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_send_detailed_object_to_ai: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.description',
+    configurable: true,
+    defaultState: true,
+  },
+  enable_battery_save_mode: {
+    category: 'affine',
+    displayName: 'Enable Battery Save Mode (Require Restart)',
+    description:
+      'Limit indexing and other compute-intensive tasks on this device, may experience longer loading time and latency in search and other features, in exchange for quietness.',
+    configurable: true,
+    defaultState: isMobile,
+  },
+  enable_mobile_database_editing: {
+    category: 'blocksuite',
+    bsFlag: 'enable_mobile_database_editing',
+    displayName: 'Enable Mobile Database Editing',
+    description: 'Enable mobile database editing',
+    configurable: isMobile,
     defaultState: false,
   },
 } satisfies { [key in string]: FlagInfo };

@@ -3,37 +3,15 @@ import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
-import type { ChunkSimilarity, Models } from '../../../models';
+import {
+  type ChunkSimilarity,
+  clearEmbeddingChunk,
+  type Models,
+} from '../../../models';
 import type { CopilotContextService } from '../context';
 import type { ContextSession } from '../context/session';
 import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
-
-const FILTER_PREFIX = [
-  'Title: ',
-  'Created at: ',
-  'Updated at: ',
-  'Created by: ',
-  'Updated by: ',
-];
-
-function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
-  if (chunk.content) {
-    const lines = chunk.content.split('\n');
-    let maxLines = 5;
-    while (maxLines > 0 && lines.length > 0) {
-      if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
-        lines.shift();
-        maxLines--;
-      } else {
-        // only process consecutive metadata rows
-        break;
-      }
-    }
-    return { ...chunk, content: lines.join('\n') };
-  }
-  return chunk;
-}
 
 export const buildDocSearchGetter = (
   ac: AccessController,
@@ -67,12 +45,14 @@ export const buildDocSearchGetter = (
         chunks.filter(c => 'docId' in c),
         'Doc.Read'
       );
+    const blobChunks = chunks.filter(c => 'blobId' in c);
     const fileChunks = chunks.filter(c => 'fileId' in c);
     if (contextChunks.length) {
       fileChunks.push(...contextChunks);
     }
-    if (!docChunks.length && !fileChunks.length)
+    if (!blobChunks.length && !docChunks.length && !fileChunks.length) {
       return `No results found for "${query}".`;
+    }
 
     const docIds = docChunks.map(c => ({
       // oxlint-disable-next-line no-non-null-assertion
@@ -105,6 +85,7 @@ export const buildDocSearchGetter = (
 
     return [
       ...fileChunks.map(clearEmbeddingChunk),
+      ...blobChunks.map(clearEmbeddingChunk),
       ...docChunks.map(c => ({
         ...c,
         ...docMetas.get(c.docId),
@@ -123,7 +104,7 @@ export const createDocSemanticSearchTool = (
   return tool({
     description:
       'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z
         .string()
         .describe(

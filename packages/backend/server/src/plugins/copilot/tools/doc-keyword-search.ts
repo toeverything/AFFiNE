@@ -40,7 +40,7 @@ export const createDocKeywordSearchTool = (
   return tool({
     description:
       'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-base lookup is sufficient.',
-    parameters: z.object({
+    inputSchema: z.object({
       query: z
         .string()
         .describe(

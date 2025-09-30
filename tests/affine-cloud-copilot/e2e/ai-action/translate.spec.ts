@@ -13,8 +13,8 @@ test.describe('AIAction/Translate', () => {
     utils,
   }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer, responses } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer, responses } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     expect(responses).toEqual(new Set(['insert-below', 'replace-selection']));
   });
 
@@ -28,8 +28,8 @@ test.describe('AIAction/Translate', () => {
         await utils.editor.createEdgelessText(page, 'Apple');
       }
     );
-    const { answer, responses } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer, responses } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
@@ -43,8 +43,8 @@ test.describe('AIAction/Translate', () => {
         await utils.editor.createEdgelessNote(page, 'Apple');
       }
     );
-    const { answer, responses } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer, responses } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
@@ -53,8 +53,8 @@ test.describe('AIAction/Translate', () => {
     utils,
   }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     const replace = answer.getByTestId('answer-replace');
     await replace.click();
     await utils.chatPanel.waitForHistory(page, [
@@ -67,7 +67,7 @@ test.describe('AIAction/Translate', () => {
       prompt,
       actionName,
     } = await utils.chatPanel.getLatestAIActionMessage(page);
-    await expect(panelAnswer).toHaveText(/Apfel/);
+    await expect(panelAnswer).toHaveText(/苹果/);
     await expect(prompt).toHaveText(/Translate/);
     await expect(actionName).toHaveText(/Translate/);
   });

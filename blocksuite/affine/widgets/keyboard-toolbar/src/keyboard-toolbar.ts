@@ -8,7 +8,7 @@ import {
   requiredProperties,
   ShadowlessElement,
 } from '@blocksuite/std';
-import { effect, type Signal, signal, untracked } from '@preact/signals-core';
+import { effect, type Signal, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -22,7 +22,6 @@ import type {
   KeyboardToolbarItem,
   KeyboardToolPanelConfig,
 } from './config';
-import { PositionController } from './position-controller';
 import { keyboardToolbarStyles } from './styles';
 import {
   isKeyboardSubToolBarConfig,
@@ -41,10 +40,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 ) {
   static override styles = keyboardToolbarStyles;
 
-  /** This field records the panel static height same as the virtual keyboard height */
-  panelHeight$ = signal(0);
-
-  positionController = new PositionController(this);
+  private readonly _expanded$ = signal(false);
 
   get std() {
     return this.rootComponent.std;
@@ -54,9 +50,31 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     return this._currentPanelIndex$.value !== -1;
   }
 
+  private get panelHeight() {
+    return this._expanded$.value
+      ? `${
+          this.keyboard.staticHeight$.value !== 0
+            ? this.keyboard.staticHeight$.value
+            : 330
+        }px`
+      : this.keyboard.appTabSafeArea$.value;
+  }
+
+  /**
+   * Prevent flickering during keyboard opening
+   */
+  private _resetPanelIndexTimeoutId: ReturnType<typeof setTimeout> | null =
+    null;
   private readonly _closeToolPanel = () => {
-    this._currentPanelIndex$.value = -1;
     if (!this.keyboard.visible$.peek()) this.keyboard.show();
+
+    if (this._resetPanelIndexTimeoutId) {
+      clearTimeout(this._resetPanelIndexTimeoutId);
+      this._resetPanelIndexTimeoutId = null;
+    }
+    this._resetPanelIndexTimeoutId = setTimeout(() => {
+      this._currentPanelIndex$.value = -1;
+    }, 100);
   };
 
   private readonly _currentPanelIndex$ = signal(-1);
@@ -83,6 +101,10 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       if (this._currentPanelIndex$.value === index) {
         this._closeToolPanel();
       } else {
+        if (this._resetPanelIndexTimeoutId) {
+          clearTimeout(this._resetPanelIndexTimeoutId);
+          this._resetPanelIndexTimeoutId = null;
+        }
         this._currentPanelIndex$.value = index;
         this.keyboard.hide();
         this._scrollCurrentBlockIntoView();
@@ -123,9 +145,6 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     return {
       std: this.std,
       rootComponent: this.rootComponent,
-      closeToolbar: (blur = false) => {
-        this.close(blur);
-      },
       closeToolPanel: () => {
         this._closeToolPanel();
       },
@@ -202,7 +221,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   }
 
   private _renderItems() {
-    if (document.activeElement !== this.rootComponent)
+    if (!this.std.event.active$.value)
       return html`<div class="item-container"></div>`;
 
     const goPrevToolbarAction = when(
@@ -226,7 +245,15 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       <icon-button
         size="36px"
         @click=${() => {
-          this.close(true);
+          if (this.keyboard.staticHeight$.value === 0) {
+            this._closeToolPanel();
+            return;
+          }
+          if (this.keyboard.visible$.peek()) {
+            this.keyboard.hide();
+          } else {
+            this.keyboard.show();
+          }
         }}
       >
         ${KeyboardIcon()}
@@ -236,6 +263,23 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
+
+    // There are two cases that `_expanded$` will be true:
+    // 1. when virtual keyboard is opened, the panel need to be expanded and overlapped by the keyboard,
+    // so that the toolbar will be on the top of the keyboard.
+    // 2. the panel is opened, whether the keyboard is closed or not exists (e.g. a physical keyboard connected)
+    //
+    // There is one case that `_expanded$` will be false:
+    // 1. the panel is closed, and the keyboard is closed, the toolbar will be rendered at the bottom of the viewport
+    this._disposables.add(
+      effect(() => {
+        if (this.keyboard.visible$.value || this.panelOpened) {
+          this._expanded$.value = true;
+        } else {
+          this._expanded$.value = false;
+        }
+      })
+    );
 
     // prevent editor blur when click item in toolbar
     this.disposables.addFromEvent(this, 'pointerdown', e => {
@@ -260,15 +304,17 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         if (this.keyboard.visible$.value) {
           this._closeToolPanel();
         }
-        // when keyboard is closed and the panel is not opened, we need to close the toolbar,
-        // this usually happens when user close keyboard from system side
-        else if (this.hasUpdated && untracked(() => !this.panelOpened)) {
-          this.close(true);
-        }
       })
     );
 
     this._watchAutoShow();
+
+    this.disposables.add(() => {
+      if (this._resetPanelIndexTimeoutId) {
+        clearTimeout(this._resetPanelIndexTimeoutId);
+        this._resetPanelIndexTimeoutId = null;
+      }
+    });
   }
 
   private _watchAutoShow() {
@@ -331,16 +377,16 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       <affine-keyboard-tool-panel
         .config=${this._currentPanelConfig}
         .context=${this._context}
-        .height=${this.panelHeight$.value}
+        style=${styleMap({
+          height: this.panelHeight,
+          paddingBottom: this.keyboard.appTabSafeArea$.value,
+        })}
       ></affine-keyboard-tool-panel>
     `;
   }
 
   @property({ attribute: false })
   accessor keyboard!: VirtualKeyboardProviderWithAction;
-
-  @property({ attribute: false })
-  accessor close: (blur: boolean) => void = () => {};
 
   @property({ attribute: false })
   accessor config!: KeyboardToolbarConfig;

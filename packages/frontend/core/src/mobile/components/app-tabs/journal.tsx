@@ -19,9 +19,8 @@ export const AppTabJournal = ({ tab }: AppTabCustomFCProps) => {
   const JournalIcon = useLiveData(docDisplayMetaService.icon$(maybeDocId));
 
   const handleOpenToday = useCallback(() => {
-    const docId = journalService.ensureJournalByDate(new Date()).id;
-    workbench.openDoc({ docId, fromTab: 'true' }, { at: 'active' });
-  }, [journalService, workbench]);
+    workbench.open('/journals', { at: 'active' });
+  }, [workbench]);
 
   const Icon = journalDate ? JournalIcon : TodayIcon;
 

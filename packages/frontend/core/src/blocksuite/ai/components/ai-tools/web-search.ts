@@ -47,6 +47,7 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
       ></tool-call-card>
     `;
   }
+
   renderToolResult() {
     if (this.data.type !== 'tool-result') {
       return nothing;
@@ -55,11 +56,12 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
     const result = this.data.result;
     if (result && Array.isArray(result)) {
       const results = result.map(item => {
-        const { favicon, title, content } = item;
+        const { favicon, title, content, url } = item;
         return {
           title: title,
           icon: favicon || WebIcon(),
           content: content,
+          href: url,
         };
       });
       const footerIcons = result.map(item => item.favicon).filter(Boolean);

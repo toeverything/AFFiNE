@@ -1,4 +1,5 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
@@ -87,6 +88,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor docDisplayService!: DocDisplayConfig;
 
   @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   get state() {
@@ -148,7 +152,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       .affineFeatureFlagService=${this.affineFeatureFlagService}
       .notificationService=${this.notificationService}
       .theme=${this.affineThemeService.appTheme.themeSignal}
+      .independentMode=${this.independentMode}
       .docDisplayService=${this.docDisplayService}
+      .peekViewService=${this.peekViewService}
       .onOpenDoc=${this.onOpenDoc}
     ></chat-content-stream-objects>`;
   }

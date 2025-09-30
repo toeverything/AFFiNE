@@ -8,6 +8,7 @@ export interface AuthConfig {
     ttr: number;
   };
   allowSignup: boolean;
+  allowSignupForOauth: boolean;
   requireEmailDomainVerification: boolean;
   requireEmailVerification: boolean;
   passwordRequirements: ConfigItem<{
@@ -25,6 +26,10 @@ declare global {
 defineModuleConfig('auth', {
   allowSignup: {
     desc: 'Whether allow new registrations.',
+    default: true,
+  },
+  allowSignupForOauth: {
+    desc: 'Whether allow new registrations via configured oauth.',
     default: true,
   },
   requireEmailDomainVerification: {

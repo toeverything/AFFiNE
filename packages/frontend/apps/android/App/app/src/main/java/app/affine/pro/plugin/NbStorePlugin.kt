@@ -556,7 +556,7 @@ class NbStorePlugin : Plugin() {
                 val id = call.getStringEnsure("id")
                 val peer = call.getStringEnsure("peer")
                 val blobId = call.getStringEnsure("blobId")
-                val uploadedAt = call.getLongEnsure("uploadedAt")
+                val uploadedAt = call.getLong("uploadedAt")
                 docStoragePool.setBlobUploadedAt(
                     universalId = id,
                     peer = peer,

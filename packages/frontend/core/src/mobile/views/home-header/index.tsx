@@ -11,6 +11,7 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { NotificationIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
 import { useCallback, useRef, useState } from 'react';
 
@@ -76,7 +77,13 @@ export const HomeHeader = () => {
           ref={floatWorkspaceCardRef}
         />
         <Menu items={<NotificationList />}>
-          <div style={{ position: 'relative' }}>
+          <div
+            style={{
+              position: 'relative',
+              lineHeight: 0,
+              color: cssVarV2.icon.primary,
+            }}
+          >
             <NotificationIcon width={28} height={28} />
             {notificationCount > 0 && (
               <div

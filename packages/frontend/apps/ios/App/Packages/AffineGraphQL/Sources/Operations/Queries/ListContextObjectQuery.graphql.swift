@@ -7,7 +7,7 @@ public class ListContextObjectQuery: GraphQLQuery {
   public static let operationName: String = "listContextObject"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query listContextObject($workspaceId: String!, $sessionId: String!, $contextId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename contexts(sessionId: $sessionId, contextId: $contextId) { __typename docs { __typename id status error createdAt } files { __typename id name mimeType blobId chunkSize error status createdAt } tags { __typename type id docs { __typename id status createdAt } createdAt } collections { __typename type id docs { __typename id status createdAt } createdAt } } } } }"#
+      #"query listContextObject($workspaceId: String!, $sessionId: String!, $contextId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename contexts(sessionId: $sessionId, contextId: $contextId) { __typename blobs { __typename id status createdAt } docs { __typename id status createdAt } files { __typename id name mimeType blobId chunkSize error status createdAt } tags { __typename type id docs { __typename id status createdAt } createdAt } collections { __typename type id docs { __typename id status createdAt } createdAt } } } } }"#
     ))
 
   public var workspaceId: String
@@ -86,12 +86,15 @@ public class ListContextObjectQuery: GraphQLQuery {
           public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContext }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
+            .field("blobs", [Blob].self),
             .field("docs", [Doc].self),
             .field("files", [File].self),
             .field("tags", [Tag].self),
             .field("collections", [Collection].self),
           ] }
 
+          /// list blobs in context
+          public var blobs: [Blob] { __data["blobs"] }
           /// list files in context
           public var docs: [Doc] { __data["docs"] }
           /// list files in context
@@ -100,6 +103,26 @@ public class ListContextObjectQuery: GraphQLQuery {
           public var tags: [Tag] { __data["tags"] }
           /// list collections in context
           public var collections: [Collection] { __data["collections"] }
+
+          /// CurrentUser.Copilot.Context.Blob
+          ///
+          /// Parent Type: `CopilotContextBlob`
+          public struct Blob: AffineGraphQL.SelectionSet {
+            public let __data: DataDict
+            public init(_dataDict: DataDict) { __data = _dataDict }
+
+            public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContextBlob }
+            public static var __selections: [ApolloAPI.Selection] { [
+              .field("__typename", String.self),
+              .field("id", AffineGraphQL.ID.self),
+              .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
+              .field("createdAt", AffineGraphQL.SafeInt.self),
+            ] }
+
+            public var id: AffineGraphQL.ID { __data["id"] }
+            public var status: GraphQLEnum<AffineGraphQL.ContextEmbedStatus>? { __data["status"] }
+            public var createdAt: AffineGraphQL.SafeInt { __data["createdAt"] }
+          }
 
           /// CurrentUser.Copilot.Context.Doc
           ///
@@ -113,13 +136,11 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("__typename", String.self),
               .field("id", AffineGraphQL.ID.self),
               .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
-              .field("error", String?.self),
               .field("createdAt", AffineGraphQL.SafeInt.self),
             ] }
 
             public var id: AffineGraphQL.ID { __data["id"] }
             public var status: GraphQLEnum<AffineGraphQL.ContextEmbedStatus>? { __data["status"] }
-            public var error: String? { __data["error"] }
             public var createdAt: AffineGraphQL.SafeInt { __data["createdAt"] }
           }
 
@@ -176,12 +197,12 @@ public class ListContextObjectQuery: GraphQLQuery {
 
             /// CurrentUser.Copilot.Context.Tag.Doc
             ///
-            /// Parent Type: `CopilotDocType`
+            /// Parent Type: `CopilotContextDoc`
             public struct Doc: AffineGraphQL.SelectionSet {
               public let __data: DataDict
               public init(_dataDict: DataDict) { __data = _dataDict }
 
-              public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotDocType }
+              public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContextDoc }
               public static var __selections: [ApolloAPI.Selection] { [
                 .field("__typename", String.self),
                 .field("id", AffineGraphQL.ID.self),
@@ -218,12 +239,12 @@ public class ListContextObjectQuery: GraphQLQuery {
 
             /// CurrentUser.Copilot.Context.Collection.Doc
             ///
-            /// Parent Type: `CopilotDocType`
+            /// Parent Type: `CopilotContextDoc`
             public struct Doc: AffineGraphQL.SelectionSet {
               public let __data: DataDict
               public init(_dataDict: DataDict) { __data = _dataDict }
 
-              public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotDocType }
+              public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContextDoc }
               public static var __selections: [ApolloAPI.Selection] { [
                 .field("__typename", String.self),
                 .field("id", AffineGraphQL.ID.self),

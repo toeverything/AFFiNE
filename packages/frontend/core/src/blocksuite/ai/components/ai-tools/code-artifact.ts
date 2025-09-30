@@ -3,10 +3,17 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type BlockStdScope } from '@blocksuite/affine/std';
+import {
+  type BlockSnapshot,
+  nanoid,
+  type SliceSnapshot,
+  Text,
+} from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CodeBlockIcon,
   CopyIcon,
+  DownloadIcon,
   PageIcon,
   ToolIcon,
 } from '@blocksuite/icons/lit';
@@ -17,6 +24,7 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
 
+import { preprocessHtml } from '../../utils/html';
 import { ArtifactTool } from './artifact-tool';
 import type { ToolError } from './type';
 
@@ -49,6 +57,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
 
     /* Container */
     .code-highlighter pre {
+      position: relative;
       margin: 0;
       display: flex;
       overflow: auto;
@@ -73,12 +82,23 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     }
 
     /* Code area */
-    .code-highlighter .code-container {
+    .code-highlighter :is(.code-container, .code-container-hidden) {
       flex: 1;
       white-space: pre;
       line-height: 20px;
       font-size: 12px;
       padding: 0 12px 12px 12px;
+    }
+
+    .code-highlighter .code-container {
+      user-select: none;
+    }
+
+    .code-highlighter .code-container-hidden {
+      color: transparent;
+      position: absolute;
+      top: 0;
+      left: 60px;
     }
 
     .code-highlighter .code-line {
@@ -209,6 +229,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     return html`<div class="code-highlighter">
       <pre>
         ${lineNumbersTemplate}
+        <div class="code-container-hidden">${this.code}</div>
         <div class="code-container">${renderedCode}</div>
       </pre>
     </div>`;
@@ -442,7 +463,7 @@ export class CodeArtifactTool extends ArtifactTool<
   accessor notificationService!: NotificationService;
 
   @state()
-  private accessor mode: 'preview' | 'code' = 'code';
+  private accessor mode: 'preview' | 'code' = 'preview';
 
   /* ---------------- ArtifactTool hooks ---------------- */
 
@@ -483,6 +504,10 @@ export class CodeArtifactTool extends ArtifactTool<
     </div>`;
   }
 
+  get clipboard() {
+    return this.std?.clipboard;
+  }
+
   protected override getPreviewControls() {
     if (this.data.type !== 'tool-result' || !this.std || !this.data.result) {
       return undefined;
@@ -493,7 +518,39 @@ export class CodeArtifactTool extends ArtifactTool<
     const title = result.title;
 
     const copyHTML = async () => {
-      await navigator.clipboard.writeText(htmlContent).catch(console.error);
+      const codeBlock: BlockSnapshot = {
+        type: 'block',
+        id: nanoid(),
+        flavour: 'affine:code',
+        version: 1,
+        props: {
+          language: 'html',
+          wrap: false,
+          caption: '',
+          text: {
+            '$blocksuite:internal:text$': true,
+            delta: [{ insert: htmlContent }],
+          },
+        },
+        children: [],
+      };
+
+      const sliceSnapshot: SliceSnapshot = {
+        type: 'slice',
+        content: [codeBlock],
+        workspaceId: 'fake-workspace-id',
+        pageId: 'fake-page-id',
+      };
+
+      await this.clipboard?.writeToClipboard(items => ({
+        ...items,
+        'text/plain': htmlContent,
+        'text/html': htmlContent,
+        'BLOCKSUITE/SNAPSHOT': JSON.stringify({
+          snapshot: sliceSnapshot,
+          blobs: {},
+        }),
+      }));
       this.notificationService.toast('Copied HTML to clipboard');
     };
 
@@ -508,6 +565,25 @@ export class CodeArtifactTool extends ArtifactTool<
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    const insertHtmlBlockToEnd = () => {
+      try {
+        const store = this.std?.store;
+        if (!store) return;
+        const notes = store.getBlocksByFlavour('affine:note');
+        const parentId = notes.length > 0 ? notes[0].id : store.root?.id;
+        if (!parentId) return;
+        const html = preprocessHtml(htmlContent);
+        store.addBlock(
+          'affine:code',
+          { text: new Text(html), language: 'html', preview: true },
+          parentId
+        );
+        this.notificationService.toast('Inserted to current doc');
       } catch (e) {
         console.error(e);
       }
@@ -549,14 +625,17 @@ export class CodeArtifactTool extends ArtifactTool<
         </div>
       </div>
       <div style="flex: 1"></div>
-      <button class="code-artifact-control-btn" @click=${downloadHTML}>
+      <button class="code-artifact-control-btn" @click=${insertHtmlBlockToEnd}>
         ${PageIcon({
           width: '20',
           height: '20',
           style: `color: ${unsafeCSSVarV2('icon/primary')}`,
         })}
-        Download
+        Insert
       </button>
+      <icon-button @click=${downloadHTML} title="Download HTML">
+        ${DownloadIcon({ width: '20', height: '20' })}
+      </icon-button>
       <icon-button @click=${copyHTML} title="Copy HTML">
         ${CopyIcon({ width: '20', height: '20' })}
       </icon-button>

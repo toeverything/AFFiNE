@@ -2,11 +2,16 @@ import { Logger } from '@nestjs/common';
 import type { ModuleRef } from '@nestjs/core';
 
 import {
+  Config,
   CopilotPromptNotFound,
   CopilotProviderNotSupported,
 } from '../../../base';
 import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
-import { ChunkSimilarity, Embedding } from '../../../models';
+import {
+  ChunkSimilarity,
+  Embedding,
+  EMBEDDING_DIMENSIONS,
+} from '../../../models';
 import { PromptService } from '../prompt';
 import {
   type CopilotProvider,
@@ -15,11 +20,7 @@ import {
   ModelInputType,
   ModelOutputType,
 } from '../providers';
-import {
-  EMBEDDING_DIMENSIONS,
-  EmbeddingClient,
-  type ReRankResult,
-} from './types';
+import { EmbeddingClient, type ReRankResult } from './types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const RERANK_PROMPT = 'Rerank results';
@@ -28,6 +29,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 
   constructor(
+    private readonly config: Config,
     private readonly providerFactory: CopilotProviderFactory,
     private readonly prompt: PromptService
   ) {
@@ -36,7 +38,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
   override async configured(): Promise<boolean> {
     const embedding = await this.providerFactory.getProvider({
-      modelId: EMBEDDING_MODEL,
+      modelId: this.config.copilot?.scenarios?.override_enabled
+        ? this.config.copilot.scenarios.scenarios?.embedding || EMBEDDING_MODEL
+        : EMBEDDING_MODEL,
       outputType: ModelOutputType.Embedding,
     });
     const result = Boolean(embedding);
@@ -209,12 +213,13 @@ export async function getEmbeddingClient(
   if (EMBEDDING_CLIENT) {
     return EMBEDDING_CLIENT;
   }
+  const config = moduleRef.get(Config, { strict: false });
   const providerFactory = moduleRef.get(CopilotProviderFactory, {
     strict: false,
   });
   const prompt = moduleRef.get(PromptService, { strict: false });
 
-  const client = new ProductionEmbeddingClient(providerFactory, prompt);
+  const client = new ProductionEmbeddingClient(config, providerFactory, prompt);
   if (await client.configured()) {
     EMBEDDING_CLIENT = client;
   }

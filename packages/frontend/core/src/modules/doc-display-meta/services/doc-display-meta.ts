@@ -1,4 +1,3 @@
-import { extractEmojiIcon } from '@affine/core/utils';
 import { i18nTime } from '@affine/i18n';
 import {
   AliasIcon as LitAliasIcon,
@@ -27,9 +26,10 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
 import type { DocRecord, DocsService } from '../../doc';
-import type { FeatureFlagService } from '../../feature-flag';
+import type { ExplorerIconService } from '../../explorer-icon/services/explorer-icon';
 import type { I18nService } from '../../i18n';
 import type { JournalService } from '../../journal';
+import { getDocIconComponent } from './icon';
 
 type IconType = 'rc' | 'lit';
 interface DocDisplayIconOptions<T extends IconType> {
@@ -87,8 +87,8 @@ export class DocDisplayMetaService extends Service {
   constructor(
     private readonly journalService: JournalService,
     private readonly docsService: DocsService,
-    private readonly featureFlagService: FeatureFlagService,
-    private readonly i18nService: I18nService
+    private readonly i18nService: I18nService,
+    private readonly explorerIconService: ExplorerIconService
   ) {
     super();
   }
@@ -128,30 +128,32 @@ export class DocDisplayMetaService extends Service {
     const iconSet = icons[options?.type ?? 'rc'];
 
     return LiveData.computed(get => {
-      const enableEmojiIcon =
-        get(this.featureFlagService.flags.enable_emoji_doc_icon.$) &&
-        options?.enableEmojiIcon !== false;
+      const enableEmojiIcon = options?.enableEmojiIcon !== false;
       const doc = get(this.docsService.list.doc$(docId));
       const referenced = !!options?.reference;
       const titleAlias = referenced ? options?.title : undefined;
-      const originalTitle = doc ? get(doc.title$) : '';
+      // const originalTitle = doc ? get(doc.title$) : '';
       // link to journal doc
       const journalDateString = get(this.journalService.journalDate$(docId));
       const journalIcon = journalDateString
         ? this.getJournalIcon(journalDateString, options)
         : undefined;
-      const journalTitle = journalDateString
-        ? i18nTime(journalDateString, { absolute: { accuracy: 'day' } })
-        : undefined;
-      const title = titleAlias ?? journalTitle ?? originalTitle;
+      // const journalTitle = journalDateString
+      //   ? i18nTime(journalDateString, { absolute: { accuracy: 'day' } })
+      //   : undefined;
+      // const title = titleAlias ?? journalTitle ?? originalTitle;
       const mode = doc ? get(doc.primaryMode$) : undefined;
       const finalMode = options?.mode ?? mode ?? 'page';
       const referenceToNode = !!(referenced && options.referenceToNode);
 
       // emoji title
-      if (enableEmojiIcon && title) {
-        const { emoji } = extractEmojiIcon(title);
-        if (emoji) return () => emoji;
+      if (enableEmojiIcon) {
+        // const { emoji } = extractEmojiIcon(title);
+        // if (emoji) return () => emoji;
+        const icon = get(this.explorerIconService.icon$('doc', docId))?.icon;
+        if (icon) {
+          return getDocIconComponent(icon);
+        }
       }
 
       // title alias
@@ -176,10 +178,6 @@ export class DocDisplayMetaService extends Service {
 
   title$(docId: string, options?: DocDisplayTitleOptions) {
     return LiveData.computed(get => {
-      const enableEmojiIcon =
-        get(this.featureFlagService.flags.enable_emoji_doc_icon.$) &&
-        options?.enableEmojiIcon !== false;
-
       const lng = get(this.i18nService.i18n.currentLanguageKey$);
       const doc = get(this.docsService.list.doc$(docId));
       const referenced = !!options?.reference;
@@ -190,20 +188,17 @@ export class DocDisplayMetaService extends Service {
       const journalTitle = journalDateString
         ? i18nTime(journalDateString, { absolute: { accuracy: 'day' } })
         : undefined;
-      const title = titleAlias ?? journalTitle ?? originalTitle;
+      // const title = titleAlias ?? journalTitle ?? originalTitle;
 
       // emoji title
-      if (enableEmojiIcon && title) {
-        const { rest } = extractEmojiIcon(title);
-        if (rest) return rest;
-
-        // When the title has only one emoji character,
-        // if it's a journal document, the date should be displayed.
-        const journalDateString = get(this.journalService.journalDate$(docId));
-        if (journalDateString) {
-          return i18nTime(journalDateString, { absolute: { accuracy: 'day' } });
-        }
-      }
+      // if (enableEmojiIcon && title) {
+      //   // When the title has only one emoji character,
+      //   // if it's a journal document, the date should be displayed.
+      //   const journalDateString = get(this.journalService.journalDate$(docId));
+      //   if (journalDateString) {
+      //     return i18nTime(journalDateString, { absolute: { accuracy: 'day' } });
+      //   }
+      // }
 
       // title alias
       if (titleAlias) return titleAlias;

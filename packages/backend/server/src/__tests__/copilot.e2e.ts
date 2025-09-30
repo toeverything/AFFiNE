@@ -111,7 +111,7 @@ test.before(async t => {
       m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
       m.overrideProvider(GeminiGenerativeProvider).useClass(
         class MockGenerativeProvider extends MockCopilotProvider {
-          // @ts-expect-error
+          // @ts-expect-error type not typed
           override type: CopilotProviderType = CopilotProviderType.Gemini;
         }
       );
@@ -459,6 +459,29 @@ test('should create message correctly', async t => {
       const messageId = await createCopilotMessage(
         app,
         sessionId,
+        undefined,
+        undefined,
+        new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
+      );
+      t.truthy(messageId, 'should be able to create message with blob');
+    }
+
+    // with attachments
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const smallestPng =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
+      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+      const messageId = await createCopilotMessage(
+        app,
+        sessionId,
+        undefined,
         undefined,
         undefined,
         [new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })]

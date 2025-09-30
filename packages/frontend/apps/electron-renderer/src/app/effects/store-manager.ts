@@ -47,13 +47,13 @@ export function setupStoreManager(framework: Framework) {
     storeManagerClient.dispose();
   });
   window.addEventListener('focus', () => {
-    storeManagerClient.disableBatterySaveMode();
+    storeManagerClient.resume();
   });
   window.addEventListener('click', () => {
-    storeManagerClient.disableBatterySaveMode();
+    storeManagerClient.resume();
   });
   window.addEventListener('blur', () => {
-    storeManagerClient.enableBatterySaveMode();
+    storeManagerClient.pause();
   });
 
   framework.impl(NbstoreProvider, {

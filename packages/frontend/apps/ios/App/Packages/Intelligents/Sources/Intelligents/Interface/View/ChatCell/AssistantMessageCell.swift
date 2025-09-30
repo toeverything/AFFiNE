@@ -8,7 +8,6 @@
 import Litext
 import MarkdownView
 import SnapKit
-import Then
 import UIKit
 
 private let markdownViewForSizeCalculation: MarkdownTextView = .init()
@@ -21,11 +20,6 @@ class AssistantMessageCell: ChatBaseCell {
     contentView.addSubview(markdownView)
   }
 
-  override func prepareForReuse() {
-    super.prepareForReuse()
-    markdownView.prepareForReuse()
-  }
-
   override func configure(with viewModel: any ChatCellViewModel) {
     super.configure(with: viewModel)
 
@@ -33,10 +27,7 @@ class AssistantMessageCell: ChatBaseCell {
       assertionFailure()
       return
     }
-    markdownView.setMarkdown(
-      vm.documentBlocks,
-      renderedContent: vm.documentRenderedContent
-    )
+    markdownView.setMarkdown(vm.preprocessedContent)
   }
 
   override func layoutContentView(bounds: CGRect) {
@@ -53,10 +44,7 @@ class AssistantMessageCell: ChatBaseCell {
     markdownViewForSizeCalculation.frame = .init(
       x: 0, y: 0, width: width, height: .greatestFiniteMagnitude
     )
-    markdownViewForSizeCalculation.setMarkdown(
-      vm.documentBlocks,
-      renderedContent: vm.documentRenderedContent
-    )
+    markdownViewForSizeCalculation.setMarkdownManually(vm.preprocessedContent)
     let boundingSize = markdownViewForSizeCalculation.boundingSize(for: width)
     return ceil(boundingSize.height)
   }

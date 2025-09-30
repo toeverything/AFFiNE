@@ -2,6 +2,7 @@ import { WidgetComponent, WidgetViewExtension } from '@blocksuite/affine/std';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html, nothing, type TemplateResult } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import { BlockDiffProvider } from '../../services/block-diff';
@@ -91,11 +92,13 @@ export class AffineBlockDiffWidgetForBlock extends WidgetComponent {
   }
 
   private _renderInsert(from: string, blocks: Block[]) {
-    return blocks
-      .map((block, offset) => {
+    return html`${repeat(
+      blocks,
+      block => block.id,
+      (block, offset) => {
         const diffId = `insert-${block.id}-${offset}`;
         return this.diffService.isRejected('insert', `${from}:${offset}`)
-          ? null
+          ? nothing
           : html`<div class="ai-block-diff insert" data-diff-id=${diffId}>
               <chat-content-rich-text
                 .text=${block.content}
@@ -120,8 +123,8 @@ export class AffineBlockDiffWidgetForBlock extends WidgetComponent {
                   })}
               ></ai-block-diff-options>
             </div>`;
-      })
-      .filter(Boolean) as TemplateResult[];
+      }
+    )}`;
   }
 
   private _renderUpdate(blockId: string, content: string) {
@@ -189,11 +192,12 @@ export class AffineBlockDiffWidgetForBlock extends WidgetComponent {
       return nothing;
     }
 
-    const { deletes, inserts, updates } = service.getDiff();
+    const diffMap = service.getDiff();
+    const { deletes, inserts, updates } = diffMap;
 
     let deleteDiff: TemplateResult | symbol = nothing;
     let updateDiff: TemplateResult | symbol = nothing;
-    let insertDiff: TemplateResult[] | symbol = nothing;
+    let insertDiff: TemplateResult | symbol = nothing;
 
     if (deletes.includes(attached)) {
       deleteDiff = this._renderDelete(attached);

@@ -14,6 +14,7 @@ import type { WorkspaceServerService } from '../../cloud';
 import type { DocRecord, DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
+import type { FeatureFlagService } from '../../feature-flag';
 import type { WorkspaceService } from '../../workspace';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { QuickSearchItem } from '../types/item';
@@ -34,7 +35,8 @@ export class DocsQuickSearchSession
     private readonly workspaceServerService: WorkspaceServerService,
     private readonly docsSearchService: DocsSearchService,
     private readonly docsService: DocsService,
-    private readonly docDisplayMetaService: DocDisplayMetaService
+    private readonly docDisplayMetaService: DocDisplayMetaService,
+    private readonly featureFlagService: FeatureFlagService
   ) {
     super();
   }
@@ -43,6 +45,9 @@ export class DocsQuickSearchSession
     this.workspaceServerService.server?.config$.value.features.includes(
       ServerFeature.Indexer
     ) ?? false;
+
+  private readonly isEnableBatterySaveMode = () =>
+    this.featureFlagService.flags.enable_battery_save_mode.value;
 
   private readonly isIndexerLoading$ = this.docsSearchService.indexerState$.map(
     ({ completed }) => {
@@ -87,7 +92,7 @@ export class DocsQuickSearchSession
 
   items$ = new LiveData<QuickSearchItem<'docs', DocsPayload>[]>([]);
 
-  searchLocally = false;
+  searchLocally = !this.isCloudWorkspace;
 
   query = effect(
     tap(query => {
@@ -144,7 +149,9 @@ export class DocsQuickSearchSession
       return out.pipe(
         tap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
           this.items$.next(
-            this.isSupportServerIndexer() && !this.searchLocally
+            this.isSupportServerIndexer() &&
+              !this.searchLocally &&
+              !this.isEnableBatterySaveMode()
               ? [...items, this.searchLocallyItem]
               : items
           );
@@ -153,7 +160,9 @@ export class DocsQuickSearchSession
         onStart(() => {
           this.error$.next(null);
           this.items$.next(
-            this.isSupportServerIndexer() && !this.searchLocally
+            this.isSupportServerIndexer() &&
+              !this.searchLocally &&
+              !this.isEnableBatterySaveMode()
               ? [this.searchLocallyItem]
               : []
           );
@@ -162,7 +171,9 @@ export class DocsQuickSearchSession
         catchError(err => {
           this.error$.next(err instanceof Error ? err.message : err);
           this.items$.next(
-            this.isSupportServerIndexer() && !this.searchLocally
+            this.isSupportServerIndexer() &&
+              !this.searchLocally &&
+              !this.isEnableBatterySaveMode()
               ? [this.searchLocallyItem]
               : []
           );

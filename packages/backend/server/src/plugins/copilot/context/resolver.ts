@@ -20,6 +20,7 @@ import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
+  BlobNotFound,
   BlobQuotaExceeded,
   CallMetric,
   CopilotEmbeddingUnavailable,
@@ -37,6 +38,7 @@ import {
 import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
 import {
+  ContextBlob,
   ContextCategories,
   ContextCategory,
   ContextDoc,
@@ -50,8 +52,7 @@ import { CopilotEmbeddingJob } from '../embedding';
 import { COPILOT_LOCKER, CopilotType } from '../resolver';
 import { ChatSessionService } from '../session';
 import { CopilotStorage } from '../storage';
-import { MAX_EMBEDDABLE_SIZE } from '../types';
-import { getSignal, readStream } from '../utils';
+import { getSignal, MAX_EMBEDDABLE_SIZE, readStream } from '../utils';
 import { CopilotContextService } from './service';
 
 @InputType()
@@ -118,6 +119,24 @@ class RemoveContextFileInput {
   fileId!: string;
 }
 
+@InputType()
+class AddContextBlobInput {
+  @Field(() => String)
+  contextId!: string;
+
+  @Field(() => String)
+  blobId!: string;
+}
+
+@InputType()
+class RemoveContextBlobInput {
+  @Field(() => String)
+  contextId!: string;
+
+  @Field(() => String)
+  blobId!: string;
+}
+
 @ObjectType('CopilotContext')
 export class CopilotContextType {
   @Field(() => ID, { nullable: true })
@@ -130,7 +149,24 @@ export class CopilotContextType {
 registerEnumType(ContextCategories, { name: 'ContextCategories' });
 
 @ObjectType()
-class CopilotDocType implements Omit<ContextDoc, 'status'> {
+class CopilotContextCategory implements Omit<ContextCategory, 'docs'> {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => ContextCategories)
+  type!: ContextCategories;
+
+  @Field(() => [CopilotContextDoc])
+  docs!: CopilotContextDoc[];
+
+  @Field(() => SafeIntResolver)
+  createdAt!: number;
+}
+
+registerEnumType(ContextEmbedStatus, { name: 'ContextEmbedStatus' });
+
+@ObjectType()
+class CopilotContextBlob implements Omit<ContextBlob, 'status'> {
   @Field(() => ID)
   id!: string;
 
@@ -142,26 +178,15 @@ class CopilotDocType implements Omit<ContextDoc, 'status'> {
 }
 
 @ObjectType()
-class CopilotContextCategory implements Omit<ContextCategory, 'docs'> {
+class CopilotContextDoc implements Omit<ContextDoc, 'status'> {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => ContextCategories)
-  type!: ContextCategories;
-
-  @Field(() => [CopilotDocType])
-  docs!: CopilotDocType[];
+  @Field(() => ContextEmbedStatus, { nullable: true })
+  status!: ContextEmbedStatus | null;
 
   @Field(() => SafeIntResolver)
   createdAt!: number;
-}
-
-registerEnumType(ContextEmbedStatus, { name: 'ContextEmbedStatus' });
-
-@ObjectType()
-class CopilotContextDoc extends CopilotDocType {
-  @Field(() => String, { nullable: true })
-  error!: string | null;
 }
 
 @ObjectType()
@@ -356,6 +381,7 @@ export class CopilotContextRootResolver {
     return false;
   }
 
+  @Throttle('strict')
   @Query(() => ContextWorkspaceEmbeddingStatus, {
     description: 'query workspace embedding status',
   })
@@ -372,9 +398,7 @@ export class CopilotContextRootResolver {
 
     if (this.context.canEmbedding) {
       const { total, embedded } =
-        await this.models.copilotWorkspace.getWorkspaceEmbeddingStatus(
-          workspaceId
-        );
+        await this.models.copilotWorkspace.getEmbeddingStatus(workspaceId);
       return { total, embedded };
     }
 
@@ -434,11 +458,33 @@ export class CopilotContextResolver {
     return tags;
   }
 
+  @ResolveField(() => [CopilotContextBlob], {
+    description: 'list blobs in context',
+  })
+  @CallMetric('ai', 'context_blob_list')
+  async blobs(
+    @Parent() context: CopilotContextType
+  ): Promise<CopilotContextBlob[]> {
+    if (!context.id) {
+      return [];
+    }
+    const session = await this.context.get(context.id);
+    const blobs = session.blobs;
+    await this.models.copilotContext.mergeBlobStatus(
+      session.workspaceId,
+      blobs
+    );
+
+    return blobs.map(blob => ({ ...blob, status: blob.status || null }));
+  }
+
   @ResolveField(() => [CopilotContextDoc], {
     description: 'list files in context',
   })
   @CallMetric('ai', 'context_file_list')
-  async docs(@Parent() context: CopilotContextType): Promise<CopilotDocType[]> {
+  async docs(
+    @Parent() context: CopilotContextType
+  ): Promise<CopilotContextDoc[]> {
     if (!context.id) {
       return [];
     }
@@ -539,7 +585,7 @@ export class CopilotContextResolver {
   async addContextDoc(
     @Args({ name: 'options', type: () => AddContextDocInput })
     options: AddContextDocInput
-  ): Promise<CopilotDocType> {
+  ): Promise<CopilotContextDoc> {
     const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
@@ -667,6 +713,90 @@ export class CopilotContextResolver {
 
     try {
       return await session.removeFile(options.fileId);
+    } catch (e: any) {
+      throw new CopilotFailedToModifyContext({
+        contextId: options.contextId,
+        message: e.message,
+      });
+    }
+  }
+
+  @Mutation(() => CopilotContextBlob, {
+    description: 'add a blob to context',
+  })
+  @CallMetric('ai', 'context_blob_add')
+  async addContextBlob(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => AddContextBlobInput })
+    options: AddContextBlobInput
+  ): Promise<CopilotContextBlob> {
+    if (!this.context.canEmbedding) {
+      throw new CopilotEmbeddingUnavailable();
+    }
+
+    const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
+    await using lock = await this.mutex.acquire(lockFlag);
+    if (!lock) {
+      throw new TooManyRequest('Server is busy');
+    }
+
+    const contextSession = await this.context.get(options.contextId);
+
+    await this.ac
+      .user(user.id)
+      .workspace(contextSession.workspaceId)
+      .allowLocal()
+      .assert('Workspace.Copilot');
+
+    try {
+      const blob = await contextSession.addBlobRecord(options.blobId);
+      if (!blob) {
+        throw new BlobNotFound({
+          spaceId: contextSession.workspaceId,
+          blobId: options.blobId,
+        });
+      }
+
+      await this.jobs.addBlobEmbeddingQueue({
+        workspaceId: contextSession.workspaceId,
+        contextId: contextSession.id,
+        blobId: options.blobId,
+      });
+
+      return { ...blob, status: blob.status || null };
+    } catch (e: any) {
+      if (e instanceof UserFriendlyError) {
+        throw e;
+      }
+      throw new CopilotFailedToModifyContext({
+        contextId: options.contextId,
+        message: e.message,
+      });
+    }
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'remove a blob from context',
+  })
+  @CallMetric('ai', 'context_blob_remove')
+  async removeContextBlob(
+    @Args({ name: 'options', type: () => RemoveContextBlobInput })
+    options: RemoveContextBlobInput
+  ): Promise<boolean> {
+    if (!this.context.canEmbedding) {
+      throw new CopilotEmbeddingUnavailable();
+    }
+
+    const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
+    await using lock = await this.mutex.acquire(lockFlag);
+    if (!lock) {
+      throw new TooManyRequest('Server is busy');
+    }
+
+    const contextSession = await this.context.get(options.contextId);
+
+    try {
+      return await contextSession.removeBlobRecord(options.blobId);
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,

@@ -33,6 +33,12 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
     closable.removeAll()
   }
 
+  public func clearAll() {
+    assert(Thread.isMainThread)
+    closeAll()
+    viewModels.removeAll()
+  }
+
   public func with(sessionId: String, _ action: (inout OrderedDictionary<MessageID, any ChatCellViewModel>) -> Void) {
     if Thread.isMainThread {
       if var sessionViewModels = viewModels[sessionId] {
@@ -59,10 +65,12 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
           return
         }
         sessionViewModels[vmId] = vm
-      } else {
-        assertionFailure()
       }
     }
+  }
+
+  public func delete(sessionId: String, vmId: UUID) {
+    with(sessionId: sessionId) { $0.removeValue(forKey: vmId) }
   }
 
   @discardableResult

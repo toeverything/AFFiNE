@@ -119,10 +119,22 @@ export class ChatPrompt {
   }
 
   private preDefinedParams(params: PromptParams) {
+    const {
+      language,
+      timezone,
+      docs,
+      contextFiles: files,
+      selectedMarkdown,
+      selectedSnapshot,
+      html,
+    } = params;
     return {
       'affine::date': new Date().toLocaleDateString(),
-      'affine::language': params.language || 'same language as the user query',
-      'affine::timezone': params.timezone || 'no preference',
+      'affine::language': language || 'same language as the user query',
+      'affine::timezone': timezone || 'no preference',
+      'affine::hasDocsRef': Array.isArray(docs) && docs.length > 0,
+      'affine::hasFilesRef': Array.isArray(files) && files.length > 0,
+      'affine::hasSelected': !!selectedMarkdown || !!selectedSnapshot || !!html,
     };
   }
 

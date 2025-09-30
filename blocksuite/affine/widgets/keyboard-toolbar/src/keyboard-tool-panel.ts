@@ -4,7 +4,7 @@ import {
   requiredProperties,
   ShadowlessElement,
 } from '@blocksuite/std';
-import { html, nothing, type PropertyValues } from 'lit';
+import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
@@ -71,22 +71,13 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
       .map(group => (typeof group === 'function' ? group(this.context) : group))
       .filter((group): group is KeyboardToolPanelGroup => group !== null);
 
-    return repeat(
-      groups,
-      group => group.name,
-      group => this._renderGroup(group)
-    );
-  }
-
-  protected override willUpdate(changedProperties: PropertyValues<this>) {
-    if (changedProperties.has('height')) {
-      this.style.height = `${this.height}px`;
-      if (this.height === 0) {
-        this.style.padding = '0';
-      } else {
-        this.style.padding = '';
-      }
-    }
+    return html`<div class="affine-keyboard-tool-panel-container">
+      ${repeat(
+        groups,
+        group => group.name,
+        group => this._renderGroup(group)
+      )}
+    </div>`;
   }
 
   @property({ attribute: false })
@@ -94,7 +85,4 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
 
   @property({ attribute: false })
   accessor context!: KeyboardToolbarContext;
-
-  @property({ attribute: false })
-  accessor height = 0;
 }
