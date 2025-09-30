@@ -149,6 +149,9 @@ export class AIChatComposer extends SignalWatcher(
   @property({ attribute: false })
   accessor aiModelService!: AIModelService;
 
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
   @state()
   accessor chips: ChatChip[] = [];
 
@@ -200,6 +203,7 @@ export class AIChatComposer extends SignalWatcher(
         .notificationService=${this.notificationService}
         .subscriptionService=${this.subscriptionService}
         .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
         .portalContainer=${this.portalContainer}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
