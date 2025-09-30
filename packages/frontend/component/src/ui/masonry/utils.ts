@@ -113,7 +113,9 @@ export const calcLayout = (
       const height = ratioMode ? item.ratio * width : item.height;
 
       const aroundGapXValue =
-        (totalWidth - paddingX * 2 - width * columns) / (columns - 1);
+        columns > 1
+          ? (totalWidth - paddingX * 2 - width * columns) / (columns - 1)
+          : 0;
       const gapXValue = Math.max(gapX, aroundGapXValue);
 
       if (ratioMode) {
