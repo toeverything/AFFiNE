@@ -7,14 +7,14 @@
 
 import Foundation
 
-enum SKUnitCategory: Int, CaseIterable, Equatable, Identifiable {
-  var id: Int { rawValue }
+public enum SKUnitCategory: Int, CaseIterable, Equatable, Identifiable {
+  public var id: Int { rawValue }
 
   case pro
   case ai
 }
 
-extension SKUnitCategory {
+public extension SKUnitCategory {
   var title: String {
     switch self {
     case .pro: "AFFINE.Pro"

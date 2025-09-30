@@ -7,6 +7,7 @@
 
 import StoreKit
 import SwiftUI
+import WebKit
 
 @MainActor
 class ViewModel: ObservableObject {
@@ -23,10 +24,18 @@ class ViewModel: ObservableObject {
 
   @Published var updating = false
   @Published var products: [Product] = []
-  @Published var purchasedItems: Set<String> = []
+  @Published var storePurchasedItems: Set<String> = []
+  @Published var externalPurchasedItems: Set<String> = []
   @Published var packageOptions: [SKUnitPackageOption] = SKUnit.allUnits.flatMap(\.package)
 
+  var purchasedItems: Set<String> {
+    Set<String>()
+      .union(storePurchasedItems)
+      .union(externalPurchasedItems)
+  }
+
   private(set) weak var associatedController: UIViewController?
+  private(set) weak var associatedWebContext: WKWebView?
 
   init() {
     updateAppStoreStatus(initial: true)
@@ -40,6 +49,10 @@ class ViewModel: ObservableObject {
 
   func bind(controller: UIViewController) {
     associatedController = controller
+  }
+
+  func bind(context: WKWebView) {
+    associatedWebContext = context
   }
 
   func select(category: SKUnitCategory) {
