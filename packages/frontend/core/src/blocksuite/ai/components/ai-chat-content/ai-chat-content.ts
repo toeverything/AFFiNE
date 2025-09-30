@@ -192,6 +192,9 @@ export class AIChatContent extends SignalWatcher(
   @property({ attribute: false })
   accessor subscriptionService!: SubscriptionService;
 
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
   @state()
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
 
@@ -381,6 +384,9 @@ export class AIChatContent extends SignalWatcher(
         .catch(console.error);
     }
 
+    // revalidate subscription to get the latest status
+    this.subscriptionService.subscription.revalidate();
+
     this._disposables.add(
       AIProvider.slots.actions.subscribe(({ event }) => {
         const { status } = this.chatContextValue;
@@ -472,6 +478,7 @@ export class AIChatContent extends SignalWatcher(
         .aiToolsConfigService=${this.aiToolsConfigService}
         .subscriptionService=${this.subscriptionService}
         .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

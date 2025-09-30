@@ -378,6 +378,9 @@ export class AIChatInput extends SignalWatcher(
   accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
+  @property({ attribute: false })
   accessor isRootSession: boolean = true;
 
   @property({ attribute: false })
@@ -534,6 +537,7 @@ export class AIChatInput extends SignalWatcher(
           .notificationService=${this.notificationService}
           .subscriptionService=${this.subscriptionService}
           .aiModelService=${this.aiModelService}
+          .onAISubscribe=${this.onAISubscribe}
         ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
           ? html`<button

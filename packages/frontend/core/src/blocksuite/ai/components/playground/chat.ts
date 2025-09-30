@@ -183,6 +183,9 @@ export class PlaygroundChat extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor onAISubscribe: (() => Promise<void>) | undefined;
+
+  @property({ attribute: false })
   accessor addChat!: () => Promise<void>;
 
   @state()
@@ -374,6 +377,7 @@ export class PlaygroundChat extends SignalWatcher(
         .aiToolsConfigService=${this.aiToolsConfigService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div>`;
   }
