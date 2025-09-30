@@ -10,18 +10,6 @@ import UIKit
 import WebKit
 
 public enum Paywall {
-  public struct Configuration {
-    public let defaultCategory: SKUnitCategory
-    public let eligibleCategory: [SKUnitCategory]
-
-    public init(defaultCategory: SKUnitCategory, eligibleCategory: [SKUnitCategory]) {
-      self.defaultCategory = defaultCategory
-      self.eligibleCategory = eligibleCategory
-      assert(!eligibleCategory.isEmpty)
-      assert(eligibleCategory.contains(defaultCategory))
-    }
-  }
-
   @MainActor
   public static func presentWall(
     toController controller: UIViewController,
