@@ -221,6 +221,14 @@ export class OAuthController {
     if (connectedAccount) {
       // already connected
       await this.updateConnectedAccount(connectedAccount, tokens);
+
+      if (
+        !connectedAccount.user.emailVerifiedAt &&
+        // external email may change, check if it matches exists email
+        externalAccount.email === connectedAccount.user.email
+      ) {
+        await this.auth.setEmailVerified(connectedAccount.userId);
+      }
       return connectedAccount.user;
     }
 
