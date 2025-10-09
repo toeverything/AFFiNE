@@ -240,6 +240,24 @@ export const notionHtmlStyleElementToDeltaMatcher =
     },
   });
 
+export const notionHtmlUserIconToDeltaMatcher = NotionHtmlASTToDeltaExtension({
+  name: 'user-icon-element',
+  match: ast => {
+    if (!isElement(ast)) {
+      return false;
+    }
+    // Match any element with 'user-icon' class
+    return (
+      Array.isArray(ast.properties?.className) &&
+      ast.properties.className.includes('user-icon')
+    );
+  },
+  toDelta: () => {
+    // Replace user icons with a space
+    return [{ insert: ' ' }];
+  },
+});
+
 export const NotionHtmlInlineToDeltaAdapterExtensions: ExtensionType[] = [
   notionHtmlTextToDeltaMatcher,
   notionHtmlSpanElementToDeltaMatcher,
@@ -253,4 +271,5 @@ export const NotionHtmlInlineToDeltaAdapterExtensions: ExtensionType[] = [
   notionHtmlLiElementToDeltaMatcher,
   notionHtmlBrElementToDeltaMatcher,
   notionHtmlStyleElementToDeltaMatcher,
+  notionHtmlUserIconToDeltaMatcher,
 ];

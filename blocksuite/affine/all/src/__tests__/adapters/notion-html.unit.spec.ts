@@ -2090,4 +2090,53 @@ describe('notion html to snapshot', () => {
     });
     expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
+
+  test('user icons', async () => {
+    const html = `<div class="page-body">
+      <p id="12d088dd-6fdb-80e5-97be-ebd049a327f5" class="">
+        Person
+        <span class="user"><img src="xxx.jpeg" class="icon user-icon"/>Name with avatar</span>
+        <span class="user"><span class="icon text-icon user-icon"><span class="user-icon-inner">C</span></span>CXXXX(Another name without avatar)</span>
+        <span class="user"><span class="icon text-icon user-icon"><span class="user-icon-inner">K</span></span>KXXXX(2nd name without avatar)</span>
+      </p>
+    </div>`;
+
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'Person Name with avatar CXXXX(Another name without avatar) KXXXX(2nd name without avatar)',
+                },
+              ],
+            },
+            type: 'text',
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const adapter = new NotionHtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await adapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
 });
