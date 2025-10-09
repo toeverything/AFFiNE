@@ -29,7 +29,7 @@ import type { DocRecord, DocsService } from '../../doc';
 import type { ExplorerIconService } from '../../explorer-icon/services/explorer-icon';
 import type { I18nService } from '../../i18n';
 import type { JournalService } from '../../journal';
-import { getDocIconComponent } from './icon';
+import { getDocIconComponent, getDocIconComponentLit } from './icon';
 
 type IconType = 'rc' | 'lit';
 interface DocDisplayIconOptions<T extends IconType> {
@@ -152,7 +152,9 @@ export class DocDisplayMetaService extends Service {
         // if (emoji) return () => emoji;
         const icon = get(this.explorerIconService.icon$('doc', docId))?.icon;
         if (icon) {
-          return getDocIconComponent(icon);
+          return options?.type === 'lit'
+            ? getDocIconComponentLit(icon)
+            : getDocIconComponent(icon);
         }
       }
 
