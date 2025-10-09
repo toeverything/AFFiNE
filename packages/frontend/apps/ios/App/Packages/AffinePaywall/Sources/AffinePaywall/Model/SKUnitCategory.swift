@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum SKUnitCategory: Int, CaseIterable, Equatable, Identifiable {
+public enum SKUnitCategory: Int, CaseIterable, Equatable, Identifiable, Sendable {
   public var id: Int { rawValue }
 
   case pro

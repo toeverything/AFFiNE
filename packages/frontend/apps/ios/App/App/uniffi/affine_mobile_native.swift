@@ -8,37 +8,37 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(affine_mobile_nativeFFI)
-  import affine_mobile_nativeFFI
+import affine_mobile_nativeFFI
 #endif
 
-private extension RustBuffer {
-  // Allocate a new buffer, copying the contents of a `UInt8` array.
-  init(bytes: [UInt8]) {
-    let rbuf = bytes.withUnsafeBufferPointer { ptr in
-      RustBuffer.from(ptr)
+fileprivate extension RustBuffer {
+    // Allocate a new buffer, copying the contents of a `UInt8` array.
+    init(bytes: [UInt8]) {
+        let rbuf = bytes.withUnsafeBufferPointer { ptr in
+            RustBuffer.from(ptr)
+        }
+        self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
-    self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
-  }
 
-  static func empty() -> RustBuffer {
-    RustBuffer(capacity: 0, len: 0, data: nil)
-  }
+    static func empty() -> RustBuffer {
+        RustBuffer(capacity: 0, len:0, data: nil)
+    }
 
-  static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-    try! rustCall { ffi_affine_mobile_native_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
-  }
+    static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
+        try! rustCall { ffi_affine_mobile_native_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+    }
 
-  // Frees the buffer in place.
-  // The buffer must not be used after this is called.
-  func deallocate() {
-    try! rustCall { ffi_affine_mobile_native_rustbuffer_free(self, $0) }
-  }
+    // Frees the buffer in place.
+    // The buffer must not be used after this is called.
+    func deallocate() {
+        try! rustCall { ffi_affine_mobile_native_rustbuffer_free(self, $0) }
+    }
 }
 
-private extension ForeignBytes {
-  init(bufferPointer: UnsafeBufferPointer<UInt8>) {
-    self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
-  }
+fileprivate extension ForeignBytes {
+    init(bufferPointer: UnsafeBufferPointer<UInt8>) {
+        self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
+    }
 }
 
 // For every type used in the interface, we provide helper methods for conveniently
@@ -48,14 +48,14 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
-  init(rustBuffer: RustBuffer) {
-    self.init(
-      bytesNoCopy: rustBuffer.data!,
-      count: Int(rustBuffer.len),
-      deallocator: .none
-    )
-  }
+fileprivate extension Data {
+    init(rustBuffer: RustBuffer) {
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
+    }
 }
 
 // Define reader functionality.  Normally this would be defined in a class or
@@ -72,1931 +72,2031 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
-  (data: data, offset: 0)
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+    (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-  let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
-  guard reader.data.count >= range.upperBound else {
-    throw UniffiInternalError.bufferOverflow
-  }
-  if T.self == UInt8.self {
-    let value = reader.data[reader.offset]
-    reader.offset += 1
-    return value as! T
-  }
-  var value: T = 0
-  let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
-  reader.offset = range.upperBound
-  return value.bigEndian
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
+    guard reader.data.count >= range.upperBound else {
+        throw UniffiInternalError.bufferOverflow
+    }
+    if T.self == UInt8.self {
+        let value = reader.data[reader.offset]
+        reader.offset += 1
+        return value as! T
+    }
+    var value: T = 0
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
+    reader.offset = range.upperBound
+    return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-  let range = reader.offset ..< (reader.offset + count)
-  guard reader.data.count >= range.upperBound else {
-    throw UniffiInternalError.bufferOverflow
-  }
-  var value = [UInt8](repeating: 0, count: count)
-  value.withUnsafeMutableBufferPointer { buffer in
-    reader.data.copyBytes(to: buffer, from: range)
-  }
-  reader.offset = range.upperBound
-  return value
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
+    guard reader.data.count >= range.upperBound else {
+        throw UniffiInternalError.bufferOverflow
+    }
+    var value = [UInt8](repeating: 0, count: count)
+    value.withUnsafeMutableBufferPointer({ buffer in
+        reader.data.copyBytes(to: buffer, from: range)
+    })
+    reader.offset = range.upperBound
+    return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-  try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-  try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
-  reader.offset < reader.data.count
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+    return reader.offset < reader.data.count
 }
 
 // Define writer functionality.  Normally this would be defined in a class or
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
-  []
+fileprivate func createWriter() -> [UInt8] {
+    return []
 }
 
-private func writeBytes(_ writer: inout [UInt8], _ byteArr: some Sequence<UInt8>) {
-  writer.append(contentsOf: byteArr)
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+    writer.append(contentsOf: byteArr)
 }
 
 // Writes an integer in big-endian order.
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt(_ writer: inout [UInt8], _ value: some FixedWidthInteger) {
-  var value = value.bigEndian
-  withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+    var value = value.bigEndian
+    withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
-  writeInt(&writer, value.bitPattern)
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+    writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
-  writeInt(&writer, value.bitPattern)
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+    writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous to the Rust trait of the same name.
-private protocol FfiConverter {
-  associatedtype FfiType
-  associatedtype SwiftType
+fileprivate protocol FfiConverter {
+    associatedtype FfiType
+    associatedtype SwiftType
 
-  static func lift(_ value: FfiType) throws -> SwiftType
-  static func lower(_ value: SwiftType) -> FfiType
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType
-  static func write(_ value: SwiftType, into buf: inout [UInt8])
+    static func lift(_ value: FfiType) throws -> SwiftType
+    static func lower(_ value: SwiftType) -> FfiType
+    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType
+    static func write(_ value: SwiftType, into buf: inout [UInt8])
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
-  #if swift(>=5.8)
+#if swift(>=5.8)
     @_documentation(visibility: private)
-  #endif
-  public static func lift(_ value: FfiType) throws -> SwiftType {
-    value
-  }
+#endif
+    public static func lift(_ value: FfiType) throws -> SwiftType {
+        return value
+    }
 
-  #if swift(>=5.8)
+#if swift(>=5.8)
     @_documentation(visibility: private)
-  #endif
-  public static func lower(_ value: SwiftType) -> FfiType {
-    value
-  }
+#endif
+    public static func lower(_ value: SwiftType) -> FfiType {
+        return value
+    }
 }
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
-  #if swift(>=5.8)
+#if swift(>=5.8)
     @_documentation(visibility: private)
-  #endif
-  public static func lift(_ buf: RustBuffer) throws -> SwiftType {
-    var reader = createReader(data: Data(rustBuffer: buf))
-    let value = try read(from: &reader)
-    if hasRemaining(reader) {
-      throw UniffiInternalError.incompleteData
+#endif
+    public static func lift(_ buf: RustBuffer) throws -> SwiftType {
+        var reader = createReader(data: Data(rustBuffer: buf))
+        let value = try read(from: &reader)
+        if hasRemaining(reader) {
+            throw UniffiInternalError.incompleteData
+        }
+        buf.deallocate()
+        return value
     }
-    buf.deallocate()
-    return value
-  }
 
-  #if swift(>=5.8)
+#if swift(>=5.8)
     @_documentation(visibility: private)
-  #endif
-  public static func lower(_ value: SwiftType) -> RustBuffer {
-    var writer = createWriter()
-    write(value, into: &writer)
-    return RustBuffer(bytes: writer)
-  }
+#endif
+    public static func lower(_ value: SwiftType) -> RustBuffer {
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
+    }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
-  case bufferOverflow
-  case incompleteData
-  case unexpectedOptionalTag
-  case unexpectedEnumCase
-  case unexpectedNullPointer
-  case unexpectedRustCallStatusCode
-  case unexpectedRustCallError
-  case unexpectedStaleHandle
-  case rustPanic(_ message: String)
+fileprivate enum UniffiInternalError: LocalizedError {
+    case bufferOverflow
+    case incompleteData
+    case unexpectedOptionalTag
+    case unexpectedEnumCase
+    case unexpectedNullPointer
+    case unexpectedRustCallStatusCode
+    case unexpectedRustCallError
+    case unexpectedStaleHandle
+    case rustPanic(_ message: String)
 
-  var errorDescription: String? {
-    switch self {
-    case .bufferOverflow: "Reading the requested value would read past the end of the buffer"
-    case .incompleteData: "The buffer still has data after lifting its containing value"
-    case .unexpectedOptionalTag: "Unexpected optional tag; should be 0 or 1"
-    case .unexpectedEnumCase: "Raw enum value doesn't match any cases"
-    case .unexpectedNullPointer: "Raw pointer value was null"
-    case .unexpectedRustCallStatusCode: "Unexpected RustCallStatus code"
-    case .unexpectedRustCallError: "CALL_ERROR but no errorClass specified"
-    case .unexpectedStaleHandle: "The object in the handle map has been dropped already"
-    case let .rustPanic(message): message
+    public var errorDescription: String? {
+        switch self {
+        case .bufferOverflow: return "Reading the requested value would read past the end of the buffer"
+        case .incompleteData: return "The buffer still has data after lifting its containing value"
+        case .unexpectedOptionalTag: return "Unexpected optional tag; should be 0 or 1"
+        case .unexpectedEnumCase: return "Raw enum value doesn't match any cases"
+        case .unexpectedNullPointer: return "Raw pointer value was null"
+        case .unexpectedRustCallStatusCode: return "Unexpected RustCallStatus code"
+        case .unexpectedRustCallError: return "CALL_ERROR but no errorClass specified"
+        case .unexpectedStaleHandle: return "The object in the handle map has been dropped already"
+        case let .rustPanic(message): return message
+        }
     }
-  }
 }
 
-private extension NSLock {
-  func withLock<T>(f: () throws -> T) rethrows -> T {
-    lock()
-    defer { self.unlock() }
-    return try f()
-  }
+fileprivate extension NSLock {
+    func withLock<T>(f: () throws -> T) rethrows -> T {
+        self.lock()
+        defer { self.unlock() }
+        return try f()
+    }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_UNEXPECTED_ERROR: Int8 = 2
-private let CALL_CANCELLED: Int8 = 3
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_UNEXPECTED_ERROR: Int8 = 2
+fileprivate let CALL_CANCELLED: Int8 = 3
 
-private extension RustCallStatus {
-  init() {
-    self.init(
-      code: CALL_SUCCESS,
-      errorBuf: RustBuffer(
-        capacity: 0,
-        len: 0,
-        data: nil
-      )
-    )
-  }
+fileprivate extension RustCallStatus {
+    init() {
+        self.init(
+            code: CALL_SUCCESS,
+            errorBuf: RustBuffer.init(
+                capacity: 0,
+                len: 0,
+                data: nil
+            )
+        )
+    }
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-  let neverThrow: ((RustBuffer) throws -> Never)? = nil
-  return try makeRustCall(callback, errorHandler: neverThrow)
+    let neverThrow: ((RustBuffer) throws -> Never)? = nil
+    return try makeRustCall(callback, errorHandler: neverThrow)
 }
 
-private func rustCallWithError<T>(
-  _ errorHandler: @escaping (RustBuffer) throws -> some Swift.Error,
-  _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+private func rustCallWithError<T, E: Swift.Error>(
+    _ errorHandler: @escaping (RustBuffer) throws -> E,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
+}
+
+private func makeRustCall<T, E: Swift.Error>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-  try makeRustCall(callback, errorHandler: errorHandler)
+    uniffiEnsureAffineMobileNativeInitialized()
+    var callStatus = RustCallStatus.init()
+    let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
 }
 
-private func makeRustCall<T>(
-  _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
-  errorHandler: ((RustBuffer) throws -> some Swift.Error)?
-) throws -> T {
-  uniffiEnsureAffineMobileNativeInitialized()
-  var callStatus = RustCallStatus()
-  let returnedVal = callback(&callStatus)
-  try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
-  return returnedVal
-}
-
-private func uniffiCheckCallStatus(
-  callStatus: RustCallStatus,
-  errorHandler: ((RustBuffer) throws -> some Swift.Error)?
+private func uniffiCheckCallStatus<E: Swift.Error>(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> E)?
 ) throws {
-  switch callStatus.code {
-  case CALL_SUCCESS:
-    return
+    switch callStatus.code {
+        case CALL_SUCCESS:
+            return
 
-  case CALL_ERROR:
-    if let errorHandler {
-      throw try errorHandler(callStatus.errorBuf)
-    } else {
-      callStatus.errorBuf.deallocate()
-      throw UniffiInternalError.unexpectedRustCallError
+        case CALL_ERROR:
+            if let errorHandler = errorHandler {
+                throw try errorHandler(callStatus.errorBuf)
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.unexpectedRustCallError
+            }
+
+        case CALL_UNEXPECTED_ERROR:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
+
+        case CALL_CANCELLED:
+            fatalError("Cancellation not supported yet")
+
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
-
-  case CALL_UNEXPECTED_ERROR:
-    // When the rust code sees a panic, it tries to construct a RustBuffer
-    // with the message.  But if that code panics, then it just sends back
-    // an empty buffer.
-    if callStatus.errorBuf.len > 0 {
-      throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-    } else {
-      callStatus.errorBuf.deallocate()
-      throw UniffiInternalError.rustPanic("Rust panic")
-    }
-
-  case CALL_CANCELLED:
-    fatalError("Cancellation not supported yet")
-
-  default:
-    throw UniffiInternalError.unexpectedRustCallStatusCode
-  }
 }
 
 private func uniffiTraitInterfaceCall<T>(
-  callStatus: UnsafeMutablePointer<RustCallStatus>,
-  makeCall: () throws -> T,
-  writeReturn: (T) -> Void
+    callStatus: UnsafeMutablePointer<RustCallStatus>,
+    makeCall: () throws -> T,
+    writeReturn: (T) -> ()
 ) {
-  do {
-    try writeReturn(makeCall())
-  } catch {
-    callStatus.pointee.code = CALL_UNEXPECTED_ERROR
-    callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
-  }
+    do {
+        try writeReturn(makeCall())
+    } catch let error {
+        callStatus.pointee.code = CALL_UNEXPECTED_ERROR
+        callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
+    }
 }
 
 private func uniffiTraitInterfaceCallWithError<T, E>(
-  callStatus: UnsafeMutablePointer<RustCallStatus>,
-  makeCall: () throws -> T,
-  writeReturn: (T) -> Void,
-  lowerError: (E) -> RustBuffer
+    callStatus: UnsafeMutablePointer<RustCallStatus>,
+    makeCall: () throws -> T,
+    writeReturn: (T) -> (),
+    lowerError: (E) -> RustBuffer
 ) {
-  do {
-    try writeReturn(makeCall())
-  } catch let error as E {
-    callStatus.pointee.code = CALL_ERROR
-    callStatus.pointee.errorBuf = lowerError(error)
-  } catch {
-    callStatus.pointee.code = CALL_UNEXPECTED_ERROR
-    callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
-  }
+    do {
+        try writeReturn(makeCall())
+    } catch let error as E {
+        callStatus.pointee.code = CALL_ERROR
+        callStatus.pointee.errorBuf = lowerError(error)
+    } catch {
+        callStatus.pointee.code = CALL_UNEXPECTED_ERROR
+        callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
+    }
+}
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
+    private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
+    private var currentHandle: UInt64 = 1
+
+    func insert(obj: T) -> UInt64 {
+        lock.withLock {
+            let handle = currentHandle
+            currentHandle += 1
+            map[handle] = obj
+            return handle
+        }
+    }
+
+     func get(handle: UInt64) throws -> T {
+        try lock.withLock {
+            guard let obj = map[handle] else {
+                throw UniffiInternalError.unexpectedStaleHandle
+            }
+            return obj
+        }
+    }
+
+    @discardableResult
+    func remove(handle: UInt64) throws -> T {
+        try lock.withLock {
+            guard let obj = map.removeValue(forKey: handle) else {
+                throw UniffiInternalError.unexpectedStaleHandle
+            }
+            return obj
+        }
+    }
+
+    var count: Int {
+        get {
+            map.count
+        }
+    }
 }
 
-private final class UniffiHandleMap<T>: @unchecked Sendable {
-  // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-  private let lock = NSLock()
-  private var map: [UInt64: T] = [:]
-  private var currentHandle: UInt64 = 1
-
-  func insert(obj: T) -> UInt64 {
-    lock.withLock {
-      let handle = currentHandle
-      currentHandle += 1
-      map[handle] = obj
-      return handle
-    }
-  }
-
-  func get(handle: UInt64) throws -> T {
-    try lock.withLock {
-      guard let obj = map[handle] else {
-        throw UniffiInternalError.unexpectedStaleHandle
-      }
-      return obj
-    }
-  }
-
-  @discardableResult
-  func remove(handle: UInt64) throws -> T {
-    try lock.withLock {
-      guard let obj = map.removeValue(forKey: handle) else {
-        throw UniffiInternalError.unexpectedStaleHandle
-      }
-      return obj
-    }
-  }
-
-  var count: Int {
-    map.count
-  }
-}
 
 // Public interface members begin here.
 
-#if swift(>=5.8)
-  @_documentation(visibility: private)
-#endif
-private struct FfiConverterUInt32: FfiConverterPrimitive {
-  typealias FfiType = UInt32
-  typealias SwiftType = UInt32
-
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
-    try lift(readInt(&buf))
-  }
-
-  static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-    writeInt(&buf, lower(value))
-  }
-}
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterInt64: FfiConverterPrimitive {
-  typealias FfiType = Int64
-  typealias SwiftType = Int64
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int64 {
-    try lift(readInt(&buf))
-  }
-
-  static func write(_ value: Int64, into buf: inout [UInt8]) {
-    writeInt(&buf, lower(value))
-  }
-}
-
-#if swift(>=5.8)
-  @_documentation(visibility: private)
-#endif
-private struct FfiConverterBool: FfiConverter {
-  typealias FfiType = Int8
-  typealias SwiftType = Bool
-
-  static func lift(_ value: Int8) throws -> Bool {
-    value != 0
-  }
-
-  static func lower(_ value: Bool) -> Int8 {
-    value ? 1 : 0
-  }
-
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
-    try lift(readInt(&buf))
-  }
-
-  static func write(_ value: Bool, into buf: inout [UInt8]) {
-    writeInt(&buf, lower(value))
-  }
-}
-
-#if swift(>=5.8)
-  @_documentation(visibility: private)
-#endif
-private struct FfiConverterString: FfiConverter {
-  typealias SwiftType = String
-  typealias FfiType = RustBuffer
-
-  static func lift(_ value: RustBuffer) throws -> String {
-    defer {
-      value.deallocate()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+        return try lift(readInt(&buf))
     }
-    if value.data == nil {
-      return String()
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
     }
-    let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
-    return String(bytes: bytes, encoding: String.Encoding.utf8)!
-  }
-
-  static func lower(_ value: String) -> RustBuffer {
-    value.utf8CString.withUnsafeBufferPointer { ptr in
-      // The swift string gives us int8_t, we want uint8_t.
-      ptr.withMemoryRebound(to: UInt8.self) { ptr in
-        // The swift string gives us a trailing null byte, we don't want it.
-        let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
-        return RustBuffer.from(buf)
-      }
-    }
-  }
-
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
-    let len: Int32 = try readInt(&buf)
-    return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
-  }
-
-  static func write(_ value: String, into buf: inout [UInt8]) {
-    let len = Int32(value.utf8.count)
-    writeInt(&buf, len)
-    writeBytes(&buf, value.utf8)
-  }
 }
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
+    typealias FfiType = Int64
+    typealias SwiftType = Int64
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int64 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Int64, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterBool : FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterString: FfiConverter {
+    typealias SwiftType = String
+    typealias FfiType = RustBuffer
+
+    public static func lift(_ value: RustBuffer) throws -> String {
+        defer {
+            value.deallocate()
+        }
+        if value.data == nil {
+            return String()
+        }
+        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
+        return String(bytes: bytes, encoding: String.Encoding.utf8)!
+    }
+
+    public static func lower(_ value: String) -> RustBuffer {
+        return value.utf8CString.withUnsafeBufferPointer { ptr in
+            // The swift string gives us int8_t, we want uint8_t.
+            ptr.withMemoryRebound(to: UInt8.self) { ptr in
+                // The swift string gives us a trailing null byte, we don't want it.
+                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
+                return RustBuffer.from(buf)
+            }
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
+        let len: Int32 = try readInt(&buf)
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+    }
+
+    public static func write(_ value: String, into buf: inout [UInt8]) {
+        let len = Int32(value.utf8.count)
+        writeInt(&buf, len)
+        writeBytes(&buf, value.utf8)
+    }
+}
+
+
+
 
 public protocol DocStoragePoolProtocol: AnyObject, Sendable {
-  func clearClocks(universalId: String) async throws
-
-  /**
-   * Initialize the database and run migrations.
-   */
-  func connect(universalId: String, path: String) async throws
-
-  func deleteBlob(universalId: String, key: String, permanently: Bool) async throws
-
-  func deleteDoc(universalId: String, docId: String) async throws
-
-  func disconnect(universalId: String) async throws
-
-  func getBlob(universalId: String, key: String) async throws -> Blob?
-
-  func getBlobUploadedAt(universalId: String, peer: String, blobId: String) async throws -> Int64?
-
-  func getDocClock(universalId: String, docId: String) async throws -> DocClock?
-
-  func getDocClocks(universalId: String, after: Int64?) async throws -> [DocClock]
-
-  func getDocSnapshot(universalId: String, docId: String) async throws -> DocRecord?
-
-  func getDocUpdates(universalId: String, docId: String) async throws -> [DocUpdate]
-
-  func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws -> DocClock?
-
-  func getPeerPulledRemoteClocks(universalId: String, peer: String) async throws -> [DocClock]
-
-  func getPeerPushedClock(universalId: String, peer: String, docId: String) async throws -> DocClock?
-
-  func getPeerPushedClocks(universalId: String, peer: String) async throws -> [DocClock]
-
-  func getPeerRemoteClock(universalId: String, peer: String, docId: String) async throws -> DocClock?
-
-  func getPeerRemoteClocks(universalId: String, peer: String) async throws -> [DocClock]
-
-  func listBlobs(universalId: String) async throws -> [ListedBlob]
-
-  func markUpdatesMerged(universalId: String, docId: String, updates: [Int64]) async throws -> UInt32
-
-  func pushUpdate(universalId: String, docId: String, update: String) async throws -> Int64
-
-  func releaseBlobs(universalId: String) async throws
-
-  func setBlob(universalId: String, blob: SetBlob) async throws
-
-  func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?) async throws
-
-  func setDocSnapshot(universalId: String, snapshot: DocRecord) async throws -> Bool
-
-  func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws
-
-  func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64) async throws
-
-  func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws
-
-  func setSpaceId(universalId: String, spaceId: String) async throws
+    
+    func clearClocks(universalId: String) async throws 
+    
+    /**
+     * Initialize the database and run migrations.
+     */
+    func connect(universalId: String, path: String) async throws 
+    
+    func deleteBlob(universalId: String, key: String, permanently: Bool) async throws 
+    
+    func deleteDoc(universalId: String, docId: String) async throws 
+    
+    func disconnect(universalId: String) async throws 
+    
+    func getBlob(universalId: String, key: String) async throws  -> Blob?
+    
+    func getBlobUploadedAt(universalId: String, peer: String, blobId: String) async throws  -> Int64?
+    
+    func getDocClock(universalId: String, docId: String) async throws  -> DocClock?
+    
+    func getDocClocks(universalId: String, after: Int64?) async throws  -> [DocClock]
+    
+    func getDocSnapshot(universalId: String, docId: String) async throws  -> DocRecord?
+    
+    func getDocUpdates(universalId: String, docId: String) async throws  -> [DocUpdate]
+    
+    func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
+    
+    func getPeerPulledRemoteClocks(universalId: String, peer: String) async throws  -> [DocClock]
+    
+    func getPeerPushedClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
+    
+    func getPeerPushedClocks(universalId: String, peer: String) async throws  -> [DocClock]
+    
+    func getPeerRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
+    
+    func getPeerRemoteClocks(universalId: String, peer: String) async throws  -> [DocClock]
+    
+    func listBlobs(universalId: String) async throws  -> [ListedBlob]
+    
+    func markUpdatesMerged(universalId: String, docId: String, updates: [Int64]) async throws  -> UInt32
+    
+    func pushUpdate(universalId: String, docId: String, update: String) async throws  -> Int64
+    
+    func releaseBlobs(universalId: String) async throws 
+    
+    func setBlob(universalId: String, blob: SetBlob) async throws 
+    
+    func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?) async throws 
+    
+    func setDocSnapshot(universalId: String, snapshot: DocRecord) async throws  -> Bool
+    
+    func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws 
+    
+    func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64) async throws 
+    
+    func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws 
+    
+    func setSpaceId(universalId: String, spaceId: String) async throws 
+    
 }
-
 open class DocStoragePool: DocStoragePoolProtocol, @unchecked Sendable {
-  fileprivate let pointer: UnsafeMutableRawPointer!
+    fileprivate let pointer: UnsafeMutableRawPointer!
 
-  /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-  #if swift(>=5.8)
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
     @_documentation(visibility: private)
-  #endif
-  public struct NoPointer {
-    public init() {}
-  }
-
-  // TODO: We'd like this to be `private` but for Swifty reasons,
-  // we can't implement `FfiConverter` without making this `required` and we can't
-  // make it `required` without making it `public`.
-  #if swift(>=5.8)
-    @_documentation(visibility: private)
-  #endif
-  public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-    self.pointer = pointer
-  }
-
-  // This constructor can be used to instantiate a fake object.
-  // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-  //
-  // - Warning:
-  //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-  #if swift(>=5.8)
-    @_documentation(visibility: private)
-  #endif
-  public init(noPointer _: NoPointer) {
-    pointer = nil
-  }
-
-  #if swift(>=5.8)
-    @_documentation(visibility: private)
-  #endif
-  public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-    try! rustCall { uniffi_affine_mobile_native_fn_clone_docstoragepool(self.pointer, $0) }
-  }
-
-  // No primary constructor declared for this class.
-
-  deinit {
-    guard let pointer else {
-      return
+#endif
+    public struct NoPointer {
+        public init() {}
     }
 
-    try! rustCall { uniffi_affine_mobile_native_fn_free_docstoragepool(pointer, $0) }
-  }
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
 
-  open func clearClocks(universalId: String) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_clear_clocks(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  /**
-   * Initialize the database and run migrations.
-   */
-  open func connect(universalId: String, path: String) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_connect(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(path)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func deleteBlob(universalId: String, key: String, permanently: Bool) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_delete_blob(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(key), FfiConverterBool.lower(permanently)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func deleteDoc(universalId: String, docId: String) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_delete_doc(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func disconnect(universalId: String) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_disconnect(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getBlob(universalId: String, key: String) async throws -> Blob? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(key)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionTypeBlob.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getBlobUploadedAt(universalId: String, peer: String, blobId: String) async throws -> Int64? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob_uploaded_at(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(blobId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionInt64.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getDocClock(universalId: String, docId: String) async throws -> DocClock? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getDocClocks(universalId: String, after: Int64?) async throws -> [DocClock] {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_clocks(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterOptionInt64.lower(after)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterSequenceTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getDocSnapshot(universalId: String, docId: String) async throws -> DocRecord? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_snapshot(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionTypeDocRecord.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getDocUpdates(universalId: String, docId: String) async throws -> [DocUpdate] {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_updates(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterSequenceTypeDocUpdate.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws -> DocClock? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pulled_remote_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getPeerPulledRemoteClocks(universalId: String, peer: String) async throws -> [DocClock] {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pulled_remote_clocks(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterSequenceTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getPeerPushedClock(universalId: String, peer: String, docId: String) async throws -> DocClock? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pushed_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getPeerPushedClocks(universalId: String, peer: String) async throws -> [DocClock] {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pushed_clocks(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterSequenceTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getPeerRemoteClock(universalId: String, peer: String, docId: String) async throws -> DocClock? {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_remote_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(docId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterOptionTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func getPeerRemoteClocks(universalId: String, peer: String) async throws -> [DocClock] {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_remote_clocks(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterSequenceTypeDocClock.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func listBlobs(universalId: String) async throws -> [ListedBlob] {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_list_blobs(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-      liftFunc: FfiConverterSequenceTypeListedBlob.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func markUpdatesMerged(universalId: String, docId: String, updates: [Int64]) async throws -> UInt32 {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_mark_updates_merged(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(docId), FfiConverterSequenceInt64.lower(updates)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_u32,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_u32,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_u32,
-      liftFunc: FfiConverterUInt32.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func pushUpdate(universalId: String, docId: String, update: String) async throws -> Int64 {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_push_update(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(docId), FfiConverterString.lower(update)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_i64,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_i64,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_i64,
-      liftFunc: FfiConverterInt64.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func releaseBlobs(universalId: String) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_release_blobs(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setBlob(universalId: String, blob: SetBlob) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_blob(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterTypeSetBlob_lower(blob)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_blob_uploaded_at(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(blobId), FfiConverterOptionInt64.lower(uploadedAt)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setDocSnapshot(universalId: String, snapshot: DocRecord) async throws -> Bool {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_doc_snapshot(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterTypeDocRecord_lower(snapshot)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_i8,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_i8,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_i8,
-      liftFunc: FfiConverterBool.lift,
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_pulled_remote_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(docId), FfiConverterInt64.lower(clock)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_pushed_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(docId), FfiConverterInt64.lower(clock)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_remote_clock(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(peer), FfiConverterString.lower(docId), FfiConverterInt64.lower(clock)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-
-  open func setSpaceId(universalId: String, spaceId: String) async throws {
-    try await uniffiRustCallAsync(
-      rustFutureFunc: {
-        uniffi_affine_mobile_native_fn_method_docstoragepool_set_space_id(
-          self.uniffiClonePointer(),
-          FfiConverterString.lower(universalId), FfiConverterString.lower(spaceId)
-        )
-      },
-      pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
-      completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
-      freeFunc: ffi_affine_mobile_native_rust_future_free_void,
-      liftFunc: { $0 },
-      errorHandler: FfiConverterTypeUniffiError_lift
-    )
-  }
-}
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_affine_mobile_native_fn_clone_docstoragepool(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_affine_mobile_native_fn_free_docstoragepool(pointer, $0) }
+    }
+
+    
+
+    
+open func clearClocks(universalId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_clear_clocks(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+    /**
+     * Initialize the database and run migrations.
+     */
+open func connect(universalId: String, path: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_connect(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(path)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func deleteBlob(universalId: String, key: String, permanently: Bool)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_delete_blob(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(key),FfiConverterBool.lower(permanently)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func deleteDoc(universalId: String, docId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_delete_doc(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func disconnect(universalId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_disconnect(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getBlob(universalId: String, key: String)async throws  -> Blob?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(key)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeBlob.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getBlobUploadedAt(universalId: String, peer: String, blobId: String)async throws  -> Int64?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob_uploaded_at(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(blobId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionInt64.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getDocClock(universalId: String, docId: String)async throws  -> DocClock?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getDocClocks(universalId: String, after: Int64?)async throws  -> [DocClock]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_clocks(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterOptionInt64.lower(after)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getDocSnapshot(universalId: String, docId: String)async throws  -> DocRecord?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_snapshot(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocRecord.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getDocUpdates(universalId: String, docId: String)async throws  -> [DocUpdate]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_updates(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeDocUpdate.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pulled_remote_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getPeerPulledRemoteClocks(universalId: String, peer: String)async throws  -> [DocClock]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pulled_remote_clocks(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getPeerPushedClock(universalId: String, peer: String, docId: String)async throws  -> DocClock?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pushed_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getPeerPushedClocks(universalId: String, peer: String)async throws  -> [DocClock]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pushed_clocks(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getPeerRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_remote_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getPeerRemoteClocks(universalId: String, peer: String)async throws  -> [DocClock]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_remote_clocks(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func listBlobs(universalId: String)async throws  -> [ListedBlob]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_list_blobs(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeListedBlob.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func markUpdatesMerged(universalId: String, docId: String, updates: [Int64])async throws  -> UInt32  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_mark_updates_merged(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId),FfiConverterSequenceInt64.lower(updates)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_u32,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_u32,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_u32,
+            liftFunc: FfiConverterUInt32.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func pushUpdate(universalId: String, docId: String, update: String)async throws  -> Int64  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_push_update(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId),FfiConverterString.lower(update)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_i64,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_i64,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_i64,
+            liftFunc: FfiConverterInt64.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func releaseBlobs(universalId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_release_blobs(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setBlob(universalId: String, blob: SetBlob)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_blob(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterTypeSetBlob_lower(blob)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_blob_uploaded_at(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(blobId),FfiConverterOptionInt64.lower(uploadedAt)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setDocSnapshot(universalId: String, snapshot: DocRecord)async throws  -> Bool  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_doc_snapshot(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterTypeDocRecord_lower(snapshot)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_i8,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_i8,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_i8,
+            liftFunc: FfiConverterBool.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_pulled_remote_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId),FfiConverterInt64.lower(clock)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_pushed_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId),FfiConverterInt64.lower(clock)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_remote_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId),FfiConverterInt64.lower(clock)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func setSpaceId(universalId: String, spaceId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_set_space_id(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(spaceId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeDocStoragePool: FfiConverter {
-  typealias FfiType = UnsafeMutableRawPointer
-  typealias SwiftType = DocStoragePool
 
-  public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DocStoragePool {
-    DocStoragePool(unsafeFromRawPointer: pointer)
-  }
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = DocStoragePool
 
-  public static func lower(_ value: DocStoragePool) -> UnsafeMutableRawPointer {
-    value.uniffiClonePointer()
-  }
-
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocStoragePool {
-    let v: UInt64 = try readInt(&buf)
-    // The Rust code won't compile if a pointer won't fit in a UInt64.
-    // We have to go via `UInt` because that's the thing that's the size of a pointer.
-    let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-    if ptr == nil {
-      throw UniffiInternalError.unexpectedNullPointer
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DocStoragePool {
+        return DocStoragePool(unsafeFromRawPointer: pointer)
     }
-    return try lift(ptr!)
-  }
 
-  public static func write(_ value: DocStoragePool, into buf: inout [UInt8]) {
-    // This fiddling is because `Int` is the thing that's the same size as a pointer.
-    // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-    writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-  }
+    public static func lower(_ value: DocStoragePool) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocStoragePool {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: DocStoragePool, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocStoragePool_lift(_ pointer: UnsafeMutableRawPointer) throws -> DocStoragePool {
-  try FfiConverterTypeDocStoragePool.lift(pointer)
+    return try FfiConverterTypeDocStoragePool.lift(pointer)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocStoragePool_lower(_ value: DocStoragePool) -> UnsafeMutableRawPointer {
-  FfiConverterTypeDocStoragePool.lower(value)
+    return FfiConverterTypeDocStoragePool.lower(value)
 }
+
+
+
 
 public struct Blob {
-  public var key: String
-  public var data: String
-  public var mime: String
-  public var size: Int64
-  public var createdAt: Int64
+    public var key: String
+    public var data: String
+    public var mime: String
+    public var size: Int64
+    public var createdAt: Int64
 
-  // Default memberwise initializers are never public by default, so we
-  // declare one manually.
-  public init(key: String, data: String, mime: String, size: Int64, createdAt: Int64) {
-    self.key = key
-    self.data = data
-    self.mime = mime
-    self.size = size
-    self.createdAt = createdAt
-  }
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(key: String, data: String, mime: String, size: Int64, createdAt: Int64) {
+        self.key = key
+        self.data = data
+        self.mime = mime
+        self.size = size
+        self.createdAt = createdAt
+    }
 }
 
 #if compiler(>=6)
-  extension Blob: Sendable {}
+extension Blob: Sendable {}
 #endif
+
 
 extension Blob: Equatable, Hashable {
-  public static func == (lhs: Blob, rhs: Blob) -> Bool {
-    if lhs.key != rhs.key {
-      return false
+    public static func ==(lhs: Blob, rhs: Blob) -> Bool {
+        if lhs.key != rhs.key {
+            return false
+        }
+        if lhs.data != rhs.data {
+            return false
+        }
+        if lhs.mime != rhs.mime {
+            return false
+        }
+        if lhs.size != rhs.size {
+            return false
+        }
+        if lhs.createdAt != rhs.createdAt {
+            return false
+        }
+        return true
     }
-    if lhs.data != rhs.data {
-      return false
-    }
-    if lhs.mime != rhs.mime {
-      return false
-    }
-    if lhs.size != rhs.size {
-      return false
-    }
-    if lhs.createdAt != rhs.createdAt {
-      return false
-    }
-    return true
-  }
 
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(key)
-    hasher.combine(data)
-    hasher.combine(mime)
-    hasher.combine(size)
-    hasher.combine(createdAt)
-  }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(key)
+        hasher.combine(data)
+        hasher.combine(mime)
+        hasher.combine(size)
+        hasher.combine(createdAt)
+    }
 }
 
+
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeBlob: FfiConverterRustBuffer {
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Blob {
-    try Blob(
-      key: FfiConverterString.read(from: &buf),
-      data: FfiConverterString.read(from: &buf),
-      mime: FfiConverterString.read(from: &buf),
-      size: FfiConverterInt64.read(from: &buf),
-      createdAt: FfiConverterInt64.read(from: &buf)
-    )
-  }
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Blob {
+        return
+            try Blob(
+                key: FfiConverterString.read(from: &buf), 
+                data: FfiConverterString.read(from: &buf), 
+                mime: FfiConverterString.read(from: &buf), 
+                size: FfiConverterInt64.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf)
+        )
+    }
 
-  public static func write(_ value: Blob, into buf: inout [UInt8]) {
-    FfiConverterString.write(value.key, into: &buf)
-    FfiConverterString.write(value.data, into: &buf)
-    FfiConverterString.write(value.mime, into: &buf)
-    FfiConverterInt64.write(value.size, into: &buf)
-    FfiConverterInt64.write(value.createdAt, into: &buf)
-  }
+    public static func write(_ value: Blob, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.key, into: &buf)
+        FfiConverterString.write(value.data, into: &buf)
+        FfiConverterString.write(value.mime, into: &buf)
+        FfiConverterInt64.write(value.size, into: &buf)
+        FfiConverterInt64.write(value.createdAt, into: &buf)
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeBlob_lift(_ buf: RustBuffer) throws -> Blob {
-  try FfiConverterTypeBlob.lift(buf)
+    return try FfiConverterTypeBlob.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeBlob_lower(_ value: Blob) -> RustBuffer {
-  FfiConverterTypeBlob.lower(value)
+    return FfiConverterTypeBlob.lower(value)
 }
+
 
 public struct DocClock {
-  public var docId: String
-  public var timestamp: Int64
+    public var docId: String
+    public var timestamp: Int64
 
-  // Default memberwise initializers are never public by default, so we
-  // declare one manually.
-  public init(docId: String, timestamp: Int64) {
-    self.docId = docId
-    self.timestamp = timestamp
-  }
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(docId: String, timestamp: Int64) {
+        self.docId = docId
+        self.timestamp = timestamp
+    }
 }
 
 #if compiler(>=6)
-  extension DocClock: Sendable {}
+extension DocClock: Sendable {}
 #endif
+
 
 extension DocClock: Equatable, Hashable {
-  public static func == (lhs: DocClock, rhs: DocClock) -> Bool {
-    if lhs.docId != rhs.docId {
-      return false
+    public static func ==(lhs: DocClock, rhs: DocClock) -> Bool {
+        if lhs.docId != rhs.docId {
+            return false
+        }
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        return true
     }
-    if lhs.timestamp != rhs.timestamp {
-      return false
-    }
-    return true
-  }
 
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(docId)
-    hasher.combine(timestamp)
-  }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(docId)
+        hasher.combine(timestamp)
+    }
 }
 
+
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeDocClock: FfiConverterRustBuffer {
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocClock {
-    try DocClock(
-      docId: FfiConverterString.read(from: &buf),
-      timestamp: FfiConverterInt64.read(from: &buf)
-    )
-  }
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocClock {
+        return
+            try DocClock(
+                docId: FfiConverterString.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf)
+        )
+    }
 
-  public static func write(_ value: DocClock, into buf: inout [UInt8]) {
-    FfiConverterString.write(value.docId, into: &buf)
-    FfiConverterInt64.write(value.timestamp, into: &buf)
-  }
+    public static func write(_ value: DocClock, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.docId, into: &buf)
+        FfiConverterInt64.write(value.timestamp, into: &buf)
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocClock_lift(_ buf: RustBuffer) throws -> DocClock {
-  try FfiConverterTypeDocClock.lift(buf)
+    return try FfiConverterTypeDocClock.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocClock_lower(_ value: DocClock) -> RustBuffer {
-  FfiConverterTypeDocClock.lower(value)
+    return FfiConverterTypeDocClock.lower(value)
 }
+
 
 public struct DocRecord {
-  public var docId: String
-  public var bin: String
-  public var timestamp: Int64
+    public var docId: String
+    public var bin: String
+    public var timestamp: Int64
 
-  // Default memberwise initializers are never public by default, so we
-  // declare one manually.
-  public init(docId: String, bin: String, timestamp: Int64) {
-    self.docId = docId
-    self.bin = bin
-    self.timestamp = timestamp
-  }
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(docId: String, bin: String, timestamp: Int64) {
+        self.docId = docId
+        self.bin = bin
+        self.timestamp = timestamp
+    }
 }
 
 #if compiler(>=6)
-  extension DocRecord: Sendable {}
+extension DocRecord: Sendable {}
 #endif
+
 
 extension DocRecord: Equatable, Hashable {
-  public static func == (lhs: DocRecord, rhs: DocRecord) -> Bool {
-    if lhs.docId != rhs.docId {
-      return false
+    public static func ==(lhs: DocRecord, rhs: DocRecord) -> Bool {
+        if lhs.docId != rhs.docId {
+            return false
+        }
+        if lhs.bin != rhs.bin {
+            return false
+        }
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        return true
     }
-    if lhs.bin != rhs.bin {
-      return false
-    }
-    if lhs.timestamp != rhs.timestamp {
-      return false
-    }
-    return true
-  }
 
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(docId)
-    hasher.combine(bin)
-    hasher.combine(timestamp)
-  }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(docId)
+        hasher.combine(bin)
+        hasher.combine(timestamp)
+    }
 }
 
+
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeDocRecord: FfiConverterRustBuffer {
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocRecord {
-    try DocRecord(
-      docId: FfiConverterString.read(from: &buf),
-      bin: FfiConverterString.read(from: &buf),
-      timestamp: FfiConverterInt64.read(from: &buf)
-    )
-  }
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocRecord {
+        return
+            try DocRecord(
+                docId: FfiConverterString.read(from: &buf), 
+                bin: FfiConverterString.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf)
+        )
+    }
 
-  public static func write(_ value: DocRecord, into buf: inout [UInt8]) {
-    FfiConverterString.write(value.docId, into: &buf)
-    FfiConverterString.write(value.bin, into: &buf)
-    FfiConverterInt64.write(value.timestamp, into: &buf)
-  }
+    public static func write(_ value: DocRecord, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.docId, into: &buf)
+        FfiConverterString.write(value.bin, into: &buf)
+        FfiConverterInt64.write(value.timestamp, into: &buf)
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocRecord_lift(_ buf: RustBuffer) throws -> DocRecord {
-  try FfiConverterTypeDocRecord.lift(buf)
+    return try FfiConverterTypeDocRecord.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocRecord_lower(_ value: DocRecord) -> RustBuffer {
-  FfiConverterTypeDocRecord.lower(value)
+    return FfiConverterTypeDocRecord.lower(value)
 }
+
 
 public struct DocUpdate {
-  public var docId: String
-  public var timestamp: Int64
-  public var bin: String
+    public var docId: String
+    public var timestamp: Int64
+    public var bin: String
 
-  // Default memberwise initializers are never public by default, so we
-  // declare one manually.
-  public init(docId: String, timestamp: Int64, bin: String) {
-    self.docId = docId
-    self.timestamp = timestamp
-    self.bin = bin
-  }
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(docId: String, timestamp: Int64, bin: String) {
+        self.docId = docId
+        self.timestamp = timestamp
+        self.bin = bin
+    }
 }
 
 #if compiler(>=6)
-  extension DocUpdate: Sendable {}
+extension DocUpdate: Sendable {}
 #endif
+
 
 extension DocUpdate: Equatable, Hashable {
-  public static func == (lhs: DocUpdate, rhs: DocUpdate) -> Bool {
-    if lhs.docId != rhs.docId {
-      return false
+    public static func ==(lhs: DocUpdate, rhs: DocUpdate) -> Bool {
+        if lhs.docId != rhs.docId {
+            return false
+        }
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        if lhs.bin != rhs.bin {
+            return false
+        }
+        return true
     }
-    if lhs.timestamp != rhs.timestamp {
-      return false
-    }
-    if lhs.bin != rhs.bin {
-      return false
-    }
-    return true
-  }
 
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(docId)
-    hasher.combine(timestamp)
-    hasher.combine(bin)
-  }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(docId)
+        hasher.combine(timestamp)
+        hasher.combine(bin)
+    }
 }
 
+
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeDocUpdate: FfiConverterRustBuffer {
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocUpdate {
-    try DocUpdate(
-      docId: FfiConverterString.read(from: &buf),
-      timestamp: FfiConverterInt64.read(from: &buf),
-      bin: FfiConverterString.read(from: &buf)
-    )
-  }
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocUpdate {
+        return
+            try DocUpdate(
+                docId: FfiConverterString.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf), 
+                bin: FfiConverterString.read(from: &buf)
+        )
+    }
 
-  public static func write(_ value: DocUpdate, into buf: inout [UInt8]) {
-    FfiConverterString.write(value.docId, into: &buf)
-    FfiConverterInt64.write(value.timestamp, into: &buf)
-    FfiConverterString.write(value.bin, into: &buf)
-  }
+    public static func write(_ value: DocUpdate, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.docId, into: &buf)
+        FfiConverterInt64.write(value.timestamp, into: &buf)
+        FfiConverterString.write(value.bin, into: &buf)
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocUpdate_lift(_ buf: RustBuffer) throws -> DocUpdate {
-  try FfiConverterTypeDocUpdate.lift(buf)
+    return try FfiConverterTypeDocUpdate.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeDocUpdate_lower(_ value: DocUpdate) -> RustBuffer {
-  FfiConverterTypeDocUpdate.lower(value)
+    return FfiConverterTypeDocUpdate.lower(value)
 }
+
 
 public struct ListedBlob {
-  public var key: String
-  public var size: Int64
-  public var mime: String
-  public var createdAt: Int64
+    public var key: String
+    public var size: Int64
+    public var mime: String
+    public var createdAt: Int64
 
-  // Default memberwise initializers are never public by default, so we
-  // declare one manually.
-  public init(key: String, size: Int64, mime: String, createdAt: Int64) {
-    self.key = key
-    self.size = size
-    self.mime = mime
-    self.createdAt = createdAt
-  }
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(key: String, size: Int64, mime: String, createdAt: Int64) {
+        self.key = key
+        self.size = size
+        self.mime = mime
+        self.createdAt = createdAt
+    }
 }
 
 #if compiler(>=6)
-  extension ListedBlob: Sendable {}
+extension ListedBlob: Sendable {}
 #endif
+
 
 extension ListedBlob: Equatable, Hashable {
-  public static func == (lhs: ListedBlob, rhs: ListedBlob) -> Bool {
-    if lhs.key != rhs.key {
-      return false
+    public static func ==(lhs: ListedBlob, rhs: ListedBlob) -> Bool {
+        if lhs.key != rhs.key {
+            return false
+        }
+        if lhs.size != rhs.size {
+            return false
+        }
+        if lhs.mime != rhs.mime {
+            return false
+        }
+        if lhs.createdAt != rhs.createdAt {
+            return false
+        }
+        return true
     }
-    if lhs.size != rhs.size {
-      return false
-    }
-    if lhs.mime != rhs.mime {
-      return false
-    }
-    if lhs.createdAt != rhs.createdAt {
-      return false
-    }
-    return true
-  }
 
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(key)
-    hasher.combine(size)
-    hasher.combine(mime)
-    hasher.combine(createdAt)
-  }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(key)
+        hasher.combine(size)
+        hasher.combine(mime)
+        hasher.combine(createdAt)
+    }
 }
 
+
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeListedBlob: FfiConverterRustBuffer {
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListedBlob {
-    try ListedBlob(
-      key: FfiConverterString.read(from: &buf),
-      size: FfiConverterInt64.read(from: &buf),
-      mime: FfiConverterString.read(from: &buf),
-      createdAt: FfiConverterInt64.read(from: &buf)
-    )
-  }
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListedBlob {
+        return
+            try ListedBlob(
+                key: FfiConverterString.read(from: &buf), 
+                size: FfiConverterInt64.read(from: &buf), 
+                mime: FfiConverterString.read(from: &buf), 
+                createdAt: FfiConverterInt64.read(from: &buf)
+        )
+    }
 
-  public static func write(_ value: ListedBlob, into buf: inout [UInt8]) {
-    FfiConverterString.write(value.key, into: &buf)
-    FfiConverterInt64.write(value.size, into: &buf)
-    FfiConverterString.write(value.mime, into: &buf)
-    FfiConverterInt64.write(value.createdAt, into: &buf)
-  }
+    public static func write(_ value: ListedBlob, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.key, into: &buf)
+        FfiConverterInt64.write(value.size, into: &buf)
+        FfiConverterString.write(value.mime, into: &buf)
+        FfiConverterInt64.write(value.createdAt, into: &buf)
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeListedBlob_lift(_ buf: RustBuffer) throws -> ListedBlob {
-  try FfiConverterTypeListedBlob.lift(buf)
+    return try FfiConverterTypeListedBlob.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeListedBlob_lower(_ value: ListedBlob) -> RustBuffer {
-  FfiConverterTypeListedBlob.lower(value)
+    return FfiConverterTypeListedBlob.lower(value)
 }
 
-public struct SetBlob {
-  public var key: String
-  public var data: String
-  public var mime: String
 
-  // Default memberwise initializers are never public by default, so we
-  // declare one manually.
-  public init(key: String, data: String, mime: String) {
-    self.key = key
-    self.data = data
-    self.mime = mime
-  }
+public struct SetBlob {
+    public var key: String
+    public var data: String
+    public var mime: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(key: String, data: String, mime: String) {
+        self.key = key
+        self.data = data
+        self.mime = mime
+    }
 }
 
 #if compiler(>=6)
-  extension SetBlob: Sendable {}
+extension SetBlob: Sendable {}
 #endif
+
 
 extension SetBlob: Equatable, Hashable {
-  public static func == (lhs: SetBlob, rhs: SetBlob) -> Bool {
-    if lhs.key != rhs.key {
-      return false
+    public static func ==(lhs: SetBlob, rhs: SetBlob) -> Bool {
+        if lhs.key != rhs.key {
+            return false
+        }
+        if lhs.data != rhs.data {
+            return false
+        }
+        if lhs.mime != rhs.mime {
+            return false
+        }
+        return true
     }
-    if lhs.data != rhs.data {
-      return false
-    }
-    if lhs.mime != rhs.mime {
-      return false
-    }
-    return true
-  }
 
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(key)
-    hasher.combine(data)
-    hasher.combine(mime)
-  }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(key)
+        hasher.combine(data)
+        hasher.combine(mime)
+    }
 }
 
+
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeSetBlob: FfiConverterRustBuffer {
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SetBlob {
-    try SetBlob(
-      key: FfiConverterString.read(from: &buf),
-      data: FfiConverterString.read(from: &buf),
-      mime: FfiConverterString.read(from: &buf)
-    )
-  }
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SetBlob {
+        return
+            try SetBlob(
+                key: FfiConverterString.read(from: &buf), 
+                data: FfiConverterString.read(from: &buf), 
+                mime: FfiConverterString.read(from: &buf)
+        )
+    }
 
-  public static func write(_ value: SetBlob, into buf: inout [UInt8]) {
-    FfiConverterString.write(value.key, into: &buf)
-    FfiConverterString.write(value.data, into: &buf)
-    FfiConverterString.write(value.mime, into: &buf)
-  }
+    public static func write(_ value: SetBlob, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.key, into: &buf)
+        FfiConverterString.write(value.data, into: &buf)
+        FfiConverterString.write(value.mime, into: &buf)
+    }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeSetBlob_lift(_ buf: RustBuffer) throws -> SetBlob {
-  try FfiConverterTypeSetBlob.lift(buf)
+    return try FfiConverterTypeSetBlob.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeSetBlob_lower(_ value: SetBlob) -> RustBuffer {
-  FfiConverterTypeSetBlob.lower(value)
+    return FfiConverterTypeSetBlob.lower(value)
 }
+
 
 public enum UniffiError: Swift.Error {
-  case Err(String
-  )
-  case Base64DecodingError(String
-  )
-  case TimestampDecodingError
+
+    
+    
+    case Err(String
+    )
+    case Base64DecodingError(String
+    )
+    case TimestampDecodingError
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeUniffiError: FfiConverterRustBuffer {
-  typealias SwiftType = UniffiError
+    typealias SwiftType = UniffiError
 
-  public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UniffiError {
-    let variant: Int32 = try readInt(&buf)
-    switch variant {
-    case 1: return try .Err(
-        FfiConverterString.read(from: &buf)
-      )
-    case 2: return try .Base64DecodingError(
-        FfiConverterString.read(from: &buf)
-      )
-    case 3: return .TimestampDecodingError
-    default: throw UniffiInternalError.unexpectedEnumCase
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UniffiError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .Err(
+            try FfiConverterString.read(from: &buf)
+            )
+        case 2: return .Base64DecodingError(
+            try FfiConverterString.read(from: &buf)
+            )
+        case 3: return .TimestampDecodingError
+
+         default: throw UniffiInternalError.unexpectedEnumCase
+        }
     }
-  }
 
-  public static func write(_ value: UniffiError, into buf: inout [UInt8]) {
-    switch value {
-    case let .Err(v1):
-      writeInt(&buf, Int32(1))
-      FfiConverterString.write(v1, into: &buf)
+    public static func write(_ value: UniffiError, into buf: inout [UInt8]) {
+        switch value {
 
-    case let .Base64DecodingError(v1):
-      writeInt(&buf, Int32(2))
-      FfiConverterString.write(v1, into: &buf)
+        
 
-    case .TimestampDecodingError:
-      writeInt(&buf, Int32(3))
+        
+        
+        case let .Err(v1):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(v1, into: &buf)
+            
+        
+        case let .Base64DecodingError(v1):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(v1, into: &buf)
+            
+        
+        case .TimestampDecodingError:
+            writeInt(&buf, Int32(3))
+        
+        }
     }
-  }
 }
 
+
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeUniffiError_lift(_ buf: RustBuffer) throws -> UniffiError {
-  try FfiConverterTypeUniffiError.lift(buf)
+    return try FfiConverterTypeUniffiError.lift(buf)
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
 public func FfiConverterTypeUniffiError_lower(_ value: UniffiError) -> RustBuffer {
-  FfiConverterTypeUniffiError.lower(value)
+    return FfiConverterTypeUniffiError.lower(value)
 }
+
 
 extension UniffiError: Equatable, Hashable {}
 
+
+
+
 extension UniffiError: Foundation.LocalizedError {
-  public var errorDescription: String? {
-    String(reflecting: self)
-  }
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
+    typealias SwiftType = Int64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
-  typealias SwiftType = Int64?
+fileprivate struct FfiConverterOptionTypeBlob: FfiConverterRustBuffer {
+    typealias SwiftType = Blob?
 
-  static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-    guard let value else {
-      writeInt(&buf, Int8(0))
-      return
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeBlob.write(value, into: &buf)
     }
-    writeInt(&buf, Int8(1))
-    FfiConverterInt64.write(value, into: &buf)
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-    switch try readInt(&buf) as Int8 {
-    case 0: return nil
-    case 1: return try FfiConverterInt64.read(from: &buf)
-    default: throw UniffiInternalError.unexpectedOptionalTag
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeBlob.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
     }
-  }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionTypeBlob: FfiConverterRustBuffer {
-  typealias SwiftType = Blob?
+fileprivate struct FfiConverterOptionTypeDocClock: FfiConverterRustBuffer {
+    typealias SwiftType = DocClock?
 
-  static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-    guard let value else {
-      writeInt(&buf, Int8(0))
-      return
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDocClock.write(value, into: &buf)
     }
-    writeInt(&buf, Int8(1))
-    FfiConverterTypeBlob.write(value, into: &buf)
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-    switch try readInt(&buf) as Int8 {
-    case 0: return nil
-    case 1: return try FfiConverterTypeBlob.read(from: &buf)
-    default: throw UniffiInternalError.unexpectedOptionalTag
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDocClock.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
     }
-  }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionTypeDocClock: FfiConverterRustBuffer {
-  typealias SwiftType = DocClock?
+fileprivate struct FfiConverterOptionTypeDocRecord: FfiConverterRustBuffer {
+    typealias SwiftType = DocRecord?
 
-  static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-    guard let value else {
-      writeInt(&buf, Int8(0))
-      return
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDocRecord.write(value, into: &buf)
     }
-    writeInt(&buf, Int8(1))
-    FfiConverterTypeDocClock.write(value, into: &buf)
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-    switch try readInt(&buf) as Int8 {
-    case 0: return nil
-    case 1: return try FfiConverterTypeDocClock.read(from: &buf)
-    default: throw UniffiInternalError.unexpectedOptionalTag
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDocRecord.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
     }
-  }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterOptionTypeDocRecord: FfiConverterRustBuffer {
-  typealias SwiftType = DocRecord?
+fileprivate struct FfiConverterSequenceInt64: FfiConverterRustBuffer {
+    typealias SwiftType = [Int64]
 
-  static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-    guard let value else {
-      writeInt(&buf, Int8(0))
-      return
+    public static func write(_ value: [Int64], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterInt64.write(item, into: &buf)
+        }
     }
-    writeInt(&buf, Int8(1))
-    FfiConverterTypeDocRecord.write(value, into: &buf)
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-    switch try readInt(&buf) as Int8 {
-    case 0: return nil
-    case 1: return try FfiConverterTypeDocRecord.read(from: &buf)
-    default: throw UniffiInternalError.unexpectedOptionalTag
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Int64] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Int64]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterInt64.read(from: &buf))
+        }
+        return seq
     }
-  }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceInt64: FfiConverterRustBuffer {
-  typealias SwiftType = [Int64]
+fileprivate struct FfiConverterSequenceTypeDocClock: FfiConverterRustBuffer {
+    typealias SwiftType = [DocClock]
 
-  static func write(_ value: [Int64], into buf: inout [UInt8]) {
-    let len = Int32(value.count)
-    writeInt(&buf, len)
-    for item in value {
-      FfiConverterInt64.write(item, into: &buf)
+    public static func write(_ value: [DocClock], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeDocClock.write(item, into: &buf)
+        }
     }
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Int64] {
-    let len: Int32 = try readInt(&buf)
-    var seq = [Int64]()
-    seq.reserveCapacity(Int(len))
-    for _ in 0 ..< len {
-      try seq.append(FfiConverterInt64.read(from: &buf))
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DocClock] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [DocClock]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeDocClock.read(from: &buf))
+        }
+        return seq
     }
-    return seq
-  }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceTypeDocClock: FfiConverterRustBuffer {
-  typealias SwiftType = [DocClock]
+fileprivate struct FfiConverterSequenceTypeDocUpdate: FfiConverterRustBuffer {
+    typealias SwiftType = [DocUpdate]
 
-  static func write(_ value: [DocClock], into buf: inout [UInt8]) {
-    let len = Int32(value.count)
-    writeInt(&buf, len)
-    for item in value {
-      FfiConverterTypeDocClock.write(item, into: &buf)
+    public static func write(_ value: [DocUpdate], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeDocUpdate.write(item, into: &buf)
+        }
     }
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DocClock] {
-    let len: Int32 = try readInt(&buf)
-    var seq = [DocClock]()
-    seq.reserveCapacity(Int(len))
-    for _ in 0 ..< len {
-      try seq.append(FfiConverterTypeDocClock.read(from: &buf))
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DocUpdate] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [DocUpdate]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeDocUpdate.read(from: &buf))
+        }
+        return seq
     }
-    return seq
-  }
 }
 
 #if swift(>=5.8)
-  @_documentation(visibility: private)
+@_documentation(visibility: private)
 #endif
-private struct FfiConverterSequenceTypeDocUpdate: FfiConverterRustBuffer {
-  typealias SwiftType = [DocUpdate]
+fileprivate struct FfiConverterSequenceTypeListedBlob: FfiConverterRustBuffer {
+    typealias SwiftType = [ListedBlob]
 
-  static func write(_ value: [DocUpdate], into buf: inout [UInt8]) {
-    let len = Int32(value.count)
-    writeInt(&buf, len)
-    for item in value {
-      FfiConverterTypeDocUpdate.write(item, into: &buf)
+    public static func write(_ value: [ListedBlob], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeListedBlob.write(item, into: &buf)
+        }
     }
-  }
 
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [DocUpdate] {
-    let len: Int32 = try readInt(&buf)
-    var seq = [DocUpdate]()
-    seq.reserveCapacity(Int(len))
-    for _ in 0 ..< len {
-      try seq.append(FfiConverterTypeDocUpdate.read(from: &buf))
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ListedBlob] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ListedBlob]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeListedBlob.read(from: &buf))
+        }
+        return seq
     }
-    return seq
-  }
 }
-
-#if swift(>=5.8)
-  @_documentation(visibility: private)
-#endif
-private struct FfiConverterSequenceTypeListedBlob: FfiConverterRustBuffer {
-  typealias SwiftType = [ListedBlob]
-
-  static func write(_ value: [ListedBlob], into buf: inout [UInt8]) {
-    let len = Int32(value.count)
-    writeInt(&buf, len)
-    for item in value {
-      FfiConverterTypeListedBlob.write(item, into: &buf)
-    }
-  }
-
-  static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ListedBlob] {
-    let len: Int32 = try readInt(&buf)
-    var seq = [ListedBlob]()
-    seq.reserveCapacity(Int(len))
-    for _ in 0 ..< len {
-      try seq.append(FfiConverterTypeListedBlob.read(from: &buf))
-    }
-    return seq
-  }
-}
-
 private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
 private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
 
-private let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
+fileprivate let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
 
-private func uniffiRustCallAsync<F, T>(
-  rustFutureFunc: () -> UInt64,
-  pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> Void,
-  completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
-  freeFunc: (UInt64) -> Void,
-  liftFunc: (F) throws -> T,
-  errorHandler: ((RustBuffer) throws -> Swift.Error)?
+fileprivate func uniffiRustCallAsync<F, T>(
+    rustFutureFunc: () -> UInt64,
+    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> (),
+    completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
+    freeFunc: (UInt64) -> (),
+    liftFunc: (F) throws -> T,
+    errorHandler: ((RustBuffer) throws -> Swift.Error)?
 ) async throws -> T {
-  // Make sure to call the ensure init function since future creation doesn't have a
-  // RustCallStatus param, so doesn't use makeRustCall()
-  uniffiEnsureAffineMobileNativeInitialized()
-  let rustFuture = rustFutureFunc()
-  defer {
-    freeFunc(rustFuture)
-  }
-  var pollResult: Int8
-  repeat {
-    pollResult = await withUnsafeContinuation {
-      pollFunc(
-        rustFuture,
-        uniffiFutureContinuationCallback,
-        uniffiContinuationHandleMap.insert(obj: $0)
-      )
+    // Make sure to call the ensure init function since future creation doesn't have a
+    // RustCallStatus param, so doesn't use makeRustCall()
+    uniffiEnsureAffineMobileNativeInitialized()
+    let rustFuture = rustFutureFunc()
+    defer {
+        freeFunc(rustFuture)
     }
-  } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
+    var pollResult: Int8;
+    repeat {
+        pollResult = await withUnsafeContinuation {
+            pollFunc(
+                rustFuture,
+                uniffiFutureContinuationCallback,
+                uniffiContinuationHandleMap.insert(obj: $0)
+            )
+        }
+    } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
 
-  return try liftFunc(makeRustCall(
-    { completeFunc(rustFuture, $0) },
-    errorHandler: errorHandler
-  ))
+    return try liftFunc(makeRustCall(
+        { completeFunc(rustFuture, $0) },
+        errorHandler: errorHandler
+    ))
 }
 
 // Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
 // lift the return value or error and resume the suspended function.
-private func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
-  if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
-    continuation.resume(returning: pollResult)
-  } else {
-    print("uniffiFutureContinuationCallback invalid handle")
-  }
+fileprivate func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
+    if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
+        continuation.resume(returning: pollResult)
+    } else {
+        print("uniffiFutureContinuationCallback invalid handle")
+    }
 }
-
-public func hashcashMint(resource: String, bits: UInt32) -> String {
-  try! FfiConverterString.lift(try! rustCall {
+public func hashcashMint(resource: String, bits: UInt32) -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_affine_mobile_native_fn_func_hashcash_mint(
-      FfiConverterString.lower(resource),
-      FfiConverterUInt32.lower(bits), $0
+        FfiConverterString.lower(resource),
+        FfiConverterUInt32.lower(bits),$0
     )
-  })
+})
 }
-
-public func newDocStoragePool() -> DocStoragePool {
-  try! FfiConverterTypeDocStoragePool_lift(try! rustCall {
+public func newDocStoragePool() -> DocStoragePool  {
+    return try!  FfiConverterTypeDocStoragePool_lift(try! rustCall() {
     uniffi_affine_mobile_native_fn_func_new_doc_storage_pool($0
     )
-  })
+})
 }
 
 private enum InitializationResult {
-  case ok
-  case contractVersionMismatch
-  case apiChecksumMismatch
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
 }
-
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
 private let initializationResult: InitializationResult = {
-  // Get the bindings contract version from our ComponentInterface
-  let bindings_contract_version = 29
-  // Get the scaffolding contract version by calling the into the dylib
-  let scaffolding_contract_version = ffi_affine_mobile_native_uniffi_contract_version()
-  if bindings_contract_version != scaffolding_contract_version {
-    return InitializationResult.contractVersionMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_func_hashcash_mint() != 23633 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_func_new_doc_storage_pool() != 32882 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_clocks() != 51151 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_connect() != 19047 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_blob() != 53695 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc() != 4005 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob() != 56927 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob_uploaded_at() != 41270 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clock() != 48394 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clocks() != 46082 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_snapshot() != 31220 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_updates() != 65430 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clock() != 56577 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clocks() != 13441 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_clock() != 34705 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_clocks() != 47148 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clock() != 47662 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clocks() != 14523 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_list_blobs() != 6777 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_mark_updates_merged() != 42713 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 20688 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_release_blobs() != 2203 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_blob() != 31398 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_blob_uploaded_at() != 7188 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_snapshot() != 5287 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_pulled_remote_clock() != 33923 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_pushed_clock() != 16565 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_remote_clock() != 46506 {
-    return InitializationResult.apiChecksumMismatch
-  }
-  if uniffi_affine_mobile_native_checksum_method_docstoragepool_set_space_id() != 21955 {
-    return InitializationResult.apiChecksumMismatch
-  }
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 29
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_affine_mobile_native_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_func_hashcash_mint() != 23633) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_func_new_doc_storage_pool() != 32882) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_clocks() != 51151) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_connect() != 19047) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_blob() != 53695) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc() != 4005) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob() != 56927) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob_uploaded_at() != 41270) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clock() != 48394) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clocks() != 46082) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_snapshot() != 31220) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_updates() != 65430) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clock() != 56577) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clocks() != 13441) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_clock() != 34705) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_clocks() != 47148) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clock() != 47662) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clocks() != 14523) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_list_blobs() != 6777) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_mark_updates_merged() != 42713) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 20688) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_release_blobs() != 2203) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_blob() != 31398) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_blob_uploaded_at() != 7188) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_snapshot() != 5287) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_pulled_remote_clock() != 33923) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_pushed_clock() != 16565) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_remote_clock() != 46506) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_set_space_id() != 21955) {
+        return InitializationResult.apiChecksumMismatch
+    }
 
-  return InitializationResult.ok
+    return InitializationResult.ok
 }()
 
 // Make the ensure init function public so that other modules which have external type references to
 // our types can call it.
 public func uniffiEnsureAffineMobileNativeInitialized() {
-  switch initializationResult {
-  case .ok:
-    break
-  case .contractVersionMismatch:
-    fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
-  case .apiChecksumMismatch:
-    fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-  }
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }
 
 // swiftlint:enable all
