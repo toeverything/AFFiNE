@@ -67,7 +67,9 @@ export function applyAttachHeaders(
   res.setHeader('X-Content-Type-Options', 'nosniff');
   if (!contentType && buffer) contentType = sniffMime(buffer);
   if (contentType && isDangerousInlineMime(contentType)) {
-    const safeName = filename || 'download';
+    const safeName = (filename || 'download')
+      .replace(/[\r\n]/g, '')
+      .replace(/[^\w\s.-]/g, '_');
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="${encodeURIComponent(safeName)}"; filename*=UTF-8''${encodeURIComponent(
@@ -76,7 +78,7 @@ export function applyAttachHeaders(
     );
   }
   if (!res.getHeader('Content-Type')) {
-    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Type', contentType || 'application/octet-stream');
   }
 }
 
@@ -86,7 +88,7 @@ export function sniffMime(
 ): string | undefined {
   try {
     const detected = getMime(buffer);
-    if (detected && typeof detected === 'string') return detected;
+    if (detected) return detected;
   } catch {}
   return declared;
 }

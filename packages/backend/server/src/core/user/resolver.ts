@@ -100,14 +100,14 @@ export class UserResolver {
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
+    if (!user) {
+      throw new UserNotFound();
+    }
+
     const avatarBuffer = await readBufferWithLimit(avatar.createReadStream());
     const contentType = sniffMime(avatarBuffer, avatar.mimetype);
     if (!contentType || !contentType.startsWith('image/')) {
-      throw new Error('Invalid file type');
-    }
-
-    if (!user) {
-      throw new UserNotFound();
+      throw new Error(`Invalid file type: ${contentType || 'unknown'}`);
     }
 
     const avatarUrl = await this.storage.put(

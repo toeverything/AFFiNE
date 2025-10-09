@@ -809,7 +809,7 @@ export class CopilotResolver {
         );
         attachments.push({
           attachment,
-          mimeType: sniffMime(uploaded.buffer) || blob.mimetype,
+          mimeType: sniffMime(uploaded.buffer, blob.mimetype) || blob.mimetype,
         });
       }
     }
