@@ -20,7 +20,7 @@ export const calloutEmojiContainerStyles = css({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  marginTop: '10px',
+  // marginTop is dynamically set by JavaScript based on first child's height
   marginBottom: '10px',
   flexShrink: 0,
   position: 'relative',

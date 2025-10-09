@@ -4,7 +4,10 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
-import { type CalloutBlockModel } from '@blocksuite/affine-model';
+import {
+  type CalloutBlockModel,
+  ParagraphBlockModel,
+} from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
@@ -67,6 +70,35 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
   override connectedCallback() {
     super.connectedCallback();
     this.classList.add(calloutHostStyles);
+  }
+
+  private _getEmojiMarginTop(): string {
+    if (this.model.children.length === 0) {
+      return '10px';
+    }
+
+    const firstChild = this.model.children[0];
+    const flavour = firstChild.flavour;
+
+    const marginTopMap: Record<string, string> = {
+      'affine:paragraph:h1': '23px',
+      'affine:paragraph:h2': '20px',
+      'affine:paragraph:h3': '16px',
+      'affine:paragraph:h4': '15px',
+      'affine:paragraph:h5': '14px',
+      'affine:paragraph:h6': '13px',
+    };
+
+    // For heading blocks, use the type to determine margin
+    if (flavour === 'affine:paragraph') {
+      const paragraph = firstChild as ParagraphBlockModel;
+      const type = paragraph.props.type$.value;
+      const key = `${flavour}:${type}`;
+      return marginTopMap[key] || '10px';
+    }
+
+    // Default for all other block types
+    return '10px';
   }
 
   private _closeIconPicker() {
@@ -204,6 +236,9 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
                 @click=${this._toggleIconPicker}
                 contenteditable="false"
                 class="${calloutEmojiContainerStyles}"
+                style=${styleMap({
+                  marginTop: this._getEmojiMarginTop(),
+                })}
               >
                 <span class="${calloutEmojiStyles}" data-testid="callout-emoji"
                   >${iconContent}</span
