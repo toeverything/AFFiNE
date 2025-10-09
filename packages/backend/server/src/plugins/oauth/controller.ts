@@ -225,7 +225,8 @@ export class OAuthController {
       if (
         !connectedAccount.user.emailVerifiedAt &&
         // external email may change, check if it matches exists email
-        externalAccount.email === connectedAccount.user.email
+        externalAccount.email.toLowerCase() ===
+          connectedAccount.user.email.toLowerCase()
       ) {
         await this.auth.setEmailVerified(connectedAccount.userId);
       }
