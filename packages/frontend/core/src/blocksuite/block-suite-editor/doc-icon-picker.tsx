@@ -11,8 +11,7 @@ const TitleContainer = ({ children }: { children: React.ReactNode }) => {
     <div
       className="doc-icon-container"
       style={{
-        paddingTop: 0,
-        paddingBottom: 0,
+        paddingBottom: 8,
       }}
     >
       {children}
