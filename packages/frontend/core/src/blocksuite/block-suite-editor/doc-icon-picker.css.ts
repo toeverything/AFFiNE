@@ -11,7 +11,10 @@ export const docIconPickerTrigger = style({
       lineHeight: 1,
     },
     '&[data-icon-type="emoji"]': {
-      fontFamily: 'emoji',
+      fontFamily: 'Inter',
+    },
+    '&::after': {
+      display: 'none',
     },
   },
 });
