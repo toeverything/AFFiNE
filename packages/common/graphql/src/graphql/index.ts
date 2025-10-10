@@ -88,11 +88,12 @@ export const listUserAccessTokensQuery = {
   id: 'listUserAccessTokensQuery' as const,
   op: 'listUserAccessTokens',
   query: `query listUserAccessTokens {
-  accessTokens {
+  revealedAccessTokens {
     id
     name
     createdAt
     expiresAt
+    token
   }
 }`,
 };
@@ -2215,6 +2216,25 @@ export const setWorkspacePublicByIdMutation = {
     id
   }
 }`,
+};
+
+export const refreshSubscriptionMutation = {
+  id: 'refreshSubscriptionMutation' as const,
+  op: 'refreshSubscription',
+  query: `mutation refreshSubscription {
+  refreshUserSubscriptions {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const subscriptionQuery = {

@@ -200,6 +200,10 @@ export const NavigationPanelTagNode = ({
       operations={finalOperations}
       dropEffect={handleDropEffectOnTag}
       data-testid={`navigation-panel-tag-${tagId}`}
+      explorerIconConfig={{
+        where: 'tag',
+        id: tagId,
+      }}
     >
       <NavigationPanelTagNodeDocs tag={tagRecord} path={path} />
     </NavigationPanelTreeNode>

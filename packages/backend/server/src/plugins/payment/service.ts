@@ -13,6 +13,7 @@ import {
   InvalidLicenseSessionId,
   InvalidSubscriptionParameters,
   LicenseRevealed,
+  ManagedByAppStoreOrPlay,
   OnEvent,
   SameSubscriptionRecurring,
   SubscriptionExpired,
@@ -165,6 +166,11 @@ export class SubscriptionService {
       throw new SubscriptionNotExists({ plan: identity.plan });
     }
 
+    // IAP read-only: RevenueCat-managed subscriptions cannot be modified on web
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
+    }
+
     if (!subscription.stripeSubscriptionId) {
       throw new CantUpdateOnetimePaymentSubscription(
         'Onetime payment subscription cannot be canceled.'
@@ -209,6 +215,11 @@ export class SubscriptionService {
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    // IAP read-only: RevenueCat-managed subscriptions cannot be modified on web
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.canceledAt) {
@@ -256,6 +267,11 @@ export class SubscriptionService {
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    // IAP read-only: RevenueCat-managed subscriptions cannot be modified on web
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.stripeSubscriptionId) {
@@ -310,6 +326,10 @@ export class SubscriptionService {
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.stripeSubscriptionId) {

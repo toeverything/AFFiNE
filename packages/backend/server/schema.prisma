@@ -749,6 +749,16 @@ model Subscription {
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   // stripe schedule id
   stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
+  // subscription provider: stripe or revenuecat
+  provider             Provider  @default(stripe)
+  // iap store for revenuecat subscriptions
+  iapStore             IapStore? @map("iap_store")
+  // revenuecat entitlement name like "Pro" / "AI"
+  rcEntitlement        String?   @map("rc_entitlement") @db.VarChar
+  // revenuecat product id like "app.affine.pro.Annual"
+  rcProductId          String?   @map("rc_product_id") @db.VarChar
+  // external reference, appstore originalTransactionId or play purchaseToken
+  rcExternalRef        String?   @map("rc_external_ref") @db.VarChar
   // subscription.status, active/past_due/canceled/unpaid...
   status               String    @db.VarChar(20)
   // subscription.current_period_start
@@ -768,6 +778,16 @@ model Subscription {
 
   @@unique([targetId, plan])
   @@map("subscriptions")
+}
+
+enum Provider {
+  stripe
+  revenuecat
+}
+
+enum IapStore {
+  app_store
+  play_store
 }
 
 model Invoice {

@@ -15,13 +15,14 @@ export class AccessTokenModel extends BaseModel {
     super();
   }
 
-  async list(userId: string) {
+  async list(userId: string, revealed: boolean = false) {
     return await this.db.accessToken.findMany({
       select: {
         id: true,
         name: true,
         createdAt: true,
         expiresAt: true,
+        token: revealed,
       },
       where: {
         userId,

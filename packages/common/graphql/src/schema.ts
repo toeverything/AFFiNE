@@ -654,7 +654,7 @@ export interface DeleteAccount {
 }
 
 export interface DeleteSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
   sessionIds: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }
@@ -923,6 +923,7 @@ export enum ErrorNames {
   LICENSE_REVEALED = 'LICENSE_REVEALED',
   LINK_EXPIRED = 'LINK_EXPIRED',
   MAILER_SERVICE_IS_NOT_CONFIGURED = 'MAILER_SERVICE_IS_NOT_CONFIGURED',
+  MANAGED_BY_APP_STORE_OR_PLAY = 'MANAGED_BY_APP_STORE_OR_PLAY',
   MEMBER_NOT_FOUND_IN_SPACE = 'MEMBER_NOT_FOUND_IN_SPACE',
   MEMBER_QUOTA_EXCEEDED = 'MEMBER_QUOTA_EXCEEDED',
   MENTION_USER_DOC_ACCESS_DENIED = 'MENTION_USER_DOC_ACCESS_DENIED',
@@ -1450,6 +1451,8 @@ export interface Mutation {
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
+  /** Refresh current user subscriptions and return latest. */
+  refreshUserSubscriptions: Array<SubscriptionType>;
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
@@ -2165,6 +2168,7 @@ export interface Query {
   publicUserById: Maybe<PublicUserType>;
   /** query workspace embedding status */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
+  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2583,6 +2587,8 @@ export interface SubscriptionType {
   canceledAt: Maybe<Scalars['DateTime']['output']>;
   createdAt: Scalars['DateTime']['output'];
   end: Maybe<Scalars['DateTime']['output']>;
+  /** If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store */
+  iapStore: Maybe<Scalars['String']['output']>;
   /** @deprecated removed */
   id: Maybe<Scalars['String']['output']>;
   nextBillAt: Maybe<Scalars['DateTime']['output']>;
@@ -2591,6 +2597,8 @@ export interface SubscriptionType {
    * There won't actually be a subscription with plan 'Free'
    */
   plan: SubscriptionPlan;
+  /** Payment provider of this subscription. Read-only. One of: stripe | revenuecat */
+  provider: Maybe<Scalars['String']['output']>;
   recurring: SubscriptionRecurring;
   start: Scalars['DateTime']['output'];
   status: SubscriptionStatus;
@@ -3084,12 +3092,13 @@ export type ListUserAccessTokensQueryVariables = Exact<{
 
 export type ListUserAccessTokensQuery = {
   __typename?: 'Query';
-  accessTokens: Array<{
-    __typename?: 'AccessToken';
+  revealedAccessTokens: Array<{
+    __typename?: 'RevealedAccessToken';
     id: string;
     name: string;
     createdAt: string;
     expiresAt: string | null;
+    token: string;
   }>;
 };
 
@@ -5989,6 +5998,26 @@ export type SetWorkspacePublicByIdMutation = {
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type RefreshSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RefreshSubscriptionMutation = {
+  __typename?: 'Mutation';
+  refreshUserSubscriptions: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
 export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
 
 export type SubscriptionQuery = {
@@ -7073,6 +7102,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'refreshSubscriptionMutation';
+      variables: RefreshSubscriptionMutationVariables;
+      response: RefreshSubscriptionMutation;
     }
   | {
       name: 'updateDocDefaultRoleMutation';

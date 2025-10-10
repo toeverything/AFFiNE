@@ -3,6 +3,10 @@ import { type Blob } from '@prisma/client';
 import { TestingApp } from './testing-app';
 import { TEST_LOG_LEVEL } from './utils';
 
+export const smallestPng =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
+export const smallestGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+
 export async function listBlobs(
   app: TestingApp,
   workspaceId: string

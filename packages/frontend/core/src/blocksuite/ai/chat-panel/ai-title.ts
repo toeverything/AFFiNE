@@ -130,6 +130,9 @@ export class AIChatPanelTitle extends SignalWatcher(
   @property({ attribute: false })
   accessor openDoc!: (docId: string, sessionId: string) => void;
 
+  @property({ attribute: false })
+  accessor deleteSession!: (session: BlockSuitePresets.AIRecentSession) => void;
+
   private readonly openPlayground = () => {
     const playgroundContent = html`
       <playground-content
@@ -182,6 +185,7 @@ export class AIChatPanelTitle extends SignalWatcher(
           .onTogglePin=${this.togglePin}
           .onOpenSession=${this.openSession}
           .onOpenDoc=${this.openDoc}
+          .onSessionDelete=${this.deleteSession}
           .docDisplayConfig=${this.docDisplayConfig}
           .notificationService=${this.notificationService}
         ></ai-chat-toolbar>

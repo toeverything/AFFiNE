@@ -3,6 +3,7 @@ import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
+import { DeleteIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 
@@ -62,7 +63,6 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
         position: relative;
         display: flex;
         height: 24px;
-        padding: 2px 4px;
         justify-content: space-between;
         align-items: center;
         border-radius: 4px;
@@ -85,6 +85,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
         font-size: 12px;
         font-weight: 400;
         line-height: 20px;
+        padding: 2px 4px;
         color: ${unsafeCSSVarV2('text/primary')};
         overflow: hidden;
         text-overflow: ellipsis;
@@ -94,7 +95,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
       .ai-session-doc {
         display: flex;
         width: 120px;
-        padding: 0px 4px;
+        padding: 2px;
         align-items: center;
         gap: 4px;
         flex-shrink: 0;
@@ -117,6 +118,36 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
           white-space: nowrap;
         }
       }
+
+      .ai-session-item-delete {
+        position: absolute;
+        right: 2px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${unsafeCSSVarV2('layer/background/primary')};
+        border-radius: 2px;
+        padding: 2px;
+        cursor: pointer;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.2s ease,
+          visibility 0.2s ease;
+
+        svg {
+          width: 16px;
+          height: 16px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
+      }
+
+      .ai-session-item:hover .ai-session-item-delete {
+        opacity: 1;
+        visibility: visible;
+      }
     }
 
     ${scrollbarStyle('.ai-session-history')}
@@ -133,6 +164,11 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor onSessionClick!: (sessionId: string) => void;
+
+  @property({ attribute: false })
+  accessor onSessionDelete!: (
+    session: BlockSuitePresets.AIRecentSession
+  ) => void;
 
   @property({ attribute: false })
   accessor onDocClick!: (docId: string, sessionId: string) => void;
@@ -272,6 +308,16 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
               ${session.docId
                 ? this.renderSessionDoc(session.docId, session.sessionId)
                 : nothing}
+              <div
+                class="ai-session-item-delete"
+                @click=${(e: MouseEvent) => {
+                  e.stopPropagation();
+                  this.onSessionDelete(session);
+                }}
+              >
+                ${DeleteIcon()}
+                <affine-tooltip>Delete</affine-tooltip>
+              </div>
             </div>
           `;
         })}

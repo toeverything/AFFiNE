@@ -1,5 +1,4 @@
 import SnapKit
-import Then
 import UIKit
 
 class MainHeaderView: UIView {

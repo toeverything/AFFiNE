@@ -2,6 +2,8 @@ import type {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type { SubscriptionService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type {
@@ -622,6 +624,9 @@ export class AIChatBlockPeekView extends LitElement {
         }}
         .portalContainer=${this.parentElement}
         .reasoningConfig=${this.reasoningConfig}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div> `;
   }
@@ -658,6 +663,15 @@ export class AIChatBlockPeekView extends LitElement {
 
   @property({ attribute: false })
   accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor _historyMessages: ChatMessage[] = [];
@@ -697,7 +711,10 @@ export const AIChatBlockPeekViewTemplate = (
   affineFeatureFlagService: FeatureFlagService,
   affineWorkspaceDialogService: WorkspaceDialogService,
   aiDraftService: AIDraftService,
-  aiToolsConfigService: AIToolsConfigService
+  aiToolsConfigService: AIToolsConfigService,
+  subscriptionService: SubscriptionService,
+  aiModelService: AIModelService,
+  onAISubscribe: (() => Promise<void>) | undefined
 ) => {
   return html`<ai-chat-block-peek-view
     .blockModel=${blockModel}
@@ -710,5 +727,8 @@ export const AIChatBlockPeekViewTemplate = (
     .affineWorkspaceDialogService=${affineWorkspaceDialogService}
     .aiDraftService=${aiDraftService}
     .aiToolsConfigService=${aiToolsConfigService}
+    .subscriptionService=${subscriptionService}
+    .aiModelService=${aiModelService}
+    .onAISubscribe=${onAISubscribe}
   ></ai-chat-block-peek-view>`;
 };

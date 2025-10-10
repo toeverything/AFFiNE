@@ -32,8 +32,8 @@ class AFFiNEViewController: CAPBridgeViewController {
       CookiePlugin(),
       HashcashPlugin(),
       NavigationGesturePlugin(),
-      // IntelligentsPlugin(representController: self), // no longer put in use
       NbStorePlugin(),
+      PayWallPlugin(associatedController: self),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
   }

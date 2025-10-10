@@ -100,6 +100,10 @@ export function useAFFiNEI18N(): {
       */
     ["Copied link to clipboard"](): string;
     /**
+      * `Copied to clipboard`
+      */
+    ["Copied to clipboard"](): string;
+    /**
       * `Copy`
       */
     Copy(): string;
@@ -2505,6 +2509,18 @@ export function useAFFiNEI18N(): {
       * `Just now`
       */
     ["com.affine.just-now"](): string;
+    /**
+      * `Align center`
+      */
+    ["com.affine.keyboardShortcuts.alignCenter"](): string;
+    /**
+      * `Align left`
+      */
+    ["com.affine.keyboardShortcuts.alignLeft"](): string;
+    /**
+      * `Align right`
+      */
+    ["com.affine.keyboardShortcuts.alignRight"](): string;
     /**
       * `Append to daily note`
       */
@@ -8181,6 +8197,14 @@ export function useAFFiNEI18N(): {
         readonly name: string;
     }): string;
     /**
+      * `MCP Server`
+      */
+    ["com.affine.integration.mcp-server.name"](): string;
+    /**
+      * `Enable other MCP Client to search and read the doc of AFFiNE.`
+      */
+    ["com.affine.integration.mcp-server.desc"](): string;
+    /**
       * `Notes`
       */
     ["com.affine.audio.notes"](): string;
@@ -8295,6 +8319,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.filter.only-current-mode"](): string;
     /**
+      * `Unlock more features`
+      */
+    ["com.affine.payment.subscription.title"](): string;
+    /**
+      * `The universal editor that lets you work, play, present or create just about anything.`
+      */
+    ["com.affine.payment.subscription.description"](): string;
+    /**
+      * `Upgrade`
+      */
+    ["com.affine.payment.subscription.button"](): string;
+    /**
       * `Reply`
       */
     ["com.affine.comment.reply"](): string;
@@ -8314,6 +8350,10 @@ export function useAFFiNEI18N(): {
       * `Cut`
       */
     ["com.affine.context-menu.cut"](): string;
+    /**
+      * `Add icon`
+      */
+    ["com.affine.docIconPicker.placeholder"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -8719,6 +8759,10 @@ export function useAFFiNEI18N(): {
       * `Workspace id is required to update team subscription.`
       */
     ["error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION"](): string;
+    /**
+      * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
+      */
+    ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
     /**
       * `Copilot session not found.`
       */
