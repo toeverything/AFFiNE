@@ -636,11 +636,10 @@ export class ChatSessionService {
       })
       .then(s => s.map(s => [s.userId, s.id]));
     for (const [userId, sessionId] of sessionIds) {
-      await this.models.copilotSession.update({
-        userId,
-        sessionId,
-        docId: null,
-      });
+      await this.models.copilotSession.update(
+        { userId, sessionId, docId: null },
+        true
+      );
     }
   }
 

@@ -396,7 +396,10 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async update(options: UpdateChatSessionOptions): Promise<string> {
+  async update(
+    options: UpdateChatSessionOptions,
+    internalCall = false
+  ): Promise<string> {
     const { userId, sessionId, docId, promptName, pinned, title } = options;
     const session = await this.getExists(
       sessionId,
@@ -415,14 +418,16 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     // not allow to update action session
-    if (session.prompt.action) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update action: ${session.id}`
-      );
-    } else if (docId && session.parentSessionId) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update docId for forked session: ${session.id}`
-      );
+    if (!internalCall) {
+      if (session.prompt.action) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update action: ${session.id}`
+        );
+      } else if (docId && session.parentSessionId) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update docId for forked session: ${session.id}`
+        );
+      }
     }
 
     if (promptName) {

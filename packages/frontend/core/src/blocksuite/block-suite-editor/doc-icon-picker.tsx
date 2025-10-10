@@ -6,21 +6,13 @@ import { useLiveData, useService } from '@toeverything/infra';
 
 import * as styles from './doc-icon-picker.css';
 
-const TitleContainer = ({
-  children,
-  isPlaceholder,
-}: {
-  children: React.ReactNode;
-  isPlaceholder: boolean;
-}) => {
+const TitleContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       className="doc-icon-container"
       style={{
         paddingTop: 0,
         paddingBottom: 0,
-        // title container has `padding-top`
-        transform: isPlaceholder ? 'translateY(80%)' : 'translateY(50%)',
       }}
     >
       {children}
@@ -54,7 +46,7 @@ export const DocIconPicker = ({
   }
 
   return (
-    <TitleContainer isPlaceholder={isPlaceholder}>
+    <TitleContainer>
       <IconEditor
         icon={icon?.icon}
         onIconChange={data => {
