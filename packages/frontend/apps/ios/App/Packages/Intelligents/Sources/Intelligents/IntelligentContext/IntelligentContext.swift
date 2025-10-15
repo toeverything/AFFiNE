@@ -85,7 +85,7 @@ public class IntelligentContext {
       }
       webViewGroup.wait()
       webViewMetadata = webViewMetadataResult
-      
+
       if webViewMetadataResult[.currentAiButtonFeatureFlag] as? Bool == false {
         completion(.failure(IntelligentError.featureClosed))
         return

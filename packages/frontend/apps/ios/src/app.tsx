@@ -236,6 +236,16 @@ const frameworkProvider = framework.provider();
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.docId.get();
 };
+(window as any).getCurrentUserIdentifier = () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  return currentServer.account$.value?.id;
+};
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
@@ -248,6 +258,7 @@ const frameworkProvider = framework.provider();
   if (!workspaceRef) {
     return;
   }
+
   const { workspace, dispose: disposeWorkspace } = workspaceRef;
 
   const docsService = workspace.scope.get(DocsService);

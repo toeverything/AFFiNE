@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RevenueCat
 import UIKit
 
 extension ViewModel {
@@ -117,13 +118,43 @@ nonisolated extension ViewModel {
         if !initial { throw error }
       }
 
-      // fetch external items by executing on webview's JS context
+      guard let webView = await associatedWebContext else {
+        throw NSError(domain: "Paywall", code: -1, userInfo: [
+          NSLocalizedDescriptionKey: String(localized: "Missing required information"),
+        ])
+      }
+
+      // fetch current user identifier
       do {
-        guard let webView = await associatedWebContext else {
+        let result = try await webView.callAsyncJavaScript(
+          "return await window.getCurrentUserIdentifier();",
+          contentWorld: .page
+        )
+        let userIdentifier = (result as? String)?
+          .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // for too long it might be a problem on front end returning what we dont want
+        guard !userIdentifier.isEmpty, userIdentifier.count < 256 else {
           throw NSError(domain: "Paywall", code: -1, userInfo: [
             NSLocalizedDescriptionKey: String(localized: "Missing required information"),
           ])
         }
+        print("[*] using user identifier:", userIdentifier)
+        let configuration = Configuration
+          .builder(withAPIKey: Paywall.revenueCatToken)
+          .with(appUserID: userIdentifier)
+          .with(showStoreMessagesAutomatically: false)
+          .build()
+        Purchases.configure(with: configuration)
+        _ = try? await Purchases.shared.logOut()
+        let loginItem = try await Purchases.shared.logIn(userIdentifier)
+        print("[*] log in to RevenueCat finished: \(loginItem)")
+      } catch {
+        print("unable to login with error:", error.localizedDescription)
+        throw error
+      }
+
+      // fetch external items by executing on webview's JS context
+      do {
         let result = try await webView.callAsyncJavaScript(
           "return await window.getSubscriptionState();",
           contentWorld: .page
@@ -133,6 +164,7 @@ nonisolated extension ViewModel {
         await MainActor.run { self.externalPurchasedItems = purchased }
       } catch {
         print("fetchExternalEntitlements error:", error.localizedDescription)
+        throw error
       }
 
       // select the package under purchased items if any
