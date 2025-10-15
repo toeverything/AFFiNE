@@ -12,7 +12,7 @@ import WebKit
 
 public enum Paywall {
   package static let revenueCatToken: String = "appl_FIzFhieVpSSmJRYJWwhVrgtnsVf"
-  package static let revenueCatProxyEndpoit = URL(string: "https://app.affine.pro/api/worker/revenuecat/")!
+  package static let revenueCatProxyEndpoit = URL(string: "https://iap.affine.pro/")!
   package static var isPurchasesConfigured = false
 
   private static let setupExecution: Void = {
