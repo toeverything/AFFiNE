@@ -137,20 +137,22 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
 
     if (defaultProps) {
       Object.entries(defaultProps).forEach(([key, value]) => {
-        if (key in proxy) {
-          return;
-        }
-        if (value === undefined) {
+        if (!(key in proxy) && value === undefined) {
           initSignals(key, value);
-          return;
         }
-        proxy[key] = value;
       });
     }
 
     this._proxy = proxy;
     this._ySource.observe(this._observer);
     this._initialized = true;
+
+    if (defaultProps) {
+      Object.entries(defaultProps).forEach(([key, value]) => {
+        if (key in proxy || value === undefined) return;
+        proxy[key] = value;
+      });
+    }
   }
 
   pop = (prop: string): void => {
