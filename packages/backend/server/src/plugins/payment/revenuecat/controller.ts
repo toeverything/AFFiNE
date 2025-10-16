@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { Config, EventBus } from '../../../base';
 import { Public } from '../../../core/auth';
+import { FeatureService } from '../../../core/features';
 
 const RcEventSchema = z
   .object({
@@ -52,7 +53,8 @@ export class RevenueCatWebhookController {
 
   constructor(
     private readonly config: Config,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly feature: FeatureService
   ) {}
 
   @Public()
@@ -80,7 +82,9 @@ export class RevenueCatWebhookController {
               if (
                 appUserId &&
                 (typeof event.is_family_share !== 'boolean' ||
-                  !event.is_family_share)
+                  !event.is_family_share) &&
+                (environment.toLowerCase() === 'production' ||
+                  this.feature.isStaff(appUserId))
               ) {
                 // immediately ack and process asynchronously
                 this.event
