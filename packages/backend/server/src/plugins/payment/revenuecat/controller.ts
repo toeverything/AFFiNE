@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import { Config, EventBus } from '../../../base';
 import { Public } from '../../../core/auth';
+import { FeatureService } from '../../../core/features';
+import { Models } from '../../../models';
 
 const RcEventSchema = z
   .object({
@@ -52,7 +54,9 @@ export class RevenueCatWebhookController {
 
   constructor(
     private readonly config: Config,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly models: Models,
+    private readonly feature: FeatureService
   ) {}
 
   @Public()
@@ -70,28 +74,49 @@ export class RevenueCatWebhookController {
           if (parsed.success) {
             const event = parsed.data.event;
             const { id, app_user_id: appUserId, type } = event;
+
             if (
               event.environment.toLowerCase() === environment?.toLowerCase()
             ) {
+              const logParams = {
+                appUserId,
+                familyShare: event.is_family_share,
+                environment: event.environment,
+              };
               this.logger.log(
                 `[${id}] RevenueCat Webhook {${type}} received for appUserId=${appUserId}.`
               );
-
-              if (
-                appUserId &&
-                (typeof event.is_family_share !== 'boolean' ||
-                  !event.is_family_share)
-              ) {
-                // immediately ack and process asynchronously
-                this.event
-                  .emitAsync('revenuecat.webhook', { appUserId, event })
-                  .catch((e: Error) => {
-                    this.logger.error(
-                      'Failed to handle RevenueCat Webhook event.',
-                      e
+              if (appUserId) {
+                const user = await this.models.user.get(appUserId);
+                if (user) {
+                  if (
+                    (typeof event.is_family_share !== 'boolean' ||
+                      !event.is_family_share) &&
+                    (environment.toLowerCase() === 'production' ||
+                      this.feature.isStaff(user.email))
+                  ) {
+                    // immediately ack and process asynchronously
+                    this.event
+                      .emitAsync('revenuecat.webhook', { appUserId, event })
+                      .catch((e: Error) => {
+                        this.logger.error(
+                          'Failed to handle RevenueCat Webhook event.',
+                          e
+                        );
+                      });
+                    return;
+                  } else {
+                    this.logger.warn(
+                      `[${id}] RevenueCat Webhook received for non-acceptable params.`,
+                      logParams
                     );
-                  });
+                  }
+                }
               }
+              this.logger.warn(
+                `RevenueCat Webhook received for unknown user`,
+                logParams
+              );
             }
           } else {
             this.logger.warn(
