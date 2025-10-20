@@ -74,35 +74,49 @@ export class RevenueCatWebhookController {
           if (parsed.success) {
             const event = parsed.data.event;
             const { id, app_user_id: appUserId, type } = event;
+
             if (
               event.environment.toLowerCase() === environment?.toLowerCase()
             ) {
+              const logParams = {
+                appUserId,
+                familyShare: event.is_family_share,
+                environment: event.environment,
+              };
               this.logger.log(
                 `[${id}] RevenueCat Webhook {${type}} received for appUserId=${appUserId}.`
               );
-              const user = await this.models.user.get(appUserId || '');
-              if (user) {
-                if (
-                  (typeof event.is_family_share !== 'boolean' ||
-                    !event.is_family_share) &&
-                  (environment.toLowerCase() === 'production' ||
-                    this.feature.isStaff(user.email))
-                ) {
-                  // immediately ack and process asynchronously
-                  this.event
-                    .emitAsync('revenuecat.webhook', { appUserId, event })
-                    .catch((e: Error) => {
-                      this.logger.error(
-                        'Failed to handle RevenueCat Webhook event.',
-                        e
-                      );
-                    });
+              if (appUserId) {
+                const user = await this.models.user.get(appUserId);
+                if (user) {
+                  if (
+                    (typeof event.is_family_share !== 'boolean' ||
+                      !event.is_family_share) &&
+                    (environment.toLowerCase() === 'production' ||
+                      this.feature.isStaff(user.email))
+                  ) {
+                    // immediately ack and process asynchronously
+                    this.event
+                      .emitAsync('revenuecat.webhook', { appUserId, event })
+                      .catch((e: Error) => {
+                        this.logger.error(
+                          'Failed to handle RevenueCat Webhook event.',
+                          e
+                        );
+                      });
+                    return;
+                  } else {
+                    this.logger.warn(
+                      `[${id}] RevenueCat Webhook received for non-acceptable params.`,
+                      logParams
+                    );
+                  }
                 }
-              } else {
-                this.logger.warn(
-                  `RevenueCat Webhook received for unknown user appUserId=${appUserId}.`
-                );
               }
+              this.logger.warn(
+                `RevenueCat Webhook received for unknown user`,
+                logParams
+              );
             }
           } else {
             this.logger.warn(
