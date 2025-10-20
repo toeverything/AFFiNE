@@ -148,7 +148,7 @@ export const AffineIconPicker = ({
       </header>
 
       {/* Content */}
-      <Scrollable.Root className={pickerStyles.scrollRoot}>
+      <Scrollable.Root className={pickerStyles.iconScrollRoot}>
         <Scrollable.Viewport className={pickerStyles.scrollViewport}>
           {/* Recent */}
           {recentIcons.length ? (

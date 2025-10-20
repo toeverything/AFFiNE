@@ -31,6 +31,7 @@ import {
   EventBus,
   type FileUpload,
   RequestMutex,
+  sniffMime,
   Throttle,
   TooManyRequest,
   UserFriendlyError,
@@ -671,7 +672,11 @@ export class CopilotContextResolver {
       const { filename, mimetype } = content;
 
       await this.storage.put(user.id, session.workspaceId, blobId, buffer);
-      const file = await session.addFile(blobId, filename, mimetype);
+      const file = await session.addFile(
+        blobId,
+        filename,
+        sniffMime(buffer, mimetype) || mimetype
+      );
 
       await this.jobs.addFileEmbeddingQueue({
         userId: user.id,

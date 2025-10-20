@@ -137,6 +137,9 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor aiModelService!: AIModelService;
 
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
   @state()
   accessor session: CopilotChatHistoryFragment | null | undefined;
 
@@ -462,6 +465,7 @@ export class ChatPanel extends SignalWatcher(
           .peekViewService=${this.peekViewService}
           .subscriptionService=${this.subscriptionService}
           .aiModelService=${this.aiModelService}
+          .onAISubscribe=${this.onAISubscribe}
           .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
           .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}

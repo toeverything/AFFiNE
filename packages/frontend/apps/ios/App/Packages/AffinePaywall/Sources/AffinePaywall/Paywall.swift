@@ -7,14 +7,17 @@
 
 import SwiftUI
 import UIKit
+import WebKit
 
 public enum Paywall {
   @MainActor
   public static func presentWall(
     toController controller: UIViewController,
+    bindWebContext context: WKWebView?,
     type: String
   ) {
     let viewModel = ViewModel()
+    if let context { viewModel.bind(context: context) }
     switch type.lowercased() {
     case "pro":
       viewModel.select(category: .pro)

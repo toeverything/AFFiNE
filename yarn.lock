@@ -682,6 +682,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/core": "workspace:*"
     "@affine/env": "workspace:*"
+    "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/nbstore": "workspace:*"
@@ -798,7 +799,7 @@ __metadata:
     eslint-plugin-simple-import-sort: "npm:^12.1.1"
     eslint-plugin-sonarjs: "npm:^3.0.1"
     eslint-plugin-unicorn: "npm:^59.0.0"
-    happy-dom: "npm:^18.0.0"
+    happy-dom: "npm:^20.0.0"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.0.0"
     msw: "npm:^2.6.8"
@@ -23663,14 +23664,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^18.0.0":
-  version: 18.0.1
-  resolution: "happy-dom@npm:18.0.1"
+"happy-dom@npm:^20.0.0":
+  version: 20.0.0
+  resolution: "happy-dom@npm:20.0.0"
   dependencies:
     "@types/node": "npm:^20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
     whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10/27f6638d7b8bc67f97ddde7f004e47785ae1487e14065d7c6119adbb9ba7d8a53935d5714d37d9f60efef7f9b180a41c2b7fbbdffcea57b6d04060360a1a1d03
+  checksum: 10/0fa626e2051dfa5f1ea0da9e3776b5986d3700c261a8ba7c496e7ad89f4df0318920b7c286d3b310481712b378ffb7dee35ed782ff039e4166f4ba957a76b6df
   languageName: node
   linkType: hard
 
@@ -28413,9 +28414,9 @@ __metadata:
   linkType: hard
 
 "nodemailer@npm:^7.0.0":
-  version: 7.0.3
-  resolution: "nodemailer@npm:7.0.3"
-  checksum: 10/d51e9b30753c982c35cf77839f3b7c1f138eb3fb5607c34f724ddc32360e56c3d631ff5b4eba5491f1f8805b428b945850441b4bd893bd2283c55be615f020c5
+  version: 7.0.9
+  resolution: "nodemailer@npm:7.0.9"
+  checksum: 10/88883c58afe356d2b4c24b1e976c04857e8a7a7145e1752dab69072900b0cc2e3daa0964a08c653e692fb64382453e1cfcee3d863828844c8d6f6239727b9023
   languageName: node
   linkType: hard
 

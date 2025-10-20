@@ -32,6 +32,7 @@ import {
 } from 'rxjs';
 
 import {
+  applyAttachHeaders,
   BlobNotFound,
   CallMetric,
   Config,
@@ -795,6 +796,10 @@ export class CopilotController implements BeforeApplicationShutdown {
     } else {
       this.logger.warn(`Blob ${workspaceId}/${key} has no metadata`);
     }
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: key,
+    });
 
     res.setHeader('cache-control', 'public, max-age=2592000, immutable');
     body.pipe(res);

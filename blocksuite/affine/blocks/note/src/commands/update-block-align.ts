@@ -22,7 +22,7 @@ export const updateBlockAlign: Command<UpdateBlockAlignConfig> = (
 ) => {
   let { std, textAlign, selectedBlocks } = ctx;
 
-  if (selectedBlocks === null) {
+  if (!selectedBlocks) {
     const [result, ctx] = std.command
       .chain()
       .tryAll(chain => [

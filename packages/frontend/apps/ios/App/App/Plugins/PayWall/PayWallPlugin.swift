@@ -6,7 +6,9 @@ import UIKit
 
 @objc(PayWallPlugin)
 public class PayWallPlugin: CAPPlugin, CAPBridgedPlugin {
-  init(associatedController: UIViewController? = nil) {
+  init(
+    associatedController: UIViewController?
+  ) {
     controller = associatedController
     super.init()
   }
@@ -27,7 +29,11 @@ public class PayWallPlugin: CAPPlugin, CAPBridgedPlugin {
       // TODO: GET TO KNOW THE PAYWALL TYPE
       print("[*] showing paywall of type: \(type)")
       DispatchQueue.main.async {
-        Paywall.presentWall(toController: controller, type: type)
+        Paywall.presentWall(
+          toController: controller,
+          bindWebContext: self.webView,
+          type: type
+        )
       }
 
       call.resolve(["success": true, "type": type])

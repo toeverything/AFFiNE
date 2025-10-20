@@ -44,7 +44,7 @@ struct PackageOptionView: View {
         if !badge.isEmpty {
           Text(badge)
             .contentTransition(.numericText())
-            .font(.system(size: 12))
+            .font(.system(size: 10))
             .bold()
             .lineLimit(1)
             .foregroundColor(AffineColors.layerPureWhite.color)

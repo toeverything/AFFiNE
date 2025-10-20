@@ -30,6 +30,7 @@ import {
   Paginated,
   PaginationInput,
   RequestMutex,
+  sniffMime,
   Throttle,
   TooManyRequest,
   UserFriendlyError,
@@ -806,7 +807,10 @@ export class CopilotResolver {
           filename,
           uploaded.buffer
         );
-        attachments.push({ attachment, mimeType: blob.mimetype });
+        attachments.push({
+          attachment,
+          mimeType: sniffMime(uploaded.buffer, blob.mimetype) || blob.mimetype,
+        });
       }
     }
 

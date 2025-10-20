@@ -72,6 +72,9 @@ export class ChatInputPreference extends SignalWatcher(
     .ai-model-prefix svg {
       color: ${unsafeCSSVarV2('icon/activated')};
     }
+    .ai-model-postfix svg:hover {
+      color: ${unsafeCSSVarV2('icon/activated')};
+    }
     .ai-model-version {
       font-size: 12px;
       color: ${unsafeCSSVarV2('text/tertiary')};
@@ -119,6 +122,9 @@ export class ChatInputPreference extends SignalWatcher(
   @property({ attribute: false })
   accessor aiModelService!: AIModelService;
 
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
   model = computed(() => {
     const modelId = this.aiModelService.modelId.value;
     const activeModel = this.aiModelService.models.value.find(
@@ -161,7 +167,7 @@ export class ChatInputPreference extends SignalWatcher(
                 </div>
               `,
               postfix: html`
-                <div>
+                <div class="ai-model-postfix" @click=${this.onAISubscribe}>
                   ${model.isPro && !isSubscribed ? LockIcon() : undefined}
                 </div>
               `,

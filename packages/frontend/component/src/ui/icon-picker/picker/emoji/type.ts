@@ -9,3 +9,8 @@ export type CompactEmoji = {
   unicode: string;
   skins?: Array<Omit<CompactEmoji, 'skins'>>;
 };
+
+export type EmojiGroup = {
+  name: string;
+  emojis: Array<CompactEmoji>;
+};

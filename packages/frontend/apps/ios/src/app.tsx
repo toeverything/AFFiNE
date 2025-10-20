@@ -14,6 +14,7 @@ import {
   ServerScope,
   ServerService,
   ServersService,
+  SubscriptionService,
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
@@ -38,6 +39,7 @@ import {
 } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
+import { refreshSubscriptionMutation } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { Container } from '@blocksuite/affine/global/di';
@@ -327,6 +329,37 @@ const frameworkProvider = framework.provider();
   } finally {
     workspaceRef?.dispose();
   }
+};
+(window as any).getSubscriptionState = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  await subscriptionService.subscription.waitForRevalidation();
+  return {
+    pro: subscriptionService.subscription.pro$.value,
+    ai: subscriptionService.subscription.ai$.value,
+  };
+};
+(window as any).updateSubscriptionState = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  await currentServer
+    .gql({
+      query: refreshSubscriptionMutation,
+    })
+    .catch(console.error);
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  subscriptionService.subscription.revalidate();
 };
 
 // setup application lifecycle events, and emit application start event
