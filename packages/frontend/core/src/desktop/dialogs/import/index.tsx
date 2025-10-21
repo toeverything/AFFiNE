@@ -106,9 +106,9 @@ function createFolderStructure(
 
         // Set icon for the document if available
         if (child.icon && explorerIconService) {
-          console.log('=== Setting icon for document ===');
-          console.log('Document ID:', child.pageId);
-          console.log('Icon data:', child.icon);
+          logger.debug('=== Setting icon for document ===');
+          logger.debug('Document ID:', child.pageId);
+          logger.debug('Icon data:', child.icon);
 
           try {
             let iconData;
@@ -117,12 +117,12 @@ function createFolderStructure(
                 type: IconType.Emoji as const,
                 unicode: child.icon.content,
               };
-              console.log('Created emoji icon data:', iconData);
+              logger.debug('Created emoji icon data:', iconData);
             } else if (child.icon.type === 'image') {
               // For image icons, we'd need to handle blob conversion
               // For now, let's skip image icons or convert them to default
               // This could be enhanced later to download and convert images to blobs
-              console.log(
+              logger.debug(
                 'Skipping image icon (not implemented):',
                 child.icon.content
               );
@@ -130,7 +130,7 @@ function createFolderStructure(
             }
 
             if (iconData) {
-              console.log('Calling explorerIconService.setIcon with:', {
+              logger.debug('Calling explorerIconService.setIcon with:', {
                 where: 'doc',
                 id: child.pageId,
                 icon: iconData,
@@ -140,12 +140,12 @@ function createFolderStructure(
                 id: child.pageId,
                 icon: iconData,
               });
-              console.log('Icon set successfully for document:', child.pageId);
+              logger.debug('Icon set successfully for document:', child.pageId);
             } else {
-              console.log('No valid icon data to set');
+              logger.debug('No valid icon data to set');
             }
           } catch (error) {
-            console.error(
+            logger.error(
               'Error setting icon for document:',
               child.pageId,
               error
@@ -158,10 +158,10 @@ function createFolderStructure(
           }
         } else {
           if (!child.icon) {
-            console.log('No icon found for document:', child.pageId);
+            logger.debug('No icon found for document:', child.pageId);
           }
           if (!explorerIconService) {
-            console.log(
+            logger.debug(
               'ExplorerIconService not available for document:',
               child.pageId
             );
