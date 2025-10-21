@@ -41,7 +41,7 @@
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "graphql": "^16.9.0",
     "magic-string": "^0.30.11",
-    "vite": "^6.0.3",
+    "vite": "^7.0.0",
     "vite-plugin-istanbul": "^7.0.0",
     "vite-plugin-wasm": "^3.3.0",
     "vite-plugin-web-components-hmr": "^0.1.3"
