@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 
 import { Config } from '../../../base';
@@ -34,7 +34,7 @@ const zRcV2RawEntitlementItem = z
     products: z
       .object({ items: z.array(zRcV2RawProduct).default([]) })
       .partial()
-      .nullable(),
+      .nullish(),
   })
   .passthrough();
 
@@ -75,7 +75,7 @@ const zRcV2RawEnvelope = z
   .object({
     app_user_id: z.string().optional(),
     id: z.string().optional(),
-    subscriptions: z.array(zRcV2RawSubscription).default([]),
+    items: z.array(zRcV2RawSubscription).default([]),
   })
   .passthrough();
 
@@ -96,6 +96,8 @@ export type Subscription = z.infer<typeof Subscription>;
 
 @Injectable()
 export class RevenueCatService {
+  private readonly logger = new Logger(RevenueCatService.name);
+
   constructor(private readonly config: Config) {}
 
   private get apiKey(): string {
@@ -132,17 +134,15 @@ export class RevenueCatService {
       );
     }
 
-    const envParsed = zRcV2RawEnvelope.safeParse(await res.json());
+    const json = await res.json();
+    const envParsed = zRcV2RawEnvelope.safeParse(json);
 
     if (envParsed.success) {
-      return envParsed.data.subscriptions
+      return envParsed.data.items
         .flatMap(sub => {
           const items = sub.entitlements.items ?? [];
           return items.map(ent => {
             const product = ent.products?.items?.[0];
-            if (!product) {
-              return null;
-            }
             return {
               identifier: ent.lookup_key,
               isTrial: sub.status === 'trialing',
@@ -151,20 +151,25 @@ export class RevenueCatService {
                 sub.status === 'active' ||
                 sub.status === 'trialing',
               latestPurchaseDate: sub.starts_at
-                ? new Date(sub.starts_at * 1000)
+                ? new Date(sub.starts_at)
                 : null,
               expirationDate: sub.current_period_ends_at
-                ? new Date(sub.current_period_ends_at * 1000)
+                ? new Date(sub.current_period_ends_at)
                 : null,
-              productId: product.store_identifier,
-              store: sub.store ?? product.app.type,
+              productId: product?.store_identifier,
+              store: sub.store ?? product?.app.type,
               willRenew: sub.auto_renewal_status === 'will_renew',
-              duration: product.subscription?.duration ?? null,
+              duration: product?.subscription?.duration ?? null,
             };
           });
         })
         .filter((s): s is Subscription => s !== null);
     }
+    this.logger.error(
+      `RevenueCat subscription parse failed: ${JSON.stringify(
+        envParsed.error.format()
+      )}`
+    );
     return null;
   }
 }

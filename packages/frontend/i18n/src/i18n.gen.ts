@@ -2772,6 +2772,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.others.github"](): string;
     /**
+      * `Discord Group`
+      */
+    ["com.affine.mobile.setting.others.discord"](): string;
+    /**
       * `Privacy`
       */
     ["com.affine.mobile.setting.others.privacy"](): string;

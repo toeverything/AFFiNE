@@ -31,7 +31,7 @@
     "swr": "^2.3.2",
     "tailwindcss": "^4.0.6",
     "tsx": "^4.19.2",
-    "vite": "^6.1.0"
+    "vite": "^7.0.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11",
