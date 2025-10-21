@@ -755,7 +755,13 @@ export const ImportDialog = ({
         logger.error('Failed to import', error);
       }
     },
-    [docCollection, handleImportAffineFile, t]
+    [
+      docCollection,
+      explorerIconService,
+      handleImportAffineFile,
+      organizeService,
+      t,
+    ]
   );
 
   const handleComplete = useCallback(() => {
