@@ -99,7 +99,8 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
   constructor(
     protected readonly _ySource: YMap<unknown>,
     private readonly _onDispose: Subject<void>,
-    private readonly _onChange?: OnChange
+    private readonly _onChange?: OnChange,
+    defaultProps?: Record<string, unknown>
   ) {
     super();
     this._initialized = false;
@@ -112,7 +113,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
 
     const proxy = this._getProxy(source, source);
 
-    Object.entries(source).forEach(([key, value]) => {
+    const initSignals = (key: string, value: unknown) => {
       const signalData = signal(value);
       source[`${key}$`] = signalData;
       const unsubscribe = signalData.subscribe(next => {
@@ -128,11 +129,30 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
         subscription.unsubscribe();
         unsubscribe();
       });
+    };
+
+    Object.entries(source).forEach(([key, value]) => {
+      initSignals(key, value);
     });
+
+    if (defaultProps) {
+      Object.entries(defaultProps).forEach(([key, value]) => {
+        if (!(key in proxy) && value === undefined) {
+          initSignals(key, value);
+        }
+      });
+    }
 
     this._proxy = proxy;
     this._ySource.observe(this._observer);
     this._initialized = true;
+
+    if (defaultProps) {
+      Object.entries(defaultProps).forEach(([key, value]) => {
+        if (key in proxy || value === undefined) return;
+        proxy[key] = value;
+      });
+    }
   }
 
   pop = (prop: string): void => {
