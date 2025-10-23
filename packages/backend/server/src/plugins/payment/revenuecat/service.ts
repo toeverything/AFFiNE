@@ -46,6 +46,7 @@ const zRcV2RawEntitlements = z
 const zRcV2RawSubscription = z
   .object({
     object: z.enum(['subscription']),
+    product_id: z.string().nonempty().nullable(),
     entitlements: zRcV2RawEntitlements,
     starts_at: z.number(),
     current_period_ends_at: z.number().nullable(),
@@ -100,7 +101,7 @@ type Product = z.infer<typeof zRcV2RawProduct>;
 @Injectable()
 export class RevenueCatService {
   private readonly logger = new Logger(RevenueCatService.name);
-  private readonly productCache = new Map<string, Product>();
+  private readonly productsCache = new Map<string, Product[]>();
 
   constructor(private readonly config: Config) {}
 
@@ -120,13 +121,13 @@ export class RevenueCatService {
     return id;
   }
 
-  async getProducts(ent: Entitlement): Promise<Product | null> {
+  async getProducts(ent: Entitlement): Promise<Product[] | null> {
     if (ent.products?.items && ent.products.items.length > 0) {
-      return ent.products.items[0];
+      return ent.products.items;
     }
     const entId = ent.id;
-    if (this.productCache.has(entId)) {
-      return this.productCache.get(entId)!;
+    if (this.productsCache.has(entId)) {
+      return this.productsCache.get(entId)!;
     }
 
     const res = await fetch(
@@ -149,11 +150,11 @@ export class RevenueCatService {
     const json = await res.json();
     const entParsed = zRcV2RawEntitlementItem.safeParse(json);
     if (entParsed.success) {
-      const product = entParsed.data.products?.items?.[0] || null;
-      if (product) {
-        this.productCache.set(entId, product);
+      const products = entParsed.data.products?.items || null;
+      if (products) {
+        this.productsCache.set(entId, products);
       }
-      return product;
+      return products;
     }
     this.logger.error(
       `RevenueCat entitlement ${entId} parse failed: ${JSON.stringify(
@@ -186,29 +187,37 @@ export class RevenueCatService {
 
     if (envParsed.success) {
       const parsedSubs = await Promise.all(
-        envParsed.data.items.flatMap(sub => {
+        envParsed.data.items.flatMap(async sub => {
           const items = sub.entitlements.items ?? [];
-          return items.map(async ent => {
-            const product = await this.getProducts(ent);
-            return {
-              identifier: ent.lookup_key,
-              isTrial: sub.status === 'trialing',
-              isActive:
-                sub.gives_access === true ||
-                sub.status === 'active' ||
-                sub.status === 'trialing',
-              latestPurchaseDate: sub.starts_at
-                ? new Date(sub.starts_at)
-                : null,
-              expirationDate: sub.current_period_ends_at
-                ? new Date(sub.current_period_ends_at)
-                : null,
-              productId: product?.store_identifier,
-              store: sub.store ?? product?.app?.type,
-              willRenew: sub.auto_renewal_status === 'will_renew',
-              duration: product?.subscription?.duration ?? null,
-            };
-          });
+          const products = (
+            await Promise.all(items.map(this.getProducts.bind(this)))
+          )
+            .filter((p): p is Product[] => p !== null)
+            .flat();
+          const product = products.find(p => p.id === sub.product_id);
+          if (!product) {
+            this.logger.warn(
+              `RevenueCat subscription missing product for product_id=${sub.product_id}`
+            );
+            return null;
+          }
+
+          return {
+            identifier: product.display_name,
+            isTrial: sub.status === 'trialing',
+            isActive:
+              sub.gives_access === true ||
+              sub.status === 'active' ||
+              sub.status === 'trialing',
+            latestPurchaseDate: sub.starts_at ? new Date(sub.starts_at) : null,
+            expirationDate: sub.current_period_ends_at
+              ? new Date(sub.current_period_ends_at)
+              : null,
+            productId: product.store_identifier,
+            store: sub.store ?? product.app?.type,
+            willRenew: sub.auto_renewal_status === 'will_renew',
+            duration: product.subscription?.duration ?? null,
+          };
         })
       );
       return parsedSubs.filter((s): s is Subscription => s !== null);
