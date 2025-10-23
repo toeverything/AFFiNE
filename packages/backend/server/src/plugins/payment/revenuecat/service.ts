@@ -23,12 +23,13 @@ const zRcV2RawProduct = z
       .object({ duration: z.string().nullable() })
       .partial()
       .nullable(),
-    app: z.object({ type: Store }).partial(),
+    app: z.object({ type: Store }).partial().nullish(),
   })
   .passthrough();
 
 const zRcV2RawEntitlementItem = z
   .object({
+    id: z.string().nonempty(),
     lookup_key: z.string().nonempty(),
     display_name: z.string().nonempty(),
     products: z
@@ -93,10 +94,13 @@ export const Subscription = z.object({
 });
 
 export type Subscription = z.infer<typeof Subscription>;
+type Entitlement = z.infer<typeof zRcV2RawEntitlementItem>;
+type Product = z.infer<typeof zRcV2RawProduct>;
 
 @Injectable()
 export class RevenueCatService {
   private readonly logger = new Logger(RevenueCatService.name);
+  private readonly productCache = new Map<string, Product>();
 
   constructor(private readonly config: Config) {}
 
@@ -114,6 +118,49 @@ export class RevenueCatService {
       throw new Error('RevenueCat Project ID is not configured');
     }
     return id;
+  }
+
+  async getProducts(ent: Entitlement): Promise<Product | null> {
+    if (ent.products?.items && ent.products.items.length > 0) {
+      return ent.products.items[0];
+    }
+    const entId = ent.id;
+    if (this.productCache.has(entId)) {
+      return this.productCache.get(entId)!;
+    }
+
+    const res = await fetch(
+      `https://api.revenuecat.com/v2/projects/${this.projectId}/entitlements/${entId}?expand=product`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      this.logger.warn(
+        `RevenueCat getProducts failed: ${res.status} ${res.statusText} - ${text}`
+      );
+      return null;
+    }
+
+    const json = await res.json();
+    const entParsed = zRcV2RawEntitlementItem.safeParse(json);
+    if (entParsed.success) {
+      const product = entParsed.data.products?.items?.[0] || null;
+      if (product) {
+        this.productCache.set(entId, product);
+      }
+      return product;
+    }
+    this.logger.error(
+      `RevenueCat entitlement ${entId} parse failed: ${JSON.stringify(
+        entParsed.error.format()
+      )}`
+    );
+    return null;
   }
 
   async getSubscriptions(customerId: string): Promise<Subscription[] | null> {
@@ -138,11 +185,11 @@ export class RevenueCatService {
     const envParsed = zRcV2RawEnvelope.safeParse(json);
 
     if (envParsed.success) {
-      return envParsed.data.items
-        .flatMap(sub => {
+      const parsedSubs = await Promise.all(
+        envParsed.data.items.flatMap(sub => {
           const items = sub.entitlements.items ?? [];
-          return items.map(ent => {
-            const product = ent.products?.items?.[0];
+          return items.map(async ent => {
+            const product = await this.getProducts(ent);
             return {
               identifier: ent.lookup_key,
               isTrial: sub.status === 'trialing',
@@ -157,13 +204,14 @@ export class RevenueCatService {
                 ? new Date(sub.current_period_ends_at)
                 : null,
               productId: product?.store_identifier,
-              store: sub.store ?? product?.app.type,
+              store: sub.store ?? product?.app?.type,
               willRenew: sub.auto_renewal_status === 'will_renew',
               duration: product?.subscription?.duration ?? null,
             };
           });
         })
-        .filter((s): s is Subscription => s !== null);
+      );
+      return parsedSubs.filter((s): s is Subscription => s !== null);
     }
     this.logger.error(
       `RevenueCat subscription parse failed: ${JSON.stringify(
