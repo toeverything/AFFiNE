@@ -46,6 +46,7 @@ const zRcV2RawEntitlements = z
 const zRcV2RawSubscription = z
   .object({
     object: z.enum(['subscription']),
+    id: z.string().nonempty(),
     product_id: z.string().nonempty().nullable(),
     entitlements: zRcV2RawEntitlements,
     starts_at: z.number(),
@@ -197,7 +198,7 @@ export class RevenueCatService {
           const product = products.find(p => p.id === sub.product_id);
           if (!product) {
             this.logger.warn(
-              `RevenueCat subscription missing product for product_id=${sub.product_id}`
+              `RevenueCat subscription ${sub.id} missing product for product_id=${sub.product_id}`
             );
             return null;
           }
