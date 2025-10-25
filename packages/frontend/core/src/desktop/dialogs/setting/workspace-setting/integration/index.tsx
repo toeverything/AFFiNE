@@ -1,7 +1,7 @@
 import { SettingHeader } from '@affine/component/setting-components';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { SubPageProvider, useSubPageIsland } from '../../sub-page';
@@ -10,22 +10,21 @@ import {
   IntegrationCardContent,
   IntegrationCardHeader,
 } from './card';
-import { getAllowedIntegrationList$ } from './constants';
+import { getAllowedIntegrationList } from './constants';
 import { type IntegrationItem } from './constants';
 import { list } from './index.css';
 
 export const IntegrationSetting = () => {
   const t = useI18n();
   const [opened, setOpened] = useState<string | null>(null);
-  const featureFlagService = useService(FeatureFlagService);
+  const workspaceService = useService(WorkspaceService);
+  const isCloudWorkspace = workspaceService.workspace.flavour !== 'local';
+  console.log('isCloudWorkspace', isCloudWorkspace);
 
-  const integrationList = useLiveData(
-    useMemo(
-      () => getAllowedIntegrationList$(featureFlagService),
-      [featureFlagService]
-    )
+  const integrationList = useMemo(
+    () => getAllowedIntegrationList(isCloudWorkspace),
+    [isCloudWorkspace]
   );
-
   const handleCardClick = useCallback((card: IntegrationItem) => {
     if ('setting' in card && card.setting) {
       setOpened(card.id);

@@ -135,4 +135,4 @@ export const StorageJSONSchema: JSONSchema = {
 };
 
 export type * from './provider';
-export { autoMetadata, toBuffer } from './utils';
+export { applyAttachHeaders, autoMetadata, sniffMime, toBuffer } from './utils';

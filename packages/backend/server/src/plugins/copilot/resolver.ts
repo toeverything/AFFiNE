@@ -30,6 +30,7 @@ import {
   Paginated,
   PaginationInput,
   RequestMutex,
+  sniffMime,
   Throttle,
   TooManyRequest,
   UserFriendlyError,
@@ -125,8 +126,8 @@ class DeleteSessionInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => String)
-  docId!: string;
+  @Field(() => String, { nullable: true })
+  docId!: string | undefined;
 
   @Field(() => [String])
   sessionIds!: string[];
@@ -363,6 +364,27 @@ class CopilotPromptType {
 }
 
 @ObjectType()
+class CopilotModelType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  name!: string;
+}
+
+@ObjectType()
+export class CopilotModelsType {
+  @Field(() => String)
+  defaultModel!: string;
+
+  @Field(() => [CopilotModelType])
+  optionalModels!: CopilotModelType[];
+
+  @Field(() => [CopilotModelType])
+  proModels!: CopilotModelType[];
+}
+
+@ObjectType()
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
@@ -400,9 +422,12 @@ export class CopilotType {
 @Throttle()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
+  private readonly modelNames = new Map<string, string>();
+
   constructor(
     private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
+    private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
     private readonly storage: CopilotStorage,
     private readonly docReader: DocReader,
@@ -441,6 +466,48 @@ export class CopilotResolver {
         .assert('Workspace.Copilot');
     }
     return { userId: user.id, workspaceId, docId: docId || undefined };
+  }
+
+  @ResolveField(() => CopilotModelsType, {
+    description:
+      'List available models for a prompt, with human-readable names',
+    complexity: 2,
+  })
+  async models(
+    @Args('promptName') promptName: string
+  ): Promise<CopilotModelsType> {
+    const prompt = await this.prompt.get(promptName);
+    if (!prompt) {
+      throw new NotFoundException('Prompt not found');
+    }
+    const convertModels = (ids: string[]) => {
+      return ids
+        .map(id => ({ id, name: this.modelNames.get(id) }))
+        .filter(m => !!m.name) as CopilotModelType[];
+    };
+    const proModels = prompt.config?.proModels || [];
+    const missing = new Set(
+      [...prompt.optionalModels, ...proModels].filter(
+        id => !this.modelNames.has(id)
+      )
+    );
+    if (missing.size) {
+      for (const model of missing) {
+        if (this.modelNames.has(model)) continue;
+        const provider = await this.providerFactory.getProviderByModel(model);
+        if (provider?.configured()) {
+          for (const m of provider.models) {
+            if (m.name) this.modelNames.set(m.id, m.name);
+          }
+        }
+      }
+    }
+
+    return {
+      defaultModel: prompt.model,
+      optionalModels: convertModels(prompt.optionalModels),
+      proModels: convertModels(proModels),
+    };
   }
 
   @ResolveField(() => CopilotSessionType, {
@@ -671,11 +738,24 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => DeleteSessionInput })
     options: DeleteSessionInput
   ): Promise<string[]> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
-    if (!options.sessionIds.length) {
+    const { workspaceId, docId, sessionIds } = options;
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId, docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+    if (!sessionIds.length) {
       throw new NotFoundException('Session not found');
     }
-    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
+    const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
@@ -727,7 +807,10 @@ export class CopilotResolver {
           filename,
           uploaded.buffer
         );
-        attachments.push({ attachment, mimeType: blob.mimetype });
+        attachments.push({
+          attachment,
+          mimeType: sniffMime(uploaded.buffer, blob.mimetype) || blob.mimetype,
+        });
       }
     }
 

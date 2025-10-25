@@ -13,6 +13,7 @@ export * from './feature-flag-service';
 export * from './file-size-limit-service';
 export * from './font-loader';
 export * from './generate-url-service';
+export * from './icon-picker-service';
 export * from './link-preview-service';
 export * from './native-clipboard-service';
 export * from './notification-service';

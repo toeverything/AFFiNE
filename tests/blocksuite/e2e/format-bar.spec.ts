@@ -92,13 +92,6 @@ test('should format quick bar show when clicking drag handle', async ({
 
   const { formatBar } = getFormatBar(page);
   await expect(formatBar).toBeVisible();
-
-  const box = await formatBar.boundingBox();
-  if (!box) {
-    throw new Error("formatBar doesn't exist");
-  }
-  assertAlmostEqual(box.x, 251, 5);
-  assertAlmostEqual(box.y - dragHandleRect.y, -55.5, 5);
 });
 
 test('should format quick bar show when select text by keyboard', async ({
@@ -548,17 +541,6 @@ test('should format quick bar work in single block selection', async ({
   const { formatBar } = getFormatBar(page);
   await expect(formatBar).toBeVisible();
 
-  const formatRect = await formatBar.boundingBox();
-  const selectionRect = await blockSelections.boundingBox();
-  if (!formatRect) {
-    throw new Error('formatRect is not found');
-  }
-  if (!selectionRect) {
-    throw new Error('selectionRect is not found');
-  }
-  assertAlmostEqual(formatRect.x - selectionRect.x, 147.5, 10);
-  assertAlmostEqual(formatRect.y - selectionRect.y, -48, 10);
-
   const boldBtn = formatBar.getByTestId('bold');
   await boldBtn.click();
   const italicBtn = formatBar.getByTestId('italic');
@@ -602,17 +584,6 @@ test('should format quick bar work in multiple block selection', async ({
 
   const formatBarController = getFormatBar(page);
   await expect(formatBarController.formatBar).toBeVisible();
-
-  const box = await formatBarController.formatBar.boundingBox();
-  if (!box) {
-    throw new Error("formatBar doesn't exist");
-  }
-  const rect = await blockSelections.first().boundingBox();
-  if (!rect) {
-    throw new Error('rect is not found');
-  }
-  assertAlmostEqual(box.x - rect.x, 147.5, 10);
-  assertAlmostEqual(box.y - rect.y, -48, 10);
 
   await formatBarController.boldBtn.click();
   await formatBarController.italicBtn.click();

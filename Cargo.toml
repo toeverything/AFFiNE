@@ -39,7 +39,7 @@ crossbeam-channel      = "0.5"
 dispatch2              = "0.3"
 docx-parser            = { git = "https://github.com/toeverything/docx-parser" }
 dotenvy                = "0.15"
-file-format            = { version = "0.26", features = ["reader"] }
+file-format            = { version = "0.28", features = ["reader"] }
 homedir                = "0.3"
 infer                  = { version = "0.19.0" }
 lasso                  = { version = "0.7", features = ["multi-threaded"] }

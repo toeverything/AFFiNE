@@ -7,7 +7,6 @@
 
 import AffineGraphQL
 import SnapKit
-import Then
 import UIKit
 
 class DocumentPickerView: UIView {

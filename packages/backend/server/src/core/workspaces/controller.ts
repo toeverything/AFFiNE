@@ -2,6 +2,7 @@ import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
 import {
+  applyAttachHeaders,
   BlobNotFound,
   CallMetric,
   CommentAttachmentNotFound,
@@ -83,6 +84,10 @@ export class WorkspacesController {
     } else {
       this.logger.warn(`Blob ${workspaceId}/${name} has no metadata`);
     }
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: name,
+    });
 
     res.setHeader('cache-control', 'public, max-age=2592000, immutable');
     body.pipe(res);
@@ -215,6 +220,10 @@ export class WorkspacesController {
         `Comment attachment ${workspaceId}/${docId}/${key} has no metadata`
       );
     }
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: key,
+    });
 
     res.setHeader('cache-control', 'private, max-age=2592000, immutable');
     body.pipe(res);

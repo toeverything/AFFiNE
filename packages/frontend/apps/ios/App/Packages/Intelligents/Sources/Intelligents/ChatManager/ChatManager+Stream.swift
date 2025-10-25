@@ -275,10 +275,10 @@ private extension ChatManager {
 
     let closable = ClosableTask(detachedTask: .detached(operation: {
       let eventSource = EventSource()
-      let dataTask = await eventSource.dataTask(for: request)
+      let dataTask = eventSource.dataTask(for: request)
       var document = ""
       self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
-      for await event in await dataTask.events() {
+      for await event in dataTask.events() {
         switch event {
         case .open:
           print("[*] connection opened")

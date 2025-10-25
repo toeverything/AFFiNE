@@ -17,6 +17,7 @@ export interface DocMeta {
   createDate: number;
   updatedDate?: number;
   favorite?: boolean;
+  trash?: boolean;
 }
 
 export interface WorkspaceMeta {

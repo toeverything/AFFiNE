@@ -148,6 +148,11 @@
           "description": "Whether allow new registrations.\n@default true",
           "default": true
         },
+        "allowSignupForOauth": {
+          "type": "boolean",
+          "description": "Whether allow new registrations via configured oauth.\n@default true",
+          "default": true
+        },
         "requireEmailDomainVerification": {
           "type": "boolean",
           "description": "Whether require email domain record verification before accessing restricted resources.\n@default false",
@@ -190,6 +195,11 @@
       "type": "object",
       "description": "Configuration for mailer module",
       "properties": {
+        "SMTP.name": {
+          "type": "string",
+          "description": "Name of the email server (e.g. your domain name)\n@default \"AFFiNE Server\"\n@environment `MAILER_SERVERNAME`",
+          "default": "AFFiNE Server"
+        },
         "SMTP.host": {
           "type": "string",
           "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"\n@environment `MAILER_HOST`",
@@ -224,6 +234,11 @@
           "type": "array",
           "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
           "default": []
+        },
+        "fallbackSMTP.name": {
+          "type": "string",
+          "description": "Name of the fallback email server (e.g. your domain name)\n@default \"AFFiNE Server\"",
+          "default": "AFFiNE Server"
         },
         "fallbackSMTP.host": {
           "type": "string",
@@ -669,16 +684,16 @@
         },
         "scenarios": {
           "type": "object",
-          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"claude-sonnet-4@20250514\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"rerank\":\"gpt-4.1\",\"coding\":\"claude-sonnet-4@20250514\",\"complex_text_generation\":\"gpt-4o-2024-08-06\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
+          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"gemini-2.5-flash\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"rerank\":\"gpt-4.1\",\"coding\":\"claude-sonnet-4-5@20250929\",\"complex_text_generation\":\"gpt-4o-2024-08-06\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
           "default": {
             "override_enabled": false,
             "scenarios": {
               "audio_transcribing": "gemini-2.5-flash",
-              "chat": "claude-sonnet-4@20250514",
+              "chat": "gemini-2.5-flash",
               "embedding": "gemini-embedding-001",
               "image": "gpt-image-1",
               "rerank": "gpt-4.1",
-              "coding": "claude-sonnet-4@20250514",
+              "coding": "claude-sonnet-4-5@20250929",
               "complex_text_generation": "gpt-4o-2024-08-06",
               "quick_decision_making": "gpt-5-mini",
               "quick_text_generation": "gemini-2.5-flash",
@@ -1093,18 +1108,33 @@
         },
         "apiKey": {
           "type": "string",
-          "description": "Stripe API key to enable payment service.\n@default \"\"\n@environment `STRIPE_API_KEY`",
+          "description": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.\n@default \"\"\n@environment `STRIPE_API_KEY`",
           "default": ""
         },
         "webhookKey": {
           "type": "string",
-          "description": "Stripe webhook key to enable payment service.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
+          "description": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
           "default": ""
         },
         "stripe": {
           "type": "object",
-          "description": "Stripe sdk options\n@default {}\n@link https://docs.stripe.com/api",
-          "default": {}
+          "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\"}\n@link https://docs.stripe.com/api",
+          "default": {
+            "apiKey": "",
+            "webhookKey": ""
+          }
+        },
+        "revenuecat": {
+          "type": "object",
+          "description": "RevenueCat integration configs\n@default {\"enabled\":false,\"apiKey\":\"\",\"projectId\":\"\",\"webhookAuth\":\"\",\"environment\":\"production\",\"productMap\":{}}\n@link https://www.revenuecat.com/docs/",
+          "default": {
+            "enabled": false,
+            "apiKey": "",
+            "projectId": "",
+            "webhookAuth": "",
+            "environment": "production",
+            "productMap": {}
+          }
         }
       }
     },

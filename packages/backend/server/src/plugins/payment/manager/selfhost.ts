@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, UserStripeCustomer } from '@prisma/client';
-import { pick } from 'lodash-es';
+import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
+import { omit, pick } from 'lodash-es';
 import { z } from 'zod';
 
 import { SubscriptionPlanNotFound, URLHelper } from '../../../base';
@@ -132,8 +132,9 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
       const [subscription] = await this.db.$transaction([
         this.db.subscription.create({
           data: {
+            provider: Provider.stripe,
             targetId: key,
-            ...subscriptionData,
+            ...omit(subscriptionData, 'provider', 'iapStore'),
           },
         }),
         this.db.license.create({

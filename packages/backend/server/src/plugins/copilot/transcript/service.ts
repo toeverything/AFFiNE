@@ -12,6 +12,7 @@ import {
   NoCopilotProviderAvailable,
   OnEvent,
   OnJob,
+  sniffMime,
 } from '../../../base';
 import { Models } from '../../../models';
 import { PromptService } from '../prompt';
@@ -85,7 +86,10 @@ export class CopilotTranscriptionService {
         `${blobId}-${idx}`,
         buffer
       );
-      infos.push({ url, mimeType: blob.mimetype });
+      infos.push({
+        url,
+        mimeType: sniffMime(buffer, blob.mimetype) || blob.mimetype,
+      });
     }
 
     const model = await this.getModel(userId);

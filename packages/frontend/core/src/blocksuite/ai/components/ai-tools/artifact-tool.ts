@@ -160,6 +160,12 @@ export abstract class ArtifactTool<
     `;
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    // open the preview panel immediately
+    this.openOrUpdatePreviewPanel();
+  }
+
   override render() {
     const err = this.getErrorTemplate();
     if (err) {

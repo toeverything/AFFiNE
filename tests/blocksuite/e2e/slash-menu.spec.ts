@@ -606,7 +606,7 @@ test.describe('slash search', () => {
     await expect(slashMenu).toBeVisible();
 
     await type(page, 'c');
-    await expect(slashItems).toHaveCount(8);
+    await expect(slashItems).toHaveCount(9);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Italic']);
     await expect(slashItems.nth(2).locator('.text')).toHaveText(['New Doc']);

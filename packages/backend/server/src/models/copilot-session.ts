@@ -396,7 +396,10 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async update(options: UpdateChatSessionOptions): Promise<string> {
+  async update(
+    options: UpdateChatSessionOptions,
+    internalCall = false
+  ): Promise<string> {
     const { userId, sessionId, docId, promptName, pinned, title } = options;
     const session = await this.getExists(
       sessionId,
@@ -415,14 +418,16 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     // not allow to update action session
-    if (session.prompt.action) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update action: ${session.id}`
-      );
-    } else if (docId && session.parentSessionId) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update docId for forked session: ${session.id}`
-      );
+    if (!internalCall) {
+      if (session.prompt.action) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update action: ${session.id}`
+        );
+      } else if (docId && session.parentSessionId) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update docId for forked session: ${session.id}`
+        );
+      }
     }
 
     if (promptName) {
@@ -459,27 +464,19 @@ export class CopilotSessionModel extends BaseModel {
         docId: options.docId,
         deletedAt: null,
       },
-      select: { id: true, prompt: true },
+      select: { id: true },
     });
+
     const sessionIds = sessions.map(({ id }) => id);
     // cleanup all messages
     await this.db.aiSessionMessage.deleteMany({
       where: { sessionId: { in: sessionIds } },
     });
 
-    // only mark action session as deleted
-    // chat session always can be reuse
-    const actionIds = sessions
-      .filter(({ prompt }) => !!prompt.action)
-      .map(({ id }) => id);
-
-    // 标记 action session 为已删除
-    if (actionIds.length > 0) {
-      await this.db.aiSession.updateMany({
-        where: { id: { in: actionIds } },
-        data: { pinned: false, deletedAt: new Date() },
-      });
-    }
+    await this.db.aiSession.updateMany({
+      where: { id: { in: sessionIds } },
+      data: { pinned: false, deletedAt: new Date() },
+    });
 
     return sessionIds;
   }

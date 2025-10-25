@@ -1,4 +1,5 @@
 import { Button, IconButton, Modal } from '@affine/component';
+import { IconType } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
@@ -7,6 +8,8 @@ import {
   GlobalDialogService,
   type WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
+import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
+import { OrganizeService } from '@affine/core/modules/organize';
 import { UrlService } from '@affine/core/modules/url';
 import {
   getAFFiNEWorkspaceSchema,
@@ -48,6 +51,135 @@ import * as style from './styles.css';
 
 const logger = new DebugLogger('import');
 
+type NotionPageIcon = {
+  type: 'emoji' | 'image';
+  content: string; // emoji unicode or image URL/data
+};
+
+type FolderHierarchy = {
+  name: string;
+  path: string;
+  children: Map<string, FolderHierarchy>;
+  pageId?: string;
+  parentPath?: string;
+  icon?: NotionPageIcon;
+};
+
+// Helper function to create folder structure using OrganizeService
+function createFolderStructure(
+  organizeService: OrganizeService,
+  hierarchy: FolderHierarchy,
+  parentFolderId: string | null = null,
+  explorerIconService?: ExplorerIconService
+): {
+  folderId: string | null;
+  docLinks: Array<{ folderId: string; docId: string }>;
+} {
+  const docLinks: Array<{ folderId: string; docId: string }> = [];
+  const rootFolder = organizeService.folderTree.rootFolder;
+
+  function processHierarchyNode(
+    node: FolderHierarchy,
+    currentParentId: string | null
+  ): string | null {
+    let currentFolderId = currentParentId;
+
+    // If this node represents a folder (has children but no pageId), create it
+    if (node.children.size > 0 && !node.pageId && node.name) {
+      const parent = currentParentId
+        ? organizeService.folderTree.folderNode$(currentParentId).value
+        : rootFolder;
+
+      if (parent) {
+        const index = parent.indexAt('after');
+        currentFolderId = parent.createFolder(node.name, index);
+      }
+    }
+
+    // Process all children
+    for (const child of node.children.values()) {
+      if (child.pageId) {
+        // This is a document, link it to the current folder
+        if (currentFolderId) {
+          docLinks.push({ folderId: currentFolderId, docId: child.pageId });
+        }
+
+        // Set icon for the document if available
+        if (child.icon && explorerIconService) {
+          logger.debug('=== Setting icon for document ===');
+          logger.debug('Document ID:', child.pageId);
+          logger.debug('Icon data:', child.icon);
+
+          try {
+            let iconData;
+            if (child.icon.type === 'emoji') {
+              iconData = {
+                type: IconType.Emoji as const,
+                unicode: child.icon.content,
+              };
+              logger.debug('Created emoji icon data:', iconData);
+            } else if (child.icon.type === 'image') {
+              // For image icons, we'd need to handle blob conversion
+              // For now, let's skip image icons or convert them to default
+              // This could be enhanced later to download and convert images to blobs
+              logger.debug(
+                'Skipping image icon (not implemented):',
+                child.icon.content
+              );
+              iconData = undefined;
+            }
+
+            if (iconData) {
+              logger.debug('Calling explorerIconService.setIcon with:', {
+                where: 'doc',
+                id: child.pageId,
+                icon: iconData,
+              });
+              explorerIconService.setIcon({
+                where: 'doc',
+                id: child.pageId,
+                icon: iconData,
+              });
+              logger.debug('Icon set successfully for document:', child.pageId);
+            } else {
+              logger.debug('No valid icon data to set');
+            }
+          } catch (error) {
+            logger.error(
+              'Error setting icon for document:',
+              child.pageId,
+              error
+            );
+            logger.warn(
+              'Failed to set icon for document:',
+              child.pageId,
+              error
+            );
+          }
+        } else {
+          if (!child.icon) {
+            logger.debug('No icon found for document:', child.pageId);
+          }
+          if (!explorerIconService) {
+            logger.debug(
+              'ExplorerIconService not available for document:',
+              child.pageId
+            );
+          }
+        }
+      } else if (child.children.size > 0) {
+        // This is a subfolder, process it recursively
+        processHierarchyNode(child, currentFolderId);
+      }
+    }
+
+    return currentFolderId;
+  }
+
+  const rootFolderId = processHierarchyNode(hierarchy, parentFolderId);
+  return { folderId: rootFolderId, docLinks };
+}
+
 type ImportType =
   | 'markdown'
   | 'markdownZip'
@@ -61,6 +193,7 @@ type ImportResult = {
   docIds: string[];
   entryId?: string;
   isWorkspaceFile?: boolean;
+  rootFolderId?: string;
 };
 
 type ImportConfig = {
@@ -68,7 +201,9 @@ type ImportConfig = {
   importFunction: (
     docCollection: Workspace,
     files: File[],
-    handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>
+    handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>,
+    organizeService?: OrganizeService,
+    explorerIconService?: ExplorerIconService
   ) => Promise<ImportResult>;
 };
 
@@ -160,7 +295,13 @@ const importOptions = [
 const importConfigs: Record<ImportType, ImportConfig> = {
   markdown: {
     fileOptions: { acceptType: 'Markdown', multiple: true },
-    importFunction: async (docCollection, files) => {
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      _explorerIconService
+    ) => {
       const docIds: string[] = [];
       for (const file of files) {
         const text = await file.text();
@@ -181,7 +322,13 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   markdownZip: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async (docCollection, files) => {
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      _explorerIconService
+    ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for markdownZip import');
@@ -199,7 +346,13 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   html: {
     fileOptions: { acceptType: 'Html', multiple: true },
-    importFunction: async (docCollection, files) => {
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      _explorerIconService
+    ) => {
       const docIds: string[] = [];
       for (const file of files) {
         const text = await file.text();
@@ -220,28 +373,74 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   notion: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async (docCollection, files) => {
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      organizeService,
+      explorerIconService
+    ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for notion import');
       }
-      const { entryId, pageIds, isWorkspaceFile } =
+      const { entryId, pageIds, isWorkspaceFile, folderHierarchy } =
         await NotionHtmlTransformer.importNotionZip({
           collection: docCollection,
           schema: getAFFiNEWorkspaceSchema(),
           imported: file,
           extensions: getStoreManager().config.init().value.get('store'),
         });
+
+      let rootFolderId: string | undefined;
+
+      // Create folder structure if hierarchy exists and OrganizeService is available
+      if (
+        folderHierarchy &&
+        organizeService &&
+        folderHierarchy.children.size > 0
+      ) {
+        try {
+          const { folderId, docLinks } = createFolderStructure(
+            organizeService,
+            folderHierarchy,
+            null,
+            explorerIconService
+          );
+          rootFolderId = folderId || undefined;
+
+          // Create links for all documents to their respective folders
+          for (const { folderId, docId } of docLinks) {
+            const folder =
+              organizeService.folderTree.folderNode$(folderId).value;
+            if (folder) {
+              const index = folder.indexAt('after');
+              folder.createLink('doc', docId, index);
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to create folder structure:', error);
+          // Continue with import even if folder creation fails
+        }
+      }
+
       return {
         docIds: pageIds,
         entryId,
         isWorkspaceFile,
+        rootFolderId,
       };
     },
   },
   snapshot: {
     fileOptions: { acceptType: 'Zip', multiple: false },
-    importFunction: async (docCollection, files) => {
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      _explorerIconService
+    ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for snapshot import');
@@ -263,7 +462,13 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   },
   dotaffinefile: {
     fileOptions: { acceptType: 'Skip', multiple: false },
-    importFunction: async (_, __, handleImportAffineFile) => {
+    importFunction: async (
+      _,
+      __,
+      handleImportAffineFile,
+      _organizeService,
+      _explorerIconService
+    ) => {
       await handleImportAffineFile();
       return {
         docIds: [],
@@ -441,6 +646,8 @@ export const ImportDialog = ({
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
+  const organizeService = useService(OrganizeService);
+  const explorerIconService = useService(ExplorerIconService);
 
   const globalDialogService = useService(GlobalDialogService);
 
@@ -514,14 +721,16 @@ export const ImportDialog = ({
           });
         }
 
-        const { docIds, entryId, isWorkspaceFile } =
+        const { docIds, entryId, isWorkspaceFile, rootFolderId } =
           await importConfig.importFunction(
             docCollection,
             files,
-            handleImportAffineFile
+            handleImportAffineFile,
+            organizeService,
+            explorerIconService
           );
 
-        setImportResult({ docIds, entryId, isWorkspaceFile });
+        setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
         setStatus('success');
         track.$.importModal.$.import({
           type,
@@ -546,7 +755,13 @@ export const ImportDialog = ({
         logger.error('Failed to import', error);
       }
     },
-    [docCollection, handleImportAffineFile, t]
+    [
+      docCollection,
+      explorerIconService,
+      handleImportAffineFile,
+      organizeService,
+      t,
+    ]
   );
 
   const handleComplete = useCallback(() => {

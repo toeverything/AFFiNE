@@ -5,6 +5,7 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
+import type { TextAlign } from '../../consts';
 import type { BlockMeta } from '../../utils/types';
 
 // `toggle` type has been deprecated, do not use it
@@ -13,6 +14,7 @@ export type ListType = 'bulleted' | 'numbered' | 'todo' | 'toggle';
 export type ListProps = {
   type: ListType;
   text: Text;
+  textAlign?: TextAlign;
   checked: boolean;
   collapsed: boolean;
   order: number | null;
@@ -25,6 +27,7 @@ export const ListBlockSchema = defineBlockSchema({
     ({
       type: 'bulleted',
       text: internal.Text(),
+      textAlign: undefined,
       checked: false,
       collapsed: false,
 

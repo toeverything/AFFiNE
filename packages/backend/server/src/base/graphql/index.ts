@@ -8,6 +8,7 @@ import { Global, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import type { Request, Response } from 'express';
 
+import { NodeEnv } from '../../env';
 import { Config } from '../config';
 import { mapAnyError } from '../nestjs/exception';
 import { GQLLoggerPlugin } from './logger-plugin';
@@ -30,7 +31,7 @@ export type GraphqlContext = {
             numberScalarMode: 'integer',
           },
           useGlobalPrefix: true,
-          playground: true,
+          graphiql: env.NODE_ENV === NodeEnv.Development,
           sortSchema: true,
           autoSchemaFile: join(
             env.projectRoot,

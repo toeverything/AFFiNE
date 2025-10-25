@@ -190,6 +190,7 @@ const SettingModalInner = ({
         }
       });
     }
+    modalContentWrapperRef.current?.scrollTo({ top: 0 });
   }, [settingState]);
   return (
     <FrameworkScope scope={currentServer.scope}>

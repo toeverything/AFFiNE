@@ -14,13 +14,21 @@ export const contentRoot = style({
 });
 
 export const iconPicker = style({
-  border: `1px solid ${cssVarV2.layer.insideBorder.border}`,
-  width: 32,
-  height: 32,
   padding: 0,
+  lineHeight: 1,
+  color: cssVarV2.icon.primary,
+});
+globalStyle(`${iconPicker} span:has(svg)`, {
+  lineHeight: 0,
+});
+
+export const iconNamePickerIcon = style({
   flexShrink: 0,
   fontSize: 24,
   borderRadius: 4,
+  width: 32,
+  height: 32,
+  border: `1px solid ${cssVarV2.layer.insideBorder.border}`,
   selectors: {
     '&[data-icon-type="emoji"]': {
       fontSize: 20,

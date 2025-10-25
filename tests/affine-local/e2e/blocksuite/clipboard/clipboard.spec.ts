@@ -386,7 +386,7 @@ test.describe('paste to code block', () => {
     await pressEnter(page);
     await addCodeBlock(page);
     const plainTextCode = [
-      '  model: anthropic("claude-3-7-sonnet-20250219"),',
+      '  model: anthropic("claude-sonnet-4-5-20250929"),',
       '  prompt: How many people will live in the world in 2040?',
       '  providerOptions: {',
       '    anthropic: {',

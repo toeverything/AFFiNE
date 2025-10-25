@@ -2,6 +2,8 @@ import type {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type { SubscriptionService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -129,6 +131,15 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor peekViewService!: PeekViewService;
 
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
   @state()
   accessor session: CopilotChatHistoryFragment | null | undefined;
 
@@ -227,6 +238,31 @@ export class ChatPanel extends SignalWatcher(
       this.setSession(session);
     }
     return this.session;
+  };
+
+  private readonly deleteSession = async (
+    session: BlockSuitePresets.AIRecentSession
+  ) => {
+    if (!AIProvider.histories) {
+      return;
+    }
+    const confirm = await this.notificationService.confirm({
+      title: 'Delete this history?',
+      message:
+        'Do you want to delete this AI conversation history? Once deleted, it cannot be recovered.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (confirm) {
+      await AIProvider.histories.cleanup(
+        session.workspaceId,
+        session.docId || undefined,
+        [session.sessionId]
+      );
+      if (session.sessionId === this.session?.sessionId) {
+        this.newSession();
+      }
+    }
   };
 
   private readonly updateSession = async (options: UpdateChatSessionInput) => {
@@ -405,6 +441,7 @@ export class ChatPanel extends SignalWatcher(
         .togglePin=${this.togglePin}
         .openSession=${this.openSession}
         .openDoc=${this.openDoc}
+        .deleteSession=${this.deleteSession}
       ></ai-chat-panel-title>
       ${keyed(
         this.hasPinned ? this.session?.sessionId : this.doc.id,
@@ -426,6 +463,9 @@ export class ChatPanel extends SignalWatcher(
           .aiDraftService=${this.aiDraftService}
           .aiToolsConfigService=${this.aiToolsConfigService}
           .peekViewService=${this.peekViewService}
+          .subscriptionService=${this.subscriptionService}
+          .aiModelService=${this.aiModelService}
+          .onAISubscribe=${this.onAISubscribe}
           .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
           .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}
