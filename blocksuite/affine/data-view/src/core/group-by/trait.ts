@@ -168,10 +168,15 @@ export class GroupTrait {
   });
 
   groupDataMap$ = computed(() => {
-    const st = this.staticInfo$.value;
-    if (!st) return;
-    const { staticMap, groupInfo } = st;
-    const map: Record<string, Group> = { ...staticMap };
+    const si = this.staticInfo$.value;
+    if (!si) return;
+    const { staticMap, groupInfo } = si;
+    // Create fresh Group instances with empty rows arrays
+    const map: Record<string, Group> = {};
+    Object.entries(staticMap).forEach(([key, group]) => {
+      map[key] = new Group(key, group.value, groupInfo, this);
+    });
+    // Assign rows to their respective groups
     this.view.rows$.value.forEach(row => {
       const cell = this.view.cellGetOrCreate(row.rowId, groupInfo.property.id);
       const jv = cell.jsonValue$.value;
@@ -312,6 +317,23 @@ export class GroupTrait {
         .cellGetOrCreate(rowId, groupInfo.property.id)
         .valueSet(newValue);
     }
+    const map = this.groupDataMap$.value;
+    const info = this.groupInfo$.value;
+    if (!map || !info) return;
+
+    const addFn = info.config.addToGroup;
+    if (addFn === false) return;
+
+    const group = map[key];
+    if (!group) return;
+
+    const current = group.value;
+    // Handle both null and non-null values to ensure proper group assignment
+    const newVal = addFn(
+      current,
+      this.view.cellGetOrCreate(rowId, info.property.id).jsonValue$.value
+    );
+    this.view.cellGetOrCreate(rowId, info.property.id).valueSet(newVal);
   }
   changeGroupMode(modeName: string) {
     const propId = this.property$.value?.id;

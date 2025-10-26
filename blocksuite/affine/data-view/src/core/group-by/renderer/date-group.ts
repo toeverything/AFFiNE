@@ -40,8 +40,14 @@ export class DateGroupView extends SignalWatcher(
 
   protected override render() {
     const name = this.group.name$.value;
+    // Use contextual name based on the property when value is null
+    const displayName =
+      name ||
+      (this.group.value === null
+        ? `No ${this.group.property.name$.value}`
+        : 'Ungroups');
     return html`<div class="dv-date-group">
-      <span>${name || 'Ungroups'}</span>
+      <span>${displayName}</span>
     </div>`;
   }
 }
