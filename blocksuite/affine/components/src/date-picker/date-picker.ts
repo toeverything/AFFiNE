@@ -221,9 +221,19 @@ export class DatePicker extends WithDisposable(LitElement) {
           }
 
           // otherwise fall back to per-row logic
-          const cols = week
-            .map((c, i) => (c.rangeStart || c.inRange || c.rangeEnd ? i : -1))
-            .filter(i => i >= 0);
+          // Check if any cell in this week is both start and end (single-day range)
+          const hasSingleDayRange = week.some(c => c.rangeStart && c.rangeEnd);
+
+          // If single-day range, only highlight that specific cell
+          const cols = hasSingleDayRange
+            ? week
+                .map((c, i) => (c.rangeStart && c.rangeEnd ? i : -1))
+                .filter(i => i >= 0)
+            : week
+                .map((c, i) =>
+                  c.rangeStart || c.inRange || c.rangeEnd ? i : -1
+                )
+                .filter(i => i >= 0);
 
           // no highlight on this row?
           if (cols.length === 0) {
