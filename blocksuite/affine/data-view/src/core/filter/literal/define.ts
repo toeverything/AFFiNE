@@ -2,7 +2,6 @@ import {
   menu,
   popMenu,
   popupTargetFromElement,
-  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import {
@@ -10,6 +9,7 @@ import {
   CheckBoxCheckSolidIcon,
   CheckBoxUnIcon,
 } from '@blocksuite/icons/lit';
+import { autoPlacement, offset } from '@floating-ui/dom';
 import { css, html } from 'lit';
 
 import { t } from '../../logical/type-presets.js';
@@ -39,6 +39,12 @@ const DROPDOWN_BUTTON_CSS = css`
 
 const DIRECTIONS = ['past', 'this', 'next'] as const;
 const UNITS = ['day', 'week', 'month', 'year'] as const;
+const createRelativeDropdownMiddleware = () => [
+  offset({ mainAxis: 4, crossAxis: 0 }),
+  autoPlacement({
+    allowedPlacements: ['bottom-start', 'bottom', 'top-start', 'top'],
+  }),
+];
 
 export const allLiteralConfig: LiteralItemsConfig[] = [
   createLiteral({
@@ -65,7 +71,7 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
                     e.currentTarget as HTMLElement
                   );
                   popMenu(tgt, {
-                    middleware: subMenuMiddleware,
+                    middleware: createRelativeDropdownMiddleware(),
                     options: {
                       items: [
                         menu.group({
@@ -94,7 +100,7 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
                     e.currentTarget as HTMLElement
                   );
                   popMenu(tgt, {
-                    middleware: subMenuMiddleware,
+                    middleware: createRelativeDropdownMiddleware(),
                     options: {
                       items: [
                         menu.group({

@@ -4,7 +4,6 @@ import {
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
-  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -13,6 +12,7 @@ import {
   DeleteIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import { autoPlacement, offset } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -121,9 +121,10 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
             next.args = [{ type: 'literal', value: ['this', 'week'] }];
           } else if (v.name === 'before' || v.name === 'after') {
             // Set a default date for before/after filters
-            const defaultDate = v.name === 'before'
-              ? new Date(Date.now() - 86400000).getTime() // Yesterday
-              : new Date(Date.now() + 86400000).getTime(); // Tomorrow
+            const defaultDate =
+              v.name === 'before'
+                ? new Date(Date.now() - 86400000).getTime() // Yesterday
+                : new Date(Date.now() + 86400000).getTime(); // Tomorrow
             next.args = [{ type: 'literal', value: defaultDate }];
           }
           this.setFilter(next);
@@ -157,27 +158,48 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                   menu.action({
                     name: currentFnConfig.label,
                     postfix: ArrowRightSmallIcon(),
-                    select: () => {
+                    select: ele => {
                       // Dynamically create function items each time to get updated selection
                       const fnItems = this.getFunctionItems();
 
-                      // Pop submenu on click
-                      popMenu(origTarget, {
-                        middleware: subMenuMiddleware,
-                        options: {
-                          items: [
-                            menu.group({
-                              items: fnItems,
-                            }),
+                      // Create custom middleware for dropdown positioning below the button
+                      const dropdownMiddleware = [
+                        offset({ mainAxis: 4, crossAxis: 0 }),
+                        autoPlacement({
+                          allowedPlacements: [
+                            'bottom-start',
+                            'bottom',
+                            'top-start',
+                            'top',
                           ],
-                        },
-                      });
+                        }),
+                      ];
+
+                      // Pop submenu on click below the button
+                      const { menu: dropdownMenu } = popMenu(
+                        popupTargetFromElement(ele),
+                        {
+                          middleware: dropdownMiddleware,
+                          options: {
+                            items: [
+                              menu.group({
+                                items: fnItems,
+                              }),
+                            ],
+                          },
+                        }
+                      );
+
+                      // Set higher z-index to ensure dropdown appears on top
+                      if (dropdownMenu?.menuElement) {
+                        dropdownMenu.menuElement.style.zIndex = '10000';
+                      }
                       // Keep main menu open
                       return false;
                     },
-                  })
-                ]
-              })
+                  }),
+                ],
+              }),
             ];
           }),
           // Dynamic literal section that shows date picker or other inputs
