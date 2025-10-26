@@ -12952,13 +12952,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rollup/rollup-win32-x64-msvc@npm:4.43.0":
-  version: 4.43.0
-  resolution: "@rollup/rollup-win32-x64-msvc@npm:4.43.0"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
 "@rrweb/types@npm:^2.0.0-alpha.18":
   version: 2.0.0-alpha.18
   resolution: "@rrweb/types@npm:2.0.0-alpha.18"

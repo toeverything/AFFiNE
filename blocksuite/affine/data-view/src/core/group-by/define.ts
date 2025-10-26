@@ -4,6 +4,7 @@ import {
   differenceInCalendarDays,
   format as fmt,
   isToday,
+  isTomorrow,
   isYesterday,
   startOfDay,
   startOfMonth,
@@ -61,22 +62,55 @@ const dateRelativeCfg = buildDateCfg(
   v => {
     if (v == null) return [ungroups];
     const d = startOfDay(new Date(v));
-    const daysAgo = differenceInCalendarDays(new Date(), d);
+    const today = startOfDay(new Date());
+    const daysDiff = differenceInCalendarDays(d, today);
+
+    // Handle specific days
     if (isToday(d)) return [{ key: 'today', value: +d }];
+    if (isTomorrow(d)) return [{ key: 'tomorrow', value: +d }];
     if (isYesterday(d)) return [{ key: 'yesterday', value: +d }];
+
+    // Handle future dates
+    if (daysDiff > 0) {
+      if (daysDiff <= 7) return [{ key: 'next7', value: +d }];
+      if (daysDiff <= 30) return [{ key: 'next30', value: +d }];
+      // Group by month for future dates beyond 30 days
+      const m = startOfMonth(d);
+      return [{ key: `${+m}`, value: +m }];
+    }
+
+    // Handle past dates
+    const daysAgo = -daysDiff;
     if (daysAgo <= 7) return [{ key: 'last7', value: +d }];
     if (daysAgo <= 30) return [{ key: 'last30', value: +d }];
+    // Group by month for past dates beyond 30 days
     const m = startOfMonth(d);
     return [{ key: `${+m}`, value: +m }];
   },
   v => {
     if (v == null) return '';
     const d = startOfDay(new Date(v));
-    const daysAgo = differenceInCalendarDays(new Date(), d);
+    const today = startOfDay(new Date());
+    const daysDiff = differenceInCalendarDays(d, today);
+
+    // Handle specific days
     if (isToday(d)) return 'Today';
+    if (isTomorrow(d)) return 'Tomorrow';
     if (isYesterday(d)) return 'Yesterday';
-    if (daysAgo <= 7) return 'Last 7 days';
-    if (daysAgo <= 30) return 'Last 30 days';
+
+    // Handle future dates
+    if (daysDiff > 0) {
+      if (daysDiff <= 7) return 'Next 7 days';
+      if (daysDiff <= 30) return 'Next 30 days';
+      // Show month/year for future dates beyond 30 days
+      return fmt(new Date(v), 'MMM yyyy');
+    }
+
+    // Handle past dates
+    const daysAgo = -daysDiff;
+    if (daysAgo <= 7) return 'Last 7 days';
+    if (daysAgo <= 30) return 'Last 30 days';
+    // Show month/year for past dates beyond 30 days
     return fmt(new Date(v), 'MMM yyyy');
   }
 );

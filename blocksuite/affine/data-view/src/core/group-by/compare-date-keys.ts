@@ -1,4 +1,12 @@
-export const RELATIVE_ASC = ['last30', 'last7', 'yesterday', 'today'] as const;
+export const RELATIVE_ASC = [
+  'last30',
+  'last7',
+  'yesterday',
+  'today',
+  'tomorrow',
+  'next7',
+  'next30',
+] as const;
 export const RELATIVE_DESC = [...RELATIVE_ASC].reverse();
 
 /**

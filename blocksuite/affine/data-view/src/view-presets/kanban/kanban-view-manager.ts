@@ -74,12 +74,15 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
           };
         });
       },
-      sortGroup: ids =>
-        sortByManually(
+      sortGroup: (ids, asc) => {
+        const sorted = sortByManually(
           ids,
           v => v,
           this.view?.groupProperties.map(v => v.key) ?? []
-        ),
+        );
+        // If descending order is requested, reverse the sorted array
+        return asc === false ? sorted.reverse() : sorted;
+      },
       sortRow: (key, rows) => {
         const property = this.view?.groupProperties.find(v => v.key === key);
         return sortByManually(
