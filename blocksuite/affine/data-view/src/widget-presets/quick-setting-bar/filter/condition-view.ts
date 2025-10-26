@@ -14,6 +14,8 @@ import {
 import { ShadowlessElement } from '@blocksuite/std';
 import { autoPlacement, offset } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
+import { addDays } from 'date-fns/addDays';
+import { subDays } from 'date-fns/subDays';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -120,11 +122,11 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
           if (v.name === 'relativeToToday') {
             next.args = [{ type: 'literal', value: ['this', 'week'] }];
           } else if (v.name === 'before' || v.name === 'after') {
-            // Set a default date for before/after filters
+            // Set a default date for before/after filters using date-fns to handle DST
             const defaultDate =
               v.name === 'before'
-                ? new Date(Date.now() - 86400000).getTime() // Yesterday
-                : new Date(Date.now() + 86400000).getTime(); // Tomorrow
+                ? subDays(new Date(), 1).getTime()
+                : addDays(new Date(), 1).getTime();
             next.args = [{ type: 'literal', value: defaultDate }];
           }
           this.setFilter(next);
@@ -192,7 +194,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
 
                       // Set higher z-index to ensure dropdown appears on top
                       if (dropdownMenu?.menuElement) {
-                        dropdownMenu.menuElement.style.zIndex = '10000';
+                        dropdownMenu.menuElement.dataset.layer = 'raised';
                       }
                       // Keep main menu open
                       return false;
@@ -247,9 +249,14 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
       return `${name}: ${fn.label}`;
     }
 
-    const vals = (filter.args ?? []).map(a => a?.value);
-    const constWrapper = vals.map(v => ({ value: v, type: null }) as any);
-    const str = fn.shortString?.(...constWrapper) ?? '';
+    type ShortStringParams = Parameters<NonNullable<typeof fn.shortString>>;
+    const literalArgs = filter.args ?? [];
+    const shortStringArgs = fn.args.map((argType, index) => {
+      const literal = literalArgs[index];
+      if (!literal) return undefined;
+      return { value: literal.value, type: argType };
+    }) as ShortStringParams;
+    const str = fn.shortString ? fn.shortString(...shortStringArgs) : '';
     return str ? `${name}${str}` : name;
   }
 

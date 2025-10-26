@@ -49,6 +49,10 @@ export class MenuComponent
       color: ${unsafeCSSVarV2('text/primary')};
     }
 
+    affine-menu[data-layer='raised'] {
+      z-index: 10000;
+    }
+
     .affine-menu-search-container {
       border-radius: 4px;
       display: flex;
