@@ -4,6 +4,7 @@ import {
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
+  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -100,7 +101,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     );
   }
 
-  private getFunctionItems(target: PopupTarget) {
+  private getFunctionItems() {
     const filter = this.filter$;
     if (!filter) return [];
     const refType = getRefType(this.vars.value, filter.left);
@@ -118,9 +119,16 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
           };
           if (v.name === 'relativeToToday') {
             next.args = [{ type: 'literal', value: ['this', 'week'] }];
+          } else if (v.name === 'before' || v.name === 'after') {
+            // Set a default date for before/after filters
+            const defaultDate = v.name === 'before'
+              ? new Date(Date.now() - 86400000).getTime() // Yesterday
+              : new Date(Date.now() + 86400000).getTime(); // Tomorrow
+            next.args = [{ type: 'literal', value: defaultDate }];
           }
           this.setFilter(next);
-          this.popConditionEdit(target);
+          // Close submenu after selection to refresh the main menu
+          return true;
         },
       });
     });
@@ -131,45 +139,68 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     const fnConfig = this.fnConfig$;
     const leftVar = this.leftVar$;
     if (!filter || !fnConfig || !leftVar) return;
-    const origTarget = target;
-    const fnItems = this.getFunctionItems(origTarget);
-    const literalSection = menu.dynamic(() => this.getArgsItems());
 
-    const deleteGroup = menu.group({
-      items: [
-        menu.action({
-          name: 'Delete',
-          class: { 'delete-item': true },
-          prefix: DeleteIcon(),
-          select: () => {
-            const list = this.value.value.slice();
-            list.splice(this.index, 1);
-            this.onChange(list);
-          },
-        }),
-      ],
-    });
+    const origTarget = target;
 
     popMenu(origTarget, {
       options: {
         items: [
+          // Dynamic function selector that updates when filter changes
+          menu.dynamic(() => {
+            const currentFilter = this.filter$;
+            const currentFnConfig = this.fnConfig$;
+            if (!currentFilter || !currentFnConfig) return [];
+
+            return [
+              menu.group({
+                items: [
+                  menu.action({
+                    name: currentFnConfig.label,
+                    postfix: ArrowRightSmallIcon(),
+                    select: () => {
+                      // Dynamically create function items each time to get updated selection
+                      const fnItems = this.getFunctionItems();
+
+                      // Pop submenu on click
+                      popMenu(origTarget, {
+                        middleware: subMenuMiddleware,
+                        options: {
+                          items: [
+                            menu.group({
+                              items: fnItems,
+                            }),
+                          ],
+                        },
+                      });
+                      // Keep main menu open
+                      return false;
+                    },
+                  })
+                ]
+              })
+            ];
+          }),
+          // Dynamic literal section that shows date picker or other inputs
+          menu.dynamic(() => {
+            const items = this.getArgsItems();
+            // Only show this section if there are items to display
+            return items.length > 0 ? items : [];
+          }),
+          // Delete button
           menu.group({
             items: [
               menu.action({
-                name: fnConfig.label,
-                postfix: ArrowRightSmallIcon(),
+                name: 'Delete',
+                class: { 'delete-item': true },
+                prefix: DeleteIcon(),
                 select: () => {
-                  popMenu(origTarget, {
-                    options: {
-                      items: [menu.group({ items: fnItems })],
-                    },
-                  });
+                  const list = this.value.value.slice();
+                  list.splice(this.index, 1);
+                  this.onChange(list);
                 },
               }),
             ],
           }),
-          literalSection,
-          deleteGroup,
         ],
       },
     });
