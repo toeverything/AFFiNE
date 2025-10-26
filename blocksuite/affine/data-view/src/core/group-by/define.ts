@@ -247,13 +247,12 @@ export const groupByMatchers: GroupByConfig[] = [
     matchType: t.boolean.instance(),
     groupName: (_t, v) => `${v?.toString() ?? ''}`,
     defaultKeys: _t => [
+      ungroups,
       { key: 'true', value: true },
       { key: 'false', value: false },
     ],
     valuesGroup: (v, _t) =>
-      typeof v !== 'boolean'
-        ? [{ key: 'false', value: false }]
-        : [{ key: v.toString(), value: v }],
+      typeof v !== 'boolean' ? [ungroups] : [{ key: v.toString(), value: v }],
     addToGroup: (v: boolean | null, _old: boolean | null) => v,
     view: createUniComponentFromWebComponent(BooleanGroupView),
   }),
