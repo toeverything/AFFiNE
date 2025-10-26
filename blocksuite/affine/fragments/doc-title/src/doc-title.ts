@@ -20,14 +20,15 @@ const DOC_BLOCK_CHILD_PADDING = 24;
 export class DocTitle extends WithDisposable(ShadowlessElement) {
   static override styles = css`
     .doc-title-container {
-      box-sizing: border-box;
-      font-family: var(--affine-font-family);
-      font-size: var(--affine-font-base);
-      line-height: var(--affine-line-height);
-      color: var(--affine-text-primary-color);
       font-size: 40px;
       line-height: 50px;
       font-weight: 700;
+    }
+    .doc-icon-container,
+    .doc-title-container {
+      box-sizing: border-box;
+      font-family: var(--affine-font-family);
+      color: var(--affine-text-primary-color);
       outline: none;
       resize: none;
       border: 0;
@@ -46,9 +47,14 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
         ${DOC_BLOCK_CHILD_PADDING}px
       );
     }
+    .doc-icon-container + * .doc-title-container {
+      /* when doc icon exists, remove the top padding */
+      padding-top: 0;
+    }
 
     /* Extra small devices (phones, 640px and down) */
     @container viewport (width <= 640px) {
+      .doc-icon-container,
       .doc-title-container {
         padding-left: ${DOC_BLOCK_CHILD_PADDING}px;
         padding-right: ${DOC_BLOCK_CHILD_PADDING}px;

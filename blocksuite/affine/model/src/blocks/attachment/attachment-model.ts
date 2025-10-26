@@ -58,6 +58,8 @@ export type AttachmentBlockProps = {
   style?: (typeof AttachmentBlockStyles)[number];
 
   footnoteIdentifier: string | null;
+
+  comments?: Record<string, boolean>;
 } & Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
 
@@ -78,6 +80,7 @@ export const defaultAttachmentProps: AttachmentBlockProps = {
   'meta:createdBy': undefined,
   'meta:updatedBy': undefined,
   footnoteIdentifier: null,
+  comments: undefined,
 };
 
 export const AttachmentBlockSchema = defineBlockSchema({

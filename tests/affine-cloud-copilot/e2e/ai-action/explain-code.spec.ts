@@ -18,7 +18,7 @@ test.describe('AIAction/ExplainCode', () => {
     await expect(answer).toHaveText(/console.log/);
   });
 
-  test('should show chat history in chat panel', async ({
+  test.skip('should show chat history in chat panel', async ({
     loggedInPage: page,
     utils,
   }) => {

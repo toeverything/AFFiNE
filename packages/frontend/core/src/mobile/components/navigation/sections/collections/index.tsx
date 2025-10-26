@@ -7,7 +7,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AddCollectionIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -22,7 +22,7 @@ export const NavigationPanelCollections = () => {
       WorkbenchService,
       NavigationPanelService,
     });
-  const navigationPanelSection = navigationPanelService.sections.collections;
+  const path = useMemo(() => ['collections'], []);
   const collectionMetas = useLiveData(collectionService.collectionMetas$);
   const { openPromptModal } = usePromptModal();
 
@@ -49,12 +49,13 @@ export const NavigationPanelCollections = () => {
           type: 'collection',
         });
         workbenchService.workbench.openCollection(id);
-        navigationPanelSection.setCollapsed(false);
+        navigationPanelService.setCollapsed(path, false);
       },
     });
   }, [
     collectionService,
-    navigationPanelSection,
+    navigationPanelService,
+    path,
     openPromptModal,
     t,
     workbenchService.workbench,
@@ -62,7 +63,7 @@ export const NavigationPanelCollections = () => {
 
   return (
     <CollapsibleSection
-      name="collections"
+      path={path}
       testId="navigation-panel-collections"
       title={t['com.affine.rootAppSidebar.collections']()}
     >
@@ -71,6 +72,7 @@ export const NavigationPanelCollections = () => {
           <NavigationPanelCollectionNode
             key={collection.id}
             collectionId={collection.id}
+            parentPath={path}
           />
         ))}
         <AddItemPlaceholder

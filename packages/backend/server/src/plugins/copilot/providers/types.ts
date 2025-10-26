@@ -13,6 +13,7 @@ export enum CopilotProviderType {
   GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
   Perplexity = 'perplexity',
+  Morph = 'morph',
 }
 
 export const CopilotProviderSchema = z.object({
@@ -56,8 +57,30 @@ export const VertexSchema: JSONSchema = {
 
 // ========== prompt ==========
 
+export const PromptToolsSchema = z
+  .enum([
+    'blobRead',
+    'codeArtifact',
+    'conversationSummary',
+    // work with morph
+    'docEdit',
+    // work with indexer
+    'docRead',
+    'docKeywordSearch',
+    // work with embeddings
+    'docSemanticSearch',
+    // work with exa/model internal tools
+    'webSearch',
+    // artifact tools
+    'docCompose',
+    // section editing
+    'sectionEdit',
+  ])
+  .array();
+
 export const PromptConfigStrictSchema = z.object({
-  tools: z.enum(['webSearch']).array().nullable().optional(),
+  tools: PromptToolsSchema.nullable().optional(),
+  proModels: z.array(z.string()).nullable().optional(),
   // params requirements
   requireContent: z.boolean().nullable().optional(),
   requireAttachment: z.boolean().nullable().optional(),
@@ -86,6 +109,8 @@ export const PromptConfigSchema =
 
 export type PromptConfig = z.infer<typeof PromptConfigSchema>;
 
+export type PromptTools = z.infer<typeof PromptToolsSchema>;
+
 // ========== message ==========
 
 export const EmbeddingMessage = z.array(z.string().trim().min(1)).min(1);
@@ -104,8 +129,33 @@ export const ChatMessageAttachment = z.union([
   }),
 ]);
 
+export const StreamObjectSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('text-delta'),
+    textDelta: z.string(),
+  }),
+  z.object({
+    type: z.literal('reasoning'),
+    textDelta: z.string(),
+  }),
+  z.object({
+    type: z.literal('tool-call'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
+  }),
+  z.object({
+    type: z.literal('tool-result'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
+    result: z.any(),
+  }),
+]);
+
 export const PureMessageSchema = z.object({
   content: z.string(),
+  streamObjects: z.array(StreamObjectSchema).optional().nullable(),
   attachments: z.array(ChatMessageAttachment).optional().nullable(),
   params: z.record(z.any()).optional().nullable(),
 });
@@ -115,12 +165,15 @@ export const PromptMessageSchema = PureMessageSchema.extend({
 }).strict();
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
+export type StreamObject = z.infer<typeof StreamObjectSchema>;
 
 // ========== options ==========
 
 const CopilotProviderOptionsSchema = z.object({
   signal: z.instanceof(AbortSignal).optional(),
   user: z.string().optional(),
+  session: z.string().optional(),
+  workspace: z.string().optional(),
 });
 
 export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
@@ -133,6 +186,9 @@ export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
   .optional();
 
 export type CopilotChatOptions = z.infer<typeof CopilotChatOptionsSchema>;
+export type CopilotChatTools = NonNullable<
+  NonNullable<CopilotChatOptions>['tools']
+>[number];
 
 export const CopilotStructuredOptionsSchema =
   CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema).optional();
@@ -169,6 +225,7 @@ export enum ModelInputType {
 
 export enum ModelOutputType {
   Text = 'text',
+  Object = 'object',
   Embedding = 'embedding',
   Image = 'image',
   Structured = 'structured',
@@ -182,6 +239,7 @@ export interface ModelCapability {
 
 export interface CopilotProviderModel {
   id: string;
+  name?: string;
   capabilities: ModelCapability[];
 }
 

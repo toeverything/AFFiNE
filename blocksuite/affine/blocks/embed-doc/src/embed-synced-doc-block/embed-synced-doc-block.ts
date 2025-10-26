@@ -232,6 +232,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
             surface: false,
             selected: this.selected$.value,
             'show-hover-border': true,
+            'comment-highlighted': this.isCommentHighlighted,
           })}
           @click=${this._handleClick}
           style=${containerStyleMap}
@@ -356,10 +357,14 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   };
 
   refreshData = () => {
-    this._load().catch(e => {
-      console.error(e);
-      this._error = true;
-    });
+    this._load()
+      .then(() => {
+        this._isEmptySyncedDoc = isEmptyDoc(this.syncedDoc, this.editorMode);
+      })
+      .catch(e => {
+        console.error(e);
+        this._error = true;
+      });
   };
 
   title$ = computed(() => {
@@ -444,7 +449,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     this._cycle = false;
 
     const syncedDoc = this.syncedDoc;
-    if (!syncedDoc) {
+    const trash = syncedDoc?.meta?.trash;
+    if (trash || !syncedDoc) {
       this._deleted = true;
       this._loading = false;
       return;
@@ -520,6 +526,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     this.disposables.add(
       this.store.workspace.slots.docListUpdated.subscribe(() => {
         this._setDocUpdatedAt();
+        this.refreshData();
       })
     );
 

@@ -9,6 +9,7 @@ import {
   ModelInputType,
   ModelOutputType,
   PromptMessage,
+  StreamObject,
 } from '../../plugins/copilot/providers';
 import {
   DEFAULT_DIMENSIONS,
@@ -23,7 +24,7 @@ export class MockCopilotProvider extends OpenAIProvider {
       capabilities: [
         {
           input: [ModelInputType.Text],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
           defaultForOutputType: true,
         },
       ],
@@ -43,7 +44,7 @@ export class MockCopilotProvider extends OpenAIProvider {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -52,16 +53,7 @@ export class MockCopilotProvider extends OpenAIProvider {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
-        },
-      ],
-    },
-    {
-      id: 'gpt-4.1',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -70,16 +62,38 @@ export class MockCopilotProvider extends OpenAIProvider {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
     {
-      id: 'gpt-4.1-mini',
+      id: 'gpt-5',
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Structured],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
+        },
+      ],
+    },
+    {
+      id: 'gpt-5-2025-08-07',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
+        },
+      ],
+    },
+    {
+      id: 'gpt-5-mini',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
         },
       ],
     },
@@ -94,11 +108,28 @@ export class MockCopilotProvider extends OpenAIProvider {
       ],
     },
     {
-      id: 'gemini-2.5-flash-preview-05-20',
+      id: 'gemini-2.5-flash',
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Structured],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
+      id: 'gemini-2.5-pro',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
         },
       ],
     },
@@ -194,5 +225,25 @@ export class MockCopilotProvider extends OpenAIProvider {
     // make some time gap for history test case
     await sleep(100);
     return [Array.from(randomBytes(options.dimensions)).map(v => v % 128)];
+  }
+
+  override async *streamObject(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<StreamObject> {
+    const fullCond = { ...cond, outputType: ModelOutputType.Object };
+    await this.checkParams({ messages, cond: fullCond, options });
+
+    // make some time gap for history test case
+    await sleep(100);
+
+    const result = 'generate text to object stream';
+    for (const data of result) {
+      yield { type: 'text-delta', textDelta: data } as const;
+      if (options.signal?.aborted) {
+        break;
+      }
+    }
   }
 }

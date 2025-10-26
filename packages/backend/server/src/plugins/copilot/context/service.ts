@@ -1,4 +1,5 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 
 import {
   Cache,
@@ -15,8 +16,6 @@ import {
   Models,
 } from '../../../models';
 import { type EmbeddingClient, getEmbeddingClient } from '../embedding';
-import { PromptService } from '../prompt';
-import { CopilotProviderFactory } from '../providers';
 import { ContextSession } from './session';
 
 const CONTEXT_SESSION_KEY = 'context-session';
@@ -27,10 +26,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
+    private readonly moduleRef: ModuleRef,
     private readonly cache: Cache,
-    private readonly models: Models,
-    private readonly providerFactory: CopilotProviderFactory,
-    private readonly prompt: PromptService
+    private readonly models: Models
   ) {}
 
   @OnEvent('config.init')
@@ -44,7 +42,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   private async setup() {
-    this.client = await getEmbeddingClient(this.providerFactory, this.prompt);
+    this.client = await getEmbeddingClient(this.moduleRef);
   }
 
   async onApplicationBootstrap() {
@@ -127,7 +125,10 @@ export class CopilotContextService implements OnApplicationBootstrap {
 
   async get(id: string): Promise<ContextSession> {
     if (!this.embeddingClient) {
-      throw new NoCopilotProviderAvailable('embedding client not configured');
+      throw new NoCopilotProviderAvailable(
+        { modelId: 'embedding' },
+        'embedding client not configured'
+      );
     }
 
     const context = await this.getCachedSession(id);
@@ -144,6 +145,28 @@ export class CopilotContextService implements OnApplicationBootstrap {
       await this.models.copilotContext.getBySessionId(sessionId);
     if (existsContext) return this.get(existsContext.id);
     return null;
+  }
+
+  async matchWorkspaceBlobs(
+    workspaceId: string,
+    content: string,
+    topK: number = 5,
+    signal?: AbortSignal,
+    threshold: number = 0.5
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const blobChunks = await this.models.copilotWorkspace.matchBlobEmbedding(
+      workspaceId,
+      embedding,
+      topK * 2,
+      threshold
+    );
+    if (!blobChunks.length) return [];
+
+    return await this.embeddingClient.reRank(content, blobChunks, topK, signal);
   }
 
   async matchWorkspaceFiles(
@@ -165,7 +188,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!fileChunks.length) return [];
 
-    return this.embeddingClient.reRank(content, fileChunks, topK, signal);
+    return await this.embeddingClient.reRank(content, fileChunks, topK, signal);
   }
 
   async matchWorkspaceDocs(
@@ -188,7 +211,78 @@ export class CopilotContextService implements OnApplicationBootstrap {
       );
     if (!workspaceChunks.length) return [];
 
-    return this.embeddingClient.reRank(content, workspaceChunks, topK, signal);
+    return await this.embeddingClient.reRank(
+      content,
+      workspaceChunks,
+      topK,
+      signal
+    );
+  }
+
+  async matchWorkspaceAll(
+    workspaceId: string,
+    content: string,
+    topK: number,
+    signal?: AbortSignal,
+    threshold: number = 0.8,
+    docIds?: string[],
+    scopedThreshold: number = 0.85
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const [fileChunks, blobChunks, workspaceChunks, scopedWorkspaceChunks] =
+      await Promise.all([
+        this.models.copilotWorkspace.matchFileEmbedding(
+          workspaceId,
+          embedding,
+          topK * 2,
+          threshold
+        ),
+        this.models.copilotWorkspace.matchBlobEmbedding(
+          workspaceId,
+          embedding,
+          topK * 2,
+          threshold
+        ),
+        this.models.copilotContext.matchWorkspaceEmbedding(
+          embedding,
+          workspaceId,
+          topK * 2,
+          threshold
+        ),
+        docIds
+          ? this.models.copilotContext.matchWorkspaceEmbedding(
+              embedding,
+              workspaceId,
+              topK * 2,
+              scopedThreshold,
+              docIds
+            )
+          : null,
+      ]);
+
+    if (
+      !fileChunks.length &&
+      !blobChunks.length &&
+      !workspaceChunks.length &&
+      !scopedWorkspaceChunks?.length
+    ) {
+      return [];
+    }
+
+    return await this.embeddingClient.reRank(
+      content,
+      [
+        ...fileChunks,
+        ...blobChunks,
+        ...workspaceChunks,
+        ...(scopedWorkspaceChunks || []),
+      ],
+      topK,
+      signal
+    );
   }
 
   @OnEvent('workspace.doc.embed.failed')

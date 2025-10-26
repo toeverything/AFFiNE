@@ -1,24 +1,12 @@
-import { CalloutBlockModel } from '@blocksuite/affine-model';
 import { focusBlockEnd } from '@blocksuite/affine-shared/commands';
 import { FeatureFlagService } from '@blocksuite/affine-shared/services';
-import {
-  findAncestorModel,
-  isInsideBlockByFlavour,
-  matchModels,
-} from '@blocksuite/affine-shared/utils';
+import { isInsideBlockByFlavour } from '@blocksuite/affine-shared/utils';
 import { type SlashMenuConfig } from '@blocksuite/affine-widget-slash-menu';
 import { FontIcon } from '@blocksuite/icons/lit';
 
 import { calloutTooltip } from './tooltips';
 
 export const calloutSlashMenuConfig: SlashMenuConfig = {
-  disableWhen: ({ model }) => {
-    return (
-      findAncestorModel(model, ancestor =>
-        matchModels(ancestor, [CalloutBlockModel])
-      ) !== null
-    );
-  },
   items: [
     {
       name: 'Callout',

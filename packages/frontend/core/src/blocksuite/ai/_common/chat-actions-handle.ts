@@ -1,4 +1,3 @@
-import { ChatHistoryOrder } from '@affine/graphql';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine/blocks/surface';
 import {
   Bound,
@@ -69,14 +68,15 @@ export type ChatAction = {
 
 export async function queryHistoryMessages(
   workspaceId: string,
-  docId: string,
-  forkSessionId: string
+  forkSessionId: string,
+  docId?: string
 ) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(workspaceId, docId, {
-    sessionId: forkSessionId,
-    messageOrder: ChatHistoryOrder.asc,
-  });
+  const histories = await AIProvider.histories?.chats(
+    workspaceId,
+    forkSessionId,
+    docId
+  );
 
   if (!histories || !histories.length) {
     return [];
@@ -91,7 +91,7 @@ export function constructUserInfoWithMessages(
   userInfo: AIUserInfo | null
 ) {
   return messages.map(message => {
-    const { role, id, content, createdAt } = message;
+    const { role, streamObjects } = message;
     const isUser = role === 'user';
     const userInfoProps = isUser
       ? {
@@ -101,12 +101,10 @@ export function constructUserInfoWithMessages(
         }
       : {};
     return {
-      id,
-      role,
-      content,
-      createdAt,
-      attachments: [],
+      ...message,
       ...userInfoProps,
+      attachments: [],
+      streamObjects: streamObjects || [],
     };
   });
 }
@@ -117,11 +115,11 @@ export async function constructRootChatBlockMessages(
 ) {
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
-  const forkMessages = await queryHistoryMessages(
+  const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
-    doc.id,
-    forkSessionId
-  );
+    forkSessionId,
+    doc.id
+  )) as ChatMessage[];
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
@@ -254,7 +252,7 @@ async function insertBelowBlock(
   return true;
 }
 
-const PAGE_INSERT = {
+export const PAGE_INSERT = {
   icon: InsertBelowIcon({ width: '20px', height: '20px' }),
   title: 'Insert',
   showWhen: (host: EditorHost) => {
@@ -293,7 +291,7 @@ const PAGE_INSERT = {
   },
 };
 
-const EDGELESS_INSERT = {
+export const EDGELESS_INSERT = {
   ...PAGE_INSERT,
   handler: async (
     host: EditorHost,
@@ -471,7 +469,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
 };
 
-const SAVE_AS_DOC = {
+export const SAVE_AS_DOC = {
   icon: PageIcon({ width: '20px', height: '20px' }),
   title: 'Save as doc',
   showWhen: () => true,

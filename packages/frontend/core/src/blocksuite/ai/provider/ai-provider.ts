@@ -1,8 +1,8 @@
 import type { EditorHost } from '@blocksuite/affine/std';
 import { captureException } from '@sentry/react';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
-import type { ChatContextValue } from '../chat-panel/chat-context';
+import type { ChatContextValue } from '../components/ai-chat-content';
 import {
   PaymentRequiredError,
   RequestTimeoutError,
@@ -18,9 +18,12 @@ export interface AIUserInfo {
 
 export interface AIChatParams {
   host: EditorHost;
+  input?: string;
   mode?: 'page' | 'edgeless';
-  // Auto select and append selection to input via `Continue with AI` action.
+  // Auto select and append selection to input via `Continue in AI Chat` action.
   autoSelect?: boolean;
+  context?: Partial<ChatContextValue | null>;
+  fromAnswer?: boolean;
 }
 
 export interface AISendParams {
@@ -133,14 +136,14 @@ export class AIProvider {
     // use case: when user selects "continue in chat" in an ask ai result panel
     // do we need to pass the context to the chat panel?
     /* eslint-disable rxjs/finnish */
-    requestOpenWithChat: new Subject<AIChatParams>(),
-    requestSendWithChat: new Subject<AISendParams>(),
+    requestOpenWithChat: new BehaviorSubject<AIChatParams | null>(null),
+    requestSendWithChat: new BehaviorSubject<AISendParams | null>(null),
     requestInsertTemplate: new Subject<{
       template: string;
       mode: 'page' | 'edgeless';
     }>(),
-    requestLogin: new Subject<{ host: EditorHost }>(),
-    requestUpgradePlan: new Subject<{ host: EditorHost }>(),
+    requestLogin: new Subject<{ host?: EditorHost | null }>(),
+    requestUpgradePlan: new Subject<{ host?: EditorHost | null }>(),
     // stream of AI actions triggered by users
     actions: new Subject<{
       action: keyof BlockSuitePresets.AIActions;
@@ -149,6 +152,7 @@ export class AIProvider {
     }>(),
     // downstream can emit this slot to notify ai presets that user info has been updated
     userInfo: new Subject<AIUserInfo | null>(),
+    previewPanelOpenChange: new Subject<boolean>(),
     /* eslint-enable rxjs/finnish */
   };
 

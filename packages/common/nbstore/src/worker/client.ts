@@ -18,9 +18,7 @@ import {
   type DocRecord,
   type DocStorage,
   type DocUpdate,
-  type IndexerDocument,
   type IndexerSchema,
-  type IndexerStorage,
   type ListedBlobRecord,
   type Query,
   type SearchOptions,
@@ -29,7 +27,7 @@ import {
 import type { AwarenessSync } from '../sync/awareness';
 import type { BlobSync } from '../sync/blob';
 import type { DocSync } from '../sync/doc';
-import type { IndexerSync } from '../sync/indexer';
+import type { IndexerPreferOptions, IndexerSync } from '../sync/indexer';
 import type { StoreInitOptions, WorkerManagerOps, WorkerOps } from './ops';
 
 export type { StoreInitOptions as WorkerInitOptions } from './ops';
@@ -88,6 +86,22 @@ export class StoreManagerClient {
       connection.dispose();
     });
   }
+
+  pause() {
+    this.connections.forEach(connection => {
+      connection.store.pauseSync().catch(err => {
+        console.error('error pausing', err);
+      });
+    });
+  }
+
+  resume() {
+    this.connections.forEach(connection => {
+      connection.store.resumeSync().catch(err => {
+        console.error('error resuming', err);
+      });
+    });
+  }
 }
 
 export class StoreClient {
@@ -100,12 +114,8 @@ export class StoreClient {
     this.docFrontend = new DocFrontend(this.docStorage, this.docSync);
     this.blobFrontend = new BlobFrontend(this.blobStorage, this.blobSync);
     this.awarenessFrontend = new AwarenessFrontend(this.awarenessSync);
-    this.indexerStorage = new WorkerIndexerStorage(this.client);
     this.indexerSync = new WorkerIndexerSync(this.client);
-    this.indexerFrontend = new IndexerFrontend(
-      this.indexerStorage,
-      this.indexerSync
-    );
+    this.indexerFrontend = new IndexerFrontend(this.indexerSync);
   }
 
   private readonly docStorage: WorkerDocStorage;
@@ -113,13 +123,26 @@ export class StoreClient {
   private readonly docSync: WorkerDocSync;
   private readonly blobSync: WorkerBlobSync;
   private readonly awarenessSync: WorkerAwarenessSync;
-  private readonly indexerStorage: WorkerIndexerStorage;
   private readonly indexerSync: WorkerIndexerSync;
 
   readonly docFrontend: DocFrontend;
   readonly blobFrontend: BlobFrontend;
   readonly awarenessFrontend: AwarenessFrontend;
   readonly indexerFrontend: IndexerFrontend;
+
+  enableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.enableBatterySaveMode');
+  }
+  disableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.disableBatterySaveMode');
+  }
+
+  pauseSync() {
+    return this.client.call('sync.pauseSync');
+  }
+  resumeSync() {
+    return this.client.call('sync.resumeSync');
+  }
 }
 
 class WorkerDocStorage implements DocStorage {
@@ -348,26 +371,23 @@ class WorkerAwarenessSync implements AwarenessSync {
   }
 }
 
-class WorkerIndexerStorage implements IndexerStorage {
+class WorkerIndexerSync implements IndexerSync {
   constructor(private readonly client: OpClient<WorkerOps>) {}
-  readonly storageType = 'indexer';
-  readonly isReadonly = true;
-  connection = new WorkerIndexerConnection(this.client);
 
   search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
     table: T,
     query: Query<T>,
-    options?: O
+    options?: O & { prefer?: IndexerPreferOptions }
   ): Promise<SearchResult<T, O>> {
-    return this.client.call('indexerStorage.search', { table, query, options });
+    return this.client.call('indexerSync.search', { table, query, options });
   }
   aggregate<T extends keyof IndexerSchema, const O extends AggregateOptions<T>>(
     table: T,
     query: Query<T>,
     field: keyof IndexerSchema[T],
-    options?: O
+    options?: O & { prefer?: IndexerPreferOptions }
   ): Promise<AggregateResult<T, O>> {
-    return this.client.call('indexerStorage.aggregate', {
+    return this.client.call('indexerSync.aggregate', {
       table,
       query,
       field: field as string,
@@ -377,9 +397,9 @@ class WorkerIndexerStorage implements IndexerStorage {
   search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
     table: T,
     query: Query<T>,
-    options?: O
+    options?: O & { prefer?: IndexerPreferOptions }
   ): Observable<SearchResult<T, O>> {
-    return this.client.ob$('indexerStorage.subscribeSearch', {
+    return this.client.ob$('indexerSync.subscribeSearch', {
       table,
       query,
       options,
@@ -392,59 +412,16 @@ class WorkerIndexerStorage implements IndexerStorage {
     table: T,
     query: Query<T>,
     field: keyof IndexerSchema[T],
-    options?: O
+    options?: O & { prefer?: IndexerPreferOptions }
   ): Observable<AggregateResult<T, O>> {
-    return this.client.ob$('indexerStorage.subscribeAggregate', {
+    return this.client.ob$('indexerSync.subscribeAggregate', {
       table,
       query,
       field: field as string,
       options,
     });
   }
-  deleteByQuery<T extends keyof IndexerSchema>(
-    _table: T,
-    _query: Query<T>
-  ): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-  insert<T extends keyof IndexerSchema>(
-    _table: T,
-    _document: IndexerDocument<T>
-  ): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-  delete<T extends keyof IndexerSchema>(_table: T, _id: string): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-  update<T extends keyof IndexerSchema>(
-    _table: T,
-    _document: IndexerDocument<T>
-  ): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-  refresh<T extends keyof IndexerSchema>(_table: T): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-}
 
-class WorkerIndexerConnection extends DummyConnection {
-  constructor(private readonly client: OpClient<WorkerOps>) {
-    super();
-  }
-
-  promise: Promise<void> | undefined;
-
-  override waitForConnected(): Promise<void> {
-    if (this.promise) {
-      return this.promise;
-    }
-    this.promise = this.client.call('indexerStorage.waitForConnected');
-    return this.promise;
-  }
-}
-
-class WorkerIndexerSync implements IndexerSync {
-  constructor(private readonly client: OpClient<WorkerOps>) {}
   waitForCompleted(signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
       const abortListener = () => {

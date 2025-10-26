@@ -9,9 +9,9 @@
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/integration-test": "workspace:*",
     "@playwright/test": "=1.52.0",
-    "@toeverything/theme": "^1.1.15",
+    "@toeverything/theme": "^1.1.16",
     "json-stable-stringify": "^1.2.1",
     "rxjs": "^7.8.1"
   },
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

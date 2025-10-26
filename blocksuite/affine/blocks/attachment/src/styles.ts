@@ -15,6 +15,10 @@ export const styles = css`
     }
   }
 
+  .affine-attachment-container.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
+
   .affine-attachment-card {
     display: flex;
     gap: 12px;

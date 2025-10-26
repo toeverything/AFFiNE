@@ -123,52 +123,57 @@ const WorkbenchView = ({
     [tabsHeaderService, workbench.id]
   );
 
-  const onContextMenu = useAsyncCallback(async () => {
-    const action = await tabsHeaderService.showContextMenu?.(
-      workbench.id,
-      viewIdx
-    );
-    switch (action?.type) {
-      case 'open-in-split-view': {
-        track.$.appTabsHeader.$.tabAction({
-          control: 'contextMenu',
-          action: 'openInSplitView',
-        });
-        break;
-      }
-      case 'separate-view': {
-        track.$.appTabsHeader.$.tabAction({
-          control: 'contextMenu',
-          action: 'separateTabs',
-        });
-        break;
-      }
-      case 'pin-tab': {
-        if (action.payload.shouldPin) {
+  const onContextMenu = useAsyncCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const action = await tabsHeaderService.showContextMenu?.(
+        workbench.id,
+        viewIdx
+      );
+      switch (action?.type) {
+        case 'open-in-split-view': {
           track.$.appTabsHeader.$.tabAction({
             control: 'contextMenu',
-            action: 'pin',
+            action: 'openInSplitView',
           });
-        } else {
-          track.$.appTabsHeader.$.tabAction({
-            control: 'contextMenu',
-            action: 'unpin',
-          });
+          break;
         }
-        break;
+        case 'separate-view': {
+          track.$.appTabsHeader.$.tabAction({
+            control: 'contextMenu',
+            action: 'separateTabs',
+          });
+          break;
+        }
+        case 'pin-tab': {
+          if (action.payload.shouldPin) {
+            track.$.appTabsHeader.$.tabAction({
+              control: 'contextMenu',
+              action: 'pin',
+            });
+          } else {
+            track.$.appTabsHeader.$.tabAction({
+              control: 'contextMenu',
+              action: 'unpin',
+            });
+          }
+          break;
+        }
+        // fixme: when close tab the view may already be gc'ed
+        case 'close-tab': {
+          track.$.appTabsHeader.$.tabAction({
+            control: 'contextMenu',
+            action: 'close',
+          });
+          break;
+        }
+        default:
+          break;
       }
-      // fixme: when close tab the view may already be gc'ed
-      case 'close-tab': {
-        track.$.appTabsHeader.$.tabAction({
-          control: 'contextMenu',
-          action: 'close',
-        });
-        break;
-      }
-      default:
-        break;
-    }
-  }, [tabsHeaderService, viewIdx, workbench.id]);
+    },
+    [tabsHeaderService, viewIdx, workbench.id]
+  );
 
   const contentNode = useMemo(() => {
     return (

@@ -5,6 +5,7 @@ import {
   type Text,
 } from '@blocksuite/store';
 
+import type { TextAlign } from '../../consts';
 import type { BlockMeta } from '../../utils/types';
 
 export type ParagraphType =
@@ -19,8 +20,10 @@ export type ParagraphType =
 
 export type ParagraphProps = {
   type: ParagraphType;
+  textAlign?: TextAlign;
   text: Text;
   collapsed: boolean;
+  comments?: Record<string, boolean>;
 } & BlockMeta;
 
 export const ParagraphBlockSchema = defineBlockSchema({
@@ -28,7 +31,9 @@ export const ParagraphBlockSchema = defineBlockSchema({
   props: (internal): ParagraphProps => ({
     type: 'text',
     text: internal.Text(),
+    textAlign: undefined,
     collapsed: false,
+    comments: undefined,
     'meta:createdAt': undefined,
     'meta:createdBy': undefined,
     'meta:updatedAt': undefined,

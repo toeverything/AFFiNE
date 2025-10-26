@@ -1,14 +1,17 @@
-import { Menu, MenuItem, type MenuRef } from '@affine/component';
+import { MenuItem } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import type { DocRecord } from '@affine/core/modules/doc';
+import { IntegrationTypeIcon } from '@affine/core/modules/integration';
+import { INTEGRATION_TYPE_NAME_MAP } from '@affine/core/modules/integration/constant';
+import type { IntegrationType } from '@affine/core/modules/integration/type';
 import { useI18n } from '@affine/i18n';
 import { IntegrationsIcon, ReadwiseIcon } from '@blocksuite/icons/rc';
 import { useLiveData } from '@toeverything/infra';
-import { useEffect, useRef } from 'react';
 
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 
 export const IntegrationTypeFilterValue = ({
   filter,
@@ -22,41 +25,37 @@ export const IntegrationTypeFilterValue = ({
   onChange?: (filter: FilterParams) => void;
 }) => {
   const t = useI18n();
-  const menuRef = useRef<MenuRef>(null);
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
 
   return (
-    <Menu
-      ref={menuRef}
-      rootOptions={{
-        onClose: onDraftCompleted,
-      }}
-      items={
-        <MenuItem
-          onClick={() => {
-            onChange?.({
-              ...filter,
-              value: 'readwise',
-            });
-          }}
-          prefixIcon={<ReadwiseIcon />}
-          selected={filter.value === 'readwise'}
-        >
-          {t['com.affine.integration.readwise.name']()}
-        </MenuItem>
-      }
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
+      items={Object.entries(INTEGRATION_TYPE_NAME_MAP).map(entries => {
+        const type = entries[0] as IntegrationType;
+        const i18nKey = entries[1];
+        return (
+          <MenuItem
+            key={type}
+            onClick={() => {
+              onChange?.({
+                ...filter,
+                value: type,
+              });
+            }}
+            prefixIcon={<IntegrationTypeIcon type={type} />}
+            selected={filter.value === type}
+          >
+            {t.t(i18nKey)}
+          </MenuItem>
+        );
+      })}
     >
       <span>
-        {filter.value === 'readwise'
-          ? t['com.affine.integration.readwise.name']()
+        {INTEGRATION_TYPE_NAME_MAP[filter.value as IntegrationType]
+          ? t.t(INTEGRATION_TYPE_NAME_MAP[filter.value as IntegrationType])
           : filter.value}
       </span>
-    </Menu>
+    </FilterValueMenu>
   );
 };
 

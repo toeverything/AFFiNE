@@ -637,11 +637,20 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Workspace id is required to update team subscription.',
   },
+  managed_by_app_store_or_play: {
+    type: 'action_forbidden',
+    message:
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
+  },
 
   // Copilot errors
   copilot_session_not_found: {
     type: 'resource_not_found',
     message: `Copilot session not found.`,
+  },
+  copilot_session_invalid_input: {
+    type: 'invalid_input',
+    message: `Copilot session input is invalid.`,
   },
   copilot_session_deleted: {
     type: 'action_forbidden',
@@ -649,11 +658,18 @@ export const USER_FRIENDLY_ERRORS = {
   },
   no_copilot_provider_available: {
     type: 'internal_server_error',
-    message: `No copilot provider available.`,
+    args: { modelId: 'string' },
+    message: ({ modelId }) => `No copilot provider available: ${modelId}`,
   },
   copilot_failed_to_generate_text: {
     type: 'internal_server_error',
     message: `Failed to generate text.`,
+  },
+  copilot_failed_to_generate_embedding: {
+    type: 'internal_server_error',
+    args: { provider: 'string', message: 'string' },
+    message: ({ provider, message }) =>
+      `Failed to generate embedding with ${provider}: ${message}`,
   },
   copilot_failed_to_create_message: {
     type: 'internal_server_error',
@@ -902,5 +918,23 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     args: { reason: 'string' },
     message: ({ reason }) => `Invalid indexer input: ${reason}`,
+  },
+
+  // comment and reply errors
+  comment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment not found.',
+  },
+  reply_not_found: {
+    type: 'resource_not_found',
+    message: 'Reply not found.',
+  },
+  comment_attachment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment attachment not found.',
+  },
+  comment_attachment_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded the comment attachment size quota.',
   },
 } satisfies Record<string, UserFriendlyErrorOptions>;

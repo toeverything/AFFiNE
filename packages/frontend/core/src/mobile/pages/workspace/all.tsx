@@ -15,8 +15,13 @@ import { AllDocsHeader } from '../../views';
 const AllDocs = () => {
   const [explorerContextValue] = useState(() =>
     createDocExplorerContext({
-      quickFavorite: true,
-      displayProperties: ['createdAt', 'updatedAt', 'tags'],
+      quickFavorite: false,
+      showDocIcon: false,
+      displayProperties: [
+        'system:createdAt',
+        'system:updatedAt',
+        'system:tags',
+      ],
       view: 'masonry',
       showDragHandle: false,
       groupBy: undefined,

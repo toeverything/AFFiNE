@@ -68,7 +68,9 @@ export class MobileTableCell extends SignalWatcher(
     if (this.view.readonly$.value) {
       return;
     }
-    const setSelection = this.tableViewLogic.setSelection;
+    const setSelection = this.tableViewLogic.setSelection.bind(
+      this.tableViewLogic
+    );
     const viewId = this.tableViewLogic.view.id;
     if (setSelection && viewId) {
       if (editing && this.cell?.beforeEnterEditMode() === false) {
@@ -103,13 +105,13 @@ export class MobileTableCell extends SignalWatcher(
     this.disposables.add(
       effect(() => {
         const isEditing = this.isSelectionEditing$.value;
-        if (isEditing) {
+        if (isEditing && !this.isEditing$.peek()) {
           this.isEditing$.value = true;
           const cell = this._cell.value;
           requestAnimationFrame(() => {
             cell?.afterEnterEditingMode();
           });
-        } else {
+        } else if (!isEditing && this.isEditing$.peek()) {
           this._cell.value?.beforeExitEditingMode();
           this.isEditing$.value = false;
         }

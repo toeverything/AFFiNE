@@ -23,6 +23,7 @@ import { effect } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { correctNumberedListsOrderToPrev } from './commands/utils.js';
@@ -138,11 +139,20 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
 
   override renderBlock(): TemplateResult<1> {
     const { model, _onClickIcon } = this;
+    const widgets = html`${repeat(
+      Object.entries(this.widgets),
+      ([id]) => id,
+      ([_, widget]) => widget
+    )}`;
     const collapsed = this.store.readonly
       ? this._readonlyCollapsed
       : model.props.collapsed;
 
     const listIcon = getListIcon(model, !collapsed, _onClickIcon);
+
+    const textAlignStyle = styleMap({
+      textAlign: this.model.props.textAlign$?.value,
+    });
 
     const children = html`<div
       class="affine-block-children-container"
@@ -155,7 +165,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     </div>`;
 
     return html`
-      <div class=${'affine-list-block-container'}>
+      <div class=${'affine-list-block-container'} style="${textAlignStyle}">
         <div
           class=${classMap({
             'affine-list-rich-text-wrapper': true,
@@ -199,7 +209,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
           ></rich-text>
         </div>
 
-        ${children}
+        ${children} ${widgets}
       </div>
     `;
   }

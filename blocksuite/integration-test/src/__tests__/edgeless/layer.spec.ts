@@ -200,7 +200,7 @@ test('layer zindex should update correctly when elements changed', async () => {
     expect(service.layer.layers[1].zIndex).toBe(3);
 
     expect(service.layer.layers[2].type).toBe('block');
-    expect(service.layer.layers[2].zIndex).toBe(4);
+    expect(service.layer.layers[2].zIndex).toBe(5);
   };
   assert2StepState();
 

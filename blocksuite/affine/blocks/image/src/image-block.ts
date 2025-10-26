@@ -5,7 +5,10 @@ import { Peekable } from '@blocksuite/affine-components/peek';
 import { ResourceController } from '@blocksuite/affine-components/resource';
 import type { ImageBlockModel } from '@blocksuite/affine-model';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
-import { ToolbarRegistryIdentifier } from '@blocksuite/affine-shared/services';
+import {
+  BlockElementCommentManager,
+  ToolbarRegistryIdentifier,
+} from '@blocksuite/affine-shared/services';
 import { formatSize } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { BrokenImageIcon, ImageIcon } from '@blocksuite/icons/lit';
@@ -63,6 +66,14 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
 
   get resizableImg() {
     return this.pageImage?.resizeImg;
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private _handleClick(event: MouseEvent) {
@@ -132,6 +143,15 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
       width: '100%',
     });
 
+    const alignItemsStyleMap = styleMap({
+      alignItems:
+        this.model.props.textAlign$.value === 'left'
+          ? 'flex-start'
+          : this.model.props.textAlign$.value === 'right'
+            ? 'flex-end'
+            : undefined,
+    });
+
     const resovledState = this.resourceController.resolveStateWith({
       loadingIcon: LoadingIcon({
         strokeColor: cssVarV2('button/pureWhiteText'),
@@ -151,6 +171,7 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
             html`<affine-page-image
               .block=${this}
               .state=${resovledState}
+              style="${alignItemsStyleMap}"
             ></affine-page-image>`,
           () =>
             html`<affine-image-fallback-card

@@ -21,7 +21,7 @@ export class CertCommand extends Command {
 
   domain = Option.String('--domain', {
     description:
-      'Generate certificates for given domain. e.g. "dev.affine.fail"',
+      'Generate certificates for given domain. e.g. "affine.localhost"',
   });
 
   uninstall = Option.Boolean('--uninstall', {

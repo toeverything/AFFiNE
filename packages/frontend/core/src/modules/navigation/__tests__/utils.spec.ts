@@ -7,6 +7,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { resolveLinkToDoc, toURLSearchParams } from '../utils';
 
+vi.mock('@emoji-mart/react', () => ({
+  Emoji: () => null,
+}));
+
 function defineTest(
   input: string,
   expected: ReturnType<typeof resolveLinkToDoc>

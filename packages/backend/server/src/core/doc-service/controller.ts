@@ -44,6 +44,25 @@ export class DocRpcController {
 
   @SkipThrottle()
   @Internal()
+  @Get('/workspaces/:workspaceId/docs/:docId/markdown')
+  async getDocMarkdown(
+    @Param('workspaceId') workspaceId: string,
+    @Param('docId') docId: string,
+    @Query('aiEditable') aiEditable?: string
+  ) {
+    const result = await this.docReader.getDocMarkdown(
+      workspaceId,
+      docId,
+      aiEditable === 'true'
+    );
+    if (!result) {
+      throw new NotFound('Doc not found');
+    }
+    return result;
+  }
+
+  @SkipThrottle()
+  @Internal()
   @Post('/workspaces/:workspaceId/docs/:docId/diff')
   async getDocDiff(
     @Param('workspaceId') workspaceId: string,

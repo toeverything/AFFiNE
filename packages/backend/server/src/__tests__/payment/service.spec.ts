@@ -192,8 +192,10 @@ test.before(async t => {
         payment: {
           enabled: true,
           showLifetimePrice: true,
-          apiKey: '1',
-          webhookKey: '1',
+          stripe: {
+            apiKey: '1',
+            webhookKey: '1',
+          },
         },
       }),
       AppModule,

@@ -1,11 +1,12 @@
-import { Button, Skeleton, Tooltip } from '@affine/component';
+import { Button, notify, Skeleton, Tooltip } from '@affine/component';
 import { Loading } from '@affine/component/ui/loading';
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
-import type {
-  WorkspaceMetadata,
-  WorkspaceProfileInfo,
+import {
+  type WorkspaceMetadata,
+  type WorkspaceProfileInfo,
+  WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
@@ -21,13 +22,15 @@ import {
   TeamWorkspaceIcon,
   UnsyncIcon,
 } from '@blocksuite/icons/rc';
-import { LiveData, useLiveData } from '@toeverything/infra';
+import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { HTMLAttributes } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAsyncCallback } from '../../hooks/affine-async-hooks';
 import { useCatchEventCallback } from '../../hooks/use-catch-event-hook';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import * as styles from './styles.css';
 export { PureWorkspaceCard } from './pure-workspace-card';
@@ -174,9 +177,11 @@ const usePauseAnimation = (timeToResume = 5000) => {
 const WorkspaceSyncInfo = ({
   workspaceMetadata,
   workspaceProfile,
+  dense,
 }: {
   workspaceMetadata: WorkspaceMetadata;
   workspaceProfile: WorkspaceProfileInfo;
+  dense?: boolean;
 }) => {
   const syncStatus = useSyncEngineSyncProgress(workspaceMetadata);
   const isCloud = workspaceMetadata.flavour !== 'local';
@@ -209,15 +214,21 @@ const WorkspaceSyncInfo = ({
   }
 
   return (
-    <div className={styles.workspaceInfoSlider} data-active={delayActive}>
+    <div
+      className={styles.workspaceInfoSlider}
+      data-active={delayActive}
+      data-dense={dense}
+    >
       <div className={styles.workspaceInfoSlide}>
         <div className={styles.workspaceInfo} data-type="normal">
           <div className={styles.workspaceName} data-testid="workspace-name">
             {workspaceProfile.name}
           </div>
-          <div className={styles.workspaceStatus}>
-            {isCloud ? <CloudWorkspaceStatus /> : <LocalWorkspaceStatus />}
-          </div>
+          {!dense ? (
+            <div className={styles.workspaceStatus}>
+              {isCloud ? <CloudWorkspaceStatus /> : <LocalWorkspaceStatus />}
+            </div>
+          ) : null}
         </div>
 
         {/* when syncing/offline/... */}
@@ -250,6 +261,7 @@ export const WorkspaceCard = forwardRef<
     hideTeamWorkspaceIcon?: boolean;
     active?: boolean;
     infoClassName?: string;
+    dense?: boolean;
     onClickOpenSettings?: (workspaceMetadata: WorkspaceMetadata) => void;
     onClickEnableCloud?: (workspaceMetadata: WorkspaceMetadata) => void;
   }
@@ -259,7 +271,6 @@ export const WorkspaceCard = forwardRef<
       workspaceMetadata,
       showSyncStatus,
       showArrowDownIcon,
-      avatarSize = 32,
       onClickOpenSettings,
       onClickEnableCloud,
       className,
@@ -268,18 +279,34 @@ export const WorkspaceCard = forwardRef<
       hideCollaborationIcon,
       hideTeamWorkspaceIcon,
       active,
+      dense,
+      avatarSize = dense ? 20 : 32,
       ...props
     },
     ref
   ) => {
     const t = useI18n();
     const information = useWorkspaceInfo(workspaceMetadata);
+    const workspacesService = useService(WorkspacesService);
+    const navigate = useNavigateHelper();
 
     const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
     const onEnableCloud = useCatchEventCallback(() => {
       onClickEnableCloud?.(workspaceMetadata);
     }, [onClickEnableCloud, workspaceMetadata]);
+
+    const onRemoveWorkspace = useAsyncCallback(async () => {
+      await workspacesService
+        .deleteWorkspace(workspaceMetadata)
+        .then(() => {
+          notify.success({ title: t['Successfully removed workspace']() });
+          navigate.jumpToIndex();
+        })
+        .catch(() => {
+          notify.error({ title: t['Failed to remove workspace']() });
+        });
+    }, [workspacesService, workspaceMetadata, t, navigate]);
 
     const onOpenSettings = useCatchEventCallback(() => {
       onClickOpenSettings?.(workspaceMetadata);
@@ -301,6 +328,7 @@ export const WorkspaceCard = forwardRef<
         <div className={clsx(styles.infoContainer, infoClassName)}>
           {information ? (
             <WorkspaceAvatar
+              className={styles.avatar}
               meta={workspaceMetadata}
               rounded={3}
               data-testid="workspace-avatar"
@@ -317,6 +345,7 @@ export const WorkspaceCard = forwardRef<
                 <WorkspaceSyncInfo
                   workspaceProfile={information}
                   workspaceMetadata={workspaceMetadata}
+                  dense={dense}
                 />
               ) : (
                 <span className={styles.workspaceName}>{information.name}</span>
@@ -325,6 +354,9 @@ export const WorkspaceCard = forwardRef<
               <Skeleton width={100} />
             )}
           </div>
+          {information?.isEmpty && information.isOwner ? (
+            <Button onClick={onRemoveWorkspace}>Remove</Button>
+          ) : null}
           <div className={styles.showOnCardHover}>
             {onClickEnableCloud && workspaceMetadata.flavour === 'local' ? (
               <Button

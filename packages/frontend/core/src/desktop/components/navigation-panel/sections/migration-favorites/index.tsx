@@ -5,7 +5,7 @@ import { Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { NavigationPanelCollectionNode } from '../../nodes/collection';
@@ -25,6 +25,7 @@ export const NavigationPanelMigrationFavorites = () => {
   const trashDocs = useLiveData(docsService.list.trashDocs$);
   const migrated = useLiveData(migrationFavoriteItemsAdapter.migrated$);
   const { openConfirmModal } = useConfirmModal();
+  const path = useMemo(() => ['migration-favorites'], []);
 
   const favorites = useLiveData(
     migrationFavoriteItemsAdapter.favorites$.map(favs => {
@@ -99,7 +100,7 @@ export const NavigationPanelMigrationFavorites = () => {
 
   return (
     <CollapsibleSection
-      name="migrationFavorites"
+      path={path}
       className={styles.container}
       title={t['com.affine.rootAppSidebar.migration-data']()}
       actions={
@@ -126,6 +127,7 @@ export const NavigationPanelMigrationFavorites = () => {
           <NavigationPanelMigrationFavoriteNode
             key={favorite.id + ':' + i}
             favorite={favorite}
+            parentPath={path}
           />
         ))}
       </NavigationPanelTreeRoot>
@@ -138,11 +140,13 @@ const childLocation = {
 };
 const NavigationPanelMigrationFavoriteNode = ({
   favorite,
+  parentPath,
 }: {
   favorite: {
     id: string;
     type: 'collection' | 'doc';
   };
+  parentPath: string[];
 }) => {
   return favorite.type === 'doc' ? (
     <NavigationPanelDocNode
@@ -151,6 +155,7 @@ const NavigationPanelMigrationFavoriteNode = ({
       location={childLocation}
       reorderable={false}
       canDrop={false}
+      parentPath={parentPath}
     />
   ) : (
     <NavigationPanelCollectionNode
@@ -159,6 +164,7 @@ const NavigationPanelMigrationFavoriteNode = ({
       location={childLocation}
       reorderable={false}
       canDrop={false}
+      parentPath={parentPath}
     />
   );
 };

@@ -1,3 +1,4 @@
+import { IS_ANDROID } from '@blocksuite/global/env';
 import type { BaseTextAttributes } from '@blocksuite/store';
 
 import type { InlineEditor } from '../inline-editor.js';
@@ -41,11 +42,10 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
   };
 
-  private readonly _onBeforeInput = (event: InputEvent) => {
+  private readonly _onBeforeInput = async (event: InputEvent) => {
     const range = this.editor.rangeService.getNativeRange();
     if (
       this.editor.isReadonly ||
-      this._isComposing ||
       !range ||
       !this._isRangeCompletelyInRoot(range)
     )
@@ -54,33 +54,29 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     let inlineRange = this.editor.toInlineRange(range);
     if (!inlineRange) return;
 
+    if (this._isComposing) {
+      if (IS_ANDROID && event.inputType === 'insertCompositionText') {
+        this._compositionInlineRange = inlineRange;
+      }
+      return;
+    }
+
     let ifHandleTargetRange = true;
 
-    if (event.inputType.startsWith('delete')) {
-      if (
-        isInEmbedGap(range.commonAncestorContainer) &&
-        inlineRange.length === 0 &&
-        inlineRange.index > 0
-      ) {
-        inlineRange = {
-          index: inlineRange.index - 1,
-          length: 1,
-        };
-        ifHandleTargetRange = false;
-      } else if (
-        isInEmptyLine(range.commonAncestorContainer) &&
-        inlineRange.length === 0 &&
-        inlineRange.index > 0
-        // eslint-disable-next-line sonarjs/no-duplicated-branches
-      ) {
-        // do not use target range when deleting across lines
+    if (
+      event.inputType.startsWith('delete') &&
+      (isInEmbedGap(range.commonAncestorContainer) ||
         // https://github.com/toeverything/blocksuite/issues/5381
-        inlineRange = {
-          index: inlineRange.index - 1,
-          length: 1,
-        };
-        ifHandleTargetRange = false;
-      }
+        isInEmptyLine(range.commonAncestorContainer)) &&
+      inlineRange.length === 0 &&
+      inlineRange.index > 0
+    ) {
+      // do not use target range when deleting across lines
+      inlineRange = {
+        index: inlineRange.index - 1,
+        length: 1,
+      };
+      ifHandleTargetRange = false;
     }
 
     if (ifHandleTargetRange) {
@@ -97,10 +93,23 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
         }
       }
     }
-
     if (!inlineRange) return;
 
     event.preventDefault();
+
+    if (IS_ANDROID) {
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
+      if (
+        event.inputType === 'deleteContentBackward' &&
+        !(inlineRange.index === 0 && inlineRange.length === 0)
+      ) {
+        // when press backspace at offset 1, double characters will be removed.
+        // because we mock backspace key event `androidBindKeymapPatch` in blocksuite/framework/std/src/event/keymap.ts
+        // so we need to stop the event propagation to prevent the double characters removal.
+        event.stopPropagation();
+      }
+    }
 
     const ctx: BeforeinputHookCtx<TextAttributes> = {
       inlineEditor: this.editor,
@@ -346,11 +355,9 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       return;
     }
 
-    this.editor.disposables.addFromEvent(
-      eventSource,
-      'beforeinput',
-      this._onBeforeInput
-    );
+    this.editor.disposables.addFromEvent(eventSource, 'beforeinput', e => {
+      this._onBeforeInput(e).catch(console.error);
+    });
     this.editor.disposables.addFromEvent(
       eventSource,
       'compositionstart',

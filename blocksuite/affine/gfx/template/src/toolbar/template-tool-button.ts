@@ -116,6 +116,7 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
   `;
 
   private _cleanup: (() => void) | null = null;
+  private _autoUpdateCleanup: (() => void) | null = null;
 
   private _prevTool: ToolOptionWithType | null = null;
 
@@ -126,6 +127,11 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
   get cards() {
     const { theme } = this;
     return [TemplateCard1[theme], TemplateCard2[theme], TemplateCard3[theme]];
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.disposables.add(() => this._autoUpdateCleanup?.());
   }
 
   private _closePanel() {
@@ -175,8 +181,8 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
 
     requestAnimationFrame(() => {
       const arrowEl = panel.renderRoot.querySelector('.arrow') as HTMLElement;
-
-      autoUpdate(this, panel, () => {
+      this._autoUpdateCleanup?.();
+      this._autoUpdateCleanup = autoUpdate(this, panel, () => {
         computePosition(this, panel, {
           placement: 'top',
           middleware: [offset(20), arrow({ element: arrowEl }), shift()],

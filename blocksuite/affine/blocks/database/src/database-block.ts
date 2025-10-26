@@ -10,7 +10,10 @@ import { toast } from '@blocksuite/affine-components/toast';
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
+  BlockElementCommentManager,
+  CommentProviderIdentifier,
   DocModeProvider,
+  FeatureFlagService,
   NotificationProvider,
   type TelemetryEventMap,
   TelemetryProvider,
@@ -32,18 +35,22 @@ import {
   uniMap,
 } from '@blocksuite/data-view';
 import { widgetPresets } from '@blocksuite/data-view/widget-presets';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { Rect } from '@blocksuite/global/gfx';
 import {
+  CommentIcon,
   CopyIcon,
   DeleteIcon,
   MoreHorizontalIcon,
 } from '@blocksuite/icons/lit';
-import { type BlockComponent } from '@blocksuite/std';
+import { type BlockComponent, BlockSelection } from '@blocksuite/std';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { Slice } from '@blocksuite/store';
 import { autoUpdate } from '@floating-ui/dom';
 import { computed, signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { popSideDetail } from './components/layout.js';
 import { DatabaseConfigExtension } from './config.js';
@@ -80,6 +87,18 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
               this.model.props.title.length,
               text
             );
+          },
+        }),
+        menu.action({
+          prefix: CommentIcon(),
+          name: 'Comment',
+          hide: () => !this.std.getOptional(CommentProviderIdentifier),
+          select: () => {
+            this.std.getOptional(CommentProviderIdentifier)?.addComment([
+              new BlockSelection({
+                blockId: this.blockId,
+              }),
+            ]);
           },
         }),
         menu.action({
@@ -297,6 +316,14 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     };
   }
 
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
+  }
+
   override get topContenteditableElement() {
     if (this.std.get(DocModeProvider).getEditorMode() === 'edgeless') {
       return this.closest<BlockComponent>(
@@ -325,6 +352,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
     this.classList.add(databaseBlockStyles);
     this.listenFullWidthChange();
+    this.handleMobileEditing();
   }
 
   listenFullWidthChange() {
@@ -340,6 +368,41 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       })
     );
   }
+
+  handleMobileEditing() {
+    if (!IS_MOBILE) return;
+
+    let notifyClosed = true;
+    const handler = () => {
+      if (
+        !this.std
+          .get(FeatureFlagService)
+          .getFlag('enable_mobile_database_editing')
+      ) {
+        const notification = this.std.getOptional(NotificationProvider);
+        if (notification && notifyClosed) {
+          notifyClosed = false;
+          notification.notify({
+            title: html`<div
+              style=${styleMap({
+                whiteSpace: 'wrap',
+              })}
+            >
+              Mobile database editing is not supported yet. You can open it in
+              experimental features, or edit it in desktop mode.
+            </div>`,
+            accent: 'warning',
+            onClose: () => {
+              notifyClosed = true;
+            },
+          });
+        }
+      }
+    };
+
+    this.disposables.addFromEvent(this, 'click', handler);
+  }
+
   private readonly dataViewRootLogic = lazy(
     () =>
       new DataViewRootUILogic({
@@ -428,9 +491,15 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       })
   );
   override renderBlock() {
+    const widgets = html`${repeat(
+      Object.entries(this.widgets),
+      ([id]) => id,
+      ([_, widget]) => widget
+    )}`;
+
     return html`
       <div contenteditable="false" class="${databaseContentStyles}">
-        ${this.dataViewRootLogic.value.render()}
+        ${this.dataViewRootLogic.value.render()} ${widgets}
       </div>
     `;
   }

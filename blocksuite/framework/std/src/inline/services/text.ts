@@ -19,11 +19,16 @@ export class InlineTextService<TextAttributes extends BaseTextAttributes> {
     options: {
       match?: (delta: DeltaInsert, deltaInlineRange: InlineRange) => boolean;
       mode?: 'replace' | 'merge';
+      withoutTransact?: boolean;
     } = {}
   ): void => {
     if (this.editor.isReadonly) return;
 
-    const { match = () => true, mode = 'merge' } = options;
+    const {
+      match = () => true,
+      mode = 'merge',
+      withoutTransact = false,
+    } = options;
     const deltas = this.editor.deltaService.getDeltasByInlineRange(inlineRange);
 
     deltas
@@ -49,7 +54,7 @@ export class InlineTextService<TextAttributes extends BaseTextAttributes> {
             targetInlineRange.length,
             normalizedAttributes
           );
-        });
+        }, withoutTransact);
       });
   };
 

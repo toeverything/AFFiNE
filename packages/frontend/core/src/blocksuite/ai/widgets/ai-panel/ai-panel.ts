@@ -37,7 +37,12 @@ import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import { type AIError } from '../../provider';
 import type { AIPanelGenerating } from './components/index.js';
-import type { AffineAIPanelState, AffineAIPanelWidgetConfig } from './type.js';
+import type {
+  AffineAIPanelState,
+  AffineAIPanelWidgetConfig,
+  AIActionAnswer,
+} from './type.js';
+import { mergeAIActionAnswer } from './utils';
 export const AFFINE_AI_PANEL_WIDGET = 'affine-ai-panel-widget';
 
 export class AffineAIPanelWidget extends WidgetComponent {
@@ -103,7 +108,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
 
   private _abortController = new AbortController();
 
-  private _answer: string | null = null;
+  private _answer: AIActionAnswer | null = null;
 
   private readonly _clearDiscardModal = () => {
     if (this._discardModalAbort) {
@@ -136,10 +141,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
       !this.contains(e.target as Node)
     ) {
       this._clickOutside();
-      return true;
     }
-
-    return false;
   };
 
   private readonly _onKeyDown = (event: KeyboardEvent) => {
@@ -226,7 +228,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
     // reset answer
     this._answer = null;
 
-    const update = (answer: string) => {
+    const update = (answer: AIActionAnswer) => {
       this._answer = answer;
       this.requestUpdate();
     };
@@ -345,7 +347,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
   };
 
   get answer() {
-    return this._answer;
+    return this._answer ? mergeAIActionAnswer(this._answer) : null;
   }
 
   get inputText() {

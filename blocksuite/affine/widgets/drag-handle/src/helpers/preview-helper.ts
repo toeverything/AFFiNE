@@ -114,6 +114,7 @@ export class PreviewHelper {
     });
 
     let width: number = 500;
+    // oxlint-disable-next-line no-unassigned-vars
     let height;
 
     const noteBlock = this.widget.host.querySelector('affine-note');

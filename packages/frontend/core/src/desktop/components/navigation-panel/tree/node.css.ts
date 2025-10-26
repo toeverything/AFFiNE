@@ -15,7 +15,7 @@ export const itemRoot = style({
   minHeight: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 4px',
+  padding: '0 6px',
   fontSize: cssVar('fontSm'),
   position: 'relative',
   marginTop: '0px',
@@ -43,6 +43,14 @@ export const itemMain = style({
   flex: 1,
   position: 'relative',
   gap: 12,
+});
+export const toggleIcon = style({
+  width: 20,
+  height: 20,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 12,
 });
 export const itemRenameAnchor = style({
   pointerEvents: 'none',
@@ -84,16 +92,26 @@ export const iconContainer = style({
   height: 20,
   color: cssVarV2('icon/primary'),
   fontSize: 20,
+  position: 'absolute',
+  selectors: {
+    [`${itemRoot}[data-collapsible="true"]:hover &`]: {
+      opacity: 0,
+      pointerEvents: 'none',
+    },
+  },
 });
 export const collapsedIconContainer = style({
-  width: '16px',
-  height: '16px',
+  width: '20px',
+  height: '20px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '2px',
   transition: 'transform 0.2s',
   color: cssVarV2('icon/primary'),
+  position: 'absolute',
+  opacity: 0,
+  pointerEvents: 'none',
   selectors: {
     '&[data-collapsed="true"]': {
       transform: 'rotate(-90deg)',
@@ -105,10 +123,15 @@ export const collapsedIconContainer = style({
     '&:hover': {
       background: cssVar('hoverColor'),
     },
+    [`${itemRoot}[data-collapsible="true"]:hover &`]: {
+      opacity: 1,
+      pointerEvents: 'initial',
+    },
   },
 });
 export const collapsedIcon = style({
   transition: 'transform 0.2s ease-in-out',
+  fontSize: 16,
   selectors: {
     '&[data-collapsed="true"]': {
       transform: 'rotate(-90deg)',

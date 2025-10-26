@@ -171,6 +171,7 @@ export class DocRendererController {
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    ${env.selfhosted ? '' : '<meta name="apple-itunes-app" content="app-id=6736937980" />'}
 
     <title>${title}</title>
     <meta name="theme-color" content="#fafafa" />

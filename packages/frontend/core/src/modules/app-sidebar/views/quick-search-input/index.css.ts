@@ -3,15 +3,14 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'inline-flex',
-  background: cssVarV2('button/siderbarPrimary/background'),
   alignItems: 'center',
-  borderRadius: '8px',
+  borderRadius: '4px',
   fontSize: cssVar('fontSm'),
   width: '100%',
   height: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 12px 0 20px',
+  padding: '0 12px 0 8px',
   position: 'relative',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
@@ -20,7 +19,7 @@ export const root = style({
   },
 });
 export const icon = style({
-  marginRight: '8px',
+  marginRight: '12px',
   color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });

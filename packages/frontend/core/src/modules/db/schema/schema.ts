@@ -1,3 +1,4 @@
+import type { IconData } from '@affine/component';
 import {
   type DBSchemaBuilder,
   f,
@@ -9,7 +10,7 @@ import { nanoid } from 'nanoid';
 
 import type { WorkspacePropertyType } from '../../workspace-property';
 
-const integrationType = f.enum('readwise', 'zotero');
+const integrationType = f.enum('readwise');
 
 export const AFFiNE_WORKSPACE_DB_SCHEMA = {
   folders: {
@@ -45,6 +46,13 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
   pinnedCollections: {
     collectionId: f.string().primaryKey(),
     index: f.string(),
+  },
+  explorerIcon: {
+    /**
+     * ${doc|collection|folder|tag}:${id}
+     */
+    id: f.string().primaryKey(),
+    icon: f.json<IconData>(),
   },
 } as const satisfies DBSchemaBuilder;
 export type AFFiNEWorkspaceDbSchema = typeof AFFiNE_WORKSPACE_DB_SCHEMA;

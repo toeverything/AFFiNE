@@ -17,9 +17,9 @@ import {
   TextAlign,
   type TextStyleProps,
 } from '@blocksuite/affine-model';
-import type {
-  ToolbarActions,
-  ToolbarContext,
+import {
+  type ToolbarActions,
+  type ToolbarContext,
 } from '@blocksuite/affine-shared/services';
 import {
   getMostCommonResolvedValue,

@@ -1,9 +1,9 @@
 import {
   Checkbox,
+  ContextMenu,
   DragHandle as DragHandleIcon,
   Tooltip,
   useDraggable,
-  Wrapper,
 } from '@affine/component';
 import { DocsService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
@@ -30,7 +30,7 @@ import { PagePreview } from '../../page-list/page-content-preview';
 import { DocExplorerContext } from '../context';
 import { quickActions } from '../quick-actions.constants';
 import * as styles from './doc-list-item.css';
-import { MoreMenuButton } from './more-menu';
+import { MoreMenuButton, MoreMenuContent } from './more-menu';
 import { CardViewProperties, ListViewProperties } from './properties';
 
 export type DocListItemView = 'list' | 'grid' | 'masonry';
@@ -315,42 +315,46 @@ export const ListViewDoc = ({ docId }: DocListItemProps) => {
   const t = useI18n();
   const docsService = useService(DocsService);
   const doc = useLiveData(docsService.list.doc$(docId));
+  const contextValue = useContext(DocExplorerContext);
+  const showMoreOperation = useLiveData(contextValue.showMoreOperation$);
 
   if (!doc) {
     return null;
   }
 
   return (
-    <li className={styles.listViewRoot}>
-      <DragHandle id={docId} className={styles.listDragHandle} />
-      <Select id={docId} className={styles.listSelect} />
-      <DocIcon id={docId} className={styles.listIcon} />
-      <div className={styles.listBrief}>
-        <DocTitle
-          id={docId}
-          className={styles.listTitle}
-          data-testid="doc-list-item-title"
+    <ContextMenu
+      asChild
+      disabled={!showMoreOperation}
+      items={<MoreMenuContent docId={docId} />}
+    >
+      <li className={styles.listViewRoot}>
+        <DragHandle id={docId} className={styles.listDragHandle} />
+        <Select id={docId} className={styles.listSelect} />
+        <DocIcon id={docId} className={styles.listIcon} />
+        <div className={styles.listBrief}>
+          <DocTitle
+            id={docId}
+            className={styles.listTitle}
+            data-testid="doc-list-item-title"
+          />
+          <DocPreview id={docId} className={styles.listPreview} />
+        </div>
+        <div className={styles.listSpace} />
+        <ListViewProperties docId={docId} />
+        {quickActions.map(action => {
+          return (
+            <Tooltip key={action.key} content={t.t(action.name)}>
+              <action.Component doc={doc} />
+            </Tooltip>
+          );
+        })}
+        <MoreMenuButton
+          docId={docId}
+          contentOptions={listMoreMenuContentOptions}
         />
-        <DocPreview
-          id={docId}
-          className={styles.listPreview}
-          loading={<Wrapper height={20} width={10} />}
-        />
-      </div>
-      <div className={styles.listSpace} />
-      <ListViewProperties docId={docId} />
-      {quickActions.map(action => {
-        return (
-          <Tooltip key={action.key} content={t.t(action.name)}>
-            <action.Component doc={doc} />
-          </Tooltip>
-        );
-      })}
-      <MoreMenuButton
-        docId={docId}
-        contentOptions={listMoreMenuContentOptions}
-      />
-    </li>
+      </li>
+    </ContextMenu>
   );
 };
 
@@ -367,40 +371,47 @@ export const CardViewDoc = ({ docId }: DocListItemProps) => {
   const selectMode = useLiveData(contextValue.selectMode$);
   const docsService = useService(DocsService);
   const doc = useLiveData(docsService.list.doc$(docId));
+  const showMoreOperation = useLiveData(contextValue.showMoreOperation$);
 
   if (!doc) {
     return null;
   }
 
   return (
-    <li className={styles.cardViewRoot}>
-      <DragHandle id={docId} className={styles.cardDragHandle} />
-      <header className={styles.cardViewHeader}>
-        <DocIcon id={docId} className={styles.cardViewIcon} />
-        <DocTitle
-          id={docId}
-          className={styles.cardViewTitle}
-          data-testid="doc-list-item-title"
-        />
-        {quickActions.map(action => {
-          return (
-            <Tooltip key={action.key} content={t.t(action.name)}>
-              <action.Component size="16" doc={doc} />
-            </Tooltip>
-          );
-        })}
-        {selectMode ? (
-          <Select id={docId} className={styles.cardViewCheckbox} />
-        ) : (
-          <MoreMenuButton
-            docId={docId}
-            contentOptions={cardMoreMenuContentOptions}
-            iconProps={{ size: '16' }}
+    <ContextMenu
+      asChild
+      disabled={!showMoreOperation}
+      items={<MoreMenuContent docId={docId} />}
+    >
+      <li className={styles.cardViewRoot}>
+        <DragHandle id={docId} className={styles.cardDragHandle} />
+        <header className={styles.cardViewHeader}>
+          <DocIcon id={docId} className={styles.cardViewIcon} />
+          <DocTitle
+            id={docId}
+            className={styles.cardViewTitle}
+            data-testid="doc-list-item-title"
           />
-        )}
-      </header>
-      <DocPreview id={docId} className={styles.cardPreviewContainer} />
-      <CardViewProperties docId={docId} />
-    </li>
+          {quickActions.map(action => {
+            return (
+              <Tooltip key={action.key} content={t.t(action.name)}>
+                <action.Component size="16" doc={doc} />
+              </Tooltip>
+            );
+          })}
+          {selectMode ? (
+            <Select id={docId} className={styles.cardViewCheckbox} />
+          ) : (
+            <MoreMenuButton
+              docId={docId}
+              contentOptions={cardMoreMenuContentOptions}
+              iconProps={{ size: '16' }}
+            />
+          )}
+        </header>
+        <DocPreview id={docId} className={styles.cardPreviewContainer} />
+        <CardViewProperties docId={docId} />
+      </li>
+    </ContextMenu>
   );
 };

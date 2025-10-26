@@ -43,7 +43,7 @@ export class AudioTranscriptionJobStore extends Entity<{
     }
     const files = await this.props.getAudioFiles();
     const response = await graphqlService.gql({
-      timeout: 600_000, // default 15s is too short for audio transcription
+      timeout: 0, // default 15s is too short for audio transcription
       query: submitAudioTranscriptionMutation,
       variables: {
         workspaceId: this.currentWorkspaceId,

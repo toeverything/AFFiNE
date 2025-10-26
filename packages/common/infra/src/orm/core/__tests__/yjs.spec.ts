@@ -493,19 +493,19 @@ describe('ORM entity CRUD', () => {
 
     expect(() => {
       client.users.create({
-        // @ts-expect-error
+        // @ts-expect-error ignore the type error
         name: null,
       });
     }).toThrowError("Field 'name' is required but not set.");
 
     expect(() => {
-      // @ts-expect-error
+      // @ts-expect-error ignore the type error
       client.users.create({});
     }).toThrowError("Field 'name' is required but not set.");
 
     expect(() => {
       client.users.update(1, {
-        // @ts-expect-error
+        // @ts-expect-error ignore the type error
         name: null,
       });
     }).toThrowError("Field 'name' is required but not set.");

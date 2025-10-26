@@ -8,13 +8,17 @@ import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
 import { WorkspaceModule } from '../../core/workspaces';
+import { IndexerModule } from '../indexer';
 import {
   CopilotContextResolver,
   CopilotContextRootResolver,
   CopilotContextService,
 } from './context';
 import { CopilotController } from './controller';
+import { CopilotCronJobs } from './cron';
 import { CopilotEmbeddingJob } from './embedding';
+import { WorkspaceMcpController } from './mcp/controller';
+import { WorkspaceMcpProvider } from './mcp/provider';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import { CopilotProviderFactory, CopilotProviders } from './providers';
@@ -44,6 +48,7 @@ import {
     PermissionModule,
     ServerConfigModule,
     WorkspaceModule,
+    IndexerModule,
   ],
   providers: [
     // providers
@@ -61,7 +66,9 @@ import {
     // context
     CopilotContextResolver,
     CopilotContextService,
+    // jobs
     CopilotEmbeddingJob,
+    CopilotCronJobs,
     // transcription
     CopilotTranscriptionService,
     CopilotTranscriptionResolver,
@@ -73,7 +80,9 @@ import {
     UserCopilotResolver,
     PromptsManagementResolver,
     CopilotContextRootResolver,
+    // mcp
+    WorkspaceMcpProvider,
   ],
-  controllers: [CopilotController],
+  controllers: [CopilotController, WorkspaceMcpController],
 })
 export class CopilotModule {}

@@ -2,7 +2,12 @@ import { createHash } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 
-import { FileUpload, JobQueue, PaginationInput } from '../../../base';
+import {
+  FileUpload,
+  JobQueue,
+  PaginationInput,
+  sniffMime,
+} from '../../../base';
 import { ServerFeature, ServerService } from '../../../core';
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
@@ -64,7 +69,7 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
     const file = await this.models.copilotWorkspace.addFile(workspaceId, {
       fileName,
       blobId,
-      mimeType: content.mimetype,
+      mimeType: sniffMime(buffer, content.mimetype) || content.mimetype,
       size: buffer.length,
     });
     return { blobId, file };

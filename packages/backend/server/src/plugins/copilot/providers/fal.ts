@@ -74,6 +74,16 @@ export class FalProvider extends CopilotProvider<FalConfig> {
   override type = CopilotProviderType.FAL;
 
   override readonly models = [
+    {
+      id: 'flux-1/schnell',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Image],
+          defaultForOutputType: true,
+        },
+      ],
+    },
     // image to image models
     {
       id: 'lcm-sd15-i2i',
@@ -180,7 +190,7 @@ export class FalProvider extends CopilotProvider<FalConfig> {
               ? v.attachment
               : undefined
         )
-        .filter(v => !!v)[0],
+        .find(v => !!v),
       prompt: content.trim(),
       loras: lora.length ? lora : undefined,
       controlnets: controlnets.length ? controlnets : undefined,
