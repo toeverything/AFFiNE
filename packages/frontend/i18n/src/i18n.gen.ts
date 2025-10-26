@@ -992,6 +992,42 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.menubar.description"](): string;
     /**
+      * `Window behavior`
+      */
+    ["com.affine.appearanceSettings.menubar.minimize.title"](): string;
+    /**
+      * `Quick open from tray icon`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.toggle"](): string;
+    /**
+      * `Open AFFiNE on left clicking the tray icon.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.description"](): string;
+    /**
+      * `Minimize to tray`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.toggle"](): string;
+    /**
+      * `Minimize AFFiNE to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.description"](): string;
+    /**
+      * `Exit to tray`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.exitToTray.toggle"](): string;
+    /**
+      * `Exit AFFiNE to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.exitToTray.description"](): string;
+    /**
+      * `Start minimized`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.toggle"](): string;
+    /**
+      * `Start AFFiNE in the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.description"](): string;
+    /**
       * `Theme`
       */
     ["com.affine.appearanceSettings.theme.title"](): string;
