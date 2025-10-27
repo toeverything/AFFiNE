@@ -73,12 +73,15 @@ const styles = css`
 `;
 
 const createViewOptionsMiddleware = (): Middleware[] => [
-  autoPlacement({
-    alignment: 'end',
-    allowedPlacements: ['bottom-end', 'top-end'],
-  }),
   offset(4),
-  shift({ crossAxis: true, padding: 8 }),
+  shift({
+    padding: 16, // Increased padding to keep menu on-screen
+    crossAxis: false, // Don't shift on cross axis to maintain alignment
+  }),
+  autoPlacement({
+    alignment: 'start', // Align to left side to prevent off-screen issues
+    allowedPlacements: ['bottom-start', 'top-start', 'bottom-end', 'top-end'],
+  }),
 ];
 
 export class DataViewHeaderToolsViewOptions extends WidgetBase {
