@@ -75,9 +75,19 @@ export class DataViewRootUILogic {
 
     return new (logic(view))(this, view);
   }
-  private readonly views$ = cacheComputed(this.viewManager.views$, viewId =>
-    this.createDataViewUILogic(viewId)
-  );
+  // Create composite keys that include both view ID and type
+  // This ensures cache is invalidated when view type changes
+  private readonly viewCacheKeys$ = computed(() => {
+    return this.viewManager.views$.value.map(viewId => {
+      const view = this.viewManager.viewGet(viewId);
+      return `${viewId}:${view?.type ?? 'unknown'}`;
+    });
+  });
+  private readonly views$ = cacheComputed(this.viewCacheKeys$, cacheKey => {
+    // Extract the viewId from the composite key
+    const viewId = cacheKey.split(':')[0];
+    return this.createDataViewUILogic(viewId);
+  });
   private readonly viewsMap$ = computed(() => {
     return Object.fromEntries(
       this.views$.list.value.map(logic => [logic.view.id, logic])

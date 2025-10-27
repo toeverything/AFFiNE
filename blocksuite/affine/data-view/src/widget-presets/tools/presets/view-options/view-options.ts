@@ -18,6 +18,12 @@ import {
   MoreHorizontalIcon,
   SortIcon,
 } from '@blocksuite/icons/lit';
+import {
+  autoPlacement,
+  type Middleware,
+  offset,
+  shift,
+} from '@floating-ui/dom';
 import { css, html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -38,10 +44,10 @@ import { popCreateSort } from '../../../../core/sort/add-sort.js';
 import { sortTraitKey } from '../../../../core/sort/manager.js';
 import { createSortUtils } from '../../../../core/sort/utils.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
-import type { ChartSingleView } from '../../../view-presets/chart/chart-view-manager.js';
-import type { ChartType } from '../../../view-presets/chart/define.js';
 import { popFilterRoot } from '../../../quick-setting-bar/filter/root-panel-view.js';
 import { popSortRoot } from '../../../quick-setting-bar/sort/root-panel.js';
+import type { ChartSingleView } from '../../../view-presets/chart/chart-view-manager.js';
+import type { ChartType } from '../../../view-presets/chart/define.js';
 
 const styles = css`
   .affine-database-toolbar-item.more-action {
@@ -65,6 +71,15 @@ const styles = css`
     background: var(--affine-hover-color);
   }
 `;
+
+const createViewOptionsMiddleware = (): Middleware[] => [
+  autoPlacement({
+    alignment: 'end',
+    allowedPlacements: ['bottom-end', 'top-end'],
+  }),
+  offset(4),
+  shift({ crossAxis: true, padding: 8 }),
+];
 
 export class DataViewHeaderToolsViewOptions extends WidgetBase {
   static override styles = styles;
@@ -107,9 +122,10 @@ const createSettingMenus = (
     menu.action({
       name: 'Properties',
       prefix: InfoIcon(),
-      postfix: html` <div style="font-size: 14px;">
-          ${view.properties$.value.length} shown
-        </div>
+      postfix: html`<span
+          style="font-size: 12px; color: var(--affine-text-secondary-color);"
+          >${view.properties$.value.length} shown</span
+        >
         ${ArrowRightSmallIcon()}`,
       select: () => {
         popPropertiesSetting(target, {
@@ -126,13 +142,14 @@ const createSettingMenus = (
       menu.action({
         name: 'Filter',
         prefix: FilterIcon(),
-        postfix: html` <div style="font-size: 14px;">
-            ${filterCount === 0
-            ? ''
-            : filterCount === 1
-              ? '1 filter'
-              : `${filterCount} filters`}
-          </div>
+        postfix: html`<span
+            style="font-size: 12px; color: var(--affine-text-secondary-color);"
+            >${filterCount === 0
+              ? ''
+              : filterCount === 1
+                ? '1 filter'
+                : `${filterCount} filters`}</span
+          >
           ${ArrowRightSmallIcon()}`,
         select: () => {
           if (!filterTrait.filter$.value.conditions.length) {
@@ -170,13 +187,14 @@ const createSettingMenus = (
       menu.action({
         name: 'Sort',
         prefix: SortIcon(),
-        postfix: html` <div style="font-size: 14px;">
-            ${sortCount === 0
-            ? ''
-            : sortCount === 1
-              ? '1 sort'
-              : `${sortCount} sorts`}
-          </div>
+        postfix: html`<span
+            style="font-size: 12px; color: var(--affine-text-secondary-color);"
+            >${sortCount === 0
+              ? ''
+              : sortCount === 1
+                ? '1 sort'
+                : `${sortCount} sorts`}</span
+          >
           ${ArrowRightSmallIcon()}`,
         select: () => {
           const sortList = sortTrait.sortList$.value;
@@ -208,9 +226,10 @@ const createSettingMenus = (
       menu.action({
         name: 'Group',
         prefix: GroupingIcon(),
-        postfix: html` <div style="font-size: 14px;">
-            ${groupTrait.property$.value?.name$.value ?? ''}
-          </div>
+        postfix: html`<span
+            style="font-size: 12px; color: var(--affine-text-secondary-color);"
+            >${groupTrait.property$.value?.name$.value ?? ''}</span
+          >
           ${ArrowRightSmallIcon()}`,
         select: () => {
           const groupBy = groupTrait.property$.value;
@@ -230,7 +249,7 @@ const createSettingMenus = (
 };
 
 const createChartMenus = (
-  target: PopupTarget,
+  _target: PopupTarget,
   view: ChartSingleView,
   reopen: () => void
 ) => {
@@ -239,20 +258,24 @@ const createChartMenus = (
     t === 'pie'
       ? 'Pie'
       : t === 'bar'
-        ? 'Bar'
-        : t === 'stacked-bar'
-          ? 'Stacked Bar'
-          : 'Line';
+        ? 'Vertical Bar'
+        : t === 'horizontal-bar'
+          ? 'Horizontal Bar'
+          : t === 'stacked-bar'
+            ? 'Stacked Bar'
+            : 'Line';
   const items: MenuConfig[] = [];
   items.push(
     menu.subMenu({
       name: 'Chart type',
-      postfix: html` <div style="font-size: 14px;">
-          ${chartTypeLabel(chartType)}
-        </div>
-        ${ArrowRightSmallIcon()}`,
+      postfix: html`<span
+        style="font-size: 12px; color: var(--affine-text-secondary-color);"
+        >${chartTypeLabel(chartType)}</span
+      >`,
       options: {
-        items: (['bar', 'stacked-bar', 'line', 'pie'] as ChartType[]).map(t =>
+        items: (
+          ['bar', 'horizontal-bar', 'stacked-bar', 'line', 'pie'] as ChartType[]
+        ).map(t =>
           menu.action({
             name: chartTypeLabel(t),
             isSelected: chartType === t,
@@ -266,23 +289,219 @@ const createChartMenus = (
     })
   );
 
-  const currentProp = view.properties$.value.find(
-    p => p.id === view.data$.value?.categoryPropertyId
-  );
+  // For bar and line charts, show X/Y axis configuration
+  if (
+    chartType === 'bar' ||
+    chartType === 'horizontal-bar' ||
+    chartType === 'stacked-bar' ||
+    chartType === 'line'
+  ) {
+    // X axis section
+    items.push(
+      menu.group({
+        name: 'X axis',
+        items: [
+          menu.subMenu({
+            name: 'What to show',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >${view.properties$.value.find(
+                (p: any) => p.id === view.data$.value?.xAxisPropertyId
+              )?.name$.value ?? 'Status'}</span
+            >`,
+            options: {
+              items: view.properties$.value.map((prop: any) =>
+                menu.action({
+                  name: prop.name$.value,
+                  isSelected:
+                    prop.id ===
+                    (view.data$.value?.xAxisPropertyId ||
+                      view.data$.value?.categoryPropertyId),
+                  select: () => {
+                    view.dataUpdate(() => ({ xAxisPropertyId: prop.id }));
+                    reopen();
+                  },
+                })
+              ),
+            },
+          }),
+          menu.subMenu({
+            name: 'Sort by',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >${view.data$.value?.xAxisSort || 'Count High → Low'}</span
+            >`,
+            options: {
+              items: [
+                'Manual',
+                'Status Ascending',
+                'Status Descending',
+                'Count Low → High',
+                'Count High → Low',
+              ].map(option =>
+                menu.action({
+                  name: option,
+                  isSelected:
+                    (view.data$.value?.xAxisSort || 'Count High → Low') ===
+                    option,
+                  select: () => {
+                    view.dataUpdate(() => ({ xAxisSort: option }));
+                    reopen();
+                  },
+                })
+              ),
+            },
+          }),
+          menu.toggleSwitch({
+            name: 'Omit zero values',
+            on: view.data$.value?.omitZeroValues === true,
+            onChange: value => {
+              view.dataUpdate(() => ({ omitZeroValues: value }));
+            },
+          }),
+        ],
+      })
+    );
+
+    // Y axis section
+    items.push(
+      menu.group({
+        name: 'Y axis',
+        items: [
+          menu.subMenu({
+            name: 'What to show',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >Count</span
+            >`,
+            options: {
+              items: [
+                menu.action({
+                  name: 'Count',
+                  isSelected: true,
+                  select: () => {
+                    reopen();
+                  },
+                }),
+              ],
+            },
+          }),
+          menu.subMenu({
+            name: 'Group by',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >None</span
+            >`,
+            options: {
+              items: [
+                menu.action({
+                  name: 'None',
+                  isSelected: true,
+                  select: () => {
+                    reopen();
+                  },
+                }),
+              ],
+            },
+          }),
+          menu.subMenu({
+            name: 'Range',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >Auto</span
+            >`,
+            options: {
+              items: ['Auto', 'Custom'].map(option =>
+                menu.action({
+                  name: option,
+                  isSelected:
+                    (view.data$.value?.yAxisRange || 'Auto') === option,
+                  select: () => {
+                    view.dataUpdate(() => ({ yAxisRange: option }));
+                    reopen();
+                  },
+                })
+              ),
+            },
+          }),
+        ],
+      })
+    );
+  } else {
+    // For pie charts, show the regular "What to show" menu
+    const currentProp = view.properties$.value.find(
+      (p: any) => p.id === view.data$.value?.categoryPropertyId
+    );
+    items.push(
+      menu.subMenu({
+        name: 'What to show',
+        postfix: html`<span
+          style="font-size: 12px; color: var(--affine-text-secondary-color);"
+          >${currentProp?.name$.value ?? 'None'}</span
+        >`,
+        options: {
+          items: view.properties$.value.map((prop: any) =>
+            menu.action({
+              name: prop.name$.value,
+              isSelected: prop.id === view.data$.value?.categoryPropertyId,
+              select: () => {
+                view.dataUpdate(() => ({ categoryPropertyId: prop.id }));
+                reopen();
+              },
+            })
+          ),
+        },
+      })
+    );
+  }
+
+  // Each slice represents menu
   items.push(
     menu.subMenu({
-      name: 'What to show',
-      postfix: html` <div style="font-size: 14px;">
-          ${currentProp?.name$.value ?? 'None'}
-        </div>
-        ${ArrowRightSmallIcon()}`,
+      name: 'Each slice represents',
+      postfix: html`<span
+        style="font-size: 12px; color: var(--affine-text-secondary-color);"
+        >Count</span
+      >`,
       options: {
-        items: view.properties$.value.map(prop =>
+        items: [
           menu.action({
-            name: prop.name$.value,
-            isSelected: prop.id === view.data$.value?.categoryPropertyId,
+            name: 'Count',
+            isSelected: true,
             select: () => {
-              view.dataUpdate(() => ({ categoryPropertyId: prop.id }));
+              // TODO: Implement when sum/average features are added
+              reopen();
+            },
+          }),
+        ],
+      },
+    })
+  );
+
+  // Sort by menu
+  const sortBy = view.data$.value?.sortBy ?? 'count-high-low';
+  const sortLabels: Record<string, string> = {
+    manual: 'Manual',
+    'status-asc': 'Status Ascending',
+    'status-desc': 'Status Descending',
+    'count-low-high': 'Count Low → High',
+    'count-high-low': 'Count High → Low',
+  };
+
+  items.push(
+    menu.subMenu({
+      name: 'Sort by',
+      postfix: html`<span
+        style="font-size: 12px; color: var(--affine-text-secondary-color);"
+        >${sortLabels[sortBy] || 'Count High → Low'}</span
+      >`,
+      options: {
+        items: Object.entries(sortLabels).map(([key, label]) =>
+          menu.action({
+            name: label,
+            isSelected: sortBy === key,
+            select: () => {
+              view.dataUpdate(() => ({ sortBy: key }));
               reopen();
             },
           })
@@ -291,37 +510,112 @@ const createChartMenus = (
     })
   );
 
-  items.push(
-    menu.action({
-      name: 'Each slice represents',
-      postfix: html` <div style="font-size: 14px;">Count</div>
-        ${ArrowRightSmallIcon()}`,
-      select: () => { },
-    })
-  );
+  // Color menu
+  const colorScheme = view.data$.value?.colorScheme ?? 'auto';
+  const colorSchemes = [
+    { id: 'auto', name: 'Auto' },
+    { id: 'colorful', name: 'Colorful' },
+    { id: 'colorless', name: 'Colorless' },
+    { id: 'blue', name: 'Blue' },
+    { id: 'yellow', name: 'Yellow' },
+    { id: 'green', name: 'Green' },
+    { id: 'purple', name: 'Purple' },
+    { id: 'teal', name: 'Teal' },
+    { id: 'orange', name: 'Orange' },
+    { id: 'pink', name: 'Pink' },
+    { id: 'red', name: 'Red' },
+  ];
 
   items.push(
-    menu.action({
-      name: 'Sort by',
-      postfix: html` <div style="font-size: 14px;">Count High → Low</div>
-        ${ArrowRightSmallIcon()}`,
-      select: () => { },
-    })
-  );
-
-  items.push(
-    menu.action({
+    menu.subMenu({
       name: 'Color',
-      postfix: html`Auto ${ArrowRightSmallIcon()}`,
-      select: () => { },
+      postfix: html`<span
+        style="font-size: 12px; color: var(--affine-text-secondary-color);"
+        >${colorSchemes.find(c => c.id === colorScheme)?.name || 'Auto'}</span
+      >`,
+      options: {
+        items: colorSchemes.map(scheme =>
+          menu.action({
+            name: scheme.name,
+            isSelected: colorScheme === scheme.id,
+            select: () => {
+              view.dataUpdate(() => ({ colorScheme: scheme.id }));
+              reopen();
+            },
+          })
+        ),
+      },
     })
   );
 
+  // More style options menu
   items.push(
-    menu.action({
+    menu.subMenu({
       name: 'More style options',
-      postfix: ArrowRightSmallIcon(),
-      select: () => { },
+      options: {
+        items: [
+          menu.subMenu({
+            name: 'Height',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >${view.data$.value?.height || 'Medium'}</span
+            >`,
+            options: {
+              items: ['Small', 'Medium', 'Large'].map(size =>
+                menu.action({
+                  name: size,
+                  isSelected: (view.data$.value?.height || 'Medium') === size,
+                  select: () => {
+                    view.dataUpdate(() => ({ height: size }));
+                    reopen();
+                  },
+                })
+              ),
+            },
+          }),
+          menu.toggleSwitch({
+            name: 'Show value in center',
+            on: view.data$.value?.showValueInCenter !== false,
+            onChange: value => {
+              view.dataUpdate(() => ({ showValueInCenter: value }));
+            },
+          }),
+          menu.toggleSwitch({
+            name: 'Legend',
+            on: view.data$.value?.showLegend !== false,
+            onChange: value => {
+              view.dataUpdate(() => ({ showLegend: value }));
+            },
+          }),
+          menu.subMenu({
+            name: 'Data labels',
+            postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color);"
+              >${view.data$.value?.dataLabels || 'Value (%)'}</span
+            >`,
+            options: {
+              items: ['None', 'Value', 'Value (%)'].map(option =>
+                menu.action({
+                  name: option,
+                  isSelected:
+                    (view.data$.value?.dataLabels || 'Value (%)') === option,
+                  select: () => {
+                    view.dataUpdate(() => ({ dataLabels: option }));
+                    reopen();
+                  },
+                })
+              ),
+            },
+          }),
+          menu.toggleSwitch({
+            name: 'Caption',
+            on: view.data$.value?.showCaption === true,
+            onChange: value => {
+              view.dataUpdate(() => ({ showCaption: value }));
+            },
+          }),
+        ],
+      },
     })
   );
 
@@ -352,11 +646,10 @@ export const popViewOptions = (
       items: [
         menu.action({
           name: 'Layout',
-          postfix: html` <div
-              style="font-size: 14px;text-transform: capitalize;"
+          postfix: html`<span
+              style="font-size: 12px; color: var(--affine-text-secondary-color); text-transform: capitalize;"
+              >${view.type}</span
             >
-              ${view.type}
-            </div>
             ${ArrowRightSmallIcon()}`,
           select: () => {
             const viewTypes = view.manager.viewMetas.map<MenuConfig>(meta => {
@@ -395,8 +688,11 @@ export const popViewOptions = (
                     if (!id) {
                       return;
                     }
-                    view.manager.viewChangeType(id, meta.type);
-                    dataViewLogic.clearSelection();
+                    // Only change view type if it's different from current
+                    if (meta.type !== view.type) {
+                      view.manager.viewChangeType(id, meta.type);
+                      dataViewLogic.clearSelection();
+                    }
                   },
                   class: {},
                 };
@@ -440,6 +736,7 @@ export const popViewOptions = (
                   // }),
                 ],
               },
+              middleware: createViewOptionsMiddleware(),
             });
           },
           prefix: LayoutIcon(),
@@ -494,5 +791,6 @@ export const popViewOptions = (
       items,
       onClose: onClose,
     },
+    middleware: createViewOptionsMiddleware(),
   });
 };
