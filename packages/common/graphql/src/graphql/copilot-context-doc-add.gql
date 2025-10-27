@@ -3,6 +3,5 @@ mutation addContextDoc($options: AddContextDocInput!) {
     id
     createdAt
     status
-    error
   }
 }

@@ -300,6 +300,13 @@ export class CommentModel extends BaseModel {
     })) as Reply | null;
   }
 
+  async listReplies(workspaceId: string, docId: string, commentId: string) {
+    return (await this.db.reply.findMany({
+      where: { workspaceId, docId, commentId, deletedAt: null },
+      orderBy: { sid: 'asc' },
+    })) as Reply[];
+  }
+
   /**
    * Update a reply content
    * @param input - The reply update input

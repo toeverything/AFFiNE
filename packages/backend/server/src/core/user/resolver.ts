@@ -17,6 +17,8 @@ import { isNil, omitBy } from 'lodash-es';
 import {
   CannotDeleteOwnAccount,
   type FileUpload,
+  readBufferWithLimit,
+  sniffMime,
   Throttle,
   UserNotFound,
 } from '../../base';
@@ -98,20 +100,20 @@ export class UserResolver {
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
-    if (!avatar.mimetype.startsWith('image/')) {
-      throw new Error('Invalid file type');
-    }
-
     if (!user) {
       throw new UserNotFound();
     }
 
+    const avatarBuffer = await readBufferWithLimit(avatar.createReadStream());
+    const contentType = sniffMime(avatarBuffer, avatar.mimetype);
+    if (!contentType || !contentType.startsWith('image/')) {
+      throw new Error(`Invalid file type: ${contentType || 'unknown'}`);
+    }
+
     const avatarUrl = await this.storage.put(
       `${user.id}-avatar-${Date.now()}`,
-      avatar.createReadStream(),
-      {
-        contentType: avatar.mimetype,
-      }
+      avatarBuffer,
+      { contentType }
     );
 
     if (user.avatarUrl) {

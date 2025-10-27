@@ -40,10 +40,11 @@ public class IntelligentContext {
     case currentWorkspaceId
     case currentServerBaseUrl
     case currentI18nLocale
+    case currentAiButtonFeatureFlag
   }
 
-  public private(set) var currentSession: ChatSessionObject?
-  public private(set) var currentWorkspaceId: String?
+  @Published public private(set) var currentSession: ChatSessionObject?
+  @Published public private(set) var currentWorkspaceId: String?
 
   public lazy var temporaryDirectory: URL = {
     let tempDir = FileManager.default.temporaryDirectory
@@ -53,6 +54,7 @@ public class IntelligentContext {
   public enum IntelligentError: Error, LocalizedError {
     case loginRequired(String)
     case sessionCreationFailed(String)
+    case featureClosed
 
     public var errorDescription: String? {
       switch self {
@@ -60,6 +62,8 @@ public class IntelligentContext {
         "Login required: \(reason)"
       case let .sessionCreationFailed(reason):
         "Session creation failed: \(reason)"
+      case .featureClosed:
+        "Intelligent feature closed"
       }
     }
   }
@@ -70,6 +74,7 @@ public class IntelligentContext {
     assert(webView != nil)
     DispatchQueue.global(qos: .userInitiated).async { [self] in
       prepareTemporaryDirectory()
+      prepareMarkdownViewThemes()
 
       let webViewGroup = DispatchGroup()
       var webViewMetadataResult: [WebViewMetadataKey: Any] = [:]
@@ -80,6 +85,11 @@ public class IntelligentContext {
       }
       webViewGroup.wait()
       webViewMetadata = webViewMetadataResult
+
+      if webViewMetadataResult[.currentAiButtonFeatureFlag] as? Bool == false {
+        completion(.failure(IntelligentError.featureClosed))
+        return
+      }
 
       // Check required webView metadata
       guard let baseUrlString = webViewMetadataResult[.currentServerBaseUrl] as? String,

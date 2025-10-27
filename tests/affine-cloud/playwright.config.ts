@@ -23,7 +23,7 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: !!process.env.CI,
   workers: process.env.CI && !process.env.COPILOT ? 1 : 4,
-  retries: process.env.COPILOT ? 1 : 3,
+  retries: process.env.COPILOT || !process.env.CI ? 1 : 3,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
     {

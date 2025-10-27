@@ -96,6 +96,21 @@ test('should be able to visit private api if signed in', async t => {
   t.is(res.body.user.id, u1.id);
 });
 
+test('should be able to visit private api with access token', async t => {
+  const models = t.context.app.get(Models);
+  const token = await models.accessToken.create({
+    userId: u1.id,
+    name: 'test',
+  });
+
+  const res = await request(server)
+    .get('/private')
+    .set('Authorization', `Bearer ${token.token}`)
+    .expect(HttpStatus.OK);
+
+  t.is(res.body.user.id, u1.id);
+});
+
 test('should be able to parse session cookie', async t => {
   const spy = Sinon.spy(auth, 'getUserSession');
   await request(server)

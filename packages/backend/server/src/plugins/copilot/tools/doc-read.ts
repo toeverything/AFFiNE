@@ -57,6 +57,7 @@ export const buildDocContentGetter = (
     }
 
     return {
+      docId,
       title: content.title,
       markdown: content.markdown,
       createdAt: docMeta.createdAt,
@@ -72,8 +73,9 @@ export const createDocReadTool = (
   getDoc: (targetId?: string) => Promise<object | undefined>
 ) => {
   return tool({
-    description: 'Read the content of a doc in the current workspace',
-    parameters: z.object({
+    description:
+      'Return the complete text and basic metadata of a single document identified by docId; use this when the user needs the full content of a specific file rather than a search result.',
+    inputSchema: z.object({
       doc_id: z.string().describe('The target doc to read'),
     }),
     execute: async ({ doc_id }) => {

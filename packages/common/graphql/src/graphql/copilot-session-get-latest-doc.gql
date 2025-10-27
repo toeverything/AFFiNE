@@ -1,34 +1,22 @@
+#import "./fragments/copilot.gql"
+
 query getCopilotLatestDocSession(
   $workspaceId: String!
   $docId: String!
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(
+      chats(
+        pagination: { first: 1 }
         docId: $docId
         options: {
-          limit: 1
           sessionOrder: desc
           action: false
           fork: false
+          withMessages: true
         }
       ) {
-        sessionId
-        workspaceId
-        docId
-        pinned
-        action
-        tokens
-        createdAt
-        updatedAt
-        messages {
-          id
-          role
-          content
-          attachments
-          params
-          createdAt
-        }
+        ...PaginatedCopilotChats
       }
     }
   }

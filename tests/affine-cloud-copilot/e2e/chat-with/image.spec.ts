@@ -36,6 +36,12 @@ test.describe('AIChatWith/Image', () => {
         status: 'success',
       },
     ]);
+
+    const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
+    await expect(
+      content.toLowerCase().includes('kitten') ||
+        content.toLowerCase().includes('cat')
+    ).toBe(true);
   });
 
   test('support chat with mutiple images', async ({

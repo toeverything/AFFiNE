@@ -193,6 +193,7 @@ export const menuButtonItems = {
     (config: {
       name: string;
       label?: () => TemplateResult;
+      info?: TemplateResult;
       prefix?: TemplateResult;
       postfix?: TemplateResult;
       isSelected?: boolean;
@@ -211,7 +212,7 @@ export const menuButtonItems = {
           return html`
             ${config.prefix}
             <div class="affine-menu-action-text">
-              ${config.label?.() ?? config.name}
+              ${config.label?.() ?? config.name} ${config.info}
             </div>
             ${config.postfix ?? (config.isSelected ? DoneIcon() : undefined)}
           `;

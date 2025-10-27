@@ -1,8 +1,7 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
+import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
 import { css, html } from 'lit';
@@ -16,10 +15,10 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor host: EditorHost | null | undefined;
+  accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
   accessor doc!: Store;
@@ -51,18 +50,15 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
     if (this._isHistoryClearDisabled || !this.session) {
       return;
     }
-    const sessionId = this.session.id;
-    const notification = this.host?.std.getOptional(NotificationProvider);
+    const sessionId = this.session.sessionId;
     try {
-      const confirm = notification
-        ? await notification.confirm({
-            title: 'Clear History',
-            message:
-              'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
-            confirmText: 'Confirm',
-            cancelText: 'Cancel',
-          })
-        : true;
+      const confirm = await this.notificationService.confirm({
+        title: 'Clear History',
+        message:
+          'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel',
+      });
 
       if (confirm) {
         const actionIds = this.chatContextValue.messages
@@ -73,11 +69,11 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
           this.doc.id,
           [...(sessionId ? [sessionId] : []), ...(actionIds || [])]
         );
-        notification?.toast('History cleared');
+        this.notificationService.toast('History cleared');
         this.onHistoryCleared?.();
       }
     } catch {
-      notification?.toast('Failed to clear history');
+      this.notificationService.toast('Failed to clear history');
     }
   };
 

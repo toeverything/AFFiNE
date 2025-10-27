@@ -10,6 +10,7 @@ import {
   resolveCommentMutation,
   updateCommentMutation,
   updateReplyMutation,
+  uploadCommentAttachmentMutation,
 } from '@affine/graphql';
 import { Entity } from '@toeverything/infra';
 
@@ -23,6 +24,7 @@ import type {
   DocCommentListResult,
   DocCommentReply,
 } from '../types';
+import { findMentions } from './utils';
 
 type GQLCommentType =
   ListCommentsQuery['workspace']['comments']['edges'][number]['node'];
@@ -38,15 +40,17 @@ const normalizeUser = (user: GQLUserType) => ({
 
 const normalizeReply = (reply: GQLReplyType): DocCommentReply => ({
   id: reply.id,
+  commentId: reply.commentId,
   content: reply.content as DocCommentContent,
   createdAt: new Date(reply.createdAt).getTime(),
   updatedAt: new Date(reply.updatedAt).getTime(),
   user: normalizeUser(reply.user),
+  mentions: findMentions(reply.content.snapshot.blocks),
 });
 
 const normalizeComment = (comment: GQLCommentType): DocComment => ({
   id: comment.id,
-  content: comment.content as DocCommentContent,
+  content: comment.content ? (comment.content as DocCommentContent) : undefined,
   resolved: comment.resolved,
   createdAt: new Date(comment.createdAt).getTime(),
   updatedAt: new Date(comment.updatedAt).getTime(),
@@ -57,6 +61,9 @@ const normalizeComment = (comment: GQLCommentType): DocComment => ({
         name: '',
         avatarUrl: '',
       },
+  mentions: comment.content
+    ? findMentions(comment.content.snapshot.blocks)
+    : [],
   replies: comment.replies?.map(normalizeReply) ?? [],
 });
 
@@ -149,15 +156,25 @@ export class DocCommentStore extends Entity<{
 
     const commentChanges = response.workspace?.commentChanges;
     if (!commentChanges) {
-      return [];
+      return {
+        changes: [],
+        startCursor: '',
+        endCursor: after ?? '',
+        hasNextPage: false,
+      };
     }
 
-    return commentChanges.edges.map(edge => ({
-      id: edge.node.id,
-      action: edge.node.action,
-      comment: normalizeComment(edge.node.item),
-      commentId: edge.node.commentId || undefined,
-    }));
+    return {
+      changes: commentChanges.edges.map(edge => ({
+        id: edge.node.id,
+        action: edge.node.action,
+        comment: normalizeComment(edge.node.item),
+        commentId: edge.node.commentId || undefined,
+      })),
+      startCursor: commentChanges.pageInfo.startCursor || '',
+      endCursor: commentChanges.pageInfo.endCursor || '',
+      hasNextPage: commentChanges.pageInfo.hasNextPage,
+    };
   }
 
   async createComment(commentInput: {
@@ -169,6 +186,8 @@ export class DocCommentStore extends Entity<{
       throw new Error('GraphQL service not found');
     }
 
+    const mentions = commentInput.mentions;
+
     const response = await graphql.gql({
       query: createCommentMutation,
       variables: {
@@ -178,7 +197,7 @@ export class DocCommentStore extends Entity<{
           docMode: this.props.getDocMode(),
           docTitle: this.props.getDocTitle(),
           content: commentInput.content,
-          mentions: commentInput.mentions,
+          mentions,
         },
       },
     });
@@ -305,4 +324,27 @@ export class DocCommentStore extends Entity<{
       },
     });
   }
+
+  /**
+   * Upload a comment attachment blob and obtain the remote URL.
+   * @param file File (image/blob) selected by user
+   * @returns url string returned by server
+   */
+  uploadCommentAttachment = async (file: File): Promise<string> => {
+    const graphql = this.graphqlService;
+    if (!graphql) {
+      throw new Error('GraphQL service not found');
+    }
+
+    const res = await graphql.gql({
+      timeout: 180_000,
+      query: uploadCommentAttachmentMutation,
+      variables: {
+        workspaceId: this.currentWorkspaceId,
+        docId: this.props.docId,
+        attachment: file,
+      },
+    });
+    return res.uploadCommentAttachment;
+  };
 }

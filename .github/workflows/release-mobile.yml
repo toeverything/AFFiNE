@@ -12,6 +12,9 @@ on:
       build-type:
         type: string
         required: true
+      ios-app-version:
+        type: string
+        required: false
 
 env:
   BUILD_TYPE: ${{ inputs.build-type }}
@@ -78,7 +81,7 @@ jobs:
           path: packages/frontend/apps/android/dist
 
   ios:
-    runs-on: ${{ github.ref_name == 'canary' && 'macos-latest' || 'blaze/macos-14' }}
+    runs-on: 'macos-15'
     needs:
       - build-ios-web
     steps:
@@ -87,6 +90,7 @@ jobs:
         uses: ./.github/actions/setup-version
         with:
           app-version: ${{ inputs.app-version }}
+          ios-app-version: ${{ inputs.ios-app-version }}
       - name: 'Update Code Sign Identity'
         shell: bash
         run: ./packages/frontend/apps/ios/update_code_sign_identity.sh
@@ -106,7 +110,7 @@ jobs:
           enableScripts: false
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2
+          xcode-version: 16.4
       - name: Install Swiftformat
         run: brew install swiftformat
       - name: Cap sync

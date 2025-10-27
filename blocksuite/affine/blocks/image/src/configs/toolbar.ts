@@ -1,4 +1,5 @@
-import { ImageBlockModel } from '@blocksuite/affine-model';
+import { updateBlockAlign } from '@blocksuite/affine-block-note';
+import { ImageBlockModel, TextAlign } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
   blockCommentToolbarButton,
@@ -12,6 +13,9 @@ import {
   DeleteIcon,
   DownloadIcon,
   DuplicateIcon,
+  TextAlignCenterIcon,
+  TextAlignLeftIcon,
+  TextAlignRightIcon,
 } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
@@ -51,7 +55,55 @@ const builtinToolbarConfig = {
       },
     },
     {
-      id: 'c.comment',
+      id: 'c.1.align-left',
+      tooltip: 'Align left',
+      icon: TextAlignLeftIcon(),
+      run(ctx) {
+        const block = ctx.getCurrentBlockByType(ImageBlockComponent);
+        if (block) {
+          ctx.chain
+            .pipe(updateBlockAlign, {
+              textAlign: TextAlign.Left,
+              selectedBlocks: [block],
+            })
+            .run();
+        }
+      },
+    },
+    {
+      id: 'c.2.align-center',
+      tooltip: 'Align center',
+      icon: TextAlignCenterIcon(),
+      run(ctx) {
+        const block = ctx.getCurrentBlockByType(ImageBlockComponent);
+        if (block) {
+          ctx.chain
+            .pipe(updateBlockAlign, {
+              textAlign: TextAlign.Center,
+              selectedBlocks: [block],
+            })
+            .run();
+        }
+      },
+    },
+    {
+      id: 'c.3.align-right',
+      tooltip: 'Align right',
+      icon: TextAlignRightIcon(),
+      run(ctx) {
+        const block = ctx.getCurrentBlockByType(ImageBlockComponent);
+        if (block) {
+          ctx.chain
+            .pipe(updateBlockAlign, {
+              textAlign: TextAlign.Right,
+              selectedBlocks: [block],
+            })
+            .run();
+        }
+      },
+    },
+    {
+      id: 'd.comment',
       ...blockCommentToolbarButton,
     },
     {
@@ -145,10 +197,6 @@ const builtinSurfaceToolbarConfig = {
           control: 'add caption',
         });
       },
-    },
-    {
-      id: 'c.comment',
-      ...blockCommentToolbarButton,
     },
   ],
 

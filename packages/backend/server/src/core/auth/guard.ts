@@ -19,7 +19,7 @@ import {
 } from '../../base';
 import { WEBSOCKET_OPTIONS } from '../../base/websocket';
 import { AuthService } from './service';
-import { Session } from './session';
+import { Session, TokenSession } from './session';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
 const INTERNAL_ENTRYPOINT_SYMBOL = Symbol('internal');
@@ -56,10 +56,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       throw new AccessDenied('Invalid internal request');
     }
 
-    const userSession = await this.signIn(req, res);
-    if (res && userSession && userSession.expiresAt) {
-      await this.auth.refreshUserSessionIfNeeded(res, userSession);
-    }
+    const authedUser = await this.signIn(req, res);
 
     // api is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(
@@ -71,14 +68,29 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       return true;
     }
 
-    if (!userSession) {
+    if (!authedUser) {
       throw new AuthenticationRequired();
     }
 
     return true;
   }
 
-  async signIn(req: Request, res?: Response): Promise<Session | null> {
+  async signIn(
+    req: Request,
+    res?: Response
+  ): Promise<Session | TokenSession | null> {
+    const userSession = await this.signInWithCookie(req, res);
+    if (userSession) {
+      return userSession;
+    }
+
+    return await this.signInWithAccessToken(req);
+  }
+
+  async signInWithCookie(
+    req: Request,
+    res?: Response
+  ): Promise<Session | null> {
     if (req.session) {
       return req.session;
     }
@@ -87,12 +99,35 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     const userSession = await this.auth.getUserSessionFromRequest(req, res);
 
     if (userSession) {
+      if (res) {
+        await this.auth.refreshUserSessionIfNeeded(res, userSession.session);
+      }
+
       req.session = {
         ...userSession.session,
         user: userSession.user,
       };
 
       return req.session;
+    }
+
+    return null;
+  }
+
+  async signInWithAccessToken(req: Request): Promise<TokenSession | null> {
+    if (req.token) {
+      return req.token;
+    }
+
+    const tokenSession = await this.auth.getTokenSessionFromRequest(req);
+
+    if (tokenSession) {
+      req.token = {
+        ...tokenSession.token,
+        user: tokenSession.user,
+      };
+
+      return req.token;
     }
 
     return null;

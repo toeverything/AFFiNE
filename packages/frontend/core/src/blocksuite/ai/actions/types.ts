@@ -1,13 +1,17 @@
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type {
+  AddContextFileInput,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
   ContextWorkspaceEmbeddingStatus,
+  CopilotChatHistoryFragment,
+  CopilotContextBlob,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
-  CopilotSessionType,
+  CopilotHistories,
   getCopilotHistoriesQuery,
-  QueryChatSessionsInput,
+  QueryChatHistoriesInput,
   RequestOptions,
   StreamObject,
   UpdateChatSessionInput,
@@ -140,9 +144,13 @@ declare global {
       webSearch?: boolean;
       reasoning?: boolean;
       modelId?: string;
+      toolsConfig?: AIToolsConfig | undefined;
       contexts?: {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];
+        selectedSnapshot?: string;
+        selectedMarkdown?: string;
+        html?: string;
       };
       postfix?: (text: string) => string;
     }
@@ -273,6 +281,7 @@ declare global {
       files: CopilotContextFile[];
       tags: CopilotContextCategory[];
       collections: CopilotContextCategory[];
+      blobs: CopilotContextBlob[];
     };
 
     interface AIContextService {
@@ -294,10 +303,7 @@ declare global {
       }) => Promise<boolean>;
       addContextFile: (
         file: File,
-        options: {
-          contextId: string;
-          blobId: string;
-        }
+        options: AddContextFileInput
       ) => Promise<CopilotContextFile>;
       removeContextFile: (options: {
         contextId: string;
@@ -349,16 +355,30 @@ declare global {
         files?: ContextMatchedFileChunk[];
         docs?: ContextMatchedDocChunk[];
       }>;
+      applyDocUpdates: (
+        workspaceId: string,
+        docId: string,
+        op: string,
+        updates: string
+      ) => Promise<string>;
+      addContextBlob: (options: {
+        blobId: string;
+        contextId: string;
+      }) => Promise<CopilotContextBlob>;
+      removeContextBlob: (options: {
+        blobId: string;
+        contextId: string;
+      }) => Promise<boolean>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
     interface AIHistory {
       sessionId: string;
       tokens: number;
-      action: string;
+      action: string | null;
       createdAt: string;
       messages: {
-        id: string; // message id
+        id: string | null; // message id
         content: string;
         createdAt: string;
         role: MessageRole;
@@ -387,17 +407,24 @@ declare global {
       reuseLatestChat?: boolean;
     }
 
+    type AIRecentSession = Omit<CopilotHistories, 'messages'>;
+
     interface AISessionService {
       createSession: (options: AICreateSessionOptions) => Promise<string>;
-      getSessions: (
-        workspaceId: string,
-        docId?: string,
-        options?: QueryChatSessionsInput
-      ) => Promise<CopilotSessionType[] | undefined>;
       getSession: (
         workspaceId: string,
         sessionId: string
-      ) => Promise<CopilotSessionType | undefined>;
+      ) => Promise<CopilotChatHistoryFragment | undefined>;
+      getSessions: (
+        workspaceId: string,
+        docId?: string,
+        options?: QueryChatHistoriesInput
+      ) => Promise<CopilotChatHistoryFragment[] | undefined>;
+      getRecentSessions: (
+        workspaceId: string,
+        limit?: number,
+        offset?: number
+      ) => Promise<AIRecentSession[] | undefined>;
       updateSession: (options: UpdateChatSessionInput) => Promise<string>;
     }
 
@@ -414,7 +441,7 @@ declare global {
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,
-        docId: string,
+        docId: string | undefined,
         sessionIds: string[]
       ) => Promise<void>;
       ids: (

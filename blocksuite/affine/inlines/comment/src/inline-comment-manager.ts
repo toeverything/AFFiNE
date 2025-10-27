@@ -1,10 +1,11 @@
 import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
 import { getSelectedBlocksCommand } from '@blocksuite/affine-shared/commands';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   type CommentId,
   CommentProviderIdentifier,
   findAllCommentedBlocks,
+  findAllCommentedElements,
 } from '@blocksuite/affine-shared/services';
 import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import { DisposableGroup } from '@blocksuite/global/disposable';
@@ -38,14 +39,18 @@ export class InlineCommentManager extends LifeCycleWatcher {
     const provider = this._provider;
     if (!provider) return;
 
-    this._init();
+    this._init().catch(console.error);
 
     this._disposables.add(provider.onCommentAdded(this._handleAddComment));
     this._disposables.add(
-      provider.onCommentDeleted(this._handleDeleteAndResolve)
+      provider.onCommentDeleted(id =>
+        this._handleDeleteAndResolve(id, 'delete')
+      )
     );
     this._disposables.add(
-      provider.onCommentResolved(this._handleDeleteAndResolve)
+      provider.onCommentResolved(id =>
+        this._handleDeleteAndResolve(id, 'resolve')
+      )
     );
     this._disposables.add(
       provider.onCommentHighlighted(this._handleHighlightComment)
@@ -59,95 +64,91 @@ export class InlineCommentManager extends LifeCycleWatcher {
     this._disposables.dispose();
   }
 
-  private _init() {
+  private async _init() {
     const provider = this._provider;
     if (!provider) return;
 
-    const commentsInProvider = provider.getComments();
-    const inlineComments = findAllCommentedTexts(this.std).flatMap(
-      ([selection, inlineEditor]) => {
-        const deltas = inlineEditor.getDeltasByInlineRange({
-          index: selection.from.index,
-          length: selection.from.length,
-        });
-        return deltas.flatMap(([delta]) => extractCommentIdFromDelta(delta));
-      }
-    );
+    const commentsInProvider = await provider.getComments('all');
+
+    const commentsInEditor = this.getCommentsInEditor();
+
+    // remove comments that are in editor but not in provider
+    // which means the comment may be removed or resolved in provider side
+    difference(commentsInEditor, commentsInProvider).forEach(comment => {
+      this.std
+        .get(BlockElementCommentManager)
+        .handleDeleteAndResolve(comment, 'delete');
+    });
+  }
+
+  getCommentsInEditor() {
+    const inlineComments = [...findAllCommentedTexts(this.std.store).values()];
 
     const blockComments = findAllCommentedBlocks(this.std.store).flatMap(
       block => Object.keys(block.props.comments)
     );
 
+    const surfaceComments = findAllCommentedElements(this.std.store).flatMap(
+      element => Object.keys(element.comments)
+    );
+
     const commentsInEditor = [
-      ...new Set([...inlineComments, ...blockComments]),
+      ...new Set([...inlineComments, ...blockComments, ...surfaceComments]),
     ];
 
-    // resolve comments that are in provider but not in editor
-    // which means the commented content may be deleted
-    difference(commentsInProvider, commentsInEditor).forEach(comment => {
-      provider.resolveComment(comment);
-    });
-
-    // remove comments that are in editor but not in provider
-    // which means the comment may be removed or resolved in provider side
-    difference(commentsInEditor, commentsInProvider).forEach(comment => {
-      this._handleDeleteAndResolve(comment);
-      this.std.get(BlockCommentManager).handleDeleteAndResolve(comment);
-    });
+    return commentsInEditor;
   }
 
   private readonly _handleAddComment = (
     id: CommentId,
     selections: BaseSelection[]
   ) => {
-    const needCommentTexts = selections
-      .map(selection => {
-        if (!selection.is(TextSelection)) return [];
-        const [_, { selectedBlocks }] = this.std.command
-          .chain()
-          .pipe(getSelectedBlocksCommand, {
-            textSelection: selection,
-          })
-          .run();
+    const needCommentTexts = selections.flatMap(selection => {
+      if (!selection.is(TextSelection)) return [];
+      const [_, { selectedBlocks }] = this.std.command
+        .chain()
+        .pipe(getSelectedBlocksCommand, {
+          textSelection: selection,
+        })
+        .run();
 
-        if (!selectedBlocks) return [];
+      if (!selectedBlocks) return [];
 
-        type MakeRequired<T, K extends keyof T> = T & {
-          [key in K]: NonNullable<T[key]>;
-        };
+      type MakeRequired<T, K extends keyof T> = T & {
+        [key in K]: NonNullable<T[key]>;
+      };
 
-        return selectedBlocks
-          .map(
-            ({ model }) =>
-              [model, getInlineEditorByModel(this.std, model)] as const
-          )
-          .filter(
-            (
-              pair
-            ): pair is [MakeRequired<BlockModel, 'text'>, AffineInlineEditor] =>
-              !!pair[0].text && !!pair[1]
-          )
-          .map(([model, inlineEditor]) => {
-            let from: TextRangePoint;
-            let to: TextRangePoint | null;
-            if (model.id === selection.from.blockId) {
-              from = selection.from;
-              to = null;
-            } else if (model.id === selection.to?.blockId) {
-              from = selection.to;
-              to = null;
-            } else {
-              from = {
-                blockId: model.id,
-                index: 0,
-                length: model.text.yText.length,
-              };
-              to = null;
-            }
-            return [new TextSelection({ from, to }), inlineEditor] as const;
-          });
-      })
-      .flat();
+      return selectedBlocks
+        .map(
+          ({ model }) =>
+            [model, getInlineEditorByModel(this.std, model)] as const
+        )
+        .filter(
+          (
+            pair
+          ): pair is [MakeRequired<BlockModel, 'text'>, AffineInlineEditor] =>
+            !!pair[0].text && !!pair[1]
+        )
+        .map(([model, inlineEditor]) => {
+          let from: TextRangePoint;
+          let to: TextRangePoint | null;
+          if (model.id === selection.from.blockId) {
+            from = selection.from;
+            to = null;
+          } else if (model.id === selection.to?.blockId) {
+            from = selection.to;
+            to = null;
+          } else {
+            from = {
+              blockId: model.id,
+              index: 0,
+              length: model.text.yText.length,
+            };
+            to = null;
+          }
+          return [new TextSelection({ from, to }), inlineEditor] as const;
+        });
+    });
 
     if (needCommentTexts.length === 0) return;
 
@@ -164,16 +165,24 @@ export class InlineCommentManager extends LifeCycleWatcher {
     });
   };
 
-  private readonly _handleDeleteAndResolve = (id: CommentId) => {
-    const commentedTexts = findCommentedTexts(this.std, id);
+  private readonly _handleDeleteAndResolve = (
+    id: CommentId,
+    type: 'delete' | 'resolve'
+  ) => {
+    const commentedTexts = findCommentedTexts(this.std.store, id);
     if (commentedTexts.length === 0) return;
 
     this.std.store.withoutTransact(() => {
-      commentedTexts.forEach(([selection, inlineEditor]) => {
-        inlineEditor.formatText(
+      commentedTexts.forEach(selection => {
+        const inlineEditor = getInlineEditorByModel(
+          this.std,
+          selection.from.blockId
+        );
+
+        inlineEditor?.formatText(
           selection.from,
           {
-            [`comment-${id}`]: null,
+            [`comment-${id}`]: type === 'delete' ? null : false,
           },
           {
             withoutTransact: true,

@@ -1,16 +1,19 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
+import type { AppThemeService } from '@affine/core/modules/theme';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   DocModeProvider,
-  FeatureFlagService,
+  type FeatureFlagService,
+  type NotificationService,
 } from '@blocksuite/affine/shared/services';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
@@ -19,6 +22,7 @@ import { AffineIcon } from '../../_common/icons';
 import { AIPreloadConfig } from '../../chat-panel/preload-config';
 import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
 import { mergeStreamObjects } from '../../utils/stream-objects';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import { type ChatContextValue } from '../ai-chat-content/type';
 import type {
   AINetworkSearchConfig,
@@ -41,9 +45,8 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
       display: flex;
       flex-direction: column;
       gap: 24px;
-      height: 100%;
+      min-height: 100%;
       position: relative;
-      overflow-y: auto;
     }
 
     chat-panel-assistant-message,
@@ -122,10 +125,10 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     }
 
     .down-indicator {
-      position: absolute;
+      position: fixed;
       left: 50%;
       transform: translate(-50%, 0);
-      bottom: 24px;
+      bottom: 166px;
       z-index: 1;
       border-radius: 50%;
       width: 32px;
@@ -150,7 +153,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor avatarUrl = '';
 
   @property({ attribute: false })
-  accessor independentMode!: boolean;
+  accessor independentMode: boolean | undefined;
 
   @property({ attribute: false })
   accessor messages!: HistoryMessage[];
@@ -171,10 +174,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
@@ -186,6 +191,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
@@ -194,8 +205,17 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
-  @query('.chat-panel-messages-container')
-  accessor messagesContainer: HTMLDivElement | null = null;
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   @property({
     type: String,
@@ -203,10 +223,6 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     reflect: true,
   })
   accessor testId = 'chat-panel-messages';
-
-  getScrollContainer(): HTMLDivElement | null {
-    return this.messagesContainer;
-  }
 
   private get _isNetworkActive() {
     return (
@@ -220,8 +236,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   }
 
   private _renderAIOnboarding() {
-    return this.isHistoryLoading ||
-      !this.host?.store.get(FeatureFlagService).getFlag('enable_ai_onboarding')
+    return this.isHistoryLoading
       ? nothing
       : html`<div class="onboarding-wrapper" data-testid="ai-onboarding">
           ${repeat(
@@ -242,8 +257,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   }
 
   private readonly _onScroll = () => {
-    if (!this.messagesContainer) return;
-    const { clientHeight, scrollTop, scrollHeight } = this.messagesContainer;
+    const { clientHeight, scrollTop, scrollHeight } = this;
     this.canScrollDown = scrollHeight - scrollTop - clientHeight > 200;
   };
 
@@ -262,19 +276,15 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     const { isHistoryLoading } = this;
     const filteredItems = this.messages;
 
-    const showDownIndicator =
-      this.canScrollDown &&
-      filteredItems.length > 0 &&
-      this.chatContextValue.status !== 'transmitting';
+    const showDownIndicator = this.canScrollDown && filteredItems.length > 0;
 
     return html`
       <div
         class=${classMap({
           'chat-panel-messages-container': true,
-          'independent-mode': this.independentMode,
+          'independent-mode': !!this.independentMode,
         })}
         data-testid="chat-panel-messages-container"
-        @scroll=${() => this._debouncedOnScroll()}
       >
         ${filteredItems.length === 0
           ? html`<div
@@ -312,7 +322,6 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                 } else if (isChatMessage(item) && item.role === 'assistant') {
                   return html`<chat-message-assistant
                     .host=${this.host}
-                    .docId=${this.docId}
                     .session=${this.session}
                     .item=${item}
                     .isLast=${isLast}
@@ -320,8 +329,14 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .error=${isLast ? error : null}
                     .extensions=${this.extensions}
                     .affineFeatureFlagService=${this.affineFeatureFlagService}
+                    .affineThemeService=${this.affineThemeService}
+                    .notificationService=${this.notificationService}
                     .retry=${() => this.retry()}
                     .width=${this.width}
+                    .independentMode=${this.independentMode}
+                    .docDisplayService=${this.docDisplayService}
+                    .peekViewService=${this.peekViewService}
+                    .onOpenDoc=${this.onOpenDoc}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item) && this.host) {
                   return html`<chat-message-action
@@ -387,19 +402,31 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         )
       );
     }
+
+    // Add scroll event listener to the host element
+    this.addEventListener('scroll', this._debouncedOnScroll);
+    disposables.add(() => {
+      this.removeEventListener('scroll', this._debouncedOnScroll);
+    });
   }
 
   protected override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('isHistoryLoading')) {
       this.canScrollDown = false;
     }
+
+    if (
+      _changedProperties.has('chatContextValue') &&
+      this.chatContextValue.status === 'transmitting'
+    ) {
+      this._onScroll();
+    }
   }
 
   scrollToEnd() {
     requestAnimationFrame(() => {
-      if (!this.messagesContainer) return;
-      this.messagesContainer.scrollTo({
-        top: this.messagesContainer.scrollHeight,
+      this.scrollTo({
+        top: this.scrollHeight,
         behavior: 'smooth',
       });
     });
@@ -407,14 +434,13 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   scrollToPos(top: number) {
     requestAnimationFrame(() => {
-      if (!this.messagesContainer) return;
-      this.messagesContainer.scrollTo({ top });
+      this.scrollTo({ top });
     });
   }
 
   retry = async () => {
     try {
-      const sessionId = (await this.createSession())?.id;
+      const sessionId = (await this.createSession())?.sessionId;
       if (!sessionId) return;
       if (!AIProvider.actions.chat) return;
 
@@ -423,6 +449,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
       const last = messages[messages.length - 1];
       if ('content' in last) {
         last.content = '';
+        last.streamObjects = [];
         last.createdAt = new Date().toISOString();
       }
       this.updateContext({
@@ -444,6 +471,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         isRootSession: true,
         reasoning: this._isReasoningActive,
         webSearch: this._isNetworkActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
       });
 
       for await (const text of stream) {

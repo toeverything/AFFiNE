@@ -6,7 +6,6 @@ export const container = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
-  paddingTop: '8px',
   paddingBottom: '64px',
   position: 'relative',
   minHeight: '100%',
@@ -16,9 +15,13 @@ export const header = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '0 16px',
+  padding: '8px 16px 0 16px',
   gap: '8px',
-  height: '32px',
+  height: '40px',
+  position: 'sticky',
+  top: 0,
+  backgroundColor: cssVarV2('layer/background/primary'),
+  zIndex: 2,
 });
 
 export const headerTitle = style({
@@ -36,8 +39,11 @@ export const commentList = style({
 export const empty = style({
   height: '100%',
   flex: 1,
+  padding: 32,
   display: 'flex',
   alignItems: 'center',
+  textAlign: 'center',
+  lineHeight: '24px',
   justifyContent: 'center',
   color: cssVarV2('text/secondary'),
 });
@@ -127,6 +133,9 @@ export const previewContainer = style({
       top: '0',
       backgroundColor: cssVarV2('block/comment/highlightUnderline'),
     },
+    '&[data-deleted="true"]': {
+      textDecoration: 'line-through',
+    },
   },
 });
 
@@ -148,7 +157,14 @@ export const commentActions = style({
     '&[data-menu-open="true"]': {
       opacity: 1,
     },
+    '&[data-editing="true"]': {
+      visibility: 'hidden',
+    },
   },
+});
+
+export const actionButton = style({
+  backgroundColor: cssVarV2('button/buttonOverHover'),
 });
 
 export const readonlyCommentContainer = style({
@@ -156,6 +172,7 @@ export const readonlyCommentContainer = style({
   flexDirection: 'column',
   gap: '4px',
   paddingLeft: '8px',
+  position: 'relative',
 });
 
 export const userContainer = style({
@@ -172,6 +189,7 @@ export const commentInputContainer = style({
   justifyContent: 'flex-start',
   gap: '4px',
   paddingLeft: '8px',
+  maxWidth: '800px',
 });
 
 export const userName = style({
@@ -184,4 +202,54 @@ export const time = style({
   fontSize: cssVar('fontSm'),
   color: cssVarV2('text/secondary'),
   fontWeight: '500',
+});
+
+export const collapsedReplies = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  cursor: 'pointer',
+  height: '28px',
+  paddingLeft: '42px',
+  borderRadius: 8,
+  selectors: {
+    '&:hover': {
+      backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+    },
+  },
+});
+
+export const collapsedRepliesTitle = style({
+  color: cssVarV2('text/emphasis'),
+  fontSize: cssVar('fontXs'),
+  fontWeight: '500',
+});
+
+export const replyItem = style({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'relative',
+});
+
+export const replyActions = style({
+  display: 'flex',
+  opacity: 0,
+  gap: '8px',
+  position: 'absolute',
+  right: 0,
+  top: 0,
+  pointerEvents: 'none',
+  zIndex: 1,
+  selectors: {
+    [`${replyItem}:hover &`]: {
+      opacity: 1,
+      pointerEvents: 'auto',
+    },
+    '&[data-menu-open="true"]': {
+      opacity: 1,
+    },
+    '&[data-editing="true"]': {
+      visibility: 'hidden',
+    },
+  },
 });

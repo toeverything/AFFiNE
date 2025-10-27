@@ -6,7 +6,7 @@ import {
   EDGELESS_TOP_CONTENTEDITABLE_SELECTOR,
 } from '@blocksuite/affine-shared/consts';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   DocModeProvider,
   NotificationProvider,
 } from '@blocksuite/affine-shared/services';
@@ -394,7 +394,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }

@@ -1,14 +1,20 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { ImageProxyService } from '@blocksuite/affine/shared/adapters';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { ColorScheme } from '@blocksuite/affine/model';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { AffineAIPanelState } from '../../widgets/ai-panel/type';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { StreamObject } from '../ai-chat-messages';
 
 export class ChatContentStreamObjects extends WithDisposable(
@@ -30,6 +36,9 @@ export class ChatContentStreamObjects extends WithDisposable(
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
+
+  @property({ attribute: false })
   accessor state: AffineAIPanelState = 'finished';
 
   @property({ attribute: false })
@@ -41,18 +50,35 @@ export class ChatContentStreamObjects extends WithDisposable(
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
+  @property({ attribute: false })
+  accessor theme!: Signal<ColorScheme>;
+
+  @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
   private renderToolCall(streamObject: StreamObject) {
     if (streamObject.type !== 'tool-call') {
       return nothing;
     }
-    const imageProxyService = this.host?.store.get(ImageProxyService);
+
     switch (streamObject.toolName) {
       case 'web_crawl_exa':
         return html`
           <web-crawl-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
@@ -60,26 +86,62 @@ export class ChatContentStreamObjects extends WithDisposable(
           <web-search-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
       case 'doc_compose':
         return html`
           <doc-compose-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
+            .theme=${this.theme}
+            .notificationService=${this.notificationService}
           ></doc-compose-tool>
         `;
       case 'code_artifact':
         return html`
           <code-artifact-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
+            .theme=${this.theme}
           ></code-artifact-tool>
+        `;
+      case 'doc_edit':
+        return html`
+          <doc-edit-tool
+            .data=${streamObject}
+            .doc=${this.host?.store}
+            .notificationService=${this.notificationService}
+          ></doc-edit-tool>
+        `;
+      case 'doc_semantic_search':
+        return html`<doc-semantic-search-result
+          .data=${streamObject}
+          .width=${this.width}
+          .peekViewService=${this.peekViewService}
+        ></doc-semantic-search-result>`;
+      case 'doc_keyword_search':
+        return html`<doc-keyword-search-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-keyword-search-result>`;
+      case 'doc_read':
+        return html`<doc-read-result
+          .data=${streamObject}
+          .width=${this.width}
+        ></doc-read-result>`;
+      case 'section_edit':
+        return html`
+          <section-edit-tool
+            .data=${streamObject}
+            .extensions=${this.extensions}
+            .affineFeatureFlagService=${this.affineFeatureFlagService}
+            .notificationService=${this.notificationService}
+            .theme=${this.theme}
+            .host=${this.host}
+            .independentMode=${this.independentMode}
+          ></section-edit-tool>
         `;
       default: {
         const name = streamObject.toolName + ' tool calling';
@@ -94,14 +156,13 @@ export class ChatContentStreamObjects extends WithDisposable(
     if (streamObject.type !== 'tool-result') {
       return nothing;
     }
-    const imageProxyService = this.host?.store.get(ImageProxyService);
+
     switch (streamObject.toolName) {
       case 'web_crawl_exa':
         return html`
           <web-crawl-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
@@ -109,26 +170,70 @@ export class ChatContentStreamObjects extends WithDisposable(
           <web-search-tool
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
       case 'doc_compose':
         return html`
           <doc-compose-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
+            .theme=${this.theme}
+            .notificationService=${this.notificationService}
           ></doc-compose-tool>
         `;
       case 'code_artifact':
         return html`
           <code-artifact-tool
-            .std=${this.host?.std}
+            .std=${this.std || this.host?.std}
             .data=${streamObject}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
+            .theme=${this.theme}
+            .notificationService=${this.notificationService}
           ></code-artifact-tool>
+        `;
+      case 'doc_edit':
+        return html`
+          <doc-edit-tool
+            .data=${streamObject}
+            .host=${this.host}
+            .renderRichText=${this.renderRichText.bind(this)}
+            .notificationService=${this.notificationService}
+          ></doc-edit-tool>
+        `;
+      case 'doc_semantic_search':
+        return html`<doc-semantic-search-result
+          .data=${streamObject}
+          .width=${this.width}
+          .docDisplayService=${this.docDisplayService}
+          .peekViewService=${this.peekViewService}
+          .onOpenDoc=${this.onOpenDoc}
+        ></doc-semantic-search-result>`;
+      case 'doc_keyword_search':
+        return html`<doc-keyword-search-result
+          .data=${streamObject}
+          .width=${this.width}
+          .peekViewService=${this.peekViewService}
+          .onOpenDoc=${this.onOpenDoc}
+        ></doc-keyword-search-result>`;
+      case 'doc_read':
+        return html`<doc-read-result
+          .data=${streamObject}
+          .width=${this.width}
+          .peekViewService=${this.peekViewService}
+          .onOpenDoc=${this.onOpenDoc}
+        ></doc-read-result>`;
+      case 'section_edit':
+        return html`
+          <section-edit-tool
+            .data=${streamObject}
+            .extensions=${this.extensions}
+            .affineFeatureFlagService=${this.affineFeatureFlagService}
+            .notificationService=${this.notificationService}
+            .theme=${this.theme}
+            .host=${this.host}
+            .independentMode=${this.independentMode}
+          ></section-edit-tool>
         `;
       default: {
         const name = streamObject.toolName + ' tool result';
@@ -136,7 +241,6 @@ export class ChatContentStreamObjects extends WithDisposable(
           <tool-result-card
             .name=${name}
             .width=${this.width}
-            .imageProxyService=${imageProxyService}
           ></tool-result-card>
         `;
       }
@@ -145,11 +249,11 @@ export class ChatContentStreamObjects extends WithDisposable(
 
   private renderRichText(text: string) {
     return html`<chat-content-rich-text
-      .host=${this.host}
       .text=${text}
       .state=${this.state}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .theme=${this.theme}
     ></chat-content-rich-text>`;
   }
 

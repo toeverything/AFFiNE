@@ -8,9 +8,17 @@ import type {
 
 export type CommentId = string;
 
+export type CommentAttachment = {
+  id: string;
+  url?: string; // attachment may not be uploaded yet
+  filename?: string;
+  mimeType?: string;
+  size?: number; // in bytes
+};
+
 export interface BaseComment {
   id: CommentId;
-  content: DocCommentContent;
+  content?: DocCommentContent;
   createdAt: number;
   updatedAt: number;
   user: PublicUserType;
@@ -18,6 +26,7 @@ export interface BaseComment {
 
 export interface DocComment extends BaseComment {
   resolved: boolean;
+  mentions: string[];
   replies?: DocCommentReply[];
 }
 
@@ -27,12 +36,17 @@ export type PendingComment = {
   preview?: string;
   selections?: BaseSelection[];
   commentId?: CommentId; // only for replies, points to the parent comment
+  attachments: CommentAttachment[];
 };
 
-export type DocCommentReply = BaseComment;
+export interface DocCommentReply extends BaseComment {
+  commentId: CommentId;
+  mentions: string[];
+}
 
 export type DocCommentContent = {
   snapshot: DocSnapshot; // blocksuite snapshot
+  attachments?: CommentAttachment[];
   mode?: DocMode;
   preview?: string; // text preview of the target
 };
@@ -51,4 +65,9 @@ export interface DocCommentChange {
   commentId?: CommentId; // a change with comment id is a reply
 }
 
-export type DocCommentChangeListResult = DocCommentChange[];
+export type DocCommentChangeListResult = {
+  changes: DocCommentChange[];
+  startCursor: string;
+  endCursor: string;
+  hasNextPage: boolean;
+};

@@ -108,7 +108,14 @@ export const DocsExplorer = ({
   masonryItemWidthMin?: number;
   onRestore?: (ids: string[]) => void;
   /** Override the default delete action */
-  onDelete?: (ids: string[]) => void;
+  onDelete?: (
+    ids: string[],
+    callbacks?: {
+      onFinished?: () => void;
+      onAbort?: () => void;
+      onError?: (error: Error) => void;
+    }
+  ) => void;
 }) => {
   const t = useI18n();
   const contextValue = useContext(DocExplorerContext);
@@ -163,8 +170,11 @@ export const DocsExplorer = ({
       return;
     }
     if (onDelete) {
-      onDelete(contextValue.selectedDocIds$.value);
-      handleCloseFloatingToolbar();
+      onDelete(contextValue.selectedDocIds$.value, {
+        onFinished: () => {
+          handleCloseFloatingToolbar();
+        },
+      });
       return;
     }
 

@@ -1,4 +1,4 @@
-import { PublicUserService } from '@affine/core/modules/cloud';
+import { AuthService, PublicUserService } from '@affine/core/modules/cloud';
 import { MemberSearchService } from '@affine/core/modules/permissions';
 import {
   type ViewExtensionContext,
@@ -31,10 +31,11 @@ export class CloudViewExtension extends ViewExtensionProvider<CloudViewOptions> 
     }
     const memberSearchService = framework.get(MemberSearchService);
     const publicUserService = framework.get(PublicUserService);
+    const authService = framework.get(AuthService);
 
     context.register([
       patchUserListExtensions(memberSearchService),
-      patchUserExtensions(publicUserService),
+      patchUserExtensions(publicUserService, authService),
     ]);
   }
 }

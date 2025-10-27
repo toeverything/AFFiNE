@@ -430,3 +430,32 @@ test('should create a comment mention notification', async t => {
   t.is(notification.body.commentId, commentId);
   t.is(notification.body.replyId, replyId);
 });
+
+test('should mark all notifications as read', async t => {
+  await models.notification.createMention({
+    userId: user.id,
+    body: {
+      workspaceId: workspace.id,
+      doc: {
+        id: docId,
+        title: 'doc-title',
+        blockId: 'blockId',
+        mode: DocMode.page,
+      },
+      createdByUserId: createdBy.id,
+    },
+  });
+  await models.notification.createInvitation({
+    userId: user.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: createdBy.id,
+      inviteId: randomUUID(),
+    },
+  });
+
+  await models.notification.markAllAsRead(user.id);
+
+  const notifications = await models.notification.findManyByUserId(user.id);
+  t.is(notifications.length, 0);
+});

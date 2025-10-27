@@ -86,6 +86,9 @@ export class MobileKanbanViewUILogic extends DataViewUILogicBase<
   }
 
   renderAddGroup = () => {
+    if (this.readonly) {
+      return;
+    }
     const addGroup = this.groupManager.addGroup;
     if (!addGroup) {
       return;

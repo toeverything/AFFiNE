@@ -198,6 +198,25 @@ type WorkspaceEmbeddingEvents =
   | 'addIgnoredDocs';
 // END SECTION
 
+// SECTION: comment events
+// Add events for comment actions
+type CommentEvents =
+  | 'createComment'
+  | 'editComment'
+  | 'deleteComment'
+  | 'resolveComment';
+// END SECTION
+
+// SECTION: apply model
+type ApplyModelEvents =
+  | 'acceptAll'
+  | 'rejectAll'
+  | 'accept'
+  | 'reject'
+  | 'apply'
+  | 'copy';
+// END SECTION
+
 type UserEvents =
   | GeneralEvents
   | AppEvents
@@ -215,13 +234,15 @@ type UserEvents =
   | PaymentEvents
   | DNDEvents
   | AIEvents
+  | CommentEvents
   | AttachmentEvents
   | TemplateEvents
   | NotificationEvents
   | IntegrationEvents
   | MeetingEvents
   | MentionEvents
-  | WorkspaceEmbeddingEvents;
+  | WorkspaceEmbeddingEvents
+  | ApplyModelEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -421,6 +442,12 @@ interface PageEvents extends PageDivision {
     chatPanel: {
       chatPanelInput: ['addEmbeddingDoc'];
     };
+    intelligence: {
+      chatPanelInput: ['addEmbeddingDoc'];
+    };
+    commentPanel: {
+      $: ['createComment', 'editComment', 'deleteComment', 'resolveComment'];
+    };
     attachment: {
       $: [
         'openAttachmentInFullscreen',
@@ -551,6 +578,15 @@ interface PageEvents extends PageDivision {
       $: ['createDoc'];
     };
   };
+  applyModel: {
+    widget: {
+      page: ['acceptAll', 'rejectAll'];
+      block: ['accept', 'reject'];
+    };
+    chat: {
+      $: ['apply', 'accept', 'reject', 'copy'];
+    };
+  };
 }
 
 type OrganizeItemType = 'doc' | 'folder' | 'collection' | 'tag' | 'favorite';
@@ -622,6 +658,13 @@ type RecordingEventArgs = {
   option?: 'Auto transcribing' | 'handle transcribing' | 'on' | 'off';
 };
 
+type ApplyModelArgs = {
+  /*  ​​User's complete instruction */
+  instruction?: string;
+  /* Split individual semantic change requests */
+  operation?: string;
+};
+
 export type EventArgs = {
   createWorkspace: { flavour: string };
   signIn: AuthArgs;
@@ -680,7 +723,7 @@ export type EventArgs = {
   addEmbeddingDoc: {
     type?: 'page' | 'edgeless';
     control: 'addButton' | 'atMenu';
-    method: 'doc' | 'file' | 'tags' | 'collections' | 'suggestion';
+    method: 'doc' | 'cur-doc' | 'file' | 'tags' | 'collections' | 'suggestion';
   };
   openAttachmentInFullscreen: AttachmentEventArgs;
   openAttachmentInNewTab: AttachmentEventArgs;
@@ -807,6 +850,18 @@ export type EventArgs = {
   navigatePinedCollectionRouter: {
     control: 'all' | 'user-custom-collection';
   };
+  resolveComment: { type: 'on' | 'off' };
+  createComment: {
+    type: 'root' | 'node';
+    withAttachment: boolean;
+    withMention: boolean;
+    category: string;
+  };
+  editComment: { type: 'root' | 'node' };
+  deleteComment: { type: 'root' | 'node' };
+  accept: ApplyModelArgs;
+  reject: ApplyModelArgs;
+  apply: ApplyModelArgs;
 };
 
 // for type checking

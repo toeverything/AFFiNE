@@ -1,19 +1,15 @@
+#import "./fragments/copilot.gql"
+
 query getCopilotSessions(
   $workspaceId: String!
+  $pagination: PaginationInput!
   $docId: String
-  $options: QueryChatSessionsInput
+  $options: QueryChatHistoriesInput
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      sessions(docId: $docId, options: $options) {
-        id
-        parentSessionId
-        docId
-        pinned
-        title
-        promptName
-        model
-        optionalModels
+      chats(pagination: $pagination, docId: $docId, options: $options) {
+        ...PaginatedCopilotChats
       }
     }
   }

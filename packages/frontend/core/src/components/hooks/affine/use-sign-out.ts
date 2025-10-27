@@ -5,6 +5,7 @@ import {
 } from '@affine/component';
 import { AuthService, DefaultServerService } from '@affine/core/modules/cloud';
 import { UserFriendlyError } from '@affine/error';
+import { ServerFeature } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService, useServices } from '@toeverything/infra';
 import { useCallback } from 'react';
@@ -32,12 +33,15 @@ export const useSignOut = ({
 
   const signOut = useCallback(async () => {
     onConfirm?.()?.catch(console.error);
+    const enableLocalWorkspace =
+      BUILD_CONFIG.isNative ||
+      defaultServerService.server.config$.value.features.includes(
+        ServerFeature.LocalWorkspace
+      );
+
     try {
       await authService.signOut();
-      if (
-        defaultServerService.server.config$.value.allowGuestDemoWorkspace !==
-        false
-      ) {
+      if (enableLocalWorkspace) {
         jumpToIndex();
       } else {
         jumpToSignIn();

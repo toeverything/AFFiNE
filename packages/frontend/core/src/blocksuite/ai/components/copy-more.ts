@@ -1,8 +1,7 @@
-import type { CopilotSessionType } from '@affine/graphql';
-import { Tooltip } from '@blocksuite/affine/components/toolbar';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import { Tooltip } from '@blocksuite/affine/components/tooltip';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { noop } from '@blocksuite/affine/global/utils';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { createButtonPopper } from '@blocksuite/affine/shared/utils';
 import type {
@@ -10,6 +9,7 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { CopyIcon, MoreHorizontalIcon, ResetIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -111,7 +111,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   accessor actions: ChatAction[] = [];
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor content!: string;
@@ -131,14 +131,15 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-actions';
 
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   private _toggle() {
     this._morePopper?.toggle();
   }
 
   private readonly _notifySuccess = (title: string) => {
-    const notificationService =
-      this.host?.std.getOptional(NotificationProvider);
-    notificationService?.notify({
+    this.notificationService.notify({
       title: title,
       accent: 'success',
       onClose: function (): void {},
@@ -159,13 +160,14 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
           mainAxis: 0,
           crossAxis: -100,
         });
+        this.disposables.add(() => this._morePopper?.dispose());
       }
     }
   }
 
   override render() {
     const { host, content, isLast, messageId, actions } = this;
-    const showMoreIcon = !isLast && host && actions.length > 0;
+    const showMoreIcon = !isLast && actions.length > 0;
     return html`<style>
         .copy-more {
           margin-top: ${this.withMargin ? '8px' : '0px'};
@@ -176,11 +178,11 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         }
       </style>
       <div class="copy-more">
-        ${content && host
+        ${content
           ? html`<div
               class="button copy"
               @click=${async () => {
-                const success = await copyText(host, content);
+                const success = await copyText(content);
                 if (success) {
                   this._notifySuccess('Copied to clipboard');
                 }
@@ -201,7 +203,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
               <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
             </div>`
           : nothing}
-        ${showMoreIcon
+        ${showMoreIcon && host
           ? html`<div
               class="button more"
               data-testid="action-more-button"
@@ -224,7 +226,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                 };
                 return html`<div
                   @click=${async () => {
-                    const sessionId = this.session?.id;
+                    const sessionId = this.session?.sessionId;
                     const success = await action.handler(
                       host,
                       content,

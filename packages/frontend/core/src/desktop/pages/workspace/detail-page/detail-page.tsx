@@ -118,9 +118,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const serverService = useService(ServerService);
   const serverConfig = useLiveData(serverService.server.config$);
 
+  // comment may not be supported by the server
   const enableComment =
-    useLiveData(featureFlagService.flags.enable_comment.$) &&
-    // comment may not be supported by the server
+    workspace.flavour !== 'local' &&
     serverConfig.features.includes(ServerFeature.Comment);
 
   useEffect(() => {

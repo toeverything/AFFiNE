@@ -99,6 +99,7 @@ update_ios_marketing_version() {
 }
 
 new_version=$1
+ios_new_version=${IOS_APP_VERSION:-$new_version}
 
 update_app_version_in_helm_charts ".github/helm/affine/Chart.yaml" "$new_version"
 update_app_version_in_helm_charts ".github/helm/affine/charts/graphql/Chart.yaml" "$new_version"

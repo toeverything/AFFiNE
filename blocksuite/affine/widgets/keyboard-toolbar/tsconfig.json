@@ -17,6 +17,7 @@
     { "path": "../../blocks/paragraph" },
     { "path": "../../blocks/surface" },
     { "path": "../../blocks/surface-ref" },
+    { "path": "../../blocks/table" },
     { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../../fragments/doc-title" },

@@ -1,6 +1,7 @@
 import { CloudViewExtension } from '@affine/core/blocksuite/view-extensions/cloud';
 import { AffineEditorViewExtension } from '@affine/core/blocksuite/view-extensions/editor-view/editor-view';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/view-extensions/theme';
+import { I18n } from '@affine/i18n';
 import { CodeBlockViewExtension } from '@blocksuite/affine/blocks/code/view';
 import { DividerViewExtension } from '@blocksuite/affine/blocks/divider/view';
 import { LatexViewExtension as LatexBlockViewExtension } from '@blocksuite/affine/blocks/latex/view';
@@ -154,7 +155,7 @@ export function getCommentEditorViewManager(framework: FrameworkProvider) {
 
     manager.configure(ParagraphViewExtension, {
       getPlaceholder: () => {
-        return '';
+        return I18n.t('com.affine.notification.comment-prompt');
       },
     });
 

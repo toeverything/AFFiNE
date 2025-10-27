@@ -1,11 +1,12 @@
-import { Button, Skeleton, Tooltip } from '@affine/component';
+import { Button, notify, Skeleton, Tooltip } from '@affine/component';
 import { Loading } from '@affine/component/ui/loading';
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
-import type {
-  WorkspaceMetadata,
-  WorkspaceProfileInfo,
+import {
+  type WorkspaceMetadata,
+  type WorkspaceProfileInfo,
+  WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
@@ -21,13 +22,15 @@ import {
   TeamWorkspaceIcon,
   UnsyncIcon,
 } from '@blocksuite/icons/rc';
-import { LiveData, useLiveData } from '@toeverything/infra';
+import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { HTMLAttributes } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAsyncCallback } from '../../hooks/affine-async-hooks';
 import { useCatchEventCallback } from '../../hooks/use-catch-event-hook';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import * as styles from './styles.css';
 export { PureWorkspaceCard } from './pure-workspace-card';
@@ -284,12 +287,26 @@ export const WorkspaceCard = forwardRef<
   ) => {
     const t = useI18n();
     const information = useWorkspaceInfo(workspaceMetadata);
+    const workspacesService = useService(WorkspacesService);
+    const navigate = useNavigateHelper();
 
     const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
     const onEnableCloud = useCatchEventCallback(() => {
       onClickEnableCloud?.(workspaceMetadata);
     }, [onClickEnableCloud, workspaceMetadata]);
+
+    const onRemoveWorkspace = useAsyncCallback(async () => {
+      await workspacesService
+        .deleteWorkspace(workspaceMetadata)
+        .then(() => {
+          notify.success({ title: t['Successfully removed workspace']() });
+          navigate.jumpToIndex();
+        })
+        .catch(() => {
+          notify.error({ title: t['Failed to remove workspace']() });
+        });
+    }, [workspacesService, workspaceMetadata, t, navigate]);
 
     const onOpenSettings = useCatchEventCallback(() => {
       onClickOpenSettings?.(workspaceMetadata);
@@ -337,6 +354,9 @@ export const WorkspaceCard = forwardRef<
               <Skeleton width={100} />
             )}
           </div>
+          {information?.isEmpty && information.isOwner ? (
+            <Button onClick={onRemoveWorkspace}>Remove</Button>
+          ) : null}
           <div className={styles.showOnCardHover}>
             {onClickEnableCloud && workspaceMetadata.flavour === 'local' ? (
               <Button

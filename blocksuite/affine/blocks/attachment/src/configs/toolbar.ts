@@ -10,7 +10,6 @@ import {
 } from '@blocksuite/affine-shared/consts';
 import {
   ActionPlacement,
-  blockCommentToolbarButton,
   type ToolbarAction,
   type ToolbarActionGroup,
   type ToolbarModuleConfig,
@@ -241,10 +240,6 @@ const builtinToolbarConfig = {
     replaceAction,
     downloadAction,
     captionAction,
-    {
-      id: 'f.comment',
-      ...blockCommentToolbarButton,
-    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

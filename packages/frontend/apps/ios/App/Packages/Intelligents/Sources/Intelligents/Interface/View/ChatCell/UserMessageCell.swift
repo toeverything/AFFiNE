@@ -5,90 +5,87 @@
 //  Created by 秋星桥 on 6/27/25.
 //
 
+import Litext
 import SnapKit
-import Then
 import UIKit
 
+private let labelForSizeCalculation = LTXLabel()
+
 class UserMessageCell: ChatBaseCell {
-  // MARK: - UI Components
-
-  private lazy var messageLabel = UILabel().then {
-    $0.numberOfLines = 0
-    $0.font = .systemFont(ofSize: 16)
-    $0.textColor = .label
+  let backgroundView = UIView().then {
+    $0.backgroundColor = .gray.withAlphaComponent(0.05)
+    $0.layer.cornerRadius = 8
   }
 
-  private lazy var timestampLabel = UILabel().then {
-    $0.font = .systemFont(ofSize: 12)
-    $0.textColor = .secondaryLabel
-    $0.textAlignment = .right
+  let contentLabel = LTXLabel().then {
+    $0.isSelectable = true
   }
 
-  private lazy var retryIndicator = UIActivityIndicatorView().then {
-    $0.style = .medium
-    $0.hidesWhenStopped = true
+  override func prepareContentView(inside contentView: UIView) {
+    super.prepareContentView(inside: contentView)
+
+    contentView.addSubview(backgroundView)
+    backgroundView.addSubview(contentLabel)
   }
 
-  private lazy var stackView = UIStackView().then {
-    $0.axis = .vertical
-    $0.spacing = 8
-    $0.alignment = .fill
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    contentLabel.attributedText = .init()
   }
-
-  // MARK: - Properties
-
-  private var viewModel: UserMessageCellViewModel?
-
-  // MARK: - Setup
-
-  override func setupContentView() {
-    containerView.addSubview(stackView)
-    stackView.addArrangedSubview(messageLabel)
-
-    let bottomContainer = UIView()
-    stackView.addArrangedSubview(bottomContainer)
-
-    bottomContainer.addSubview(retryIndicator)
-    bottomContainer.addSubview(timestampLabel)
-
-    stackView.snp.makeConstraints { make in
-      make.edges.equalToSuperview().inset(contentInsets)
-    }
-
-    retryIndicator.snp.makeConstraints { make in
-      make.leading.centerY.equalToSuperview()
-      make.width.height.equalTo(16)
-    }
-
-    timestampLabel.snp.makeConstraints { make in
-      make.trailing.top.bottom.equalToSuperview()
-      make.leading.greaterThanOrEqualTo(retryIndicator.snp.trailing).offset(8)
-    }
-
-    bottomContainer.snp.makeConstraints { make in
-      make.height.equalTo(16)
-    }
-  }
-
-  // MARK: - Configuration
 
   override func configure(with viewModel: any ChatCellViewModel) {
-    guard let userViewModel = viewModel as? UserMessageCellViewModel else { return }
-    self.viewModel = userViewModel
-
-    messageLabel.text = userViewModel.content
-    configureContainer(backgroundColor: backgroundColor(for: userViewModel.cellType))
-
-    let timestamp = userViewModel.timestamp
-    timestampLabel.text = formatTimestamp(timestamp)
-    timestampLabel.isHidden = false
+    super.configure(with: viewModel)
+    guard let vm = viewModel as? UserMessageCellViewModel else {
+      assertionFailure("")
+      return
+    }
+    contentLabel.attributedText = Self.prepareAttributeText(vm.content)
   }
 
-  // MARK: - Helpers
+  override func layoutContentView(bounds: CGRect) {
+    super.layoutContentView(bounds: bounds)
 
-  private func formatTimestamp(_ timestamp: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.timeStyle = .short
-    return formatter.string(from: timestamp)
+    let inset: CGFloat = 8
+    let textMaxWidth = bounds.width * 0.8 - inset * 2
+    contentLabel.preferredMaxLayoutWidth = textMaxWidth
+    let textSize = contentLabel.intrinsicContentSize
+    let backgroundWidth = textSize.width + inset * 2
+
+    backgroundView.frame = .init(
+      x: bounds.width - backgroundWidth, // right aligned
+      y: 0,
+      width: backgroundWidth,
+      height: bounds.height
+    )
+    contentLabel.frame = backgroundView.bounds.insetBy(dx: inset, dy: inset)
+  }
+
+  class func prepareAttributeText(_ text: String) -> NSAttributedString {
+    .init(string: text, attributes: [
+      .font: UIFont.preferredFont(forTextStyle: .body),
+      .foregroundColor: UIColor.affineTextPrimary,
+      .paragraphStyle: NSMutableParagraphStyle().then {
+        $0.lineBreakMode = .byWordWrapping
+        $0.alignment = .natural
+        $0.lineSpacing = 2
+        $0.paragraphSpacing = 4
+      },
+    ])
+  }
+
+  override class func heightForContent(
+    for viewModel: any ChatCellViewModel,
+    width: CGFloat
+  ) -> CGFloat {
+    guard let vm = viewModel as? UserMessageCellViewModel else {
+      assertionFailure()
+      return 0
+    }
+    labelForSizeCalculation.attributedText = prepareAttributeText(vm.content)
+
+    let inset: CGFloat = 8
+    labelForSizeCalculation.preferredMaxLayoutWidth = width * 0.8 - inset * 2
+    let textSize = labelForSizeCalculation.intrinsicContentSize
+    return textSize.height + inset * 2
   }
 }

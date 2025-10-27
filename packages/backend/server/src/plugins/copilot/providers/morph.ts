@@ -37,6 +37,24 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
         },
       ],
     },
+    {
+      id: 'morph-v3-fast',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Text],
+        },
+      ],
+    },
+    {
+      id: 'morph-v3-large',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Text],
+        },
+      ],
+    },
   ];
 
   #instance!: VercelOpenAICompatibleProvider;

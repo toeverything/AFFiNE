@@ -5,90 +5,75 @@
 //  Created by 秋星桥 on 6/27/25.
 //
 
+import Litext
 import SnapKit
-import Then
 import UIKit
 
+private let labelForSizeCalculation = LTXLabel()
+
 class SystemMessageCell: ChatBaseCell {
-  // MARK: - UI Components
-
-  private lazy var iconView = UIImageView().then {
-    $0.image = UIImage(systemName: "info.circle.fill")
-    $0.tintColor = .systemOrange
-    $0.contentMode = .scaleAspectFit
+  let contentLabel = LTXLabel().then {
+    $0.isSelectable = false
   }
 
-  private lazy var messageLabel = UILabel().then {
-    $0.numberOfLines = 0
-    $0.font = .systemFont(ofSize: 14, weight: .medium)
-    $0.textColor = .label
+  override func prepareContentView(inside contentView: UIView) {
+    super.prepareContentView(inside: contentView)
+    contentView.addSubview(contentLabel)
   }
 
-  private lazy var timestampLabel = UILabel().then {
-    $0.font = .systemFont(ofSize: 12)
-    $0.textColor = .secondaryLabel
-    $0.textAlignment = .right
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    contentLabel.attributedText = .init()
   }
-
-  private lazy var contentStackView = UIStackView().then {
-    $0.axis = .horizontal
-    $0.spacing = 12
-    $0.alignment = .top
-  }
-
-  private lazy var textStackView = UIStackView().then {
-    $0.axis = .vertical
-    $0.spacing = 4
-    $0.alignment = .fill
-  }
-
-  // MARK: - Properties
-
-  private var viewModel: SystemMessageCellViewModel?
-
-  // MARK: - Setup
-
-  override func setupContentView() {
-    containerView.addSubview(contentStackView)
-
-    contentStackView.addArrangedSubview(iconView)
-    contentStackView.addArrangedSubview(textStackView)
-
-    textStackView.addArrangedSubview(messageLabel)
-    textStackView.addArrangedSubview(timestampLabel)
-
-    contentStackView.snp.makeConstraints { make in
-      make.edges.equalToSuperview().inset(contentInsets)
-    }
-
-    iconView.snp.makeConstraints { make in
-      make.width.height.equalTo(20)
-    }
-  }
-
-  // MARK: - Configuration
 
   override func configure(with viewModel: any ChatCellViewModel) {
-    guard let systemViewModel = viewModel as? SystemMessageCellViewModel else { return }
-    self.viewModel = systemViewModel
-
-    messageLabel.text = systemViewModel.content
-    configureContainer(backgroundColor: backgroundColor(for: systemViewModel.cellType))
-
-    // 配置时间戳
-    if let timestamp = systemViewModel.timestamp {
-      timestampLabel.text = formatTimestamp(timestamp)
-      timestampLabel.isHidden = false
-    } else {
-      timestampLabel.isHidden = true
+    super.configure(with: viewModel)
+    guard let vm = viewModel as? SystemMessageCellViewModel else {
+      assertionFailure("")
+      return
     }
+    contentLabel.attributedText = Self.prepareAttributeText(vm.content)
   }
 
-  // MARK: - Helpers
+  override func layoutContentView(bounds: CGRect) {
+    super.layoutContentView(bounds: bounds)
+    let textMaxWidth = bounds.width * 0.8
+    contentLabel.preferredMaxLayoutWidth = textMaxWidth
+    let textSize = contentLabel.intrinsicContentSize
+    let labelWidth = textSize.width
+    let labelHeight = textSize.height
+    contentLabel.frame = .init(
+      x: (bounds.width - labelWidth) / 2,
+      y: 0,
+      width: labelWidth,
+      height: labelHeight
+    )
+  }
 
-  private func formatTimestamp(_ timestamp: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.timeStyle = .short
-    return formatter.string(from: timestamp)
+  class func prepareAttributeText(_ text: String) -> NSAttributedString {
+    .init(string: text, attributes: [
+      .font: UIFont.preferredFont(forTextStyle: .footnote),
+      .foregroundColor: UIColor.affineTextSecondary,
+      .paragraphStyle: NSMutableParagraphStyle().then {
+        $0.lineBreakMode = .byWordWrapping
+        $0.alignment = .center
+        $0.lineSpacing = 2
+        $0.paragraphSpacing = 4
+      },
+    ])
+  }
+
+  override class func heightForContent(
+    for viewModel: any ChatCellViewModel,
+    width: CGFloat
+  ) -> CGFloat {
+    guard let vm = viewModel as? SystemMessageCellViewModel else {
+      assertionFailure()
+      return 0
+    }
+    labelForSizeCalculation.attributedText = prepareAttributeText(vm.content)
+    labelForSizeCalculation.preferredMaxLayoutWidth = width * 0.8
+    let textSize = labelForSizeCalculation.intrinsicContentSize
+    return textSize.height
   }
 }

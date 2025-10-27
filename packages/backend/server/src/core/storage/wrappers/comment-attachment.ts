@@ -4,6 +4,7 @@ import {
   autoMetadata,
   Config,
   EventBus,
+  metrics,
   OnEvent,
   type StorageProvider,
   StorageProviderFactory,
@@ -59,7 +60,8 @@ export class CommentAttachmentStorage {
     docId: string,
     key: string,
     name: string,
-    blob: Buffer
+    blob: Buffer,
+    userId: string
   ) {
     const meta = autoMetadata(blob);
 
@@ -68,14 +70,23 @@ export class CommentAttachmentStorage {
       blob,
       meta
     );
+    const mime = meta.contentType ?? 'application/octet-stream';
+    const size = blob.length;
     await this.models.commentAttachment.upsert({
       workspaceId,
       docId,
       key,
       name,
-      mime: meta.contentType ?? 'application/octet-stream',
-      size: blob.length,
+      mime,
+      size,
+      createdBy: userId,
     });
+
+    metrics.storage.histogram('comment_attachment_size').record(size, { mime });
+    metrics.storage.counter('comment_attachment_total').add(1, { mime });
+    this.logger.log(
+      `uploaded comment attachment ${workspaceId}/${docId}/${key} with size ${size}, mime: ${mime}, name: ${name}, user: ${userId}`
+    );
   }
 
   async get(

@@ -18,9 +18,12 @@ export interface AIUserInfo {
 
 export interface AIChatParams {
   host: EditorHost;
+  input?: string;
   mode?: 'page' | 'edgeless';
-  // Auto select and append selection to input via `Continue with AI` action.
+  // Auto select and append selection to input via `Continue in AI Chat` action.
   autoSelect?: boolean;
+  context?: Partial<ChatContextValue | null>;
+  fromAnswer?: boolean;
 }
 
 export interface AISendParams {
@@ -149,6 +152,7 @@ export class AIProvider {
     }>(),
     // downstream can emit this slot to notify ai presets that user info has been updated
     userInfo: new Subject<AIUserInfo | null>(),
+    previewPanelOpenChange: new Subject<boolean>(),
     /* eslint-enable rxjs/finnish */
   };
 

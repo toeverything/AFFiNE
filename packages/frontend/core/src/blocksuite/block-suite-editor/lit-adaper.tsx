@@ -48,6 +48,7 @@ import {
   WorkspacePropertiesTable,
 } from '../../components/properties';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
+import { DocIconPicker } from './doc-icon-picker';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import { StarterBar } from './starter-bar';
 import * as styles from './styles.css';
@@ -59,7 +60,7 @@ interface BlocksuiteEditorProps {
   defaultOpenProperty?: DefaultOpenProperty;
 }
 
-const usePatchSpecs = (mode: DocMode) => {
+const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const { workspaceService, featureFlagService } = useServices({
     WorkspaceService,
@@ -85,10 +86,9 @@ const usePatchSpecs = (mode: DocMode) => {
   const serverService = useService(ServerService);
   const serverConfig = useLiveData(serverService.server.config$);
 
+  // comment may not be supported by the server
   const enableComment =
-    useLiveData(featureFlagService.flags.enable_comment.$) &&
-    // comment may not be supported by the server
-    serverConfig.features.includes(ServerFeature.Comment);
+    isCloud && serverConfig.features.includes(ServerFeature.Comment) && !shared;
 
   const patchedSpecs = useMemo(() => {
     const manager = getViewManager()
@@ -116,7 +116,8 @@ const usePatchSpecs = (mode: DocMode) => {
       .mobile(framework)
       .electron(framework)
       .linkPreview(framework)
-      .codeBlockHtmlPreview(framework)
+      .codeBlockPreview(framework)
+      .iconPicker(framework)
       .comment(enableComment, framework).value;
 
     if (BUILD_CONFIG.isMobileEdition) {
@@ -208,7 +209,7 @@ export const BlocksuiteDocEditor = forwardRef<
     [externalTitleRef]
   );
 
-  const [specs, portals] = usePatchSpecs('page');
+  const [specs, portals] = usePatchSpecs('page', shared);
 
   const displayBiDirectionalLink = useLiveData(
     editorSettingService.editorSetting.settings$.selector(
@@ -255,6 +256,9 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <>
       <div className={styles.affineDocViewport}>
+        {!BUILD_CONFIG.isMobileEdition ? (
+          <DocIconPicker docId={page.id} readonly={readonly || shared} />
+        ) : null}
         {!isJournal ? (
           <LitDocTitle doc={page} ref={onTitleRef} />
         ) : (

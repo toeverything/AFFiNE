@@ -37,6 +37,19 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface AccessToken {
+  __typename?: 'AccessToken';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
+export interface AddContextBlobInput {
+  blobId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
+}
+
 export interface AddContextCategoryInput {
   categoryId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
@@ -245,14 +258,21 @@ export interface ContextWorkspaceEmbeddingStatus {
 export interface Copilot {
   __typename?: 'Copilot';
   audioTranscription: Maybe<TranscriptionResultType>;
+  chats: PaginatedCopilotHistoriesType;
   /** Get the context list of a session */
   contexts: Array<CopilotContext>;
+  /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
+  /** List available models for a prompt, with human-readable names */
+  models: CopilotModelsType;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
   /** Get the session by id */
   session: CopilotSessionType;
-  /** Get the session list in the workspace */
+  /**
+   * Get the session list in the workspace
+   * @deprecated use `chats` instead
+   */
   sessions: Array<CopilotSessionType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
 }
@@ -260,6 +280,12 @@ export interface Copilot {
 export interface CopilotAudioTranscriptionArgs {
   blobId?: InputMaybe<Scalars['String']['input']>;
   jobId?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface CopilotChatsArgs {
+  docId?: InputMaybe<Scalars['String']['input']>;
+  options?: InputMaybe<QueryChatHistoriesInput>;
+  pagination: PaginationInput;
 }
 
 export interface CopilotContextsArgs {
@@ -270,6 +296,10 @@ export interface CopilotContextsArgs {
 export interface CopilotHistoriesArgs {
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
+}
+
+export interface CopilotModelsArgs {
+  promptName: Scalars['String']['input'];
 }
 
 export interface CopilotSessionArgs {
@@ -283,6 +313,8 @@ export interface CopilotSessionsArgs {
 
 export interface CopilotContext {
   __typename?: 'CopilotContext';
+  /** list blobs in context */
+  blobs: Array<CopilotContextBlob>;
   /** list collections in context */
   collections: Array<CopilotContextCategory>;
   /** list files in context */
@@ -313,10 +345,17 @@ export interface CopilotContextMatchWorkspaceDocsArgs {
   threshold?: InputMaybe<Scalars['Float']['input']>;
 }
 
+export interface CopilotContextBlob {
+  __typename?: 'CopilotContextBlob';
+  createdAt: Scalars['SafeInt']['output'];
+  id: Scalars['ID']['output'];
+  status: Maybe<ContextEmbedStatus>;
+}
+
 export interface CopilotContextCategory {
   __typename?: 'CopilotContextCategory';
   createdAt: Scalars['SafeInt']['output'];
-  docs: Array<CopilotDocType>;
+  docs: Array<CopilotContextDoc>;
   id: Scalars['ID']['output'];
   type: ContextCategories;
 }
@@ -324,7 +363,6 @@ export interface CopilotContextCategory {
 export interface CopilotContextDoc {
   __typename?: 'CopilotContextDoc';
   createdAt: Scalars['SafeInt']['output'];
-  error: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   status: Maybe<ContextEmbedStatus>;
 }
@@ -352,16 +390,15 @@ export interface CopilotDocNotFoundDataType {
   docId: Scalars['String']['output'];
 }
 
-export interface CopilotDocType {
-  __typename?: 'CopilotDocType';
-  createdAt: Scalars['SafeInt']['output'];
-  id: Scalars['ID']['output'];
-  status: Maybe<ContextEmbedStatus>;
-}
-
 export interface CopilotFailedToAddWorkspaceFileEmbeddingDataType {
   __typename?: 'CopilotFailedToAddWorkspaceFileEmbeddingDataType';
   message: Scalars['String']['output'];
+}
+
+export interface CopilotFailedToGenerateEmbeddingDataType {
+  __typename?: 'CopilotFailedToGenerateEmbeddingDataType';
+  message: Scalars['String']['output'];
+  provider: Scalars['String']['output'];
 }
 
 export interface CopilotFailedToMatchContextDataType {
@@ -391,12 +428,23 @@ export interface CopilotHistories {
   createdAt: Scalars['DateTime']['output'];
   docId: Maybe<Scalars['String']['output']>;
   messages: Array<ChatMessage>;
+  model: Scalars['String']['output'];
+  optionalModels: Array<Scalars['String']['output']>;
+  parentSessionId: Maybe<Scalars['String']['output']>;
   pinned: Scalars['Boolean']['output'];
+  promptName: Scalars['String']['output'];
   sessionId: Scalars['String']['output'];
+  title: Maybe<Scalars['String']['output']>;
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
   workspaceId: Scalars['String']['output'];
+}
+
+export interface CopilotHistoriesTypeEdge {
+  __typename?: 'CopilotHistoriesTypeEdge';
+  cursor: Scalars['String']['output'];
+  node: CopilotHistories;
 }
 
 export interface CopilotInvalidContextDataType {
@@ -407,6 +455,19 @@ export interface CopilotInvalidContextDataType {
 export interface CopilotMessageNotFoundDataType {
   __typename?: 'CopilotMessageNotFoundDataType';
   messageId: Scalars['String']['output'];
+}
+
+export interface CopilotModelType {
+  __typename?: 'CopilotModelType';
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
+export interface CopilotModelsType {
+  __typename?: 'CopilotModelsType';
+  defaultModel: Scalars['String']['output'];
+  optionalModels: Array<CopilotModelType>;
+  proModels: Array<CopilotModelType>;
 }
 
 export interface CopilotPromptConfigInput {
@@ -541,6 +602,7 @@ export interface CopilotWorkspaceIgnoredDocTypeEdge {
 
 export interface CreateChatMessageInput {
   attachments?: InputMaybe<Array<Scalars['String']['input']>>;
+  blob?: InputMaybe<Scalars['Upload']['input']>;
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
   content?: InputMaybe<Scalars['String']['input']>;
   params?: InputMaybe<Scalars['JSON']['input']>;
@@ -592,7 +654,7 @@ export interface DeleteAccount {
 }
 
 export interface DeleteSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
   sessionIds: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }
@@ -681,6 +743,7 @@ export interface DocType {
   mode: PublicDocMode;
   permissions: DocPermissions;
   public: Scalars['Boolean']['output'];
+  summary: Maybe<Scalars['String']['output']>;
   title: Maybe<Scalars['String']['output']>;
   updatedAt: Maybe<Scalars['DateTime']['output']>;
   workspaceId: Scalars['String']['output'];
@@ -714,6 +777,7 @@ export type ErrorDataUnion =
   | CopilotContextFileNotSupportedDataType
   | CopilotDocNotFoundDataType
   | CopilotFailedToAddWorkspaceFileEmbeddingDataType
+  | CopilotFailedToGenerateEmbeddingDataType
   | CopilotFailedToMatchContextDataType
   | CopilotFailedToMatchGlobalContextDataType
   | CopilotFailedToModifyContextDataType
@@ -746,6 +810,7 @@ export type ErrorDataUnion =
   | MemberNotFoundInSpaceDataType
   | MentionUserDocAccessDeniedDataType
   | MissingOauthQueryParameterDataType
+  | NoCopilotProviderAvailableDataType
   | NoMoreSeatDataType
   | NotInSpaceDataType
   | QueryTooLongDataType
@@ -793,6 +858,7 @@ export enum ErrorNames {
   COPILOT_EMBEDDING_UNAVAILABLE = 'COPILOT_EMBEDDING_UNAVAILABLE',
   COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING = 'COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING',
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
+  COPILOT_FAILED_TO_GENERATE_EMBEDDING = 'COPILOT_FAILED_TO_GENERATE_EMBEDDING',
   COPILOT_FAILED_TO_GENERATE_TEXT = 'COPILOT_FAILED_TO_GENERATE_TEXT',
   COPILOT_FAILED_TO_MATCH_CONTEXT = 'COPILOT_FAILED_TO_MATCH_CONTEXT',
   COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT = 'COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT',
@@ -857,6 +923,7 @@ export enum ErrorNames {
   LICENSE_REVEALED = 'LICENSE_REVEALED',
   LINK_EXPIRED = 'LINK_EXPIRED',
   MAILER_SERVICE_IS_NOT_CONFIGURED = 'MAILER_SERVICE_IS_NOT_CONFIGURED',
+  MANAGED_BY_APP_STORE_OR_PLAY = 'MANAGED_BY_APP_STORE_OR_PLAY',
   MEMBER_NOT_FOUND_IN_SPACE = 'MEMBER_NOT_FOUND_IN_SPACE',
   MEMBER_QUOTA_EXCEEDED = 'MEMBER_QUOTA_EXCEEDED',
   MENTION_USER_DOC_ACCESS_DENIED = 'MENTION_USER_DOC_ACCESS_DENIED',
@@ -944,6 +1011,11 @@ export interface ForkChatSessionInput {
   latestMessageId?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface GenerateAccessTokenInput {
+  expiresAt?: InputMaybe<Scalars['DateTime']['input']>;
+  name: Scalars['String']['input'];
 }
 
 export interface GrantDocUserRolesInput {
@@ -1300,6 +1372,8 @@ export interface Mutation {
   __typename?: 'Mutation';
   acceptInviteById: Scalars['Boolean']['output'];
   activateLicense: License;
+  /** add a blob to context */
+  addContextBlob: CopilotContextBlob;
   /** add a category to context */
   addContextCategory: CopilotContextCategory;
   /** add a doc to context */
@@ -1355,6 +1429,7 @@ export interface Mutation {
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
+  generateUserAccessToken: RevealedAccessToken;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1371,12 +1446,18 @@ export interface Mutation {
   publishPage: DocType;
   /** queue workspace doc embedding */
   queueWorkspaceEmbedding: Scalars['Boolean']['output'];
+  /** mark all notifications as read */
+  readAllNotifications: Scalars['Boolean']['output'];
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
+  /** Refresh current user subscriptions and return latest. */
+  refreshUserSubscriptions: Array<SubscriptionType>;
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
+  /** remove a blob from context */
+  removeContextBlob: Scalars['Boolean']['output'];
   /** remove a category from context */
   removeContextCategory: Scalars['Boolean']['output'];
   /** remove a doc from context */
@@ -1398,6 +1479,7 @@ export interface Mutation {
   revokePublicDoc: DocType;
   /** @deprecated use revokePublicDoc instead */
   revokePublicPage: DocType;
+  revokeUserAccessToken: Scalars['Boolean']['output'];
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -1406,6 +1488,10 @@ export interface Mutation {
   sendVerifyEmail: Scalars['Boolean']['output'];
   setBlob: Scalars['String']['output'];
   submitAudioTranscription: Maybe<TranscriptionResultType>;
+  /** Trigger cleanup of trashed doc embeddings */
+  triggerCleanupTrashedDocEmbeddings: Scalars['Boolean']['output'];
+  /** Trigger generate missing titles cron job */
+  triggerGenerateTitleCron: Scalars['Boolean']['output'];
   /** update app configuration */
   updateAppConfig: Scalars['JSONObject']['output'];
   /** Update a comment content */
@@ -1448,6 +1534,10 @@ export interface MutationAcceptInviteByIdArgs {
 export interface MutationActivateLicenseArgs {
   license: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationAddContextBlobArgs {
+  options: AddContextBlobInput;
 }
 
 export interface MutationAddContextCategoryArgs {
@@ -1597,6 +1687,10 @@ export interface MutationGenerateLicenseKeyArgs {
   sessionId: Scalars['String']['input'];
 }
 
+export interface MutationGenerateUserAccessTokenArgs {
+  input: GenerateAccessTokenInput;
+}
+
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -1668,6 +1762,10 @@ export interface MutationReleaseDeletedBlobsArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationRemoveContextBlobArgs {
+  options: RemoveContextBlobInput;
+}
+
 export interface MutationRemoveContextCategoryArgs {
   options: RemoveContextCategoryInput;
 }
@@ -1731,6 +1829,10 @@ export interface MutationRevokePublicDocArgs {
 export interface MutationRevokePublicPageArgs {
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeUserAccessTokenArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface MutationSendChangeEmailArgs {
@@ -1856,6 +1958,11 @@ export interface MutationVerifyEmailArgs {
   token: Scalars['String']['input'];
 }
 
+export interface NoCopilotProviderAvailableDataType {
+  __typename?: 'NoCopilotProviderAvailableDataType';
+  modelId: Scalars['String']['output'];
+}
+
 export interface NoMoreSeatDataType {
   __typename?: 'NoMoreSeatDataType';
   spaceId: Scalars['String']['output'];
@@ -1952,6 +2059,13 @@ export interface PaginatedCommentObjectType {
   totalCount: Scalars['Int']['output'];
 }
 
+export interface PaginatedCopilotHistoriesType {
+  __typename?: 'PaginatedCopilotHistoriesType';
+  edges: Array<CopilotHistoriesTypeEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+}
+
 export interface PaginatedCopilotWorkspaceFileType {
   __typename?: 'PaginatedCopilotWorkspaceFileType';
   edges: Array<CopilotWorkspaceFileTypeEdge>;
@@ -2025,8 +2139,11 @@ export interface PublicUserType {
 
 export interface Query {
   __typename?: 'Query';
+  accessTokens: Array<AccessToken>;
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
+  /** Apply updates to a doc using LLM and return the merged markdown. */
+  applyDocUpdates: Scalars['String']['output'];
   /** @deprecated use `user.quotaUsage` instead */
   collectAllBlobSizes: WorkspaceBlobSizes;
   /** Get current user */
@@ -2051,6 +2168,7 @@ export interface Query {
   publicUserById: Maybe<PublicUserType>;
   /** query workspace embedding status */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
+  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2072,6 +2190,13 @@ export interface Query {
   workspaceRolePermissions: WorkspaceRolePermissions;
   /** Get all accessible workspaces for current user */
   workspaces: Array<WorkspaceType>;
+}
+
+export interface QueryApplyDocUpdatesArgs {
+  docId: Scalars['String']['input'];
+  op: Scalars['String']['input'];
+  updates: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryErrorArgs {
@@ -2131,6 +2256,7 @@ export interface QueryChatHistoriesInput {
   sessionId?: InputMaybe<Scalars['String']['input']>;
   sessionOrder?: InputMaybe<ChatHistoryOrder>;
   skip?: InputMaybe<Scalars['Int']['input']>;
+  withMessages?: InputMaybe<Scalars['Boolean']['input']>;
   withPrompt?: InputMaybe<Scalars['Boolean']['input']>;
 }
 
@@ -2158,6 +2284,11 @@ export interface ReleaseVersionType {
 export interface RemoveAvatar {
   __typename?: 'RemoveAvatar';
   success: Scalars['Boolean']['output'];
+}
+
+export interface RemoveContextBlobInput {
+  blobId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
 }
 
 export interface RemoveContextCategoryInput {
@@ -2202,6 +2333,15 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface RevealedAccessToken {
+  __typename?: 'RevealedAccessToken';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  token: Scalars['String']['output'];
 }
 
 export interface RevokeDocUserRoleInput {
@@ -2317,7 +2457,10 @@ export enum SearchTable {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
-  /** Whether allow guest users to create demo workspaces. */
+  /**
+   * Whether allow guest users to create demo workspaces.
+   * @deprecated This field is deprecated, please use `features` instead. Will be removed in 0.25.0
+   */
   allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** fetch latest available upgradable release of server */
   availableUpgrade: Maybe<ReleaseVersionType>;
@@ -2351,6 +2494,7 @@ export enum ServerFeature {
   Copilot = 'Copilot',
   CopilotEmbedding = 'CopilotEmbedding',
   Indexer = 'Indexer',
+  LocalWorkspace = 'LocalWorkspace',
   OAuth = 'OAuth',
   Payment = 'Payment',
 }
@@ -2443,6 +2587,8 @@ export interface SubscriptionType {
   canceledAt: Maybe<Scalars['DateTime']['output']>;
   createdAt: Scalars['DateTime']['output'];
   end: Maybe<Scalars['DateTime']['output']>;
+  /** If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store */
+  iapStore: Maybe<Scalars['String']['output']>;
   /** @deprecated removed */
   id: Maybe<Scalars['String']['output']>;
   nextBillAt: Maybe<Scalars['DateTime']['output']>;
@@ -2451,6 +2597,8 @@ export interface SubscriptionType {
    * There won't actually be a subscription with plan 'Free'
    */
   plan: SubscriptionPlan;
+  /** Payment provider of this subscription. Read-only. One of: stripe | revenuecat */
+  provider: Maybe<Scalars['String']['output']>;
   recurring: SubscriptionRecurring;
   start: Scalars['DateTime']['output'];
   status: SubscriptionStatus;
@@ -2922,6 +3070,47 @@ export interface TokenType {
   token: Scalars['String']['output'];
 }
 
+export type GenerateUserAccessTokenMutationVariables = Exact<{
+  input: GenerateAccessTokenInput;
+}>;
+
+export type GenerateUserAccessTokenMutation = {
+  __typename?: 'Mutation';
+  generateUserAccessToken: {
+    __typename?: 'RevealedAccessToken';
+    id: string;
+    name: string;
+    token: string;
+    createdAt: string;
+    expiresAt: string | null;
+  };
+};
+
+export type ListUserAccessTokensQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ListUserAccessTokensQuery = {
+  __typename?: 'Query';
+  revealedAccessTokens: Array<{
+    __typename?: 'RevealedAccessToken';
+    id: string;
+    name: string;
+    createdAt: string;
+    expiresAt: string | null;
+    token: string;
+  }>;
+};
+
+export type RevokeUserAccessTokenMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type RevokeUserAccessTokenMutation = {
+  __typename?: 'Mutation';
+  revokeUserAccessToken: boolean;
+};
+
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AdminServerConfigQuery = {
@@ -2932,7 +3121,6 @@ export type AdminServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
-    allowGuestDemoWorkspace: boolean;
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
@@ -3459,6 +3647,41 @@ export type UploadCommentAttachmentMutation = {
   uploadCommentAttachment: string;
 };
 
+export type ApplyDocUpdatesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  op: Scalars['String']['input'];
+  updates: Scalars['String']['input'];
+}>;
+
+export type ApplyDocUpdatesQuery = {
+  __typename?: 'Query';
+  applyDocUpdates: string;
+};
+
+export type AddContextBlobMutationVariables = Exact<{
+  options: AddContextBlobInput;
+}>;
+
+export type AddContextBlobMutation = {
+  __typename?: 'Mutation';
+  addContextBlob: {
+    __typename?: 'CopilotContextBlob';
+    id: string;
+    createdAt: number;
+    status: ContextEmbedStatus | null;
+  };
+};
+
+export type RemoveContextBlobMutationVariables = Exact<{
+  options: RemoveContextBlobInput;
+}>;
+
+export type RemoveContextBlobMutation = {
+  __typename?: 'Mutation';
+  removeContextBlob: boolean;
+};
+
 export type AddContextCategoryMutationVariables = Exact<{
   options: AddContextCategoryInput;
 }>;
@@ -3471,7 +3694,7 @@ export type AddContextCategoryMutation = {
     createdAt: number;
     type: ContextCategories;
     docs: Array<{
-      __typename?: 'CopilotDocType';
+      __typename?: 'CopilotContextDoc';
       id: string;
       createdAt: number;
       status: ContextEmbedStatus | null;
@@ -3509,7 +3732,6 @@ export type AddContextDocMutation = {
     id: string;
     createdAt: number;
     status: ContextEmbedStatus | null;
-    error: string | null;
   };
 };
 
@@ -3565,11 +3787,16 @@ export type ListContextObjectQuery = {
       __typename?: 'Copilot';
       contexts: Array<{
         __typename?: 'CopilotContext';
+        blobs: Array<{
+          __typename?: 'CopilotContextBlob';
+          id: string;
+          status: ContextEmbedStatus | null;
+          createdAt: number;
+        }>;
         docs: Array<{
           __typename?: 'CopilotContextDoc';
           id: string;
           status: ContextEmbedStatus | null;
-          error: string | null;
           createdAt: number;
         }>;
         files: Array<{
@@ -3589,7 +3816,7 @@ export type ListContextObjectQuery = {
           id: string;
           createdAt: number;
           docs: Array<{
-            __typename?: 'CopilotDocType';
+            __typename?: 'CopilotContextDoc';
             id: string;
             status: ContextEmbedStatus | null;
             createdAt: number;
@@ -3601,7 +3828,7 @@ export type ListContextObjectQuery = {
           id: string;
           createdAt: number;
           docs: Array<{
-            __typename?: 'CopilotDocType';
+            __typename?: 'CopilotContextDoc';
             id: string;
             status: ContextEmbedStatus | null;
             createdAt: number;
@@ -3755,6 +3982,7 @@ export type QueueWorkspaceEmbeddingMutation = {
 
 export type GetCopilotHistoryIdsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
@@ -3765,17 +3993,31 @@ export type GetCopilotHistoryIdsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          createdAt: string;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            pinned: boolean;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              createdAt: string;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -3783,6 +4025,7 @@ export type GetCopilotHistoryIdsQuery = {
 export type GetCopilotDocSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
+  pagination: PaginationInput;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
 
@@ -3792,31 +4035,53 @@ export type GetCopilotDocSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -3834,37 +4099,60 @@ export type GetCopilotPinnedSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
 
 export type GetCopilotWorkspaceSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
 
@@ -3874,37 +4162,60 @@ export type GetCopilotWorkspaceSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
 
 export type GetCopilotHistoriesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
@@ -3915,31 +4226,53 @@ export type GetCopilotHistoriesQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -4038,6 +4371,34 @@ export type CreateCopilotMessageMutation = {
   createCopilotMessage: string;
 };
 
+export type GetPromptModelsQueryVariables = Exact<{
+  promptName: Scalars['String']['input'];
+}>;
+
+export type GetPromptModelsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      models: {
+        __typename?: 'CopilotModelsType';
+        defaultModel: string;
+        optionalModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+        proModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+      };
+    };
+  } | null;
+};
+
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CopilotQuotaQuery = {
@@ -4093,26 +4454,53 @@ export type GetCopilotLatestDocSessionQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        workspaceId: string;
-        docId: string | null;
-        pinned: boolean;
-        action: string | null;
-        tokens: number;
-        createdAt: string;
-        updatedAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          params: Record<string, string> | null;
-          createdAt: string;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -4128,16 +4516,52 @@ export type GetCopilotSessionQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      session: {
-        __typename?: 'CopilotSessionType';
-        id: string;
-        parentSessionId: string | null;
-        docId: string | null;
-        pinned: boolean;
-        title: string | null;
-        promptName: string;
-        model: string;
-        optionalModels: Array<string>;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
+        }>;
       };
     };
   } | null;
@@ -4146,6 +4570,7 @@ export type GetCopilotSessionQuery = {
 export type GetCopilotRecentSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 export type GetCopilotRecentSessionsQuery = {
@@ -4154,17 +4579,53 @@ export type GetCopilotRecentSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        workspaceId: string;
-        docId: string | null;
-        pinned: boolean;
-        action: string | null;
-        tokens: number;
-        createdAt: string;
-        updatedAt: string;
-      }>;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
+        }>;
+      };
     };
   } | null;
 };
@@ -4180,8 +4641,9 @@ export type UpdateCopilotSessionMutation = {
 
 export type GetCopilotSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   docId?: InputMaybe<Scalars['String']['input']>;
-  options?: InputMaybe<QueryChatSessionsInput>;
+  options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
 
 export type GetCopilotSessionsQuery = {
@@ -4190,17 +4652,53 @@ export type GetCopilotSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      sessions: Array<{
-        __typename?: 'CopilotSessionType';
-        id: string;
-        parentSessionId: string | null;
-        docId: string | null;
-        pinned: boolean;
-        title: string | null;
-        promptName: string;
-        model: string;
-        optionalModels: Array<string>;
-      }>;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
+        }>;
+      };
     };
   } | null;
 };
@@ -4427,9 +4925,113 @@ export type GetDocRolePermissionsQuery = {
         Doc_Update: boolean;
         Doc_Users_Manage: boolean;
         Doc_Users_Read: boolean;
+        Doc_Comments_Create: boolean;
+        Doc_Comments_Delete: boolean;
+        Doc_Comments_Read: boolean;
+        Doc_Comments_Resolve: boolean;
       };
     };
   };
+};
+
+export type CopilotChatMessageFragment = {
+  __typename?: 'ChatMessage';
+  id: string | null;
+  role: string;
+  content: string;
+  attachments: Array<string> | null;
+  createdAt: string;
+  streamObjects: Array<{
+    __typename?: 'StreamObject';
+    type: string;
+    textDelta: string | null;
+    toolCallId: string | null;
+    toolName: string | null;
+    args: Record<string, string> | null;
+    result: Record<string, string> | null;
+  }> | null;
+};
+
+export type CopilotChatHistoryFragment = {
+  __typename?: 'CopilotHistories';
+  sessionId: string;
+  workspaceId: string;
+  docId: string | null;
+  parentSessionId: string | null;
+  promptName: string;
+  model: string;
+  optionalModels: Array<string>;
+  action: string | null;
+  pinned: boolean;
+  title: string | null;
+  tokens: number;
+  createdAt: string;
+  updatedAt: string;
+  messages: Array<{
+    __typename?: 'ChatMessage';
+    id: string | null;
+    role: string;
+    content: string;
+    attachments: Array<string> | null;
+    createdAt: string;
+    streamObjects: Array<{
+      __typename?: 'StreamObject';
+      type: string;
+      textDelta: string | null;
+      toolCallId: string | null;
+      toolName: string | null;
+      args: Record<string, string> | null;
+      result: Record<string, string> | null;
+    }> | null;
+  }>;
+};
+
+export type PaginatedCopilotChatsFragment = {
+  __typename?: 'PaginatedCopilotHistoriesType';
+  pageInfo: {
+    __typename?: 'PageInfo';
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor: string | null;
+    endCursor: string | null;
+  };
+  edges: Array<{
+    __typename?: 'CopilotHistoriesTypeEdge';
+    cursor: string;
+    node: {
+      __typename?: 'CopilotHistories';
+      sessionId: string;
+      workspaceId: string;
+      docId: string | null;
+      parentSessionId: string | null;
+      promptName: string;
+      model: string;
+      optionalModels: Array<string>;
+      action: string | null;
+      pinned: boolean;
+      title: string | null;
+      tokens: number;
+      createdAt: string;
+      updatedAt: string;
+      messages: Array<{
+        __typename?: 'ChatMessage';
+        id: string | null;
+        role: string;
+        content: string;
+        attachments: Array<string> | null;
+        createdAt: string;
+        streamObjects: Array<{
+          __typename?: 'StreamObject';
+          type: string;
+          textDelta: string | null;
+          toolCallId: string | null;
+          toolName: string | null;
+          args: Record<string, string> | null;
+          result: Record<string, string> | null;
+        }> | null;
+      }>;
+    };
+  }>;
 };
 
 export type CredentialsRequirementsFragment = {
@@ -4528,6 +5130,19 @@ export type GetDocDefaultRoleQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     doc: { __typename?: 'DocType'; defaultRole: DocRole };
+  };
+};
+
+export type GetDocSummaryQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}>;
+
+export type GetDocSummaryQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: { __typename?: 'DocType'; summary: string | null };
   };
 };
 
@@ -4714,6 +5329,7 @@ export type GetUserSettingsQuery = {
       __typename?: 'UserSettingsType';
       receiveInvitationEmail: boolean;
       receiveMentionEmail: boolean;
+      receiveCommentEmail: boolean;
     };
   } | null;
 };
@@ -4765,6 +5381,8 @@ export type GetWorkspacePageByIdQuery = {
       mode: PublicDocMode;
       defaultRole: DocRole;
       public: boolean;
+      title: string | null;
+      summary: string | null;
     };
   };
 };
@@ -5213,6 +5831,15 @@ export type QuotaQuery = {
   } | null;
 };
 
+export type ReadAllNotificationsMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ReadAllNotificationsMutation = {
+  __typename?: 'Mutation';
+  readAllNotifications: boolean;
+};
+
 export type ReadNotificationMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -5348,7 +5975,6 @@ export type ServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
-    allowGuestDemoWorkspace: boolean;
     type: ServerDeploymentType;
     initialized: boolean;
     credentialsRequirement: {
@@ -5370,6 +5996,26 @@ export type SetWorkspacePublicByIdMutationVariables = Exact<{
 export type SetWorkspacePublicByIdMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type RefreshSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RefreshSubscriptionMutation = {
+  __typename?: 'Mutation';
+  refreshUserSubscriptions: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
 };
 
 export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
@@ -5701,6 +6347,11 @@ export type GrantWorkspaceTeamMemberMutation = {
 
 export type Queries =
   | {
+      name: 'listUserAccessTokensQuery';
+      variables: ListUserAccessTokensQueryVariables;
+      response: ListUserAccessTokensQuery;
+    }
+  | {
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
@@ -5739,6 +6390,11 @@ export type Queries =
       name: 'listCommentsQuery';
       variables: ListCommentsQueryVariables;
       response: ListCommentsQuery;
+    }
+  | {
+      name: 'applyDocUpdatesQuery';
+      variables: ApplyDocUpdatesQueryVariables;
+      response: ApplyDocUpdatesQuery;
     }
   | {
       name: 'listContextObjectQuery';
@@ -5799,6 +6455,11 @@ export type Queries =
       name: 'getAudioTranscriptionQuery';
       variables: GetAudioTranscriptionQueryVariables;
       response: GetAudioTranscriptionQuery;
+    }
+  | {
+      name: 'getPromptModelsQuery';
+      variables: GetPromptModelsQueryVariables;
+      response: GetPromptModelsQuery;
     }
   | {
       name: 'copilotQuotaQuery';
@@ -5864,6 +6525,11 @@ export type Queries =
       name: 'getDocDefaultRoleQuery';
       variables: GetDocDefaultRoleQueryVariables;
       response: GetDocDefaultRoleQuery;
+    }
+  | {
+      name: 'getDocSummaryQuery';
+      variables: GetDocSummaryQueryVariables;
+      response: GetDocSummaryQuery;
     }
   | {
       name: 'getInviteInfoQuery';
@@ -6048,6 +6714,16 @@ export type Queries =
 
 export type Mutations =
   | {
+      name: 'generateUserAccessTokenMutation';
+      variables: GenerateUserAccessTokenMutationVariables;
+      response: GenerateUserAccessTokenMutation;
+    }
+  | {
+      name: 'revokeUserAccessTokenMutation';
+      variables: RevokeUserAccessTokenMutationVariables;
+      response: RevokeUserAccessTokenMutation;
+    }
+  | {
       name: 'createChangePasswordUrlMutation';
       variables: CreateChangePasswordUrlMutationVariables;
       response: CreateChangePasswordUrlMutation;
@@ -6176,6 +6852,16 @@ export type Mutations =
       name: 'uploadCommentAttachmentMutation';
       variables: UploadCommentAttachmentMutationVariables;
       response: UploadCommentAttachmentMutation;
+    }
+  | {
+      name: 'addContextBlobMutation';
+      variables: AddContextBlobMutationVariables;
+      response: AddContextBlobMutation;
+    }
+  | {
+      name: 'removeContextBlobMutation';
+      variables: RemoveContextBlobMutationVariables;
+      response: RemoveContextBlobMutation;
     }
   | {
       name: 'addContextCategoryMutation';
@@ -6348,6 +7034,11 @@ export type Mutations =
       response: PublishPageMutation;
     }
   | {
+      name: 'readAllNotificationsMutation';
+      variables: ReadAllNotificationsMutationVariables;
+      response: ReadAllNotificationsMutation;
+    }
+  | {
       name: 'readNotificationMutation';
       variables: ReadNotificationMutationVariables;
       response: ReadNotificationMutation;
@@ -6411,6 +7102,11 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'refreshSubscriptionMutation';
+      variables: RefreshSubscriptionMutationVariables;
+      response: RefreshSubscriptionMutation;
     }
   | {
       name: 'updateDocDefaultRoleMutation';

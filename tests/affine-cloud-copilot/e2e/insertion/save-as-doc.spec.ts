@@ -13,12 +13,12 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -45,12 +45,12 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await utils.editor.switchToEdgelessMode(page);
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',

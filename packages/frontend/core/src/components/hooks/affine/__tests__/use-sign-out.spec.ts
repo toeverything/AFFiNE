@@ -2,6 +2,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import { ServerFeature } from '@affine/graphql';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -24,8 +25,10 @@ vi.mock('@toeverything/infra', () => {
         server: {
           config$: {
             value: {
-              get allowGuestDemoWorkspace() {
-                return allowGuestDemo;
+              get features() {
+                return allowGuestDemo !== false
+                  ? [ServerFeature.LocalWorkspace]
+                  : [];
               },
             },
           },

@@ -5,6 +5,7 @@ import {
   MarkdownAdapter,
 } from '@blocksuite/affine/shared/adapters';
 import {
+  type BlockModel,
   type DocSnapshot,
   nanoid,
   type Store,
@@ -151,5 +152,32 @@ export class SnapshotHelper extends Service {
     } else {
       return undefined;
     }
+  }
+
+  isDocEmpty(store?: Store): boolean {
+    if (!store) {
+      return true;
+    }
+
+    const checkBlock = (block: BlockModel) => {
+      if (block.text && block.text.length > 0) {
+        return false;
+      }
+      const children = block.children;
+      for (const child of children) {
+        if (!checkBlock(child)) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const blocks = store.blocks.peek();
+    for (const block of Object.values(blocks)) {
+      if (!checkBlock(block.model)) {
+        return false;
+      }
+    }
+    return true;
   }
 }

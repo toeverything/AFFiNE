@@ -2,6 +2,7 @@ import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onb
 import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
+  type AddContextFileInput,
   ContextCategories,
   type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
@@ -98,6 +99,9 @@ export function setupAIProvider(
       params: {
         docs: contexts?.docs,
         files: contexts?.files,
+        selectedSnapshot: contexts?.selectedSnapshot,
+        selectedMarkdown: contexts?.selectedMarkdown,
+        html: contexts?.html,
         searchMode: webSearch ? 'MUST' : 'AUTO',
       },
       endpoint: Endpoint.StreamObject,
@@ -586,7 +590,14 @@ Could you make a new website based on these notes and send back just the html fi
       docId?: string,
       options?: QueryChatSessionsInput
     ) => {
-      return client.getSessions(workspaceId, docId, options);
+      return client.getSessions(workspaceId, {}, docId, options);
+    },
+    getRecentSessions: async (
+      workspaceId: string,
+      limit?: number,
+      offset?: number
+    ) => {
+      return client.getRecentSessions(workspaceId, limit, offset);
     },
     updateSession: async (options: UpdateChatSessionInput) => {
       return client.updateSession(options);
@@ -606,10 +617,7 @@ Could you make a new website based on these notes and send back just the html fi
     removeContextDoc: async (options: { contextId: string; docId: string }) => {
       return client.removeContextDoc(options);
     },
-    addContextFile: async (
-      file: File,
-      options: { contextId: string; blobId: string }
-    ) => {
+    addContextFile: async (file: File, options: AddContextFileInput) => {
       return client.addContextFile(file, options);
     },
     removeContextFile: async (options: {
@@ -732,6 +740,29 @@ Could you make a new website based on these notes and send back just the html fi
         threshold
       );
     },
+    applyDocUpdates: async (
+      workspaceId: string,
+      docId: string,
+      op: string,
+      updates: string
+    ) => {
+      return client.applyDocUpdates(workspaceId, docId, op, updates);
+    },
+    addContextBlob: async (options: { blobId: string; contextId: string }) => {
+      return client.addContextBlob({
+        contextId: options.contextId,
+        blobId: options.blobId,
+      });
+    },
+    removeContextBlob: async (options: {
+      blobId: string;
+      contextId: string;
+    }) => {
+      return client.removeContextBlob({
+        contextId: options.contextId,
+        blobId: options.blobId,
+      });
+    },
   });
 
   AIProvider.provide('histories', {
@@ -741,9 +772,10 @@ Could you make a new website based on these notes and send back just the html fi
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
-        (await client.getHistories(workspaceId, docId, {
+        (await client.getHistories(workspaceId, {}, docId, {
           action: true,
           withPrompt: true,
+          withMessages: true,
         })) ?? []
       );
     },
@@ -754,14 +786,15 @@ Could you make a new website based on these notes and send back just the html fi
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
-        (await client.getHistories(workspaceId, docId, {
+        (await client.getHistories(workspaceId, {}, docId, {
           sessionId,
+          withMessages: true,
         })) ?? []
       );
     },
     cleanup: async (
       workspaceId: string,
-      docId: string,
+      docId: string | undefined,
       sessionIds: string[]
     ) => {
       await client.cleanupSessions({ workspaceId, docId, sessionIds });
@@ -773,8 +806,8 @@ Could you make a new website based on these notes and send back just the html fi
         typeof getCopilotHistoriesQuery
       >['variables']['options']
     ): Promise<BlockSuitePresets.AIHistoryIds[]> => {
-      // @ts-expect-error - 'role' is missing type in server impl
-      return await client.getHistoryIds(workspaceId, docId, options);
+      // @ts-expect-error - 'action' is missing in server impl
+      return await client.getHistoryIds(workspaceId, {}, docId, options);
     },
   });
 

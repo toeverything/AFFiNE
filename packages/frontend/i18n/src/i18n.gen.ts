@@ -100,6 +100,10 @@ export function useAFFiNEI18N(): {
       */
     ["Copied link to clipboard"](): string;
     /**
+      * `Copied to clipboard`
+      */
+    ["Copied to clipboard"](): string;
+    /**
       * `Copy`
       */
     Copy(): string;
@@ -2494,9 +2498,29 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.journal.updated-today"](): string;
     /**
+      * `No Journal`
+      */
+    ["com.affine.journal.placeholder.title"](): string;
+    /**
+      * `Create Daily Journal`
+      */
+    ["com.affine.journal.placeholder.create"](): string;
+    /**
       * `Just now`
       */
     ["com.affine.just-now"](): string;
+    /**
+      * `Align center`
+      */
+    ["com.affine.keyboardShortcuts.alignCenter"](): string;
+    /**
+      * `Align left`
+      */
+    ["com.affine.keyboardShortcuts.alignLeft"](): string;
+    /**
+      * `Align right`
+      */
+    ["com.affine.keyboardShortcuts.alignRight"](): string;
     /**
       * `Append to daily note`
       */
@@ -2747,6 +2771,10 @@ export function useAFFiNEI18N(): {
       * `Star us on GitHub`
       */
     ["com.affine.mobile.setting.others.github"](): string;
+    /**
+      * `Discord Group`
+      */
+    ["com.affine.mobile.setting.others.discord"](): string;
     /**
       * `Privacy`
       */
@@ -4826,13 +4854,23 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.setting.notifications.email.invites.subtitle"](): string;
     /**
+      * `Comments`
+      */
+    ["com.affine.setting.notifications.email.comments.title"](): string;
+    /**
+      * `You will be notified through email when other members of the workspace comment on your docs.`
+      */
+    ["com.affine.setting.notifications.email.comments.subtitle"](): string;
+    /**
       * `Account settings`
       */
     ["com.affine.setting.account"](): string;
     /**
-      * `Delete your account`
+      * `Delete your account from {{server}}`
       */
-    ["com.affine.setting.account.delete"](): string;
+    ["com.affine.setting.account.delete-from-server"](options: {
+        readonly server: string;
+    }): string;
     /**
       * `Once deleted, your account will no longer be accessible, and all data in your personal cloud space will be permanently deleted.`
       */
@@ -4849,10 +4887,6 @@ export function useAFFiNEI18N(): {
       * `Delete your account?`
       */
     ["com.affine.setting.account.delete.confirm-title"](): string;
-    /**
-      * `Are you sure you want to delete your account?`
-      */
-    ["com.affine.setting.account.delete.confirm-description-1"](): string;
     /**
       * `Please type your email to confirm`
       */
@@ -5950,6 +5984,14 @@ export function useAFFiNEI18N(): {
       * `Once enabled, you can preview adapter export content in the right side bar.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-adapter-panel.description"](): string;
+    /**
+      * `Send detailed object information to AI`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.name"](): string;
+    /**
+      * `When toggled off, every time you choose "Continue with AI", AI only got a screenshot.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.description"](): string;
     /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
@@ -7747,6 +7789,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.notification.unsupported"](): string;
     /**
+      * `What are your thoughts?`
+      */
+    ["com.affine.notification.comment-prompt"](): string;
+    /**
       * `No new notifications`
       */
     ["com.affine.notification.empty"](): string;
@@ -7766,6 +7812,10 @@ export function useAFFiNEI18N(): {
       * `Accept & Join`
       */
     ["com.affine.notification.invitation.accept"](): string;
+    /**
+      * `Delete all notifications`
+      */
+    ["com.affine.notification.delete-all"](): string;
     /**
       * `Tips`
       */
@@ -8151,6 +8201,14 @@ export function useAFFiNEI18N(): {
         readonly name: string;
     }): string;
     /**
+      * `MCP Server`
+      */
+    ["com.affine.integration.mcp-server.name"](): string;
+    /**
+      * `Enable other MCP Client to search and read the doc of AFFiNE.`
+      */
+    ["com.affine.integration.mcp-server.desc"](): string;
+    /**
       * `Notes`
       */
     ["com.affine.audio.notes"](): string;
@@ -8227,7 +8285,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.comments"](): string;
     /**
-      * `No comments yet`
+      * `No comments yet, select content to add comment to`
       */
     ["com.affine.comment.no-comments"](): string;
     /**
@@ -8247,6 +8305,12 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.reply.delete.confirm.description"](): string;
     /**
+      * `Show {{count}} more replies`
+      */
+    ["com.affine.comment.reply.show-more"](options: {
+        readonly count: string;
+    }): string;
+    /**
       * `Show resolved comments`
       */
     ["com.affine.comment.filter.show-resolved"](): string;
@@ -8259,6 +8323,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.filter.only-current-mode"](): string;
     /**
+      * `Unlock more features`
+      */
+    ["com.affine.payment.subscription.title"](): string;
+    /**
+      * `The universal editor that lets you work, play, present or create just about anything.`
+      */
+    ["com.affine.payment.subscription.description"](): string;
+    /**
+      * `Upgrade`
+      */
+    ["com.affine.payment.subscription.button"](): string;
+    /**
       * `Reply`
       */
     ["com.affine.comment.reply"](): string;
@@ -8266,6 +8342,22 @@ export function useAFFiNEI18N(): {
       * `Copy link`
       */
     ["com.affine.comment.copy-link"](): string;
+    /**
+      * `Copy`
+      */
+    ["com.affine.context-menu.copy"](): string;
+    /**
+      * `Paste`
+      */
+    ["com.affine.context-menu.paste"](): string;
+    /**
+      * `Cut`
+      */
+    ["com.affine.context-menu.cut"](): string;
+    /**
+      * `Add icon`
+      */
+    ["com.affine.docIconPicker.placeholder"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -8672,6 +8764,10 @@ export function useAFFiNEI18N(): {
       */
     ["error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION"](): string;
     /**
+      * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
+      */
+    ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
+    /**
       * `Copilot session not found.`
       */
     ["error.COPILOT_SESSION_NOT_FOUND"](): string;
@@ -8684,13 +8780,22 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_SESSION_DELETED"](): string;
     /**
-      * `No copilot provider available.`
+      * `No copilot provider available: {{modelId}}`
       */
-    ["error.NO_COPILOT_PROVIDER_AVAILABLE"](): string;
+    ["error.NO_COPILOT_PROVIDER_AVAILABLE"](options: {
+        readonly modelId: string;
+    }): string;
     /**
       * `Failed to generate text.`
       */
     ["error.COPILOT_FAILED_TO_GENERATE_TEXT"](): string;
+    /**
+      * `Failed to generate embedding with {{provider}}: {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_GENERATE_EMBEDDING"](options: Readonly<{
+        provider: string;
+        message: string;
+    }>): string;
     /**
       * `Failed to create chat message.`
       */
@@ -9261,9 +9366,17 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `Are you sure you want to delete your account from <1>{{server}}</1>?`
+      */
+    ["com.affine.setting.account.delete.confirm-delete-description-1"]: ComponentType<TypedTransProps<{
+        readonly server: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
       * `Your account will be inaccessible, and your personal cloud space will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
-    ["com.affine.setting.account.delete.confirm-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+    ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
     }>>;
     /**

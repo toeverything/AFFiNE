@@ -16,8 +16,7 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
     .chat-message-user {
       display: flex;
       flex-direction: column;
-      max-width: 800px;
-      margin-left: 58px;
+      max-width: calc(100% - 58px);
     }
 
     .chat-content-images {

@@ -2,12 +2,12 @@ import type { Meta, StoryFn } from '@storybook/react';
 import { useCallback, useState } from 'react';
 
 import { Button } from '../button';
+import { type IconData, IconType } from '../icon-picker';
 import { ResizePanel } from '../resize-panel/resize-panel';
 import {
   IconAndNameEditorMenu,
   type IconAndNameEditorMenuProps,
   IconEditor,
-  type IconType,
 } from './icon-name-editor';
 
 export default {
@@ -16,10 +16,13 @@ export default {
 } satisfies Meta<typeof IconAndNameEditorMenu>;
 
 export const Basic: StoryFn<IconAndNameEditorMenuProps> = () => {
-  const [icon, setIcon] = useState<string>('👋');
+  const [icon, setIcon] = useState<IconData | undefined>({
+    type: IconType.Emoji,
+    unicode: '👋',
+  });
   const [name, setName] = useState<string>('Hello');
 
-  const handleIconChange = useCallback((_: IconType, icon: string) => {
+  const handleIconChange = useCallback((icon?: IconData) => {
     setIcon(icon);
   }, []);
   const handleNameChange = useCallback((name: string) => {
@@ -28,7 +31,7 @@ export const Basic: StoryFn<IconAndNameEditorMenuProps> = () => {
 
   return (
     <div>
-      <p>Icon: {icon}</p>
+      <p>Icon: {JSON.stringify(icon)}</p>
       <p>Name: {name}</p>
 
       <ResizePanel
@@ -44,17 +47,16 @@ export const Basic: StoryFn<IconAndNameEditorMenuProps> = () => {
         }}
       >
         <IconAndNameEditorMenu
-          iconType="emoji"
           icon={icon}
           name={name}
           onIconChange={handleIconChange}
           onNameChange={handleNameChange}
+          closeAfterSelect
         >
           <Button>Edit Name and Icon</Button>
         </IconAndNameEditorMenu>
 
         <IconEditor
-          iconType="emoji"
           icon={icon}
           onIconChange={handleIconChange}
           closeAfterSelect

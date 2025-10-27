@@ -9,7 +9,6 @@ import AffineGraphQL
 import Apollo
 import ApolloAPI
 import Combine
-import EventSource
 import Foundation
 import OrderedCollections
 
@@ -22,14 +21,22 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
     SessionID,
     OrderedDictionary<MessageID, any ChatCellViewModel>
   > = [:]
+  public let scrollToBottomPublisher = PassthroughSubject<SessionID, Never>()
 
   var closable: [Closable] = []
 
   private init() {}
 
   public func closeAll() {
+    print("[+] terminating all closables...")
     closable.forEach { $0.close() }
     closable.removeAll()
+  }
+
+  public func clearAll() {
+    assert(Thread.isMainThread)
+    closeAll()
+    viewModels.removeAll()
   }
 
   public func with(sessionId: String, _ action: (inout OrderedDictionary<MessageID, any ChatCellViewModel>) -> Void) {
@@ -58,10 +65,12 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
           return
         }
         sessionViewModels[vmId] = vm
-      } else {
-        assertionFailure()
       }
     }
+  }
+
+  public func delete(sessionId: String, vmId: UUID) {
+    with(sessionId: sessionId) { $0.removeValue(forKey: vmId) }
   }
 
   @discardableResult
@@ -74,7 +83,8 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
   public func report(_ sessionID: String, _ error: Error) -> UUID {
     let model = ErrorCellViewModel(
       id: .init(),
-      errorMessage: error.localizedDescription
+      errorMessage: error.localizedDescription,
+      timestamp: .init()
     )
     append(sessionId: sessionID, model)
     return model.id

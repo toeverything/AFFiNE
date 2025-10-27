@@ -125,12 +125,12 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
         system,
         messages: msgs,
         temperature: options.temperature ?? 0,
-        maxTokens: options.maxTokens ?? 4096,
+        maxOutputTokens: options.maxTokens ?? 4096,
         abortSignal: options.signal,
       });
 
       const parser = new CitationParser();
-      for (const source of sources) {
+      for (const source of sources.filter(s => s.sourceType === 'url')) {
         parser.push(source.url);
       }
 
@@ -165,7 +165,7 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
         system,
         messages: msgs,
         temperature: options.temperature ?? 0,
-        maxTokens: options.maxTokens ?? 4096,
+        maxOutputTokens: options.maxTokens ?? 4096,
         abortSignal: options.signal,
       });
 
@@ -173,19 +173,18 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
       for await (const chunk of stream.fullStream) {
         switch (chunk.type) {
           case 'source': {
-            parser.push(chunk.source.url);
+            if (chunk.sourceType === 'url') {
+              parser.push(chunk.url);
+            }
             break;
           }
           case 'text-delta': {
-            const text = chunk.textDelta.replaceAll(
-              /<\/?think>\n?/g,
-              '\n---\n'
-            );
+            const text = chunk.text.replaceAll(/<\/?think>\n?/g, '\n---\n');
             const result = parser.parse(text);
             yield result;
             break;
           }
-          case 'step-finish': {
+          case 'finish-step': {
             const result = parser.end();
             yield result;
             break;

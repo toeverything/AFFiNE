@@ -140,10 +140,13 @@ export class ElasticsearchProvider extends SearchProvider {
     const result = await this.request(
       'POST',
       url.toString(),
-      JSON.stringify({ query })
+      JSON.stringify({ query }),
+      'application/json',
+      // ignore 409 error: version_conflict_engine_exception, version conflict, required seqNo [255898790], primary term [3]. current document has seqNo [256133002] and primary term [3]
+      [409]
     );
     this.logger.debug(
-      `deleted by query ${table} ${JSON.stringify(query)} in ${Date.now() - start}ms, result: ${JSON.stringify(result)}`
+      `deleted by query ${table} ${JSON.stringify(query)} in ${Date.now() - start}ms, result: ${JSON.stringify(result).substring(0, 500)}`
     );
   }
 
@@ -264,7 +267,8 @@ export class ElasticsearchProvider extends SearchProvider {
     method: 'POST' | 'PUT',
     url: string,
     body: string,
-    contentType = 'application/json'
+    contentType = 'application/json',
+    ignoreErrorStatus?: number[]
   ) {
     const headers = {
       'Content-Type': contentType,
@@ -280,6 +284,10 @@ export class ElasticsearchProvider extends SearchProvider {
       headers,
     });
     const data = await response.json();
+    if (ignoreErrorStatus?.includes(response.status)) {
+      return data;
+    }
+
     // handle error, status >= 400
     // {
     //   "error": {

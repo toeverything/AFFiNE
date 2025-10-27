@@ -6,7 +6,7 @@ import { ResourceController } from '@blocksuite/affine-components/resource';
 import type { ImageBlockModel } from '@blocksuite/affine-model';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   ToolbarRegistryIdentifier,
 } from '@blocksuite/affine-shared/services';
 import { formatSize } from '@blocksuite/affine-shared/utils';
@@ -71,7 +71,7 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }
@@ -143,6 +143,15 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
       width: '100%',
     });
 
+    const alignItemsStyleMap = styleMap({
+      alignItems:
+        this.model.props.textAlign$.value === 'left'
+          ? 'flex-start'
+          : this.model.props.textAlign$.value === 'right'
+            ? 'flex-end'
+            : undefined,
+    });
+
     const resovledState = this.resourceController.resolveStateWith({
       loadingIcon: LoadingIcon({
         strokeColor: cssVarV2('button/pureWhiteText'),
@@ -162,6 +171,7 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
             html`<affine-page-image
               .block=${this}
               .state=${resovledState}
+              style="${alignItemsStyleMap}"
             ></affine-page-image>`,
           () =>
             html`<affine-image-fallback-card

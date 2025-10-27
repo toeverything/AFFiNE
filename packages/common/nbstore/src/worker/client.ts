@@ -87,17 +87,18 @@ export class StoreManagerClient {
     });
   }
 
-  enableBatterySaveMode() {
+  pause() {
     this.connections.forEach(connection => {
-      connection.store.enableBatterySaveMode().catch(err => {
-        console.error('error enabling battery save mode', err);
+      connection.store.pauseSync().catch(err => {
+        console.error('error pausing', err);
       });
     });
   }
-  disableBatterySaveMode() {
+
+  resume() {
     this.connections.forEach(connection => {
-      connection.store.disableBatterySaveMode().catch(err => {
-        console.error('error disabling battery save mode', err);
+      connection.store.resumeSync().catch(err => {
+        console.error('error resuming', err);
       });
     });
   }
@@ -134,6 +135,13 @@ export class StoreClient {
   }
   disableBatterySaveMode(): Promise<void> {
     return this.client.call('sync.disableBatterySaveMode');
+  }
+
+  pauseSync() {
+    return this.client.call('sync.pauseSync');
+  }
+  resumeSync() {
+    return this.client.call('sync.resumeSync');
   }
 }
 

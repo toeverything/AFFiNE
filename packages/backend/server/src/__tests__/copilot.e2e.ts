@@ -30,6 +30,7 @@ import {
   createTestingApp,
   createWorkspace,
   inviteUser,
+  smallestPng,
   TestingApp,
   TestUser,
 } from './utils';
@@ -111,7 +112,7 @@ test.before(async t => {
       m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
       m.overrideProvider(GeminiGenerativeProvider).useClass(
         class MockGenerativeProvider extends MockCopilotProvider {
-          // @ts-expect-error
+          // @ts-expect-error type not typed
           override type: CopilotProviderType = CopilotProviderType.Gemini;
         }
       );
@@ -134,14 +135,16 @@ test.before(async t => {
   t.context.jobs = jobs;
 });
 
-const textPromptName = 'prompt';
-const imagePromptName = 'prompt-image';
+let textPromptName = 'prompt';
+let imagePromptName = 'prompt-image';
+
 test.beforeEach(async t => {
   Sinon.restore();
   const { app, prompt } = t.context;
-  await app.initTestingDB();
   await prompt.onApplicationBootstrap();
-  t.context.u1 = await app.signupV1('u1@affine.pro');
+  t.context.u1 = await app.signupV1();
+  textPromptName = randomUUID().replaceAll('-', '');
+  imagePromptName = randomUUID().replaceAll('-', '');
 
   await prompt.set(textPromptName, 'test', [
     { role: 'system', content: 'hello {{word}}' },
@@ -189,7 +192,7 @@ test('should create session correctly', async t => {
   }
 
   {
-    const u2 = await app.createUser('u2@affine.pro');
+    const u2 = await app.createUser();
     const { id } = await createWorkspace(app);
     await app.login(u2);
     await assertCreateSession(id, '', async x => {
@@ -253,8 +256,8 @@ test('should update session correctly', async t => {
   }
 
   {
-    await app.signupV1('test@affine.pro');
-    const u2 = await app.createUser('u2@affine.pro');
+    await app.signupV1();
+    const u2 = await app.createUser();
     const { id: workspaceId } = await createWorkspace(app);
     const inviteId = await inviteUser(app, workspaceId, u2.email);
     await app.login(u2);
@@ -288,6 +291,7 @@ test('should fork session correctly', async t => {
 
   const assertForkSession = async (
     workspaceId: string,
+    docId: string,
     sessionId: string,
     lastMessageId: string | undefined,
     error: string,
@@ -298,13 +302,7 @@ test('should fork session correctly', async t => {
     }
   ) =>
     await asserter(
-      forkCopilotSession(
-        app,
-        workspaceId,
-        randomUUID(),
-        sessionId,
-        lastMessageId
-      )
+      forkCopilotSession(app, workspaceId, docId, sessionId, lastMessageId)
     );
 
   // prepare session
@@ -328,6 +326,7 @@ test('should fork session correctly', async t => {
     // should be able to fork session
     forkedSessionId = await assertForkSession(
       id,
+      docId,
       sessionId,
       latestMessageId!,
       'should be able to fork session with cloud workspace that user can access'
@@ -338,6 +337,7 @@ test('should fork session correctly', async t => {
   {
     forkedSessionId = await assertForkSession(
       id,
+      docId,
       sessionId,
       undefined,
       'should be able to fork session without latestMessageId'
@@ -346,18 +346,25 @@ test('should fork session correctly', async t => {
 
   // should not be able to fork session with wrong latestMessageId
   {
-    await assertForkSession(id, sessionId, 'wrong-message-id', '', async x => {
-      await t.throwsAsync(
-        x,
-        { instanceOf: Error },
-        'should not able to fork session with wrong latestMessageId'
-      );
-    });
+    await assertForkSession(
+      id,
+      docId,
+      sessionId,
+      'wrong-message-id',
+      '',
+      async x => {
+        await t.throwsAsync(
+          x,
+          { instanceOf: Error },
+          'should not able to fork session with wrong latestMessageId'
+        );
+      }
+    );
   }
 
   {
-    const u2 = await app.signupV1('u2@affine.pro');
-    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+    const u2 = await app.signupV1();
+    await assertForkSession(id, docId, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
         { instanceOf: Error },
@@ -369,7 +376,7 @@ test('should fork session correctly', async t => {
     const inviteId = await inviteUser(app, id, u2.email);
     await app.switchUser(u2);
     await acceptInviteById(app, id, inviteId, false);
-    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+    await assertForkSession(id, docId, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
         { instanceOf: Error },
@@ -387,6 +394,7 @@ test('should fork session correctly', async t => {
     await app.switchUser(u2);
     await assertForkSession(
       id,
+      docId,
       forkedSessionId,
       latestMessageId!,
       'should able to fork a forked session created by other user'
@@ -446,12 +454,31 @@ test('should create message correctly', async t => {
         randomUUID(),
         textPromptName
       );
-      const smallestPng =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
       const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
       const messageId = await createCopilotMessage(
         app,
         sessionId,
+        undefined,
+        undefined,
+        new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
+      );
+      t.truthy(messageId, 'should be able to create message with blob');
+    }
+
+    // with attachments
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+      const messageId = await createCopilotMessage(
+        app,
+        sessionId,
+        undefined,
         undefined,
         undefined,
         [new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })]
@@ -712,7 +739,7 @@ test('should reject message from different session', async t => {
 test('should reject request from different user', async t => {
   const { app, u1 } = t.context;
 
-  const u2 = await app.createUser('u2@affine.pro');
+  const u2 = await app.createUser();
   const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
@@ -789,7 +816,7 @@ test('should be able to list history', async t => {
 test('should reject request that user have not permission', async t => {
   const { app, u1 } = t.context;
 
-  const u2 = await app.createUser('u2@affine.pro');
+  const u2 = await app.createUser();
   const { id: workspaceId } = await createWorkspace(app);
 
   // should reject request that user have not permission

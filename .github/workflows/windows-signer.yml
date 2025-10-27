@@ -29,7 +29,7 @@ jobs:
         shell: cmd
         run: |
           cd ${{ env.ARCHIVE_DIR }}/out
-          signtool sign /tr http://timestamp.sectigo.com /td sha256 /fd sha256 /a ${{ inputs.files }}
+          signtool sign /tr http://timestamp.globalsign.com/tsa/r6advanced1 /td sha256 /fd sha256 /a ${{ inputs.files }}
       - name: zip file
         shell: cmd
         run: |

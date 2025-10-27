@@ -19,10 +19,10 @@ export declare class ApplicationStateChangedSubscriber {
 }
 
 export declare class AudioCaptureSession {
+  stop(): void
   get sampleRate(): number
   get channels(): number
   get actualSampleRate(): number
-  stop(): void
 }
 
 export declare class ShareableContent {
@@ -31,9 +31,9 @@ export declare class ShareableContent {
   constructor()
   static applications(): Array<ApplicationInfo>
   static applicationWithProcessId(processId: number): ApplicationInfo | null
+  static isUsingMicrophone(processId: number): boolean
   static tapAudio(processId: number, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
   static tapGlobalAudio(excludedProcesses: Array<ApplicationInfo> | undefined | null, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
-  static isUsingMicrophone(processId: number): boolean
 }
 
 export declare function decodeAudio(buf: Uint8Array, destSampleRate?: number | undefined | null, filename?: string | undefined | null, signal?: AbortSignal | undefined | null): Promise<Float32Array>

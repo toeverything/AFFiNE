@@ -1,55 +1,56 @@
-import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
 import type { CommentId } from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import { type BlockStdScope, TextSelection } from '@blocksuite/std';
-import type { InlineEditor } from '@blocksuite/std/inline';
-import type { DeltaInsert } from '@blocksuite/store';
+import { TextSelection } from '@blocksuite/std';
+import type { DeltaInsert, Store } from '@blocksuite/store';
 
-export function findAllCommentedTexts(std: BlockStdScope) {
-  const selections: [TextSelection, InlineEditor<AffineTextAttributes>][] = [];
-  std.store.getAllModels().forEach(model => {
-    const inlineEditor = getInlineEditorByModel(std, model);
-    if (!inlineEditor) return;
+export function findAllCommentedTexts(
+  store: Store
+): Map<TextSelection, CommentId> {
+  const result = new Map<TextSelection, CommentId>();
 
-    inlineEditor.mapDeltasInInlineRange(
-      {
-        index: 0,
-        length: inlineEditor.yTextLength,
-      },
-      (delta, rangeIndex) => {
-        if (
-          delta.attributes &&
-          Object.keys(delta.attributes).some(key => key.startsWith('comment-'))
-        ) {
-          selections.push([
-            new TextSelection({
-              from: {
-                blockId: model.id,
-                index: rangeIndex,
-                length: delta.insert.length,
-              },
-              to: null,
-            }),
-            inlineEditor,
-          ]);
-        }
+  store.getAllModels().forEach(model => {
+    if (!model.text) return;
+
+    let index = 0;
+    model.text.toDelta().forEach(delta => {
+      if (!delta.insert) return;
+
+      const length = delta.insert.length;
+
+      if (!delta.attributes) {
+        index += length;
+        return;
       }
-    );
+
+      Object.keys(delta.attributes)
+        .filter(key => key.startsWith('comment-'))
+        .forEach(key => {
+          const commentId = key.replace('comment-', '');
+          const selection = new TextSelection({
+            from: {
+              blockId: model.id,
+              index,
+              length,
+            },
+            to: null,
+          });
+          result.set(selection, commentId);
+        });
+
+      index += length;
+    });
   });
 
-  return selections;
+  return result;
 }
 
-export function findCommentedTexts(std: BlockStdScope, commentId: CommentId) {
-  return findAllCommentedTexts(std).filter(([selection, inlineEditor]) => {
-    const deltas = inlineEditor.getDeltasByInlineRange({
-      index: selection.from.index,
-      length: selection.from.length,
-    });
-    return deltas
-      .flatMap(([delta]) => extractCommentIdFromDelta(delta))
-      .includes(commentId);
-  });
+export function findCommentedTexts(
+  store: Store,
+  commentId: CommentId
+): TextSelection[] {
+  return [...findAllCommentedTexts(store).entries()]
+    .filter(([_, id]) => id === commentId)
+    .map(([selection]) => selection);
 }
 
 export function extractCommentIdFromDelta(

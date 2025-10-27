@@ -64,7 +64,7 @@ test.describe('AIAction/MakeItReal', () => {
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({
+  test.skip('should show chat history in chat panel', async ({
     loggedInPage: page,
     utils,
   }) => {

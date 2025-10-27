@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { OneMB } from '../../base';
 import type { ChatPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers';
 
@@ -16,6 +15,23 @@ const zMaybeString = z.preprocess(val => {
   return s === '' || s == null ? undefined : s;
 }, z.string().min(1).optional());
 
+const ToolsConfigSchema = z.preprocess(
+  val => {
+    // if val is a string, try to parse it as JSON
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return {};
+      }
+    }
+    return val || {};
+  },
+  z.record(z.enum(['searchWorkspace', 'readingDocs']), z.boolean()).default({})
+);
+
+export type ToolsConfig = z.infer<typeof ToolsConfigSchema>;
+
 export const ChatQuerySchema = z
   .object({
     messageId: zMaybeString,
@@ -23,15 +39,25 @@ export const ChatQuerySchema = z
     retry: zBool,
     reasoning: zBool,
     webSearch: zBool,
+    toolsConfig: ToolsConfigSchema,
   })
   .catchall(z.string())
   .transform(
-    ({ messageId, modelId, retry, reasoning, webSearch, ...params }) => ({
+    ({
       messageId,
       modelId,
       retry,
       reasoning,
       webSearch,
+      toolsConfig,
+      ...params
+    }) => ({
+      messageId,
+      modelId,
+      retry,
+      reasoning,
+      webSearch,
+      toolsConfig,
       params,
     })
   );
@@ -46,12 +72,19 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatHistorySchema = z
   .object({
+    userId: z.string(),
     sessionId: z.string(),
     workspaceId: z.string(),
     docId: z.string().nullable(),
+    parentSessionId: z.string().nullable(),
     pinned: z.boolean(),
     title: z.string().nullable(),
+
     action: z.string().nullable(),
+    model: z.string(),
+    optionalModels: z.array(z.string()),
+    promptName: z.string(),
+
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
@@ -69,32 +102,26 @@ export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
 
 // ======== Chat Session ========
 
-export interface ChatSessionOptions {
-  // connect ids
-  userId: string;
-  workspaceId: string;
-  docId: string | null;
-  promptName: string;
-  pinned: boolean;
+export type ChatSessionOptions = Pick<
+  ChatHistory,
+  'userId' | 'workspaceId' | 'docId' | 'promptName' | 'pinned'
+> & {
   reuseLatestChat?: boolean;
-}
+};
 
-export interface ChatSessionForkOptions
-  extends Omit<ChatSessionOptions, 'pinned' | 'promptName'> {
-  sessionId: string;
+export type ChatSessionForkOptions = Pick<
+  ChatHistory,
+  'userId' | 'sessionId' | 'workspaceId' | 'docId'
+> & {
   latestMessageId?: string;
-}
+};
 
-export interface ChatSessionState
-  extends Omit<ChatSessionOptions, 'promptName'> {
-  title: string | null;
-  // connect ids
-  sessionId: string;
-  parentSessionId: string | null;
-  // states
+export type ChatSessionState = Pick<
+  ChatHistory,
+  'userId' | 'sessionId' | 'workspaceId' | 'docId' | 'messages'
+> & {
   prompt: ChatPrompt;
-  messages: ChatMessage[];
-}
+};
 
 export type CopilotContextFile = {
   id: string; // fileId
@@ -102,5 +129,3 @@ export type CopilotContextFile = {
   // embedding status
   status: 'in_progress' | 'completed' | 'failed';
 };
-
-export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;

@@ -17,6 +17,7 @@ extension IntelligentContext {
       (.currentWorkspaceId, .getCurrentWorkspaceId),
       (.currentServerBaseUrl, .getCurrentServerBaseUrl),
       (.currentI18nLocale, .getCurrentI18nLocale),
+      (.currentAiButtonFeatureFlag, .getAiButtonFeatureFlag),
     ]
     for (key, script) in keysAndScripts {
       DispatchQueue.main.async {

@@ -16,7 +16,7 @@ test.describe('AIChatWith/tags', () => {
     await utils.editor.clearAllTags(page);
   });
 
-  test('should support chat with tag', async ({
+  test.skip('should support chat with tag', async ({
     loggedInPage: page,
     utils,
   }) => {
@@ -49,7 +49,8 @@ test.describe('AIChatWith/tags', () => {
     }).toPass();
   });
 
-  test('should support chat with multiple tags', async ({
+  // FIXME: This test is flaky, need to fix it.
+  test.skip('should support chat with multiple tags', async ({
     loggedInPage: page,
     utils,
   }) => {

@@ -10,6 +10,7 @@ export enum ServerFeature {
   OAuth = 'oauth',
   Indexer = 'indexer',
   Comment = 'comment',
+  LocalWorkspace = 'local_workspace',
 }
 
 registerEnumType(ServerFeature, {
@@ -42,6 +43,8 @@ export class ServerConfigType {
 
   @Field(() => Boolean, {
     description: 'Whether allow guest users to create demo workspaces.',
+    deprecationReason:
+      'This field is deprecated, please use `features` instead. Will be removed in 0.25.0',
   })
   allowGuestDemoWorkspace!: boolean;
 }

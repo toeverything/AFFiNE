@@ -1,6 +1,13 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
+import type { AppThemeService } from '@affine/core/modules/theme';
+import type {
+  ContextEmbedStatus,
+  CopilotChatHistoryFragment,
+} from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -12,8 +19,10 @@ import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { throttle } from 'lodash-es';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
+import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { AIProvider } from '../../provider';
-import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { ChatContextValue } from '../ai-chat-content';
 import type {
   AINetworkSearchConfig,
@@ -25,6 +34,7 @@ import {
   type ChatAction,
   type ChatMessage,
   type HistoryMessage,
+  isChatMessage,
 } from '../ai-chat-messages';
 
 const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
@@ -35,6 +45,11 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   status: 'idle',
   error: null,
   markdown: '',
+  snapshot: null,
+  attachments: [],
+  combinedElementsMarkdown: null,
+  docs: [],
+  html: null,
 };
 
 export class PlaygroundChat extends SignalWatcher(
@@ -75,7 +90,7 @@ export class PlaygroundChat extends SignalWatcher(
 
       ai-chat-messages {
         flex: 1;
-        overflow-y: hidden;
+        overflow-y: auto;
       }
 
       .chat-panel-hints {
@@ -129,7 +144,7 @@ export class PlaygroundChat extends SignalWatcher(
   accessor doc!: Store;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
@@ -156,6 +171,21 @@ export class PlaygroundChat extends SignalWatcher(
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe: (() => Promise<void>) | undefined;
+
+  @property({ attribute: false })
   accessor addChat!: () => Promise<void>;
 
   @state()
@@ -172,6 +202,21 @@ export class PlaygroundChat extends SignalWatcher(
 
   // request counter to track the latest request
   private _updateHistoryCounter = 0;
+
+  get messages() {
+    return this.chatContextValue.messages.filter(item => {
+      return (
+        isChatMessage(item) ||
+        item.messages?.length === 3 ||
+        (HISTORY_IMAGE_ACTIONS.includes(item.action) &&
+          item.messages?.length === 2)
+      );
+    });
+  }
+
+  get showActions() {
+    return false;
+  }
 
   private readonly _initPanel = async () => {
     const userId = (await AIProvider.userInfo)?.id;
@@ -193,7 +238,7 @@ export class PlaygroundChat extends SignalWatcher(
 
     const currentRequest = ++this._updateHistoryCounter;
 
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     const [histories, actions] = await Promise.all([
       sessionId
         ? AIProvider.histories.chats(
@@ -202,7 +247,7 @@ export class PlaygroundChat extends SignalWatcher(
             this.doc.id
           )
         : Promise.resolve([]),
-      this.doc.id
+      this.doc.id && this.showActions
         ? AIProvider.histories.actions(this.doc.workspace.id, this.doc.id)
         : Promise.resolve([]),
     ]);
@@ -229,7 +274,7 @@ export class PlaygroundChat extends SignalWatcher(
     this._scrollToEnd();
   };
 
-  private readonly _updateEmbeddingProgress = (
+  private readonly onEmbeddingProgressChange = (
     count: Record<ContextEmbedStatus, number>
   ) => {
     const total = count.finished + count.processing + count.failed;
@@ -287,9 +332,9 @@ export class PlaygroundChat extends SignalWatcher(
           <affine-tooltip>Add chat</affine-tooltip>
         </div>
         <ai-history-clear
-          .host=${this.host}
           .doc=${this.doc}
           .session=${this.session}
+          .notificationService=${this.notificationService}
           .onHistoryCleared=${this._updateHistory}
           .chatContextValue=${this.chatContextValue}
         ></ai-history-clear>
@@ -307,8 +352,12 @@ export class PlaygroundChat extends SignalWatcher(
         .updateContext=${this.updateContext}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .affineThemeService=${this.affineThemeService}
+        .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
+        .messages=${this.messages}
       ></ai-chat-messages>
       <ai-chat-composer
         .host=${this.host}
@@ -318,12 +367,17 @@ export class PlaygroundChat extends SignalWatcher(
         .createSession=${this._createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .updateEmbeddingProgress=${this._updateEmbeddingProgress}
+        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div>`;
   }

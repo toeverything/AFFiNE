@@ -637,6 +637,11 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Workspace id is required to update team subscription.',
   },
+  managed_by_app_store_or_play: {
+    type: 'action_forbidden',
+    message:
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
+  },
 
   // Copilot errors
   copilot_session_not_found: {
@@ -653,11 +658,18 @@ export const USER_FRIENDLY_ERRORS = {
   },
   no_copilot_provider_available: {
     type: 'internal_server_error',
-    message: `No copilot provider available.`,
+    args: { modelId: 'string' },
+    message: ({ modelId }) => `No copilot provider available: ${modelId}`,
   },
   copilot_failed_to_generate_text: {
     type: 'internal_server_error',
     message: `Failed to generate text.`,
+  },
+  copilot_failed_to_generate_embedding: {
+    type: 'internal_server_error',
+    args: { provider: 'string', message: 'string' },
+    message: ({ provider, message }) =>
+      `Failed to generate embedding with ${provider}: ${message}`,
   },
   copilot_failed_to_create_message: {
     type: 'internal_server_error',

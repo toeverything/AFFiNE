@@ -57,7 +57,7 @@ export type CanvasLayer = BaseLayer<GfxPrimitiveElementModel> & {
   type: 'canvas';
 
   /**
-   * The z-index of canvas layer.
+   * The z-index of the first element in this canvas layer.
    *
    * A canvas layer renders all the elements in a single canvas,
    *  this property is used to render the canvas with correct z-index.
@@ -165,8 +165,7 @@ export class LayerManager extends GfxExtension {
         ];
         curLayer.zIndex = currentCSSZindex;
         layers.push(curLayer as LayerManager['layers'][number]);
-        currentCSSZindex +=
-          curLayer.type === 'block' ? curLayer.elements.length : 1;
+        currentCSSZindex += curLayer.elements.length;
       }
     };
     const addLayer = (type: 'canvas' | 'block') => {

@@ -4,9 +4,12 @@ import {
 } from '@blocksuite/affine-ext-loader';
 
 import { effects } from './effects';
-import { MindmapElementRendererExtension } from './element-renderer';
 import { MindMapIndicatorOverlay } from './indicator-overlay';
 import { MindMapDragExtension } from './interactivity';
+import {
+  MindmapDomRendererExtension,
+  MindmapElementRendererExtension,
+} from './renderer';
 import {
   mindmapToolbarExtension,
   shapeMindmapToolbarExtension,
@@ -25,6 +28,7 @@ export class MindmapViewExtension extends ViewExtensionProvider {
   override setup(context: ViewExtensionContext) {
     super.setup(context);
     context.register(MindmapElementRendererExtension);
+    context.register(MindmapDomRendererExtension);
     context.register(mindMapSeniorTool);
     context.register(mindmapToolbarExtension);
     context.register(shapeMindmapToolbarExtension);

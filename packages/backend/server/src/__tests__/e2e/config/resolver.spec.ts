@@ -21,3 +21,13 @@ e2e('should comment feature enabled by default', async t => {
     JSON.stringify(serverConfig, null, 2)
   );
 });
+
+e2e('should enable local workspace feature by default', async t => {
+  const { serverConfig } = await app.gql({ query: serverConfigQuery });
+
+  t.is(
+    serverConfig.features.includes(ServerFeature.LocalWorkspace),
+    true,
+    JSON.stringify(serverConfig, null, 2)
+  );
+});

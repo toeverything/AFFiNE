@@ -252,7 +252,7 @@ async function insertBelowBlock(
   return true;
 }
 
-const PAGE_INSERT = {
+export const PAGE_INSERT = {
   icon: InsertBelowIcon({ width: '20px', height: '20px' }),
   title: 'Insert',
   showWhen: (host: EditorHost) => {
@@ -291,7 +291,7 @@ const PAGE_INSERT = {
   },
 };
 
-const EDGELESS_INSERT = {
+export const EDGELESS_INSERT = {
   ...PAGE_INSERT,
   handler: async (
     host: EditorHost,
@@ -469,7 +469,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
 };
 
-const SAVE_AS_DOC = {
+export const SAVE_AS_DOC = {
   icon: PageIcon({ width: '20px', height: '20px' }),
   title: 'Save as doc',
   showWhen: () => true,

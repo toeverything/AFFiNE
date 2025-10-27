@@ -51,7 +51,11 @@ import {
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
 import { AIProvider } from '../../provider';
 import { getAIPanelWidget } from '../../utils/ai-widgets';
-import { mindMapToMarkdown } from '../../utils/edgeless';
+import {
+  getEdgelessCopilotWidget,
+  mindMapToMarkdown,
+} from '../../utils/edgeless';
+import { extractSelectedContent } from '../../utils/extract';
 import { canvasToBlob, randomSeed } from '../../utils/image';
 import {
   getCopilotSelectedElems,
@@ -108,25 +112,32 @@ const othersGroup: AIItemGroupConfig = {
   name: 'others',
   items: [
     {
-      name: 'Continue with AI',
+      name: 'Continue in AI Chat',
       testId: 'action-continue-with-ai',
       icon: CommentIcon({ width: '20px', height: '20px' }),
       showWhen: () => true,
       handler: host => {
         const panel = getAIPanelWidget(host);
-        AIProvider.slots.requestOpenWithChat.next({
-          host,
-          mode: 'edgeless',
-          autoSelect: true,
-        });
+        const edgelessCopilot = getEdgelessCopilotWidget(host);
+        extractSelectedContent(host)
+          .then(context => {
+            AIProvider.slots.requestOpenWithChat.next({
+              host,
+              mode: 'edgeless',
+              autoSelect: true,
+              context,
+            });
+          })
+          .catch(console.error);
+        edgelessCopilot.hideCopilotPanel();
         panel.hide();
       },
     },
   ],
 };
 
-const editGroup: AIItemGroupConfig = {
-  name: 'edit with ai',
+const editTextGroup: AIItemGroupConfig = {
+  name: 'edit text',
   items: [
     {
       name: 'Translate to',
@@ -174,8 +185,8 @@ const editGroup: AIItemGroupConfig = {
   ],
 };
 
-const draftGroup: AIItemGroupConfig = {
-  name: 'draft with ai',
+const draftFromTextGroup: AIItemGroupConfig = {
+  name: 'draft from text',
   items: [
     {
       name: 'Write an article about this',
@@ -215,8 +226,46 @@ const draftGroup: AIItemGroupConfig = {
   ],
 };
 
-const reviewGroup: AIItemGroupConfig = {
-  name: 'review with ai',
+const reviewImageGroup: AIItemGroupConfig = {
+  name: 'review image',
+  items: [
+    {
+      name: 'Explain this image',
+      icon: PenIcon(),
+      testId: 'action-explain-image',
+      showWhen: imageOnlyShowWhen,
+      handler: actionToHandler(
+        'explainImage',
+        AIStarIconWithAnimation,
+        undefined,
+        imageCustomInput
+      ),
+    },
+  ],
+};
+
+const reviewCodeGroup: AIItemGroupConfig = {
+  name: 'review code',
+  items: [
+    {
+      name: 'Explain this code',
+      icon: ExplainIcon(),
+      testId: 'action-explain-code',
+      showWhen: noteWithCodeBlockShowWen,
+      handler: actionToHandler('explainCode', AIStarIconWithAnimation),
+    },
+    {
+      name: 'Check code error',
+      icon: ExplainIcon(),
+      testId: 'action-check-code-error',
+      showWhen: noteWithCodeBlockShowWen,
+      handler: actionToHandler('checkCodeErrors', AIStarIconWithAnimation),
+    },
+  ],
+};
+
+const reviewTextGroup: AIItemGroupConfig = {
+  name: 'review text',
   items: [
     {
       name: 'Fix spelling',
@@ -232,32 +281,7 @@ const reviewGroup: AIItemGroupConfig = {
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('improveGrammar', AIStarIconWithAnimation),
     },
-    {
-      name: 'Explain this image',
-      icon: PenIcon(),
-      testId: 'action-explain-image',
-      showWhen: imageOnlyShowWhen,
-      handler: actionToHandler(
-        'explainImage',
-        AIStarIconWithAnimation,
-        undefined,
-        imageCustomInput
-      ),
-    },
-    {
-      name: 'Explain this code',
-      icon: ExplainIcon(),
-      testId: 'action-explain-code',
-      showWhen: noteWithCodeBlockShowWen,
-      handler: actionToHandler('explainCode', AIStarIconWithAnimation),
-    },
-    {
-      name: 'Check code error',
-      icon: ExplainIcon(),
-      testId: 'action-check-code-error',
-      showWhen: noteWithCodeBlockShowWen,
-      handler: actionToHandler('checkCodeErrors', AIStarIconWithAnimation),
-    },
+
     {
       name: 'Explain selection',
       icon: SelectionIcon({ width: '20px', height: '20px' }),
@@ -268,8 +292,8 @@ const reviewGroup: AIItemGroupConfig = {
   ],
 };
 
-const generateGroup: AIItemGroupConfig = {
-  name: 'generate with ai',
+const generateFromTextGroup: AIItemGroupConfig = {
+  name: 'generate from text',
   items: [
     {
       name: 'Summarize',
@@ -285,6 +309,13 @@ const generateGroup: AIItemGroupConfig = {
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('createHeadings', AIPenIconWithAnimation),
       beta: true,
+    },
+    {
+      name: 'Generate outline',
+      icon: PenIcon(),
+      testId: 'action-generate-outline',
+      showWhen: noteBlockOrTextShowWhen,
+      handler: actionToHandler('writeOutline', AIPenIconWithAnimation),
     },
     {
       name: 'Generate an image',
@@ -360,13 +391,6 @@ const generateGroup: AIItemGroupConfig = {
           };
         }
       ),
-    },
-    {
-      name: 'Generate outline',
-      icon: PenIcon(),
-      testId: 'action-generate-outline',
-      showWhen: noteBlockOrTextShowWhen,
-      handler: actionToHandler('writeOutline', AIPenIconWithAnimation),
     },
     {
       name: 'Expand from this mind map node',
@@ -547,9 +571,11 @@ const generateGroup: AIItemGroupConfig = {
 };
 
 export const edgelessAIGroups: AIItemGroupConfig[] = [
-  reviewGroup,
-  editGroup,
-  generateGroup,
-  draftGroup,
+  reviewTextGroup,
+  reviewCodeGroup,
+  reviewImageGroup,
+  editTextGroup,
+  generateFromTextGroup,
+  draftFromTextGroup,
   othersGroup,
 ];

@@ -91,7 +91,7 @@ export type ListSessionOptions = Pick<
   Partial<ChatSession>,
   'sessionId' | 'workspaceId' | 'docId' | 'pinned'
 > & {
-  userId: string;
+  userId: string | undefined;
   action?: boolean;
   fork?: boolean;
   limit?: number;
@@ -265,26 +265,31 @@ export class CopilotSessionModel extends BaseModel {
       userId: true,
       workspaceId: true,
       docId: true,
-      pinned: true,
       parentSessionId: true,
+      pinned: true,
       title: true,
+      promptName: true,
+      tokenCost: true,
+      createdAt: true,
+      updatedAt: true,
       messages: {
         select: {
           id: true,
           role: true,
           content: true,
-          streamObjects: true,
           attachments: true,
+          streamObjects: true,
           params: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'asc' },
       },
-      promptName: true,
     });
   }
 
-  async list(options: ListSessionOptions) {
+  private getListConditions(
+    options: ListSessionOptions
+  ): Prisma.AiSessionWhereInput {
     const { userId, sessionId, workspaceId, docId, action, fork } = options;
 
     function getNullCond<T>(
@@ -330,8 +335,18 @@ export class CopilotSessionModel extends BaseModel {
       });
     }
 
+    return { OR: conditions };
+  }
+
+  async count(options: ListSessionOptions) {
+    return await this.db.aiSession.count({
+      where: this.getListConditions(options),
+    });
+  }
+
+  async list(options: ListSessionOptions) {
     return await this.db.aiSession.findMany({
-      where: { OR: conditions },
+      where: this.getListConditions(options),
       select: {
         id: true,
         userId: true,
@@ -351,8 +366,8 @@ export class CopilotSessionModel extends BaseModel {
                 role: true,
                 content: true,
                 attachments: true,
-                params: true,
                 streamObjects: true,
+                params: true,
                 createdAt: true,
               },
               orderBy: {
@@ -381,7 +396,10 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async update(options: UpdateChatSessionOptions): Promise<string> {
+  async update(
+    options: UpdateChatSessionOptions,
+    internalCall = false
+  ): Promise<string> {
     const { userId, sessionId, docId, promptName, pinned, title } = options;
     const session = await this.getExists(
       sessionId,
@@ -400,14 +418,16 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     // not allow to update action session
-    if (session.prompt.action) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update action: ${session.id}`
-      );
-    } else if (docId && session.parentSessionId) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update docId for forked session: ${session.id}`
-      );
+    if (!internalCall) {
+      if (session.prompt.action) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update action: ${session.id}`
+        );
+      } else if (docId && session.parentSessionId) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update docId for forked session: ${session.id}`
+        );
+      }
     }
 
     if (promptName) {
@@ -444,27 +464,19 @@ export class CopilotSessionModel extends BaseModel {
         docId: options.docId,
         deletedAt: null,
       },
-      select: { id: true, prompt: true },
+      select: { id: true },
     });
+
     const sessionIds = sessions.map(({ id }) => id);
     // cleanup all messages
     await this.db.aiSessionMessage.deleteMany({
       where: { sessionId: { in: sessionIds } },
     });
 
-    // only mark action session as deleted
-    // chat session always can be reuse
-    const actionIds = sessions
-      .filter(({ prompt }) => !!prompt.action)
-      .map(({ id }) => id);
-
-    // 标记 action session 为已删除
-    if (actionIds.length > 0) {
-      await this.db.aiSession.updateMany({
-        where: { id: { in: actionIds } },
-        data: { pinned: false, deletedAt: new Date() },
-      });
-    }
+    await this.db.aiSession.updateMany({
+      where: { id: { in: sessionIds } },
+      data: { pinned: false, deletedAt: new Date() },
+    });
 
     return sessionIds;
   }
@@ -566,5 +578,57 @@ export class CopilotSessionModel extends BaseModel {
     return sessions
       .map(({ messageCost, prompt: { action } }) => (action ? 1 : messageCost))
       .reduce((prev, cost) => prev + cost, 0);
+  }
+
+  @Transactional()
+  async cleanupEmptySessions(earlyThen: Date) {
+    // delete never used sessions
+    const { count: removed } = await this.db.aiSession.deleteMany({
+      where: {
+        messageCost: 0,
+        deletedAt: null,
+        // filter session updated more than 24 hours ago
+        updatedAt: { lt: earlyThen },
+      },
+    });
+
+    // mark empty sessions as deleted
+    const { count: cleaned } = await this.db.aiSession.updateMany({
+      where: {
+        deletedAt: null,
+        messages: { none: {} },
+        // filter session updated more than 24 hours ago
+        updatedAt: { lt: earlyThen },
+      },
+      data: {
+        deletedAt: new Date(),
+        pinned: false,
+      },
+    });
+
+    return { removed, cleaned };
+  }
+
+  @Transactional()
+  async toBeGenerateTitle() {
+    const sessions = await this.db.aiSession
+      .findMany({
+        where: {
+          title: null,
+          deletedAt: null,
+          messages: { some: {} },
+          // only generate titles for non-actions sessions
+          prompt: { action: null },
+        },
+        select: {
+          id: true,
+          // count assistant messages
+          _count: { select: { messages: { where: { role: 'assistant' } } } },
+        },
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(s => s.filter(s => s._count.messages > 0));
+
+    return sessions;
   }
 }

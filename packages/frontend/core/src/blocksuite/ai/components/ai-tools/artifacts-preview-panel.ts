@@ -5,13 +5,15 @@ import { EmptyIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
+import type { AIChatContent } from '../ai-chat-content';
+
 function getChatPanel(target: HTMLElement) {
-  return target.closest('chat-panel');
+  return target.closest('ai-chat-content') as AIChatContent;
 }
 
 export const isPreviewPanelOpen = (target: HTMLElement) => {
   const chatPanel = getChatPanel(target);
-  return chatPanel?.showPreviewPanel ?? false;
+  return chatPanel?.isPreviewPanelOpen ?? false;
 };
 
 export const renderPreviewPanel = (
@@ -26,13 +28,11 @@ export const renderPreviewPanel = (
     return;
   }
 
-  chatPanel.showPreviewPanel = true;
-
   const preview = html`<artifact-preview-panel
     .content=${content}
     .controls=${controls ?? nothing}
   ></artifact-preview-panel>`;
-  chatPanel.previewPanelContent = preview;
+  chatPanel.openPreviewPanel(preview);
 };
 
 export const closePreviewPanel = (target: HTMLElement) => {
@@ -43,7 +43,7 @@ export const closePreviewPanel = (target: HTMLElement) => {
     return;
   }
 
-  chatPanel.showPreviewPanel = false;
+  chatPanel.closePreviewPanel();
 };
 
 export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
@@ -62,7 +62,7 @@ export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
       background-color: ${unsafeCSSVarV2('layer/background/overlayPanel')};
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       height: 100%;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
     .artifact-panel-header {
@@ -71,9 +71,6 @@ export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
       justify-content: flex-end;
       padding: 0 12px;
       height: 52px;
-      position: sticky;
-      z-index: 1;
-      top: 0;
       background: ${unsafeCSSVarV2('layer/background/overlayPanel')};
     }
 
@@ -105,7 +102,9 @@ export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
     }
 
     .artifact-panel-content {
+      overflow-y: auto;
       height: calc(100% - 52px);
+      position: relative;
     }
 
     .artifact-panel-close:hover {

@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { isNothingSelectedCommand } from '../../../commands/selection/is-nothing-selected';
 import { ImageSelection } from '../../../selection';
-import { affine } from '../../helpers/affine-template';
+import { affine } from '../../../test-utils';
 
 describe('commands/selection', () => {
   describe('isNothingSelectedCommand', () => {

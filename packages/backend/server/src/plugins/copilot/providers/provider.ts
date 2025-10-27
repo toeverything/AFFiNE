@@ -14,12 +14,16 @@ import { AccessController } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
+import { PromptService } from '../prompt';
 import {
+  buildBlobContentGetter,
   buildContentGetter,
   buildDocContentGetter,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  createBlobReadTool,
   createCodeArtifactTool,
+  createConversationSummaryTool,
   createDocComposeTool,
   createDocEditTool,
   createDocKeywordSearchTool,
@@ -27,6 +31,7 @@ import {
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
+  createSectionEditTool,
 } from '../tools';
 import { CopilotProviderFactory } from './factory';
 import {
@@ -50,6 +55,8 @@ import {
 @Injectable()
 export abstract class CopilotProvider<C = any> {
   protected readonly logger = new Logger(this.constructor.name);
+  protected readonly MAX_STEPS = 20;
+  protected onlineModelList: string[] = [];
   abstract readonly type: CopilotProviderType;
   abstract readonly models: CopilotProviderModel[];
   abstract configured(): boolean;
@@ -77,10 +84,17 @@ export abstract class CopilotProvider<C = any> {
   protected setup() {
     if (this.configured()) {
       this.factory.register(this);
+      if (env.selfhosted) {
+        this.refreshOnlineModels().catch(e =>
+          this.logger.error('Failed to refresh online models', e)
+        );
+      }
     } else {
       this.factory.unregister(this);
     }
   }
+
+  async refreshOnlineModels() {}
 
   private findValidModel(
     cond: ModelFullConditions
@@ -92,9 +106,16 @@ export abstract class CopilotProvider<C = any> {
         inputTypes.every(type => cap.input.includes(type)));
 
     if (modelId) {
-      return this.models.find(
+      const hasOnlineModel = this.onlineModelList.includes(modelId);
+
+      const model = this.models.find(
         m => m.id === modelId && m.capabilities.some(matcher)
       );
+
+      if (model) return model;
+      // allow online model without capabilities check
+      if (hasOnlineModel) return { id: modelId, capabilities: [] };
+      return undefined;
     }
     if (!outputType) return undefined;
 
@@ -125,7 +146,7 @@ export abstract class CopilotProvider<C = any> {
   protected getProviderSpecificTools(
     _toolName: CopilotChatTools,
     _model: string
-  ): [string, Tool] | undefined {
+  ): [string, Tool?] | undefined {
     return;
   }
 
@@ -138,32 +159,66 @@ export abstract class CopilotProvider<C = any> {
     if (options?.tools?.length) {
       this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
       const ac = this.moduleRef.get(AccessController, { strict: false });
+      const context = this.moduleRef.get(CopilotContextService, {
+        strict: false,
+      });
+      const docReader = this.moduleRef.get(DocReader, { strict: false });
+      const models = this.moduleRef.get(Models, { strict: false });
+      const prompt = this.moduleRef.get(PromptService, {
+        strict: false,
+      });
 
       for (const tool of options.tools) {
         const toolDef = this.getProviderSpecificTools(tool, model);
         if (toolDef) {
-          tools[toolDef[0]] = toolDef[1];
+          // allow provider prevent tool creation
+          if (toolDef[1]) {
+            tools[toolDef[0]] = toolDef[1];
+          }
           continue;
         }
         switch (tool) {
+          case 'blobRead': {
+            const docContext = options.session
+              ? await context.getBySessionId(options.session)
+              : null;
+            const getBlobContent = buildBlobContentGetter(ac, docContext);
+            tools.blob_read = createBlobReadTool(
+              getBlobContent.bind(null, options)
+            );
+            break;
+          }
+          case 'codeArtifact': {
+            tools.code_artifact = createCodeArtifactTool(prompt, this.factory);
+            break;
+          }
+          case 'conversationSummary': {
+            tools.conversation_summary = createConversationSummaryTool(
+              options.session,
+              prompt,
+              this.factory
+            );
+            break;
+          }
           case 'docEdit': {
-            const doc = this.moduleRef.get(DocReader, { strict: false });
-            const getDocContent = buildContentGetter(ac, doc);
+            const getDocContent = buildContentGetter(ac, docReader);
             tools.doc_edit = createDocEditTool(
               this.factory,
+              prompt,
               getDocContent.bind(null, options)
             );
             break;
           }
           case 'docSemanticSearch': {
-            const context = this.moduleRef.get(CopilotContextService, {
-              strict: false,
-            });
-
             const docContext = options.session
               ? await context.getBySessionId(options.session)
               : null;
-            const searchDocs = buildDocSearchGetter(ac, context, docContext);
+            const searchDocs = buildDocSearchGetter(
+              ac,
+              context,
+              docContext,
+              models
+            );
             tools.doc_semantic_search = createDocSemanticSearchTool(
               searchDocs.bind(null, options)
             );
@@ -171,9 +226,6 @@ export abstract class CopilotProvider<C = any> {
           }
           case 'docKeywordSearch': {
             if (this.AFFiNEConfig.indexer.enabled) {
-              const ac = this.moduleRef.get(AccessController, {
-                strict: false,
-              });
               const indexerService = this.moduleRef.get(IndexerService, {
                 strict: false,
               });
@@ -188,9 +240,6 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'docRead': {
-            const ac = this.moduleRef.get(AccessController, { strict: false });
-            const models = this.moduleRef.get(Models, { strict: false });
-            const docReader = this.moduleRef.get(DocReader, { strict: false });
             const getDoc = buildDocContentGetter(ac, docReader, models);
             tools.doc_read = createDocReadTool(getDoc.bind(null, options));
             break;
@@ -201,11 +250,11 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'docCompose': {
-            tools.doc_compose = createDocComposeTool();
+            tools.doc_compose = createDocComposeTool(prompt, this.factory);
             break;
           }
-          case 'codeArtifact': {
-            tools.code_artifact = createCodeArtifactTool();
+          case 'sectionEdit': {
+            tools.section_edit = createSectionEditTool(prompt, this.factory);
             break;
           }
         }

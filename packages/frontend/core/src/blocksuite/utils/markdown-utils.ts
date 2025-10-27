@@ -1,16 +1,15 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
-import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import {
   defaultImageProxyMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
-  MixTextAdapter,
   pasteMiddleware,
   PlainTextAdapter,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
 import {
+  BlockStdScope,
   type EditorHost,
   type TextRangePoint,
   TextSelection,
@@ -19,7 +18,6 @@ import type {
   BlockModel,
   BlockSnapshot,
   DraftModel,
-  Schema,
   Slice,
   SliceSnapshot,
   Store,
@@ -27,6 +25,43 @@ import type {
 } from '@blocksuite/affine/store';
 import { toDraftModel, Transformer } from '@blocksuite/affine/store';
 import { Doc as YDoc } from 'yjs';
+
+import { getStoreManager } from '../manager/store';
+
+interface MarkdownWorkspace {
+  collection: WorkspaceImpl;
+  std: BlockStdScope;
+}
+
+let markdownWorkspace: MarkdownWorkspace | null = null;
+
+const getMarkdownWorkspace = (
+  featureFlagService?: FeatureFlagService
+): MarkdownWorkspace => {
+  if (markdownWorkspace) {
+    return markdownWorkspace;
+  }
+
+  const collection = new WorkspaceImpl({
+    rootDoc: new YDoc({ guid: 'markdownToDoc' }),
+    featureFlagService: featureFlagService,
+  });
+  collection.meta.initialize();
+
+  const mockDoc = collection.createDoc('mock-id');
+  const std = new BlockStdScope({
+    store: mockDoc.getStore(),
+    extensions: getStoreManager().config.init().value.get('store'),
+  });
+
+  markdownWorkspace = {
+    collection,
+    std,
+  };
+
+  return markdownWorkspace;
+};
+
 const updateSnapshotText = (
   point: TextRangePoint,
   snapshot: BlockSnapshot,
@@ -110,7 +145,7 @@ export const markdownToSnapshot = async (
     ? [defaultImageProxyMiddleware, pasteMiddleware(host.std)]
     : [defaultImageProxyMiddleware];
   const transformer = store.getTransformer(middlewares);
-  const markdownAdapter = new MixTextAdapter(transformer, store.provider);
+  const markdownAdapter = new MarkdownAdapter(transformer, store.provider);
   const payload = {
     file: markdown,
     assets: transformer.assetsManager,
@@ -118,10 +153,31 @@ export const markdownToSnapshot = async (
     pageId: store.id,
   };
 
-  const snapshot = await markdownAdapter.toSliceSnapshot(payload);
+  const page = await markdownAdapter.toDoc(payload);
+
+  if (page) {
+    const pageSnapshot = transformer.docToSnapshot(page);
+    if (pageSnapshot) {
+      const snapshot: SliceSnapshot = {
+        type: 'slice',
+        content: [
+          pageSnapshot.blocks.children.find(
+            b => b.flavour === 'affine:note'
+          ) as BlockSnapshot,
+        ],
+        workspaceId: payload.workspaceId,
+        pageId: payload.pageId,
+      };
+
+      return {
+        snapshot,
+        transformer,
+      };
+    }
+  }
 
   return {
-    snapshot,
+    snapshot: null,
     transformer,
   };
 };
@@ -131,7 +187,8 @@ export async function insertFromMarkdown(
   markdown: string,
   doc: Store,
   parent?: string,
-  index?: number
+  index?: number,
+  id?: string
 ) {
   const { snapshot, transformer } = await markdownToSnapshot(
     markdown,
@@ -144,6 +201,9 @@ export async function insertFromMarkdown(
   const models: BlockModel[] = [];
   for (let i = 0; i < snapshots.length; i++) {
     const blockSnapshot = snapshots[i];
+    if (snapshots.length === 1 && id) {
+      blockSnapshot.id = id;
+    }
     const model = await transformer.snapshotToBlock(
       blockSnapshot,
       doc,
@@ -158,21 +218,36 @@ export async function insertFromMarkdown(
   return models;
 }
 
+export async function replaceFromMarkdown(
+  host: EditorHost | undefined,
+  markdown: string,
+  doc: Store,
+  parent: string,
+  index: number,
+  id: string
+) {
+  doc.deleteBlock(id);
+  const { snapshot, transformer } = await markdownToSnapshot(
+    markdown,
+    doc,
+    host
+  );
+
+  const snapshots = snapshot?.content.flatMap(x => x.children) ?? [];
+  const blockSnapshot = snapshots[0];
+  blockSnapshot.id = id;
+  await transformer.snapshotToBlock(blockSnapshot, doc, parent, index);
+}
+
 export async function markDownToDoc(
-  provider: ServiceProvider,
-  schema: Schema,
   answer: string,
   middlewares?: TransformerMiddleware[],
   affineFeatureFlagService?: FeatureFlagService
 ) {
-  // Should not create a new doc in the original collection
-  const collection = new WorkspaceImpl({
-    rootDoc: new YDoc({ guid: 'markdownToDoc' }),
-    featureFlagService: affineFeatureFlagService,
-  });
-  collection.meta.initialize();
+  const { collection, std } = getMarkdownWorkspace(affineFeatureFlagService);
+
   const transformer = new Transformer({
-    schema,
+    schema: std.store.schema,
     blobCRUD: collection.blobSync,
     docCRUD: {
       create: (id: string) => collection.createDoc(id).getStore({ id }),
@@ -181,7 +256,7 @@ export async function markDownToDoc(
     },
     middlewares,
   });
-  const mdAdapter = new MarkdownAdapter(transformer, provider);
+  const mdAdapter = new MarkdownAdapter(transformer, std.store.provider);
   const doc = await mdAdapter.toDoc({
     file: answer,
     assets: transformer.assetsManager,

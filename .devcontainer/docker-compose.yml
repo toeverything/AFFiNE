@@ -25,7 +25,7 @@ services:
     image: redis
 
   indexer:
-    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.3.2}
+    image: manticoresearch/manticore:${MANTICORE_VERSION:-10.1.0}
     ulimits:
       nproc: 65535
       nofile:

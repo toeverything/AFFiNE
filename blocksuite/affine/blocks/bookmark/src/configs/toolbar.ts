@@ -17,7 +17,6 @@ import {
 } from '@blocksuite/affine-shared/consts';
 import {
   ActionPlacement,
-  blockCommentToolbarButton,
   EmbedIframeService,
   EmbedOptionProvider,
   type LinkEventType,
@@ -289,10 +288,6 @@ const builtinToolbarConfig = {
       },
     } satisfies ToolbarActionGroup<ToolbarAction>,
     captionAction,
-    {
-      id: 'e.comment',
-      ...blockCommentToolbarButton,
-    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

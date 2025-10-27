@@ -13,7 +13,7 @@ import {
   type SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   DocModeProvider,
   EditPropsStore,
   type OpenDocMode,
@@ -145,7 +145,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }

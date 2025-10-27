@@ -1,6 +1,8 @@
 import type { User, Workspace } from '@prisma/client';
 import Stripe from 'stripe';
 
+import type { RcEvent } from './revenuecat';
+
 export enum SubscriptionRecurring {
   Monthly = 'monthly',
   Yearly = 'yearly',
@@ -86,6 +88,12 @@ declare global {
     'stripe.customer.subscription.created': Stripe.CustomerSubscriptionCreatedEvent;
     'stripe.customer.subscription.updated': Stripe.CustomerSubscriptionUpdatedEvent;
     'stripe.customer.subscription.deleted': Stripe.CustomerSubscriptionDeletedEvent;
+
+    // RevenueCat integration
+    'revenuecat.webhook': {
+      appUserId?: string;
+      event: RcEvent;
+    };
   }
 }
 

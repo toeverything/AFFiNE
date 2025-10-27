@@ -1,5 +1,4 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
@@ -12,14 +11,14 @@ interface WebSearchToolCall {
   type: 'tool-call';
   toolCallId: string;
   toolName: string;
-  args: { url: string };
+  args: { query: string };
 }
 
 interface WebSearchToolResult {
   type: 'tool-result';
   toolCallId: string;
   toolName: string;
-  args: { url: string };
+  args: { query: string };
   result:
     | Array<{
         title: string;
@@ -40,17 +39,15 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
-  @property({ attribute: false })
-  accessor imageProxyService: ImageProxyService | null | undefined;
-
   renderToolCall() {
     return html`
       <tool-call-card
-        .name=${'Search from web'}
+        .name=${`Searching the web for "${this.data.args.query}"`}
         .icon=${WebIcon()}
       ></tool-call-card>
     `;
   }
+
   renderToolResult() {
     if (this.data.type !== 'tool-result') {
       return nothing;
@@ -59,11 +56,12 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
     const result = this.data.result;
     if (result && Array.isArray(result)) {
       const results = result.map(item => {
-        const { favicon, title, content } = item;
+        const { favicon, title, content, url } = item;
         return {
           title: title,
           icon: favicon || WebIcon(),
           content: content,
+          href: url,
         };
       });
       const footerIcons = result.map(item => item.favicon).filter(Boolean);
@@ -75,7 +73,6 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
           .footerIcons=${footerIcons}
           .results=${results}
           .width=${this.width}
-          .imageProxyService=${this.imageProxyService}
         ></tool-result-card>
       `;
     }

@@ -32,8 +32,8 @@ class AFFiNEViewController: CAPBridgeViewController {
       CookiePlugin(),
       HashcashPlugin(),
       NavigationGesturePlugin(),
-      // IntelligentsPlugin(representController: self), // no longer put in use
       NbStorePlugin(),
+      PayWallPlugin(associatedController: self),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
   }
@@ -64,12 +64,7 @@ class AFFiNEViewController: CAPBridgeViewController {
         switch result {
         case .failure: break
         case .success:
-          #if DEBUG
-          // only show the button in debug mode before we get done
           self.presentIntelligentsButton()
-          #else
-          break
-          #endif
         }
       }
     }
