@@ -45,6 +45,8 @@ const sendMailKey = 'mailjob:sendMail';
 const retryMailKey = 'mailjob:sendMail:retry';
 const sendMailCacheKey = (name: string, to: string) =>
   `${sendMailKey}:${name}:${to}`;
+const retryMaxPerTick = 20;
+const retryFirstTime = 3;
 
 @Injectable()
 export class MailJob {
@@ -176,7 +178,7 @@ export class MailJob {
   async sendMail(job: Jobs['notification.sendMail']) {
     const cacheKey = sendMailCacheKey(job.name, job.to);
     const retried = await this.cache.mapIncrease(sendMailKey, cacheKey, 1);
-    if (retried <= 3) {
+    if (retried <= retryFirstTime) {
       const ret = await this.sendMailInternal(job);
       if (!ret) await this.cache.mapDelete(sendMailKey, cacheKey);
       return ret;
@@ -189,10 +191,9 @@ export class MailJob {
   @Cron(CronExpression.EVERY_MINUTE)
   async sendRetryMails() {
     // pick random one from the retry map
-    const maxPerTick = 20;
     let processed = 0;
     let key = await this.cache.mapRandomKey(retryMailKey);
-    while (key && processed < maxPerTick) {
+    while (key && processed < retryMaxPerTick) {
       try {
         const job = await this.cache.mapGet<string>(retryMailKey, key);
         if (job) {
