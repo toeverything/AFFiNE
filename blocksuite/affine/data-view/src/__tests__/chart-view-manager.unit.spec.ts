@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { DataSource } from '../core/data-source/base.js';
 import type { PropertyMetaConfig } from '../core/property/property-config.js';
+import type { DataViewDataType } from '../core/view/data-view.js';
 import type { ViewManager } from '../core/view-manager/view-manager.js';
 import { textPropertyConfig } from '../property-presets/text/cell-renderer.js';
 import {
@@ -46,7 +47,7 @@ function createChartViewContext(
   ];
   const propertyIds = properties.map(p => p.id);
   const propertyMetaMap = new Map<string, PropertyMetaConfig>([
-    ['text', textPropertyConfig],
+    ['text', textPropertyConfig as unknown as PropertyMetaConfig],
   ]);
   const propertyById = new Map(properties.map(p => [p.id, p]));
 
@@ -100,11 +101,14 @@ function createChartViewContext(
     },
     viewDataDelete: () => {},
     viewDataMoveTo: () => {},
-    viewDataUpdate: (id, updater) => {
+    viewDataUpdate: <ViewData extends DataViewDataType>(
+      id: string,
+      updater: (data: ViewData) => Partial<ViewData>
+    ) => {
       if (!viewData || id !== viewId) {
         return;
       }
-      Object.assign(viewData, updater(viewData));
+      Object.assign(viewData, updater(viewData as unknown as ViewData));
     },
     propertyMetaGet: (type: string) => propertyMetaMap.get(type),
     propertyNameGet: (propertyId: string) =>

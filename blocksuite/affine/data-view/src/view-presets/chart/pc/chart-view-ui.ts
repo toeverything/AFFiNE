@@ -133,6 +133,8 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     }
     .chart-tooltip .action {
       color: #ccc;
+      pointer-events: auto;
+      cursor: pointer;
     }
 
     .chart-caption {
@@ -244,6 +246,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
             justifyContent: 'flex-start',
             maxWidth: '100%',
             margin: '0',
+            paddingLeft: '0',
             paddingRight: '24px',
           }
     );
@@ -839,17 +842,17 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
             enabled: false,
             external: this.externalTooltipHandler,
           },
-        },
 
-        // ─── Disable ALL built-in "datalabels" (in case you had chartjs-plugin-datalabels) ───
-        // This ensures no extra text (like "Status") is ever rendered automatically on each slice.
-        // Only include if datalabels plugin is available
-        ...((Chart.defaults.plugins as unknown as { datalabels?: unknown })
-          ?.datalabels !== undefined && {
-          datalabels: {
-            display: false,
-          },
-        }),
+          // ─── Disable ALL built-in "datalabels" (in case you had chartjs-plugin-datalabels) ───
+          // This ensures no extra text (like "Status") is ever rendered automatically on each slice.
+          // Only include if datalabels plugin is available
+          ...((Chart.defaults.plugins as unknown as { datalabels?: unknown })
+            ?.datalabels !== undefined && {
+            datalabels: {
+              display: false,
+            },
+          }),
+        },
       },
       // Only include the plugins that are relevant for this chart type
       plugins: extraPlugins,
@@ -1064,8 +1067,13 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
 
   private readonly handleChartClick = (_event: unknown, elements: any[]) => {
     if (!elements || elements.length === 0) return;
-    const index = elements[0].index;
-    const label = this.chartLabels[index];
+    const el = elements[0];
+    // For stacked bars, dataIndex may be 0; fall back to datasetIndex
+    const resolvedIndex =
+      typeof el.dataIndex !== 'undefined' && this.chartLabels[el.dataIndex]
+        ? el.dataIndex
+        : (el.datasetIndex ?? el.index);
+    const label = this.chartLabels[resolvedIndex];
     if (label) {
       void this.openDataDialog(label).catch(console.error);
     }
