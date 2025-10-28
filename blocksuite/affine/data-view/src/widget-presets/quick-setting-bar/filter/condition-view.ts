@@ -131,7 +131,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
           }
           this.setFilter(next);
           // Close submenu after selection to refresh the main menu
-          return true;
+          return false;
         },
       });
     });

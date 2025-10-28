@@ -50,7 +50,9 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
   createLiteral({
     type: t.relativeDate.instance(),
     getItems: (_type, value, onChange) => {
-      const [dir, unit] = value.value ?? ['this', 'day'];
+      const [dirRaw, unitRaw] = value.value ?? ['this', 'day'];
+      const dir = dirRaw ?? 'this';
+      const unit = unitRaw ?? 'day';
       const [start, end] = getRange(dir, unit);
 
       return [
@@ -75,20 +77,23 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
                     options: {
                       items: [
                         menu.group({
-                          items: DIRECTIONS.map(d =>
-                            menu.action({
-                              name: d[0].toUpperCase() + d.slice(1),
+                          items: DIRECTIONS.map(d => {
+                            const label =
+                              d.charAt(0).toUpperCase() + d.slice(1);
+                            return menu.action({
+                              name: label,
                               isSelected: d === dir,
                               select: () => onChange([d, unit]),
-                            })
-                          ),
+                            });
+                          }),
                         }),
                       ],
                     },
                   });
                 }}
               >
-                ${dir[0].toUpperCase() + dir.slice(1)} ${ArrowDownSmallIcon()}
+                ${dir.charAt(0).toUpperCase() + dir.slice(1)}
+                ${ArrowDownSmallIcon()}
               </button>
 
               <button
@@ -104,20 +109,23 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
                     options: {
                       items: [
                         menu.group({
-                          items: UNITS.map(u =>
-                            menu.action({
-                              name: u[0].toUpperCase() + u.slice(1),
+                          items: UNITS.map(u => {
+                            const label =
+                              u.charAt(0).toUpperCase() + u.slice(1);
+                            return menu.action({
+                              name: label,
                               isSelected: u === unit,
                               select: () => onChange([dir, u]),
-                            })
-                          ),
+                            });
+                          }),
                         }),
                       ],
                     },
                   });
                 }}
               >
-                ${unit[0].toUpperCase() + unit.slice(1)} ${ArrowDownSmallIcon()}
+                ${unit.charAt(0).toUpperCase() + unit.slice(1)}
+                ${ArrowDownSmallIcon()}
               </button>
             </div>
 
