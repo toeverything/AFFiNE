@@ -60,7 +60,7 @@ export class EmbeddingProgress extends Entity {
             smartRetry(),
             mergeMap(value => {
               this.progress$.next(value);
-              if (value && value.embedded === value.total) {
+              if (value && value.embedded === value.total && value.total > 0) {
                 this.stopEmbeddingProgressPolling();
               }
               return EMPTY;

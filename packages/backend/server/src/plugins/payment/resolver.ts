@@ -12,8 +12,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { User } from '@prisma/client';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Provider, type User } from '@prisma/client';
 import { GraphQLJSONObject } from 'graphql-scalars';
 import { groupBy } from 'lodash-es';
 import Stripe from 'stripe';
@@ -31,6 +30,7 @@ import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
 import { Invoice, Subscription, WorkspaceSubscriptionManager } from './manager';
+import { RevenueCatWebhookHandler } from './revenuecat';
 import { CheckoutParams, SubscriptionService } from './service';
 import {
   InvoiceStatus,
@@ -107,6 +107,23 @@ export class SubscriptionType implements Partial<Subscription> {
 
   @Field(() => Date)
   updatedAt!: Date;
+
+  // read-only fields for display purpose
+  // provider: 'stripe' | 'revenuecat'
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'Payment provider of this subscription. Read-only. One of: stripe | revenuecat',
+  })
+  provider?: string | null;
+
+  // iapStore: 'app_store' | 'play_store' | null when provider is stripe
+  @Field(() => String, {
+    nullable: true,
+    description:
+      'If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store',
+  })
+  iapStore?: string | null;
 
   // deprecated fields
   @Field(() => String, {
@@ -446,7 +463,22 @@ export class SubscriptionResolver {
 
 @Resolver(() => UserType)
 export class UserSubscriptionResolver {
-  constructor(private readonly db: PrismaClient) {}
+  constructor(
+    private readonly db: PrismaClient,
+    private readonly rcHandler: RevenueCatWebhookHandler
+  ) {}
+
+  private normalizeSubscription(s: Subscription) {
+    if (
+      s.variant &&
+      ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
+        s.variant as SubscriptionVariant
+      )
+    ) {
+      s.variant = null;
+    }
+    return s;
+  }
 
   @ResolveField(() => [SubscriptionType])
   async subscriptions(
@@ -461,21 +493,18 @@ export class UserSubscriptionResolver {
       where: {
         targetId: user.id,
         status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
         },
       },
     });
 
-    subscriptions.forEach(subscription => {
-      if (
-        subscription.variant &&
-        ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
-          subscription.variant as SubscriptionVariant
-        )
-      ) {
-        subscription.variant = null;
-      }
-    });
+    subscriptions.forEach(subscription =>
+      this.normalizeSubscription(subscription)
+    );
 
     return subscriptions;
   }
@@ -513,6 +542,71 @@ export class UserSubscriptionResolver {
       },
     });
   }
+
+  @Throttle('strict')
+  @Mutation(() => [SubscriptionType], {
+    description: 'Refresh current user subscriptions and return latest.',
+  })
+  async refreshUserSubscriptions(
+    @CurrentUser() user: CurrentUser
+  ): Promise<Subscription[]> {
+    if (!user) {
+      throw new AuthenticationRequired();
+    }
+
+    let current = await this.db.subscription.findMany({
+      where: {
+        targetId: user.id,
+        status: {
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
+        },
+      },
+    });
+
+    const existsPlans = Object.values(SubscriptionPlan);
+    const subscriptions = current.reduce(
+      (r, s) => {
+        if (existsPlans.includes(s.plan as SubscriptionPlan)) {
+          r[s.plan as SubscriptionPlan] = s.provider;
+        }
+        return r;
+      },
+      {} as Record<SubscriptionPlan, Provider>
+    );
+
+    // has revenuecat subscription or no subscription at all
+    const shouldSync =
+      current.length === 0 ||
+      subscriptions.pro === Provider.revenuecat ||
+      subscriptions.ai === Provider.revenuecat;
+
+    if (shouldSync) {
+      try {
+        await this.rcHandler.syncAppUser(user.id);
+        current = await this.db.subscription.findMany({
+          where: {
+            targetId: user.id,
+            status: {
+              in: [
+                SubscriptionStatus.Active,
+                SubscriptionStatus.Trialing,
+                SubscriptionStatus.PastDue,
+              ],
+            },
+          },
+        });
+        // ignore errors
+      } catch {}
+    }
+
+    current.forEach(subscription => this.normalizeSubscription(subscription));
+
+    return current;
+  }
 }
 
 @Resolver(() => WorkspaceType)
@@ -528,7 +622,7 @@ export class WorkspaceSubscriptionResolver {
     description: 'The team subscription of the workspace, if exists.',
   })
   async subscription(@Parent() workspace: WorkspaceType) {
-    return this.service.getSubscription({
+    return this.service.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId: workspace.id,
     });

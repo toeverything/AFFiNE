@@ -86,6 +86,22 @@ export class StoreManagerClient {
       connection.dispose();
     });
   }
+
+  pause() {
+    this.connections.forEach(connection => {
+      connection.store.pauseSync().catch(err => {
+        console.error('error pausing', err);
+      });
+    });
+  }
+
+  resume() {
+    this.connections.forEach(connection => {
+      connection.store.resumeSync().catch(err => {
+        console.error('error resuming', err);
+      });
+    });
+  }
 }
 
 export class StoreClient {
@@ -113,6 +129,20 @@ export class StoreClient {
   readonly blobFrontend: BlobFrontend;
   readonly awarenessFrontend: AwarenessFrontend;
   readonly indexerFrontend: IndexerFrontend;
+
+  enableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.enableBatterySaveMode');
+  }
+  disableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.disableBatterySaveMode');
+  }
+
+  pauseSync() {
+    return this.client.call('sync.pauseSync');
+  }
+  resumeSync() {
+    return this.client.call('sync.resumeSync');
+  }
 }
 
 class WorkerDocStorage implements DocStorage {

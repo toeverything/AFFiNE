@@ -1,0 +1,7 @@
+mutation addContextBlob($options: AddContextBlobInput!) {
+  addContextBlob(options: $options) {
+    id
+    createdAt
+    status
+  }
+}

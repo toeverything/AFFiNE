@@ -46,6 +46,10 @@ model User {
   // receive notifications
   notifications                Notification[]                 @relation("user_notifications")
   settings                     UserSettings?
+  comments                     Comment[]
+  replies                      Reply[]
+  commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
+  AccessToken                  AccessToken[]
 
   @@index([email])
   @@map("users")
@@ -107,26 +111,30 @@ model VerificationToken {
 
 model Workspace {
   // NOTE: manually set this column type to identity in migration file
-  sid                Int      @unique @default(autoincrement())
-  id                 String   @id @default(uuid()) @db.VarChar
-  public             Boolean
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  sid                 Int      @unique @default(autoincrement())
+  id                  String   @id @default(uuid()) @db.VarChar
+  public              Boolean
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
-  enableAi           Boolean  @default(true) @map("enable_ai")
-  enableUrlPreview   Boolean  @default(false) @map("enable_url_preview")
-  enableDocEmbedding Boolean  @default(true) @map("enable_doc_embedding")
-  name               String?  @db.VarChar
-  avatarKey          String?  @map("avatar_key") @db.VarChar
-  indexed            Boolean  @default(false)
+  enableAi            Boolean  @default(true) @map("enable_ai")
+  enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
+  enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
+  name                String?  @db.VarChar
+  avatarKey           String?  @map("avatar_key") @db.VarChar
+  indexed             Boolean  @default(false)
+  lastCheckEmbeddings DateTime @default("1970-01-01T00:00:00-00:00") @map("last_check_embeddings") @db.Timestamptz(3)
 
-  features       WorkspaceFeature[]
-  docs           WorkspaceDoc[]
-  permissions    WorkspaceUserRole[]
-  docPermissions WorkspaceDocUserRole[]
-  blobs          Blob[]
-  ignoredDocs    AiWorkspaceIgnoredDocs[]
-  embedFiles     AiWorkspaceFiles[]
+  features           WorkspaceFeature[]
+  docs               WorkspaceDoc[]
+  permissions        WorkspaceUserRole[]
+  docPermissions     WorkspaceDocUserRole[]
+  blobs              Blob[]
+  ignoredDocs        AiWorkspaceIgnoredDocs[]
+  embedFiles         AiWorkspaceFiles[]
+  comments           Comment[]
+  commentAttachments CommentAttachment[]
 
+  @@index([lastCheckEmbeddings])
   @@map("workspaces")
 }
 
@@ -438,6 +446,7 @@ model AiSession {
   promptName      String    @map("prompt_name") @db.VarChar(32)
   promptAction    String?   @default("") @map("prompt_action") @db.VarChar(32)
   pinned          Boolean   @default(false)
+  title           String?   @db.VarChar
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
@@ -560,6 +569,23 @@ model AiWorkspaceFileEmbedding {
   @@id([workspaceId, fileId, chunk])
   @@index([embedding], map: "ai_workspace_file_embeddings_idx")
   @@map("ai_workspace_file_embeddings")
+}
+
+model AiWorkspaceBlobEmbedding {
+  workspaceId String                      @map("workspace_id") @db.VarChar
+  blobId      String                      @map("blob_id") @db.VarChar
+  // a file can be divided into multiple chunks and embedded separately.
+  chunk       Int                         @db.Integer
+  content     String                      @db.VarChar
+  embedding   Unsupported("vector(1024)")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  blob Blob @relation(fields: [workspaceId, blobId], references: [workspaceId, key], onDelete: Cascade)
+
+  @@id([workspaceId, blobId, chunk])
+  @@index([embedding], map: "ai_workspace_blob_embeddings_idx")
+  @@map("ai_workspace_blob_embeddings")
 }
 
 enum AiJobStatus {
@@ -723,6 +749,16 @@ model Subscription {
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   // stripe schedule id
   stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
+  // subscription provider: stripe or revenuecat
+  provider             Provider  @default(stripe)
+  // iap store for revenuecat subscriptions
+  iapStore             IapStore? @map("iap_store")
+  // revenuecat entitlement name like "Pro" / "AI"
+  rcEntitlement        String?   @map("rc_entitlement") @db.VarChar
+  // revenuecat product id like "app.affine.pro.Annual"
+  rcProductId          String?   @map("rc_product_id") @db.VarChar
+  // external reference, appstore originalTransactionId or play purchaseToken
+  rcExternalRef        String?   @map("rc_external_ref") @db.VarChar
   // subscription.status, active/past_due/canceled/unpaid...
   status               String    @db.VarChar(20)
   // subscription.current_period_start
@@ -742,6 +778,16 @@ model Subscription {
 
   @@unique([targetId, plan])
   @@map("subscriptions")
+}
+
+enum Provider {
+  stripe
+  revenuecat
+}
+
+enum IapStore {
+  app_store
+  play_store
 }
 
 model Invoice {
@@ -801,7 +847,8 @@ model Blob {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace                Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  AiWorkspaceBlobEmbedding AiWorkspaceBlobEmbedding[]
 
   @@id([workspaceId, key])
   @@map("blobs")
@@ -816,6 +863,8 @@ enum NotificationType {
   InvitationReviewRequest
   InvitationReviewApproved
   InvitationReviewDeclined
+  Comment
+  CommentMention
 }
 
 enum NotificationLevel {
@@ -855,4 +904,85 @@ model UserSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
+}
+
+model Comment {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement()) @db.Integer
+  id          String    @id @default(uuid()) @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  userId      String    @map("user_id") @db.VarChar
+  content     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  // whether the comment is resolved
+  resolved    Boolean   @default(false) @map("resolved")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  replies   Reply[]
+
+  @@index([workspaceId, docId, sid])
+  @@index([workspaceId, docId, updatedAt])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Reply {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement()) @db.Integer
+  id          String    @id @default(uuid()) @db.VarChar
+  userId      String    @map("user_id") @db.VarChar
+  commentId   String    @map("comment_id") @db.VarChar
+  // query new replies by workspaceId and docId
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  content     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId, sid])
+  @@index([workspaceId, docId, updatedAt])
+  @@index([userId])
+  @@map("replies")
+}
+
+model CommentAttachment {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int      @unique @default(autoincrement())
+  workspaceId String   @map("workspace_id") @db.VarChar
+  docId       String   @map("doc_id") @db.VarChar
+  key         String   @db.VarChar
+  size        Int      @db.Integer
+  mime        String   @db.VarChar
+  name        String   @db.VarChar
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String?  @map("created_by") @db.VarChar
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // will delete creator record if creator's account is deleted
+  createdByUser User?     @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@id([workspaceId, docId, key])
+  @@map("comment_attachments")
+}
+
+model AccessToken {
+  id        String    @id @default(uuid()) @db.VarChar
+  name      String    @db.VarChar
+  token     String    @unique @db.VarChar
+  userId    String    @map("user_id") @db.VarChar
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("access_tokens")
 }

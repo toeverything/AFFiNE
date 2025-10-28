@@ -10,7 +10,7 @@ import Foundation
 
 extension QLService {
   final class URLSessionCookieClient: URLSessionClient {
-    public init() {
+    init() {
       super.init()
       session.configuration.httpCookieStorage = .init()
       HTTPCookieStorage.shared.cookies?.forEach { cookie in

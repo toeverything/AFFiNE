@@ -29,25 +29,25 @@ const isInternal = buildType === 'internal';
 
 const replicaConfig = {
   stable: {
-    web: 3,
-    graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 3,
-    sync: Number(process.env.PRODUCTION_SYNC_REPLICA) || 3,
-    renderer: Number(process.env.PRODUCTION_RENDERER_REPLICA) || 3,
-    doc: Number(process.env.PRODUCTION_DOC_REPLICA) || 3,
+    web: 2,
+    graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 2,
+    sync: Number(process.env.PRODUCTION_SYNC_REPLICA) || 2,
+    renderer: Number(process.env.PRODUCTION_RENDERER_REPLICA) || 2,
+    doc: Number(process.env.PRODUCTION_DOC_REPLICA) || 2,
   },
   beta: {
-    web: 2,
-    graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 2,
-    sync: Number(process.env.BETA_SYNC_REPLICA) || 2,
-    renderer: Number(process.env.BETA_RENDERER_REPLICA) || 2,
-    doc: Number(process.env.BETA_DOC_REPLICA) || 2,
+    web: 1,
+    graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 1,
+    sync: Number(process.env.BETA_SYNC_REPLICA) || 1,
+    renderer: Number(process.env.BETA_RENDERER_REPLICA) || 1,
+    doc: Number(process.env.BETA_DOC_REPLICA) || 1,
   },
   canary: {
-    web: 2,
-    graphql: 2,
-    sync: 2,
-    renderer: 2,
-    doc: 2,
+    web: 1,
+    graphql: 1,
+    sync: 1,
+    renderer: 1,
+    doc: 1,
   },
 };
 

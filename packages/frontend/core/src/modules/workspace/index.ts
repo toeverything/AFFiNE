@@ -74,7 +74,11 @@ export function configureWorkspaceModule(framework: Framework) {
     .service(WorkspaceService)
     .entity(Workspace, [WorkspaceScope, FeatureFlagService])
     .service(WorkspaceEngineService, [WorkspaceScope])
-    .entity(WorkspaceEngine, [WorkspaceService, NbstoreService])
+    .entity(WorkspaceEngine, [
+      WorkspaceService,
+      NbstoreService,
+      FeatureFlagService,
+    ])
     .impl(WorkspaceLocalState, WorkspaceLocalStateImpl, [
       WorkspaceService,
       GlobalState,

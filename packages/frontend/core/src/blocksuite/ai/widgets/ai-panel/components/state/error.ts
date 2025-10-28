@@ -182,13 +182,12 @@ export class AIPanelError extends WithDisposable(LitElement) {
       () => {
         const tip = this.config.error?.message;
         const error = tip
-          ? html`<span class="error-tip"
-              >An error occurred<affine-tooltip
-                tip-position="bottom-start"
-                .arrow=${false}
-                >${tip}</affine-tooltip
-              ></span
-            >`
+          ? html`<span class="error-tip">
+              An error occurred
+              <affine-tooltip tip-position="bottom-start">
+                ${tip}
+              </affine-tooltip>
+            </span>`
           : 'An error occurred';
         return html`
           <style>

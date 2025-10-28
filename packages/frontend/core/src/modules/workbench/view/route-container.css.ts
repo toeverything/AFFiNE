@@ -57,6 +57,8 @@ export const rightSidebarButton = style({
       opacity: 0,
       maxWidth: 0,
       marginLeft: 0,
+      // prevent click event from being triggered
+      pointerEvents: 'none',
     },
   },
 });

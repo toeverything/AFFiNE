@@ -1,8 +1,9 @@
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { CloseIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 export class ImagePreviewGrid extends LitElement {
   static override styles = css`
@@ -11,6 +12,10 @@ export class ImagePreviewGrid extends LitElement {
       overflow-y: hidden;
       max-height: 80px;
       white-space: nowrap;
+
+      /* to prevent the close button from being clipped */
+      padding-top: 8px;
+      margin-top: -8px;
     }
 
     ${scrollbarStyle('.image-preview-wrapper')}
@@ -28,42 +33,42 @@ export class ImagePreviewGrid extends LitElement {
       height: 68px;
       border-radius: 4px;
       cursor: pointer;
-      overflow: hidden;
       position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
       flex: 0 0 auto;
-    }
-
-    .image-container img {
-      max-width: 100%;
-      max-height: 100%;
-      width: auto;
-      height: auto;
+      border: 1px solid var(--affine-v2-layer-insideBorder-border);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
 
     .close-wrapper {
       width: 16px;
       height: 16px;
       border-radius: 4px;
-      border: 1px solid var(--affine-border-color);
+      border: 0.5px solid var(--affine-v2-layer-insideBorder-border);
       justify-content: center;
       align-items: center;
       display: none;
       position: absolute;
-      background-color: var(--affine-white);
+      background-color: var(--affine-v2-layer-background-primary);
+      color: var(--affine-v2-icon-primary);
       z-index: 1;
       cursor: pointer;
+      top: -6px;
+      right: -6px;
+    }
+
+    .image-container:hover .close-wrapper {
+      display: flex;
     }
 
     .close-wrapper:hover {
-      background-color: var(--affine-background-error-color);
-      border: 1px solid var(--affine-error-color);
-    }
-
-    .close-wrapper:hover svg path {
-      fill: var(--affine-error-color);
+      background-color: var(--affine-v2-layer-background-error);
+      border: 0.5px solid var(--affine-v2-button-error);
+      color: var(--affine-v2-button-error);
     }
   `;
 
@@ -129,37 +134,11 @@ export class ImagePreviewGrid extends LitElement {
     }
   };
 
-  private readonly _handleMouseEnter = (evt: MouseEvent, index: number) => {
-    const ele = evt.target as HTMLImageElement;
-    const rect = ele.getBoundingClientRect();
-    if (!ele.parentElement) return;
-    const parentRect = ele.parentElement.getBoundingClientRect();
-    const left = Math.abs(rect.right - parentRect.left);
-    const top = Math.abs(parentRect.top - rect.top);
-    this.currentIndex = index;
-    if (!this.closeWrapper) return;
-    this.closeWrapper.style.display = 'flex';
-    this.closeWrapper.style.left = left + 'px';
-    this.closeWrapper.style.top = top + 'px';
-  };
-
-  private readonly _handleMouseLeave = () => {
-    if (!this.closeWrapper) return;
-    this.closeWrapper.style.display = 'none';
-    this.currentIndex = -1;
-  };
-
-  private readonly _handleDelete = () => {
-    if (this.currentIndex >= 0 && this.currentIndex < this.images.length) {
-      const file = this.images[this.currentIndex];
-      const url = this._getObjectUrl(file);
-      this._releaseObjectUrl(url);
-
-      this.onImageRemove?.(this.currentIndex);
-      this.currentIndex = -1;
-      if (!this.closeWrapper) return;
-      this.closeWrapper.style.display = 'none';
-    }
+  private readonly _handleDelete = (index: number) => {
+    const file = this.images[index];
+    const url = this._getObjectUrl(file);
+    this._releaseObjectUrl(url);
+    this.onImageRemove?.(index);
   };
 
   override disconnectedCallback() {
@@ -169,7 +148,7 @@ export class ImagePreviewGrid extends LitElement {
 
   override render() {
     return html`
-      <div class="image-preview-wrapper" @mouseleave=${this._handleMouseLeave}>
+      <div class="image-preview-wrapper">
         <div class="images-container">
           ${repeat(
             this.images,
@@ -180,17 +159,20 @@ export class ImagePreviewGrid extends LitElement {
                 <div
                   class="image-container"
                   @error=${() => this._releaseObjectUrl(url)}
-                  @mouseenter=${(evt: MouseEvent) =>
-                    this._handleMouseEnter(evt, index)}
+                  style=${styleMap({
+                    backgroundImage: `url(${url})`,
+                  })}
                 >
-                  <img src="${url}" alt="${image.name}" />
+                  <div
+                    class="close-wrapper"
+                    @click=${() => this._handleDelete(index)}
+                  >
+                    ${CloseIcon()}
+                  </div>
                 </div>
               `;
             }
           )}
-        </div>
-        <div class="close-wrapper" @click=${this._handleDelete}>
-          ${CloseIcon()}
         </div>
       </div>
     `;
@@ -201,12 +183,6 @@ export class ImagePreviewGrid extends LitElement {
 
   @property({ attribute: false })
   accessor onImageRemove: ((index: number) => void) | null = null;
-
-  @query('.close-wrapper')
-  accessor closeWrapper: HTMLDivElement | null = null;
-
-  @state()
-  accessor currentIndex = -1;
 }
 
 declare global {

@@ -23,6 +23,11 @@ import {
   UserSubscriptionResolver,
   WorkspaceSubscriptionResolver,
 } from './resolver';
+import {
+  RevenueCatService,
+  RevenueCatWebhookController,
+  RevenueCatWebhookHandler,
+} from './revenuecat';
 import { SubscriptionService } from './service';
 import { StripeFactory, StripeProvider } from './stripe';
 import { StripeWebhook } from './webhook';
@@ -40,10 +45,12 @@ import { StripeWebhook } from './webhook';
   providers: [
     StripeFactory,
     StripeProvider,
+    RevenueCatService,
     SubscriptionService,
     SubscriptionResolver,
     UserSubscriptionResolver,
     StripeWebhook,
+    RevenueCatWebhookHandler,
     UserSubscriptionManager,
     WorkspaceSubscriptionManager,
     SelfhostTeamSubscriptionManager,
@@ -51,6 +58,10 @@ import { StripeWebhook } from './webhook';
     WorkspaceSubscriptionResolver,
     PaymentEventHandlers,
   ],
-  controllers: [StripeWebhookController, LicenseController],
+  controllers: [
+    StripeWebhookController,
+    LicenseController,
+    RevenueCatWebhookController,
+  ],
 })
 export class PaymentModule {}

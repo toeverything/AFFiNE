@@ -36,6 +36,8 @@ import { crawlingDocData } from './crawler';
 export type IndexerPreferOptions = 'local' | 'remote';
 
 export interface IndexerSyncState {
+  paused: boolean;
+  batterySaveMode: boolean;
   /**
    * Number of documents currently in the indexing queue
    */
@@ -157,6 +159,22 @@ export class IndexerSyncImpl implements IndexerSync {
     // sync feature only works on local indexer
     this.indexer = this.peers.local;
     this.remote = Object.values(this.peers.remotes).find(remote => !!remote);
+  }
+
+  enableBatterySaveMode() {
+    this.status.enableBatterySaveMode();
+  }
+
+  disableBatterySaveMode() {
+    this.status.disableBatterySaveMode();
+  }
+
+  pauseSync() {
+    this.status.pauseSync();
+  }
+
+  resumeSync() {
+    this.status.resumeSync();
   }
 
   start() {
@@ -316,6 +334,7 @@ export class IndexerSyncImpl implements IndexerSync {
         const docId = await this.status.acceptJob(signal);
 
         if (docId === this.rootDocId) {
+          console.log('[indexer] start indexing root doc', docId);
           // #region crawl root doc
           for (const [docId, { title }] of this.status.docsInRootDoc) {
             const existingDoc = this.status.docsInIndexer.get(docId);
@@ -393,6 +412,7 @@ export class IndexerSyncImpl implements IndexerSync {
             // doc is deleted, just skip
             continue;
           }
+          console.log('[indexer] start indexing doc', docId);
           const docYDoc = new YDoc({ guid: docId });
           applyUpdate(docYDoc, docBin.bin);
 
@@ -445,6 +465,8 @@ export class IndexerSyncImpl implements IndexerSync {
           });
           // #endregion
         }
+
+        console.log('[indexer] complete job', docId);
 
         this.status.completeJob();
       }
@@ -611,6 +633,11 @@ class IndexerSyncStatus {
   currentJob: string | null = null;
   errorMessage: string | null = null;
   statusUpdatedSubject$ = new Subject<string | true>();
+  paused: {
+    promise: Promise<void>;
+    resolve: () => void;
+  } | null = null;
+  batterySaveMode: boolean = false;
 
   state$ = new Observable<IndexerSyncState>(subscribe => {
     const next = () => {
@@ -620,6 +647,8 @@ class IndexerSyncStatus {
           total: 0,
           errorMessage: this.errorMessage,
           completed: true,
+          batterySaveMode: this.batterySaveMode,
+          paused: this.paused !== null,
         });
       } else {
         subscribe.next({
@@ -627,6 +656,8 @@ class IndexerSyncStatus {
           total: this.docsInRootDoc.size + 1,
           errorMessage: this.errorMessage,
           completed: this.rootDocReady && this.jobs.length() === 0,
+          batterySaveMode: this.batterySaveMode,
+          paused: this.paused !== null,
         });
       }
     };
@@ -685,7 +716,14 @@ class IndexerSyncStatus {
   }
 
   async acceptJob(abort?: AbortSignal) {
-    const job = await this.jobs.asyncPop(abort);
+    if (this.paused) {
+      await this.paused.promise;
+    }
+    const job = await this.jobs.asyncPop(
+      // if battery save mode is enabled, only accept jobs with priority > 1; otherwise accept all jobs
+      this.batterySaveMode ? 1 : undefined,
+      abort
+    );
     this.currentJob = job;
     this.statusUpdatedSubject$.next(job);
     return job;
@@ -709,6 +747,39 @@ class IndexerSyncStatus {
     };
   }
 
+  enableBatterySaveMode() {
+    if (this.batterySaveMode) {
+      return;
+    }
+    this.batterySaveMode = true;
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  disableBatterySaveMode() {
+    if (!this.batterySaveMode) {
+      return;
+    }
+    this.batterySaveMode = false;
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  pauseSync() {
+    if (this.paused) {
+      return;
+    }
+    this.paused = Promise.withResolvers();
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  resumeSync() {
+    if (!this.paused) {
+      return;
+    }
+    this.paused.resolve();
+    this.paused = null;
+    this.statusUpdatedSubject$.next(true);
+  }
+
   reset() {
     // reset all state, except prioritySettings
     this.isReadonly = false;
@@ -718,6 +789,8 @@ class IndexerSyncStatus {
     this.rootDoc = new YDoc();
     this.rootDocReady = false;
     this.currentJob = null;
+    this.batterySaveMode = false;
+    this.paused = null;
     this.statusUpdatedSubject$.next(true);
   }
 }

@@ -1,16 +1,20 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { CopilotSessionType } from '@affine/graphql';
+import type { AppThemeService } from '@affine/core/modules/theme';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
 import { AIProvider } from '../../provider';
-import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { DocDisplayConfig } from '../ai-chat-chips';
 import type {
   AINetworkSearchConfig,
   AIPlaygroundConfig,
@@ -83,8 +87,17 @@ export class PlaygroundContent extends SignalWatcher(
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
+  @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
   @state()
-  accessor sessions: CopilotSessionType[] = [];
+  accessor sessions: CopilotChatHistoryFragment[] = [];
 
   @state()
   accessor sharedInputValue: string = '';
@@ -118,14 +131,14 @@ export class PlaygroundContent extends SignalWatcher(
         }
       }
     } else {
-      this.rootSessionId = rootSession.id;
+      this.rootSessionId = rootSession.sessionId;
       const childSessions = sessions.filter(
-        session => session.parentSessionId === rootSession.id
+        session => session.parentSessionId === rootSession.sessionId
       );
       if (childSessions.length > 0) {
         this.sessions = childSessions;
       } else {
-        const forkSession = await this.forkSession(rootSession.id);
+        const forkSession = await this.forkSession(rootSession.sessionId);
         if (forkSession) {
           this.sessions = [forkSession];
         }
@@ -321,12 +334,13 @@ export class PlaygroundContent extends SignalWatcher(
       <div class="playground-content">
         ${repeat(
           this.sessions,
-          session => session.id,
+          session => session.sessionId,
           session => html`
             <div class="playground-chat-item">
               <playground-chat
                 .host=${this.host}
                 .doc=${this.doc}
+                .session=${session}
                 .networkSearchConfig=${this.networkSearchConfig}
                 .reasoningConfig=${this.reasoningConfig}
                 .playgroundConfig=${this.playgroundConfig}
@@ -335,7 +349,9 @@ export class PlaygroundContent extends SignalWatcher(
                 .docDisplayConfig=${this.docDisplayConfig}
                 .extensions=${this.extensions}
                 .affineFeatureFlagService=${this.affineFeatureFlagService}
-                .session=${session}
+                .affineThemeService=${this.affineThemeService}
+                .notificationService=${this.notificationService}
+                .aiToolsConfigService=${this.aiToolsConfigService}
                 .addChat=${this.addChat}
               ></playground-chat>
             </div>

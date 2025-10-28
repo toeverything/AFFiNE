@@ -116,7 +116,7 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
 
     this.selection.setGroup('note', []);
 
-    const portal = createLitPortal({
+    const { portal } = createLitPortal({
       template: html`<latex-editor-menu
         .std=${this.std}
         .latexSignal=${this.model.props.latex$}

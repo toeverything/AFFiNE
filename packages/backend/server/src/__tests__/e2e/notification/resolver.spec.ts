@@ -8,6 +8,7 @@ import {
   notificationCountQuery,
   NotificationObjectType,
   NotificationType,
+  readAllNotificationsMutation,
   readNotificationMutation,
 } from '@affine/graphql';
 
@@ -676,4 +677,42 @@ e2e('should list and count notifications', async t => {
     t.is(result3.currentUser!.notifications.pageInfo.endCursor, null);
     t.is(result3.currentUser!.notifications.edges.length, 0);
   }
+});
+
+e2e('should mark all notifications as read', async t => {
+  const { member, owner, workspace } = await init();
+  await app.login(owner);
+
+  await app.gql({
+    query: mentionUserMutation,
+    variables: {
+      input: {
+        userId: member.id,
+        workspaceId: workspace.id,
+        doc: {
+          id: 'doc-id-1',
+          title: 'doc-title-1',
+          blockId: 'block-id-1',
+          mode: DocMode.page,
+        },
+      },
+    },
+  });
+
+  await app.login(member);
+
+  await app.gql({
+    query: readAllNotificationsMutation,
+  });
+
+  const result = await app.gql({
+    query: listNotificationsQuery,
+    variables: {
+      pagination: {
+        first: 10,
+        offset: 0,
+      },
+    },
+  });
+  t.is(result.currentUser!.notifications.totalCount, 0);
 });

@@ -44,6 +44,8 @@ const optionsSchema = z.object({
       .args(z.custom<ConfirmModalProps>().optional(), z.any().optional()),
     closeConfirmModal: z.function(),
   }),
+
+  scope: z.enum(['doc', 'workspace']).optional(),
 });
 
 export type AffineEditorViewOptions = z.infer<typeof optionsSchema>;
@@ -93,16 +95,7 @@ export class AffineEditorViewExtension extends ViewExtensionProvider<AffineEdito
     if (!options) {
       return;
     }
-    const {
-      framework,
-
-      reactToLit,
-      confirmModal,
-    } = options;
-
-    const docService = framework.get(DocService);
-    const docsService = framework.get(DocsService);
-    const editorService = framework.get(EditorService);
+    const { framework, reactToLit, confirmModal, scope = 'doc' } = options;
 
     const referenceRenderer = this._getCustomReferenceRenderer(framework);
 
@@ -112,12 +105,20 @@ export class AffineEditorViewExtension extends ViewExtensionProvider<AffineEdito
         patchNotificationService(confirmModal),
         patchOpenDocExtension(),
         patchSideBarService(framework),
-        patchDocModeService(docService, docsService, editorService),
         patchFileSizeLimitExtension(framework),
         buildDocDisplayMetaExtension(framework),
         patchForAudioEmbedView(reactToLit),
       ])
       .register(patchDocUrlExtensions(framework))
       .register(patchQuickSearchService(framework));
+
+    if (scope === 'doc') {
+      const docService = framework.get(DocService);
+      const docsService = framework.get(DocsService);
+      const editorService = framework.get(EditorService);
+      context.register([
+        patchDocModeService(docService, docsService, editorService),
+      ]);
+    }
   }
 }

@@ -1,11 +1,11 @@
-import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { IntegrationTypeIcon } from '@affine/core/modules/integration';
 import type { I18nString } from '@affine/i18n';
 import { Logo1Icon, TodayIcon } from '@blocksuite/icons/rc';
-import { LiveData } from '@toeverything/infra';
 import type { ReactNode } from 'react';
 
 import { CalendarSettingPanel } from './calendar/setting-panel';
+import MCPIcon from './mcp-server/MCP.inline.svg';
+import { McpServerSettingPanel } from './mcp-server/setting-panel';
 import { ReadwiseSettingPanel } from './readwise/setting-panel';
 
 type IntegrationCard = {
@@ -13,6 +13,7 @@ type IntegrationCard = {
   name: I18nString;
   desc: I18nString;
   icon: ReactNode;
+  cloud?: boolean;
 } & (
   | {
       setting: ReactNode;
@@ -38,6 +39,14 @@ const INTEGRATION_LIST = [
     setting: <CalendarSettingPanel />,
   },
   {
+    id: 'mcp-server' as const,
+    name: 'com.affine.integration.mcp-server.name',
+    desc: 'com.affine.integration.mcp-server.desc',
+    icon: <img src={MCPIcon} />,
+    setting: <McpServerSettingPanel />,
+    cloud: true,
+  },
+  {
     id: 'web-clipper' as const,
     name: 'com.affine.integration.web-clipper.name',
     desc: 'com.affine.integration.web-clipper.desc',
@@ -55,13 +64,11 @@ export type IntegrationItem = Exclude<IntegrationCard, 'id'> & {
   id: IntegrationId;
 };
 
-export function getAllowedIntegrationList$(
-  _featureFlagService: FeatureFlagService
-) {
-  return LiveData.computed(() => {
-    return INTEGRATION_LIST.filter(item => {
-      if (!item) return false;
-      return true;
-    }) as IntegrationItem[];
-  });
+export function getAllowedIntegrationList(isCloudWorkspace: boolean) {
+  return INTEGRATION_LIST.filter(item => {
+    if (!item) return false;
+    const requiredCloud = 'cloud' in item && item.cloud;
+    if (requiredCloud && !isCloudWorkspace) return false;
+    return true;
+  }) as IntegrationItem[];
 }

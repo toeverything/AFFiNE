@@ -85,4 +85,20 @@ extension InputBox: UITextViewDelegate {
     updatePlaceholderVisibility()
     updateTextViewHeight()
   }
+
+  func textView(_: UITextView, shouldChangeTextIn _: NSRange, replacementText text: String) -> Bool {
+    if text == "\n" {
+      delegate?.inputBoxDidSend(self)
+      return false
+    }
+    return true
+  }
+
+  func textView(_ textView: UITextView, editMenuForTextIn _: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
+    let insertNewLineAction = UIAction(title: "Insert New Line") { _ in
+      textView.insertText("\n")
+    }
+
+    return UIMenu(children: suggestedActions + [insertNewLineAction])
+  }
 }

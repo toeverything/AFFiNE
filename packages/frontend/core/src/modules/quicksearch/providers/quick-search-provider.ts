@@ -16,6 +16,7 @@ export interface QuickSearchSession<S, P> {
   query?: (query: string) => void;
   loadMore?: () => void;
   dispose?: () => void;
+  beforeSubmit?: (item: QuickSearchItem<S, P>) => boolean;
 }
 
 export type QuickSearchSource<S, P> =

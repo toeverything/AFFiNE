@@ -73,7 +73,8 @@ update_app_stream_version() {
 
 update_ios_marketing_version() {
   local file_path=$1
-  local new_version=$2
+  # Remove everything after the "-"
+  local new_version=$(echo "$2" | sed -E 's/-.*$//')
 
   # Check if file exists
   if [ ! -f "$file_path" ]; then
@@ -98,6 +99,7 @@ update_ios_marketing_version() {
 }
 
 new_version=$1
+ios_new_version=${IOS_APP_VERSION:-$new_version}
 
 update_app_version_in_helm_charts ".github/helm/affine/Chart.yaml" "$new_version"
 update_app_version_in_helm_charts ".github/helm/affine/charts/graphql/Chart.yaml" "$new_version"

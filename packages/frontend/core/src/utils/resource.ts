@@ -33,6 +33,14 @@ export async function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
+export function downloadFile(url: string, filename: string) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.target = '_blank';
+  a.click();
+}
+
 export async function downloadResourceWithUrl(url: string, filename: string) {
   // given input url may not have correct mime type
   const blob = await resourceUrlToBlob(url);

@@ -1,10 +1,12 @@
 import { type Framework } from '@toeverything/infra';
 
+import { WorkspaceServerService } from '../cloud';
 import { CollectionService } from '../collection';
 import { WorkspaceDialogService } from '../dialogs';
 import { DocsService } from '../doc';
 import { DocDisplayMetaService } from '../doc-display-meta';
 import { DocsSearchService } from '../docs-search';
+import { FeatureFlagService } from '../feature-flag';
 import { GlobalContextService } from '../global-context';
 import { JournalService } from '../journal';
 import { TagService } from '../tag';
@@ -56,9 +58,11 @@ export function configureQuickSearchModule(framework: Framework) {
     .entity(CommandsQuickSearchSession, [GlobalContextService])
     .entity(DocsQuickSearchSession, [
       WorkspaceService,
+      WorkspaceServerService,
       DocsSearchService,
       DocsService,
       DocDisplayMetaService,
+      FeatureFlagService,
     ])
     .entity(LinksQuickSearchSession, [
       WorkspaceService,

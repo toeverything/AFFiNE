@@ -14,6 +14,18 @@ declare global {
       enableDocEmbedding?: boolean;
     };
 
+    'workspace.blob.embed.finished': {
+      contextId: string;
+      blobId: string;
+      chunkSize: number;
+    };
+
+    'workspace.blob.embed.failed': {
+      contextId: string;
+      blobId: string;
+      error: string;
+    };
+
     'workspace.doc.embedding': Array<{
       workspaceId: string;
       docId: string;
@@ -61,6 +73,16 @@ declare global {
       fileId: string;
       fileName: string;
     };
+
+    'copilot.embedding.blobs': {
+      contextId?: string;
+      workspaceId: string;
+      blobId: string;
+    };
+
+    'copilot.embedding.cleanupTrashedDocEmbeddings': {
+      workspaceId: string;
+    };
   }
 }
 
@@ -75,8 +97,6 @@ export type Chunk = {
   index: number;
   content: string;
 };
-
-export const EMBEDDING_DIMENSIONS = 1024;
 
 export abstract class EmbeddingClient {
   async configured() {
@@ -176,17 +196,15 @@ export abstract class EmbeddingClient {
 }
 
 const ReRankItemSchema = z.object({
-  scores: z.object({
-    chunk: z.string().describe('The chunk index of the search result.'),
-    targetId: z.string().describe('The id of the target.'),
-    score: z
-      .number()
-      .min(0)
-      .max(10)
-      .describe(
-        'The relevance score of the results should be 0-10, with 0 being the least relevant and 10 being the most relevant.'
-      ),
-  }),
+  chunk: z.number().describe('The chunk index of the search result.'),
+  targetId: z.string().describe('The id of the target.'),
+  score: z
+    .number()
+    .min(0)
+    .max(10)
+    .describe(
+      'The relevance score of the results should be 0-10, with 0 being the least relevant and 10 being the most relevant.'
+    ),
 });
 
-export type ReRankResult = z.infer<typeof ReRankItemSchema>['scores'][];
+export type ReRankResult = z.infer<typeof ReRankItemSchema>[];

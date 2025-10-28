@@ -70,6 +70,9 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
         if (event.defaultPrevented) {
           return;
         }
+        if (event.button !== 0 && event.button !== 1) {
+          return;
+        }
         const at = inferOpenAt(event);
         workbench.open(to, { at, replaceHistory, show: false });
         event.preventDefault();

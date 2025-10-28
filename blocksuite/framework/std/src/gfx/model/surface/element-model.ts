@@ -52,6 +52,7 @@ export type BaseElementProps = {
   index: string;
   seed: number;
   lockedBySelf?: boolean;
+  comments?: Record<string, boolean>;
 };
 
 export type SerializedElement = Record<string, unknown> & {
@@ -60,6 +61,7 @@ export type SerializedElement = Record<string, unknown> & {
   id: string;
   index: string;
   lockedBySelf?: boolean;
+  comments?: Record<string, boolean>;
   props: Record<string, unknown>;
 };
 export abstract class GfxPrimitiveElementModel<
@@ -372,6 +374,9 @@ export abstract class GfxPrimitiveElementModel<
 
   @field()
   accessor seed!: number;
+
+  @field()
+  accessor comments: Record<string, boolean> | undefined = undefined;
 }
 
 export abstract class GfxGroupLikeElementModel<

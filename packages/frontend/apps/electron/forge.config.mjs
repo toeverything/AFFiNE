@@ -3,7 +3,9 @@ import { rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { utils } from '@electron-forge/core';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
 
 import {
   appIdMap,
@@ -202,7 +204,18 @@ export default {
     },
   },
   makers,
-  plugins: [{ name: '@electron-forge/plugin-auto-unpack-natives', config: {} }],
+  plugins: [
+    { name: '@electron-forge/plugin-auto-unpack-natives', config: {} },
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    }),
+  ],
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build

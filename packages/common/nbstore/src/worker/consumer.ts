@@ -134,6 +134,45 @@ class StoreConsumer {
     }
   }
 
+  private readonly ENABLE_BATTERY_SAVE_MODE_DELAY = 1000;
+  private syncPauseTimeout: NodeJS.Timeout | null = null;
+  private syncPaused = false;
+
+  private pauseSync() {
+    if (this.syncPauseTimeout || this.syncPaused) {
+      return;
+    }
+    this.syncPauseTimeout = setTimeout(() => {
+      if (!this.syncPaused) {
+        this.indexerSync.pauseSync();
+        this.syncPaused = true;
+        console.log('[IndexerSync] paused');
+      }
+    }, this.ENABLE_BATTERY_SAVE_MODE_DELAY);
+  }
+
+  private resumeSync() {
+    if (this.syncPauseTimeout) {
+      clearTimeout(this.syncPauseTimeout);
+      this.syncPauseTimeout = null;
+    }
+    if (this.syncPaused) {
+      this.indexerSync.resumeSync();
+      this.syncPaused = false;
+      console.log('[IndexerSync] resumed');
+    }
+  }
+
+  private enableBatterySaveMode() {
+    console.log('[IndexerSync] enable battery save mode');
+    this.indexerSync.enableBatterySaveMode();
+  }
+
+  private disableBatterySaveMode() {
+    console.log('[IndexerSync] disable battery save mode');
+    this.indexerSync.disableBatterySaveMode();
+  }
+
   private registerHandlers(consumer: OpConsumer<WorkerOps>) {
     const collectJobs = new Map<
       string,
@@ -285,6 +324,10 @@ class StoreConsumer {
         this.indexerSync.search$(table, query, options),
       'indexerSync.subscribeAggregate': ({ table, query, field, options }) =>
         this.indexerSync.aggregate$(table, query, field, options),
+      'sync.enableBatterySaveMode': () => this.enableBatterySaveMode(),
+      'sync.disableBatterySaveMode': () => this.disableBatterySaveMode(),
+      'sync.pauseSync': () => this.pauseSync(),
+      'sync.resumeSync': () => this.resumeSync(),
     });
   }
 }

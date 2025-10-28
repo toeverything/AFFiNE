@@ -305,6 +305,6 @@ export function handleInlineAskAIAction(
       },
       abortController: abortController,
       closeOnClickAway: true,
-    });
+    }).portal;
   }, 0);
 }

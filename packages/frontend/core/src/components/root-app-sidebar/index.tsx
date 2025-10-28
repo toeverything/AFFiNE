@@ -10,14 +10,16 @@ import {
   SidebarScrollableContainer,
 } from '@affine/core/modules/app-sidebar/views';
 import { ExternalMenuLinkItem } from '@affine/core/modules/app-sidebar/views/menu-item/external-menu-link-item';
-import { AuthService } from '@affine/core/modules/cloud';
+import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
 import type { Workspace } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
 import {
+  AiOutlineIcon,
   AllDocsIcon,
   ImportIcon,
   JournalIcon,
@@ -82,6 +84,31 @@ const AllDocsButton = () => {
       <span data-testid="all-pages">
         {t['com.affine.workspaceSubPath.all']()}
       </span>
+    </MenuLinkItem>
+  );
+};
+
+const AIChatButton = () => {
+  const featureFlagService = useService(FeatureFlagService);
+  const serverService = useService(ServerService);
+  const serverFeatures = useLiveData(serverService.server.features$);
+  const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
+
+  const { workbenchService } = useServices({
+    WorkbenchService,
+  });
+  const workbench = workbenchService.workbench;
+  const aiChatActive = useLiveData(
+    workbench.location$.selector(location => location.pathname === '/chat')
+  );
+
+  if (!enableAI || !serverFeatures?.copilot) {
+    return null;
+  }
+
+  return (
+    <MenuLinkItem icon={<AiOutlineIcon />} active={aiChatActive} to={'/chat'}>
+      <span data-testid="ai-chat">Intelligence</span>
     </MenuLinkItem>
   );
 };
@@ -184,6 +211,7 @@ export const RootAppSidebar = memo((): ReactElement => {
         <AllDocsButton />
         <AppSidebarJournalButton />
         {sessionStatus === 'authenticated' && <NotificationButton />}
+        <AIChatButton />
         <MenuItem
           data-testid="slider-bar-workspace-setting-button"
           icon={<SettingsIcon />}
@@ -201,7 +229,7 @@ export const RootAppSidebar = memo((): ReactElement => {
         <NavigationPanelTags />
         <NavigationPanelCollections />
         <CollapsibleSection
-          name="others"
+          path={['others']}
           title={t['com.affine.rootAppSidebar.others']()}
           contentStyle={{ padding: '6px 8px 0 8px' }}
         >

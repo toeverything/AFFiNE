@@ -1,6 +1,6 @@
 import track from '@affine/track';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import { Signal } from '@preact/signals-core';
 import { html, type PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -19,6 +19,9 @@ export class ChatPanelDocChip extends SignalWatcher(
   accessor chip!: DocChip;
 
   @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
   accessor addChip!: (chip: DocChip) => void;
 
   @property({ attribute: false })
@@ -35,9 +38,6 @@ export class ChatPanelDocChip extends SignalWatcher(
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
-
-  @property({ attribute: false })
-  accessor host!: EditorHost;
 
   private chipName = new Signal<string>('');
 
@@ -84,7 +84,10 @@ export class ChatPanelDocChip extends SignalWatcher(
         state: 'processing',
       });
       const mode = this.docDisplayConfig.getDocPrimaryMode(this.chip.docId);
-      track.$.chatPanel.chatPanelInput.addEmbeddingDoc({
+      const page = this.independentMode
+        ? track.$.intelligence
+        : track.$.chatPanel;
+      page.chatPanelInput.addEmbeddingDoc({
         control: 'addButton',
         method: 'suggestion',
         type: mode,
@@ -111,10 +114,7 @@ export class ChatPanelDocChip extends SignalWatcher(
       if (!doc.ready) {
         doc.load();
       }
-      const value = await extractMarkdownFromDoc(
-        doc,
-        this.host.std.store.provider
-      );
+      const value = await extractMarkdownFromDoc(doc);
       const tokenCount = estimateTokenCount(value);
       if (this.checkTokenLimit(this.chip, tokenCount)) {
         const markdown = this.chip.markdown ?? new Signal<string>('');

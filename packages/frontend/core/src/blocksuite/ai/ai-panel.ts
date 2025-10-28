@@ -11,6 +11,7 @@ import {
 } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import {
   ChatWithAiIcon,
   DeleteIcon,
@@ -306,7 +307,13 @@ export function buildAIPanelConfig(
   const ctx = new AIContext();
   const searchService = framework.get(AINetworkSearchService);
   return {
-    answerRenderer: createAIScrollableTextRenderer(panel.host, {}, 320, true),
+    answerRenderer: createAIScrollableTextRenderer(
+      {
+        theme: panel.host.std.get(ThemeProvider).app$,
+      },
+      320,
+      true
+    ),
     finishStateConfig: buildFinishConfig(panel, 'chat', ctx),
     generatingStateConfig: buildGeneratingConfig(),
     errorStateConfig: buildErrorConfig(panel),

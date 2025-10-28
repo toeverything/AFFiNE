@@ -58,9 +58,9 @@ const createTestPrompts = async (
   copilotSession: CopilotSessionModel,
   db: PrismaClient
 ) => {
-  await copilotSession.createPrompt(TEST_PROMPTS.NORMAL, 'gpt-4.1');
+  await copilotSession.createPrompt(TEST_PROMPTS.NORMAL, 'gpt-5-mini');
   await db.aiPrompt.create({
-    data: { name: TEST_PROMPTS.ACTION, model: 'gpt-4.1', action: 'edit' },
+    data: { name: TEST_PROMPTS.ACTION, model: 'gpt-5-mini', action: 'edit' },
   });
 };
 
@@ -82,6 +82,7 @@ const createTestSession = async (
     workspaceId: workspace.id,
     docId: null,
     pinned: false,
+    title: null,
     promptName: TEST_PROMPTS.NORMAL,
     promptAction: null,
     ...overrides,
@@ -115,7 +116,7 @@ const addMessagesToSession = async (
   await copilotSession.updateMessages({
     sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-4.1' },
+    prompt: { model: 'gpt-5-mini' },
     messages: [
       {
         role: 'user',
@@ -168,6 +169,7 @@ test('should list and filter session type', async t => {
     const workspaceSessions = await copilotSession.list({
       userId: user.id,
       workspaceId: workspace.id,
+      docId: null,
     });
 
     t.snapshot(
@@ -297,6 +299,7 @@ test('should pin and unpin sessions', async t => {
       promptName: 'test-prompt',
       promptAction: null,
       pinned: true,
+      title: null,
     });
 
     const firstSession = await copilotSession.get(firstSessionId);
@@ -312,6 +315,7 @@ test('should pin and unpin sessions', async t => {
       promptName: 'test-prompt',
       promptAction: null,
       pinned: true,
+      title: null,
     });
 
     const sessionStatesAfterSecondPin = await getSessionStates(db, [
@@ -573,6 +577,10 @@ test('should handle session queries, ordering, and filtering', async t => {
   const queryTestCases = [
     { name: 'all_workspace_sessions', params: baseParams },
     {
+      name: 'workspace_sessions_with_messages',
+      params: { ...baseParams, docId: null, withMessages: true },
+    },
+    {
       name: 'doc_sessions_with_messages',
       params: { ...docParams, withMessages: true },
     },
@@ -606,6 +614,7 @@ test('should handle session queries, ordering, and filtering', async t => {
         type: copilotSession.getSessionType(s),
         hasMessages: !!s.messages?.length,
         messageCount: s.messages?.length || 0,
+        isAction: s.promptName === TEST_PROMPTS.ACTION,
         isFork: !!s.parentSessionId,
       })),
     };
@@ -796,8 +805,9 @@ test('should handle fork and session attachment operations', async t => {
       workspaceId: workspace.id,
       docId: forkConfig.docId,
       pinned: forkConfig.pinned,
+      title: null,
       parentSessionId,
-      prompt: { name: TEST_PROMPTS.NORMAL, action: null, model: 'gpt-4.1' },
+      prompt: { name: TEST_PROMPTS.NORMAL, action: null, model: 'gpt-5-mini' },
       messages: [
         {
           role: 'user',
@@ -905,5 +915,180 @@ test('should handle fork and session attachment operations', async t => {
       },
     },
     'attach and detach operation results'
+  );
+});
+
+test('should cleanup empty sessions correctly', async t => {
+  const { copilotSession, db } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  // should be deleted
+  const neverUsedSessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    neverUsedSessionIds.map(async id => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: { messageCost: 0, updatedAt: oneDayAgo },
+      });
+    })
+  );
+
+  // should be marked as deleted
+  const emptySessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    emptySessionIds.map(async id => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: { messageCost: 100, updatedAt: oneDayAgo },
+      });
+    })
+  );
+
+  // should not be affected
+  const recentSessionId = randomUUID();
+  await createTestSession(t, { sessionId: recentSessionId });
+  await db.aiSession.update({
+    where: { id: recentSessionId },
+    data: { messageCost: 0, updatedAt: twoHoursAgo },
+  });
+
+  // Create session with messages (should not be affected)
+  const sessionWithMsgId = randomUUID();
+  await createSessionWithMessages(
+    t,
+    { sessionId: sessionWithMsgId },
+    'test message'
+  );
+
+  const result = await copilotSession.cleanupEmptySessions(oneDayAgo);
+
+  const remainingSessions = await db.aiSession.findMany({
+    where: {
+      id: {
+        in: [
+          ...neverUsedSessionIds,
+          ...emptySessionIds,
+          recentSessionId,
+          sessionWithMsgId,
+        ],
+      },
+    },
+    select: { id: true, deletedAt: true, pinned: true },
+  });
+
+  t.snapshot(
+    {
+      cleanupResult: result,
+      remainingSessions: remainingSessions.map(s => ({
+        deleted: !!s.deletedAt,
+        pinned: s.pinned,
+        type: neverUsedSessionIds.includes(s.id)
+          ? 'zeroCost'
+          : emptySessionIds.includes(s.id)
+            ? 'noMessages'
+            : s.id === recentSessionId
+              ? 'recent'
+              : 'withMessages',
+      })),
+    },
+    'cleanup empty sessions results'
+  );
+});
+
+test('should get sessions for title generation correctly', async t => {
+  const { copilotSession, db } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  // create valid sessions with messages
+  const sessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    sessionIds.map(async (id, index) => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: {
+          updatedAt: new Date(Date.now() - index * 1000),
+          messages: {
+            create: Array.from({ length: index + 1 }, (_, i) => ({
+              role: 'assistant',
+              content: `assistant message ${i}`,
+            })),
+          },
+        },
+      });
+    })
+  );
+
+  // create excluded sessions
+  const excludedSessions = [
+    {
+      reason: 'hasTitle',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSession.update({
+          where: { id },
+          data: { title: 'Existing Title' },
+        });
+      },
+    },
+    {
+      reason: 'isDeleted',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSession.update({
+          where: { id },
+          data: { deletedAt: new Date() },
+        });
+      },
+    },
+    {
+      reason: 'noMessages',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+      },
+    },
+    {
+      reason: 'isAction',
+      setupFn: async (id: string) => {
+        await createTestSession(t, {
+          sessionId: id,
+          promptName: TEST_PROMPTS.ACTION,
+        });
+      },
+    },
+    {
+      reason: 'noAssistantMessages',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSessionMessage.create({
+          data: { sessionId: id, role: 'user', content: 'User message only' },
+        });
+      },
+    },
+  ];
+
+  await Promise.all(
+    excludedSessions.map(async session => {
+      await session.setupFn(randomUUID());
+    })
+  );
+
+  const result = await copilotSession.toBeGenerateTitle();
+
+  t.snapshot(
+    {
+      total: result.length,
+      sessions: result.map(s => ({
+        assistantMessageCount: s._count.messages,
+        isValid: sessionIds.includes(s.id),
+      })),
+      onlyValidSessionsReturned: result.every(s => sessionIds.includes(s.id)),
+    },
+    'sessions for title generation results'
   );
 });

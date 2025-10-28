@@ -1,5 +1,5 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
@@ -37,15 +37,12 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
   accessor data!: WebCrawlToolCall | WebCrawlToolResult;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
-
-  @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
   renderToolCall() {
     return html`
       <tool-call-card
-        .name=${'Reading the website'}
+        .name=${`Reading the website "${this.data.args.url}"`}
         .icon=${WebIcon()}
       ></tool-call-card>
     `;
@@ -57,11 +54,10 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
     }
 
     const result = this.data.result;
-    if (result && Array.isArray(result)) {
+    if (result && Array.isArray(result) && result.length > 0) {
       const { favicon, title, content } = result[0];
       return html`
         <tool-result-card
-          .host=${this.host}
           .name=${'The reading is complete, and this webpage has been read'}
           .icon=${WebIcon()}
           .footerIcons=${favicon ? [favicon] : []}

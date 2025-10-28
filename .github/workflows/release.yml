@@ -21,6 +21,10 @@ on:
         required: true
         type: boolean
         default: false
+      ios-app-version:
+        description: 'iOS App Store Version (Optional, use tag version if empty)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -30,6 +34,7 @@ permissions:
   packages: write
   security-events: write
   attestations: write
+  issues: write
 
 jobs:
   prepare:
@@ -69,7 +74,8 @@ jobs:
         name: Wait for approval
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: forehalo,fengmk2
+          approvers: forehalo,fengmk2,darkskygit
+          minimum-approvals: 1
           fail-on-denial: true
           issue-title: Please confirm to release docker image
           issue-body: |
@@ -78,7 +84,7 @@ jobs:
             Tag: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}
 
             > comment with "approve", "approved", "lgtm", "yes" to approve
-            > comment with "deny", "deny", "no" to deny
+            > comment with "deny", "denied", "no" to deny
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -117,3 +123,4 @@ jobs:
       build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
       app-version: ${{ needs.prepare.outputs.APP_VERSION }}
       git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
+      ios-app-version: ${{ inputs.ios-app-version }}

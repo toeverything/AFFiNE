@@ -62,18 +62,25 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
         option: checked ? 'on' : 'off',
       });
 
-      embeddingService.embeddingEnabled.setEnabled(checked).catch(error => {
-        const err = UserFriendlyError.fromAny(error);
-        notify.error({
-          title:
-            t[
-              'com.affine.settings.workspace.indexer-embedding.embedding.switch.error'
-            ](),
-          message: t[`error.${err.name}`](err.data),
+      embeddingService.embeddingEnabled
+        .setEnabled(checked)
+        .then(() => {
+          if (checked) {
+            embeddingService.embeddingProgress.startEmbeddingProgressPolling();
+          }
+        })
+        .catch(error => {
+          const err = UserFriendlyError.fromAny(error);
+          notify.error({
+            title:
+              t[
+                'com.affine.settings.workspace.indexer-embedding.embedding.switch.error'
+              ](),
+            message: t[`error.${err.name}`](err.data),
+          });
         });
-      });
     },
-    [embeddingService.embeddingEnabled, t]
+    [embeddingService.embeddingEnabled, embeddingService.embeddingProgress, t]
   );
 
   const handleAttachmentUpload = useCallback(
@@ -84,8 +91,10 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
         docType: file.type,
       });
       embeddingService.additionalAttachments.addAttachments([file]);
+      // Restart polling to track progress of newly uploaded files
+      embeddingService.embeddingProgress.startEmbeddingProgressPolling();
     },
-    [embeddingService.additionalAttachments]
+    [embeddingService.additionalAttachments, embeddingService.embeddingProgress]
   );
 
   const handleAttachmentsDelete = useCallback(

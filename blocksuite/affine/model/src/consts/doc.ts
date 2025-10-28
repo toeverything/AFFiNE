@@ -43,6 +43,7 @@ export const ReferenceParamsSchema = z
     databaseId: z.string().optional(),
     databaseRowId: z.string().optional(),
     xywh: SerializedXYWHSchema.optional(),
+    commentId: z.string().optional(),
   })
   .partial();
 

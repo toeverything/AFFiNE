@@ -17,6 +17,7 @@ import {
 } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
+  blockCommentToolbarButton,
   type ElementLockEvent,
   type ToolbarAction,
   type ToolbarContext,
@@ -303,6 +304,12 @@ export const builtinMiscToolbarConfig = {
           elements: elements.map(e => e.id),
         });
       },
+    },
+
+    {
+      placement: ActionPlacement.End,
+      id: 'c.comment',
+      ...blockCommentToolbarButton,
     },
 
     // More actions

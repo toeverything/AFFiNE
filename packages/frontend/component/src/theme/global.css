@@ -6,6 +6,7 @@
 
 :root {
   --noise-background: url(./noise.avif);
+  text-autospace: normal;
 }
 
 html,
@@ -305,4 +306,19 @@ math {
     'Cambria Math' /* windows */,
     'STIX Two Math' /* mac */,
     math;
+}
+
+/* AI Block Diff */
+.ai-block-diff-deleted {
+  background-color: var(
+    --affine-v2-aI-applyDeleteHighlight,
+    #ffeaea
+  ) !important;
+  border-radius: 4px !important;
+  padding: 8px 0px !important;
+  margin-bottom: 10px !important;
+}
+
+.ai-block-diff-deleted .affine-block-component {
+  margin: 0 !important;
 }

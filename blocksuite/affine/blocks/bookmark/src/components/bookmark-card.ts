@@ -45,6 +45,7 @@ export class BookmarkCard extends SignalWatcher(
       [style]: true,
       selected: this.bookmark.selected$.value,
       edgeless: isGfxBlockComponent(this.bookmark),
+      'comment-highlighted': this.bookmark.isCommentHighlighted,
     });
 
     const domainName = url.match(

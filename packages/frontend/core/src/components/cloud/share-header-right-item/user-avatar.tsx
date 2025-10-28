@@ -7,6 +7,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
 
 import { AuthService, SubscriptionService } from '../../../modules/cloud';
+import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import * as styles from './styles.css';
 
 const UserInfo = () => {
@@ -51,9 +52,11 @@ export const PublishPageUserAvatar = () => {
   const user = useLiveData(authService.session.account$);
   const t = useI18n();
 
+  const navigateHelper = useNavigateHelper();
   const handleSignOut = useAsyncCallback(async () => {
     await authService.signOut();
-  }, [authService]);
+    navigateHelper.jumpToSignIn();
+  }, [authService, navigateHelper]);
 
   const menuItem = useMemo(() => {
     return (

@@ -56,6 +56,7 @@ declare global {
     'copilot.transcript.submit': {
       jobId: string;
       infos?: AudioBlobInfos;
+      modelId?: string;
       /// @deprecated use `infos` instead
       url?: string;
       /// @deprecated use `infos` instead

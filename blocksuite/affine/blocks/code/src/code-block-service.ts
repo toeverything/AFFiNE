@@ -19,8 +19,12 @@ import {
 export class CodeBlockHighlighter extends LifeCycleWatcher {
   static override key = 'code-block-highlighter';
 
-  private _darkThemeKey: string | undefined;
+  // Singleton highlighter instance
+  private static _sharedHighlighter: HighlighterCore | null = null;
+  private static _highlighterPromise: Promise<HighlighterCore> | null = null;
+  private static _refCount = 0;
 
+  private _darkThemeKey: string | undefined;
   private _lightThemeKey: string | undefined;
 
   highlighter$: Signal<HighlighterCore | null> = signal(null);
@@ -35,6 +39,13 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
   private readonly _loadTheme = async (
     highlighter: HighlighterCore
   ): Promise<void> => {
+    // It is possible that by the time the highlighter is ready all instances
+    // have already been unmounted. In that case there is no need to load
+    // themes or update state.
+    if (CodeBlockHighlighter._refCount === 0) {
+      return;
+    }
+
     const config = this.std.getOptional(CodeBlockConfigExtension.identifier);
     const darkTheme = config?.theme?.dark ?? CODE_BLOCK_DEFAULT_DARK_THEME;
     const lightTheme = config?.theme?.light ?? CODE_BLOCK_DEFAULT_LIGHT_THEME;
@@ -44,18 +55,58 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
     this.highlighter$.value = highlighter;
   };
 
+  private static async _getOrCreateHighlighter(): Promise<HighlighterCore> {
+    if (CodeBlockHighlighter._sharedHighlighter) {
+      return CodeBlockHighlighter._sharedHighlighter;
+    }
+
+    if (!CodeBlockHighlighter._highlighterPromise) {
+      CodeBlockHighlighter._highlighterPromise = createHighlighterCore({
+        engine: createOnigurumaEngine(() => getWasm),
+      }).then(highlighter => {
+        CodeBlockHighlighter._sharedHighlighter = highlighter;
+        return highlighter;
+      });
+    }
+
+    return CodeBlockHighlighter._highlighterPromise;
+  }
+
   override mounted(): void {
     super.mounted();
 
-    createHighlighterCore({
-      engine: createOnigurumaEngine(() => getWasm),
-    })
+    CodeBlockHighlighter._refCount++;
+
+    CodeBlockHighlighter._getOrCreateHighlighter()
       .then(this._loadTheme)
       .catch(console.error);
   }
 
   override unmounted(): void {
-    this.highlighter$.value?.dispose();
+    CodeBlockHighlighter._refCount--;
+
+    // Dispose the shared highlighter **after** any in-flight creation finishes.
+    if (CodeBlockHighlighter._refCount !== 0) {
+      return;
+    }
+
+    const doDispose = (highlighter: HighlighterCore | null) => {
+      if (highlighter) {
+        highlighter.dispose();
+      }
+      CodeBlockHighlighter._sharedHighlighter = null;
+      CodeBlockHighlighter._highlighterPromise = null;
+    };
+
+    if (CodeBlockHighlighter._sharedHighlighter) {
+      // Highlighter already created – dispose immediately.
+      doDispose(CodeBlockHighlighter._sharedHighlighter);
+    } else if (CodeBlockHighlighter._highlighterPromise) {
+      // Highlighter still being created – wait for it, then dispose.
+      CodeBlockHighlighter._highlighterPromise
+        .then(doDispose)
+        .catch(console.error);
+    }
   }
 }
 

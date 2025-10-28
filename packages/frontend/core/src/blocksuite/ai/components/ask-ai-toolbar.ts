@@ -65,7 +65,7 @@ export class AskAIToolbarButton extends WithDisposable(LitElement) {
       },
       abortController: this._abortController,
       closeOnClickAway: true,
-    });
+    }).portal;
   };
 
   private readonly _generateAnswer: AffineAIPanelWidgetConfig['generateAnswer'] =

@@ -8,19 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		2E0DD47B57B994A104B25EED /* Pods_AFFiNE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */; };
+		500D72F72E825064006E553F /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 500D72F62E825064006E553F /* Intelligents */; };
+		5027D4782E7C5FBD00ADD25A /* AffinePaywall in Frameworks */ = {isa = PBXBuildFile; productRef = 5027D4772E7C5FBD00ADD25A /* AffinePaywall */; };
+		5027D47A2E7C5FC100ADD25A /* AffineResources in Frameworks */ = {isa = PBXBuildFile; productRef = 5027D4792E7C5FC100ADD25A /* AffineResources */; };
+		5027D47C2E7C5FC400ADD25A /* AffineGraphQL in Frameworks */ = {isa = PBXBuildFile; productRef = 5027D47B2E7C5FC400ADD25A /* AffineGraphQL */; };
+		5027D4802E7C611900ADD25A /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5027D47F2E7C611900ADD25A /* Tools.swift */; };
 		5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507513692D1924C600AD60C0 /* RootViewController.swift */; };
-		5075136E2D1925BC00AD60C0 /* IntelligentsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */; };
-		50802D612D112F8700694021 /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; settings = {ATTRIBUTES = (Required, ); }; };
 		50A285D72D112A5E000D5A6D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D62D112A5E000D5A6D /* Localizable.xcstrings */; };
 		50A285D82D112A5E000D5A6D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */; };
-		50E218302E0BE1A700EA4C6E /* Intelligents in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		50A485DE2E840A8000F220CE /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A485DD2E840A8000F220CE /* StoreKit.framework */; };
 		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
 		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
-		9D5622962D64A6A5009F1BE4 /* AuthPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5622952D64A6A4009F1BE4 /* AuthPlugin.swift */; };
-		9D6A85332CCF6DA700DAB35F /* HashcashPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6A85322CCF6DA700DAB35F /* HashcashPlugin.swift */; };
-		9D90BE252CCB9876006677DB /* CookieManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D90BE172CCB9876006677DB /* CookieManager.swift */; };
-		9D90BE262CCB9876006677DB /* CookiePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D90BE182CCB9876006677DB /* CookiePlugin.swift */; };
 		9D90BE272CCB9876006677DB /* AffineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D90BE1B2CCB9876006677DB /* AffineViewController.swift */; };
 		9D90BE282CCB9876006677DB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D90BE1C2CCB9876006677DB /* AppDelegate.swift */; };
 		9D90BE292CCB9876006677DB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE1D2CCB9876006677DB /* Assets.xcassets */; };
@@ -34,7 +33,6 @@
 		C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C6F2D0307B700BC2AD1 /* affine_mobile_native.swift */; };
 		C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C702D0307B700BC2AD1 /* affine_mobile_nativeFFI.h */; };
 		C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C712D0307B700BC2AD1 /* affine_mobile_nativeFFI.modulemap */; };
-		E93B276C2CED92B1001409B8 /* NavigationGesturePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93B276B2CED92B1001409B8 /* NavigationGesturePlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,7 +42,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				50E218302E0BE1A700EA4C6E /* Intelligents in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -53,20 +50,20 @@
 
 /* Begin PBXFileReference section */
 		3256F4410D881A03FE77D092 /* Pods-AFFiNE.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AFFiNE.debug.xcconfig"; path = "Pods/Target Support Files/Pods-AFFiNE/Pods-AFFiNE.debug.xcconfig"; sourceTree = "<group>"; };
+		5027D4762E7C5FB700ADD25A /* AffinePaywall */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffinePaywall; sourceTree = "<group>"; };
+		5027D47F2E7C611900ADD25A /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		5039CC962D1D42C700874F32 /* AffineGraphQL */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineGraphQL; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* AFFiNE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AFFiNE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		507513692D1924C600AD60C0 /* RootViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootViewController.swift; sourceTree = "<group>"; };
-		5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligentsPlugin.swift; sourceTree = "<group>"; };
 		50802D5E2D112F7D00694021 /* Intelligents */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Intelligents; sourceTree = "<group>"; };
 		50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		50A285D62D112A5E000D5A6D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		50A485DD2E840A8000F220CE /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		50BBC54E2E840DBC0067C5E2 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+		50CECF1E2E7C1084004487AA /* AffineResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineResources; sourceTree = "<group>"; };
 		50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationBridgedWindowScript.swift; sourceTree = "<group>"; };
 		50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AffineViewController+AIButton.swift"; sourceTree = "<group>"; };
 		9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSValueContainerExt.swift; sourceTree = "<group>"; };
-		9D5622952D64A6A4009F1BE4 /* AuthPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthPlugin.swift; sourceTree = "<group>"; };
-		9D6A85322CCF6DA700DAB35F /* HashcashPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashcashPlugin.swift; sourceTree = "<group>"; };
-		9D90BE172CCB9876006677DB /* CookieManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookieManager.swift; sourceTree = "<group>"; };
-		9D90BE182CCB9876006677DB /* CookiePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookiePlugin.swift; sourceTree = "<group>"; };
 		9D90BE1B2CCB9876006677DB /* AffineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffineViewController.swift; sourceTree = "<group>"; };
 		9D90BE1C2CCB9876006677DB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9D90BE1D2CCB9876006677DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -85,16 +82,15 @@
 		C4C97C702D0307B700BC2AD1 /* affine_mobile_nativeFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = affine_mobile_nativeFFI.h; sourceTree = "<group>"; };
 		C4C97C712D0307B700BC2AD1 /* affine_mobile_nativeFFI.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = affine_mobile_nativeFFI.modulemap; sourceTree = "<group>"; };
 		E5E5070D1CA1200D4964D91F /* Pods-AFFiNE.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AFFiNE.release.xcconfig"; path = "Pods/Target Support Files/Pods-AFFiNE/Pods-AFFiNE.release.xcconfig"; sourceTree = "<group>"; };
-		E93B276B2CED92B1001409B8 /* NavigationGesturePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationGesturePlugin.swift; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C45499AB2D140B5000E21978 /* NBStore */ = {
+		9DAE85B72E7BAC3B00DB9F1D /* Plugins */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 			);
-			path = NBStore;
+			path = Plugins;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -104,8 +100,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5027D47A2E7C5FC100ADD25A /* AffineResources in Frameworks */,
+				50A485DE2E840A8000F220CE /* StoreKit.framework in Frameworks */,
+				5027D4782E7C5FBD00ADD25A /* AffinePaywall in Frameworks */,
 				9DFCD1462D27D1D70028C92B /* libaffine_mobile_native.a in Frameworks */,
-				50802D612D112F8700694021 /* Intelligents in Frameworks */,
+				5027D47C2E7C5FC400ADD25A /* AffineGraphQL in Frameworks */,
+				500D72F72E825064006E553F /* Intelligents in Frameworks */,
 				2E0DD47B57B994A104B25EED /* Pods_AFFiNE.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -116,6 +116,7 @@
 		27E2DDA53C4D2A4D1A88CE4A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				50A485DD2E840A8000F220CE /* StoreKit.framework */,
 				C4C97C6B2D03027900BC2AD1 /* libaffine_mobile_native.a */,
 				9DFCD1452D27D1D70028C92B /* libaffine_mobile_native.a */,
 				BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */,
@@ -149,6 +150,8 @@
 			isa = PBXGroup;
 			children = (
 				5039CC962D1D42C700874F32 /* AffineGraphQL */,
+				5027D4762E7C5FB700ADD25A /* AffinePaywall */,
+				50CECF1E2E7C1084004487AA /* AffineResources */,
 				50802D5E2D112F7D00694021 /* Intelligents */,
 			);
 			path = Packages;
@@ -165,48 +168,20 @@
 			name = Pods;
 			sourceTree = "<group>";
 		};
-		9D5622942D64A69C009F1BE4 /* Auth */ = {
-			isa = PBXGroup;
-			children = (
-				9D5622952D64A6A4009F1BE4 /* AuthPlugin.swift */,
-			);
-			path = Auth;
-			sourceTree = "<group>";
-		};
-		9D90BE192CCB9876006677DB /* Cookie */ = {
-			isa = PBXGroup;
-			children = (
-				9D90BE172CCB9876006677DB /* CookieManager.swift */,
-				9D90BE182CCB9876006677DB /* CookiePlugin.swift */,
-				9D6A85322CCF6DA700DAB35F /* HashcashPlugin.swift */,
-				5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */,
-			);
-			path = Cookie;
-			sourceTree = "<group>";
-		};
-		9D90BE1A2CCB9876006677DB /* Plugins */ = {
-			isa = PBXGroup;
-			children = (
-				9D5622942D64A69C009F1BE4 /* Auth */,
-				C45499AB2D140B5000E21978 /* NBStore */,
-				E93B276A2CED9298001409B8 /* NavigationGesture */,
-				9D90BE192CCB9876006677DB /* Cookie */,
-			);
-			path = Plugins;
-			sourceTree = "<group>";
-		};
 		9D90BE242CCB9876006677DB /* App */ = {
 			isa = PBXGroup;
 			children = (
 				9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */,
 				9DEC59422D323EE00027CEBD /* Mutex.swift */,
 				9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */,
-				9D90BE1A2CCB9876006677DB /* Plugins */,
+				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
 				9D90BE1C2CCB9876006677DB /* AppDelegate.swift */,
 				507513692D1924C600AD60C0 /* RootViewController.swift */,
 				9D90BE1B2CCB9876006677DB /* AffineViewController.swift */,
 				50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */,
 				50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */,
+				5027D47F2E7C611900ADD25A /* Tools.swift */,
+				50BBC54E2E840DBC0067C5E2 /* Products.storekit */,
 				9D90BE1D2CCB9876006677DB /* Assets.xcassets */,
 				9D90BE1E2CCB9876006677DB /* capacitor.config.json */,
 				9D90BE1F2CCB9876006677DB /* config.xml */,
@@ -230,14 +205,6 @@
 			path = App/uniffi;
 			sourceTree = "<group>";
 		};
-		E93B276A2CED9298001409B8 /* NavigationGesture */ = {
-			isa = PBXGroup;
-			children = (
-				E93B276B2CED92B1001409B8 /* NavigationGesturePlugin.swift */,
-			);
-			path = NavigationGesture;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -258,7 +225,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C45499AB2D140B5000E21978 /* NBStore */,
+				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
 			);
 			name = AFFiNE;
 			productName = App;
@@ -273,7 +240,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 0920;
-				LastUpgradeCheck = 0920;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
@@ -376,22 +343,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */,
-				5075136E2D1925BC00AD60C0 /* IntelligentsPlugin.swift in Sources */,
 				5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */,
 				C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */,
 				9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */,
 				50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */,
 				C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */,
-				9D5622962D64A6A5009F1BE4 /* AuthPlugin.swift in Sources */,
 				C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */,
-				E93B276C2CED92B1001409B8 /* NavigationGesturePlugin.swift in Sources */,
 				9DEC59432D323EE40027CEBD /* Mutex.swift in Sources */,
-				9D90BE252CCB9876006677DB /* CookieManager.swift in Sources */,
 				50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */,
-				9D90BE262CCB9876006677DB /* CookiePlugin.swift in Sources */,
-				9D6A85332CCF6DA700DAB35F /* HashcashPlugin.swift in Sources */,
 				9D90BE272CCB9876006677DB /* AffineViewController.swift in Sources */,
 				9D90BE282CCB9876006677DB /* AppDelegate.swift in Sources */,
+				5027D4802E7C611900ADD25A /* Tools.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -413,6 +375,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -423,6 +386,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -430,8 +394,10 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -464,6 +430,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -474,6 +441,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -484,6 +452,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -491,8 +460,10 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -518,6 +489,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -533,10 +505,10 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = 964G86XT2P;
+				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -545,7 +517,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				MARKETING_VERSION = 0.22.2;
+				MARKETING_VERSION = 0.23.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -569,10 +541,10 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = 964G86XT2P;
+				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -581,7 +553,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				MARKETING_VERSION = 0.22.2;
+				MARKETING_VERSION = 0.23.1;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -621,9 +593,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		50802D602D112F8700694021 /* Intelligents */ = {
+		500D72F62E825064006E553F /* Intelligents */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Intelligents;
+		};
+		5027D4772E7C5FBD00ADD25A /* AffinePaywall */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AffinePaywall;
+		};
+		5027D4792E7C5FC100ADD25A /* AffineResources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AffineResources;
+		};
+		5027D47B2E7C5FC400ADD25A /* AffineGraphQL */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AffineGraphQL;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

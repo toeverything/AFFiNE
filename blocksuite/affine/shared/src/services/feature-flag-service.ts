@@ -15,6 +15,7 @@ export interface BlockSuiteFlags {
   enable_shape_shadow_blur: boolean;
   enable_mobile_keyboard_toolbar: boolean;
   enable_mobile_linked_doc_menu: boolean;
+  enable_mobile_database_editing: boolean;
   enable_block_meta: boolean;
   enable_callout: boolean;
   enable_edgeless_scribbled_style: boolean;
@@ -41,6 +42,7 @@ export class FeatureFlagService extends StoreExtension {
     enable_mobile_keyboard_toolbar: false,
     enable_mobile_linked_doc_menu: false,
     enable_block_meta: true,
+    enable_mobile_database_editing: false,
     enable_callout: false,
     enable_edgeless_scribbled_style: false,
     enable_table_virtual_scroll: false,

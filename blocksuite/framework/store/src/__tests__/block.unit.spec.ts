@@ -51,6 +51,7 @@ const flatTableSchema = defineBlockSchema({
     textCols: {} as Record<string, Text>,
     rows: {} as Record<string, { color: string }>,
     labels: [] as Array<string>,
+    optional: undefined as string | undefined,
   }),
   metadata: {
     role: 'content',
@@ -494,6 +495,16 @@ describe('flat', () => {
     expect(model.props.textCols$.value.a.toDelta()).toEqual([
       { insert: 'test' },
     ]);
+
+    onChange.mockClear();
+    expect(model.props).not.toHaveProperty('optional');
+    expect(model.props).toHaveProperty('optional$');
+    model.props.optional$.value = 'test';
+    expect(model.props.optional).toBe('test');
+    expect(model.props.optional$.value).toBe('test');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(expect.anything(), 'optional', true);
+    expect(yBlock.get('prop:optional')).toBe('test');
   });
 
   test('stash and pop', () => {

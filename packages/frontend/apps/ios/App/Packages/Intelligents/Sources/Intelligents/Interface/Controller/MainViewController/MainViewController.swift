@@ -1,6 +1,5 @@
 import Combine
 import SnapKit
-import Then
 import UIKit
 
 class MainViewController: UIViewController {
@@ -10,26 +9,7 @@ class MainViewController: UIViewController {
     $0.delegate = self
   }
 
-  lazy var tableView = UITableView().then {
-    $0.backgroundColor = .clear
-    $0.separatorStyle = .none
-    $0.delegate = self
-    $0.dataSource = self
-    $0.register(ChatCell.self, forCellReuseIdentifier: "ChatCell")
-    $0.keyboardDismissMode = .interactive
-    $0.contentInsetAdjustmentBehavior = .never
-  }
-
-  lazy var emptyStateView = UIView().then {
-    $0.isHidden = true
-  }
-
-  lazy var emptyStateLabel = UILabel().then {
-    $0.text = "Start a conversation..."
-    $0.font = .systemFont(ofSize: 18, weight: .medium)
-    $0.textColor = .systemGray
-    $0.textAlignment = .center
-  }
+  lazy var listView = ChatListView()
 
   lazy var inputBox = InputBox().then {
     $0.delegate = self
@@ -49,10 +29,9 @@ class MainViewController: UIViewController {
 
   // MARK: - Properties
 
-  private var messages: [ChatMessage] = []
-  private var cancellables = Set<AnyCancellable>()
-  private let intelligentContext = IntelligentContext.shared
-  private let chatManager = ChatManager.shared
+  var cancellables = Set<AnyCancellable>()
+  let intelligentContext = IntelligentContext.shared
+  let chatManager = ChatManager.shared
   var terminateEditGesture: UITapGestureRecognizer!
 
   // MARK: - Lifecycle
@@ -62,7 +41,6 @@ class MainViewController: UIViewController {
     view.backgroundColor = .affineLayerBackgroundPrimary
 
     setupUI()
-    setupBindings()
 
     view.isUserInteractionEnabled = true
     terminateEditGesture = UITapGestureRecognizer(target: self, action: #selector(terminateEditing))
@@ -73,32 +51,20 @@ class MainViewController: UIViewController {
 
   private func setupUI() {
     view.addSubview(headerView)
-    view.addSubview(tableView)
-    view.addSubview(emptyStateView)
+    view.addSubview(listView)
     view.addSubview(inputBox)
     view.addSubview(documentPickerHideDetector)
     view.addSubview(documentPickerView)
-
-    emptyStateView.addSubview(emptyStateLabel)
 
     headerView.snp.makeConstraints { make in
       make.top.equalTo(view.safeAreaLayoutGuide)
       make.leading.trailing.equalToSuperview()
     }
 
-    tableView.snp.makeConstraints { make in
+    listView.snp.makeConstraints { make in
       make.top.equalTo(headerView.snp.bottom)
-      make.leading.trailing.equalToSuperview()
-      make.bottom.equalTo(inputBox.snp.top)
-    }
-
-    emptyStateView.snp.makeConstraints { make in
-      make.center.equalTo(tableView)
-      make.width.lessThanOrEqualTo(tableView).inset(32)
-    }
-
-    emptyStateLabel.snp.makeConstraints { make in
-      make.edges.equalToSuperview()
+      make.left.right.equalToSuperview()
+      make.bottom.equalToSuperview()
     }
 
     inputBox.snp.makeConstraints { make in
@@ -117,24 +83,6 @@ class MainViewController: UIViewController {
     }
   }
 
-  private func setupBindings() {
-    chatManager.$currentSession
-      .receive(on: DispatchQueue.main)
-      .sink { [weak self] session in
-        self?.updateMessages(for: session?.id)
-      }
-      .store(in: &cancellables)
-
-    chatManager.$messages
-      .receive(on: DispatchQueue.main)
-      .sink { [weak self] _ in
-        if let sessionId = self?.chatManager.currentSession?.id {
-          self?.updateMessages(for: sessionId)
-        }
-      }
-      .store(in: &cancellables)
-  }
-
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     navigationController!.setNavigationBarHidden(true, animated: animated)
@@ -149,69 +97,17 @@ class MainViewController: UIViewController {
     navigationController!.setNavigationBarHidden(false, animated: animated)
   }
 
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+
+    let bottomAnchor = inputBox.frame.minY
+    let bottomInset = view.bounds.height - bottomAnchor + 64
+    if listView.listView.bottomInset != bottomInset {
+      listView.listView.bottomInset = bottomInset
+    }
+  }
+
   @objc func terminateEditing() {
     view.endEditing(true)
-  }
-
-  // MARK: - Chat Methods
-
-  private func updateMessages(for sessionId: String?) {
-    guard let sessionId else {
-      messages = []
-      updateEmptyState()
-      tableView.reloadData()
-      return
-    }
-
-    messages = chatManager.messages[sessionId] ?? []
-    updateEmptyState()
-    tableView.reloadData()
-
-    if !messages.isEmpty {
-      let indexPath = IndexPath(row: messages.count - 1, section: 0)
-      tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
-    }
-  }
-
-  private func updateEmptyState() {
-    emptyStateView.isHidden = !messages.isEmpty
-    tableView.isHidden = messages.isEmpty
-  }
-
-  // MARK: - Internal Methods for Preview/Testing
-
-  #if DEBUG
-    func setMessagesForPreview(_ previewMessages: [ChatMessage]) {
-      messages = previewMessages
-      updateEmptyState()
-      tableView.reloadData()
-    }
-  #endif
-}
-
-// MARK: - UITableViewDataSource
-
-extension MainViewController: UITableViewDataSource {
-  func tableView(_: UITableView, numberOfRowsInSection _: Int) -> Int {
-    messages.count
-  }
-
-  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath) as! ChatCell
-    let message = messages[indexPath.row]
-    cell.configure(with: message)
-    return cell
-  }
-}
-
-// MARK: - UITableViewDelegate
-
-extension MainViewController: UITableViewDelegate {
-  func tableView(_: UITableView, heightForRowAt _: IndexPath) -> CGFloat {
-    UITableView.automaticDimension
-  }
-
-  func tableView(_: UITableView, estimatedHeightForRowAt _: IndexPath) -> CGFloat {
-    60
   }
 }

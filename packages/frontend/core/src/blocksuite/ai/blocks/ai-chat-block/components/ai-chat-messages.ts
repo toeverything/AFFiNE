@@ -1,5 +1,9 @@
 import type { TextRendererOptions } from '@affine/core/blocksuite/ai/components/text-renderer';
 import type { EditorHost } from '@blocksuite/affine/std';
+import {
+  NotificationProvider,
+  ThemeProvider,
+} from '@blocksuite/affine-shared/services';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -11,7 +15,7 @@ import {
 } from '../../../components/ai-chat-messages';
 import { UserInfoTemplate } from './user-info';
 
-export class AIChatMessage extends LitElement {
+export class AIChatBlockMessage extends LitElement {
   static override styles = css`
     .ai-chat-message {
       display: flex;
@@ -65,6 +69,7 @@ export class AIChatMessage extends LitElement {
   }
 
   private renderStreamObjects(answer: StreamObject[]) {
+    const notificationService = this.host.std.get(NotificationProvider);
     return html`<chat-content-stream-objects
       .answer=${answer}
       .host=${this.host}
@@ -72,17 +77,20 @@ export class AIChatMessage extends LitElement {
       .extensions=${this.textRendererOptions.extensions}
       .affineFeatureFlagService=${this.textRendererOptions
         .affineFeatureFlagService}
+      .notificationService=${notificationService}
+      .independentMode=${false}
+      .theme=${this.host.std.get(ThemeProvider).app$}
     ></chat-content-stream-objects>`;
   }
 
   private renderRichText(text: string) {
     return html`<chat-content-rich-text
-      .host=${this.host}
       .text=${text}
       .state=${this.state}
       .extensions=${this.textRendererOptions.extensions}
       .affineFeatureFlagService=${this.textRendererOptions
         .affineFeatureFlagService}
+      .theme=${this.host.std.get(ThemeProvider).app$}
     ></chat-content-rich-text>`;
   }
 
@@ -99,7 +107,7 @@ export class AIChatMessage extends LitElement {
   accessor textRendererOptions: TextRendererOptions = {};
 }
 
-export class AIChatMessages extends LitElement {
+export class AIChatBlockMessages extends LitElement {
   static override styles = css`
     :host {
       width: 100%;
@@ -123,11 +131,11 @@ export class AIChatMessages extends LitElement {
         message => message.id || message.createdAt,
         message => {
           return html`
-            <ai-chat-message
+            <ai-chat-block-message
               .host=${this.host}
               .textRendererOptions=${this.textRendererOptions}
               .message=${message}
-            ></ai-chat-message>
+            ></ai-chat-block-message>
           `;
         }
       )}
@@ -146,7 +154,7 @@ export class AIChatMessages extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ai-chat-message': AIChatMessage;
-    'ai-chat-messages': AIChatMessages;
+    'ai-chat-block-message': AIChatBlockMessage;
+    'ai-chat-block-messages': AIChatBlockMessages;
   }
 }

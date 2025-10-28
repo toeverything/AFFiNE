@@ -1,9 +1,16 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
+import type { AppThemeService } from '@affine/core/modules/theme';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
-import type { EditorHost } from '@blocksuite/affine/std';
-import { ShadowlessElement } from '@blocksuite/affine/std';
+import {
+  type BlockStdScope,
+  type EditorHost,
+  ShadowlessElement,
+} from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -12,6 +19,7 @@ import {
   EdgelessEditorActions,
   PageEditorActions,
 } from '../../_common/chat-actions-handle';
+import type { DocDisplayConfig } from '../../components/ai-chat-chips';
 import {
   type ChatMessage,
   type ChatStatus,
@@ -32,7 +40,10 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor std: BlockStdScope | null | undefined;
 
   @property({ attribute: false })
   accessor item!: ChatMessage;
@@ -53,7 +64,10 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor retry!: () => void;
@@ -62,7 +76,22 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor testId = 'chat-message-assistant';
 
   @property({ attribute: false })
-  accessor panelWidth!: Signal<number | undefined>;
+  accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
+  accessor docDisplayService!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   get state() {
     const { isLast, status } = this;
@@ -98,7 +127,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ${streamObjects?.length
         ? this.renderStreamObjects(streamObjects)
         : this.renderRichText(content)}
-      ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+      ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
       ${this.renderEditorActions()}
     `;
   }
@@ -114,27 +143,34 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
 
   private renderStreamObjects(answer: StreamObject[]) {
     return html`<chat-content-stream-objects
-      .answer=${answer}
       .host=${this.host}
+      .std=${this.std}
+      .answer=${answer}
       .state=${this.state}
-      .width=${this.panelWidth}
+      .width=${this.width}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .notificationService=${this.notificationService}
+      .theme=${this.affineThemeService.appTheme.themeSignal}
+      .independentMode=${this.independentMode}
+      .docDisplayService=${this.docDisplayService}
+      .peekViewService=${this.peekViewService}
+      .onOpenDoc=${this.onOpenDoc}
     ></chat-content-stream-objects>`;
   }
 
   private renderRichText(text: string) {
     return html`<chat-content-rich-text
-      .host=${this.host}
       .text=${text}
       .state=${this.state}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .theme=${this.affineThemeService.appTheme.themeSignal}
     ></chat-content-rich-text>`;
   }
 
   private renderEditorActions() {
-    const { item, isLast, status } = this;
+    const { item, isLast, status, host, session } = this;
 
     if (!isChatMessage(item) || item.role !== 'assistant') return nothing;
 
@@ -146,35 +182,40 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
     )
       return nothing;
 
-    const { host } = this;
     const { content, streamObjects, id: messageId } = item;
     const markdown = streamObjects?.length
       ? mergeStreamContent(streamObjects)
       : content;
 
-    const actions = isInsidePageEditor(host)
-      ? PageEditorActions
-      : EdgelessEditorActions;
+    const actions = host
+      ? isInsidePageEditor(host)
+        ? PageEditorActions
+        : EdgelessEditorActions
+      : null;
+
+    const showActions = host && !!markdown && !this.independentMode;
 
     return html`
       <chat-copy-more
         .host=${host}
-        .actions=${actions}
+        .session=${session}
+        .actions=${showActions ? actions : []}
         .content=${markdown}
         .isLast=${isLast}
-        .getSessionId=${this.getSessionId}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
+        .notificationService=${this.notificationService}
       ></chat-copy-more>
-      ${isLast && !!markdown
+      ${isLast && showActions
         ? html`<chat-action-list
             .actions=${actions}
             .host=${host}
+            .session=${session}
             .content=${markdown}
-            .getSessionId=${this.getSessionId}
             .messageId=${messageId ?? undefined}
             .withMargin=${true}
+            .notificationService=${this.notificationService}
           ></chat-action-list>`
         : nothing}
     `;

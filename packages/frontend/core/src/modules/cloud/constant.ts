@@ -44,6 +44,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                 ServerFeature.CopilotEmbedding,
                 ServerFeature.OAuth,
                 ServerFeature.Payment,
+                ServerFeature.LocalWorkspace,
               ],
               oauthProviders: [
                 OAuthProviderType.Google,
@@ -76,6 +77,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                   ServerFeature.CopilotEmbedding,
                   ServerFeature.OAuth,
                   ServerFeature.Payment,
+                  ServerFeature.LocalWorkspace,
                 ],
                 oauthProviders: [
                   OAuthProviderType.Google,
@@ -108,6 +110,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                     ServerFeature.CopilotEmbedding,
                     ServerFeature.OAuth,
                     ServerFeature.Payment,
+                    ServerFeature.LocalWorkspace,
                   ],
                   oauthProviders: [
                     OAuthProviderType.Google,
@@ -136,6 +139,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                       ServerFeature.CopilotEmbedding,
                       ServerFeature.OAuth,
                       ServerFeature.Payment,
+                      ServerFeature.LocalWorkspace,
                     ],
                     oauthProviders: [
                       OAuthProviderType.Google,
@@ -166,6 +170,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                         ServerFeature.CopilotEmbedding,
                         ServerFeature.OAuth,
                         ServerFeature.Payment,
+                        ServerFeature.LocalWorkspace,
                       ],
                       oauthProviders: [
                         OAuthProviderType.Google,

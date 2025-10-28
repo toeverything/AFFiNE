@@ -4,6 +4,7 @@ import {
   clickView,
   createEdgelessNoteBlock,
   fitViewportToContent,
+  focusDocTitle,
   getSelectedXYWH,
   locateEditorContainer,
   resizeElementByHandle,
@@ -48,6 +49,7 @@ test('should not show hidden note in embed view page mode', async ({
   await inlineLink.dblclick();
 
   // reference the previous page
+  await focusDocTitle(page);
   await page.keyboard.press('Enter');
   await page.keyboard.type('@' + title);
   const docPopover = page.locator('.linked-doc-popover');

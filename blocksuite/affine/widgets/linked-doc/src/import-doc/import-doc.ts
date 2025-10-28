@@ -134,7 +134,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
       );
       return;
     }
-    this._onImportSuccess([entryId], {
+    this._onImportSuccess(entryId ? [entryId] : [], {
       isWorkspaceFile,
       importedCount: pageIds.length,
     });

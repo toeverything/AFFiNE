@@ -24,8 +24,13 @@ import * as styles from './calendar-events.css';
 const pad = (val?: number) => (val ?? 0).toString().padStart(2, '0');
 
 function formatTime(start?: ICAL.Time, end?: ICAL.Time) {
-  const from = `${pad(start?.hour)}:${pad(start?.minute)}`;
-  const to = `${pad(end?.hour)}:${pad(end?.minute)}`;
+  if (!start || !end) return '';
+  // Use toJSDate which handles timezone conversion for us
+  const startDate = start.toJSDate();
+  const endDate = end.toJSDate();
+
+  const from = `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}`;
+  const to = `${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
   return from === to ? from : `${from} - ${to}`;
 }
 

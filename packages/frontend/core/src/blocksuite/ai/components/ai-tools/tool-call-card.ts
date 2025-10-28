@@ -12,6 +12,7 @@ export class ToolCallCard extends WithDisposable(ShadowlessElement) {
       margin: 8px 0;
       border-radius: 8px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+      background-color: ${unsafeCSSVarV2('layer/background/primary')};
 
       .ai-tool-header {
         display: flex;
@@ -47,6 +48,37 @@ export class ToolCallCard extends WithDisposable(ShadowlessElement) {
         display: inline;
         margin-left: 2px;
         color: ${unsafeCSSVarV2('icon/activated')};
+      }
+    }
+    .ai-tool-call-wrapper.shine {
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        width: 80px;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          ${unsafeCSSVarV2('layer/background/primary')},
+          transparent
+        );
+        animation: shine 1.8s infinite;
+      }
+    }
+
+    @keyframes shine {
+      0% {
+        left: -80px;
+      }
+      100% {
+        left: 100%;
       }
     }
   `;
@@ -89,7 +121,7 @@ export class ToolCallCard extends WithDisposable(ShadowlessElement) {
 
   protected override render() {
     return html`
-      <div class="ai-tool-call-wrapper">
+      <div class="ai-tool-call-wrapper shine">
         <div class="ai-tool-header">
           <div class="ai-icon">${this.icon}</div>
           <div class="ai-tool-name">

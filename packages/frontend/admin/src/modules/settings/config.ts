@@ -55,6 +55,7 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'auth',
     fields: [
       'allowSignup',
+      'allowSignupForOauth',
       // nested json object
       {
         key: 'passwordRequirements',
@@ -74,6 +75,7 @@ export const KNOWN_CONFIG_GROUPS = [
     name: 'Notification',
     module: 'mailer',
     fields: [
+      'SMTP.name',
       'SMTP.host',
       'SMTP.port',
       'SMTP.username',
@@ -142,6 +144,7 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'copilot',
     fields: [
       'enabled',
+      'scenarios',
       'providers.openai',
       'providers.gemini',
       'providers.perplexity',

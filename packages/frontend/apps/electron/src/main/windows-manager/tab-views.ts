@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 
+import { I18n } from '@affine/i18n';
 import {
   app,
   BrowserWindow,
@@ -822,42 +823,53 @@ export class WebContentViewsManager {
       },
     });
 
-    if (spellCheckSettings.enabled) {
-      view.webContents.on('context-menu', (_event, params) => {
-        const shouldShow =
-          params.misspelledWord && params.dictionarySuggestions.length > 0;
+    view.webContents.on('context-menu', (_event, params) => {
+      const menu = Menu.buildFromTemplate([
+        {
+          id: 'cut',
+          label: I18n['com.affine.context-menu.cut'](),
+          role: 'cut',
+          enabled: params.editFlags.canCut,
+        },
+        {
+          id: 'copy',
+          label: I18n['com.affine.context-menu.copy'](),
+          role: 'copy',
+          enabled: params.editFlags.canCopy,
+        },
+        {
+          id: 'paste',
+          label: I18n['com.affine.context-menu.paste'](),
+          role: 'paste',
+          enabled: params.editFlags.canPaste,
+        },
+      ]);
 
-        if (!shouldShow) {
-          return;
-        }
-        const menu = new Menu();
+      // Add each spelling suggestion
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(
+          new MenuItem({
+            label: suggestion,
+            click: () => view.webContents.replaceMisspelling(suggestion),
+          })
+        );
+      }
 
-        // Add each spelling suggestion
-        for (const suggestion of params.dictionarySuggestions) {
-          menu.append(
-            new MenuItem({
-              label: suggestion,
-              click: () => view.webContents.replaceMisspelling(suggestion),
-            })
-          );
-        }
+      // Allow users to add the misspelled word to the dictionary
+      if (params.misspelledWord) {
+        menu.append(
+          new MenuItem({
+            label: 'Add to dictionary', // TODO: i18n
+            click: () =>
+              view.webContents.session.addWordToSpellCheckerDictionary(
+                params.misspelledWord
+              ),
+          })
+        );
+      }
 
-        // Allow users to add the misspelled word to the dictionary
-        if (params.misspelledWord) {
-          menu.append(
-            new MenuItem({
-              label: 'Add to dictionary', // TODO: i18n
-              click: () =>
-                view.webContents.session.addWordToSpellCheckerDictionary(
-                  params.misspelledWord
-                ),
-            })
-          );
-        }
-
-        menu.popup();
-      });
-    }
+      menu.popup();
+    });
 
     this.webViewsMap$.next(this.tabViewsMap.set(viewId, view));
     let unsub = () => {};

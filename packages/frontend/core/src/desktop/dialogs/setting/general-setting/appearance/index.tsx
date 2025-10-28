@@ -181,7 +181,7 @@ export const AppearanceSettings = () => {
           ]()}
         >
           <Switch
-            checked={appSettings.showLinkedDocInSidebar}
+            checked={!!appSettings.showLinkedDocInSidebar}
             onChange={checked =>
               updateSettings('showLinkedDocInSidebar', checked)
             }

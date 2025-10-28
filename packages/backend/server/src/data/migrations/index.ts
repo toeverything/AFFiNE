@@ -6,3 +6,4 @@ export * from './1732861452428-migrate-invite-status';
 export * from './1733125339942-universal-subscription';
 export * from './1738590347632-feature-redundant';
 export * from './1745211351719-create-indexer-tables';
+export * from './1751966744168-correct-session-update-time';

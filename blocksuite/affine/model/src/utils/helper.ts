@@ -10,7 +10,11 @@ import {
 
 import type { BlockMeta } from './types';
 
-export type EmbedProps<Props = object> = Props & GfxCompatibleProps & BlockMeta;
+export type EmbedProps<Props = object> = Props &
+  GfxCompatibleProps &
+  BlockMeta & {
+    comments?: Record<string, boolean>;
+  };
 
 export function defineEmbedModel<
   Props extends object,
@@ -52,6 +56,7 @@ export function createEmbedBlockSchema<
         xywh: '[0,0,0,0]',
         lockedBySelf: false,
         rotate: 0,
+        comments: undefined,
         'meta:createdAt': undefined,
         'meta:updatedAt': undefined,
         'meta:createdBy': undefined,

@@ -5,16 +5,23 @@ import type {
 } from '@blocksuite/std/inline';
 import type { BaseTextAttributes, DeltaInsert } from '@blocksuite/store';
 import type * as Y from 'yjs';
-import type { ZodTypeAny } from 'zod';
+import type { AnyZodObject, KeySchema, ZodEffects, ZodRecord } from 'zod';
 
 export type InlineSpecs<
   TextAttributes extends BaseTextAttributes = BaseTextAttributes,
 > = {
   name: keyof TextAttributes | string;
-  schema: ZodTypeAny;
+  schema:
+    | AnyZodObject
+    | ZodEffects<
+        ZodRecord<KeySchema>,
+        Partial<Record<string, unknown>>,
+        unknown
+      >;
   match: (delta: DeltaInsert<TextAttributes>) => boolean;
   renderer: AttributeRenderer<TextAttributes>;
   embed?: boolean;
+  wrapper?: boolean;
 };
 
 export type InlineMarkdownMatchAction<

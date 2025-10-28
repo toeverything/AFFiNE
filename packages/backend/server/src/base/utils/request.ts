@@ -118,3 +118,11 @@ export function getRequestIdFromHost(host: ArgumentsHost) {
   const req = getRequestFromHost(host);
   return getRequestIdFromRequest(req, type);
 }
+
+export function getClientVersionFromRequest(req: Request) {
+  let version = req.headers['x-affine-version'];
+  if (Array.isArray(version)) {
+    version = version[0];
+  }
+  return version;
+}

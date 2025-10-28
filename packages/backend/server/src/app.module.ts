@@ -28,13 +28,16 @@ import { RedisModule } from './base/redis';
 import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
+import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
+import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
 import { DocRendererModule } from './core/doc-renderer';
 import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
 import { MailModule } from './core/mail';
+import { MonitorModule } from './core/monitor';
 import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
@@ -111,6 +114,8 @@ export const FunctionalityModules = [
   WebSocketModule,
   JobModule.forRoot(),
   ModelsModule,
+  ScheduleModule.forRoot(),
+  MonitorModule,
 ];
 
 export class AppModuleBuilder {
@@ -150,12 +155,8 @@ export function buildAppModule(env: Env) {
     // basic
     .use(...FunctionalityModules)
 
-    // enable schedule module on graphql server and doc service
-    .useIf(
-      () => env.flavors.graphql || env.flavors.doc,
-      ScheduleModule.forRoot(),
-      IndexerModule
-    )
+    // enable indexer module on graphql server and doc service
+    .useIf(() => env.flavors.graphql || env.flavors.doc, IndexerModule)
 
     // auth
     .use(UserModule, AuthModule, PermissionModule)
@@ -186,7 +187,9 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
-      CustomerIoModule
+      CustomerIoModule,
+      CommentModule,
+      AccessTokenModule
     )
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)
