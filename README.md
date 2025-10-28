@@ -6,7 +6,7 @@
     <br>
 </h1>
 <a href="https://affine.pro/download">
-    <img alt="affine logo" src="https://cdn.affine.pro/Github_hero_image1.png" style="width: 100%">
+    <img alt="affine logo" src="https://cdn.affine.pro/Github_hero_image2.png" style="width: 100%">
 </a>
 <br/>
 <p align="center">
