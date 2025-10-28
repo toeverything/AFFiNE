@@ -14,6 +14,10 @@ import { LifeCycleWatcher } from '../extension/index.js';
 import { ClipboardAdapterConfigIdentifier } from './clipboard-adapter.js';
 import { onlyContainImgElement } from './utils.js';
 
+const CLIPBOARD_LOG_PREFIX = '[Blocksuite Clipboard]';
+const clipboardLog = (...args: unknown[]) =>
+  console.info(CLIPBOARD_LOG_PREFIX, ...args);
+
 export class Clipboard extends LifeCycleWatcher {
   static override key = 'clipboard';
 
@@ -76,10 +80,22 @@ export class Clipboard extends LifeCycleWatcher {
     const byPriority = Array.from(this._adapters).sort(
       (a, b) => b.priority - a.priority
     );
+    clipboardLog('begin resolving snapshot by priority', {
+      parent,
+      index,
+      adapterCount: byPriority.length,
+    });
     for (const { adapter, mimeType } of byPriority) {
+      clipboardLog('checking adapter', {
+        adapterName: adapter.name,
+        mimeType,
+      });
       const item = getItem(mimeType);
       if (Array.isArray(item)) {
         if (item.length === 0) {
+          clipboardLog('adapter provided empty file list', {
+            mimeType,
+          });
           continue;
         }
         if (
@@ -88,10 +104,31 @@ export class Clipboard extends LifeCycleWatcher {
             .map(f => f.type === mimeType || mimeType === '*/*')
             .reduce((a, b) => a && b, true)
         ) {
+          clipboardLog('adapter file types mismatched', {
+            mimeType,
+            files: item.map(file => ({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+            })),
+          });
           continue;
         }
       }
       if (item) {
+        clipboardLog('adapter received clipboard payload', {
+          mimeType,
+          payloadType: Array.isArray(item)
+            ? 'files'
+            : typeof item === 'string'
+              ? 'string'
+              : typeof item,
+          payloadLength: Array.isArray(item)
+            ? item.length
+            : typeof item === 'string'
+              ? item.length
+              : undefined,
+        });
         const job = this._getJob();
         const adapterInstance = new adapter(job, this.std.store.provider);
         const payload = {
@@ -107,10 +144,17 @@ export class Clipboard extends LifeCycleWatcher {
           index
         );
         if (result) {
+          clipboardLog('adapter produced slice', {
+            mimeType,
+          });
           return result;
         }
+        clipboardLog('adapter returned no slice', {
+          mimeType,
+        });
       }
     }
+    clipboardLog('no adapters able to produce slice');
     return null;
   };
 
@@ -124,6 +168,10 @@ export class Clipboard extends LifeCycleWatcher {
   copySlice = async (slice: Slice) => {
     const adapterKeys = this._adapters.map(adapter => adapter.mimeType);
 
+    clipboardLog('copy slice requested', {
+      adapterKeys,
+    });
+
     await this.writeToClipboard(async items => {
       const filtered = (
         await Promise.all(
@@ -136,6 +184,10 @@ export class Clipboard extends LifeCycleWatcher {
           })
         )
       ).filter((adapter): adapter is string[] => Boolean(adapter));
+
+      clipboardLog('copy slice resolved clipboard items', {
+        matchedTypes: filtered.map(([type]) => type),
+      });
 
       return {
         ...items,
@@ -170,10 +222,22 @@ export class Clipboard extends LifeCycleWatcher {
     index?: number
   ) => {
     const data = event.clipboardData;
-    if (!data) return;
+    if (!data) {
+      clipboardLog('paste invoked without clipboardData');
+      return;
+    }
+
+    clipboardLog('paste invoked', {
+      types: Array.from(data.types),
+      parent,
+      index,
+    });
 
     try {
       const json = this.readFromClipboard(data);
+      clipboardLog('paste read snapshot from html', {
+        snapshotTypes: Object.keys(json ?? {}),
+      });
       const slice = await this._getSnapshotByPriority(
         type => json[type],
         doc,
@@ -181,13 +245,18 @@ export class Clipboard extends LifeCycleWatcher {
         index
       );
       if (!slice) {
+        clipboardLog('paste html snapshot produced no slice');
         throw new BlockSuiteError(
           ErrorCode.TransformerError,
           'No snapshot found'
         );
       }
+      clipboardLog('paste resolved slice from html snapshot');
       return slice;
-    } catch {
+    } catch (error) {
+      clipboardLog('paste failed to read snapshot from html, falling back', {
+        error,
+      });
       const getDataByType = this._getDataByType(data);
       const slice = await this._getSnapshotByPriority(
         type => getDataByType(type),
@@ -196,6 +265,11 @@ export class Clipboard extends LifeCycleWatcher {
         index
       );
 
+      if (slice) {
+        clipboardLog('paste resolved slice from fallback data');
+      } else {
+        clipboardLog('paste fallback unable to resolve slice');
+      }
       return slice;
     }
   };
@@ -227,14 +301,20 @@ export class Clipboard extends LifeCycleWatcher {
       ClipboardAdapterConfigIdentifier(type)
     );
     if (!adapterItem) {
+      clipboardLog('no adapter item found for type', { type });
       return;
     }
     const { adapter } = adapterItem;
     const adapterInstance = new adapter(job, this.std.store.provider);
     const result = await adapterInstance.fromSlice(slice);
     if (!result) {
+      clipboardLog('adapter failed to convert slice for type', { type });
       return;
     }
+    clipboardLog('adapter produced clipboard item for type', {
+      type,
+      payloadType: typeof result.file,
+    });
     return result.file;
   }
 
@@ -314,7 +394,7 @@ export class Clipboard extends LifeCycleWatcher {
     if (hasInnerHTML || isEmpty) {
       const type = 'text/html';
       const snapshot = lz.compressToEncodedURIComponent(JSON.stringify(items));
-      const html = `<div data-blocksuite-snapshot='${snapshot}'>${innerHTML}</div>`;
+      const html = `<div data-blocksuite-snapshot="${snapshot}">${innerHTML}</div>`;
       clipboardItems[type] = new Blob([html], { type });
     }
 

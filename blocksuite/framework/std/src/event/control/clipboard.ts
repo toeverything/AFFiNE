@@ -3,10 +3,18 @@ import type { UIEventDispatcher } from '../dispatcher.js';
 import { ClipboardEventState } from '../state/clipboard.js';
 import { EventScopeSourceType, EventSourceState } from '../state/source.js';
 
+const CLIPBOARD_CONTROL_LOG_PREFIX = '[Blocksuite ClipboardControl]';
+const clipboardControlLog = (...args: unknown[]) =>
+  console.info(CLIPBOARD_CONTROL_LOG_PREFIX, ...args);
+
 export class ClipboardControl {
   private readonly _copy = (event: ClipboardEvent) => {
     const clipboardEventState = new ClipboardEventState({
       event,
+    });
+    clipboardControlLog('copy event captured', {
+      types: Array.from(event.clipboardData?.types ?? []),
+      target: this._logTarget(event.target),
     });
     this._dispatcher.run(
       'copy',
@@ -18,6 +26,10 @@ export class ClipboardControl {
     const clipboardEventState = new ClipboardEventState({
       event,
     });
+    clipboardControlLog('cut event captured', {
+      types: Array.from(event.clipboardData?.types ?? []),
+      target: this._logTarget(event.target),
+    });
     this._dispatcher.run(
       'cut',
       this._createContext(event, clipboardEventState)
@@ -28,6 +40,10 @@ export class ClipboardControl {
     const clipboardEventState = new ClipboardEventState({
       event,
     });
+    clipboardControlLog('paste event captured', {
+      types: Array.from(event.clipboardData?.types ?? []),
+      target: this._logTarget(event.target),
+    });
 
     this._dispatcher.run(
       'paste',
@@ -36,6 +52,19 @@ export class ClipboardControl {
   };
 
   constructor(private readonly _dispatcher: UIEventDispatcher) {}
+
+  private _logTarget(target: EventTarget | null) {
+    if (!target) {
+      return 'null';
+    }
+    if (typeof HTMLElement !== 'undefined' && target instanceof HTMLElement) {
+      return `${target.tagName.toLowerCase()}#${target.id || 'no-id'}`;
+    }
+    if (typeof Document !== 'undefined' && target instanceof Document) {
+      return 'document';
+    }
+    return target.constructor?.name ?? 'unknown';
+  }
 
   private _createContext(event: Event, clipboardState: ClipboardEventState) {
     return UIEventStateContext.from(
