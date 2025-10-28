@@ -9,7 +9,11 @@ import {
 } from '@blocksuite/icons/lit';
 
 import { insertDatabaseBlockCommand } from '../commands';
-import { KanbanViewTooltip, TableViewTooltip, ChartViewTooltip } from './tooltips';
+import {
+  ChartViewTooltip,
+  KanbanViewTooltip,
+  TableViewTooltip,
+} from './tooltips';
 
 export const databaseSlashMenuConfig: SlashMenuConfig = {
   disableWhen: ({ model }) => model.flavour === 'affine:database',
@@ -110,6 +114,6 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
           })
           .run();
       },
-    }, 
+    },
   ],
 };

@@ -180,7 +180,6 @@ export const ToDoListTooltip = html`<svg width="170" height="68" viewBox="0 0 17
 </svg>
 `;
 
-
 // prettier-ignore
 export const ChartViewTooltip = html`
   <svg

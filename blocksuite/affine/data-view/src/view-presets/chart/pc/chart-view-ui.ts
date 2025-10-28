@@ -143,6 +143,12 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       white-space: pre-wrap;
     }
 
+    .chart-caption.chart-caption--below-chart {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+
     dialog::backdrop {
       background: rgba(0, 0, 0, 0.5);
     }
@@ -228,10 +234,10 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     const showCaption = this.logic.view.data$.value?.showCaption === true;
     const captionText = this.logic.view.data$.value?.captionText ?? '';
     const chartType = this.logic.view.data$.value?.chartType ?? 'pie';
-    const isPie = chartType === 'pie';
-    const wrapperAlignmentClass = isPie ? 'align-center' : 'align-left';
+    const wrapperAlignmentClass =
+      chartType === 'pie' ? 'align-center' : 'align-left';
     const containerStyleOverrides = styleMap(
-      isPie
+      chartType === 'pie'
         ? {}
         : {
             alignItems: 'stretch',
@@ -257,7 +263,12 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
           </dialog>
         </div>
         ${showCaption
-          ? html`<div class="chart-caption">${captionText}</div>`
+          ? html`<div
+              class="chart-caption"
+              style="margin: 12px auto 0; text-align: center;"
+            >
+              ${captionText}
+            </div>`
           : ''}
       </div>
     `;

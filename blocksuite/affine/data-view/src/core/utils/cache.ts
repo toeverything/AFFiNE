@@ -19,12 +19,11 @@ export const cacheComputed = <T>(
     getOrCreate,
     list: computed<T[]>(() => {
       const list = ids.value;
-      const keys = new Set(cache.keys());
-      for (const [cachedId] of cache) {
-        keys.delete(cachedId);
-      }
-      for (const id of keys) {
-        cache.delete(id);
+      const validIds = new Set(list);
+      for (const cachedId of Array.from(cache.keys())) {
+        if (!validIds.has(cachedId)) {
+          cache.delete(cachedId);
+        }
       }
       return list.map(id => getOrCreate(id));
     }),
