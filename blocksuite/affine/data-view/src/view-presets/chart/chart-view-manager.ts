@@ -19,33 +19,68 @@ export class ChartSingleView extends SingleViewBase<ChartViewData> {
    * `categoryPropertyId` and increments the corresponding count. Using the
    * string value ensures select properties use their tag names.
    */
-  readonly categoryCounts$: ReadonlySignal<Record<string, number>> = computed(
-    () => {
-      const data = this.data$.value;
-      const categoryProp = data?.categoryPropertyId;
-      if (!categoryProp) {
-        return {}; // no category property selected → no data
-      }
-
-      // Get all existing rows in this view
-      const rows = this.rows$.value; // array of Row objects
-      const counts: Record<string, number> = {};
-
-      rows.forEach(row => {
-        // For each row, get/create the cell in the chosen property
-        const cell: Cell = this.cellGetOrCreate(row.rowId, categoryProp);
-        // Use the string value so Select/Multi-select show their tag names
-        const raw = cell.stringValue$.value as unknown;
-        const category =
-          typeof raw === 'string' && raw.trim().length > 0 ? raw : undefined;
-        if (!category) {
-          return;
-        }
-        counts[category] = (counts[category] || 0) + 1;
-      });
-
-      return counts;
+  private readonly categoryInsights$ = computed(() => {
+    const data = this.data$.value;
+    const categoryProp = data?.categoryPropertyId;
+    if (!categoryProp) {
+      return {
+        counts: {} as Record<string, number>,
+        rawValues: {} as Record<string, unknown>,
+        rowIds: {} as Record<string, string[]>,
+        propertyType: undefined as string | undefined,
+      };
     }
+
+    const rows = this.rows$.value;
+    const counts: Record<string, number> = {};
+    const rawValues: Record<string, unknown> = {};
+    const rowIds: Record<string, string[]> = {};
+
+    rows.forEach(row => {
+      const cell: Cell = this.cellGetOrCreate(row.rowId, categoryProp);
+      const rawString = cell.stringValue$.value as unknown;
+      const category =
+        typeof rawString === 'string' && rawString.trim().length > 0
+          ? rawString.trim()
+          : undefined;
+      if (!category) {
+        return;
+      }
+      counts[category] = (counts[category] || 0) + 1;
+      if (!(category in rawValues)) {
+        rawValues[category] = cell.value$.value;
+      }
+      if (!rowIds[category]) {
+        rowIds[category] = [];
+      }
+      rowIds[category].push(row.rowId);
+    });
+
+    const propertyType = this.propertyGetOrCreate(categoryProp).type$.value as
+      | string
+      | undefined;
+
+    return {
+      counts,
+      rawValues,
+      rowIds,
+      propertyType,
+    };
+  });
+
+  readonly categoryCounts$: ReadonlySignal<Record<string, number>> = computed(
+    () => this.categoryInsights$.value.counts
+  );
+
+  readonly categoryRawValues$: ReadonlySignal<Record<string, unknown>> =
+    computed(() => this.categoryInsights$.value.rawValues);
+
+  readonly categoryRowIds$: ReadonlySignal<Record<string, string[]>> = computed(
+    () => this.categoryInsights$.value.rowIds
+  );
+
+  readonly categoryPropertyType$: ReadonlySignal<string | undefined> = computed(
+    () => this.categoryInsights$.value.propertyType
   );
 
   /**

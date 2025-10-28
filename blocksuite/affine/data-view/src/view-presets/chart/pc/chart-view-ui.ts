@@ -1,9 +1,10 @@
-import { computed, signal } from '@preact/signals-core';
+import { signal } from '@preact/signals-core';
 import Chart from 'chart.js/auto';
 import { css, html, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import type { DataViewRootUILogic } from '../../../core/data-view.js';
 import type { FilterGroup } from '../../../core/filter/types.js';
 import { renderUniLit } from '../../../core/index.js';
 import { DataViewUIBase } from '../../../core/view/data-view-base.js';
@@ -13,18 +14,23 @@ import { type TableViewData, tableViewModel } from '../../table/define.js';
 import { tableViewStyle } from '../../table/pc/table-view-style.js';
 import { TableViewUILogic } from '../../table/pc/table-view-ui-logic.js';
 import { TableSingleView } from '../../table/table-view-manager.js';
+import { ChartProperty } from '../chart-view-manager.js';
 import { chartContainerStyle } from '../styles.js';
 import type { ChartViewUILogic } from './chart-view-ui-logic.js';
 
 class DialogTableView extends TableSingleView {
   private readonly _data: ReturnType<typeof signal<TableViewData>>;
   override data$: ReturnType<typeof signal<TableViewData>>;
-  override readonly$ = computed(() => true);
+  private readonly visibleRowIds$ = signal<Set<string> | undefined>(undefined);
 
   constructor(manager: ViewManager, data: TableViewData) {
     super(manager, 'dialog-table');
     this._data = signal<TableViewData>(data);
     this.data$ = this._data;
+  }
+
+  setVisibleRowIds(rowIds?: string[]) {
+    this.visibleRowIds$.value = rowIds ? new Set(rowIds) : undefined;
   }
 
   override dataUpdate(
@@ -35,11 +41,46 @@ class DialogTableView extends TableSingleView {
     const updates = updater(cur);
     this._data.value = { ...cur, ...updates } as TableViewData;
   }
+
+  override isShow(rowId: string): boolean {
+    const visibleRowIds = this.visibleRowIds$.value;
+    if (visibleRowIds && !visibleRowIds.has(rowId)) {
+      return false;
+    }
+    return super.isShow(rowId);
+  }
 }
 
+type DetailStateCallbacks = {
+  beforeOpen?: () => void;
+  afterClose?: () => void;
+};
+
 class DialogTableViewUILogic extends TableViewUILogic {
+  constructor(
+    root: DataViewRootUILogic,
+    view: DialogTableView,
+    private readonly detailCallbacks: DetailStateCallbacks = {}
+  ) {
+    super(root, view);
+  }
+
   override get headerWidget() {
     return undefined;
+  }
+
+  override onBeforeOpenRowDetail(_rowId: string): void {
+    if (!this.root.config.detailPanelConfig.openDetailPanel) {
+      return;
+    }
+    this.detailCallbacks.beforeOpen?.();
+  }
+
+  override onAfterCloseRowDetail(_rowId: string): void {
+    if (!this.root.config.detailPanelConfig.openDetailPanel) {
+      return;
+    }
+    this.detailCallbacks.afterClose?.();
   }
 }
 
@@ -162,6 +203,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       color: #fff;
       padding: 0;
       min-width: 300px;
+      z-index: 10;
     }
 
     .dialog-content {
@@ -222,11 +264,112 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
   private accessor selectedCategory: string | null = null;
   private dialogTable?: DialogTableView;
   private dialogLogic?: TableViewUILogic;
+  private dialogIsModal = false;
+  private suppressDialogCloseCleanup = false;
+
+  private readonly setDialogDetailOverlayState = (active: boolean) => {
+    if (!this.dialogEl || !this.dialogEl.isConnected) {
+      this.dialogEl = this.renderRoot.querySelector('#data-dialog') as
+        | HTMLDialogElement
+        | undefined;
+    }
+    if (!this.dialogEl) {
+      return;
+    }
+    this.dialogEl.classList.toggle('detail-overlay-active', active);
+    if (active) {
+      this.dialogEl.setAttribute('aria-hidden', 'true');
+      this.dialogEl.style.pointerEvents = 'none';
+      this.dialogEl.style.zIndex = '1';
+    } else {
+      this.dialogEl.removeAttribute('aria-hidden');
+      this.dialogEl.style.pointerEvents = 'auto';
+      this.dialogEl.style.zIndex = '';
+    }
+  };
+
+  private readonly handleDetailBeforeOpen = () => {
+    this.setDialogDisplayMode('modeless');
+    this.setDialogDetailOverlayState(true);
+  };
+
+  private readonly handleDetailAfterClose = () => {
+    this.setDialogDetailOverlayState(false);
+    if (this.selectedCategory) {
+      this.setDialogDisplayMode('modal');
+    }
+  };
+
+  private setDialogDisplayMode(mode: 'modal' | 'modeless') {
+    if (!this.selectedCategory) {
+      return;
+    }
+    if (!this.dialogEl || !this.dialogEl.isConnected) {
+      this.dialogEl = this.renderRoot.querySelector('#data-dialog') as
+        | HTMLDialogElement
+        | undefined;
+    }
+    const dialog = this.dialogEl;
+    if (!dialog) {
+      return;
+    }
+
+    const wantModal = mode === 'modal';
+
+    if (!dialog.open) {
+      if (wantModal) {
+        dialog.showModal();
+        this.dialogIsModal = true;
+      } else {
+        dialog.show();
+        this.dialogIsModal = false;
+      }
+      return;
+    }
+
+    if (wantModal && !this.dialogIsModal) {
+      this.suppressDialogCloseCleanup = true;
+      dialog.close();
+      dialog.showModal();
+      this.dialogIsModal = true;
+    } else if (!wantModal && this.dialogIsModal) {
+      this.suppressDialogCloseCleanup = true;
+      dialog.close();
+      dialog.show();
+      this.dialogIsModal = false;
+    }
+  }
 
   override connectedCallback(): void {
     super.connectedCallback();
     // Let our logic know we're ready to receive updates
     this.logic.ui$.value = this;
+  }
+
+  override disconnectedCallback(): void {
+    if (this.tooltipEl?.isConnected) {
+      this.tooltipEl.remove();
+    }
+    this.tooltipEl = undefined;
+
+    if (this.dialogEl) {
+      this.dialogEl.removeEventListener('close', this.closeDataDialog);
+      if (this.dialogEl.open) {
+        this.dialogEl.close();
+      }
+    }
+    this.dialogEl = undefined;
+    this.dialogTable = undefined;
+    this.dialogLogic = undefined;
+
+    if (this.logic.chartInstance) {
+      this.logic.chartInstance.destroy();
+      this.logic.chartInstance = null;
+    }
+    this.canvasEl = undefined;
+    this.logic.ui$.value = undefined;
+
+    super.disconnectedCallback();
   }
 
   override render(): TemplateResult {
@@ -882,7 +1025,12 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     if (!dataPoint) return;
 
     const datasetIndex = dataPoint.datasetIndex ?? 0;
-    const dataIndex = dataPoint.dataIndex ?? 0;
+    const dataIndex =
+      typeof dataPoint.dataIndex === 'number'
+        ? dataPoint.dataIndex
+        : typeof dataPoint.index === 'number'
+          ? dataPoint.index
+          : undefined;
     const dataset = chart.data.datasets?.[datasetIndex];
     const toNumber = (value: unknown): number => {
       if (typeof value === 'number') {
@@ -898,7 +1046,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     };
     const dataEntry = dataset
       ? Array.isArray(dataset.data)
-        ? dataset.data[dataIndex]
+        ? dataset.data[dataIndex ?? 0]
         : dataset.data
       : undefined;
     const countValue = toNumber(dataEntry);
@@ -917,8 +1065,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       typeof dataset?.label === 'string' && dataset.label.length
         ? dataset.label
         : undefined;
-    const indexLabel =
-      this.chartLabels[dataIndex] ?? this.chartLabels[datasetIndex];
+    const indexLabel = this.getLabelForIndex(dataIndex);
     const rawLabel = typeof dataPoint.label === 'string' ? dataPoint.label : '';
     const label =
       (rawLabel && rawLabel !== 'Total' ? rawLabel : undefined) ??
@@ -929,7 +1076,13 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     const datasetBg = dataPoint.dataset?.backgroundColor;
     let color: string | undefined;
     if (Array.isArray(datasetBg)) {
-      color = datasetBg[dataPoint.dataIndex] as string | undefined;
+      const colorIndex =
+        (typeof dataPoint.dataIndex === 'number'
+          ? dataPoint.dataIndex
+          : typeof dataPoint.index === 'number'
+            ? dataPoint.index
+            : undefined) ?? 0;
+      color = datasetBg[colorIndex] as string | undefined;
     } else if (typeof datasetBg === 'string') {
       color = datasetBg;
     }
@@ -948,23 +1101,45 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       }
     }
 
-    tooltipEl.innerHTML = `
-            <div class="title"><span class="color-box" style="background:${color ?? 'var(--affine-icon-secondary)'}"></span>${label} ${countValue} (${pct}%)</div>
-            <div class="divider"></div>
-            <div class="action">Click to view data</div>
-        `;
+    tooltipEl.replaceChildren();
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'title';
+
+    const colorBox = document.createElement('span');
+    colorBox.className = 'color-box';
+    colorBox.style.background =
+      typeof color === 'string' ? color : 'var(--affine-icon-secondary)';
+
+    const titleLabel = label && label.length > 0 ? label : undefined;
+    const titleParts = [titleLabel, String(countValue), `(${pct}%)`].filter(
+      (part): part is string => part != null
+    );
+    const titleText = document.createTextNode(titleParts.join(' '));
+    titleDiv.append(colorBox, titleText);
+
+    const divider = document.createElement('div');
+    divider.className = 'divider';
+
+    const actionDiv = document.createElement('div');
+    actionDiv.className = 'action';
+    actionDiv.textContent = 'Click to view data';
+    actionDiv.addEventListener('click', () => {
+      const resolvedLabel = this.resolveCategoryLabelFromSource(
+        dataPoint,
+        label
+      );
+      if (resolvedLabel) {
+        void this.openDataDialog(resolvedLabel).catch(console.error);
+      }
+    });
+
+    tooltipEl.append(titleDiv, divider, actionDiv);
 
     const { offsetLeft: left, offsetTop: top } = chart.canvas;
     tooltipEl.style.opacity = '1';
     tooltipEl.style.left = left + tooltip.caretX + 'px';
     tooltipEl.style.top = top + tooltip.caretY + 'px';
-
-    const action = tooltipEl.querySelector('.action') as HTMLElement | null;
-    if (action) {
-      action.onclick = () => {
-        void this.openDataDialog(label).catch(console.error);
-      };
-    }
   };
 
   private async openDataDialog(category: string) {
@@ -988,38 +1163,34 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       );
       this.dialogLogic = new DialogTableViewUILogic(
         this.logic.root,
-        this.dialogTable
+        this.dialogTable,
+        {
+          beforeOpen: this.handleDetailBeforeOpen,
+          afterClose: this.handleDetailAfterClose,
+        }
       );
     }
 
     const prop = this.logic.view.propertyGetOrCreate(categoryId);
-    const parsed = prop.parseValueFromString(category);
-    let filterFn = 'is';
-    let filterValue: unknown = category;
-    const type = prop.type$.value;
+    const categoryRowIds =
+      this.logic.view.categoryRowIds$.value?.[category] ?? undefined;
+    this.dialogTable.setVisibleRowIds(categoryRowIds);
 
-    if (parsed) {
-      filterValue = parsed.value;
-      if (type === 'select') {
-        filterFn = 'isOneOf';
-        filterValue = [parsed.value];
-      } else if (type === 'multi-select') {
-        filterFn = 'containsOneOf';
-        filterValue = [parsed.value];
-      }
-    }
+    const filterConfig = this.buildCategoryFilter(prop, category);
 
     const filter: FilterGroup = {
       type: 'group',
       op: 'and',
-      conditions: [
-        {
-          type: 'filter',
-          left: { type: 'ref', name: categoryId },
-          function: filterFn,
-          args: [{ type: 'literal', value: filterValue }],
-        },
-      ],
+      conditions: filterConfig
+        ? [
+            {
+              type: 'filter',
+              left: { type: 'ref', name: categoryId },
+              function: filterConfig.functionName,
+              args: [{ type: 'literal', value: filterConfig.value }],
+            },
+          ]
+        : [],
     };
     this.dialogTable.dataUpdate(() => ({ filter }));
 
@@ -1030,17 +1201,40 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
         | undefined;
       this.dialogEl?.addEventListener('close', this.closeDataDialog);
     }
-    this.dialogEl?.showModal();
+    if (!this.dialogEl) {
+      this.dialogEl = this.renderRoot.querySelector('#data-dialog') as
+        | HTMLDialogElement
+        | undefined;
+    }
+    if (!this.dialogEl) {
+      return;
+    }
+    if (!this.dialogEl.open) {
+      this.dialogEl.showModal();
+      this.dialogIsModal = true;
+    } else if (!this.dialogIsModal) {
+      this.setDialogDisplayMode('modal');
+    }
   }
 
   private readonly closeDataDialog = () => {
     this.dialogEl = this.renderRoot.querySelector('#data-dialog') as
       | HTMLDialogElement
       | undefined;
-    this.dialogEl?.close();
+    if (this.suppressDialogCloseCleanup) {
+      this.suppressDialogCloseCleanup = false;
+      return;
+    }
+    if (this.dialogEl?.open) {
+      this.dialogEl.close();
+    }
+    this.setDialogDetailOverlayState(false);
     this.selectedCategory = null;
+    this.dialogTable?.setVisibleRowIds(undefined);
     this.dialogTable = undefined;
     this.dialogLogic = undefined;
+    this.dialogIsModal = false;
+    this.suppressDialogCloseCleanup = false;
   };
 
   private renderDataDialog() {
@@ -1065,17 +1259,169 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     `;
   }
 
+  private buildCategoryFilter(
+    property: ChartProperty,
+    categoryLabel: string
+  ): {
+    functionName: string;
+    value: unknown;
+  } | null {
+    const rawValue = this.logic.view.categoryRawValues$.value?.[categoryLabel];
+    const type = property.type$.value;
+
+    if (type === 'select') {
+      const ids = this.ensureStringArray(rawValue);
+      const resolved = ids.length
+        ? ids
+        : this.resolveSelectOptionIds(property, [categoryLabel]);
+      if (!resolved.length) {
+        return null;
+      }
+      return {
+        functionName: 'isOneOf',
+        value: resolved,
+      };
+    }
+
+    if (type === 'multi-select') {
+      const ids = this.ensureStringArray(rawValue);
+      if (!ids.length) {
+        const labels = categoryLabel
+          .split(',')
+          .map(v => v.trim())
+          .filter(Boolean);
+        const resolved = this.resolveSelectOptionIds(property, labels);
+        if (!resolved.length) {
+          return null;
+        }
+        return {
+          functionName: 'containsOneOf',
+          value: resolved,
+        };
+      }
+      return {
+        functionName: 'containsOneOf',
+        value: ids,
+      };
+    }
+
+    if (type === 'checkbox') {
+      const boolValue =
+        typeof rawValue === 'boolean'
+          ? rawValue
+          : typeof categoryLabel === 'string'
+            ? categoryLabel.trim().toLowerCase() === 'true'
+            : undefined;
+      if (boolValue == null) {
+        return null;
+      }
+      return {
+        functionName: 'is',
+        value: boolValue,
+      };
+    }
+
+    if (type === 'number') {
+      const numeric =
+        typeof rawValue === 'number'
+          ? rawValue
+          : typeof categoryLabel === 'string'
+            ? Number(categoryLabel)
+            : NaN;
+      if (Number.isNaN(numeric)) {
+        return null;
+      }
+      return {
+        functionName: 'is',
+        value: numeric,
+      };
+    }
+
+    if (rawValue != null) {
+      return {
+        functionName: 'is',
+        value: rawValue,
+      };
+    }
+
+    if (categoryLabel) {
+      return {
+        functionName: 'is',
+        value: categoryLabel,
+      };
+    }
+
+    return null;
+  }
+
+  private ensureStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === 'string');
+    }
+    return typeof value === 'string' ? [value] : [];
+  }
+
+  private resolveSelectOptionIds(
+    property: ChartProperty,
+    labels: string[]
+  ): string[] {
+    if (!labels.length) {
+      return [];
+    }
+    const data = property.data$.value as
+      | { options?: { id: string; value: string }[] }
+      | undefined;
+    const options = data?.options ?? [];
+    if (!options.length) {
+      return [];
+    }
+    const labelSet = new Set(labels.map(label => label.trim()).filter(Boolean));
+    return options
+      .filter(option => labelSet.has(option.value))
+      .map(option => option.id);
+  }
+
+  private getLabelForIndex(index: unknown): string | undefined {
+    if (typeof index !== 'number') {
+      return undefined;
+    }
+    const label = this.chartLabels[index];
+    return typeof label === 'string' && label.length > 0 ? label : undefined;
+  }
+
+  private resolveCategoryLabelFromSource(
+    source: { label?: unknown; dataIndex?: unknown; index?: unknown },
+    fallback?: string
+  ): string | undefined {
+    const directLabel =
+      typeof source.label === 'string' && source.label.trim().length > 0
+        ? source.label.trim()
+        : undefined;
+    if (directLabel && directLabel !== 'Total') {
+      return directLabel;
+    }
+    const index =
+      typeof source.dataIndex === 'number'
+        ? source.dataIndex
+        : typeof source.index === 'number'
+          ? source.index
+          : undefined;
+    const indexed = this.getLabelForIndex(index);
+    if (indexed) {
+      return indexed;
+    }
+    if (fallback && fallback.trim().length > 0) {
+      return fallback.trim();
+    }
+    return undefined;
+  }
+
   private readonly handleChartClick = (_event: unknown, elements: any[]) => {
     if (!elements || elements.length === 0) return;
     const el = elements[0];
-    // For stacked bars, dataIndex may be 0; fall back to datasetIndex
-    const resolvedIndex =
-      typeof el.dataIndex !== 'undefined' && this.chartLabels[el.dataIndex]
-        ? el.dataIndex
-        : (el.datasetIndex ?? el.index);
-    const label = this.chartLabels[resolvedIndex];
-    if (label) {
-      void this.openDataDialog(label).catch(console.error);
+    const resolvedLabel = this.resolveCategoryLabelFromSource(el);
+    if (resolvedLabel) {
+      void this.openDataDialog(resolvedLabel).catch(console.error);
     }
   };
 

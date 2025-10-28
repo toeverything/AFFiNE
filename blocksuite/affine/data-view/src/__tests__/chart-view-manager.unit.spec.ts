@@ -223,6 +223,27 @@ describe('ChartSingleView', () => {
     });
   });
 
+  it('exposes raw values and row ids per category', () => {
+    const ctx = createChartViewContext({
+      categoryPropertyId: 'status',
+      rows: [
+        { id: 'row-1', values: { status: 'Todo' } },
+        { id: 'row-2', values: { status: 'Todo' } },
+        { id: 'row-3', values: { status: 'Complete' } },
+      ],
+    });
+
+    expect(ctx.view.categoryRawValues$.value).toMatchObject({
+      Todo: 'Todo',
+      Complete: 'Complete',
+    });
+    expect(ctx.view.categoryRowIds$.value).toMatchObject({
+      Todo: ['row-1', 'row-2'],
+      Complete: ['row-3'],
+    });
+    expect(ctx.view.categoryPropertyType$.value).toBe('text');
+  });
+
   it('exposes all datasource properties as visible columns', () => {
     const ctx = createChartViewContext({
       categoryPropertyId: 'status',
