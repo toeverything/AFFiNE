@@ -171,7 +171,11 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
           const list = [...this.groupProperties];
           const idx = list.findIndex(g => g.key === key);
           if (idx >= 0) {
-            list[idx] = { ...list[idx], hide };
+            const target = list[idx];
+            if (!target) {
+              return { groupProperties: list };
+            }
+            list[idx] = { ...target, hide };
           } else {
             const order = (this.groupTrait.groupsDataListAll$.value ?? [])
               .map(g => g?.key)

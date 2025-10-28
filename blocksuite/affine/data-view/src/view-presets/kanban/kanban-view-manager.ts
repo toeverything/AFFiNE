@@ -144,11 +144,16 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
           const list = [...(this.view?.groupProperties ?? [])];
           const idx = list.findIndex(g => g.key === key);
           if (idx >= 0) {
-            list[idx] = { ...list[idx], hide };
+            const target = list[idx];
+            if (!target) {
+              return { groupProperties: list };
+            }
+            list[idx] = { ...target, hide };
           } else {
             // maintain existing order when inserting a new entry
-            const order =
-              this.groupTrait.groupsDataListAll$.value?.map(g => g.key) ?? [];
+            const order = (this.groupTrait.groupsDataListAll$.value ?? [])
+              .map(g => g?.key)
+              .filter((k): k is string => typeof k === 'string');
             let insertPos = 0;
             for (const k of order) {
               if (k === key) break;

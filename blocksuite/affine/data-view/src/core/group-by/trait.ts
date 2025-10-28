@@ -9,7 +9,7 @@ import {
   signal,
 } from '@preact/signals-core';
 
-import type { GroupBy } from '../common/types.js';
+import type { GroupBy, GroupProperty } from '../common/types.js';
 import type { TypeInstance } from '../logical/type.js';
 import { createTraitKey } from '../traits/key.js';
 import { computedLock } from '../utils/lock.js';
@@ -78,7 +78,14 @@ export class Group<
 function hasGroupProperties(
   data: unknown
 ): data is { groupProperties?: GroupProperty[] } {
-  return typeof data === 'object' && data !== null && 'groupProperties' in data;
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+  if (!('groupProperties' in data)) {
+    return false;
+  }
+  const value = (data as { groupProperties?: unknown }).groupProperties;
+  return value === undefined || Array.isArray(value);
 }
 
 export class GroupTrait {
@@ -208,8 +215,8 @@ export class GroupTrait {
       return ordered
         .map(k => map[k])
         .filter(
-          g =>
-            g != null &&
+          (g): g is Group =>
+            !!g &&
             !this.isGroupHidden(g.key) &&
             (!this.hideEmpty$.value || g.rows.length > 0)
         );
@@ -235,18 +242,16 @@ export class GroupTrait {
         orderedKeys = this.ops.sortGroup(Object.keys(map), this.sortAsc$.value);
       }
 
-      const visible: Array<Group | undefined> = [];
-      const hidden: Array<Group | undefined> = [];
+      const visible: Group[] = [];
+      const hidden: Group[] = [];
       orderedKeys
         .map(key => map[key])
-        .filter(g => g != null)
+        .filter((g): g is Group => g != null)
         .forEach(g => {
-          if (g) {
-            if (g.hide$.value) {
-              hidden.push(g);
-            } else {
-              visible.push(g);
-            }
+          if (g.hide$.value) {
+            hidden.push(g);
+          } else {
+            visible.push(g);
           }
         });
       return [...visible, ...hidden];
