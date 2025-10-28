@@ -54,14 +54,22 @@ export type ChartViewData = BasicViewDataType<
     xAxisPropertyId?: string;
     /** X axis sort order */
     xAxisSort?: string;
-    /** Whether to omit zero values */
-    omitZeroValues?: boolean;
     /** Y axis range */
     yAxisRange?: 'Auto' | 'Custom';
     /** Custom Y axis min value */
     yAxisMin?: number;
     /** Custom Y axis max value */
     yAxisMax?: number;
+    /** Grid line display mode for line charts */
+    gridLine?: 'none' | 'horizontal' | 'vertical' | 'both';
+    /** Axis title visibility mode for line charts */
+    axisNameMode?: 'none' | 'x' | 'y' | 'both';
+    /** Whether line charts use a smoothed/curved stroke */
+    smoothLine?: boolean;
+    /** Whether to fill the area underneath the line */
+    gradientArea?: boolean;
+    /** Whether to draw value labels on each data point */
+    showDataLabels?: boolean;
   }
 >;
 

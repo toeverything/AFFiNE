@@ -19,10 +19,12 @@ export class ChartViewUILogic extends DataViewUILogicBase<
   ui$ = signal<ChartViewUI>();
 
   /** Once the chart is drawn, we keep this to update or destroy as needed. */
-  chartInstance: Chart<'doughnut', number[], string> | null = null;
+  chartInstance: Chart | null = null;
 
   /** The `render` function used by DataView to instantiate the UI. */
-  renderer = createUniComponentFromWebComponent(ChartViewUI);
+  renderer = createUniComponentFromWebComponent(ChartViewUI) as ReturnType<
+    typeof createUniComponentFromWebComponent<ChartViewUI>
+  > as never;
 
   /** Clean up the Chart instance when this logic is disposed. */
   onHostDisconnected(): void {

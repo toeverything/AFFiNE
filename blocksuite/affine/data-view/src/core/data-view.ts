@@ -86,6 +86,12 @@ export class DataViewRootUILogic {
   private readonly views$ = cacheComputed(this.viewCacheKeys$, cacheKey => {
     // Extract the viewId from the composite key
     const viewId = cacheKey.split(':')[0];
+    if (!viewId) {
+      throw new BlockSuiteError(
+        BlockSuiteError.ErrorCode.DatabaseBlockError,
+        `Invalid cache key: ${cacheKey}`
+      );
+    }
     return this.createDataViewUILogic(viewId);
   });
   private readonly viewsMap$ = computed(() => {

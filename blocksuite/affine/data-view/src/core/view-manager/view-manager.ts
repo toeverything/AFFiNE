@@ -8,10 +8,13 @@ import type {
   DataViewMode,
   ViewMeta,
 } from '../view/data-view.js';
+import type { Property } from './property.js';
 import type { SingleView } from './single-view.js';
 
 export interface ViewManager {
-  propertyGetOrCreate(propId: string): Property<unknown, unknown, unknown>;
+  propertyGetOrCreate(
+    propId: string
+  ): Property<unknown, unknown, Record<string, unknown>>;
   viewMetas: ViewMeta[];
   dataSource: DataSource;
   readonly$: ReadonlySignal<boolean>;
@@ -127,5 +130,15 @@ export class ViewManagerBase implements ViewManager {
     const meta = this.dataSource.viewMetaGetById(id);
     if (!meta) return;
     return new meta.model.dataViewManager(this, id);
+  }
+
+  propertyGetOrCreate(
+    propId: string
+  ): Property<unknown, unknown, Record<string, unknown>> {
+    const view = this.currentView$.value;
+    if (!view) {
+      throw new Error('No current view available');
+    }
+    return view.propertyGetOrCreate(propId);
   }
 }

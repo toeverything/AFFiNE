@@ -1,7 +1,8 @@
 import { computed, signal } from '@preact/signals-core';
 import Chart from 'chart.js/auto';
-import { css, html } from 'lit';
+import { css, html, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import type { FilterGroup } from '../../../core/filter/types.js';
 import { renderUniLit } from '../../../core/index.js';
@@ -30,6 +31,7 @@ class DialogTableView extends TableSingleView {
     updater: (data: TableViewData) => Partial<TableViewData>
   ): void {
     const cur = this._data.value;
+    if (!cur) return;
     const updates = updater(cur);
     this._data.value = { ...cur, ...updates } as TableViewData;
   }
@@ -66,7 +68,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       width: 100%;
       max-width: 100%;
       position: relative; /* so child <canvas> can absolutely fill */
-      margin: 0 auto;
+      margin: 0;
     }
 
     .chart-wrapper.small {
@@ -91,6 +93,15 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       left: 0;
       width: 100% !important;
       height: 100% !important;
+    }
+
+    .chart-wrapper.align-center {
+      margin: 0 auto;
+    }
+
+    .chart-wrapper.align-left {
+      margin-left: 0;
+      margin-right: auto;
     }
 
     /* Custom tooltip element for external handler */
@@ -122,6 +133,14 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     }
     .chart-tooltip .action {
       color: #ccc;
+    }
+
+    .chart-caption {
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 20px;
+      color: var(--affine-text-secondary-color);
+      white-space: pre-wrap;
     }
 
     dialog::backdrop {
@@ -202,10 +221,26 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     this.logic.ui$.value = this;
   }
 
-  override render() {
+  override render(): TemplateResult {
     // Get height setting for wrapper class
     const height = this.logic.view.data$.value?.height || 'Medium';
     const heightClass = height.toLowerCase();
+    const showCaption = this.logic.view.data$.value?.showCaption === true;
+    const captionText = this.logic.view.data$.value?.captionText ?? '';
+    const chartType = this.logic.view.data$.value?.chartType ?? 'pie';
+    const isPie = chartType === 'pie';
+    const wrapperAlignmentClass = isPie ? 'align-center' : 'align-left';
+    const containerStyleOverrides = styleMap(
+      isPie
+        ? {}
+        : {
+            alignItems: 'stretch',
+            justifyContent: 'flex-start',
+            maxWidth: '100%',
+            margin: '0',
+            paddingRight: '24px',
+          }
+    );
 
     // If the user provided a header widget, render it above the chart
     return html`
@@ -214,13 +249,16 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
             dataViewLogic: this.logic,
           })
         : ''}
-      <div class="${chartContainerStyle}">
-        <div class="chart-wrapper ${heightClass}">
+      <div class="${chartContainerStyle}" style=${containerStyleOverrides}>
+        <div class="chart-wrapper ${heightClass} ${wrapperAlignmentClass}">
           <canvas id="chart-canvas"></canvas>
           <dialog id="data-dialog">
             ${this.selectedCategory ? this.renderDataDialog() : ''}
           </dialog>
         </div>
+        ${showCaption
+          ? html`<div class="chart-caption">${captionText}</div>`
+          : ''}
       </div>
     `;
   }
@@ -313,7 +351,8 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     });
 
     // 4) Pick a color palette based on user selection
-    const colorScheme = this.logic.view.data$.value?.colorScheme ?? 'auto';
+    const colorScheme = (this.logic.view.data$.value?.colorScheme ??
+      'auto') as keyof typeof colorPalettes;
     const colorPalettes: Record<string, string[]> = {
       auto: [
         'rgb(75, 192, 192)', // teal
@@ -404,25 +443,67 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
         'rgb(198, 40, 40)',
       ],
     };
-    const selectedPalette = colorPalettes[colorScheme] || colorPalettes.auto;
-    const backgroundColor = rawLabels.map((_, idx) => {
+    const selectedPalette = (colorPalettes[colorScheme] ??
+      colorPalettes.auto) as string[];
+    const paletteColors = rawLabels.map((_, idx) => {
       return selectedPalette[idx % selectedPalette.length];
     });
+
+    const toRGBA = (color: string, alpha: number) => {
+      const match = color.match(
+        /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/
+      );
+      if (match) {
+        const [, r, g, b] = match;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+      return color;
+    };
 
     // 5) Determine Chart.js "type" (we treat 'pie' as 'doughnut')
     const chartType = this.logic.view.data$.value?.chartType ?? 'pie';
     const isDoughnut = chartType === 'pie';
+    const isLine = chartType === 'line';
     const type = isDoughnut
       ? 'doughnut'
       : chartType === 'bar' ||
           chartType === 'horizontal-bar' ||
           chartType === 'stacked-bar'
         ? 'bar'
-        : chartType === 'line'
+        : isLine
           ? 'line'
           : 'bar';
     const isStacked = chartType === 'stacked-bar';
     const horizontal = chartType === 'horizontal-bar';
+    const gridMode = (this.logic.view.data$.value?.gridLine ?? 'horizontal') as
+      | 'horizontal'
+      | 'vertical'
+      | 'both'
+      | 'none';
+    const axisNameMode = (this.logic.view.data$.value?.axisNameMode ??
+      'none') as 'none' | 'x' | 'y' | 'both';
+    const smoothLine = this.logic.view.data$.value?.smoothLine !== false;
+    const gradientArea = this.logic.view.data$.value?.gradientArea !== false;
+    const showLineDataLabels =
+      this.logic.view.data$.value?.showDataLabels !== false;
+    const showVerticalGrid =
+      isLine && (gridMode === 'vertical' || gridMode === 'both');
+    const showHorizontalGrid =
+      isLine && (gridMode === 'horizontal' || gridMode === 'both');
+    const showXAxisTitle =
+      isLine && (axisNameMode === 'x' || axisNameMode === 'both');
+    const showYAxisTitle =
+      isLine && (axisNameMode === 'y' || axisNameMode === 'both');
+
+    const axisPropertyId =
+      this.logic.view.data$.value?.xAxisPropertyId ??
+      this.logic.view.data$.value?.categoryPropertyId;
+    const axisProperty = this.logic.view.properties$.value.find(
+      (prop: any) => prop.id === axisPropertyId
+    );
+    const xAxisTitle = axisProperty?.name$.value ?? 'Category';
+    const yAxisTitle = 'Value';
+    const legendLabel = axisProperty?.name$.value ?? 'Category';
 
     //
     // ─── PLUGIN: Center Text ("13" + "Total") ─────────────────────────────────────────
@@ -520,7 +601,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
           ctx.textBaseline = 'middle';
 
           // Final draw of label, anchored at (ex + offsetX, ey + offsetY)
-          ctx.fillText(displayLabels[index], ex + offsetX, ey + offsetY);
+          ctx.fillText(displayLabels[index] ?? '', ex + offsetX, ey + offsetY);
         });
 
         ctx.restore();
@@ -536,28 +617,111 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       ? rawLabels.map((label, idx) => ({
           label: label,
           data: [dataValues[idx]],
-          backgroundColor: backgroundColor[idx],
+          backgroundColor: paletteColors[idx],
           borderWidth: 2,
         }))
       : [
-          {
-            // Setting `label: ''` ensures Chart.js never auto-prepends "Status" anywhere
-            label: '',
-            data: dataValues,
-            backgroundColor,
-            borderWidth: isDoughnut ? 1 : 2,
-            ...(isDoughnut && {
-              hoverOffset: 4,
-              // Slightly smaller and thinner ring for doughnut charts
-              cutout: '85%',
-            }),
-            ...(type === 'line' && {
-              borderColor: backgroundColor,
-              fill: false,
-              tension: 0.1,
-            }),
-          },
+          (() => {
+            const dataset: any = {
+              // Setting `label: ''` ensures Chart.js never auto-prepends "Status" anywhere
+              label: '',
+              data: dataValues,
+              backgroundColor: paletteColors,
+              borderWidth: isDoughnut ? 1 : 2,
+            };
+            if (isDoughnut) {
+              dataset.hoverOffset = 4;
+              dataset.cutout = '85%';
+            }
+            if (isLine) {
+              const strokeColor = paletteColors[0] ?? 'rgb(75, 192, 192)';
+              dataset.borderColor = strokeColor;
+              dataset.pointBackgroundColor = paletteColors;
+              dataset.pointBorderColor = '#ffffff';
+              dataset.pointRadius = 4;
+              dataset.pointHoverRadius = 6;
+              dataset.pointHoverBorderWidth = 2;
+              dataset.tension = smoothLine ? 0.35 : 0;
+              dataset.fill = gradientArea ? 'start' : false;
+              dataset.backgroundColor = gradientArea
+                ? (context: any) => {
+                    const { chart } = context;
+                    const { ctx: chartCtx, chartArea } = chart;
+                    if (!chartArea) {
+                      return toRGBA(strokeColor, 0.3);
+                    }
+                    const gradient = chartCtx.createLinearGradient(
+                      0,
+                      chartArea.top,
+                      0,
+                      chartArea.bottom
+                    );
+                    gradient.addColorStop(0, toRGBA(strokeColor, 0.45));
+                    gradient.addColorStop(1, toRGBA(strokeColor, 0));
+                    return gradient;
+                  }
+                : toRGBA(strokeColor, 0.85);
+              dataset.label = legendLabel;
+            }
+            return dataset;
+          })(),
         ];
+
+    if (!isDoughnut && !isStacked && datasets.length > 0) {
+      (datasets[0] as { label?: string }).label = legendLabel;
+    }
+
+    const lineDataLabelPlugin = {
+      id: 'line-data-labels',
+      afterDatasetsDraw: (chart: Chart) => {
+        if (!isLine || !showLineDataLabels) {
+          return;
+        }
+        const meta = chart.getDatasetMeta(0);
+        if (meta.type !== 'line') {
+          return;
+        }
+        const dataset = chart.data.datasets[0];
+        if (!dataset || !Array.isArray(dataset.data)) {
+          return;
+        }
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.font = '12px sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        meta.data.forEach((element: any, index: number) => {
+          const raw = dataset.data[index] as unknown;
+          let numericValue: number | undefined;
+          if (typeof raw === 'number') {
+            numericValue = raw;
+          } else if (raw && typeof raw === 'object') {
+            const candidate = raw as { x?: unknown; y?: unknown };
+            numericValue =
+              typeof candidate.y === 'number'
+                ? candidate.y
+                : typeof candidate.x === 'number'
+                  ? candidate.x
+                  : undefined;
+          }
+          if (!Number.isFinite(numericValue)) {
+            return;
+          }
+          const position = element.tooltipPosition();
+          ctx.fillText(String(numericValue), position.x, position.y - 6);
+        });
+        ctx.restore();
+      },
+    };
+
+    const extraPlugins: any[] = [];
+    if (isDoughnut) {
+      extraPlugins.push(centerTextPlugin, outerLabelPlugin);
+    }
+    if (isLine && showLineDataLabels) {
+      extraPlugins.push(lineDataLabelPlugin);
+    }
 
     this.logic.chartInstance = new Chart(ctx, {
       type: type as any,
@@ -578,20 +742,42 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                 x: {
                   stacked: isStacked,
                   grid: {
-                    display: false,
+                    display: type === 'line' ? showVerticalGrid : false,
+                    color: 'rgba(255, 255, 255, 0.1)',
                   },
                   ticks: {
                     color: 'rgba(255, 255, 255, 0.46)',
+                  },
+                  title: {
+                    display: showXAxisTitle,
+                    text: xAxisTitle,
+                    color: 'rgba(255, 255, 255, 0.46)',
+                    font: {
+                      size: 12,
+                      weight: 400 as const,
+                    },
+                    padding: { top: 12 },
                   },
                 },
                 y: {
                   stacked: isStacked,
                   beginAtZero: true,
                   grid: {
+                    display: type === 'line' ? showHorizontalGrid : true,
                     color: 'rgba(255, 255, 255, 0.1)',
                   },
                   ticks: {
                     color: 'rgba(255, 255, 255, 0.46)',
+                  },
+                  title: {
+                    display: showYAxisTitle,
+                    text: yAxisTitle,
+                    color: 'rgba(255, 255, 255, 0.46)',
+                    font: {
+                      size: 12,
+                      weight: 400 as const,
+                    },
+                    padding: { bottom: 8 },
                   },
                 },
               }
@@ -647,14 +833,15 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
         // ─── Disable ALL built-in "datalabels" (in case you had chartjs-plugin-datalabels) ───
         // This ensures no extra text (like "Status") is ever rendered automatically on each slice.
         // Only include if datalabels plugin is available
-        ...(Chart.defaults.plugins?.datalabels !== undefined && {
+        ...((Chart.defaults.plugins as unknown as { datalabels?: unknown })
+          ?.datalabels !== undefined && {
           datalabels: {
             display: false,
           },
         }),
       },
-      // Only include doughnut-specific plugins for pie charts
-      plugins: isDoughnut ? [centerTextPlugin, outerLabelPlugin] : [],
+      // Only include the plugins that are relevant for this chart type
+      plugins: extraPlugins,
     });
   }
 
@@ -738,6 +925,14 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     ) {
       color = dataPoint.element?.options?.backgroundColor as string;
     }
+    if (!color) {
+      const borderColor = dataPoint.dataset?.borderColor;
+      if (Array.isArray(borderColor)) {
+        color = borderColor[dataPoint.dataIndex] as string | undefined;
+      } else if (typeof borderColor === 'string') {
+        color = borderColor;
+      }
+    }
 
     tooltipEl.innerHTML = `
             <div class="title"><span class="color-box" style="background:${color ?? 'var(--affine-icon-secondary)'}"></span>${label} ${countValue} (${pct}%)</div>
@@ -766,7 +961,10 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     if (!this.dialogTable) {
       const data = tableViewModel.model.defaultData(this.logic.view.manager);
       const props = this.logic.view.manager.dataSource.properties$.value;
-      const tableData = {
+      const tableData: TableViewData = {
+        id: 'dialog-table',
+        name: 'Dialog Table',
+        mode: 'table',
         ...data,
         columns: props.map(id => ({ id, width: DEFAULT_COLUMN_WIDTH })),
       };
