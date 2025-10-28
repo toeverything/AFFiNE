@@ -174,6 +174,8 @@ const openExternalAction = {
     block.openExternal().catch(error => {
       console.error('Failed to open externally:', error);
     });
+  },
+} as const satisfies ToolbarAction;
 
 const replaceAction = {
   id: 'c.replace',

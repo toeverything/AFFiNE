@@ -137,7 +137,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
           const buffer = new Uint8Array(await blob.arrayBuffer());
           await (window as any).__apis.file.openTempFile(
             Array.from(buffer),
-            this.model.props.name
+            this.model.props.name$.value
           );
           return;
         }
@@ -326,7 +326,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
                   module: 'attachment',
                   control: 'upgrade',
                   category: 'card',
-                  type: this.model.props.name.split('.').pop() ?? '',
+                  type: this.model.props.name$.value.split('.').pop() ?? '',
                 });
             }
           }}
