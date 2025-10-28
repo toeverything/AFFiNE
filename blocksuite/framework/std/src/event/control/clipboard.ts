@@ -3,19 +3,12 @@ import type { UIEventDispatcher } from '../dispatcher.js';
 import { ClipboardEventState } from '../state/clipboard.js';
 import { EventScopeSourceType, EventSourceState } from '../state/source.js';
 
-const CLIPBOARD_CONTROL_LOG_PREFIX = '[Blocksuite ClipboardControl]';
-const clipboardControlLog = (...args: unknown[]) =>
-  console.info(CLIPBOARD_CONTROL_LOG_PREFIX, ...args);
-
 export class ClipboardControl {
   private readonly _copy = (event: ClipboardEvent) => {
     const clipboardEventState = new ClipboardEventState({
       event,
     });
-    clipboardControlLog('copy event captured', {
-      types: Array.from(event.clipboardData?.types ?? []),
-      target: this._logTarget(event.target),
-    });
+
     this._dispatcher.run(
       'copy',
       this._createContext(event, clipboardEventState)
@@ -26,10 +19,7 @@ export class ClipboardControl {
     const clipboardEventState = new ClipboardEventState({
       event,
     });
-    clipboardControlLog('cut event captured', {
-      types: Array.from(event.clipboardData?.types ?? []),
-      target: this._logTarget(event.target),
-    });
+
     this._dispatcher.run(
       'cut',
       this._createContext(event, clipboardEventState)
@@ -39,10 +29,6 @@ export class ClipboardControl {
   private readonly _paste = (event: ClipboardEvent) => {
     const clipboardEventState = new ClipboardEventState({
       event,
-    });
-    clipboardControlLog('paste event captured', {
-      types: Array.from(event.clipboardData?.types ?? []),
-      target: this._logTarget(event.target),
     });
 
     this._dispatcher.run(
