@@ -59,14 +59,17 @@ export class MailJob {
     private readonly models: Models
   ) {}
 
+  private calculateRetryDelay(startTime: number) {
+    const elapsed = Date.now() - startTime;
+    return Math.min(30 * 1000, Math.round(elapsed / 2000) * 1000);
+  }
+
   private async sendMailInternal({
     startTime,
     name,
     to,
     props,
   }: Jobs['notification.sendMail']) {
-    const elapsed = Date.now() - startTime;
-    const retryDelay = Math.min(30 * 1000, Math.round(elapsed / 2000) * 1000);
     let options: Partial<SendOptions> = {};
 
     for (const key in props) {
@@ -119,6 +122,7 @@ export class MailJob {
       });
       if (!result) {
         // wait for a while before retrying
+        const retryDelay = this.calculateRetryDelay(startTime);
         await sleep(retryDelay);
         return JOB_SIGNAL.Retry;
       }
@@ -126,6 +130,7 @@ export class MailJob {
     } catch (e) {
       this.logger.error(`Failed to send mail [${name}] to [${to}]`, e);
       // wait for a while before retrying
+      const retryDelay = this.calculateRetryDelay(startTime);
       await sleep(retryDelay);
       return JOB_SIGNAL.Retry;
     }
@@ -184,21 +189,28 @@ export class MailJob {
   @Cron(CronExpression.EVERY_MINUTE)
   async sendRetryMails() {
     // pick random one from the retry map
+    const maxPerTick = 20;
+    let processed = 0;
     let key = await this.cache.mapRandomKey(retryMailKey);
-    while (key) {
+    while (key && processed < maxPerTick) {
       try {
         const job = await this.cache.mapGet<string>(retryMailKey, key);
-        const jobData = JSON.parse(job!) as Jobs['notification.sendMail'];
-        await this.queue.add('notification.sendMail', jobData);
+        if (job) {
+          const jobData = JSON.parse(job) as Jobs['notification.sendMail'];
+          await this.queue.add('notification.sendMail', jobData);
+          // wait for a while before retrying
+          const retryDelay = this.calculateRetryDelay(jobData.startTime);
+          await sleep(retryDelay);
+        }
         await this.cache.mapDelete(retryMailKey, key);
-        const elapsed = Date.now() - jobData.startTime;
-        const retryDelay = Math.min(
-          30 * 1000,
-          Math.round(elapsed / 2000) * 1000
+      } catch (e) {
+        this.logger.error(
+          `Failed to re-queue retry mail job for key [${key}]`,
+          e
         );
-        await sleep(retryDelay);
-      } catch {}
+      }
       key = await this.cache.mapRandomKey(retryMailKey);
+      processed++;
     }
   }
 }
