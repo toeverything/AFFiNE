@@ -214,3 +214,117 @@ export async function addAttachments(
 
   return blockIds;
 }
+
+const SPREADSHEET_MIME_TYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]);
+
+const TEXT_MIME_TYPES = new Set([
+  'text/plain',
+  'text/markdown',
+  'text/x-markdown',
+  'application/json',
+  'application/ld+json',
+  'application/graphql',
+  'application/yaml',
+  'application/x-yaml',
+  'text/yaml',
+  'text/x-yaml',
+  'text/html',
+  'text/css',
+  'text/csv',
+  'application/csv',
+  'text/tab-separated-values',
+  'application/javascript',
+  'text/javascript',
+  'application/typescript',
+  'text/typescript',
+  'text/xml',
+  'application/xml',
+  'application/sql',
+]);
+
+const TEXT_MIME_PREFIXES = ['text/'];
+
+const SPREADSHEET_EXTENSIONS = ['.xlsx', '.xls', '.xlsm'];
+
+const TEXT_EXTENSIONS = [
+  '.txt',
+  '.md',
+  '.markdown',
+  '.json',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.html',
+  '.htm',
+  '.css',
+  '.scss',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.sql',
+  '.log',
+  '.ini',
+  '.conf',
+  '.env',
+];
+
+export function isSpreadsheetAttachment(type: string, name: string) {
+  const lowerType = (type ?? '').toLowerCase();
+  const lowerName = name.toLowerCase();
+  const hasSpreadsheetExtension = SPREADSHEET_EXTENSIONS.some(ext =>
+    lowerName.endsWith(ext)
+  );
+
+  if (SPREADSHEET_MIME_TYPES.has(lowerType)) {
+    return true;
+  }
+
+  return (
+    (lowerType === 'application/octet-stream' && hasSpreadsheetExtension) ||
+    hasSpreadsheetExtension
+  );
+}
+
+export function isTextAttachment(type: string, name: string) {
+  const lowerType = (type ?? '').toLowerCase();
+  const lowerName = name.toLowerCase();
+
+  if (TEXT_MIME_TYPES.has(lowerType)) {
+    return true;
+  }
+
+  if (TEXT_MIME_PREFIXES.some(prefix => lowerType.startsWith(prefix))) {
+    return true;
+  }
+
+  return TEXT_EXTENSIONS.some(ext => lowerName.endsWith(ext));
+}
+
+export function isAttachmentEditable(type: string, name: string) {
+  return (
+    isSpreadsheetAttachment(type, name) ||
+    isCsvLike(type, name) ||
+    isTextAttachment(type, name)
+  );
+}
+
+function isCsvLike(type: string, name: string) {
+  const lowerType = (type ?? '').toLowerCase();
+  const lowerName = name.toLowerCase();
+  const hasCsvExtension =
+    lowerName.endsWith('.csv') || lowerName.endsWith('.tsv');
+
+  return (
+    lowerType === 'text/csv' ||
+    lowerType === 'application/csv' ||
+    lowerType === 'text/tab-separated-values' ||
+    (lowerType === 'application/octet-stream' && hasCsvExtension) ||
+    hasCsvExtension
+  );
+}

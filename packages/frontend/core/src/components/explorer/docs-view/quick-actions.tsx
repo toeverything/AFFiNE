@@ -2,10 +2,17 @@ import {
   Checkbox,
   IconButton,
   type IconButtonProps,
+  notify,
   toast,
   useConfirmModal,
 } from '@affine/component';
-import type { DocRecord } from '@affine/core/modules/doc';
+import {
+  ATTACHMENT_TRASH_CUSTOM_PROPERTY,
+  ATTACHMENT_TRASH_META_KEY,
+  parseAttachmentTrashMetadata,
+  serializeAttachmentTrashMetadata,
+} from '@affine/core/blocksuite/block-suite-editor/attachment-trash';
+import { type DocRecord, DocsService } from '@affine/core/modules/doc';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -24,6 +31,32 @@ import { memo, useCallback, useContext } from 'react';
 import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { IsFavoriteIcon } from '../../pure/icons';
 import { DocExplorerContext } from '../context';
+
+// Helper functions for attachment restoration
+function cloneAttachmentProps(props: Record<string, unknown>) {
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(props);
+    } catch (error) {
+      console.warn('structuredClone failed for attachment props', error);
+    }
+  }
+  return JSON.parse(JSON.stringify(props));
+}
+
+function resolveAttachmentParent(store: any, parentId: string | null) {
+  if (parentId) {
+    const parent = store.getModelById(parentId);
+    if (parent) {
+      return parent.id;
+    }
+  }
+  const note = store.getModelsByFlavour('affine:note')[0];
+  if (note) return note.id;
+  const surface = store.getModelsByFlavour('affine:surface')[0];
+  if (surface) return surface.id;
+  return store.root?.id ?? null;
+}
 
 export interface QuickActionProps extends IconButtonProps {
   doc: DocRecord;
@@ -309,33 +342,125 @@ export const QuickRestore = memo(function QuickRestore({
   const t = useI18n();
   const contextValue = useContext(DocExplorerContext);
   const quickRestore = useLiveData(contextValue.quickRestore$);
-  const { restoreFromTrash } = useBlockSuiteMetaHelper();
+  const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const guardService = useService(GuardService);
+  const docsService = useService(DocsService);
 
   const handleRestore = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(e);
       e.stopPropagation();
       e.preventDefault();
-      guardService
-        .can('Doc_Delete', doc.id)
-        .then(can => {
-          if (can) {
-            restoreFromTrash(doc.id);
-            toast(
-              t['com.affine.toastMessage.restored']({
-                title: doc.title$.value || 'Untitled',
-              })
-            );
-          } else {
-            toast(t['com.affine.no-permission']());
+
+      const can = await guardService.can('Doc_Delete', doc.id);
+      if (!can) {
+        toast(t['com.affine.no-permission']());
+        return;
+      }
+
+      try {
+        // Check if this is an attachment trash document
+        const properties = doc.getProperties() as Record<string, unknown>;
+
+        const metadata = parseAttachmentTrashMetadata(
+          properties[ATTACHMENT_TRASH_CUSTOM_PROPERTY]
+        );
+
+        if (metadata) {
+          // This is an attachment trash document - handle specially
+
+          // Now restore the attachment to its original location
+          const { docId: originalDocId, entry } = metadata;
+          const { doc: targetDoc, release: releaseTarget } =
+            docsService.open(originalDocId);
+          try {
+            await targetDoc.waitForSyncReady();
+            const store = targetDoc.blockSuiteDoc;
+            const attachmentProps = cloneAttachmentProps(entry.props);
+            delete attachmentProps.id;
+
+            const parent = entry.parentId
+              ? store.getModelById(entry.parentId)
+              : null;
+
+            store.captureSync();
+            store.transact(() => {
+              if (parent) {
+                let insertIndex: number | undefined;
+                if (entry.nextId) {
+                  const next = store.getModelById(entry.nextId);
+                  if (next && parent.children) {
+                    const idx = parent.children.findIndex(
+                      ({ id }) => id === next.id
+                    );
+                    insertIndex = idx >= 0 ? idx : undefined;
+                  }
+                } else if (entry.prevId) {
+                  const prev = store.getModelById(entry.prevId);
+                  if (prev && parent.children) {
+                    const idx = parent.children.findIndex(
+                      ({ id }) => id === prev.id
+                    );
+                    insertIndex = idx >= 0 ? idx + 1 : undefined;
+                  }
+                }
+
+                store.addBlock(
+                  'affine:attachment',
+                  attachmentProps as Record<string, unknown>,
+                  parent.id,
+                  insertIndex
+                );
+              } else {
+                const fallbackParent = resolveAttachmentParent(
+                  store,
+                  entry.parentId
+                );
+                store.addBlock(
+                  'affine:attachment',
+                  attachmentProps as Record<string, unknown>,
+                  fallbackParent ?? undefined
+                );
+              }
+            });
+          } finally {
+            releaseTarget();
           }
-        })
-        .catch(e => {
-          console.error(e);
-        });
+
+          // Now permanently delete the trash document
+          permanentlyDeletePage(doc.id);
+
+          // Clear metadata
+          doc.setCustomProperty(ATTACHMENT_TRASH_META_KEY, '');
+
+          notify.success({
+            title: 'Attachment restored',
+            message:
+              'The attachment has been restored to its original location',
+          });
+        } else {
+          // Normal document - use standard restore
+          restoreFromTrash(doc.id);
+          toast(
+            t['com.affine.toastMessage.restored']({
+              title: doc.title$.value || 'Untitled',
+            })
+          );
+        }
+      } catch (error) {
+        console.error('Failed to restore:', error);
+        toast(t['com.affine.toastMessage.failed']?.() || 'Restore failed');
+      }
     },
-    [doc.id, doc.title$, guardService, onClick, restoreFromTrash, t]
+    [
+      doc,
+      docsService,
+      guardService,
+      onClick,
+      permanentlyDeletePage,
+      restoreFromTrash,
+      t,
+    ]
   );
 
   if (!quickRestore) {
@@ -345,7 +470,9 @@ export const QuickRestore = memo(function QuickRestore({
   return (
     <IconButton
       data-testid="restore-page-button"
-      onClick={handleRestore}
+      onClick={e => {
+        handleRestore(e).catch(console.error);
+      }}
       icon={<ResetIcon />}
       {...iconButtonProps}
     />

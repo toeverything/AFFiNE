@@ -1,9 +1,12 @@
+import { notify } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import type {
   EdgelessEditor,
   PageEditor,
 } from '@affine/core/blocksuite/editors';
 import { ServerService } from '@affine/core/modules/cloud';
+import type { DocRecord } from '@affine/core/modules/doc';
+import { DocsService } from '@affine/core/modules/doc';
 import {
   EditorSettingService,
   fontStyleOptions,
@@ -32,6 +35,15 @@ import type { CSSProperties, HTMLAttributes } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { DefaultOpenProperty } from '../../components/properties';
+import {
+  ATTACHMENT_TRASH_CUSTOM_PROPERTY,
+  ATTACHMENT_TRASH_EVENT,
+  ATTACHMENT_TRASH_META_KEY,
+  type AttachmentTrashEventDetail,
+  type AttachmentTrashMetadata,
+  parseAttachmentTrashMetadata,
+  serializeAttachmentTrashMetadata,
+} from './attachment-trash';
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
 import * as styles from './styles.css';
 
@@ -72,15 +84,181 @@ const BlockSuiteEditorImpl = ({
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
+  const attachmentRestoreSubscriptions = useRef<Map<string, () => void>>(
+    new Map()
+  );
   const featureFlags = useService(FeatureFlagService).flags;
   const enableEditorRTL = useLiveData(featureFlags.enable_editor_rtl.$);
   const editorSetting = useService(EditorSettingService).editorSetting;
   const server = useService(ServerService).server;
+  const docsService = useService(DocsService);
 
   const { enableMiddleClickPaste } = useLiveData(
     editorSetting.settings$.selector(s => ({
       enableMiddleClickPaste: s.enableMiddleClickPaste,
     }))
+  );
+
+  const createAttachmentTrashDoc = useCallback(
+    async (detail: AttachmentTrashEventDetail) => {
+      try {
+        const attachmentName =
+          (detail.entry.props.name as string | undefined)?.toString() ||
+          'Attachment';
+        const docRecord = docsService.createDoc({ title: attachmentName });
+        docRecord.setMeta({ title: attachmentName });
+
+        const { doc, release } = docsService.open(docRecord.id);
+        try {
+          await doc.waitForSyncReady();
+          const note =
+            doc.blockSuiteDoc.getModelsByFlavour('affine:note')[0] ?? null;
+          const attachmentProps = cloneAttachmentProps(detail.entry.props);
+          // Remove id from props as BlockSuite generates its own IDs
+          delete attachmentProps.id;
+
+          doc.blockSuiteDoc.captureSync();
+          doc.blockSuiteDoc.transact(() => {
+            doc.blockSuiteDoc.addBlock(
+              'affine:attachment',
+              attachmentProps as Record<string, unknown>,
+              note?.id ?? doc.blockSuiteDoc.root?.id ?? undefined
+            );
+          });
+        } finally {
+          release();
+        }
+
+        // Set custom property AFTER doc content is created and synced
+        const serializedMetadata = serializeAttachmentTrashMetadata(detail);
+        docRecord.setCustomProperty(
+          ATTACHMENT_TRASH_META_KEY,
+          serializedMetadata
+        );
+
+        docRecord.moveToTrash();
+        notify.success({
+          title: 'Moved to Trash',
+          message: 'Attachment has been moved to Trash',
+        });
+      } catch (error) {
+        console.error('Failed to move attachment to trash', error);
+        notify.error({
+          title: 'Failed to move to Trash',
+          message: 'Could not move attachment to Trash',
+        });
+      }
+    },
+    [docsService]
+  );
+
+  const restoreAttachmentFromTrashDoc = useCallback(
+    async (record: DocRecord) => {
+      const properties = record.getProperties() as Record<string, unknown>;
+      const metadata = parseAttachmentTrashMetadata(
+        properties[ATTACHMENT_TRASH_CUSTOM_PROPERTY]
+      );
+      if (!metadata) {
+        console.warn(
+          'No attachment trash metadata found in document',
+          record.id
+        );
+        return;
+      }
+
+      // Clear metadata immediately to prevent double-restoration if event fires again
+      record.setCustomProperty(ATTACHMENT_TRASH_META_KEY, '');
+
+      try {
+        const { docId: originalDocId, entry } = metadata;
+
+        // Delete the trash document FIRST (synchronously) to prevent it from appearing in "All docs"
+        const { doc: sourceDoc, release: releaseSource } = docsService.open(
+          record.id
+        );
+        try {
+          await sourceDoc.waitForSyncReady();
+          sourceDoc.workspace.docCollection.removeDoc(record.id);
+        } finally {
+          releaseSource();
+        }
+
+        // Now restore the attachment to its original location
+        const { doc: targetDoc, release: releaseTarget } =
+          docsService.open(originalDocId);
+        try {
+          await targetDoc.waitForSyncReady();
+          const store = targetDoc.blockSuiteDoc;
+          const attachmentProps = cloneAttachmentProps(entry.props);
+          // Remove id from props as BlockSuite generates its own IDs
+          delete attachmentProps.id;
+
+          const parent = entry.parentId
+            ? store.getModelById(entry.parentId)
+            : null;
+
+          store.captureSync();
+          store.transact(() => {
+            if (parent) {
+              let insertIndex: number | undefined;
+              if (entry.nextId) {
+                const next = store.getModelById(entry.nextId);
+                if (next && parent.children) {
+                  const idx = parent.children.findIndex(
+                    ({ id }) => id === next.id
+                  );
+                  insertIndex = idx >= 0 ? idx : undefined;
+                }
+              } else if (entry.prevId) {
+                const prev = store.getModelById(entry.prevId);
+                if (prev && parent.children) {
+                  const idx = parent.children.findIndex(
+                    ({ id }) => id === prev.id
+                  );
+                  insertIndex = idx >= 0 ? idx + 1 : undefined;
+                }
+              }
+
+              store.addBlock(
+                'affine:attachment',
+                attachmentProps as Record<string, unknown>,
+                parent.id,
+                insertIndex
+              );
+            } else {
+              const fallbackParent = resolveAttachmentParent(
+                store,
+                entry.parentId
+              );
+              store.addBlock(
+                'affine:attachment',
+                attachmentProps as Record<string, unknown>,
+                fallbackParent ?? undefined
+              );
+            }
+          });
+        } finally {
+          releaseTarget();
+        }
+
+        notify.success({
+          title: 'Attachment restored',
+          message: 'The attachment has been restored to its original location',
+        });
+      } catch (error) {
+        console.error('Failed to restore attachment from trash', error);
+        // Restore metadata so user can retry
+        record.setCustomProperty(
+          ATTACHMENT_TRASH_META_KEY,
+          serializeAttachmentTrashMetadata(metadata)
+        );
+        notify.error({
+          title: 'Failed to restore',
+          message: 'Could not restore the attachment. Please try again.',
+        });
+      }
+    },
+    [docsService]
   );
 
   /**
@@ -209,6 +387,94 @@ const BlockSuiteEditorImpl = ({
   }, [enableMiddleClickPaste]);
 
   useEffect(() => {
+    const record = docsService.list.doc$(page.id).value;
+    const properties = record?.getProperties() as Record<
+      string,
+      unknown
+    > | null;
+    const isAttachmentTrashDoc = Boolean(
+      properties?.[ATTACHMENT_TRASH_CUSTOM_PROPERTY]
+    );
+    if (isAttachmentTrashDoc) {
+      return;
+    }
+
+    // Listen for the attachment trash event dispatched from the block component
+    const handleAttachmentTrash = (event: Event) => {
+      const customEvent = event as CustomEvent<AttachmentTrashEventDetail>;
+      createAttachmentTrashDoc(customEvent.detail).catch(console.error);
+    };
+
+    // Use a timeout to ensure the editor host is available
+    const timeoutId = setTimeout(() => {
+      const editorHost = affineEditorContainerProxy?.host;
+      if (editorHost) {
+        editorHost.addEventListener(
+          ATTACHMENT_TRASH_EVENT as any,
+          handleAttachmentTrash
+        );
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      const editorHost = affineEditorContainerProxy?.host;
+      if (editorHost) {
+        editorHost.removeEventListener(
+          ATTACHMENT_TRASH_EVENT as any,
+          handleAttachmentTrash
+        );
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [affineEditorContainerProxy?.host, createAttachmentTrashDoc, page.id]);
+
+  // Disabled: Attachment restoration is now handled directly in the trash page UI
+  // This subscription was causing the trash doc to appear in "All docs" briefly
+  // useEffect(() => {
+  //   const subscriptions = attachmentRestoreSubscriptions.current;
+  //   const docsSubscription = docsService.list.docs$.subscribe(records => {
+  //     const seen = new Set<string>();
+
+  //     records.forEach(record => {
+  //       const properties = record.getProperties() as Record<string, unknown>;
+  //       const hasMetadata = Boolean(
+  //         properties[ATTACHMENT_TRASH_CUSTOM_PROPERTY]
+  //       );
+
+  //       if (hasMetadata) {
+  //         if (!subscriptions.has(record.id)) {
+  //           const sub = record.trash$.subscribe(isTrashed => {
+  //             if (!isTrashed) {
+  //               restoreAttachmentFromTrashDoc(record).catch(console.error);
+  //             }
+  //           });
+  //           subscriptions.set(record.id, () => sub.unsubscribe());
+  //         }
+  //       } else if (subscriptions.has(record.id)) {
+  //         subscriptions.get(record.id)!();
+  //         subscriptions.delete(record.id);
+  //       }
+
+  //       seen.add(record.id);
+  //     });
+
+  //     for (const id of Array.from(subscriptions.keys())) {
+  //       if (!seen.has(id)) {
+  //         subscriptions.get(id)!();
+  //         subscriptions.delete(id);
+  //       }
+  //     }
+  //   });
+
+  //   return () => {
+  //     docsSubscription.unsubscribe();
+  //     subscriptions.forEach(dispose => dispose());
+  //     subscriptions.clear();
+  //   };
+  // }, [docsService, restoreAttachmentFromTrashDoc]);
+
+  useEffect(() => {
     const editor = affineEditorContainerProxy;
     globalThis.currentEditor = editor;
     const disposableGroup = new DisposableGroup();
@@ -276,6 +542,31 @@ const BlockSuiteEditorImpl = ({
     </div>
   );
 };
+
+function cloneAttachmentProps(props: Record<string, unknown>) {
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(props);
+    } catch (error) {
+      console.warn('structuredClone failed for attachment props', error);
+    }
+  }
+  return JSON.parse(JSON.stringify(props));
+}
+
+function resolveAttachmentParent(store: Store, parentId: string | null) {
+  if (parentId) {
+    const parent = store.getModelById(parentId);
+    if (parent) {
+      return parent.id;
+    }
+  }
+  const note = store.getModelsByFlavour('affine:note')[0];
+  if (note) return note.id;
+  const surface = store.getModelsByFlavour('affine:surface')[0];
+  if (surface) return surface.id;
+  return store.root?.id ?? null;
+}
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const [isLoading, setIsLoading] = useState(true);
