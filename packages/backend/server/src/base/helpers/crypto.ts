@@ -46,10 +46,9 @@ function generatePrivateKey(): string {
   return key.toString('utf8');
 }
 
-function generatePublicKey(privateKey: string) {
-  // Import private key (prefer PKCS#8, fallback to SEC1), then derive public key
+function parseKey(privateKey: string) {
   const keyBuf = Buffer.from(privateKey);
-  let priv;
+  let priv: KeyObject;
   try {
     priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'pkcs8' });
   } catch (e1) {
@@ -60,9 +59,8 @@ function generatePublicKey(privateKey: string) {
       priv = createPrivateKey(keyBuf);
     }
   }
-  return createPublicKey(priv)
-    .export({ format: 'pem', type: 'spki' })
-    .toString('utf8');
+  const pub = createPublicKey(priv);
+  return { priv, pub };
 }
 
 @Injectable()
@@ -104,21 +102,10 @@ export class CryptoHelper implements OnModuleInit {
 
   private setup() {
     const privateKey = this.config.crypto.privateKey || generatePrivateKey();
-    const publicKey = generatePublicKey(privateKey);
-
-    // Initialize KeyObjects and determine key type for sign/verify
-    const keyBuf = Buffer.from(privateKey);
-    let priv: KeyObject;
-    try {
-      priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'pkcs8' });
-    } catch (_) {
-      try {
-        priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'sec1' });
-      } catch (_) {
-        priv = createPrivateKey(keyBuf);
-      }
-    }
-    const pub = createPublicKey(priv);
+    const { priv, pub } = parseKey(privateKey);
+    const publicKey = pub
+      .export({ format: 'pem', type: 'spki' })
+      .toString('utf8');
 
     this.keyPair = {
       publicKey: pub,
