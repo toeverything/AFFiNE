@@ -89,23 +89,33 @@ export class RevenueCatWebhookHandler {
         this.mapStatus(sub);
 
       const rcExternalRef = externalRef || this.pickExternalRef(event);
+      // Upsert by unique (targetId, plan) for idempotency
+      const start = sub.latestPurchaseDate || new Date();
+      const end = overrideExpirationDate || sub.expirationDate || null;
+      const nextBillAt = end; // period end serves as next bill anchor for IAP
 
       // Mutual exclusion: skip if Stripe already active for the same plan
       const conflict = await this.db.subscription.findFirst({
         where: {
           targetId: appUserId,
           plan: mapping.plan,
-          provider: Provider.stripe,
           status: {
             in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
           },
         },
       });
       if (conflict) {
-        this.logger.warn(
-          `Skip RC upsert: Stripe active exists. user=${appUserId} plan=${mapping.plan}`
-        );
-        continue;
+        if (conflict.provider === Provider.stripe) {
+          this.logger.warn(
+            `Skip RC upsert: Stripe active exists. user=${appUserId} plan=${mapping.plan}`
+          );
+          continue;
+        } else if (conflict.end && end && conflict.end > end) {
+          this.logger.warn(
+            `Skip RC upsert: newer subscription exists. user=${appUserId} plan=${mapping.plan}`
+          );
+          continue;
+        }
       }
 
       if (deleteInstead) {
@@ -126,11 +136,6 @@ export class RevenueCatWebhookHandler {
         }
         continue;
       }
-
-      // Upsert by unique (targetId, plan) for idempotency
-      const start = sub.latestPurchaseDate || new Date();
-      const end = overrideExpirationDate || sub.expirationDate || null;
-      const nextBillAt = end; // period end serves as next bill anchor for IAP
 
       await this.db.subscription.upsert({
         where: {
