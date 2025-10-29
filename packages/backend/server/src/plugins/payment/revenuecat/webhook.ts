@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IapStore, PrismaClient, Provider } from '@prisma/client';
 
-import { Config, EventBus, OnEvent } from '../../../base';
+import { Config, EventBus, OneMinute, OnEvent } from '../../../base';
 import { SubscriptionStatus } from '../types';
 import { RcEvent } from './controller';
 import { resolveProductMapping } from './map';
@@ -30,6 +30,30 @@ export class RevenueCatWebhookHandler {
     await this.syncAppUser(appUserId, evt.event);
   }
 
+  // NOTE: add subscription to user before the subscription event is received
+  // will expire after a short duration if not confirmed by webhook
+  async syncAppUserWithExternalRef(appUserId: string, externalRef: string) {
+    // Pull latest state to be resilient to reorder/duplicate events
+    let subscriptions: Awaited<
+      ReturnType<RevenueCatService['getSubscriptions']>
+    >;
+    try {
+      subscriptions = await this.rc.getSubscriptionByExternalRef(externalRef);
+      if (!subscriptions) return;
+    } catch (e) {
+      this.logger.error(`Failed to fetch RC subscriber for ${appUserId}`, e);
+      return;
+    }
+
+    await this.syncSubscription(
+      appUserId,
+      subscriptions,
+      undefined,
+      externalRef,
+      new Date(Date.now() + 10 * OneMinute) // expire after 10 minutes
+    );
+  }
+
   // Exposed for reuse by reconcile job
   async syncAppUser(appUserId: string, event?: RcEvent) {
     // Pull latest state to be resilient to reorder/duplicate events
@@ -44,6 +68,16 @@ export class RevenueCatWebhookHandler {
       return;
     }
 
+    await this.syncSubscription(appUserId, subscriptions, event);
+  }
+
+  private async syncSubscription(
+    appUserId: string,
+    subscriptions: Subscription[],
+    event?: RcEvent,
+    externalRef?: string,
+    overrideExpirationDate?: Date
+  ) {
     const productOverride = this.config.payment.revenuecat?.productMap;
 
     for (const sub of subscriptions) {
@@ -54,7 +88,7 @@ export class RevenueCatWebhookHandler {
       const { status, deleteInstead, canceledAt, iapStore } =
         this.mapStatus(sub);
 
-      const rcExternalRef = this.pickExternalRef(event);
+      const rcExternalRef = externalRef || this.pickExternalRef(event);
 
       // Mutual exclusion: skip if Stripe already active for the same plan
       const conflict = await this.db.subscription.findFirst({
@@ -95,7 +129,7 @@ export class RevenueCatWebhookHandler {
 
       // Upsert by unique (targetId, plan) for idempotency
       const start = sub.latestPurchaseDate || new Date();
-      const end = sub.expirationDate || null;
+      const end = overrideExpirationDate || sub.expirationDate || null;
       const nextBillAt = end; // period end serves as next bill anchor for IAP
 
       await this.db.subscription.upsert({
