@@ -557,10 +557,7 @@ export class UserSubscriptionResolver {
     }
 
     let existsSubscription = await this.db.subscription.findFirst({
-      where: {
-        targetId: user.id,
-        rcExternalRef: transactionId,
-      },
+      where: { rcExternalRef: transactionId },
     });
 
     // subscription with the transactionId already exists
@@ -568,6 +565,7 @@ export class UserSubscriptionResolver {
       if (existsSubscription.targetId !== user.id) {
         throw new InvalidSubscriptionParameters();
       } else {
+        this.normalizeSubscription(existsSubscription);
         return [existsSubscription];
       }
     }
