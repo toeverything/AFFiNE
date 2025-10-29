@@ -274,12 +274,12 @@ export class AuthController {
       token: string;
       clientNonce: string;
     }>(cacheKey);
-    if (!cachedToken || typeof cachedToken !== 'object') {
-      throw new InvalidAuthState();
-    }
-    const token = cachedToken.token;
-    if (cachedToken.clientNonce && cachedToken.clientNonce !== clientNonce) {
-      throw new InvalidAuthState();
+    let token: string | undefined;
+    if (cachedToken && typeof cachedToken === 'object') {
+      token = cachedToken.token;
+      if (cachedToken.clientNonce && cachedToken.clientNonce !== clientNonce) {
+        throw new InvalidAuthState();
+      }
     }
 
     if (!token) {
