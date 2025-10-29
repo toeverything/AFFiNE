@@ -41,7 +41,10 @@ export class RevenueCatWebhookHandler {
       subscriptions = await this.rc.getSubscriptionByExternalRef(externalRef);
       if (!subscriptions) return;
     } catch (e) {
-      this.logger.error(`Failed to fetch RC subscriber for ${appUserId}`, e);
+      this.logger.error(
+        `Failed to fetch RC subscriptions for ${appUserId} by ${externalRef}`,
+        e
+      );
       return;
     }
 
@@ -64,7 +67,7 @@ export class RevenueCatWebhookHandler {
       subscriptions = await this.rc.getSubscriptions(appUserId);
       if (!subscriptions) return;
     } catch (e) {
-      this.logger.error(`Failed to fetch RC subscriber for ${appUserId}`, e);
+      this.logger.error(`Failed to fetch RC subscription for ${appUserId}`, e);
       return;
     }
 
