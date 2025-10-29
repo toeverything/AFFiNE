@@ -88,8 +88,10 @@ export class RevenueCatWebhookHandler {
       // ignore non-whitelisted and non-fallbackable products
       if (!mapping) continue;
 
-      const { status, deleteInstead, canceledAt, iapStore } =
-        this.mapStatus(sub);
+      const { status, deleteInstead, canceledAt, iapStore } = this.mapStatus(
+        sub,
+        overrideExpirationDate
+      );
 
       const rcExternalRef = externalRef || this.pickExternalRef(event);
       // Upsert by unique (targetId, plan) for idempotency
@@ -214,7 +216,10 @@ export class RevenueCatWebhookHandler {
     );
   }
 
-  private mapStatus(sub: Subscription): {
+  private mapStatus(
+    sub: Subscription,
+    overrideExpirationDate?: Date
+  ): {
     status: SubscriptionStatus;
     iapStore: IapStore | null;
     deleteInstead: boolean;
@@ -231,7 +236,7 @@ export class RevenueCatWebhookHandler {
         : null;
 
     if (sub.isActive) {
-      if (sub.isTrial) {
+      if (sub.isTrial || overrideExpirationDate) {
         return {
           iapStore,
           status: SubscriptionStatus.Trialing,
