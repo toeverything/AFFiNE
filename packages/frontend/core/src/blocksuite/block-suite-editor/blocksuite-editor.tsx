@@ -5,7 +5,6 @@ import type {
   PageEditor,
 } from '@affine/core/blocksuite/editors';
 import { ServerService } from '@affine/core/modules/cloud';
-import type { DocRecord } from '@affine/core/modules/doc';
 import { DocsService } from '@affine/core/modules/doc';
 import {
   EditorSettingService,
@@ -40,8 +39,6 @@ import {
   ATTACHMENT_TRASH_EVENT,
   ATTACHMENT_TRASH_META_KEY,
   type AttachmentTrashEventDetail,
-  type AttachmentTrashMetadata,
-  parseAttachmentTrashMetadata,
   serializeAttachmentTrashMetadata,
 } from './attachment-trash';
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
@@ -84,9 +81,8 @@ const BlockSuiteEditorImpl = ({
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-  const attachmentRestoreSubscriptions = useRef<Map<string, () => void>>(
-    new Map()
-  );
+  // Note: attachmentRestoreSubscriptions removed as it's no longer used
+  // Attachment restoration is now handled directly in the trash page UI
   const featureFlags = useService(FeatureFlagService).flags;
   const enableEditorRTL = useLiveData(featureFlags.enable_editor_rtl.$);
   const editorSetting = useService(EditorSettingService).editorSetting;
@@ -152,114 +148,9 @@ const BlockSuiteEditorImpl = ({
     [docsService]
   );
 
-  const restoreAttachmentFromTrashDoc = useCallback(
-    async (record: DocRecord) => {
-      const properties = record.getProperties() as Record<string, unknown>;
-      const metadata = parseAttachmentTrashMetadata(
-        properties[ATTACHMENT_TRASH_CUSTOM_PROPERTY]
-      );
-      if (!metadata) {
-        console.warn(
-          'No attachment trash metadata found in document',
-          record.id
-        );
-        return;
-      }
-
-      // Clear metadata immediately to prevent double-restoration if event fires again
-      record.setCustomProperty(ATTACHMENT_TRASH_META_KEY, '');
-
-      try {
-        const { docId: originalDocId, entry } = metadata;
-
-        // Delete the trash document FIRST (synchronously) to prevent it from appearing in "All docs"
-        const { doc: sourceDoc, release: releaseSource } = docsService.open(
-          record.id
-        );
-        try {
-          await sourceDoc.waitForSyncReady();
-          sourceDoc.workspace.docCollection.removeDoc(record.id);
-        } finally {
-          releaseSource();
-        }
-
-        // Now restore the attachment to its original location
-        const { doc: targetDoc, release: releaseTarget } =
-          docsService.open(originalDocId);
-        try {
-          await targetDoc.waitForSyncReady();
-          const store = targetDoc.blockSuiteDoc;
-          const attachmentProps = cloneAttachmentProps(entry.props);
-          // Remove id from props as BlockSuite generates its own IDs
-          delete attachmentProps.id;
-
-          const parent = entry.parentId
-            ? store.getModelById(entry.parentId)
-            : null;
-
-          store.captureSync();
-          store.transact(() => {
-            if (parent) {
-              let insertIndex: number | undefined;
-              if (entry.nextId) {
-                const next = store.getModelById(entry.nextId);
-                if (next && parent.children) {
-                  const idx = parent.children.findIndex(
-                    ({ id }) => id === next.id
-                  );
-                  insertIndex = idx >= 0 ? idx : undefined;
-                }
-              } else if (entry.prevId) {
-                const prev = store.getModelById(entry.prevId);
-                if (prev && parent.children) {
-                  const idx = parent.children.findIndex(
-                    ({ id }) => id === prev.id
-                  );
-                  insertIndex = idx >= 0 ? idx + 1 : undefined;
-                }
-              }
-
-              store.addBlock(
-                'affine:attachment',
-                attachmentProps as Record<string, unknown>,
-                parent.id,
-                insertIndex
-              );
-            } else {
-              const fallbackParent = resolveAttachmentParent(
-                store,
-                entry.parentId
-              );
-              store.addBlock(
-                'affine:attachment',
-                attachmentProps as Record<string, unknown>,
-                fallbackParent ?? undefined
-              );
-            }
-          });
-        } finally {
-          releaseTarget();
-        }
-
-        notify.success({
-          title: 'Attachment restored',
-          message: 'The attachment has been restored to its original location',
-        });
-      } catch (error) {
-        console.error('Failed to restore attachment from trash', error);
-        // Restore metadata so user can retry
-        record.setCustomProperty(
-          ATTACHMENT_TRASH_META_KEY,
-          serializeAttachmentTrashMetadata(metadata)
-        );
-        notify.error({
-          title: 'Failed to restore',
-          message: 'Could not restore the attachment. Please try again.',
-        });
-      }
-    },
-    [docsService]
-  );
+  // Note: restoreAttachmentFromTrashDoc removed as it's no longer used
+  // Attachment restoration is now handled directly in the trash page UI
+  // The logic has been moved to packages/frontend/core/src/components/explorer/docs-view/quick-actions.tsx
 
   /**
    * mimic an AffineEditorContainer using proxy
@@ -554,19 +445,9 @@ function cloneAttachmentProps(props: Record<string, unknown>) {
   return JSON.parse(JSON.stringify(props));
 }
 
-function resolveAttachmentParent(store: Store, parentId: string | null) {
-  if (parentId) {
-    const parent = store.getModelById(parentId);
-    if (parent) {
-      return parent.id;
-    }
-  }
-  const note = store.getModelsByFlavour('affine:note')[0];
-  if (note) return note.id;
-  const surface = store.getModelsByFlavour('affine:surface')[0];
-  if (surface) return surface.id;
-  return store.root?.id ?? null;
-}
+// Note: resolveAttachmentParent removed as it's no longer used in this file
+// It's duplicated in packages/frontend/core/src/components/explorer/docs-view/quick-actions.tsx
+// where attachment restoration logic is now handled
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const [isLoading, setIsLoading] = useState(true);

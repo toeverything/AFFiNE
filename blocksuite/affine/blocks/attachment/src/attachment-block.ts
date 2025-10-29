@@ -74,11 +74,12 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   );
 
   // Store parent info early for trash functionality
-  private _cachedParentInfo: {
-    parentId: string | null;
-    prevId: string | null;
-    nextId: string | null;
-  } | null = null;
+  // Note: Currently cached but not actively used - reserved for future trash restoration features
+  // private _cachedParentInfo: {
+  //   parentId: string | null;
+  //   prevId: string | null;
+  //   nextId: string | null;
+  // } | null = null;
 
   get blobUrl() {
     return this.resourceController.blobUrl$.value;
@@ -159,7 +160,8 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     const blobUrl = this.blobUrl;
     if (!blobUrl) return;
 
-    if (BUILD_CONFIG.isElectron && (window as any).__apis?.file?.openTempFile) {
+    // Check if Electron API is available for opening temp files
+    if ((window as any).__apis?.file?.openTempFile) {
       try {
         const blob = await this.resourceController.blob();
         if (blob) {
@@ -184,7 +186,6 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     await peekView.peek({
       docId: this.model.store.id,
       blockIds: [this.blockId],
-      filetype: this.filetype,
       target: this,
     });
   };
@@ -280,65 +281,47 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     );
   };
 
-  private _cacheParentInfo() {
-    const store = this.model.store;
-    const parent = store.getParent(this.model);
-    const prev = store.getPrev(this.model);
-    const next = store.getNext(this.model);
+  // Commenting out this method as _cachedParentInfo is currently unused
+  // If needed in the future, this would need to use a different API to iterate all blocks
+  // since store.models is not available on the Store type
+  // private _cacheParentInfo() {
+  //   const store = this.model.store;
+  //   const parent = store.getParent(this.model);
+  //   const prev = store.getPrev(this.model);
+  //   const next = store.getNext(this.model);
 
-    let finalParentId = parent?.id ?? null;
-    let finalPrevId = prev?.id ?? null;
-    let finalNextId = next?.id ?? null;
+  //   let finalParentId = parent?.id ?? null;
+  //   let finalPrevId = prev?.id ?? null;
+  //   let finalNextId = next?.id ?? null;
 
-    // If parent is null, try to find it by checking note blocks
-    if (!parent) {
-      const notes = store.getModelsByFlavour('affine:note');
+  //   // If parent is null, try to find it by checking note blocks
+  //   if (!parent) {
+  //     const notes = store.getModelsByFlavour('affine:note');
 
-      // Check if this attachment is in any note's children
-      for (const note of notes) {
-        if (note.children?.some(child => child.id === this.model.id)) {
-          finalParentId = note.id;
-          const childIndex = note.children.findIndex(
-            child => child.id === this.model.id
-          );
-          if (childIndex > 0) {
-            finalPrevId = note.children[childIndex - 1].id;
-          }
-          if (childIndex < note.children.length - 1) {
-            finalNextId = note.children[childIndex + 1].id;
-          }
-          break;
-        }
-      }
+  //     // Check if this attachment is in any note's children
+  //     for (const note of notes) {
+  //       if (note.children?.some(child => child.id === this.model.id)) {
+  //         finalParentId = note.id;
+  //         const childIndex = note.children.findIndex(
+  //           child => child.id === this.model.id
+  //         );
+  //         if (childIndex > 0) {
+  //           finalPrevId = note.children[childIndex - 1].id;
+  //         }
+  //         if (childIndex < note.children.length - 1) {
+  //           finalNextId = note.children[childIndex + 1].id;
+  //         }
+  //         break;
+  //       }
+  //     }
+  //   }
 
-      if (!finalParentId) {
-        const allBlocks = Array.from(store.models.values());
-        for (const block of allBlocks) {
-          if (
-            block.children?.some((child: any) => child.id === this.model.id)
-          ) {
-            finalParentId = block.id;
-            const childIndex = block.children.findIndex(
-              (child: any) => child.id === this.model.id
-            );
-            if (childIndex > 0) {
-              finalPrevId = block.children[childIndex - 1].id;
-            }
-            if (childIndex < block.children.length - 1) {
-              finalNextId = block.children[childIndex + 1].id;
-            }
-            break;
-          }
-        }
-      }
-    }
-
-    this._cachedParentInfo = {
-      parentId: finalParentId,
-      prevId: finalPrevId,
-      nextId: finalNextId,
-    };
-  }
+  //   this._cachedParentInfo = {
+  //     parentId: finalParentId,
+  //     prevId: finalPrevId,
+  //     nextId: finalNextId,
+  //   };
+  // }
 
   override connectedCallback() {
     super.connectedCallback();
@@ -356,23 +339,39 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       })
     );
 
+    // Note: Cache update logic commented out as _cacheParentInfo is currently unused
     // Update cache when blocks are added (not on delete to avoid caching null)
-    this.disposables.add(
-      this.model.store.slots.blockUpdated.subscribe(payload => {
-        // Only update cache when blocks are added, not when deleted
-        // (during deletion, parent relationships may already be broken)
-        if (payload.type === 'add') {
-          this._cacheParentInfo();
-        }
-      })
-    );
+    // this.disposables.add(
+    //   this.model.store.slots.blockUpdated.subscribe(payload => {
+    //     // Only update cache when blocks are added, not when deleted
+    //     // (during deletion, parent relationships may already be broken)
+    //     if (payload.type === 'add') {
+    //       this._cacheParentInfo();
+    //     }
+    //   })
+    // );
 
+    // Only dispatch trash event for local deletions to avoid duplicates in shared workspaces
     this.disposables.add(
-      this.model.deleted.subscribe(() => {
-        if (this.model.props.sourceId) {
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+
+            return Boolean(this.model.props.sourceId);
+          })
+        )
+        .subscribe(() => {
           dispatchAttachmentTrashEvent(this);
-        }
-      })
+        })
     );
 
     if (!this.model.props.style && !this.store.readonly) {
@@ -387,8 +386,9 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   }
 
   override firstUpdated() {
+    // Note: Cache parent info commented out as _cacheParentInfo is currently unused
     // Cache parent info now that the block is fully rendered and in the tree
-    this._cacheParentInfo();
+    // this._cacheParentInfo();
 
     // lazy bindings
     this.disposables.addFromEvent(this, 'click', this.onClick);

@@ -10,7 +10,6 @@ import {
   ATTACHMENT_TRASH_CUSTOM_PROPERTY,
   ATTACHMENT_TRASH_META_KEY,
   parseAttachmentTrashMetadata,
-  serializeAttachmentTrashMetadata,
 } from '@affine/core/blocksuite/block-suite-editor/attachment-trash';
 import { type DocRecord, DocsService } from '@affine/core/modules/doc';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
