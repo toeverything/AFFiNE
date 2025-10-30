@@ -497,7 +497,7 @@ test('should remove or cancel the record and revoke entitlement when a trialing 
         isTrial: false,
         isActive: false,
         latestPurchaseDate: new Date('2025-04-01T00:00:00.000Z'),
-        expirationDate: new Date('2024-01-01T00:00:00.000Z'),
+        expirationDate: new Date('2025-04-08T00:00:00.000Z'),
         productId: 'app.affine.pro.Annual',
         store: 'app_store',
         willRenew: false,

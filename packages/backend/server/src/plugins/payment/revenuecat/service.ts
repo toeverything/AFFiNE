@@ -18,6 +18,7 @@ const Store = z.enum([
 const zRcV2RawProduct = z
   .object({
     id: z.string().nonempty(),
+    display_name: z.string().nonempty(),
     store_identifier: z.string().nonempty(),
     subscription: z
       .object({ duration: z.string().nullable() })
@@ -165,6 +166,43 @@ export class RevenueCatService {
     return null;
   }
 
+  async getSubscriptionByExternalRef(
+    externalRef: string
+  ): Promise<Subscription[] | null> {
+    const res = await fetch(
+      `https://api.revenuecat.com/v2/projects/${this.projectId}/subscriptions?store_subscription_identifier=${encodeURIComponent(externalRef)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `RevenueCat getSubscriber failed: ${res.status} ${res.statusText} - ${text}`
+      );
+    }
+
+    const json = await res.json();
+    const envParsed = zRcV2RawEnvelope.safeParse(json);
+
+    if (envParsed.success) {
+      const parsedSubs = await Promise.all(
+        envParsed.data.items.flatMap(async sub => this.parseSubscription(sub))
+      );
+      return parsedSubs.filter((s): s is Subscription => s !== null);
+    }
+    this.logger.error(
+      `RevenueCat subscription parse failed: ${JSON.stringify(
+        envParsed.error.format()
+      )}`
+    );
+    return null;
+  }
+
   async getSubscriptions(customerId: string): Promise<Subscription[] | null> {
     const res = await fetch(
       `https://api.revenuecat.com/v2/projects/${this.projectId}/customers/${customerId}/subscriptions`,
@@ -188,38 +226,7 @@ export class RevenueCatService {
 
     if (envParsed.success) {
       const parsedSubs = await Promise.all(
-        envParsed.data.items.flatMap(async sub => {
-          const items = sub.entitlements.items ?? [];
-          const products = (
-            await Promise.all(items.map(this.getProducts.bind(this)))
-          )
-            .filter((p): p is Product[] => p !== null)
-            .flat();
-          const product = products.find(p => p.id === sub.product_id);
-          if (!product) {
-            this.logger.warn(
-              `RevenueCat subscription ${sub.id} missing product for product_id=${sub.product_id}`
-            );
-            return null;
-          }
-
-          return {
-            identifier: product.display_name,
-            isTrial: sub.status === 'trialing',
-            isActive:
-              sub.gives_access === true ||
-              sub.status === 'active' ||
-              sub.status === 'trialing',
-            latestPurchaseDate: sub.starts_at ? new Date(sub.starts_at) : null,
-            expirationDate: sub.current_period_ends_at
-              ? new Date(sub.current_period_ends_at)
-              : null,
-            productId: product.store_identifier,
-            store: sub.store ?? product.app?.type,
-            willRenew: sub.auto_renewal_status === 'will_renew',
-            duration: product.subscription?.duration ?? null,
-          };
-        })
+        envParsed.data.items.flatMap(async sub => this.parseSubscription(sub))
       );
       return parsedSubs.filter((s): s is Subscription => s !== null);
     }
@@ -229,5 +236,38 @@ export class RevenueCatService {
       )}`
     );
     return null;
+  }
+
+  private async parseSubscription(
+    sub: z.infer<typeof zRcV2RawSubscription>
+  ): Promise<Subscription | null> {
+    const items = sub.entitlements.items ?? [];
+    const products = (await Promise.all(items.map(this.getProducts.bind(this))))
+      .filter((p): p is Product[] => p !== null)
+      .flat();
+    const product = products.find(p => p.id === sub.product_id);
+    if (!product) {
+      this.logger.warn(
+        `RevenueCat subscription ${sub.id} missing product for product_id=${sub.product_id}`
+      );
+      return null;
+    }
+
+    return {
+      identifier: product.display_name,
+      isTrial: sub.status === 'trialing',
+      isActive:
+        sub.gives_access === true ||
+        sub.status === 'active' ||
+        sub.status === 'trialing',
+      latestPurchaseDate: sub.starts_at ? new Date(sub.starts_at) : null,
+      expirationDate: sub.current_period_ends_at
+        ? new Date(sub.current_period_ends_at)
+        : null,
+      productId: product.store_identifier,
+      store: sub.store ?? product.app?.type,
+      willRenew: sub.auto_renewal_status === 'will_renew',
+      duration: product.subscription?.duration ?? null,
+    };
   }
 }
