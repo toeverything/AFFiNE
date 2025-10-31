@@ -99,6 +99,10 @@ declare global {
       userId: User['id'];
       startTime: number;
     };
+    'revenuecat.subscription.refresh.anonymous': {
+      externalRef: string;
+      startTime: number;
+    };
   }
 }
 

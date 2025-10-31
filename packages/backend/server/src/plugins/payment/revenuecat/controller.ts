@@ -82,11 +82,12 @@ export class RevenueCatWebhookController {
                 appUserId,
                 familyShare: event.is_family_share,
                 environment: event.environment,
+                transactionId: event.transaction_id,
               };
               this.logger.log(
                 `[${id}] RevenueCat Webhook {${type}} received for appUserId=${appUserId}.`
               );
-              if (appUserId) {
+              if (appUserId && !appUserId.startsWith('$RCAnonymousID:')) {
                 const user = await this.models.user.get(appUserId);
                 if (user) {
                   if (
@@ -112,6 +113,19 @@ export class RevenueCatWebhookController {
                     );
                   }
                 }
+              } else if (event.transaction_id) {
+                this.event
+                  .emitAsync('revenuecat.subscription.refresh.anonymous', {
+                    externalRef: event.transaction_id,
+                    startTime: Date.now(),
+                  })
+                  .catch((e: Error) => {
+                    this.logger.error(
+                      'Failed to handle RevenueCat Webhook event.',
+                      e
+                    );
+                  });
+                return;
               }
               this.logger.warn(
                 `RevenueCat Webhook received for unknown user`,

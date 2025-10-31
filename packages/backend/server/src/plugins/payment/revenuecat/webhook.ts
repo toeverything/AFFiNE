@@ -103,6 +103,15 @@ export class RevenueCatWebhookHandler {
 
     let success = 0;
     for (const sub of subscriptions) {
+      const customerAlias = await this.rc.getCustomerAlias(sub.customerId);
+      if (customerAlias && !customerAlias.includes(appUserId)) {
+        this.logger.warn(`RevenueCat subscription customer alias mismatch`, {
+          customerId: sub.customerId,
+          customerAlias,
+          appUserId,
+        });
+        continue;
+      }
       const mapping = resolveProductMapping(sub, productOverride);
       // ignore non-whitelisted and non-fallbackable products
       if (!mapping) continue;
@@ -290,6 +299,62 @@ export class RevenueCatWebhookHandler {
       status: SubscriptionStatus.Canceled,
       deleteInstead: true,
     };
+  }
+
+  @OnEvent('revenuecat.subscription.refresh.anonymous')
+  async onSubscriptionRefreshAnonymousUser(evt: {
+    externalRef: string;
+    startTime: number;
+  }) {
+    if (!this.config.payment.revenuecat?.enabled) return;
+    if (Date.now() - evt.startTime > REFRESH_MAX_TIMES) {
+      this.logger.warn(
+        `RevenueCat subscription refresh timed out for externalRef ${evt.externalRef}`
+      );
+      return;
+    }
+    const startTime = Date.now();
+    try {
+      const subscriptions = await this.rc.getSubscriptionByExternalRef(
+        evt.externalRef
+      );
+      let success = 0;
+      if (subscriptions) {
+        for (const sub of subscriptions) {
+          const customerAlias = await this.rc.getCustomerAlias(sub.customerId);
+          if (customerAlias) {
+            if (customerAlias.length === 0 || customerAlias.length > 1) {
+              this.logger.warn(
+                `RevenueCat anonymous subscription has invalid customer alias`,
+                { customerId: sub.customerId, customerAlias }
+              );
+              continue;
+            }
+            const appUserId = customerAlias[0];
+            const saved = await this.syncSubscription(
+              appUserId,
+              [sub],
+              undefined,
+              evt.externalRef
+            );
+            if (saved) success += 1;
+          }
+        }
+      }
+      if (success > 0) return;
+    } catch (e) {
+      this.logger.error(
+        `Failed to fetch RC anonymous subscriptions by ${evt.externalRef}`,
+        e
+      );
+      return;
+    }
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed < REFRESH_INTERVAL) {
+      await sleep(REFRESH_INTERVAL - elapsed);
+    }
+    return JOB_SIGNAL.Retry;
   }
 
   @OnEvent('revenuecat.subscription.refresh')
