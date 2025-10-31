@@ -48,7 +48,7 @@ const zRcV2RawSubscription = z
   .object({
     object: z.enum(['subscription']),
     id: z.string().nonempty(),
-    customer_id: z.string().nonempty(),
+    customer_id: z.string().nonempty().nullish(),
     product_id: z.string().nonempty().nullable(),
     entitlements: zRcV2RawEntitlements,
     starts_at: z.number(),
@@ -105,7 +105,7 @@ export const Subscription = z.object({
   isActive: z.boolean(),
   latestPurchaseDate: z.date().nullable(),
   expirationDate: z.date().nullable(),
-  customerId: z.string(),
+  customerId: z.string().optional(),
   productId: z.string(),
   store: Store,
   willRenew: z.boolean(),
@@ -315,7 +315,7 @@ export class RevenueCatService {
       expirationDate: sub.current_period_ends_at
         ? new Date(sub.current_period_ends_at)
         : null,
-      customerId: sub.customer_id,
+      customerId: sub.customer_id || undefined,
       productId: product.store_identifier,
       store: sub.store ?? product.app?.type,
       willRenew: sub.auto_renewal_status === 'will_renew',

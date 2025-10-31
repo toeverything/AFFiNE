@@ -106,6 +106,12 @@ export class RevenueCatWebhookHandler {
 
     let success = 0;
     for (const sub of subscriptions) {
+      if (!sub.customerId) {
+        this.logger.warn(`RevenueCat subscription missing customerId`, {
+          subscription: sub,
+        });
+        continue;
+      }
       const customerAlias = await this.rc.getCustomerAlias(sub.customerId);
       if (customerAlias && !customerAlias.includes(appUserId)) {
         this.logger.warn(`RevenueCat subscription customer alias mismatch`, {
@@ -324,9 +330,19 @@ export class RevenueCatWebhookHandler {
       let success = 0;
       if (subscriptions) {
         for (const sub of subscriptions) {
+          if (!sub.customerId) {
+            this.logger.warn(`RevenueCat subscription missing customerId`, {
+              subscription: sub,
+            });
+            continue;
+          }
           const customerAlias = await this.rc.getCustomerAlias(sub.customerId);
           if (customerAlias) {
-            if (customerAlias.length === 0 || customerAlias.length > 1) {
+            if (
+              customerAlias.length === 0 ||
+              customerAlias.length > 1 ||
+              !customerAlias[0]
+            ) {
               this.logger.warn(
                 `RevenueCat anonymous subscription has invalid customer alias`,
                 { customerId: sub.customerId, customerAlias }
