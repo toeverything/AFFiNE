@@ -1,11 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IapStore, PrismaClient, Provider } from '@prisma/client';
 
-import { Config, EventBus, OneMinute, OnEvent } from '../../../base';
+import {
+  Config,
+  EventBus,
+  JOB_SIGNAL,
+  OneMinute,
+  OnEvent,
+  sleep,
+} from '../../../base';
 import { SubscriptionStatus } from '../types';
 import { RcEvent } from './controller';
 import { resolveProductMapping } from './map';
 import { RevenueCatService, Subscription } from './service';
+
+const REFRESH_INTERVAL = 5 * 1000; // 5 seconds
+const REFRESH_MAX_TIMES = 10 * OneMinute;
 
 @Injectable()
 export class RevenueCatWebhookHandler {
@@ -39,39 +49,47 @@ export class RevenueCatWebhookHandler {
     >;
     try {
       subscriptions = await this.rc.getSubscriptionByExternalRef(externalRef);
-      if (!subscriptions) return;
+      if (!subscriptions) {
+        throw new Error(`No transaction found: ${externalRef}`);
+      }
     } catch (e) {
       this.logger.error(
         `Failed to fetch RC subscriptions for ${appUserId} by ${externalRef}`,
         e
       );
-      return;
+      return false;
     }
 
-    await this.syncSubscription(
+    const success = await this.syncSubscription(
       appUserId,
       subscriptions,
       undefined,
       externalRef,
       new Date(Date.now() + 10 * OneMinute) // expire after 10 minutes
     );
+    this.event.emit('revenuecat.subscription.refresh', {
+      userId: appUserId,
+      startTime: Date.now(),
+    });
+
+    return success;
   }
 
   // Exposed for reuse by reconcile job
-  async syncAppUser(appUserId: string, event?: RcEvent) {
+  async syncAppUser(appUserId: string, event?: RcEvent): Promise<boolean> {
     // Pull latest state to be resilient to reorder/duplicate events
     let subscriptions: Awaited<
       ReturnType<RevenueCatService['getSubscriptions']>
     >;
     try {
       subscriptions = await this.rc.getSubscriptions(appUserId);
-      if (!subscriptions) return;
+      if (!subscriptions) return false;
     } catch (e) {
       this.logger.error(`Failed to fetch RC subscription for ${appUserId}`, e);
-      return;
+      return false;
     }
 
-    await this.syncSubscription(appUserId, subscriptions, event);
+    return await this.syncSubscription(appUserId, subscriptions, event);
   }
 
   private async syncSubscription(
@@ -80,9 +98,10 @@ export class RevenueCatWebhookHandler {
     event?: RcEvent,
     externalRef?: string,
     overrideExpirationDate?: Date
-  ) {
+  ): Promise<boolean> {
     const productOverride = this.config.payment.revenuecat?.productMap;
 
+    let success = 0;
     for (const sub of subscriptions) {
       const mapping = resolveProductMapping(sub, productOverride);
       // ignore non-whitelisted and non-fallbackable products
@@ -197,6 +216,7 @@ export class RevenueCatWebhookHandler {
           plan: mapping.plan,
           recurring: mapping.recurring,
         });
+        success += 1;
       } else if (status !== SubscriptionStatus.PastDue) {
         // Do not emit canceled for PastDue (still within retry/grace window)
         this.event.emit('user.subscription.canceled', {
@@ -206,6 +226,7 @@ export class RevenueCatWebhookHandler {
         });
       }
     }
+    return success > 0;
   }
 
   private pickExternalRef(e?: RcEvent): string | null {
@@ -269,5 +290,25 @@ export class RevenueCatWebhookHandler {
       status: SubscriptionStatus.Canceled,
       deleteInstead: true,
     };
+  }
+
+  @OnEvent('revenuecat.subscription.refresh')
+  async onSubscriptionRefresh(evt: { userId: string; startTime: number }) {
+    if (!this.config.payment.revenuecat?.enabled) return;
+    if (Date.now() - evt.startTime > REFRESH_MAX_TIMES) {
+      this.logger.warn(
+        `RevenueCat subscription refresh timed out for user ${evt.userId}`
+      );
+      return;
+    }
+    const startTime = Date.now();
+    const success = await this.syncAppUser(evt.userId);
+    if (success) return;
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed < REFRESH_INTERVAL) {
+      await sleep(REFRESH_INTERVAL - elapsed);
+    }
+    return JOB_SIGNAL.Retry;
   }
 }

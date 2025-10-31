@@ -94,6 +94,11 @@ declare global {
       appUserId?: string;
       event: RcEvent;
     };
+
+    'revenuecat.subscription.refresh': {
+      userId: User['id'];
+      startTime: number;
+    };
   }
 }
 
