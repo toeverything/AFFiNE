@@ -5,7 +5,9 @@
 //  Created by qaq on 9/18/25.
 //
 
+import AffineGraphQL
 import Foundation
+import Intelligents
 import RevenueCat
 import UIKit
 
@@ -31,9 +33,33 @@ extension ViewModel {
         switch result {
         case .pending:
           break
-        case let .success(transaction):
-          print("purchase success", transaction)
-          shouldDismiss = true
+        case let .success(verificationResult):
+          // Verify the transaction
+          switch verificationResult {
+          case .verified(let transaction):
+            print("✅ purchase success - verified transaction: \(transaction.id)")
+
+            // Get transaction ID and call requestApplySubscription
+            let transactionId = String(transaction.id)
+
+            do {
+              try await self.requestApplySubscription(transactionId: transactionId)
+              print("✅ requestApplySubscription success for transaction: \(transactionId)")
+            } catch {
+              // Even if this fails, continue - webhook will handle it as fallback
+              print("⚠️ requestApplySubscription failed: \(error.localizedDescription), will rely on webhook")
+            }
+
+            // Finish the transaction
+            await transaction.finish()
+            shouldDismiss = true
+
+          case .unverified(let transaction, let verificationError):
+            print("❌ Transaction verification failed: \(verificationError)")
+            // Verification failed, finish transaction but don't authorize
+            await transaction.finish()
+          }
+
         case .userCancelled:
           break
         @unknown default:
@@ -92,6 +118,44 @@ extension ViewModel {
     }
 
     associatedController?.dismiss(animated: true)
+  }
+
+  // Call requestApplySubscription GraphQL mutation
+  private func requestApplySubscription(transactionId: String) async throws {
+    return try await withCheckedThrowingContinuation { continuation in
+      let mutation = RequestApplySubscriptionMutation(transactionId: transactionId)
+
+      QLService.shared.client.perform(mutation: mutation) { result in
+        switch result {
+        case .success(let graphQLResult):
+          if let subscriptions = graphQLResult.data?.requestApplySubscription {
+            print("📱 Subscriptions applied: \(subscriptions.count) subscription(s)")
+            for sub in subscriptions {
+              print("  - Plan: \(sub.plan.rawValue), Status: \(sub.status.rawValue)")
+            }
+            continuation.resume()
+          } else if let errors = graphQLResult.errors {
+            let errorMessage = errors.map { $0.message }.joined(separator: ", ")
+            print("❌ GraphQL errors: \(errorMessage)")
+            continuation.resume(throwing: NSError(
+              domain: "AffinePaywall.GraphQL",
+              code: -1,
+              userInfo: [NSLocalizedDescriptionKey: errorMessage]
+            ))
+          } else {
+            continuation.resume(throwing: NSError(
+              domain: "AffinePaywall.GraphQL",
+              code: -2,
+              userInfo: [NSLocalizedDescriptionKey: "Unknown GraphQL error"]
+            ))
+          }
+
+        case .failure(let error):
+          print("❌ Network error: \(error.localizedDescription)")
+          continuation.resume(throwing: error)
+        }
+      }
+    }
   }
 }
 
