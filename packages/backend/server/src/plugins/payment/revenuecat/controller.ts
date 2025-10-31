@@ -1,7 +1,7 @@
 import { Body, Controller, Headers, Logger, Post } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Config, EventBus } from '../../../base';
+import { Config, EventBus, JobQueue } from '../../../base';
 import { Public } from '../../../core/auth';
 import { FeatureService } from '../../../core/features';
 import { Models } from '../../../models';
@@ -55,6 +55,7 @@ export class RevenueCatWebhookController {
   constructor(
     private readonly config: Config,
     private readonly event: EventBus,
+    private readonly queue: JobQueue,
     private readonly models: Models,
     private readonly feature: FeatureService
   ) {}
@@ -114,8 +115,8 @@ export class RevenueCatWebhookController {
                   }
                 }
               } else if (event.transaction_id) {
-                this.event
-                  .emitAsync('revenuecat.subscription.refresh.anonymous', {
+                await this.queue
+                  .add('nightly.revenuecat.subscription.refresh.anonymous', {
                     externalRef: event.transaction_id,
                     startTime: Date.now(),
                   })

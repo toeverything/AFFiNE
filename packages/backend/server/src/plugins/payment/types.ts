@@ -94,12 +94,14 @@ declare global {
       appUserId?: string;
       event: RcEvent;
     };
+  }
 
-    'revenuecat.subscription.refresh': {
+  interface Jobs {
+    'nightly.revenuecat.subscription.refresh': {
       userId: User['id'];
       startTime: number;
     };
-    'revenuecat.subscription.refresh.anonymous': {
+    'nightly.revenuecat.subscription.refresh.anonymous': {
       externalRef: string;
       startTime: number;
     };

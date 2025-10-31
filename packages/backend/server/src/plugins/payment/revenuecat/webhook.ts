@@ -5,8 +5,10 @@ import {
   Config,
   EventBus,
   JOB_SIGNAL,
+  JobQueue,
   OneMinute,
   OnEvent,
+  OnJob,
   sleep,
 } from '../../../base';
 import { SubscriptionStatus } from '../types';
@@ -25,7 +27,8 @@ export class RevenueCatWebhookHandler {
     private readonly rc: RevenueCatService,
     private readonly db: PrismaClient,
     private readonly config: Config,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly queue: JobQueue
   ) {}
 
   @OnEvent('revenuecat.webhook')
@@ -67,7 +70,7 @@ export class RevenueCatWebhookHandler {
       externalRef,
       new Date(Date.now() + 10 * OneMinute) // expire after 10 minutes
     );
-    this.event.emit('revenuecat.subscription.refresh', {
+    await this.queue.add('nightly.revenuecat.subscription.refresh', {
       userId: appUserId,
       startTime: Date.now(),
     });
@@ -301,7 +304,7 @@ export class RevenueCatWebhookHandler {
     };
   }
 
-  @OnEvent('revenuecat.subscription.refresh.anonymous')
+  @OnJob('nightly.revenuecat.subscription.refresh.anonymous')
   async onSubscriptionRefreshAnonymousUser(evt: {
     externalRef: string;
     startTime: number;
@@ -357,7 +360,7 @@ export class RevenueCatWebhookHandler {
     return JOB_SIGNAL.Retry;
   }
 
-  @OnEvent('revenuecat.subscription.refresh')
+  @OnJob('nightly.revenuecat.subscription.refresh')
   async onSubscriptionRefresh(evt: { userId: string; startTime: number }) {
     if (!this.config.payment.revenuecat?.enabled) return;
     if (Date.now() - evt.startTime > REFRESH_MAX_TIMES) {
