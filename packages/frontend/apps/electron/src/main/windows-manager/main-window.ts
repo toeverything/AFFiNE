@@ -140,9 +140,16 @@ export class MainWindowManager {
       // TODO(@pengx17): gracefully close the app, for example, ask user to save unsaved changes
       e.preventDefault();
       if (!isMacOS()) {
-        closeAllWindows();
-        this.mainWindowReady = undefined;
-        this.mainWindow$.next(undefined);
+        if (
+          TraySettingsState.value.enabled &&
+          TraySettingsState.value.closeToTray
+        ) {
+          mainWindow.hide();
+        } else {
+          closeAllWindows();
+          this.mainWindowReady = undefined;
+          this.mainWindow$.next(undefined);
+        }
       } else {
         // hide window on macOS
         // application quit will be handled by closing the hidden window
