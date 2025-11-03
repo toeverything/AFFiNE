@@ -193,7 +193,6 @@ export const content = style({
   // in case that width is specified by parent and text is too long
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  overflow: 'hidden',
 });
 
 export const icon = style({
