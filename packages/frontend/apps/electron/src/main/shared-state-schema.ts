@@ -60,7 +60,7 @@ export const MenubarStateSchema = z.object({
   enabled: z.boolean().default(true),
   openOnLeftClick: z.boolean().default(false),
   minimizeToTray: z.boolean().default(false),
-  exitToTray: z.boolean().default(false),
+  closeToTray: z.boolean().default(false),
   startMinimized: z.boolean().default(false),
 });
 

@@ -119,15 +119,15 @@ const MenubarSetting = () => {
           </SettingRow>
           <SettingRow
             name={t[
-              'com.affine.appearanceSettings.menubar.windowBehavior.exitToTray.toggle'
+              'com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.toggle'
             ]()}
             desc={t[
-              'com.affine.appearanceSettings.menubar.windowBehavior.exitToTray.description'
+              'com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.description'
             ]()}
           >
             <Switch
-              checked={traySetting.exitToTray}
-              onChange={checked => traySettingService.setExitToTray(checked)}
+              checked={traySetting.closeToTray}
+              onChange={checked => traySettingService.setCloseToTray(checked)}
             />
           </SettingRow>
           <SettingRow

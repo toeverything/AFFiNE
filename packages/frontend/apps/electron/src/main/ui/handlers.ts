@@ -91,7 +91,10 @@ export const uiHandlers = {
     await handleWebContentsResize(e.sender);
   },
   handleCloseApp: async () => {
-    if (TraySettingsState.value.enabled && TraySettingsState.value.exitToTray) {
+    if (
+      TraySettingsState.value.enabled &&
+      TraySettingsState.value.closeToTray
+    ) {
       const window = await getMainWindow();
       window?.hide();
     } else {
