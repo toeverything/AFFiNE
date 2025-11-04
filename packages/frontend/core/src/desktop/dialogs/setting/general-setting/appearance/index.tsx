@@ -80,7 +80,7 @@ const MenubarSetting = () => {
           />
         </SettingRow>
       </SettingWrapper>
-      {traySetting.enabled ? (
+      {traySetting.enabled && !environment.isMacOs ? (
         <SettingWrapper
           id="windowBehavior"
           title={t[
