@@ -1,0 +1,29 @@
+[build]
+  command = "yarn --immutable && yarn workspace @affine/web build"
+  publish = "packages/frontend/apps/web/dist"
+
+[context.production.environment]
+  AFFINE_BACKEND_URL = "https://YOUR-BACKEND-URL"
+
+[[redirects]]
+  from = "/api/*"
+  to = "${AFFINE_BACKEND_URL}/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/graphql"
+  to = "${AFFINE_BACKEND_URL}/graphql"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/socket.io/*"
+  to = "${AFFINE_BACKEND_URL}/socket.io/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
