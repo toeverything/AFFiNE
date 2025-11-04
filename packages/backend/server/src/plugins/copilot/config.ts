@@ -35,6 +35,8 @@ declare global {
         anthropic: ConfigItem<AnthropicOfficialConfig>;
         anthropicVertex: ConfigItem<AnthropicVertexConfig>;
         morph: ConfigItem<MorphConfig>;
+        huggingface: ConfigItem<{ apiKey: string; baseURL?: string }>;
+        ollama: ConfigItem<{ baseURL?: string }>;
       };
     };
   }
@@ -110,6 +112,19 @@ defineModuleConfig('copilot', {
   'providers.morph': {
     desc: 'The config for the morph provider.',
     default: {},
+  },
+  'providers.huggingface': {
+    desc: 'The config for the HuggingFace Inference provider.',
+    default: {
+      apiKey: '',
+      baseURL: 'https://api-inference.huggingface.co',
+    },
+  },
+  'providers.ollama': {
+    desc: 'The config for the Ollama local provider.',
+    default: {
+      baseURL: 'http://localhost:11434',
+    },
   },
   unsplash: {
     desc: 'The config for the unsplash key.',
