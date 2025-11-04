@@ -2,6 +2,13 @@
   command = "yarn --immutable && yarn workspace @affine/web build"
   publish = "packages/frontend/apps/web/dist"
 
+# Global build env (override in UI if needed)
+[build.environment]
+  NODE_VERSION = "20"
+  NETLIFY_USE_YARN = "true"
+  YARN_ENABLE_IMMUTABLE_INSTALLS = "true"
+  # Set your backend URL in Site env or here per context
+
 [context.production.environment]
   AFFINE_BACKEND_URL = "https://YOUR-BACKEND-URL"
 
