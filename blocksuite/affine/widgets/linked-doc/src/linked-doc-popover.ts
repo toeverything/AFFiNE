@@ -181,6 +181,10 @@ export class LinkedDocPopover extends SignalWatcher(
       target: eventSource,
       signal: keydownObserverAbortController.signal,
       interceptor: (event, next) => {
+        if (event.key === 'GroupNext' || event.key === 'GroupPrevious') {
+          event.stopPropagation();
+          return;
+        }
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
           event.stopPropagation();
