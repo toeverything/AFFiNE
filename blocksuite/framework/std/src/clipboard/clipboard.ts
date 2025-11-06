@@ -76,6 +76,7 @@ export class Clipboard extends LifeCycleWatcher {
     const byPriority = Array.from(this._adapters).sort(
       (a, b) => b.priority - a.priority
     );
+
     for (const { adapter, mimeType } of byPriority) {
       const item = getItem(mimeType);
       if (Array.isArray(item)) {
@@ -170,7 +171,9 @@ export class Clipboard extends LifeCycleWatcher {
     index?: number
   ) => {
     const data = event.clipboardData;
-    if (!data) return;
+    if (!data) {
+      return;
+    }
 
     try {
       const json = this.readFromClipboard(data);
@@ -187,7 +190,7 @@ export class Clipboard extends LifeCycleWatcher {
         );
       }
       return slice;
-    } catch {
+    } catch (error) {
       const getDataByType = this._getDataByType(data);
       const slice = await this._getSnapshotByPriority(
         type => getDataByType(type),
@@ -195,7 +198,6 @@ export class Clipboard extends LifeCycleWatcher {
         parent,
         index
       );
-
       return slice;
     }
   };
@@ -292,9 +294,7 @@ export class Clipboard extends LifeCycleWatcher {
 
     if (image) {
       const type = 'image/png';
-
       delete items[type];
-
       if (typeof image === 'string') {
         clipboardItems[type] = new Blob([image], { type });
       } else if (image instanceof Blob) {
@@ -314,7 +314,7 @@ export class Clipboard extends LifeCycleWatcher {
     if (hasInnerHTML || isEmpty) {
       const type = 'text/html';
       const snapshot = lz.compressToEncodedURIComponent(JSON.stringify(items));
-      const html = `<div data-blocksuite-snapshot='${snapshot}'>${innerHTML}</div>`;
+      const html = `<div data-blocksuite-snapshot="${snapshot}">${innerHTML}</div>`;
       clipboardItems[type] = new Blob([html], { type });
     }
 

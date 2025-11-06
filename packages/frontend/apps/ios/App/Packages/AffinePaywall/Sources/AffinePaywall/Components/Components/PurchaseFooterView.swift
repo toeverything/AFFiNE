@@ -71,6 +71,7 @@ struct PurchaseFooterView: View {
       .foregroundStyle(AffineColors.textSecondary.color)
       .opacity(viewModel.products.isEmpty ? 0 : 1)
       .disabled(isPurchased)
+      .disabled(viewModel.updating)
 
       Text("The Monthly and Annual plans renew automatically, but you’re free to cancel at any time if it’s not right for you.")
         .font(.system(size: 12))

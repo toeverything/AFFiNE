@@ -48,6 +48,7 @@ libc                   = "0.2"
 log                    = "0.4"
 loom                   = { version = "0.7", features = ["checkpoint"] }
 mimalloc               = "0.1"
+mp4parse               = "0.17"
 nanoid                 = "0.4"
 napi                   = { version = "3.0.0-beta.3", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
 napi-build             = { version = "2" }
