@@ -1,10 +1,11 @@
-import { app, clipboard, nativeImage, nativeTheme, shell } from 'electron';
+import { app, clipboard, nativeImage, nativeTheme } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 import { map, shareReplay } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
+import { openExternalSafely } from '../security/open-external';
 import type { WorkbenchViewMeta } from '../shared-state-schema';
 import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
@@ -182,7 +183,7 @@ export const uiHandlers = {
     }
   },
   openExternal(_, url: string) {
-    return shell.openExternal(url);
+    return openExternalSafely(url);
   },
 
   // tab handlers
