@@ -1,5 +1,5 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const docIconPickerTrigger = style({
   width: 64,
@@ -34,4 +34,12 @@ export const placeholderContentIcon = style({
 export const placeholderContentText = style({
   color: cssVarV2.text.secondary,
   fontSize: 12,
+});
+
+globalStyle('.doc-icon-container[data-has-icon="false"]', {
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
 });
