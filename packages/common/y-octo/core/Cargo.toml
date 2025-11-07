@@ -20,9 +20,7 @@ version = "0.0.1"
 
 [dependencies]
 ahash         = { workspace = true }
-bitvec        = { workspace = true }
 byteorder     = { workspace = true }
-lasso         = { workspace = true }
 log           = { workspace = true }
 nanoid        = { workspace = true }
 nom           = { workspace = true }
