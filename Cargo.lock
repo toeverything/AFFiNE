@@ -40,6 +40,7 @@ dependencies = [
 name = "affine_common"
 version = "0.1.0"
 dependencies = [
+ "assert-json-diff",
  "cc",
  "chrono",
  "criterion2",
@@ -50,6 +51,7 @@ dependencies = [
  "rand 0.9.1",
  "rayon",
  "readability",
+ "serde",
  "serde_json",
  "sha3",
  "strum_macros",
@@ -69,6 +71,7 @@ dependencies = [
  "tree-sitter-scala",
  "tree-sitter-typescript",
  "url",
+ "y-octo",
 ]
 
 [[package]]
