@@ -28,7 +28,6 @@ dotenvy = { workspace = true }
 napi-build = { workspace = true }
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
-  "json",
   "macros",
   "migrate",
   "runtime-tokio",
