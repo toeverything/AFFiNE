@@ -1,0 +1,77 @@
+name: Deploy to Oracle Cloud
+
+# 此工作流用于自动部署到 Oracle Cloud 服务器
+# 需要配置 GitHub Secrets
+
+on:
+  workflow_dispatch:  # 手动触发
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+      - '!.github/workflows/deploy-to-oracle-cloud.yml'
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Oracle Cloud
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH || '~/MingNote' }}
+
+            echo "📥 拉取最新代码..."
+            git pull origin main
+
+            echo "🔄 更新应用..."
+            ./deploy.sh update
+
+            echo "✅ 部署完成"
+            ./deploy.sh status
+
+      - name: Notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 部署成功！"
+          else
+            echo "❌ 部署失败！"
+          fi
+
+# GitHub Secrets 配置说明：
+#
+# 需要在仓库设置中添加以下 Secrets：
+# Settings → Secrets and variables → Actions → New repository secret
+#
+# 1. DEPLOY_HOST - 服务器 IP 地址或域名
+#    示例: 123.456.789.012
+#
+# 2. DEPLOY_USER - SSH 用户名
+#    示例: ubuntu
+#
+# 3. DEPLOY_SSH_KEY - SSH 私钥内容
+#    获取方式: cat ~/.ssh/id_rsa (或你的私钥文件)
+#    复制完整内容，包括 -----BEGIN 和 -----END 行
+#
+# 4. DEPLOY_PORT（可选）- SSH 端口
+#    默认: 22
+#
+# 5. DEPLOY_PATH（可选）- 项目在服务器上的路径
+#    默认: ~/MingNote
+#
+# 配置完成后，每次推送代码到 main 分支，
+# 或手动触发 workflow，都会自动部署到服务器

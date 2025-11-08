@@ -52,6 +52,7 @@ Thumbs.db
 # env
 *.env.local
 *.local.env
+.env
 .history
 
 .next
@@ -88,3 +89,13 @@ af.cmd
 
 # playwright
 storageState.json
+
+# deployment
+backups/
+storage/
+ssl/
+*.pem
+*.key
+*.crt
+*.sql
+*.tar.gz

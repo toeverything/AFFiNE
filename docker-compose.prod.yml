@@ -1,0 +1,178 @@
+version: '3.8'
+
+# MingNote 生产环境部署配置
+# 适用于 Oracle Cloud、VPS 等服务器部署
+
+services:
+  # PostgreSQL 数据库（带 pgvector 扩展）
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mingnote-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-affine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-affine}
+      POSTGRES_DB: ${POSTGRES_DB:-affine}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-affine}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mingnote-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: mingnote-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mingnote-network
+
+  # Manticore Search 全文搜索引擎
+  indexer:
+    image: manticoresearch/manticore:6.2.12
+    container_name: mingnote-indexer
+    restart: unless-stopped
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - manticore_data:/var/lib/manticore
+    ports:
+      - "9308:9308"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9308 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mingnote-network
+
+  # AFFiNE 后端服务
+  backend:
+    image: ghcr.io/toeverything/affine-graphql:stable
+    container_name: mingnote-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      indexer:
+        condition: service_healthy
+    environment:
+      # 节点环境
+      NODE_ENV: production
+
+      # 服务器配置
+      AFFINE_SERVER_HOST: ${AFFINE_SERVER_HOST:-0.0.0.0}
+      AFFINE_SERVER_PORT: ${AFFINE_SERVER_PORT:-3000}
+      AFFINE_SERVER_HTTPS: ${AFFINE_SERVER_HTTPS:-false}
+
+      # 数据库配置
+      DATABASE_URL: postgresql://${POSTGRES_USER:-affine}:${POSTGRES_PASSWORD:-affine}@postgres:5432/${POSTGRES_DB:-affine}
+
+      # Redis 配置
+      REDIS_SERVER_HOST: redis
+      REDIS_SERVER_PORT: 6379
+
+      # 搜索引擎配置
+      AFFINE_INDEXER_SEARCH_ENDPOINT: http://indexer:9308
+
+      # 认证配置
+      AUTH_SECRET: ${AUTH_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+
+      # 存储配置
+      AFFINE_STORAGE_PROVIDER: ${AFFINE_STORAGE_PROVIDER:-local}
+      AFFINE_LOCAL_STORAGE_PATH: /app/storage
+
+      # 功能开关
+      AFFINE_ADMIN_EMAIL: ${AFFINE_ADMIN_EMAIL:-}
+      AFFINE_ADMIN_PASSWORD: ${AFFINE_ADMIN_PASSWORD:-}
+
+      # Telemetry（可选）
+      TELEMETRY_ENABLE: ${TELEMETRY_ENABLE:-false}
+
+    volumes:
+      # 文件存储
+      - storage_data:/app/storage
+      # 配置文件
+      - ./config:/app/config:ro
+    ports:
+      - "${AFFINE_SERVER_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mingnote-network
+
+  # 前端应用（可选，如果需要完全自托管）
+  # 如果使用 GitHub Pages，可以注释掉这部分
+  frontend:
+    image: ghcr.io/toeverything/affine-web:stable
+    container_name: mingnote-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      AFFINE_BACKEND_URL: http://backend:3000
+    ports:
+      - "8080:80"
+    networks:
+      - mingnote-network
+
+  # Nginx 反向代理（可选）
+  nginx:
+    image: nginx:alpine
+    container_name: mingnote-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - mingnote-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  manticore_data:
+    driver: local
+  storage_data:
+    driver: local
+
+networks:
+  mingnote-network:
+    driver: bridge

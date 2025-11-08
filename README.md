@@ -193,6 +193,23 @@ We would like to express our gratitude to all the individuals who have already c
 
 Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/self-host-affine).
 
+### 🚀 Free Deployment Options
+
+- **[Oracle Cloud 永久免费部署指南](docs/DEPLOY_ORACLE_CLOUD.md)** - 完整的 Oracle Cloud 免费部署教程
+- **[快速开始指南](QUICK_START.md)** - 5 分钟快速部署到任何 VPS
+
+### Quick Start
+
+```bash
+# 克隆项目
+git clone https://github.com/YOUR_USERNAME/MingNote.git
+cd MingNote
+
+# 一键部署
+chmod +x deploy.sh
+./deploy.sh init
+```
+
 [![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
 
 ## Hiring
