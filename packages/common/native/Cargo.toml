@@ -4,8 +4,22 @@ name    = "affine_common"
 version = "0.1.0"
 
 [features]
-default = []
-doc-loader = ["docx-parser", "infer", "path-ext", "pdf-extract", "readability", "serde_json", "strum_macros", "text-splitter", "thiserror", "tree-sitter", "url"]
+default = ["hashcash"]
+doc-loader = [
+  "docx-parser",
+  "infer",
+  "path-ext",
+  "pdf-extract",
+  "readability",
+  "serde",
+  "serde_json",
+  "strum_macros",
+  "text-splitter",
+  "thiserror",
+  "tree-sitter",
+  "url",
+]
+hashcash = ["sha3", "rand"]
 tree-sitter = [
   "cc",
   "dep:tree-sitter",
@@ -21,34 +35,41 @@ tree-sitter = [
   "dep:tree-sitter-scala",
   "dep:tree-sitter-typescript",
 ]
+ydoc-loader = ["assert-json-diff", "y-octo"]
 
 [dependencies]
 chrono = { workspace = true }
-rand   = { workspace = true }
-sha3   = { workspace = true }
+rand   = { workspace = true, optional = true }
+sha3   = { workspace = true, optional = true }
 
-docx-parser            = { workspace = true, optional = true }
-infer                  = { workspace = true, optional = true }
-path-ext               = { workspace = true, optional = true }
-pdf-extract            = { workspace = true, optional = true }
-readability            = { workspace = true, optional = true, default-features = false }
-serde_json             = { workspace = true, optional = true }
-strum_macros           = { workspace = true, optional = true }
-text-splitter          = { workspace = true, features = ["markdown", "tiktoken-rs"], optional = true }
-thiserror              = { workspace = true, optional = true }
-tree-sitter            = { workspace = true, optional = true }
-tree-sitter-c          = { workspace = true, optional = true }
-tree-sitter-c-sharp    = { workspace = true, optional = true }
-tree-sitter-cpp        = { workspace = true, optional = true }
-tree-sitter-go         = { workspace = true, optional = true }
-tree-sitter-java       = { workspace = true, optional = true }
+assert-json-diff = { workspace = true, optional = true }
+docx-parser = { workspace = true, optional = true }
+infer = { workspace = true, optional = true }
+path-ext = { workspace = true, optional = true }
+pdf-extract = { workspace = true, optional = true }
+readability = { workspace = true, optional = true, default-features = false }
+serde = { workspace = true, optional = true, features = ["derive"] }
+serde_json = { workspace = true, optional = true }
+strum_macros = { workspace = true, optional = true }
+text-splitter = { workspace = true, features = [
+  "markdown",
+  "tiktoken-rs",
+], optional = true }
+thiserror = { workspace = true, optional = true }
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-c = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
+tree-sitter-cpp = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-java = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }
-tree-sitter-kotlin-ng  = { workspace = true, optional = true }
-tree-sitter-python     = { workspace = true, optional = true }
-tree-sitter-rust       = { workspace = true, optional = true }
-tree-sitter-scala      = { workspace = true, optional = true }
+tree-sitter-kotlin-ng = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-scala = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
-url                    = { workspace = true, optional = true }
+url = { workspace = true, optional = true }
+y-octo = { workspace = true, optional = true }
 
 tiktoken-rs = { workspace = true }
 
