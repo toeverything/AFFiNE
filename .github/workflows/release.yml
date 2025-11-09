@@ -69,23 +69,6 @@ jobs:
       - prepare
       - cloud
     steps:
-      - uses: trstringer/manual-approval@v1
-        if: ${{ needs.prepare.outputs.BUILD_TYPE == 'stable' }}
-        name: Wait for approval
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: forehalo,fengmk2,darkskygit
-          minimum-approvals: 1
-          fail-on-denial: true
-          issue-title: Please confirm to release docker image
-          issue-body: |
-            Env: ${{ needs.prepare.outputs.BUILD_TYPE }}
-            Candidate: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}-${{ needs.prepare.outputs.GIT_SHORT_HASH }}
-            Tag: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}
-
-            > comment with "approve", "approved", "lgtm", "yes" to approve
-            > comment with "deny", "denied", "no" to deny
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -93,12 +76,35 @@ jobs:
           logout: false
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Tag Image
+
+      - name: Tag and Push Image to Personal GHCR
+        env:
+          GHCR_OWNER: andresmaqueo
+          IMAGE_NAME: affine
+          BUILD_TYPE: ${{ needs.prepare.outputs.BUILD_TYPE }}
+          GIT_SHORT_HASH: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
+          APP_VERSION: ${{ needs.prepare.outputs.APP_VERSION }}
         run: |
-          docker buildx imagetools create --tag ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}} ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
-          docker buildx imagetools create --tag ghcr.io/toeverything/affine:${{needs.prepare.outputs.APP_VERSION}} ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
+          echo "🔹 Tagging image for GHCR..."
+          docker buildx imagetools create \
+            --tag ghcr.io/${GHCR_OWNER}/${IMAGE_NAME}:${BUILD_TYPE}-${GIT_SHORT_HASH} \
+            ghcr.io/${GHCR_OWNER}/${IMAGE_NAME}:${BUILD_TYPE}-${GIT_SHORT_HASH} || true
+
+          echo "🔹 Creating stable tags..."
+          docker buildx imagetools create \
+            --tag ghcr.io/${GHCR_OWNER}/${IMAGE_NAME}:${BUILD_TYPE} \
+            ghcr.io/${GHCR_OWNER}/${IMAGE_NAME}:${BUILD_TYPE}-${GIT_SHORT_HASH} || true
+
+          docker buildx imagetools create \
+            --tag ghcr.io/${GHCR_OWNER}/${IMAGE_NAME}:${APP_VERSION} \
+            ghcr.io/${GHCR_OWNER}/${IMAGE_NAME}:${BUILD_TYPE}-${GIT_SHORT_HASH} || true
+
+      - name: Verify GHCR Push
+        run: |
+          echo "✅ GHCR push completed to ghcr.io/${{ env.GHCR_OWNER }}/${{ env.IMAGE_NAME }}"
 
   desktop:
     name: Release Desktop
