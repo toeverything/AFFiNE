@@ -95,6 +95,17 @@ declare global {
       event: RcEvent;
     };
   }
+
+  interface Jobs {
+    'nightly.revenuecat.subscription.refresh': {
+      userId: User['id'];
+      startTime: number;
+    };
+    'nightly.revenuecat.subscription.refresh.anonymous': {
+      externalRef: string;
+      startTime: number;
+    };
+  }
 }
 
 export interface LookupKey {

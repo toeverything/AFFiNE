@@ -22,7 +22,6 @@ rand        = { workspace = true }
 rand_chacha = { workspace = true }
 regex       = { workspace = true, optional = true }
 y-octo      = { workspace = true }
-y-sync      = { workspace = true }
 yrs         = { workspace = true }
 
 [dev-dependencies]
