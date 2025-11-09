@@ -37,9 +37,27 @@ install [fnm](https://github.com/Schniz/fnm)
 fnm use
 ```
 
+#### Option 3: Use mise
+
+install [mise](https://mise.jdx.dev/installing-mise.html)
+
+```
+mise install
+```
+
 ### Install Rust Tools
 
+#### Option 1: Use rustup
+
 Please follow the official guide at https://www.rust-lang.org/tools/install.
+
+#### Option 2: Use mise
+
+install [mise](https://mise.jdx.dev/installing-mise.html)
+
+```
+mise install
+```
 
 ### Setup Node.js Environment
 

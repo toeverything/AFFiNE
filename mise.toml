@@ -1,0 +1,10 @@
+[settings]
+# mise will only parse rust-toolchain.toml when its core Rust plugin is active,
+# and that plugin is still flagged experimental.
+experimental = true
+# use .nvmrc and rust-toolchain.toml
+idiomatic_version_file_enable_tools = ['node','rust']
+
+[env]
+# mise sets up Corepack shims for you
+MISE_NODE_COREPACK = "true"
