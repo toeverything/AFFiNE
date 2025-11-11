@@ -287,7 +287,7 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
   {
     name: 'Callout',
     icon: FontIcon(),
-    showWhen: ({ std, rootComponent: { model } }) => {
+    showWhen: ({ rootComponent: { model } }) => {
       return !isInsideBlockByFlavour(
         model.store,
         model,
