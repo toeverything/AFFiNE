@@ -1,8 +1,12 @@
 import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
 import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
-import type { SubscriptionService } from '@affine/core/modules/cloud';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import {
   type CopilotChatHistoryFragment,
+  ServerDeploymentType,
   SubscriptionStatus,
 } from '@affine/graphql';
 import {
@@ -111,6 +115,9 @@ export class ChatInputPreference extends SignalWatcher(
   // --------- search props end ---------
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor toolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
@@ -153,6 +160,9 @@ export class ChatInputPreference extends SignalWatcher(
         options: {
           items: this.aiModelService.models.value.map(model => {
             const isSelected = model.id === this.model.value?.id;
+            const isSelfHosted =
+              this.serverService.server.config$.value?.type ===
+              ServerDeploymentType.Selfhosted;
             const status =
               this.subscriptionService.subscription.ai$.value?.status;
             const isSubscribed = status === SubscriptionStatus.Active;
@@ -172,7 +182,7 @@ export class ChatInputPreference extends SignalWatcher(
                 </div>
               `,
               select: () => {
-                if (model.isPro && !isSubscribed) {
+                if (model.isPro && !isSelfHosted && !isSubscribed) {
                   this.notificationService.toast(
                     `Pro models require an AFFiNE AI subscription.`
                   );

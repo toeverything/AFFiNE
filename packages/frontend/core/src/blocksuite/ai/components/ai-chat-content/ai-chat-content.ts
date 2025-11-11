@@ -4,7 +4,10 @@ import type {
 } from '@affine/core/modules/ai-button';
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
 import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
-import type { SubscriptionService } from '@affine/core/modules/cloud';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -150,6 +153,9 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor extensions!: ExtensionType[];
+
+  @property({ attribute: false })
+  accessor serverService!: ServerService;
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
@@ -472,6 +478,7 @@ export class AIChatContent extends SignalWatcher(
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .serverService=${this.serverService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${this.notificationService}
         .aiDraftService=${this.aiDraftService}

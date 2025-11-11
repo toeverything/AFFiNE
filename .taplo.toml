@@ -1,7 +1,7 @@
-include = ["./*.toml", "./packages/**/*.toml"]
+exclude = ["node_modules/**/*.toml", "target/**/*.toml"]
 
+# https://taplo.tamasfe.dev/configuration/formatter-options.html
 [formatting]
-align_entries  = true
-column_width   = 180
-reorder_arrays = true
-reorder_keys   = true
+align_entries = true
+indent_tables = true
+reorder_keys  = true

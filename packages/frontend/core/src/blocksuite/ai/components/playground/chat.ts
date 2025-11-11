@@ -1,4 +1,5 @@
 import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { ServerService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
@@ -166,6 +167,9 @@ export class PlaygroundChat extends SignalWatcher(
 
   @property({ attribute: false })
   accessor extensions!: ExtensionType[];
+
+  @property({ attribute: false })
+  accessor serverService!: ServerService;
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
@@ -373,6 +377,7 @@ export class PlaygroundChat extends SignalWatcher(
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .serverService=${this.serverService}
         .notificationService=${this.notificationService}
         .aiToolsConfigService=${this.aiToolsConfigService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
