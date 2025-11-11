@@ -17,7 +17,7 @@ export const calloutSlashMenuConfig: SlashMenuConfig = {
       },
       searchAlias: ['callout'],
       group: '0_Basic@9',
-      when: ({ std, model }) => {
+      when: ({ model }) => {
         return !isInsideBlockByFlavour(
           model.store,
           model,
