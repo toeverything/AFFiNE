@@ -8,16 +8,30 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 affine_schema = { path = "../schema" }
-anyhow        = { workspace = true }
-chrono        = { workspace = true }
-napi          = { workspace = true }
-napi-derive   = { workspace = true }
-sqlx          = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-tokio         = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+napi = { workspace = true }
+napi-derive = { workspace = true }
+sqlx = { workspace = true, default-features = false, features = [
+  "chrono",
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "sqlite",
+  "tls-rustls",
+] }
+tokio = { workspace = true, features = ["full"] }
 
 [build-dependencies]
 affine_schema = { path = "../schema" }
-dotenvy       = { workspace = true }
-napi-build    = { workspace = true }
-sqlx          = { workspace = true, default-features = false, features = ["chrono", "json", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-tokio         = { workspace = true, features = ["full"] }
+dotenvy = { workspace = true }
+napi-build = { workspace = true }
+sqlx = { workspace = true, default-features = false, features = [
+  "chrono",
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "sqlite",
+  "tls-rustls",
+] }
+tokio = { workspace = true, features = ["full"] }
