@@ -62,22 +62,92 @@ export const ThemeSettings = () => {
 const MenubarSetting = () => {
   const t = useI18n();
   const traySettingService = useService(TraySettingService);
-  const { enabled } = useLiveData(traySettingService.setting$);
+  const traySetting = useLiveData(traySettingService.settings$);
+
   return (
-    <SettingWrapper
-      id="menubar"
-      title={t['com.affine.appearanceSettings.menubar.title']()}
-    >
-      <SettingRow
-        name={t['com.affine.appearanceSettings.menubar.toggle']()}
-        desc={t['com.affine.appearanceSettings.menubar.description']()}
+    <>
+      <SettingWrapper
+        id="menubar"
+        title={t['com.affine.appearanceSettings.menubar.title']()}
       >
-        <Switch
-          checked={enabled}
-          onChange={checked => traySettingService.setEnabled(checked)}
-        />
-      </SettingRow>
-    </SettingWrapper>
+        <SettingRow
+          name={t['com.affine.appearanceSettings.menubar.toggle']()}
+          desc={t['com.affine.appearanceSettings.menubar.description']()}
+        >
+          <Switch
+            checked={traySetting.enabled}
+            onChange={checked => traySettingService.setEnabled(checked)}
+          />
+        </SettingRow>
+      </SettingWrapper>
+      {traySetting.enabled && !environment.isMacOs ? (
+        <SettingWrapper
+          id="windowBehavior"
+          title={t[
+            'com.affine.appearanceSettings.menubar.windowBehavior.title'
+          ]()}
+        >
+          <SettingRow
+            name={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.toggle'
+            ]()}
+            desc={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.description'
+            ]()}
+          >
+            <Switch
+              checked={traySetting.openOnLeftClick}
+              onChange={checked =>
+                traySettingService.setOpenOnLeftClick(checked)
+              }
+            />
+          </SettingRow>
+          <SettingRow
+            name={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.toggle'
+            ]()}
+            desc={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.description'
+            ]()}
+          >
+            <Switch
+              checked={traySetting.minimizeToTray}
+              onChange={checked =>
+                traySettingService.setMinimizeToTray(checked)
+              }
+            />
+          </SettingRow>
+          <SettingRow
+            name={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.toggle'
+            ]()}
+            desc={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.description'
+            ]()}
+          >
+            <Switch
+              checked={traySetting.closeToTray}
+              onChange={checked => traySettingService.setCloseToTray(checked)}
+            />
+          </SettingRow>
+          <SettingRow
+            name={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.toggle'
+            ]()}
+            desc={t[
+              'com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.description'
+            ]()}
+          >
+            <Switch
+              checked={traySetting.startMinimized}
+              onChange={checked =>
+                traySettingService.setStartMinimized(checked)
+              }
+            />
+          </SettingRow>
+        </SettingWrapper>
+      ) : null}
+    </>
   );
 };
 

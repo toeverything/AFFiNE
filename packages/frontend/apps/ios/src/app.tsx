@@ -39,7 +39,10 @@ import {
 } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
-import { refreshSubscriptionMutation } from '@affine/graphql';
+import {
+  refreshSubscriptionMutation,
+  requestApplySubscriptionMutation,
+} from '@affine/graphql';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { Container } from '@blocksuite/affine/global/di';
@@ -367,6 +370,23 @@ const frameworkProvider = framework.provider();
   await currentServer
     .gql({
       query: refreshSubscriptionMutation,
+    })
+    .catch(console.error);
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  subscriptionService.subscription.revalidate();
+};
+(window as any).requestApplySubscription = async (transactionId: string) => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  await currentServer
+    .gql({
+      query: requestApplySubscriptionMutation,
+      variables: { transactionId },
     })
     .catch(console.error);
   const subscriptionService = currentServer.scope.get(SubscriptionService);

@@ -8,7 +8,7 @@ import {
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import { AIModelService } from '@affine/core/modules/ai-button/services/models';
-import { SubscriptionService } from '@affine/core/modules/cloud';
+import { ServerService, SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -32,6 +32,7 @@ export const AIChatBlockPeekView = ({
   } = useAIChatConfig();
 
   const framework = useFramework();
+  const serverService = framework.get(ServerService);
   const affineFeatureFlagService = framework.get(FeatureFlagService);
   const affineWorkspaceDialogService = framework.get(WorkspaceDialogService);
   const aiDraftService = framework.get(AIDraftService);
@@ -48,6 +49,7 @@ export const AIChatBlockPeekView = ({
       searchMenuConfig,
       networkSearchConfig,
       reasoningConfig,
+      serverService,
       affineFeatureFlagService,
       affineWorkspaceDialogService,
       aiDraftService,
@@ -64,6 +66,7 @@ export const AIChatBlockPeekView = ({
     searchMenuConfig,
     networkSearchConfig,
     reasoningConfig,
+    serverService,
     affineFeatureFlagService,
     affineWorkspaceDialogService,
     aiDraftService,

@@ -42,6 +42,7 @@ type Ctx = {
   controller: RevenueCatWebhookController;
   subResolver: UserSubscriptionResolver;
 
+  mockAlias: (appUserId: string) => Sinon.SinonStub;
   mockSub: (subs: Subscription[]) => Sinon.SinonStub;
   mockSubSeq: (sequences: Subscription[][]) => Sinon.SinonStub;
   triggerWebhook: (
@@ -100,13 +101,20 @@ test.beforeEach(async t => {
   t.context.controller = controller;
   t.context.subResolver = subResolver;
 
-  t.context.mockSub = subs => Sinon.stub(rc, 'getSubscriptions').resolves(subs);
+  const customerId = 'cust';
+  t.context.mockAlias = appUserId =>
+    Sinon.stub(rc, 'getCustomerAlias').resolves([appUserId]);
+  t.context.mockSub = subs =>
+    Sinon.stub(rc, 'getSubscriptions').resolves(
+      subs.map(s => ({ ...s, customerId: customerId }))
+    );
   t.context.mockSubSeq = sequences => {
     const stub = Sinon.stub(rc, 'getSubscriptions');
     sequences.forEach((seq, idx) => {
-      if (idx === 0) stub.onFirstCall().resolves(seq);
-      else if (idx === 1) stub.onSecondCall().resolves(seq);
-      else stub.onCall(idx).resolves(seq);
+      const subs = seq.map(s => ({ ...s, customerId: customerId }));
+      if (idx === 0) stub.onFirstCall().resolves(subs);
+      else if (idx === 1) stub.onSecondCall().resolves(subs);
+      else stub.onCall(idx).resolves(subs);
     });
     return stub;
   };
@@ -178,8 +186,9 @@ test('should resolve product mapping consistently (whitelist, override, unknown)
 });
 
 test('should standardize RC subscriber response and upsert subscription with observability fields', async t => {
-  const { webhook, collectEvents, mockSub } = t.context;
+  const { webhook, collectEvents, mockAlias, mockSub } = t.context;
 
+  mockAlias(user.id);
   const subscriber = mockSub([
     {
       identifier: 'Pro',
@@ -234,8 +243,9 @@ test('should standardize RC subscriber response and upsert subscription with obs
 });
 
 test('should process expiration/refund by deleting subscription and emitting canceled', async t => {
-  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
 
+  mockAlias(user.id);
   await db.subscription.create({
     data: {
       targetId: user.id,
@@ -339,8 +349,10 @@ test('should enqueue per-user reconciliation jobs for existing RC active/trialin
 });
 
 test('should activate subscriptions via webhook for whitelisted products across stores (iOS/Android)', async t => {
-  const { db, event, collectEvents, mockSubSeq, triggerWebhook } = t.context;
+  const { db, event, collectEvents, mockAlias, mockSubSeq, triggerWebhook } =
+    t.context;
 
+  mockAlias(user.id);
   const scenarios = [
     {
       name: 'Pro monthly on iOS',
@@ -422,7 +434,9 @@ test('should activate subscriptions via webhook for whitelisted products across 
 });
 
 test('should keep active and advance period dates when a trialing subscription renews', async t => {
-  const { db, collectEvents, mockSubSeq, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSubSeq, triggerWebhook } =
+    t.context;
+  mockAlias(user.id);
   mockSubSeq([
     [
       {
@@ -476,7 +490,9 @@ test('should keep active and advance period dates when a trialing subscription r
 });
 
 test('should remove or cancel the record and revoke entitlement when a trialing subscription expires', async t => {
-  const { db, collectEvents, mockSubSeq, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSubSeq, triggerWebhook } =
+    t.context;
+  mockAlias(user.id);
   mockSubSeq([
     [
       {
@@ -526,7 +542,8 @@ test('should remove or cancel the record and revoke entitlement when a trialing 
 });
 
 test('should set canceledAt and keep active until expiration when will_renew is false (cancellation before period end)', async t => {
-  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
+  mockAlias(user.id);
   mockSub([
     {
       identifier: 'Pro',
@@ -563,7 +580,8 @@ test('should set canceledAt and keep active until expiration when will_renew is 
 });
 
 test('should retain record as past_due (inactive but not expired) and NOT emit canceled event', async t => {
-  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
+  mockAlias(user.id);
   mockSub([
     {
       identifier: 'Pro',
@@ -656,7 +674,8 @@ test('should block checkout when an existing subscription of the same plan is ac
 });
 
 test('should skip RC upsert when Stripe active already exists for same plan', async t => {
-  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
+  mockAlias(user.id);
   await db.subscription.create({
     data: {
       targetId: user.id,
@@ -732,8 +751,9 @@ test('should block read-write ops on revenuecat-managed record (cancel/resume/up
 });
 
 test('should reconcile and fix missing or out-of-order states for revenuecat Active/Trialing/PastDue records', async t => {
-  const { webhook, collectEvents, mockSub } = t.context;
+  const { webhook, collectEvents, mockAlias, mockSub } = t.context;
 
+  mockAlias(user.id);
   const subscriber = mockSub([
     {
       identifier: 'Pro',
@@ -759,8 +779,9 @@ test('should reconcile and fix missing or out-of-order states for revenuecat Act
 });
 
 test('should treat refund as early expiration and revoke immediately', async t => {
-  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
 
+  mockAlias(user.id);
   await db.subscription.create({
     data: {
       targetId: user.id,
@@ -803,7 +824,9 @@ test('should treat refund as early expiration and revoke immediately', async t =
 });
 
 test('should ignore non-whitelisted productId and not write to DB', async t => {
-  const { db, collectEvents, mockSub, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
+
+  mockAlias(user.id);
   mockSub([
     {
       identifier: 'Weird',
@@ -831,8 +854,10 @@ test('should ignore non-whitelisted productId and not write to DB', async t => {
 });
 
 test('should map via entitlement+duration when productId not whitelisted (P1M/P1Y only)', async t => {
-  const { db, collectEvents, mockSubSeq, triggerWebhook } = t.context;
+  const { db, collectEvents, mockAlias, mockSubSeq, triggerWebhook } =
+    t.context;
 
+  mockAlias(user.id);
   mockSubSeq([
     [
       {
@@ -933,8 +958,9 @@ test('should not dispatch webhook event when authorization header is missing or 
 });
 
 test('should refresh user subscriptions (empty / revenuecat / stripe-only)', async t => {
-  const { subResolver, db, mockSubSeq } = t.context;
+  const { subResolver, db, mockAlias, mockSubSeq } = t.context;
 
+  mockAlias(user.id);
   const currentUser = {
     id: user.id,
     email: user.email,

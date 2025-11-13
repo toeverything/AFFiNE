@@ -31,8 +31,18 @@ extension ViewModel {
         switch result {
         case .pending:
           break
-        case let .success(transaction):
-          print("purchase success", transaction)
+        case let .success(verificationResult):
+          switch verificationResult {
+          case .verified(let transaction):
+            print("purchase success", transaction)
+            try await self.applySubscription(transactionID: .init(transaction.id))
+          case .unverified:
+            #if DEBUG
+            break
+            #else
+            throw NSError() // should not happening
+            #endif
+          }
           shouldDismiss = true
         case .userCancelled:
           break
@@ -92,6 +102,21 @@ extension ViewModel {
     }
 
     associatedController?.dismiss(animated: true)
+  }
+
+  func applySubscription(transactionID: String) async throws {
+    print(#function, transactionID)
+
+    if let context = associatedWebContext {
+      _ = try await context.callAsyncJavaScript(
+        "return await window.requestApplySubscription('\(transactionID)');",
+        contentWorld: .page
+      )
+      print("requestApplySubscription success")
+    } else {
+      assertionFailure()
+      throw NSError()
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { ServerService } from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
@@ -83,6 +84,9 @@ export class PlaygroundContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor extensions!: ExtensionType[];
+
+  @property({ attribute: false })
+  accessor serverService!: ServerService;
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
@@ -348,6 +352,7 @@ export class PlaygroundContent extends SignalWatcher(
                 .searchMenuConfig=${this.searchMenuConfig}
                 .docDisplayConfig=${this.docDisplayConfig}
                 .extensions=${this.extensions}
+                .serverService=${this.serverService}
                 .affineFeatureFlagService=${this.affineFeatureFlagService}
                 .affineThemeService=${this.affineThemeService}
                 .notificationService=${this.notificationService}
