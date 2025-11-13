@@ -228,7 +228,8 @@ const CloudWorkSpaceList = ({
 
   const handleSignOut = useAsyncCallback(async () => {
     await authService.signOut();
-  }, [authService]);
+    navigateHelper.jumpToSignIn();
+  }, [authService, navigateHelper]);
 
   const handleSignIn = useAsyncCallback(async () => {
     globalDialogService.open('sign-in', {

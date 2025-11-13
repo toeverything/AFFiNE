@@ -22,6 +22,7 @@ export function useAsyncCallback<T extends any[]>(
   const handleAsyncError = React.useContext(AsyncCallbackContext);
   return React.useCallback(
     (...args: any) => {
+      // oxlint-disable-next-line exhaustive-deps
       callback(...args).catch(e => handleAsyncError(e));
     },
     [...deps] // eslint-disable-line react-hooks/exhaustive-deps

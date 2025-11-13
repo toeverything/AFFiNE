@@ -65,7 +65,7 @@ export abstract class DataViewUILogicBase<
       return handler(context);
     });
   }
-  setSelection(selection?: Selection): void {
+  setSelection(selection?: Selection) {
     this.root.setSelection(selection);
   }
 

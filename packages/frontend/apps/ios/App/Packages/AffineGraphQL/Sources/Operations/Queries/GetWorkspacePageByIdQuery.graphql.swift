@@ -7,7 +7,7 @@ public class GetWorkspacePageByIdQuery: GraphQLQuery {
   public static let operationName: String = "getWorkspacePageById"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getWorkspacePageById($workspaceId: String!, $pageId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $pageId) { __typename id mode defaultRole public } } }"#
+      #"query getWorkspacePageById($workspaceId: String!, $pageId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $pageId) { __typename id mode defaultRole public title summary } } }"#
     ))
 
   public var workspaceId: String
@@ -68,12 +68,16 @@ public class GetWorkspacePageByIdQuery: GraphQLQuery {
           .field("mode", GraphQLEnum<AffineGraphQL.PublicDocMode>.self),
           .field("defaultRole", GraphQLEnum<AffineGraphQL.DocRole>.self),
           .field("public", Bool.self),
+          .field("title", String?.self),
+          .field("summary", String?.self),
         ] }
 
         public var id: String { __data["id"] }
         public var mode: GraphQLEnum<AffineGraphQL.PublicDocMode> { __data["mode"] }
         public var defaultRole: GraphQLEnum<AffineGraphQL.DocRole> { __data["defaultRole"] }
         public var `public`: Bool { __data["public"] }
+        public var title: String? { __data["title"] }
+        public var summary: String? { __data["summary"] }
       }
     }
   }

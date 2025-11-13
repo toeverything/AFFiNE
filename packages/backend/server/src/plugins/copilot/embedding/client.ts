@@ -2,10 +2,16 @@ import { Logger } from '@nestjs/common';
 import type { ModuleRef } from '@nestjs/core';
 
 import {
+  Config,
   CopilotPromptNotFound,
   CopilotProviderNotSupported,
 } from '../../../base';
-import { ChunkSimilarity, Embedding } from '../../../models';
+import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
+import {
+  ChunkSimilarity,
+  Embedding,
+  EMBEDDING_DIMENSIONS,
+} from '../../../models';
 import { PromptService } from '../prompt';
 import {
   type CopilotProvider,
@@ -14,19 +20,16 @@ import {
   ModelInputType,
   ModelOutputType,
 } from '../providers';
-import {
-  EMBEDDING_DIMENSIONS,
-  EmbeddingClient,
-  getReRankSchema,
-  type ReRankResult,
-} from './types';
+import { EmbeddingClient, type ReRankResult } from './types';
 
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 const RERANK_PROMPT = 'Rerank results';
 
 class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 
   constructor(
+    private readonly config: Config,
     private readonly providerFactory: CopilotProviderFactory,
     private readonly prompt: PromptService
   ) {
@@ -35,6 +38,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
   override async configured(): Promise<boolean> {
     const embedding = await this.providerFactory.getProvider({
+      modelId: this.config.copilot?.scenarios?.override_enabled
+        ? this.config.copilot.scenarios.scenarios?.embedding || EMBEDDING_MODEL
+        : EMBEDDING_MODEL,
       outputType: ModelOutputType.Embedding,
     });
     const result = Boolean(embedding);
@@ -61,6 +67,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
   async getEmbeddings(input: string[]): Promise<Embedding[]> {
     const provider = await this.getProvider({
+      modelId: EMBEDDING_MODEL,
       outputType: ModelOutputType.Embedding,
     });
     this.logger.verbose(
@@ -72,6 +79,12 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       input,
       { dimensions: EMBEDDING_DIMENSIONS }
     );
+    if (embeddings.length !== input.length) {
+      throw new CopilotFailedToGenerateEmbedding({
+        provider: provider.type,
+        message: `Expected ${input.length} embeddings, got ${embeddings.length}`,
+      });
+    }
 
     return Array.from(embeddings.entries()).map(([index, embedding]) => ({
       index,
@@ -81,9 +94,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   }
 
   private getTargetId<T extends ChunkSimilarity>(embedding: T) {
-    return 'docId' in embedding
+    return 'docId' in embedding && typeof embedding.docId === 'string'
       ? embedding.docId
-      : 'fileId' in embedding
+      : 'fileId' in embedding && typeof embedding.fileId === 'string'
         ? embedding.fileId
         : '';
   }
@@ -102,24 +115,22 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       throw new CopilotPromptNotFound({ name: RERANK_PROMPT });
     }
     const provider = await this.getProvider({ modelId: prompt.model });
-    const schema = getReRankSchema(embeddings.length);
 
-    const ranks = await provider.structure(
+    const ranks = await provider.rerank(
       { modelId: prompt.model },
-      prompt.finish({
-        query,
-        results: embeddings.map(e => ({
-          targetId: this.getTargetId(e),
-          chunk: e.chunk,
-          content: e.content,
-        })),
-        schema,
-      }),
-      { maxRetries: 3, signal }
+      embeddings.map(e => prompt.finish({ query, doc: e.content })),
+      { signal }
     );
 
     try {
-      return schema.parse(JSON.parse(ranks)).ranks;
+      return ranks.map((score, i) => {
+        const chunk = embeddings[i];
+        return {
+          chunk: chunk.chunk,
+          targetId: this.getTargetId(chunk),
+          score: Math.max(score, 1 - (chunk.distance || -Infinity)),
+        };
+      });
     } catch (error) {
       this.logger.error('Failed to parse rerank results', error);
       // silent error, will fallback to default sorting in parent method
@@ -151,7 +162,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
     const chunks = sortedEmbeddings.reduce(
       (acc, e) => {
-        const targetId = 'docId' in e ? e.docId : 'fileId' in e ? e.fileId : '';
+        const targetId = this.getTargetId(e);
         const key = `${targetId}:${e.chunk}`;
         acc[key] = e;
         return acc;
@@ -176,13 +187,16 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
       const highConfidenceChunks = ranks
         .flat()
-        .toSorted((a, b) => b.scores.score - a.scores.score)
-        .filter(r => r.scores.score > 5)
-        .map(r => chunks[`${r.scores.targetId}:${r.scores.chunk}`])
+        .toSorted((a, b) => b.score - a.score)
+        .filter(r => r.score > 0.5)
+        .map(r => chunks[`${r.targetId}:${r.chunk}`])
         .filter(Boolean);
 
       this.logger.verbose(
-        `ReRank completed: ${highConfidenceChunks.length} high-confidence results found`
+        `ReRank completed: ${highConfidenceChunks.length} high-confidence results found, total ${sortedEmbeddings.length} embeddings`,
+        highConfidenceChunks.length !== sortedEmbeddings.length
+          ? JSON.stringify(ranks)
+          : undefined
       );
       return highConfidenceChunks.slice(0, topK);
     } catch (error) {
@@ -199,12 +213,13 @@ export async function getEmbeddingClient(
   if (EMBEDDING_CLIENT) {
     return EMBEDDING_CLIENT;
   }
+  const config = moduleRef.get(Config, { strict: false });
   const providerFactory = moduleRef.get(CopilotProviderFactory, {
     strict: false,
   });
   const prompt = moduleRef.get(PromptService, { strict: false });
 
-  const client = new ProductionEmbeddingClient(providerFactory, prompt);
+  const client = new ProductionEmbeddingClient(config, providerFactory, prompt);
   if (await client.configured()) {
     EMBEDDING_CLIENT = client;
   }

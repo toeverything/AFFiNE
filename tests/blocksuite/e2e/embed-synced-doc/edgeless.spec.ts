@@ -111,6 +111,7 @@ test.describe('Embed synced doc in edgeless mode', () => {
         },
         { embedDocId, height }
       );
+      await waitNextFrame(page);
     };
 
     const embedSyncedBlockInNote = page.locator(

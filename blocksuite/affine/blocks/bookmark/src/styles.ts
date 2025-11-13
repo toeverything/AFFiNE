@@ -1,4 +1,4 @@
-import { unsafeCSSVar } from '@blocksuite/affine-shared/theme';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { baseTheme } from '@toeverything/theme';
 import { css, unsafeCSS } from 'lit';
 
@@ -17,9 +17,9 @@ export const styles = css`
     width: 100%;
 
     border-radius: 8px;
-    border: 1px solid var(--affine-background-tertiary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
 
-    background: var(--affine-background-primary-color);
+    background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
   }
 
@@ -156,6 +156,10 @@ export const styles = css`
     height: 102px;
     object-fit: cover;
     border-radius: 4px;
+  }
+
+  .affine-bookmark-card.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
   }
 
   .affine-bookmark-card.loading {

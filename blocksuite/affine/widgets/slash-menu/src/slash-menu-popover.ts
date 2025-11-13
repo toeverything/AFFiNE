@@ -142,15 +142,13 @@ export class SlashMenu extends WithDisposable(LitElement) {
       // We search first and second layer
       if (this._filteredItems.length !== 0 && depth >= 1) break;
 
-      queue = queue
-        .map<typeof queue>(item => {
-          if (isSubMenuItem(item)) {
-            return item.subMenu;
-          } else {
-            return [];
-          }
-        })
-        .flat();
+      queue = queue.flatMap(item => {
+        if (isSubMenuItem(item)) {
+          return item.subMenu;
+        } else {
+          return [];
+        }
+      });
 
       depth++;
     }
@@ -378,7 +376,7 @@ export class InnerSlashMenu extends WithDisposable(LitElement) {
       this._closeSubMenu();
     });
 
-    const subMenuElement = createLitPortal({
+    const { portal: subMenuElement } = createLitPortal({
       shadowDom: false,
       template: html`<inner-slash-menu
         .context=${this.context}

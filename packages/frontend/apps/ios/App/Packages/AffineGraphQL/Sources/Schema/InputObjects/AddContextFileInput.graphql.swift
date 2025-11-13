@@ -11,7 +11,7 @@ public struct AddContextFileInput: InputObject {
   }
 
   public init(
-    blobId: String,
+    blobId: GraphQLNullable<String> = nil,
     contextId: String
   ) {
     __data = InputDict([
@@ -20,7 +20,7 @@ public struct AddContextFileInput: InputObject {
     ])
   }
 
-  public var blobId: String {
+  public var blobId: GraphQLNullable<String> {
     get { __data["blobId"] }
     set { __data["blobId"] = newValue }
   }

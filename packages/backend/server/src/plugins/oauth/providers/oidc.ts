@@ -21,7 +21,7 @@ const OIDCTokenSchema = z.object({
 const OIDCUserInfoSchema = z
   .object({
     sub: z.string(),
-    preferred_username: z.string(),
+    preferred_username: z.string().optional(),
     email: z.string().email(),
     name: z.string(),
     groups: z.array(z.string()).optional(),

@@ -1,6 +1,8 @@
 package app.affine.pro.ai.chat
 
 import com.affine.pro.graphql.GetCopilotHistoriesQuery
+import com.affine.pro.graphql.fragment.CopilotChatHistory
+import com.affine.pro.graphql.fragment.CopilotChatMessage
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -51,7 +53,7 @@ data class ChatMessage(
             createAt = Clock.System.now(),
         )
 
-        fun from(message: GetCopilotHistoriesQuery.Message) = ChatMessage(
+        fun from(message: CopilotChatMessage) = ChatMessage(
             id = message.id,
             role = Role.fromValue(message.role),
             content = message.content,

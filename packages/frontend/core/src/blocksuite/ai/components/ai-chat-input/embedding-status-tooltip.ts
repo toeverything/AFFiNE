@@ -1,7 +1,9 @@
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { SignalWatcher } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar } from '@blocksuite/affine/shared/theme';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
+import { debounce } from 'lodash-es';
 
 export class AIChatEmbeddingStatusTooltip extends SignalWatcher(LitElement) {
   static override styles = css`
@@ -34,7 +36,21 @@ export class AIChatEmbeddingStatusTooltip extends SignalWatcher(LitElement) {
   `;
 
   @property({ attribute: false })
-  accessor progressText = 'Loading embedding status...';
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
+
+  override connectedCallback() {
+    super.connectedCallback();
+  }
+
+  private readonly _handleCheckStatusClick = debounce(
+    () => {
+      this.affineWorkspaceDialogService.open('setting', {
+        activeTab: 'workspace:embedding',
+      });
+    },
+    1000,
+    { leading: true }
+  );
 
   override render() {
     return html`
@@ -48,11 +64,9 @@ export class AIChatEmbeddingStatusTooltip extends SignalWatcher(LitElement) {
         <div
           class="check-status"
           data-testid="ai-chat-embedding-status-tooltip-check"
+          @click=${this._handleCheckStatusClick}
         >
           Check status
-          <affine-tooltip tip-position="top-start"
-            >${this.progressText}</affine-tooltip
-          >
         </div>
       </div>
     `;

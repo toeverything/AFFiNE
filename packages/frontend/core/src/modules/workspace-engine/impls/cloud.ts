@@ -1,4 +1,3 @@
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
@@ -7,6 +6,7 @@ import {
   getWorkspacesQuery,
   Permission,
   ServerDeploymentType,
+  ServerFeature,
 } from '@affine/graphql';
 import type {
   BlobStorage,
@@ -86,7 +86,6 @@ const logger = new DebugLogger('affine:cloud-workspace-flavour-provider');
 class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   private readonly authService: AuthService;
   private readonly graphqlService: GraphQLService;
-  private readonly featureFlagService: FeatureFlagService;
   private readonly unsubscribeAccountChanged: () => void;
 
   constructor(
@@ -95,7 +94,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   ) {
     this.authService = server.scope.get(AuthService);
     this.graphqlService = server.scope.get(GraphQLService);
-    this.featureFlagService = server.scope.get(FeatureFlagService);
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
       () => {
@@ -337,6 +335,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     const localData = (await docStorage.getDoc(id))?.bin;
     const cloudData = (await cloudStorage.getDoc(id))?.bin;
 
+    const isEmpty = isEmptyUpdate(localData) && isEmptyUpdate(cloudData);
+
     docStorage.connection.disconnect();
 
     const info = await this.getWorkspaceInfo(id, signal);
@@ -346,6 +346,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         isOwner: info.workspace.role === Permission.Owner,
         isAdmin: info.workspace.role === Permission.Admin,
         isTeam: info.workspace.team,
+        isEmpty,
       };
     }
 
@@ -362,8 +363,10 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       isOwner: info.workspace.role === Permission.Owner,
       isAdmin: info.workspace.role === Permission.Admin,
       isTeam: info.workspace.team,
+      isEmpty,
     };
   }
+
   async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
     const storage = new this.BlobStorageType({
       id: id,
@@ -477,24 +480,14 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             id: `${this.flavour}:${workspaceId}`,
           },
         },
-        indexer: this.featureFlagService.flags.enable_cloud_indexer.value
-          ? {
-              name: 'CloudIndexerStorage',
-              opts: {
-                flavour: this.flavour,
-                type: 'workspace',
-                id: workspaceId,
-                serverBaseUrl: this.server.serverMetadata.baseUrl,
-              },
-            }
-          : {
-              name: 'IndexedDBIndexerStorage',
-              opts: {
-                flavour: this.flavour,
-                type: 'workspace',
-                id: workspaceId,
-              },
-            },
+        indexer: {
+          name: 'IndexedDBIndexerStorage',
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
         indexerSync: {
           name: 'IndexedDBIndexerSyncStorage',
           opts: {
@@ -535,6 +528,19 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
                 ServerDeploymentType.Selfhosted,
             },
           },
+          indexer: this.server.config$.value.features.includes(
+            ServerFeature.Indexer
+          )
+            ? {
+                name: 'CloudIndexerStorage',
+                opts: {
+                  flavour: this.flavour,
+                  type: 'workspace',
+                  id: workspaceId,
+                  serverBaseUrl: this.server.serverMetadata.baseUrl,
+                },
+              }
+            : undefined,
         },
         v1: {
           doc: this.DocStorageV1Type
@@ -656,5 +662,15 @@ export class CloudWorkspaceFlavoursProvider
         obj.dispose();
       },
     }
+  );
+}
+
+export function isEmptyUpdate(binary: Uint8Array | undefined) {
+  if (!binary) {
+    return true;
+  }
+  return (
+    binary.byteLength === 0 ||
+    (binary.byteLength === 2 && binary[0] === 0 && binary[1] === 0)
   );
 }

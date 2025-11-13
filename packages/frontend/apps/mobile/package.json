@@ -1,6 +1,6 @@
 {
   "name": "@affine/mobile",
-  "version": "0.21.0",
+  "version": "0.25.2",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "browser": "src/index.tsx",
@@ -15,7 +15,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.12",
+    "@blocksuite/icons": "^2.2.17",
     "@sentry/react": "^9.2.0",
     "@toeverything/infra": "workspace:*",
     "react": "^19.0.0",

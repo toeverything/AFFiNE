@@ -11,6 +11,7 @@ import {
   type IframeOptions,
   LinkPreviewServiceIdentifier,
   NotificationProvider,
+  VirtualKeyboardProvider,
 } from '@blocksuite/affine-shared/services';
 import { matchModels } from '@blocksuite/affine-shared/utils';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
@@ -213,9 +214,33 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       this._linkInputAbortController.abort();
     }
 
+    const keyboard = this.host.std.getOptional(VirtualKeyboardProvider);
+    const computePosition = keyboard
+      ? {
+          referenceElement: document.body,
+          placement: 'top' as const,
+          middleware: [
+            offset(({ rects }) => ({
+              mainAxis:
+                -rects.floating.height -
+                (window.innerHeight -
+                  rects.floating.height -
+                  keyboard.height$.value) /
+                  2,
+            })),
+          ],
+          autoUpdate: { animationFrame: true },
+        }
+      : {
+          referenceElement: this._blockContainer,
+          placement: 'bottom' as const,
+          middleware: [flip(), offset(LINK_CREATE_POPUP_OFFSET), shift()],
+          autoUpdate: { animationFrame: true },
+        };
+
     this._linkInputAbortController = new AbortController();
 
-    createLitPortal({
+    const { update } = createLitPortal({
       template: html`<embed-iframe-link-input-popup
         .model=${this.model}
         .abortController=${this._linkInputAbortController}
@@ -224,15 +249,19 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         .options=${options}
       ></embed-iframe-link-input-popup>`,
       container: document.body,
-      computePosition: {
-        referenceElement: this._blockContainer,
-        placement: 'bottom',
-        middleware: [flip(), offset(LINK_CREATE_POPUP_OFFSET), shift()],
-        autoUpdate: { animationFrame: true },
-      },
+      computePosition,
       abortController: this._linkInputAbortController,
       closeOnClickAway: true,
     });
+
+    if (keyboard) {
+      this._linkInputAbortController.signal.addEventListener(
+        'abort',
+        keyboard.height$.subscribe(() => {
+          update();
+        })
+      );
+    }
   };
 
   /**

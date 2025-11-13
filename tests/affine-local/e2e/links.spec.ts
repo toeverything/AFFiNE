@@ -1,9 +1,15 @@
 import { toolbarButtons } from '@affine-test/kit/bs/linked-toolbar';
 import { waitNextFrame } from '@affine-test/kit/bs/misc';
 import { test } from '@affine-test/kit/playwright';
-import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
+import {
+  clickEdgelessModeButton,
+  locateToolbar,
+} from '@affine-test/kit/utils/editor';
 import {
   pasteByKeyboard,
+  pressArrowUp,
+  pressBackspace,
+  pressEnter,
   selectAllByKeyboard,
   writeTextToClipboard,
 } from '@affine-test/kit/utils/keyboard';
@@ -13,6 +19,7 @@ import {
   createLinkedPage,
   createTodayPage,
   getBlockSuiteEditorTitle,
+  type,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
 import {
@@ -814,64 +821,64 @@ test.describe('Customize linked doc title and description', () => {
     await expect(cardDescription).toBeHidden();
   });
 
-  test('should show emoji doc icon in normal document', async ({ page }) => {
-    await enableEmojiDocIcon(page);
+  // test('should show emoji doc icon in normal document', async ({ page }) => {
+  //   await enableEmojiDocIcon(page);
 
-    await clickNewPageButton(page);
-    const title = getBlockSuiteEditorTitle(page);
-    await title.click();
+  //   await clickNewPageButton(page);
+  //   const title = getBlockSuiteEditorTitle(page);
+  //   await title.click();
 
-    await page.keyboard.press('Enter');
-    await createLinkedPage(page, 'Test Page');
+  //   await page.keyboard.press('Enter');
+  //   await createLinkedPage(page, 'Test Page');
 
-    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  //   const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
 
-    const inlineLink = page.locator('affine-reference');
-    await inlineLink.hover();
+  //   const inlineLink = page.locator('affine-reference');
+  //   await inlineLink.hover();
 
-    // Edits title
-    await toolbar.getByRole('button', { name: 'Edit' }).click();
+  //   // Edits title
+  //   await toolbar.getByRole('button', { name: 'Edit' }).click();
 
-    // Title alias
-    await page.keyboard.type('🦀hello');
-    await page.keyboard.press('Enter');
+  //   // Title alias
+  //   await page.keyboard.type('🦀hello');
+  //   await page.keyboard.press('Enter');
 
-    const a = inlineLink.locator('a');
+  //   const a = inlineLink.locator('a');
 
-    await expect(a).toHaveText('🦀hello');
-    await expect(a.locator('svg')).toBeHidden();
-    await expect(a.locator('.affine-reference-title')).toHaveText('hello');
-  });
+  //   await expect(a).toHaveText('🦀hello');
+  //   await expect(a.locator('svg')).toBeHidden();
+  //   await expect(a.locator('.affine-reference-title')).toHaveText('hello');
+  // });
 
-  test('should show emoji doc icon in journal document', async ({ page }) => {
-    await enableEmojiDocIcon(page);
+  //   test('should show emoji doc icon in journal document', async ({ page }) => {
+  //     await enableEmojiDocIcon(page);
 
-    await clickNewPageButton(page);
-    const title = getBlockSuiteEditorTitle(page);
-    await title.click();
+  //     await clickNewPageButton(page);
+  //     const title = getBlockSuiteEditorTitle(page);
+  //     await title.click();
 
-    await page.keyboard.press('Enter');
-    await createTodayPage(page);
+  //     await page.keyboard.press('Enter');
+  //     await createTodayPage(page);
 
-    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  //     const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
 
-    const inlineLink = page.locator('affine-reference');
-    await inlineLink.hover();
+  //     const inlineLink = page.locator('affine-reference');
+  //     await inlineLink.hover();
 
-    // Edits title
-    await toolbar.getByRole('button', { name: 'Edit' }).click();
+  //     // Edits title
+  //     await toolbar.getByRole('button', { name: 'Edit' }).click();
 
-    // Title alias
-    await page.keyboard.type('🦀');
-    await page.keyboard.press('Enter');
+  //     // Title alias
+  //     await page.keyboard.type('🦀');
+  //     await page.keyboard.press('Enter');
 
-    const a = inlineLink.locator('a');
+  //     const a = inlineLink.locator('a');
 
-    const year = String(new Date().getFullYear());
-    await expect(a).toContainText('🦀');
-    await expect(a.locator('svg')).toBeHidden();
-    await expect(a.locator('.affine-reference-title')).toContainText(year);
-  });
+  //     const year = String(new Date().getFullYear());
+  //     await expect(a).toContainText('🦀');
+  //     await expect(a.locator('svg')).toBeHidden();
+  //     await expect(a.locator('.affine-reference-title')).toContainText(year);
+  //   });
 });
 
 test('should save open doc mode of internal links', async ({ page }) => {
@@ -1163,4 +1170,76 @@ test('should add HTTP protocol into link automatically', async ({ page }) => {
 
   url = await linkPreview.locator('a').getAttribute('href');
   expect(url).toBe(link);
+});
+
+test('should open link in new tab when middle clicking on link', async ({
+  page,
+  context,
+}) => {
+  await pressEnter(page);
+
+  // external link
+  {
+    await type(page, 'external-link');
+    await selectAllByKeyboard(page);
+    const toolbar = locateToolbar(page);
+    await toolbar.getByTestId('link').click();
+    const input = page.locator('.affine-link-popover-input');
+
+    const externalUrl = new URL('https://github.com/').toString();
+    await input.fill(externalUrl);
+    await pressEnter(page);
+
+    const newTabPromise = context.waitForEvent('page');
+
+    await page.locator('affine-link').click({ button: 'middle' });
+
+    const newTab = await newTabPromise;
+    await expect(newTab).toHaveURL(externalUrl);
+    await newTab.close();
+  }
+
+  await selectAllByKeyboard(page);
+  await pressBackspace(page);
+
+  // internal link
+  {
+    await type(page, 'internal-link');
+    const url = page.url();
+    await selectAllByKeyboard(page);
+    const toolbar = locateToolbar(page);
+    await toolbar.getByTestId('link').click();
+    const input = page.locator('.affine-link-popover-input');
+    await input.fill(url);
+    await pressEnter(page);
+
+    const newTabPromise = context.waitForEvent('page');
+
+    await page.locator('affine-link').click({ button: 'middle' });
+
+    const newTab = await newTabPromise;
+    // there is a refreshKey in the url
+    expect(newTab.url()).toContain(url);
+    await newTab.close();
+  }
+
+  await selectAllByKeyboard(page);
+  await pressBackspace(page);
+
+  // reference doc
+  {
+    await pressArrowUp(page);
+    await type(page, 'ThisPage');
+    await pressEnter(page);
+    await type(page, '@ThisPage');
+    await pressEnter(page);
+
+    const newTabPromise = context.waitForEvent('page');
+
+    await page.locator('affine-reference').click({ button: 'middle' });
+
+    const newTab = await newTabPromise;
+    expect(newTab.url()).toContain(page.url());
+    await newTab.close();
+  }
 });

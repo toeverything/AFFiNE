@@ -7,7 +7,7 @@ public class AddContextDocMutation: GraphQLMutation {
   public static let operationName: String = "addContextDoc"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation addContextDoc($options: AddContextDocInput!) { addContextDoc(options: $options) { __typename id createdAt status error } }"#
+      #"mutation addContextDoc($options: AddContextDocInput!) { addContextDoc(options: $options) { __typename id createdAt status } }"#
     ))
 
   public var options: AddContextDocInput
@@ -43,13 +43,11 @@ public class AddContextDocMutation: GraphQLMutation {
         .field("id", AffineGraphQL.ID.self),
         .field("createdAt", AffineGraphQL.SafeInt.self),
         .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
-        .field("error", String?.self),
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
       public var createdAt: AffineGraphQL.SafeInt { __data["createdAt"] }
       public var status: GraphQLEnum<AffineGraphQL.ContextEmbedStatus>? { __data["status"] }
-      public var error: String? { __data["error"] }
     }
   }
 }

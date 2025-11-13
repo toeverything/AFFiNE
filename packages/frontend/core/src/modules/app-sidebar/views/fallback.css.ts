@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
 export const fallback = style({
-  padding: '4px 16px',
+  padding: '4px 8px',
   height: '100%',
   overflow: 'clip',
 });
@@ -13,7 +13,7 @@ export const fallbackHeader = style({
   flexDirection: 'row',
   gap: '8px',
   overflow: 'hidden',
-  height: '52px',
+  height: '42px',
 });
 
 export const spacer = style({

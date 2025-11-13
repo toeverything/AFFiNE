@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 
 import { BlobQuotaExceeded, StorageQuotaExceeded } from '../error';
+import { OneKB } from './unit';
 
 export type CheckExceededResult =
   | {
@@ -52,11 +53,19 @@ export async function readBuffer(
 
 export async function readBufferWithLimit(
   readable: Readable,
-  limit: number
+  limit: number = 500 * OneKB
 ): Promise<Buffer> {
   return readBuffer(readable, size =>
     size > limit
       ? { blobQuotaExceeded: true, storageQuotaExceeded: false }
       : undefined
   );
+}
+
+export async function readableToBuffer(readable: Readable) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of readable) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 }

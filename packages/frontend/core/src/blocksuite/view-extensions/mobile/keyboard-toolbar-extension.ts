@@ -1,4 +1,5 @@
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
+import { globalVars } from '@affine/core/mobile/styles/variables.css';
 import type { Container } from '@blocksuite/affine/global/di';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import {
@@ -29,6 +30,12 @@ export function KeyboardToolbarExtension(
     // eslint-disable-next-line rxjs/finnish
     readonly height$ = signal(0);
 
+    // eslint-disable-next-line rxjs/finnish
+    readonly staticHeight$ = signal(0);
+
+    // eslint-disable-next-line rxjs/finnish
+    readonly appTabSafeArea$ = signal(`calc(${globalVars.appTabSafeArea})`);
+
     static override setup(di: Container) {
       super.setup(di);
       di.addImpl(BSVirtualKeyboardProvider, provider => {
@@ -40,6 +47,9 @@ export function KeyboardToolbarExtension(
       this._disposables.add(
         affineVirtualKeyboardProvider.onChange(({ visible, height }) => {
           batch(() => {
+            if (visible && this.staticHeight$.peek() !== height) {
+              this.staticHeight$.value = height;
+            }
             this.visible$.value = visible;
             this.height$.value = height;
           });

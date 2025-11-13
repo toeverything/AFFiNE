@@ -252,11 +252,15 @@ const MobileDetailPage = ({
 
   const handleDateChange = useCallback(
     (date: string) => {
-      const docId = journalService.ensureJournalByDate(date).id;
-      workbench.openDoc(
-        { docId, fromTab: fromTab ? 'true' : undefined },
-        { replaceHistory: true }
-      );
+      const docs = journalService.journalsByDate$(date).value;
+      if (docs.length > 0) {
+        workbench.openDoc(
+          { docId: docs[0].id, fromTab: fromTab ? 'true' : undefined },
+          { replaceHistory: true }
+        );
+      } else {
+        workbench.open(`/journals?date=${date}`);
+      }
     },
     [fromTab, journalService, workbench]
   );

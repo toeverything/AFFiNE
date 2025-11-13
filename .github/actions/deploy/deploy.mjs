@@ -29,25 +29,25 @@ const isInternal = buildType === 'internal';
 
 const replicaConfig = {
   stable: {
-    web: 3,
-    graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 3,
-    sync: Number(process.env.PRODUCTION_SYNC_REPLICA) || 3,
-    renderer: Number(process.env.PRODUCTION_RENDERER_REPLICA) || 3,
-    doc: Number(process.env.PRODUCTION_DOC_REPLICA) || 3,
+    web: 2,
+    graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 2,
+    sync: Number(process.env.PRODUCTION_SYNC_REPLICA) || 2,
+    renderer: Number(process.env.PRODUCTION_RENDERER_REPLICA) || 2,
+    doc: Number(process.env.PRODUCTION_DOC_REPLICA) || 2,
   },
   beta: {
-    web: 2,
-    graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 2,
-    sync: Number(process.env.BETA_SYNC_REPLICA) || 2,
-    renderer: Number(process.env.BETA_RENDERER_REPLICA) || 2,
-    doc: Number(process.env.BETA_DOC_REPLICA) || 2,
+    web: 1,
+    graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 1,
+    sync: Number(process.env.BETA_SYNC_REPLICA) || 1,
+    renderer: Number(process.env.BETA_RENDERER_REPLICA) || 1,
+    doc: Number(process.env.BETA_DOC_REPLICA) || 1,
   },
   canary: {
-    web: 2,
-    graphql: 2,
-    sync: 2,
-    renderer: 2,
-    doc: 2,
+    web: 1,
+    graphql: 1,
+    sync: 1,
+    renderer: 1,
+    doc: 1,
   },
 };
 
@@ -126,7 +126,10 @@ const createHelmCommand = ({ isDryRun }) => {
         ? 'internal'
         : 'dev';
 
-  const host = DEPLOY_HOST || CANARY_DEPLOY_HOST;
+  const hosts = (DEPLOY_HOST || CANARY_DEPLOY_HOST)
+    .split(',')
+    .map(host => host.trim())
+    .filter(host => host);
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
     `--namespace  ${namespace}`,
@@ -135,7 +138,9 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string global.app.buildType="${buildType}"`,
     `--set        global.ingress.enabled=true`,
     `--set-json   global.ingress.annotations="{ \\"kubernetes.io/ingress.class\\": \\"gce\\", \\"kubernetes.io/ingress.allow-http\\": \\"true\\", \\"kubernetes.io/ingress.global-static-ip-name\\": \\"${STATIC_IP_NAME}\\" }"`,
-    `--set-string global.ingress.host="${host}"`,
+    ...hosts.map(
+      (host, index) => `--set global.ingress.hosts[${index}]=${host}`
+    ),
     `--set-string global.version="${APP_VERSION}"`,
     ...redisAndPostgres,
     ...indexerOptions,
@@ -143,14 +148,14 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string web.image.tag="${imageTag}"`,
     `--set        graphql.replicaCount=${replica.graphql}`,
     `--set-string graphql.image.tag="${imageTag}"`,
-    `--set        graphql.app.host=${host}`,
+    `--set        graphql.app.host=${hosts[0]}`,
     `--set        sync.replicaCount=${replica.sync}`,
     `--set-string sync.image.tag="${imageTag}"`,
     `--set-string renderer.image.tag="${imageTag}"`,
-    `--set        renderer.app.host=${host}`,
+    `--set        renderer.app.host=${hosts[0]}`,
     `--set        renderer.replicaCount=${replica.renderer}`,
     `--set-string doc.image.tag="${imageTag}"`,
-    `--set        doc.app.host=${host}`,
+    `--set        doc.app.host=${hosts[0]}`,
     `--set        doc.replicaCount=${replica.doc}`,
     ...serviceAnnotations,
     ...resources,

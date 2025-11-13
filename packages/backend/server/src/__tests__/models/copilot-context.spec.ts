@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { AiSession, PrismaClient, User, Workspace } from '@prisma/client';
+import { PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
@@ -43,21 +43,22 @@ test.before(async t => {
 
 let user: User;
 let workspace: Workspace;
-let session: AiSession;
+let sessionId: string;
 let docId = 'doc1';
 
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
-  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-4.1');
+  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-5-mini');
   user = await t.context.user.create({
     email: 'test@affine.pro',
   });
   workspace = await t.context.workspace.create(user.id);
-  session = await t.context.copilotSession.create({
+  sessionId = await t.context.copilotSession.create({
     sessionId: randomUUID(),
     workspaceId: workspace.id,
     docId,
     userId: user.id,
+    title: null,
     promptName: 'prompt-name',
     promptAction: null,
   });
@@ -68,7 +69,7 @@ test.after(async t => {
 });
 
 test('should create a copilot context', async t => {
-  const { id: contextId } = await t.context.copilotContext.create(session.id);
+  const { id: contextId } = await t.context.copilotContext.create(sessionId);
   t.truthy(contextId);
 
   const context = await t.context.copilotContext.get(contextId);
@@ -77,7 +78,7 @@ test('should create a copilot context', async t => {
   const config = await t.context.copilotContext.getConfig(contextId);
   t.is(config?.workspaceId, workspace.id, 'should get context config');
 
-  const context1 = await t.context.copilotContext.getBySessionId(session.id);
+  const context1 = await t.context.copilotContext.getBySessionId(sessionId);
   t.is(context1?.id, contextId, 'should get context by session id');
 });
 
@@ -87,14 +88,15 @@ test('should get null for non-exist job', async t => {
 });
 
 test('should update context', async t => {
-  const { id: contextId } = await t.context.copilotContext.create(session.id);
-  const config = await t.context.copilotContext.getConfig(contextId);
+  const { id: contextId } = await t.context.copilotContext.create(sessionId);
+  const config = (await t.context.copilotContext.getConfig(contextId))!;
+  t.assert(config, 'should get context config');
 
   const doc = {
     id: docId,
     createdAt: Date.now(),
   };
-  config?.docs.push(doc);
+  config.docs.push(doc);
   await t.context.copilotContext.update(contextId, { config });
 
   const config1 = await t.context.copilotContext.getConfig(contextId);
@@ -102,7 +104,7 @@ test('should update context', async t => {
 });
 
 test('should insert embedding by doc id', async t => {
-  const { id: contextId } = await t.context.copilotContext.create(session.id);
+  const { id: contextId } = await t.context.copilotContext.create(sessionId);
 
   {
     await t.context.copilotContext.insertFileEmbedding(contextId, 'file-id', [
@@ -163,11 +165,14 @@ test('should insert embedding by doc id', async t => {
     );
 
     {
-      const ret = await t.context.copilotContext.hasWorkspaceEmbedding(
+      const ret = await t.context.copilotContext.listWorkspaceDocEmbedding(
         workspace.id,
         [docId]
       );
-      t.true(ret.has(docId), 'should return doc id when embedding is inserted');
+      t.true(
+        ret.includes(docId),
+        'should return doc id when embedding is inserted'
+      );
     }
 
     {
@@ -316,8 +321,8 @@ test('should merge doc status correctly', async t => {
 
     const hasEmbeddingStub = Sinon.stub(
       t.context.copilotContext,
-      'hasWorkspaceEmbedding'
-    ).resolves(new Set<string>());
+      'listWorkspaceDocEmbedding'
+    ).resolves([]);
 
     const stubResult = await t.context.copilotContext.mergeDocStatus(
       workspace.id,

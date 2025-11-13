@@ -16,12 +16,12 @@ import { LinksRow } from '@affine/core/desktop/dialogs/doc-info/links-row';
 import { TimeRow } from '@affine/core/desktop/dialogs/doc-info/time-row';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
-import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { DocLinksService } from '@affine/core/modules/doc-link';
 import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import { LiveData, useLiveData, useServices } from '@toeverything/infra';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { useLiveData, useServices } from '@toeverything/infra';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import * as styles from './doc-info.css';
 
@@ -31,43 +31,26 @@ export const DocInfoSheet = ({
   docId: string;
   defaultOpenProperty?: DefaultOpenProperty;
 }) => {
-  const { docsSearchService, workspacePropertyService } = useServices({
-    DocsSearchService,
+  const { workspacePropertyService, docLinksService } = useServices({
     WorkspacePropertyService,
+    DocLinksService,
   });
   const t = useI18n();
 
   const canEditPropertyInfo = useGuard('Workspace_Properties_Update');
   const canEditProperty = useGuard('Doc_Update', docId);
-  const links = useLiveData(
-    useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
-      [docId, docsSearchService]
-    )
-  );
-  const backlinks = useLiveData(
-    useMemo(() => {
-      return LiveData.from(docsSearchService.watchRefsTo(docId), []).map(
-        links => {
-          const visitedDoc = new Set<string>();
-          // for each doc, we only show the first block
-          return links.filter(link => {
-            if (visitedDoc.has(link.docId)) {
-              return false;
-            }
-            visitedDoc.add(link.docId);
-            return true;
-          });
-        }
-      );
-    }, [docId, docsSearchService])
-  );
+  const links = useLiveData(docLinksService.links.links$);
+  const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
 
   const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
 
   const onPropertyAdded = useCallback((property: DocCustomPropertyInfo) => {
     setNewPropertyId(property.id);
   }, []);
+
+  useEffect(() => {
+    docLinksService.backlinks.revalidateFromCloud();
+  }, [docLinksService.backlinks]);
 
   const properties = useLiveData(workspacePropertyService.sortedProperties$);
 

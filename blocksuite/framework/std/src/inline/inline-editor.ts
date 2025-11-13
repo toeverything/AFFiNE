@@ -279,7 +279,10 @@ export class InlineEditor<
     this._isReadonly = isReadonly;
   }
 
-  transact(fn: () => void): void {
+  /**
+   * @param withoutTransact Execute a transaction without capturing the history.
+   */
+  transact(fn: () => void, withoutTransact = false): void {
     const doc = this.yText.doc;
     if (!doc) {
       throw new BlockSuiteError(
@@ -288,6 +291,6 @@ export class InlineEditor<
       );
     }
 
-    doc.transact(fn, doc.clientID);
+    doc.transact(fn, withoutTransact ? null : doc.clientID);
   }
 }

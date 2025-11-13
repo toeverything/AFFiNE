@@ -157,10 +157,12 @@ export class IndexerJob {
     }
 
     const startSid = payload.lastIndexedWorkspaceSid ?? 0;
-    const workspaces = await this.models.workspace.listAfterSid(
-      startSid,
+    const workspaces = await this.models.workspace.list(
+      { sid: { gt: startSid } },
+      { id: true, indexed: true, sid: true },
       this.config.indexer.autoIndex.batchSize
     );
+
     if (workspaces.length === 0) {
       // Keep the current sid value when repeating
       return JOB_SIGNAL.Repeat;

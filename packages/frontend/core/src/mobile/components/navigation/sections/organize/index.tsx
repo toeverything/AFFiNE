@@ -6,7 +6,7 @@ import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { AddOrganizeIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -18,7 +18,7 @@ export const NavigationPanelOrganize = () => {
     OrganizeService,
     NavigationPanelService,
   });
-  const navigationPanelSection = navigationPanelService.sections.organize;
+  const path = useMemo(() => ['organize'], []);
   const [openNewFolderDialog, setOpenNewFolderDialog] = useState(false);
 
   const t = useI18n();
@@ -36,15 +36,15 @@ export const NavigationPanelOrganize = () => {
         rootFolder.indexAt('before')
       );
       track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
-      navigationPanelSection.setCollapsed(false);
+      navigationPanelService.setCollapsed(path, false);
       return newFolderId;
     },
-    [navigationPanelSection, rootFolder]
+    [navigationPanelService, path, rootFolder]
   );
 
   return (
     <CollapsibleSection
-      name="organize"
+      path={path}
       title={t['com.affine.rootAppSidebar.organize']()}
     >
       {/* TODO(@CatsJuice): Organize loading UI */}
@@ -53,6 +53,7 @@ export const NavigationPanelOrganize = () => {
           <NavigationPanelFolderNode
             key={child.id}
             nodeId={child.id as string}
+            parentPath={path}
           />
         ))}
         <AddItemPlaceholder

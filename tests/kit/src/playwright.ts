@@ -77,7 +77,7 @@ export const test = baseTest.extend<{
     if (enableCoverage) {
       await context.addInitScript(() =>
         window.addEventListener('beforeunload', () =>
-          // @ts-expect-error
+          // @ts-expect-error window.__coverage__ is not typed
           window.collectIstanbulCoverage(JSON.stringify(window.__coverage__))
         )
       );
@@ -103,7 +103,7 @@ export const test = baseTest.extend<{
     if (enableCoverage) {
       for (const page of context.pages()) {
         await page.evaluate(() =>
-          // @ts-expect-error
+          // @ts-expect-error window.__coverage__ is not typed
           window.collectIstanbulCoverage(JSON.stringify(window.__coverage__))
         );
       }

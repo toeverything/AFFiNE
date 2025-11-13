@@ -13,6 +13,7 @@ import {
   InvalidLicenseSessionId,
   InvalidSubscriptionParameters,
   LicenseRevealed,
+  ManagedByAppStoreOrPlay,
   OnEvent,
   SameSubscriptionRecurring,
   SubscriptionExpired,
@@ -89,7 +90,7 @@ export class SubscriptionService {
     return this.stripeProvider.stripe;
   }
 
-  private select(plan: SubscriptionPlan): SubscriptionManager {
+  select(plan: SubscriptionPlan): SubscriptionManager {
     switch (plan) {
       case SubscriptionPlan.Team:
         return this.workspaceManager;
@@ -159,10 +160,15 @@ export class SubscriptionService {
     this.assertSubscriptionIdentity(identity);
 
     const manager = this.select(identity.plan);
-    const subscription = await manager.getSubscription(identity);
+    const subscription = await manager.getActiveSubscription(identity);
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    // IAP read-only: RevenueCat-managed subscriptions cannot be modified on web
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.stripeSubscriptionId) {
@@ -205,10 +211,15 @@ export class SubscriptionService {
 
     const manager = this.select(identity.plan);
 
-    const subscription = await manager.getSubscription(identity);
+    const subscription = await manager.getActiveSubscription(identity);
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    // IAP read-only: RevenueCat-managed subscriptions cannot be modified on web
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.canceledAt) {
@@ -252,10 +263,15 @@ export class SubscriptionService {
     this.assertSubscriptionIdentity(identity);
 
     const manager = this.select(identity.plan);
-    const subscription = await manager.getSubscription(identity);
+    const subscription = await manager.getActiveSubscription(identity);
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    // IAP read-only: RevenueCat-managed subscriptions cannot be modified on web
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.stripeSubscriptionId) {
@@ -304,12 +320,16 @@ export class SubscriptionService {
   ) {
     this.assertSubscriptionIdentity(identity);
 
-    const subscription = await this.select(identity.plan).getSubscription(
+    const subscription = await this.select(identity.plan).getActiveSubscription(
       identity
     );
 
     if (!subscription) {
       throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    if (subscription.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     if (!subscription.stripeSubscriptionId) {

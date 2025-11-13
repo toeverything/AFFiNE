@@ -1,6 +1,7 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import {
   ArrowDownBigIcon as ArrowDownIcon,
   ArrowUpBigIcon as ArrowUpIcon,
@@ -163,16 +164,18 @@ export class ActionWrapper extends WithDisposable(LitElement) {
                   ></chat-content-images>`
                 : nothing}
               ${answer
-                ? createTextRenderer(this.host, {
+                ? createTextRenderer({
                     customHeading: true,
                     testId: 'chat-message-action-answer',
+                    theme: this.host.std.get(ThemeProvider).app$,
                   })(answer)
                 : nothing}
               ${originalText
                 ? html`<div class="subtitle prompt">Prompt</div>
-                    ${createTextRenderer(this.host, {
+                    ${createTextRenderer({
                       customHeading: true,
                       testId: 'chat-message-action-prompt',
+                      theme: this.host.std.get(ThemeProvider).app$,
                     })(item.messages[0].content + originalText)}`
                 : nothing}
             </div>

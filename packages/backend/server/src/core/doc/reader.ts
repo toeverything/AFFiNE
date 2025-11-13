@@ -67,7 +67,8 @@ export abstract class DocReader {
 
   abstract getDocMarkdown(
     workspaceId: string,
-    docId: string
+    docId: string,
+    aiEditable: boolean
   ): Promise<DocMarkdown | null>;
 
   abstract getDocDiff(
@@ -184,13 +185,19 @@ export class DatabaseDocReader extends DocReader {
 
   async getDocMarkdown(
     workspaceId: string,
-    docId: string
+    docId: string,
+    aiEditable: boolean
   ): Promise<DocMarkdown | null> {
     const doc = await this.workspace.getDoc(workspaceId, docId);
     if (!doc) {
       return null;
     }
-    return parseDocToMarkdownFromDocSnapshot(workspaceId, docId, doc.bin);
+    return parseDocToMarkdownFromDocSnapshot(
+      workspaceId,
+      docId,
+      doc.bin,
+      aiEditable
+    );
   }
 
   async getDocDiff(
@@ -328,9 +335,10 @@ export class RpcDocReader extends DatabaseDocReader {
 
   override async getDocMarkdown(
     workspaceId: string,
-    docId: string
+    docId: string,
+    aiEditable: boolean
   ): Promise<DocMarkdown | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown`;
+    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown?aiEditable=${aiEditable}`;
     const accessToken = this.crypto.sign(docId);
     try {
       const res = await this.fetch(accessToken, url, 'GET');
@@ -349,7 +357,7 @@ export class RpcDocReader extends DatabaseDocReader {
         err
       );
       // fallback to database doc reader if the error is not user friendly, like network error
-      return await super.getDocMarkdown(workspaceId, docId);
+      return await super.getDocMarkdown(workspaceId, docId, aiEditable);
     }
   }
 

@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { toGfxBlockComponent } from '@blocksuite/std';
 import { css } from 'lit';
 
@@ -9,7 +10,7 @@ export class ImageEdgelessPlaceholderBlockComponent extends toGfxBlockComponent(
   static override styles = css`
     affine-edgeless-placeholder-preview-image
       .affine-placeholder-preview-container {
-      border: 1px solid var(--affine-background-tertiary-color);
+      border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
     }
   `;
 

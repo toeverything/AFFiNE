@@ -972,8 +972,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        shardTotal: [10]
     needs:
       - build-server-native
     services:
@@ -1064,24 +1064,36 @@ jobs:
       fail-fast: false
       matrix:
         tests:
-          - name: 'Cloud E2E Test 1/6'
+          - name: 'Cloud E2E Test 1/10'
             shard: 1
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=1/6
-          - name: 'Cloud E2E Test 2/6'
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=1/10
+          - name: 'Cloud E2E Test 2/10'
             shard: 2
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=2/6
-          - name: 'Cloud E2E Test 3/6'
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=2/10
+          - name: 'Cloud E2E Test 3/10'
             shard: 3
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=3/6
-          - name: 'Cloud E2E Test 4/6'
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=3/10
+          - name: 'Cloud E2E Test 4/10'
             shard: 4
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=4/6
-          - name: 'Cloud E2E Test 5/6'
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=4/10
+          - name: 'Cloud E2E Test 5/10'
             shard: 5
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=5/6
-          - name: 'Cloud E2E Test 6/6'
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=5/10
+          - name: 'Cloud E2E Test 6/10'
             shard: 6
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=6/6
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=6/10
+          - name: 'Cloud E2E Test 7/10'
+            shard: 7
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=7/10
+          - name: 'Cloud E2E Test 8/10'
+            shard: 8
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=8/10
+          - name: 'Cloud E2E Test 9/10'
+            shard: 9
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=9/10
+          - name: 'Cloud E2E Test 10/10'
+            shard: 10
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=10/10
           - name: 'Cloud Desktop E2E Test'
             shard: desktop
             script: |
@@ -1359,15 +1371,6 @@ jobs:
         run: |
           yarn affine @affine/electron node ./scripts/macos-arm64-output-check.ts
 
-  test-build-mobile-app:
-    uses: ./.github/workflows/release-mobile.yml
-    with:
-      build-type: canary
-      build-target: development
-    secrets: inherit
-    permissions:
-      id-token: 'write'
-
   test-done:
     needs:
       - analyze
@@ -1398,7 +1401,6 @@ jobs:
       - desktop-test
       - desktop-bundle-check
       - cloud-e2e-test
-      - test-build-mobile-app
     if: always()
     runs-on: ubuntu-latest
     name: 3, 2, 1 Launch

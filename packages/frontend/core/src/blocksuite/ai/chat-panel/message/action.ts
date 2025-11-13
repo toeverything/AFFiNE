@@ -1,5 +1,3 @@
-import '../content/assistant-avatar';
-
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';

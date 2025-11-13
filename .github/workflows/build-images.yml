@@ -3,7 +3,13 @@ name: Build Images
 on:
   workflow_call:
     inputs:
-      flavor:
+      build-type:
+        type: string
+        required: true
+      app-version:
+        type: string
+        required: true
+      git-short-hash:
         type: string
         required: true
 
@@ -16,12 +22,13 @@ jobs:
   build-web:
     name: Build @affine/web
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
+    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Core
@@ -30,11 +37,11 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          BUILD_TYPE: ${{ inputs.build-type }}
           CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: 'affine-web'
-          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
+          SENTRY_RELEASE: ${{ inputs.app-version }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
@@ -49,12 +56,13 @@ jobs:
   build-admin:
     name: Build @affine/admin
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
+    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Admin
@@ -63,7 +71,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          BUILD_TYPE: ${{ inputs.build-type }}
           CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: 'affine-admin'
@@ -81,12 +89,13 @@ jobs:
   build-mobile:
     name: Build @affine/mobile
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
+    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Build Mobile
@@ -95,7 +104,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
+          BUILD_TYPE: ${{ inputs.build-type }}
           CAPTCHA_SITE_KEY: ${{ secrets.CAPTCHA_SITE_KEY }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: 'affine-mobile'
@@ -113,7 +122,7 @@ jobs:
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
+    environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,8 +137,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -161,8 +171,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -202,16 +213,6 @@ jobs:
         with:
           name: server-dist
           path: ./packages/backend/server/dist
-      - name: Setup env
-        run: |
-          echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-          if [ -z "${{ inputs.flavor }}" ]
-          then
-            echo "RELEASE_FLAVOR=canary" >> "$GITHUB_ENV"
-          else
-            echo "RELEASE_FLAVOR=${{ inputs.flavor }}" >> "$GITHUB_ENV"
-          fi
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -263,8 +264,9 @@ jobs:
         run: mv ./node_modules ./packages/backend/server
 
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
 
       - name: Build front Dockerfile
         uses: docker/build-push-action@v6
@@ -275,7 +277,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-front:${{env.RELEASE_FLAVOR}}
+          tags: ghcr.io/toeverything/affine-front:${{inputs.build-type}}-${{ inputs.git-short-hash }}
 
       - name: Build graphql Dockerfile
         uses: docker/build-push-action@v6
@@ -286,4 +288,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}-${{ env.GIT_SHORT_HASH }},ghcr.io/toeverything/affine-graphql:${{env.RELEASE_FLAVOR}}
+          tags: ghcr.io/toeverything/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}

@@ -6,7 +6,10 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('AIChatWith/Collections', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(page);
+    await utils.testUtils.setupTestEnvironment(
+      page,
+      'claude-sonnet-4-5@20250929'
+    );
     await utils.chatPanel.openChatPanel(page);
     await utils.editor.clearAllCollections(page);
 

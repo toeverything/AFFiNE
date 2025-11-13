@@ -73,7 +73,9 @@ export class MobileKanbanCell extends SignalWatcher(
     if (this.view.readonly$.value) {
       return;
     }
-    const setSelection = this.kanbanViewLogic.setSelection;
+    const setSelection = this.kanbanViewLogic.setSelection.bind(
+      this.kanbanViewLogic
+    );
     const viewId = this.kanbanViewLogic.view.id;
     if (setSelection && viewId) {
       if (editing && this.cell?.beforeEnterEditMode() === false) {
@@ -101,12 +103,12 @@ export class MobileKanbanCell extends SignalWatcher(
     this.disposables.add(
       effect(() => {
         const isEditing = this.isSelectionEditing$.value;
-        if (isEditing) {
+        if (isEditing && !this.isEditing$.peek()) {
           this.isEditing$.value = true;
           requestAnimationFrame(() => {
             this._cell.value?.afterEnterEditingMode();
           });
-        } else {
+        } else if (!isEditing && this.isEditing$.peek()) {
           this._cell.value?.beforeExitEditingMode();
           this.isEditing$.value = false;
         }

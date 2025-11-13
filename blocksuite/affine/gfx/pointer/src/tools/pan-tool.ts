@@ -1,4 +1,7 @@
-import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
+import {
+  DefaultTool,
+  EdgelessLegacySlotIdentifier,
+} from '@blocksuite/affine-block-surface';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
 import { BaseTool, MouseButton, type ToolOptions } from '@blocksuite/std/gfx';
@@ -64,12 +67,15 @@ export class PanTool extends BaseTool<PanToolOption> {
         const { toolType, options: originalToolOptions } = currentTool;
         const selectionToRestore = this.gfx.selection.surfaceSelections;
         if (!toolType) return;
+        // restore to DefaultTool if previous tool is CopilotTool
+        if (toolType.toolName === 'copilot') {
+          this.controller.setTool(DefaultTool);
+          return;
+        }
 
         let finalOptions: ToolOptions<BaseTool<any>> | undefined =
           originalToolOptions;
-        const PRESENT_TOOL_NAME = 'frameNavigator';
-
-        if (toolType.toolName === PRESENT_TOOL_NAME) {
+        if (toolType.toolName === 'frameNavigator') {
           // When restoring PresentTool (frameNavigator) after a temporary pan (e.g., via middle mouse button),
           // set 'restoredAfterPan' to true. This allows PresentTool to avoid an unwanted viewport reset
           // and maintain the panned position.
@@ -93,15 +99,17 @@ export class PanTool extends BaseTool<PanToolOption> {
         });
       }
 
-      this.controller.setTool(PanTool, {
-        panning: true,
+      requestAnimationFrame(() => {
+        this.controller.setTool(PanTool, {
+          panning: true,
+        });
       });
 
       const dispose = on(document, 'pointerup', evt => {
         if (evt.button === MouseButton.MIDDLE) {
           restoreToPrevious();
-          dispose();
         }
+        dispose();
       });
 
       return false;

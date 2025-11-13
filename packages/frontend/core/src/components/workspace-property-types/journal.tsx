@@ -3,7 +3,6 @@ import {
   DatePicker,
   Menu,
   MenuItem,
-  type MenuRef,
   PropertyValue,
 } from '@affine/component';
 import { MobileJournalConflictList } from '@affine/core/mobile/pages/workspace/detail/menu/journal-conflicts';
@@ -25,6 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { DocListPropertyProps, GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import type { PropertyValueProps } from '../properties/types';
 import * as styles from './journal.css';
 
@@ -192,20 +192,10 @@ export const JournalFilterValue = ({
   onDraftCompleted?: () => void;
   onChange?: (filter: FilterParams) => void;
 }) => {
-  const menuRef = useRef<MenuRef>(null);
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
-
   return (
-    <Menu
-      ref={menuRef}
-      rootOptions={{
-        onClose: onDraftCompleted,
-      }}
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       items={
         <>
           <MenuItem
@@ -234,7 +224,7 @@ export const JournalFilterValue = ({
       }
     >
       <span>{filter.value === 'true' ? 'True' : 'False'}</span>
-    </Menu>
+    </FilterValueMenu>
   );
 };
 

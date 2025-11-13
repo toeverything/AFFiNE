@@ -168,6 +168,9 @@ export class GuardService extends Service {
     if (this.workspaceService.workspace.flavour === 'local') {
       return {} as Record<WorkspacePermissionActions, boolean>;
     }
+    if (this.workspaceService.workspace.openOptions.isSharedMode) {
+      return {};
+    }
     const permissions = await this.guardStore.getWorkspacePermissions();
     this.workspacePermissions$.next(permissions);
     return permissions;
@@ -176,6 +179,9 @@ export class GuardService extends Service {
   private readonly loadDocPermission = async (docId: string) => {
     if (this.workspaceService.workspace.flavour === 'local') {
       return {} as Record<DocPermissionActions, boolean>;
+    }
+    if (this.workspaceService.workspace.openOptions.isSharedMode) {
+      return {};
     }
     const permissions = await this.guardStore.getDocPermissions(docId);
     this.docPermissions$.next({

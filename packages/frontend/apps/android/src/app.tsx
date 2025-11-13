@@ -120,7 +120,9 @@ framework.impl(VirtualKeyboardProvider, {
           const navBarHeight = (await AffineTheme.getSystemNavBarHeight())
             .height;
           callback({
-            visible: true,
+            // When an physical keyboard is connected, the virtual keyboard height is 0,
+            // even though the `keyboardWillShow` event is still triggered.
+            visible: info.keyboardHeight !== 0,
             height: info.keyboardHeight - navBarHeight,
           });
         })().catch(console.error);

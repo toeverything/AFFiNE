@@ -142,7 +142,7 @@ export class OAuthController {
           provider: rawState.provider,
         })
       );
-      clientUrl.searchParams.set('server', this.url.origin);
+      clientUrl.searchParams.set('server', this.url.requestOrigin);
 
       return res.redirect(
         this.url.link('/open-app/url?', {
@@ -221,10 +221,19 @@ export class OAuthController {
     if (connectedAccount) {
       // already connected
       await this.updateConnectedAccount(connectedAccount, tokens);
+
+      if (
+        !connectedAccount.user.emailVerifiedAt &&
+        // external email may change, check if it matches exists email
+        externalAccount.email.toLowerCase() ===
+          connectedAccount.user.email.toLowerCase()
+      ) {
+        await this.auth.setEmailVerified(connectedAccount.userId);
+      }
       return connectedAccount.user;
     }
 
-    if (!this.config.auth.allowSignup) {
+    if (!this.config.auth.allowSignupForOauth) {
       throw new SignUpForbidden();
     }
 

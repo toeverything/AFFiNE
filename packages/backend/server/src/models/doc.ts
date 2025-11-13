@@ -558,6 +558,8 @@ export class DocModel extends BaseModel {
         mode: PublicDocMode;
         public: boolean;
         defaultRole: DocRole;
+        title: string | null;
+        summary: string | null;
         createdAt: Date;
         updatedAt: Date;
         creatorId?: string;
@@ -570,6 +572,8 @@ export class DocModel extends BaseModel {
      "workspace_pages"."mode" as "mode",
      "workspace_pages"."public" as "public",
      "workspace_pages"."defaultRole" as "defaultRole",
+     "workspace_pages"."title" as "title",
+     "workspace_pages"."summary" as "summary",
      "snapshots"."created_at" as "createdAt",
      "snapshots"."updated_at" as "updatedAt",
      "snapshots"."created_by" as "creatorId",
@@ -690,6 +694,19 @@ export class DocModel extends BaseModel {
     `;
 
     return [count, rows] as const;
+  }
+
+  async findEmptySummaryDocIds(workspaceId: string) {
+    const rows = await this.db.workspaceDoc.findMany({
+      where: {
+        workspaceId,
+        summary: null,
+      },
+      select: {
+        docId: true,
+      },
+    });
+    return rows.map(row => row.docId);
   }
 
   // #endregion

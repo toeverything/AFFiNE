@@ -16,7 +16,7 @@ type AIActionEventName =
   | 'AI result accepted';
 
 type AIActionEventProperties = {
-  page: 'doc' | 'edgeless';
+  page: 'doc' | 'edgeless' | 'unknown';
   segment:
     | 'AI action panel'
     | 'right side bar'
@@ -58,7 +58,7 @@ type AIActionEventProperties = {
     | 'other';
   category: string;
   other: Record<string, unknown>;
-  docId: string;
+  docId?: string;
   workspaceId: string;
 };
 
@@ -231,7 +231,9 @@ const toTrackedOptions = (
 
   if (!eventName) return null;
 
-  const pageMode = inferPageMode(event.options.host);
+  const pageMode = event.options.host
+    ? inferPageMode(event.options.host)
+    : 'unknown';
   const otherProperties = omit(event.options, defaultActionOptions);
   const type = inferObjectType(event);
   const segment = inferSegment(event);

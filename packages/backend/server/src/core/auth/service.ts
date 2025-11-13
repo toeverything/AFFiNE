@@ -264,6 +264,36 @@ export class AuthService implements OnApplicationBootstrap {
     return session;
   }
 
+  async getTokenSessionFromRequest(req: Request) {
+    const tokenHeader = req.headers.authorization;
+    if (!tokenHeader) {
+      return null;
+    }
+
+    const tokenValue = extractTokenFromHeader(tokenHeader);
+
+    if (!tokenValue) {
+      return null;
+    }
+
+    const token = await this.models.accessToken.getByToken(tokenValue);
+
+    if (token) {
+      const user = await this.models.user.get(token.userId);
+
+      if (!user) {
+        return null;
+      }
+
+      return {
+        token,
+        user: sessionUser(user),
+      };
+    }
+
+    return null;
+  }
+
   async changePassword(
     id: string,
     newPassword: string

@@ -1,21 +1,16 @@
-import {
-  Menu,
-  MenuItem,
-  type MenuRef,
-  PropertyValue,
-  type RadioItem,
-} from '@affine/component';
+import { MenuItem, PropertyValue, type RadioItem } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import { type DocRecord, DocService } from '@affine/core/modules/doc';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useI18n } from '@affine/i18n';
 import { LongerIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import type { PropertyValueProps } from '../properties/types';
 import { PropertyRadioGroup } from '../properties/widgets/radio-group';
 import { container } from './page-width.css';
@@ -99,20 +94,11 @@ export const PageWidthFilterValue = ({
   onChange?: (filter: FilterParams) => void;
 }) => {
   const t = useI18n();
-  const menuRef = useRef<MenuRef>(null);
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
 
   return (
-    <Menu
-      ref={menuRef}
-      rootOptions={{
-        onClose: onDraftCompleted,
-      }}
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       items={
         <>
           <MenuItem
@@ -153,7 +139,7 @@ export const PageWidthFilterValue = ({
               'com.affine.settings.editorSettings.page.default-page-width.standard'
             ]()}
       </span>
-    </Menu>
+    </FilterValueMenu>
   );
 };
 

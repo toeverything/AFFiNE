@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 2
 enabled: false
 database: 
   connectionName: ""
@@ -33,8 +33,11 @@ service:
 
 resources:
   limits:
-    memory: "4Gi"
-    cpu: "2"
+    memory: "1Gi"
+    cpu: "1"
+  requests:
+    memory: "512Mi"
+    cpu: "100m"
 
 volumes: []
 volumeMounts: []

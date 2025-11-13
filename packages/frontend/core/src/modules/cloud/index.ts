@@ -7,6 +7,7 @@ export { AccountLoggedOut } from './events/account-logged-out';
 export { AuthProvider } from './provider/auth';
 export { ValidatorProvider } from './provider/validator';
 export { ServerScope } from './scopes/server';
+export { AccessTokenService } from './services/access-token';
 export { AuthService } from './services/auth';
 export { CaptchaService } from './services/captcha';
 export { DefaultServerService } from './services/default-server';
@@ -102,6 +103,8 @@ import { WorkspacePermissionService } from '../permissions';
 import { DocScope, DocService, DocsService } from '../doc';
 import { DocCreatedByUpdatedBySyncStore } from './stores/doc-created-by-updated-by-sync';
 import { GlobalDialogService } from '../dialogs';
+import { AccessTokenService } from './services/access-token';
+import { AccessTokenStore } from './stores/access-token';
 
 export function configureCloudModule(framework: Framework) {
   configureDefaultAuthProvider(framework);
@@ -171,7 +174,9 @@ export function configureCloudModule(framework: Framework) {
     .service(PublicUserService, [PublicUserStore])
     .store(PublicUserStore, [GraphQLService])
     .service(UserSettingsService, [UserSettingsStore])
-    .store(UserSettingsStore, [GraphQLService]);
+    .store(UserSettingsStore, [GraphQLService])
+    .service(AccessTokenService, [AccessTokenStore])
+    .store(AccessTokenStore, [GraphQLService]);
 
   framework
     .scope(WorkspaceScope)

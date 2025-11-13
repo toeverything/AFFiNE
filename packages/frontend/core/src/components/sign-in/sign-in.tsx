@@ -27,6 +27,7 @@ import {
   useState,
 } from 'react';
 
+import { useSelfhostLoginVersionGuard } from '../hooks/affine/use-selfhost-login-version-guard';
 import type { SignInState } from '.';
 import { Back } from './back';
 import * as style from './style.css';
@@ -54,6 +55,7 @@ export const SignInStep = ({
   const serverName = useLiveData(
     serverService.server.config$.selector(c => c.serverName)
   );
+  const versionError = useSelfhostLoginVersionGuard(serverService.server);
   const isSelfhosted = useLiveData(
     serverService.server.config$.selector(
       c => c.type === ServerDeploymentType.Selfhosted
@@ -124,6 +126,20 @@ export const SignInStep = ({
       step: 'addSelfhosted',
     }));
   }, [changeState]);
+
+  if (versionError && isSelfhosted) {
+    return (
+      <AuthContainer>
+        <AuthHeader
+          title={t['com.affine.auth.sign.in']()}
+          subTitle={serverName}
+        />
+        <AuthContent>
+          <div>{versionError}</div>
+        </AuthContent>
+      </AuthContainer>
+    );
+  }
 
   return (
     <AuthContainer>

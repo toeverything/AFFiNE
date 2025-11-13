@@ -7,6 +7,7 @@ import path from 'node:path';
 import { shell } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
+import { openExternalSafely } from '../security/open-external';
 import type { NamespaceHandlers } from '../type';
 import {
   askForMeetingPermission,
@@ -87,7 +88,9 @@ export const recordingHandlers = {
         microphone: 'Privacy_Microphone',
       };
       const url = `x-apple.systempreferences:com.apple.preference.security?${urlMap[type]}`;
-      return shell.openExternal(url);
+      return openExternalSafely(url, {
+        additionalProtocols: ['x-apple.systempreferences:'],
+      });
     }
     // this only available on MacOS
     return false;

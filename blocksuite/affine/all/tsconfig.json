@@ -45,6 +45,7 @@
     { "path": "../gfx/template" },
     { "path": "../gfx/text" },
     { "path": "../gfx/turbo-renderer" },
+    { "path": "../inlines/comment" },
     { "path": "../inlines/footnote" },
     { "path": "../inlines/latex" },
     { "path": "../inlines/link" },

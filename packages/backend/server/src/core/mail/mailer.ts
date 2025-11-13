@@ -15,11 +15,14 @@ export class Mailer {
    *
    * @note never throw
    */
-  async trySend(command: Jobs['notification.sendMail']) {
+  async trySend(command: Omit<Jobs['notification.sendMail'], 'startTime'>) {
     return this.send(command, true);
   }
 
-  async send(command: Jobs['notification.sendMail'], suppressError = false) {
+  async send(
+    command: Omit<Jobs['notification.sendMail'], 'startTime'>,
+    suppressError = false
+  ) {
     if (!this.sender.configured) {
       if (suppressError) {
         return false;
@@ -28,7 +31,12 @@ export class Mailer {
     }
 
     try {
-      await this.queue.add('notification.sendMail', command);
+      await this.queue.add(
+        'notification.sendMail',
+        Object.assign({}, command, {
+          startTime: Date.now(),
+        }) as Jobs['notification.sendMail']
+      );
       return true;
     } catch {
       return false;
