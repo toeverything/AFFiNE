@@ -22,36 +22,12 @@ import type { Row } from '../../../core/index.js';
 import { createDndContext } from '../../../core/utils/wc-dnd/dnd-context.js';
 import { defaultActivators } from '../../../core/utils/wc-dnd/sensors/index.js';
 import { linearMove } from '../../../core/utils/wc-dnd/utils/linear-move.js';
+import { getCollapsedState, setCollapsedState } from '../collapsed-state.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import { TableViewAreaSelection } from '../selection';
 import { DataViewColumnPreview } from './header/column-renderer.js';
 import { getVerticalIndicator } from './header/vertical-indicator.js';
 import type { TableViewUILogic } from './table-view-ui-logic.js';
-
-const collapsedState = {
-  get(viewId: string, groupKey: string): boolean {
-    try {
-      const value = sessionStorage.getItem(
-        `affine:table-group:${viewId}:${groupKey}:collapsed`
-      );
-      if (!value) return false;
-      const parsed = JSON.parse(value);
-      return typeof parsed === 'boolean' ? parsed : false;
-    } catch {
-      return false;
-    }
-  },
-  set(viewId: string, groupKey: string, collapsed: boolean) {
-    try {
-      sessionStorage.setItem(
-        `affine:table-group:${viewId}:${groupKey}:collapsed`,
-        JSON.stringify(collapsed)
-      );
-    } catch {
-      // ignore
-    }
-  },
-};
 
 const styles = css`
   affine-data-view-table-group:hover .group-header-op {
@@ -137,7 +113,7 @@ export class TableGroup extends SignalWatcher(
     this.storageLoaded = true;
     const view = this.tableViewLogic?.view;
     if (!view) return;
-    const value = collapsedState.get(view.id, this.group?.key ?? 'all');
+    const value = getCollapsedState(view.id, this.group?.key ?? 'all');
     this.collapsed$.value = value;
   }
 
@@ -147,7 +123,7 @@ export class TableGroup extends SignalWatcher(
     this.collapsed$.value = next;
     const view = this.tableViewLogic?.view;
     if (view) {
-      collapsedState.set(view.id, this.group?.key ?? 'all', next);
+      setCollapsedState(view.id, this.group?.key ?? 'all', next);
     }
   };
 

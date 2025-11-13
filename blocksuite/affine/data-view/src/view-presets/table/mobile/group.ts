@@ -19,33 +19,9 @@ import { repeat } from 'lit/directives/repeat.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
 import type { Group } from '../../../core/group-by/trait.js';
 import type { Row } from '../../../core/index.js';
+import { getCollapsedState, setCollapsedState } from '../collapsed-state.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
-
-const collapsedState = {
-  get(viewId: string, groupKey: string): boolean {
-    try {
-      const value = sessionStorage.getItem(
-        `affine:table-group:${viewId}:${groupKey}:collapsed`
-      );
-      if (!value) return false;
-      const parsed = JSON.parse(value);
-      return typeof parsed === 'boolean' ? parsed : false;
-    } catch {
-      return false;
-    }
-  },
-  set(viewId: string, groupKey: string, collapsed: boolean) {
-    try {
-      sessionStorage.setItem(
-        `affine:table-group:${viewId}:${groupKey}:collapsed`,
-        JSON.stringify(collapsed)
-      );
-    } catch {
-      // ignore
-    }
-  },
-};
 
 const styles = css`
   .data-view-table-group-add-row {
@@ -110,7 +86,7 @@ export class MobileTableGroup extends SignalWatcher(
     this.storageLoaded = true;
     const view = this.tableViewLogic?.view;
     if (!view) return;
-    const value = collapsedState.get(view.id, this.group?.key ?? 'all');
+    const value = getCollapsedState(view.id, this.group?.key ?? 'all');
     this.collapsed$.value = value;
   }
 
@@ -120,7 +96,7 @@ export class MobileTableGroup extends SignalWatcher(
     this.collapsed$.value = next;
     const view = this.tableViewLogic?.view;
     if (view) {
-      collapsedState.set(view.id, this.group?.key ?? 'all', next);
+      setCollapsedState(view.id, this.group?.key ?? 'all', next);
     }
   };
 
@@ -256,7 +232,7 @@ export class MobileTableGroup extends SignalWatcher(
 
   override render() {
     return html`
-      ${this.renderGroupHeader()}
+      ${this.collapsed$.value ? this.renderGroupHeader() : nothing}
       ${this.collapsed$.value ? nothing : this.renderRows(this.rows)}
     `;
   }
