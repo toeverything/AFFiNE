@@ -23,12 +23,14 @@ import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
 
 const collapsedState = {
-  get(viewId: string, groupKey: string) {
+  get(viewId: string, groupKey: string): boolean {
     try {
       const value = sessionStorage.getItem(
         `affine:table-group:${viewId}:${groupKey}:collapsed`
       );
-      return value ? JSON.parse(value) : false;
+      if (!value) return false;
+      const parsed = JSON.parse(value);
+      return typeof parsed === 'boolean' ? parsed : false;
     } catch {
       return false;
     }
