@@ -1,7 +1,7 @@
 import { Body, Controller, Headers, Logger, Post } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Config, EventBus } from '../../../base';
+import { Config, EventBus, JobQueue } from '../../../base';
 import { Public } from '../../../core/auth';
 import { FeatureService } from '../../../core/features';
 import { Models } from '../../../models';
@@ -55,6 +55,7 @@ export class RevenueCatWebhookController {
   constructor(
     private readonly config: Config,
     private readonly event: EventBus,
+    private readonly queue: JobQueue,
     private readonly models: Models,
     private readonly feature: FeatureService
   ) {}
@@ -82,11 +83,12 @@ export class RevenueCatWebhookController {
                 appUserId,
                 familyShare: event.is_family_share,
                 environment: event.environment,
+                transactionId: event.transaction_id,
               };
               this.logger.log(
                 `[${id}] RevenueCat Webhook {${type}} received for appUserId=${appUserId}.`
               );
-              if (appUserId) {
+              if (appUserId && !appUserId.startsWith('$RCAnonymousID:')) {
                 const user = await this.models.user.get(appUserId);
                 if (user) {
                   if (
@@ -112,6 +114,19 @@ export class RevenueCatWebhookController {
                     );
                   }
                 }
+              } else if (event.transaction_id) {
+                await this.queue
+                  .add('nightly.revenuecat.subscription.refresh.anonymous', {
+                    externalRef: event.transaction_id,
+                    startTime: Date.now(),
+                  })
+                  .catch((e: Error) => {
+                    this.logger.error(
+                      'Failed to handle RevenueCat Webhook event.',
+                      e
+                    );
+                  });
+                return;
               }
               this.logger.warn(
                 `RevenueCat Webhook received for unknown user`,

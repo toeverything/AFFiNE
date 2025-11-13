@@ -13,109 +13,122 @@ members = [
 ]
 resolver = "3"
 
-[workspace.package]
-edition = "2024"
+  [workspace.package]
+  edition = "2024"
 
-[workspace.dependencies]
-affine_common          = { path = "./packages/common/native" }
-affine_nbstore         = { path = "./packages/frontend/native/nbstore" }
-ahash                  = "0.8"
-anyhow                 = "1"
-arbitrary              = { version = "1.3", features = ["derive"] }
-assert-json-diff       = "2.0"
-async-lock             = { version = "3.4.0", features = ["loom"] }
-base64-simd            = "0.8"
-bitvec                 = "1.0"
-block2                 = "0.6"
-byteorder              = "1.5"
-cpal                   = "0.15"
-chrono                 = "0.4"
-clap                   = { version = "4.4", features = ["derive"] }
-core-foundation        = "0.10"
-coreaudio-rs           = "0.12"
-criterion              = { version = "0.5", features = ["html_reports"] }
-criterion2             = { version = "3", default-features = false }
-crossbeam-channel      = "0.5"
-dispatch2              = "0.3"
-docx-parser            = { git = "https://github.com/toeverything/docx-parser" }
-dotenvy                = "0.15"
-file-format            = { version = "0.28", features = ["reader"] }
-homedir                = "0.3"
-infer                  = { version = "0.19.0" }
-lasso                  = { version = "0.7", features = ["multi-threaded"] }
-lib0                   = { version = "0.16", features = ["lib0-serde"] }
-libc                   = "0.2"
-log                    = "0.4"
-loom                   = { version = "0.7", features = ["checkpoint"] }
-mimalloc               = "0.1"
-mp4parse               = "0.17"
-nanoid                 = "0.4"
-napi                   = { version = "3.0.0-beta.3", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
-napi-build             = { version = "2" }
-napi-derive            = { version = "3.0.0-beta.3" }
-nom                    = "8"
-notify                 = { version = "8", features = ["serde"] }
-objc2                  = "0.6"
-objc2-foundation       = "0.3"
-once_cell              = "1"
-ordered-float          = "5"
-parking_lot            = "0.12"
-path-ext               = "0.1.2"
-pdf-extract            = { git = "https://github.com/toeverything/pdf-extract", branch = "darksky/improve-font-decoding" }
-phf                    = { version = "0.11", features = ["macros"] }
-proptest               = "1.3"
-proptest-derive        = "0.5"
-rand                   = "0.9"
-rand_chacha            = "0.9"
-rand_distr             = "0.5"
-rayon                  = "1.10"
-readability            = { version = "0.3.0", default-features = false }
-regex                  = "1.10"
-rubato                 = "0.16"
-screencapturekit       = "0.3"
-serde                  = "1"
-serde_json             = "1"
-sha3                   = "0.10"
-smol_str               = "0.3"
-sqlx                   = { version = "0.8", default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-strum_macros           = "0.27.0"
-symphonia              = { version = "0.5", features = ["all", "opt-simd"] }
-text-splitter          = "0.27"
-thiserror              = "2"
-tiktoken-rs            = "0.7"
-tokio                  = "1.45"
-tree-sitter            = { version = "0.25" }
-tree-sitter-c          = { version = "0.24" }
-tree-sitter-c-sharp    = { version = "0.23" }
-tree-sitter-cpp        = { version = "0.23" }
-tree-sitter-go         = { version = "0.23" }
-tree-sitter-java       = { version = "0.23" }
-tree-sitter-javascript = { version = "0.23" }
-tree-sitter-kotlin-ng  = { version = "1.1" }
-tree-sitter-python     = { version = "0.23" }
-tree-sitter-rust       = { version = "0.24" }
-tree-sitter-scala      = { version = "0.24" }
-tree-sitter-typescript = { version = "0.23" }
-uniffi                 = "0.29"
-url                    = { version = "2.5" }
-uuid                   = "1.8"
-v_htmlescape           = "0.15"
-windows                = { version = "0.61", features = [
-  "Win32_Devices_FunctionDiscovery",
-  "Win32_UI_Shell_PropertiesSystem",
-  "Win32_Media_Audio",
-  "Win32_System_Variant",
-  "Win32_System_Com_StructuredStorage",
-  "Win32_System_Threading",
-  "Win32_System_ProcessStatus",
-  "Win32_Foundation",
-  "Win32_System_Com",
-  "Win32_System_Diagnostics_ToolHelp",
-] }
-windows-core = { version = "0.61" }
-y-octo                 = { path = "./packages/common/y-octo/core" }
-y-sync                 = { version = "0.4" }
-yrs                    = "0.23.0"
+  [workspace.dependencies]
+  affine_common = { path = "./packages/common/native" }
+  affine_nbstore = { path = "./packages/frontend/native/nbstore" }
+  ahash = "0.8"
+  anyhow = "1"
+  arbitrary = { version = "1.3", features = ["derive"] }
+  assert-json-diff = "2.0"
+  async-lock = { version = "3.4.0", features = ["loom"] }
+  base64-simd = "0.8"
+  bitvec = "1.0"
+  block2 = "0.6"
+  byteorder = "1.5"
+  chrono = "0.4"
+  clap = { version = "4.4", features = ["derive"] }
+  core-foundation = "0.10"
+  coreaudio-rs = "0.12"
+  cpal = "0.15"
+  criterion = { version = "0.5", features = ["html_reports"] }
+  criterion2 = { version = "3", default-features = false }
+  crossbeam-channel = "0.5"
+  dispatch2 = "0.3"
+  docx-parser = { git = "https://github.com/toeverything/docx-parser" }
+  dotenvy = "0.15"
+  file-format = { version = "0.28", features = ["reader"] }
+  homedir = "0.3"
+  infer = { version = "0.19.0" }
+  lasso = { version = "0.7", features = ["multi-threaded"] }
+  lib0 = { version = "0.16", features = ["lib0-serde"] }
+  libc = "0.2"
+  log = "0.4"
+  loom = { version = "0.7", features = ["checkpoint"] }
+  mimalloc = "0.1"
+  mp4parse = "0.17"
+  nanoid = "0.4"
+  napi = { version = "3.0.0-beta.3", features = [
+    "async",
+    "chrono_date",
+    "error_anyhow",
+    "napi9",
+    "serde",
+  ] }
+  napi-build = { version = "2" }
+  napi-derive = { version = "3.0.0-beta.3" }
+  nom = "8"
+  notify = { version = "8", features = ["serde"] }
+  objc2 = "0.6"
+  objc2-foundation = "0.3"
+  once_cell = "1"
+  ordered-float = "5"
+  parking_lot = "0.12"
+  path-ext = "0.1.2"
+  pdf-extract = { git = "https://github.com/toeverything/pdf-extract", branch = "darksky/improve-font-decoding" }
+  phf = { version = "0.11", features = ["macros"] }
+  proptest = "1.3"
+  proptest-derive = "0.5"
+  rand = "0.9"
+  rand_chacha = "0.9"
+  rand_distr = "0.5"
+  rayon = "1.10"
+  readability = { version = "0.3.0", default-features = false }
+  regex = "1.10"
+  rubato = "0.16"
+  screencapturekit = "0.3"
+  serde = "1"
+  serde_json = "1"
+  sha3 = "0.10"
+  smol_str = "0.3"
+  sqlx = { version = "0.8", default-features = false, features = [
+    "chrono",
+    "macros",
+    "migrate",
+    "runtime-tokio",
+    "sqlite",
+    "tls-rustls",
+  ] }
+  strum_macros = "0.27.0"
+  symphonia = { version = "0.5", features = ["all", "opt-simd"] }
+  text-splitter = "0.27"
+  thiserror = "2"
+  tiktoken-rs = "0.7"
+  tokio = "1.45"
+  tree-sitter = { version = "0.25" }
+  tree-sitter-c = { version = "0.24" }
+  tree-sitter-c-sharp = { version = "0.23" }
+  tree-sitter-cpp = { version = "0.23" }
+  tree-sitter-go = { version = "0.23" }
+  tree-sitter-java = { version = "0.23" }
+  tree-sitter-javascript = { version = "0.23" }
+  tree-sitter-kotlin-ng = { version = "1.1" }
+  tree-sitter-python = { version = "0.23" }
+  tree-sitter-rust = { version = "0.24" }
+  tree-sitter-scala = { version = "0.24" }
+  tree-sitter-typescript = { version = "0.23" }
+  uniffi = "0.29"
+  url = { version = "2.5" }
+  uuid = "1.8"
+  v_htmlescape = "0.15"
+  windows = { version = "0.61", features = [
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Threading",
+    "Win32_System_Variant",
+    "Win32_UI_Shell_PropertiesSystem",
+  ] }
+  windows-core = { version = "0.61" }
+  y-octo = { path = "./packages/common/y-octo/core" }
+  y-sync = { version = "0.4" }
+  yrs = "0.23.0"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
@@ -126,6 +139,6 @@ lto           = true
 opt-level     = 3
 strip         = "symbols"
 
-# android uniffi bindgen requires symbols
-[profile.release.package.affine_mobile_native]
-strip         = "none"
+  # android uniffi bindgen requires symbols
+  [profile.release.package.affine_mobile_native]
+  strip = "none"

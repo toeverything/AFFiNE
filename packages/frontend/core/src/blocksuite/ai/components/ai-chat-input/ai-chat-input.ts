@@ -3,7 +3,10 @@ import type {
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
-import type { SubscriptionService } from '@affine/core/modules/cloud';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -360,6 +363,9 @@ export class AIChatInput extends SignalWatcher(
   accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor aiDraftService: AIDraftService | undefined;
 
   @property({ attribute: false })
@@ -533,6 +539,7 @@ export class AIChatInput extends SignalWatcher(
           .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
           .isNetworkActive=${this._isNetworkActive}
           .onNetworkActiveChange=${this._toggleNetworkSearch}
+          .serverService=${this.serverService}
           .toolsConfigService=${this.aiToolsConfigService}
           .notificationService=${this.notificationService}
           .subscriptionService=${this.subscriptionService}

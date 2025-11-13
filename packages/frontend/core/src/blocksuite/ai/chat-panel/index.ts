@@ -3,7 +3,10 @@ import type {
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
-import type { SubscriptionService } from '@affine/core/modules/cloud';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -106,6 +109,9 @@ export class ChatPanel extends SignalWatcher(
 
   @property({ attribute: false })
   accessor extensions!: ExtensionType[];
+
+  @property({ attribute: false })
+  accessor serverService!: ServerService;
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
@@ -429,6 +435,7 @@ export class ChatPanel extends SignalWatcher(
         .searchMenuConfig=${this.searchMenuConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .extensions=${this.extensions}
+        .serverService=${this.serverService}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .affineThemeService=${this.affineThemeService}
@@ -456,6 +463,7 @@ export class ChatPanel extends SignalWatcher(
           .searchMenuConfig=${this.searchMenuConfig}
           .docDisplayConfig=${this.docDisplayConfig}
           .extensions=${this.extensions}
+          .serverService=${this.serverService}
           .affineFeatureFlagService=${this.affineFeatureFlagService}
           .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
           .affineThemeService=${this.affineThemeService}
