@@ -33,6 +33,9 @@ node_modules
 !.vscode/launch.template.json
 !.vscode/extensions.json
 
+# Kiro
+.kiro
+
 # misc
 /.sass-cache
 /connect.lock

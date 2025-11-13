@@ -47,10 +47,7 @@ import {
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
-import {
-  FeatureFlagService,
-  TelemetryProvider,
-} from '@blocksuite/affine-shared/services';
+import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import type { AffineTextStyleAttributes } from '@blocksuite/affine-shared/types';
 import {
   createDefaultDoc,
@@ -290,10 +287,11 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
   {
     name: 'Callout',
     icon: FontIcon(),
-    showWhen: ({ std, rootComponent: { model } }) => {
-      return (
-        std.get(FeatureFlagService).getFlag('enable_callout') &&
-        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text')
+    showWhen: ({ rootComponent: { model } }) => {
+      return !isInsideBlockByFlavour(
+        model.store,
+        model,
+        'affine:edgeless-text'
       );
     },
     action: ({ rootComponent: { model }, std }) => {
