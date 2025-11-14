@@ -25,7 +25,7 @@ env:
   RELEASE_VERSION: ${{ inputs.app-version }}
   DEBUG: 'affine:*,napi:*'
   APP_NAME: affine
-  MACOSX_DEPLOYMENT_TARGET: '11.0'
+  MACOSX_DEPLOYMENT_TARGET: '11.6'
 
 jobs:
   before-make:
