@@ -417,9 +417,10 @@ export class RevenueCatWebhookHandler {
     const success = await this.syncAppUser(evt.userId);
     if (success) return;
     if (isTimeout) {
-      this.logger.warn(
-        `RevenueCat subscription refresh timed out for user ${evt.userId}`
-      );
+      this.logger.warn(`RevenueCat subscription refresh timed out`, {
+        userId: evt.userId,
+        externalRef: evt.externalRef,
+      });
       return;
     }
 
