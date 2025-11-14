@@ -1390,7 +1390,7 @@ If there are items in the content that can be used as to-do tasks, please refer 
   {
     name: 'Make it real',
     action: 'Make it real',
-    model: 'claude-sonnet-4@20250514',
+    model: 'claude-sonnet-4-5@20250929',
     messages: [
       {
         role: 'system',
@@ -1431,7 +1431,7 @@ When sent new wireframes, respond ONLY with the contents of the html file.`,
   {
     name: 'Make it real with text',
     action: 'Make it real with text',
-    model: 'claude-sonnet-4@20250514',
+    model: 'claude-sonnet-4-5@20250929',
     messages: [
       {
         role: 'system',
@@ -1712,7 +1712,7 @@ const modelActions: Prompt[] = [
   {
     name: 'Apply Updates',
     action: 'Apply Updates',
-    model: 'claude-sonnet-4@20250514',
+    model: 'claude-sonnet-4-5@20250929',
     messages: [
       {
         role: 'user',
@@ -1868,7 +1868,7 @@ Now apply the \`updates\` to the \`content\`, following the intent in \`op\`, an
   },
   {
     name: 'Code Artifact',
-    model: 'claude-sonnet-4@20250514',
+    model: 'claude-sonnet-4-5@20250929',
     messages: [
       {
         role: 'system',
@@ -1928,18 +1928,11 @@ Now apply the \`updates\` to the \`content\`, following the intent in \`op\`, an
 ];
 
 const CHAT_PROMPT: Omit<Prompt, 'name'> = {
-  model: 'claude-sonnet-4@20250514',
+  model: 'gemini-2.5-flash',
   optionalModels: [
-    'gpt-4.1',
-    'gpt-5',
-    'o3',
-    'o4-mini',
     'gemini-2.5-flash',
     'gemini-2.5-pro',
-    'claude-opus-4@20250514',
-    'claude-sonnet-4@20250514',
-    'claude-3-7-sonnet@20250219',
-    'claude-3-5-sonnet-v2@20241022',
+    'claude-sonnet-4-5@20250929',
   ],
   messages: [
     {
@@ -2099,6 +2092,7 @@ Below is the user's query. Please respond in the user's preferred language witho
       'codeArtifact',
       'blobRead',
     ],
+    proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
   },
 };
 

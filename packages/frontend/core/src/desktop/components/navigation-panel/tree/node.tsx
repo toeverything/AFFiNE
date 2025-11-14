@@ -4,19 +4,22 @@ import {
   type DropTargetDropEvent,
   type DropTargetOptions,
   type DropTargetTreeInstruction,
+  IconAndNameEditorMenu,
   IconButton,
+  type IconData,
+  IconRenderer,
   Menu,
   MenuItem,
   useDraggable,
   useDropTarget,
 } from '@affine/component';
-import { RenameModal } from '@affine/component/rename-modal';
 import { Guard } from '@affine/core/components/guard';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
+import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
+import type { ExplorerType } from '@affine/core/modules/explorer-icon/store/explorer-icon';
 import type { DocPermissionActions } from '@affine/core/modules/permissions';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
-import { extractEmojiIcon } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
@@ -83,12 +86,18 @@ export interface BaseNavigationPanelTreeNodeProps {
   [key: `data-${string}`]: any;
 }
 
+type ExplorerIconConfig = {
+  where: ExplorerType;
+  id: string;
+};
 interface WebNavigationPanelTreeNodeProps
   extends BaseNavigationPanelTreeNodeProps {
   renameable?: boolean;
   onRename?: (newName: string) => void;
   renameableGuard?: { docId: string; action: DocPermissionActions };
   defaultRenaming?: boolean;
+
+  explorerIconConfig?: ExplorerIconConfig | null;
 
   canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
   reorderable?: boolean;
@@ -105,25 +114,63 @@ export const NavigationPanelTreeNodeRenameModal = ({
   setRenaming,
   handleRename,
   rawName,
+  explorerIconConfig,
   className,
+  fallbackIcon,
 }: {
   setRenaming: (renaming: boolean) => void;
   handleRename: (newName: string) => void;
   rawName: string | undefined;
   className?: string;
+  explorerIconConfig?: ExplorerIconConfig | null;
+  fallbackIcon?: React.ReactNode;
 }) => {
+  const explorerIconService = useService(ExplorerIconService);
   const appSidebarService = useService(AppSidebarService).sidebar;
   const sidebarWidth = useLiveData(appSidebarService.width$);
+
+  const explorerIcon = useLiveData(
+    useMemo(
+      () =>
+        explorerIconConfig
+          ? explorerIconService.icon$(
+              explorerIconConfig.where,
+              explorerIconConfig.id
+            )
+          : null,
+      [explorerIconConfig, explorerIconService]
+    )
+  );
+
+  const onIconChange = useCallback(
+    (data?: IconData) => {
+      if (!explorerIconConfig) return;
+      explorerIconService.setIcon({
+        where: explorerIconConfig.where,
+        id: explorerIconConfig.id,
+        icon: data,
+      });
+    },
+    [explorerIconConfig, explorerIconService]
+  );
+
   return (
-    <RenameModal
+    <IconAndNameEditorMenu
       open
-      width={sidebarWidth - 32}
       onOpenChange={setRenaming}
-      onRename={handleRename}
-      currentName={rawName ?? ''}
+      onIconChange={onIconChange}
+      onNameChange={handleRename}
+      name={rawName ?? ''}
+      icon={explorerIcon?.icon}
+      width={sidebarWidth - 16}
+      contentOptions={{
+        sideOffset: 36,
+      }}
+      iconPlaceholder={fallbackIcon}
+      inputTestId="rename-modal-input"
     >
       <div className={clsx(styles.itemRenameAnchor, className)} />
-    </RenameModal>
+    </IconAndNameEditorMenu>
   );
 };
 
@@ -140,7 +187,6 @@ export const NavigationPanelTreeNode = ({
   onRename,
   disabled,
   collapsed,
-  extractEmojiAsIcon,
   setCollapsed,
   collapsible = true,
   canDrop,
@@ -151,10 +197,12 @@ export const NavigationPanelTreeNode = ({
   childrenPlaceholder,
   linkComponent: LinkComponent = WorkbenchLink,
   dndData,
+  explorerIconConfig,
   onDrop,
   dropEffect,
   ...otherProps
 }: WebNavigationPanelTreeNodeProps) => {
+  const explorerIconService = useService(ExplorerIconService);
   const t = useI18n();
   const cid = useId();
   const context = useContext(NavigationPanelTreeContext);
@@ -165,20 +213,19 @@ export const NavigationPanelTreeNode = ({
   const [renaming, setRenaming] = useState(defaultRenaming);
   const [lastInGroup, setLastInGroup] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const explorerIcon = useLiveData(
+    useMemo(
+      () =>
+        explorerIconConfig
+          ? explorerIconService.icon$(
+              explorerIconConfig?.where,
+              explorerIconConfig?.id
+            )
+          : null,
+      [explorerIconConfig, explorerIconService]
+    )
+  );
 
-  const { emoji, name } = useMemo(() => {
-    if (!extractEmojiAsIcon || !rawName) {
-      return {
-        emoji: null,
-        name: rawName,
-      };
-    }
-    const { emoji, rest } = extractEmojiIcon(rawName);
-    return {
-      emoji,
-      name: rest,
-    };
-  }, [extractEmojiAsIcon, rawName]);
   const { dragRef, dragging, CustomDragPreview } = useDraggable<
     AffineDNDData & { draggable: { __cid: string } }
   >(
@@ -384,6 +431,14 @@ export const NavigationPanelTreeNode = ({
     [clickForCollapse, collapsed, collapsible, onClick, setCollapsed]
   );
 
+  const fallbackIcon = Icon && (
+    <Icon
+      draggedOver={draggedOver && !isSelfDraggedOver}
+      treeInstruction={treeInstruction}
+      collapsed={collapsed}
+    />
+  );
+
   const content = (
     <div
       onClick={handleClick}
@@ -405,19 +460,12 @@ export const NavigationPanelTreeNode = ({
           />
         </div>
         <div className={styles.iconContainer}>
-          {emoji ??
-            (Icon && (
-              <Icon
-                draggedOver={draggedOver && !isSelfDraggedOver}
-                treeInstruction={treeInstruction}
-                collapsed={collapsed}
-              />
-            ))}
+          <IconRenderer data={explorerIcon?.icon} fallback={fallbackIcon} />
         </div>
       </div>
 
       <div className={styles.itemMain}>
-        <div className={styles.itemContent}>{name}</div>
+        <div className={styles.itemContent}>{rawName}</div>
         {postfix}
         <div
           className={styles.postfix}
@@ -452,6 +500,8 @@ export const NavigationPanelTreeNode = ({
           setRenaming={setRenaming}
           handleRename={handleRename}
           rawName={rawName}
+          explorerIconConfig={explorerIconConfig}
+          fallbackIcon={fallbackIcon}
         />
       )}
     </div>

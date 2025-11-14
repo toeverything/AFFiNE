@@ -7,11 +7,13 @@ import {
   type BlockSnapshot,
   nanoid,
   type SliceSnapshot,
+  Text,
 } from '@blocksuite/affine/store';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CodeBlockIcon,
   CopyIcon,
+  DownloadIcon,
   PageIcon,
   ToolIcon,
 } from '@blocksuite/icons/lit';
@@ -22,6 +24,7 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
 
+import { preprocessHtml } from '../../utils/html';
 import { ArtifactTool } from './artifact-tool';
 import type { ToolError } from './type';
 
@@ -460,7 +463,7 @@ export class CodeArtifactTool extends ArtifactTool<
   accessor notificationService!: NotificationService;
 
   @state()
-  private accessor mode: 'preview' | 'code' = 'code';
+  private accessor mode: 'preview' | 'code' = 'preview';
 
   /* ---------------- ArtifactTool hooks ---------------- */
 
@@ -567,6 +570,25 @@ export class CodeArtifactTool extends ArtifactTool<
       }
     };
 
+    const insertHtmlBlockToEnd = () => {
+      try {
+        const store = this.std?.store;
+        if (!store) return;
+        const notes = store.getBlocksByFlavour('affine:note');
+        const parentId = notes.length > 0 ? notes[0].id : store.root?.id;
+        if (!parentId) return;
+        const html = preprocessHtml(htmlContent);
+        store.addBlock(
+          'affine:code',
+          { text: new Text(html), language: 'html', preview: true },
+          parentId
+        );
+        this.notificationService.toast('Inserted to current doc');
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     const setCodeMode = () => {
       if (this.mode !== 'code') {
         this.mode = 'code';
@@ -603,14 +625,17 @@ export class CodeArtifactTool extends ArtifactTool<
         </div>
       </div>
       <div style="flex: 1"></div>
-      <button class="code-artifact-control-btn" @click=${downloadHTML}>
+      <button class="code-artifact-control-btn" @click=${insertHtmlBlockToEnd}>
         ${PageIcon({
           width: '20',
           height: '20',
           style: `color: ${unsafeCSSVarV2('icon/primary')}`,
         })}
-        Download
+        Insert
       </button>
+      <icon-button @click=${downloadHTML} title="Download HTML">
+        ${DownloadIcon({ width: '20', height: '20' })}
+      </icon-button>
       <icon-button @click=${copyHTML} title="Copy HTML">
         ${CopyIcon({ width: '20', height: '20' })}
       </icon-button>

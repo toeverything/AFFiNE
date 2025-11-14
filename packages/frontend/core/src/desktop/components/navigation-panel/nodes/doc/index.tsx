@@ -314,6 +314,10 @@ export const NavigationPanelDocNode = ({
       operations={finalOperations}
       dropEffect={handleDropEffectOnDoc}
       data-testid={`navigation-panel-doc-${docId}`}
+      explorerIconConfig={{
+        where: 'doc',
+        id: docId,
+      }}
     >
       {appSettings.showLinkedDocInSidebar ? (
         <Guard docId={docId} permission="Doc_Read">

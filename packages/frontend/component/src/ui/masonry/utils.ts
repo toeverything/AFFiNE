@@ -112,12 +112,18 @@ export const calcLayout = (
       const ratioMode = 'ratio' in item;
       const height = ratioMode ? item.ratio * width : item.height;
 
+      const aroundGapXValue =
+        columns > 1
+          ? (totalWidth - paddingX * 2 - width * columns) / (columns - 1)
+          : 0;
+      const gapXValue = Math.max(gapX, aroundGapXValue);
+
       if (ratioMode) {
         const minRatio = Math.min(...ratioStack);
         const minRatioIndex = ratioStack.indexOf(minRatio);
         const minHeight = heightStack[minRatioIndex];
         const hasGap = heightStack[minRatioIndex] ? gapY : 0;
-        const x = minRatioIndex * (width + gapX) + paddingX;
+        const x = minRatioIndex * (width + gapXValue) + paddingX;
         const y = finalHeight + minHeight + hasGap;
 
         ratioStack[minRatioIndex] += item.ratio * 10000;
@@ -133,7 +139,7 @@ export const calcLayout = (
         const minHeight = Math.min(...heightStack);
         const minHeightIndex = heightStack.indexOf(minHeight);
         const hasGap = heightStack[minHeightIndex] ? gapY : 0;
-        const x = minHeightIndex * (width + gapX) + paddingX;
+        const x = minHeightIndex * (width + gapXValue) + paddingX;
         const y = finalHeight + minHeight + hasGap;
 
         const ratio = height / width;
@@ -193,7 +199,7 @@ export const calcSticky = (options: {
 
   const stickyGroupEntry = groupEntries.find(([_, xywh], index) => {
     const next = groupEntries[index + 1];
-    return xywh.y < scrollY && (!next || next[1].y > scrollY);
+    return xywh.y <= scrollY && (!next || next[1].y > scrollY);
   });
 
   return stickyGroupEntry

@@ -112,9 +112,7 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
           `${baseUrl}/models?key=${this.config.apiKey}`
         )
           .then(r => r.json())
-          .then(
-            r => (console.log(JSON.stringify(r)), ModelListSchema.parse(r))
-          );
+          .then(r => ModelListSchema.parse(r));
         this.onlineModelList = models.map(model =>
           model.name.replace('models/', '')
         );

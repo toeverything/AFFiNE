@@ -51,11 +51,11 @@ defineModuleConfig('copilot', {
       override_enabled: false,
       scenarios: {
         audio_transcribing: 'gemini-2.5-flash',
-        chat: 'claude-sonnet-4@20250514',
+        chat: 'gemini-2.5-flash',
         embedding: 'gemini-embedding-001',
         image: 'gpt-image-1',
         rerank: 'gpt-4.1',
-        coding: 'claude-sonnet-4@20250514',
+        coding: 'claude-sonnet-4-5@20250929',
         complex_text_generation: 'gpt-4o-2024-08-06',
         quick_decision_making: 'gpt-5-mini',
         quick_text_generation: 'gemini-2.5-flash',

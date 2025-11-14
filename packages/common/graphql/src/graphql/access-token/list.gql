@@ -1,8 +1,9 @@
 query listUserAccessTokens {
-  accessTokens {
+  revealedAccessTokens {
     id
     name
     createdAt
     expiresAt
+    token
   }
 }

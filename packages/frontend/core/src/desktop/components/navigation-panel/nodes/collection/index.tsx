@@ -229,6 +229,10 @@ export const NavigationPanelCollectionNode = ({
       operations={finalOperations}
       dropEffect={handleDropEffectOnCollection}
       data-testid={`navigation-panel-collection-${collectionId}`}
+      explorerIconConfig={{
+        where: 'collection',
+        id: collectionId,
+      }}
     >
       <NavigationPanelCollectionNodeChildren
         collection={collection}

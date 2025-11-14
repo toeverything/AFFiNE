@@ -63,6 +63,10 @@
       "type": "Boolean",
       "desc": "Whether allow new registrations."
     },
+    "allowSignupForOauth": {
+      "type": "Boolean",
+      "desc": "Whether allow new registrations via configured oauth."
+    },
     "requireEmailDomainVerification": {
       "type": "Boolean",
       "desc": "Whether require email domain record verification before accessing restricted resources."
@@ -85,6 +89,11 @@
     }
   },
   "mailer": {
+    "SMTP.name": {
+      "type": "String",
+      "desc": "Name of the email server (e.g. your domain name)",
+      "env": "MAILER_SERVERNAME"
+    },
     "SMTP.host": {
       "type": "String",
       "desc": "Host of the email server (e.g. smtp.gmail.com)",
@@ -118,6 +127,10 @@
     "fallbackDomains": {
       "type": "Array",
       "desc": "The emails from these domains are always sent using the fallback SMTP server."
+    },
+    "fallbackSMTP.name": {
+      "type": "String",
+      "desc": "Name of the fallback email server (e.g. your domain name)"
     },
     "fallbackSMTP.host": {
       "type": "String",
@@ -387,18 +400,23 @@
     },
     "apiKey": {
       "type": "String",
-      "desc": "Stripe API key to enable payment service.",
+      "desc": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.",
       "env": "STRIPE_API_KEY"
     },
     "webhookKey": {
       "type": "String",
-      "desc": "Stripe webhook key to enable payment service.",
+      "desc": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.",
       "env": "STRIPE_WEBHOOK_KEY"
     },
     "stripe": {
       "type": "Object",
-      "desc": "Stripe sdk options",
+      "desc": "Stripe sdk options and credentials",
       "link": "https://docs.stripe.com/api"
+    },
+    "revenuecat": {
+      "type": "Object",
+      "desc": "RevenueCat integration configs",
+      "link": "https://www.revenuecat.com/docs/"
     }
   },
   "worker": {

@@ -175,6 +175,7 @@ const usePreviewExtensions = () => {
       .ai(enableAI, framework)
       .theme(framework)
       .database(framework)
+      .iconPicker(framework)
       .linkedDoc(framework)
       .paragraph(enableAI)
       .linkPreview(framework)

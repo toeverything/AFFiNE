@@ -3,6 +3,11 @@ import type {
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -150,6 +155,9 @@ export class AIChatContent extends SignalWatcher(
   accessor extensions!: ExtensionType[];
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
@@ -168,6 +176,9 @@ export class AIChatContent extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor onEmbeddingProgressChange:
     | ((count: Record<ContextEmbedStatus, number>) => void)
     | undefined;
@@ -183,6 +194,12 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
@@ -373,6 +390,9 @@ export class AIChatContent extends SignalWatcher(
         .catch(console.error);
     }
 
+    // revalidate subscription to get the latest status
+    this.subscriptionService.subscription.revalidate();
+
     this._disposables.add(
       AIProvider.slots.actions.subscribe(({ event }) => {
         const { status } = this.chatContextValue;
@@ -458,10 +478,14 @@ export class AIChatContent extends SignalWatcher(
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .serverService=${this.serverService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${this.notificationService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

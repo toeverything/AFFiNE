@@ -263,6 +263,8 @@ export interface Copilot {
   contexts: Array<CopilotContext>;
   /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
+  /** List available models for a prompt, with human-readable names */
+  models: CopilotModelsType;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
   /** Get the session by id */
@@ -294,6 +296,10 @@ export interface CopilotContextsArgs {
 export interface CopilotHistoriesArgs {
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
+}
+
+export interface CopilotModelsArgs {
+  promptName: Scalars['String']['input'];
 }
 
 export interface CopilotSessionArgs {
@@ -449,6 +455,19 @@ export interface CopilotInvalidContextDataType {
 export interface CopilotMessageNotFoundDataType {
   __typename?: 'CopilotMessageNotFoundDataType';
   messageId: Scalars['String']['output'];
+}
+
+export interface CopilotModelType {
+  __typename?: 'CopilotModelType';
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
+export interface CopilotModelsType {
+  __typename?: 'CopilotModelsType';
+  defaultModel: Scalars['String']['output'];
+  optionalModels: Array<CopilotModelType>;
+  proModels: Array<CopilotModelType>;
 }
 
 export interface CopilotPromptConfigInput {
@@ -635,7 +654,7 @@ export interface DeleteAccount {
 }
 
 export interface DeleteSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
   sessionIds: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }
@@ -904,6 +923,7 @@ export enum ErrorNames {
   LICENSE_REVEALED = 'LICENSE_REVEALED',
   LINK_EXPIRED = 'LINK_EXPIRED',
   MAILER_SERVICE_IS_NOT_CONFIGURED = 'MAILER_SERVICE_IS_NOT_CONFIGURED',
+  MANAGED_BY_APP_STORE_OR_PLAY = 'MANAGED_BY_APP_STORE_OR_PLAY',
   MEMBER_NOT_FOUND_IN_SPACE = 'MEMBER_NOT_FOUND_IN_SPACE',
   MEMBER_QUOTA_EXCEEDED = 'MEMBER_QUOTA_EXCEEDED',
   MENTION_USER_DOC_ACCESS_DENIED = 'MENTION_USER_DOC_ACCESS_DENIED',
@@ -1431,6 +1451,8 @@ export interface Mutation {
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
+  /** Refresh current user subscriptions and return latest. */
+  refreshUserSubscriptions: Array<SubscriptionType>;
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
@@ -1445,6 +1467,8 @@ export interface Mutation {
   /** Remove workspace embedding files */
   removeWorkspaceEmbeddingFiles: Scalars['Boolean']['output'];
   removeWorkspaceFeature: Scalars['Boolean']['output'];
+  /** Request to apply the subscription in advance */
+  requestApplySubscription: Array<SubscriptionType>;
   /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
@@ -1764,6 +1788,10 @@ export interface MutationRemoveWorkspaceEmbeddingFilesArgs {
 export interface MutationRemoveWorkspaceFeatureArgs {
   feature: FeatureType;
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRequestApplySubscriptionArgs {
+  transactionId: Scalars['String']['input'];
 }
 
 export interface MutationResolveCommentArgs {
@@ -2146,6 +2174,7 @@ export interface Query {
   publicUserById: Maybe<PublicUserType>;
   /** query workspace embedding status */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
+  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2564,6 +2593,8 @@ export interface SubscriptionType {
   canceledAt: Maybe<Scalars['DateTime']['output']>;
   createdAt: Scalars['DateTime']['output'];
   end: Maybe<Scalars['DateTime']['output']>;
+  /** If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store */
+  iapStore: Maybe<Scalars['String']['output']>;
   /** @deprecated removed */
   id: Maybe<Scalars['String']['output']>;
   nextBillAt: Maybe<Scalars['DateTime']['output']>;
@@ -2572,6 +2603,8 @@ export interface SubscriptionType {
    * There won't actually be a subscription with plan 'Free'
    */
   plan: SubscriptionPlan;
+  /** Payment provider of this subscription. Read-only. One of: stripe | revenuecat */
+  provider: Maybe<Scalars['String']['output']>;
   recurring: SubscriptionRecurring;
   start: Scalars['DateTime']['output'];
   status: SubscriptionStatus;
@@ -3065,12 +3098,13 @@ export type ListUserAccessTokensQueryVariables = Exact<{
 
 export type ListUserAccessTokensQuery = {
   __typename?: 'Query';
-  accessTokens: Array<{
-    __typename?: 'AccessToken';
+  revealedAccessTokens: Array<{
+    __typename?: 'RevealedAccessToken';
     id: string;
     name: string;
     createdAt: string;
     expiresAt: string | null;
+    token: string;
   }>;
 };
 
@@ -4341,6 +4375,34 @@ export type CreateCopilotMessageMutationVariables = Exact<{
 export type CreateCopilotMessageMutation = {
   __typename?: 'Mutation';
   createCopilotMessage: string;
+};
+
+export type GetPromptModelsQueryVariables = Exact<{
+  promptName: Scalars['String']['input'];
+}>;
+
+export type GetPromptModelsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      models: {
+        __typename?: 'CopilotModelsType';
+        defaultModel: string;
+        optionalModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+        proModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+      };
+    };
+  } | null;
 };
 
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
@@ -5942,6 +6004,46 @@ export type SetWorkspacePublicByIdMutation = {
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type RefreshSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RefreshSubscriptionMutation = {
+  __typename?: 'Mutation';
+  refreshUserSubscriptions: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
+export type RequestApplySubscriptionMutationVariables = Exact<{
+  transactionId: Scalars['String']['input'];
+}>;
+
+export type RequestApplySubscriptionMutation = {
+  __typename?: 'Mutation';
+  requestApplySubscription: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
 export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
 
 export type SubscriptionQuery = {
@@ -6379,6 +6481,11 @@ export type Queries =
       name: 'getAudioTranscriptionQuery';
       variables: GetAudioTranscriptionQueryVariables;
       response: GetAudioTranscriptionQuery;
+    }
+  | {
+      name: 'getPromptModelsQuery';
+      variables: GetPromptModelsQueryVariables;
+      response: GetPromptModelsQuery;
     }
   | {
       name: 'copilotQuotaQuery';
@@ -7021,6 +7128,16 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'refreshSubscriptionMutation';
+      variables: RefreshSubscriptionMutationVariables;
+      response: RefreshSubscriptionMutation;
+    }
+  | {
+      name: 'requestApplySubscriptionMutation';
+      variables: RequestApplySubscriptionMutationVariables;
+      response: RequestApplySubscriptionMutation;
     }
   | {
       name: 'updateDocDefaultRoleMutation';

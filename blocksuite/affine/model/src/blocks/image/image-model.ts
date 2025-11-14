@@ -9,6 +9,7 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
+import type { TextAlign } from '../../consts';
 import type { BlockMeta } from '../../utils/types.js';
 import { ImageBlockTransformer } from './image-transformer.js';
 
@@ -20,6 +21,7 @@ export type ImageBlockProps = {
   rotate: number;
   size?: number;
   comments?: Record<string, boolean>;
+  textAlign?: TextAlign;
 } & Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
 
@@ -34,6 +36,7 @@ const defaultImageProps: ImageBlockProps = {
   rotate: 0,
   size: -1,
   comments: undefined,
+  textAlign: undefined,
   'meta:createdAt': undefined,
   'meta:createdBy': undefined,
   'meta:updatedAt': undefined,

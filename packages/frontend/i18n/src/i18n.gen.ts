@@ -100,6 +100,10 @@ export function useAFFiNEI18N(): {
       */
     ["Copied link to clipboard"](): string;
     /**
+      * `Copied to clipboard`
+      */
+    ["Copied to clipboard"](): string;
+    /**
       * `Copy`
       */
     Copy(): string;
@@ -987,6 +991,42 @@ export function useAFFiNEI18N(): {
       * `Display the menubar app in the tray for quick access to AFFiNE or meeting recordings.`
       */
     ["com.affine.appearanceSettings.menubar.description"](): string;
+    /**
+      * `Window behavior`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.title"](): string;
+    /**
+      * `Quick open from tray icon`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.toggle"](): string;
+    /**
+      * `Open AFFiNE when left‑clicking the tray icon.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.description"](): string;
+    /**
+      * `Minimize to tray`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.toggle"](): string;
+    /**
+      * `Minimize AFFiNE to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.description"](): string;
+    /**
+      * `Close to tray`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.toggle"](): string;
+    /**
+      * `Close AFFiNE to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.description"](): string;
+    /**
+      * `Start minimized`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.toggle"](): string;
+    /**
+      * `Start AFFiNE minimized to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.description"](): string;
     /**
       * `Theme`
       */
@@ -2506,6 +2546,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.just-now"](): string;
     /**
+      * `Align center`
+      */
+    ["com.affine.keyboardShortcuts.alignCenter"](): string;
+    /**
+      * `Align left`
+      */
+    ["com.affine.keyboardShortcuts.alignLeft"](): string;
+    /**
+      * `Align right`
+      */
+    ["com.affine.keyboardShortcuts.alignRight"](): string;
+    /**
       * `Append to daily note`
       */
     ["com.affine.keyboardShortcuts.appendDailyNote"](): string;
@@ -2755,6 +2807,10 @@ export function useAFFiNEI18N(): {
       * `Star us on GitHub`
       */
     ["com.affine.mobile.setting.others.github"](): string;
+    /**
+      * `Discord Group`
+      */
+    ["com.affine.mobile.setting.others.discord"](): string;
     /**
       * `Privacy`
       */
@@ -8181,6 +8237,14 @@ export function useAFFiNEI18N(): {
         readonly name: string;
     }): string;
     /**
+      * `MCP Server`
+      */
+    ["com.affine.integration.mcp-server.name"](): string;
+    /**
+      * `Enable other MCP Client to search and read the doc of AFFiNE.`
+      */
+    ["com.affine.integration.mcp-server.desc"](): string;
+    /**
       * `Notes`
       */
     ["com.affine.audio.notes"](): string;
@@ -8295,6 +8359,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.filter.only-current-mode"](): string;
     /**
+      * `Unlock more features`
+      */
+    ["com.affine.payment.subscription.title"](): string;
+    /**
+      * `The universal editor that lets you work, play, present or create just about anything.`
+      */
+    ["com.affine.payment.subscription.description"](): string;
+    /**
+      * `Upgrade`
+      */
+    ["com.affine.payment.subscription.button"](): string;
+    /**
       * `Reply`
       */
     ["com.affine.comment.reply"](): string;
@@ -8314,6 +8390,10 @@ export function useAFFiNEI18N(): {
       * `Cut`
       */
     ["com.affine.context-menu.cut"](): string;
+    /**
+      * `Add icon`
+      */
+    ["com.affine.docIconPicker.placeholder"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -8719,6 +8799,10 @@ export function useAFFiNEI18N(): {
       * `Workspace id is required to update team subscription.`
       */
     ["error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION"](): string;
+    /**
+      * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
+      */
+    ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
     /**
       * `Copilot session not found.`
       */

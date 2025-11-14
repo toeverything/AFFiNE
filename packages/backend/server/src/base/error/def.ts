@@ -637,6 +637,11 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Workspace id is required to update team subscription.',
   },
+  managed_by_app_store_or_play: {
+    type: 'action_forbidden',
+    message:
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
+  },
 
   // Copilot errors
   copilot_session_not_found: {

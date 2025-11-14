@@ -4,6 +4,11 @@ import type {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type {
   ContextEmbedStatus,
@@ -127,6 +132,9 @@ export class AIChatComposer extends SignalWatcher(
   accessor portalContainer: HTMLElement | null = null;
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @property({ attribute: false })
@@ -140,6 +148,15 @@ export class AIChatComposer extends SignalWatcher(
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor chips: ChatChip[] = [];
@@ -186,9 +203,14 @@ export class AIChatComposer extends SignalWatcher(
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .serverService=${this.serverService}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .notificationService=${this.notificationService}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
         .portalContainer=${this.portalContainer}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
@@ -198,12 +220,6 @@ export class AIChatComposer extends SignalWatcher(
         <ai-chat-composer-tip
           .tips=${[
             html`<span>AI outputs can be misleading or wrong</span>`,
-            this.embeddingCompleted
-              ? null
-              : html`<ai-chat-embedding-status-tooltip
-                  .affineWorkspaceDialogService=${this
-                    .affineWorkspaceDialogService}
-                />`,
           ].filter(Boolean)}
           .loop=${false}
         ></ai-chat-composer-tip>
