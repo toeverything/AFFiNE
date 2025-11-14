@@ -466,6 +466,4 @@ jobs:
           draft: ${{ inputs.build-type == 'stable' }}
           prerelease: ${{ inputs.build-type != 'stable' }}
           tag_name: v${{ env.RELEASE_VERSION}}
-          files: |
-            ./release/*
-            ./release/.env.example
+          files: ./release/*
