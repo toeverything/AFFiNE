@@ -312,42 +312,49 @@ export class RevenueCatWebhookHandler {
 
   @OnJob('nightly.revenuecat.subscription.refresh.anonymous')
   async onSubscriptionRefreshAnonymousUser(evt: {
+    appUserId: string;
     externalRef: string;
     startTime: number;
   }) {
     if (!this.config.payment.revenuecat?.enabled) return;
-    if (Date.now() - evt.startTime > REFRESH_MAX_TIMES) {
-      this.logger.warn(
-        `RevenueCat subscription refresh timed out for externalRef ${evt.externalRef}`
-      );
-      return;
-    }
+    const context = { appUserId: evt.appUserId, externalRef: evt.externalRef };
     const startTime = Date.now();
     try {
       const subscriptions = await this.rc.getSubscriptionByExternalRef(
         evt.externalRef
       );
+      const isTimeout = Date.now() - evt.startTime > REFRESH_MAX_TIMES;
       let success = 0;
       if (subscriptions) {
         for (const sub of subscriptions) {
           if (!sub.customerId) {
             this.logger.warn(`RevenueCat subscription missing customerId`, {
+              ...context,
               subscription: sub,
             });
             continue;
           }
-          const customerAlias = await this.rc.getCustomerAlias(sub.customerId);
+          const rawCustomerAlias =
+            (await this.rc.getCustomerAlias(sub.customerId, false)) || [];
+          let customerAlias = rawCustomerAlias.filter(
+            alias => alias && !alias.startsWith('$RCAnonymousID:')
+          );
           if (customerAlias) {
             if (
               customerAlias.length === 0 ||
               customerAlias.length > 1 ||
               !customerAlias[0]
             ) {
-              this.logger.warn(
-                `RevenueCat anonymous subscription has invalid customer alias`,
-                { customerId: sub.customerId, customerAlias }
-              );
-              continue;
+              if (isTimeout && !customerAlias[0] && rawCustomerAlias[0]) {
+                await this.rc.identifyUser(rawCustomerAlias[0], evt.appUserId);
+                customerAlias = [evt.appUserId];
+              } else {
+                this.logger.warn(
+                  `RevenueCat anonymous subscription has invalid customer alias`,
+                  { ...context, customerId: sub.customerId, customerAlias }
+                );
+                continue;
+              }
             }
             const appUserId = customerAlias[0];
             const saved = await this.syncSubscription(
@@ -361,6 +368,10 @@ export class RevenueCatWebhookHandler {
         }
       }
       if (success > 0) return;
+      if (isTimeout) {
+        this.logger.warn('RevenueCat subscription refresh timed out', context);
+        return;
+      }
     } catch (e) {
       this.logger.error(
         `Failed to fetch RC anonymous subscriptions by ${evt.externalRef}`,
