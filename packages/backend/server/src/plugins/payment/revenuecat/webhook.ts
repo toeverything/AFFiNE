@@ -70,6 +70,11 @@ export class RevenueCatWebhookHandler {
       externalRef,
       new Date(Date.now() + 10 * OneMinute) // expire after 10 minutes
     );
+    this.logger.log('Sync subscription by externalRef completed', {
+      appUserId,
+      externalRef,
+      subscriptions: subscriptions.map(s => s.identifier),
+    });
     await this.queue.add('nightly.revenuecat.subscription.refresh', {
       userId: appUserId,
       startTime: Date.now(),
