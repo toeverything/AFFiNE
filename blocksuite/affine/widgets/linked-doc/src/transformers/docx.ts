@@ -1,5 +1,5 @@
-import type { Schema, Workspace } from '@blocksuite/store';
-import mammoth from 'mammoth';
+import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
+import { convertToHtml } from 'mammoth';
 
 import { HtmlTransformer } from './html';
 
@@ -7,6 +7,7 @@ type ImportDocxOptions = {
   collection: Workspace;
   schema: Schema;
   imported: Blob;
+  extensions: ExtensionType[];
 };
 
 /**
@@ -18,14 +19,20 @@ type ImportDocxOptions = {
  * @param options.imported - The .docx file as a Blob.
  * @returns A Promise that resolves to the ID of the newly created doc, or undefined if import fails.
  */
-async function importDocx({ collection, schema, imported }: ImportDocxOptions) {
-  const { value } = await mammoth.convertToHtml({
+async function importDocx({
+  collection,
+  schema,
+  imported,
+  extensions,
+}: ImportDocxOptions) {
+  const { value } = await convertToHtml({
     arrayBuffer: await imported.arrayBuffer(),
   });
   return await HtmlTransformer.importHTMLToDoc({
     collection,
     schema,
     html: value,
+    extensions,
   });
 }
 

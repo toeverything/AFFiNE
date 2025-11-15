@@ -53,7 +53,6 @@ import * as style from './styles.css';
 
 const logger = new DebugLogger('import');
 
-
 type NotionPageIcon = {
   type: 'emoji' | 'image';
   content: string; // emoji unicode or image URL/data
@@ -458,6 +457,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         collection: docCollection,
         schema: getAFFiNEWorkspaceSchema(),
         imported: file,
+        extensions: getStoreManager().config.init().value.get('store'),
       });
       if (docId) docIds.push(docId);
       return {
