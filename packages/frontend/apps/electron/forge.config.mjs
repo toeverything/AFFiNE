@@ -129,7 +129,7 @@ const makers = [
             '/usr/share/metainfo/affine.metainfo.xml',
           ],
         ],
-        runtimeVersion: '24.08',
+        runtimeVersion: '25.08',
         modules: [
           {
             name: 'zypak',
@@ -137,7 +137,7 @@ const makers = [
               {
                 type: 'git',
                 url: 'https://github.com/refi64/zypak',
-                tag: 'v2024.01.17',
+                tag: 'v2025.09',
               },
             ],
           },
