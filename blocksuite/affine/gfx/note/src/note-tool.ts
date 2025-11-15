@@ -268,7 +268,7 @@ function addNote(
         focusTextModel(gfx.std, blockId);
       } else {
         // Cannot reuse `handleNativeRangeClick` directly here,
-        // since `retargetClick` will re-target to pervious editor
+        // since `retargetClick` will re-target to previous editor
         handleNativeRangeAtPoint(point.x, point.y);
       }
     }

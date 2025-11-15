@@ -22,7 +22,7 @@ export function onClickOutside(
     if (!isOutside) return;
 
     callback(element, event.target as HTMLElement);
-    // if reuseable, need to manually remove the listener
+    // if reusable, need to manually remove the listener
     if (!reusable) removeClickListener();
   };
 
