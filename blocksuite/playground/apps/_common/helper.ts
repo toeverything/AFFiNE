@@ -1,9 +1,9 @@
-import { SpecProvider } from '@blocksuite/affine/shared/utils';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
+import { getTestStoreManager } from '@blocksuite/integration-test/store';
 
 export function createEmptyDoc() {
   const collection = new TestWorkspace();
-  collection.storeExtensions = SpecProvider._.getSpec('store').value;
+  collection.storeExtensions = getTestStoreManager().get('store');
   collection.meta.initialize();
   const doc = collection.createDoc();
   const store = doc.getStore();

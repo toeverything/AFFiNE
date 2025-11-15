@@ -14,6 +14,7 @@ import {
   Subject,
   take,
   tap,
+  timer,
 } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -34,9 +35,11 @@ import type {
 
 const debug = false; // Toggle for debug logs
 
-const defaultOptions: RendererOptions = {
+const defaultOptions = {
   zoomThreshold: 1, // With high enough zoom, fallback to DOM rendering
   debounceTime: 1000, // During this period, fallback to DOM
+  enableBitmapRendering: false, // When enabled, the bitmap rendering will be used
+  postZoomDelay: 100,
 };
 
 export const TurboRendererConfigFactory =
@@ -76,12 +79,14 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   public readonly state$ = new BehaviorSubject<RenderingState>('inactive');
   public readonly canvas: HTMLCanvasElement = document.createElement('canvas');
   public layoutCacheData: ViewportLayoutTree | null = null;
+  public optimizedBlockIds: string[] = [];
   private readonly worker: Worker;
   private readonly disposables = new DisposableGroup();
   private layoutVersion = 0;
   private bitmap: ImageBitmap | null = null;
   private viewportElement: GfxViewportElement | null = null;
   private readonly refresh$ = new Subject<void>();
+  private readonly isRecentlyZoomed$ = new BehaviorSubject<boolean>(false);
 
   public get currentState(): RenderingState {
     return this.state$.value;
@@ -163,6 +168,14 @@ export class ViewportTurboRendererExtension extends GfxExtension {
               if (isZooming) {
                 this.state$.next('zooming');
               } else if (this.state$.value === 'zooming') {
+                this.clearOptimizedBlocks();
+                this.isRecentlyZoomed$.next(true);
+                this.disposables.add(
+                  timer(defaultOptions.postZoomDelay).subscribe(() => {
+                    this.isRecentlyZoomed$.next(false);
+                  })
+                );
+
                 this.state$.next('pending');
                 this.refresh().catch(console.error);
               }
@@ -230,14 +243,12 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       this.debugLog('Using cached bitmap');
       nextState = 'ready';
       this.drawCachedBitmap();
-      this.updateOptimizedBlocks();
     } else {
       this.debugLog('Starting bitmap rendering');
       nextState = 'rendering';
       this.state$.next(nextState);
       await this.paintLayout();
       this.drawCachedBitmap();
-      this.updateOptimizedBlocks();
       // After rendering completes, transition to ready state
       nextState = 'ready';
     }
@@ -269,7 +280,10 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   private async paintLayout(): Promise<void> {
     return new Promise(resolve => {
-      if (!this.worker) return;
+      if (!this.worker || !this.options.enableBitmapRendering) {
+        resolve();
+        return;
+      }
 
       const layout = this.layoutCache;
       const dpr = window.devicePixelRatio;
@@ -318,9 +332,8 @@ export class ViewportTurboRendererExtension extends GfxExtension {
     });
   }
 
-  private canUseBitmapCache(): boolean {
-    // Never use bitmap cache during zooming
-    if (this.isZooming()) return false;
+  public canUseBitmapCache(): boolean {
+    if (!this.options.enableBitmapRendering || this.isZooming()) return false;
     return !!(this.layoutCache && this.bitmap);
   }
 
@@ -336,9 +349,10 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   }
 
   private drawCachedBitmap() {
-    if (!this.bitmap) {
-      this.debugLog('No cached bitmap available, requesting refresh');
-      this.refresh$.next();
+    if (!this.options.enableBitmapRendering || !this.bitmap) {
+      this.debugLog(
+        'Bitmap drawing skipped (disabled or no cached bitmap available)'
+      );
       return;
     }
 
@@ -366,26 +380,37 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   }
 
   private canOptimize(): boolean {
+    if (this.isRecentlyZoomed$.value) return false;
+
     const isBelowZoomThreshold =
       this.viewport.zoom <= this.options.zoomThreshold;
-    return (
-      (this.state$.value === 'ready' || this.state$.value === 'zooming') &&
-      isBelowZoomThreshold
-    );
+    return this.state$.value === 'zooming' && isBelowZoomThreshold;
   }
 
   private updateOptimizedBlocks() {
+    if (!this.canOptimize()) return;
     requestAnimationFrame(() => {
       if (!this.viewportElement || !this.layoutCache) return;
-      if (!this.canOptimize()) return;
-
       const blockElements = this.viewportElement.getModelsInViewport();
       const blockIds = Array.from(blockElements).map(model => model.id);
+
+      // Set all previously optimized blocks to active first
+      if (this.optimizedBlockIds.length > 0) {
+        this.viewportElement.setBlocksActive(this.optimizedBlockIds);
+      }
+      // Now set the new blocks to idle (hidden)
+      this.optimizedBlockIds = blockIds;
+      this.viewportElement.setBlocksIdle(blockIds);
+
       this.debugLog(`Optimized ${blockIds.length} blocks`);
     });
   }
 
   private clearOptimizedBlocks() {
+    if (!this.viewportElement || this.optimizedBlockIds.length === 0) return;
+
+    this.viewportElement.setBlocksActive(this.optimizedBlockIds);
+    this.optimizedBlockIds = [];
     this.debugLog('Cleared optimized blocks');
   }
 
@@ -397,12 +422,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   }
 
   private paintPlaceholder() {
-    paintPlaceholder(
-      this.std.host,
-      this.canvas,
-      this.layoutCache,
-      this.viewport
-    );
+    paintPlaceholder(this.canvas, this.layoutCache, this.viewport);
   }
 }
 

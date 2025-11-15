@@ -1,3 +1,4 @@
+import { IS_MAC } from '@blocksuite/global/env';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
@@ -20,27 +21,42 @@ test.describe('AIChatWith/Text', () => {
     await expect(page.getByTestId('ai-generating')).not.toBeVisible();
   });
 
+  test('should support stop generating when click outside', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.editor.askAIWithText(page, 'Panda');
+    await page.getByTestId('action-generate-image').click();
+    await expect(page.getByTestId('ai-generating')).toBeVisible();
+    await page.mouse.click(0, 0);
+    await expect(
+      page.getByText('AI is generating content. Do you want to stop generating')
+    ).toBeVisible();
+    await page.getByTestId('confirm-modal-confirm').click();
+    await expect(page.getByTestId('ai-generating')).not.toBeVisible();
+  });
+
   test('should support copy answer', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     const copy = answer.getByTestId('answer-copy-button');
     await copy.click();
     await expect(answer.getByTestId('answer-copied')).toBeVisible();
     const clipboardText = await page.evaluate(() =>
       navigator.clipboard.readText()
     );
-    expect(clipboardText).toBe('Apfel');
+    expect(clipboardText).toBe('苹果');
   });
 
   test('should support insert below', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     const insertBelow = answer.getByTestId('answer-insert-below');
     await insertBelow.click();
     const content = await utils.editor.getEditorContent(page);
-    expect(content).toBe('Apple\nApfel');
+    expect(content).toBe('Apple\n苹果');
   });
 
   test('should support insert above', async ({ loggedInPage: page, utils }) => {
@@ -62,13 +78,22 @@ test.describe('AIChatWith/Text', () => {
     loggedInPage: page,
     utils,
   }) => {
-    const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    await utils.editor.focusToEditor(page);
+    await page.keyboard.insertText('I Loev Apple');
+
+    // Select the word "Loev"
+    const SHORT_KEY = IS_MAC ? 'Alt' : 'Control';
+    await page.keyboard.press(`${SHORT_KEY}+ArrowLeft`);
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press(`Shift+${SHORT_KEY}+ArrowLeft`);
+
+    const { fixSpelling } = await utils.editor.showAIMenu(page);
+    const { answer } = await fixSpelling();
+    await expect(answer).toHaveText(/Love/, { timeout: 10000 });
     const replace = answer.getByTestId('answer-replace');
     await replace.click();
     const content = await utils.editor.getEditorContent(page);
-    expect(content).toBe('Apfel');
+    expect(content).toBe('I Love Apple');
   });
 
   test('should support continue in chat', async ({
@@ -76,8 +101,8 @@ test.describe('AIChatWith/Text', () => {
     utils,
   }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    const { answer } = await translate('Simplified Chinese');
+    await expect(answer).toHaveText(/苹果/, { timeout: 10000 });
     const continueInChat = answer.getByTestId('answer-continue-in-chat');
     await continueInChat.click();
     const chatPanelInput = await page.getByTestId('chat-panel-input-container');
@@ -87,7 +112,7 @@ test.describe('AIChatWith/Text', () => {
 
   test('should support regenerate', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
+    const { answer } = await translate('Simplified Chinese');
     const regenerate = answer.getByTestId('answer-regenerate');
     await regenerate.click();
     const content = await utils.editor.getEditorContent(page);
@@ -121,7 +146,7 @@ test.describe('AIChatWith/Text', () => {
 
   test('should support discard', async ({ loggedInPage: page, utils }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
+    const { answer } = await translate('Simplified Chinese');
     const discard = answer.getByTestId('answer-discard');
     await discard.click();
     await expect(answer).not.toBeVisible();
@@ -134,7 +159,7 @@ test.describe('AIChatWith/Text', () => {
     utils,
   }) => {
     const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
+    const { answer } = await translate('Simplified Chinese');
     await page.mouse.click(0, 0);
     await expect(page.getByText('Discard the AI result')).toBeVisible();
     await page.getByTestId('confirm-modal-confirm').click();

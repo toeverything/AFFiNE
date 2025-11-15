@@ -58,9 +58,7 @@ export const typeConfig = (property: Property) => {
                 return menu.action({
                   isSelected: config.type === property.type$.value,
                   name: config.config.name,
-                  prefix: renderUniLit(
-                    property.view.propertyIconGet(config.type)
-                  ),
+                  prefix: renderUniLit(config.renderer.icon),
                   select: () => {
                     if (property.type$.value === config.type) {
                       return;

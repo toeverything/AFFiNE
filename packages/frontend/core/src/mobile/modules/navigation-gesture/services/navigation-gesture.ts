@@ -6,7 +6,7 @@ import {
   LiveData,
   Service,
 } from '@toeverything/infra';
-import { catchError, distinctUntilChanged, EMPTY, mergeMap } from 'rxjs';
+import { catchError, distinctUntilChanged, EMPTY } from 'rxjs';
 
 import type { NavigationGestureProvider } from '../providers/navigation-gesture';
 
@@ -35,7 +35,6 @@ export class NavigationGestureService extends Service {
         }
         return;
       }).pipe(
-        mergeMap(() => EMPTY),
         catchError(err => {
           logger.error('navigationGestureProvider error', err);
           return EMPTY;

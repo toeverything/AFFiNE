@@ -1,0 +1,22 @@
+query listCommentChanges($workspaceId: String!, $docId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    commentChanges(docId: $docId, pagination: $pagination) {
+      totalCount
+      edges {
+        cursor
+        node {
+          action
+          id
+          commentId
+          item
+        }
+      }
+      pageInfo {
+        startCursor
+        endCursor
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+}

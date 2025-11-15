@@ -1,5 +1,5 @@
+import { AttachmentBlockSchema } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { sha } from '@blocksuite/global/utils';
 import {
   type AssetsManager,
   BaseAdapter,
@@ -88,40 +88,49 @@ export class AttachmentAdapter extends BaseAdapter<Attachment> {
     );
   }
 
-  override async toSliceSnapshot(
-    payload: AttachmentToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  override async toSliceSnapshot({
+    assets,
+    file: files,
+    pageId,
+    workspaceId,
+  }: AttachmentToSliceSnapshotPayload): Promise<SliceSnapshot | null> {
+    if (files.length === 0) return null;
+
     const content: SliceSnapshot['content'] = [];
-    for (const item of payload.file) {
-      const blobId = await sha(await item.arrayBuffer());
-      payload.assets?.getAssets().set(blobId, item);
-      await payload.assets?.writeToBlob(blobId);
+    const flavour = AttachmentBlockSchema.model.flavour;
+
+    for (const blob of files) {
+      const id = nanoid();
+      const { name, size, type } = blob;
+
+      assets?.uploadingAssetsMap.set(id, {
+        blob,
+        mapInto: sourceId => ({ sourceId }),
+      });
+
       content.push({
         type: 'block',
-        flavour: 'affine:attachment',
-        id: nanoid(),
+        flavour,
+        id,
         props: {
-          name: item.name,
-          size: item.size,
-          type: item.type,
+          name,
+          size,
+          type,
           embed: false,
           style: 'horizontalThin',
           index: 'a0',
           xywh: '[0,0,0,0]',
           rotate: 0,
-          sourceId: blobId,
         },
         children: [],
       });
     }
-    if (content.length === 0) {
-      return null;
-    }
+
     return {
       type: 'slice',
       content,
-      workspaceId: payload.workspaceId,
-      pageId: payload.pageId,
+      pageId,
+      workspaceId,
     };
   }
 }

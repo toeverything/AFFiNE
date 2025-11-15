@@ -5,7 +5,7 @@ import { Controller, Get, Logger, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import isMobile from 'is-mobile';
 
-import { metrics } from '../../base';
+import { Config, metrics } from '../../base';
 import { Models } from '../../models';
 import { htmlSanitize } from '../../native';
 import { Public } from '../auth';
@@ -51,7 +51,8 @@ export class DocRendererController {
 
   constructor(
     private readonly doc: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly config: Config
   ) {
     this.webAssets = this.readHtmlAssets(join(env.projectRoot, 'static'));
     this.mobileAssets = this.readHtmlAssets(
@@ -140,6 +141,7 @@ export class DocRendererController {
     // TODO(@forehalo): how can we enable the type reference to @affine/env
     const envMeta: Record<string, any> = {
       publicPath: assets.publicPath,
+      subPath: this.config.server.path,
       renderer: 'ssr',
     };
 
@@ -169,6 +171,7 @@ export class DocRendererController {
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    ${env.selfhosted ? '' : '<meta name="apple-itunes-app" content="app-id=6736937980" />'}
 
     <title>${title}</title>
     <meta name="theme-color" content="#fafafa" />
@@ -176,7 +179,7 @@ export class DocRendererController {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="shortcut icon" href="/favicon.ico?v=2" />
     <meta name="emotion-insertion-point" content="" />
     ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
     <meta
@@ -192,11 +195,11 @@ export class DocRendererController {
     ${Object.entries(envMeta)
       .map(([key, val]) => `<meta name="env:${key}" content="${val}" />`)
       .join('\n')}
-    ${assets.css.map(url => `<link rel="stylesheet" href="${url}" />`).join('\n')}
+    ${assets.css.map(url => `<link rel="stylesheet" href="${url}" crossorigin />`).join('\n')}
   </head>
   <body>
     <div id="app" data-version="${assets.gitHash}"></div>
-    ${assets.js.map(url => `<script src="${url}"></script>`).join('\n')}
+    ${assets.js.map(url => `<script src="${url}" crossorigin></script>`).join('\n')}
   </body>
 </html>
     `;

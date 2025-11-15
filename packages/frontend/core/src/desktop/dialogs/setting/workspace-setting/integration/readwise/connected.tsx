@@ -9,7 +9,11 @@ import * as styles from './connected.css';
 import { actionButton } from './index.css';
 import { readwiseTrack } from './track';
 
-export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
+export const ReadwiseDisconnectDialog = ({
+  onClose,
+}: {
+  onClose: () => void;
+}) => {
   const t = useI18n();
   const readwise = useService(IntegrationService).readwise;
 
@@ -59,18 +63,16 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export const ConnectedActions = ({ onImport }: { onImport: () => void }) => {
+export const ReadwiseDisconnectButton = () => {
   const t = useI18n();
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
-
   return (
     <>
       {showDisconnectDialog && (
-        <DisconnectDialog onClose={() => setShowDisconnectDialog(false)} />
+        <ReadwiseDisconnectDialog
+          onClose={() => setShowDisconnectDialog(false)}
+        />
       )}
-      <Button className={actionButton} onClick={onImport}>
-        {t['com.affine.integration.readwise.import']()}
-      </Button>
       <Button
         variant="error"
         className={actionButton}

@@ -1,7 +1,7 @@
 name: affine
 services:
   affine:
-    image: ghcr.io/toeverything/affine-graphql:${AFFINE_REVISION:-stable}
+    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-stable}
     container_name: affine_server
     ports:
       - '${PORT:-3010}:3010'
@@ -21,10 +21,11 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-affine}
+      - AFFINE_INDEXER_ENABLED=false
     restart: unless-stopped
 
   affine_migration:
-    image: ghcr.io/toeverything/affine-graphql:${AFFINE_REVISION:-stable}
+    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-stable}
     container_name: affine_migration_job
     volumes:
       # custom configurations
@@ -36,6 +37,7 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-affine}
+      - AFFINE_INDEXER_ENABLED=false
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,7 +46,7 @@ services:
 
   redis:
     image: redis
-    container_name: redis
+    container_name: affine_redis
     healthcheck:
       test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
       interval: 10s
@@ -53,8 +55,8 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16
-    container_name: postgres
+    image: pgvector/pgvector:pg16
+    container_name: affine_postgres
     volumes:
       - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
     environment:

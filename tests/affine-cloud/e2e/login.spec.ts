@@ -85,8 +85,8 @@ test.describe('login first', () => {
     {
       await clickSideBarSettingButton(page);
       const locator = page.getByTestId('user-info-card');
-      expect(locator.getByText(user.email)).toBeTruthy();
-      expect(locator.getByText(user.name)).toBeTruthy();
+      await expect(locator.getByText(user.email)).toBeVisible();
+      await expect(locator.getByText(user.name)).toBeVisible();
       await locator.click({
         delay: 50,
       });
@@ -103,8 +103,8 @@ test.describe('login first', () => {
     {
       await clickSideBarSettingButton(page);
       const locator = page.getByTestId('user-info-card');
-      expect(locator.getByText(user.email)).toBeTruthy();
-      expect(locator.getByText(newName)).toBeTruthy();
+      await expect(locator.getByText(user.email)).toBeVisible();
+      await expect(locator.getByText(newName)).toBeVisible();
     }
   });
 });

@@ -1,9 +1,9 @@
 import type { WriteStream } from 'node:fs';
 
-import type { AudioTapStream, TappableApplication } from '@affine/native';
+import type { ApplicationInfo, AudioCaptureSession } from '@affine/native';
 
 export interface TappableAppInfo {
-  rawInstance: TappableApplication;
+  info: ApplicationInfo;
   isRunning: boolean;
   processId: number;
   processGroupId: number;
@@ -27,7 +27,7 @@ export interface Recording {
   appGroup?: AppGroupInfo;
   // the buffered file that is being recorded streamed to
   file: WriteStream;
-  stream: AudioTapStream;
+  session: AudioCaptureSession;
   startTime: number;
   filepath?: string; // the filepath of the recording (only available when status is ready)
 }

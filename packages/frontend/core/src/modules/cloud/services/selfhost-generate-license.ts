@@ -9,7 +9,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { exhaustMap, tap } from 'rxjs';
 
 import type { SelfhostGenerateLicenseStore } from '../stores/selfhost-generate-license';
 
@@ -27,9 +27,8 @@ export class SelfhostGenerateLicenseService extends Service {
         return await this.store.generateKey(sessionId);
       }).pipe(
         smartRetry(),
-        mergeMap(key => {
+        tap(key => {
           this.licenseKey$.next(key);
-          return EMPTY;
         }),
         catchErrorInto(this.error$),
         onStart(() => {

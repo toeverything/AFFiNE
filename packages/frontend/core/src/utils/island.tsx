@@ -1,4 +1,5 @@
 import { LiveData, useLiveData } from '@toeverything/infra';
+import { nanoid } from 'nanoid';
 import {
   forwardRef,
   type Ref,
@@ -10,9 +11,10 @@ import { createPortal } from 'react-dom';
 
 export const createIsland = () => {
   const targetLiveData$ = new LiveData<HTMLDivElement | null>(null);
+  const provided$ = new LiveData<boolean>(false);
   let mounted = false;
-  let provided = false;
   return {
+    id: nanoid(),
     Target: forwardRef(function IslandTarget(
       { ...other }: React.HTMLProps<HTMLDivElement>,
       ref: Ref<HTMLDivElement>
@@ -36,16 +38,17 @@ export const createIsland = () => {
     Provider: ({ children }: React.PropsWithChildren) => {
       const target = useLiveData(targetLiveData$);
       useEffect(() => {
-        if (provided === true && BUILD_CONFIG.debug) {
+        if (provided$.value === true && BUILD_CONFIG.debug) {
           throw new Error('Island should not be provided more than once');
         }
-        provided = true;
+        provided$.next(true);
         return () => {
-          provided = false;
+          provided$.next(false);
         };
       }, []);
       return target ? createPortal(children, target) : null;
     },
+    provided$,
   };
 };
 

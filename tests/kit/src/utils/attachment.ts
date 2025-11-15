@@ -4,7 +4,11 @@ import { Path } from '../playwright';
 
 const fixturesDir = Path.dir(import.meta.url).join('../../../fixtures');
 
-export async function importAttachment(page: Page, file: string) {
+export async function importFile(
+  page: Page,
+  file: string,
+  fn?: (page: Page) => Promise<void>
+) {
   await page.evaluate(() => {
     // Force fallback to input[type=file] in tests
     // See https://github.com/microsoft/playwright/issues/8850
@@ -13,9 +17,15 @@ export async function importAttachment(page: Page, file: string) {
 
   const fileChooser = page.waitForEvent('filechooser');
 
-  // open slash menu
-  await page.keyboard.type('/attachment', { delay: 50 });
-  await page.keyboard.press('Enter');
+  if (fn) await fn(page);
 
   await (await fileChooser).setFiles(fixturesDir.join(file).value);
+}
+
+export async function importAttachment(page: Page, file: string) {
+  // open slash menu
+  await importFile(page, file, async page => {
+    await page.keyboard.type('/attachment', { delay: 50 });
+    await page.keyboard.press('Enter');
+  });
 }

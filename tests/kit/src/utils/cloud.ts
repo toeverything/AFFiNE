@@ -12,6 +12,7 @@ import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { type PrismaClient } from '@prisma/client';
 import type { Assertions } from 'ava';
 import { z } from 'zod';
 
@@ -57,12 +58,7 @@ const server = new Package('@affine/server');
 const require = createRequire(server.srcPath.join('index.ts').toFileUrl());
 
 export const runPrisma = async <T>(
-  cb: (
-    prisma: InstanceType<
-      // oxlint-disable-next-line @typescript-eslint/consistent-type-imports
-      typeof import('../../../../packages/backend/server/node_modules/@prisma/client').PrismaClient
-    >
-  ) => Promise<T>
+  cb: (prisma: PrismaClient) => Promise<T>
 ): Promise<T> => {
   const { PrismaClient } = require('@prisma/client');
   const client = new PrismaClient({
@@ -154,6 +150,31 @@ export async function createRandomUser(): Promise<{
     ...result,
     password: user.password,
   } as any;
+}
+
+export async function cleanupWorkspace(workspaceId: string): Promise<void> {
+  await runPrisma(async client => {
+    const ret = await client.snapshot.deleteMany({
+      where: { workspaceId, id: { not: workspaceId } },
+    });
+    console.error(ret);
+  });
+}
+
+export async function switchDefaultChatModel(model: string) {
+  await runPrisma(async client => {
+    const promptId = await client.aiPrompt
+      .findFirst({
+        where: { name: 'Chat With AFFiNE AI' },
+        select: { id: true },
+      })
+      .then(f => f!.id);
+
+    await client.aiPrompt.update({
+      where: { id: promptId },
+      data: { model },
+    });
+  });
 }
 
 export async function createRandomAIUser(): Promise<{
@@ -312,5 +333,7 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
 export async function enableShare(page: Page) {
   await page.getByTestId('cloud-share-menu-button').click();
   await page.getByTestId('share-link-menu-trigger').click();
+  // wait for the menu to be visible
+  await page.waitForTimeout(500);
   await page.getByTestId('share-link-menu-enable-share').click();
 }

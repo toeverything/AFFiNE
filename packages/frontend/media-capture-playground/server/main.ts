@@ -3,14 +3,18 @@ import { createServer } from 'node:http';
 import path from 'node:path';
 
 import {
-  type Application,
-  type AudioTapStream,
+  type ApplicationInfo,
+  type AudioCaptureSession,
   ShareableContent,
-  type TappableApplication,
 } from '@affine/native';
 import type { FSWatcher } from 'chokidar';
 import chokidar from 'chokidar';
-import express from 'express';
+import express, {
+  type NextFunction,
+  type Request,
+  type RequestHandler,
+  type Response,
+} from 'express';
 import rateLimit from 'express-rate-limit';
 import fs from 'fs-extra';
 import { debounce } from 'lodash-es';
@@ -30,10 +34,10 @@ console.log(`📁 Ensuring recordings directory exists at ${RECORDING_DIR}`);
 
 // Types
 interface Recording {
-  app: TappableApplication | null;
-  appGroup: Application | null;
+  app: ApplicationInfo | null;
+  appGroup: ApplicationInfo | null;
   buffers: Float32Array[];
-  stream: AudioTapStream;
+  session: AudioCaptureSession;
   startTime: number;
   isWriting: boolean;
   isGlobal?: boolean;
@@ -61,7 +65,7 @@ interface RecordingMetadata {
 }
 
 interface AppInfo {
-  app?: TappableApplication;
+  app?: ApplicationInfo;
   processId: number;
   processGroupId: number;
   bundleIdentifier: string;
@@ -90,15 +94,19 @@ const io = new Server(httpServer, {
 });
 
 // Add CORS headers middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header(
+app.use((req: Request, res: Response, next: NextFunction): void => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
+  res.setHeader(
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept'
   );
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    res.status(200).end();
+    return;
   }
   next();
 });
@@ -108,16 +116,18 @@ app.use(express.json());
 // Update the static file serving to handle the new folder structure
 app.use(
   '/recordings',
-  (req, res, next) => {
+  (req: Request, res: Response, next: NextFunction): void => {
     // Extract the folder name from the path
     const parts = req.path.split('/');
     if (parts.length < 2) {
-      return res.status(400).json({ error: 'Invalid request path' });
+      res.status(400).json({ error: 'Invalid request path' });
+      return;
     }
 
     const folderName = parts[1];
     if (!validateAndSanitizeFolderName(folderName)) {
-      return res.status(400).json({ error: 'Invalid folder name format' });
+      res.status(400).json({ error: 'Invalid folder name format' });
+      return;
     }
 
     if (req.path.endsWith('.mp3')) {
@@ -140,8 +150,37 @@ const upload = multer({
   },
 });
 
+// Helper functions to safely access properties from both ApplicationInfo and ApplicationInfo
+function getAppName(app: ApplicationInfo | null): string {
+  if (!app) return 'Unknown App';
+  return app.name ?? 'Unknown App';
+}
+
+function getAppProcessId(app: ApplicationInfo | null): number {
+  if (!app) return 0;
+  return app.processId ?? 0;
+}
+
+function getAppBundleIdentifier(app: ApplicationInfo | null): string {
+  if (!app) return 'unknown';
+  return app.bundleIdentifier ?? 'unknown';
+}
+
+function getAppIcon(app: ApplicationInfo | null): Buffer | null {
+  if (!app) return null;
+  try {
+    return app.icon ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Recording management
-async function saveRecording(recording: Recording): Promise<string | null> {
+async function saveRecording(
+  recording: Recording,
+  sampleRate: number,
+  channels: number
+): Promise<string | null> {
   try {
     recording.isWriting = true;
     const app = recording.isGlobal ? null : recording.appGroup || recording.app;
@@ -154,17 +193,16 @@ async function saveRecording(recording: Recording): Promise<string | null> {
     const recordingEndTime = Date.now();
     const recordingDuration = (recordingEndTime - recording.startTime) / 1000;
 
-    // Get the actual sample rate from the stream's audio stats
-    const actualSampleRate = recording.stream.sampleRate;
-    const channelCount = recording.stream.channels;
+    const actualSampleRate = sampleRate;
+    const channelCount = channels;
     const expectedSamples = recordingDuration * actualSampleRate;
 
     if (recording.isGlobal) {
       console.log('💾 Saving global recording:');
     } else {
-      const appName = app?.name ?? 'Unknown App';
-      const processId = app?.processId ?? 0;
-      const bundleId = app?.bundleIdentifier ?? 'unknown';
+      const appName = getAppName(app);
+      const processId = getAppProcessId(app);
+      const bundleId = getAppBundleIdentifier(app);
       console.log(`💾 Saving recording for ${appName}:`);
       if (app) {
         console.log(`- Process ID: ${processId}`);
@@ -194,7 +232,7 @@ async function saveRecording(recording: Recording): Promise<string | null> {
     const timestamp = Date.now();
     const baseFilename = recording.isGlobal
       ? `global-recording-${timestamp}`
-      : `${app?.bundleIdentifier ?? 'unknown'}-${app?.processId ?? 0}-${timestamp}`;
+      : `${getAppBundleIdentifier(app)}-${getAppProcessId(app)}-${timestamp}`;
 
     // Sanitize the baseFilename to prevent path traversal
     const sanitizedFilename = baseFilename
@@ -235,18 +273,19 @@ async function saveRecording(recording: Recording): Promise<string | null> {
     console.log('✅ Transcription Wav file written successfully');
 
     // Save app icon if available
-    if (app?.icon) {
+    const appIcon = getAppIcon(app);
+    if (appIcon) {
       console.log(`📝 Writing app icon to ${iconFilename}`);
-      await fs.writeFile(iconFilename, app.icon);
+      await fs.writeFile(iconFilename, appIcon);
       console.log('✅ App icon written successfully');
     }
 
     console.log(`📝 Writing metadata to ${metadataFilename}`);
     // Save metadata with the actual sample rate from the stream
     const metadata: RecordingMetadata = {
-      appName: app?.name ?? 'Global Recording',
-      bundleIdentifier: app?.bundleIdentifier ?? 'system.global',
-      processId: app?.processId ?? -1,
+      appName: getAppName(app),
+      bundleIdentifier: getAppBundleIdentifier(app),
+      processId: getAppProcessId(app),
       recordingStartTime: recording.startTime,
       recordingEndTime,
       recordingDuration,
@@ -269,8 +308,8 @@ async function saveRecording(recording: Recording): Promise<string | null> {
 function getRecordingStatus(): RecordingStatus[] {
   return Array.from(recordingMap.entries()).map(([processId, recording]) => ({
     processId,
-    bundleIdentifier: recording.app?.bundleIdentifier ?? 'system.global',
-    name: recording.app?.name ?? 'Global Recording',
+    bundleIdentifier: getAppBundleIdentifier(recording.app),
+    name: getAppName(recording.app),
     startTime: recording.startTime,
     duration: Date.now() - recording.startTime,
   }));
@@ -280,45 +319,57 @@ function emitRecordingStatus() {
   io.emit('apps:recording', { recordings: getRecordingStatus() });
 }
 
-async function startRecording(app: TappableApplication) {
-  if (recordingMap.has(app.processId)) {
+async function startRecording(app: ApplicationInfo) {
+  const appProcessId = getAppProcessId(app);
+  const appName = getAppName(app);
+  const appBundleId = getAppBundleIdentifier(app);
+
+  if (recordingMap.has(appProcessId)) {
     console.log(
-      `⚠️ Recording already in progress for ${app.name} (PID: ${app.processId})`
+      `⚠️ Recording already in progress for ${appName} (PID: ${appProcessId})`
     );
     return;
   }
 
   try {
+    console.log(
+      `🎙️ Starting recording for ${appName} (Bundle: ${appBundleId}, PID: ${appProcessId})`
+    );
+
     const processGroupId = app.processGroupId;
     const rootApp =
-      shareableContent.applicationWithProcessId(processGroupId) ||
-      shareableContent.applicationWithProcessId(app.processId);
+      ShareableContent.applicationWithProcessId(processGroupId) ||
+      ShareableContent.applicationWithProcessId(app.processId);
+
     if (!rootApp) {
-      console.error(`❌ App group not found for ${app.name}`);
+      console.error(`❌ App group not found for ${appName}`);
       return;
     }
 
     console.log(
-      `🎙️ Starting recording for ${rootApp.name} (PID: ${rootApp.processId})`
+      `🎙️ Recording from ${rootApp.name} (PID: ${rootApp.processId})`
     );
 
     const buffers: Float32Array[] = [];
-    const stream = app.tapAudio((err, samples) => {
-      if (err) {
-        console.error(`❌ Audio stream error for ${rootApp.name}:`, err);
-        return;
+    const session = ShareableContent.tapAudio(
+      appProcessId,
+      (err: any, samples: any) => {
+        if (err) {
+          console.error(`❌ Audio stream error for ${rootApp.name}:`, err);
+          return;
+        }
+        const recording = recordingMap.get(appProcessId);
+        if (recording && !recording.isWriting) {
+          buffers.push(new Float32Array(samples));
+        }
       }
-      const recording = recordingMap.get(app.processId);
-      if (recording && !recording.isWriting) {
-        buffers.push(new Float32Array(samples));
-      }
-    });
+    );
 
-    recordingMap.set(app.processId, {
+    recordingMap.set(appProcessId, {
       app,
       appGroup: rootApp,
       buffers,
-      stream,
+      session,
       startTime: Date.now(),
       isWriting: false,
     });
@@ -326,7 +377,7 @@ async function startRecording(app: TappableApplication) {
     console.log(`✅ Recording started successfully for ${rootApp.name}`);
     emitRecordingStatus();
   } catch (error) {
-    console.error(`❌ Error starting recording for ${app.name}:`, error);
+    console.error(`❌ Error starting recording for ${appName}:`, error);
   }
 }
 
@@ -338,17 +389,32 @@ async function stopRecording(processId: number) {
   }
 
   const app = recording.appGroup || recording.app;
-  const appName =
-    app?.name ?? (recording.isGlobal ? 'Global Recording' : 'Unknown App');
-  const appPid = app?.processId ?? processId;
+  const appName = recording.isGlobal
+    ? 'Global Recording'
+    : getAppName(app) || 'Unknown App';
+  const appPid = getAppProcessId(app);
 
   console.log(`⏹️ Stopping recording for ${appName} (PID: ${appPid})`);
   console.log(
     `⏱️ Recording duration: ${((Date.now() - recording.startTime) / 1000).toFixed(2)}s`
   );
 
-  recording.stream.stop();
-  const filename = await saveRecording(recording);
+  let sampleRate = 0;
+  let channels = 0;
+  try {
+    // Get properties BEFORE stopping the session
+    sampleRate = recording.session.sampleRate;
+    channels = recording.session.channels;
+  } catch (e) {
+    console.error('❌ Failed to get session properties before stopping:', e);
+    // Handle error appropriately, maybe use default values or skip saving?
+    // For now, log and continue, saveRecording might fail later if values are 0.
+  }
+
+  recording.session.stop(); // Stop the session
+
+  // Pass the retrieved values to saveRecording
+  const filename = await saveRecording(recording, sampleRate, channels);
   recordingMap.delete(processId);
 
   if (filename) {
@@ -501,11 +567,15 @@ async function setupRecordingsWatcher() {
   }
 }
 
-// Application management
-const shareableContent = new ShareableContent();
-
+/**
+ * Gets all applications and groups them by bundle identifier.
+ * For apps with the same bundle ID (e.g., multiple processes of the same app),
+ * only one representative is returned. The selection prioritizes:
+ * 1. Running apps over stopped apps
+ * 2. Lower process IDs (usually parent processes)
+ */
 async function getAllApps(): Promise<AppInfo[]> {
-  const apps: (AppInfo | null)[] = shareableContent.applications().map(app => {
+  const apps: (AppInfo | null)[] = ShareableContent.applications().map(app => {
     try {
       return {
         app,
@@ -513,7 +583,9 @@ async function getAllApps(): Promise<AppInfo[]> {
         processGroupId: app.processGroupId,
         bundleIdentifier: app.bundleIdentifier,
         name: app.name,
-        isRunning: app.isRunning,
+        get isRunning() {
+          return ShareableContent.isUsingMicrophone(app.processId);
+        },
       };
     } catch (error) {
       console.error(error);
@@ -529,37 +601,57 @@ async function getAllApps(): Promise<AppInfo[]> {
     );
   });
 
+  // Group apps by bundleIdentifier - only keep one representative per bundle ID
+  const bundleGroups = new Map<string, AppInfo[]>();
+
+  // Group all apps by their bundle identifier
   for (const app of filteredApps) {
-    if (filteredApps.some(a => a.processId === app.processGroupId)) {
-      continue;
+    const bundleId = app.bundleIdentifier;
+    if (!bundleGroups.has(bundleId)) {
+      bundleGroups.set(bundleId, []);
     }
-    const appGroup = shareableContent.applicationWithProcessId(
-      app.processGroupId
-    );
-    if (!appGroup) {
-      continue;
-    }
-    filteredApps.push({
-      processId: appGroup.processId,
-      processGroupId: appGroup.processGroupId,
-      bundleIdentifier: appGroup.bundleIdentifier,
-      name: appGroup.name,
-      isRunning: false,
-    });
+    bundleGroups.get(bundleId)?.push(app);
   }
 
-  // Stop recording if app is not listed
+  console.log(`📦 Found ${bundleGroups.size} unique bundle identifiers`);
+
+  // For each bundle group, select the best representative
+  const groupedApps: AppInfo[] = [];
+
+  for (const [_, appsInGroup] of bundleGroups) {
+    if (appsInGroup.length === 1) {
+      // Only one app with this bundle ID, use it directly
+      groupedApps.push(appsInGroup[0]);
+    } else {
+      // Multiple apps with same bundle ID, choose the best representative
+
+      // Prefer running apps, then apps with lower process IDs (usually parent processes)
+      const sortedApps = appsInGroup.sort((a, b) => {
+        // First priority: running apps
+        if (a.isRunning !== b.isRunning) {
+          return a.isRunning ? -1 : 1;
+        }
+        // Second priority: lower process ID (usually parent process)
+        return a.processId - b.processId;
+      });
+
+      const representative = sortedApps[0];
+      groupedApps.push(representative);
+    }
+  }
+
+  // Stop recording if app is not listed (check by process ID)
   await Promise.all(
     Array.from(recordingMap.keys()).map(async processId => {
-      if (!filteredApps.some(a => a.processId === processId)) {
+      if (!groupedApps.some(a => a.processId === processId)) {
         await stopRecording(processId);
       }
     })
   );
 
-  listenToAppStateChanges(filteredApps);
+  listenToAppStateChanges(groupedApps);
 
-  return filteredApps;
+  return groupedApps;
 }
 
 function listenToAppStateChanges(apps: AppInfo[]) {
@@ -569,19 +661,27 @@ function listenToAppStateChanges(apps: AppInfo[]) {
         return { unsubscribe: () => {} };
       }
 
+      const appName = getAppName(app);
+      const appProcessId = getAppProcessId(app);
+
       const onAppStateChanged = () => {
+        const currentIsRunning =
+          ShareableContent.isUsingMicrophone(appProcessId);
+
         console.log(
-          `🔄 Application state changed: ${app.name} (PID: ${app.processId}) is now ${
-            app.isRunning ? '▶️ running' : '⏹️ stopped'
+          `🔄 Application state changed: ${appName} (PID: ${appProcessId}) is now ${
+            currentIsRunning ? '▶️ running' : '⏹️ stopped'
           }`
         );
+
+        // Emit state change to all clients
         io.emit('apps:state-changed', {
-          processId: app.processId,
-          isRunning: app.isRunning,
+          processId: appProcessId,
+          isRunning: currentIsRunning,
         });
 
-        if (!app.isRunning) {
-          stopRecording(app.processId).catch(error => {
+        if (!currentIsRunning) {
+          stopRecording(appProcessId).catch(error => {
             console.error('❌ Error stopping recording:', error);
           });
         }
@@ -593,7 +693,7 @@ function listenToAppStateChanges(apps: AppInfo[]) {
       );
     } catch (error) {
       console.error(
-        `Failed to listen to app state changes for ${app?.name}:`,
+        `Failed to listen to app state changes for ${app ? getAppName(app) : 'unknown app'}:`,
         error
       );
       return { unsubscribe: () => {} };
@@ -624,7 +724,8 @@ io.on('connection', async socket => {
   console.log(`📤 Sending ${files.length} saved recordings to new client`);
   socket.emit('apps:saved', { recordings: files });
 
-  listenToAppStateChanges(initialApps.map(app => app.app).filter(app => !!app));
+  // Set up state listeners for the current apps
+  listenToAppStateChanges(initialApps.filter(appInfo => appInfo.app != null));
 
   socket.on('disconnect', () => {
     console.log('🔌 Client disconnected');
@@ -639,6 +740,9 @@ ShareableContent.onApplicationListChanged(() => {
       const apps = await getAllApps();
       console.log(`📢 Broadcasting ${apps.length} applications to all clients`);
       io.emit('apps:all', { apps });
+
+      // Set up state listeners for the updated apps
+      listenToAppStateChanges(apps.filter(appInfo => appInfo.app != null));
     } catch (error) {
       console.error('❌ Error handling application list change:', error);
     }
@@ -652,11 +756,6 @@ const rateLimiter = rateLimit({
   windowMs: 1000,
   max: 200,
   message: { error: 'Too many requests, please try again later.' },
-});
-
-app.get('/permissions', (req, res) => {
-  const permission = shareableContent.checkRecordingPermissions();
-  res.json({ permission });
 });
 
 app.get('/apps', async (_req, res) => {
@@ -691,11 +790,15 @@ function validateAndSanitizeFolderName(folderName: string): string | null {
   return sanitized;
 }
 
-app.delete('/recordings/:foldername', rateLimiter, async (req, res) => {
+app.delete('/recordings/:foldername', rateLimiter, (async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const foldername = validateAndSanitizeFolderName(req.params.foldername);
   if (!foldername) {
     console.error('❌ Invalid folder name format:', req.params.foldername);
-    return res.status(400).json({ error: 'Invalid folder name format' });
+    res.status(400).json({ error: 'Invalid folder name format' });
+    return;
   }
 
   // Construct the path safely using path.join to avoid path traversal
@@ -712,7 +815,8 @@ app.delete('/recordings/:foldername', rateLimiter, async (req, res) => {
         recordingDirPath,
         requestedFile: foldername,
       });
-      return res.status(403).json({ error: 'Access denied' });
+      res.status(403).json({ error: 'Access denied' });
+      return;
     }
 
     console.log(`🗑️ Deleting recording folder: ${foldername}`);
@@ -736,12 +840,12 @@ app.delete('/recordings/:foldername', rateLimiter, async (req, res) => {
       });
     }
   }
-});
+}) as RequestHandler);
 
 app.get('/apps/:process_id/icon', (req, res) => {
   const processId = parseInt(req.params.process_id);
   try {
-    const app = shareableContent.applicationWithProcessId(processId);
+    const app = ShareableContent.applicationWithProcessId(processId);
     if (!app) {
       res.status(404).json({ error: 'App not found' });
       return;
@@ -758,7 +862,7 @@ app.get('/apps/:process_id/icon', (req, res) => {
 app.post('/apps/:process_id/record', async (req, res) => {
   const processId = parseInt(req.params.process_id);
   try {
-    const app = shareableContent.tappableApplicationWithProcessId(processId);
+    const app = ShareableContent.applicationWithProcessId(processId);
     if (!app) {
       res.status(404).json({ error: 'App not found' });
       return;
@@ -778,100 +882,101 @@ app.post('/apps/:process_id/stop', async (req, res) => {
 });
 
 // Update transcription endpoint to use folder validation
-app.post(
-  '/recordings/:foldername/transcribe',
-  rateLimiter,
-  async (req, res) => {
-    const foldername = validateAndSanitizeFolderName(req.params.foldername);
-    if (!foldername) {
-      console.error('❌ Invalid folder name format:', req.params.foldername);
-      return res.status(400).json({ error: 'Invalid folder name format' });
-    }
-
-    const recordingDir = `${RECORDING_DIR}/${foldername}`;
-
-    try {
-      // Check if directory exists
-      await fs.access(recordingDir);
-
-      const transcriptionWavPath = `${recordingDir}/transcription.wav`;
-      const transcriptionMetadataPath = `${recordingDir}/transcription.json`;
-
-      // Check if transcription file exists
-      await fs.access(transcriptionWavPath);
-
-      // Create initial transcription metadata
-      const initialMetadata: TranscriptionMetadata = {
-        transcriptionStartTime: Date.now(),
-        transcriptionEndTime: 0,
-        transcriptionStatus: 'pending',
-      };
-      await fs.writeJson(transcriptionMetadataPath, initialMetadata);
-
-      // Notify clients that transcription has started
-      io.emit('apps:recording-transcription-start', { filename: foldername });
-
-      const transcription = await gemini(transcriptionWavPath, {
-        mode: 'transcript',
-      });
-
-      // Update transcription metadata with results
-      const metadata: TranscriptionMetadata = {
-        transcriptionStartTime: initialMetadata.transcriptionStartTime,
-        transcriptionEndTime: Date.now(),
-        transcriptionStatus: 'completed',
-        transcription: transcription ?? undefined,
-      };
-
-      await fs.writeJson(transcriptionMetadataPath, metadata);
-
-      // Notify clients that transcription is complete
-      io.emit('apps:recording-transcription-end', {
-        filename: foldername,
-        success: true,
-        transcription,
-      });
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('❌ Error during transcription:', error);
-
-      // Update transcription metadata with error
-      const metadata: TranscriptionMetadata = {
-        transcriptionStartTime: Date.now(),
-        transcriptionEndTime: Date.now(),
-        transcriptionStatus: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-
-      await fs
-        .writeJson(`${recordingDir}/transcription.json`, metadata)
-        .catch(err => {
-          console.error('❌ Error saving transcription metadata:', err);
-        });
-
-      // Notify clients of transcription error
-      io.emit('apps:recording-transcription-end', {
-        filename: foldername,
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-
-      res.status(500).json({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
+app.post('/recordings/:foldername/transcribe', rateLimiter, (async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const foldername = validateAndSanitizeFolderName(req.params.foldername);
+  if (!foldername) {
+    console.error('❌ Invalid folder name format:', req.params.foldername);
+    res.status(400).json({ error: 'Invalid folder name format' });
+    return;
   }
-);
+
+  const recordingDir = `${RECORDING_DIR}/${foldername}`;
+
+  try {
+    // Check if directory exists
+    await fs.access(recordingDir);
+
+    const transcriptionWavPath = `${recordingDir}/transcription.wav`;
+    const transcriptionMetadataPath = `${recordingDir}/transcription.json`;
+
+    // Check if transcription file exists
+    await fs.access(transcriptionWavPath);
+
+    // Create initial transcription metadata
+    const initialMetadata: TranscriptionMetadata = {
+      transcriptionStartTime: Date.now(),
+      transcriptionEndTime: 0,
+      transcriptionStatus: 'pending',
+    };
+    await fs.writeJson(transcriptionMetadataPath, initialMetadata);
+
+    // Notify clients that transcription has started
+    io.emit('apps:recording-transcription-start', { filename: foldername });
+
+    const transcription = await gemini(transcriptionWavPath, {
+      mode: 'transcript',
+    });
+
+    // Update transcription metadata with results
+    const metadata: TranscriptionMetadata = {
+      transcriptionStartTime: initialMetadata.transcriptionStartTime,
+      transcriptionEndTime: Date.now(),
+      transcriptionStatus: 'completed',
+      transcription: transcription ?? undefined,
+    };
+
+    await fs.writeJson(transcriptionMetadataPath, metadata);
+
+    // Notify clients that transcription is complete
+    io.emit('apps:recording-transcription-end', {
+      filename: foldername,
+      success: true,
+      transcription,
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Error during transcription:', error);
+
+    // Update transcription metadata with error
+    const metadata: TranscriptionMetadata = {
+      transcriptionStartTime: Date.now(),
+      transcriptionEndTime: Date.now(),
+      transcriptionStatus: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+
+    await fs
+      .writeJson(`${recordingDir}/transcription.json`, metadata)
+      .catch(err => {
+        console.error('❌ Error saving transcription metadata:', err);
+      });
+
+    // Notify clients of transcription error
+    io.emit('apps:recording-transcription-end', {
+      filename: foldername,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}) as RequestHandler);
 
 app.post(
   '/transcribe',
   rateLimiter,
-  upload.single('audio') as any,
-  async (req, res) => {
+  upload.single('audio') as unknown as RequestHandler,
+  (async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: 'No audio file provided' });
+        res.status(400).json({ error: 'No audio file provided' });
+        return;
       }
 
       // Notify clients that transcription has started
@@ -896,7 +1001,7 @@ app.post(
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
-  }
+  }) as RequestHandler
 );
 
 async function startGlobalRecording() {
@@ -910,7 +1015,7 @@ async function startGlobalRecording() {
     console.log('🎙️ Starting global recording');
 
     const buffers: Float32Array[] = [];
-    const stream = ShareableContent.tapGlobalAudio(
+    const session = ShareableContent.tapGlobalAudio(
       null,
       (err: Error | null, samples: Float32Array) => {
         if (err) {
@@ -928,7 +1033,7 @@ async function startGlobalRecording() {
       app: null,
       appGroup: null,
       buffers,
-      stream,
+      session,
       startTime: Date.now(),
       isWriting: false,
       isGlobal: true,
@@ -963,9 +1068,7 @@ httpServer.listen(PORT, () => {
   console.log(`
 🎙️  Media Capture Server started successfully:
 - Port: ${PORT}
-- Recordings directory: ${RECORDING_DIR}
-- Sample rate: 44.1kHz
-- Channels: Mono
+- Recordings directory: ${path.join(process.cwd(), RECORDING_DIR)}
 `);
 });
 

@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html } from 'lit';
 
 export const EMBED_HTML_MIN_WIDTH = 370;
@@ -15,17 +16,15 @@ export const styles = css`
     gap: 20px;
 
     border-radius: 12px;
-    border: 1px solid var(--affine-background-tertiary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
 
-    opacity: var(--add, 1);
-    background: var(--affine-background-primary-color);
+    background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
   }
 
   .affine-embed-html {
     flex-grow: 1;
     width: 100%;
-    opacity: var(--add, 1);
   }
 
   .affine-embed-html img,
@@ -34,7 +33,7 @@ export const styles = css`
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 4px 4px var(--1, 0px) var(--1, 0px);
+    border-radius: 4px;
   }
 
   .affine-embed-html-iframe-container {
@@ -94,10 +93,6 @@ export const styles = css`
     display: flex;
     align-items: center;
     gap: 8px;
-
-    padding: var(--1, 0px);
-    border-radius: var(--1, 0px);
-    opacity: var(--add, 1);
   }
 
   .affine-embed-html-title-icon {

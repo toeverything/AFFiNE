@@ -5,8 +5,8 @@ import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
 import { createBuiltinToolbarConfigExtension } from '../configs/toolbar';
-import { EmbedLoomBlockAdapterExtensions } from './adapters/extension';
 import { embedLoomSlashMenuConfig } from './configs/slash-menu';
+import { EmbedLoomBlockInteraction } from './embed-edgeless-loom-bock';
 import { EmbedLoomBlockComponent } from './embed-loom-block';
 import {
   EmbedLoomBlockOptionConfig,
@@ -15,7 +15,7 @@ import {
 
 const flavour = EmbedLoomBlockSchema.model.flavour;
 
-export const EmbedLoomBlockSpec: ExtensionType[] = [
+export const EmbedLoomViewExtensions: ExtensionType[] = [
   FlavourExtension(flavour),
   EmbedLoomBlockService,
   BlockViewExtension(flavour, model => {
@@ -23,8 +23,8 @@ export const EmbedLoomBlockSpec: ExtensionType[] = [
       ? literal`affine-embed-edgeless-loom-block`
       : literal`affine-embed-loom-block`;
   }),
-  EmbedLoomBlockAdapterExtensions,
   EmbedLoomBlockOptionConfig,
   createBuiltinToolbarConfigExtension(flavour, EmbedLoomBlockComponent),
   SlashMenuConfigExtension(flavour, embedLoomSlashMenuConfig),
+  EmbedLoomBlockInteraction,
 ].flat();

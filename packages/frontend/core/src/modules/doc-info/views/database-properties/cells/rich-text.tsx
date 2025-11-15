@@ -10,7 +10,7 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import type * as Y from 'yjs';
 
 import type { DatabaseCellRendererProps } from '../../../types';
-import { useBlockStdScope } from '../../../utils';
+import { useBlockStdScope } from '../../../use-std';
 import * as styles from './rich-text.css';
 
 // todo(@pengx17): handle markdown/keyboard shortcuts
@@ -31,7 +31,7 @@ const renderRichText = ({
 
   const richText = new RichText();
   richText.yText = text;
-  richText.undoManager = doc.history;
+  richText.undoManager = doc.history.undoManager;
   richText.readonly = doc.readonly;
   richText.attributesSchema = inlineManager.getSchema() as any;
   richText.attributeRenderer = inlineManager.getRenderer();

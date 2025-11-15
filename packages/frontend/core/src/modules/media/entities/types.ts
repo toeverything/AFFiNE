@@ -7,4 +7,5 @@ export interface TranscriptionResult {
     end: string;
     transcription: string;
   }[];
+  actions?: string;
 }

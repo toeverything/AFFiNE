@@ -11,7 +11,7 @@ import { addSampleNotes } from './doc-generator.js';
 import { createPainterWorker, setupEditor } from './setup.js';
 
 async function init() {
-  setupEditor('edgeless', [
+  await setupEditor('edgeless', [
     ParagraphLayoutHandlerExtension,
     ListLayoutHandlerExtension,
     ImageLayoutHandlerExtension,
@@ -29,4 +29,4 @@ async function init() {
   window.renderer = renderer;
 }
 
-init();
+await init();

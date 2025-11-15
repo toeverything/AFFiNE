@@ -12,29 +12,39 @@ export {
 } from '../utils/tree.js';
 export { GfxController } from './controller.js';
 export type { CursorType, StandardCursor } from './cursor.js';
-export type {
-  DragExtensionInitializeContext,
-  DragInitializationOption,
-  ExtensionDragEndContext,
-  ExtensionDragMoveContext,
-  ExtensionDragStartContext,
-} from './element-transform/drag.js';
-export { CanvasEventHandler } from './element-transform/extension/canvas-event-handler.js';
-export {
-  ElementTransformManager,
-  TransformExtension,
-  TransformExtensionIdentifier,
-  TransformManagerIdentifier,
-} from './element-transform/transform-manager.js';
-export type {
-  DragEndContext,
-  DragMoveContext,
-  DragStartContext,
-} from './element-transform/view-transform.js';
-export { type SelectedContext } from './element-transform/view-transform.js';
 export { GfxExtension, GfxExtensionIdentifier } from './extension.js';
 export { GridManager } from './grid.js';
 export { GfxControllerIdentifier } from './identifiers.js';
+export type {
+  BoxSelectionContext,
+  DragEndContext,
+  DragExtensionInitializeContext,
+  DragInitializationOption,
+  DragMoveContext,
+  DragStartContext,
+  ExtensionDragEndContext,
+  ExtensionDragMoveContext,
+  ExtensionDragStartContext,
+  GfxInteractivityContext,
+  GfxViewInteractionConfig,
+  ResizeConstraint,
+  ResizeEndContext,
+  ResizeHandle,
+  ResizeMoveContext,
+  ResizeStartContext,
+  RotateConstraint,
+  RotateEndContext,
+  RotateMoveContext,
+  RotateStartContext,
+  SelectContext,
+} from './interactivity/index.js';
+export {
+  GfxViewEventManager,
+  GfxViewInteractionExtension,
+  InteractivityExtension,
+  InteractivityIdentifier,
+  InteractivityManager,
+} from './interactivity/index.js';
 export { LayerManager, type ReorderingDirection } from './layer.js';
 export type {
   GfxCompatibleInterface,
@@ -91,10 +101,9 @@ export {
 } from './surface-middleware.js';
 export {
   BaseTool,
-  type GfxToolsFullOption,
-  type GfxToolsFullOptionValue,
-  type GfxToolsMap,
-  type GfxToolsOption,
+  type ToolOptions,
+  type ToolOptionWithType,
+  type ToolType,
 } from './tool/tool.js';
 export { MouseButton, ToolController } from './tool/tool-controller.js';
 export {

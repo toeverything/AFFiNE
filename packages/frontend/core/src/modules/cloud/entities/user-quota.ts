@@ -10,9 +10,9 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import bytes from 'bytes';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import type { AuthService } from '../services/auth';
 import type { UserQuotaStore } from '../stores/user-quota';
@@ -48,8 +48,8 @@ export class UserQuota extends Entity {
   color$ = this.percent$.map(percent =>
     percent !== null
       ? percent > 80
-        ? cssVar('errorColor')
-        : cssVar('processingColor')
+        ? cssVarV2('toast/iconState/error')
+        : cssVarV2('toast/iconState/regular')
       : null
   );
 
@@ -79,7 +79,7 @@ export class UserQuota extends Entity {
           return { quota, used };
         }).pipe(
           smartRetry(),
-          mergeMap(data => {
+          tap(data => {
             if (data) {
               const { quota, used } = data;
               this.quota$.next(quota);
@@ -88,7 +88,6 @@ export class UserQuota extends Entity {
               this.quota$.next(null);
               this.used$.next(null);
             }
-            return EMPTY;
           }),
           catchErrorInto(this.error$),
           onStart(() => this.isRevalidating$.next(true)),

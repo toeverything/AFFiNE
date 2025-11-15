@@ -143,7 +143,7 @@ test('can insert attachment from slash menu', async ({ page }, testInfo) => {
   await waitLoading();
 
   expect(await getName()).toBe(FILE_NAME);
-  expect(await getSize()).toBe('45.8 kB');
+  expect(await getSize()).toBe('44.73KB');
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}.json`
@@ -167,7 +167,7 @@ test('should undo/redo works for attachment', async ({ page }, testInfo) => {
   );
 
   await undoByKeyboard(page);
-  await waitNextFrame(page);
+  await page.locator('affine-attachment').waitFor({ state: 'detached' });
 
   // The loading/error state should not be restored after undo
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
@@ -285,7 +285,7 @@ test(`support dragging attachment block directly`, async ({
   await waitLoading();
 
   expect(await getName()).toBe(FILE_NAME);
-  expect(await getSize()).toBe('45.8 kB');
+  expect(await getSize()).toBe('44.73KB');
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_1.json`
@@ -322,7 +322,7 @@ test(`support dragging attachment block directly`, async ({
   await page.mouse.move(rect.x + 40, rect.y + rect.height + 80, { steps: 20 });
   await page.mouse.up();
 
-  const rects = page.locator('affine-block-selection').locator('visible=true');
+  const rects = page.locator('.affine-attachment-container.focused');
   await expect(rects).toHaveCount(1);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_3.json`

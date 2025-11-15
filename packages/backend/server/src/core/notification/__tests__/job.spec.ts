@@ -8,6 +8,7 @@ import {
   type TestingModule,
 } from '../../../__tests__/utils';
 import {
+  DocMode,
   Models,
   User,
   Workspace,
@@ -73,7 +74,9 @@ test('should create invitation notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitation');
   await notificationJob.sendInvitation({
@@ -92,7 +95,9 @@ test('should create invitation accepted notification when user accepts the invit
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Accepted
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationAccepted');
   await notificationJob.sendInvitationAccepted({
@@ -121,7 +126,9 @@ test('should create invitation review request notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationReviewRequest');
   await notificationJob.sendInvitationReviewRequest({
@@ -151,7 +158,9 @@ test('should create invitation review approved notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationReviewApproved');
   await notificationJob.sendInvitationReviewApproved({
@@ -181,7 +190,9 @@ test('should create invitation review declined notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationReviewDeclined');
   await notificationJob.sendInvitationReviewDeclined({
@@ -193,4 +204,25 @@ test('should create invitation review declined notification', async t => {
   t.is(spy.firstCall.args[0].userId, member.id);
   t.is(spy.firstCall.args[0].body.workspaceId, workspace.id);
   t.is(spy.firstCall.args[0].body.createdByUserId, owner.id);
+});
+
+test('should create comment notification', async t => {
+  const { notificationJob, notificationService } = t.context;
+  const spy = Sinon.spy(notificationService, 'createComment');
+
+  await notificationJob.sendComment({
+    userId: member.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: owner.id,
+      doc: {
+        id: randomUUID(),
+        title: 'doc-title-1',
+        mode: DocMode.page,
+      },
+      commentId: randomUUID(),
+    },
+  });
+
+  t.is(spy.callCount, 1);
 });

@@ -4,7 +4,8 @@ import clsx from 'clsx';
 import { useCallback } from 'react';
 
 import { Button, IconButton } from '../../button';
-import type { NotificationCardProps } from '../types';
+import { FlexWrapper } from '../../layout/wrapper';
+import type { NotificationActionProps, NotificationCardProps } from '../types';
 import { getCardVars } from '../utils';
 import * as styles from './styles.css';
 
@@ -18,10 +19,9 @@ export const DesktopNotificationCard = ({
     icon = <InformationFillDuotoneIcon />,
     iconColor,
     thumb,
-    action,
+    actions,
     error,
     title,
-    footer,
     alignMessage = 'title',
     onDismiss,
     rootAttrs,
@@ -32,13 +32,6 @@ export const DesktopNotificationCard = ({
     errorI18nKey && errorI18nKey in t
       ? t[errorI18nKey](error?.data)
       : undefined;
-
-  const onActionClicked = useCallback(() => {
-    action?.onClick()?.catch(console.error);
-    if (action?.autoClose !== false) {
-      onDismiss?.();
-    }
-  }, [action, onDismiss]);
 
   return (
     <div
@@ -56,18 +49,6 @@ export const DesktopNotificationCard = ({
             </div>
           ) : null}
           <div className={styles.title}>{title || errorTitle}</div>
-
-          {action ? (
-            <div className={clsx(styles.headAlignWrapper, styles.action)}>
-              <Button
-                className={styles.actionButton}
-                onClick={onActionClicked}
-                {...action.buttonProps}
-              >
-                {action.label}
-              </Button>
-            </div>
-          ) : null}
           <div
             data-float={!!thumb}
             className={clsx(styles.headAlignWrapper, styles.closeButton)}
@@ -80,11 +61,49 @@ export const DesktopNotificationCard = ({
             </IconButton>
           </div>
         </header>
-        <main data-align={alignMessage} className={styles.main}>
-          {notification.message}
-        </main>
-        <footer>{footer}</footer>
+        {notification.message ? (
+          <main data-align={alignMessage} className={styles.main}>
+            {notification.message}
+          </main>
+        ) : null}
+        {actions?.length ? (
+          <footer>
+            <FlexWrapper marginTop={8} justifyContent="flex-end" gap="12px">
+              {actions?.map(action => (
+                <NotificationCardAction
+                  key={action.key}
+                  action={action}
+                  onDismiss={onDismiss}
+                />
+              ))}
+            </FlexWrapper>
+          </footer>
+        ) : null}
       </div>
     </div>
+  );
+};
+
+const NotificationCardAction = ({
+  action,
+  onDismiss,
+}: NotificationActionProps) => {
+  const onActionClicked = useCallback(() => {
+    action.onClick()?.catch(console.error);
+    if (action.autoClose !== false) {
+      onDismiss?.();
+    }
+  }, [action, onDismiss]);
+
+  return (
+    <Button
+      variant="plain"
+      data-testid={action.key}
+      className={styles.actionButton}
+      onClick={onActionClicked}
+      {...action.buttonProps}
+    >
+      {action.label}
+    </Button>
   );
 };

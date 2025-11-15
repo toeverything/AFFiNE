@@ -1,15 +1,12 @@
 import { Button, usePromptModal } from '@affine/component';
-import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { SaveIcon } from '@blocksuite/icons/rc';
-import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
-import { createEmptyCollection } from '../use-collection-manager';
 import * as styles from './save-as-collection-button.css';
 
 interface SaveAsCollectionButtonProps {
-  onConfirm: (collection: Collection) => void;
+  onConfirm: (collectionName: string) => void;
 }
 
 export const SaveAsCollectionButton = ({
@@ -35,7 +32,7 @@ export const SaveAsCollectionButton = ({
         variant: 'primary',
       },
       onConfirm(name) {
-        onConfirm(createEmptyCollection(nanoid(), { name }));
+        onConfirm(name);
       },
     });
   }, [openPromptModal, t, onConfirm]);

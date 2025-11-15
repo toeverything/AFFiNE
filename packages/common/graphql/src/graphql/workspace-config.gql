@@ -2,6 +2,7 @@ query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
     enableAi
     enableUrlPreview
+    enableDocEmbedding
     inviteLink {
       link
       expireTime

@@ -82,6 +82,10 @@ export type RequestOptions<Q extends GraphQLQuery> = QueryVariablesOption<Q> & {
    * @default 15000
    */
   timeout?: number;
+  /**
+   * Abort signal
+   */
+  signal?: AbortSignal;
 };
 
 export type QueryOptions<Q extends GraphQLQuery> = RequestOptions<Q> & {
@@ -207,6 +211,7 @@ export const gqlFetcherFactory = (
         headers,
         body: isFormData ? body : JSON.stringify(body),
         timeout: options.timeout,
+        signal: options.signal,
       })
     ).then(async res => {
       if (res.headers.get('content-type')?.startsWith('application/json')) {

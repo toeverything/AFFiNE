@@ -1,53 +1,64 @@
 import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onboarding/apis';
+import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
-  type ChatHistoryOrder,
+  type AddContextFileInput,
   ContextCategories,
+  type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
+  type QueryChatSessionsInput,
   type RequestOptions,
+  type UpdateChatSessionInput,
 } from '@affine/graphql';
 import { z } from 'zod';
 
 import { AIProvider } from './ai-provider';
-import type { CopilotClient } from './copilot-client';
+import { type CopilotClient, Endpoint } from './copilot-client';
 import type { PromptKey } from './prompt';
 import { textToText, toImage } from './request';
 import { setupTracker } from './tracker';
 
+function toAIUserInfo(account: AuthAccountInfo | null) {
+  if (!account) return null;
+  return {
+    avatarUrl: account.avatar ?? '',
+    email: account.email ?? '',
+    id: account.id,
+    name: account.label,
+  };
+}
+
 const filterStyleToPromptName = new Map<string, PromptKey>(
   Object.entries({
-    'Clay style': 'workflow:image-clay',
-    'Pixel style': 'workflow:image-pixel',
-    'Sketch style': 'workflow:image-sketch',
-    'Anime style': 'workflow:image-anime',
+    'Clay style': 'Convert to Clay style',
+    'Pixel style': 'Convert to Pixel style',
+    'Sketch style': 'Convert to Sketch style',
+    'Anime style': 'Convert to Anime style',
   })
 );
 
 const processTypeToPromptName = new Map<string, PromptKey>(
   Object.entries({
-    Clearer: 'debug:action:fal-upscaler',
-    'Remove background': 'debug:action:fal-remove-bg',
-    'Convert to sticker': 'debug:action:fal-face-to-sticker',
+    Clearer: 'Upscale image',
+    'Remove background': 'Remove background',
+    'Convert to sticker': 'Convert to sticker',
   })
 );
 
 export function setupAIProvider(
   client: CopilotClient,
-  globalDialogService: GlobalDialogService
+  globalDialogService: GlobalDialogService,
+  authService: AuthService
 ) {
   async function createSession({
+    promptName,
     workspaceId,
     docId,
-    promptName,
     sessionId,
     retry,
-  }: {
-    workspaceId: string;
-    docId: string;
-    promptName: PromptKey;
-    sessionId?: string;
-    retry?: boolean;
-  }) {
+    pinned,
+    reuseLatestChat,
+  }: BlockSuitePresets.AICreateSessionOptions) {
     if (sessionId) return sessionId;
     if (retry) return AIProvider.LAST_ACTION_SESSIONID;
 
@@ -55,33 +66,45 @@ export function setupAIProvider(
       workspaceId,
       docId,
       promptName,
+      pinned,
+      reuseLatestChat,
     });
   }
 
+  AIProvider.provide('userInfo', () => {
+    return toAIUserInfo(authService.session.account$.value);
+  });
+
+  const accountSubscription = authService.session.account$.subscribe(
+    account => {
+      AIProvider.slots.userInfo.next(toAIUserInfo(account));
+    }
+  );
+
   //#region actions
   AIProvider.provide('chat', async options => {
-    const { input, contexts, attachments, networkSearch, retry } = options;
-    const disableSearch =
-      !!contexts?.files.length ||
-      !!contexts?.docs.length ||
-      !!attachments?.length;
-    const promptName =
-      networkSearch && !disableSearch
-        ? 'Search With AFFiNE AI'
-        : 'Chat With AFFiNE AI';
+    const { input, contexts, webSearch } = options;
+
     const sessionId = await createSession({
-      promptName,
+      promptName: 'Chat With AFFiNE AI',
       ...options,
     });
-    if (!retry) {
-      await AIProvider.session?.updateSession(sessionId, promptName);
-    }
     return textToText({
       ...options,
+      modelId: options.modelId,
       client,
       sessionId,
       content: input,
-      params: contexts,
+      timeout: 5 * 60 * 1000, // 5 minutes
+      params: {
+        docs: contexts?.docs,
+        files: contexts?.files,
+        selectedSnapshot: contexts?.selectedSnapshot,
+        selectedMarkdown: contexts?.selectedMarkdown,
+        html: contexts?.html,
+        searchMode: webSearch ? 'MUST' : 'AUTO',
+      },
+      endpoint: Endpoint.StreamObject,
     });
   });
 
@@ -337,7 +360,7 @@ export function setupAIProvider(
       content: options.input,
       // 3 minutes
       timeout: 180000,
-      workflow: true,
+      endpoint: Endpoint.Workflow,
     });
   });
 
@@ -463,28 +486,26 @@ Could you make a new website based on these notes and send back just the html fi
       content: options.input,
       // 3 minutes
       timeout: 180000,
-      workflow: true,
+      endpoint: Endpoint.Workflow,
       postfix,
     });
   });
 
   AIProvider.provide('createImage', async options => {
-    // test to image
-    let promptName: PromptKey = 'debug:action:dalle3';
-    // image to image
-    if (options.attachments?.length) {
-      promptName = 'debug:action:fal-sd15';
-    }
-
     const sessionId = await createSession({
-      promptName,
+      promptName: 'Generate image',
       ...options,
     });
     return toImage({
       ...options,
       client,
       sessionId,
-      content: options.input,
+      content:
+        !options.input && options.attachments
+          ? 'Make the image more detailed.'
+          : options.input,
+      // 5 minutes
+      timeout: 300000,
     });
   });
 
@@ -500,13 +521,14 @@ Could you make a new website based on these notes and send back just the html fi
       promptName,
       ...options,
     });
+    const isWorkflow = !!promptName?.startsWith('workflow:');
     return toImage({
       ...options,
       client,
       sessionId,
       content: options.input,
       timeout: 180000,
-      workflow: !!promptName?.startsWith('workflow:'),
+      endpoint: isWorkflow ? Endpoint.Workflow : Endpoint.Images,
     });
   });
 
@@ -560,18 +582,25 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('session', {
     createSession,
+    getSession: async (workspaceId: string, sessionId: string) => {
+      return client.getSession(workspaceId, sessionId);
+    },
     getSessions: async (
       workspaceId: string,
       docId?: string,
-      options?: { action?: boolean }
+      options?: QueryChatSessionsInput
     ) => {
-      return client.getSessions(workspaceId, docId, options);
+      return client.getSessions(workspaceId, {}, docId, options);
     },
-    updateSession: async (sessionId: string, promptName: string) => {
-      return client.updateSession({
-        sessionId,
-        promptName,
-      });
+    getRecentSessions: async (
+      workspaceId: string,
+      limit?: number,
+      offset?: number
+    ) => {
+      return client.getRecentSessions(workspaceId, limit, offset);
+    },
+    updateSession: async (options: UpdateChatSessionInput) => {
+      return client.updateSession(options);
     },
   });
 
@@ -588,10 +617,7 @@ Could you make a new website based on these notes and send back just the html fi
     removeContextDoc: async (options: { contextId: string; docId: string }) => {
       return client.removeContextDoc(options);
     },
-    addContextFile: async (
-      file: File,
-      options: { contextId: string; blobId: string }
-    ) => {
+    addContextFile: async (file: File, options: AddContextFileInput) => {
       return client.addContextFile(file, options);
     },
     removeContextFile: async (options: {
@@ -680,42 +706,95 @@ Could you make a new website based on these notes and send back just the html fi
         await new Promise(resolve => setTimeout(resolve, interval));
       }
     },
-    matchContext: async (
-      contextId: string,
-      content: string,
-      limit?: number
+    pollEmbeddingStatus: async (
+      workspaceId: string,
+      onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
+      abortSignal: AbortSignal
     ) => {
-      return client.matchContext(contextId, content, limit);
+      const poll = async () => {
+        const result = await client.getEmbeddingStatus(workspaceId);
+        onPoll(result);
+      };
+
+      const INTERVAL = 10 * 1000;
+
+      while (!abortSignal.aborted) {
+        await poll();
+        await new Promise(resolve => setTimeout(resolve, INTERVAL));
+      }
+    },
+    matchContext: async (
+      content: string,
+      contextId?: string,
+      workspaceId?: string,
+      limit?: number,
+      scopedThreshold?: number,
+      threshold?: number
+    ) => {
+      return client.matchContext(
+        content,
+        contextId,
+        workspaceId,
+        limit,
+        scopedThreshold,
+        threshold
+      );
+    },
+    applyDocUpdates: async (
+      workspaceId: string,
+      docId: string,
+      op: string,
+      updates: string
+    ) => {
+      return client.applyDocUpdates(workspaceId, docId, op, updates);
+    },
+    addContextBlob: async (options: { blobId: string; contextId: string }) => {
+      return client.addContextBlob({
+        contextId: options.contextId,
+        blobId: options.blobId,
+      });
+    },
+    removeContextBlob: async (options: {
+      blobId: string;
+      contextId: string;
+    }) => {
+      return client.removeContextBlob({
+        contextId: options.contextId,
+        blobId: options.blobId,
+      });
     },
   });
 
   AIProvider.provide('histories', {
     actions: async (
       workspaceId: string,
-      docId?: string
+      docId: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
-        (await client.getHistories(workspaceId, docId, {
+        (await client.getHistories(workspaceId, {}, docId, {
           action: true,
           withPrompt: true,
+          withMessages: true,
         })) ?? []
       );
     },
     chats: async (
       workspaceId: string,
-      docId?: string,
-      options?: {
-        sessionId?: string;
-        messageOrder?: ChatHistoryOrder;
-      }
+      sessionId: string,
+      docId?: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
-      return (await client.getHistories(workspaceId, docId, options)) ?? [];
+      return (
+        (await client.getHistories(workspaceId, {}, docId, {
+          sessionId,
+          withMessages: true,
+        })) ?? []
+      );
     },
     cleanup: async (
       workspaceId: string,
-      docId: string,
+      docId: string | undefined,
       sessionIds: string[]
     ) => {
       await client.cleanupSessions({ workspaceId, docId, sessionIds });
@@ -727,8 +806,8 @@ Could you make a new website based on these notes and send back just the html fi
         typeof getCopilotHistoriesQuery
       >['variables']['options']
     ): Promise<BlockSuitePresets.AIHistoryIds[]> => {
-      // @ts-expect-error - 'role' is missing type in server impl
-      return await client.getHistoryIds(workspaceId, docId, options);
+      // @ts-expect-error - 'action' is missing in server impl
+      return await client.getHistoryIds(workspaceId, {}, docId, options);
     },
   });
 
@@ -774,5 +853,6 @@ Could you make a new website based on these notes and send back just the html fi
 
   return () => {
     disposeRequestLoginHandler.unsubscribe();
+    accountSubscription.unsubscribe();
   };
 }

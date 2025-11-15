@@ -15,6 +15,7 @@ import {
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
 } from '@blocksuite/affine-shared/services';
+import { getBlockProps } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
 import {
   CaptionIcon,
@@ -23,6 +24,7 @@ import {
   DownloadIcon,
   DuplicateIcon,
   EditIcon,
+  ReplaceIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
@@ -35,7 +37,6 @@ import { keyed } from 'lit/directives/keyed.js';
 import { AttachmentBlockComponent } from '../attachment-block';
 import { RenameModal } from '../components/rename-model';
 import { AttachmentEmbedProvider } from '../embed';
-import { cloneAttachmentProperties } from '../utils';
 
 const trackBaseProps = {
   category: 'attachment',
@@ -69,17 +70,27 @@ export const attachmentViewDropdownMenu = {
     {
       id: 'embed',
       label: 'Embed view',
+      disabled: ctx => {
+        const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+        return block ? !block.embedded() : true;
+      },
       run(ctx) {
         const model = ctx.getCurrentModelByType(AttachmentBlockModel);
         if (!model) return;
 
-        if (!ctx.hasSelectedSurfaceModels) {
+        const provider = ctx.std.get(AttachmentEmbedProvider);
+
+        // TODO(@fundon): should auto focus image block.
+        if (
+          provider.shouldBeConverted(model) &&
+          !ctx.hasSelectedSurfaceModels
+        ) {
           // Clears
           ctx.reset();
           ctx.select('note');
         }
 
-        ctx.std.get(AttachmentEmbedProvider).convertTo(model);
+        provider.convertTo(model);
 
         ctx.track('SelectedView', {
           ...trackBaseProps,
@@ -90,18 +101,32 @@ export const attachmentViewDropdownMenu = {
     },
   ],
   content(ctx) {
-    const model = ctx.getCurrentModelByType(AttachmentBlockModel);
-    if (!model) return null;
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return null;
 
+    const model = block.model;
     const embedProvider = ctx.std.get(AttachmentEmbedProvider);
-    const actions = this.actions.map(action => ({ ...action }));
-    const viewType$ = computed(() => {
-      const [cardAction, embedAction] = actions;
+    const actions = computed(() => {
+      const [cardAction, embedAction] = this.actions.map(action => ({
+        ...action,
+      }));
+
+      const ok = block.resourceController.resolvedState$.value.state === 'none';
+      const sourceId = Boolean(model.props.sourceId$.value);
       const embed = model.props.embed$.value ?? false;
+      // 1. Check whether `sourceId` exists.
+      // 2. Check if `embedded` is allowed.
+      // 3. Check `blobState$`
+      const allowed = ok && sourceId && embedProvider.embedded(model) && !embed;
 
       cardAction.disabled = !embed;
-      embedAction.disabled = embed && embedProvider.embedded(model);
+      embedAction.disabled = !allowed;
 
+      return [cardAction, embedAction];
+    });
+    const viewType$ = computed(() => {
+      const [cardAction, embedAction] = actions.value;
+      const embed = model.props.embed$.value ?? false;
       return embed ? embedAction.label : cardAction.label;
     });
     const onToggle = (e: CustomEvent<boolean>) => {
@@ -115,30 +140,51 @@ export const attachmentViewDropdownMenu = {
       });
     };
 
-    return html`${keyed(
-      model,
-      html`<affine-view-dropdown-menu
-        @toggle=${onToggle}
-        .actions=${actions}
-        .context=${ctx}
-        .viewType$=${viewType$}
-      ></affine-view-dropdown-menu>`
-    )}`;
+    return html`<affine-view-dropdown-menu
+      @toggle=${onToggle}
+      .actions=${actions.value}
+      .context=${ctx}
+      .viewType$=${viewType$}
+    ></affine-view-dropdown-menu>`;
   },
 } as const satisfies ToolbarActionGroup<ToolbarAction>;
 
+const replaceAction = {
+  id: 'c.replace',
+  tooltip: 'Replace attachment',
+  icon: ReplaceIcon(),
+  disabled(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return true;
+
+    const { downloading = false, uploading = false } =
+      block.resourceController.state$.value;
+    return downloading || uploading;
+  },
+  run(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    block?.replace().catch(console.error);
+  },
+} as const satisfies ToolbarAction;
+
 const downloadAction = {
-  id: 'c.download',
+  id: 'd.download',
   tooltip: 'Download',
   icon: DownloadIcon(),
   run(ctx) {
     const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
     block?.download();
   },
+  when(ctx) {
+    const model = ctx.getCurrentModelByType(AttachmentBlockModel);
+    if (!model) return false;
+    // Current citation attachment block does not support download
+    return model.props.style !== 'citation' && !model.props.footnoteIdentifier;
+  },
 } as const satisfies ToolbarAction;
 
 const captionAction = {
-  id: 'd.caption',
+  id: 'e.caption',
   tooltip: 'Caption',
   icon: CaptionIcon(),
   run(ctx) {
@@ -156,24 +202,24 @@ const builtinToolbarConfig = {
   actions: [
     {
       id: 'a.rename',
-      content(cx) {
-        const block = cx.getCurrentBlockByType(AttachmentBlockComponent);
+      content(ctx) {
+        const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
         if (!block) return null;
 
         const abortController = new AbortController();
-        abortController.signal.onabort = () => cx.show();
+        abortController.signal.onabort = () => ctx.show();
 
         return html`
           <editor-icon-button
             aria-label="Rename"
             .tooltip="${'Rename'}"
             @click=${() => {
-              cx.hide();
+              ctx.hide();
 
               createLitPortal({
                 template: RenameModal({
                   model: block.model,
-                  editorHost: cx.host,
+                  editorHost: ctx.host,
                   abortController,
                 }),
                 computePosition: {
@@ -191,6 +237,7 @@ const builtinToolbarConfig = {
       },
     },
     attachmentViewDropdownMenu,
+    replaceAction,
     downloadAction,
     captionAction,
     {
@@ -219,7 +266,7 @@ const builtinToolbarConfig = {
             ctx.store.addSiblingBlocks(model, [
               {
                 flavour: model.flavour,
-                ...cloneAttachmentProperties(model),
+                ...getBlockProps(model),
               },
             ]);
           },
@@ -233,7 +280,13 @@ const builtinToolbarConfig = {
       icon: ResetIcon(),
       run(ctx) {
         const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
-        block?.refreshData();
+        block?.reload();
+
+        ctx.track('AttachmentReloadedEvent', {
+          ...trackBaseProps,
+          control: 'reload',
+          type: block?.model.props.name.split('.').pop() ?? '',
+        });
       },
     },
     {
@@ -319,15 +372,18 @@ const builtinSurfaceToolbarConfig = {
       },
     } satisfies ToolbarActionGroup<ToolbarAction>,
     {
+      ...replaceAction,
+      id: 'd.replace',
+    },
+    {
       ...downloadAction,
-      id: 'd.download',
+      id: 'e.download',
     },
     {
       ...captionAction,
-      id: 'e.caption',
+      id: 'f.caption',
     },
   ],
-
   when: ctx => ctx.getSurfaceModelsByType(AttachmentBlockModel).length === 1,
 } as const satisfies ToolbarModuleConfig;
 

@@ -1,4 +1,9 @@
-import type { BlockSelection, Command, TextSelection } from '@blocksuite/std';
+import type {
+  BlockSelection,
+  Command,
+  SurfaceSelection,
+  TextSelection,
+} from '@blocksuite/std';
 import { BlockComponent } from '@blocksuite/std';
 import type { RoleType } from '@blocksuite/store';
 
@@ -9,11 +14,13 @@ export const getSelectedBlocksCommand: Command<
     currentTextSelection?: TextSelection;
     currentBlockSelections?: BlockSelection[];
     currentImageSelections?: ImageSelection[];
+    currentSurfaceSelection?: SurfaceSelection;
     textSelection?: TextSelection;
     blockSelections?: BlockSelection[];
     imageSelections?: ImageSelection[];
+    surfaceSelection?: SurfaceSelection;
     filter?: (el: BlockComponent) => boolean;
-    types?: Array<'image' | 'text' | 'block'>;
+    types?: Array<'image' | 'text' | 'block' | 'surface'>;
     roles?: RoleType[];
     mode?: 'all' | 'flat' | 'highest';
   },
@@ -22,7 +29,7 @@ export const getSelectedBlocksCommand: Command<
   }
 > = (ctx, next) => {
   const {
-    types = ['block', 'text', 'image'],
+    types = ['block', 'text', 'image', 'surface'],
     roles = ['content'],
     mode = 'flat',
   } = ctx;
@@ -106,6 +113,15 @@ export const getSelectedBlocksCommand: Command<
         return el;
       })
       .filter((el): el is BlockComponent => Boolean(el));
+    dirtyResult.push(...selectedBlocks);
+  }
+
+  const surfaceSelection = ctx.surfaceSelection ?? ctx.currentSurfaceSelection;
+  if (types.includes('surface') && surfaceSelection) {
+    const viewStore = ctx.std.view;
+    const selectedBlocks = surfaceSelection.elements
+      .map(id => viewStore.getBlock(id))
+      .filter(block => !!block);
     dirtyResult.push(...selectedBlocks);
   }
 

@@ -7,7 +7,7 @@ import {
   onStart,
   Service,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap, switchMap } from 'rxjs';
+import { exhaustMap, switchMap, tap } from 'rxjs';
 
 import type { ValidatorProvider } from '../provider/validator';
 import type { FetchService } from './fetch';
@@ -58,11 +58,10 @@ export class CaptchaService extends Service {
         }
         return { challenge: data.challenge, token: undefined };
       }).pipe(
-        mergeMap(({ challenge, token }) => {
+        tap(({ challenge, token }) => {
           this.verifyToken$.next(token);
           this.challenge$.next(challenge);
           this.resetAfter5min();
-          return EMPTY;
         }),
         catchErrorInto(this.error$),
         onStart(() => {
@@ -83,11 +82,10 @@ export class CaptchaService extends Service {
         });
         return true;
       }).pipe(
-        mergeMap(_ => {
+        tap(_ => {
           this.challenge$.next(undefined);
           this.verifyToken$.next(undefined);
           this.isLoading$.next(false);
-          return EMPTY;
         })
       );
     })

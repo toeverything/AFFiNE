@@ -8,7 +8,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { Notification, NotificationStore } from '../stores/notification';
 import type { NotificationCountService } from './count';
@@ -43,10 +43,10 @@ export class NotificationListService extends Service {
           signal
         )
       ).pipe(
-        mergeMap(result => {
+        tap(result => {
           if (!result) {
             // If the user is not logged in, we just ignore the result.
-            return EMPTY;
+            return;
           }
           const { edges, pageInfo, totalCount } = result;
           this.notifications$.next([
@@ -59,8 +59,6 @@ export class NotificationListService extends Service {
 
           this.hasMore$.next(pageInfo.hasNextPage);
           this.nextCursor$.next(pageInfo.endCursor ?? undefined);
-
-          return EMPTY;
         }),
         smartRetry(),
         catchErrorInto(this.error$),
@@ -89,5 +87,24 @@ export class NotificationListService extends Service {
     this.notificationCount.setCount(
       Math.max(this.notificationCount.count$.value - 1, 0)
     );
+  }
+
+  async readAllNotifications() {
+    // optimistic clear all notifications
+    this.reset();
+    this.notificationCount.setCount(0);
+    // avoid loading more notifications after clear all notifications
+    this.hasMore$.setValue(false);
+
+    try {
+      await this.store.readAllNotifications();
+    } catch (err) {
+      // rollback the optimistic clear all notifications
+      this.reset();
+      this.loadMore();
+
+      // rethrow the error to the caller, to notify the user
+      throw err;
+    }
   }
 }

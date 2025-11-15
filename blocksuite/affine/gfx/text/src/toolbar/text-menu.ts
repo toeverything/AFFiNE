@@ -2,10 +2,11 @@ import { DefaultTheme } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { computed } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
+
+import { TextTool } from '../tool';
 
 export class EdgelessTextMenu extends EdgelessToolbarToolMixin(LitElement) {
   static override styles = css`
@@ -20,10 +21,10 @@ export class EdgelessTextMenu extends EdgelessToolbarToolMixin(LitElement) {
     return this.edgeless.std.get(ThemeProvider).theme$.value;
   });
 
-  override type: GfxToolsFullOptionValue['type'] = 'text';
+  override type = TextTool;
 
   override render() {
-    if (this.edgelessTool.type !== 'text') return nothing;
+    if (this.edgelessTool.toolType !== TextTool) return nothing;
 
     return html`
       <edgeless-slide-menu>

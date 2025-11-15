@@ -6,13 +6,8 @@ import {
   type ShapeElementModel,
 } from '@blocksuite/affine/model';
 import { matchModels } from '@blocksuite/affine/shared/utils';
-import type { BlockComponent, EditorHost } from '@blocksuite/affine/std';
+import type { BlockComponent } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
-
-import {
-  AFFINE_EDGELESS_COPILOT_WIDGET,
-  type EdgelessCopilotWidget,
-} from '../widgets/edgeless-copilot';
 
 export function mindMapToMarkdown(mindmap: MindmapElementModel) {
   let markdownStr = '';
@@ -45,17 +40,7 @@ export function isMindmapChild(ele: GfxModel) {
   return ele?.group instanceof MindmapElementModel && !isMindMapRoot(ele);
 }
 
-export function getEdgelessCopilotWidget(
-  host: EditorHost
-): EdgelessCopilotWidget {
-  const rootBlockId = host.doc.root?.id as string;
-  const copilotWidget = host.view.getWidget(
-    AFFINE_EDGELESS_COPILOT_WIDGET,
-    rootBlockId
-  ) as EdgelessCopilotWidget;
-
-  return copilotWidget;
-}
+export { getEdgelessCopilotWidget } from './get-edgeless-copilot-widget';
 
 export function findNoteBlockModel(blockElement: BlockComponent) {
   let curBlock = blockElement;

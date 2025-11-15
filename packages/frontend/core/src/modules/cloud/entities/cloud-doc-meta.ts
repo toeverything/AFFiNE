@@ -10,7 +10,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
 import type { DocService } from '../../doc';
 import type { GlobalCache } from '../../storage';
@@ -47,9 +47,8 @@ export class CloudDocMeta extends Entity {
         this.store.fetchCloudDocMeta(this.workspaceId, this.docId)
       ).pipe(
         smartRetry(),
-        mergeMap(meta => {
+        tap(meta => {
           this.cache.set<CloudDocMetaType>(this.cacheKey, meta);
-          return EMPTY;
         }),
         catchErrorInto(this.error$),
         onStart(() => this.isRevalidating$.next(true)),

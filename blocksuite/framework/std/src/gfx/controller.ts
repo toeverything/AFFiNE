@@ -26,10 +26,7 @@ import { LayerManager } from './layer.js';
 import type { PointTestOptions } from './model/base.js';
 import { GfxBlockElementModel } from './model/gfx-block-model.js';
 import type { GfxModel } from './model/model.js';
-import {
-  GfxGroupLikeElementModel,
-  GfxPrimitiveElementModel,
-} from './model/surface/element-model.js';
+import { GfxPrimitiveElementModel } from './model/surface/element-model.js';
 import type { SurfaceBlockModel } from './model/surface/surface-model.js';
 import { FIT_TO_SCREEN_PADDING, Viewport, ZOOM_INITIAL } from './viewport.js';
 
@@ -179,55 +176,6 @@ export class GfxController extends LifeCycleWatcher {
     }
 
     return last(picked) ?? null;
-  }
-
-  /**
-   * Get the top element in the given point.
-   * If the element is in a group, the group will be returned.
-   * If the group is currently selected, the child element will be returned.
-   * @param x
-   * @param y
-   * @param options
-   * @returns
-   */
-  getElementInGroup(
-    x: number,
-    y: number,
-    options?: PointTestOptions
-  ): GfxModel | null {
-    const selectionManager = this.selection;
-    const results = this.getElementByPoint(x, y, {
-      ...options,
-      all: true,
-    });
-
-    let picked = last(results) ?? null;
-    const { activeGroup } = selectionManager;
-    const first = picked;
-
-    if (activeGroup && picked && activeGroup.hasDescendant(picked)) {
-      let index = results.length - 1;
-
-      while (
-        picked === activeGroup ||
-        (picked instanceof GfxGroupLikeElementModel &&
-          picked.hasDescendant(activeGroup))
-      ) {
-        picked = results[--index];
-      }
-    } else if (picked) {
-      let index = results.length - 1;
-
-      while (picked.group instanceof GfxGroupLikeElementModel) {
-        if (--index < 0) {
-          picked = null;
-          break;
-        }
-        picked = results[index];
-      }
-    }
-
-    return (picked ?? first) as GfxModel | null;
   }
 
   /**

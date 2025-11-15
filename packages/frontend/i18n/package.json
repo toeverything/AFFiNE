@@ -1,6 +1,6 @@
 {
   "name": "@affine/i18n",
-  "version": "0.21.0",
+  "version": "0.25.2",
   "description": "",
   "type": "module",
   "private": true,
@@ -30,6 +30,6 @@
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
     "glob": "^11.0.0",
-    "vitest": "3.1.1"
+    "vitest": "3.1.3"
   }
 }

@@ -1,5 +1,6 @@
 import {
   CanvasElementType,
+  DefaultTool,
   EdgelessCRUDIdentifier,
 } from '@blocksuite/affine-block-surface';
 import {
@@ -109,8 +110,7 @@ export class EdgelessShapeToolElement extends WithDisposable(LitElement) {
       return;
     }
     this._dragging = false;
-    // @ts-expect-error FIXME: resolve after gfx tool refactor
-    this.gfx.tool.setTool('default');
+    this.gfx.tool.setTool(DefaultTool);
     if (this._isOutside) {
       const rect = this._shapeElement.getBoundingClientRect();
       this._backupShapeElement.style.setProperty('transition', 'none');

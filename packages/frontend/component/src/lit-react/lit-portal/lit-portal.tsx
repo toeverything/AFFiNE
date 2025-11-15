@@ -1,4 +1,4 @@
-import { html, LitElement } from 'lit';
+import { html, LitElement, type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
@@ -74,7 +74,7 @@ declare global {
   }
 }
 
-export type ElementOrFactory = React.ReactElement | (() => React.ReactElement);
+export type ElementOrFactory = React.ReactNode | (() => React.ReactNode);
 
 type LitPortal = {
   id: string;
@@ -82,74 +82,73 @@ type LitPortal = {
   litElement: LitReactPortal;
 };
 
+export type ReactToLit = (
+  elementOrFactory: ElementOrFactory,
+  rerendering?: boolean
+) => TemplateResult;
+
 // returns a factory function that renders a given element to a lit template
 export const useLitPortalFactory = () => {
   const [portals, setPortals] = useState<LitPortal[]>([]);
 
-  return [
-    useCallback(
-      (
-        elementOrFactory: React.ReactElement | (() => React.ReactElement),
-        rerendering = true
-      ) => {
-        const element =
-          typeof elementOrFactory === 'function'
-            ? elementOrFactory()
-            : elementOrFactory;
-        return createLitPortalAnchor(event => {
-          setPortals(portals => {
-            const { name, target } = event;
-            const id = target.portalId;
-            let newPortals = portals;
-            const updatePortals = () => {
-              let oldPortalIndex = portals.findIndex(
-                p => p.litElement === target
-              );
-              oldPortalIndex =
-                oldPortalIndex === -1 ? portals.length : oldPortalIndex;
-              newPortals = portals.toSpliced(oldPortalIndex, 1, {
-                id,
-                portal: ReactDOM.createPortal(element, target),
-                litElement: target,
-              });
-            };
-            switch (name) {
-              case 'connectedCallback':
-                updatePortals();
+  const reactToLit: ReactToLit = useCallback(
+    (elementOrFactory, rerendering) => {
+      const element =
+        typeof elementOrFactory === 'function'
+          ? elementOrFactory()
+          : elementOrFactory;
+      return createLitPortalAnchor(event => {
+        setPortals(portals => {
+          const { name, target } = event;
+          const id = target.portalId;
+          let newPortals = portals;
+          const updatePortals = () => {
+            let oldPortalIndex = portals.findIndex(
+              p => p.litElement === target
+            );
+            oldPortalIndex =
+              oldPortalIndex === -1 ? portals.length : oldPortalIndex;
+            newPortals = portals.toSpliced(oldPortalIndex, 1, {
+              id,
+              portal: ReactDOM.createPortal(element, target),
+              litElement: target,
+            });
+          };
+          switch (name) {
+            case 'connectedCallback':
+              updatePortals();
+              break;
+            case 'disconnectedCallback':
+              newPortals = portals.filter(p => p.litElement.isConnected);
+              break;
+            case 'willUpdate':
+              if (!target.isConnected || !rerendering) {
                 break;
-              case 'disconnectedCallback':
-                newPortals = portals.filter(p => p.litElement.isConnected);
-                break;
-              case 'willUpdate':
-                if (!target.isConnected || !rerendering) {
-                  break;
-                }
-                updatePortals();
-                break;
-            }
-            return newPortals;
-          });
+              }
+              updatePortals();
+              break;
+          }
+          return newPortals;
         });
-      },
-      [setPortals]
-    ),
-    portals,
-  ] as const;
+      });
+    },
+    []
+  );
+
+  return [reactToLit, portals] as const;
 };
 
 // render a react element to a lit template
-export const useLitPortal = (
-  elementOrFactory: React.ReactElement | (() => React.ReactElement)
-) => {
+export const useLitPortal = (elementOrFactory: ElementOrFactory) => {
   const [anchor, setAnchor] = useState<HTMLElement>();
   const template = useMemo(
     () =>
       createLitPortalAnchor(event => {
+        let anchor: HTMLElement | undefined;
         if (event.name !== 'disconnectedCallback') {
-          setAnchor(event.target as HTMLElement);
-        } else {
-          setAnchor(undefined);
+          anchor = event.target as HTMLElement;
         }
+        setAnchor(anchor);
       }),
     []
   );

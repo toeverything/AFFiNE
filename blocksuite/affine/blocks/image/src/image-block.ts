@@ -1,28 +1,53 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { whenHover } from '@blocksuite/affine-components/hover';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { Peekable } from '@blocksuite/affine-components/peek';
+import { ResourceController } from '@blocksuite/affine-components/resource';
 import type { ImageBlockModel } from '@blocksuite/affine-model';
-import { ToolbarRegistryIdentifier } from '@blocksuite/affine-shared/services';
+import { ImageSelection } from '@blocksuite/affine-shared/selection';
+import {
+  BlockElementCommentManager,
+  ToolbarRegistryIdentifier,
+} from '@blocksuite/affine-shared/services';
+import { formatSize } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
+import { BrokenImageIcon, ImageIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
+import { computed } from '@preact/signals-core';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { html } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 
-import type { ImageBlockFallbackCard } from './components/image-block-fallback.js';
-import type { ImageBlockPageComponent } from './components/page-image-block.js';
+import type { ImageBlockPageComponent } from './components/page-image-block';
 import {
   copyImageBlob,
   downloadImageBlob,
-  fetchImageBlob,
+  refreshData,
   turnImageIntoCardView,
-} from './utils.js';
+} from './utils';
 
 @Peekable({
   enableOn: () => !IS_MOBILE,
 })
 export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel> {
+  resizeable$ = computed(() =>
+    this.std.selection.value.some(
+      selection =>
+        selection.is(ImageSelection) && selection.blockId === this.blockId
+    )
+  );
+
+  resourceController = new ResourceController(
+    computed(() => this.model.props.sourceId$.value),
+    'Image'
+  );
+
+  get blobUrl() {
+    return this.resourceController.blobUrl$.value;
+  }
+
   convertToCardView = () => {
     turnImageIntoCardView(this).catch(console.error);
   };
@@ -36,12 +61,19 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
   };
 
   refreshData = () => {
-    this.retryCount = 0;
-    fetchImageBlob(this).catch(console.error);
+    refreshData(this).catch(console.error);
   };
 
   get resizableImg() {
     return this.pageImage?.resizeImg;
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private _handleClick(event: MouseEvent) {
@@ -82,22 +114,18 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
   override connectedCallback() {
     super.connectedCallback();
 
-    this.refreshData();
     this.contentEditable = 'false';
-    this._disposables.add(
-      this.model.propsUpdated.subscribe(({ key }) => {
-        if (key === 'sourceId') {
-          this.refreshData();
-        }
+
+    this.resourceController.setEngine(this.std.store.blobSync);
+
+    this.disposables.add(this.resourceController.subscribe());
+    this.disposables.add(this.resourceController);
+
+    this.disposables.add(
+      this.model.props.sourceId$.subscribe(() => {
+        this.refreshData();
       })
     );
-  }
-
-  override disconnectedCallback() {
-    if (this.blobUrl) {
-      URL.revokeObjectURL(this.blobUrl);
-    }
-    super.disconnectedCallback();
   }
 
   override firstUpdated() {
@@ -107,22 +135,48 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
   }
 
   override renderBlock() {
+    const blobUrl = this.blobUrl;
+    const { size = 0 } = this.model.props;
+
     const containerStyleMap = styleMap({
       position: 'relative',
       width: '100%',
     });
 
+    const alignItemsStyleMap = styleMap({
+      alignItems:
+        this.model.props.textAlign$.value === 'left'
+          ? 'flex-start'
+          : this.model.props.textAlign$.value === 'right'
+            ? 'flex-end'
+            : undefined,
+    });
+
+    const resovledState = this.resourceController.resolveStateWith({
+      loadingIcon: LoadingIcon({
+        strokeColor: cssVarV2('button/pureWhiteText'),
+        ringColor: cssVarV2('loading/imageLoadingLayer', '#ffffff8f'),
+      }),
+      errorIcon: BrokenImageIcon(),
+      icon: ImageIcon(),
+      title: 'Image',
+      description: formatSize(size),
+    });
+
     return html`
       <div class="affine-image-container" style=${containerStyleMap}>
         ${when(
-          this.loading || this.error,
+          blobUrl,
+          () =>
+            html`<affine-page-image
+              .block=${this}
+              .state=${resovledState}
+              style="${alignItemsStyleMap}"
+            ></affine-page-image>`,
           () =>
             html`<affine-image-fallback-card
-              .error=${this.error}
-              .loading=${this.loading}
-              .mode=${'page'}
-            ></affine-image-fallback-card>`,
-          () => html`<affine-page-image .block=${this}></affine-page-image>`
+              .state=${resovledState}
+            ></affine-image-fallback-card>`
         )}
       </div>
 
@@ -130,41 +184,13 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
     `;
   }
 
-  override updated() {
-    this.fallbackCard?.requestUpdate();
-  }
-
-  @property({ attribute: false })
-  accessor blob: Blob | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor blobUrl: string | undefined = undefined;
-
   override accessor blockContainerStyles = { margin: '18px 0' };
-
-  @property({ attribute: false })
-  accessor downloading = false;
-
-  @property({ attribute: false })
-  accessor error = false;
-
-  @query('affine-image-fallback-card')
-  accessor fallbackCard: ImageBlockFallbackCard | null = null;
-
-  @state()
-  accessor lastSourceId!: string;
-
-  @property({ attribute: false })
-  accessor loading = false;
 
   @query('affine-page-image')
   private accessor pageImage: ImageBlockPageComponent | null = null;
 
   @query('.affine-image-container')
   accessor hoverableContainer!: HTMLDivElement;
-
-  @property({ attribute: false })
-  accessor retryCount = 0;
 
   override accessor useCaptionEditor = true;
 

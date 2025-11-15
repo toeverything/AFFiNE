@@ -8,7 +8,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
-import { catchError, EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { catchError, EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { WorkspaceMetadata } from '../metadata';
 import type { WorkspaceFlavourProvider } from '../providers/flavour';
@@ -24,6 +24,7 @@ export interface WorkspaceProfileInfo {
   isOwner?: boolean;
   isAdmin?: boolean;
   isTeam?: boolean;
+  isEmpty?: boolean;
 }
 
 /**
@@ -76,11 +77,10 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
       return fromPromise(signal =>
         provider.getWorkspaceProfile(this.props.metadata.id, signal)
       ).pipe(
-        mergeMap(info => {
+        tap(info => {
           if (info) {
             this.setProfile({ ...this.profile$.value, ...info });
           }
-          return EMPTY;
         }),
         catchError(err => {
           logger.error(err);

@@ -4,20 +4,20 @@ import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
-import { EmbedIframeBlockAdapterExtensions } from './adapters';
 import { embedIframeSlashMenuConfig } from './configs/slash-menu/slash-menu';
 import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
+import { EmbedIframeInteraction } from './embed-edgeless-iframe-block';
 
 const flavour = EmbedIframeBlockSchema.model.flavour;
 
-export const EmbedIframeBlockSpec: ExtensionType[] = [
+export const EmbedIframeViewExtensions: ExtensionType[] = [
   FlavourExtension(flavour),
   BlockViewExtension(flavour, model => {
     return model.parent?.flavour === 'affine:surface'
       ? literal`affine-embed-edgeless-iframe-block`
       : literal`affine-embed-iframe-block`;
   }),
-  EmbedIframeBlockAdapterExtensions,
   createBuiltinToolbarConfigExtension(flavour),
   SlashMenuConfigExtension(flavour, embedIframeSlashMenuConfig),
+  EmbedIframeInteraction,
 ].flat();

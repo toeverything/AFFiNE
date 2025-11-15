@@ -3,13 +3,15 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     alias libs.plugins.android.application
-    alias libs.plugins.compose
-    alias libs.plugins.hilt
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.kotlin.serialization
     alias libs.plugins.ksp
     alias libs.plugins.rust.android
+    alias libs.plugins.compose
+    alias libs.plugins.google.service
+    alias libs.plugins.firebase.crashlytics
+    alias libs.plugins.hilt
 }
 
 apply from: 'capacitor.build.gradle'
@@ -23,7 +25,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName System.getenv('VERSION_NAME') ?: 'v1.0.0-local'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -51,14 +53,10 @@ android {
     }
     flavorDimensions = ['chanel']
     productFlavors {
-        stable {
-            buildConfigField 'String', 'BASE_URL', '"https://app.affine.pro"'
-            resValue 'string', 'host', '"app.affine.pro"'
-        }
-        canary {
-            buildConfigField 'String', 'BASE_URL', '"https://affine.fail"'
-            resValue 'string', 'host', '"affine.fail"'
-        }
+        stable
+        beta
+        internal
+        canary
     }
 
     compileOptions {
@@ -106,6 +104,7 @@ dependencies {
     implementation libs.androidx.coordinatorlayout
     implementation libs.androidx.core.ktx
     implementation libs.androidx.core.splashscreen
+    implementation libs.androidx.datastore.preferences
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui.ktx
 
@@ -118,30 +117,31 @@ dependencies {
     implementation libs.kotlinx.coroutines.android
     implementation libs.kotlinx.serialization.json
 
-    def okhttpBom = platform(libs.okhttp.bom)
-    implementation okhttpBom
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.analytics
+    implementation libs.firebase.crashlytics
+    implementation libs.firebase.storage
+
+    implementation platform(libs.okhttp.bom)
     implementation libs.okhttp
     implementation libs.okhttp.coroutines
     implementation libs.okhttp.logging
     implementation libs.okhttp.sse
+
+    implementation libs.richtext.commonmark
+    implementation libs.richtext.ui
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
 }
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch (Exception ignored) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
-
 cargo {
     module = "../../../../mobile-native"
     libname = "affine_mobile_native"
+    features {
+        defaultAnd("use-as-lib")
+    }
     targets = ["arm64"]
     pythonCommand = "python3"
     targetDirectory = "../../../../../../target"

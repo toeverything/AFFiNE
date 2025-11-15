@@ -8,6 +8,8 @@ import {
   ConnectorLIcon,
 } from '@blocksuite/icons/lit';
 
+import { ConnectorTool } from '../connector-tool';
+
 export const buildConnectorDenseMenu: DenseMenuBuilder = (edgeless, gfx) => {
   const prevMode =
     edgeless.std.get(EditPropsStore).lastProps$.value.connector.mode;
@@ -17,7 +19,7 @@ export const buildConnectorDenseMenu: DenseMenuBuilder = (edgeless, gfx) => {
   const createSelect =
     (mode: ConnectorMode, record = true) =>
     () => {
-      gfx.tool.setTool('connector', {
+      gfx.tool.setTool(ConnectorTool, {
         mode,
       });
       record &&

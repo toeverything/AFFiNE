@@ -1,6 +1,3 @@
-import { markdownFootnoteReferenceToDeltaMatcher } from '@blocksuite/affine-inline-footnote';
-import { markdownInlineMathToDeltaMatcher } from '@blocksuite/affine-inline-latex';
-import { markdownLinkToDeltaMatcher } from '@blocksuite/affine-inline-link';
 import { MarkdownASTToDeltaExtension } from '@blocksuite/affine-shared/adapters';
 
 export const markdownTextToDeltaMatcher = MarkdownASTToDeltaExtension({
@@ -96,9 +93,6 @@ export const MarkdownInlineToDeltaAdapterExtensions = [
   markdownStrongToDeltaMatcher,
   markdownEmphasisToDeltaMatcher,
   markdownDeleteToDeltaMatcher,
-  markdownLinkToDeltaMatcher,
-  markdownInlineMathToDeltaMatcher,
   markdownListToDeltaMatcher,
-  markdownFootnoteReferenceToDeltaMatcher,
   markdownHtmlToDeltaMatcher,
 ];

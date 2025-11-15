@@ -368,7 +368,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
       mount();
     });
 
-    Object.values(this.doc.blocks.peek()).forEach(block => {
+    Object.values(this.store.blocks.peek()).forEach(block => {
       if (isGfxGroupCompatibleModel(block.model)) {
         this._groupLikeModels.set(block.id, block.model);
       }
@@ -376,7 +376,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
 
     elementsYMap.observe(onElementsMapChange);
 
-    const subscription = this.doc.slots.blockUpdated.subscribe(payload => {
+    const subscription = this.store.slots.blockUpdated.subscribe(payload => {
       switch (payload.type) {
         case 'add':
           if (isGfxGroupCompatibleModel(payload.model)) {
@@ -468,7 +468,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     const disposables = new DisposableGroup();
     disposables.add(this.elementAdded.subscribe(updateIsEmpty));
     disposables.add(this.elementRemoved.subscribe(updateIsEmpty));
-    this.doc.slots.blockUpdated.subscribe(payload => {
+    this.store.slots.blockUpdated.subscribe(payload => {
       if (['add', 'delete'].includes(payload.type)) {
         updateIsEmpty();
       }
@@ -503,7 +503,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
   addElement<T extends object = Record<string, unknown>>(
     props: Partial<T> & { type: string }
   ) {
-    if (this.doc.readonly) {
+    if (this.store.readonly) {
       throw new Error('Cannot add element in readonly mode');
     }
 
@@ -535,7 +535,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
 
     this._elementModels.set(id, elementModel);
 
-    this.doc.transact(() => {
+    this.store.transact(() => {
       this.elements.getValue()!.set(id, elementModel.model.yMap);
     });
 
@@ -552,7 +552,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
   }
 
   deleteElement(id: string) {
-    if (this.doc.readonly) {
+    if (this.store.readonly) {
       throw new Error('Cannot remove element in readonly mode');
     }
 
@@ -560,7 +560,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
       return;
     }
 
-    this.doc.transact(() => {
+    this.store.transact(() => {
       const element = this.getElementById(id)!;
       const group = this.getGroup(id);
 
@@ -568,8 +568,8 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
         element.childIds.forEach(childId => {
           if (this.hasElementById(childId)) {
             this.deleteElement(childId);
-          } else if (this.doc.hasBlock(childId)) {
-            this.doc.deleteBlock(this.doc.getBlock(childId)!.model);
+          } else if (this.store.hasBlock(childId)) {
+            this.store.deleteBlock(this.store.getBlock(childId)!.model);
           }
         });
       }
@@ -610,7 +610,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     elem =
       typeof elem === 'string'
         ? ((this.getElementById(elem) ??
-            this.doc.getBlock(elem)?.model) as GfxModel)
+            this.store.getBlock(elem)?.model) as GfxModel)
         : elem;
 
     if (!elem) return null;
@@ -626,6 +626,11 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     return null;
   }
 
+  /**
+   * Get all groups in the group chain. The last group is the top level group.
+   * @param id
+   * @returns
+   */
   getGroups(id: string): GfxGroupModel[] {
     const groups: GfxGroupModel[] = [];
     const visited = new Set<GfxGroupModel>();
@@ -655,7 +660,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
       const el = this.getElementById(element);
       if (el) return isGfxGroupCompatibleModel(el);
 
-      const blockModel = this.doc.getBlock(element)?.model;
+      const blockModel = this.store.getBlock(element)?.model;
       if (blockModel) return isGfxGroupCompatibleModel(blockModel);
 
       return false;
@@ -668,7 +673,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     id: string,
     props: Partial<T>
   ) {
-    if (this.doc.readonly) {
+    if (this.store.readonly) {
       throw new Error('Cannot update element in readonly mode');
     }
 
@@ -678,7 +683,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
       throw new Error(`Element ${id} is not found`);
     }
 
-    this.doc.transact(() => {
+    this.store.transact(() => {
       props = this._propsToY(
         elementModel.type,
         props as Record<string, unknown>

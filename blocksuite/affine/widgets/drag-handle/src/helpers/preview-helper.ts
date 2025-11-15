@@ -1,10 +1,10 @@
+import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import {
   DocModeExtension,
   DocModeProvider,
   EditorSettingExtension,
   EditorSettingProvider,
 } from '@blocksuite/affine-shared/services';
-import { SpecProvider } from '@blocksuite/affine-shared/utils';
 import { BlockStdScope, BlockViewIdentifier } from '@blocksuite/std';
 import type {
   BlockModel,
@@ -35,13 +35,13 @@ export class PreviewHelper {
         if (!selectedIds.includes(parent)) {
           ids.push({ viewType: 'bypass', id: parent });
         }
-        parent = this.widget.doc.getParent(parent)?.id ?? null;
+        parent = this.widget.store.getParent(parent)?.id ?? null;
       } while (parent && !ids.map(({ id }) => id).includes(parent));
     });
 
     // The children of the selected blocks should be rendered as Display
     const addChildren = (id: string) => {
-      const model = this.widget.doc.getBlock(id)?.model;
+      const model = this.widget.store.getBlock(id)?.model;
       if (!model) {
         return;
       }
@@ -66,14 +66,16 @@ export class PreviewHelper {
     blockIds = blockIds.slice();
 
     const docModeService = std.get(DocModeProvider);
-    const editorSetting = std.get(EditorSettingProvider).peek();
+    const editorSetting = std.get(EditorSettingProvider);
     const query = this._calculateQuery(blockIds as string[]);
-    const store = widget.doc.doc.getStore({ query });
-    const previewSpec = SpecProvider._.getSpec('preview:page');
-    const settingSignal = signal({ ...editorSetting });
+    const store = widget.store.doc.getStore({ query });
+    let previewSpec = widget.std
+      .get(ViewExtensionManagerIdentifier)
+      .get('preview-page');
+    const settingSignal = signal({ ...editorSetting.setting$.peek() });
     const extensions = [
       DocModeExtension(docModeService),
-      EditorSettingExtension(settingSignal),
+      EditorSettingExtension({ setting$: settingSignal }),
       {
         setup(di) {
           di.override(
@@ -86,7 +88,7 @@ export class PreviewHelper {
         setup(di) {
           di.override(BlockViewIdentifier('affine:image'), () => {
             return (model: BlockModel) => {
-              const parent = model.doc.getParent(model.id);
+              const parent = model.store.getParent(model.id);
 
               if (parent?.flavour === 'affine:surface') {
                 return literal`affine-edgeless-placeholder-preview-image`;
@@ -99,7 +101,7 @@ export class PreviewHelper {
       } as ExtensionType,
     ];
 
-    previewSpec.extend(extensions);
+    previewSpec = previewSpec.concat(extensions);
 
     settingSignal.value = {
       ...settingSignal.value,
@@ -108,10 +110,11 @@ export class PreviewHelper {
 
     const previewStd = new BlockStdScope({
       store,
-      extensions: previewSpec.value,
+      extensions: previewSpec,
     });
 
     let width: number = 500;
+    // oxlint-disable-next-line no-unassigned-vars
     let height;
 
     const noteBlock = this.widget.host.querySelector('affine-note');

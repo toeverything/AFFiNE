@@ -3,7 +3,6 @@ import {
   createInviteLinkMutation,
   getMembersByWorkspaceIdQuery,
   grantWorkspaceTeamMemberMutation,
-  inviteByEmailMutation,
   inviteByEmailsMutation,
   type Permission,
   revokeInviteLinkMutation,
@@ -43,30 +42,7 @@ export class WorkspaceMembersStore extends Store {
     return data.workspace;
   }
 
-  async inviteMember(
-    workspaceId: string,
-    email: string,
-    sendInviteMail = false
-  ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const invite = await this.workspaceServerService.server.gql({
-      query: inviteByEmailMutation,
-      variables: {
-        workspaceId,
-        email,
-        sendInviteMail,
-      },
-    });
-    return invite.invite;
-  }
-
-  async inviteBatch(
-    workspaceId: string,
-    emails: string[],
-    sendInviteMail = false
-  ) {
+  async inviteBatch(workspaceId: string, emails: string[]) {
     if (!this.workspaceServerService.server) {
       throw new Error('No Server');
     }
@@ -75,10 +51,9 @@ export class WorkspaceMembersStore extends Store {
       variables: {
         workspaceId,
         emails,
-        sendInviteMail,
       },
     });
-    return inviteBatch.inviteBatch;
+    return inviteBatch.inviteMembers;
   }
 
   async generateInviteLink(
@@ -128,7 +103,7 @@ export class WorkspaceMembersStore extends Store {
       },
       context: { signal },
     });
-    return revoke.revoke;
+    return revoke.revokeMember;
   }
 
   async approveMember(workspaceId: string, userId: string) {

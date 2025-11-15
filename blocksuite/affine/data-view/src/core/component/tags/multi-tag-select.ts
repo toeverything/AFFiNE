@@ -53,7 +53,7 @@ import {
   tagSelectInputContainerStyle,
   tagSelectInputStyle,
   tagTextStyle,
-} from './styles.css.js';
+} from './styles-css.js';
 
 type RenderOption = {
   value: string;
@@ -72,7 +72,7 @@ export type TagManagerOptions = {
 };
 
 class TagManager {
-  changeTag = (option: SelectTag) => {
+  changeTag = (option: Partial<SelectTag>) => {
     this.ops.onOptionsChange(
       this.ops.options.value.map(item => {
         if (item.id === option.id) {
@@ -177,7 +177,7 @@ class TagManager {
   }
 
   selectTag(id: string) {
-    if (this.isSelected(id)) {
+    if (!this.isSingleMode && this.isSelected(id)) {
       return;
     }
     const newValue = this.isSingleMode ? [id] : [...this.value$.value, id];
@@ -207,7 +207,7 @@ export class MultiTagSelect extends SignalWatcher(
             initialValue: option.value,
             onChange: text => {
               this.tagManager.changeTag({
-                ...option,
+                id: option.id,
                 value: text,
               });
             },
@@ -237,7 +237,7 @@ export class MultiTagSelect extends SignalWatcher(
                 isSelected: option.color === item.color,
                 select: () => {
                   this.tagManager.changeTag({
-                    ...option,
+                    id: option.id,
                     color: item.color,
                   });
                 },

@@ -1,24 +1,34 @@
-import type { GroupElementModel } from '@blocksuite/affine-model';
-import { GfxElementModelView } from '@blocksuite/std/gfx';
+import {
+  type ViewExtensionContext,
+  ViewExtensionProvider,
+} from '@blocksuite/affine-ext-loader';
 
-import { mountGroupTitleEditor } from './text/edgeless-group-title-editor';
+import { effects } from './effects';
+import { GroupElementView, GroupInteraction } from './element-view';
+import { GroupInteractionExtension } from './interaction-ext';
+import {
+  GroupDomRendererExtension,
+  GroupElementRendererExtension,
+} from './renderer';
+import { groupToolbarExtension } from './toolbar/config';
 
-export class GroupElementView extends GfxElementModelView<GroupElementModel> {
-  static override type: string = 'group';
+export class GroupViewExtension extends ViewExtensionProvider {
+  override name = 'affine-group-gfx';
 
-  override onCreated(): void {
-    super.onCreated();
-
-    this._initDblClickToEdit();
+  override effect(): void {
+    super.effect();
+    effects();
   }
 
-  private _initDblClickToEdit(): void {
-    this.on('dblclick', () => {
-      const edgeless = this.std.view.getBlock(this.std.store.root!.id);
-
-      if (edgeless && !this.model.isLocked()) {
-        mountGroupTitleEditor(this.model, edgeless);
-      }
-    });
+  override setup(context: ViewExtensionContext) {
+    super.setup(context);
+    context.register(GroupElementRendererExtension);
+    context.register(GroupDomRendererExtension);
+    context.register(GroupElementView);
+    if (this.isEdgeless(context.scope)) {
+      context.register(groupToolbarExtension);
+      context.register(GroupInteraction);
+      context.register(GroupInteractionExtension);
+    }
   }
 }

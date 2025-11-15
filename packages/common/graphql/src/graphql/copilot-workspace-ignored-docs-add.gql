@@ -1,0 +1,3 @@
+mutation addWorkspaceEmbeddingIgnoredDocs($workspaceId: String!, $add: [String!]!) {
+  updateWorkspaceEmbeddingIgnoredDocs(workspaceId: $workspaceId, add: $add)
+}

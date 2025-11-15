@@ -3,10 +3,10 @@ import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import type { BlockStdScope } from '@blocksuite/std';
 import {
-  docContext,
   modelContext,
   ShadowlessElement,
   stdContext,
+  storeContext,
   TextSelection,
 } from '@blocksuite/std';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
@@ -168,7 +168,7 @@ export class BlockCaptionEditor<
   @state()
   accessor display = false;
 
-  @consume({ context: docContext })
+  @consume({ context: storeContext })
   accessor doc!: Store;
 
   @query('.block-caption-editor')

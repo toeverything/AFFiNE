@@ -2,6 +2,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { type Signal, signal } from '@preact/signals-core';
 import * as Y from 'yjs';
 
+import type { BaseTextAttributes } from './attributes';
 import type { DeltaInsert, DeltaOperation, OnTextChange } from './types';
 
 /**
@@ -22,7 +23,9 @@ import type { DeltaInsert, DeltaOperation, OnTextChange } from './types';
  *
  * @category Reactive
  */
-export class Text {
+export class Text<
+  TextAttributes extends BaseTextAttributes = BaseTextAttributes,
+> {
   private readonly _deltas$: Signal<DeltaOperation[]>;
 
   private readonly _length$: Signal<number>;
@@ -49,7 +52,7 @@ export class Text {
   /**
    * @param input - The input can be a string, a Y.Text instance, or an array of DeltaInsert.
    */
-  constructor(input?: Y.Text | string | DeltaInsert[]) {
+  constructor(input?: Y.Text | string | DeltaInsert<TextAttributes>[]) {
     let length = 0;
     if (typeof input === 'string') {
       const text = input.replaceAll('\r\n', '\n');
@@ -417,7 +420,7 @@ export class Text {
       );
     }
     let tmpIndex = 0;
-    const rightDeltas: DeltaInsert[] = [];
+    const rightDeltas: DeltaInsert<TextAttributes>[] = [];
     for (let i = 0; i < deltas.length; i++) {
       const insert = deltas[i].insert;
       if (typeof insert === 'string') {

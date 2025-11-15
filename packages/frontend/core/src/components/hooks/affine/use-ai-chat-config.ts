@@ -1,5 +1,7 @@
 // packages/frontend/core/src/blocksuite/ai/hooks/useChatPanelConfig.ts
 import { AINetworkSearchService } from '@affine/core/modules/ai-button/services/network-search';
+import { AIPlaygroundService } from '@affine/core/modules/ai-button/services/playground';
+import { AIReasoningService } from '@affine/core/modules/ai-button/services/reasoning';
 import { CollectionService } from '@affine/core/modules/collection';
 import { DocsService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
@@ -19,6 +21,8 @@ export function useAIChatConfig() {
   const framework = useFramework();
 
   const searchService = framework.get(AINetworkSearchService);
+  const reasoningService = framework.get(AIReasoningService);
+  const playgroundService = framework.get(AIPlaygroundService);
   const docDisplayMetaService = framework.get(DocDisplayMetaService);
   const workspaceService = framework.get(WorkspaceService);
   const searchMenuService = framework.get(SearchMenuService);
@@ -31,6 +35,15 @@ export function useAIChatConfig() {
     visible: searchService.visible,
     enabled: searchService.enabled,
     setEnabled: searchService.setEnabled,
+  };
+
+  const reasoningConfig = {
+    enabled: reasoningService.enabled,
+    setEnabled: reasoningService.setEnabled,
+  };
+
+  const playgroundConfig = {
+    visible: playgroundService.visible,
   };
 
   const docDisplayConfig = {
@@ -74,8 +87,13 @@ export function useAIChatConfig() {
       return tag$.value?.pageIds$.value ?? [];
     },
     getCollections: () => {
-      const collections$ = collectionService.collections$;
-      return createSignalFromObservable(collections$, []);
+      const collectionMetas$ = collectionService.collectionMetas$;
+      return createSignalFromObservable(collectionMetas$, []);
+    },
+    getCollectionPageIds: (collectionId: string) => {
+      const collection$ = collectionService.collection$(collectionId);
+      // TODO: lack of documents that meet the collection rules
+      return collection$?.value?.info$.value.allowList ?? [];
     },
   };
 
@@ -109,7 +127,9 @@ export function useAIChatConfig() {
 
   return {
     networkSearchConfig,
+    reasoningConfig,
     docDisplayConfig,
     searchMenuConfig,
+    playgroundConfig,
   };
 }

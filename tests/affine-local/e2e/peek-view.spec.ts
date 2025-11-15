@@ -1,5 +1,6 @@
 import { test } from '@affine-test/kit/playwright';
 import {
+  clickEdgelessModeButton,
   getSelectedXYWH,
   getViewportBound,
 } from '@affine-test/kit/utils/editor';
@@ -8,6 +9,7 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   createLinkedPage,
+  createSyncedPageInEdgeless,
   type,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
@@ -102,6 +104,63 @@ test('can open peek view via db+click link card', async ({ page }) => {
       .getByTestId('main-container')
       .locator('doc-title:has-text("Test Page")')
   ).toBeVisible();
+});
+
+test('should not open peek view when content is covered by canvas element', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await clickEdgelessModeButton(page);
+
+  await createSyncedPageInEdgeless(page, 'Test Page');
+
+  const syncedDocBlock = await page.locator(
+    'affine-embed-edgeless-synced-doc-block'
+  );
+  const syncedDocRect = (await syncedDocBlock.boundingBox())!;
+
+  await expect(syncedDocBlock).toBeDefined();
+
+  const syncedDocCenter = {
+    x: syncedDocRect.x + syncedDocRect.width / 2,
+    y: syncedDocRect.y + syncedDocRect.height / 2,
+  };
+
+  // click to make sure peek view is working
+  await page.mouse.move(syncedDocCenter.x, syncedDocCenter.y, {
+    steps: 10,
+  });
+  await page.mouse.dblclick(syncedDocCenter.x, syncedDocCenter.y);
+  await page.waitForTimeout(100);
+  await expect(page.getByTestId('peek-view-modal')).toBeVisible();
+
+  // close peek view
+  await page
+    .locator('[data-testid="peek-view-control"][data-action-name="close"]')
+    .click();
+  await expect(page.getByTestId('peek-view-modal')).not.toBeVisible();
+
+  // create a shape covering the synced doc block
+  await page.locator('edgeless-toolbar-button.edgeless-shape-button').click();
+  await page.mouse.move(syncedDocRect.x, syncedDocRect.y);
+  await page.mouse.down();
+  await page.mouse.move(
+    syncedDocRect.x + syncedDocRect.width,
+    syncedDocRect.y + syncedDocRect.height,
+    {
+      steps: 10,
+    }
+  );
+  await page.mouse.up();
+  await page.waitForTimeout(100);
+
+  // click the same position again
+  await page.mouse.move(syncedDocCenter.x, syncedDocCenter.y, {
+    steps: 10,
+  });
+  await page.mouse.dblclick(syncedDocCenter.x, syncedDocCenter.y);
+  // should not open peek view because the synced doc block is covered by shape
+  await expect(page.getByTestId('peek-view-modal')).not.toBeVisible();
 });
 
 test('can open peek view for embedded frames', async ({ page }) => {

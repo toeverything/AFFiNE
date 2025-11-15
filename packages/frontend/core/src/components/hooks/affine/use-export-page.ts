@@ -76,7 +76,7 @@ async function exportDoc(
     ],
   });
 
-  const adapterFactory = std.provider.get(config.identifier);
+  const adapterFactory = std.store.provider.get(config.identifier);
   const adapter = adapterFactory.get(transformer);
   const result = (await adapter.fromDoc(doc)) as AdapterResult;
 

@@ -9,19 +9,18 @@ import type {
   CellRenderProps,
   DataViewCellLifeCycle,
 } from '../../../core/property/index.js';
-import type { SingleView } from '../../../core/view-manager/single-view.js';
 import {
   TableViewAreaSelection,
   type TableViewSelectionWithType,
 } from '../selection';
-import type { TableColumn } from '../table-view-manager.js';
+import type { TableProperty } from '../table-view-manager.js';
 import type { TableGroup } from './group.js';
-
-export class DatabaseCellContainer extends SignalWatcher(
+import type { TableViewUILogic } from './table-view-ui-logic.js';
+export class TableViewCellContainer extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = css`
-    affine-database-cell-container {
+    dv-table-view-cell-container {
       display: flex;
       align-items: start;
       width: 100%;
@@ -30,32 +29,32 @@ export class DatabaseCellContainer extends SignalWatcher(
       outline: none;
     }
 
-    affine-database-cell-container * {
+    dv-table-view-cell-container * {
       box-sizing: border-box;
     }
 
-    affine-database-cell-container uni-lit > *:first-child {
+    dv-table-view-cell-container uni-lit > *:first-child {
       padding: 6px;
     }
   `;
 
-  private readonly _cell = signal<DataViewCellLifeCycle>();
+  private readonly _cell$ = signal<DataViewCellLifeCycle>();
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor rowId!: string;
 
   cell$ = computed(() => {
-    return this.column.cellGet(this.rowId);
+    return this.column.cellGetOrCreate(this.rowId);
   });
 
   selectCurrentCell = (editing: boolean) => {
     if (this.view.readonly$.value) {
       return;
     }
-    const selectionView = this.selectionView;
+    const selectionView = this.selectionController;
     if (selectionView) {
       const selection = selectionView.selection;
       if (selection && this.isSelected(selection) && editing) {
@@ -81,20 +80,15 @@ export class DatabaseCellContainer extends SignalWatcher(
   };
 
   get cell(): DataViewCellLifeCycle | undefined {
-    return this._cell.value;
+    return this._cell$.value;
   }
 
   private get groupKey() {
     return this.closest<TableGroup>('affine-data-view-table-group')?.group?.key;
   }
 
-  private get selectionView() {
-    return this.closest('affine-database-table')?.selectionController;
-  }
-
-  get table() {
-    const table = this.closest('affine-database-table');
-    return table;
+  private get selectionController() {
+    return this.tableViewLogic.selectionController;
   }
 
   override connectedCallback() {
@@ -134,7 +128,7 @@ export class DatabaseCellContainer extends SignalWatcher(
     };
 
     return renderUniLit(view, props, {
-      ref: this._cell,
+      ref: this._cell$,
       style: {
         display: 'contents',
       },
@@ -152,12 +146,16 @@ export class DatabaseCellContainer extends SignalWatcher(
   @property({ attribute: false })
   accessor rowIndex!: number;
 
+  get view() {
+    return this.tableViewLogic.view;
+  }
+
   @property({ attribute: false })
-  accessor view!: SingleView;
+  accessor tableViewLogic!: TableViewUILogic;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'affine-database-cell-container': DatabaseCellContainer;
+    'dv-table-view-cell-container': TableViewCellContainer;
   }
 }

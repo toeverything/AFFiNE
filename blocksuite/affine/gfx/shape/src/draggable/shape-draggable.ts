@@ -1,5 +1,6 @@
 import {
   CanvasElementType,
+  DefaultTool,
   EdgelessCRUDIdentifier,
 } from '@blocksuite/affine-block-surface';
 import {
@@ -137,7 +138,7 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
 
   draggingShape: DraggableShape['name'] = 'roundedRect';
 
-  override type = 'shape' as const;
+  override type = ShapeTool;
 
   get crud() {
     return this.edgeless.std.get(EdgelessCRUDIdentifier);
@@ -169,8 +170,7 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
           this.draggableController.states.draggingElement?.data.name;
         if (!shapeName) return;
 
-        this.setEdgelessTool({
-          type: 'shape',
+        this.setEdgelessTool(ShapeTool, {
           shapeName,
         });
         const controller = this.gfx.tool.currentTool$.peek();
@@ -206,8 +206,7 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
         this._setShapeOverlayLock(false);
         this.readyToDrop = false;
 
-        // @ts-expect-error FIXME: resolve after gfx tool refactor
-        this.gfx.tool.setTool('default');
+        this.gfx.tool.setTool(DefaultTool);
         this.gfx.selection.set({
           elements: [id],
           editing: false,
@@ -236,21 +235,18 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
           const locked = this.gfx.viewport.locked;
           const selection = this.gfx.selection;
           if (locked || selection.editing) return;
-          if (
-            this.gfx.tool.dragging$.peek() &&
-            this.gfx.tool.currentToolName$.peek() === 'shape'
-          ) {
-            return;
-          }
 
-          const activeIndex = shapes.findIndex(
-            s => s.name === this.draggingShape
-          );
-          const nextIndex = (activeIndex + 1) % shapes.length;
-          const next = shapes[nextIndex];
-          this.draggingShape = next.name;
+          const currentTool = this.gfx.tool.currentToolName$.peek();
 
           if (this.readyToDrop) {
+            if (currentTool === ShapeTool.toolName) {
+              const activeIndex = shapes.findIndex(
+                s => s.name === this.draggingShape
+              );
+              const nextIndex = (activeIndex + 1) % shapes.length;
+              const next = shapes[nextIndex];
+              this.draggingShape = next.name;
+            }
             this.draggableController.cancelWithoutAnimation();
             const el = this.shapeContainer.querySelector(
               `.shape.${this.draggingShape}`
@@ -259,14 +255,20 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
               console.error('Edgeless toolbar Shape element not found');
               return;
             }
-            const { x, y } = this.gfx.tool.lastMousePos$.peek();
+            const { x, y } = this.gfx.tool.lastMouseViewPos$.peek();
             const { viewport } = this.edgeless.std.get(ViewportElementProvider);
             const { left, top } = viewport;
             const clientPos = { x: x + left, y: y + top };
             this.draggableController.dragAndMoveTo(el, clientPos);
           } else {
-            this.setEdgelessTool('shape', {
-              shapeName: this.draggingShape,
+            if (this.gfx.tool.dragging$.peek()) return;
+            let shapeName =
+              this.gfx.tool.get(ShapeTool).activatedOption.shapeName;
+            if (currentTool === ShapeTool.toolName) {
+              shapeName = this.gfx.tool.get(ShapeTool).cycleShapeName('next');
+            }
+            this.setEdgelessTool(ShapeTool, {
+              shapeName,
             });
           }
         },

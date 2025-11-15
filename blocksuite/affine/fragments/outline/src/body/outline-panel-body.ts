@@ -35,7 +35,7 @@ import type {
 import type { NoteCardEntity, NoteDropPayload } from '../utils/drag';
 import {
   getHeadingBlocksFromDoc,
-  getNotesFromDoc,
+  getNotesFromStore,
   isHeadingBlock,
 } from '../utils/query';
 import {
@@ -91,8 +91,8 @@ export class OutlinePanelBody extends SignalWatcher(
     return this._context.editor$.value;
   }
 
-  private get doc() {
-    return this.editor.doc;
+  private get store() {
+    return this.editor.store;
   }
 
   get viewportPadding(): [number, number, number, number] {
@@ -154,11 +154,11 @@ export class OutlinePanelBody extends SignalWatcher(
   }
 
   private _moveSelectedNotes(insertIndex: number) {
-    if (!this.doc.root) return;
+    if (!this.store.root) return;
 
     const pageVisibleNotes = this._pageVisibleNotes$.peek();
     const selected = this._allSelectedNotes$.peek();
-    const children = this.doc.root.children.slice();
+    const children = this.store.root.children.slice();
 
     const noteIndex = new Map<NoteBlockModel, number>();
     children.forEach((block, index) => {
@@ -189,14 +189,14 @@ export class OutlinePanelBody extends SignalWatcher(
 
     const newChildren = [...leftPart, ...selected, ...rightPart];
 
-    this.doc.updateBlock(this.doc.root, {
+    this.store.updateBlock(this.store.root, {
       children: newChildren,
     });
   }
 
   private async _scrollToBlock(blockId: string) {
     // if focus title
-    if (blockId === this.doc.root?.id) {
+    if (blockId === this.store.root?.id) {
       this.editor.std.selection.setGroup('note', []);
       this.editor.std.event.active = false;
       focusTitle(this.editor);
@@ -221,7 +221,7 @@ export class OutlinePanelBody extends SignalWatcher(
     const { selected, id, multiselect } = e.detail;
     const gfx = this.editor.std.get(GfxControllerIdentifier);
     const editorMode = this.editor.std.get(DocModeProvider).getEditorMode();
-    const note = this.doc.getBlock(id)?.model;
+    const note = this.store.getBlock(id)?.model;
     if (!note || !matchModels(note, [NoteBlockModel])) return;
 
     // map from signal to value
@@ -262,14 +262,14 @@ export class OutlinePanelBody extends SignalWatcher(
 
   private _watchSelectedNotes() {
     return effect(() => {
-      const { std, doc } = this.editor;
+      const { std, store } = this.editor;
       const docModeService = this.editor.std.get(DocModeProvider);
       const mode = docModeService.getEditorMode();
       if (mode !== 'edgeless') return;
 
       const currSelectedNotes = std.selection
         .filter(SurfaceSelection)
-        .map(({ blockId }) => doc.getBlock(blockId)?.model)
+        .map(({ blockId }) => store.getBlock(blockId)?.model)
         .filter(model => {
           return !!model && matchModels(model, [NoteBlockModel]);
         });
@@ -302,12 +302,12 @@ export class OutlinePanelBody extends SignalWatcher(
           return hasHeadings || this._context.enableSorting$.value;
         };
 
-        this._pageVisibleNotes$.value = getNotesFromDoc(this.doc, [
+        this._pageVisibleNotes$.value = getNotesFromStore(this.store, [
           NoteDisplayMode.DocAndEdgeless,
           NoteDisplayMode.DocOnly,
         ]).filter(isRenderableNote);
 
-        this._edgelessOnlyNotes$.value = getNotesFromDoc(this.doc, [
+        this._edgelessOnlyNotes$.value = getNotesFromStore(this.store, [
           NoteDisplayMode.EdgelessOnly,
         ]).filter(isRenderableNote);
       })
@@ -379,23 +379,23 @@ export class OutlinePanelBody extends SignalWatcher(
   }
 
   private _renderDocTitle() {
-    if (!this.doc.root) return nothing;
+    if (!this.store.root) return nothing;
 
     const hasNotEmptyHeadings =
       getHeadingBlocksFromDoc(
-        this.doc,
+        this.store,
         [NoteDisplayMode.DocOnly, NoteDisplayMode.DocAndEdgeless],
         true
       ).length > 0;
 
     if (!hasNotEmptyHeadings) return nothing;
 
-    const rootId = this.doc.root.id;
+    const rootId = this.store.root.id;
     const active = rootId === this._activeHeadingId$.value;
 
     return html`<affine-outline-block-preview
       class=${classMap({ active: active })}
-      .block=${this.doc.root}
+      .block=${this.store.root}
       @click=${() => {
         this._scrollToBlock(rootId).catch(console.error);
       }}

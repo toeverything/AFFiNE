@@ -11,18 +11,23 @@ import { UserModule } from '../../core/user';
 import { WorkspaceModule } from '../../core/workspaces';
 import { StripeWebhookController } from './controller';
 import { SubscriptionCronJobs } from './cron';
+import { PaymentEventHandlers } from './event';
 import { LicenseController } from './license/controller';
 import {
   SelfhostTeamSubscriptionManager,
   UserSubscriptionManager,
   WorkspaceSubscriptionManager,
 } from './manager';
-import { QuotaOverride } from './quota';
 import {
   SubscriptionResolver,
   UserSubscriptionResolver,
   WorkspaceSubscriptionResolver,
 } from './resolver';
+import {
+  RevenueCatService,
+  RevenueCatWebhookController,
+  RevenueCatWebhookHandler,
+} from './revenuecat';
 import { SubscriptionService } from './service';
 import { StripeFactory, StripeProvider } from './stripe';
 import { StripeWebhook } from './webhook';
@@ -40,17 +45,23 @@ import { StripeWebhook } from './webhook';
   providers: [
     StripeFactory,
     StripeProvider,
+    RevenueCatService,
     SubscriptionService,
     SubscriptionResolver,
     UserSubscriptionResolver,
     StripeWebhook,
+    RevenueCatWebhookHandler,
     UserSubscriptionManager,
     WorkspaceSubscriptionManager,
     SelfhostTeamSubscriptionManager,
     SubscriptionCronJobs,
     WorkspaceSubscriptionResolver,
-    QuotaOverride,
+    PaymentEventHandlers,
   ],
-  controllers: [StripeWebhookController, LicenseController],
+  controllers: [
+    StripeWebhookController,
+    LicenseController,
+    RevenueCatWebhookController,
+  ],
 })
 export class PaymentModule {}

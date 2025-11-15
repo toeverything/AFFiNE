@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use std::{cmp::Ordering, ffi::c_void};
 
 use coreaudio::sys::kAudioHardwareBadStreamError;
 use objc2::{Encode, Encoding, RefEncode};
@@ -202,37 +202,53 @@ impl InputAndOutputAudioBufferList {
     input_sample_rate: f64,
     output_sample_rate: f64,
   ) -> Result<Vec<f32>, CoreAudioError> {
-    let [AudioBuffer {
-      mData: m_data_input,
-      mNumberChannels: m_number_channels_input,
-      mDataByteSize: m_data_byte_size_input,
-    }, AudioBuffer {
-      mData: m_data_output,
-      mNumberChannels: m_number_channels_output,
-      mDataByteSize: m_data_byte_size_output,
-    }] = self.0.mBuffers;
-    let Some(processed_samples_input) = process_audio_frame(
-      m_data_input,
-      m_data_byte_size_input,
-      m_number_channels_input,
+    let mut mixed_samples = Vec::new();
+
+    // Directly access buffers from the list
+    let [input_buffer, output_buffer] = self.0.mBuffers;
+
+    if let Some(processed_input) = process_audio_frame(
+      input_buffer.mData,
+      input_buffer.mDataByteSize,
+      input_buffer.mNumberChannels,
       input_sample_rate,
       target_sample_rate,
-    ) else {
-      return Err(CoreAudioError::ProcessAudioFrameFailed("input"));
-    };
+    ) {
+      mixed_samples = processed_input;
+    }
 
-    let Some(processed_samples_output) = process_audio_frame(
-      m_data_output,
-      m_data_byte_size_output,
-      m_number_channels_output,
+    if let Some(processed_output) = process_audio_frame(
+      output_buffer.mData,
+      output_buffer.mDataByteSize,
+      output_buffer.mNumberChannels,
       output_sample_rate,
       target_sample_rate,
-    ) else {
-      return Err(CoreAudioError::ProcessAudioFrameFailed("output"));
-    };
+    ) {
+      if mixed_samples.is_empty() {
+        mixed_samples = processed_output;
+      } else {
+        let len1 = mixed_samples.len();
+        let len2 = processed_output.len();
+        match len1.cmp(&len2) {
+          Ordering::Less => {
+            mixed_samples.resize(len2, 0.0);
+          }
+          Ordering::Greater => {
+            let mut padded_output = processed_output;
+            padded_output.resize(len1, 0.0);
+            for (sample1, sample2) in mixed_samples.iter_mut().zip(padded_output.iter()) {
+              *sample1 = (*sample1 + *sample2) / 2.0;
+            }
+            return Ok(mixed_samples);
+          }
+          _ => {}
+        }
 
-    // Use the extracted mixing function with the const weights
-    let mixed_samples = mix_audio_samples(&processed_samples_input, &processed_samples_output);
+        for (sample1, sample2) in mixed_samples.iter_mut().zip(processed_output.iter()) {
+          *sample1 = (*sample1 + *sample2) / 2.0;
+        }
+      }
+    }
 
     Ok(mixed_samples)
   }

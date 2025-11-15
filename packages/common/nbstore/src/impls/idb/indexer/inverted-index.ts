@@ -225,17 +225,26 @@ export class FullTextInvertedIndex implements InvertedIndex {
       )?.value ?? 0;
     for (const token of queryTokens) {
       const key = InvertedIndexKey.forString(this.fieldKey, token.term);
-      const objs = await trx
-        .objectStore('invertedIndex')
-        .index('key')
-        .getAll(
-          IDBKeyRange.bound(
-            [this.table, key.buffer()],
-            [this.table, key.add1().buffer()],
-            false,
-            true
-          )
-        );
+      const objs = [
+        // match exact
+        ...(await trx
+          .objectStore('invertedIndex')
+          .index('key')
+          .getAll([this.table, key.buffer()])),
+        // match prefix
+        ...(await trx
+          .objectStore('invertedIndex')
+          .index('key')
+          .getAll(
+            IDBKeyRange.bound(
+              [this.table, key.buffer()],
+              [this.table, key.add1().buffer()],
+              true,
+              true
+            ),
+            5000 // get maximum 5000 items for prefix match
+          )),
+      ];
       const submatched: {
         nid: number;
         score: number;
@@ -245,6 +254,9 @@ export class FullTextInvertedIndex implements InvertedIndex {
         };
       }[] = [];
       for (const obj of objs) {
+        if (!obj) {
+          continue;
+        }
         const key = InvertedIndexKey.fromBuffer(obj.key);
         const originTokenTerm = key.asString();
         const matchLength = token.term.length;

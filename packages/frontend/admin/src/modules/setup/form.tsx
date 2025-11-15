@@ -165,7 +165,7 @@ export const Form = () => {
     passwordValue,
   ]);
 
-  const onPrevious = useCallback(() => {
+  const onPrevious = useAsyncCallback(async () => {
     if (current === count) {
       if (serverConfig.initialized === true) {
         return navigate('/admin', { replace: true });

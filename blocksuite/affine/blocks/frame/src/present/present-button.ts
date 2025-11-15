@@ -3,8 +3,9 @@ import {
   QuickToolMixin,
 } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { PresentationIcon } from '@blocksuite/icons/lit';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { css, html, LitElement } from 'lit';
+
+import { PresentTool } from '../present-tool';
 
 export class EdgelessPresentButton extends QuickToolMixin(
   EdgelessToolbarToolMixin(LitElement)
@@ -19,7 +20,7 @@ export class EdgelessPresentButton extends QuickToolMixin(
     }
   `;
 
-  override type: GfxToolsFullOptionValue['type'] = 'frameNavigator';
+  override type = PresentTool;
 
   override render() {
     return html`<edgeless-tool-icon-button
@@ -29,9 +30,7 @@ export class EdgelessPresentButton extends QuickToolMixin(
     .iconContainerPadding=${6}
     .iconSize=${'24px'}
     @click=${() => {
-      this.setEdgelessTool({
-        type: 'frameNavigator',
-      });
+      this.setEdgelessTool(PresentTool);
     }}
   >
     ${PresentationIcon()}

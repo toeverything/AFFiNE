@@ -1,6 +1,7 @@
 import { HoverController } from '@blocksuite/affine-components/hover';
 import { PeekViewProvider } from '@blocksuite/affine-components/peek';
 import type { FootNote } from '@blocksuite/affine-model';
+import { CitationProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { WithDisposable } from '@blocksuite/global/lit';
@@ -17,7 +18,7 @@ import {
   ZERO_WIDTH_FOR_EMPTY_LINE,
 } from '@blocksuite/std/inline';
 import type { DeltaInsert } from '@blocksuite/store';
-import { shift } from '@floating-ui/dom';
+import { flip, offset, shift } from '@floating-ui/dom';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -28,6 +29,8 @@ import type { FootNoteNodeConfigProvider } from './footnote-config';
 
 // Virtual padding for the footnote popup overflow detection offsets.
 const POPUP_SHIFT_PADDING = 8;
+// The offset between the footnote node and the popup.
+const POPUP_OFFSET = 4;
 
 export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -52,6 +55,7 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
         text-overflow: ellipsis;
         font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
         transition: background 0.3s ease-in-out;
+        transform: translateY(-0.2em);
       }
     }
 
@@ -110,6 +114,14 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
     return this.delta.attributes?.footnote;
   }
 
+  get readonly() {
+    return this.std.store.readonly;
+  }
+
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   onFootnoteClick = () => {
     if (!this.footnote) {
       return;
@@ -143,6 +155,20 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
     window.open(url, '_blank');
   };
 
+  private readonly _updateFootnoteAttributes = (footnote: FootNote) => {
+    if (!this.footnote || this.readonly) {
+      return;
+    }
+
+    if (!this.inlineEditor || !this.selfInlineRange) {
+      return;
+    }
+
+    this.inlineEditor.formatText(this.selfInlineRange, {
+      footnote: footnote,
+    });
+  };
+
   private readonly _FootNoteDefaultContent = (footnote: FootNote) => {
     return html`<span
       class="footnote-content-default"
@@ -162,6 +188,7 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
           .std=${this.std}
           .abortController=${abortController}
           .onPopupClick=${this.onPopupClick ?? this.onFootnoteClick}
+          .updateFootnoteAttributes=${this._updateFootnoteAttributes}
         ></footnote-popup>`;
   };
 
@@ -193,14 +220,22 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
         return null;
       }
 
+      this.citationService.trackEvent('Hover', {
+        control: 'Source Footnote',
+      });
+
       return {
         template: this._FootNotePopup(footnote, abortController),
-        container: this,
+        container: this.std.host,
         computePosition: {
           referenceElement: this,
           placement: 'top',
           autoUpdate: true,
-          middleware: [shift({ padding: POPUP_SHIFT_PADDING })],
+          middleware: [
+            shift({ padding: POPUP_SHIFT_PADDING }),
+            flip(),
+            offset(POPUP_OFFSET),
+          ],
         },
       };
     },

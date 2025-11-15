@@ -10,7 +10,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import type { AuthService } from '../services/auth';
 import type { UserFeatureStore } from '../stores/user-feature';
@@ -64,13 +64,12 @@ export class UserFeature extends Entity {
           };
         }).pipe(
           smartRetry(),
-          mergeMap(data => {
+          tap(data => {
             if (data) {
               this.features$.next(data.features);
             } else {
               this.features$.next(null);
             }
-            return EMPTY;
           }),
           catchErrorInto(this.error$),
           onStart(() => this.isRevalidating$.next(true)),

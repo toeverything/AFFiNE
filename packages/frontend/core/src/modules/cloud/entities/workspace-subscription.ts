@@ -11,7 +11,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceServerService } from '../services/workspace-server';
@@ -123,7 +123,7 @@ export class WorkspaceSubscription extends Entity {
         };
       }).pipe(
         smartRetry(),
-        mergeMap(data => {
+        tap(data => {
           if (data && data.subscription && data.workspaceId && this.store) {
             this.store.setCachedWorkspaceSubscription(
               data.workspaceId,
@@ -133,7 +133,6 @@ export class WorkspaceSubscription extends Entity {
           } else {
             this.subscription$.next(undefined);
           }
-          return EMPTY;
         }),
         catchErrorInto(this.error$),
         onStart(() => this.isRevalidating$.next(true)),

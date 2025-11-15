@@ -31,6 +31,7 @@ export abstract class AutoReconnectConnection<T = any>
   private _status: ConnectionStatus = 'idle';
   private _error: Error | undefined = undefined;
   retryDelay = 3000;
+  connectingTimeout = 15000;
   private refCount = 0;
   private connectingAbort?: AbortController;
   private reconnectingAbort?: AbortController;
@@ -89,10 +90,17 @@ export abstract class AutoReconnectConnection<T = any>
   private innerConnect() {
     if (this.status !== 'connecting') {
       this.setStatus('connecting');
-      this.connectingAbort = new AbortController();
-      const signal = this.connectingAbort.signal;
+      const connectingAbort = new AbortController();
+      this.connectingAbort = connectingAbort;
+      const signal = connectingAbort.signal;
+      const timeout = setTimeout(() => {
+        if (!signal.aborted) {
+          this.handleError(new Error('connecting timeout'));
+        }
+      }, this.connectingTimeout);
       this.doConnect(signal)
         .then(value => {
+          clearTimeout(timeout);
           if (!signal.aborted) {
             this._inner = value;
             this.setStatus('connected');
@@ -106,6 +114,7 @@ export abstract class AutoReconnectConnection<T = any>
         })
         .catch(error => {
           if (!signal.aborted) {
+            clearTimeout(timeout);
             console.error('failed to connect', error);
             this.handleError(error as any);
           }
@@ -132,16 +141,23 @@ export abstract class AutoReconnectConnection<T = any>
     // on error
     console.error('connection error, will reconnect', reason);
     this.innerDisconnect();
+    // if the connection is closed, do not reconnect
+    if (this.status === 'closed') {
+      return;
+    }
     this.setStatus('error', reason);
     // reconnect
 
     this.reconnectingAbort = new AbortController();
     const signal = this.reconnectingAbort.signal;
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       if (!signal.aborted) {
         this.innerConnect();
       }
     }, this.retryDelay);
+    signal.addEventListener('abort', () => {
+      clearTimeout(timeout);
+    });
   }
 
   connect() {

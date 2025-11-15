@@ -1,17 +1,16 @@
 import { toast } from '@affine/component';
-import type {
-  CollectionMeta,
-  TagMeta,
-} from '@affine/core/components/page-list';
-import track from '@affine/track';
+import type { TagMeta } from '@affine/core/components/page-list';
+import type { CollectionMeta } from '@affine/core/modules/collection';
+import track, { type EventArgs } from '@affine/track';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
+import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { DocMeta } from '@blocksuite/affine/store';
 import {
   CollectionsIcon,
+  ImageIcon,
   MoreHorizontalIcon,
   SearchIcon,
   TagsIcon,
@@ -22,7 +21,8 @@ import { css, html, type TemplateResult } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { ChatChip, DocDisplayConfig, SearchMenuConfig } from './type';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { ChatChip, DocDisplayConfig } from './type';
 
 enum AddPopoverMode {
   Default = 'default',
@@ -93,6 +93,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
       font-size: var(--affine-font-sm);
       color: ${unsafeCSSVarV2('text/primary')};
       flex-grow: 1;
+      background-color: transparent;
     }
     .search-input-wrapper input::placeholder {
       color: ${unsafeCSSVarV2('text/placeholder')};
@@ -118,6 +119,12 @@ export class ChatPanelAddPopover extends SignalWatcher(
   `;
 
   private accessor _query = '';
+
+  @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @state()
   private accessor _searchGroups: MenuGroup[] = [];
@@ -161,23 +168,47 @@ export class ChatPanelAddPopover extends SignalWatcher(
   };
 
   private readonly _addFileChip = async () => {
-    const file = await openFileOrFiles();
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      toast('You can only upload files less than 50MB');
-      return;
-    }
-    this.addChip({
-      file,
-      state: 'processing',
-    });
-    this._track('file');
+    const files = await openFilesWith();
+    if (!files || files.length === 0) return;
+
     this.abortController.abort();
+    const images = files.filter(file => file.type.startsWith('image/'));
+    if (images.length > 0) {
+      this.addImages(images);
+    }
+
+    const others = files.filter(file => !file.type.startsWith('image/'));
+    const addChipPromises = others.map(async file => {
+      if (file.size > 50 * 1024 * 1024) {
+        toast(`${file.name} is too large, please upload a file less than 50MB`);
+        return;
+      }
+      await this.addChip({
+        file,
+        state: 'processing',
+      });
+    });
+    await Promise.all(addChipPromises);
+    this._track('file');
+  };
+
+  private readonly _addImageChip = async () => {
+    const images = await openFilesWith('Images');
+    if (!images) return;
+    this.abortController.abort();
+    this.addImages(images);
   };
 
   private readonly uploadGroup: MenuGroup = {
     name: 'Upload',
     items: [
+      {
+        key: 'images',
+        name: 'Upload images',
+        testId: 'ai-chat-with-images',
+        icon: ImageIcon(),
+        action: this._addImageChip,
+      },
       {
         key: 'files',
         name: 'Upload files (pdf, txt, csv)',
@@ -249,7 +280,10 @@ export class ChatPanelAddPopover extends SignalWatcher(
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
-  accessor addChip!: (chip: ChatChip) => void;
+  accessor addChip!: (chip: ChatChip) => Promise<void>;
+
+  @property({ attribute: false })
+  accessor addImages!: (images: File[]) => void;
 
   @property({ attribute: false })
   accessor abortController!: AbortController;
@@ -257,8 +291,13 @@ export class ChatPanelAddPopover extends SignalWatcher(
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId: string = 'ai-search-input';
 
+  @property({ attribute: false })
+  accessor uploadImageCount!: number;
+
   @query('.search-input')
   accessor searchInput!: HTMLInputElement;
+
+  private _menuGroupAbortController = new AbortController();
 
   override connectedCallback() {
     super.connectedCallback();
@@ -273,6 +312,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
   override disconnectedCallback() {
     super.disconnectedCallback();
     document.removeEventListener('keydown', this._handleKeyDown);
+    this._menuGroupAbortController.abort();
   }
 
   override render() {
@@ -385,13 +425,15 @@ export class ChatPanelAddPopover extends SignalWatcher(
   }
 
   private _updateSearchGroup() {
+    this._menuGroupAbortController.abort();
+    this._menuGroupAbortController = new AbortController();
     switch (this._mode) {
       case AddPopoverMode.Tags: {
         this._searchGroups = [
           this.searchMenuConfig.getTagMenuGroup(
             this._query,
             this._addTagChip,
-            this.abortController.signal
+            this._menuGroupAbortController.signal
           ),
         ];
         break;
@@ -401,7 +443,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
           this.searchMenuConfig.getCollectionMenuGroup(
             this._query,
             this._addCollectionChip,
-            this.abortController.signal
+            this._menuGroupAbortController.signal
           ),
         ];
         break;
@@ -410,7 +452,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
         const docGroup = this.searchMenuConfig.getDocMenuGroup(
           this._query,
           this._addDocChip,
-          this.abortController.signal
+          this._menuGroupAbortController.signal
         );
         if (!this._query) {
           this._searchGroups = [docGroup];
@@ -418,12 +460,12 @@ export class ChatPanelAddPopover extends SignalWatcher(
           const tagGroup = this.searchMenuConfig.getTagMenuGroup(
             this._query,
             this._addTagChip,
-            this.abortController.signal
+            this._menuGroupAbortController.signal
           );
           const collectionGroup = this.searchMenuConfig.getCollectionMenuGroup(
             this._query,
             this._addCollectionChip,
-            this.abortController.signal
+            this._menuGroupAbortController.signal
           );
           const nothing = html``;
           this._searchGroups = [
@@ -454,32 +496,33 @@ export class ChatPanelAddPopover extends SignalWatcher(
     }
   }
 
-  private readonly _addDocChip = (meta: DocMeta) => {
-    this.addChip({
+  private readonly _addDocChip = async (meta: DocMeta) => {
+    this.abortController.abort();
+    await this.addChip({
       docId: meta.id,
       state: 'processing',
     });
     const mode = this.docDisplayConfig.getDocPrimaryMode(meta.id);
-    this._track('doc', mode);
-    this.abortController.abort();
+    const method = meta.id === this.docId ? 'cur-doc' : 'doc';
+    this._track(method, mode);
   };
 
-  private readonly _addTagChip = (tag: TagMeta) => {
-    this.addChip({
+  private readonly _addTagChip = async (tag: TagMeta) => {
+    this.abortController.abort();
+    await this.addChip({
       tagId: tag.id,
       state: 'processing',
     });
     this._track('tags');
-    this.abortController.abort();
   };
 
-  private readonly _addCollectionChip = (collection: CollectionMeta) => {
-    this.addChip({
+  private readonly _addCollectionChip = async (collection: CollectionMeta) => {
+    this.abortController.abort();
+    await this.addChip({
       collectionId: collection.id,
       state: 'processing',
     });
     this._track('collections');
-    this.abortController.abort();
   };
 
   private readonly _handleKeyDown = (event: KeyboardEvent) => {
@@ -525,10 +568,13 @@ export class ChatPanelAddPopover extends SignalWatcher(
   }
 
   private _track(
-    method: 'doc' | 'file' | 'tags' | 'collections',
+    method: EventArgs['addEmbeddingDoc']['method'],
     type?: 'page' | 'edgeless'
   ) {
-    track.$.chatPanel.chatPanelInput.addEmbeddingDoc({
+    const page = this.independentMode
+      ? track.$.intelligence
+      : track.$.chatPanel;
+    page.chatPanelInput.addEmbeddingDoc({
       control: 'addButton',
       method,
       type,

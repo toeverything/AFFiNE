@@ -86,10 +86,8 @@ export class AskAIPanel extends WithDisposable(LitElement) {
     const style = styleMap({
       minWidth: `${this.minWidth}px`,
     });
-    const appTheme = this.host.std.get(ThemeProvider).app$.value;
     return html`<div class="ask-ai-panel" style=${style}>
       <ai-item-list
-        .theme=${appTheme}
         .host=${this.host}
         .groups=${this._actionGroups}
         .onClick=${this.onItemClick}

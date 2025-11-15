@@ -1,27 +1,47 @@
 import { Scrollable } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
-import type { ChatPanel } from '@affine/core/blocksuite/ai';
+import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
+import type { AIChatParams, ChatPanel } from '@affine/core/blocksuite/ai';
 import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
-import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
-import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
+import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+// import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { CommentSidebar } from '@affine/core/components/comment/sidebar';
 import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
+import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
+import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
+import { WorkspacePropertySidebar } from '@affine/core/components/properties/sidebar';
+import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
+import { TopTip } from '@affine/core/components/top-tip';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
-import { ViewService } from '@affine/core/modules/workbench';
+import {
+  useIsActiveView,
+  ViewBody,
+  ViewHeader,
+  ViewService,
+  ViewSidebarTab,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
+import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
+  CommentIcon,
+  ExportIcon,
   FrameIcon,
   PropertyIcon,
   TocIcon,
@@ -39,24 +59,11 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Subscription } from 'rxjs';
 
-import { AffineErrorBoundary } from '../../../../components/affine/affine-error-boundary';
-import { GlobalPageHistoryModal } from '../../../../components/affine/page-history-modal';
-import { useRegisterBlocksuiteEditorCommands } from '../../../../components/hooks/affine/use-register-blocksuite-editor-commands';
-import { useActiveBlocksuiteEditor } from '../../../../components/hooks/use-block-suite-editor';
-import { PageDetailEditor } from '../../../../components/page-detail-editor';
-import { TrashPageFooter } from '../../../../components/pure/trash-page-footer';
-import { TopTip } from '../../../../components/top-tip';
-import {
-  useIsActiveView,
-  ViewBody,
-  ViewHeader,
-  ViewSidebarTab,
-  WorkbenchService,
-} from '../../../../modules/workbench';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 import { DetailPageWrapper } from './detail-page-wrapper';
+import { EditorAdapterPanel } from './tabs/adapter';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
@@ -103,6 +110,19 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const enableAI = useEnableAI();
 
+  const featureFlagService = useService(FeatureFlagService);
+  const enableAdapterPanel = useLiveData(
+    featureFlagService.flags.enable_adapter_panel.$
+  );
+
+  const serverService = useService(ServerService);
+  const serverConfig = useLiveData(serverService.server.config$);
+
+  // comment may not be supported by the server
+  const enableComment =
+    workspace.flavour !== 'local' &&
+    serverConfig.features.includes(ServerFeature.Comment);
+
   useEffect(() => {
     if (isActiveView) {
       setActiveBlockSuiteEditor(editorContainer);
@@ -111,7 +131,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useEffect(() => {
     const disposables: Subscription[] = [];
-    const openHandler = () => {
+    const openHandler = (params: AIChatParams | null) => {
+      if (!params) {
+        return;
+      }
       workbench.openSidebar();
       view.activeSidebarTab('chat');
     };
@@ -327,7 +350,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewSidebarTab tabId="properties" icon={<PropertyIcon />}>
         <Scrollable.Root className={styles.sidebarScrollArea}>
           <Scrollable.Viewport>
-            <DocPropertySidebar />
+            <WorkspacePropertySidebar />
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
         </Scrollable.Root>
@@ -360,8 +383,29 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </Scrollable.Root>
       </ViewSidebarTab>
 
+      {enableAdapterPanel && (
+        <ViewSidebarTab tabId="adapter" icon={<ExportIcon />}>
+          <Scrollable.Root className={styles.sidebarScrollArea}>
+            <Scrollable.Viewport>
+              <EditorAdapterPanel host={editorContainer?.host ?? null} />
+            </Scrollable.Viewport>
+          </Scrollable.Root>
+        </ViewSidebarTab>
+      )}
+
+      {workspace.flavour !== 'local' && enableComment && (
+        <ViewSidebarTab tabId="comment" icon={<CommentIcon />}>
+          <Scrollable.Root className={styles.sidebarScrollArea}>
+            <Scrollable.Viewport>
+              <CommentSidebar />
+            </Scrollable.Viewport>
+            <Scrollable.Scrollbar />
+          </Scrollable.Root>
+        </ViewSidebarTab>
+      )}
+
       <GlobalPageHistoryModal />
-      <PageAIOnboarding />
+      {/* FIXME: wait for better ai, <PageAIOnboarding /> */}
     </FrameworkScope>
   );
 });
@@ -386,7 +430,7 @@ export const Component = () => {
     <DetailPageWrapper
       pageId={pageId}
       canAccess={canAccess}
-      skeleton={<PageDetailSkeleton />}
+      skeleton={<PageDetailLoading />}
       notFound={<PageNotFound noPermission />}
     >
       <DetailPageImpl />

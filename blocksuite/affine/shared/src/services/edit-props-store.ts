@@ -41,6 +41,7 @@ const LocalPropsSchema = z.object({
   presentBlackBackground: z.boolean(),
   presentFillScreen: z.boolean(),
   presentHideToolbar: z.boolean(),
+  presentNoFrameToastShown: z.boolean(),
 
   autoHideEmbedHTMLFullScreenToolbar: z.boolean(),
 });
@@ -98,7 +99,9 @@ export class EditPropsStore extends LifeCycleWatcher {
     );
 
     this.lastProps$ = computed(() => {
-      const editorSetting$ = this.std.getOptional(EditorSettingProvider);
+      const editorSetting$ = this.std.getOptional(
+        EditorSettingProvider
+      )?.setting$;
       const nextProps = mergeWith(
         clonedeep(initProps),
         editorSetting$?.value,
@@ -124,6 +127,8 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:presentation:fillScreen';
       case 'presentHideToolbar':
         return 'blocksuite:presentation:hideToolbar';
+      case 'presentNoFrameToastShown':
+        return 'blocksuite:presentation:noFrameToastShown';
       case 'templateCache':
         return 'blocksuite:' + id + ':templateTool';
       case 'remoteColor':

@@ -58,7 +58,7 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
       return;
     }
 
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       this.children.set(element.id, true);
     });
   }
@@ -79,7 +79,7 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
     if (!this.children) {
       return;
     }
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       this.children.delete(element.id);
     });
   }

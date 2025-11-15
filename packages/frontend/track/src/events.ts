@@ -39,6 +39,7 @@ type WorkspaceEvents =
   | 'export'
   | 'openWorkspaceList';
 type DocEvents =
+  | 'openDoc'
   | 'createDoc'
   | 'quickStart'
   | 'renameDoc'
@@ -49,10 +50,15 @@ type DocEvents =
   | 'openDocOptionsMenu'
   | 'openDocInfo'
   | 'copyBlockToLink'
+  | 'loadDoc'
   | 'bookmark'
   | 'editProperty'
   | 'editPropertyMeta'
-  | 'addProperty';
+  | 'addProperty'
+  | 'editDisplayMenu'
+  | 'navigateAllDocsRouter'
+  | 'navigatePinedCollectionRouter'
+  | 'htmlBlockPreviewFailed';
 type EditorEvents =
   | 'bold'
   | 'italic'
@@ -76,7 +82,9 @@ type CollectionEvents =
   | 'createCollection'
   | 'deleteCollection'
   | 'renameCollection'
-  | 'addDocToCollection';
+  | 'addDocToCollection'
+  | 'editCollection'
+  | 'addPinnedCollection';
 type FolderEvents =
   | 'createFolder'
   | 'renameFolder'
@@ -117,7 +125,8 @@ type AuthEvents =
   | 'signIn'
   | 'signInFail'
   | 'signedIn'
-  | 'signOut';
+  | 'signOut'
+  | 'deleteAccount';
 type AccountEvents = 'uploadAvatar' | 'removeAvatar' | 'updateUserName';
 type PaymentEvents =
   | 'viewPlans'
@@ -162,7 +171,8 @@ type IntegrationEvents =
   | 'selectIntegrationImport'
   | 'confirmIntegrationImport'
   | 'abortIntegrationImport'
-  | 'completeIntegrationImport';
+  | 'completeIntegrationImport'
+  | 'createCalendarDocEvent';
 // END SECTION
 
 // SECTION: journal
@@ -179,6 +189,32 @@ type MeetingEvents =
 
 // SECTION: mention
 type MentionEvents = 'mentionMember' | 'noAccessPrompted';
+// END SECTION
+
+// SECTION: workspace embedding
+type WorkspaceEmbeddingEvents =
+  | 'toggleWorkspaceEmbedding'
+  | 'addAdditionalDocs'
+  | 'addIgnoredDocs';
+// END SECTION
+
+// SECTION: comment events
+// Add events for comment actions
+type CommentEvents =
+  | 'createComment'
+  | 'editComment'
+  | 'deleteComment'
+  | 'resolveComment';
+// END SECTION
+
+// SECTION: apply model
+type ApplyModelEvents =
+  | 'acceptAll'
+  | 'rejectAll'
+  | 'accept'
+  | 'reject'
+  | 'apply'
+  | 'copy';
 // END SECTION
 
 type UserEvents =
@@ -198,12 +234,15 @@ type UserEvents =
   | PaymentEvents
   | DNDEvents
   | AIEvents
+  | CommentEvents
   | AttachmentEvents
   | TemplateEvents
   | NotificationEvents
   | IntegrationEvents
   | MeetingEvents
-  | MentionEvents;
+  | MentionEvents
+  | WorkspaceEmbeddingEvents
+  | ApplyModelEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -213,7 +252,7 @@ interface PageDivision {
   };
 }
 
-const PageEvents = {
+interface PageEvents extends PageDivision {
   // page: {
   //   $: {}
   //   ^ if empty
@@ -224,9 +263,16 @@ const PageEvents = {
   // to: page.$.segment.module.event1()
   $: {
     $: {
-      $: ['createWorkspace', 'checkout'],
-      auth: ['requestSignIn', 'signIn', 'signedIn', 'signInFail', 'signOut'],
-    },
+      $: ['createWorkspace', 'checkout'];
+      auth: [
+        'requestSignIn',
+        'signIn',
+        'signedIn',
+        'signInFail',
+        'signOut',
+        'deleteAccount',
+      ];
+    };
     sharePanel: {
       $: [
         'createShareLink',
@@ -236,29 +282,29 @@ const PageEvents = {
         'modifyDocDefaultRole',
         'modifyUserDocRole',
         'inviteUserDocRole',
-      ],
-    },
+      ];
+    };
     docInfoPanel: {
-      $: ['open'],
-      property: ['editProperty', 'addProperty', 'editPropertyMeta'],
-      databaseProperty: ['editProperty'],
-    },
+      $: ['open'];
+      property: ['editProperty', 'addProperty', 'editPropertyMeta'];
+      databaseProperty: ['editProperty'];
+    };
     settingsPanel: {
-      menu: ['openSettings'],
+      menu: ['openSettings'];
       workspace: [
         'viewPlans',
         'export',
         'addProperty',
         'editPropertyMeta',
         'deleteUnusedBlob',
-      ],
+      ];
       archivedWorkspaces: [
         'recoverArchivedWorkspace',
         'deleteArchivedWorkspace',
-      ],
-      profileAndBadge: ['viewPlans'],
-      accountUsage: ['viewPlans'],
-      accountSettings: ['uploadAvatar', 'removeAvatar', 'updateUserName'],
+      ];
+      profileAndBadge: ['viewPlans'];
+      accountUsage: ['viewPlans'];
+      accountSettings: ['uploadAvatar', 'removeAvatar', 'updateUserName'];
       plans: [
         'checkout',
         'subscribe',
@@ -268,9 +314,9 @@ const PageEvents = {
         'confirmCancelingSubscription',
         'resumeSubscription',
         'confirmResumingSubscription',
-      ],
-      billing: ['viewPlans', 'bookDemo'],
-      about: ['checkUpdates', 'downloadUpdate', 'changeAppSetting'],
+      ];
+      billing: ['viewPlans', 'bookDemo'];
+      about: ['checkUpdates', 'downloadUpdate', 'changeAppSetting'];
       integrationList: [
         'connectIntegration',
         'disconnectIntegration',
@@ -280,17 +326,22 @@ const PageEvents = {
         'confirmIntegrationImport',
         'abortIntegrationImport',
         'completeIntegrationImport',
-      ],
-      meetings: ['toggleMeetingFeatureFlag'],
-    },
+      ];
+      meetings: ['toggleMeetingFeatureFlag'];
+      indexerEmbedding: [
+        'toggleWorkspaceEmbedding',
+        'addAdditionalDocs',
+        'addIgnoredDocs',
+      ];
+    };
     cmdk: {
-      recent: ['recentDocs'],
-      results: ['searchResultsDocs'],
-      general: ['copyShareLink', 'goBack', 'goForward', 'findInPage'],
-      creation: ['createDoc'],
-      workspace: ['createWorkspace'],
-      settings: ['openSettings', 'changeAppSetting'],
-      navigation: ['navigate'],
+      recent: ['recentDocs'];
+      results: ['searchResultsDocs'];
+      general: ['copyShareLink', 'goBack', 'goForward', 'findInPage'];
+      creation: ['createDoc'];
+      workspace: ['createWorkspace'];
+      settings: ['openSettings', 'changeAppSetting'];
+      navigation: ['navigate'];
       editor: [
         'toggleFavorite',
         'switchPageMode',
@@ -298,14 +349,14 @@ const PageEvents = {
         'export',
         'deleteDoc',
         'restoreDoc',
-      ],
-      docInfo: ['open'],
-      docHistory: ['open'],
-      updates: ['quitAndInstall'],
-      help: ['contactUs', 'openChangelog'],
-    },
+      ];
+      docInfo: ['open'];
+      docHistory: ['open'];
+      updates: ['quitAndInstall'];
+      help: ['contactUs', 'openChangelog'];
+    };
     navigationPanel: {
-      $: ['quickSearch', 'createDoc', 'navigate', 'openSettings', 'toggle'],
+      $: ['quickSearch', 'createDoc', 'navigate', 'openSettings', 'toggle'];
       organize: [
         'createOrganizeItem',
         'renameOrganizeItem',
@@ -316,54 +367,55 @@ const PageEvents = {
         'openInSplitView',
         'toggleFavorite',
         'drop',
-      ],
-      docs: ['createDoc', 'deleteDoc', 'linkDoc', 'drop'],
+      ];
+      docs: ['createDoc', 'deleteDoc', 'linkDoc', 'drop', 'openDoc'];
       collections: [
         'createDoc',
         'addDocToCollection',
         'removeOrganizeItem',
         'drop',
-      ],
-      folders: ['createDoc', 'drop'],
-      tags: ['createDoc', 'tagDoc', 'drop'],
-      favorites: ['createDoc', 'drop'],
-      migrationData: ['openMigrationDataHelp'],
+        'editCollection',
+      ];
+      folders: ['createDoc', 'drop'];
+      tags: ['createDoc', 'tagDoc', 'drop'];
+      favorites: ['createDoc', 'drop'];
+      migrationData: ['openMigrationDataHelp'];
       bottomButtons: [
         'downloadApp',
         'quitAndInstall',
         'openChangelog',
         'dismissChangelog',
-      ],
-      others: ['navigate'],
-      importModal: ['open'],
+      ];
+      others: ['navigate'];
+      importModal: ['open'];
       workspaceList: [
         'requestSignIn',
         'open',
         'createWorkspace',
         'createDoc',
         'openSettings',
-      ],
-      profileAndBadge: ['openSettings'],
-      journal: ['navigate'],
-    },
+      ];
+      profileAndBadge: ['openSettings'];
+      journal: ['navigate'];
+    };
     aiOnboarding: {
-      dialog: ['viewPlans'],
-    },
+      dialog: ['viewPlans'];
+    };
     docHistory: {
-      $: ['open', 'close', 'switchPageMode', 'viewPlans'],
-    },
+      $: ['open', 'close', 'switchPageMode', 'viewPlans'];
+    };
     importModal: {
-      $: ['open', 'import', 'createDoc'],
-    },
+      $: ['open', 'import', 'createDoc'];
+    };
     paywall: {
-      storage: ['viewPlans'],
-      aiAction: ['viewPlans'],
-    },
+      storage: ['viewPlans'];
+      aiAction: ['viewPlans'];
+    };
     appTabsHeader: {
-      $: ['tabAction', 'dragStart'],
-    },
+      $: ['tabAction', 'dragStart'];
+    };
     header: {
-      $: ['dragStart'],
+      $: ['dragStart'];
       actions: [
         'createDoc',
         'createWorkspace',
@@ -371,7 +423,7 @@ const PageEvents = {
         'toggleFavorite',
         'openDocInfo',
         'renameDoc',
-      ],
+      ];
       docOptions: [
         'open',
         'deleteDoc',
@@ -381,15 +433,21 @@ const PageEvents = {
         'import',
         'toggleFavorite',
         'export',
-      ],
-      history: ['open'],
-      pageInfo: ['open'],
-      importModal: ['open'],
-      snapshot: ['import', 'export'],
-    },
+      ];
+      history: ['open'];
+      pageInfo: ['open'];
+      importModal: ['open'];
+      snapshot: ['import', 'export'];
+    };
     chatPanel: {
-      chatPanelInput: ['addEmbeddingDoc'],
-    },
+      chatPanelInput: ['addEmbeddingDoc'];
+    };
+    intelligence: {
+      chatPanelInput: ['addEmbeddingDoc'];
+    };
+    commentPanel: {
+      $: ['createComment', 'editComment', 'deleteComment', 'resolveComment'];
+    };
     attachment: {
       $: [
         'openAttachmentInFullscreen',
@@ -397,54 +455,59 @@ const PageEvents = {
         'openAttachmentInPeekView',
         'openAttachmentInSplitView',
         'openPDFRendererFail',
-      ],
-    },
+      ];
+    };
     sidebar: {
-      newDoc: ['quickStart'],
-      template: ['openTemplateListMenu', 'quickStart'],
-      notifications: ['openInbox', 'clickNotification'],
-    },
+      newDoc: ['quickStart'];
+      template: ['openTemplateListMenu', 'quickStart'];
+      notifications: ['openInbox', 'clickNotification'];
+    };
     splitViewIndicator: {
-      $: ['splitViewAction', 'openInSplitView', 'openInPeekView'],
-    },
-  },
+      $: ['splitViewAction', 'openInSplitView', 'openInPeekView'];
+    };
+  };
   doc: {
+    $: {
+      $: ['loadDoc'];
+    };
     editor: {
-      slashMenu: ['linkDoc', 'createDoc', 'bookmark'],
+      slashMenu: ['linkDoc', 'createDoc', 'bookmark'];
       atMenu: [
         'linkDoc',
         'import',
         'createDoc',
         'mentionMember',
         'noAccessPrompted',
-      ],
-      quickSearch: ['createDoc'],
-      formatToolbar: ['bold'],
-      pageRef: ['navigate'],
+      ];
+      quickSearch: ['createDoc'];
+      formatToolbar: ['bold'];
+      pageRef: ['navigate'];
       toolbar: [
         'copyBlockToLink',
         'openInSplitView',
         'openInNewTab',
         'openInPeekView',
-      ],
-      aiActions: ['requestSignIn'],
-      starterBar: ['quickStart', 'openTemplateListMenu'],
-      audioBlock: ['transcribeRecording', 'openTranscribeNotes'],
-    },
+      ];
+      aiActions: ['requestSignIn'];
+      starterBar: ['quickStart', 'openTemplateListMenu'];
+      audioBlock: ['transcribeRecording', 'openTranscribeNotes'];
+      codeBlock: ['htmlBlockPreviewFailed'];
+    };
     inlineDocInfo: {
-      $: ['toggle'],
-      property: ['editProperty', 'editPropertyMeta', 'addProperty'],
-      databaseProperty: ['editProperty'],
-    },
+      $: ['toggle'];
+      property: ['editProperty', 'editPropertyMeta', 'addProperty'];
+      databaseProperty: ['editProperty'];
+    };
     sidepanel: {
-      property: ['addProperty', 'editPropertyMeta'],
-    },
+      property: ['addProperty', 'editPropertyMeta'];
+      journal: ['createCalendarDocEvent'];
+    };
     biDirectionalLinksPanel: {
-      $: ['toggle'],
-      backlinkTitle: ['toggle', 'navigate'],
-      backlinkPreview: ['navigate'],
-    },
-  },
+      $: ['toggle'];
+      backlinkTitle: ['toggle', 'navigate'];
+      backlinkPreview: ['navigate'];
+    };
+  };
   edgeless: {
     pageBlock: {
       headerToolbar: [
@@ -452,45 +515,54 @@ const PageEvents = {
         'openDocInfo',
         'copyBlockToLink',
         'switchPageMode',
-      ],
-    },
-  },
+      ];
+    };
+  };
   workspace: {
     $: {
-      $: ['upgradeWorkspace'],
-    },
-  },
+      $: ['upgradeWorkspace'];
+    };
+  };
   allDocs: {
     header: {
-      actions: ['createDoc', 'createWorkspace'],
-    },
+      navigation: ['navigateAllDocsRouter', 'navigatePinedCollectionRouter'];
+      actions: ['createDoc', 'createWorkspace'];
+      displayMenu: ['editDisplayMenu'];
+      viewMode: ['editDisplayMenu'];
+      collection: ['editCollection', 'addPinnedCollection'];
+    };
     list: {
+      doc: ['openDoc'];
       docMenu: [
         'createDoc',
         'deleteDoc',
         'openInSplitView',
         'toggleFavorite',
         'openInNewTab',
-      ],
-    },
-  },
+        'openDocInfo',
+      ];
+    };
+  };
   collection: {
     docList: {
-      docMenu: ['removeOrganizeItem'],
-    },
-  },
-  tag: {},
-  trash: {},
+      docMenu: ['removeOrganizeItem'];
+    };
+    collection: {
+      $: ['editCollection'];
+    };
+  };
+  tag: {};
+  trash: {};
   subscriptionLanding: {
     $: {
-      $: ['checkout'],
-    },
-  },
+      $: ['checkout'];
+    };
+  };
   menubarApp: {
     menubarActionsMenu: {
-      menubarActionsList: ['activeMenubarAppItem', 'startRecording'],
-    },
-  },
+      menubarActionsList: ['activeMenubarAppItem', 'startRecording'];
+    };
+  };
   popup: {
     $: {
       recordingBar: [
@@ -498,10 +570,24 @@ const PageEvents = {
         'startRecording',
         'dismissRecording',
         'finishRecording',
-      ],
-    },
-  },
-} as const satisfies PageDivision;
+      ];
+    };
+  };
+  clipper: {
+    $: {
+      $: ['createDoc'];
+    };
+  };
+  applyModel: {
+    widget: {
+      page: ['acceptAll', 'rejectAll'];
+      block: ['accept', 'reject'];
+    };
+    chat: {
+      $: ['apply', 'accept', 'reject', 'copy'];
+    };
+  };
+}
 
 type OrganizeItemType = 'doc' | 'folder' | 'collection' | 'tag' | 'favorite';
 type OrganizeItemArgs =
@@ -559,13 +645,24 @@ type ImportArgs = {
 };
 type IntegrationArgs<T extends Record<string, any>> = {
   type: string;
-  control: 'Readwise Card' | 'Readwise settings' | 'Readwise import list';
+  control:
+    | 'Readwise Card'
+    | 'Readwise settings'
+    | 'Readwise import list'
+    | 'Calendar Setting';
 } & T;
 
 type RecordingEventArgs = {
   type: 'Meeting record';
   method?: string;
   option?: 'Auto transcribing' | 'handle transcribing' | 'on' | 'off';
+};
+
+type ApplyModelArgs = {
+  /*  ​​User's complete instruction */
+  instruction?: string;
+  /* Split individual semantic change requests */
+  operation?: string;
 };
 
 export type EventArgs = {
@@ -626,7 +723,7 @@ export type EventArgs = {
   addEmbeddingDoc: {
     type?: 'page' | 'edgeless';
     control: 'addButton' | 'atMenu';
-    method: 'doc' | 'file' | 'tags' | 'collections' | 'suggestion';
+    method: 'doc' | 'cur-doc' | 'file' | 'tags' | 'collections' | 'suggestion';
   };
   openAttachmentInFullscreen: AttachmentEventArgs;
   openAttachmentInNewTab: AttachmentEventArgs;
@@ -713,7 +810,58 @@ export type EventArgs = {
   mentionMember: {
     type: 'member' | 'invite' | 'more';
   };
+  htmlBlockPreviewFailed: {
+    type: string;
+  };
   noAccessPrompted: {};
+  loadDoc: {
+    workspaceId: string;
+    docId: string;
+    time: number;
+    success: boolean;
+  };
+  toggleWorkspaceEmbedding: {
+    type: 'Embedding';
+    control: 'Workspace embedding';
+    option: 'on' | 'off';
+  };
+  addAdditionalDocs: {
+    type: 'Embedding';
+    control: 'Select doc';
+    docType: string;
+  };
+  addIgnoredDocs: {
+    type: 'Embedding';
+    control: 'Additional docs';
+    result: 'success' | 'failure';
+  };
+  editDisplayMenu: {
+    control:
+      | 'groupBy'
+      | 'orderBy'
+      | 'displayProperties'
+      | 'listViewOptions'
+      | 'quickActions';
+    type: string;
+  };
+  navigateAllDocsRouter: {
+    control: string;
+  };
+  navigatePinedCollectionRouter: {
+    control: 'all' | 'user-custom-collection';
+  };
+  resolveComment: { type: 'on' | 'off' };
+  createComment: {
+    type: 'root' | 'node';
+    withAttachment: boolean;
+    withMention: boolean;
+    category: string;
+  };
+  editComment: { type: 'root' | 'node' };
+  deleteComment: { type: 'root' | 'node' };
+  accept: ApplyModelArgs;
+  reject: ApplyModelArgs;
+  apply: ApplyModelArgs;
 };
 
 // for type checking
@@ -722,4 +870,4 @@ export const YOU_MUST_DEFINE_ARGS_WITH_WRONG_EVENT_NAME: keyof EventArgs extends
   ? true
   : false = true;
 
-export type Events = typeof PageEvents;
+export type Events = PageEvents;

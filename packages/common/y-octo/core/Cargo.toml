@@ -1,0 +1,93 @@
+[package]
+authors = [
+  "DarkSky <darksky2048@gmail.com>",
+  "forehalo <forehalo@gmail.com>",
+  "x1a0t <405028157@qq.com>",
+  "Brooklyn <lynweklm@gmail.com>",
+]
+description = "High-performance and thread-safe CRDT implementation compatible with Yjs"
+edition = "2021"
+homepage = "https://github.com/toeverything/y-octo"
+include = ["LICENSE", "README.md", "benches/**/*", "bin/**/*", "src/**/*"]
+keywords = ["collaboration", "crdt", "crdts", "yata", "yjs"]
+license = "MIT"
+name = "y-octo"
+readme = "README.md"
+repository = "https://github.com/toeverything/y-octo"
+version = "0.0.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ahash         = { workspace = true }
+byteorder     = { workspace = true }
+log           = { workspace = true }
+nanoid        = { workspace = true }
+nom           = { workspace = true }
+ordered-float = { workspace = true }
+rand          = { workspace = true }
+rand_chacha   = { workspace = true }
+rand_distr    = { workspace = true }
+serde         = { workspace = true, features = ["derive"] }
+serde_json    = { workspace = true }
+smol_str      = { workspace = true }
+thiserror     = { workspace = true }
+
+[features]
+bench      = []
+debug      = []
+large_refs = []
+serde_json = []
+
+[target.'cfg(fuzzing)'.dependencies]
+arbitrary     = { workspace = true }
+ordered-float = { workspace = true, features = ["arbitrary"] }
+
+[target.'cfg(loom)'.dependencies]
+loom = { workspace = true }
+# override the dev-dependencies feature
+async-lock = { workspace = true }
+
+[dev-dependencies]
+assert-json-diff = { workspace = true }
+criterion        = { workspace = true }
+lib0             = { workspace = true }
+ordered-float    = { workspace = true, features = ["proptest"] }
+path-ext         = { workspace = true }
+proptest         = { workspace = true }
+proptest-derive  = { workspace = true }
+yrs              = { workspace = true }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+  'cfg(debug)',
+  'cfg(fuzzing)',
+  'cfg(loom)',
+] }
+
+[[bench]]
+harness = false
+name    = "array_ops_benchmarks"
+
+[[bench]]
+harness = false
+name    = "codec_benchmarks"
+
+[[bench]]
+harness = false
+name    = "map_ops_benchmarks"
+
+[[bench]]
+harness = false
+name    = "text_ops_benchmarks"
+
+[[bench]]
+harness = false
+name    = "apply_benchmarks"
+
+[[bench]]
+harness = false
+name    = "update_benchmarks"
+
+[lib]
+bench = true

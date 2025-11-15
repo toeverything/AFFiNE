@@ -6,7 +6,7 @@ import { EdgelessIcon, ImportIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { MouseEvent, PropsWithChildren } from 'react';
 import { useCallback, useState } from 'react';
 
-import { menuContent } from './new-page-button.css';
+import * as styles from './new-page-button.css';
 
 type NewPageButtonProps = {
   createNewDoc: (e?: MouseEvent) => void;
@@ -120,7 +120,7 @@ export const NewPageButton = ({
         open,
       }}
       contentOptions={{
-        className: menuContent,
+        className: styles.menuContent,
         align: 'end',
         hideWhenDetached: true,
         onInteractOutside: useCallback(() => {
@@ -133,6 +133,7 @@ export const NewPageButton = ({
         onClick={handleCreateNewDoc}
         onAuxClick={handleCreateNewPage}
         onClickDropDown={useCallback(() => setOpen(open => !open), [])}
+        className={styles.button}
       >
         {children}
       </DropdownButton>

@@ -13,6 +13,7 @@ import type {
   WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs/constant';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { createIsland, type Island } from '@affine/core/utils/island';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons/rc';
@@ -23,6 +24,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -34,6 +36,11 @@ import { IssueFeedbackModal } from './issue-feedback-modal';
 import { SettingSidebar } from './setting-sidebar';
 import { StarAFFiNEModal } from './star-affine-modal';
 import * as style from './style.css';
+import {
+  SubPageContext,
+  type SubPageContextType,
+  SubPageTarget,
+} from './sub-page';
 import type { SettingState } from './types';
 import { WorkspaceSetting } from './workspace-setting';
 
@@ -59,6 +66,7 @@ const SettingModalInner = ({
   onCloseSetting,
   scrollAnchor: initialScrollAnchor,
 }: SettingProps) => {
+  const [subPageIslands, setSubPageIslands] = useState<Island[]>([]);
   const [settingState, setSettingState] = useState<SettingState>({
     activeTab: initialActiveTab,
     scrollAnchor: initialScrollAnchor,
@@ -143,6 +151,24 @@ const SettingModalInner = ({
     setOpenStarAFFiNEModal(true);
   }, [setOpenStarAFFiNEModal]);
 
+  const addSubPageIsland = useCallback(() => {
+    const island = createIsland();
+    setSubPageIslands(prev => [...prev, island]);
+    const dispose = () => {
+      setSubPageIslands(prev => prev.filter(i => i !== island));
+    };
+    return { island, dispose };
+  }, []);
+
+  const contextValue = useMemo(
+    () =>
+      ({
+        islands: subPageIslands,
+        addIsland: addSubPageIsland,
+      }) satisfies SubPageContextType,
+    [subPageIslands, addSubPageIsland]
+  );
+
   useEffect(() => {
     if (
       isSelfhosted &&
@@ -164,6 +190,7 @@ const SettingModalInner = ({
         }
       });
     }
+    modalContentWrapperRef.current?.scrollTo({ top: 0 });
   }, [settingState]);
   return (
     <FrameworkScope scope={currentServer.scope}>
@@ -171,64 +198,69 @@ const SettingModalInner = ({
         activeTab={settingState.activeTab}
         onTabChange={onTabChange}
       />
-      <Scrollable.Root>
-        <Scrollable.Viewport
-          data-testid="setting-modal-content"
-          className={style.wrapper}
-          ref={modalContentWrapperRef}
-        >
-          <div className={style.centerContainer}>
-            <div ref={modalContentRef} className={style.content}>
-              <Suspense fallback={<WorkspaceDetailSkeleton />}>
-                {settingState.activeTab === 'account' &&
-                loginStatus === 'authenticated' ? (
-                  <AccountSetting onChangeSettingState={setSettingState} />
-                ) : isWorkspaceSetting(settingState.activeTab) ? (
-                  <WorkspaceSetting
-                    activeTab={settingState.activeTab}
-                    onCloseSetting={onCloseSetting}
-                    onChangeSettingState={setSettingState}
-                  />
-                ) : !isWorkspaceSetting(settingState.activeTab) ? (
-                  <GeneralSetting
-                    activeTab={settingState.activeTab}
-                    onChangeSettingState={setSettingState}
-                  />
-                ) : null}
-              </Suspense>
-            </div>
-            <div className={style.footer}>
-              <ContactWithUsIcon fontSize={16} />
-              <Trans
-                i18nKey={'com.affine.settings.suggestion-2'}
-                components={{
-                  1: (
-                    <span
-                      className={style.link}
-                      onClick={handleOpenStarAFFiNEModal}
+      <SubPageContext.Provider value={contextValue}>
+        <Scrollable.Root>
+          <Scrollable.Viewport
+            data-testid="setting-modal-content"
+            className={style.wrapper}
+            ref={modalContentWrapperRef}
+            data-setting-page
+            data-open
+          >
+            <div className={style.centerContainer}>
+              <div ref={modalContentRef} className={style.content}>
+                <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                  {settingState.activeTab === 'account' &&
+                  loginStatus === 'authenticated' ? (
+                    <AccountSetting onChangeSettingState={setSettingState} />
+                  ) : isWorkspaceSetting(settingState.activeTab) ? (
+                    <WorkspaceSetting
+                      activeTab={settingState.activeTab}
+                      onCloseSetting={onCloseSetting}
+                      onChangeSettingState={setSettingState}
                     />
-                  ),
-                  2: (
-                    <span
-                      className={style.link}
-                      onClick={handleOpenIssueFeedbackModal}
+                  ) : !isWorkspaceSetting(settingState.activeTab) ? (
+                    <GeneralSetting
+                      activeTab={settingState.activeTab}
+                      onChangeSettingState={setSettingState}
                     />
-                  ),
-                }}
+                  ) : null}
+                </Suspense>
+              </div>
+              <div className={style.footer}>
+                <ContactWithUsIcon fontSize={16} />
+                <Trans
+                  i18nKey={'com.affine.settings.suggestion-2'}
+                  components={{
+                    1: (
+                      <span
+                        className={style.link}
+                        onClick={handleOpenStarAFFiNEModal}
+                      />
+                    ),
+                    2: (
+                      <span
+                        className={style.link}
+                        onClick={handleOpenIssueFeedbackModal}
+                      />
+                    ),
+                  }}
+                />
+              </div>
+              <StarAFFiNEModal
+                open={openStarAFFiNEModal}
+                setOpen={setOpenStarAFFiNEModal}
+              />
+              <IssueFeedbackModal
+                open={openIssueFeedbackModal}
+                setOpen={setOpenIssueFeedbackModal}
               />
             </div>
-            <StarAFFiNEModal
-              open={openStarAFFiNEModal}
-              setOpen={setOpenStarAFFiNEModal}
-            />
-            <IssueFeedbackModal
-              open={openIssueFeedbackModal}
-              setOpen={setOpenIssueFeedbackModal}
-            />
-          </div>
-          <Scrollable.Scrollbar />
-        </Scrollable.Viewport>
-      </Scrollable.Root>
+            <Scrollable.Scrollbar />
+          </Scrollable.Viewport>
+          <SubPageTarget />
+        </Scrollable.Root>
+      </SubPageContext.Provider>
     </FrameworkScope>
   );
 };
@@ -246,7 +278,7 @@ export const SettingDialog = ({
         ['data-testid' as string]: 'setting-modal',
         style: {
           maxHeight: '85vh',
-          maxWidth: '70vw',
+          maxWidth: 'calc(100dvw - 100px)',
           padding: 0,
           overflow: 'hidden',
           display: 'flex',
@@ -254,6 +286,9 @@ export const SettingDialog = ({
       }}
       open
       onOpenChange={() => close()}
+      closeButtonOptions={{
+        style: { right: 14, top: 14 },
+      }}
     >
       <Suspense fallback={<CenteredLoading />}>
         <SettingModalInner

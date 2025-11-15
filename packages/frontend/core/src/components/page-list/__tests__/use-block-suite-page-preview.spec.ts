@@ -3,7 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
-import { StoreExtensions } from '@blocksuite/affine/extensions';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { type Store, Text } from '@blocksuite/affine/store';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
 import { renderHook } from '@testing-library/react';
@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 let docCollection: TestWorkspace;
 
-const extensions = StoreExtensions;
+const extensions = getStoreManager().config.init().value.get('store');
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });

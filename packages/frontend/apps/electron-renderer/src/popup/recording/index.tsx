@@ -5,7 +5,7 @@ import {
   createStreamEncoder,
   encodeRawBufferToOpus,
   type OpusStreamEncoder,
-} from '@affine/core/utils/webm-encoding';
+} from '@affine/core/utils/opus-encoding';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
@@ -148,6 +148,7 @@ export function Recording() {
   );
 
   useEffect(() => {
+    let removed = false;
     let currentStreamEncoder: OpusStreamEncoder | undefined;
 
     apis?.recording
@@ -161,6 +162,9 @@ export function Recording() {
       .catch(console.error);
 
     const handleRecordingStatusChanged = async (status: Status) => {
+      if (removed) {
+        return;
+      }
       if (status?.status === 'new') {
         track.popup.$.recordingBar.toggleRecordingBar({
           type: 'Meeting record',
@@ -196,6 +200,7 @@ export function Recording() {
     });
 
     return () => {
+      removed = true;
       unsubscribe?.();
       currentStreamEncoder?.close();
     };

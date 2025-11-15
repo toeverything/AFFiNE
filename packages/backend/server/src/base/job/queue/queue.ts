@@ -30,7 +30,7 @@ export class JobQueue {
       } as JobData<T>,
       opts
     );
-    this.logger.log(`Job [${name}] added; id=${job.id}`);
+    this.logger.debug(`Job [${name}] added; id=${job.id}`);
     return job;
   }
 
@@ -48,7 +48,7 @@ export class JobQueue {
 
     const removed = await queue.remove(jobId);
     if (removed) {
-      this.logger.log(`Job ${jobName} removed from queue ${ns}`);
+      this.logger.log(`Job ${jobName}(id=${jobId}) removed from queue ${ns}`);
       return job.data.payload;
     }
 

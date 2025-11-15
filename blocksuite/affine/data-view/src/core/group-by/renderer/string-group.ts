@@ -7,7 +7,7 @@ import { css, html } from 'lit';
 
 import { BaseGroup } from './base.js';
 
-export class StringGroupView extends BaseGroup<NonNullable<unknown>, string> {
+export class StringGroupView extends BaseGroup<string, NonNullable<unknown>> {
   static override styles = css`
     .data-view-group-title-string-view {
       border-radius: 8px;

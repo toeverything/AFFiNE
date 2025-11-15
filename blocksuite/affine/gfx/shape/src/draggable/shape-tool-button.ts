@@ -38,7 +38,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     if (!this.popper) this._toggleMenu();
   };
 
-  override type = 'shape' as const;
+  override type = ShapeTool;
 
   private _toggleMenu() {
     this.createPopper('edgeless-shape-menu', this, {

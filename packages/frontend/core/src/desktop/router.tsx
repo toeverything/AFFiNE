@@ -188,6 +188,7 @@ const createBrowserRouter = wrapCreateBrowserRouterV6(
 export const router = (
   window.SENTRY_RELEASE ? createBrowserRouter : reactRouterCreateBrowserRouter
 )(topLevelRoutes, {
+  basename: environment.subPath,
   future: {
     v7_normalizeFormMethod: true,
   },

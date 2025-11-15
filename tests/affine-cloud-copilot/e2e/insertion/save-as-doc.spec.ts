@@ -13,12 +13,12 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -31,7 +31,7 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     const { actions, content } =
       await utils.chatPanel.getLatestAssistantMessage(page);
     await actions.saveAsDoc();
-    await page.getByText('New doc created');
+    await page.getByText('New doc created').waitFor({ state: 'visible' });
 
     // Verify the ai block is created
     const editorContent = await utils.editor.getEditorContent(page);
@@ -45,12 +45,12 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await utils.editor.switchToEdgelessMode(page);
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -63,7 +63,7 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     const { actions, content } =
       await utils.chatPanel.getLatestAssistantMessage(page);
     await actions.saveAsDoc();
-    await page.getByText('New doc created');
+    await page.getByText('New doc created').waitFor({ state: 'visible' });
 
     // Switch to page mode
     await utils.editor.isPageMode(page);

@@ -29,7 +29,7 @@ import {
 } from '../../../../core/group-by/setting.js';
 import { groupTraitKey } from '../../../../core/group-by/trait.js';
 import {
-  type DataViewInstance,
+  type DataViewUILogicBase,
   emptyFilterGroup,
   popCreateFilter,
   renderUniLit,
@@ -73,7 +73,7 @@ export class DataViewHeaderToolsViewOptions extends WidgetBase {
   };
 
   openMoreAction = (target: PopupTarget) => {
-    popViewOptions(target, this.dataViewInstance);
+    popViewOptions(target, this.dataViewLogic);
   };
 
   override render() {
@@ -96,10 +96,10 @@ declare global {
 }
 const createSettingMenus = (
   target: PopupTarget,
-  dataViewInstance: DataViewInstance,
+  dataViewLogic: DataViewUILogicBase,
   reopen: () => void
 ) => {
-  const view = dataViewInstance.view;
+  const view = dataViewLogic.view;
   const settingItems: MenuConfig[] = [];
   settingItems.push(
     menu.action({
@@ -145,13 +145,16 @@ const createSettingMenus = (
                 popFilterRoot(target, {
                   filterTrait: filterTrait,
                   onBack: reopen,
+                  dataViewLogic: dataViewLogic,
                 });
+                dataViewLogic.eventTrace('CreateDatabaseFilter', {});
               },
             });
           } else {
             popFilterRoot(target, {
               filterTrait: filterTrait,
               onBack: reopen,
+              dataViewLogic: dataViewLogic,
             });
           }
         },
@@ -177,7 +180,7 @@ const createSettingMenus = (
           const sortList = sortTrait.sortList$.value;
           const sortUtils = createSortUtils(
             sortTrait,
-            dataViewInstance.eventTrace
+            dataViewLogic.eventTrace
           );
           if (!sortList.length) {
             popCreateSort(target, {
@@ -225,12 +228,12 @@ const createSettingMenus = (
 };
 export const popViewOptions = (
   target: PopupTarget,
-  dataViewInstance: DataViewInstance,
+  dataViewLogic: DataViewUILogicBase,
   onClose?: () => void
 ) => {
-  const view = dataViewInstance.view;
+  const view = dataViewLogic.view;
   const reopen = () => {
-    popViewOptions(target, dataViewInstance);
+    popViewOptions(target, dataViewLogic);
   };
   const items: MenuConfig[] = [];
   items.push(
@@ -291,7 +294,7 @@ export const popViewOptions = (
                       return;
                     }
                     view.manager.viewChangeType(id, meta.type);
-                    dataViewInstance.clearSelection();
+                    dataViewLogic.clearSelection();
                   },
                   class: {},
                 };
@@ -345,7 +348,7 @@ export const popViewOptions = (
 
   items.push(
     menu.group({
-      items: createSettingMenus(target, dataViewInstance, reopen),
+      items: createSettingMenus(target, dataViewLogic, reopen),
     })
   );
   items.push(

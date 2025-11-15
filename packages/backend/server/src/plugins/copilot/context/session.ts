@@ -1,20 +1,21 @@
 import { nanoid } from 'nanoid';
 
 import {
+  ContextBlob,
   ContextCategories,
   ContextCategory,
   ContextConfig,
   ContextDoc,
   ContextEmbedStatus,
   ContextFile,
-  ContextList,
+  FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { EmbeddingClient } from './types';
+import { EmbeddingClient } from '../embedding';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
-    private readonly client: EmbeddingClient,
+    private readonly client: EmbeddingClient | undefined,
     private readonly contextId: string,
     private readonly config: ContextConfig,
     private readonly models: Models,
@@ -46,19 +47,26 @@ export class ContextSession implements AsyncDisposable {
     return categories.filter(c => c.type === ContextCategories.Collection);
   }
 
+  get blobs(): ContextBlob[] {
+    return this.config.blobs.map(d => ({ ...d }));
+  }
+
   get docs(): ContextDoc[] {
     return this.config.docs.map(d => ({ ...d }));
   }
 
-  get files() {
-    return this.config.files.map(f => ({ ...f }));
+  get files(): Required<ContextFile>[] {
+    return this.config.files.map(f => this.fulfillFile(f));
   }
 
-  get sortedList(): ContextList {
-    const { docs, files } = this.config;
-    return [...docs, ...files].toSorted(
-      (a, b) => a.createdAt - b.createdAt
-    ) as ContextList;
+  get docIds() {
+    return Array.from(
+      new Set(
+        [this.config.docs, this.config.categories.flatMap(c => c.docs)]
+          .flat()
+          .map(d => d.id)
+      )
+    );
   }
 
   async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
@@ -109,6 +117,63 @@ export class ContextSession implements AsyncDisposable {
     return true;
   }
 
+  async addBlobRecord(blobId: string): Promise<ContextBlob | null> {
+    const existsBlob = this.config.blobs.find(b => b.id === blobId);
+    if (existsBlob) {
+      return existsBlob;
+    }
+    const blob = await this.models.blob.get(this.config.workspaceId, blobId);
+    if (!blob) return null;
+
+    const record: ContextBlob = {
+      id: blobId,
+      createdAt: Date.now(),
+      status: ContextEmbedStatus.processing,
+    };
+    this.config.blobs.push(record);
+    await this.save();
+    return record;
+  }
+
+  async getBlobMetadata() {
+    const blobIds = this.blobs.map(b => b.id);
+    const blobs = await this.models.blob.list(this.config.workspaceId, {
+      where: { key: { in: blobIds } },
+      select: { key: true, mime: true },
+    });
+    const blobChunkSizes = await this.models.copilotWorkspace.getBlobChunkSizes(
+      this.config.workspaceId,
+      blobIds
+    );
+    return blobs
+      .filter(b => !!blobChunkSizes.get(b.key))
+      .map(b => ({
+        id: b.key,
+        mimeType: b.mime,
+        chunkSize: blobChunkSizes.get(b.key),
+      }));
+  }
+
+  async getBlobContent(
+    blobId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    return this.models.copilotWorkspace.getBlobContent(
+      this.config.workspaceId,
+      blobId,
+      chunk
+    );
+  }
+
+  async removeBlobRecord(blobId: string): Promise<boolean> {
+    const index = this.config.blobs.findIndex(b => b.id === blobId);
+    if (index >= 0) {
+      this.config.blobs.splice(index, 1);
+      await this.save();
+    }
+    return true;
+  }
+
   async addDocRecord(docId: string): Promise<ContextDoc> {
     const doc = this.config.docs.find(f => f.id === docId);
     if (doc) {
@@ -129,14 +194,25 @@ export class ContextSession implements AsyncDisposable {
     return true;
   }
 
-  async addFile(blobId: string, name: string): Promise<ContextFile> {
+  private fulfillFile(file: ContextFile): Required<ContextFile> {
+    return {
+      ...file,
+      mimeType: file.mimeType || 'application/octet-stream',
+    };
+  }
+
+  async addFile(
+    blobId: string,
+    name: string,
+    mimeType: string
+  ): Promise<Required<ContextFile>> {
     let fileId = nanoid();
     const existsBlob = this.config.files.find(f => f.blobId === blobId);
     if (existsBlob) {
       // use exists file id if the blob exists
       // we assume that the file content pointed to by the same blobId is consistent.
       if (existsBlob.status === ContextEmbedStatus.finished) {
-        return existsBlob;
+        return this.fulfillFile(existsBlob);
       }
       fileId = existsBlob.id;
     } else {
@@ -145,19 +221,36 @@ export class ContextSession implements AsyncDisposable {
         blobId,
         chunkSize: 0,
         name,
+        mimeType,
         error: null,
         createdAt: Date.now(),
       }));
     }
-    return this.getFile(fileId) as ContextFile;
+    return this.fulfillFile(this.getFile(fileId) as ContextFile);
   }
 
   getFile(fileId: string): ContextFile | undefined {
     return this.config.files.find(f => f.id === fileId);
   }
 
+  async getFileContent(
+    fileId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = this.getFile(fileId);
+    if (!file) return undefined;
+    return this.models.copilotContext.getFileContent(
+      this.contextId,
+      fileId,
+      chunk
+    );
+  }
+
   async removeFile(fileId: string): Promise<boolean> {
-    await this.models.copilotContext.deleteEmbedding(this.contextId, fileId);
+    await this.models.copilotContext.deleteFileEmbedding(
+      this.contextId,
+      fileId
+    );
     this.config.files = this.config.files.filter(f => f.id !== fileId);
     await this.save();
     return true;
@@ -171,22 +264,48 @@ export class ContextSession implements AsyncDisposable {
    * @param threshold relevance threshold for the similarity score, higher threshold means more similar chunks, default 0.7, good enough based on prior experiments
    * @returns list of similar chunks
    */
-  async matchFileChunks(
+  async matchFiles(
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.7
-  ) {
-    const embedding = await this.client
-      .getEmbeddings([content], signal)
-      .then(r => r?.[0]?.embedding);
+    scopedThreshold: number = 0.85,
+    threshold: number = 0.5
+  ): Promise<FileChunkSimilarity[]> {
+    if (!this.client) return [];
+    const embedding = await this.client.getEmbedding(content, signal);
     if (!embedding) return [];
 
-    return this.models.copilotContext.matchContentEmbedding(
-      embedding,
-      this.id,
+    const [context, workspace] = await Promise.all([
+      this.models.copilotContext.matchFileEmbedding(
+        embedding,
+        this.id,
+        topK * 2,
+        scopedThreshold
+      ),
+      this.models.copilotWorkspace.matchFileEmbedding(
+        this.workspaceId,
+        embedding,
+        topK * 2,
+        threshold
+      ),
+    ]);
+    const files = new Map(this.files.map(f => [f.id, f]));
+
+    return this.client.reRank(
+      content,
+      [
+        ...context
+          .filter(f => files.has(f.fileId))
+          .map(c => {
+            const { blobId, name, mimeType } = files.get(
+              c.fileId
+            ) as Required<ContextFile>;
+            return { ...c, blobId, name, mimeType };
+          }),
+        ...workspace,
+      ],
       topK,
-      threshold
+      signal
     );
   }
 
@@ -198,22 +317,47 @@ export class ContextSession implements AsyncDisposable {
    * @param threshold relevance threshold for the similarity score, higher threshold means more similar chunks, default 0.7, good enough based on prior experiments
    * @returns list of similar chunks
    */
-  async matchWorkspaceChunks(
+  async matchWorkspaceDocs(
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.7
+    scopedThreshold: number = 0.85,
+    threshold: number = 0.5
   ) {
-    const embedding = await this.client
-      .getEmbeddings([content], signal)
-      .then(r => r?.[0]?.embedding);
+    if (!this.client) return [];
+    const embedding = await this.client.getEmbedding(content, signal);
     if (!embedding) return [];
 
-    return this.models.copilotContext.matchWorkspaceEmbedding(
-      embedding,
-      this.workspaceId,
+    const docIds = this.docIds;
+    const [inContext, workspace] = await Promise.all([
+      this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        this.workspaceId,
+        topK * 2,
+        scopedThreshold,
+        docIds
+      ),
+      this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        this.workspaceId,
+        topK * 2,
+        threshold
+      ),
+    ]);
+
+    const result = await this.client.reRank(
+      content,
+      [...inContext, ...workspace],
       topK,
-      threshold
+      signal
+    );
+
+    // sort result, doc recorded in context first
+    const docIdSet = new Set(docIds);
+    return result.toSorted(
+      (a, b) =>
+        (docIdSet.has(a.docId) ? -1 : 1) - (docIdSet.has(b.docId) ? -1 : 1) ||
+        (a.distance || Infinity) - (b.distance || Infinity)
     );
   }
 

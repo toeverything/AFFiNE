@@ -47,7 +47,7 @@ const assertAndSnapshotRaw = async (
     .send(options?.body)
     .expect(status)
     .expect(checker);
-  t.notThrowsAsync(res, message);
+  await t.notThrowsAsync(res, message);
   t.snapshot((await res).body);
 };
 

@@ -1,0 +1,10 @@
+mutation addWorkspaceEmbeddingFiles($workspaceId: String!, $blob: Upload!) {
+  addWorkspaceEmbeddingFiles(workspaceId: $workspaceId, blob: $blob) {
+    fileId
+    fileName
+    blobId
+    mimeType
+    size
+    createdAt
+  }
+}

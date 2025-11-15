@@ -43,6 +43,7 @@ export const ReferenceParamsSchema = z
     databaseId: z.string().optional(),
     databaseRowId: z.string().optional(),
     xywh: SerializedXYWHSchema.optional(),
+    commentId: z.string().optional(),
   })
   .partial();
 
@@ -65,6 +66,9 @@ export type ReferenceInfo = z.infer<typeof ReferenceInfoSchema>;
  * 3. url: string - the url of the reference
  * 4. fileName: string - the name of the attachment
  * 5. fileType: string - the type of the attachment
+ * 6. favicon: string - the favicon of the url reference
+ * 7. title: string - the title of the url reference
+ * 8. description: string - the description of the url reference
  */
 export const FootNoteReferenceParamsSchema = z.object({
   type: z.enum(FootNoteReferenceTypes),
@@ -73,6 +77,9 @@ export const FootNoteReferenceParamsSchema = z.object({
   fileName: z.string().optional(),
   fileType: z.string().optional(),
   url: z.string().optional(),
+  favicon: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export type FootNoteReferenceParams = z.infer<

@@ -4,6 +4,11 @@ description: 'Prepare Server Test Environment'
 runs:
   using: 'composite'
   steps:
+    - name: Bundle @affine/reader
+      shell: bash
+      run: |
+        yarn affine @affine/reader build
+
     - name: Initialize database
       shell: bash
       run: |
@@ -21,11 +26,10 @@ runs:
         yarn affine @affine/server prisma generate
         yarn affine @affine/server prisma migrate deploy
         yarn affine @affine/server data-migration run
+
     - name: Import config
       shell: bash
+      env:
+        DEFAULT_CONFIG: '{}'
       run: |
-        printf '{"copilot":{"enabled":true,"providers.fal":{"apiKey":"%s"},"providers.gemini":{"apiKey":"%s"},"providers.openai":{"apiKey":"%s"},"providers.perplexity":{"apiKey":"%s"}}}' \
-        "$COPILOT_FAL_API_KEY" \
-        "$COPILOT_GOOGLE_API_KEY" \
-        "$COPILOT_OPENAI_API_KEY" \
-        "$COPILOT_PERPLEXITY_API_KEY" > ./packages/backend/server/config.json
+        printf '%s\n' "${SERVER_CONFIG:-$DEFAULT_CONFIG}" > ./packages/backend/server/config.json

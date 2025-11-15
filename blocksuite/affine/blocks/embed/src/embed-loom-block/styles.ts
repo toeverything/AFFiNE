@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html } from 'lit';
 
 export const styles = css`
@@ -12,17 +13,15 @@ export const styles = css`
     height: 100%;
 
     border-radius: 8px;
-    border: 1px solid var(--affine-background-tertiary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
 
-    opacity: var(--add, 1);
-    background: var(--affine-background-primary-color);
+    background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
   }
 
   .affine-embed-loom-video {
     flex-grow: 1;
     width: 100%;
-    opacity: var(--add, 1);
   }
 
   .affine-embed-loom-video img,
@@ -31,7 +30,7 @@ export const styles = css`
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 4px 4px var(--1, 0px) var(--1, 0px);
+    border-radius: 4px;
   }
 
   .affine-embed-loom-video-iframe-container {
@@ -42,7 +41,7 @@ export const styles = css`
   .affine-embed-loom-video-iframe-container > iframe {
     width: 100%;
     height: 100%;
-    border-radius: 4px 4px var(--1, 0px) var(--1, 0px);
+    border-radius: 4px;
   }
 
   .affine-embed-loom-video-iframe-overlay {
@@ -62,8 +61,6 @@ export const styles = css`
     flex-direction: column;
     width: 100%;
     height: fit-content;
-    border-radius: var(--1, 0px);
-    opacity: var(--add, 1);
   }
 
   .affine-embed-loom-content-header {
@@ -73,9 +70,6 @@ export const styles = css`
     align-items: center;
 
     align-self: stretch;
-    padding: var(--1, 0px);
-    border-radius: var(--1, 0px);
-    opacity: var(--add, 1);
   }
 
   .affine-embed-loom-content-title-icon {

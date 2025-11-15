@@ -6,7 +6,7 @@ import {
 } from '@blocksuite/affine-model';
 import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { type BlockStdScope, StdIdentifier } from '@blocksuite/std';
-import { Extension, type ExtensionType } from '@blocksuite/store';
+import { Extension } from '@blocksuite/store';
 import { type Signal, signal } from '@preact/signals-core';
 import {
   type AffineCssVariables,
@@ -23,14 +23,6 @@ export const ThemeExtensionIdentifier = createIdentifier<ThemeExtension>(
 export interface ThemeExtension {
   getAppTheme?: () => Signal<ColorScheme>;
   getEdgelessTheme?: (docId?: string) => Signal<ColorScheme>;
-}
-
-export function OverrideThemeExtension(service: ThemeExtension): ExtensionType {
-  return {
-    setup: di => {
-      di.override(ThemeExtensionIdentifier, () => service);
-    },
-  };
 }
 
 export const ThemeProvider = createIdentifier<ThemeService>(
@@ -78,6 +70,7 @@ export class ThemeService extends Extension {
    *
    * @param color - A color value.
    * @param fallback  - If color value processing fails, it will be used as a fallback.
+   * @param theme - Target theme, default is the current theme.
    * @returns - A color property string.
    *
    * @example
@@ -112,6 +105,7 @@ export class ThemeService extends Extension {
    * @param color - A color value.
    * @param fallback - If color value processing fails, it will be used as a fallback.
    * @param real - If true, it returns the computed style.
+   * @param theme - Target theme, default is the current theme.
    * @returns - A color property string.
    *
    * @example

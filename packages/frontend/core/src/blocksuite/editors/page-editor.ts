@@ -1,4 +1,3 @@
-import { PageEditorBlockSpecs } from '@blocksuite/affine/extensions';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { noop } from '@blocksuite/affine/global/utils';
 import { ThemeProvider } from '@blocksuite/affine/shared/services';
@@ -7,7 +6,7 @@ import {
   EditorHost,
   ShadowlessElement,
 } from '@blocksuite/affine/std';
-import type { Store } from '@blocksuite/affine/store';
+import type { ExtensionType, Store } from '@blocksuite/affine/store';
 import { css, html, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { guard } from 'lit/directives/guard.js';
@@ -104,7 +103,7 @@ export class PageEditor extends SignalWatcher(
   accessor doc!: Store;
 
   @property({ attribute: false })
-  accessor specs = PageEditorBlockSpecs;
+  accessor specs: ExtensionType[] = [];
 
   @state()
   accessor std!: BlockStdScope;

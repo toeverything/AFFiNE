@@ -1,4 +1,5 @@
 import {
+  canEmbedAsEmbedBlock,
   canEmbedAsIframe,
   EMBED_IFRAME_DEFAULT_HEIGHT_IN_SURFACE,
   EMBED_IFRAME_DEFAULT_WIDTH_IN_SURFACE,
@@ -149,13 +150,10 @@ const builtinToolbarConfig = {
             if (!model) return true;
 
             const url = model.props.url;
-            // check if the url can be embedded as iframe block or other embed blocks
-            const options = ctx.std
-              .get(EmbedOptionProvider)
-              .getEmbedBlockOptions(url);
 
             return (
-              !canEmbedAsIframe(ctx.std, url) && options?.viewType !== 'embed'
+              !canEmbedAsIframe(ctx.std, url) &&
+              !canEmbedAsEmbedBlock(ctx.std, url)
             );
           },
           run(ctx) {
@@ -169,15 +167,8 @@ const builtinToolbarConfig = {
 
             let blockId: string | undefined;
 
-            // first try to embed as iframe block
-            if (canEmbedAsIframe(ctx.std, url)) {
-              const embedIframeService = ctx.std.get(EmbedIframeService);
-              blockId = embedIframeService.addEmbedIframeBlock(
-                { url, caption, title, description },
-                parent.id,
-                index
-              );
-            } else {
+            // first try to embed as a custom embed block
+            if (canEmbedAsEmbedBlock(ctx.std, url)) {
               const options = ctx.std
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
@@ -200,6 +191,13 @@ const builtinToolbarConfig = {
                   style: newStyle,
                 },
                 parent,
+                index
+              );
+            } else if (canEmbedAsIframe(ctx.std, url)) {
+              const embedIframeService = ctx.std.get(EmbedIframeService);
+              blockId = embedIframeService.addEmbedIframeBlock(
+                { url, caption, title, description },
+                parent.id,
                 index
               );
             }
@@ -379,27 +377,8 @@ const builtinSurfaceToolbarConfig = {
 
             let newId: string | undefined;
 
-            // first try to embed as iframe block
-            if (canEmbedAsIframe(ctx.std, url)) {
-              const embedIframeService = ctx.std.get(EmbedIframeService);
-              const config = embedIframeService.getConfig(url);
-              if (!config) {
-                return;
-              }
-
-              const bound = Bound.deserialize(xywh);
-              const options = config.options;
-              const { widthInSurface, heightInSurface } = options ?? {};
-              bound.w = widthInSurface ?? EMBED_IFRAME_DEFAULT_WIDTH_IN_SURFACE;
-              bound.h =
-                heightInSurface ?? EMBED_IFRAME_DEFAULT_HEIGHT_IN_SURFACE;
-
-              newId = ctx.store.addBlock(
-                'affine:embed-iframe',
-                { url, caption, title, description, xywh: bound.serialize() },
-                parent
-              );
-            } else {
+            // first try to embed as a custom embed block
+            if (canEmbedAsEmbedBlock(ctx.std, url)) {
               const options = ctx.std
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
@@ -407,7 +386,7 @@ const builtinSurfaceToolbarConfig = {
               if (options?.viewType !== 'embed') return;
 
               const { flavour, styles } = options;
-              let { style } = model.props;
+              let style: EmbedCardStyle = model.props.style;
 
               if (!styles.includes(style)) {
                 style = styles[0];
@@ -429,7 +408,28 @@ const builtinSurfaceToolbarConfig = {
                 },
                 parent
               );
+            } else if (canEmbedAsIframe(ctx.std, url)) {
+              const embedIframeService = ctx.std.get(EmbedIframeService);
+              const config = embedIframeService.getConfig(url);
+              if (!config) {
+                return;
+              }
+
+              const bound = Bound.deserialize(xywh);
+              const options = config.options;
+              const { widthInSurface, heightInSurface } = options ?? {};
+              bound.w = widthInSurface ?? EMBED_IFRAME_DEFAULT_WIDTH_IN_SURFACE;
+              bound.h =
+                heightInSurface ?? EMBED_IFRAME_DEFAULT_HEIGHT_IN_SURFACE;
+
+              newId = ctx.store.addBlock(
+                'affine:embed-iframe',
+                { url, caption, title, description, xywh: bound.serialize() },
+                parent
+              );
             }
+
+            if (!newId) return;
 
             ctx.command.exec(reassociateConnectorsCommand, { oldId, newId });
 
@@ -449,13 +449,10 @@ const builtinSurfaceToolbarConfig = {
       when(ctx) {
         const model = ctx.getCurrentModelByType(BookmarkBlockModel);
         if (!model) return false;
-
         const { url } = model.props;
-        const options = ctx.std
-          .get(EmbedOptionProvider)
-          .getEmbedBlockOptions(url);
-
-        return canEmbedAsIframe(ctx.std, url) || options?.viewType === 'embed';
+        return (
+          canEmbedAsIframe(ctx.std, url) || canEmbedAsEmbedBlock(ctx.std, url)
+        );
       },
       content(ctx) {
         const model = ctx.getCurrentModelByType(BookmarkBlockModel);
@@ -482,24 +479,26 @@ const builtinSurfaceToolbarConfig = {
     } satisfies ToolbarActionGroup<ToolbarAction>,
     {
       id: 'b.style',
-      actions: [
-        {
-          id: 'horizontal',
-          label: 'Large horizontal style',
-        },
-        {
-          id: 'list',
-          label: 'Small horizontal style',
-        },
-        {
-          id: 'vertical',
-          label: 'Large vertical style',
-        },
-        {
-          id: 'cube',
-          label: 'Small vertical style',
-        },
-      ].filter(action => BookmarkStyles.includes(action.id as EmbedCardStyle)),
+      actions: (
+        [
+          {
+            id: 'horizontal',
+            label: 'Large horizontal style',
+          },
+          {
+            id: 'list',
+            label: 'Small horizontal style',
+          },
+          {
+            id: 'vertical',
+            label: 'Large vertical style',
+          },
+          {
+            id: 'cube',
+            label: 'Small vertical style',
+          },
+        ] as const
+      ).filter(action => BookmarkStyles.includes(action.id)),
       content(ctx) {
         const model = ctx.getCurrentModelByType(BookmarkBlockModel);
         if (!model) return null;

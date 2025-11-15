@@ -1,3 +1,4 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { BookmarkBlockSchema } from '@blocksuite/affine-model';
 import {
@@ -5,6 +6,7 @@ import {
   SlashMenuConfigIdentifier,
 } from '@blocksuite/affine-widget-slash-menu';
 import { LinkIcon } from '@blocksuite/icons/lit';
+import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { ExtensionType } from '@blocksuite/store';
 
 import { LinkTooltip } from './tooltips';
@@ -21,10 +23,10 @@ const bookmarkSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@2',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:bookmark'),
+        model.store.schema.flavourSchemaMap.has('affine:bookmark'),
       action: ({ std, model }) => {
         const { host } = std;
-        const parentModel = host.doc.getParent(model);
+        const parentModel = host.store.getParent(model);
         if (!parentModel) {
           return;
         }
@@ -33,11 +35,17 @@ const bookmarkSlashMenuConfig: SlashMenuConfig = {
           host,
           'Links',
           'The added link will be displayed as a card view.',
-          { mode: 'page', parentModel, index }
+          { mode: 'page', parentModel, index },
+          ({ mode }) => {
+            if (mode === 'edgeless') {
+              const gfx = std.get(GfxControllerIdentifier);
+              gfx.tool.setTool(DefaultTool);
+            }
+          }
         )
           .then(() => {
             if (model.text?.length === 0) {
-              model.doc.deleteBlock(model);
+              model.store.deleteBlock(model);
             }
           })
           .catch(console.error);

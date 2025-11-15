@@ -21,6 +21,9 @@ export const menuTriggerStyle = style({
 });
 export const menuTriggerText = style({
   margin: '0px 4px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
 });
 export const suffixClassName = style({
   width: '20px',

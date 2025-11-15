@@ -25,10 +25,7 @@ const GroupLabel = ({
 }) => (
   <div className={styles.groupLabelWrapper}>
     {icon}
-    <div
-      className={styles.groupLabel}
-      data-testid={`group-label-${id}-${count}`}
-    >
+    <div className={styles.groupLabel} data-testid={`group-label-${id}`}>
       {label}
     </div>
     <div className={styles.pageCount}>{` · ${count}`}</div>

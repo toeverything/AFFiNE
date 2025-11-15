@@ -29,7 +29,7 @@ test('should read NODE_ENV', t => {
     },
     {
       message:
-        'Invalid value "unknown" for environment variable NODE_ENV, expected one of ["development","test","production"]',
+        'Invalid NODE_ENV environment. `unknown` is not a valid NODE_ENV value.',
     }
   );
 });
@@ -111,7 +111,7 @@ test('should tell flavors correctly', t => {
     sync: true,
     renderer: true,
     doc: true,
-    script: true,
+    script: false,
   });
 
   process.env.SERVER_FLAVOR = 'graphql';
@@ -121,6 +121,15 @@ test('should tell flavors correctly', t => {
     renderer: false,
     doc: false,
     script: false,
+  });
+
+  process.env.SERVER_FLAVOR = 'script';
+  t.deepEqual(new Env().flavors, {
+    graphql: false,
+    sync: false,
+    renderer: false,
+    doc: false,
+    script: true,
   });
 });
 

@@ -184,6 +184,7 @@ function AddPageWithoutAsk({ className, style }: AddPageButtonProps) {
       data-testid="sidebar-new-page-button"
       style={style}
       className={clsx([styles.root, className])}
+      size={16}
       onClick={onClickNewPage}
       onAuxClick={onClickNewPage}
     >

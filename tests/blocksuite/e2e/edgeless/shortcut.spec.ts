@@ -86,8 +86,13 @@ test('toggle shapes shortcut', async ({ page }) => {
     'roundedRect',
   ] as ShapeName[];
   for (const shape of shapesInOrder) {
-    await page.keyboard.press('Shift+s');
+    await page.keyboard.press('s');
     await assertEdgelessShapeType(page, shape);
+  }
+
+  for (const shape of shapesInOrder.reverse()) {
+    await assertEdgelessShapeType(page, shape);
+    await page.keyboard.press('Shift+s');
   }
 });
 

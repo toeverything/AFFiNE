@@ -156,7 +156,7 @@ export class FramePanelBody extends SignalWatcher(
   };
 
   get frames() {
-    const frames = this.editorHost.doc
+    const frames = this.editorHost.store
       .getBlocksByFlavour('affine:frame')
       .map(block => block.model as FrameBlockModel);
     return frames.sort(compare);
@@ -312,13 +312,13 @@ export class FramePanelBody extends SignalWatcher(
       const after = frames[insertIndex]?.props.presentationIndex || null;
       selectedFrames.forEach(frame => {
         const newIndex = generateKeyBetweenV2(before, after);
-        frame.doc.updateBlock(frame, {
+        frame.store.updateBlock(frame, {
           presentationIndex: newIndex,
         });
         before = newIndex;
       });
 
-      this.editorHost.doc.captureSync();
+      this.editorHost.store.captureSync();
       this._updateFrames();
     }
   }
@@ -392,9 +392,9 @@ export class FramePanelBody extends SignalWatcher(
 
   override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('editorHost') && this.editorHost) {
-      this._setDocDisposables(this.editorHost.doc);
+      this._setDocDisposables(this.editorHost.store);
       // after switch to edgeless mode, should update the selection
-      if (this.editorHost.doc.id === this._lastEdgelessRootId) {
+      if (this.editorHost.store.id === this._lastEdgelessRootId) {
         this._gfx.selection.set({
           elements: this._selected,
           editing: false,
@@ -402,7 +402,7 @@ export class FramePanelBody extends SignalWatcher(
       } else {
         this._selected = this._selected.length ? [] : this._selected;
       }
-      this._lastEdgelessRootId = this.editorHost.doc.id;
+      this._lastEdgelessRootId = this.editorHost.store.id;
     }
   }
 

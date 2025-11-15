@@ -57,4 +57,11 @@ export const PeekViewStyles = css`
     flex-direction: column;
     gap: 8px;
   }
+
+  .history-clear-container {
+    display: flex;
+    align-items: center;
+    flex-direction: row-reverse;
+    width: 100%;
+  }
 `;

@@ -15,7 +15,7 @@ export const splitListCommand: Command<{
 }> = (ctx, next) => {
   const { blockId, inlineIndex, std } = ctx;
   const host = std.host as EditorHost;
-  const doc = host.doc;
+  const doc = host.store;
 
   const model = doc.getBlock(blockId)?.model;
   if (!model || !matchModels(model, [ListBlockModel])) {

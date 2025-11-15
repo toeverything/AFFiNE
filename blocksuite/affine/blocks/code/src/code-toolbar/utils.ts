@@ -12,5 +12,5 @@ export const duplicateCodeBlock = (model: CodeBlockModel) => {
     ...duplicateProps,
   };
 
-  return model.doc.addSiblingBlocks(model, [newProps])[0];
+  return model.store.addSiblingBlocks(model, [newProps])[0];
 };

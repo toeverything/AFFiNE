@@ -1,11 +1,19 @@
-import { createUniComponentFromWebComponent } from '../../core/utils/uni-component/uni-component.js';
+import './pc-virtual/effect.js';
+import './pc/effect.js';
+
 import { createIcon } from '../../core/utils/uni-icon.js';
 import { tableViewModel } from './define.js';
-import { MobileDataViewTable } from './mobile/table-view.js';
-import { DataViewTable } from './pc/table-view.js';
+import { MobileTableViewUILogic } from './mobile/table-view-ui-logic.js';
+import { TableViewUILogic } from './pc/table-view-ui-logic.js';
+import { VirtualTableViewUILogic } from './pc-virtual/table-view-ui-logic';
 
 export const tableViewMeta = tableViewModel.createMeta({
-  view: createUniComponentFromWebComponent(DataViewTable),
-  mobileView: createUniComponentFromWebComponent(MobileDataViewTable),
   icon: createIcon('DatabaseTableViewIcon'),
+  pcLogic: view =>
+    // @ts-expect-error fixme: typesafe
+    view.manager.dataSource.featureFlags$.value.enable_table_virtual_scroll
+      ? VirtualTableViewUILogic
+      : TableViewUILogic,
+  // @ts-expect-error fixme: typesafe
+  mobileLogic: () => MobileTableViewUILogic,
 });

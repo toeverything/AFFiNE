@@ -15,7 +15,6 @@ import {
   type,
 } from './utils/actions/index.js';
 import {
-  getBoundingClientRect,
   getEditorHostLocator,
   getPageSnapshot,
   initParagraphsByCount,
@@ -239,7 +238,7 @@ test('should sync selected-blocks to session-manager when clicking drag handle',
   await assertRichTexts(page, ['123', '456', '789']);
 
   await focusRichText(page, 1);
-  const rect = await getBoundingClientRect(page, '[data-block-id="1"]');
+  const rect = await page.locator('[data-block-id="1"]').boundingBox();
   if (!rect) {
     throw new Error();
   }
@@ -347,13 +346,13 @@ test('should blur rich-text first on starting block selection', async ({
   await initThreeParagraphs(page);
   await assertRichTexts(page, ['123', '456', '789']);
 
-  await expect(page.locator('*:focus')).toHaveCount(1);
+  await expect(page.locator('[contenteditable="true"]:focus')).toHaveCount(1);
 
   await dragHandleFromBlockToBlockBottomById(page, '2', '4');
   await expect(page.locator('.affine-drop-indicator')).toBeHidden();
   await assertRichTexts(page, ['456', '789', '123']);
 
-  await expect(page.locator('*:focus')).toHaveCount(0);
+  await expect(page.locator('[contenteditable="true"]:focus')).toHaveCount(0);
 });
 
 test('hide drag handle when mouse is hovering over the title', async ({
@@ -363,10 +362,10 @@ test('hide drag handle when mouse is hovering over the title', async ({
   await initEmptyParagraphState(page);
   await initThreeParagraphs(page);
 
-  const rect = await getBoundingClientRect(
-    page,
-    '.affine-note-block-container'
-  );
+  const rect = await page.locator('.affine-note-block-container').boundingBox();
+  if (!rect) {
+    throw new Error();
+  }
   const dragHandle = page.locator('.affine-drag-handle-container');
   // When there is a gap between paragraph blocks, it is the correct behavior for the drag handle to appear
   // when the mouse is over the gap. Therefore, we use rect.y - 20 to make the Y offset greater than the gap between the
@@ -491,7 +490,7 @@ test('should trigger click event on editor container when clicking on blocks und
     .locator('affine-block-selection')
     .locator('visible=true');
   await expect(blockSelections).toHaveCount(2);
-  await expect(page.locator('*:focus')).toHaveCount(0);
+  await expect(page.locator('[contenteditable="true"]:focus')).toHaveCount(0);
 
   const editorHost = getEditorHostLocator(page);
   const editors = editorHost.locator('rich-text');
@@ -507,7 +506,7 @@ test('should trigger click event on editor container when clicking on blocks und
   await page.mouse.down();
   await page.mouse.up();
   await expect(blockSelections).toHaveCount(0);
-  await expect(page.locator('*:focus')).toHaveCount(1);
+  await expect(page.locator('[contenteditable="true"]:focus')).toHaveCount(1);
 });
 
 test('should get to selected block when dragging unselected block', async ({

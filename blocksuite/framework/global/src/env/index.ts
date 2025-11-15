@@ -1,5 +1,5 @@
 const agent = globalThis.navigator?.userAgent ?? '';
-const platform = globalThis.navigator?.platform;
+const platform = globalThis.navigator?.platform || globalThis.process?.platform;
 
 export const IS_WEB =
   typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -17,13 +17,15 @@ export const IS_IOS =
   IS_SAFARI &&
   (/Mobile\/\w+/.test(agent) || globalThis.navigator?.maxTouchPoints > 2);
 
-export const IS_MAC = /Mac/i.test(platform);
+export const IS_MAC = /Mac/i.test(platform) || /darwin/.test(platform);
 
 export const IS_IPAD =
   /iPad/i.test(platform) ||
   /iPad/i.test(agent) ||
   (/Macintosh/i.test(agent) && globalThis.navigator?.maxTouchPoints > 2);
 
-export const IS_WINDOWS = /Win/.test(platform);
+export const IS_WINDOWS = /Win/.test(platform) || /win32/.test(platform);
+
+export const IS_LINUX = /Linux/.test(platform);
 
 export const IS_MOBILE = IS_IOS || IS_IPAD || IS_ANDROID;

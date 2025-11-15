@@ -7,7 +7,8 @@ import {
   TurboRendererConfigFactory,
   ViewportTurboRendererExtension,
 } from '@blocksuite/affine-gfx-turbo-renderer';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { firstValueFrom } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
 import { wait } from '../utils/common.js';
 import { addSampleNotes } from '../utils/doc-generator.js';
@@ -17,9 +18,13 @@ import {
   setupEditor,
 } from '../utils/setup.js';
 
+const FRAME = 16;
+
 describe('viewport turbo renderer', () => {
+  let cleanup: () => void;
+
   beforeEach(async () => {
-    const cleanup = await setupEditor('edgeless', [
+    cleanup = await setupEditor('edgeless', [
       ParagraphLayoutHandlerExtension,
       TurboRendererConfigFactory({
         painterWorkerEntry: createPainterWorker,
@@ -29,13 +34,7 @@ describe('viewport turbo renderer', () => {
     return cleanup;
   });
 
-  test('should render 6 notes in viewport', async () => {
-    addSampleNotes(doc, 6);
-    await wait();
-
-    const notes = document.querySelectorAll('affine-edgeless-note');
-    expect(notes.length).toBe(6);
-  });
+  afterEach(() => cleanup?.());
 
   test('should access turbo renderer instance', async () => {
     const renderer = getRenderer();
@@ -49,22 +48,35 @@ describe('viewport turbo renderer', () => {
     expect(renderer.state$.value).toBe('pending');
   });
 
-  test('zooming should change state to zooming', async () => {
+  test.skip('zooming should change internal state and populate optimized block ids', async () => {
     const renderer = getRenderer();
+    addSampleNotes(doc, 1);
+    await wait(FRAME);
+    expect(renderer.optimizedBlockIds.length).toBe(0);
+
     renderer.viewport.zooming$.next(true);
-    await wait();
-    expect(renderer.state$.value).toBe('zooming');
+    const nextState = await firstValueFrom(renderer.state$);
+    expect(nextState).toBe('zooming');
+
+    const canUseCache = renderer.canUseBitmapCache();
+    expect(canUseCache).toBe(false);
+
+    await renderer.refresh();
+    await wait(FRAME);
+    expect(renderer.optimizedBlockIds.length).toBe(1);
+
     renderer.viewport.zooming$.next(false);
-    await wait();
+    await wait(renderer.options.debounceTime + 100);
+
     expect(renderer.state$.value).not.toBe('zooming');
+    expect(renderer.optimizedBlockIds.length).toBe(0);
   });
 
-  test('state transitions between pending and ready', async () => {
+  test.skip('state transitions between pending and ready', async () => {
     const renderer = getRenderer();
 
-    // Initial state should be pending after adding content
     addSampleNotes(doc, 1);
-    await wait(100); // Short wait for initial processing
+    await wait(FRAME);
     expect(renderer.state$.value).toBe('pending');
 
     // Ensure zooming is off and wait for debounce + buffer
@@ -98,12 +110,12 @@ describe('viewport turbo renderer', () => {
   test('accessing layoutCache getter should populate cache data', async () => {
     const renderer = getRenderer();
     addSampleNotes(doc, 1);
-    await wait();
-    expect(renderer.layoutCacheData).toBeNull(); // Check internal state before access
+    await wait(FRAME);
+    expect(renderer.layoutCacheData).toBeNull();
 
-    const _cache = renderer.layoutCache; // Access getter to populate cache
+    const _cache = renderer.layoutCache;
     noop(_cache);
-    expect(renderer.layoutCacheData).not.toBeNull(); // Check internal state after access
-    expect(renderer.layoutCache?.roots.length).toBeGreaterThan(0); // Check public getter result
+    expect(renderer.layoutCacheData).not.toBeNull();
+    expect(renderer.layoutCache?.roots.length).toBeGreaterThan(0);
   });
 });

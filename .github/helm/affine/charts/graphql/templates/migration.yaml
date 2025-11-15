@@ -44,6 +44,15 @@ spec:
               secretKeyRef:
                 name: redis
                 key: redis-password
+          - name: AFFINE_INDEXER_SEARCH_PROVIDER
+            value: "{{ .Values.global.indexer.provider }}"
+          - name: AFFINE_INDEXER_SEARCH_ENDPOINT
+            value: "{{ .Values.global.indexer.endpoint }}"
+          - name: AFFINE_INDEXER_SEARCH_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: indexer
+                key: indexer-apiKey
         resources:
           requests:
             cpu: '100m'

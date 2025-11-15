@@ -3,6 +3,7 @@ import {
   pasteMiddleware,
   replaceIdMiddleware,
   surfaceRefToEmbed,
+  uploadMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import {
   clearAndSelectFirstModelCommand,
@@ -34,14 +35,17 @@ export class PageClipboard extends ReadOnlyClipboard {
     // When pastina a surface-ref block to another doc
     const surfaceRefToEmbedMiddleware = surfaceRefToEmbed(this.std);
     const replaceId = replaceIdMiddleware(this.std.store.workspace.idGenerator);
+    const upload = uploadMiddleware(this.std);
     this.std.clipboard.use(paste);
     this.std.clipboard.use(surfaceRefToEmbedMiddleware);
     this.std.clipboard.use(replaceId);
+    this.std.clipboard.use(upload);
     this._disposables.add({
       dispose: () => {
         this.std.clipboard.unuse(paste);
         this.std.clipboard.unuse(surfaceRefToEmbedMiddleware);
         this.std.clipboard.unuse(replaceId);
+        this.std.clipboard.unuse(upload);
       },
     });
   };
@@ -65,7 +69,7 @@ export class PageClipboard extends ReadOnlyClipboard {
     const e = ctx.get('clipboardState').raw;
     e.preventDefault();
 
-    this._copySelected(() => {
+    this._copySelectedInPage(() => {
       this.std.command
         .chain()
         .try<{}>(cmd => [
@@ -80,6 +84,7 @@ export class PageClipboard extends ReadOnlyClipboard {
     const e = ctx.get('clipboardState').raw;
     e.preventDefault();
 
+    if (this.std.store.readonly) return;
     this.std.store.captureSync();
     this.std.command
       .chain()

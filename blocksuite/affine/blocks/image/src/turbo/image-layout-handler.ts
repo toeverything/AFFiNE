@@ -25,7 +25,9 @@ export class ImageLayoutHandlerExtension extends BlockLayoutHandlerExtension<Ima
     host: EditorHost,
     viewportRecord: ViewportRecord
   ): ImageLayout | null {
-    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
+    const component = host.std.view.getBlock(
+      model.id
+    ) as GfxBlockComponent | null;
     if (!component) return null;
 
     const imageContainer = component.querySelector('.affine-image-container');

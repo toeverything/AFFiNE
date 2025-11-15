@@ -1,6 +1,7 @@
 import {
   type ExternalGetDataFeedbackArgs,
   type fromExternalData,
+  type MonitorDragEvent,
   monitorForElements,
   type MonitorGetFeedback,
   type toExternalData,
@@ -16,6 +17,7 @@ import type { DragBlockPayload } from '@blocksuite/affine/widgets/drag-handle';
 import { Service } from '@toeverything/infra';
 
 import type { DocsService } from '../../doc';
+import type { EditorSettingService } from '../../editor-setting';
 import { resolveLinkToDoc } from '../../navigation';
 import type { WorkspaceService } from '../../workspace';
 
@@ -31,7 +33,8 @@ type MixedDNDData = AffineDNDData & {
 export class DndService extends Service {
   constructor(
     private readonly docsService: DocsService,
-    private readonly workspaceService: WorkspaceService
+    private readonly workspaceService: WorkspaceService,
+    private readonly editorSettingService: EditorSettingService
   ) {
     super();
 
@@ -130,6 +133,42 @@ export class DndService extends Service {
       );
     }
 
+    function getBSDropTarget(args: MonitorDragEvent<MixedDNDData>) {
+      for (const target of args.location.current.dropTargets) {
+        const { tagName } = target.element;
+        if (['AFFINE-EDGELESS-NOTE', 'AFFINE-NOTE'].includes(tagName))
+          return 'note';
+        if (tagName === 'AFFINE-EDGELESS-ROOT') return 'canvas';
+      }
+      return 'other';
+    }
+
+    const changeDocCardView = (args: MonitorDragEvent<MixedDNDData>) => {
+      if (args.source.data.from?.at === 'blocksuite-editor') return;
+
+      const dropTarget = getBSDropTarget(args);
+      if (dropTarget === 'other') return;
+
+      const flavour =
+        dropTarget === 'canvas'
+          ? this.editorSettingService.editorSetting.docCanvasPreferView.value
+          : 'affine:embed-linked-doc';
+
+      const { entity, bsEntity } = args.source.data;
+      if (!entity || !bsEntity) return;
+
+      const dndAPI = this.getBlocksuiteDndAPI();
+      if (!dndAPI) return;
+
+      const snapshotSlice = dndAPI.fromEntity({
+        docId: entity.id,
+        flavour,
+      });
+      if (!snapshotSlice) return;
+
+      bsEntity.snapshot = snapshotSlice;
+    };
+
     this.disposables.push(
       monitorForElements({
         canMonitor: (args: MonitorGetFeedback<MixedDNDData>) => {
@@ -143,6 +182,9 @@ export class DndService extends Service {
             return true;
           }
           return false;
+        },
+        onDropTargetChange: (args: MonitorDragEvent<MixedDNDData>) => {
+          changeDocCardView(args);
         },
       })
     );
@@ -233,7 +275,7 @@ export class DndService extends Service {
     // only deal with the first url
     const url = urls
       ?.split('\n')
-      .filter(u => u.trim() && !u.trim().startsWith('#'))[0];
+      .find(u => u.trim() && !u.trim().startsWith('#'));
 
     if (url) {
       const maybeDocLink = resolveLinkToDoc(url);

@@ -1,7 +1,3 @@
-import {
-  AFFINE_VIEWPORT_OVERLAY_WIDGET,
-  type AffineViewportOverlayWidget,
-} from '@blocksuite/affine/blocks/root';
 import { ColorScheme } from '@blocksuite/affine/model';
 import {
   DocModeProvider,
@@ -20,6 +16,10 @@ import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/affine/std/inline';
 import type { BaseSelection } from '@blocksuite/affine/store';
 import {
+  AFFINE_VIEWPORT_OVERLAY_WIDGET,
+  type AffineViewportOverlayWidget,
+} from '@blocksuite/affine/widgets/viewport-overlay';
+import {
   autoPlacement,
   autoUpdate,
   computePosition,
@@ -37,7 +37,12 @@ import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import { type AIError } from '../../provider';
 import type { AIPanelGenerating } from './components/index.js';
-import type { AffineAIPanelState, AffineAIPanelWidgetConfig } from './type.js';
+import type {
+  AffineAIPanelState,
+  AffineAIPanelWidgetConfig,
+  AIActionAnswer,
+} from './type.js';
+import { mergeAIActionAnswer } from './utils';
 export const AFFINE_AI_PANEL_WIDGET = 'affine-ai-panel-widget';
 
 export class AffineAIPanelWidget extends WidgetComponent {
@@ -103,7 +108,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
 
   private _abortController = new AbortController();
 
-  private _answer: string | null = null;
+  private _answer: AIActionAnswer | null = null;
 
   private readonly _clearDiscardModal = () => {
     if (this._discardModalAbort) {
@@ -113,7 +118,11 @@ export class AffineAIPanelWidget extends WidgetComponent {
   };
 
   private readonly _clickOutside = () => {
-    this._discardWithConfirmation();
+    if (this.state === 'generating') {
+      this._stopWithConfirmation();
+    } else {
+      this._discardWithConfirmation();
+    }
   };
 
   private _discardModalAbort: AbortController | null = null;
@@ -132,10 +141,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
       !this.contains(e.target as Node)
     ) {
       this._clickOutside();
-      return true;
     }
-
-    return false;
   };
 
   private readonly _onKeyDown = (event: KeyboardEvent) => {
@@ -168,6 +174,16 @@ export class AffineAIPanelWidget extends WidgetComponent {
   private _stopAutoUpdate?: undefined | (() => void);
 
   ctx: unknown = null;
+
+  private readonly _stopWithConfirmation = () => {
+    this.showStopModal()
+      .then(stop => {
+        if (stop) {
+          this.stopGenerating();
+        }
+      })
+      .catch(console.error);
+  };
 
   private readonly _discardWithConfirmation = () => {
     if (this.state === 'hidden') {
@@ -212,7 +228,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
     // reset answer
     this._answer = null;
 
-    const update = (answer: string) => {
+    const update = (answer: AIActionAnswer) => {
       this._answer = answer;
       this.requestUpdate();
     };
@@ -275,6 +291,24 @@ export class AffineAIPanelWidget extends WidgetComponent {
     this._autoUpdatePosition(reference);
   };
 
+  showStopModal = () => {
+    const notification = this.host.std.getOptional(NotificationProvider);
+    if (!notification) {
+      return Promise.resolve(true);
+    }
+    this._clearDiscardModal();
+    this._discardModalAbort = new AbortController();
+    return notification
+      .confirm({
+        title: 'Stop generating',
+        message: 'AI is generating content. Do you want to stop generating?',
+        cancelText: 'Cancel',
+        confirmText: 'Stop',
+        abort: this._abortController.signal,
+      })
+      .finally(() => (this._discardModalAbort = null));
+  };
+
   showDiscardModal = () => {
     const notification = this.host.std.getOptional(NotificationProvider);
     if (!notification) {
@@ -301,25 +335,19 @@ export class AffineAIPanelWidget extends WidgetComponent {
     }
   };
 
-  toggle = (
-    reference: Element,
-    input?: string,
-    shouldTriggerCallback?: boolean
-  ) => {
-    if (typeof input === 'string') {
-      this._inputText = input;
+  toggle = (reference: Element, type: 'input' | 'generate') => {
+    if (type === 'generate') {
+      this._inputText = '';
       this.generate();
-    } else {
-      // reset state
-      this.hide(shouldTriggerCallback);
+    } else if (type === 'input') {
+      this.hide();
       this.state = 'input';
     }
-
     this._autoUpdatePosition(reference);
   };
 
   get answer() {
-    return this._answer;
+    return this._answer ? mergeAIActionAnswer(this._answer) : null;
   }
 
   get inputText() {
@@ -327,7 +355,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
   }
 
   get viewportOverlayWidget() {
-    const rootId = this.host.doc.root?.id;
+    const rootId = this.host.store.root?.id;
     return rootId
       ? (this.host.view.getWidget(
           AFFINE_VIEWPORT_OVERLAY_WIDGET,

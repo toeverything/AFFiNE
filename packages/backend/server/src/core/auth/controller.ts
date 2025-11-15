@@ -27,6 +27,7 @@ import {
   Throttle,
   URLHelper,
   UseNamedGuard,
+  WrongSignInCredentials,
 } from '../../base';
 import { Models, TokenType } from '../../models';
 import { validators } from '../utils/validators';
@@ -162,7 +163,10 @@ export class AuthController {
     clientNonce?: string
   ) {
     // send email magic link
-    const user = await this.models.user.getUserByEmail(email);
+    const user = await this.models.user.getUserByEmail(email, {
+      withDisabled: true,
+    });
+
     if (!user) {
       if (!this.config.auth.allowSignup) {
         throw new SignUpForbidden();
@@ -191,6 +195,8 @@ export class AuthController {
           throw new InvalidEmail({ email });
         }
       }
+    } else if (user.disabled) {
+      throw new WrongSignInCredentials({ email });
     }
 
     const ttlInSec = 30 * 60;
@@ -264,14 +270,12 @@ export class AuthController {
     validators.assertValidEmail(email);
 
     const cacheKey = OTP_CACHE_KEY(otp);
-    const cachedToken = await this.cache.get<
-      { token: string; clientNonce: string } | string
-    >(cacheKey);
+    const cachedToken = await this.cache.get<{
+      token: string;
+      clientNonce: string;
+    }>(cacheKey);
     let token: string | undefined;
-    // TODO(@fengmk2): this is a temporary compatible with cache token is string value, should be removed in 0.22
-    if (typeof cachedToken === 'string') {
-      token = cachedToken;
-    } else if (cachedToken) {
+    if (cachedToken && typeof cachedToken === 'object') {
       token = cachedToken.token;
       if (cachedToken.clientNonce && cachedToken.clientNonce !== clientNonce) {
         throw new InvalidAuthState();

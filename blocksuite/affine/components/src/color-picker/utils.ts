@@ -321,7 +321,7 @@ export const calcCustomButtonStyle = (
     return { '--b': b, '--c': c };
   }
 
-  if (color.startsWith('---')) {
+  if (color.startsWith('--')) {
     if (!color.endsWith('transparent')) {
       b = 'var(--affine-background-overlay-panel-color)';
       c = keepColor(

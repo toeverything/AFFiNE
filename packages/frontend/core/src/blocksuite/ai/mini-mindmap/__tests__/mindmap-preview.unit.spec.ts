@@ -1,4 +1,4 @@
-import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { Container } from '@blocksuite/affine/global/di';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
 import { describe, expect, test } from 'vitest';
@@ -6,9 +6,11 @@ import { describe, expect, test } from 'vitest';
 import { markdownToMindmap } from '../mindmap-preview.js';
 
 const container = new Container();
-getMarkdownAdapterExtensions().forEach(ext => {
-  ext.setup(container);
-});
+getStoreManager()
+  .value.get('store')
+  .forEach(ext => {
+    ext.setup(container);
+  });
 const provider = container.provider();
 
 describe('markdownToMindmap: convert markdown list to a mind map tree', () => {

@@ -142,12 +142,15 @@ export class QuotaService {
     const usedStorageQuota = quota.ownerQuota
       ? await this.getUserStorageUsage(quota.ownerQuota)
       : await this.getWorkspaceStorageUsage(workspaceId);
-    const memberCount = await this.models.workspaceUser.count(workspaceId);
+    const memberCount =
+      await this.models.workspaceUser.chargedCount(workspaceId);
+    const overcapacityMemberCount = memberCount - quota.memberLimit;
 
     return {
       ...quota,
       usedStorageQuota,
       memberCount,
+      overcapacityMemberCount,
       usedSize: usedStorageQuota,
     };
   }
@@ -170,7 +173,8 @@ export class QuotaService {
 
   async getWorkspaceSeatQuota(workspaceId: string) {
     const quota = await this.getWorkspaceQuota(workspaceId);
-    const memberCount = await this.models.workspaceUser.count(workspaceId);
+    const memberCount =
+      await this.models.workspaceUser.chargedCount(workspaceId);
 
     return {
       memberCount,
@@ -203,6 +207,7 @@ export class QuotaService {
       historyPeriod: formatDate(quota.historyPeriod),
       memberLimit: quota.memberLimit.toString(),
       memberCount: quota.memberCount.toString(),
+      overcapacityMemberCount: quota.overcapacityMemberCount.toString(),
     };
   }
 

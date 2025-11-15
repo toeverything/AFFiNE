@@ -1,9 +1,16 @@
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
-import type { DefaultOpenProperty } from '@affine/core/components/doc-properties';
+import type { DefaultOpenProperty } from '@affine/core/components/properties';
+import { PresentTool } from '@blocksuite/affine/blocks/frame';
+import { DefaultTool } from '@blocksuite/affine/blocks/surface';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
+import { findCommentedTexts } from '@blocksuite/affine/inlines/comment';
 import type { DocMode, ReferenceParams } from '@blocksuite/affine/model';
 import { HighlightSelection } from '@blocksuite/affine/shared/selection';
-import { FeatureFlagService as BSFeatureFlagService } from '@blocksuite/affine/shared/services';
+import {
+  DocModeProvider,
+  findCommentedBlocks,
+  findCommentedElements,
+} from '@blocksuite/affine/shared/services';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { InlineEditor } from '@blocksuite/std/inline';
 import { effect } from '@preact/signals-core';
@@ -11,8 +18,9 @@ import { Entity, LiveData } from '@toeverything/infra';
 import { defaults, isEqual, omit } from 'lodash-es';
 import { skip } from 'rxjs';
 
+import { CommentPanelService } from '../../comment/services/comment-panel-service';
+import { DocCommentManagerService } from '../../comment/services/doc-comment-manager';
 import type { DocService } from '../../doc';
-import { AFFINE_FLAGS, type FeatureFlagService } from '../../feature-flag';
 import { paramsParseOptions, preprocessParams } from '../../navigation/utils';
 import type { WorkbenchView } from '../../workbench';
 import type { WorkspaceService } from '../../workspace';
@@ -50,7 +58,8 @@ export class Editor extends Entity {
     const selector = get(this.selector$);
     const mode = get(this.mode$);
     let id = selector?.blockIds?.[0];
-    let key = 'blockIds';
+    let commentId = selector?.commentId;
+    let key: 'blockIds' | 'elementIds' = 'blockIds';
 
     if (mode === 'edgeless') {
       const elementId = selector?.elementIds?.[0];
@@ -60,9 +69,15 @@ export class Editor extends Entity {
       }
     }
 
-    if (!id) return null;
+    if (!id && !commentId) return null;
 
-    return { id, key, mode, refreshKey: selector?.refreshKey };
+    return {
+      id,
+      key,
+      mode,
+      refreshKey: selector?.refreshKey,
+      commentId: commentId,
+    };
   });
 
   isPresenting$ = new LiveData<boolean>(false);
@@ -72,9 +87,11 @@ export class Editor extends Entity {
       GfxControllerIdentifier
     );
     if (!gfx) return;
-    gfx.tool.setTool({
-      type: !this.isPresenting$.value ? 'frameNavigator' : 'default',
-    });
+    if (!this.isPresenting$.value) {
+      gfx.tool.setTool(PresentTool);
+    } else {
+      gfx.tool.setTool(DefaultTool);
+    }
   }
 
   setSelector(selector: EditorSelector | undefined) {
@@ -180,6 +197,77 @@ export class Editor extends Entity {
     };
   }
 
+  handleFocusAt(focusAt: {
+    key: 'blockIds' | 'elementIds';
+    mode: DocMode;
+    id?: string;
+    commentId?: string;
+  }) {
+    const editorContainer = this.editorContainer$.value;
+    if (!editorContainer) return;
+
+    const selection = editorContainer.host?.std.selection;
+    const { id, key, mode, commentId } = focusAt;
+
+    let finalId = id;
+    let finalKey = key;
+    let highlight = true;
+
+    // If we have commentId but no blockId, find the block from the comment
+    if (commentId && !id && editorContainer.host?.std) {
+      const std = editorContainer.host.std;
+
+      // First try to find inline commented texts
+      const inlineCommentedSelections = findCommentedTexts(
+        std.store,
+        commentId
+      );
+      if (inlineCommentedSelections.length > 0) {
+        const firstSelection = inlineCommentedSelections[0];
+        finalId = firstSelection.from.blockId;
+        finalKey = 'blockIds';
+      } else {
+        // Then try to find block comments
+        const blockCommentedBlocks = findCommentedBlocks(std.store, commentId);
+        if (blockCommentedBlocks.length > 0) {
+          finalId = blockCommentedBlocks[0].id;
+          finalKey = 'blockIds';
+        } else {
+          const commentedElements = findCommentedElements(std.store, commentId);
+          if (commentedElements.length > 0) {
+            finalId = commentedElements[0].id;
+            finalKey = 'elementIds';
+          }
+        }
+      }
+      // Workaround: clear selection to avoid comment editor flickering
+      selection?.clear();
+
+      // highlight comment
+      setTimeout(() => {
+        const commentManager = this.framework.get(DocCommentManagerService);
+        const commentPanelService = this.framework.get(CommentPanelService);
+        const commentEntity = commentManager.get(this.doc.id);
+        commentPanelService.openCommentPanel();
+        commentEntity.obj.highlightComment(commentId);
+        commentEntity.release();
+      }, 0);
+
+      // do not highlight block
+      highlight = false;
+    }
+
+    if (mode === this.mode$.value && finalId) {
+      selection?.setGroup('scene', [
+        selection?.create(HighlightSelection, {
+          mode,
+          [finalKey]: [finalId],
+          highlight,
+        } as const),
+      ]);
+    }
+  }
+
   bindEditorContainer(
     editorContainer: AffineEditorContainer,
     docTitle?: DocTitle | null,
@@ -189,7 +277,6 @@ export class Editor extends Entity {
       throw new Error('already bound');
     }
 
-    this._setupBlocksuiteEditorFlags(editorContainer);
     this.editorContainer$.next(editorContainer);
     const unsubs: (() => void)[] = [];
 
@@ -226,18 +313,7 @@ export class Editor extends Entity {
           title?.inlineEditor?.focusEnd();
         }
       } else {
-        const selection = editorContainer.host?.std.selection;
-
-        const { id, key, mode } = initialFocusAt;
-
-        if (mode === this.mode$.value) {
-          selection?.setGroup('scene', [
-            selection?.create(HighlightSelection, {
-              mode,
-              [key]: [id],
-            }),
-          ]);
-        }
+        this.handleFocusAt(initialFocusAt);
       }
     }
 
@@ -277,35 +353,23 @@ export class Editor extends Entity {
       .pipe(skip(1))
       .subscribe(anchor => {
         if (!anchor) return;
-
-        const selection = editorContainer.host?.std.selection;
-        if (!selection) return;
-
-        const { id, key, mode } = anchor;
-
-        selection.setGroup('scene', [
-          selection.create(HighlightSelection, {
-            mode,
-            [key]: [id],
-          }),
-        ]);
+        this.handleFocusAt(anchor);
       });
     unsubs.push(subscription.unsubscribe.bind(subscription));
 
     // ----- Presenting -----
-    const edgelessPage = editorContainer.host?.querySelector(
-      'affine-edgeless-root'
-    );
-    if (!edgelessPage) {
+    const std = editorContainer.host?.std;
+    const editorMode = std?.get(DocModeProvider)?.getEditorMode();
+    if (!editorMode || editorMode !== 'edgeless' || !gfx) {
       this.isPresenting$.next(false);
     } else {
       this.isPresenting$.next(
-        edgelessPage.gfx.tool.currentToolName$.peek() === 'frameNavigator'
+        gfx.tool.currentToolName$.peek() === 'frameNavigator'
       );
 
       const disposable = effect(() => {
         this.isPresenting$.next(
-          edgelessPage.gfx.tool.currentToolName$.value === 'frameNavigator'
+          gfx.tool.currentToolName$.value === 'frameNavigator'
         );
       });
       unsubs.push(disposable);
@@ -319,24 +383,9 @@ export class Editor extends Entity {
     };
   }
 
-  private _setupBlocksuiteEditorFlags(editorContainer: AffineEditorContainer) {
-    const affineFeatureFlagService = this.featureFlagService;
-    const bsFeatureFlagService = editorContainer.doc.get(BSFeatureFlagService);
-    Object.entries(AFFINE_FLAGS).forEach(([key, flag]) => {
-      if (flag.category === 'blocksuite') {
-        const value =
-          affineFeatureFlagService.flags[key as keyof AFFINE_FLAGS].value;
-        if (value !== undefined) {
-          bsFeatureFlagService.setFlag(flag.bsFlag, value);
-        }
-      }
-    });
-  }
-
   constructor(
     private readonly docService: DocService,
-    private readonly workspaceService: WorkspaceService,
-    private readonly featureFlagService: FeatureFlagService
+    private readonly workspaceService: WorkspaceService
   ) {
     super();
   }

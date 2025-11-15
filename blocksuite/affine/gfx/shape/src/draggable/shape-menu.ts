@@ -15,12 +15,16 @@ import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { StyleGeneralIcon, StyleScribbleIcon } from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  GfxControllerIdentifier,
+  type ToolOptionWithType,
+} from '@blocksuite/std/gfx';
 import { computed, effect, type Signal, signal } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 
+import { ShapeTool } from '../shape-tool';
 import { ShapeComponentConfig } from '../toolbar';
 
 export class EdgelessShapeMenu extends SignalWatcher(
@@ -115,8 +119,12 @@ export class EdgelessShapeMenu extends SignalWatcher(
       effect(() => {
         const value = gfx.tool.currentToolOption$.value;
 
-        if (value && value.type === 'shape') {
-          this._shapeName$.value = value.shapeName;
+        if (value && value.toolType === ShapeTool) {
+          const shapeName = (value as ToolOptionWithType<ShapeTool>).options
+            ?.shapeName;
+          if (shapeName) {
+            this._shapeName$.value = shapeName;
+          }
         }
       })
     );
@@ -186,7 +194,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
             .value=${fillColor}
             .theme=${this._theme$.value}
             .palettes=${DefaultTheme.FillColorShortPalettes}
-            .hasTransparent=${!this.edgeless.doc
+            .hasTransparent=${!this.edgeless.store
               .get(FeatureFlagService)
               .getFlag('enable_color_picker')}
             @select=${(e: ColorEvent) => this._setFillColor(e.detail)}

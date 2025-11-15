@@ -11,7 +11,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import type { GlobalCache } from '../../storage';
 import type { WorkspaceService } from '../../workspace';
@@ -22,7 +22,12 @@ type ShareDocListType = GetWorkspacePublicPagesQuery['workspace']['publicDocs'];
 export const logger = new DebugLogger('affine:share-doc-list');
 
 export class ShareDocsList extends Entity {
-  list$ = LiveData.from(this.cache.watch<ShareDocListType>('share-docs'), []);
+  list$ = LiveData.from(
+    this.cache
+      .watch<ShareDocListType>('share-docs')
+      .pipe(map(list => list ?? [])),
+    []
+  );
   isLoading$ = new LiveData<boolean>(false);
   error$ = new LiveData<any>(null);
 
@@ -43,9 +48,8 @@ export class ShareDocsList extends Entity {
         );
       }).pipe(
         smartRetry(),
-        mergeMap(list => {
+        tap(list => {
           this.cache.set('share-docs', list);
-          return EMPTY;
         }),
         catchErrorInto(this.error$, err =>
           logger.error('revalidate share docs error', err)

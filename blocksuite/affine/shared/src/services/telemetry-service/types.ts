@@ -61,9 +61,36 @@ export interface MindMapCollapseEvent extends TelemetryEvent {
   type: 'expand' | 'collapse';
 }
 
+export interface AttachmentReloadedEvent extends TelemetryEvent {
+  page: 'doc editor' | 'whiteboard editor';
+  segment: 'doc' | 'whiteboard';
+  module: 'attachment';
+  control: 'reload' | 'retry';
+  category: 'card' | 'embed';
+  type: string; // file type
+}
+
+export interface AttachmentReloadedEventInToolbar extends TelemetryEvent {
+  page: 'doc editor' | 'whiteboard editor';
+  segment: 'doc' | 'whiteboard';
+  module: 'toolbar';
+  control: 'reload';
+  category: 'attachment';
+  type: string; // file type
+}
+
+export interface AttachmentUpgradedEvent extends TelemetryEvent {
+  page: 'doc editor' | 'whiteboard editor';
+  segment: 'doc' | 'whiteboard';
+  module: 'attachment';
+  control: 'upgrade';
+  category: 'card' | 'embed';
+  type: string; // file type
+}
+
 export interface AttachmentUploadedEvent extends TelemetryEvent {
   page: 'doc editor' | 'whiteboard editor';
-  segment: 'attachment';
+  segment: 'doc' | 'whiteboard';
   module: 'attachment';
   control: 'uploader';
   type: string; // file type
@@ -89,4 +116,12 @@ export interface ElementUpdatedEvent extends TelemetryEvent {
 
 export interface LinkEvent extends TelemetryEvent {
   result?: 'success' | 'failure';
+}
+
+export interface LatexEvent extends TelemetryEvent {
+  from: 'doc' | 'edgeless text' | 'edgeless note';
+  page: 'doc' | 'edgeless';
+  segment: 'doc' | 'whiteboard';
+  module: 'equation' | 'inline equation';
+  control: 'create equation' | 'create inline equation';
 }

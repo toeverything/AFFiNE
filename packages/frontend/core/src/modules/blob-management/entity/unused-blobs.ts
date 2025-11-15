@@ -8,16 +8,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { fileTypeFromBuffer } from 'file-type';
-import {
-  EMPTY,
-  filter,
-  firstValueFrom,
-  fromEvent,
-  map,
-  mergeMap,
-  switchMap,
-  takeUntil,
-} from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
 import type { DocsSearchService } from '../../docs-search';
 import type { WorkspaceService } from '../../workspace';
@@ -46,9 +37,8 @@ export class UnusedBlobs extends Entity {
       fromPromise(async () => {
         return await this.getUnusedBlobs();
       }).pipe(
-        mergeMap(data => {
+        tap(data => {
           this.unusedBlobs$.setValue(data);
-          return EMPTY;
         }),
         onStart(() => this.isLoading$.setValue(true)),
         onComplete(() => this.isLoading$.setValue(false))
@@ -87,15 +77,7 @@ export class UnusedBlobs extends Entity {
 
   async getUnusedBlobs(abortSignal?: AbortSignal) {
     // Wait for both sync and indexing to complete
-    const ready$ = this.workspaceService.workspace.engine.doc.state$
-      .pipe(filter(state => state.syncing === 0 && !state.syncRetrying))
-      .pipe(map(() => true));
-
-    await firstValueFrom(
-      abortSignal
-        ? ready$.pipe(takeUntil(fromEvent(abortSignal, 'abort')))
-        : ready$
-    );
+    await this.workspaceService.workspace.engine.doc.waitForSynced();
 
     await this.docsSearchService.indexer.waitForCompleted(abortSignal);
 

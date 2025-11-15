@@ -34,6 +34,10 @@ export function getCodeBlock(page: Page) {
     const cancelWrapButton = menu.getByRole('button', { name: 'Cancel wrap' });
     const duplicateButton = menu.getByRole('button', { name: 'Duplicate' });
     const deleteButton = menu.getByRole('button', { name: 'Delete' });
+    const lineNumberButton = menu.getByRole('button', { name: 'Line number' });
+    const cancelLineNumberButton = menu.getByRole('button', {
+      name: 'Cancel line number',
+    });
 
     return {
       menu,
@@ -41,6 +45,8 @@ export function getCodeBlock(page: Page) {
       cancelWrapButton,
       duplicateButton,
       deleteButton,
+      lineNumberButton,
+      cancelLineNumberButton,
     };
   };
 

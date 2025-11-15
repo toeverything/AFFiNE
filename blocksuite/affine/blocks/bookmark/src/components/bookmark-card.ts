@@ -1,10 +1,11 @@
 import { getEmbedCardIcons } from '@blocksuite/affine-block-embed';
-import { WebIcon16 } from '@blocksuite/affine-components/icons';
+import { LoadingIcon, WebIcon16 } from '@blocksuite/affine-components/icons';
+import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getHostName } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { OpenInNewIcon } from '@blocksuite/icons/lit';
-import { BlockSelection, ShadowlessElement } from '@blocksuite/std';
+import { isGfxBlockComponent, ShadowlessElement } from '@blocksuite/std';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -16,28 +17,6 @@ export class BookmarkCard extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = styles;
-
-  private _handleClick(event: MouseEvent) {
-    event.stopPropagation();
-    const model = this.bookmark.model;
-
-    if (model.parent?.flavour !== 'affine:surface') {
-      this._selectBlock();
-    }
-  }
-
-  private _handleDoubleClick(event: MouseEvent) {
-    event.stopPropagation();
-    this.bookmark.open();
-  }
-
-  private _selectBlock() {
-    const selectionManager = this.bookmark.host.selection;
-    const blockSelection = selectionManager.create(BlockSelection, {
-      blockId: this.bookmark.blockId,
-    });
-    selectionManager.setGroup('note', [blockSelection]);
-  }
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -56,14 +35,17 @@ export class BookmarkCard extends SignalWatcher(
   }
 
   override render() {
-    const { icon, title, url, description, image, style } =
-      this.bookmark.model.props;
+    const { url, style } = this.bookmark.model.props;
+    const { icon, title, description, image } =
+      this.bookmark.linkPreview$.value;
 
     const cardClassMap = classMap({
       loading: this.loading,
       error: this.error,
       [style]: true,
       selected: this.bookmark.selected$.value,
+      edgeless: isGfxBlockComponent(this.bookmark),
+      'comment-highlighted': this.bookmark.isCommentHighlighted,
     });
 
     const domainName = url.match(
@@ -79,12 +61,13 @@ export class BookmarkCard extends SignalWatcher(
         : title;
 
     const theme = this.bookmark.std.get(ThemeProvider).theme;
-    const { LoadingIcon, EmbedCardBannerIcon } = getEmbedCardIcons(theme);
+    const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
+    const imageProxyService = this.bookmark.store.get(ImageProxyService);
 
     const titleIcon = this.loading
-      ? LoadingIcon
+      ? LoadingIcon()
       : icon
-        ? html`<img src=${icon} alt="icon" />`
+        ? html`<img src=${imageProxyService.buildUrl(icon)} alt="icon" />`
         : WebIcon16;
 
     const descriptionText = this.loading
@@ -97,14 +80,14 @@ export class BookmarkCard extends SignalWatcher(
 
     const bannerImage =
       !this.loading && image
-        ? html`<img src=${image} alt="banner" />`
+        ? html`<img src=${imageProxyService.buildUrl(image)} alt="banner" />`
         : EmbedCardBannerIcon;
 
     return html`
       <div
         class="affine-bookmark-card ${cardClassMap}"
-        @click=${this._handleClick}
-        @dblclick=${this._handleDoubleClick}
+        @click=${this.bookmark.handleClick}
+        @dblclick=${this.bookmark.handleDoubleClick}
       >
         <div class="affine-bookmark-content">
           <div class="affine-bookmark-content-title">

@@ -1,9 +1,9 @@
 import { ScrollableContainer } from '@affine/component';
 import { MenuItem } from '@affine/component/ui/menu';
-import { AuthService } from '@affine/core/modules/cloud';
+import { AuthService, DefaultServerService } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { type WorkspaceMetadata } from '@affine/core/modules/workspace';
+import { ServerFeature } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { Logo1Icon } from '@blocksuite/icons/rc';
@@ -66,7 +66,7 @@ export const UserWithWorkspaceList = ({
 }: UserWithWorkspaceListProps) => {
   const globalDialogService = useService(GlobalDialogService);
   const session = useLiveData(useService(AuthService).session.session$);
-  const featureFlagService = useService(FeatureFlagService);
+  const defaultServerService = useService(DefaultServerService);
 
   const isAuthenticated = session.status === 'authenticated';
 
@@ -75,10 +75,12 @@ export const UserWithWorkspaceList = ({
   }, [globalDialogService]);
 
   const onNewWorkspace = useCallback(() => {
-    if (
-      !isAuthenticated &&
-      !featureFlagService.flags.enable_local_workspace.value
-    ) {
+    const enableLocalWorkspace =
+      BUILD_CONFIG.isNative ||
+      defaultServerService.server.config$.value.features.includes(
+        ServerFeature.LocalWorkspace
+      );
+    if (!isAuthenticated && !enableLocalWorkspace) {
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();
@@ -90,7 +92,7 @@ export const UserWithWorkspaceList = ({
     onEventEnd?.();
   }, [
     globalDialogService,
-    featureFlagService,
+    defaultServerService,
     isAuthenticated,
     onCreatedWorkspace,
     onEventEnd,

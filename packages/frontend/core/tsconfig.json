@@ -15,8 +15,15 @@
     { "path": "../../common/graphql" },
     { "path": "../i18n" },
     { "path": "../../common/nbstore" },
+    { "path": "../../common/reader" },
     { "path": "../track" },
     { "path": "../../../blocksuite/affine/all" },
-    { "path": "../../common/infra" }
+    { "path": "../../../blocksuite/affine/blocks/root" },
+    { "path": "../../../blocksuite/affine/components" },
+    { "path": "../../../blocksuite/affine/shared" },
+    { "path": "../../../blocksuite/framework/global" },
+    { "path": "../../../blocksuite/framework/std" },
+    { "path": "../../common/infra" },
+    { "path": "../../../blocksuite/affine/ext-loader" }
   ]
 }

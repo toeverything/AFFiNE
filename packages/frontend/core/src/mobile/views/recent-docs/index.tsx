@@ -4,7 +4,7 @@ import { useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { DocCard } from '../../components/doc-card';
-import { CollapsibleSection } from '../../components/explorer';
+import { CollapsibleSection } from '../../components/navigation';
 import * as styles from './styles.css';
 
 export const RecentDocs = ({ max = 5 }: { max?: number }) => {
@@ -24,7 +24,7 @@ export const RecentDocs = ({ max = 5 }: { max?: number }) => {
 
   return (
     <CollapsibleSection
-      name="recent"
+      path={['recent']}
       title="Recent"
       headerClassName={styles.header}
       className={styles.recentSection}

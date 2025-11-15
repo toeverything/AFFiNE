@@ -1,6 +1,7 @@
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { ThemeProvider } from '@affine/core/components/theme-provider';
+import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage';
 import { configureAppSidebarModule } from '@affine/core/modules/app-sidebar';
 import { ShellAppSidebarFallback } from '@affine/core/modules/app-sidebar/views';
 import {
@@ -9,10 +10,7 @@ import {
 } from '@affine/core/modules/app-tabs-header';
 import { configureDesktopApiModule } from '@affine/core/modules/desktop-api';
 import { configureI18nModule, I18nProvider } from '@affine/core/modules/i18n';
-import {
-  configureElectronStateStorageImpls,
-  configureStorageModule,
-} from '@affine/core/modules/storage';
+import { configureStorageModule } from '@affine/core/modules/storage';
 import { configureAppThemeModule } from '@affine/core/modules/theme';
 import { Framework, FrameworkRoot } from '@toeverything/infra';
 

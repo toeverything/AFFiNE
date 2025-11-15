@@ -1,0 +1,144 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "B8962ABD",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6736937980",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "73YMMDVT2M",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 780406221.25107503,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21781265",
+      "localizations" : [
+
+      ],
+      "name" : "AI",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "106.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6752564901",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "AFFiNE AI Yearly Subscription",
+              "displayName" : "AFFiNE AI Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "app.affine.pro.ai.Annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "AI Yearly Subscription",
+          "subscriptionGroupID" : "21781265",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "id" : "21781263",
+      "localizations" : [
+
+      ],
+      "name" : "Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "7.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6752564392",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "AFFiNE Pro Monthly Subscription",
+              "displayName" : "AFFiNE Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "app.affine.pro.Monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly Subscription",
+          "subscriptionGroupID" : "21781263",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "81.0",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6752564335",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "AFFiNE Pro Yearly Subscription",
+              "displayName" : "AFFiNE Pro Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "app.affine.pro.Annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Yearly Subscription",
+          "subscriptionGroupID" : "21781263",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

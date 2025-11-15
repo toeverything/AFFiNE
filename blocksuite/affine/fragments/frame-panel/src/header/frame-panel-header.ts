@@ -1,4 +1,7 @@
-import type { NavigatorMode } from '@blocksuite/affine-block-frame';
+import {
+  type NavigatorMode,
+  PresentTool,
+} from '@blocksuite/affine-block-frame';
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import {
   DocModeProvider,
@@ -124,8 +127,7 @@ export class FramePanelHeader extends WithDisposable(LitElement) {
     }
 
     setTimeout(() => {
-      this._gfx.tool.setTool({
-        type: 'frameNavigator',
+      this._gfx.tool.setTool(PresentTool, {
         mode: this._navigatorMode,
       });
     }, 100);

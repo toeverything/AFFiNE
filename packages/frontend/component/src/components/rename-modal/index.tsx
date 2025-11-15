@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import type { KeyboardEvent, ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -55,6 +56,9 @@ export const RenameModal = ({
       }}
       items={
         <Input
+          inputStyle={{
+            fontSize: cssVar('fontBase'),
+          }}
           autoFocus
           autoSelect
           value={value}

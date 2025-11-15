@@ -9,9 +9,9 @@ import type { BlockComponent } from '@blocksuite/std';
 import {
   type GfxController,
   GfxControllerIdentifier,
-  type GfxToolsFullOption,
-  type GfxToolsFullOptionValue,
   type ToolController,
+  type ToolOptionWithType,
+  type ToolType,
 } from '@blocksuite/std/gfx';
 import { consume } from '@lit/context';
 import { effect } from '@preact/signals-core';
@@ -28,8 +28,6 @@ import {
 import { createPopper, type MenuPopper } from '../create-popper';
 import type { EdgelessToolbarWidget } from '../edgeless-toolbar';
 
-type ValueOf<T> = T[keyof T];
-
 export declare abstract class EdgelessToolbarToolClass extends DisposableClass {
   active: boolean;
 
@@ -37,7 +35,7 @@ export declare abstract class EdgelessToolbarToolClass extends DisposableClass {
 
   edgeless: BlockComponent;
 
-  edgelessTool: GfxToolsFullOptionValue;
+  edgelessTool: ToolOptionWithType;
 
   enableActiveBackground?: boolean;
 
@@ -58,9 +56,7 @@ export declare abstract class EdgelessToolbarToolClass extends DisposableClass {
    */
   tryDisposePopper: () => boolean;
 
-  abstract type:
-    | GfxToolsFullOptionValue['type']
-    | GfxToolsFullOptionValue['type'][];
+  abstract type: ToolType | ToolType[];
 
   accessor toolbar: EdgelessToolbarWidget;
 }
@@ -71,19 +67,15 @@ export const EdgelessToolbarToolMixin = <T extends Constructor<LitElement>>(
   abstract class DerivedClass extends WithDisposable(SuperClass) {
     enableActiveBackground = false;
 
-    abstract type:
-      | GfxToolsFullOptionValue['type']
-      | GfxToolsFullOptionValue['type'][];
+    abstract type: ToolType | ToolType[];
 
     get active() {
       const { type } = this;
-      // @ts-expect-error FIXME: we need to fix the type of edgelessTool
-      const activeType = this.edgelessTool?.type;
+      const activeType = this.edgelessTool?.toolType;
 
       return activeType
         ? Array.isArray(type)
-          ? // @ts-expect-error FIXME: we need to fix the type of edgelessTool
-            type.includes(activeType)
+          ? type.includes(activeType)
           : activeType === type
         : false;
     }
@@ -93,12 +85,7 @@ export const EdgelessToolbarToolMixin = <T extends Constructor<LitElement>>(
     }
 
     get setEdgelessTool() {
-      return (...args: Parameters<ToolController['setTool']>) => {
-        this.gfx.tool.setTool(
-          // @ts-expect-error FIXME: ts error
-          ...args
-        );
-      };
+      return this.gfx.tool.setTool;
     }
 
     private _applyActiveStyle() {
@@ -162,7 +149,7 @@ export const EdgelessToolbarToolMixin = <T extends Constructor<LitElement>>(
     accessor edgeless!: BlockComponent;
 
     @state()
-    accessor edgelessTool!: ValueOf<GfxToolsFullOption> | null;
+    accessor edgelessTool!: ToolOptionWithType | null;
 
     @state()
     public accessor popper: MenuPopper<HTMLElement> | null = null;

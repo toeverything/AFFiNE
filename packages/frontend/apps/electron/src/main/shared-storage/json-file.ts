@@ -7,7 +7,7 @@ import {
   exhaustMapWithTrailing,
   fromPromise,
 } from '@toeverything/infra';
-import { debounceTime, EMPTY, mergeMap, Observable, timeout } from 'rxjs';
+import { debounceTime, Observable, timeout } from 'rxjs';
 
 import { logger } from '../logger';
 
@@ -127,8 +127,7 @@ export class PersistentJSONFileStorage implements Memento {
         timeout(5000),
         backoffRetry({
           count: Infinity,
-        }),
-        mergeMap(() => EMPTY)
+        })
       );
     })
   );

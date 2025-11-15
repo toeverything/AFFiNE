@@ -1,4 +1,6 @@
 import type { I18nString } from '@affine/i18n';
+import type { Dayjs } from 'dayjs';
+import type ICAL from 'ical.js';
 import type { ComponentType, SVGProps } from 'react';
 
 import type { DocIntegrationRef } from '../db/schema/schema';
@@ -7,7 +9,6 @@ export type IntegrationType = NonNullable<DocIntegrationRef['type']>;
 
 export type IntegrationDocPropertiesMap = {
   readwise: ReadwiseDocProperties;
-  zotero: never;
 };
 
 export type IntegrationProperty<T extends IntegrationType> = {
@@ -96,3 +97,18 @@ export interface ReadwiseConfig {
 // Zotero
 // ===============================
 // TODO
+
+// ===============================
+// Calendar
+// ===============================
+export type CalendarEvent = {
+  id: string;
+  url: string;
+  title: string;
+  startAt?: ICAL.Time;
+  endAt?: ICAL.Time;
+  allDay?: boolean;
+  date?: Dayjs;
+};
+
+export type EventsByDateMap = Map<string, CalendarEvent[]>;

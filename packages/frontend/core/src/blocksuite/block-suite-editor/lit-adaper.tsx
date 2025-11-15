@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import 'katex/dist/katex.min.css';
+
 import { useConfirmModal, useLitPortalFactory } from '@affine/component';
 import {
   type EdgelessEditor,
@@ -6,23 +9,20 @@ import {
   LitEdgelessEditor,
   type PageEditor,
 } from '@affine/core/blocksuite/editors';
+import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
-import { PublicUserService } from '@affine/core/modules/cloud';
+import { ServerService } from '@affine/core/modules/cloud';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
-import { DocService, DocsService } from '@affine/core/modules/doc';
 import type {
   DatabaseRow,
   DatabaseValueCell,
 } from '@affine/core/modules/doc-info/types';
-import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { JournalService } from '@affine/core/modules/journal';
-import { toDocSearchParams } from '@affine/core/modules/navigation';
 import { useInsidePeekView } from '@affine/core/modules/peek-view';
-import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
-import { MemberSearchService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
 import type { DocMode } from '@blocksuite/affine/model';
@@ -44,39 +44,11 @@ import {
 } from 'react';
 
 import {
-  AffinePageReference,
-  AffineSharedPageReference,
-} from '../../components/affine/reference-link';
-import {
   type DefaultOpenProperty,
-  DocPropertiesTable,
-} from '../../components/doc-properties';
-import {
-  patchForAudioEmbedView,
-  patchForPDFEmbedView,
-} from '../extensions/attachment-embed-view';
-import { patchDatabaseBlockConfigService } from '../extensions/database-block-config-service';
-import { patchDocModeService } from '../extensions/doc-mode-service';
-import { patchDocUrlExtensions } from '../extensions/doc-url';
-import { EdgelessClipboardAIChatConfig } from '../extensions/edgeless-clipboard';
-import { patchForClipboardInElectron } from '../extensions/electron-clipboard';
-import { enableEditorExtension } from '../extensions/entry/enable-editor';
-import { enableMobileExtension } from '../extensions/entry/enable-mobile';
-import { enablePreviewExtension } from '../extensions/entry/enable-preview';
-import { patchForEdgelessNoteConfig } from '../extensions/note-config';
-import { patchNotificationService } from '../extensions/notification-service';
-import { patchOpenDocExtension } from '../extensions/open-doc';
-import { patchPeekViewService } from '../extensions/peek-view-service';
-import { patchQuickSearchService } from '../extensions/quick-search-service';
-import {
-  patchReferenceRenderer,
-  type ReferenceReactRenderer,
-} from '../extensions/reference-renderer';
-import { patchSideBarService } from '../extensions/side-bar-service';
-import { patchTurboRendererExtension } from '../extensions/turbo-renderer';
-import { patchUserExtensions } from '../extensions/user';
-import { patchUserListExtensions } from '../extensions/user-list';
+  WorkspacePropertiesTable,
+} from '../../components/properties';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
+import { DocIconPicker } from './doc-icon-picker';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import { StarterBar } from './starter-bar';
 import * as styles from './styles.css';
@@ -88,136 +60,86 @@ interface BlocksuiteEditorProps {
   defaultOpenProperty?: DefaultOpenProperty;
 }
 
-const usePatchSpecs = (mode: DocMode) => {
+const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
   const [reactToLit, portals] = useLitPortalFactory();
-  const {
-    peekViewService,
-    docService,
-    docsService,
-    editorService,
-    workspaceService,
-    featureFlagService,
-    memberSearchService,
-    publicUserService,
-  } = useServices({
-    PeekViewService,
-    DocService,
-    DocsService,
+  const { workspaceService, featureFlagService } = useServices({
     WorkspaceService,
-    EditorService,
     FeatureFlagService,
-    MemberSearchService,
-    PublicUserService,
   });
   const isCloud = workspaceService.workspace.flavour !== 'local';
   const framework = useFramework();
-  const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
-    return function customReference(reference) {
-      const data = reference.delta.attributes?.reference;
-      if (!data) return <span />;
-
-      const pageId = data.pageId;
-      if (!pageId) return <span />;
-
-      // title alias
-      const title = data.title;
-      const params = toDocSearchParams(data.params);
-
-      if (workspaceService.workspace.openOptions.isSharedMode) {
-        return (
-          <AffineSharedPageReference
-            docCollection={workspaceService.workspace.docCollection}
-            pageId={pageId}
-            params={params}
-            title={title}
-          />
-        );
-      }
-
-      return (
-        <AffinePageReference pageId={pageId} params={params} title={title} />
-      );
-    };
-  }, [workspaceService]);
-
-  useMemo(() => {
-    enablePreviewExtension(framework);
-  }, [framework]);
 
   const confirmModal = useConfirmModal();
 
   const enableAI = useEnableAI();
 
-  const insidePeekView = useInsidePeekView();
+  const isInPeekView = useInsidePeekView();
 
   const enableTurboRenderer = useLiveData(
     featureFlagService.flags.enable_turbo_renderer.$
   );
 
   const enablePDFEmbedPreview = useLiveData(
-    featureFlagService.flags.enable_pdf_embed_preview.$.map(
-      flag => !workspaceService.workspace.openOptions.isSharedMode && flag
-    )
+    featureFlagService.flags.enable_pdf_embed_preview.$
   );
 
+  const serverService = useService(ServerService);
+  const serverConfig = useLiveData(serverService.server.config$);
+
+  // comment may not be supported by the server
+  const enableComment =
+    isCloud && serverConfig.features.includes(ServerFeature.Comment) && !shared;
+
   const patchedSpecs = useMemo(() => {
-    const builder = enableEditorExtension(framework, mode, enableAI);
-
-    builder.extend(
-      [
-        patchReferenceRenderer(reactToLit, referenceRenderer),
-        patchForEdgelessNoteConfig(framework, reactToLit, insidePeekView),
-        patchNotificationService(confirmModal),
-        patchPeekViewService(peekViewService),
-        patchOpenDocExtension(),
-        EdgelessClipboardAIChatConfig,
-        patchDocUrlExtensions(framework),
-        patchQuickSearchService(framework),
-        patchSideBarService(framework),
-        patchDocModeService(docService, docsService, editorService),
-        patchForAudioEmbedView(reactToLit),
-        isCloud
-          ? [
-              patchUserListExtensions(memberSearchService),
-              patchUserExtensions(publicUserService),
-            ]
-          : [],
-        patchDatabaseBlockConfigService(),
-        mode === 'edgeless' && enableTurboRenderer
-          ? patchTurboRendererExtension()
-          : [],
-      ].flat()
-    );
-
-    if (enablePDFEmbedPreview) {
-      builder.extend([patchForPDFEmbedView(reactToLit)]);
-    }
+    const manager = getViewManager()
+      .config.init()
+      .foundation(framework)
+      .ai(enableAI, framework)
+      .theme(framework)
+      .editorConfig(framework)
+      .editorView({
+        framework,
+        reactToLit,
+        confirmModal,
+      })
+      .cloud(framework, isCloud)
+      .turboRenderer(enableTurboRenderer)
+      .pdf(enablePDFEmbedPreview, reactToLit)
+      .edgelessBlockHeader({
+        framework,
+        isInPeekView,
+        reactToLit,
+      })
+      .database(framework)
+      .linkedDoc(framework)
+      .paragraph(enableAI)
+      .mobile(framework)
+      .electron(framework)
+      .linkPreview(framework)
+      .codeBlockPreview(framework)
+      .iconPicker(framework)
+      .comment(enableComment, framework).value;
 
     if (BUILD_CONFIG.isMobileEdition) {
-      enableMobileExtension(builder, framework);
+      if (mode === 'page') {
+        return manager.get('mobile-page');
+      } else {
+        return manager.get('mobile-edgeless');
+      }
+    } else {
+      return manager.get(mode);
     }
-    if (BUILD_CONFIG.isElectron) {
-      builder.extend([patchForClipboardInElectron(framework)].flat());
-    }
-
-    return builder.value;
   }, [
-    framework,
-    mode,
-    enableAI,
-    reactToLit,
-    referenceRenderer,
-    insidePeekView,
     confirmModal,
-    peekViewService,
-    docService,
-    docsService,
-    editorService,
-    isCloud,
-    memberSearchService,
-    publicUserService,
-    enableTurboRenderer,
+    enableAI,
     enablePDFEmbedPreview,
+    enableTurboRenderer,
+    enableComment,
+    framework,
+    isInPeekView,
+    isCloud,
+    mode,
+    reactToLit,
   ]);
 
   return [
@@ -287,7 +209,7 @@ export const BlocksuiteDocEditor = forwardRef<
     [externalTitleRef]
   );
 
-  const [specs, portals] = usePatchSpecs('page');
+  const [specs, portals] = usePatchSpecs('page', shared);
 
   const displayBiDirectionalLink = useLiveData(
     editorSettingService.editorSetting.settings$.selector(
@@ -334,6 +256,9 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <>
       <div className={styles.affineDocViewport}>
+        {!BUILD_CONFIG.isMobileEdition ? (
+          <DocIconPicker docId={page.id} readonly={readonly || shared} />
+        ) : null}
         {!isJournal ? (
           <LitDocTitle doc={page} ref={onTitleRef} />
         ) : (
@@ -341,7 +266,7 @@ export const BlocksuiteDocEditor = forwardRef<
         )}
         {!shared && displayDocInfo ? (
           <div className={styles.docPropertiesTableContainer}>
-            <DocPropertiesTable
+            <WorkspacePropertiesTable
               className={styles.docPropertiesTable}
               onDatabasePropertyChange={onDatabasePropertyChange}
               onPropertyChange={onPropertyChange}
@@ -399,7 +324,9 @@ export const BlocksuiteEdgelessEditor = forwardRef<
       editorRef.current.updateComplete
         .then(() => {
           // make sure editor can get keyboard events on showing up
-          editorRef.current?.querySelector('affine-edgeless-root')?.click();
+          editorRef.current
+            ?.querySelector<HTMLElement>('affine-edgeless-root')
+            ?.click();
         })
         .catch(console.error);
     }

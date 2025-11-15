@@ -204,12 +204,11 @@ export class GfxSelectionManager extends GfxExtension {
     return selections.every(sel => sel.elements.length === 0);
   }
 
-  isInSelectedRect(viewX: number, viewY: number) {
+  isInSelectedRect(modelX: number, modelY: number) {
     const selected = this.selectedElements;
     if (!selected.length) return false;
 
     const commonBound = getCommonBoundWithRotation(selected);
-    const [modelX, modelY] = this.gfx.viewport.toModelCoord(viewX, viewY);
     if (commonBound && commonBound.isPointInBound([modelX, modelY])) {
       return true;
     }

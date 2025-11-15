@@ -1,8 +1,5 @@
-import type {
-  CollectionMeta,
-  TagMeta,
-} from '@affine/core/components/page-list';
-import { fuzzyMatch } from '@affine/core/utils/fuzzy-match';
+import type { TagMeta } from '@affine/core/components/page-list';
+import { UserFriendlyError } from '@affine/error';
 import { I18n } from '@affine/i18n';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
 import type { DocMeta } from '@blocksuite/affine/store';
@@ -10,16 +7,16 @@ import type {
   LinkedMenuGroup,
   LinkedMenuItem,
 } from '@blocksuite/affine/widgets/linked-doc';
-import { CollectionsIcon } from '@blocksuite/icons/lit';
-import { computed } from '@preact/signals-core';
+import { CollectionsIcon, WarningIcon } from '@blocksuite/icons/lit';
+import { computed, signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import Fuse, { type FuseResultMatch } from 'fuse.js';
 import { html } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { map } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 
-import type { CollectionService } from '../../collection';
+import type { CollectionMeta, CollectionService } from '../../collection';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
 import { type RecentDocsService } from '../../quicksearch';
@@ -91,6 +88,7 @@ export class SearchMenuService extends Service {
   ): LinkedMenuGroup {
     const currentWorkspace = this.workspaceService.workspace;
     const rawMetas = currentWorkspace.docCollection.meta.docMetas;
+    const loading = signal(true);
     const { signal: docsSignal, cleanup: cleanupDocs } =
       createSignalFromObservable(
         this.searchDocs$(query).pipe(
@@ -108,12 +106,30 @@ export class SearchMenuService extends Service {
                     ...meta,
                     highlights,
                   },
-                  action,
-                  query
+                  action
                 );
               })
               .filter(m => !!m);
+            loading.value = false;
             return docs;
+          }),
+          catchError(err => {
+            loading.value = false;
+            const userFriendlyError = UserFriendlyError.fromAny(err);
+            return of([
+              {
+                name: html`<span style="color: ${cssVarV2('status/error')}"
+                  >${I18n.t(
+                    `error.${userFriendlyError.name}`,
+                    userFriendlyError.data
+                  )}</span
+                >`,
+                key: 'error',
+                icon: WarningIcon(),
+                disabled: true,
+                action: () => {},
+              },
+            ]);
           })
         ),
         []
@@ -134,6 +150,7 @@ export class SearchMenuService extends Service {
       name: I18n.t('com.affine.editor.at-menu.link-to-doc', {
         query,
       }),
+      loading: loading,
       items: docsSignal,
       maxDisplay: MAX_DOCS,
       overflowText,
@@ -143,43 +160,39 @@ export class SearchMenuService extends Service {
   // only search docs by title, excluding blocks
   private searchDocs$(query: string) {
     return this.docsSearch.indexer
-      .aggregate$(
+      .search$(
         'doc',
         {
-          type: 'boolean',
-          occur: 'must',
-          queries: [
+          type: 'match',
+          field: 'title',
+          match: query,
+        },
+        {
+          fields: ['docId', 'title'],
+          highlights: [
             {
-              type: 'match',
               field: 'title',
-              match: query,
+              before: `<span style="color: ${cssVarV2('text/emphasis')}">`,
+              end: '</span>',
             },
           ],
-        },
-        'docId',
-        {
-          hits: {
-            fields: ['docId', 'title'],
-            pagination: {
-              limit: 1,
-            },
-            highlights: [
-              {
-                field: 'title',
-                before: `<span style="color: ${cssVarV2('text/emphasis')}">`,
-                end: '</span>',
-              },
-            ],
-          },
         }
       )
       .pipe(
-        map(({ buckets }) =>
-          buckets.map(bucket => {
+        map(({ nodes }) =>
+          nodes.map(node => {
+            const id =
+              typeof node.fields.docId === 'string'
+                ? node.fields.docId
+                : node.fields.docId[0];
+            const title =
+              typeof node.fields.title === 'string'
+                ? node.fields.title
+                : node.fields.title[0];
             return {
-              id: bucket.key,
-              title: bucket.hits.nodes[0].fields.title,
-              highlights: bucket.hits.nodes[0].highlights.title[0],
+              id,
+              title,
+              highlights: node.highlights?.title?.[0],
             };
           })
         )
@@ -188,18 +201,13 @@ export class SearchMenuService extends Service {
 
   private toDocMenuItem(
     meta: DocMetaWithHighlights,
-    action: SearchDocMenuAction,
-    query?: string
+    action: SearchDocMenuAction
   ): LinkedMenuItem | null {
     const title = this.docDisplayMetaService.title$(meta.id, {
       reference: true,
     }).value;
 
     if (meta.trash) {
-      return null;
-    }
-
-    if (query && !fuzzyMatch(title, query)) {
       return null;
     }
 
@@ -273,12 +281,12 @@ export class SearchMenuService extends Service {
         query,
       }),
       items: result.map(item => {
-        const title = this.highlightFuseTitle(
+        const name = this.highlightFuseTitle(
           item.matches,
-          item.item.title,
-          'title'
+          item.item.name,
+          'name'
         );
-        return this.toTagMenuItem({ ...item.item, title }, action);
+        return this.toTagMenuItem({ ...item.item, name }, action);
       }),
     };
   }
@@ -296,7 +304,7 @@ export class SearchMenuService extends Service {
     `;
     return {
       key: tag.id,
-      name: html`${unsafeHTML(tag.title)}`,
+      name: html`${unsafeHTML(tag.name)}`,
       icon: tagIcon,
       action: async () => {
         await action(tag);
@@ -309,7 +317,7 @@ export class SearchMenuService extends Service {
     action: SearchCollectionMenuAction,
     _abortSignal: AbortSignal
   ): LinkedMenuGroup {
-    const collections = this.collectionService.collections$.value;
+    const collections = this.collectionService.collectionMetas$.value;
     if (query.trim().length === 0) {
       return {
         name: I18n.t('com.affine.editor.at-menu.collections', {

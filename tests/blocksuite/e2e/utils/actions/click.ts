@@ -113,10 +113,10 @@ export async function switchReadonly(page: Page, value = true) {
     const defaultPage = document.querySelector(
       'affine-page-root,affine-edgeless-root'
     ) as HTMLElement & {
-      doc: Store;
+      store: Store;
     };
-    const doc = defaultPage.doc;
-    doc.readonly = _value;
+    const store = defaultPage.store;
+    store.readonly = _value;
   }, value);
 }
 

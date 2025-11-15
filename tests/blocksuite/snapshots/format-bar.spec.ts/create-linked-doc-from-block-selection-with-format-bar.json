@@ -9,6 +9,7 @@
           "id": "12",
           "props": {
             "caption": null,
+            "footnoteIdentifier": null,
             "index": "a0",
             "lockedBySelf": false,
             "pageId": "5",
@@ -24,7 +25,7 @@
       "id": "1",
       "props": {
         "background": {
-          "dark": "#000000",
+          "dark": "#252525",
           "light": "#ffffff"
         },
         "displayMode": "both",

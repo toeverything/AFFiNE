@@ -10,7 +10,7 @@ export async function getAttachmentBlob(model: AttachmentBlockModel) {
     return null;
   }
 
-  const doc = model.doc;
+  const doc = model.store;
   let blob = await doc.blobSync.get(sourceId);
 
   if (blob) {

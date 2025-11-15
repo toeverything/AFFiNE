@@ -55,33 +55,6 @@ export const collectionSchema = z.object({
   createDate: z.union([z.date(), z.number()]).optional(),
   updateDate: z.union([z.date(), z.number()]).optional(),
 });
-export const deletedCollectionSchema = z.object({
-  userId: z.string().optional(),
-  userName: z.string(),
-  collection: collectionSchema,
-});
-export type DeprecatedCollection = {
-  id: string;
-  name: string;
-  workspaceId: string;
-  filterList: z.infer<typeof filterSchema>[];
-  allowList?: string[];
-};
 export type Collection = z.input<typeof collectionSchema>;
-export type DeleteCollectionInfo = {
-  userId: string;
-  userName: string;
-} | null;
-export type DeletedCollection = z.input<typeof deletedCollectionSchema>;
-
-export const tagSchema = z.object({
-  id: z.string(),
-  value: z.string(),
-  color: z.string(),
-  parentId: z.string().optional(),
-  createDate: z.union([z.date(), z.number()]).optional(),
-  updateDate: z.union([z.date(), z.number()]).optional(),
-});
-export type Tag = z.input<typeof tagSchema>;
 
 export type PropertiesMeta = DocsPropertiesMeta;

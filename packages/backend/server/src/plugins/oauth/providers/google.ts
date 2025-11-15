@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { InvalidOauthCallbackCode, URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
-import { OAuthProvider } from './def';
+import { OAuthProvider, Tokens } from './def';
 
 interface GoogleOAuthTokenResponse {
   access_token: string;
@@ -76,13 +76,13 @@ export class GoogleOAuthProvider extends OAuthProvider {
     }
   }
 
-  async getUser(token: string) {
+  async getUser(tokens: Tokens) {
     const response = await fetch(
       'https://www.googleapis.com/oauth2/v2/userinfo',
       {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${tokens.accessToken}`,
         },
       }
     );

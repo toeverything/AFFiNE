@@ -27,7 +27,10 @@ export class ParagraphLayoutHandlerExtension extends BlockLayoutHandlerExtension
     host: EditorHost,
     viewportRecord: ViewportRecord
   ): ParagraphLayout | null {
-    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
+    const component = host.std.view.getBlock(
+      model.id
+    ) as GfxBlockComponent | null;
+    if (!component) return null;
     const paragraphSelector =
       '.affine-paragraph-rich-text-wrapper [data-v-text="true"]';
     const paragraphNode = component.querySelector(paragraphSelector);

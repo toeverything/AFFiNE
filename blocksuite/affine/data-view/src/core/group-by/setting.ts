@@ -24,7 +24,7 @@ import {
   sortable,
 } from '../utils/wc-dnd/sort/sort-context.js';
 import { verticalListSortingStrategy } from '../utils/wc-dnd/sort/strategies/index.js';
-import { groupByMatcher } from './matcher.js';
+import { getGroupByService } from './matcher.js';
 import type { GroupTrait } from './trait.js';
 import type { GroupRenderProps } from './types.js';
 
@@ -142,21 +142,22 @@ export class GroupSetting extends SignalWatcher(
           groups,
           group => group?.key ?? 'default key',
           group => {
-            if (!group) return;
+            const type = group.property.dataType$.value;
+            if (!type) return;
             const props: GroupRenderProps = {
-              value: group.value,
-              data: group.property.data$.value,
+              group,
               readonly: true,
             };
-            const config = group.manager.config$.value;
             return html` <div
               ${sortable(group.key)}
               ${dragHandler(group.key)}
               class="dv-hover dv-round-4 group-item"
             >
               <div class="group-item-drag-bar"></div>
-              <div style="padding: 0 4px;position:relative;">
-                ${renderUniLit(config?.view, props)}
+              <div
+                style="padding: 0 4px;position:relative;pointer-events: none;max-width: 330px"
+              >
+                ${renderUniLit(group.view, props)}
                 <div
                   style="position:absolute;left: 0;top: 0;right: 0;bottom: 0;"
                 ></div>
@@ -189,22 +190,26 @@ export const selectGroupByProperty = (
     },
     items: [
       menu.group({
-        items: view.propertiesWithoutFilter$.value
-          .filter(id => {
-            if (view.propertyGet(id).type$.value === 'title') {
+        items: view.propertiesRaw$.value
+          .filter(property => {
+            if (property.type$.value === 'title') {
               return false;
             }
-            return !!groupByMatcher.match(view.propertyGet(id).dataType$.value);
+            const dataType = property.dataType$.value;
+            if (!dataType) {
+              return false;
+            }
+            const groupByService = getGroupByService(view.manager.dataSource);
+            return !!groupByService?.matcher.match(dataType);
           })
-          .map<MenuConfig>(id => {
-            const property = view.propertyGet(id);
+          .map<MenuConfig>(property => {
             return menu.action({
               name: property.name$.value,
-              isSelected: group.property$.value?.id === id,
+              isSelected: group.property$.value?.id === property.id,
               prefix: html` <uni-lit .uni="${property.icon}"></uni-lit>`,
               select: () => {
-                group.changeGroup(id);
-                ops?.onSelect?.(id);
+                group.changeGroup(property.id);
+                ops?.onSelect?.(property.id);
               },
             });
           }),
@@ -254,7 +259,7 @@ export const popGroupSetting = (
   if (!type) {
     return;
   }
-  const icon = view.propertyIconGet(type);
+  const icon = groupProperty.icon;
   const menuHandler = popMenu(target, {
     options: {
       title: {

@@ -1,20 +1,29 @@
-import { Button, ConfirmModal, Input, notify } from '@affine/component';
+import { Button, ConfirmModal, Input, Modal, notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useMutation } from '@affine/core/components/hooks/use-mutation';
 import {
   SelfhostLicenseService,
   WorkspaceSubscriptionService,
 } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
+import { UrlService } from '@affine/core/modules/url';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
+import {
+  createSelfhostCustomerPortalMutation,
+  SubscriptionVariant,
+} from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import * as styles from './styles.css';
+import { UploadLicenseModal } from './upload-license-modal';
 
 export const SelfHostTeamCard = () => {
   const t = useI18n();
@@ -30,11 +39,13 @@ export const SelfHostTeamCard = () => {
   const isLocalWorkspace = workspace.flavour === 'local';
 
   const [openModal, setOpenModal] = useState(false);
+  const [openUploadModal, setOpenUploadModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const selfhostLicenseService = useService(SelfhostLicenseService);
   const license = useLiveData(selfhostLicenseService.license$);
+  const isOneTimePurchase = license?.variant === SubscriptionVariant.Onetime;
 
-  useEffect(() => {
+  const revalidate = useCallback(() => {
     permission.revalidate();
     workspaceQuotaService.quota.revalidate();
     workspaceSubscriptionService.subscription.revalidate();
@@ -46,24 +57,44 @@ export const SelfHostTeamCard = () => {
     workspaceSubscriptionService,
   ]);
 
+  useEffect(() => {
+    revalidate();
+  }, [revalidate]);
+
   const description = useMemo(() => {
     if (isTeam) {
-      return t[
-        'com.affine.settings.workspace.license.self-host-team.team.description'
-      ]({
-        expirationDate: new Date(license?.expiredAt || 0).toLocaleDateString(),
-        leftDays: Math.floor(
-          (new Date(license?.expiredAt || 0).getTime() - Date.now()) /
-            (1000 * 60 * 60 * 24)
-        ).toLocaleString(),
-      });
+      return (
+        <div>
+          <p>
+            {t[
+              'com.affine.settings.workspace.license.self-host-team.team.description'
+            ]({
+              expirationDate: new Date(
+                license?.expiredAt || 0
+              ).toLocaleDateString(),
+              leftDays: Math.floor(
+                (new Date(license?.expiredAt || 0).getTime() - Date.now()) /
+                  (1000 * 60 * 60 * 24)
+              ).toLocaleString(),
+            })}
+          </p>
+          {isOneTimePurchase ? (
+            <p>
+              <Trans
+                i18nKey="com.affine.settings.workspace.license.self-host-team.team.license"
+                components={{ 1: <strong /> }}
+              />
+            </p>
+          ) : null}
+        </div>
+      );
     }
     return t[
       'com.affine.settings.workspace.license.self-host-team.free.description'
     ]({
       memberCount: workspaceQuota?.humanReadable.memberLimit || '10',
     });
-  }, [isTeam, license, t, workspaceQuota]);
+  }, [isOneTimePurchase, isTeam, license, t, workspaceQuota]);
   const handleClick = useCallback(() => {
     if (isLocalWorkspace) {
       confirmEnableCloud(workspace);
@@ -71,6 +102,10 @@ export const SelfHostTeamCard = () => {
     }
     setOpenModal(true);
   }, [confirmEnableCloud, isLocalWorkspace, workspace]);
+
+  const handleOpenUploadModal = useCallback(() => {
+    setOpenUploadModal(true);
+  }, []);
 
   const onActivate = useCallback(
     (license: string) => {
@@ -80,8 +115,7 @@ export const SelfHostTeamCard = () => {
         .then(() => {
           setLoading(false);
           setOpenModal(false);
-          permission.revalidate();
-          selfhostLicenseService.revalidate();
+          revalidate();
           notify.success({
             title:
               t['com.affine.settings.workspace.license.activate-success'](),
@@ -99,7 +133,7 @@ export const SelfHostTeamCard = () => {
           });
         });
     },
-    [permission, selfhostLicenseService, t, workspace.id]
+    [revalidate, selfhostLicenseService, t, workspace.id]
   );
 
   const onDeactivate = useCallback(() => {
@@ -109,7 +143,7 @@ export const SelfHostTeamCard = () => {
       .then(() => {
         setLoading(false);
         setOpenModal(false);
-        permission.revalidate();
+        revalidate();
         notify.success({
           title:
             t['com.affine.settings.workspace.license.deactivate-success'](),
@@ -126,7 +160,7 @@ export const SelfHostTeamCard = () => {
           message: error.message,
         });
       });
-  }, [permission, selfhostLicenseService, t, workspace.id]);
+  }, [revalidate, selfhostLicenseService, t, workspace.id]);
 
   const handleConfirm = useCallback(
     (license: string) => {
@@ -163,7 +197,7 @@ export const SelfHostTeamCard = () => {
               ]()}
             </span>
             <span>
-              {isTeam
+              {isTeam && !isOneTimePurchase
                 ? license?.quantity || ''
                 : `${workspaceQuota?.memberCount}/${workspaceQuota?.memberLimit}`}
             </span>
@@ -174,13 +208,24 @@ export const SelfHostTeamCard = () => {
             left: isTeam || isLocalWorkspace,
           })}
         >
+          {!isTeam && !isLocalWorkspace ? (
+            <Button
+              variant="plain"
+              className={styles.uploadButton}
+              onClick={handleOpenUploadModal}
+            >
+              {t[
+                'com.affine.settings.workspace.license.self-host-team.upload-license-file'
+              ]()}
+            </Button>
+          ) : null}
           <Button
             variant="primary"
             className={styles.activeButton}
             onClick={handleClick}
           >
             {t[
-              `com.affine.settings.workspace.license.self-host-team.${isTeam ? 'deactivate-license' : 'active-key'}`
+              `com.affine.settings.workspace.license.self-host-team.${isTeam ? 'deactivate-license' : 'use-purchased-key'}`
             ]()}
           </Button>
         </div>
@@ -191,6 +236,11 @@ export const SelfHostTeamCard = () => {
         isTeam={!!isTeam}
         loading={loading}
         onConfirm={handleConfirm}
+        isOneTimePurchase={isOneTimePurchase}
+      />
+      <UploadLicenseModal
+        open={openUploadModal}
+        onOpenChange={setOpenUploadModal}
       />
     </>
   );
@@ -202,15 +252,40 @@ const ActionModal = ({
   isTeam,
   onConfirm,
   loading,
+  isOneTimePurchase,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isTeam: boolean;
   loading: boolean;
+  isOneTimePurchase: boolean;
   onConfirm: (key: string) => void;
 }) => {
   const t = useI18n();
   const [key, setKey] = useState('');
+
+  const workspace = useService(WorkspaceService).workspace;
+
+  const { isMutating, trigger } = useMutation({
+    mutation: createSelfhostCustomerPortalMutation,
+  });
+  const urlService = useService(UrlService);
+
+  const update = useAsyncCallback(async () => {
+    await trigger(
+      {
+        workspaceId: workspace.id,
+      },
+      {
+        onSuccess: data => {
+          urlService.openExternal(data.createSelfhostWorkspaceCustomerPortal);
+        },
+      }
+    ).catch(e => {
+      const userFriendlyError = UserFriendlyError.fromAny(e);
+      notify.error(userFriendlyError);
+    });
+  }, [trigger, urlService, workspace.id]);
 
   const handleConfirm = useCallback(() => {
     onConfirm(key);
@@ -225,23 +300,96 @@ const ActionModal = ({
     [onOpenChange]
   );
 
+  const handleCancel = useCallback(() => {
+    setKey('');
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  if (isTeam && isOneTimePurchase) {
+    return (
+      <ConfirmModal
+        width={480}
+        open={open}
+        onOpenChange={handleOpenChange}
+        title={t[
+          `com.affine.settings.workspace.license.deactivate-modal.title`
+        ]()}
+        description={t[
+          'com.affine.settings.workspace.license.deactivate-modal.description-license'
+        ]()}
+        cancelText={t['Cancel']()}
+        cancelButtonOptions={{
+          variant: 'secondary',
+        }}
+        confirmText={t['Confirm']()}
+        confirmButtonOptions={{
+          loading: loading,
+          disabled: loading,
+          variant: 'primary',
+        }}
+        onConfirm={handleConfirm}
+        childrenContentClassName={styles.activateModalContent}
+      />
+    );
+  }
+
+  if (isTeam) {
+    return (
+      <Modal
+        width={480}
+        open={open}
+        onOpenChange={handleOpenChange}
+        title={t[
+          `com.affine.settings.workspace.license.deactivate-modal.title`
+        ]()}
+        description={
+          <Trans
+            i18nKey="com.affine.settings.workspace.license.deactivate-modal.description"
+            components={{
+              1: <strong />,
+            }}
+          />
+        }
+      >
+        <div className={styles.footer}>
+          <Button
+            variant="secondary"
+            onClick={update}
+            loading={isMutating}
+            disabled={isMutating}
+          >
+            {t[
+              'com.affine.settings.workspace.license.deactivate-modal.manage-payment'
+            ]()}
+          </Button>
+          <div className={styles.rightActions}>
+            <Button variant="secondary" onClick={handleCancel}>
+              {t['Cancel']()}
+            </Button>
+            <Button variant="primary" onClick={handleConfirm}>
+              {t['Confirm']()}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <ConfirmModal
       width={480}
       open={open}
       onOpenChange={handleOpenChange}
-      title={t[
-        `com.affine.settings.workspace.license.${isTeam ? 'deactivate' : 'activate'}-modal.title`
-      ]()}
+      title={t['com.affine.settings.workspace.license.activate-modal.title']()}
       description={t[
-        `com.affine.settings.workspace.license.${isTeam ? 'deactivate' : 'activate'}-modal.description`
+        'com.affine.settings.workspace.license.activate-modal.description'
       ]()}
       cancelText={t['Cancel']()}
       cancelButtonOptions={{
         variant: 'secondary',
       }}
       contentOptions={{
-        ['data-testid' as string]: 'invite-modal',
+        ['data-testid' as string]: 'license-modal',
         style: {
           padding: '20px 24px',
         },
@@ -249,46 +397,32 @@ const ActionModal = ({
       confirmText={t['Confirm']()}
       confirmButtonOptions={{
         loading: loading,
-        variant: isTeam ? 'error' : 'primary',
+        variant: 'primary',
         disabled: loading || (!isTeam && !key),
       }}
       onConfirm={handleConfirm}
       childrenContentClassName={styles.activateModalContent}
     >
-      {isTeam ? null : (
-        <>
-          <Input
-            value={key}
-            onChange={setKey}
-            placeholder="AAAA-AAAA-AAAA-AAAA-AAAA"
-          />
-          <span>
-            <Trans
-              i18nKey="com.affine.settings.workspace.license.activate-modal.tips"
-              components={{
-                1: (
-                  <a
-                    href="mailto:support@toeverything.info"
-                    style={{ color: 'var(--affine-link-color)' }}
-                  >
-                    customer support
-                  </a>
-                ),
-                2: (
-                  <a
-                    href="https://affine.pro/pricing/?type=selfhost#table"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: 'var(--affine-link-color)' }}
-                  >
-                    click to purchase
-                  </a>
-                ),
-              }}
-            />
-          </span>
-        </>
-      )}
+      <Input
+        value={key}
+        onChange={setKey}
+        placeholder="AAAA-AAAA-AAAA-AAAA-AAAA"
+      />
+      <span className={styles.tips}>
+        <Trans
+          i18nKey="com.affine.settings.workspace.license.activate-modal.tips"
+          components={{
+            1: (
+              <a
+                href="https://affine.pro/pricing/?type=selfhost#table"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: cssVarV2('text/link') }}
+              />
+            ),
+          }}
+        />
+      </span>
     </ConfirmModal>
   );
 };

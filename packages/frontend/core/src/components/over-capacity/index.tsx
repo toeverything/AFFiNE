@@ -43,10 +43,13 @@ export const OverCapacityNotification = () => {
               title: t['com.affine.payment.storage-limit.new-title'](),
               message:
                 t['com.affine.payment.storage-limit.new-description.owner'](),
-              action: {
-                label: t['com.affine.payment.upgrade'](),
-                onClick: jumpToPricePlan,
-              },
+              actions: [
+                {
+                  key: 'upgrade',
+                  label: t['com.affine.payment.upgrade'](),
+                  onClick: jumpToPricePlan,
+                },
+              ],
             });
           } else {
             notify.warning({

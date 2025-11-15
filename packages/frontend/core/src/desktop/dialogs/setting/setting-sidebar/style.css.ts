@@ -5,7 +5,7 @@ export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
   background: cssVar('backgroundSecondaryColor'),
-  padding: '20px 12px',
+  padding: '20px 0px 0px 12px',
   height: '100%',
   flexShrink: 0,
   display: 'flex',
@@ -89,6 +89,19 @@ export const sidebarSelectItemName = style({
   flexGrow: 1,
 });
 
+export const sidebarSelectItemBeta = style({
+  fontSize: cssVar('fontXs'),
+  color: cssVarV2('text/primary'),
+  background: cssVarV2('chip/label/blue'),
+  height: 20,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 8px',
+  borderRadius: '4px',
+  transform: 'translateX(2px)',
+});
+
 export const currentWorkspaceLabel = style({
   width: '20px',
   height: '20px',
@@ -110,6 +123,7 @@ export const sidebarGroup = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '4px',
+  paddingRight: '12px',
 });
 
 export const accountButton = style({

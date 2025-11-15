@@ -5,8 +5,8 @@ import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
 import { createBuiltinToolbarConfigExtension } from '../configs/toolbar';
-import { EmbedGithubBlockAdapterExtensions } from './adapters/extension';
 import { embedGithubSlashMenuConfig } from './configs/slash-menu';
+import { EmbedGithubBlockInteraction } from './embed-edgeless-github-block';
 import { EmbedGithubBlockComponent } from './embed-github-block';
 import {
   EmbedGithubBlockOptionConfig,
@@ -15,7 +15,7 @@ import {
 
 const flavour = EmbedGithubBlockSchema.model.flavour;
 
-export const EmbedGithubBlockSpec: ExtensionType[] = [
+export const EmbedGithubViewExtensions: ExtensionType[] = [
   FlavourExtension(flavour),
   EmbedGithubBlockService,
   BlockViewExtension(flavour, model => {
@@ -23,8 +23,8 @@ export const EmbedGithubBlockSpec: ExtensionType[] = [
       ? literal`affine-embed-edgeless-github-block`
       : literal`affine-embed-github-block`;
   }),
-  EmbedGithubBlockAdapterExtensions,
   EmbedGithubBlockOptionConfig,
+  EmbedGithubBlockInteraction,
   createBuiltinToolbarConfigExtension(flavour, EmbedGithubBlockComponent),
   SlashMenuConfigExtension(flavour, embedGithubSlashMenuConfig),
 ].flat();

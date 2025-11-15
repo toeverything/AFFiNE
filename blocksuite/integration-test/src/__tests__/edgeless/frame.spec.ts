@@ -1,9 +1,7 @@
 import type { FrameBlockComponent } from '@blocksuite/affine/blocks/frame';
-import type {
-  AffineFrameTitleWidget,
-  EdgelessRootBlockComponent,
-} from '@blocksuite/affine/blocks/root';
+import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type { FrameBlockModel } from '@blocksuite/affine/model';
+import type { AffineFrameTitleWidget } from '@blocksuite/affine/widgets/frame-title';
 import { assertType } from '@blocksuite/global/utils';
 import { Text } from '@blocksuite/store';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -33,12 +31,15 @@ describe('frame', () => {
     );
     await wait();
 
-    const frameTitleWidget = service.std.view.getWidget(
-      'affine-frame-title-widget',
-      doc.root!.id
-    ) as AffineFrameTitleWidget | null;
+    const getFrameTitle = (frameId: string) => {
+      const frameTitleWidget = service.std.view.getWidget(
+        'affine-frame-title-widget',
+        frameId
+      ) as AffineFrameTitleWidget | null;
+      return frameTitleWidget?.shadowRoot?.querySelector('affine-frame-title');
+    };
 
-    const frameTitle = frameTitleWidget?.getFrameTitle(frame);
+    const frameTitle = getFrameTitle(frame);
     const rect = frameTitle?.getBoundingClientRect();
 
     expect(frameTitle).toBeTruthy();
@@ -60,7 +61,7 @@ describe('frame', () => {
     );
     await wait();
 
-    const nestedTitle = frameTitleWidget?.getFrameTitle(nestedFrame);
+    const nestedTitle = getFrameTitle(nestedFrame);
     expect(nestedTitle).toBeTruthy();
     if (!nestedTitle) return;
 

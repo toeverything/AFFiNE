@@ -1,0 +1,23 @@
+{
+  "$schema": "./schema.json",
+  "route": "/",
+  "children": {
+    "admin": {
+      "route": "admin",
+      "children": {
+        "auth": "auth",
+        "setup": "setup",
+        "accounts": "accounts",
+        "ai": "ai",
+        "settings": {
+          "route": "settings",
+          "children": {
+            "module": ":module"
+          }
+        },
+        "about": "about",
+        "notFound": "404"
+      }
+    }
+  }
+}

@@ -48,7 +48,7 @@ test.describe('split list', () => {
       listLocator.nth(2).locator('.affine-list-block__numbered')
     ).toHaveText('2.');
     await expect(listLocator.nth(3).locator('rich-text')).toHaveText('ddd');
-    expect(
+    await expect(
       listLocator.nth(3).locator('.affine-list-block__numbered')
     ).toHaveText('3.');
 

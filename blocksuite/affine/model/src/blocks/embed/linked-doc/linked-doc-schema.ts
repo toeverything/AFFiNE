@@ -14,6 +14,8 @@ const defaultEmbedLinkedDocBlockProps: EmbedLinkedDocBlockProps = {
   // title & description aliases
   title: undefined,
   description: undefined,
+
+  footnoteIdentifier: null,
 };
 
 export const EmbedLinkedDocBlockSchema = createEmbedBlockSchema({

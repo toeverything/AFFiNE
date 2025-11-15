@@ -7,7 +7,7 @@ export const OVERRIDE_CONFIG_TOKEN = Symbol('OVERRIDE_CONFIG_TOKEN');
 
 @Injectable()
 export class ConfigFactory {
-  #original: AppConfig;
+  readonly #original: AppConfig;
   readonly #config: AppConfig;
   get config() {
     return this.#config;
@@ -18,8 +18,8 @@ export class ConfigFactory {
     @Optional()
     private readonly overrides: DeepPartial<AppConfig> = {}
   ) {
-    this.#config = this.loadDefault();
-    this.#original = structuredClone(this.#config);
+    this.#original = this.loadDefault();
+    this.#config = structuredClone(this.#original);
   }
 
   clone() {
@@ -28,18 +28,22 @@ export class ConfigFactory {
   }
 
   override(updates: DeepPartial<AppConfig>) {
+    override(this.#original, updates);
     override(this.#config, updates);
-    this.#original = structuredClone(this.#config);
   }
 
   validate(updates: Array<{ module: string; key: string; value: any }>) {
-    const errors: string[] = [];
+    const errors: InvalidAppConfig[] = [];
 
     updates.forEach(update => {
       const descriptor = APP_CONFIG_DESCRIPTORS[update.module]?.[update.key];
       if (!descriptor) {
         errors.push(
-          `Invalid config for module [${update.module}] with unknown key [${update.key}]`
+          new InvalidAppConfig({
+            module: update.module,
+            key: update.key,
+            hint: `Unknown config [${update.key}]`,
+          })
         );
         return;
       }
@@ -47,16 +51,18 @@ export class ConfigFactory {
       const { success, error } = descriptor.validate(update.value);
       if (!success) {
         error.issues.forEach(issue => {
-          errors.push(`Invalid config for module [${update.module}] with key [${update.key}]
-Value: ${JSON.stringify(update.value)}
-Error: ${issue.message}`);
+          errors.push(
+            new InvalidAppConfig({
+              module: update.module,
+              key: update.key,
+              hint: issue.message,
+            })
+          );
         });
       }
     });
 
-    if (errors.length > 0) {
-      throw new InvalidAppConfig(errors.join('\n'));
-    }
+    return errors.length > 0 ? errors : null;
   }
 
   private loadDefault() {

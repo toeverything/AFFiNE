@@ -1,5 +1,8 @@
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
-import type { SurfaceBlockComponent } from '@blocksuite/affine/blocks/surface';
+import {
+  DefaultTool,
+  type SurfaceBlockComponent,
+} from '@blocksuite/affine/blocks/surface';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { click, drag, wait } from '../utils/common.js';
@@ -18,7 +21,7 @@ describe('default tool', () => {
     surface = getSurface(window.doc, window.editor);
     service = edgeless.service;
 
-    edgeless.gfx.tool.setTool('default');
+    edgeless.gfx.tool.setTool(DefaultTool);
 
     return cleanup;
   });

@@ -10,13 +10,13 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import type { WorkspaceDoc as PrismaWorkspaceDoc } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 
 import {
   Cache,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
+  DocNotFound,
   ExpectToGrantDocUserRoles,
   ExpectToPublishDoc,
   ExpectToRevokeDocUserRoles,
@@ -29,13 +29,14 @@ import {
 } from '../../../base';
 import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
+import { Editor } from '../../doc';
 import {
   AccessController,
   DOC_ACTIONS,
   DocAction,
   DocRole,
 } from '../../permission';
-import { WorkspaceUserType } from '../../user';
+import { PublicUserType, WorkspaceUserType } from '../../user';
 import { WorkspaceType } from '../types';
 import {
   DotToUnderline,
@@ -48,7 +49,7 @@ registerEnumType(PublicDocMode, {
 });
 
 @ObjectType()
-class DocType implements Partial<PrismaWorkspaceDoc> {
+class DocType {
   @Field(() => String, { name: 'id' })
   docId!: string;
 
@@ -63,6 +64,24 @@ class DocType implements Partial<PrismaWorkspaceDoc> {
 
   @Field(() => DocRole)
   defaultRole!: DocRole;
+
+  @Field(() => Date, { nullable: true })
+  createdAt?: Date;
+
+  @Field(() => Date, { nullable: true })
+  updatedAt?: Date;
+
+  @Field(() => String, { nullable: true })
+  creatorId?: string;
+
+  @Field(() => String, { nullable: true })
+  lastUpdaterId?: string;
+
+  @Field(() => String, { nullable: true })
+  title?: string | null;
+
+  @Field(() => String, { nullable: true })
+  summary?: string | null;
 }
 
 @InputType()
@@ -131,6 +150,9 @@ class GrantedDocUserType {
 @ObjectType()
 class PaginatedGrantedDocUserType extends Paginated(GrantedDocUserType) {}
 
+@ObjectType()
+class PaginatedDocType extends Paginated(DocType) {}
+
 const DocPermissions = registerObjectType<
   Record<DotToUnderline<DocAction>, boolean>
 >(
@@ -148,6 +170,30 @@ const DocPermissions = registerObjectType<
   { name: 'DocPermissions' }
 );
 
+@ObjectType()
+export class EditorType implements Partial<Editor> {
+  @Field()
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl!: string | null;
+}
+
+@ObjectType()
+class WorkspaceDocMeta {
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+
+  @Field(() => EditorType, { nullable: true })
+  createdBy!: EditorType | null;
+
+  @Field(() => EditorType, { nullable: true })
+  updatedBy!: EditorType | null;
+}
+
 @Resolver(() => WorkspaceType)
 export class WorkspaceDocResolver {
   private readonly logger = new Logger(WorkspaceDocResolver.name);
@@ -161,6 +207,28 @@ export class WorkspaceDocResolver {
     private readonly models: Models,
     private readonly cache: Cache
   ) {}
+
+  @ResolveField(() => WorkspaceDocMeta, {
+    description: 'Cloud page metadata of workspace',
+    complexity: 2,
+    deprecationReason: 'use [WorkspaceType.doc] instead',
+  })
+  async pageMeta(
+    @Parent() workspace: WorkspaceType,
+    @Args('pageId') pageId: string
+  ) {
+    const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
+    if (!metadata) {
+      throw new DocNotFound({ spaceId: workspace.id, docId: pageId });
+    }
+
+    return {
+      createdAt: metadata.createdAt,
+      updatedAt: metadata.updatedAt,
+      createdBy: metadata.createdByUser || null,
+      updatedBy: metadata.updatedByUser || null,
+    };
+  }
 
   @ResolveField(() => [DocType], {
     complexity: 2,
@@ -185,10 +253,44 @@ export class WorkspaceDocResolver {
     deprecationReason: 'use [WorkspaceType.doc] instead',
   })
   async publicPage(
+    @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
-    return this.doc(workspace, pageId);
+    return this.doc(me, workspace, pageId);
+  }
+
+  @ResolveField(() => PaginatedDocType)
+  async docs(
+    @Parent() workspace: WorkspaceType,
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput
+  ): Promise<PaginatedDocType> {
+    const [count, rows] = await this.models.doc.paginateDocInfo(
+      workspace.id,
+      pagination
+    );
+
+    return paginate(rows, 'createdAt', pagination, count);
+  }
+
+  @ResolveField(() => PaginatedDocType, {
+    description: 'Get recently updated docs of a workspace',
+  })
+  async recentlyUpdatedDocs(
+    @CurrentUser() me: CurrentUser,
+    @Parent() workspace: WorkspaceType,
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput
+  ): Promise<PaginatedDocType> {
+    const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
+      workspace.id,
+      pagination
+    );
+    const needs = await this.ac
+      .user(me.id)
+      .workspace(workspace.id)
+      .docs(rows, 'Doc.Read');
+
+    return paginate(needs, 'updatedAt', pagination, count);
   }
 
   @ResolveField(() => DocType, {
@@ -196,21 +298,26 @@ export class WorkspaceDocResolver {
     complexity: 2,
   })
   async doc(
+    @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string
   ): Promise<DocType> {
-    const doc = await this.models.doc.getMeta(workspace.id, docId);
+    const doc = await this.models.doc.getDocInfo(workspace.id, docId);
     if (doc) {
+      // check if doc is readable
+      await this.ac.user(me.id).doc(workspace.id, docId).assert('Doc.Read');
       return doc;
     }
 
     await this.tryFixDocOwner(workspace.id, docId);
 
+    const isPublic = await this.models.doc.isPublic(workspace.id, docId);
+
     return {
       docId,
       workspaceId: workspace.id,
       mode: PublicDocMode.Page,
-      public: false,
+      public: isPublic,
       defaultRole: DocRole.Manager,
     };
   }
@@ -364,6 +471,50 @@ export class DocResolver {
     private readonly models: Models
   ) {}
 
+  @ResolveField(() => PublicUserType, {
+    nullable: true,
+    description: 'Doc create user',
+  })
+  async createdBy(@Parent() doc: DocType): Promise<PublicUserType | null> {
+    if (!doc.creatorId) {
+      return null;
+    }
+
+    return await this.models.user.get(doc.creatorId);
+  }
+
+  @ResolveField(() => PublicUserType, {
+    nullable: true,
+    description: 'Doc last updated user',
+  })
+  async lastUpdatedBy(@Parent() doc: DocType): Promise<PublicUserType | null> {
+    if (!doc.lastUpdaterId) {
+      return null;
+    }
+
+    return await this.models.user.get(doc.lastUpdaterId);
+  }
+
+  @ResolveField(() => WorkspaceDocMeta, {
+    description: 'Doc metadata',
+    complexity: 2,
+  })
+  async meta(@Parent() doc: DocType) {
+    const metadata = await this.models.doc.getAuthors(
+      doc.workspaceId,
+      doc.docId
+    );
+    if (!metadata) {
+      throw new DocNotFound({ spaceId: doc.workspaceId, docId: doc.docId });
+    }
+
+    return {
+      createdAt: metadata.createdAt,
+      updatedAt: metadata.updatedAt,
+      createdBy: metadata.createdByUser || null,
+      updatedBy: metadata.updatedByUser || null,
+    };
+  }
   @ResolveField(() => DocPermissions)
   async permissions(
     @CurrentUser() user: CurrentUser,
@@ -536,7 +687,7 @@ export class DocResolver {
     @Args('input') input: UpdateDocDefaultRoleInput
   ) {
     if (input.role === DocRole.Owner) {
-      this.logger.log(
+      this.logger.debug(
         `Doc default role can not be owner (${JSON.stringify(input)})`
       );
       throw new DocDefaultRoleCanNotBeOwner();
@@ -559,7 +710,7 @@ export class DocResolver {
       await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
     } catch (error) {
       if (error instanceof DocActionDenied) {
-        this.logger.log(
+        this.logger.debug(
           `User does not have permission to update page default role (${JSON.stringify(
             {
               ...pairs,

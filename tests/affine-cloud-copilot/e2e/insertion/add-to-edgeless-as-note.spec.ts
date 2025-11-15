@@ -13,12 +13,12 @@ test.describe('AIInsertion/AddToEdgelessAsNote', () => {
     utils,
   }) => {
     await utils.editor.focusToEditor(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -44,15 +44,15 @@ test.describe('AIInsertion/AddToEdgelessAsNote', () => {
 
     // Delete default note
     await (await page.waitForSelector('affine-edgeless-note')).click();
-    page.keyboard.press('Delete');
+    await page.keyboard.press('Delete');
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',

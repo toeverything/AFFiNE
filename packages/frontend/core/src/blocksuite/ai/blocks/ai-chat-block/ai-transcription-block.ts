@@ -1,4 +1,4 @@
-import type { TranscriptionBlockModel } from '@blocksuite/affine/model';
+import type { TranscriptionBlockModel } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { BlockComponent, BlockViewExtension } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import { css, type PropertyValues } from 'lit';
@@ -10,24 +10,15 @@ export class LitTranscriptionBlock extends BlockComponent<TranscriptionBlockMode
     css`
       transcription-block {
         outline: none;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
     `,
   ];
 
-  get lastCalloutBlock() {
-    for (const child of this.model.children.toReversed()) {
-      if (child.flavour === 'affine:callout') {
-        return child;
-      }
-    }
-    return null;
-  }
-
   override render() {
-    return this.std.host.renderChildren(this.model, model => {
-      // if model is the last transcription block, we should render it
-      return model === this.lastCalloutBlock;
-    });
+    return this.std.host.renderChildren(this.model);
   }
 
   @property({ type: String, attribute: 'data-block-id' })

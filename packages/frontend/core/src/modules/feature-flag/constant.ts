@@ -1,9 +1,9 @@
 import type { FlagInfo } from './types';
 
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
-const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
+const isIOS = BUILD_CONFIG.isIOS;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -26,14 +26,14 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
-  enable_block_query: {
-    category: 'blocksuite',
-    bsFlag: 'enable_block_query',
+  enable_ai_playground: {
+    category: 'affine',
     displayName:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.name',
+      'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.name',
     description:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.description',
+      'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.description',
     configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
   },
   enable_edgeless_text: {
     category: 'blocksuite',
@@ -95,16 +95,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: true,
   },
-  enable_callout: {
-    category: 'blocksuite',
-    bsFlag: 'enable_callout',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-callout.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-callout.description',
-    configurable: isCanaryBuild,
-    defaultState: isCanaryBuild,
-  },
 
   enable_emoji_folder_icon: {
     category: 'affine',
@@ -149,15 +139,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild && !isMobile,
     defaultState: isCanaryBuild,
   },
-  enable_local_workspace: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.description',
-    configurable: isCanaryBuild,
-    defaultState: isDesktopEnvironment || isCanaryBuild,
-  },
   enable_advanced_block_visibility: {
     category: 'blocksuite',
     bsFlag: 'enable_advanced_block_visibility',
@@ -188,15 +169,6 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: isMobile,
   },
-  enable_multiple_cloud_servers: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description',
-    configurable: false,
-    defaultState: isDesktopEnvironment || BUILD_CONFIG.isIOS,
-  },
   enable_mobile_edgeless_editing: {
     category: 'affine',
     displayName:
@@ -213,7 +185,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description',
     configurable: !isMobile,
-    defaultState: false,
+    defaultState: true,
   },
   enable_editor_rtl: {
     category: 'affine',
@@ -228,14 +200,23 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable AI Button',
     description: 'Enable AI Button on mobile',
-    configurable: BUILD_CONFIG.isMobileEdition,
-    defaultState: false,
+    configurable: isMobile && isIOS,
+    defaultState: isMobile && isIOS,
   },
   enable_turbo_renderer: {
-    category: 'affine',
+    category: 'blocksuite',
+    bsFlag: 'enable_turbo_renderer',
     displayName: 'Enable Turbo Renderer',
     description: 'Enable experimental edgeless turbo renderer',
     configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_dom_renderer: {
+    category: 'blocksuite',
+    bsFlag: 'enable_dom_renderer',
+    displayName: 'Enable DOM Renderer',
+    description: 'Enable DOM renderer for graphics elements',
+    configurable: true,
     defaultState: false,
   },
   enable_edgeless_scribbled_style: {
@@ -248,16 +229,63 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_meetings: {
+  enable_table_virtual_scroll: {
+    category: 'blocksuite',
+    bsFlag: 'enable_table_virtual_scroll',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_setting_subpage_animation: {
+    category: 'affine',
+    displayName: 'Enable Setting Subpage Animation',
+    description: 'Apply animation for setting subpage open/close',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_adapter_panel: {
     category: 'affine',
     displayName:
-      'com.affine.settings.workspace.experimental-features.enable-meetings.name',
+      'com.affine.settings.workspace.experimental-features.enable-adapter-panel.name',
     description:
-      'com.affine.settings.workspace.experimental-features.enable-meetings.description',
-    configurable: !isMobile && environment.isMacOs && BUILD_CONFIG.isElectron,
-    feedbackType: 'discord',
-    feedbackLink:
-      'https://discord.com/channels/959027316334407691/1358384103925350542',
+      'com.affine.settings.workspace.experimental-features.enable-adapter-panel.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_two_step_journal_confirmation: {
+    category: 'affine',
+    displayName: 'Enable Two Step Journal Confirmation',
+    description:
+      'When enabled, you must confirm the journal before you can create a new journal.',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_send_detailed_object_to_ai: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.description',
+    configurable: true,
+    defaultState: true,
+  },
+  enable_battery_save_mode: {
+    category: 'affine',
+    displayName: 'Enable Battery Save Mode (Require Restart)',
+    description:
+      'Limit indexing and other compute-intensive tasks on this device, may experience longer loading time and latency in search and other features, in exchange for quietness.',
+    configurable: true,
+    defaultState: isMobile,
+  },
+  enable_mobile_database_editing: {
+    category: 'blocksuite',
+    bsFlag: 'enable_mobile_database_editing',
+    displayName: 'Enable Mobile Database Editing',
+    description: 'Enable mobile database editing',
+    configurable: isMobile,
     defaultState: false,
   },
 } satisfies { [key in string]: FlagInfo };

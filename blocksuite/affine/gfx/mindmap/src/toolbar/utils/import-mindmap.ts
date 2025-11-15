@@ -1,4 +1,4 @@
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
+import { openSingleFileWith } from '@blocksuite/affine-shared/utils';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { Bound } from '@blocksuite/global/gfx';
 import c from 'simple-xml-to-json';
@@ -12,9 +12,7 @@ type MindMapNode = {
 };
 
 export async function importMindmap(bound: Bound): Promise<MindMapNode> {
-  const file = await openFileOrFiles({
-    acceptType: 'MindMap',
-  });
+  const file = await openSingleFileWith('MindMap');
 
   if (!file) {
     throw new BlockSuiteError(ErrorCode.UserAbortError, 'Aborted by user');

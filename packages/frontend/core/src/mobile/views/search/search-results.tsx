@@ -12,6 +12,7 @@ export interface SearchResultsProps {
   docs?: DocCardProps['meta'][];
   collections?: UniversalSearchResultItemProps['item'][];
   tags?: UniversalSearchResultItemProps['item'][];
+  error?: any;
 }
 
 const Empty = () => {
@@ -26,10 +27,13 @@ export const SearchResults = ({
   docs,
   collections,
   tags,
+  error,
 }: SearchResultsProps) => {
   return (
     <>
       <div className={styles.resTitle}>{title}</div>
+
+      {error && <p className={styles.errorMessage}>{error}</p>}
 
       {!docs?.length && !collections?.length && !tags?.length ? (
         <Empty />

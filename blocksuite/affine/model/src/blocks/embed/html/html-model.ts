@@ -3,7 +3,7 @@ import { BlockModel } from '@blocksuite/store';
 import type { EmbedCardStyle } from '../../../utils/index.js';
 import { defineEmbedModel } from '../../../utils/index.js';
 
-export const EmbedHtmlStyles: EmbedCardStyle[] = ['html'] as const;
+export const EmbedHtmlStyles = ['html'] as const satisfies EmbedCardStyle[];
 
 export type EmbedHtmlBlockProps = {
   style: (typeof EmbedHtmlStyles)[number];

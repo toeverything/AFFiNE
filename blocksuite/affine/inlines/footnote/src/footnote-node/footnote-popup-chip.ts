@@ -1,43 +1,40 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
+import { baseTheme } from '@toeverything/theme';
+import {
+  css,
+  html,
+  LitElement,
+  nothing,
+  type TemplateResult,
+  unsafeCSS,
+} from 'lit';
 import { property } from 'lit/decorators.js';
 
 export class FootNotePopupChip extends LitElement {
   static override styles = css`
     .popup-chip-container {
       display: flex;
-      border-radius: 4px;
-      max-width: 173px;
-      height: 24px;
-      padding: 2px 4px;
+      height: 22px;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
       box-sizing: border-box;
-      cursor: default;
-      transition: width 0.3s ease-in-out;
     }
 
-    .prefix-icon,
-    .suffix-icon {
+    .prefix-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 16px;
       height: 16px;
+      width: 16px;
       color: ${unsafeCSSVarV2('icon/primary')};
       border-radius: 4px;
 
       svg,
-      object {
+      img {
         width: 16px;
         height: 16px;
         fill: ${unsafeCSSVarV2('icon/primary')};
       }
-    }
-
-    .suffix-icon:hover {
-      background-color: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
-      cursor: pointer;
     }
 
     .popup-chip-label {
@@ -46,28 +43,22 @@ export class FootNotePopupChip extends LitElement {
       text-overflow: ellipsis;
       white-space: nowrap;
       text-align: left;
-      height: 20px;
-      line-height: 20px;
+      height: 22px;
+      line-height: 22px;
       color: ${unsafeCSSVarV2('text/primary')};
-      font-size: 12px;
-      font-weight: 400;
+      font-size: var(--affine-font-sm);
+      font-weight: 500;
+      font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
     }
   `;
 
   override render() {
     return html`
-      <div class="popup-chip-container" @click=${this.onClick}>
+      <div class="popup-chip-container">
         ${this.prefixIcon
-          ? html`<div class="prefix-icon" @click=${this.onPrefixClick}>
-              ${this.prefixIcon}
-            </div>`
+          ? html`<div class="prefix-icon">${this.prefixIcon}</div>`
           : nothing}
         <div class="popup-chip-label" title=${this.tooltip}>${this.label}</div>
-        ${this.suffixIcon
-          ? html`<div class="suffix-icon" @click=${this.onSuffixClick}>
-              ${this.suffixIcon}
-            </div>`
-          : nothing}
       </div>
     `;
   }
@@ -79,17 +70,5 @@ export class FootNotePopupChip extends LitElement {
   accessor label: string = '';
 
   @property({ attribute: false })
-  accessor suffixIcon: TemplateResult | undefined = undefined;
-
-  @property({ attribute: false })
   accessor tooltip: string = '';
-
-  @property({ attribute: false })
-  accessor onClick: (() => void) | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor onPrefixClick: (() => void) | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor onSuffixClick: (() => void) | undefined = undefined;
 }

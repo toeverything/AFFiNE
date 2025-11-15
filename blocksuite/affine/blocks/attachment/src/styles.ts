@@ -1,34 +1,44 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css } from 'lit';
 
 export const styles = css`
-  .affine-attachment-card {
-    margin: 0 auto;
+  .affine-attachment-container {
+    border-radius: 8px;
     box-sizing: border-box;
+    user-select: none;
+    overflow: hidden;
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
+    background: ${unsafeCSSVarV2('layer/background/primary')};
+
+    &.focused {
+      border-color: ${unsafeCSSVarV2('layer/insideBorder/primaryBorder')};
+    }
+  }
+
+  .affine-attachment-container.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
+
+  .affine-attachment-card {
     display: flex;
     gap: 12px;
-
-    width: 100%;
-    height: 100%;
-
     padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--affine-background-tertiary-color);
-
-    opacity: var(--add, 1);
-    background: var(--affine-background-primary-color);
-    user-select: none;
   }
 
   .affine-attachment-content {
-    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
     flex: 1 0 0;
+    min-width: 0;
+  }
 
-    border-radius: var(--1, 0px);
-    opacity: var(--add, 1);
+  .truncate {
+    align-self: stretch;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .affine-attachment-content-title {
@@ -36,37 +46,19 @@ export const styles = css`
     flex-direction: row;
     gap: 8px;
     align-items: center;
-
     align-self: stretch;
-    padding: var(--1, 0px);
-    border-radius: var(--1, 0px);
-    opacity: var(--add, 1);
   }
 
   .affine-attachment-content-title-icon {
     display: flex;
-    width: 16px;
-    height: 16px;
     align-items: center;
     justify-content: center;
-  }
-
-  .affine-attachment-content-title-icon svg {
-    width: 16px;
-    height: 16px;
-    fill: var(--affine-background-primary-color);
+    color: var(--affine-text-primary-color);
+    font-size: 16px;
   }
 
   .affine-attachment-content-title-text {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-
-    word-break: break-all;
-    overflow: hidden;
-    text-overflow: ellipsis;
     color: var(--affine-text-primary-color);
-
     font-family: var(--affine-font-family);
     font-size: var(--affine-font-sm);
     font-style: normal;
@@ -74,22 +66,41 @@ export const styles = css`
     line-height: 22px;
   }
 
+  .affine-attachment-content-description {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    gap: 8px;
+  }
+
   .affine-attachment-content-info {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    flex: 1 0 0;
-
-    word-break: break-all;
-    overflow: hidden;
     color: var(--affine-text-secondary-color);
-    text-overflow: ellipsis;
-
     font-family: var(--affine-font-family);
     font-size: var(--affine-font-xs);
     font-style: normal;
     font-weight: 400;
     line-height: 20px;
+  }
+
+  .affine-attachment-content-button {
+    display: flex;
+    height: 20px;
+    align-items: center;
+    align-self: stretch;
+    gap: 4px;
+    white-space: nowrap;
+    padding: 0 4px;
+    color: ${unsafeCSSVarV2('button/primary')};
+    font-family: var(--affine-font-family);
+    font-size: var(--affine-font-xs);
+    font-style: normal;
+    font-weight: 500;
+    text-transform: capitalize;
+    line-height: 20px;
+
+    svg {
+      font-size: 16px;
+    }
   }
 
   .affine-attachment-banner {
@@ -98,22 +109,21 @@ export const styles = css`
     justify-content: center;
   }
 
-  .affine-attachment-banner svg {
-    width: 40px;
-    height: 40px;
-  }
-
   .affine-attachment-card.loading {
-    background: var(--affine-background-secondary-color);
-
     .affine-attachment-content-title-text {
-      color: var(--affine-placeholder-color);
+      color: ${unsafeCSSVarV2('text/placeholder')};
     }
   }
 
-  .affine-attachment-card.error,
-  .affine-attachment-card.unsynced {
-    background: var(--affine-background-secondary-color);
+  .affine-attachment-card.error {
+    .affine-attachment-content-title-icon {
+      color: ${unsafeCSSVarV2('status/error')};
+    }
+  }
+
+  .affine-attachment-card.loading,
+  .affine-attachment-card.error {
+    background: ${unsafeCSSVarV2('layer/background/secondary')};
   }
 
   .affine-attachment-card.cubeThick {
@@ -127,7 +137,7 @@ export const styles = css`
     }
 
     .affine-attachment-banner {
-      justify-content: flex-start;
+      justify-content: space-between;
     }
   }
 
@@ -135,6 +145,12 @@ export const styles = css`
     position: relative;
     width: 100%;
     height: 100%;
+  }
+
+  .affine-attachment-embed-status {
+    position: absolute;
+    left: 14px;
+    bottom: 64px;
   }
 
   .affine-attachment-embed-event-mask {

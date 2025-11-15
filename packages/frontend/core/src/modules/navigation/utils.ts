@@ -8,6 +8,7 @@ function maybeAffineOrigin(origin: string, baseUrl: string) {
   return (
     origin.startsWith('file://') ||
     origin.endsWith('affine.pro') || // stable/beta
+    origin.endsWith('apple.getaffineapp.com') || // stable/beta
     origin.endsWith('affine.fail') || // canary
     origin === baseUrl // localhost or self-hosted
   );
@@ -74,21 +75,32 @@ export const resolveRouteLinkMeta = (
   }
 };
 
-export const isLink = (href: string) => {
+const toURL = (str: string) => {
   try {
-    const hasScheme = href.match(/^https?:\/\//);
+    if (!URL.canParse(str)) return null;
 
-    if (!hasScheme) {
-      const dotIdx = href.indexOf('.');
-      if (dotIdx > 0 && dotIdx < href.length - 1) {
-        href = `https://${href}`;
-      }
-    }
-
-    return Boolean(URL.canParse?.(href) ?? new URL(href));
+    return new URL(str);
   } catch {
     return null;
   }
+};
+
+export const isLink = (str: string) => {
+  str = str.trim();
+
+  let url = toURL(str);
+
+  if (!url) {
+    const hasScheme = str.match(/^https?:\/\//);
+    if (!hasScheme) {
+      const dotIdx = str.indexOf('.');
+      if (dotIdx > 0 && dotIdx < str.length - 1) {
+        url = toURL(`https://${str}`);
+      }
+    }
+  }
+
+  return Boolean(url);
 };
 
 /**
@@ -143,6 +155,7 @@ export const preprocessParams = (
     'databaseId',
     'databaseRowId',
     'refreshKey',
+    'commentId',
   ]);
 };
 
@@ -159,6 +172,7 @@ export const paramsParseOptions: ParseOptions = {
     databaseId: 'string',
     databaseRowId: 'string',
     refreshKey: 'string',
+    commentId: 'string',
   },
 };
 

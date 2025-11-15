@@ -4,10 +4,9 @@ import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
-import { ImageBlockAdapterExtensions } from './adapters/extension';
 import { imageSlashMenuConfig } from './configs/slash-menu';
 import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
-import { ImageProxyService } from './image-proxy-service';
+import { ImageEdgelessBlockInteraction } from './image-edgeless-block';
 import { ImageDropOption } from './image-service';
 
 const flavour = ImageBlockSchema.model.flavour;
@@ -15,7 +14,7 @@ const flavour = ImageBlockSchema.model.flavour;
 export const ImageBlockSpec: ExtensionType[] = [
   FlavourExtension(flavour),
   BlockViewExtension(flavour, model => {
-    const parent = model.doc.getParent(model.id);
+    const parent = model.store.getParent(model.id);
 
     if (parent?.flavour === 'affine:surface') {
       return literal`affine-edgeless-image`;
@@ -24,9 +23,7 @@ export const ImageBlockSpec: ExtensionType[] = [
     return literal`affine-image`;
   }),
   ImageDropOption,
-  ImageBlockAdapterExtensions,
+  ImageEdgelessBlockInteraction,
   createBuiltinToolbarConfigExtension(flavour),
   SlashMenuConfigExtension(flavour, imageSlashMenuConfig),
 ].flat();
-
-export const ImageStoreSpec: ExtensionType[] = [ImageProxyService];

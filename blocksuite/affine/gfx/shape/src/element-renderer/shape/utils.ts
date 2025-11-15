@@ -68,7 +68,7 @@ export function drawGeneralShape(
     const { blur, offsetX, offsetY, color } = shapeModel.shadow;
     const scale = ctx.getTransform().a;
 
-    const enableShadowBlur = shapeModel.surface.doc
+    const enableShadowBlur = shapeModel.surface.store
       .get(FeatureFlagService)
       .getFlag('enable_shape_shadow_blur');
 

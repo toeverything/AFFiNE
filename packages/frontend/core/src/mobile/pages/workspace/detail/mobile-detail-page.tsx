@@ -1,5 +1,5 @@
 import { useThemeColorV2 } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { useGuard } from '@affine/core/components/guard';
@@ -21,13 +21,12 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime } from '@affine/i18n';
+import { DisposableGroup } from '@blocksuite/affine/global/disposable';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   customImageProxyMiddleware,
   ImageProxyService,
-} from '@blocksuite/affine/blocks/image';
-import { DisposableGroup } from '@blocksuite/affine/global/disposable';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
-import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
+} from '@blocksuite/affine/shared/adapters';
 import {
   FrameworkScope,
   useLiveData,
@@ -139,20 +138,12 @@ const DetailPageImpl = () => {
         server.baseUrl
       ).toString();
 
-      const linkPreviewUrl = new URL(
-        BUILD_CONFIG.linkPreviewUrl,
-        server.baseUrl
-      ).toString();
-
       editorContainer.std.clipboard.use(
         customImageProxyMiddleware(imageProxyUrl)
       );
       editorContainer.doc
         .get(ImageProxyService)
         .setImageProxyURL(imageProxyUrl);
-
-      // provide link preview endpoint to blocksuite
-      editorContainer.doc.get(LinkPreviewerService).setEndpoint(linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
       const refNodeService =
@@ -223,7 +214,7 @@ const DetailPageImpl = () => {
 const getSkeleton = (back: boolean) => (
   <>
     <PageHeader back={back} className={styles.header} />
-    <PageDetailSkeleton />
+    <PageDetailLoading />
   </>
 );
 const getNotFound = (back: boolean) => (
@@ -261,11 +252,15 @@ const MobileDetailPage = ({
 
   const handleDateChange = useCallback(
     (date: string) => {
-      const docId = journalService.ensureJournalByDate(date).id;
-      workbench.openDoc(
-        { docId, fromTab: fromTab ? 'true' : undefined },
-        { replaceHistory: true }
-      );
+      const docs = journalService.journalsByDate$(date).value;
+      if (docs.length > 0) {
+        workbench.openDoc(
+          { docId: docs[0].id, fromTab: fromTab ? 'true' : undefined },
+          { replaceHistory: true }
+        );
+      } else {
+        workbench.open(`/journals?date=${date}`);
+      }
     },
     [fromTab, journalService, workbench]
   );

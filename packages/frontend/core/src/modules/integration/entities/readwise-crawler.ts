@@ -5,7 +5,7 @@ import {
   onComplete,
   onStart,
 } from '@toeverything/infra';
-import { catchError, EMPTY, mergeMap, Observable, switchMap } from 'rxjs';
+import { catchError, EMPTY, Observable, switchMap, tap } from 'rxjs';
 
 import type { ReadwiseStore } from '../store/readwise';
 import type {
@@ -129,9 +129,8 @@ export class ReadwiseCrawler extends Entity {
           abortController?.abort();
         };
       }).pipe(
-        mergeMap(data => {
+        tap(data => {
           this.data$.next(data);
-          return EMPTY;
         }),
         catchError(err => {
           this.error$.next(err);

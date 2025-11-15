@@ -1,3 +1,7 @@
+import {
+  DocModeProvider,
+  TelemetryProvider,
+} from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type { BlockComponent } from '@blocksuite/std';
 import { InlineMarkdownExtension } from '@blocksuite/std/inline';
@@ -6,7 +10,7 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
   name: 'latex',
 
   pattern:
-    /(?:\$\$)(?<content>[^$]+)(?:\$\$)$|(?<blockPrefix>\$\$\$\$)|(?<inlinePrefix>\$\$)$/g,
+    /(?:\$\$)(?<content>[^$]+)(?:\$\$)\s$|(?<blockPrefix>\$\$\$\$)\s$|(?<inlinePrefix>\$\$)\s$/g,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = pattern.exec(prefixText);
     if (!match || !match.groups) return;
@@ -14,37 +18,25 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
     const inlinePrefix = match.groups['inlinePrefix'];
     const blockPrefix = match.groups['blockPrefix'];
 
-    if (blockPrefix === '$$$$') {
-      inlineEditor.insertText(
-        {
-          index: inlineRange.index,
-          length: 0,
-        },
-        ' '
-      );
-      inlineEditor.setInlineRange({
-        index: inlineRange.index + 1,
-        length: 0,
-      });
+    if (!inlineEditor.rootElement) return;
+    const blockComponent =
+      inlineEditor.rootElement.closest<BlockComponent>('[data-block-id]');
+    if (!blockComponent) return;
 
+    const doc = blockComponent.store;
+    const std = blockComponent.std;
+    const parentComponent = blockComponent.parentComponent;
+    if (!parentComponent) return;
+    const index = parentComponent.model.children.indexOf(blockComponent.model);
+    if (index === -1) return;
+    const mode = std.get(DocModeProvider).getEditorMode() ?? 'page';
+    const ifEdgelessText = blockComponent.closest('affine-edgeless-text');
+
+    if (blockPrefix === '$$$$') {
       undoManager.stopCapturing();
 
-      if (!inlineEditor.rootElement) return;
-      const blockComponent =
-        inlineEditor.rootElement.closest<BlockComponent>('[data-block-id]');
-      if (!blockComponent) return;
-
-      const doc = blockComponent.doc;
-      const parentComponent = blockComponent.parentComponent;
-      if (!parentComponent) return;
-
-      const index = parentComponent.model.children.indexOf(
-        blockComponent.model
-      );
-      if (index === -1) return;
-
       inlineEditor.deleteText({
-        index: inlineRange.index - 4,
+        index: inlineRange.index - 5,
         length: 5,
       });
 
@@ -67,38 +59,39 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
         })
         .catch(console.error);
 
+      std.getOptional(TelemetryProvider)?.track('Latex', {
+        from:
+          mode === 'page'
+            ? 'doc'
+            : ifEdgelessText
+              ? 'edgeless text'
+              : 'edgeless note',
+        page: mode === 'page' ? 'doc' : 'edgeless',
+        segment: mode === 'page' ? 'doc' : 'whiteboard',
+        module: 'equation',
+        control: 'create equation',
+      });
+
       return;
     }
 
     if (inlinePrefix === '$$') {
-      inlineEditor.insertText(
-        {
-          index: inlineRange.index,
-          length: 0,
-        },
-        ' '
-      );
-      inlineEditor.setInlineRange({
-        index: inlineRange.index + 1,
-        length: 0,
-      });
-
       undoManager.stopCapturing();
 
       inlineEditor.deleteText({
-        index: inlineRange.index - 2,
+        index: inlineRange.index - 3,
         length: 3,
       });
       inlineEditor.insertText(
         {
-          index: inlineRange.index - 2,
+          index: inlineRange.index - 3,
           length: 0,
         },
         ' '
       );
       inlineEditor.formatText(
         {
-          index: inlineRange.index - 2,
+          index: inlineRange.index - 3,
           length: 1,
         },
         {
@@ -112,7 +105,7 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
           await inlineEditor.waitForUpdate();
 
           const textPoint = inlineEditor.getTextPoint(
-            inlineRange.index - 2 + 1
+            inlineRange.index - 3 + 1
           );
           if (!textPoint) return;
 
@@ -124,26 +117,27 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
         })
         .catch(console.error);
 
+      std.getOptional(TelemetryProvider)?.track('Latex', {
+        from:
+          mode === 'page'
+            ? 'doc'
+            : ifEdgelessText
+              ? 'edgeless text'
+              : 'edgeless note',
+        page: mode === 'page' ? 'doc' : 'edgeless',
+        segment: mode === 'page' ? 'doc' : 'whiteboard',
+        module: 'inline equation',
+        control: 'create inline equation',
+      });
+
       return;
     }
 
     if (!content || content.length === 0) return;
 
-    inlineEditor.insertText(
-      {
-        index: inlineRange.index,
-        length: 0,
-      },
-      ' '
-    );
-    inlineEditor.setInlineRange({
-      index: inlineRange.index + 1,
-      length: 0,
-    });
-
     undoManager.stopCapturing();
 
-    const startIndex = inlineRange.index - 2 - content.length - 2;
+    const startIndex = inlineRange.index - 1 - 2 - content.length - 2;
     inlineEditor.deleteText({
       index: startIndex,
       length: 2 + content.length + 2 + 1,
@@ -168,6 +162,19 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
     inlineEditor.setInlineRange({
       index: startIndex + 1,
       length: 0,
+    });
+
+    std.getOptional(TelemetryProvider)?.track('Latex', {
+      from:
+        mode === 'page'
+          ? 'doc'
+          : ifEdgelessText
+            ? 'edgeless text'
+            : 'edgeless note',
+      page: mode === 'page' ? 'doc' : 'edgeless',
+      segment: mode === 'page' ? 'doc' : 'whiteboard',
+      module: 'inline equation',
+      control: 'create inline equation',
     });
   },
 });

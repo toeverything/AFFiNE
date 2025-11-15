@@ -31,6 +31,11 @@ export const footnoteReferenceDeltaToMarkdownAdapterMatcher =
             clonedFootnoteReference.url
           );
         }
+        if (clonedFootnoteReference.favicon) {
+          clonedFootnoteReference.favicon = encodeURIComponent(
+            clonedFootnoteReference.favicon
+          );
+        }
         configs.set(
           footnoteDefinitionKey,
           JSON.stringify(clonedFootnoteReference)

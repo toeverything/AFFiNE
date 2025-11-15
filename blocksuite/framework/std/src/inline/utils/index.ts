@@ -1,5 +1,6 @@
 export * from './attribute-renderer.js';
 export * from './delta-convert.js';
+export * from './dynamic-schema.js';
 export * from './embed.js';
 export * from './guard.js';
 export * from './point-conversion.js';

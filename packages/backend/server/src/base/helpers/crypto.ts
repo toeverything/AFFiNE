@@ -7,17 +7,24 @@ import {
   createSign,
   createVerify,
   generateKeyPairSync,
+  type KeyObject,
   randomBytes,
   randomInt,
+  sign,
   timingSafeEqual,
+  verify,
 } from 'node:crypto';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   hash as hashPassword,
   verify as verifyPassword,
 } from '@node-rs/argon2';
 
+import {
+  AFFINE_PRO_LICENSE_AES_KEY,
+  AFFINE_PRO_PUBLIC_KEY,
+} from '../../native';
 import { Config } from '../config';
 import { OnEvent } from '../event';
 
@@ -29,45 +36,55 @@ function generatePrivateKey(): string {
     namedCurve: 'prime256v1',
   });
 
+  // Export EC private key as PKCS#8 PEM. This avoids OpenSSL 3.x decoder issues
+  // in Node.js 22 when later deriving the public key via createPublicKey.
   const key = privateKey.export({
-    type: 'sec1',
+    type: 'pkcs8',
     format: 'pem',
   });
 
   return key.toString('utf8');
 }
 
-function readPrivateKey(privateKey: string) {
-  return createPrivateKey({
-    key: Buffer.from(privateKey),
-    format: 'pem',
-    type: 'sec1',
-  })
-    .export({
-      format: 'pem',
-      type: 'pkcs8',
-    })
-    .toString('utf8');
-}
-
-function readPublicKey(privateKey: string) {
-  return createPublicKey({
-    key: Buffer.from(privateKey),
-  })
-    .export({ format: 'pem', type: 'spki' })
-    .toString('utf8');
+function parseKey(privateKey: string) {
+  const keyBuf = Buffer.from(privateKey);
+  let priv: KeyObject;
+  try {
+    priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'pkcs8' });
+  } catch (e1) {
+    try {
+      priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'sec1' });
+    } catch (e2) {
+      // As a last resort rely on auto-detection
+      priv = createPrivateKey(keyBuf);
+    }
+  }
+  const pub = createPublicKey(priv);
+  return { priv, pub };
 }
 
 @Injectable()
-export class CryptoHelper {
+export class CryptoHelper implements OnModuleInit {
+  logger = new Logger(CryptoHelper.name);
+
   keyPair!: {
-    publicKey: Buffer;
-    privateKey: Buffer;
+    publicKey: KeyObject;
+    privateKey: KeyObject;
     sha256: {
       publicKey: Buffer;
       privateKey: Buffer;
     };
   };
+
+  AFFiNEProPublicKey: Buffer | null = null;
+  AFFiNEProLicenseAESKey: Buffer | null = null;
+
+  onModuleInit() {
+    if (env.selfhosted) {
+      this.AFFiNEProPublicKey = this.loadAFFiNEProPublicKey();
+      this.AFFiNEProLicenseAESKey = this.loadAFFiNEProLicenseAESKey();
+    }
+  }
 
   constructor(private readonly config: Config) {}
 
@@ -84,13 +101,15 @@ export class CryptoHelper {
   }
 
   private setup() {
-    const key = this.config.crypto.privateKey || generatePrivateKey();
-    const privateKey = readPrivateKey(key);
-    const publicKey = readPublicKey(key);
+    const privateKey = this.config.crypto.privateKey || generatePrivateKey();
+    const { priv, pub } = parseKey(privateKey);
+    const publicKey = pub
+      .export({ format: 'pem', type: 'spki' })
+      .toString('utf8');
 
     this.keyPair = {
-      publicKey: Buffer.from(publicKey),
-      privateKey: Buffer.from(privateKey),
+      publicKey: pub,
+      privateKey: priv,
       sha256: {
         publicKey: this.sha256(publicKey),
         privateKey: this.sha256(privateKey),
@@ -98,11 +117,23 @@ export class CryptoHelper {
     };
   }
 
+  private get keyType() {
+    return (this.keyPair.privateKey.asymmetricKeyType as string) || 'ec';
+  }
+
   sign(data: string) {
-    const sign = createSign('rsa-sha256');
-    sign.update(data, 'utf-8');
-    sign.end();
-    return `${data},${sign.sign(this.keyPair.privateKey, 'base64')}`;
+    const input = Buffer.from(data, 'utf-8');
+    if (this.keyType === 'ed25519') {
+      // Ed25519 signs the message directly (no pre-hash)
+      const sig = sign(null, input, this.keyPair.privateKey);
+      return `${data},${sig.toString('base64')}`;
+    } else {
+      // ECDSA with SHA-256 for EC keys
+      const sign = createSign('sha256');
+      sign.update(input);
+      sign.end();
+      return `${data},${sign.sign(this.keyPair.privateKey, 'base64')}`;
+    }
   }
 
   verify(signatureWithData: string) {
@@ -110,10 +141,18 @@ export class CryptoHelper {
     if (!signature) {
       return false;
     }
-    const verify = createVerify('rsa-sha256');
-    verify.update(data, 'utf-8');
-    verify.end();
-    return verify.verify(this.keyPair.privateKey, signature, 'base64');
+    const input = Buffer.from(data, 'utf-8');
+    const sigBuf = Buffer.from(signature, 'base64');
+    if (this.keyType === 'ed25519') {
+      // Ed25519 verifies the message directly
+      return verify(null, input, this.keyPair.publicKey, sigBuf);
+    } else {
+      // ECDSA with SHA-256
+      const verify = createVerify('sha256');
+      verify.update(input);
+      verify.end();
+      return verify.verify(this.keyPair.publicKey, sigBuf);
+    }
   }
 
   encrypt(data: string) {
@@ -178,7 +217,7 @@ export class CryptoHelper {
     let otp = '';
 
     for (let i = 0; i < length; i++) {
-      otp += this.randomInt(0, 9).toString();
+      otp += this.randomInt(0, 10).toString();
     }
 
     return otp;
@@ -186,5 +225,35 @@ export class CryptoHelper {
 
   sha256(data: string) {
     return createHash('sha256').update(data).digest();
+  }
+
+  private loadAFFiNEProPublicKey() {
+    if (AFFINE_PRO_PUBLIC_KEY) {
+      return Buffer.from(AFFINE_PRO_PUBLIC_KEY);
+    } else {
+      this.logger.warn('AFFINE_PRO_PUBLIC_KEY is not set at compile time.');
+    }
+
+    if (!env.prod && process.env.AFFiNE_PRO_PUBLIC_KEY) {
+      return Buffer.from(process.env.AFFiNE_PRO_PUBLIC_KEY);
+    }
+
+    return null;
+  }
+
+  private loadAFFiNEProLicenseAESKey() {
+    if (AFFINE_PRO_LICENSE_AES_KEY) {
+      return this.sha256(AFFINE_PRO_LICENSE_AES_KEY);
+    } else {
+      this.logger.warn(
+        'AFFINE_PRO_LICENSE_AES_KEY is not set at compile time.'
+      );
+    }
+
+    if (!env.prod && process.env.AFFiNE_PRO_LICENSE_AES_KEY) {
+      return this.sha256(process.env.AFFiNE_PRO_LICENSE_AES_KEY);
+    }
+
+    return null;
   }
 }

@@ -30,6 +30,7 @@ import {
 import {
   captureEventTarget,
   type DropTarget as DropResult,
+  findNoteBlockModel,
   getBlockComponentsExcludeSubtrees,
   getRectByBlockComponent,
   getScrollContainer,
@@ -75,6 +76,7 @@ import last from 'lodash-es/last';
 import type { AffineDragHandleWidget } from '../drag-handle.js';
 import { PreviewHelper } from '../helpers/preview-helper.js';
 import { gfxBlocksFilter } from '../middleware/blocks-filter.js';
+import { cardStyleUpdater } from '../middleware/card-style-updater.js';
 import { newIdCrossDoc } from '../middleware/new-id-cross-doc.js';
 import { reorderList } from '../middleware/reorder-list';
 import {
@@ -501,7 +503,7 @@ export class DragEventWatcher {
       // can't drop edgeless content on the same doc
       if (
         dragPayload.bsEntity?.fromMode === 'gfx' &&
-        dragPayload.from?.docId === this.widget.doc.id
+        dragPayload.from?.docId === this.widget.store.id
       ) {
         return;
       }
@@ -550,7 +552,7 @@ export class DragEventWatcher {
 
     // drop on the same place, do nothing
     if (
-      (dragPayload.from?.docId === this.widget.doc.id &&
+      (dragPayload.from?.docId === this.widget.store.id &&
         result.placement === 'after' &&
         parent.children[index]?.id === snapshot.content[0].id) ||
       (result.placement === 'before' &&
@@ -566,7 +568,7 @@ export class DragEventWatcher {
     ) {
       snapshot.content = snapshot.content.filter(
         block =>
-          dragPayload.from?.docId !== this.widget.doc.id ||
+          dragPayload.from?.docId !== this.widget.store.id ||
           block.id !== parent.id
       );
       if (snapshot.content.length) {
@@ -590,7 +592,7 @@ export class DragEventWatcher {
       matchModels(parent, [NoteBlockModel])
     ) {
       // if the snapshot comes from the same doc, just create a surface-ref block
-      if (dragPayload.from?.docId === this.widget.doc.id) {
+      if (dragPayload.from?.docId === this.widget.store.id) {
         let largestElem!: {
           size: number;
           id: string;
@@ -709,6 +711,7 @@ export class DragEventWatcher {
     dropPayload: DropPayload,
     point: Point
   ) => {
+    this.std.store.captureSync();
     if (this.mode === 'edgeless') {
       this._onEdgelessDrop(dropBlock, dragPayload, dropPayload, point);
     } else {
@@ -1089,7 +1092,7 @@ export class DragEventWatcher {
           block.flavour === 'affine:bookmark' ||
           block.flavour.startsWith('affine:embed-')
         ) {
-          const style = 'vertical' as EmbedCardStyle;
+          const style = (block.props.style ?? 'vertical') as EmbedCardStyle;
           block.props.style = style;
 
           blockBound.w = EMBED_CARD_WIDTH[style];
@@ -1194,7 +1197,7 @@ export class DragEventWatcher {
         };
 
         this._rewriteSnapshotXYWH(pageSnapshot, point, true);
-        this._dropToModel(pageSnapshot, this.widget.doc.root!.id)
+        this._dropToModel(pageSnapshot, this.widget.store.root!.id)
           .then(slices => {
             slices?.content.forEach((block, idx) => {
               if (block.flavour === 'affine:embed-iframe') {
@@ -1247,20 +1250,50 @@ export class DragEventWatcher {
             console.error
           );
         }
-      } else {
-        // create note to wrap the snapshot
-        const noteId = store.addBlock(
-          'affine:note',
-          {
-            xywh: new Bound(
-              point.x,
-              point.y,
-              DEFAULT_NOTE_WIDTH,
-              DEFAULT_NOTE_HEIGHT
-            ).serialize(),
-          },
-          this.widget.doc.root!
-        );
+      }
+      // create note to wrap the snapshot
+      else {
+        const originalModel = store.getModelById(snapshot.content[0].id);
+        const originalNote = originalModel
+          ? findNoteBlockModel(originalModel)
+          : null;
+
+        let noteId: string;
+        if (originalNote) {
+          const placement =
+            originalNote.children[0].id === snapshot.content[0].id
+              ? 'before'
+              : 'after';
+
+          noteId = store.addSiblingBlocks(
+            originalNote,
+            [
+              {
+                flavour: 'affine:note',
+                xywh: new Bound(
+                  point.x,
+                  point.y,
+                  DEFAULT_NOTE_WIDTH,
+                  DEFAULT_NOTE_HEIGHT
+                ).serialize(),
+              },
+            ],
+            placement
+          )[0];
+        } else {
+          noteId = store.addBlock(
+            'affine:note',
+            {
+              xywh: new Bound(
+                point.x,
+                point.y,
+                DEFAULT_NOTE_WIDTH,
+                DEFAULT_NOTE_HEIGHT
+              ).serialize(),
+            },
+            this.widget.store.root!
+          );
+        }
 
         this._dropToModel(
           {
@@ -1268,7 +1301,19 @@ export class DragEventWatcher {
             content,
           },
           noteId
-        ).catch(console.error);
+        )
+          .then(() => {
+            const telemetry = this.std.getOptional(TelemetryProvider);
+            telemetry?.track('CanvasElementAdded', {
+              page: 'whiteboard editor',
+              module: 'canvas',
+              segment: 'whiteboard',
+              control: 'canvas:drop',
+              type: 'note',
+              other: 'split-from-note',
+            });
+          })
+          .catch(console.error);
       }
     }
   };
@@ -1389,6 +1434,7 @@ export class DragEventWatcher {
       newIdCrossDoc(std),
       reorderList(std),
       surfaceRefToEmbed(std),
+      cardStyleUpdater(std),
     ];
 
     if (selectedIds) {
@@ -1508,7 +1554,7 @@ export class DragEventWatcher {
            */
           if (source.data.bsEntity?.type === 'blocks') {
             return (
-              source.data.from?.docId !== widget.doc.id ||
+              source.data.from?.docId !== widget.store.id ||
               source.data.bsEntity.modelIds.every(id => id !== view.model.id)
             );
           }
@@ -1521,6 +1567,11 @@ export class DragEventWatcher {
           }
         },
         onDragLeave: () => {
+          if (isNote && 'hideMask' in view) {
+            view.hideMask = false;
+          }
+        },
+        onDrop: () => {
           if (isNote && 'hideMask' in view) {
             view.hideMask = false;
           }

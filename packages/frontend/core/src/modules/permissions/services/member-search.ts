@@ -8,7 +8,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { Member } from '../entities/members';
@@ -43,11 +43,9 @@ export class MemberSearchService extends Service {
           signal
         );
       }).pipe(
-        mergeMap(data => {
+        tap(data => {
           this.result$.setValue([...this.result$.value, ...data.members]);
           this.hasMore$.setValue(data.members.length === this.PAGE_SIZE);
-
-          return EMPTY;
         }),
         smartRetry(),
         catchErrorInto(this.error$),

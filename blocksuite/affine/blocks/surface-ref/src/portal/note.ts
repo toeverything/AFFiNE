@@ -1,4 +1,5 @@
 import type { CanvasRenderer } from '@blocksuite/affine-block-surface';
+import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import type { NoteBlockModel } from '@blocksuite/affine-model';
 import {
   DefaultTheme,
@@ -10,7 +11,6 @@ import {
   EDGELESS_BLOCK_CHILD_PADDING,
 } from '@blocksuite/affine-shared/consts';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
-import { SpecProvider } from '@blocksuite/affine-shared/utils';
 import { deserializeXYWH } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import {
@@ -43,7 +43,7 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
     let parent: BlockModel | null = this.model;
     while (parent) {
       this.ancestors.add(parent.id);
-      parent = this.model.doc.getParent(parent.id);
+      parent = this.model.store.getParent(parent.id);
     }
     const query: Query = {
       mode: 'include',
@@ -54,9 +54,9 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
     };
     this.query = query;
 
-    const doc = this.model.doc;
+    const doc = this.model.store;
     this._disposables.add(() => {
-      doc.doc.clearQuery(query, true);
+      doc.doc.removeStore({ query, readonly: true });
     });
   }
 
@@ -118,14 +118,16 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
       console.error('Query is not set before rendering note preview');
       return nothing;
     }
-    const doc = this.model.doc.doc.getStore({
+    const doc = this.model.store.doc.getStore({
       query: this.query,
       readonly: true,
     });
-    const previewSpec = SpecProvider._.getSpec('preview:page');
+    const previewSpec = this.host.std
+      .get(ViewExtensionManagerIdentifier)
+      .get('preview-page');
     return new BlockStdScope({
       store: doc,
-      extensions: previewSpec.value.slice(),
+      extensions: previewSpec,
     }).render();
   }
 

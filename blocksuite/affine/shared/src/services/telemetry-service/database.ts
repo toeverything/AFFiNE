@@ -18,10 +18,36 @@ export type DatabaseViewEvents = {
   DatabaseSortClear: {
     rulesCount: number;
   };
+  CreateDatabaseView: {
+    viewType: string; // e.g., 'table', 'gallery'
+  };
+  ChangeDatabaseLayout: {
+    fromViewType: string;
+    toViewType: string;
+  };
+};
+
+export type DatabasePropertyEvents = {
+  CreateDatabaseProperty: {
+    propertyType: string; // e.g., 'text', 'number', 'select'
+  };
+};
+
+export type DatabaseFilterEvents = {
+  CreateDatabaseFilter: {};
+};
+
+export type DatabaseGroupEvents = {
+  CreateDatabaseGroup: {
+    groupBy: string;
+  };
 };
 
 export type DatabaseEvents = {
   AddDatabase: {};
+  AddDatabaseView: {
+    type: string;
+  };
 };
 
 export interface DatabaseAllSortEvents {
@@ -40,7 +66,10 @@ export interface DatabaseAllSortEvents {
 }
 
 export type DatabaseAllViewEvents = DatabaseViewEvents &
-  WithParams<DatabaseAllSortEvents, SortParams>;
+  WithParams<DatabaseAllSortEvents, SortParams> &
+  DatabasePropertyEvents &
+  DatabaseFilterEvents &
+  DatabaseGroupEvents;
 
 export type DatabaseAllEvents = DatabaseEvents &
   WithParams<DatabaseAllViewEvents, ViewParams>;

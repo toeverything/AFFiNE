@@ -4,7 +4,13 @@ global:
   ingress:
     enabled: false
     className: ''
-    host: affine.pro
+    # hosts for ingress rules
+    # e.g.
+    # hosts:
+    #  - affine.pro
+    #  - www.affine.pro
+    hosts:
+      - affine.pro
     tls: []
   secret:
     secretName: 'server-private-key'
@@ -21,6 +27,11 @@ global:
     username: ''
     password: ''
     database: 0
+  indexer:
+    provider: ''
+    endpoint: ''
+    username: ''
+    password: ''
   docService:
     name: 'affine-doc'
     port: 3020

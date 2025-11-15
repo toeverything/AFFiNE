@@ -7,7 +7,9 @@ import { expandCollapsibleSection, pageBack } from './utils';
 
 test('Create new doc in favorites', async ({ page }) => {
   const section = await expandCollapsibleSection(page, 'favorites');
-  const newButton = section.getByTestId('explorer-bar-add-favorite-button');
+  const newButton = section.getByTestId(
+    'navigation-panel-bar-add-favorite-button'
+  );
   await newButton.tap();
 
   // const testTitleText = 'Test Favorited Doc';
@@ -19,7 +21,7 @@ test('Create new doc in favorites', async ({ page }) => {
 
   await pageBack(page);
   const section2 = await expandCollapsibleSection(page, 'favorites');
-  const node = section2.getByTestId(`explorer-doc-${docId}`);
+  const node = section2.getByTestId(`navigation-panel-doc-${docId}`);
   await expect(node).toBeVisible();
 
   // const label = node.getByText(testTitleText);

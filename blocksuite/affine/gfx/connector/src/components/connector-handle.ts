@@ -1,5 +1,4 @@
 import {
-  type ConnectionOverlay,
   EdgelessLegacySlotIdentifier,
   OverlayIdentifier,
 } from '@blocksuite/affine-block-surface';
@@ -10,8 +9,8 @@ import { WithDisposable } from '@blocksuite/global/lit';
 import {
   type BlockComponent,
   type BlockStdScope,
-  docContext,
   stdContext,
+  storeContext,
 } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { Store } from '@blocksuite/store';
@@ -19,6 +18,8 @@ import { consume } from '@lit/context';
 import { css, html, LitElement } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+
+import type { ConnectionOverlay } from '../connector-manager';
 
 const SIZE = 12;
 const HALF_SIZE = SIZE / 2;
@@ -153,7 +154,7 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
   accessor connector!: ConnectorElementModel;
 
   @consume({
-    context: docContext,
+    context: storeContext,
   })
   accessor doc!: Store;
 

@@ -1,5 +1,8 @@
 /* oxlint-disable @typescript-eslint/no-non-null-assertion */
-import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
+import {
+  DefaultTool,
+  EdgelessLegacySlotIdentifier,
+} from '@blocksuite/affine-block-surface';
 import {
   type MenuHandler,
   popMenu,
@@ -345,6 +348,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
       .map(tool =>
         tool({ block, gfx, toolbarContainer: this.toolbarContainer })
       )
+      .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
       .filter(({ enable = true }) => enable);
   }
 
@@ -429,8 +433,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
   }
 
   get edgelessTool() {
-    // FIXME: maybe we need to fix this type
-    return this.gfx.tool.currentToolOption$.value as { type: string };
+    return this.gfx.tool.currentToolName$.value;
   }
 
   get gfx() {
@@ -438,7 +441,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
   }
 
   get isPresentMode() {
-    return this.edgelessTool.type === 'frameNavigator';
+    return this.edgelessTool === 'frameNavigator';
   }
 
   get scrollSeniorToolSize() {
@@ -522,7 +525,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
           @click=${this._openMoreQuickToolsMenu}
           ?active=${this._quickTools
             .slice(this._visibleQuickToolSize)
-            .some(tool => tool.type === this.edgelessTool?.type)}
+            .some(tool => tool.type === this.edgelessTool)}
         >
           ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
           <affine-tooltip tip-position="top" .offset=${25}>
@@ -601,16 +604,15 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
         {
           Escape: () => {
             if (this.gfx.selection.editing) return;
-            if (this.edgelessTool.type === 'frameNavigator') return;
-            if (this.edgelessTool.type === 'default') {
+            if (this.edgelessTool === 'frameNavigator') return;
+            if (this.edgelessTool === 'default') {
               if (this.activePopper) {
                 this.activePopper.dispose();
                 this.activePopper = null;
               }
               return;
             }
-            // @ts-expect-error FIXME: resolve after gfx tool refactor
-            this.gfx.tool.setTool('default');
+            this.gfx.tool.setTool(DefaultTool);
           },
         },
         { global: true }
@@ -657,8 +659,8 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
   }
 
   override render() {
-    const { type } = this.edgelessTool || {};
-    if (this.doc.readonly && type !== 'frameNavigator') {
+    const type = this.edgelessTool;
+    if (this.store.readonly && type !== 'frameNavigator') {
       return nothing;
     }
 

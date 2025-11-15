@@ -79,7 +79,6 @@ export class AIPanelGenerating extends WithDisposable(LitElement) {
       ${stages && stages.length > 0
         ? html`<generating-placeholder
             .height=${height}
-            .theme=${this.theme}
             .loadingProgress=${this.loadingProgress}
             .stages=${stages}
             .showHeader=${!this.withAnswer}

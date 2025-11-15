@@ -9,8 +9,10 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
-import type { TableSingleView } from '../../table-view-manager.js';
+import { cellDivider } from '../../styles.js';
 import type { TableGroup } from '../group.js';
+import { tableStyle } from '../table-view-style';
+import { type TableViewUILogic } from '../table-view-ui-logic.js';
 import { styles } from './styles.js';
 
 export class DatabaseColumnHeader extends SignalWatcher(
@@ -31,7 +33,6 @@ export class DatabaseColumnHeader extends SignalWatcher(
   editLastColumnTitle = () => {
     const columns = this.querySelectorAll('affine-database-header-column');
     const column = columns.item(columns.length - 1);
-    column.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     column.editTitle();
   };
 
@@ -88,7 +89,7 @@ export class DatabaseColumnHeader extends SignalWatcher(
       <div class="affine-database-column-header database-row">
         ${this.readonly
           ? nothing
-          : html`<div class="data-view-table-left-bar"></div>`}
+          : html`<div class="${tableStyle.leftToolBarStyle}"></div>`}
         ${repeat(
           this.tableViewManager.properties$.value,
           column => column.id,
@@ -104,9 +105,9 @@ export class DatabaseColumnHeader extends SignalWatcher(
                 data-column-index="${index}"
                 class="affine-database-column database-cell"
                 .column="${column}"
-                .tableViewManager="${this.tableViewManager}"
+                .tableViewLogic="${this.tableViewLogic}"
               ></affine-database-header-column>
-              <div class="cell-divider" style="height: auto;"></div>
+              <div class="${cellDivider}" style="height: auto;"></div>
             `;
           }
         )}
@@ -128,7 +129,11 @@ export class DatabaseColumnHeader extends SignalWatcher(
   accessor scaleDiv!: HTMLDivElement;
 
   @property({ attribute: false })
-  accessor tableViewManager!: TableSingleView;
+  accessor tableViewLogic!: TableViewUILogic;
+
+  get tableViewManager() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

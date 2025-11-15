@@ -29,13 +29,13 @@ describe('isValidUrl: determining whether a URL is valid is very complicated', (
     expect(isValidUrl('www.example.com')).toEqual(true);
     expect(isValidUrl('example.co')).toEqual(true);
     expect(isValidUrl('example.cm')).toEqual(true);
-    expect(isValidUrl('1.1.1.1')).toEqual(true);
+    expect(isValidUrl('1.1.1.1')).toEqual(false);
 
     expect(isValidUrl('example.c')).toEqual(false);
   });
 
   test('special cases', () => {
-    expect(isValidUrl('example.com.')).toEqual(true);
+    expect(isValidUrl('example.com.')).toEqual(false);
 
     // I don't know why
     // private & local networks is excluded
@@ -44,8 +44,8 @@ describe('isValidUrl: determining whether a URL is valid is very complicated', (
     expect(isValidUrl('localhost')).toEqual(false);
     expect(isValidUrl('0.0.0.0')).toEqual(false);
 
-    expect(isValidUrl('128.0.0.1')).toEqual(true);
-    expect(isValidUrl('1.0.0.1')).toEqual(true);
+    expect(isValidUrl('128.0.0.1')).toEqual(false);
+    expect(isValidUrl('1.0.0.1')).toEqual(false);
   });
 
   test('email link is a valid URL', () => {
@@ -79,5 +79,9 @@ describe('isValidUrl: determining whether a URL is valid is very complicated', (
     // Longest TLD up to date is `.xn--vermgensberatung-pwb`, at 24 characters in Punycode and 17 when decoded [vermögensberatung].
     // See also https://stackoverflow.com/questions/9238640/how-long-can-a-tld-possibly-be#:~:text=Longest%20TLD%20up%20to%20date,17%20when%20decoded%20%5Bverm%C3%B6gensberatung%5D.
     expect(isValidUrl('example.xn--vermgensberatung-pwb')).toEqual(false);
+  });
+
+  test('should allow ip address url when origin is same', () => {
+    expect(isValidUrl('http://127.0.0.1', 'http://127.0.0.1')).toEqual(true);
   });
 });

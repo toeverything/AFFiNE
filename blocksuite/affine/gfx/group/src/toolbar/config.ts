@@ -14,7 +14,11 @@ import {
 import { matchModels } from '@blocksuite/affine-shared/utils';
 import { getRootBlock } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { Bound } from '@blocksuite/global/gfx';
-import { EditIcon, PageIcon, UngroupIcon } from '@blocksuite/icons/lit';
+import {
+  EditIcon,
+  InsertIntoPageIcon,
+  UngroupIcon,
+} from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
 
 import { ungroupCommand } from '../command';
@@ -25,9 +29,8 @@ export const groupToolbarConfig = {
     {
       id: 'a.insert-into-page',
       label: 'Insert into Page',
-      showLabel: true,
       tooltip: 'Insert into Page',
-      icon: PageIcon(),
+      icon: InsertIntoPageIcon(),
       when: ctx => ctx.getSurfaceModelsByType(GroupElementModel).length === 1,
       run(ctx) {
         const model = ctx.getCurrentModelByType(GroupElementModel);
@@ -37,13 +40,11 @@ export const groupToolbarConfig = {
         if (!rootModel) return;
 
         const { id: groupId, xywh } = model;
-        let lastNoteId = rootModel.children
-          .filter(
-            note =>
-              matchModels(note, [NoteBlockModel]) &&
-              note.props.displayMode !== NoteDisplayMode.EdgelessOnly
-          )
-          .pop()?.id;
+        let lastNoteId = rootModel.children.findLast(
+          note =>
+            matchModels(note, [NoteBlockModel]) &&
+            note.props.displayMode !== NoteDisplayMode.EdgelessOnly
+        )?.id;
 
         if (!lastNoteId) {
           const bounds = Bound.deserialize(xywh);

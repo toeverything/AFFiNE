@@ -528,7 +528,7 @@ export const pasteMiddleware = (
 ): TransformerMiddleware => {
   return ({ slots }) => {
     let tr: PasteTr | undefined;
-    slots.beforeImport.subscribe(payload => {
+    const beforeImportSubscription = slots.beforeImport.subscribe(payload => {
       if (payload.type === 'slice') {
         const { snapshot } = payload;
         flatNote(snapshot);
@@ -543,13 +543,18 @@ export const pasteMiddleware = (
         }
       }
     });
-    slots.afterImport.subscribe(payload => {
+    const afterImportSubscription = slots.afterImport.subscribe(payload => {
       if (tr && payload.type === 'slice') {
         tr.pasted();
         tr.focusPasted();
         tr.convertToLinkedDoc();
       }
     });
+
+    return () => {
+      beforeImportSubscription.unsubscribe();
+      afterImportSubscription.unsubscribe();
+    };
   };
 };
 

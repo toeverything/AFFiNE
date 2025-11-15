@@ -23,6 +23,7 @@ export type MenuOptions = {
     placeholder?: string;
   };
   items: MenuConfig[];
+  testId?: string;
 };
 
 // Global menu open listener type
@@ -72,6 +73,9 @@ export class Menu {
       ? document.createElement('mobile-menu')
       : document.createElement('affine-menu');
     this.menuElement.menu = this;
+    if (this.options.testId) {
+      this.menuElement.dataset.testid = this.options.testId;
+    }
 
     // Call global menu open listeners
     menuOpenListeners.forEach(listener => {

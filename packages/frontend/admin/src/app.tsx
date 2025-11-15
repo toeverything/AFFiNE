@@ -1,11 +1,13 @@
 import { Toaster } from '@affine/admin/components/ui/sonner';
-import { wrapCreateBrowserRouterV6 } from '@sentry/react';
+import { lazy, ROUTES } from '@affine/routes';
+import { withSentryReactRouterV7Routing } from '@sentry/react';
 import { useEffect } from 'react';
 import {
-  createBrowserRouter as reactRouterCreateBrowserRouter,
+  BrowserRouter,
   Navigate,
   Outlet,
-  RouterProvider,
+  Route,
+  Routes as ReactRouterRoutes,
   useLocation,
 } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -15,13 +17,28 @@ import { TooltipProvider } from './components/ui/tooltip';
 import { isAdmin, useCurrentUser, useServerConfig } from './modules/common';
 import { Layout } from './modules/layout';
 
-const createBrowserRouter = wrapCreateBrowserRouterV6(
-  reactRouterCreateBrowserRouter
+export const Setup = lazy(
+  () => import(/* webpackChunkName: "setup" */ './modules/setup')
+);
+export const Accounts = lazy(
+  () => import(/* webpackChunkName: "accounts" */ './modules/accounts')
+);
+export const AI = lazy(
+  () => import(/* webpackChunkName: "ai" */ './modules/ai')
+);
+export const About = lazy(
+  () => import(/* webpackChunkName: "about" */ './modules/about')
+);
+export const Settings = lazy(
+  () => import(/* webpackChunkName: "settings" */ './modules/settings')
+);
+export const Auth = lazy(
+  () => import(/* webpackChunkName: "auth" */ './modules/auth')
 );
 
-const _createBrowserRouter = window.SENTRY_RELEASE
-  ? createBrowserRouter
-  : reactRouterCreateBrowserRouter;
+const Routes = window.SENTRY_RELEASE
+  ? withSentryReactRouterV7Routing(ReactRouterRoutes)
+  : ReactRouterRoutes;
 
 function AuthenticatedRoutes() {
   const user = useCurrentUser();
@@ -58,57 +75,6 @@ function RootRoutes() {
   return <Outlet />;
 }
 
-export const router = _createBrowserRouter(
-  [
-    {
-      path: '/admin',
-      element: <RootRoutes />,
-      children: [
-        {
-          path: '/admin/auth',
-          lazy: () => import('./modules/auth'),
-        },
-        {
-          path: '/admin/setup',
-          lazy: () => import('./modules/setup'),
-        },
-        {
-          path: '/admin/*',
-          element: <AuthenticatedRoutes />,
-          children: [
-            {
-              path: 'accounts',
-              lazy: () => import('./modules/accounts'),
-            },
-            {
-              path: 'ai',
-              lazy: () => import('./modules/ai'),
-            },
-            {
-              path: 'about',
-              lazy: () => import('./modules/about'),
-            },
-            {
-              path: 'settings',
-              children: [
-                {
-                  path: '*',
-                  lazy: () => import('./modules/settings'),
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  {
-    future: {
-      v7_normalizeFormMethod: true,
-    },
-  }
-);
-
 export const App = () => {
   return (
     <TooltipProvider>
@@ -118,7 +84,28 @@ export const App = () => {
           revalidateOnMount: false,
         }}
       >
-        <RouterProvider router={router} />
+        <BrowserRouter basename={environment.subPath}>
+          <Routes>
+            <Route path={ROUTES.admin.index} element={<RootRoutes />}>
+              <Route path={ROUTES.admin.auth} element={<Auth />} />
+              <Route path={ROUTES.admin.setup} element={<Setup />} />
+              <Route element={<AuthenticatedRoutes />}>
+                <Route path={ROUTES.admin.accounts} element={<Accounts />} />
+                <Route path={ROUTES.admin.ai} element={<AI />} />
+                <Route path={ROUTES.admin.about} element={<About />} />
+                <Route
+                  path={ROUTES.admin.settings.index}
+                  element={<Settings />}
+                >
+                  <Route
+                    path={ROUTES.admin.settings.module}
+                    element={<Settings />}
+                  />
+                </Route>
+              </Route>
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </SWRConfig>
       <Toaster />
     </TooltipProvider>

@@ -82,6 +82,7 @@ export interface BlockLayoutPainter {
 export interface RendererOptions {
   zoomThreshold: number;
   debounceTime: number;
+  enableBitmapRendering?: boolean;
 }
 
 export interface TurboRendererConfig {

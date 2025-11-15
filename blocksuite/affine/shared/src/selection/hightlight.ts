@@ -1,8 +1,12 @@
-import {
-  type ReferenceParams,
-  ReferenceParamsSchema,
-} from '@blocksuite/affine-model';
+import { ReferenceParamsSchema } from '@blocksuite/affine-model';
 import { BaseSelection, SelectionExtension } from '@blocksuite/store';
+import z from 'zod';
+
+const HighlightSelectionParamsSchema = ReferenceParamsSchema.extend({
+  highlight: z.boolean().optional(),
+});
+
+type HighlightSelectionParams = z.infer<typeof HighlightSelectionParamsSchema>;
 
 export class HighlightSelection extends BaseSelection {
   static override group = 'scene';
@@ -15,16 +19,24 @@ export class HighlightSelection extends BaseSelection {
 
   readonly mode: 'page' | 'edgeless' = 'page';
 
-  constructor({ mode, blockIds, elementIds }: ReferenceParams) {
+  readonly highlight: boolean = true;
+
+  constructor({
+    mode,
+    blockIds,
+    elementIds,
+    highlight = true,
+  }: HighlightSelectionParams) {
     super({ blockId: '[scene-highlight]' });
 
     this.mode = mode ?? 'page';
     this.blockIds = blockIds ?? [];
     this.elementIds = elementIds ?? [];
+    this.highlight = highlight;
   }
 
   static override fromJSON(json: Record<string, unknown>): HighlightSelection {
-    const result = ReferenceParamsSchema.parse(json);
+    const result = HighlightSelectionParamsSchema.parse(json);
     return new HighlightSelection(result);
   }
 

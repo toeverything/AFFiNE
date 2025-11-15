@@ -3,7 +3,35 @@ import { DoneIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import type { HTMLAttributes, ReactNode } from 'react';
 
+import { IntegrationCardIcon } from './card';
 import * as styles from './setting.css';
+
+export const IntegrationSettingHeader = ({
+  icon,
+  name,
+  desc,
+  action,
+  divider = true,
+}: {
+  icon: ReactNode;
+  name: string;
+  desc: string;
+  action?: ReactNode;
+  divider?: boolean;
+}) => {
+  return (
+    <header className={styles.header} data-divider={divider}>
+      <IntegrationCardIcon className={styles.headerIcon}>
+        {icon}
+      </IntegrationCardIcon>
+      <div className={styles.headerContent}>
+        <h1 className={styles.headerTitle}>{name}</h1>
+        <p className={styles.headerCaption}>{desc}</p>
+      </div>
+      {action}
+    </header>
+  );
+};
 
 // universal
 export interface IntegrationSettingItemProps
@@ -19,7 +47,11 @@ export const IntegrationSettingItem = ({
   ...props
 }: IntegrationSettingItemProps) => {
   return (
-    <div className={clsx(styles.settingItem, className)} {...props}>
+    <div
+      data-has-desc={!!desc}
+      className={clsx(styles.settingItem, className)}
+      {...props}
+    >
       <div>
         {name && <h6 className={styles.settingName}>{name}</h6>}
         {desc && <p className={styles.settingDesc}>{desc}</p>}

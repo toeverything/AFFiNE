@@ -118,9 +118,15 @@ Get the root block of the store.
 
 ### addBlock()
 
-> **addBlock**(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
+> **addBlock**\<`T`\>(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
 
 Creates and adds a new block to the store
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -132,7 +138,7 @@ The block's flavour (type)
 
 ##### blockProps
 
-`Partial`\<`BlockSysProps` & `Record`\<`string`, `unknown`\> & `Omit`\<`BlockProps`, `"flavour"`\>\> = `{}`
+`Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\> = `{}`
 
 Optional properties for the new block
 
@@ -196,7 +202,7 @@ Array of IDs of the newly created blocks
 
 ### addSiblingBlocks()
 
-> **addSiblingBlocks**(`targetModel`, `props`, `place`): `string`[]
+> **addSiblingBlocks**(`targetModel`, `props`, `placement`): `string`[]
 
 Add sibling blocks to the store
 
@@ -214,7 +220,7 @@ The target block model
 
 Array of block properties
 
-##### place
+##### placement
 
 Optional position to place the new blocks ('after' or 'before')
 
@@ -566,9 +572,15 @@ Optional flag to insert before sibling
 
 ### updateBlock()
 
-> **updateBlock**(`modelOrId`, `callBackOrProps`): `void`
+> **updateBlock**\<`T`\>(`modelOrId`, `callBackOrProps`): `void`
 
 Updates a block's properties or executes a callback in a transaction
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -576,13 +588,13 @@ Updates a block's properties or executes a callback in a transaction
 
 The block model or block ID to update
 
-`string` | `BlockModel`\<`object`\>
+`string` | `T`
 
 ##### callBackOrProps
 
 Either a callback function to execute or properties to update
 
-`Partial`\<`BlockProps`\> | () => `void`
+() => `void` | `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\>
 
 #### Returns
 
@@ -721,15 +733,31 @@ Check if the store can undo
 
 ***
 
-### captureSync
+### history
 
 #### Get Signature
 
-> **get** **captureSync**(): () => `void`
+> **get** **history**(): `HistoryExtension`
+
+Get the Y.UndoManager instance for current store.
+
+##### Returns
+
+`HistoryExtension`
+
+***
+
+### captureSync()
+
+> **captureSync**(): `void`
 
 Force the following history to be captured into a new stack.
 
-##### Example
+#### Returns
+
+`void`
+
+#### Example
 
 ```ts
 op1();
@@ -741,75 +769,53 @@ store.undo(); // undo op3
 store.undo(); // undo op1, op2
 ```
 
-##### Returns
-
-> (): `void`
-
-###### Returns
-
-`void`
-
 ***
 
-### history
+### redo()
 
-#### Get Signature
-
-> **get** **history**(): `UndoManager`
-
-Get the Y.UndoManager instance for current store.
-
-##### Returns
-
-`UndoManager`
-
-***
-
-### redo
-
-#### Get Signature
-
-> **get** **redo**(): () => `void`
+> **redo**(): `void`
 
 Redo the last undone transaction.
 
-##### Returns
-
-> (): `void`
-
-###### Returns
+#### Returns
 
 `void`
 
 ***
 
-### resetHistory
+### resetHistory()
 
-#### Get Signature
-
-> **get** **resetHistory**(): () => `void`
+> **resetHistory**(): `void`
 
 Reset the history of the store.
 
-##### Returns
-
-> (): `void`
-
-###### Returns
+#### Returns
 
 `void`
 
 ***
 
-### transact
+### transact()
 
-#### Get Signature
-
-> **get** **transact**(): (`fn`, `shouldTransact?`) => `void`
+> **transact**(`fn`, `shouldTransact`): `void`
 
 Execute a transaction.
 
-##### Example
+#### Parameters
+
+##### fn
+
+() => `void`
+
+##### shouldTransact
+
+`boolean` = `...`
+
+#### Returns
+
+`void`
+
+#### Example
 
 ```ts
 store.transact(() => {
@@ -818,53 +824,37 @@ store.transact(() => {
 });
 ```
 
-##### Returns
-
-> (`fn`, `shouldTransact?`): `void`
-
-###### Parameters
-
-###### fn
-
-() => `void`
-
-###### shouldTransact?
-
-`boolean`
-
-###### Returns
-
-`void`
-
 ***
 
-### undo
+### undo()
 
-#### Get Signature
-
-> **get** **undo**(): () => `void`
+> **undo**(): `void`
 
 Undo the last transaction.
 
-##### Returns
-
-> (): `void`
-
-###### Returns
+#### Returns
 
 `void`
 
 ***
 
-### withoutTransact
+### withoutTransact()
 
-#### Get Signature
-
-> **get** **withoutTransact**(): (`fn`) => `void`
+> **withoutTransact**(`fn`): `void`
 
 Execute a transaction without capturing the history.
 
-##### Example
+#### Parameters
+
+##### fn
+
+() => `void`
+
+#### Returns
+
+`void`
+
+#### Example
 
 ```ts
 store.withoutTransact(() => {
@@ -872,20 +862,6 @@ store.withoutTransact(() => {
   op2();
 });
 ```
-
-##### Returns
-
-> (`fn`): `void`
-
-###### Parameters
-
-###### fn
-
-() => `void`
-
-###### Returns
-
-`void`
 
 ## Store Lifecycle
 
@@ -1059,13 +1035,13 @@ Get the Doc instance for current store.
 
 #### Get Signature
 
-> **get** **schema**(): `Schema`
+> **get** **schema**(): [`Schema`](Schema.md)
 
-Get the Schema instance of the store.
+Get the [Schema](Schema.md) instance of the store.
 
 ##### Returns
 
-`Schema`
+[`Schema`](Schema.md)
 
 ***
 

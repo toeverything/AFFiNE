@@ -1,4 +1,5 @@
 import {
+  DefaultTool,
   EdgelessCRUDIdentifier,
   SurfaceBlockComponent,
 } from '@blocksuite/affine-block-surface';
@@ -45,10 +46,10 @@ export function insertEmbedCard(
   if (blockId) {
     const block = host.view.getBlock(blockId);
     if (!block) return;
-    const parent = host.doc.getParent(block.model);
+    const parent = host.store.getParent(block.model);
     if (!parent) return;
     const index = parent.children.indexOf(block.model);
-    const cardId = host.doc.addBlock(
+    const cardId = host.store.addBlock(
       flavour as never,
       props,
       parent,
@@ -82,10 +83,7 @@ export function insertEmbedCard(
       surfaceBlock.model
     );
 
-    gfx.tool.setTool(
-      // @ts-expect-error FIXME: resolve after gfx tool refactor
-      'default'
-    );
+    gfx.tool.setTool(DefaultTool);
     gfx.selection.set({
       elements: [cardId],
       editing: false,

@@ -10,7 +10,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
-import { EMPTY, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
 import { validateAndReduceImage } from '../../../utils/reduce-image';
 import type { AccountProfile, AuthStore } from '../stores/auth';
@@ -78,11 +78,10 @@ export class AuthSession extends Entity {
         backoffRetry({
           count: Infinity,
         }),
-        mergeMap(sessionInfo => {
+        tap(sessionInfo => {
           if (!isEqual(this.store.getCachedAuthSession(), sessionInfo)) {
             this.store.setCachedAuthSession(sessionInfo);
           }
-          return EMPTY;
         }),
         onStart(() => {
           this.isRevalidating$.next(true);
@@ -142,7 +141,6 @@ export class AuthSession extends Entity {
 
   async updateLabel(label: string) {
     await this.store.updateLabel(label);
-    console.log('updateLabel');
     await this.waitForRevalidation();
   }
 

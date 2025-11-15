@@ -83,7 +83,8 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
 
   const onSignOut = useAsyncCallback(async () => {
     await authService.signOut();
-  }, [authService]);
+    navigateHelper.jumpToSignIn();
+  }, [authService, navigateHelper]);
 
   if ((loading && !requestToJoinLoading) || inviteId !== targetInviteId) {
     return null;

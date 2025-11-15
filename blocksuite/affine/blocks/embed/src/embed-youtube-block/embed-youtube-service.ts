@@ -5,7 +5,7 @@ import {
 } from '@blocksuite/affine-model';
 import {
   EmbedOptionConfig,
-  LinkPreviewerService,
+  LinkPreviewServiceIdentifier,
 } from '@blocksuite/affine-shared/services';
 import { BlockService } from '@blocksuite/std';
 
@@ -21,7 +21,7 @@ export class EmbedYoutubeBlockService extends BlockService {
   ) => {
     return queryEmbedYoutubeData(
       embedYoutubeModel,
-      this.doc.get(LinkPreviewerService),
+      this.std.get(LinkPreviewServiceIdentifier),
       signal
     );
   };

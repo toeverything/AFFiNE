@@ -11,12 +11,11 @@ import {
   RootBlockSchema,
 } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { BlockStdScope } from '@blocksuite/std';
+import { BlockService, type BlockStdScope } from '@blocksuite/std';
 import type {
   GfxController,
   GfxModel,
   LayerManager,
-  PointTestOptions,
   ReorderingDirection,
 } from '@blocksuite/std/gfx';
 import {
@@ -30,10 +29,12 @@ import {
 import { effect } from '@preact/signals-core';
 import clamp from 'lodash-es/clamp';
 
-import { RootService } from '../root-service.js';
 import { getCursorMode } from './utils/query.js';
 
-export class EdgelessRootService extends RootService implements SurfaceContext {
+export class EdgelessRootService
+  extends BlockService
+  implements SurfaceContext
+{
   static override readonly flavour = RootBlockSchema.model.flavour;
 
   private readonly _surface: SurfaceBlockModel;
@@ -164,19 +165,6 @@ export class EdgelessRootService extends RootService implements SurfaceContext {
     super.mounted();
     this._initSlotEffects();
     this._initReadonlyListener();
-  }
-
-  /**
-   * This method is used to pick element in group, if the picked element is in a
-   * group, we will pick the group instead. If that picked group is currently selected, then
-   * we will pick the element itself.
-   */
-  pickElementInGroup(
-    x: number,
-    y: number,
-    options?: PointTestOptions
-  ): GfxModel | null {
-    return this.gfx.getElementInGroup(x, y, options);
   }
 
   removeElement(id: string | GfxModel) {

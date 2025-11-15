@@ -37,9 +37,9 @@ export class ChatPanelTagChip extends SignalWatcher(
 
   override render() {
     const { state } = this.chip;
-    const { title, color } = this.tag;
+    const { name, color } = this.tag;
     const isLoading = state === 'processing';
-    const tooltip = getChipTooltip(state, title, this.chip.tooltip);
+    const tooltip = getChipTooltip(state, name, this.chip.tooltip);
     const tagIcon = html`
       <div class="tag-icon-container">
         <div class="tag-icon" style="background-color: ${color};"></div>
@@ -49,7 +49,7 @@ export class ChatPanelTagChip extends SignalWatcher(
 
     return html`<chat-panel-chip
       .state=${state}
-      .name=${title}
+      .name=${name}
       .tooltip=${tooltip}
       .icon=${icon}
       .closeable=${!isLoading}

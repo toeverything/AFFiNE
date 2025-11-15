@@ -26,6 +26,11 @@ export const header = style({
       display: 'none',
     },
   },
+  selectors: {
+    '&[data-show-switch=true]': {
+      paddingLeft: 8,
+    },
+  },
 });
 
 export const viewBodyContainer = style({
@@ -52,6 +57,8 @@ export const rightSidebarButton = style({
       opacity: 0,
       maxWidth: 0,
       marginLeft: 0,
+      // prevent click event from being triggered
+      pointerEvents: 'none',
     },
   },
 });

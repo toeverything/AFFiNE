@@ -9,7 +9,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { DocService } from '../../doc';
 import type { WorkspaceService } from '../../workspace';
@@ -52,7 +52,7 @@ export class DocGrantedUsersService extends Service {
           signal
         );
       }).pipe(
-        mergeMap(({ edges, pageInfo, totalCount }) => {
+        tap(({ edges, pageInfo, totalCount }) => {
           this.grantedUsers$.next([
             ...this.grantedUsers$.value,
             ...edges.map(edge => edge.node),
@@ -61,8 +61,6 @@ export class DocGrantedUsersService extends Service {
           this.grantedUserCount$.next(totalCount);
           this.hasMore$.next(pageInfo.hasNextPage);
           this.nextCursor$.next(pageInfo.endCursor ?? undefined);
-
-          return EMPTY;
         }),
         smartRetry(),
         catchErrorInto(this.error$),

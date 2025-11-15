@@ -85,6 +85,8 @@ export class MenuSubMenu extends MenuFocusable {
         .catch(err => console.error(err));
     });
     this.menu.openSubMenu(menu);
+    // in case that the menu is not closed, but the component is removed,
+    this.disposables.add(unsub);
   }
 
   protected override render(): unknown {

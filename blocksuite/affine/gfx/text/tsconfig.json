@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../blocks/surface" },
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

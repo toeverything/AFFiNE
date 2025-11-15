@@ -4,7 +4,7 @@ import type { DataTypeOf } from '../logical/data-type.js';
 import { t } from '../logical/index.js';
 import type { TypeInstance } from '../logical/type.js';
 import { typeSystem } from '../logical/type-system.js';
-import type { SingleView } from '../view-manager/index.js';
+import type { Row, SingleView } from '../view-manager/index.js';
 import type { Sort } from './types.js';
 
 export const Compare = {
@@ -16,14 +16,14 @@ const evalRef = (
   view: SingleView,
   ref: VariableRef
 ):
-  | ((row: string) => {
+  | ((row: Row) => {
       value: unknown;
       ttype?: TypeInstance;
     })
   | undefined => {
-  const ttype = view.propertyDataTypeGet(ref.name);
+  const ttype = view.propertyGetOrCreate(ref.name).dataType$.value;
   return row => ({
-    value: view.cellJsonValueGet(row, ref.name),
+    value: view.cellGetOrCreate(row.rowId, ref.name).jsonValue$.value,
     ttype,
   });
 };
@@ -153,7 +153,7 @@ const compare = (type: TypeInstance, a: unknown, b: unknown): CompareType => {
 export const evalSort = (
   sort: Sort,
   view: SingleView
-): ((rowA: string, rowB: string) => number) | undefined => {
+): ((rowA: Row, rowB: Row) => number) | undefined => {
   if (sort.sortBy.length) {
     const sortBy = sort.sortBy.map(sort => {
       return {

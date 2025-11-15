@@ -10,7 +10,7 @@ import {
 } from '../view';
 import { PropTypes, requiredProperties } from '../view/decorators/required';
 import { GfxControllerIdentifier } from './identifiers';
-import type { GfxBlockElementModel } from './model/gfx-block-model';
+import { GfxBlockElementModel } from './model/gfx-block-model';
 import { Viewport } from './viewport';
 
 /**
@@ -66,33 +66,40 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     }
   `;
 
-  private readonly _hideOutsideBlock = () => {
+  private readonly _hideOutsideAndNoSelectedBlock = () => {
     if (!this.host) return;
 
     const gfx = this.host.std.get(GfxControllerIdentifier);
-    const modelsInViewport = this.getModelsInViewport();
+    const currentViewportModels = this.getModelsInViewport();
+    const currentSelectedModels = this._getSelectedModels();
+    const shouldBeVisible = new Set([
+      ...currentViewportModels,
+      ...currentSelectedModels,
+    ]);
+
+    const previousVisible = this._lastVisibleModels
+      ? new Set(this._lastVisibleModels)
+      : new Set<GfxBlockElementModel>();
 
     batch(() => {
-      modelsInViewport.forEach(model => {
+      // Step 1: Activate all the blocks that should be visible
+      shouldBeVisible.forEach(model => {
         const view = gfx.view.get(model);
-        if (isGfxBlockComponent(view)) {
-          view.transformState$.value = 'active';
-        }
-
-        if (this._lastVisibleModels?.has(model)) {
-          this._lastVisibleModels!.delete(model);
-        }
+        if (!isGfxBlockComponent(view)) return;
+        view.transformState$.value = 'active';
       });
 
-      this._lastVisibleModels?.forEach(model => {
+      // Step 2: Hide all the blocks that should not be visible
+      previousVisible.forEach(model => {
+        if (shouldBeVisible.has(model)) return;
+
         const view = gfx.view.get(model);
-        if (isGfxBlockComponent(view)) {
-          view.transformState$.value = 'idle';
-        }
+        if (!isGfxBlockComponent(view)) return;
+        view.transformState$.value = 'idle';
       });
     });
 
-    this._lastVisibleModels = modelsInViewport;
+    this._lastVisibleModels = shouldBeVisible;
   };
 
   private _lastVisibleModels?: Set<GfxBlockElementModel>;
@@ -103,7 +110,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
   }[] = [];
 
   private readonly _refreshViewport = requestThrottledConnectedFrame(() => {
-    this._hideOutsideBlock();
+    this._hideOutsideAndNoSelectedBlock();
   }, this);
 
   private _updatingChildrenFlag = false;
@@ -119,7 +126,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       delete this.scheduleUpdateChildren;
     }
 
-    this._hideOutsideBlock();
+    this._hideOutsideAndNoSelectedBlock();
     this.disposables.add(
       this.viewport.viewportUpdated.subscribe(() => viewportUpdateCallback())
     );
@@ -165,6 +172,17 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
     return promise;
   };
+
+  private _getSelectedModels(): Set<GfxBlockElementModel> {
+    if (!this.host) return new Set();
+    const gfx = this.host.std.get(GfxControllerIdentifier);
+    return new Set(
+      gfx.selection.surfaceSelections
+        .flatMap(({ elements }) => elements)
+        .map(id => gfx.getElementById(id))
+        .filter(e => e instanceof GfxBlockElementModel)
+    );
+  }
 
   @property({ attribute: false })
   accessor getModelsInViewport: () => Set<GfxBlockElementModel> = () =>

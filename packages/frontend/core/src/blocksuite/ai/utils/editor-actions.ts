@@ -1,14 +1,23 @@
-import { defaultImageProxyMiddleware } from '@blocksuite/affine/blocks/image';
-import { deleteTextCommand } from '@blocksuite/affine/inlines/preset';
+import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
+import { clipboardConfigs } from '@blocksuite/affine/foundation/clipboard';
+import { defaultImageProxyMiddleware } from '@blocksuite/affine/shared/adapters';
+import { replaceSelectedTextWithBlocksCommand } from '@blocksuite/affine/shared/commands';
 import { isInsideEdgelessEditor } from '@blocksuite/affine/shared/utils';
 import {
   type BlockComponent,
   BlockSelection,
+  BlockStdScope,
+  Clipboard,
   type EditorHost,
   SurfaceSelection,
   type TextSelection,
 } from '@blocksuite/affine/std';
-import { type BlockModel, Slice } from '@blocksuite/affine/store';
+import {
+  type BlockModel,
+  type BlockSnapshot,
+  Slice,
+} from '@blocksuite/affine/store';
+import { Doc as YDoc } from 'yjs';
 
 import {
   insertFromMarkdown,
@@ -67,11 +76,11 @@ export const insert = async (
   );
   const insertIndex = below ? index + 1 : index;
 
-  const { doc } = host;
+  const { store } = host;
   const models = await insertFromMarkdown(
     host,
     content,
-    doc,
+    store,
     blockParent.model.id,
     insertIndex
   );
@@ -109,26 +118,64 @@ export const replace = async (
   );
 
   if (textSelection) {
-    host.std.command.exec(deleteTextCommand, { textSelection });
-    const { snapshot, transformer } = await markdownToSnapshot(content, host);
-    if (snapshot) {
-      await transformer.snapshotToSlice(
-        snapshot,
-        host.doc,
-        firstBlockParent.model.id,
-        firstIndex + 1
+    const collection = new WorkspaceImpl({
+      id: 'AI_REPLACE',
+      rootDoc: new YDoc({ guid: 'AI_REPLACE' }),
+    });
+    collection.meta.initialize();
+    const fragmentDoc = collection.createDoc();
+
+    try {
+      const fragment = fragmentDoc.getStore();
+      fragmentDoc.load();
+
+      const rootId = fragment.addBlock('affine:page');
+      fragment.addBlock('affine:surface', {}, rootId);
+      const noteId = fragment.addBlock('affine:note', {}, rootId);
+
+      const { snapshot, transformer } = await markdownToSnapshot(
+        content,
+        fragment,
+        host
       );
+
+      if (snapshot) {
+        const blockSnapshots = (
+          snapshot.content[0].flavour === 'affine:note'
+            ? snapshot.content[0].children
+            : snapshot.content
+        ) as BlockSnapshot[];
+
+        const blocks = (
+          await Promise.all(
+            blockSnapshots.map(async blockSnapshot => {
+              return await transformer.snapshotToBlock(
+                blockSnapshot,
+                fragment,
+                noteId,
+                0
+              );
+            })
+          )
+        ).filter(block => block) as BlockModel[];
+        host.std.command.exec(replaceSelectedTextWithBlocksCommand, {
+          textSelection,
+          blocks,
+        });
+      }
+    } finally {
+      collection.dispose();
     }
   } else {
     selectedModels.forEach(model => {
-      host.doc.deleteBlock(model);
+      host.store.deleteBlock(model);
     });
 
-    const { doc } = host;
+    const { store } = host;
     const models = await insertFromMarkdown(
       host,
       content,
-      doc,
+      store,
       firstBlockParent.model.id,
       firstIndex
     );
@@ -141,27 +188,25 @@ export const replace = async (
 };
 
 export const copyTextAnswer = async (panel: AffineAIPanelWidget) => {
-  const host = panel.host;
   if (!panel.answer) {
     return false;
   }
-  return copyText(host, panel.answer);
+  return copyText(panel.answer);
 };
 
-export const copyText = async (host: EditorHost, text: string) => {
-  const previewDoc = await markDownToDoc(
-    host.std.provider,
-    host.std.store.schema,
-    text,
-    [defaultImageProxyMiddleware]
-  );
+export const copyText = async (text: string) => {
+  const previewDoc = await markDownToDoc(text, [defaultImageProxyMiddleware]);
   const models = previewDoc
     .getBlocksByFlavour('affine:note')
     .map(b => b.model)
     .flatMap(model => model.children);
   const slice = Slice.fromModels(previewDoc, models);
-  await host.std.clipboard.copySlice(slice);
+  const std = new BlockStdScope({
+    store: previewDoc,
+    extensions: [...clipboardConfigs],
+  });
+  const clipboard = std.provider.get(Clipboard);
+  await clipboard.copySlice(slice);
   previewDoc.dispose();
-  previewDoc.workspace.dispose();
   return true;
 };

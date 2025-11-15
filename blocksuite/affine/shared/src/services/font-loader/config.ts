@@ -1,11 +1,14 @@
 import { FontFamily, FontStyle, FontWeight } from '@blocksuite/affine-model';
+import { z } from 'zod';
 
-export interface FontConfig {
-  font: string;
-  weight: string;
-  url: string;
-  style: string;
-}
+export const fontConfigSchema = z.object({
+  font: z.string(),
+  weight: z.string(),
+  url: z.string(),
+  style: z.string(),
+});
+
+export type FontConfig = z.infer<typeof fontConfigSchema>;
 
 export const AffineCanvasTextFonts: FontConfig[] = [
   // Inter, https://fonts.cdnfonts.com/css/inter?styles=29139,29134,29135,29136,29140,29141

@@ -1,261 +1,115 @@
 import { autoResizeElementsCommand } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
-import type {
-  AttachmentBlockProps,
-  ImageBlockModel,
-  ImageBlockProps,
+import {
+  type AttachmentBlockProps,
+  type ImageBlockModel,
+  type ImageBlockProps,
+  ImageBlockSchema,
 } from '@blocksuite/affine-model';
 import {
-  FileSizeLimitService,
+  FileSizeLimitProvider,
   NativeClipboardProvider,
 } from '@blocksuite/affine-shared/services';
 import {
-  downloadBlob,
+  convertToPng,
+  formatSize,
   getBlockProps,
-  humanFileSize,
   isInsidePageEditor,
   readImageSize,
   transformModel,
   withTempBlobData,
 } from '@blocksuite/affine-shared/utils';
-import { Bound, type IVec, Point, Vec } from '@blocksuite/global/gfx';
-import {
-  BlockSelection,
-  type BlockStdScope,
-  type EditorHost,
-} from '@blocksuite/std';
+import { Bound, type IVec, Vec } from '@blocksuite/global/gfx';
+import { BlockSelection, type BlockStdScope } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
 import {
   SURFACE_IMAGE_CARD_HEIGHT,
   SURFACE_IMAGE_CARD_WIDTH,
-} from './components/image-block-fallback.js';
-import type { ImageBlockComponent } from './image-block.js';
-import type { ImageEdgelessBlockComponent } from './image-edgeless-block.js';
+} from './components/image-block-fallback';
+import type { ImageBlockComponent } from './image-block';
+import type { ImageEdgelessBlockComponent } from './image-edgeless-block';
 
-const MAX_RETRY_COUNT = 3;
 const DEFAULT_ATTACHMENT_NAME = 'affine-attachment';
 
-const imageUploads = new Set<string>();
-export function setImageUploading(blockId: string) {
-  imageUploads.add(blockId);
-}
-export function setImageUploaded(blockId: string) {
-  imageUploads.delete(blockId);
-}
-export function isImageUploading(blockId: string) {
-  return imageUploads.has(blockId);
-}
-
-export async function uploadBlobForImage(
-  editorHost: EditorHost,
-  blockId: string,
-  blob: Blob
-): Promise<void> {
-  if (isImageUploading(blockId)) {
-    console.error('The image is already uploading!');
-    return;
-  }
-  setImageUploading(blockId);
-  const doc = editorHost.doc;
-  let sourceId: string | undefined;
-
-  try {
-    sourceId = await doc.blobSync.set(blob);
-  } catch (error) {
-    console.error(error);
-    if (error instanceof Error) {
-      toast(
-        editorHost,
-        `Failed to upload image! ${error.message || error.toString()}`
-      );
-    }
-  } finally {
-    setImageUploaded(blockId);
-
-    const imageModel = doc.getModelById(blockId) as ImageBlockModel | null;
-    if (sourceId && imageModel) {
-      const props: Partial<ImageBlockProps> = {
-        sourceId,
-        // Assign a default size to make sure the image can be displayed correctly.
-        width: 100,
-        height: 100,
-      };
-
-      const blob = await doc.blobSync.get(sourceId);
-      if (blob) {
-        try {
-          const size = await readImageSize(blob);
-          props.width = size.width;
-          props.height = size.height;
-        } catch {
-          // Ignore the error
-          console.warn('Failed to read image size');
-        }
-      }
-
-      doc.withoutTransact(() => {
-        doc.updateBlock(imageModel, props);
-      });
-    }
-  }
-}
-
 async function getImageBlob(model: ImageBlockModel) {
-  const sourceId = model.props.sourceId;
-  if (!sourceId) {
-    return null;
-  }
+  const sourceId = model.props.sourceId$.peek();
+  if (!sourceId) return null;
 
-  const doc = model.doc;
-  const blob = await doc.blobSync.get(sourceId);
-
-  if (!blob) {
-    return null;
-  }
+  const doc = model.store;
+  let blob = await doc.blobSync.get(sourceId);
+  if (!blob) return null;
 
   if (!blob.type) {
     const buffer = await blob.arrayBuffer();
     const FileType = await import('file-type');
     const fileType = await FileType.fileTypeFromBuffer(buffer);
-    if (!fileType?.mime.startsWith('image/')) {
-      return null;
-    }
 
-    return new Blob([buffer], { type: fileType.mime });
+    blob = new Blob([buffer], { type: fileType?.mime });
   }
 
-  if (!blob.type.startsWith('image/')) {
-    return null;
-  }
+  if (!blob.type.startsWith('image/')) return null;
 
   return blob;
 }
 
-export async function fetchImageBlob(
+export async function refreshData(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
-  try {
-    if (block.model.props.sourceId !== block.lastSourceId || !block.blobUrl) {
-      block.loading = true;
-      block.error = false;
-      block.blob = undefined;
-
-      if (block.blobUrl) {
-        URL.revokeObjectURL(block.blobUrl);
-        block.blobUrl = undefined;
-      }
-    } else if (block.blobUrl) {
-      return;
-    }
-
-    const { model } = block;
-    const { sourceId } = model.props;
-    const { id, doc } = model;
-
-    if (isImageUploading(id)) {
-      return;
-    }
-
-    if (!sourceId) {
-      return;
-    }
-
-    const blob = await doc.blobSync.get(sourceId);
-    if (!blob) {
-      return;
-    }
-
-    block.loading = false;
-    block.blob = blob;
-    block.blobUrl = URL.createObjectURL(blob);
-    block.lastSourceId = sourceId;
-  } catch (error) {
-    block.retryCount++;
-    console.warn(`${error}, retrying`, block.retryCount);
-
-    if (block.retryCount < MAX_RETRY_COUNT) {
-      setTimeout(() => {
-        fetchImageBlob(block).catch(console.error);
-        // 1s, 2s, 3s
-      }, 1000 * block.retryCount);
-    } else {
-      block.loading = false;
-      block.error = true;
-    }
-  }
+  await block.resourceController.refreshUrlWith();
 }
 
 export async function downloadImageBlob(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
-  const { host, downloading } = block;
-  if (downloading) {
+  const { host, blobUrl, resourceController } = block;
+
+  if (!blobUrl) {
+    toast(host, 'Failed to download image!');
+    return;
+  }
+
+  if (resourceController.state$.peek().downloading) {
     toast(host, 'Download in progress...');
     return;
   }
 
-  block.downloading = true;
+  resourceController.updateState({ downloading: true });
 
-  const blob = await getImageBlob(block.model);
-  if (!blob) {
-    toast(host, `Unable to download image!`);
-    return;
-  }
+  toast(host, 'Downloading image...');
 
-  toast(host, `Downloading image...`);
+  const tmpLink = document.createElement('a');
+  const event = new MouseEvent('click');
+  tmpLink.download = 'image';
+  tmpLink.href = blobUrl;
+  tmpLink.dispatchEvent(event);
+  tmpLink.remove();
 
-  downloadBlob(blob, 'image');
-
-  block.downloading = false;
+  resourceController.updateState({ downloading: false });
 }
 
 export async function resetImageSize(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
-  const { blob, model } = block;
+  const { model } = block;
+
+  const blob = await getImageBlob(model);
   if (!blob) {
+    console.error('Failed to get image blob');
     return;
   }
 
-  const file = new File([blob], 'image.png', { type: blob.type });
-  const size = await readImageSize(file);
+  const imageSize = await readImageSize(blob);
+
   const bound = model.elementBound;
-  const props: Partial<ImageBlockProps> = {
-    width: size.width,
-    height: size.height,
-  };
+  bound.w = imageSize.width;
+  bound.h = imageSize.height;
 
-  if (!bound.w || !bound.h) {
-    bound.w = size.width;
-    bound.h = size.height;
-    props.xywh = bound.serialize();
-  }
+  const xywh = bound.serialize();
+  const props: Partial<ImageBlockProps> = { ...imageSize, xywh };
 
-  block.doc.updateBlock(model, props);
-}
-
-function convertToPng(blob: Blob): Promise<Blob | null> {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.addEventListener('load', _ => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = img.width;
-        c.height = img.height;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0);
-        c.toBlob(resolve, 'image/png');
-      };
-      img.onerror = () => resolve(null);
-      img.src = reader.result as string;
-    });
-    reader.addEventListener('error', () => resolve(null));
-    reader.readAsDataURL(blob);
-  });
+  block.store.updateBlock(model, props);
 }
 
 export async function copyImageBlob(
@@ -312,107 +166,20 @@ export async function copyImageBlob(
   }
 }
 
-export function shouldResizeImage(node: Node, target: EventTarget | null) {
-  return !!(
-    target &&
-    target instanceof HTMLElement &&
-    node.contains(target) &&
-    target.classList.contains('resize')
-  );
-}
-
-export function addSiblingImageBlock(
-  editorHost: EditorHost,
-  files: File[],
-  maxFileSize: number,
-  targetModel: BlockModel,
-  place: 'after' | 'before' = 'after'
-) {
-  const imageFiles = files.filter(file => file.type.startsWith('image/'));
-  if (!imageFiles.length) {
-    return;
-  }
-
-  const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      editorHost,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return;
-  }
-
-  const imageBlockProps: Partial<ImageBlockProps> &
-    {
-      flavour: 'affine:image';
-    }[] = imageFiles.map(file => ({
-    flavour: 'affine:image',
-    size: file.size,
-  }));
-
-  const doc = editorHost.doc;
-  const blockIds = doc.addSiblingBlocks(targetModel, imageBlockProps, place);
-  blockIds.forEach(
-    (blockId, index) =>
-      void uploadBlobForImage(editorHost, blockId, imageFiles[index])
-  );
-  return blockIds;
-}
-
-export function addImageBlocks(
-  editorHost: EditorHost,
-  files: File[],
-  maxFileSize: number,
-  parent?: BlockModel | string | null,
-  parentIndex?: number
-) {
-  const imageFiles = files.filter(file => file.type.startsWith('image/'));
-  if (!imageFiles.length) {
-    return;
-  }
-
-  const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      editorHost,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return;
-  }
-
-  const doc = editorHost.doc;
-  const blockIds = imageFiles.map(file =>
-    doc.addBlock('affine:image', { size: file.size }, parent, parentIndex)
-  );
-  blockIds.forEach(
-    (blockId, index) =>
-      void uploadBlobForImage(editorHost, blockId, imageFiles[index])
-  );
-  return blockIds;
-}
-
 /**
  * Turn the image block into a attachment block.
  */
 export async function turnImageIntoCardView(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
-  const doc = block.doc;
+  const doc = block.store;
   if (!doc.schema.flavourSchemaMap.has('affine:attachment')) {
     console.error('The attachment flavour is not supported!');
     return;
   }
 
   const model = block.model;
-  const sourceId = model.props.sourceId;
+  const sourceId = model.props.sourceId$.peek();
   const blob = await getImageBlob(model);
   if (!sourceId || !blob) {
     console.error('Image data not available');
@@ -436,115 +203,175 @@ export async function turnImageIntoCardView(
   transformModel(model, 'affine:attachment', attachmentProp);
 }
 
+export function shouldResizeImage(node: Node, target: EventTarget | null) {
+  return !!(
+    target &&
+    target instanceof HTMLElement &&
+    node.contains(target) &&
+    target.classList.contains('resize')
+  );
+}
+
+function hasExceeded(
+  std: BlockStdScope,
+  files: File[],
+  maxFileSize = std.get(FileSizeLimitProvider).maxFileSize
+) {
+  const exceeded = files.some(file => file.size > maxFileSize);
+
+  if (exceeded) {
+    const size = formatSize(maxFileSize);
+    toast(std.host, `You can only upload files less than ${size}`);
+  }
+
+  return exceeded;
+}
+
+async function buildPropsWith(std: BlockStdScope, file: File) {
+  const { size } = file;
+  const [imageSize, sourceId] = await Promise.all([
+    readImageSize(file),
+    std.store.blobSync.set(file),
+  ]);
+
+  if (!(imageSize.width * imageSize.height)) {
+    toast(std.host, 'Failed to read image size, please try another image');
+    throw new Error('Failed to read image size');
+  }
+
+  return { size, sourceId, ...imageSize } satisfies Partial<ImageBlockProps>;
+}
+
+export async function addSiblingImageBlocks(
+  std: BlockStdScope,
+  files: File[],
+  targetModel: BlockModel,
+  placement: 'after' | 'before' = 'after'
+) {
+  files = files.filter(file => file.type.startsWith('image/'));
+  if (!files.length) return [];
+
+  if (hasExceeded(std, files)) return [];
+
+  const flavour = ImageBlockSchema.model.flavour;
+
+  const propsArray = await Promise.all(
+    files.map(file => buildPropsWith(std, file))
+  );
+
+  const blockIds = std.store.addSiblingBlocks(
+    targetModel,
+    propsArray.map(props => ({ ...props, flavour })),
+    placement
+  );
+
+  return blockIds;
+}
+
+export async function addImageBlocks(
+  std: BlockStdScope,
+  files: File[],
+  parent?: BlockModel | string | null,
+  parentIndex?: number
+) {
+  files = files.filter(file => file.type.startsWith('image/'));
+  if (!files.length) return [];
+
+  if (hasExceeded(std, files)) return [];
+
+  const flavour = ImageBlockSchema.model.flavour;
+
+  const propsArray = await Promise.all(
+    files.map(file => buildPropsWith(std, file))
+  );
+
+  const blocks = propsArray.map(blockProps => ({ flavour, blockProps }));
+
+  const blockIds = std.store.addBlocks(blocks, parent, parentIndex);
+
+  return blockIds;
+}
+
 export async function addImages(
   std: BlockStdScope,
   files: File[],
   options: {
     point?: IVec;
     maxWidth?: number;
-    transformPoint?: boolean; // determines whether we should use `toModelCoord` to convert the point
+    shouldTransformPoint?: boolean; // determines whether we should use `toModelCoord` to convert the point
   }
 ): Promise<string[]> {
-  const imageFiles = [...files].filter(file => file.type.startsWith('image/'));
-  if (!imageFiles.length) return [];
+  files = files.filter(file => file.type.startsWith('image/'));
+  if (!files.length) return [];
+
+  if (hasExceeded(std, files)) return [];
+
+  const flavour = ImageBlockSchema.model.flavour;
+
+  const propsArray = await Promise.all(
+    files.map(file => buildPropsWith(std, file))
+  );
 
   const gfx = std.get(GfxControllerIdentifier);
+  const isMultiple = propsArray.length > 1;
+  const inTopLeft = isMultiple;
+  const gap = 32;
+  const { point, maxWidth, shouldTransformPoint = true } = options;
 
-  const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-  const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      std.host,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return [];
-  }
-
-  const { point, maxWidth, transformPoint = true } = options;
   let { x, y } = gfx.viewport.center;
   if (point) {
-    if (transformPoint) {
+    if (shouldTransformPoint) {
       [x, y] = gfx.viewport.toModelCoord(...point);
     } else {
       [x, y] = point;
     }
   }
 
-  const dropInfos: { point: Point; blockId: string }[] = [];
-  const IMAGE_STACK_GAP = 32;
-  const isMultipleFiles = imageFiles.length > 1;
-  const inTopLeft = isMultipleFiles ? true : false;
+  const xy = [x, y];
 
-  // create image cards without image data
-  imageFiles.forEach((file, index) => {
-    const point = new Point(
-      x + index * IMAGE_STACK_GAP,
-      y + index * IMAGE_STACK_GAP
-    );
-    const center = Vec.toVec(point);
-    const bound = calcBoundByOrigin(center, inTopLeft);
-    const blockId = std.store.addBlock(
-      'affine:image',
-      {
-        size: file.size,
-        xywh: bound.serialize(),
-        index: gfx.layer.generateIndex(),
-      },
-      gfx.surface
-    );
-    dropInfos.push({ point, blockId });
-  });
-
-  // upload image data and update the image model
-  const uploadPromises = imageFiles.map(async (file, index) => {
-    const { point, blockId } = dropInfos[index];
-    const block = std.store.getBlock(blockId);
-    const imageSize = await readImageSize(file);
-
-    if (!imageSize.width || !imageSize.height) {
-      std.store.deleteBlock(block!.model);
-
-      toast(std.host, 'Failed to read image size, please try another image');
-      throw new Error('Failed to read image size');
-    }
-
-    const sourceId = await std.store.blobSync.set(file);
-
-    const center = Vec.toVec(point);
+  const blocks = propsArray.map((props, i) => {
     // If maxWidth is provided, limit the width of the image to maxWidth
     // Otherwise, use the original width
-    const width = maxWidth
-      ? Math.min(imageSize.width, maxWidth)
-      : imageSize.width;
-    const height = maxWidth
-      ? (imageSize.height / imageSize.width) * width
-      : imageSize.height;
-    const bound = calcBoundByOrigin(center, inTopLeft, width, height);
+    if (maxWidth) {
+      const p = props.height / props.width;
+      props.width = Math.min(props.width, maxWidth);
+      props.height = props.width * p;
+    }
 
-    std.store.withoutTransact(() => {
-      gfx.updateElement(blockId, {
-        sourceId,
-        ...imageSize,
+    const center = Vec.addScalar(xy, i * gap);
+    const index = gfx.layer.generateIndex();
+
+    const { width, height } = props;
+    const xywh = calcBoundByOrigin(
+      center,
+      inTopLeft,
+      width,
+      height
+    ).serialize();
+
+    return {
+      flavour,
+      blockProps: {
+        ...props,
         width,
         height,
-        xywh: bound.serialize(),
-      } satisfies Partial<ImageBlockProps>);
-    });
+        xywh,
+        index,
+      },
+    };
   });
-  await Promise.all(uploadPromises);
 
-  const blockIds = dropInfos.map(info => info.blockId);
+  const blockIds = std.store.addBlocks(blocks, gfx.surface);
+
   gfx.selection.set({
     elements: blockIds,
     editing: false,
   });
-  if (isMultipleFiles) {
+
+  if (isMultiple) {
     std.command.exec(autoResizeElementsCommand);
   }
+
   return blockIds;
 }
 
@@ -571,15 +398,15 @@ export function duplicate(block: ImageBlockComponent) {
     ...duplicateProps
   } = blockProps;
 
-  const { doc } = model;
-  const parent = doc.getParent(model);
+  const { store } = model;
+  const parent = store.getParent(model);
   if (!parent) {
     console.error(`Parent not found for block(${model.flavour}) ${model.id}`);
     return;
   }
 
   const index = parent?.children.indexOf(model);
-  const duplicateId = doc.addBlock(
+  const duplicateId = store.addBlock(
     model.flavour,
     duplicateProps,
     parent,

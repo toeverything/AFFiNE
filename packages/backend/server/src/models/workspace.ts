@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { type Workspace } from '@prisma/client';
+import { Prisma, type Workspace } from '@prisma/client';
 
 import { EventBus } from '../base';
 import { BaseModel } from './base';
 
 declare global {
   interface Events {
+    'workspace.updated': Workspace;
     'workspace.deleted': {
       id: string;
     };
@@ -16,7 +17,14 @@ declare global {
 export type { Workspace };
 export type UpdateWorkspaceInput = Pick<
   Partial<Workspace>,
-  'public' | 'enableAi' | 'enableUrlPreview' | 'name' | 'avatarKey'
+  | 'public'
+  | 'enableAi'
+  | 'enableUrlPreview'
+  | 'enableDocEmbedding'
+  | 'name'
+  | 'avatarKey'
+  | 'indexed'
+  | 'lastCheckEmbeddings'
 >;
 
 @Injectable()
@@ -42,16 +50,25 @@ export class WorkspaceModel extends BaseModel {
   /**
    * Update the workspace with the given data.
    */
-  async update(workspaceId: string, data: UpdateWorkspaceInput) {
+  async update(
+    workspaceId: string,
+    data: UpdateWorkspaceInput,
+    notifyUpdate = true
+  ) {
     const workspace = await this.db.workspace.update({
       where: {
         id: workspaceId,
       },
       data,
     });
-    this.logger.log(
+    this.logger.debug(
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
+
+    if (notifyUpdate) {
+      this.event.emit('workspace.updated', workspace);
+    }
+
     return workspace;
   }
 
@@ -71,6 +88,21 @@ export class WorkspaceModel extends BaseModel {
     });
   }
 
+  async list<S extends Prisma.WorkspaceSelect>(
+    where: Prisma.WorkspaceWhereInput = {},
+    select?: S,
+    limit?: number
+  ) {
+    return (await this.db.workspace.findMany({
+      where,
+      select,
+      take: limit,
+      orderBy: {
+        sid: 'asc',
+      },
+    })) as Prisma.WorkspaceGetPayload<{ select: S }>[];
+  }
+
   async delete(workspaceId: string) {
     const rawResult = await this.db.workspace.deleteMany({
       where: {
@@ -87,6 +119,15 @@ export class WorkspaceModel extends BaseModel {
   async allowUrlPreview(workspaceId: string) {
     const workspace = await this.get(workspaceId);
     return workspace?.enableUrlPreview ?? false;
+  }
+
+  async allowEmbedding(workspaceId: string) {
+    const workspace = await this.get(workspaceId);
+    return workspace?.enableDocEmbedding ?? false;
+  }
+
+  async isTeamWorkspace(workspaceId: string) {
+    return this.models.workspaceFeature.has(workspaceId, 'team_plan_v1');
   }
   // #endregion
 }

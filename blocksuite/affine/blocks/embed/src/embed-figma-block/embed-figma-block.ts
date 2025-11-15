@@ -6,7 +6,6 @@ import type {
 import { BlockSelection } from '@blocksuite/std';
 import { html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { EmbedBlockComponent } from '../common/embed-block-element.js';
 import { FigmaIcon, styles } from './styles.js';
@@ -49,8 +48,8 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
     this._cardStyle = this.model.props.style;
 
     if (!this.model.props.title) {
-      this.doc.withoutTransact(() => {
-        this.doc.updateBlock(this.model, {
+      this.store.withoutTransact(() => {
+        this.store.updateBlock(this.model, {
           title: 'Figma',
         });
       });
@@ -76,10 +75,6 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
             'affine-embed-figma-block': true,
             selected: this.selected$.value,
           })}
-          style=${styleMap({
-            transform: `scale(${this._scale})`,
-            transformOrigin: '0 0',
-          })}
           @click=${this._handleClick}
           @dblclick=${this._handleDoubleClick}
         >
@@ -89,6 +84,7 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
                 src=${`https://www.figma.com/embed?embed_host=blocksuite&url=${url}`}
                 allowfullscreen
                 loading="lazy"
+                credentialless
               ></iframe>
 
               <!-- overlay to prevent the iframe from capturing pointer events -->

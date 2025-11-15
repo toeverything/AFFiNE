@@ -33,7 +33,6 @@ export function normalizeWheelDeltaY(delta: number, zoom = 1) {
   return newZoom;
 }
 
-export { addNote, addNoteAtPoint } from './add-note';
 export { getBgGridGap } from './get-bg-grip-gap';
 export { getLastPropsKey } from './get-last-props-key';
 export * from './get-surface-block';

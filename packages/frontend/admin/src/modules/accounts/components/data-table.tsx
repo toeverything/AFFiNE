@@ -21,13 +21,14 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import type { UserType } from '../schema';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
-import { useUserCount } from './use-user-management';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   pagination: PaginationState;
+  usersCount: number;
   selectedUsers: UserType[];
+  setMemoUsers: Dispatch<SetStateAction<UserType[]>>;
   onPaginationChange: Dispatch<
     SetStateAction<{
       pageIndex: number;
@@ -40,22 +41,23 @@ export function DataTable<TData extends { id: string }, TValue>({
   columns,
   data,
   pagination,
+  usersCount,
   selectedUsers,
+  setMemoUsers,
   onPaginationChange,
 }: DataTableProps<TData, TValue>) {
-  const usersCount = useUserCount();
-
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const [tableData, setTableData] = useState(data);
+  const [rowCount, setRowCount] = useState(usersCount);
   const table = useReactTable({
     data: tableData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: row => row.id,
     manualPagination: true,
-    rowCount: usersCount,
+    rowCount: rowCount,
     enableFilters: true,
     onPaginationChange: onPaginationChange,
     enableRowSelection: true,
@@ -72,13 +74,20 @@ export function DataTable<TData extends { id: string }, TValue>({
     setTableData(data);
   }, [data]);
 
+  useEffect(() => {
+    setRowCount(usersCount);
+  }, [usersCount]);
+
   return (
     <div className="flex flex-col gap-4 py-5 px-6 h-full overflow-auto">
       <DataTableToolbar
         setDataTable={setTableData}
         data={data}
+        usersCount={usersCount}
         table={table}
         selectedUsers={selectedUsers}
+        setRowCount={setRowCount}
+        setMemoUsers={setMemoUsers}
       />
       <div className="rounded-md border h-full flex flex-col overflow-auto">
         <Table>

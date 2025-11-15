@@ -17,11 +17,11 @@ export class UserDBEngine extends Entity<{
   readonly client: StoreClient;
 
   DocStorageType =
-    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteDocStorage
       : IndexedDBDocStorage;
   DocSyncStorageType =
-    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteDocSyncStorage
       : IndexedDBDocSyncStorage;
 

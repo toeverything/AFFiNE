@@ -170,6 +170,16 @@ export class OauthAccountAlreadyConnected extends UserFriendlyError {
   }
 }
 @ObjectType()
+class InvalidOauthResponseDataType {
+  @Field() reason!: string
+}
+
+export class InvalidOauthResponse extends UserFriendlyError {
+  constructor(args: InvalidOauthResponseDataType, message?: string | ((args: InvalidOauthResponseDataType) => string)) {
+    super('bad_request', 'invalid_oauth_response', message, args);
+  }
+}
+@ObjectType()
 class InvalidEmailDataType {
   @Field() email!: string
 }
@@ -507,6 +517,28 @@ export class CanNotBatchGrantDocOwnerPermissions extends UserFriendlyError {
     super('invalid_input', 'can_not_batch_grant_doc_owner_permissions', message);
   }
 }
+
+export class NewOwnerIsNotActiveMember extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'new_owner_is_not_active_member', message);
+  }
+}
+
+export class InvalidInvitation extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'invalid_invitation', message);
+  }
+}
+@ObjectType()
+class NoMoreSeatDataType {
+  @Field() spaceId!: string
+}
+
+export class NoMoreSeat extends UserFriendlyError {
+  constructor(args: NoMoreSeatDataType, message?: string | ((args: NoMoreSeatDataType) => string)) {
+    super('bad_request', 'no_more_seat', message, args);
+  }
+}
 @ObjectType()
 class UnsupportedSubscriptionPlanDataType {
   @Field() plan!: string
@@ -619,9 +651,21 @@ export class WorkspaceIdRequiredToUpdateTeamSubscription extends UserFriendlyErr
   }
 }
 
+export class ManagedByAppStoreOrPlay extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'managed_by_app_store_or_play', message);
+  }
+}
+
 export class CopilotSessionNotFound extends UserFriendlyError {
   constructor(message?: string) {
     super('resource_not_found', 'copilot_session_not_found', message);
+  }
+}
+
+export class CopilotSessionInvalidInput extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'copilot_session_invalid_input', message);
   }
 }
 
@@ -630,16 +674,31 @@ export class CopilotSessionDeleted extends UserFriendlyError {
     super('action_forbidden', 'copilot_session_deleted', message);
   }
 }
+@ObjectType()
+class NoCopilotProviderAvailableDataType {
+  @Field() modelId!: string
+}
 
 export class NoCopilotProviderAvailable extends UserFriendlyError {
-  constructor(message?: string) {
-    super('internal_server_error', 'no_copilot_provider_available', message);
+  constructor(args: NoCopilotProviderAvailableDataType, message?: string | ((args: NoCopilotProviderAvailableDataType) => string)) {
+    super('internal_server_error', 'no_copilot_provider_available', message, args);
   }
 }
 
 export class CopilotFailedToGenerateText extends UserFriendlyError {
   constructor(message?: string) {
     super('internal_server_error', 'copilot_failed_to_generate_text', message);
+  }
+}
+@ObjectType()
+class CopilotFailedToGenerateEmbeddingDataType {
+  @Field() provider!: string
+  @Field() message!: string
+}
+
+export class CopilotFailedToGenerateEmbedding extends UserFriendlyError {
+  constructor(args: CopilotFailedToGenerateEmbeddingDataType, message?: string | ((args: CopilotFailedToGenerateEmbeddingDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_generate_embedding', message, args);
   }
 }
 
@@ -703,6 +762,17 @@ export class CopilotPromptInvalid extends UserFriendlyError {
   }
 }
 @ObjectType()
+class CopilotProviderNotSupportedDataType {
+  @Field() provider!: string
+  @Field() kind!: string
+}
+
+export class CopilotProviderNotSupported extends UserFriendlyError {
+  constructor(args: CopilotProviderNotSupportedDataType, message?: string | ((args: CopilotProviderNotSupportedDataType) => string)) {
+    super('invalid_input', 'copilot_provider_not_supported', message, args);
+  }
+}
+@ObjectType()
 class CopilotProviderSideErrorDataType {
   @Field() provider!: string
   @Field() kind!: string
@@ -758,6 +828,24 @@ export class CopilotFailedToMatchContext extends UserFriendlyError {
     super('internal_server_error', 'copilot_failed_to_match_context', message, args);
   }
 }
+@ObjectType()
+class CopilotFailedToMatchGlobalContextDataType {
+  @Field() workspaceId!: string
+  @Field() content!: string
+  @Field() message!: string
+}
+
+export class CopilotFailedToMatchGlobalContext extends UserFriendlyError {
+  constructor(args: CopilotFailedToMatchGlobalContextDataType, message?: string | ((args: CopilotFailedToMatchGlobalContextDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_match_global_context', message, args);
+  }
+}
+
+export class CopilotEmbeddingDisabled extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'copilot_embedding_disabled', message);
+  }
+}
 
 export class CopilotEmbeddingUnavailable extends UserFriendlyError {
   constructor(message?: string) {
@@ -780,6 +868,16 @@ export class CopilotTranscriptionJobNotFound extends UserFriendlyError {
 export class CopilotTranscriptionAudioNotProvided extends UserFriendlyError {
   constructor(message?: string) {
     super('bad_request', 'copilot_transcription_audio_not_provided', message);
+  }
+}
+@ObjectType()
+class CopilotFailedToAddWorkspaceFileEmbeddingDataType {
+  @Field() message!: string
+}
+
+export class CopilotFailedToAddWorkspaceFileEmbedding extends UserFriendlyError {
+  constructor(args: CopilotFailedToAddWorkspaceFileEmbeddingDataType, message?: string | ((args: CopilotFailedToAddWorkspaceFileEmbeddingDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_add_workspace_file_embedding', message, args);
   }
 }
 
@@ -847,6 +945,12 @@ export class CannotDeleteOwnAccount extends UserFriendlyError {
   }
 }
 
+export class CannotDeleteAccountWithOwnedTeamWorkspace extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'cannot_delete_account_with_owned_team_workspace', message);
+  }
+}
+
 export class CaptchaVerificationFailed extends UserFriendlyError {
   constructor(message?: string) {
     super('bad_request', 'captcha_verification_failed', message);
@@ -876,10 +980,14 @@ export class LicenseNotFound extends UserFriendlyError {
     super('resource_not_found', 'license_not_found', message);
   }
 }
+@ObjectType()
+class InvalidLicenseToActivateDataType {
+  @Field() reason!: string
+}
 
 export class InvalidLicenseToActivate extends UserFriendlyError {
-  constructor(message?: string) {
-    super('bad_request', 'invalid_license_to_activate', message);
+  constructor(args: InvalidLicenseToActivateDataType, message?: string | ((args: InvalidLicenseToActivateDataType) => string)) {
+    super('bad_request', 'invalid_license_to_activate', message, args);
   }
 }
 @ObjectType()
@@ -892,14 +1000,10 @@ export class InvalidLicenseUpdateParams extends UserFriendlyError {
     super('invalid_input', 'invalid_license_update_params', message, args);
   }
 }
-@ObjectType()
-class WorkspaceMembersExceedLimitToDowngradeDataType {
-  @Field() limit!: number
-}
 
-export class WorkspaceMembersExceedLimitToDowngrade extends UserFriendlyError {
-  constructor(args: WorkspaceMembersExceedLimitToDowngradeDataType, message?: string | ((args: WorkspaceMembersExceedLimitToDowngradeDataType) => string)) {
-    super('bad_request', 'workspace_members_exceed_limit_to_downgrade', message, args);
+export class LicenseExpired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'license_expired', message);
   }
 }
 @ObjectType()
@@ -935,10 +1039,77 @@ export class MentionUserOneselfDenied extends UserFriendlyError {
     super('action_forbidden', 'mention_user_oneself_denied', message);
   }
 }
+@ObjectType()
+class InvalidAppConfigDataType {
+  @Field() module!: string
+  @Field() key!: string
+  @Field() hint!: string
+}
 
 export class InvalidAppConfig extends UserFriendlyError {
+  constructor(args: InvalidAppConfigDataType, message?: string | ((args: InvalidAppConfigDataType) => string)) {
+    super('invalid_input', 'invalid_app_config', message, args);
+  }
+}
+@ObjectType()
+class InvalidAppConfigInputDataType {
+  @Field() message!: string
+}
+
+export class InvalidAppConfigInput extends UserFriendlyError {
+  constructor(args: InvalidAppConfigInputDataType, message?: string | ((args: InvalidAppConfigInputDataType) => string)) {
+    super('invalid_input', 'invalid_app_config_input', message, args);
+  }
+}
+
+export class SearchProviderNotFound extends UserFriendlyError {
   constructor(message?: string) {
-    super('invalid_input', 'invalid_app_config', message);
+    super('resource_not_found', 'search_provider_not_found', message);
+  }
+}
+@ObjectType()
+class InvalidSearchProviderRequestDataType {
+  @Field() reason!: string
+  @Field() type!: string
+}
+
+export class InvalidSearchProviderRequest extends UserFriendlyError {
+  constructor(args: InvalidSearchProviderRequestDataType, message?: string | ((args: InvalidSearchProviderRequestDataType) => string)) {
+    super('invalid_input', 'invalid_search_provider_request', message, args);
+  }
+}
+@ObjectType()
+class InvalidIndexerInputDataType {
+  @Field() reason!: string
+}
+
+export class InvalidIndexerInput extends UserFriendlyError {
+  constructor(args: InvalidIndexerInputDataType, message?: string | ((args: InvalidIndexerInputDataType) => string)) {
+    super('invalid_input', 'invalid_indexer_input', message, args);
+  }
+}
+
+export class CommentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_not_found', message);
+  }
+}
+
+export class ReplyNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'reply_not_found', message);
+  }
+}
+
+export class CommentAttachmentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_attachment_not_found', message);
+  }
+}
+
+export class CommentAttachmentQuotaExceeded extends UserFriendlyError {
+  constructor(message?: string) {
+    super('quota_exceeded', 'comment_attachment_quota_exceeded', message);
   }
 }
 export enum ErrorNames {
@@ -964,6 +1135,7 @@ export enum ErrorNames {
   INVALID_AUTH_STATE,
   MISSING_OAUTH_QUERY_PARAMETER,
   OAUTH_ACCOUNT_ALREADY_CONNECTED,
+  INVALID_OAUTH_RESPONSE,
   INVALID_EMAIL,
   INVALID_PASSWORD_LENGTH,
   PASSWORD_REQUIRED,
@@ -1005,6 +1177,9 @@ export enum ErrorNames {
   ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE,
   DOC_DEFAULT_ROLE_CAN_NOT_BE_OWNER,
   CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS,
+  NEW_OWNER_IS_NOT_ACTIVE_MEMBER,
+  INVALID_INVITATION,
+  NO_MORE_SEAT,
   UNSUPPORTED_SUBSCRIPTION_PLAN,
   FAILED_TO_CHECKOUT,
   INVALID_CHECKOUT_PARAMETERS,
@@ -1020,10 +1195,13 @@ export enum ErrorNames {
   CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION,
+  MANAGED_BY_APP_STORE_OR_PLAY,
   COPILOT_SESSION_NOT_FOUND,
+  COPILOT_SESSION_INVALID_INPUT,
   COPILOT_SESSION_DELETED,
   NO_COPILOT_PROVIDER_AVAILABLE,
   COPILOT_FAILED_TO_GENERATE_TEXT,
+  COPILOT_FAILED_TO_GENERATE_EMBEDDING,
   COPILOT_FAILED_TO_CREATE_MESSAGE,
   UNSPLASH_IS_NOT_CONFIGURED,
   COPILOT_ACTION_TAKEN,
@@ -1032,15 +1210,19 @@ export enum ErrorNames {
   COPILOT_MESSAGE_NOT_FOUND,
   COPILOT_PROMPT_NOT_FOUND,
   COPILOT_PROMPT_INVALID,
+  COPILOT_PROVIDER_NOT_SUPPORTED,
   COPILOT_PROVIDER_SIDE_ERROR,
   COPILOT_INVALID_CONTEXT,
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED,
   COPILOT_FAILED_TO_MODIFY_CONTEXT,
   COPILOT_FAILED_TO_MATCH_CONTEXT,
+  COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT,
+  COPILOT_EMBEDDING_DISABLED,
   COPILOT_EMBEDDING_UNAVAILABLE,
   COPILOT_TRANSCRIPTION_JOB_EXISTS,
   COPILOT_TRANSCRIPTION_JOB_NOT_FOUND,
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED,
+  COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING,
   BLOB_QUOTA_EXCEEDED,
   STORAGE_QUOTA_EXCEEDED,
   MEMBER_QUOTA_EXCEEDED,
@@ -1050,6 +1232,7 @@ export enum ErrorNames {
   MAILER_SERVICE_IS_NOT_CONFIGURED,
   CANNOT_DELETE_ALL_ADMIN_ACCOUNT,
   CANNOT_DELETE_OWN_ACCOUNT,
+  CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE,
   CAPTCHA_VERIFICATION_FAILED,
   INVALID_LICENSE_SESSION_ID,
   LICENSE_REVEALED,
@@ -1057,12 +1240,20 @@ export enum ErrorNames {
   LICENSE_NOT_FOUND,
   INVALID_LICENSE_TO_ACTIVATE,
   INVALID_LICENSE_UPDATE_PARAMS,
-  WORKSPACE_MEMBERS_EXCEED_LIMIT_TO_DOWNGRADE,
+  LICENSE_EXPIRED,
   UNSUPPORTED_CLIENT_VERSION,
   NOTIFICATION_NOT_FOUND,
   MENTION_USER_DOC_ACCESS_DENIED,
   MENTION_USER_ONESELF_DENIED,
-  INVALID_APP_CONFIG
+  INVALID_APP_CONFIG,
+  INVALID_APP_CONFIG_INPUT,
+  SEARCH_PROVIDER_NOT_FOUND,
+  INVALID_SEARCH_PROVIDER_REQUEST,
+  INVALID_INDEXER_INPUT,
+  COMMENT_NOT_FOUND,
+  REPLY_NOT_FOUND,
+  COMMENT_ATTACHMENT_NOT_FOUND,
+  COMMENT_ATTACHMENT_QUOTA_EXCEEDED
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'
@@ -1071,5 +1262,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

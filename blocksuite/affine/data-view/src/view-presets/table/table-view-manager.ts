@@ -17,6 +17,7 @@ import {
 import { fromJson } from '../../core/property/utils';
 import { SortManager, sortTraitKey } from '../../core/sort/manager.js';
 import { PropertyBase } from '../../core/view-manager/property.js';
+import { type Row, RowBase } from '../../core/view-manager/row.js';
 import {
   type SingleView,
   SingleViewBase,
@@ -24,10 +25,9 @@ import {
 import type { ViewManager } from '../../core/view-manager/view-manager.js';
 import { DEFAULT_COLUMN_MIN_WIDTH, DEFAULT_COLUMN_WIDTH } from './consts.js';
 import type { TableViewData } from './define.js';
-import type { StatCalcOpType } from './types.js';
 
 export class TableSingleView extends SingleViewBase<TableViewData> {
-  propertiesWithoutFilter$ = computed(() => {
+  propertiesRaw$ = computed(() => {
     const needShow = new Set(this.dataSource.properties$.value);
     const result: string[] = [];
     this.data$.value?.columns.forEach(v => {
@@ -37,19 +37,11 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
       }
     });
     result.push(...needShow);
-    return result;
+    return result.map(id => this.propertyGetOrCreate(id));
   });
 
-  private readonly computedColumns$ = computed(() => {
-    return this.propertiesWithoutFilter$.value.map(id => {
-      const column = this.propertyGet(id);
-      return {
-        id: column.id,
-        hide: column.hide$.value,
-        width: column.width$.value,
-        statCalcType: column.statCalcOp$.value,
-      };
-    });
+  properties$ = computed(() => {
+    return this.propertiesRaw$.value.filter(property => !property.hide$.value);
   });
 
   private readonly filter$ = computed(() => {
@@ -81,8 +73,8 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
   );
 
   detailProperties$ = computed(() => {
-    return this.propertiesWithoutFilter$.value.filter(
-      id => this.propertyTypeGet(id) !== 'title'
+    return this.propertiesRaw$.value.filter(
+      property => property.type$.value !== 'title'
     );
   });
 
@@ -115,9 +107,13 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
           v => v,
           this.groupProperties.map(v => v.key)
         ),
-      sortRow: (key, ids) => {
+      sortRow: (key, rows) => {
         const property = this.groupProperties.find(v => v.key === key);
-        return sortByManually(ids, v => v, property?.manuallyCardSort ?? []);
+        return sortByManually(
+          rows,
+          v => v.rowId,
+          property?.manuallyCardSort ?? []
+        );
       },
       changeGroupSort: keys => {
         const map = new Map(this.groupProperties.map(v => [v.key, v]));
@@ -173,17 +169,11 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
   mainProperties$ = computed(() => {
     return (
       this.data$.value?.header ?? {
-        titleColumn: this.propertiesWithoutFilter$.value.find(
-          id => this.propertyTypeGet(id) === 'title'
-        ),
+        titleColumn: this.propertiesRaw$.value.find(
+          property => property.type$.value === 'title'
+        )?.id,
         iconColumn: 'type',
       }
-    );
-  });
-
-  propertyIds$ = computed(() => {
-    return this.propertiesWithoutFilter$.value.filter(
-      id => !this.propertyHideGet(id)
     );
   });
 
@@ -207,58 +197,12 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
     super(viewManager, viewId);
   }
 
-  columnGetStatCalcOp(columnId: string): StatCalcOpType {
-    return this.data$.value?.columns.find(v => v.id === columnId)?.statCalcType;
-  }
-
-  columnGetWidth(columnId: string): number {
-    const column = this.data$.value?.columns.find(v => v.id === columnId);
-    if (column?.width != null) {
-      return column.width;
-    }
-    const type = this.propertyTypeGet(columnId);
-    if (type === 'title') {
-      return 260;
-    }
-    return DEFAULT_COLUMN_WIDTH;
-  }
-
-  columnUpdateStatCalcOp(columnId: string, op?: string): void {
-    this.dataUpdate(() => {
-      return {
-        columns: this.computedColumns$.value.map(v =>
-          v.id === columnId
-            ? {
-                ...v,
-                statCalcType: op,
-              }
-            : v
-        ),
-      };
-    });
-  }
-
-  columnUpdateWidth(columnId: string, width: number): void {
-    this.dataUpdate(() => {
-      return {
-        columns: this.computedColumns$.value.map(v =>
-          v.id === columnId
-            ? {
-                ...v,
-                width: width,
-              }
-            : v
-        ),
-      };
-    });
-  }
-
   isShow(rowId: string): boolean {
     if (this.filter$.value?.conditions.length) {
       const rowMap = Object.fromEntries(
         this.properties$.value.map(column => [
           column.id,
-          column.cellGet(rowId).jsonValue$.value,
+          column.cellGetOrCreate(rowId).jsonValue$.value,
         ])
       );
       return evalFilter(this.filter$.value, rowMap);
@@ -266,54 +210,12 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
     return true;
   }
 
-  minWidthGet(type: string): number {
-    return (
-      this.propertyMetaGet(type)?.config.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH
-    );
+  propertyGetOrCreate(columnId: string): TableProperty {
+    return new TableProperty(this, columnId);
   }
 
-  propertyGet(columnId: string): TableColumn {
-    return new TableColumn(this, columnId);
-  }
-
-  propertyHideGet(columnId: string): boolean {
-    return (
-      this.data$.value?.columns.find(v => v.id === columnId)?.hide ?? false
-    );
-  }
-
-  propertyHideSet(columnId: string, hide: boolean): void {
-    this.dataUpdate(() => {
-      return {
-        columns: this.computedColumns$.value.map(v =>
-          v.id === columnId
-            ? {
-                ...v,
-                hide,
-              }
-            : v
-        ),
-      };
-    });
-  }
-
-  propertyMove(columnId: string, toAfterOfColumn: InsertToPosition): void {
-    this.dataUpdate(() => {
-      const columnIndex = this.computedColumns$.value.findIndex(
-        v => v.id === columnId
-      );
-      if (columnIndex < 0) {
-        return {};
-      }
-      const columns = [...this.computedColumns$.value];
-      const [column] = columns.splice(columnIndex, 1);
-      if (!column) return {};
-      const index = insertPositionToIndex(toAfterOfColumn, columns);
-      columns.splice(index, 0, column);
-      return {
-        columns,
-      };
-    });
+  override rowGetOrCreate(rowId: string): TableRow {
+    return new TableRow(this, rowId);
   }
 
   override rowAdd(
@@ -326,64 +228,103 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
     if (filter.conditions.length > 0) {
       const defaultValues = generateDefaultValues(filter, this.vars$.value);
       Object.entries(defaultValues).forEach(([propertyId, jsonValue]) => {
-        const property = this.propertyGet(propertyId);
-        const propertyMeta = this.propertyMetaGet(property.type$.value);
+        const property = this.propertyGetOrCreate(propertyId);
+        const propertyMeta = property.meta$.value;
         if (propertyMeta) {
           const value = fromJson(propertyMeta.config, {
             value: jsonValue,
             data: property.data$.value,
             dataSource: this.dataSource,
           });
-          this.cellValueSet(id, propertyId, value);
+          this.cellGetOrCreate(id, propertyId).valueSet(value);
         }
       });
     }
 
-    if (groupKey) {
+    if (groupKey && id) {
       this.groupTrait.addToGroup(id, groupKey);
     }
     return id;
   }
 
-  override rowMove(
-    rowId: string,
-    position: InsertToPosition,
-    fromGroup?: string,
-    toGroup?: string
-  ) {
-    if (toGroup == null) {
-      super.rowMove(rowId, position);
-      return;
-    }
-    this.groupTrait.moveCardTo(rowId, fromGroup, toGroup, position);
-  }
-
-  override rowNextGet(rowId: string): string | undefined {
-    const index = this.rows$.value.indexOf(rowId);
-    return this.rows$.value[index + 1];
-  }
-
-  override rowPrevGet(rowId: string): string | undefined {
-    const index = this.rows$.value.indexOf(rowId);
-    return this.rows$.value[index - 1];
-  }
-
-  override rowsMapping(rows: string[]) {
+  override rowsMapping(rows: Row[]) {
     return this.sortManager.sort(super.rowsMapping(rows));
   }
+
+  readonly computedProperties$: ReadonlySignal<TableColumnData[]> = computed(
+    () => {
+      return this.propertiesRaw$.value.map(property => {
+        return {
+          id: property.id,
+          hide: property.hide$.value,
+          width: property.width$.value,
+          statCalcType: property.statCalcOp$.value,
+        };
+      });
+    }
+  );
 }
 
-export class TableColumn extends PropertyBase {
+type TableColumnData = TableViewData['columns'][number];
+
+export class TableProperty extends PropertyBase {
+  override hideSet(hide: boolean): void {
+    this.viewDataUpdate(data => {
+      return {
+        ...data,
+        hide,
+      };
+    });
+  }
+  override move(position: InsertToPosition): void {
+    this.tableView.dataUpdate(() => {
+      const columnIndex = this.tableView.computedProperties$.value.findIndex(
+        v => v.id === this.id
+      );
+      if (columnIndex < 0) {
+        return {};
+      }
+      const columns = [...this.tableView.computedProperties$.value];
+      const [column] = columns.splice(columnIndex, 1);
+      if (!column) return {};
+      const index = insertPositionToIndex(position, columns);
+      columns.splice(index, 0, column);
+      return {
+        columns,
+      };
+    });
+  }
+
+  hide$ = computed(() => {
+    const hideFromViewData = this.viewData$.value?.hide;
+    if (hideFromViewData != null) {
+      return hideFromViewData;
+    }
+    const defaultShow = this.meta$.value?.config.fixed?.defaultShow;
+    if (defaultShow != null) {
+      return !defaultShow;
+    }
+    return false;
+  });
+
   statCalcOp$ = computed(() => {
-    return this.tableView.columnGetStatCalcOp(this.id);
+    return this.viewData$.value?.statCalcType;
   });
 
   width$: ReadonlySignal<number> = computed(() => {
-    return this.tableView.columnGetWidth(this.id);
+    const column = this.viewData$.value;
+    if (column?.width != null) {
+      return column.width;
+    }
+    const type = this.type$.value;
+    if (type === 'title') {
+      return 260;
+    }
+    return DEFAULT_COLUMN_WIDTH;
   });
 
   get minWidth() {
-    return this.tableView.minWidthGet(this.type$.value);
+    return this.meta$.value?.config.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH;
   }
 
   constructor(
@@ -393,11 +334,62 @@ export class TableColumn extends PropertyBase {
     super(tableView as SingleView, columnId);
   }
 
+  viewDataUpdate(
+    updater: (viewData: TableColumnData) => Partial<TableColumnData>
+  ): void {
+    this.tableView.dataUpdate(data => {
+      return {
+        ...data,
+        columns: this.tableView.computedProperties$.value.map(v =>
+          v.id === this.id ? { ...v, ...updater(v) } : v
+        ),
+      };
+    });
+  }
+
+  viewData$ = computed(() => {
+    return this.tableView.data$.value?.columns.find(v => v.id === this.id);
+  });
+
   updateStatCalcOp(type?: string): void {
-    return this.tableView.columnUpdateStatCalcOp(this.id, type);
+    this.viewDataUpdate(data => {
+      return {
+        ...data,
+        statCalcType: type,
+      };
+    });
   }
 
   updateWidth(width: number): void {
-    this.tableView.columnUpdateWidth(this.id, width);
+    this.viewDataUpdate(data => {
+      return {
+        ...data,
+        width,
+      };
+    });
+  }
+}
+export class TableRow extends RowBase {
+  override move(
+    position: InsertToPosition,
+    fromGroup?: string,
+    toGroup?: string
+  ): void {
+    if (toGroup == null) {
+      super.move(position);
+      return;
+    }
+    this.tableView.groupTrait.moveCardTo(
+      this.rowId,
+      fromGroup,
+      toGroup,
+      position
+    );
+  }
+  constructor(
+    readonly tableView: TableSingleView,
+    rowId: string
+  ) {
+    super(tableView, rowId);
   }
 }

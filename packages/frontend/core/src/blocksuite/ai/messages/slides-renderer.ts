@@ -1,11 +1,12 @@
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
+import { ViewExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { SpecProvider } from '@blocksuite/affine/shared/utils';
 import { BlockStdScope, type EditorHost } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { Doc as YDoc } from 'yjs';
 
 import { PPTBuilder } from '../slides/index';
 import { getAIPanelWidget } from '../utils/ai-widgets';
@@ -89,6 +90,12 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
         })
         .catch(console.error);
     });
+  }
+
+  protected _getExtensions() {
+    return this.host.std
+      .get(ViewExtensionManagerIdentifier)
+      .get('preview-edgeless');
   }
 
   protected override render() {
@@ -205,7 +212,7 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
         >
           ${new BlockStdScope({
             store: this._doc,
-            extensions: SpecProvider._.getSpec('preview:edgeless').value,
+            extensions: this._getExtensions(),
           }).render()}
         </div>
         <div class="mask"></div>
@@ -217,6 +224,7 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
 
     const collection = new WorkspaceImpl({
       id: 'SLIDES_PREVIEW',
+      rootDoc: new YDoc({ guid: 'SLIDES_PREVIEW' }),
     });
     collection.meta.initialize();
     const doc = collection.createDoc().getStore();

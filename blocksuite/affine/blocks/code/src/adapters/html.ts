@@ -7,7 +7,6 @@ import {
 } from '@blocksuite/affine-shared/adapters';
 import type { DeltaInsert } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
-import { bundledLanguagesInfo, codeToHast } from 'shiki';
 
 export const codeBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
   flavour: CodeBlockSchema.model.flavour,
@@ -69,24 +68,38 @@ export const codeBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
     enter: async (o, context) => {
       const { walkerContext } = context;
       const rawLang = o.node.props.language as string | null;
-      const matchedLang = rawLang
-        ? (bundledLanguagesInfo.find(
-            info =>
-              info.id === rawLang ||
-              info.name === rawLang ||
-              info.aliases?.includes(rawLang)
-          )?.id ?? 'text')
-        : 'text';
-
       const text = (o.node.props.text as Record<string, unknown>)
         .delta as DeltaInsert[];
       const code = text.map(delta => delta.insert).join('');
-      const hast = await codeToHast(code, {
-        lang: matchedLang,
-        theme: 'light-plus',
-      });
 
-      walkerContext.openNode(hast as never, 'children').closeNode();
+      walkerContext
+        .openNode(
+          {
+            type: 'element',
+            tagName: 'pre',
+            properties: {},
+            children: [],
+          },
+          'children'
+        )
+        .openNode(
+          {
+            type: 'element',
+            tagName: 'code',
+            properties: {
+              className: [`code-${rawLang ?? 'text'}`],
+            },
+            children: [
+              {
+                type: 'text',
+                value: code,
+              },
+            ],
+          },
+          'children'
+        )
+        .closeNode()
+        .closeNode();
     },
   },
 };

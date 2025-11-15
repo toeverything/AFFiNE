@@ -10,7 +10,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap, switchMap, timer } from 'rxjs';
+import { switchMap, tap, timer } from 'rxjs';
 
 import { AccountChanged, type AuthService } from '../../cloud';
 import { ServerStarted } from '../../cloud/events/server-started';
@@ -45,9 +45,8 @@ export class NotificationCountService extends Service {
         }
         return this.store.getNotificationCount(signal);
       }).pipe(
-        mergeMap(result => {
+        tap(result => {
           this.setCount(result ?? 0);
-          return EMPTY;
         }),
         smartRetry(),
         catchErrorInto(this.error$),

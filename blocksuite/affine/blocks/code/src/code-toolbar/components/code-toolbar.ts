@@ -4,6 +4,7 @@ import type {
   MenuItemGroup,
 } from '@blocksuite/affine-components/toolbar';
 import { renderGroups } from '@blocksuite/affine-components/toolbar';
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
 import { MoreVerticalIcon } from '@blocksuite/icons/lit';
@@ -30,12 +31,11 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
       padding: 4px;
       margin: 0;
       display: flex;
-      justify-content: flex-end;
     }
 
     .code-toolbar-button {
-      color: var(--affine-icon-color);
-      background-color: var(--affine-background-primary-color);
+      color: ${unsafeCSSVarV2('icon/primary')};
+      background-color: ${unsafeCSSVarV2('button/secondary')};
       box-shadow: var(--affine-shadow-1);
       border-radius: 4px;
     }

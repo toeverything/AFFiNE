@@ -8,7 +8,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { catchError, EMPTY, mergeMap } from 'rxjs';
+import { catchError, EMPTY, tap } from 'rxjs';
 
 import type {
   UpdateUserSettingsInput,
@@ -33,9 +33,8 @@ export class UserSettingsService extends Service {
         return this.store.getUserSettings();
       }).pipe(
         smartRetry(),
-        mergeMap(settings => {
+        tap(settings => {
           this.userSettings$.value = settings;
-          return EMPTY;
         }),
         catchError(error => {
           this.error$.value = error;

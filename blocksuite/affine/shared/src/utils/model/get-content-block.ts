@@ -26,7 +26,7 @@ export function getPrevContentBlock(
   model: BlockModel
 ): BlockModel | null {
   const getPrev = (model: BlockModel) => {
-    const parent = model.doc.getParent(model);
+    const parent = model.store.getParent(model);
     if (!parent) return null;
 
     const index = parent.children.indexOf(model);
@@ -113,7 +113,7 @@ export function getNextContentBlock(
   }
   map[model.id] = true;
 
-  const doc = model.doc;
+  const doc = model.store;
   if (model.children.length) {
     return model.children[0];
   }

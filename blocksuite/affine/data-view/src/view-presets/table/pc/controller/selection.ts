@@ -18,10 +18,10 @@ import {
   type TableViewSelection,
   type TableViewSelectionWithType,
 } from '../../selection';
-import type { DatabaseCellContainer } from '../cell.js';
+import type { TableViewCellContainer } from '../cell.js';
 import type { TableGroup } from '../group.js';
-import type { TableRow } from '../row/row.js';
-import type { DataViewTable } from '../table-view.js';
+import type { TableRowView } from '../row/row.js';
+import type { TableViewUILogic } from '../table-view-ui-logic.js';
 import {
   DragToFillElement,
   fillSelectionWithFocusCellData,
@@ -87,41 +87,44 @@ export class TableSelectionController implements ReactiveController {
       );
       const cell = container?.cell;
       const isEditing = cell ? cell.beforeEnterEditMode() : true;
-      this.host.props.setSelection({
+      this.logic.setSelection({
         ...selection,
         isEditing,
       });
     } else {
-      this.host.props.setSelection(selection);
+      this.logic.setSelection(selection);
     }
   }
 
   get tableContainer() {
-    return this.host.querySelector('.affine-database-table-container');
+    return this.logic.tableContainer$.value;
   }
 
   get view() {
-    return this.host.props.view;
+    return this.logic.view;
   }
 
   get viewData() {
     return this.view;
   }
 
-  constructor(public host: DataViewTable) {
-    host.addController(this);
+  constructor(public logic: TableViewUILogic) {
     this.__selectionElement = new SelectionElement();
     this.__selectionElement.controller = this;
   }
 
+  get host() {
+    return this.logic.ui$.value;
+  }
+
   private clearSelection() {
-    this.host.props.setSelection();
+    this.logic.setSelection();
   }
 
   private handleDragEvent() {
-    this.host.disposables.add(
-      this.host.props.handleEvent('dragStart', context => {
-        if (this.host.props.view.readonly$.value) {
+    this.host?.disposables.add(
+      this.logic.handleEvent('dragStart', context => {
+        if (this.logic.view.readonly$.value) {
           return;
         }
         const event = context.get('pointerState').raw;
@@ -152,8 +155,8 @@ export class TableSelectionController implements ReactiveController {
   }
 
   private handleSelectionChange() {
-    this.host.disposables.add(
-      this.host.props.selection$.subscribe(tableSelection => {
+    this.host?.disposables.add(
+      this.logic.selection$.subscribe(tableSelection => {
         if (!this.isValidSelection(tableSelection)) {
           this.selection = undefined;
           return;
@@ -238,13 +241,13 @@ export class TableSelectionController implements ReactiveController {
         ? this.view.groupTrait.groupDataMap$.value?.[groupKey]?.rows
         : this.view.rows$.value;
     requestAnimationFrame(() => {
-      const index = this.host.props.view.properties$.value.findIndex(
+      const index = this.logic.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );
       this.selection = TableViewAreaSelection.create({
         groupKey: groupKey,
         focus: {
-          rowIndex: rows?.findIndex(v => v === id) ?? 0,
+          rowIndex: rows?.findIndex(v => v.rowId === id) ?? 0,
           columnIndex: index,
         },
         isEditing: true,
@@ -254,14 +257,14 @@ export class TableSelectionController implements ReactiveController {
 
   private resolveDragStartTarget(
     target: HTMLElement
-  ): [cell: DatabaseCellContainer | null, fillValues: boolean] {
-    let cell: DatabaseCellContainer | null;
+  ): [cell: TableViewCellContainer | null, fillValues: boolean] {
+    let cell: TableViewCellContainer | null;
     const fillValues = !!target.dataset.dragToFill;
     if (fillValues) {
       const focusCellContainer = this.getFocusCellContainer();
       cell = focusCellContainer ?? null;
     } else {
-      cell = target.closest('affine-database-cell-container');
+      cell = target.closest('dv-table-view-cell-container');
     }
     return [cell, fillValues];
   }
@@ -295,7 +298,7 @@ export class TableSelectionController implements ReactiveController {
     const rows = this.rows(groupKey);
     const cells = rows
       ?.item(0)
-      .querySelectorAll('affine-database-cell-container');
+      .querySelectorAll('dv-table-view-cell-container');
 
     return (x1: number, x2: number, y1: number, y2: number) => {
       const rowOffsets: number[] = Array.from(rows ?? []).map(
@@ -346,8 +349,9 @@ export class TableSelectionController implements ReactiveController {
   }
 
   deleteRow(rowId: string) {
-    this.view.rowDelete([rowId]);
+    this.view.rowsDelete([rowId]);
     this.focusToCell('up');
+    this.logic.ui$.value?.requestUpdate();
   }
 
   focusFirstCell() {
@@ -394,7 +398,7 @@ export class TableSelectionController implements ReactiveController {
         ?.querySelectorAll('data-view-table-row') ?? []
     );
     const cells = Array.from(
-      row?.querySelectorAll('affine-database-cell-container') ?? []
+      row?.querySelectorAll('dv-table-view-cell-container') ?? []
     );
     if (!row || !rows || !cells) {
       return;
@@ -432,7 +436,7 @@ export class TableSelectionController implements ReactiveController {
       }
     }
     rows[rowIndex]
-      ?.querySelectorAll('affine-database-cell-container')
+      ?.querySelectorAll('dv-table-view-cell-container')
       ?.item(columnIndex)
       ?.selectCurrentCell(false);
   }
@@ -441,10 +445,10 @@ export class TableSelectionController implements ReactiveController {
     groupKey: string | undefined,
     rowIndex: number,
     columnIndex: number
-  ): DatabaseCellContainer | undefined {
+  ): TableViewCellContainer | undefined {
     const row = this.rows(groupKey)?.item(rowIndex);
     return row
-      ?.querySelectorAll('affine-database-cell-container')
+      ?.querySelectorAll('dv-table-view-cell-container')
       .item(columnIndex);
   }
 
@@ -479,7 +483,7 @@ export class TableSelectionController implements ReactiveController {
     if (!topRow || !bottomRow) {
       return;
     }
-    const topCells = topRow.querySelectorAll('affine-database-cell-container');
+    const topCells = topRow.querySelectorAll('dv-table-view-cell-container');
     const leftCell = topCells.item(left);
     const rightCell = topCells.item(right);
     if (!leftCell || !rightCell) {
@@ -553,7 +557,7 @@ export class TableSelectionController implements ReactiveController {
       (
         this.getGroup(lastRow?.groupKey)?.querySelector(
           `data-view-table-row[data-row-id='${lastRow?.id}']`
-        ) as TableRow | null
+        ) as TableRowView | null
       )?.rowIndex ?? 0;
     const getRowByIndex = (index: number) => {
       const tableRow = this.rows(lastRow?.groupKey)?.item(index);
@@ -752,7 +756,7 @@ export class TableSelectionController implements ReactiveController {
       const max =
         (this.rows(newSelection.groupKey)
           ?.item(0)
-          .querySelectorAll('affine-database-cell-container').length ?? 0) - 1;
+          .querySelectorAll('dv-table-view-cell-container').length ?? 0) - 1;
       newSelection.columnsSelection.end = Math.min(
         max,
         newSelection.columnsSelection.end + 1
@@ -810,7 +814,7 @@ export class TableSelectionController implements ReactiveController {
 
   startDrag(
     evt: PointerEvent,
-    cell: DatabaseCellContainer,
+    cell: TableViewCellContainer,
     fillValues?: boolean
   ) {
     const groupKey = cell.closest<TableGroup>('affine-data-view-table-group')
@@ -882,7 +886,7 @@ export class TableSelectionController implements ReactiveController {
         if (fillValues && this.selection) {
           this.__dragToFillElement.dragging = false;
           fillSelectionWithFocusCellData(
-            this.host,
+            this.logic,
             TableViewAreaSelection.create({
               groupKey: groupKey,
               rowsSelection: selection.row,
@@ -997,7 +1001,7 @@ export class SelectionElement extends WithDisposable(ShadowlessElement) {
   selectionRef: Ref<HTMLDivElement> = createRef<HTMLDivElement>();
 
   get selection$() {
-    return this.controller.host.props.selection$;
+    return this.controller.logic.selection$;
   }
 
   clearAreaStyle() {
@@ -1049,7 +1053,7 @@ export class SelectionElement extends WithDisposable(ShadowlessElement) {
     this.cancelSelectionUpdate();
     if (
       selection?.selectionType === 'area' &&
-      !this.controller.host.props.view.readonly$.value
+      !this.controller.logic.view.readonly$.value
     ) {
       this.updateAreaSelectionStyle(
         selection.groupKey,

@@ -7,8 +7,13 @@ import {
 } from '@blocksuite/affine-model';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import { requestThrottledConnectedFrame } from '@blocksuite/affine-shared/utils';
+import { Bound } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
-import { GfxElementModelView } from '@blocksuite/std/gfx';
+import {
+  type BoxSelectionContext,
+  GfxElementModelView,
+  GfxViewInteractionExtension,
+} from '@blocksuite/std/gfx';
 
 import { handleLayout } from './utils.js';
 
@@ -329,6 +334,13 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
     return collapseButton;
   }
 
+  override onBoxSelected(context: BoxSelectionContext) {
+    const { box } = context;
+    const bound = new Bound(box.x, box.y, box.w, box.h);
+
+    return bound.contains(this.model.elementBound);
+  }
+
   override onCreated(): void {
     this._setLayoutMethod();
     this._initCollapseButtons();
@@ -342,3 +354,25 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
     });
   }
 }
+
+export const MindMapInteraction = GfxViewInteractionExtension<MindMapView>(
+  MindMapView.type,
+  {
+    resizeConstraint: {
+      allowedHandlers: [],
+    },
+    handleSelection: () => {
+      return {
+        onSelect(context) {
+          const { model } = context;
+
+          if (model.isLocked()) {
+            return context.default(context);
+          }
+
+          return false;
+        },
+      };
+    },
+  }
+);

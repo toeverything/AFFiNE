@@ -11,7 +11,7 @@ import { effect, fromPromise, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { switchMap } from 'rxjs';
 
 import { generateSubscriptionCallbackLink } from '../../../components/hooks/affine/use-subscription-notify';
 import {
@@ -162,7 +162,7 @@ export const Component = () => {
             const e = UserFriendlyError.fromAny(err);
             setMessage(e.message);
           }
-        }).pipe(mergeMap(() => EMPTY));
+        });
       })
     );
 

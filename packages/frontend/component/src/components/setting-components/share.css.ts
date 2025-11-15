@@ -1,20 +1,26 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const settingHeader = style({
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   paddingBottom: '16px',
   marginBottom: '24px',
+  whiteSpace: 'pre-wrap',
 });
 globalStyle(`${settingHeader} .title`, {
   fontSize: cssVar('fontBase'),
   fontWeight: 600,
   lineHeight: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  position: 'relative',
 });
 globalStyle(`${settingHeader} .subtitle`, {
   paddingTop: '4px',
   paddingBottom: '8px',
   fontSize: cssVar('fontXs'),
-  lineHeight: '16px',
+  lineHeight: '20px',
   color: cssVar('textSecondaryColor'),
 });
 export const wrapper = style({
@@ -89,4 +95,15 @@ globalStyle(`${settingRow} .right-col`, {
   justifyContent: 'flex-end',
   paddingLeft: '15px',
   flexShrink: 0,
+});
+
+export const settingHeaderBeta = style({
+  fontSize: cssVar('fontXs'),
+  background: cssVarV2('chip/label/blue'),
+  padding: '0 8px',
+  borderRadius: '4px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 20,
 });

@@ -60,6 +60,7 @@ test('should update workspace', async t => {
     public: true,
     enableAi: true,
     enableUrlPreview: true,
+    enableDocEmbedding: false,
   };
   await t.context.workspace.update(workspace.id, data);
   const workspace1 = await t.context.workspace.get(workspace.id);

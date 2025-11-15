@@ -7,7 +7,7 @@
       "id": "1",
       "props": {
         "background": {
-          "dark": "#000000",
+          "dark": "#252525",
           "light": "#ffffff"
         },
         "displayMode": "both",

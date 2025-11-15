@@ -809,7 +809,7 @@
   "com.affine.lastMonth": "지난 달",
   "com.affine.lastWeek": "지난 주",
   "com.affine.lastYear": "지난 해",
-  "com.affine.loading": "로딩...",
+  "com.affine.loading": "로딩",
   "com.affine.moreThan30Days": "한 달 이상",
   "com.affine.moveToTrash.confirmModal.description": "{{title}} 을(를) 휴지통으로 옮김",
   "com.affine.moveToTrash.confirmModal.description.multiple": "{{ number }} 페이지를 휴지통으로 옮김",

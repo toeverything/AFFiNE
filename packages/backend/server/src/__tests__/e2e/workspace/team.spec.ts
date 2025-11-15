@@ -1,146 +1,167 @@
 import {
-  acceptInviteByInviteIdMutation,
-  createInviteLinkMutation,
   getInviteInfoQuery,
-  inviteByEmailMutation,
-  WorkspaceInviteLinkExpireTime,
+  inviteByEmailsMutation,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
 
+import { WorkspaceRole } from '../../../models';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
-async function createTeamWorkspace(quantity = 10) {
+const createTeamWorkspace = async (memberLimit = 3) => {
   const owner = await app.create(Mockers.User);
-
   const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
+    owner: {
+      id: owner.id,
+    },
   });
   await app.create(Mockers.TeamWorkspace, {
     id: workspace.id,
-    quantity,
+    quantity: memberLimit,
   });
 
+  const writer = await app.create(Mockers.User);
+  await app.create(Mockers.WorkspaceUser, {
+    userId: writer.id,
+    workspaceId: workspace.id,
+  });
+
+  const admin = await app.create(Mockers.User);
+  await app.create(Mockers.WorkspaceUser, {
+    userId: admin.id,
+    workspaceId: workspace.id,
+    type: WorkspaceRole.Admin,
+  });
+
+  const external = await app.create(Mockers.User);
+
   return {
-    owner,
     workspace,
+    owner,
+    admin,
+    writer,
+    external,
   };
-}
+};
 
-e2e(
-  'should invite by link and send review request notification below quota limit',
-  async t => {
-    const { owner, workspace } = await createTeamWorkspace();
+const getInvitationInfo = async (inviteId: string) => {
+  const result = await app.gql({
+    query: getInviteInfoQuery,
+    variables: {
+      inviteId,
+    },
+  });
+  return result.getInviteInfo;
+};
 
-    await app.login(owner);
-    const { createInviteLink } = await app.gql({
-      query: createInviteLinkMutation,
-      variables: {
-        workspaceId: workspace.id,
-        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-      },
-    });
-    t.truthy(createInviteLink, 'failed to create invite link');
-    const link = createInviteLink.link;
-    const inviteId = link.split('/').pop()!;
+e2e('should set new invited users to AllocatingSeat', async t => {
+  const { owner, workspace } = await createTeamWorkspace();
+  await app.login(owner);
 
-    // accept invite by link
-    await app.signup();
-    const result = await app.gql({
-      query: acceptInviteByInviteIdMutation,
-      variables: {
-        workspaceId: workspace.id,
-        inviteId,
-      },
-    });
-    t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
-    );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
-  }
-);
+  const u1 = await app.createUser();
 
-e2e(
-  'should invite by link and send review request notification over quota limit',
-  async t => {
-    const { owner, workspace } = await createTeamWorkspace(1);
+  const result = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      workspaceId: workspace.id,
+      emails: [u1.email],
+    },
+  });
 
-    await app.login(owner);
-    const { createInviteLink } = await app.gql({
-      query: createInviteLinkMutation,
-      variables: {
-        workspaceId: workspace.id,
-        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-      },
-    });
-    t.truthy(createInviteLink, 'failed to create invite link');
-    const link = createInviteLink.link;
-    const inviteId = link.split('/').pop()!;
+  t.not(result.inviteMembers[0].inviteId, null);
 
-    // accept invite by link
-    await app.signup();
-    const result = await app.gql({
-      query: acceptInviteByInviteIdMutation,
-      variables: {
-        workspaceId: workspace.id,
-        inviteId,
-      },
-    });
-    t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
-    );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
-  }
-);
+  const invitationInfo = await getInvitationInfo(
+    result.inviteMembers[0].inviteId!
+  );
+  t.is(invitationInfo.status, WorkspaceMemberStatus.AllocatingSeat);
+});
 
-e2e(
-  'should accept invitation by link directly if status is pending on team workspace',
-  async t => {
-    const { owner, workspace } = await createTeamWorkspace(2);
-    const member = await app.create(Mockers.User);
+e2e('should allocate seats', async t => {
+  const { owner, workspace } = await createTeamWorkspace();
+  await app.login(owner);
 
-    await app.login(owner);
-    // create a pending invitation
-    const invite = await app.gql({
-      query: inviteByEmailMutation,
-      variables: {
-        email: member.email,
-        workspaceId: workspace.id,
-      },
-    });
-    t.truthy(invite, 'failed to create invitation');
+  const u1 = await app.createUser();
+  await app.create(Mockers.WorkspaceUser, {
+    userId: u1.id,
+    workspaceId: workspace.id,
+    status: WorkspaceMemberStatus.AllocatingSeat,
+    source: 'Email',
+  });
 
-    const { createInviteLink } = await app.gql({
-      query: createInviteLinkMutation,
-      variables: {
-        workspaceId: workspace.id,
-        expireTime: WorkspaceInviteLinkExpireTime.OneDay,
-      },
-    });
-    t.truthy(createInviteLink, 'failed to create invite link');
-    const link = createInviteLink.link;
-    const inviteLinkId = link.split('/').pop()!;
+  const u2 = await app.createUser();
+  await app.create(Mockers.WorkspaceUser, {
+    userId: u2.id,
+    workspaceId: workspace.id,
+    status: WorkspaceMemberStatus.AllocatingSeat,
+    source: 'Link',
+  });
 
-    // member accept invitation by link
-    await app.login(member);
-    await app.gql({
-      query: acceptInviteByInviteIdMutation,
-      variables: {
-        inviteId: inviteLinkId,
-        workspaceId: workspace.id,
-      },
-    });
+  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
+    workspaceId: workspace.id,
+    quantity: 5,
+  });
 
-    const { getInviteInfo } = await app.gql({
-      query: getInviteInfoQuery,
-      variables: {
-        inviteId: invite.invite,
-      },
-    });
-    t.is(getInviteInfo.status, WorkspaceMemberStatus.Accepted);
-  }
-);
+  const [members] = await app.models.workspaceUser.paginate(workspace.id, {
+    first: 10,
+    offset: 0,
+  });
+
+  t.is(
+    members.find(m => m.user.id === u1.id)?.status,
+    WorkspaceMemberStatus.Pending
+  );
+  t.is(
+    members.find(m => m.user.id === u2.id)?.status,
+    WorkspaceMemberStatus.Accepted
+  );
+
+  t.is(app.queue.count('notification.sendInvitation'), 1);
+});
+
+e2e('should set all rests to NeedMoreSeat', async t => {
+  const { owner, workspace } = await createTeamWorkspace();
+  await app.login(owner);
+
+  const u1 = await app.createUser();
+  await app.create(Mockers.WorkspaceUser, {
+    userId: u1.id,
+    workspaceId: workspace.id,
+    status: WorkspaceMemberStatus.AllocatingSeat,
+    source: 'Email',
+  });
+
+  const u2 = await app.createUser();
+  await app.create(Mockers.WorkspaceUser, {
+    userId: u2.id,
+    workspaceId: workspace.id,
+    status: WorkspaceMemberStatus.AllocatingSeat,
+    source: 'Email',
+  });
+
+  const u3 = await app.createUser();
+  await app.create(Mockers.WorkspaceUser, {
+    userId: u3.id,
+    workspaceId: workspace.id,
+    status: WorkspaceMemberStatus.AllocatingSeat,
+    source: 'Link',
+  });
+
+  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
+    workspaceId: workspace.id,
+    quantity: 4,
+  });
+
+  const [members] = await app.models.workspaceUser.paginate(workspace.id, {
+    first: 10,
+    offset: 0,
+  });
+
+  t.is(
+    members.find(m => m.user.id === u2.id)?.status,
+    WorkspaceMemberStatus.NeedMoreSeat
+  );
+  t.is(
+    members.find(m => m.user.id === u3.id)?.status,
+    WorkspaceMemberStatus.NeedMoreSeat
+  );
+});

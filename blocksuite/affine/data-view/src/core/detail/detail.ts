@@ -120,9 +120,12 @@ export class RecordDetail extends SignalWatcher(
             items: this.view.propertyMetas$.value.map(meta => {
               return menu.action({
                 name: meta.config.name,
-                prefix: renderUniLit(this.view.propertyIconGet(meta.type)),
+                prefix: renderUniLit(meta.renderer.icon),
                 select: () => {
-                  this.view.propertyAdd('end', meta.type);
+                  this.view.propertyAdd('end', {
+                    type: meta.type,
+                    name: meta.config.name,
+                  });
                 },
               });
             }),
@@ -136,9 +139,7 @@ export class RecordDetail extends SignalWatcher(
   accessor view!: SingleView;
 
   properties$ = computed(() => {
-    return this.view.detailProperties$.value.map(id =>
-      this.view.propertyGet(id)
-    );
+    return this.view.detailProperties$.value;
   });
 
   selection = new DetailSelection(this);
@@ -184,16 +185,20 @@ export class RecordDetail extends SignalWatcher(
     this.dataset.widgetId = 'affine-detail-widget';
   }
 
+  row$ = computed(() => {
+    return this.view.rowGetOrCreate(this.rowId);
+  });
+
   hasNext() {
-    return this.view.rowNextGet(this.rowId) != null;
+    return this.row$.value.next$.value != null;
   }
 
   hasPrev() {
-    return this.view.rowPrevGet(this.rowId) != null;
+    return this.row$.value.prev$.value != null;
   }
 
   nextRow() {
-    const rowId = this.view.rowNextGet(this.rowId);
+    const rowId = this.row$.value.next$.value?.rowId;
     if (rowId == null) {
       return;
     }
@@ -202,7 +207,7 @@ export class RecordDetail extends SignalWatcher(
   }
 
   prevRow() {
-    const rowId = this.view.rowPrevGet(this.rowId);
+    const rowId = this.row$.value.prev$.value?.rowId;
     if (rowId == null) {
       return;
     }

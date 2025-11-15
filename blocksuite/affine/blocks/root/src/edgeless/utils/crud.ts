@@ -25,10 +25,10 @@ export function deleteElements(
 
   set.forEach(element => {
     if (isNoteBlock(element)) {
-      const children = edgeless.doc.root?.children ?? [];
+      const children = edgeless.store.root?.children ?? [];
       // FIXME: should always keep at least 1 note
       if (children.length > 1) {
-        edgeless.doc.deleteBlock(element);
+        edgeless.store.deleteBlock(element);
       }
     } else {
       service.removeElement(element.id);

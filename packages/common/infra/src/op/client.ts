@@ -61,7 +61,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
     }
 
     if ('error' in msg) {
-      pending.reject(msg.error);
+      pending.reject(Object.assign(new Error(), msg.error));
     } else {
       pending.resolve(msg.data);
     }
@@ -86,7 +86,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
         return;
       }
 
-      ob.error(msg.error);
+      ob.error(Object.assign(new Error(), msg.error));
     };
 
   private readonly handleSubscriptionCompleteMessage: MessageHandlers['complete'] =

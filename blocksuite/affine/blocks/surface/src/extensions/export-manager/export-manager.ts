@@ -28,7 +28,7 @@ import {
 } from '@blocksuite/std/gfx';
 import type { ExtensionType, Store } from '@blocksuite/store';
 
-import type { CanvasRenderer } from '../../renderer/canvas-renderer.js';
+import { CanvasRenderer } from '../../renderer/canvas-renderer.js';
 import type { SurfaceBlockComponent } from '../../surface-block.js';
 import { getBgGridGap } from '../../utils/get-bg-grip-gap.js';
 import { FileExporter } from './file-exporter.js';
@@ -43,19 +43,6 @@ export type ExportOptions = {
 export class ExportManager {
   private readonly _exportOptions: ExportOptions = {
     imageProxyEndpoint: DEFAULT_IMAGE_PROXY_ENDPOINT,
-  };
-
-  private readonly _replaceRichTextWithSvgElement = (element: HTMLElement) => {
-    const richList = Array.from(element.querySelectorAll('.inline-editor'));
-    richList.forEach(rich => {
-      const svgEle = this._elementToSvgElement(
-        rich.cloneNode(true) as HTMLElement,
-        rich.clientWidth,
-        rich.clientHeight + 1
-      );
-      rich.parentElement?.append(svgEle);
-      rich.remove();
-    });
   };
 
   replaceImgSrcWithSvg = async (element: HTMLElement) => {
@@ -232,7 +219,6 @@ export class ExportManager {
       },
       onclone: async (_documentClone: Document, element: HTMLElement) => {
         element.style.height = `${viewportHeight}px`;
-        this._replaceRichTextWithSvgElement(element);
         await this.replaceImgSrcWithSvg(element);
       },
       backgroundColor: window.getComputedStyle(viewportElement).backgroundColor,
@@ -291,30 +277,6 @@ export class ExportManager {
     });
   }
 
-  private _elementToSvgElement(
-    node: HTMLElement,
-    width: number,
-    height: number
-  ) {
-    const xmlns = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(xmlns, 'svg');
-    const foreignObject = document.createElementNS(xmlns, 'foreignObject');
-
-    svg.setAttribute('width', `${width}`);
-    svg.setAttribute('height', `${height}`);
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-
-    foreignObject.setAttribute('width', '100%');
-    foreignObject.setAttribute('height', '100%');
-    foreignObject.setAttribute('x', '0');
-    foreignObject.setAttribute('y', '0');
-    foreignObject.setAttribute('externalResourcesRequired', 'true');
-
-    svg.append(foreignObject);
-    foreignObject.append(node);
-    return svg;
-  }
-
   private _enableMediaPrint() {
     document.querySelectorAll('.media-print').forEach(mediaPrint => {
       mediaPrint.classList.remove('hide');
@@ -358,7 +320,6 @@ export class ExportManager {
           }
         });
 
-        this._replaceRichTextWithSvgElement(element);
         await this.replaceImgSrcWithSvg(element);
       },
       useCORS: this._exportOptions.imageProxyEndpoint ? false : true,
@@ -397,6 +358,9 @@ export class ExportManager {
       const surfaceBlock = gfx.surfaceComponent as SurfaceBlockComponent | null;
       if (!surfaceBlock) return;
       const bound = gfx.elementsBound;
+      if (!(surfaceBlock.renderer instanceof CanvasRenderer)) {
+        return;
+      }
       return this.edgelessToCanvas(surfaceBlock.renderer, bound, gfx);
     }
   }
@@ -412,6 +376,13 @@ export class ExportManager {
       zoom: number;
     }
   ): Promise<HTMLCanvasElement | undefined> {
+    if (!(surfaceRenderer instanceof CanvasRenderer)) {
+      console.warn(
+        'ExportManager.edgelessToCanvas was called with an invalid renderer type. Expected CanvasRenderer.'
+      );
+      return undefined;
+    }
+
     const rootModel = this.doc.root;
     if (!rootModel) return;
 
@@ -477,7 +448,7 @@ export class ExportManager {
       if (matchModels(block, [ImageBlockModel])) {
         if (!block.props.sourceId) return;
 
-        const blob = await block.doc.blobSync.get(block.props.sourceId);
+        const blob = await block.store.blobSync.get(block.props.sourceId);
         if (!blob) return;
 
         const blobToImage = (blob: Blob) =>
@@ -581,7 +552,7 @@ type RootBlockComponent = BlockComponent & {
 function getRootByEditorHost(
   editorHost: EditorHost
 ): RootBlockComponent | null {
-  const model = editorHost.doc.root;
+  const model = editorHost.store.root;
   if (!model) return null;
   const root = editorHost.view.getBlock(model.id);
   return root as RootBlockComponent | null;

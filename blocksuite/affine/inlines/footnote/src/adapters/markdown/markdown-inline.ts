@@ -26,16 +26,31 @@ export const markdownFootnoteReferenceToDeltaMatcher =
             footnoteDefinitionJson.url
           );
         }
+        if (footnoteDefinitionJson.favicon) {
+          footnoteDefinitionJson.favicon = decodeURIComponent(
+            footnoteDefinitionJson.favicon
+          );
+        }
         const footnoteReference = FootNoteReferenceParamsSchema.parse(
           footnoteDefinitionJson
         );
+
+        // If the footnote reference is an attachment, and the file type is not set,
+        // Try to infer the file type from the file name.
+        const { type: referenceType, fileName, fileType } = footnoteReference;
+        if (referenceType === 'attachment' && fileName && !fileType) {
+          const ext = fileName.split('.').pop()?.toLowerCase();
+          if (ext) {
+            footnoteReference.fileType = ext;
+          }
+        }
+
         const footnote = {
           label: ast.identifier,
           reference: footnoteReference,
         };
         return [{ insert: ' ', attributes: { footnote } }];
-      } catch (error) {
-        console.warn('Error parsing footnote reference', error);
+      } catch {
         return [];
       }
     },

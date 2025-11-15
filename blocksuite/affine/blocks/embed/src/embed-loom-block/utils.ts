@@ -62,7 +62,7 @@ export async function refreshEmbedLoomUrlData(
 
     if (signal?.aborted) return;
 
-    embedLoomElement.doc.updateBlock(embedLoomElement.model, {
+    embedLoomElement.store.updateBlock(embedLoomElement.model, {
       title,
       description,
       image,

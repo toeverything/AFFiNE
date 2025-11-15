@@ -1,13 +1,17 @@
 import './utils/declare-test-window.js';
 
+import type { BookmarkBlockComponent } from '@blocksuite/affine/blocks/bookmark';
 import type { BlockSnapshot } from '@blocksuite/store';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import {
   activeNoteInEdgeless,
+  clickView,
   copyByKeyboard,
+  createNote,
   dragBlockToPoint,
+  edgelessCommonSetup,
   enterPlaygroundRoom,
   expectConsoleMessage,
   focusRichText,
@@ -15,6 +19,7 @@ import {
   initEmptyEdgelessState,
   initEmptyParagraphState,
   pasteByKeyboard,
+  pasteContent,
   pressArrowDown,
   pressArrowRight,
   pressArrowUp,
@@ -357,6 +362,21 @@ test('bookmark can be dragged from note to surface top level block', async ({
   await assertParentBlockFlavour(page, '4', 'affine:surface');
 });
 
+test('bookmark card should show banner in edgeless mode', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const url = 'https://github.com/toeverything/AFFiNE/pull/11796';
+
+  await page.locator('edgeless-link-tool-button').click();
+  await page.locator('.embed-card-modal-input').fill(url);
+  await pressEnter(page);
+
+  const banner = page.locator('.affine-bookmark-banner');
+  await expect(banner).toBeVisible();
+});
+
 test.describe('embed youtube card', () => {
   test(scoped`create youtube card by slash menu`, async ({ page }) => {
     expectConsoleMessage(page, /Unrecognized feature/, 'warning');
@@ -463,4 +483,48 @@ test.describe('embed figma card', () => {
     const snapshot2 = (await getPageSnapshot(page)) as BlockSnapshot;
     expect(ignoreSnapshotId(snapshot2)).toMatchSnapshot('embed-figma.json');
   });
+});
+
+test.describe('embed github card', () => {
+  test('github embed card should show banner in edgeless mode', async ({
+    page,
+  }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await switchEditorMode(page);
+    await clickView(page, [0, 0]);
+    const url = 'https://github.com/toeverything/AFFiNE/pull/11796';
+
+    await pasteContent(page, {
+      'text/plain': url,
+    });
+
+    const banner = page.locator('.affine-embed-github-banner');
+    await expect(banner).toBeVisible();
+  });
+});
+
+test('drag a card from canvas to note should not change the style of the card', async ({
+  page,
+}) => {
+  const url = 'https://github.com/toeverything/AFFiNE/pull/12660';
+
+  await edgelessCommonSetup(page);
+  await createNote(page, [-100, -300]);
+  await page.locator('edgeless-link-tool-button').click();
+  await page.locator('.embed-card-modal-input').fill(url);
+  await pressEnter(page);
+
+  const edgelessBookmark = page.locator('affine-edgeless-bookmark');
+  await edgelessBookmark.click();
+  await waitNextFrame(page);
+  const dragHandle = page.locator('.affine-drag-handle-container');
+  await dragHandle.dragTo(page.locator('affine-edgeless-note'));
+
+  const noteBookmark = page.locator('affine-bookmark');
+  await expect(noteBookmark).toBeVisible();
+  const style = await noteBookmark.evaluate(
+    (el: BookmarkBlockComponent) => el.model.props.style
+  );
+  expect(style).toBe('horizontal');
 });

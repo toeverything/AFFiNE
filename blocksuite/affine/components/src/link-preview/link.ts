@@ -14,9 +14,6 @@ export class LinkPreview extends LitElement {
       justify-content: flex-start;
       min-width: 60px;
       max-width: 140px;
-      padding: var(--1, 0px);
-      border-radius: var(--1, 0px);
-      opacity: var(--add, 1);
       user-select: none;
       cursor: pointer;
 
@@ -39,7 +36,6 @@ export class LinkPreview extends LitElement {
 
       text-overflow: ellipsis;
       overflow: hidden;
-      opacity: var(--add, 1);
     }
   `;
 

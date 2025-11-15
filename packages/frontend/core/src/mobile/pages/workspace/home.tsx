@@ -2,11 +2,11 @@ import { SafeArea, useThemeColorV2 } from '@affine/component';
 
 import { AppTabs } from '../../components';
 import {
-  ExplorerCollections,
-  ExplorerFavorites,
-  ExplorerOrganize,
-  ExplorerTags,
-} from '../../components/explorer';
+  NavigationPanelCollections,
+  NavigationPanelFavorites,
+  NavigationPanelOrganize,
+  NavigationPanelTags,
+} from '../../components/navigation';
 import { HomeHeader, RecentDocs } from '../../views';
 
 export const Component = () => {
@@ -25,10 +25,10 @@ export const Component = () => {
             padding: '0 8px 32px 8px',
           }}
         >
-          <ExplorerFavorites />
-          <ExplorerOrganize />
-          <ExplorerCollections />
-          <ExplorerTags />
+          <NavigationPanelFavorites />
+          <NavigationPanelOrganize />
+          <NavigationPanelCollections />
+          <NavigationPanelTags />
         </div>
       </SafeArea>
       <AppTabs />

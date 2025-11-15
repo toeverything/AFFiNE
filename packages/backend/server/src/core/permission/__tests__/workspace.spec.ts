@@ -45,12 +45,9 @@ test('should get null role', async t => {
 
 test('should return null if role is not accepted', async t => {
   const u2 = await models.user.create({ email: 'u2@affine.pro' });
-  await models.workspaceUser.set(
-    ws.id,
-    u2.id,
-    WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.UnderReview
-  );
+  await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
+    status: WorkspaceMemberStatus.UnderReview,
+  });
 
   const role = await ac.getRole({
     workspaceId: ws.id,
@@ -131,12 +128,9 @@ test('should assert action', async t => {
     ac.assert({ workspaceId: ws.id, userId: u2.id }, 'Workspace.Sync')
   );
 
-  await models.workspaceUser.set(
-    ws.id,
-    u2.id,
-    WorkspaceRole.Admin,
-    WorkspaceMemberStatus.Accepted
-  );
+  await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Admin, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
 
   await t.notThrowsAsync(
     ac.assert(

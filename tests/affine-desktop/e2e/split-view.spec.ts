@@ -7,6 +7,7 @@ import {
   clickNewPageButton,
   createLinkedPage,
   dragTo,
+  getPageByTitle,
   waitForAllPagesLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
@@ -60,14 +61,10 @@ test('open split view in all docs (operations button)', async ({ page }) => {
   await clickNewPageButton(page, testTitle);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  await page
-    .getByTestId('page-list-item')
-    .filter({
-      hasText: testTitle,
-    })
-    .getByTestId('page-list-operation-button')
+  await getPageByTitle(page, testTitle)
+    .getByTestId('doc-list-operation-button')
     .click();
-  await page.getByRole('menuitem', { name: 'Open in Split View' }).click();
+  await page.getByRole('menuitem', { name: 'Open in split view' }).click();
   await expect(page.getByTestId('split-view-panel')).toHaveCount(2);
   const targetPage = page.getByTestId('split-view-panel').last();
   await expect(targetPage).toHaveAttribute('data-is-active', 'true');
@@ -85,12 +82,7 @@ test('open split view in all docs (drag to resize handle)', async ({
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
 
-  // case for AF-2061. toggle selection checkbox
-  await page.getByTestId('page-list-header-selection-checkbox').click();
-
-  const pageItem = page.getByTestId('page-list-item').filter({
-    hasText: testTitle,
-  });
+  const pageItem = getPageByTitle(page, testTitle);
 
   const leftResizeHandle = page.getByTestId('resize-handle').first();
 

@@ -8,7 +8,7 @@ export class CodeBlockToolbarContext extends MenuContext {
   };
 
   get doc() {
-    return this.blockComponent.doc;
+    return this.blockComponent.store;
   }
 
   get host() {

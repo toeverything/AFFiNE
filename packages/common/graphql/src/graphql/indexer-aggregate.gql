@@ -1,0 +1,21 @@
+query indexerAggregate($id: String!, $input: AggregateInput!) {
+  workspace(id: $id) {
+    aggregate(input: $input) {
+      buckets {
+        key
+        count
+        hits {
+          nodes {
+            fields
+            highlights
+          }
+        }
+      }
+      pagination {
+        count
+        hasMore
+        nextCursor
+      }
+    }
+  }
+}

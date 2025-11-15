@@ -42,7 +42,7 @@ export class MindmapSurfaceBlock extends BlockComponent<SurfaceBlockModel> {
   }
 
   private _adjustNodeWidth() {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       this.model.elementModels.forEach(element => {
         if (element.type === 'shape') {
           fitContent(element as ShapeElementModel);

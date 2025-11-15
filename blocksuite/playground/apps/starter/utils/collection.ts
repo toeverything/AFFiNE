@@ -1,5 +1,5 @@
+import type { StoreExtensionManager } from '@blocksuite/affine/ext-loader';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
-import { SpecProvider } from '@blocksuite/affine/shared/utils';
 import { nanoid, Schema, Transformer } from '@blocksuite/affine/store';
 import {
   createAutoIncrementIdGenerator,
@@ -23,7 +23,9 @@ const room = params.get('room');
 const isE2E = room?.startsWith('playwright');
 const blobSourceArgs = (params.get('blobSource') ?? '').split(',');
 
-export function createStarterDocCollection() {
+export function createStarterDocCollection(
+  storeExtensionManager: StoreExtensionManager
+) {
   const collectionId = room ?? 'starter';
   const schema = new Schema();
   schema.register(AffineSchemas);
@@ -56,7 +58,7 @@ export function createStarterDocCollection() {
     blobSources,
   };
   const collection = new TestWorkspace(options);
-  collection.storeExtensions = SpecProvider._.getSpec('store').value;
+  collection.storeExtensions = storeExtensionManager.get('store');
   collection.start();
 
   // debug info
@@ -93,6 +95,5 @@ export async function initStarterDocCollection(collection: TestWorkspace) {
     if (!doc?.loaded) {
       doc?.load();
     }
-    doc?.resetHistory();
   }
 }

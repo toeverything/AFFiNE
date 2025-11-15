@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { InvalidOauthCallbackCode, URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
-import { OAuthProvider } from './def';
+import { OAuthProvider, Tokens } from './def';
 
 interface AuthTokenResponse {
   access_token: string;
@@ -71,11 +71,11 @@ export class GithubOAuthProvider extends OAuthProvider {
     }
   }
 
-  async getUser(token: string) {
+  async getUser(tokens: Tokens) {
     const response = await fetch('https://api.github.com/user', {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${tokens.accessToken}`,
       },
     });
 

@@ -1,4 +1,9 @@
-import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
+import {
+  DefaultTool,
+  EdgelessCRUDIdentifier,
+} from '@blocksuite/affine-block-surface';
+import { EmptyTool } from '@blocksuite/affine-gfx-pointer';
+import { TextTool } from '@blocksuite/affine-gfx-text';
 import type {
   MindmapElementModel,
   MindmapStyle,
@@ -14,7 +19,6 @@ import {
 } from '@blocksuite/affine-widget-edgeless-toolbar';
 import type { Bound } from '@blocksuite/global/gfx';
 import { SignalWatcher } from '@blocksuite/global/lit';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { computed } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -150,8 +154,7 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
 
   override enableActiveBackground = true;
 
-  // @ts-expect-error FIXME: resolve after gfx tool refactor
-  override type: GfxToolsFullOptionValue['type'][] = ['empty', 'text'];
+  override type = [EmptyTool, TextTool];
 
   get draggableTools(): DraggableTool[] {
     const style = this._style$.value;
@@ -192,8 +195,7 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
 
   private _toggleMenu() {
     if (this.tryDisposePopper()) return;
-    // @ts-expect-error FIXME: resolve after gfx tool refactor
-    this.setEdgelessTool({ type: 'default' });
+    this.setEdgelessTool(DefaultTool);
 
     const menu = this.createPopper('edgeless-mindmap-menu', this);
     Object.assign(menu.element, {
@@ -213,8 +215,7 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
           const element = this.crud.getElementById(id) as MindmapElementModel;
 
           this.tryDisposePopper();
-          // @ts-expect-error FIXME: resolve after gfx tool refactor
-          this.setEdgelessTool({ type: 'default' });
+          this.setEdgelessTool(DefaultTool);
           this.gfx.selection.set({
             elements: [element.tree.id],
             editing: false,
@@ -274,15 +275,13 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
             if (!id) return;
             this.readyToDrop = false;
             if (el.data.name === 'mindmap') {
-              // @ts-expect-error FIXME: resolve after gfx tool refactor
-              this.setEdgelessTool({ type: 'default' });
+              this.setEdgelessTool(DefaultTool);
               this.gfx.selection.set({
                 elements: [id],
                 editing: false,
               });
             } else if (el.data.name === 'text') {
-              // @ts-expect-error FIXME: resolve after gfx tool refactor
-              this.setEdgelessTool({ type: 'default' });
+              this.setEdgelessTool(DefaultTool);
             }
           })
           .catch(console.error);
@@ -314,10 +313,9 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
             });
             return;
           }
-          // @ts-expect-error FIXME: resolve after gfx tool refactor
-          this.setEdgelessTool({ type: 'empty' });
+          this.setEdgelessTool(EmptyTool);
           const icon = this.mindmapElement;
-          const { x, y } = gfx.tool.lastMousePos$.peek();
+          const { x, y } = gfx.tool.lastMouseViewPos$.peek();
           const { viewport } = this.edgeless.std.get(ViewportElementProvider);
           const { left, top } = viewport;
           const clientPos = { x: x + left, y: y + top };

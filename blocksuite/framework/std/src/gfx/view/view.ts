@@ -1,19 +1,19 @@
 import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { Bound, IVec } from '@blocksuite/global/gfx';
+import { type Bound, type IVec } from '@blocksuite/global/gfx';
 import type { Extension } from '@blocksuite/store';
 
 import type { PointerEventState } from '../../event/index.js';
 import type { EditorHost } from '../../view/index.js';
+import type { GfxController } from '../index.js';
 import type {
+  BoxSelectionContext,
   DragEndContext,
   DragMoveContext,
   DragStartContext,
   GfxViewTransformInterface,
-  SelectedContext,
-} from '../element-transform/view-transform.js';
-import type { GfxController } from '../index.js';
+} from '../interactivity/index.js';
 import type { GfxElementGeometry, PointTestOptions } from '../model/base.js';
 import { GfxPrimitiveElementModel } from '../model/surface/element-model.js';
 import type { GfxLocalElementModel } from '../model/surface/local-element-model.js';
@@ -26,6 +26,9 @@ export type EventsHandlerMap = {
   pointerleave: PointerEventState;
   pointermove: PointerEventState;
   pointerup: PointerEventState;
+  dragstart: PointerEventState;
+  dragmove: PointerEventState;
+  dragend: PointerEventState;
 };
 
 export type SupportedEvent = keyof EventsHandlerMap;
@@ -97,11 +100,24 @@ export class GfxElementModelView<
     return this.model.containsBound(bounds);
   }
 
+  /**
+   * Dispatches an event to the view.
+   * @param event
+   * @param evt
+   * @returns Whether the event view has any handlers for the event.
+   */
   dispatch<K extends keyof EventsHandlerMap>(
     event: K,
     evt: EventsHandlerMap[K]
   ) {
-    this._handlers.get(event)?.forEach(callback => callback(evt));
+    const handlers = this._handlers.get(event);
+
+    if (handlers?.length) {
+      handlers.forEach(callback => callback(evt));
+      return true;
+    }
+
+    return false;
   }
 
   getLineIntersections(start: IVec, end: IVec) {
@@ -193,21 +209,7 @@ export class GfxElementModelView<
     this.model.xywh = currentBound.moveDelta(dx, dy).serialize();
   }
 
-  onSelected(context: SelectedContext): void | boolean {
-    if (this.model instanceof GfxPrimitiveElementModel) {
-      if (context.multiSelect) {
-        this.gfx.selection.toggle(this.model);
-      } else {
-        this.gfx.selection.set({ elements: [this.model.id] });
-      }
-
-      return true;
-    }
-  }
-
-  onResize = () => {};
-
-  onRotate = () => {};
+  onBoxSelected(_: BoxSelectionContext): boolean | void {}
 
   /**
    * Called when the view is destroyed.

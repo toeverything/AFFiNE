@@ -1,23 +1,28 @@
-import { defaultImageProxyMiddleware } from '@blocksuite/affine-block-image';
 import {
+  defaultImageProxyMiddleware,
   docLinkBaseURLMiddleware,
   fileNameMiddleware,
+  filePathMiddleware,
   MarkdownAdapter,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
-import { SpecProvider } from '@blocksuite/affine-shared/utils';
 import { Container } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { sha } from '@blocksuite/global/utils';
-import type { Schema, Store, Workspace } from '@blocksuite/store';
+import type {
+  ExtensionType,
+  Schema,
+  Store,
+  Workspace,
+} from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 
+import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 import { createAssetsArchive, download, Unzip } from './utils.js';
 
-function getProvider() {
+function getProvider(extensions: ExtensionType[]) {
   const container = new Container();
-  const exts = SpecProvider._.getSpec('store').value;
-  exts.forEach(ext => {
+  extensions.forEach(ext => {
     ext.setup(container);
   });
   return container.provider();
@@ -27,6 +32,7 @@ type ImportMarkdownToBlockOptions = {
   doc: Store;
   markdown: string;
   blockId: string;
+  extensions: ExtensionType[];
 };
 
 type ImportMarkdownToDocOptions = {
@@ -34,12 +40,14 @@ type ImportMarkdownToDocOptions = {
   schema: Schema;
   markdown: string;
   fileName?: string;
+  extensions: ExtensionType[];
 };
 
 type ImportMarkdownZipOptions = {
   collection: Workspace;
   schema: Schema;
   imported: Blob;
+  extensions: ExtensionType[];
 };
 
 /**
@@ -48,7 +56,7 @@ type ImportMarkdownZipOptions = {
  * @returns A Promise that resolves when the export is complete
  */
 async function exportDoc(doc: Store) {
-  const provider = getProvider();
+  const provider = doc.provider;
   const job = doc.getTransformer([
     docLinkBaseURLMiddleware(doc.workspace.id),
     titleMiddleware(doc.workspace.meta.docMetas),
@@ -98,8 +106,9 @@ async function importMarkdownToBlock({
   doc,
   markdown,
   blockId,
+  extensions,
 }: ImportMarkdownToBlockOptions) {
-  const provider = getProvider();
+  const provider = getProvider(extensions);
   const job = doc.getTransformer([
     defaultImageProxyMiddleware,
     docLinkBaseURLMiddleware(doc.workspace.id),
@@ -142,8 +151,9 @@ async function importMarkdownToDoc({
   schema,
   markdown,
   fileName,
+  extensions,
 }: ImportMarkdownToDocOptions) {
-  const provider = getProvider();
+  const provider = getProvider(extensions);
   const job = new Transformer({
     schema,
     blobCRUD: collection.blobSync,
@@ -181,25 +191,35 @@ async function importMarkdownZip({
   collection,
   schema,
   imported,
+  extensions,
 }: ImportMarkdownZipOptions) {
-  const provider = getProvider();
+  const provider = getProvider(extensions);
   const unzip = new Unzip();
   await unzip.load(imported);
 
   const docIds: string[] = [];
-  const pendingAssets = new Map<string, File>();
-  const pendingPathBlobIdMap = new Map<string, string>();
-  const markdownBlobs: [string, Blob][] = [];
+  const pendingAssets: AssetMap = new Map();
+  const pendingPathBlobIdMap: PathBlobIdMap = new Map();
+  const markdownBlobs: ImportedFileEntry[] = [];
 
+  // Iterate over all files in the zip
   for (const { path, content: blob } of unzip) {
+    // Skip the files that are not markdown files
     if (path.includes('__MACOSX') || path.includes('.DS_Store')) {
       continue;
     }
 
+    // Get the file name
     const fileName = path.split('/').pop() ?? '';
+    // If the file is a markdown file, store it to markdownBlobs
     if (fileName.endsWith('.md')) {
-      markdownBlobs.push([fileName, blob]);
+      markdownBlobs.push({
+        filename: fileName,
+        contentBlob: blob,
+        fullPath: path,
+      });
     } else {
+      // If the file is not a markdown file, store it to pendingAssets
       const ext = path.split('.').at(-1) ?? '';
       const mime = extMimeMap.get(ext) ?? '';
       const key = await sha(await blob.arrayBuffer());
@@ -209,8 +229,9 @@ async function importMarkdownZip({
   }
 
   await Promise.all(
-    markdownBlobs.map(async ([fileName, blob]) => {
-      const fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+    markdownBlobs.map(async markdownFile => {
+      const { filename, contentBlob, fullPath } = markdownFile;
+      const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
       const job = new Transformer({
         schema,
         blobCRUD: collection.blobSync,
@@ -223,18 +244,25 @@ async function importMarkdownZip({
           defaultImageProxyMiddleware,
           fileNameMiddleware(fileNameWithoutExt),
           docLinkBaseURLMiddleware(collection.id),
+          filePathMiddleware(fullPath),
         ],
       });
       const assets = job.assets;
       const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
-      for (const [key, value] of pendingAssets.entries()) {
-        assets.set(key, value);
+      // Iterate over all assets to be imported
+      for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
+        // Get the relative path of the asset to the markdown file
+        // Store the path to blobId map
+        pathBlobIdMap.set(assetPath, key);
+        // Store the asset to assets, the key is the blobId, the value is the file object
+        // In block adapter, it will use the blobId to get the file object
+        if (pendingAssets.get(key)) {
+          assets.set(key, pendingAssets.get(key)!);
+        }
       }
-      for (const [key, value] of pendingPathBlobIdMap.entries()) {
-        pathBlobIdMap.set(key, value);
-      }
+
       const mdAdapter = new MarkdownAdapter(job, provider);
-      const markdown = await blob.text();
+      const markdown = await contentBlob.text();
       const doc = await mdAdapter.toDoc({
         file: markdown,
         assets: job.assetsManager,

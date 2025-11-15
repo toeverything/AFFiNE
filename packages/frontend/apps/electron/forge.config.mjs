@@ -3,7 +3,9 @@ import { rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { utils } from '@electron-forge/core';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
 
 import {
   appIdMap,
@@ -12,7 +14,7 @@ import {
   icnsPath,
   iconPngPath,
   iconUrl,
-  iconX64PngPath,
+  iconX512PngPath,
   icoPath,
   platform,
   productName,
@@ -85,8 +87,8 @@ const makers = [
     config: {
       icons: [
         {
-          file: iconX64PngPath,
-          size: 64,
+          file: iconX512PngPath,
+          size: 512,
         },
       ],
     },
@@ -98,8 +100,14 @@ const makers = [
       options: {
         name: productName,
         productName,
-        icon: iconX64PngPath,
+        icon: iconX512PngPath,
         mimeType: linuxMimeTypes,
+        scripts: {
+          // maker-deb does not have a way to include arbitrary files in package root
+          // instead, put files in extraResource, and then install with a script
+          postinst: './resources/deb/postinst',
+          prerm: './resources/deb/prerm',
+        },
       },
     },
   },
@@ -115,7 +123,25 @@ const makers = [
         id: fromBuildIdentifier(appIdMap),
         icon: iconPngPath, // not working yet
         branch: buildType,
-        runtimeVersion: '20.08',
+        files: [
+          [
+            './resources/affine.metainfo.xml',
+            '/usr/share/metainfo/affine.metainfo.xml',
+          ],
+        ],
+        runtimeVersion: '24.08',
+        modules: [
+          {
+            name: 'zypak',
+            sources: [
+              {
+                type: 'git',
+                url: 'https://github.com/refi64/zypak',
+                tag: 'v2024.01.17',
+              },
+            ],
+          },
+        ],
         finishArgs: [
           // Wayland/X11 Rendering
           '--socket=wayland',
@@ -160,7 +186,10 @@ export default {
         }
       : undefined,
     // We need the following line for updater
-    extraResource: ['./resources/app-update.yml'],
+    extraResource: [
+      './resources/app-update.yml',
+      ...(platform === 'linux' ? ['./resources/affine.metainfo.xml'] : []),
+    ],
     protocols: [
       {
         name: productName,
@@ -175,7 +204,18 @@ export default {
     },
   },
   makers,
-  plugins: [{ name: '@electron-forge/plugin-auto-unpack-natives', config: {} }],
+  plugins: [
+    { name: '@electron-forge/plugin-auto-unpack-natives', config: {} },
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    }),
+  ],
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build

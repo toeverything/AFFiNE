@@ -25,7 +25,6 @@ import {
   RootBlockSchema,
   SurfaceRefBlockSchema,
   TableBlockSchema,
-  TranscriptionBlockSchema,
 } from '@blocksuite/affine-model';
 import type { BlockSchema } from '@blocksuite/store';
 import type { z } from 'zod';
@@ -57,5 +56,4 @@ export const AffineSchemas: z.infer<typeof BlockSchema>[] = [
   LatexBlockSchema,
   TableBlockSchema,
   CalloutBlockSchema,
-  TranscriptionBlockSchema,
 ];

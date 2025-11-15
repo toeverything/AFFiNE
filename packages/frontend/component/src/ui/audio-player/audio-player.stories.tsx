@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import bytes from 'bytes';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AudioPlayer, MiniAudioPlayer } from './audio-player';
 
@@ -82,7 +83,7 @@ const AudioWrapper = () => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
       if (file && file.type.startsWith('audio/')) {
-        handleFileChange(file);
+        handleFileChange(file).catch(console.error);
       }
     },
     [handleFileChange]
@@ -92,7 +93,7 @@ const AudioWrapper = () => {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        handleFileChange(file);
+        handleFileChange(file).catch(console.error);
       }
     },
     [handleFileChange]
@@ -158,6 +159,10 @@ const AudioWrapper = () => {
       setPlaybackRate(rate);
     }
   }, []);
+
+  const description = useMemo(() => {
+    return audioFile ? <>{bytes(audioFile.size)}</> : null;
+  }, [audioFile]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -296,7 +301,7 @@ const AudioWrapper = () => {
           />
           <MiniAudioPlayer
             name={audioFile.name}
-            size={audioFile.size}
+            description={description}
             waveform={waveform}
             playbackState={playbackState}
             seekTime={seekTime}
@@ -311,7 +316,7 @@ const AudioWrapper = () => {
           />
           <AudioPlayer
             name={audioFile.name}
-            size={audioFile.size}
+            description={description}
             waveform={waveform}
             playbackState={playbackState}
             seekTime={seekTime}

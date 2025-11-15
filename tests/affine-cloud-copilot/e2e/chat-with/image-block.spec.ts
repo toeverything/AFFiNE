@@ -30,6 +30,9 @@ test.describe('AIChatWith/Image', () => {
     const imageBlock = await page.locator('affine-image');
     const captionBlock = await imageBlock.locator('block-caption-editor');
     await expect(captionBlock).toBeVisible();
-    await expect(captionBlock.locator('textarea')).toHaveValue(caption);
+    const captionText = await captionBlock.locator('textarea');
+    expect(await captionText.inputValue().then(t => t.trim())).toBe(
+      caption.trim()
+    );
   });
 });

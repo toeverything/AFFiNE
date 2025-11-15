@@ -1,8 +1,9 @@
-import { OpenIcon } from '@blocksuite/affine-components/icons';
+import { LoadingIcon, OpenIcon } from '@blocksuite/affine-components/icons';
 import type {
   EmbedYoutubeModel,
   EmbedYoutubeStyles,
 } from '@blocksuite/affine-model';
+import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { BlockSelection } from '@blocksuite/std';
 import { html, nothing } from 'lit';
@@ -62,12 +63,12 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
     this._cardStyle = this.model.props.style;
 
     if (!this.model.props.videoId) {
-      this.doc.withoutTransact(() => {
+      this.store.withoutTransact(() => {
         const url = this.model.props.url;
         const urlMatch = url.match(youtubeUrlRegex);
         if (urlMatch) {
           const [, videoId] = urlMatch;
-          this.doc.updateBlock(this.model, {
+          this.store.updateBlock(this.model, {
             videoId,
           });
         }
@@ -75,7 +76,7 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
     }
 
     if (!this.model.props.description && !this.model.props.title) {
-      this.doc.withoutTransact(() => {
+      this.store.withoutTransact(() => {
         this.refreshData();
       });
     }
@@ -106,24 +107,22 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;
-    const { LoadingIcon, EmbedCardBannerIcon } = getEmbedCardIcons(theme);
-    const titleIcon = loading ? LoadingIcon : YoutubeIcon;
+    const imageProxyService = this.store.get(ImageProxyService);
+    const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
+    const titleIcon = loading ? LoadingIcon() : YoutubeIcon;
     const titleText = loading ? 'Loading...' : title;
     const descriptionText = loading ? null : description;
     const bannerImage =
       !loading && image
-        ? html`<object type="image/webp" data=${image} draggable="false">
-            ${EmbedCardBannerIcon}
-          </object>`
+        ? html`<img src=${imageProxyService.buildUrl(image)} alt="banner" />`
         : EmbedCardBannerIcon;
 
     const creatorImageEl =
       !loading && creatorImage
-        ? html`<object
-            type="image/webp"
-            data=${creatorImage}
-            draggable="false"
-          ></object>`
+        ? html`<img
+            src=${imageProxyService.buildUrl(creatorImage)}
+            alt="creator"
+          />`
         : nothing;
 
     return this.renderEmbed(
@@ -152,6 +151,7 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       allowfullscreen
                       loading="lazy"
+                      credentialless
                     ></iframe>
 
                     <!-- overlay to prevent the iframe from capturing pointer events -->

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, UserStripeCustomer } from '@prisma/client';
+import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
 import { omit, pick } from 'lodash-es';
 import { z } from 'zod';
 
@@ -157,6 +157,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
 
     return this.db.subscription.upsert({
       where: {
+        provider: Provider.stripe,
         stripeSubscriptionId: stripeSubscription.id,
       },
       update: {
@@ -166,11 +167,12 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
           'nextBillAt',
           'canceledAt',
           'quantity',
+          'end',
         ]),
       },
       create: {
         targetId: workspaceId,
-        ...subscriptionData,
+        ...omit(subscriptionData, 'provider', 'iapStore'),
       },
     });
   }
@@ -201,6 +203,16 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   }
 
   getSubscription(identity: z.infer<typeof WorkspaceSubscriptionIdentity>) {
+    return this.db.subscription.findFirst({
+      where: {
+        targetId: identity.workspaceId,
+      },
+    });
+  }
+
+  getActiveSubscription(
+    identity: z.infer<typeof WorkspaceSubscriptionIdentity>
+  ) {
     return this.db.subscription.findFirst({
       where: {
         targetId: identity.workspaceId,
@@ -274,18 +286,21 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   }
 
   @OnEvent('workspace.members.updated')
-  async onMembersUpdated({
-    workspaceId,
-    count,
-  }: Events['workspace.members.updated']) {
-    const subscription = await this.getSubscription({
+  async onMembersUpdated({ workspaceId }: Events['workspace.members.updated']) {
+    const count = await this.models.workspaceUser.chargedCount(workspaceId);
+    const subscription = await this.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId,
     });
 
-    if (!subscription || !subscription.stripeSubscriptionId) {
+    if (
+      !subscription ||
+      !subscription.stripeSubscriptionId ||
+      count === subscription.quantity
+    ) {
       return;
     }
+
     const stripeSubscription = await this.stripe.subscriptions.retrieve(
       subscription.stripeSubscriptionId
     );

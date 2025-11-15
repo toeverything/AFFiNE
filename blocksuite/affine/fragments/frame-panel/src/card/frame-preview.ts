@@ -1,10 +1,10 @@
+import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import type { FrameBlockModel } from '@blocksuite/affine-model';
 import {
   DocModeExtension,
   DocModeProvider,
   ViewportElementExtension,
 } from '@blocksuite/affine-shared/services';
-import { SpecProvider } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { Bound, deserializeXYWH } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
@@ -15,13 +15,12 @@ import {
   ShadowlessElement,
 } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
-import { type Query, type Store } from '@blocksuite/store';
+import { type ExtensionType, type Query, type Store } from '@blocksuite/store';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { guard } from 'lit/directives/guard.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import debounce from 'lodash-es/debounce';
-
 const DEFAULT_PREVIEW_CONTAINER_WIDTH = 280;
 const DEFAULT_PREVIEW_CONTAINER_HEIGHT = 166;
 
@@ -86,7 +85,15 @@ export class FramePreview extends WithDisposable(ShadowlessElement) {
 
   private _previewDoc: Store | null = null;
 
-  private readonly _previewSpec = SpecProvider._.getSpec('preview:edgeless');
+  private _runtimePreviewExt: ExtensionType[] = [];
+
+  private get _viewExtensionManager() {
+    return this.std.get(ViewExtensionManagerIdentifier);
+  }
+
+  private get _previewSpec() {
+    return this._viewExtensionManager.get('preview-edgeless');
+  }
 
   private readonly _updateFrameViewportWH = () => {
     const [, , w, h] = deserializeXYWH(this.frame.xywh);
@@ -105,7 +112,7 @@ export class FramePreview extends WithDisposable(ShadowlessElement) {
   };
 
   get _originalDoc() {
-    return this.frame.doc;
+    return this.frame.store;
   }
 
   private _initPreviewDoc() {
@@ -113,7 +120,7 @@ export class FramePreview extends WithDisposable(ShadowlessElement) {
     this._previewDoc =
       doc?.getStore({ readonly: true, query: this._docFilter }) ?? null;
     this.disposables.add(() => {
-      this._originalDoc.doc.clearQuery(this._docFilter);
+      this._originalDoc.doc.removeStore({ query: this._docFilter });
     });
   }
 
@@ -143,11 +150,11 @@ export class FramePreview extends WithDisposable(ShadowlessElement) {
     }
 
     const docModeService = this.std.get(DocModeProvider);
-    this._previewSpec.extend([
+    this._runtimePreviewExt = [
       ViewportElementExtension('.frame-preview-viewport'),
       FramePreviewWatcher,
       DocModeExtension(docModeService),
-    ]);
+    ];
   }
 
   private _refreshViewport() {
@@ -163,7 +170,7 @@ export class FramePreview extends WithDisposable(ShadowlessElement) {
   private _renderSurfaceContent() {
     const { width, height } = this.frameViewportWH;
 
-    const _previewSpec = this._previewSpec.value;
+    const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
     return html`<div
       class="frame-preview-surface-container"
       style=${styleMap({

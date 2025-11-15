@@ -9,8 +9,9 @@ import {
   type EmbedIframeData,
   EmbedIframeService,
   type IframeOptions,
-  LinkPreviewerService,
+  LinkPreviewServiceIdentifier,
   NotificationProvider,
+  VirtualKeyboardProvider,
 } from '@blocksuite/affine-shared/services';
 import { matchModels } from '@blocksuite/affine-shared/utils';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
@@ -94,7 +95,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   }
 
   get linkPreviewService() {
-    return this.std.get(LinkPreviewerService);
+    return this.std.get(LinkPreviewServiceIdentifier);
   }
 
   get notificationService() {
@@ -156,7 +157,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       if (!embedIframeService || !linkPreviewService) {
         throw new BlockSuiteError(
           ErrorCode.ValueNotExists,
-          'EmbedIframeService or LinkPreviewerService not found'
+          'EmbedIframeService or LinkPreviewService not found'
         );
       }
 
@@ -177,7 +178,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
       // update model
       const iframeUrl = this._getIframeUrl(embedData) ?? currentIframeUrl;
-      this.doc.updateBlock(this.model, {
+      this.store.updateBlock(this.model, {
         iframeUrl,
         title: embedData?.title || previewData?.title,
         description: embedData?.description || previewData?.description,
@@ -213,9 +214,33 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       this._linkInputAbortController.abort();
     }
 
+    const keyboard = this.host.std.getOptional(VirtualKeyboardProvider);
+    const computePosition = keyboard
+      ? {
+          referenceElement: document.body,
+          placement: 'top' as const,
+          middleware: [
+            offset(({ rects }) => ({
+              mainAxis:
+                -rects.floating.height -
+                (window.innerHeight -
+                  rects.floating.height -
+                  keyboard.height$.value) /
+                  2,
+            })),
+          ],
+          autoUpdate: { animationFrame: true },
+        }
+      : {
+          referenceElement: this._blockContainer,
+          placement: 'bottom' as const,
+          middleware: [flip(), offset(LINK_CREATE_POPUP_OFFSET), shift()],
+          autoUpdate: { animationFrame: true },
+        };
+
     this._linkInputAbortController = new AbortController();
 
-    createLitPortal({
+    const { update } = createLitPortal({
       template: html`<embed-iframe-link-input-popup
         .model=${this.model}
         .abortController=${this._linkInputAbortController}
@@ -224,15 +249,19 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         .options=${options}
       ></embed-iframe-link-input-popup>`,
       container: document.body,
-      computePosition: {
-        referenceElement: this._blockContainer,
-        placement: 'bottom',
-        middleware: [flip(), offset(LINK_CREATE_POPUP_OFFSET), shift()],
-        autoUpdate: { animationFrame: true },
-      },
+      computePosition,
       abortController: this._linkInputAbortController,
       closeOnClickAway: true,
     });
+
+    if (keyboard) {
+      this._linkInputAbortController.signal.addEventListener(
+        'abort',
+        keyboard.height$.subscribe(() => {
+          update();
+        })
+      );
+    }
   };
 
   /**
@@ -311,6 +340,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         ?allowfullscreen=${allowFullscreen}
         loading="lazy"
         frameborder="0"
+        credentialless
         src=${ifDefined(iframeUrl)}
         allow=${ifDefined(allow)}
         referrerpolicy=${ifDefined(referrerpolicy)}
@@ -372,7 +402,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
     // if the iframe url is not set, refresh the data to get the iframe url
     if (!this.model.props.iframeUrl) {
-      this.doc.withoutTransact(() => {
+      this.store.withoutTransact(() => {
         this.refreshData().catch(console.error);
       });
     } else {
@@ -451,7 +481,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   };
 
   get readonly() {
-    return this.doc.readonly;
+    return this.store.readonly;
   }
 
   get selectionManager() {

@@ -464,6 +464,8 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
 
   const url = page.url();
 
+  const docTitle = await page.getByTestId('title-edit-button').innerText();
+
   await clickNewPageButton(page);
   await clickEdgelessModeButton(page);
   await page.locator('affine-edgeless-root').press('@');
@@ -475,26 +477,28 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   await insertInputText(page, url);
 
   // expect the default page to be selected
-  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(5);
+  await expect(
+    page.locator('[cmdk-group-items] [cmdk-item][data-selected="true"]')
+  ).toContainText(docTitle);
 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
   await expect(
-    page.locator('affine-embed-edgeless-linked-doc-block')
+    page.locator('affine-embed-edgeless-synced-doc-block')
   ).toBeVisible();
   await expect(
-    page.locator('.affine-embed-linked-doc-content-title')
-  ).toContainText('Write, Draw, Plan all at Once');
+    page.getByTestId('edgeless-embed-synced-doc-title')
+  ).toContainText(docTitle);
 
   // focus on the note block
   await page.waitForTimeout(500);
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .click({ force: true });
   await page.waitForTimeout(500);
   // double clock to show peek view
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });
@@ -511,17 +515,13 @@ test('can paste a doc link to create link reference', async ({ page }) => {
   // paste the url
   await writeTextToClipboard(page, url);
 
-  // check the link reference
-  await page.waitForTimeout(500);
   await expect(
-    page.locator('affine-reference:has-text("Write, Draw, Plan all at Once.")')
+    page.locator('affine-reference:has-text("Getting Started")')
   ).toBeVisible();
 
   // can ctrl-z to revert to normal link
   await page.keyboard.press('ControlOrMeta+z');
 
-  // check the normal link
-  await page.waitForTimeout(500);
   await expect(page.locator(`affine-link:has-text("${url}")`)).toBeVisible();
 });
 

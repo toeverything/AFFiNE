@@ -74,7 +74,7 @@ export class PageKeyboardManager {
   }
 
   private get _doc() {
-    return this.rootComponent.doc;
+    return this.rootComponent.store;
   }
 
   private get _selection() {
@@ -143,7 +143,7 @@ export class PageKeyboardManager {
       return;
     }
 
-    const doc = rootComponent.host.doc;
+    const doc = rootComponent.host.store;
     const autofill = getTitleFromSelectedModels(
       selectedModels.map(toDraftModel)
     );
@@ -156,7 +156,7 @@ export class PageKeyboardManager {
           draftedModels,
           title
         ).catch(console.error);
-        notifyDocCreated(rootComponent.std, doc);
+        notifyDocCreated(rootComponent.std);
       })
       .catch(console.error);
   }

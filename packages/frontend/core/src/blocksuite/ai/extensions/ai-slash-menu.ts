@@ -19,7 +19,7 @@ import {
 } from '../widgets/ai-panel/ai-panel';
 
 export function AiSlashMenuConfigExtension() {
-  const AIItems = pageAIGroups.map(group => group.items).flat();
+  const AIItems = pageAIGroups.flatMap(group => group.items);
 
   const iconWrapper = (icon: AIItemConfig['icon']) => {
     return html`<div style="color: var(--affine-primary-color)">
@@ -30,7 +30,7 @@ export function AiSlashMenuConfigExtension() {
   const showWhenWrapper =
     (item?: AIItemConfig) =>
     ({ std }: SlashMenuContext) => {
-      const root = std.host.doc.root;
+      const root = std.host.store.root;
       if (!root) return false;
       const affineAIPanelWidget = std.view.getWidget(
         AFFINE_AI_PANEL_WIDGET,
@@ -40,7 +40,7 @@ export function AiSlashMenuConfigExtension() {
 
       const chain = std.host.command.chain();
       const docModeService = std.get(DocModeProvider);
-      const editorMode = docModeService.getPrimaryMode(std.host.doc.id);
+      const editorMode = docModeService.getPrimaryMode(std.host.store.id);
 
       return item?.showWhen?.(chain, editorMode, std.host) ?? true;
     };
@@ -80,7 +80,7 @@ export function AiSlashMenuConfigExtension() {
       icon: AIStarIcon,
       when: showWhenWrapper(),
       action: ({ std }) => {
-        const root = std.host.doc.root;
+        const root = std.host.store.root;
         if (!root) return;
         const affineAIPanelWidget = std.view.getWidget(
           AFFINE_AI_PANEL_WIDGET,

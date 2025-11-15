@@ -14,12 +14,12 @@ import { WorkspaceEvents } from './event';
 import {
   DocHistoryResolver,
   DocResolver,
-  TeamWorkspaceResolver,
   WorkspaceBlobResolver,
   WorkspaceDocResolver,
+  WorkspaceMemberResolver,
   WorkspaceResolver,
-  WorkspaceService,
 } from './resolvers';
+import { WorkspaceService } from './service';
 
 @Module({
   imports: [
@@ -36,7 +36,7 @@ import {
   controllers: [WorkspacesController],
   providers: [
     WorkspaceResolver,
-    TeamWorkspaceResolver,
+    WorkspaceMemberResolver,
     WorkspaceDocResolver,
     DocResolver,
     DocHistoryResolver,
@@ -48,4 +48,5 @@ import {
 })
 export class WorkspaceModule {}
 
+export { WorkspaceService } from './service';
 export { InvitationType, WorkspaceType } from './types';

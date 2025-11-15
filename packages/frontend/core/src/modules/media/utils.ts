@@ -1,49 +1,62 @@
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 
+const imageExts = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'avif',
+  'tiff',
+  'bmp',
+]);
+
+const audioExts = new Set(['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'opus']);
+
+const videoExts = new Set([
+  'mp4',
+  'webm',
+  'avi',
+  'mov',
+  'mkv',
+  'mpeg',
+  'ogv',
+  '3gp',
+]);
+
 export function getAttachmentType(model: AttachmentBlockModel) {
+  const type = model.props.type;
+
   // Check MIME type first
-  if (model.props.type.startsWith('image/')) {
+  if (type.startsWith('image/')) {
     return 'image';
   }
 
-  if (model.props.type.startsWith('audio/')) {
+  if (type.startsWith('audio/')) {
     return 'audio';
   }
 
-  if (model.props.type.startsWith('video/')) {
+  if (type.startsWith('video/')) {
     return 'video';
   }
 
-  if (model.props.type === 'application/pdf') {
+  if (type === 'application/pdf') {
     return 'pdf';
   }
 
   // If MIME type doesn't match, check file extension
-  const ext = model.props.name.split('.').pop()?.toLowerCase() || '';
+  const ext = model.props.name.split('.').pop()?.toLowerCase() ?? '';
 
-  if (
-    [
-      'jpg',
-      'jpeg',
-      'png',
-      'gif',
-      'webp',
-      'svg',
-      'avif',
-      'tiff',
-      'bmp',
-    ].includes(ext)
-  ) {
+  if (imageExts.has(ext)) {
     return 'image';
   }
 
-  if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'opus'].includes(ext)) {
+  if (audioExts.has(ext)) {
     return 'audio';
   }
 
-  if (
-    ['mp4', 'webm', 'avi', 'mov', 'mkv', 'mpeg', 'ogv', '3gp'].includes(ext)
-  ) {
+  if (videoExts.has(ext)) {
     return 'video';
   }
 
@@ -55,16 +68,15 @@ export function getAttachmentType(model: AttachmentBlockModel) {
 }
 
 export async function downloadBlobToBuffer(model: AttachmentBlockModel) {
-  const sourceId = model.props.sourceId;
+  const sourceId = model.props.sourceId$.peek();
   if (!sourceId) {
     throw new Error('Attachment not found');
   }
 
-  const blob = await model.doc.blobSync.get(sourceId);
+  const blob = await model.store.blobSync.get(sourceId);
   if (!blob) {
     throw new Error('Attachment not found');
   }
 
-  const arrayBuffer = await blob.arrayBuffer();
-  return arrayBuffer;
+  return await blob.arrayBuffer();
 }

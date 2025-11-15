@@ -10,7 +10,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceServerService } from '../services/workspace-server';
@@ -55,10 +55,9 @@ export class WorkspaceInvoices extends Entity {
             signal
           );
         }).pipe(
-          mergeMap(data => {
+          tap(data => {
             this.invoiceCount$.setValue(data.invoiceCount);
             this.pageInvoices$.setValue(data.invoices);
-            return EMPTY;
           }),
           smartRetry(),
           catchErrorInto(this.error$),

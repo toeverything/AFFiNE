@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 
 import { Button, IconButton } from '../../button';
 import { Modal } from '../../modal';
-import type { NotificationCardProps } from '../types';
+import type { NotificationActionProps, NotificationCardProps } from '../types';
 import { getCardVars } from '../utils';
 import * as styles from './styles.css';
 
@@ -70,8 +70,7 @@ const MobileNotifyDetail = ({
     iconColor,
     title,
     message,
-    footer,
-    action,
+    actions,
     error,
   } = notification;
   const t = useI18n();
@@ -87,12 +86,6 @@ const MobileNotifyDetail = ({
     },
     [onClose]
   );
-  const onActionClicked = useCallback(() => {
-    action?.onClick()?.catch(console.error);
-    if (action?.autoClose !== false) {
-      onClose?.();
-    }
-  }, [action, onClose]);
 
   return (
     <Modal
@@ -114,14 +107,33 @@ const MobileNotifyDetail = ({
         <main className={styles.detailContent}>{message}</main>
         {/* actions */}
         <div className={styles.detailActions}>
-          {action ? (
-            <Button onClick={onActionClicked} {...action.buttonProps}>
-              {action.label}
-            </Button>
-          ) : null}
-          {footer}
+          {actions?.map(action => (
+            <NotificationCardAction
+              key={action.key}
+              action={action}
+              onDismiss={onClose}
+            />
+          ))}
         </div>
       </div>
     </Modal>
+  );
+};
+
+const NotificationCardAction = ({
+  action,
+  onDismiss,
+}: NotificationActionProps) => {
+  const onActionClicked = useCallback(() => {
+    action.onClick()?.catch(console.error);
+    if (action.autoClose !== false) {
+      onDismiss?.();
+    }
+  }, [action, onDismiss]);
+
+  return (
+    <Button onClick={onActionClicked} {...action.buttonProps}>
+      {action.label}
+    </Button>
   );
 };

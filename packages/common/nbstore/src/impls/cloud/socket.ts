@@ -168,7 +168,7 @@ class SocketManager {
   constructor(endpoint: string, isSelfHosted: boolean) {
     this.socketIOManager = new SocketIOManager(endpoint, {
       autoConnect: false,
-      transports: isSelfHosted ? ['websocket', 'polling'] : ['websocket'], // self-hosted server may not support websocket
+      transports: isSelfHosted ? ['polling', 'websocket'] : ['websocket'], // self-hosted server may not support websocket
       secure: new URL(endpoint).protocol === 'https:',
       // we will handle reconnection by ourselves
       reconnection: false,
@@ -246,7 +246,7 @@ export class SocketConnection extends AutoReconnectConnection<{
         }),
         new Promise<void>((_resolve, reject) => {
           signal?.addEventListener('abort', () => {
-            reject(new Error('Aborted'));
+            reject(signal.reason);
           });
         }),
       ]);

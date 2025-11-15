@@ -27,28 +27,28 @@ export interface AffineDNDData extends DNDData {
     entity?: AffineDNDEntity;
     from?:
       | {
-          at: 'explorer:organize:folder-node';
+          at: 'navigation-panel:organize:folder-node';
           nodeId: string;
         }
       | {
-          at: 'explorer:collection:list';
+          at: 'navigation-panel:collection:list';
         }
       | {
-          at: 'explorer:doc:linked-docs';
+          at: 'navigation-panel:doc:linked-docs';
           docId: string;
         }
       | {
-          at: 'explorer:collection:filtered-docs';
+          at: 'navigation-panel:collection:filtered-docs';
           collectionId: string;
         }
       | {
-          at: 'explorer:favorite:list';
+          at: 'navigation-panel:favorite:list';
         }
       | {
-          at: 'explorer:old-favorite:list';
+          at: 'navigation-panel:old-favorite:list';
         }
       | {
-          at: 'explorer:migration-data:list';
+          at: 'navigation-panel:migration-data:list';
         }
       | {
           at: 'all-docs:list';
@@ -60,10 +60,10 @@ export interface AffineDNDData extends DNDData {
           at: 'all-collections:list';
         }
       | {
-          at: 'explorer:tags:list';
+          at: 'navigation-panel:tags:list';
         }
       | {
-          at: 'explorer:tags:docs';
+          at: 'navigation-panel:tags:docs';
         }
       | {
           at: 'app-header:tabs';
@@ -103,28 +103,28 @@ export interface AffineDNDData extends DNDData {
   };
   dropTarget:
     | {
-        at: 'explorer:organize:root';
+        at: 'navigation-panel:organize:root';
       }
     | {
-        at: 'explorer:favorite:root';
+        at: 'navigation-panel:favorite:root';
       }
     | {
-        at: 'explorer:organize:folder';
+        at: 'navigation-panel:organize:folder';
       }
     | {
-        at: 'explorer:favorite:root';
+        at: 'navigation-panel:favorite:root';
       }
     | {
-        at: 'explorer:old-favorite:root';
+        at: 'navigation-panel:old-favorite:root';
       }
     | {
-        at: 'explorer:doc';
+        at: 'navigation-panel:doc';
       }
     | {
         at: 'app-sidebar:trash';
       }
     | {
-        at: 'explorer:tag';
+        at: 'navigation-panel:tag';
       }
     | {
         at: 'app-header:tabs';

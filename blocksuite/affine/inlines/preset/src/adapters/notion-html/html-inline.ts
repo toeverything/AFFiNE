@@ -1,4 +1,3 @@
-import { notionHtmlLinkElementToDeltaMatcher } from '@blocksuite/affine-inline-link';
 import {
   HastUtils,
   type HtmlAST,
@@ -249,7 +248,6 @@ export const NotionHtmlInlineToDeltaAdapterExtensions: ExtensionType[] = [
   notionHtmlCodeElementToDeltaMatcher,
   notionHtmlDelElementToDeltaMatcher,
   notionHtmlUnderlineElementToDeltaMatcher,
-  notionHtmlLinkElementToDeltaMatcher,
   notionHtmlMarkElementToDeltaMatcher,
   notionHtmlListToDeltaMatcher,
   notionHtmlLiElementToDeltaMatcher,

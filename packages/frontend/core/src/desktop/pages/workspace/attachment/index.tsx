@@ -1,5 +1,5 @@
 import { Skeleton } from '@affine/component';
-import { AttachmentViewer } from '@affine/core/blocksuite/attachment-viewer';
+import { AttachmentViewerView } from '@affine/core/blocksuite/attachment-viewer';
 import { type Doc, DocsService } from '@affine/core/modules/doc';
 import { type AttachmentBlockModel } from '@blocksuite/affine/model';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
@@ -16,6 +16,7 @@ type AttachmentPageProps = {
 };
 
 const useLoadAttachment = (pageId: string, attachmentId: string) => {
+  const [loading, setLoading] = useState(true);
   const docsService = useService(DocsService);
   const docRecord = useLiveData(docsService.list.doc$(pageId));
   const [doc, setDoc] = useState<Doc | null>(null);
@@ -23,6 +24,7 @@ const useLoadAttachment = (pageId: string, attachmentId: string) => {
 
   useLayoutEffect(() => {
     if (!docRecord) {
+      setLoading(false);
       return;
     }
 
@@ -38,44 +40,23 @@ const useLoadAttachment = (pageId: string, attachmentId: string) => {
     doc
       .waitForSyncReady()
       .then(() => {
-        const block = doc.blockSuiteDoc.getBlock(attachmentId);
-        if (block) {
-          setModel(block.model as AttachmentBlockModel);
-        }
+        const model =
+          doc.blockSuiteDoc.getModelById<AttachmentBlockModel>(attachmentId);
+        setModel(model);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
 
     return () => {
       release();
       dispose();
     };
-  }, [docRecord, docsService, pageId, attachmentId]);
+  }, [docRecord, docsService, pageId, attachmentId, setLoading]);
 
-  return { doc, model };
+  return { doc, model, loading };
 };
 
-export const AttachmentPage = ({
-  pageId,
-  attachmentId,
-}: AttachmentPageProps): ReactElement => {
-  const { doc, model } = useLoadAttachment(pageId, attachmentId);
-
-  if (!doc) {
-    return <PageNotFound noPermission={false} />;
-  }
-
-  if (doc && model) {
-    return (
-      <FrameworkScope scope={doc.scope}>
-        <ViewTitle title={model.props.name} />
-        <ViewIcon
-          icon={model.props.type.endsWith('pdf') ? 'pdf' : 'attachment'}
-        />
-        <AttachmentViewer model={model} />
-      </FrameworkScope>
-    );
-  }
-
+const Loading = () => {
   return (
     <div className={styles.attachmentSkeletonStyle}>
       <Skeleton
@@ -109,12 +90,37 @@ export const AttachmentPage = ({
   );
 };
 
+export const AttachmentPage = ({
+  pageId,
+  attachmentId,
+}: AttachmentPageProps): ReactElement => {
+  const { doc, model, loading } = useLoadAttachment(pageId, attachmentId);
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (doc && model) {
+    return (
+      <FrameworkScope scope={doc.scope}>
+        <ViewTitle title={model.props.name} />
+        <ViewIcon
+          icon={model.props.type.endsWith('pdf') ? 'pdf' : 'attachment'}
+        />
+        <AttachmentViewerView model={model} />
+      </FrameworkScope>
+    );
+  }
+
+  return <PageNotFound noPermission={false} />;
+};
+
 export const Component = () => {
   const { pageId, attachmentId } = useParams();
 
-  if (!pageId || !attachmentId) {
-    return <PageNotFound noPermission />;
+  if (pageId && attachmentId) {
+    return <AttachmentPage pageId={pageId} attachmentId={attachmentId} />;
   }
 
-  return <AttachmentPage pageId={pageId} attachmentId={attachmentId} />;
+  return <PageNotFound noPermission />;
 };

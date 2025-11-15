@@ -3,13 +3,17 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { computed, signal } from '@preact/signals-core';
 import { Subject } from 'rxjs';
+import * as Y from 'yjs';
 
 import type { ExtensionType } from '../../extension/extension.js';
 import {
   BlockSchemaIdentifier,
+  type Doc,
+  HistoryExtension,
   StoreExtensionIdentifier,
   StoreSelectionExtension,
 } from '../../extension/index.js';
+import { DocIdentifier } from '../../extension/workspace/doc.js';
 import { Schema } from '../../schema/index.js';
 import type { TransformerMiddleware } from '../../transformer/middleware.js';
 import { Transformer } from '../../transformer/transformer.js';
@@ -18,8 +22,10 @@ import {
   type BlockModel,
   type BlockOptions,
   type BlockProps,
+  type BlockSysProps,
+  type PropsOfModel,
+  type YBlock,
 } from '../block/index.js';
-import type { Doc } from '../doc.js';
 import { DocCRUD } from './crud.js';
 import { StoreIdentifier } from './identifier.js';
 import { type Query, runQuery } from './query.js';
@@ -133,7 +139,7 @@ type StoreBlockUpdatedPayloads =
  * @interface
  * @category Store
  */
-export type StoreSlots = Doc['slots'] & {
+export type StoreSlots = {
   /**
    * This fires after `doc.load` is called.
    * The Y.Doc is fully loaded and ready to use.
@@ -160,9 +166,22 @@ export type StoreSlots = Doc['slots'] & {
    *
    */
   blockUpdated: Subject<StoreBlockUpdatedPayloads>;
+  /** @internal */
+  yBlockUpdated: Subject<
+    | {
+        type: 'add';
+        id: string;
+        isLocal: boolean;
+      }
+    | {
+        type: 'delete';
+        id: string;
+        isLocal: boolean;
+      }
+  >;
 };
 
-const internalExtensions = [StoreSelectionExtension];
+const internalExtensions = [StoreSelectionExtension, HistoryExtension];
 
 /**
  * Core store class that manages blocks and their lifecycle in BlockSuite
@@ -185,6 +204,8 @@ export class Store {
   disposableGroup = new DisposableGroup();
 
   private readonly _provider: ServiceProvider;
+
+  private _shouldTransact = true;
 
   private readonly _runQuery = (block: Block) => {
     runQuery(this._query, block);
@@ -284,7 +305,7 @@ export class Store {
     if (this.readonly) {
       return false;
     }
-    return this._doc.canRedo;
+    return this._history.canRedo;
   }
 
   /**
@@ -296,7 +317,7 @@ export class Store {
     if (this.readonly) {
       return false;
     }
-    return this._doc.canUndo;
+    return this._history.canUndo;
   }
 
   /**
@@ -304,37 +325,35 @@ export class Store {
    *
    * @category History
    */
-  get undo() {
+  undo = () => {
     if (this.readonly) {
-      return () => {
-        console.error('cannot undo in readonly mode');
-      };
+      console.error('cannot undo in readonly mode');
+      return;
     }
-    return this._doc.undo.bind(this._doc);
-  }
+    this._history.undoManager.undo();
+  };
 
   /**
    * Redo the last undone transaction.
    *
    * @category History
    */
-  get redo() {
+  redo = () => {
     if (this.readonly) {
-      return () => {
-        console.error('cannot undo in readonly mode');
-      };
+      console.error('cannot undo in readonly mode');
+      return;
     }
-    return this._doc.redo.bind(this._doc);
-  }
+    this._history.undoManager.redo();
+  };
 
   /**
    * Reset the history of the store.
    *
    * @category History
    */
-  get resetHistory() {
-    return this._doc.resetHistory.bind(this._doc);
-  }
+  resetHistory = () => {
+    return this._history.undoManager.clear();
+  };
 
   /**
    * Execute a transaction.
@@ -349,8 +368,21 @@ export class Store {
    *
    * @category History
    */
-  get transact() {
-    return this._doc.transact.bind(this._doc);
+  transact(fn: () => void, shouldTransact: boolean = this._shouldTransact) {
+    const spaceDoc = this._doc.spaceDoc;
+    spaceDoc.transact(
+      () => {
+        try {
+          fn();
+        } catch (e) {
+          console.error(
+            `An error occurred while Y.doc ${spaceDoc.guid} transacting:`
+          );
+          console.error(e);
+        }
+      },
+      shouldTransact ? this.spaceDoc.clientID : null
+    );
   }
 
   /**
@@ -366,8 +398,10 @@ export class Store {
    *
    * @category History
    */
-  get withoutTransact() {
-    return this._doc.withoutTransact.bind(this._doc);
+  withoutTransact(fn: () => void) {
+    this._shouldTransact = false;
+    fn();
+    this._shouldTransact = true;
   }
 
   /**
@@ -386,9 +420,9 @@ export class Store {
    *
    * @category History
    */
-  get captureSync() {
-    return this._doc.captureSync.bind(this._doc);
-  }
+  captureSync = () => {
+    this._history.undoManager.stopCapturing();
+  };
 
   /**
    * Get the {@link Workspace} instance for current store.
@@ -403,7 +437,7 @@ export class Store {
    * @category History
    */
   get history() {
-    return this._doc.history;
+    return this._history;
   }
 
   /**
@@ -516,20 +550,22 @@ export class Store {
 
   private _isDisposed = false;
 
+  private get _history() {
+    return this._provider.get(HistoryExtension);
+  }
+
   /**
    * @internal
    * In most cases, you don't need to use the constructor directly.
    * The store is created by the {@link Doc} instance.
    */
-  constructor({ doc, readonly, query, provider, extensions }: StoreOptions) {
-    this._doc = doc;
+  constructor({ readonly, query, provider, extensions }: StoreOptions) {
     this.slots = {
       ready: new Subject(),
       rootAdded: new Subject(),
       rootDeleted: new Subject(),
       blockUpdated: new Subject(),
-      historyUpdated: this._doc.slots.historyUpdated,
-      yBlockUpdated: this._doc.slots.yBlockUpdated,
+      yBlockUpdated: new Subject(),
     };
     this._schema = new Schema();
 
@@ -550,6 +586,7 @@ export class Store {
     this._provider.getAll(BlockSchemaIdentifier).forEach(schema => {
       this._schema.register([schema]);
     });
+    this._doc = this._provider.get(DocIdentifier);
     this._crud = new DocCRUD(this._yBlocks, this._schema);
     if (readonly !== undefined) {
       this._readonly.value = readonly;
@@ -558,7 +595,10 @@ export class Store {
       this._query = query;
     }
 
+    this._yBlocks.observeDeep(this._handleYEvents);
     this._yBlocks.forEach((_, id) => {
+      this._handleYBlockAdd(id, false);
+
       if (id in this._blocks.peek()) {
         return;
       }
@@ -570,7 +610,7 @@ export class Store {
 
   private readonly _subscribeToSlots = () => {
     this.disposableGroup.add(
-      this._doc.slots.yBlockUpdated.subscribe(({ type, id, isLocal }) => {
+      this.slots.yBlockUpdated.subscribe(({ type, id, isLocal }) => {
         switch (type) {
           case 'add': {
             this._onBlockAdded(id, isLocal, false);
@@ -700,9 +740,9 @@ export class Store {
    *
    * @category Block CRUD
    */
-  addBlock(
+  addBlock<T extends BlockModel = BlockModel>(
     flavour: string,
-    blockProps: Partial<BlockProps & Omit<BlockProps, 'flavour'>> = {},
+    blockProps: Partial<(PropsOfModel<T> & BlockSysProps) | BlockProps> = {},
     parent?: BlockModel | string | null,
     parentIndex?: number
   ): string {
@@ -764,7 +804,7 @@ export class Store {
    * Add sibling blocks to the store
    * @param targetModel - The target block model
    * @param props - Array of block properties
-   * @param place - Optional position to place the new blocks ('after' or 'before')
+   * @param placement - Optional position to place the new blocks ('after' or 'before')
    * @returns Array of IDs of the newly created blocks
    *
    * @category Block CRUD
@@ -772,7 +812,7 @@ export class Store {
   addSiblingBlocks(
     targetModel: BlockModel,
     props: Array<Partial<BlockProps>>,
-    place: 'after' | 'before' = 'after'
+    placement: 'after' | 'before' = 'after'
   ): string[] {
     if (!props.length) return [];
     const parent = this.getParent(targetModel);
@@ -780,7 +820,7 @@ export class Store {
 
     const targetIndex =
       parent.children.findIndex(({ id }) => id === targetModel.id) ?? 0;
-    const insertIndex = place === 'before' ? targetIndex : targetIndex + 1;
+    const insertIndex = placement === 'before' ? targetIndex : targetIndex + 1;
 
     if (props.length <= 1) {
       if (!props[0]?.flavour) return [];
@@ -814,9 +854,12 @@ export class Store {
    *
    * @category Block CRUD
    */
-  updateBlock(
-    modelOrId: BlockModel | string,
-    callBackOrProps: (() => void) | Partial<BlockProps>
+
+  updateBlock<T extends BlockModel = BlockModel>(
+    modelOrId: T | string,
+    callBackOrProps:
+      | (() => void)
+      | Partial<(PropsOfModel<T> & BlockSysProps) | BlockProps>
   ) {
     if (this.readonly) {
       console.error('cannot modify data in readonly mode');
@@ -1200,11 +1243,56 @@ export class Store {
     this._provider.getAll(StoreExtensionIdentifier).forEach(ext => {
       ext.disposed();
     });
+    if (this._doc.ready) {
+      this._yBlocks.unobserveDeep(this._handleYEvents);
+    }
     this.slots.ready.complete();
     this.slots.rootAdded.complete();
     this.slots.rootDeleted.complete();
     this.slots.blockUpdated.complete();
+    this.slots.yBlockUpdated.complete();
     this.disposableGroup.dispose();
     this._isDisposed = true;
   }
+
+  private _handleYBlockAdd(id: string, isLocal: boolean) {
+    this.slots.yBlockUpdated.next({ type: 'add', id, isLocal });
+  }
+
+  private _handleYBlockDelete(id: string, isLocal: boolean) {
+    this.slots.yBlockUpdated.next({ type: 'delete', id, isLocal });
+  }
+
+  private _handleYEvent(event: Y.YEvent<YBlock | Y.Text | Y.Array<unknown>>) {
+    // event on top-level block store
+    if (event.target !== this._yBlocks) {
+      return;
+    }
+    const isLocal =
+      !event.transaction.origin ||
+      !this._yBlocks.doc ||
+      event.transaction.origin instanceof Y.UndoManager ||
+      event.transaction.origin.proxy
+        ? true
+        : event.transaction.origin === this._yBlocks.doc.clientID;
+    event.keys.forEach((value, id) => {
+      try {
+        if (value.action === 'add') {
+          this._handleYBlockAdd(id, isLocal);
+          return;
+        }
+        if (value.action === 'delete') {
+          this._handleYBlockDelete(id, isLocal);
+          return;
+        }
+      } catch (e) {
+        console.error('An error occurred while handling Yjs event:');
+        console.error(e);
+      }
+    });
+  }
+
+  private readonly _handleYEvents = (events: Y.YEvent<YBlock | Y.Text>[]) => {
+    events.forEach(event => this._handleYEvent(event));
+  };
 }

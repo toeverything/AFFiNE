@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+import { skipOnboarding } from '@affine-test/kit/playwright';
 import {
   createRandomAIUser,
   enableCloudWorkspace,
@@ -20,7 +21,9 @@ async function setupTestEnvironment(page: Page) {
 
 export default async function globalSetup() {
   const browser = await chromium.launch();
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  await skipOnboarding(context);
+  const page = await context.newPage();
   await page.goto('http://localhost:8080/', { timeout: 240 * 1000 });
   const user = await getUser();
   await page.getByTestId('sidebar-user-avatar').click({

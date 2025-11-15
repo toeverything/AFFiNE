@@ -9,7 +9,9 @@ import {
   EventBus,
   InternalServerError,
   InvalidCheckoutParameters,
+  ManagedByAppStoreOrPlay,
   Mutex,
+  OnEvent,
   SubscriptionAlreadyExists,
   SubscriptionPlanNotFound,
   TooManyRequest,
@@ -100,6 +102,14 @@ export class UserSubscriptionManager extends SubscriptionManager {
       lookupKey.plan !== SubscriptionPlan.AI
     ) {
       throw new InvalidCheckoutParameters();
+    }
+
+    const active = await this.getActiveSubscription({
+      plan: lookupKey.plan,
+      userId: user.id,
+    });
+    if (active?.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     const subscription = await this.getSubscription({
@@ -201,6 +211,15 @@ export class UserSubscriptionManager extends SubscriptionManager {
       where: {
         targetId: args.userId,
         plan: args.plan,
+      },
+    });
+  }
+
+  async getActiveSubscription(args: z.infer<typeof UserSubscriptionIdentity>) {
+    return this.db.subscription.findFirst({
+      where: {
+        targetId: args.userId,
+        plan: args.plan,
         status: {
           in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
         },
@@ -242,10 +261,11 @@ export class UserSubscriptionManager extends SubscriptionManager {
         'stripeScheduleId',
         'nextBillAt',
         'canceledAt',
+        'end',
       ]),
       create: {
         targetId: userId,
-        ...subscriptionData,
+        ...omit(subscriptionData, ['provider', 'iapStore']),
       },
     });
   }
@@ -681,6 +701,19 @@ export class UserSubscriptionManager extends SubscriptionManager {
   ): asserts userId is string {
     if (!userId) {
       throw new Error('user should exists for stripe subscription or invoice.');
+    }
+  }
+
+  @OnEvent('user.deleted')
+  async onUserDeleted({ id }: Events['user.deleted']) {
+    const subscription = await this.db.subscription.findFirst({
+      where: {
+        targetId: id,
+      },
+    });
+
+    if (subscription?.stripeSubscriptionId) {
+      await this.stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
     }
   }
 }

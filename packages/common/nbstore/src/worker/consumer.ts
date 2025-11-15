@@ -134,6 +134,45 @@ class StoreConsumer {
     }
   }
 
+  private readonly ENABLE_BATTERY_SAVE_MODE_DELAY = 1000;
+  private syncPauseTimeout: NodeJS.Timeout | null = null;
+  private syncPaused = false;
+
+  private pauseSync() {
+    if (this.syncPauseTimeout || this.syncPaused) {
+      return;
+    }
+    this.syncPauseTimeout = setTimeout(() => {
+      if (!this.syncPaused) {
+        this.indexerSync.pauseSync();
+        this.syncPaused = true;
+        console.log('[IndexerSync] paused');
+      }
+    }, this.ENABLE_BATTERY_SAVE_MODE_DELAY);
+  }
+
+  private resumeSync() {
+    if (this.syncPauseTimeout) {
+      clearTimeout(this.syncPauseTimeout);
+      this.syncPauseTimeout = null;
+    }
+    if (this.syncPaused) {
+      this.indexerSync.resumeSync();
+      this.syncPaused = false;
+      console.log('[IndexerSync] resumed');
+    }
+  }
+
+  private enableBatterySaveMode() {
+    console.log('[IndexerSync] enable battery save mode');
+    this.indexerSync.enableBatterySaveMode();
+  }
+
+  private disableBatterySaveMode() {
+    console.log('[IndexerSync] disable battery save mode');
+    this.indexerSync.disableBatterySaveMode();
+  }
+
   private registerHandlers(consumer: OpConsumer<WorkerOps>) {
     const collectJobs = new Map<
       string,
@@ -212,11 +251,14 @@ class StoreConsumer {
           const undo = this.docSync.addPriority(docId, priority);
           return () => undo();
         }),
+      'docSync.waitForSynced': (docId, ctx) =>
+        this.docSync.waitForSynced(docId ?? undefined, ctx.signal),
       'docSync.resetSync': () => this.docSync.resetSync(),
       'blobSync.state': () => this.blobSync.state$,
       'blobSync.blobState': blobId => this.blobSync.blobState$(blobId),
       'blobSync.downloadBlob': key => this.blobSync.downloadBlob(key),
-      'blobSync.uploadBlob': blob => this.blobSync.uploadBlob(blob),
+      'blobSync.uploadBlob': ({ blob, force }) =>
+        this.blobSync.uploadBlob(blob, force),
       'blobSync.fullDownload': peerId =>
         new Observable(subscriber => {
           const abortController = new AbortController();
@@ -262,16 +304,6 @@ class StoreConsumer {
         }),
       'awarenessSync.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
-      'indexerStorage.aggregate': ({ table, query, field, options }) =>
-        this.indexerStorage.aggregate(table, query, field, options),
-      'indexerStorage.search': ({ table, query, options }) =>
-        this.indexerStorage.search(table, query, options),
-      'indexerStorage.subscribeSearch': ({ table, query, options }) =>
-        this.indexerStorage.search$(table, query, options),
-      'indexerStorage.subscribeAggregate': ({ table, query, field, options }) =>
-        this.indexerStorage.aggregate$(table, query, field, options),
-      'indexerStorage.waitForConnected': (_, ctx) =>
-        this.indexerStorage.connection.waitForConnected(ctx.signal),
       'indexerSync.state': () => this.indexerSync.state$,
       'indexerSync.docState': (docId: string) =>
         this.indexerSync.docState$(docId),
@@ -284,6 +316,18 @@ class StoreConsumer {
         this.indexerSync.waitForCompleted(ctx.signal),
       'indexerSync.waitForDocCompleted': (docId: string, ctx) =>
         this.indexerSync.waitForDocCompleted(docId, ctx.signal),
+      'indexerSync.aggregate': ({ table, query, field, options }) =>
+        this.indexerSync.aggregate(table, query, field, options),
+      'indexerSync.search': ({ table, query, options }) =>
+        this.indexerSync.search(table, query, options),
+      'indexerSync.subscribeSearch': ({ table, query, options }) =>
+        this.indexerSync.search$(table, query, options),
+      'indexerSync.subscribeAggregate': ({ table, query, field, options }) =>
+        this.indexerSync.aggregate$(table, query, field, options),
+      'sync.enableBatterySaveMode': () => this.enableBatterySaveMode(),
+      'sync.disableBatterySaveMode': () => this.disableBatterySaveMode(),
+      'sync.pauseSync': () => this.pauseSync(),
+      'sync.resumeSync': () => this.resumeSync(),
     });
   }
 }

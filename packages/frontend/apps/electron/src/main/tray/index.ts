@@ -220,15 +220,17 @@ class TrayState implements Disposable {
           );
         }
       }
-      items.push({
-        label: `Meetings Settings...`,
-        click: () => {
-          showMainWindow();
-          applicationMenuSubjects.openInSettingModal$.next({
-            activeTab: 'meetings',
-          });
-        },
-      });
+      if (checkRecordingAvailable()) {
+        items.push({
+          label: `Meetings Settings...`,
+          click: () => {
+            showMainWindow();
+            applicationMenuSubjects.openInSettingModal$.next({
+              activeTab: 'meetings',
+            });
+          },
+        });
+      }
 
       return items;
     };
@@ -315,7 +317,14 @@ class TrayState implements Disposable {
         logger.debug('User clicked on tray icon');
         this.update();
         if (!isMacOS()) {
-          this.tray?.popUpContextMenu();
+          if (
+            TraySettingsState.value.enabled &&
+            TraySettingsState.value.openOnLeftClick
+          ) {
+            showMainWindow();
+          } else {
+            this.tray?.popUpContextMenu();
+          }
         }
         updateApplicationsPing$.next(Date.now());
       };

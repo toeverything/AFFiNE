@@ -1,4 +1,5 @@
-import { Overlay, PathGenerator } from '@blocksuite/affine-block-surface';
+import { Overlay } from '@blocksuite/affine-block-surface';
+import { PathGenerator } from '@blocksuite/affine-gfx-connector';
 import {
   ConnectorMode,
   LayoutType,

@@ -68,7 +68,7 @@ export class EventBus
       this.cls.run(() => {
         requestId = requestId ?? genRequestId('event');
         this.cls.set(CLS_ID, requestId);
-        this.logger.log(`Server Event: ${event} (Received)`);
+        this.logger.debug(`Server Event: ${event} (Received)`);
         this.emit(event, payload);
       });
     });
@@ -78,7 +78,7 @@ export class EventBus
    * Emit event to trigger all listeners on current instance
    */
   async emitAsync<T extends EventName>(event: T, payload: Events[T]) {
-    this.logger.log(`Dispatch event: ${event} (async)`);
+    this.logger.debug(`Dispatch event: ${event} (async)`);
     return await this.emitter.emitAsync(event, payload);
   }
 
@@ -86,7 +86,7 @@ export class EventBus
    * Emit event to trigger all listeners on current instance
    */
   emit<T extends EventName>(event: T, payload: Events[T]) {
-    this.logger.log(`Dispatch event: ${event}`);
+    this.logger.debug(`Dispatch event: ${event}`);
 
     // NOTE(@forehalo):
     //   Because all event handlers are wrapped in promisified metrics and cls context, they will always run in standalone tick.
@@ -103,7 +103,7 @@ export class EventBus
    * Broadcast event to trigger all listeners on all instance in cluster
    */
   broadcast<T extends EventName>(event: T, payload: Events[T]) {
-    this.logger.log(`Server Event: ${event} (Send)`);
+    this.logger.debug(`Server Event: ${event} (Send)`);
     this.server?.serverSideEmit('broadcast', event, payload, this.cls.getId());
   }
 

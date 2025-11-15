@@ -26,14 +26,12 @@ import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions/incubating';
-import prismaInstrument from '@prisma/instrumentation';
+import { PrismaInstrumentation } from '@prisma/instrumentation';
 
 import { Config } from '../config';
 import { OnEvent } from '../event/def';
 import { registerCustomMetrics } from './metrics';
 import { PrismaMetricProducer } from './prisma';
-
-const { PrismaInstrumentation } = prismaInstrument;
 
 export abstract class BaseOpentelemetryOptionsFactory {
   abstract getMetricReader(): MetricReader;
@@ -107,6 +105,9 @@ export class OpentelemetryProvider {
 
   @OnEvent('config.init')
   async init(event: Events['config.init']) {
+    if (env.flavors.script) {
+      return;
+    }
     if (event.config.metrics.enabled) {
       await this.setup();
       registerCustomMetrics();

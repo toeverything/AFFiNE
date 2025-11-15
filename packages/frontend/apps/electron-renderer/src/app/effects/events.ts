@@ -2,7 +2,6 @@ import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { DocsService } from '@affine/core/modules/doc';
-import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { JournalService } from '@affine/core/modules/journal';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -52,15 +51,9 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
           return;
         }
         const { workspace } = currentWorkspace;
-        const editorSettingService =
-          frameworkProvider.get(EditorSettingService);
         const docsService = workspace.scope.get(DocsService);
-        const editorSetting = editorSettingService.editorSetting;
 
-        const docProps = {
-          note: editorSetting.get('affine:note'),
-        };
-        const page = docsService.createDoc({ docProps, primaryMode: type });
+        const page = docsService.createDoc({ primaryMode: type });
         workspace.scope.get(WorkbenchService).workbench.openDoc(page.id);
       })
       .catch(err => {

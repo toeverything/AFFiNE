@@ -15,7 +15,6 @@ export type Prompt = {
   action: string | null;
   config: {
     __typename?: 'CopilotPromptConfigType';
-    jsonMode: boolean | null;
     frequencyPenalty: number | null;
     presencePenalty: number | null;
     temperature: number | null;

@@ -9,7 +9,7 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import { WorkspaceMemberStatus } from '@prisma/client';
-import { SafeIntResolver } from 'graphql-scalars';
+import { GraphQLJSONObject, SafeIntResolver } from 'graphql-scalars';
 
 import { DocRole, WorkspaceRole } from '../permission';
 import { UserType, WorkspaceUserType } from '../user/types';
@@ -56,12 +56,6 @@ export class InviteUserType extends OmitType(
   @Field({ description: 'Invite id' })
   inviteId!: string;
 
-  @Field({
-    description: 'User accepted',
-    deprecationReason: 'Use `status` instead',
-  })
-  accepted!: boolean;
-
   @Field(() => WorkspaceMemberStatus, {
     description: 'Member invite status in workspace',
   })
@@ -87,6 +81,9 @@ export class WorkspaceType extends WorkspaceFeatureType {
 
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
+
+  @Field({ description: 'Enable doc embedding' })
+  enableDocEmbedding!: boolean;
 
   @Field(() => [InviteUserType], {
     description: 'Members of workspace',
@@ -133,7 +130,7 @@ export class InvitationType {
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  ['public', 'enableAi', 'enableUrlPreview'],
+  ['public', 'enableAi', 'enableUrlPreview', 'enableDocEmbedding'],
   InputType
 ) {
   @Field(() => ID)
@@ -158,10 +155,23 @@ export class InviteResult {
     nullable: true,
     description: 'Invite id, null if invite record create failed',
   })
-  inviteId!: string | null;
+  inviteId?: string;
 
-  @Field(() => Boolean, { description: 'Invite email sent success' })
-  sentSuccess!: boolean;
+  /**
+   * @deprecated
+   */
+  @Field(() => Boolean, {
+    description: 'Invite email sent success',
+    deprecationReason: 'Notification will be sent asynchronously',
+    defaultValue: true,
+  })
+  sentSuccess?: boolean;
+
+  @Field(() => GraphQLJSONObject, {
+    nullable: true,
+    description: 'Invite error',
+  })
+  error?: object;
 }
 
 const Day = 24 * 60 * 60 * 1000;

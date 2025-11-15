@@ -49,6 +49,10 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
       cursor: pointer;
       user-select: none;
       padding: 1px 2px 1px 0;
+
+      svg {
+        margin-bottom: 0.1em;
+      }
     }
     .affine-reference:hover {
       background: var(--affine-hover-color);
@@ -146,10 +150,15 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
 
   readonly open = (event?: Partial<DocLinkClickedEvent>) => {
     if (!this.config.interactable) return;
+    if (event?.event?.button === 2) {
+      return;
+    }
 
     this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.next({
       ...this.referenceInfo,
       ...event,
+      openMode:
+        event?.event?.button === 1 ? 'open-in-new-tab' : event?.openMode,
       host: this.std.host,
     });
   };
@@ -281,6 +290,7 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
       class="affine-reference"
       style=${styleMap(style)}
       @click=${(event: MouseEvent) => this.open({ event })}
+      @auxclick=${(event: MouseEvent) => this.open({ event })}
       >${content}<v-text .str=${ZERO_WIDTH_FOR_EMBED_NODE}></v-text
     ></span>`;
   }

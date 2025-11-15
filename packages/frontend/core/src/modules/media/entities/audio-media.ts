@@ -10,7 +10,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { clamp } from 'lodash-es';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { mergeMap, switchMap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 
@@ -132,6 +132,9 @@ export class AudioMedia extends Entity<AudioSource> {
     return { waveform, duration };
   });
 
+  // `MediaSession` is available
+  private readonly available = 'mediaSession' in navigator;
+
   private readonly audioElement: HTMLAudioElement;
 
   private updatePlaybackState(
@@ -194,8 +197,10 @@ export class AudioMedia extends Entity<AudioSource> {
             `Calculate audio stats time: ${performance.now() - startTime}ms`
           );
         }),
-        mergeMap(() => EMPTY),
-        onStart(() => this.loading$.setValue(true)),
+        onStart(() => {
+          this.loadError$.setValue(null);
+          this.loading$.setValue(true);
+        }),
         onComplete(() => {
           this.loading$.setValue(false);
         }),
@@ -213,7 +218,7 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private setupMediaSession() {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
 
@@ -238,14 +243,14 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private updateMediaSessionMetadata() {
-    if (!('mediaSession' in navigator) || !this.props.metadata) {
+    if (!this.available || !this.props.metadata) {
       return;
     }
     navigator.mediaSession.metadata = this.props.metadata;
   }
 
   private updateMediaSessionPositionState(seekTime: number) {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
 
@@ -261,7 +266,7 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private updateMediaSessionPlaybackState(state: AudioMediaPlaybackState) {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
 
@@ -271,7 +276,7 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private cleanupMediaSession() {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
     navigator.mediaSession.metadata = null;

@@ -292,7 +292,7 @@ export const PropertyName = ({
   name?: ReactNode;
   menuItems?: ReactNode;
   defaultOpenMenu?: boolean;
-} & HTMLProps<HTMLDivElement>) => {
+} & Omit<HTMLProps<HTMLDivElement>, 'name'>) => {
   const [menuOpen, setMenuOpen] = useState(defaultOpenMenu);
   const hasMenu = !!menuItems;
 

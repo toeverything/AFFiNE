@@ -9,6 +9,7 @@
   "include": ["./src"],
   "references": [
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../../inlines/preset" },
     { "path": "../../inlines/reference" },
     { "path": "../../model" },

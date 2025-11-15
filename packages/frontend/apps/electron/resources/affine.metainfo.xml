@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<component type="desktop-application">
+  <id>affine</id>
+  <name>AFFiNE</name>
+  <summary>Productivity and note-taking app</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT AND LicenseRef-proprietary=https://github.com/toeverything/AFFiNE/blob/canary/LICENSE</project_license>
+  <url type="homepage">https://affine.pro</url>
+  <url type="bugtracker">https://github.com/toeverything/AFFiNE/issues</url>
+  <url type="help">https://docs.affine.pro/docs</url>
+  <url type="vcs-browser">https://github.com/toeverything/AFFiNE</url>
+  <url type="contribute">https://docs.affine.pro/docs/contributing</url>
+  <developer id="pro.affine.app">
+    <name>affine</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <categories>
+    <category>Office</category>
+  </categories>
+  <keywords>
+    <keyword>notes</keyword>
+    <keyword>canvas</keyword>
+  </keywords>
+  <branding>
+    <color type="primary">#1e96eb</color>
+  </branding>
+  <recommends>
+    <display_length compare="ge">800</display_length>
+    <internet>always</internet>
+  </recommends>
+  <provides>
+    <mediatype>x-scheme-handler/affine</mediatype>
+  </provides>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>tablet</control>
+    <control>touch</control>
+  </supports>
+  <description>
+    <p>Write, Draw, Plan, All at Once. With AI.</p>
+    <p>AFFiNE is a workspace with fully merged docs, whiteboards and databases. Get more things done, your creativity isn’t monotone.</p>
+    <p>Features</p>
+    <ul>
+      <li>Write your way to better productivity. Build up your content like blocks and let your ideas run wild.</li>
+      <li>Draw and visualise with ease and creativity. Visualise your creativity with others. No constraints, limited only by your imagination.</li>
+      <li>Plan, track, and collaborate efficiently. Stay on top of your workload and achieve more in less time.</li>
+      <li>AI partner helps you better write, draw and plan. Let you think bigger, create faster, work smarter in anytime, anywhere</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">affine.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://affine.pro/overview/Write.jpg</image>
+      <caption>Document writing interface with block-based editing</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://affine.pro/overview/Draw.jpg</image>
+      <caption>Whiteboard drawing and visualization capabilities</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://affine.pro/overview/Plan.jpg</image>
+      <caption>Project planning and task management view</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.25.2" date="2025-10-29">
+      <url>https://github.com/toeverything/AFFiNE/releases/tag/v0.25.2</url>
+    </release>
+  </releases>
+</component>

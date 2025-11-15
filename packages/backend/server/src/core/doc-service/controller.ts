@@ -4,10 +4,10 @@ import {
   Logger,
   Param,
   Post,
+  Query,
   RawBody,
   Res,
 } from '@nestjs/common';
-import { Args } from '@nestjs/graphql';
 import type { Response } from 'express';
 
 import { NotFound, SkipThrottle } from '../../base';
@@ -32,7 +32,7 @@ export class DocRpcController {
     if (!doc) {
       throw new NotFound('Doc not found');
     }
-    this.logger.log(
+    this.logger.debug(
       `get doc ${docId} from workspace ${workspaceId}, size: ${doc.bin.length}`
     );
     res.setHeader('x-doc-timestamp', doc.timestamp.toString());
@@ -40,6 +40,25 @@ export class DocRpcController {
       res.setHeader('x-doc-editor-id', doc.editor);
     }
     res.send(doc.bin);
+  }
+
+  @SkipThrottle()
+  @Internal()
+  @Get('/workspaces/:workspaceId/docs/:docId/markdown')
+  async getDocMarkdown(
+    @Param('workspaceId') workspaceId: string,
+    @Param('docId') docId: string,
+    @Query('aiEditable') aiEditable?: string
+  ) {
+    const result = await this.docReader.getDocMarkdown(
+      workspaceId,
+      docId,
+      aiEditable === 'true'
+    );
+    if (!result) {
+      throw new NotFound('Doc not found');
+    }
+    return result;
   }
 
   @SkipThrottle()
@@ -59,7 +78,7 @@ export class DocRpcController {
     if (!diff) {
       throw new NotFound('Doc not found');
     }
-    this.logger.log(
+    this.logger.debug(
       `get doc diff ${docId} from workspace ${workspaceId}, missing size: ${diff.missing.length}, old state size: ${stateVector?.length}, new state size: ${diff.state.length}`
     );
     res.setHeader('x-doc-timestamp', diff.timestamp.toString());
@@ -78,15 +97,16 @@ export class DocRpcController {
   async getDocContent(
     @Param('workspaceId') workspaceId: string,
     @Param('docId') docId: string,
-    @Args('full', { nullable: true }) fullContent?: boolean
+    @Query('full') fullContent?: string
   ) {
-    const content = fullContent
-      ? await this.docReader.getFullDocContent(workspaceId, docId)
-      : await this.docReader.getDocContent(workspaceId, docId);
+    const content =
+      fullContent === 'true'
+        ? await this.docReader.getFullDocContent(workspaceId, docId)
+        : await this.docReader.getDocContent(workspaceId, docId);
     if (!content) {
       throw new NotFound('Doc not found');
     }
-    this.logger.log(`get doc content ${docId} from workspace ${workspaceId}`);
+    this.logger.debug(`get doc content ${docId} from workspace ${workspaceId}`);
     return content;
   }
 
@@ -98,7 +118,7 @@ export class DocRpcController {
     if (!content) {
       throw new NotFound('Workspace not found');
     }
-    this.logger.log(`get workspace content ${workspaceId}`);
+    this.logger.debug(`get workspace content ${workspaceId}`);
     return content;
   }
 }

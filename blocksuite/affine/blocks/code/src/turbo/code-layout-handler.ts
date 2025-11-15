@@ -25,7 +25,9 @@ export class CodeLayoutHandlerExtension extends BlockLayoutHandlerExtension<Code
     host: EditorHost,
     viewportRecord: ViewportRecord
   ): CodeLayout | null {
-    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
+    const component = host.std.view.getBlock(
+      model.id
+    ) as GfxBlockComponent | null;
     if (!component) return null;
 
     const codeBlockElement = component.querySelector(

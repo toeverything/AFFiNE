@@ -28,12 +28,12 @@ async function randomPut(
 ): Promise<string> {
   const key = prefix + 'test-key-' + Math.random().toString(16).substring(2, 8);
   const body = Buffer.from(key);
-  provider.put(key, body);
+  await provider.put(key, body);
   return key;
 }
 
 test.after.always(() => {
-  fs.rm(config.path, { recursive: true });
+  fs.rm(config.path, { recursive: true }).catch(console.error);
 });
 
 test('put & get', async t => {

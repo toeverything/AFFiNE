@@ -75,8 +75,7 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
   }, [onButtonClick, resetError]);
 
   const desc = descriptions.map((item, i) => (
-    // eslint-disable-next-line react/no-array-index-key
-    <p key={i} className={styles.text}>
+    <p key={`error-desc-${i}`} className={styles.text}>
       {item}
     </p>
   ));
@@ -137,15 +136,17 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
 
 export function ContactUS() {
   return (
-    <Trans>
-      If you are still experiencing this issue, please{' '}
-      <a
-        style={{ color: 'var(--affine-primary-color)' }}
-        href="https://community.affine.pro"
-        target="__blank"
-      >
-        contact us through the community.
-      </a>
-    </Trans>
+    <Trans
+      i18nKey="com.affine.error.contact-us"
+      components={{
+        1: (
+          <a
+            style={{ color: 'var(--affine-primary-color)' }}
+            href="https://community.affine.pro"
+            target="__blank"
+          />
+        ),
+      }}
+    />
   );
 }

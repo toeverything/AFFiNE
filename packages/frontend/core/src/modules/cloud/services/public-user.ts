@@ -7,7 +7,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { catchError, EMPTY, exhaustMap, groupBy, mergeMap } from 'rxjs';
+import { catchError, EMPTY, exhaustMap, groupBy, mergeMap, tap } from 'rxjs';
 
 import type { PublicUserStore } from '../stores/public-user';
 
@@ -20,6 +20,7 @@ type ExistedUserInfo = {
   id: string;
   name?: string | null;
   avatar?: string | null;
+  avatarUrl?: string | null;
   removed?: false;
 };
 
@@ -90,6 +91,7 @@ export class PublicUserService extends Service {
               id,
               name: user.name,
               avatar: user.avatarUrl,
+              avatarUrl: user.avatarUrl,
             };
           }).pipe(
             smartRetry(),
@@ -98,10 +100,9 @@ export class PublicUserService extends Service {
               this.setError(id, error);
               return EMPTY;
             }),
-            mergeMap(user => {
+            tap(user => {
               this.setPublicUser(id, user);
               this.setError(id, null); // clear error
-              return EMPTY;
             }),
             onStart(() => this.setLoading(id, true)),
             onComplete(() => this.setLoading(id, false))

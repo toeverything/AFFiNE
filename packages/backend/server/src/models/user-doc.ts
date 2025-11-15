@@ -92,13 +92,15 @@ export class UserDocModel extends BaseModel {
    * Delete a user doc by userId and docId.
    */
   async delete(userId: string, docId: string) {
-    await this.db.userSnapshot.deleteMany({
+    const { count } = await this.db.userSnapshot.deleteMany({
       where: {
         userId,
         id: docId,
       },
     });
-    this.logger.log(`Deleted user ${userId} doc ${docId}`);
+    if (count > 0) {
+      this.logger.log(`Deleted user ${userId} doc ${docId}`);
+    }
   }
 
   /**
@@ -110,7 +112,9 @@ export class UserDocModel extends BaseModel {
         userId,
       },
     });
-    this.logger.log(`Deleted user ${userId} ${count} docs`);
+    if (count > 0) {
+      this.logger.log(`Deleted user ${userId} ${count} docs`);
+    }
     return count;
   }
 }

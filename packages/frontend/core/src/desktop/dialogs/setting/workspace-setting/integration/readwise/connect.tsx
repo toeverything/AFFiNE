@@ -1,11 +1,19 @@
-import { Button, Input, Modal, notify } from '@affine/component';
+import {
+  Button,
+  type ButtonProps,
+  Input,
+  Modal,
+  notify,
+} from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IntegrationService } from '@affine/core/modules/integration';
 import { Trans, useI18n } from '@affine/i18n';
 import { ReadwiseLogoDuotoneIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import {
   type FormEvent,
+  type MouseEvent,
   useCallback,
   useEffect,
   useRef,
@@ -156,11 +164,14 @@ const ConnectDialog = ({
   );
 };
 
-export const ConnectButton = ({
+export const ReadwiseConnectButton = ({
   onSuccess,
+  className,
+  onClick,
+  ...buttonProps
 }: {
   onSuccess: (token: string) => void;
-}) => {
+} & ButtonProps) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
 
@@ -168,14 +179,22 @@ export const ConnectButton = ({
     setOpen(false);
   }, []);
 
-  const handleOpen = useCallback(() => {
-    setOpen(true);
-  }, []);
+  const handleOpen = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      onClick?.(e);
+      setOpen(true);
+    },
+    [onClick]
+  );
 
   return (
     <>
       {open && <ConnectDialog onClose={handleClose} onSuccess={onSuccess} />}
-      <Button variant="primary" className={actionButton} onClick={handleOpen}>
+      <Button
+        className={clsx(actionButton, className)}
+        onClick={handleOpen}
+        {...buttonProps}
+      >
         {t['com.affine.integration.readwise.connect']()}
       </Button>
     </>

@@ -110,7 +110,7 @@ test('can sync collections between different browser', async ({
     page
   );
   await enableCloudWorkspace(page);
-  await page.getByTestId('explorer-bar-add-collection-button').click();
+  await page.getByTestId('navigation-panel-bar-add-collection-button').click();
   const title = page.getByTestId('prompt-modal-input');
   await title.isVisible();
   await title.fill('test collection');
@@ -122,7 +122,7 @@ test('can sync collections between different browser', async ({
     const page2 = await context.newPage();
     await loginUser(page2, user);
     await page2.goto(page.url());
-    const collections = page2.getByTestId('explorer-collections');
+    const collections = page2.getByTestId('navigation-panel-collections');
     await collections.getByTestId('category-divider-collapse-button').click();
     await expect(collections.getByText('test collection')).toBeVisible();
   }
@@ -164,7 +164,7 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.keyboard.press('Enter', { delay: 50 });
   const fileChooser = await fileChooserPromise;
-  fileChooser.setFiles(Path.dir(import.meta.url).join('logo.svg').value);
+  await fileChooser.setFiles(Path.dir(import.meta.url).join('logo.svg').value);
   await expect(image).toBeVisible();
 
   // the user should see the svg

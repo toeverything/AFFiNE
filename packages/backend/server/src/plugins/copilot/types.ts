@@ -1,46 +1,66 @@
-import { type Tokenizer } from '@affine/server-native';
 import { z } from 'zod';
 
-import { fromModelName } from '../../native';
 import type { ChatPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers';
 
-export enum AvailableModels {
-  // text to text
-  Gpt4Omni = 'gpt-4o',
-  Gpt4Omni0806 = 'gpt-4o-2024-08-06',
-  Gpt4OmniMini = 'gpt-4o-mini',
-  Gpt4OmniMini0718 = 'gpt-4o-mini-2024-07-18',
-  Gpt41 = 'gpt-4.1',
-  Gpt410414 = 'gpt-4.1-2025-04-14',
-  Gpt41Mini = 'gpt-4.1-mini',
-  // embeddings
-  TextEmbedding3Large = 'text-embedding-3-large',
-  TextEmbedding3Small = 'text-embedding-3-small',
-  TextEmbeddingAda002 = 'text-embedding-ada-002',
-  // moderation
-  TextModerationLatest = 'text-moderation-latest',
-  TextModerationStable = 'text-moderation-stable',
-  // text to image
-  DallE3 = 'dall-e-3',
-}
+const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 
-export type AvailableModel = keyof typeof AvailableModels;
+const zBool = z.preprocess(val => {
+  const s = String(takeFirst(val)).toLowerCase();
+  return ['true', '1', 'yes'].includes(s);
+}, z.boolean().default(false));
 
-export function getTokenEncoder(model?: string | null): Tokenizer | null {
-  if (!model) return null;
-  const modelStr = AvailableModels[model as AvailableModel];
-  if (!modelStr) return null;
-  if (modelStr.startsWith('gpt')) {
-    return fromModelName(modelStr);
-  } else if (modelStr.startsWith('dall')) {
-    // dalle don't need to calc the token
-    return null;
-  } else {
-    // c100k based model
-    return fromModelName('gpt-4');
-  }
-}
+const zMaybeString = z.preprocess(val => {
+  const s = takeFirst(val);
+  return s === '' || s == null ? undefined : s;
+}, z.string().min(1).optional());
+
+const ToolsConfigSchema = z.preprocess(
+  val => {
+    // if val is a string, try to parse it as JSON
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return {};
+      }
+    }
+    return val || {};
+  },
+  z.record(z.enum(['searchWorkspace', 'readingDocs']), z.boolean()).default({})
+);
+
+export type ToolsConfig = z.infer<typeof ToolsConfigSchema>;
+
+export const ChatQuerySchema = z
+  .object({
+    messageId: zMaybeString,
+    modelId: zMaybeString,
+    retry: zBool,
+    reasoning: zBool,
+    webSearch: zBool,
+    toolsConfig: ToolsConfigSchema,
+  })
+  .catchall(z.string())
+  .transform(
+    ({
+      messageId,
+      modelId,
+      retry,
+      reasoning,
+      webSearch,
+      toolsConfig,
+      ...params
+    }) => ({
+      messageId,
+      modelId,
+      retry,
+      reasoning,
+      webSearch,
+      toolsConfig,
+      params,
+    })
+  );
 
 // ======== ChatMessage ========
 
@@ -52,11 +72,23 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatHistorySchema = z
   .object({
+    userId: z.string(),
     sessionId: z.string(),
+    workspaceId: z.string(),
+    docId: z.string().nullable(),
+    parentSessionId: z.string().nullable(),
+    pinned: z.boolean(),
+    title: z.string().nullable(),
+
     action: z.string().nullable(),
+    model: z.string(),
+    optionalModels: z.array(z.string()),
+    promptName: z.string(),
+
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
+    updatedAt: z.date(),
   })
   .strict();
 
@@ -70,44 +102,25 @@ export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
 
 // ======== Chat Session ========
 
-export interface ChatSessionOptions {
-  // connect ids
-  userId: string;
-  workspaceId: string;
-  docId: string;
-  promptName: string;
-}
+export type ChatSessionOptions = Pick<
+  ChatHistory,
+  'userId' | 'workspaceId' | 'docId' | 'promptName' | 'pinned'
+> & {
+  reuseLatestChat?: boolean;
+};
 
-export interface ChatSessionPromptUpdateOptions
-  extends Pick<ChatSessionState, 'sessionId' | 'userId'> {
-  promptName: string;
-}
+export type ChatSessionForkOptions = Pick<
+  ChatHistory,
+  'userId' | 'sessionId' | 'workspaceId' | 'docId'
+> & {
+  latestMessageId?: string;
+};
 
-export interface ChatSessionForkOptions
-  extends Omit<ChatSessionOptions, 'promptName'> {
-  sessionId: string;
-  latestMessageId: string;
-}
-
-export interface ChatSessionState
-  extends Omit<ChatSessionOptions, 'promptName'> {
-  // connect ids
-  sessionId: string;
-  parentSessionId: string | null;
-  // states
+export type ChatSessionState = Pick<
+  ChatHistory,
+  'userId' | 'sessionId' | 'workspaceId' | 'docId' | 'messages'
+> & {
   prompt: ChatPrompt;
-  messages: ChatMessage[];
-}
-
-export type ListHistoriesOptions = {
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
-  sessionId: string | undefined;
-  withPrompt: boolean | undefined;
 };
 
 export type CopilotContextFile = {

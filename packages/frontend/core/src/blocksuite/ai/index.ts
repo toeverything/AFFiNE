@@ -3,7 +3,6 @@ export * from './actions';
 export { ChatPanel } from './chat-panel';
 export * from './entries';
 export * from './entries/edgeless/actions-config';
-export * from './extensions';
 export * from './messages';
 export { AIChatBlockPeekViewTemplate } from './peek-view/chat-block-peek-view';
 export * from './provider';

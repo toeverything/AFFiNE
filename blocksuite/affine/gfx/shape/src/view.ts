@@ -1,24 +1,33 @@
-import type { ShapeElementModel } from '@blocksuite/affine-model';
-import { GfxElementModelView } from '@blocksuite/std/gfx';
+import {
+  type ViewExtensionContext,
+  ViewExtensionProvider,
+} from '@blocksuite/affine-ext-loader';
 
-import { mountShapeTextEditor } from './text/edgeless-shape-text-editor';
+import { effects } from './effects';
+import { ShapeElementRendererExtension } from './element-renderer';
+import { ShapeDomRendererExtension } from './element-renderer/shape-dom';
+import { ShapeElementView, ShapeViewInteraction } from './element-view';
+import { ShapeTool } from './shape-tool';
+import { shapeSeniorTool, shapeToolbarExtension } from './toolbar';
 
-export class ShapeElementView extends GfxElementModelView<ShapeElementModel> {
-  static override type: string = 'shape';
+export class ShapeViewExtension extends ViewExtensionProvider {
+  override name = 'affine-shape-gfx';
 
-  override onCreated(): void {
-    super.onCreated();
-
-    this._initDblClickToEdit();
+  override effect(): void {
+    super.effect();
+    effects();
   }
 
-  private _initDblClickToEdit(): void {
-    this.on('dblclick', () => {
-      const edgeless = this.std.view.getBlock(this.std.store.root!.id);
-
-      if (edgeless && !this.model.isLocked()) {
-        mountShapeTextEditor(this.model, edgeless);
-      }
-    });
+  override setup(context: ViewExtensionContext) {
+    super.setup(context);
+    if (this.isEdgeless(context.scope)) {
+      context.register(ShapeElementRendererExtension);
+      context.register(ShapeDomRendererExtension);
+      context.register(ShapeElementView);
+      context.register(ShapeTool);
+      context.register(shapeSeniorTool);
+      context.register(shapeToolbarExtension);
+      context.register(ShapeViewInteraction);
+    }
   }
 }

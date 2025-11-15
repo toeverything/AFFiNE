@@ -171,23 +171,26 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[214px] p-[5px] gap-2">
           <DropdownMenuItem
-            className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
-            onSelect={openResetPasswordDialog}
-          >
-            <LockIcon fontSize={20} /> Reset Password
-          </DropdownMenuItem>
-          <DropdownMenuItem
             onSelect={handleEdit}
             className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
           >
-            <EditIcon fontSize={20} /> Edit
+            <EditIcon fontSize={20} />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
+            onSelect={openResetPasswordDialog}
+          >
+            <LockIcon fontSize={20} />
+            {user.hasPassword ? 'Reset Password' : 'Setup Account'}
           </DropdownMenuItem>
           {user.disabled && (
             <DropdownMenuItem
               className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
               onSelect={openEnableDialog}
             >
-              <AccountBanIcon fontSize={20} /> Enable Email
+              <AccountBanIcon fontSize={20} />
+              Enable Email
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
@@ -196,14 +199,16 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
               className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
               onSelect={openDisableDialog}
             >
-              <AccountBanIcon fontSize={20} /> Disable & Delete data
+              <AccountBanIcon fontSize={20} />
+              Disable & Delete data
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
             className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
             onSelect={openDeleteDialog}
           >
-            <DeleteIcon fontSize={20} /> Delete
+            <DeleteIcon fontSize={20} />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -48,6 +48,7 @@ export function getBuildConfig(
         downloadUrl: 'https://affine.pro/download',
         pricingUrl: 'https://affine.pro/pricing',
         discordUrl: 'https://affine.pro/redirect/discord',
+        requestLicenseUrl: 'https://affine.pro/redirect/license',
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
         CAPTCHA_SITE_KEY: process.env.CAPTCHA_SITE_KEY ?? '',

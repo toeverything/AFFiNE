@@ -4,7 +4,7 @@ import { query } from 'lit/decorators.js';
 import { BaseCellRenderer } from '../../core/property/index.js';
 import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
-import { textInputStyle, textStyle } from './cell-renderer.css.js';
+import { textInputStyle, textStyle } from './cell-renderer-css.js';
 import { textPropertyModelConfig } from './define.js';
 
 export class TextCell extends BaseCellRenderer<string, string> {

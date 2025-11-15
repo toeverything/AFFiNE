@@ -256,12 +256,14 @@ const MemberItem = ({
 const getMemberStatus = (member: Member): I18nString => {
   switch (member.status) {
     case WorkspaceMemberStatus.NeedMoreSeat:
+    case WorkspaceMemberStatus.NeedMoreSeatAndReview:
       return 'insufficient-team-seat';
     case WorkspaceMemberStatus.Pending:
       return 'Pending';
-    case WorkspaceMemberStatus.NeedMoreSeatAndReview:
     case WorkspaceMemberStatus.UnderReview:
       return 'Under-Review';
+    case WorkspaceMemberStatus.AllocatingSeat:
+      return 'Allocating Seat';
     case WorkspaceMemberStatus.Accepted:
       switch (member.permission) {
         case Permission.Owner:

@@ -1,4 +1,4 @@
-import type { Schema, Workspace } from '@blocksuite/store';
+import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
 
 import {
   ImportDoc,
@@ -9,6 +9,7 @@ import {
 export function showImportModal({
   schema,
   collection,
+  extensions,
   onSuccess,
   onFail,
   container = document.body,
@@ -16,6 +17,7 @@ export function showImportModal({
 }: {
   schema: Schema;
   collection: Workspace;
+  extensions: ExtensionType[];
   onSuccess?: OnSuccessHandler;
   onFail?: OnFailHandler;
   multiple?: boolean;
@@ -25,6 +27,7 @@ export function showImportModal({
   const importDoc = new ImportDoc(
     collection,
     schema,
+    extensions,
     onSuccess,
     onFail,
     abortController

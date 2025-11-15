@@ -11,15 +11,16 @@ import { JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { DocReader } from '../core/doc';
+import { CopilotContextService } from '../plugins/copilot/context';
 import {
-  CopilotContextDocJob,
-  CopilotContextService,
-} from '../plugins/copilot/context';
-import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
+  CopilotEmbeddingJob,
+  MockEmbeddingClient,
+} from '../plugins/copilot/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
-  GeminiProvider,
+  CopilotProviderType,
+  GeminiGenerativeProvider,
   OpenAIProvider,
 } from '../plugins/copilot/providers';
 import { CopilotStorage } from '../plugins/copilot/storage';
@@ -29,6 +30,7 @@ import {
   createTestingApp,
   createWorkspace,
   inviteUser,
+  smallestPng,
   TestingApp,
   TestUser,
 } from './utils';
@@ -38,6 +40,7 @@ import {
   array2sse,
   audioTranscription,
   chatWithImages,
+  chatWithStreamObject,
   chatWithText,
   chatWithTextStream,
   chatWithWorkflow,
@@ -46,8 +49,15 @@ import {
   createCopilotContext,
   createCopilotMessage,
   createCopilotSession,
+  createDocCopilotSession,
+  createPinnedCopilotSession,
+  createWorkspaceCopilotSession,
   forkCopilotSession,
+  getCopilotSession,
+  getDocSessions,
   getHistories,
+  getPinnedSessions,
+  getWorkspaceSessions,
   listContext,
   listContextDocAndFiles,
   matchFiles,
@@ -64,7 +74,7 @@ const test = ava as TestFn<{
   app: TestingApp;
   db: PrismaClient;
   context: CopilotContextService;
-  jobs: CopilotContextDocJob;
+  jobs: CopilotEmbeddingJob;
   prompt: PromptService;
   factory: CopilotProviderFactory;
   storage: CopilotStorage;
@@ -79,7 +89,7 @@ test.before(async t => {
           providers: {
             openai: { apiKey: '1' },
             fal: {},
-            perplexity: {},
+            gemini: { apiKey: '1' },
           },
           unsplash: {
             key: process.env.UNSPLASH_ACCESS_KEY || '1',
@@ -100,7 +110,12 @@ test.before(async t => {
         },
       });
       m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
-      m.overrideProvider(GeminiProvider).useClass(MockCopilotProvider);
+      m.overrideProvider(GeminiGenerativeProvider).useClass(
+        class MockGenerativeProvider extends MockCopilotProvider {
+          // @ts-expect-error type not typed
+          override type: CopilotProviderType = CopilotProviderType.Gemini;
+        }
+      );
     },
   });
 
@@ -109,7 +124,7 @@ test.before(async t => {
   const context = app.get(CopilotContextService);
   const prompt = app.get(PromptService);
   const storage = app.get(CopilotStorage);
-  const jobs = app.get(CopilotContextDocJob);
+  const jobs = app.get(CopilotEmbeddingJob);
 
   t.context.app = app;
   t.context.db = db;
@@ -120,15 +135,22 @@ test.before(async t => {
   t.context.jobs = jobs;
 });
 
-const promptName = 'prompt';
+let textPromptName = 'prompt';
+let imagePromptName = 'prompt-image';
+
 test.beforeEach(async t => {
   Sinon.restore();
   const { app, prompt } = t.context;
-  await app.initTestingDB();
   await prompt.onApplicationBootstrap();
-  t.context.u1 = await app.signupV1('u1@affine.pro');
+  t.context.u1 = await app.signupV1();
+  textPromptName = randomUUID().replaceAll('-', '');
+  imagePromptName = randomUUID().replaceAll('-', '');
 
-  await prompt.set(promptName, 'test', [
+  await prompt.set(textPromptName, 'test', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  await prompt.set(imagePromptName, 'test-image', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 });
@@ -150,7 +172,7 @@ test('should create session correctly', async t => {
     }
   ) => {
     await asserter(
-      createCopilotSession(app, workspaceId, randomUUID(), promptName)
+      createCopilotSession(app, workspaceId, randomUUID(), textPromptName)
     );
   };
 
@@ -170,7 +192,7 @@ test('should create session correctly', async t => {
   }
 
   {
-    const u2 = await app.createUser('u2@affine.pro');
+    const u2 = await app.createUser();
     const { id } = await createWorkspace(app);
     await app.login(u2);
     await assertCreateSession(id, '', async x => {
@@ -181,7 +203,7 @@ test('should create session correctly', async t => {
       );
     });
 
-    app.switchUser(u1);
+    await app.switchUser(u1);
     const inviteId = await inviteUser(app, id, u2.email);
     await app.login(u2);
     await acceptInviteById(app, id, inviteId, false);
@@ -202,7 +224,7 @@ test('should update session correctly', async t => {
       t.truthy(await x, error);
     }
   ) => {
-    await asserter(updateCopilotSession(app, sessionId, promptName));
+    await asserter(updateCopilotSession(app, sessionId, textPromptName));
   };
 
   {
@@ -212,7 +234,7 @@ test('should update session correctly', async t => {
       app,
       workspaceId,
       docId,
-      promptName
+      textPromptName
     );
     await assertUpdateSession(
       sessionId,
@@ -225,7 +247,7 @@ test('should update session correctly', async t => {
       app,
       randomUUID(),
       randomUUID(),
-      promptName
+      textPromptName
     );
     await assertUpdateSession(
       sessionId,
@@ -234,8 +256,8 @@ test('should update session correctly', async t => {
   }
 
   {
-    await app.signupV1('test@affine.pro');
-    const u2 = await app.createUser('u2@affine.pro');
+    await app.signupV1();
+    const u2 = await app.createUser();
     const { id: workspaceId } = await createWorkspace(app);
     const inviteId = await inviteUser(app, workspaceId, u2.email);
     await app.login(u2);
@@ -244,7 +266,7 @@ test('should update session correctly', async t => {
       app,
       workspaceId,
       randomUUID(),
-      promptName
+      textPromptName
     );
     await assertUpdateSession(
       sessionId,
@@ -269,8 +291,9 @@ test('should fork session correctly', async t => {
 
   const assertForkSession = async (
     workspaceId: string,
+    docId: string,
     sessionId: string,
-    lastMessageId: string,
+    lastMessageId: string | undefined,
     error: string,
     asserter = async (x: any) => {
       const forkedSessionId = await x;
@@ -279,23 +302,13 @@ test('should fork session correctly', async t => {
     }
   ) =>
     await asserter(
-      forkCopilotSession(
-        app,
-        workspaceId,
-        randomUUID(),
-        sessionId,
-        lastMessageId
-      )
+      forkCopilotSession(app, workspaceId, docId, sessionId, lastMessageId)
     );
 
   // prepare session
   const { id } = await createWorkspace(app);
-  const sessionId = await createCopilotSession(
-    app,
-    id,
-    randomUUID(),
-    promptName
-  );
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(app, id, docId, textPromptName);
 
   let forkedSessionId: string;
   // should be able to fork session
@@ -304,7 +317,7 @@ test('should fork session correctly', async t => {
       const messageId = await createCopilotMessage(app, sessionId);
       await chatWithText(app, sessionId, messageId);
     }
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     const latestMessageId = histories[0].messages.findLast(
       m => m.role === 'assistant'
     )?.id;
@@ -313,15 +326,45 @@ test('should fork session correctly', async t => {
     // should be able to fork session
     forkedSessionId = await assertForkSession(
       id,
+      docId,
       sessionId,
       latestMessageId!,
       'should be able to fork session with cloud workspace that user can access'
     );
   }
 
+  // should be able to fork session without latestMessageId (copy all messages)
   {
-    const u2 = await app.signupV1('u2@affine.pro');
-    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+    forkedSessionId = await assertForkSession(
+      id,
+      docId,
+      sessionId,
+      undefined,
+      'should be able to fork session without latestMessageId'
+    );
+  }
+
+  // should not be able to fork session with wrong latestMessageId
+  {
+    await assertForkSession(
+      id,
+      docId,
+      sessionId,
+      'wrong-message-id',
+      '',
+      async x => {
+        await t.throwsAsync(
+          x,
+          { instanceOf: Error },
+          'should not able to fork session with wrong latestMessageId'
+        );
+      }
+    );
+  }
+
+  {
+    const u2 = await app.signupV1();
+    await assertForkSession(id, docId, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
         { instanceOf: Error },
@@ -329,11 +372,11 @@ test('should fork session correctly', async t => {
       );
     });
 
-    app.switchUser(u1);
+    await app.switchUser(u1);
     const inviteId = await inviteUser(app, id, u2.email);
-    app.switchUser(u2);
+    await app.switchUser(u2);
     await acceptInviteById(app, id, inviteId, false);
-    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+    await assertForkSession(id, docId, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
         { instanceOf: Error },
@@ -341,16 +384,17 @@ test('should fork session correctly', async t => {
       );
     });
 
-    app.switchUser(u1);
-    const histories = await getHistories(app, { workspaceId: id });
+    await app.switchUser(u1);
+    const histories = await getHistories(app, { workspaceId: id, docId });
     const latestMessageId = histories
       .find(h => h.sessionId === forkedSessionId)
       ?.messages.findLast(m => m.role === 'assistant')?.id;
     t.truthy(latestMessageId, 'should find latest message id');
 
-    app.switchUser(u2);
+    await app.switchUser(u2);
     await assertForkSession(
       id,
+      docId,
       forkedSessionId,
       latestMessageId!,
       'should able to fork a forked session created by other user'
@@ -363,7 +407,7 @@ test('should be able to use test provider', async t => {
 
   const { id } = await createWorkspace(app);
   t.truthy(
-    await createCopilotSession(app, id, randomUUID(), promptName),
+    await createCopilotSession(app, id, randomUUID(), textPromptName),
     'failed to create session'
   );
 });
@@ -379,10 +423,68 @@ test('should create message correctly', async t => {
       app,
       id,
       randomUUID(),
-      promptName
+      textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
     t.truthy(messageId, 'should be able to create message with valid session');
+  }
+
+  {
+    // with attachment url
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const messageId = await createCopilotMessage(app, sessionId, undefined, [
+        'http://example.com/cat.jpg',
+      ]);
+      t.truthy(messageId, 'should be able to create message with url link');
+    }
+
+    // with attachment
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+      const messageId = await createCopilotMessage(
+        app,
+        sessionId,
+        undefined,
+        undefined,
+        new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
+      );
+      t.truthy(messageId, 'should be able to create message with blob');
+    }
+
+    // with attachments
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+      const messageId = await createCopilotMessage(
+        app,
+        sessionId,
+        undefined,
+        undefined,
+        undefined,
+        [new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })]
+      );
+      t.truthy(messageId, 'should be able to create message with blobs');
+    }
   }
 
   {
@@ -402,33 +504,66 @@ test('should be able to chat with api', async t => {
   Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
 
   const { id } = await createWorkspace(app);
-  const sessionId = await createCopilotSession(
-    app,
-    id,
-    randomUUID(),
-    promptName
-  );
-  const messageId = await createCopilotMessage(app, sessionId);
-  const ret = await chatWithText(app, sessionId, messageId);
-  t.is(ret, 'generate text to text', 'should be able to chat with text');
+  {
+    const sessionId = await createCopilotSession(
+      app,
+      id,
+      randomUUID(),
+      textPromptName
+    );
+    const messageId = await createCopilotMessage(app, sessionId);
+    const ret = await chatWithText(app, sessionId, messageId);
+    t.is(ret, 'generate text to text', 'should be able to chat with text');
 
-  const ret2 = await chatWithTextStream(app, sessionId, messageId);
-  t.is(
-    ret2,
-    textToEventStream('generate text to text stream', messageId),
-    'should be able to chat with text stream'
-  );
+    const ret2 = await chatWithTextStream(app, sessionId, messageId);
+    t.is(
+      ret2,
+      textToEventStream('generate text to text stream', messageId),
+      'should be able to chat with text stream'
+    );
+  }
 
-  const ret3 = await chatWithImages(app, sessionId, messageId);
-  t.is(
-    array2sse(sse2array(ret3).filter(e => e.event !== 'event')),
-    textToEventStream(
-      ['https://example.com/test.jpg', 'hello '],
-      messageId,
-      'attachment'
-    ),
-    'should be able to chat with images'
-  );
+  {
+    const sessionId = await createCopilotSession(
+      app,
+      id,
+      randomUUID(),
+      imagePromptName
+    );
+    const messageId = await createCopilotMessage(app, sessionId);
+    const ret3 = await chatWithImages(app, sessionId, messageId);
+    t.is(
+      array2sse(sse2array(ret3).filter(e => e.event !== 'event')),
+      textToEventStream(
+        ['https://example.com/test-image.jpg', 'hello '],
+        messageId,
+        'attachment'
+      ),
+      'should be able to chat with images'
+    );
+  }
+
+  {
+    const sessionId = await createCopilotSession(
+      app,
+      id,
+      randomUUID(),
+      textPromptName
+    );
+    const messageId = await createCopilotMessage(app, sessionId);
+
+    const ret4 = await chatWithStreamObject(app, sessionId, messageId);
+
+    const objects = Array.from('generate text to object stream').map(data =>
+      JSON.stringify({ type: 'text-delta', textDelta: data })
+    );
+
+    t.is(
+      ret4,
+      textToEventStream(objects, messageId),
+      'should be able to chat with stream object'
+    );
+  }
 
   Sinon.restore();
 });
@@ -482,12 +617,19 @@ test('should be able to chat with special image model', async t => {
     );
   };
 
-  await testWithModel('debug:action:fal-sd15', 'some-tag');
+  await testWithModel('Generate image', 'some-tag');
   await testWithModel(
-    'debug:action:fal-upscaler',
-    'best quality, 8K resolution, highres, clarity, some-tag'
+    'Convert to sticker',
+    'convert this image to sticker. you need to identify the subject matter and warp a circle of white stroke around the subject matter and with transparent background. some-tag'
   );
-  await testWithModel('debug:action:fal-remove-bg', 'some-tag');
+  await testWithModel(
+    'Upscale image',
+    'make the image more detailed. some-tag'
+  );
+  await testWithModel(
+    'Remove background',
+    'Keep the subject and remove other non-subject items. Transparent background. some-tag'
+  );
 
   Sinon.restore();
 });
@@ -500,18 +642,19 @@ test('should be able to retry with api', async t => {
   // normal chat
   {
     const { id } = await createWorkspace(app);
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
-      promptName
+      docId,
+      textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
     // chat 2 times
     await chatWithText(app, sessionId, messageId);
     await chatWithText(app, sessionId, messageId);
 
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['generate text to text', 'generate text to text']],
@@ -522,11 +665,12 @@ test('should be able to retry with api', async t => {
   // retry chat
   {
     const { id } = await createWorkspace(app);
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
-      promptName
+      docId,
+      textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
     await chatWithText(app, sessionId, messageId);
@@ -534,7 +678,7 @@ test('should be able to retry with api', async t => {
     await chatWithText(app, sessionId);
 
     // should only have 1 message
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     t.snapshot(
       cleanObject(histories),
       'should be able to list history after retry'
@@ -544,11 +688,12 @@ test('should be able to retry with api', async t => {
   // retry chat with new message id
   {
     const { id } = await createWorkspace(app);
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
-      promptName
+      docId,
+      textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
     await chatWithText(app, sessionId, messageId);
@@ -557,7 +702,7 @@ test('should be able to retry with api', async t => {
     await chatWithText(app, sessionId, newMessageId, '', true);
 
     // should only have 1 message
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     t.snapshot(
       cleanObject(histories),
       'should be able to list history after retry'
@@ -575,13 +720,13 @@ test('should reject message from different session', async t => {
     app,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
   const anotherSessionId = await createCopilotSession(
     app,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
   const anotherMessageId = await createCopilotMessage(app, anotherSessionId);
   await t.throwsAsync(
@@ -594,13 +739,13 @@ test('should reject message from different session', async t => {
 test('should reject request from different user', async t => {
   const { app, u1 } = t.context;
 
-  const u2 = await app.createUser('u2@affine.pro');
+  const u2 = await app.createUser();
   const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
 
   // should reject message from different user
@@ -615,10 +760,10 @@ test('should reject request from different user', async t => {
 
   // should reject chat from different user
   {
-    app.switchUser(u1);
+    await app.switchUser(u1);
     const messageId = await createCopilotMessage(app, sessionId);
     {
-      app.switchUser(u2);
+      await app.switchUser(u2);
       await t.throwsAsync(
         chatWithText(app, sessionId, messageId),
         { instanceOf: Error },
@@ -634,18 +779,19 @@ test('should be able to list history', async t => {
   const { app } = t.context;
 
   const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
   const sessionId = await createCopilotSession(
     app,
     workspaceId,
-    randomUUID(),
-    promptName
+    docId,
+    textPromptName
   );
 
   const messageId = await createCopilotMessage(app, sessionId, 'hello');
   await chatWithText(app, sessionId, messageId);
 
   {
-    const histories = await getHistories(app, { workspaceId });
+    const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['hello', 'generate text to text']],
@@ -656,6 +802,7 @@ test('should be able to list history', async t => {
   {
     const histories = await getHistories(app, {
       workspaceId,
+      docId,
       options: { messageOrder: 'desc' },
     });
     t.deepEqual(
@@ -669,7 +816,7 @@ test('should be able to list history', async t => {
 test('should reject request that user have not permission', async t => {
   const { app, u1 } = t.context;
 
-  const u2 = await app.createUser('u2@affine.pro');
+  const u2 = await app.createUser();
   const { id: workspaceId } = await createWorkspace(app);
 
   // should reject request that user have not permission
@@ -684,9 +831,9 @@ test('should reject request that user have not permission', async t => {
 
   // should able to list history after user have permission
   {
-    app.switchUser(u1);
+    await app.switchUser(u1);
     const inviteId = await inviteUser(app, workspaceId, u2.email);
-    app.switchUser(u2);
+    await app.switchUser(u2);
     await acceptInviteById(app, workspaceId, inviteId, false);
 
     t.deepEqual(
@@ -697,24 +844,25 @@ test('should reject request that user have not permission', async t => {
   }
 
   {
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       workspaceId,
-      randomUUID(),
-      promptName
+      docId,
+      textPromptName
     );
 
     const messageId = await createCopilotMessage(app, sessionId);
     await chatWithText(app, sessionId, messageId);
 
-    const histories = await getHistories(app, { workspaceId });
+    const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['generate text to text']],
       'should able to list history'
     );
 
-    app.switchUser(u1);
+    await app.switchUser(u1);
     t.deepEqual(
       await getHistories(app, { workspaceId }),
       [],
@@ -738,7 +886,7 @@ test('should be able to manage context', async t => {
     app,
     workspaceId,
     randomUUID(),
-    promptName
+    textPromptName
   );
 
   // use mocked embedding client
@@ -820,7 +968,7 @@ test('should be able to manage context', async t => {
       app,
       workspaceId,
       randomUUID(),
-      promptName
+      textPromptName
     );
     const contextId = await createCopilotContext(app, workspaceId, sessionId);
 
@@ -879,9 +1027,22 @@ test('should be able to transcript', async t => {
 
   const { id: workspaceId } = await createWorkspace(app);
 
-  Sinon.stub(app.get(GeminiProvider), 'generateText').resolves(
-    '[{"a":"A","s":30,"e":45,"t":"Hello, everyone."},{"a":"B","s":46,"e":70,"t":"Hi, thank you for joining the meeting today."}]'
-  );
+  for (const [provider, func] of [
+    [GeminiGenerativeProvider, 'text'],
+    [GeminiGenerativeProvider, 'structure'],
+  ] as const) {
+    Sinon.stub(app.get(provider), func).resolves(
+      JSON.stringify([
+        { a: 'A', s: 30, e: 45, t: 'Hello, everyone.' },
+        {
+          a: 'B',
+          s: 46,
+          e: 70,
+          t: 'Hi, thank you for joining the meeting today.',
+        },
+      ])
+    );
+  }
 
   {
     const job = await submitAudioTranscription(app, workspaceId, '1', '1.mp3', [
@@ -946,4 +1107,157 @@ test('should be able to transcript', async t => {
       );
     }
   }
+});
+
+test('should create different session types and validate prompt constraints', async t => {
+  const { app } = t.context;
+  const { id: workspaceId } = await createWorkspace(app);
+
+  const validateSession = async (
+    description: string,
+    workspaceId: string,
+    createPromise: Promise<string>
+  ) => {
+    const sessionId = await createPromise;
+
+    t.truthy(sessionId, description);
+    t.snapshot(
+      cleanObject(
+        [await getCopilotSession(app, workspaceId, sessionId)],
+        ['id', 'workspaceId', 'promptName']
+      ),
+      `should create session with ${description}`
+    );
+    return sessionId;
+  };
+
+  await validateSession(
+    'should create workspace session with text prompt',
+    workspaceId,
+    createWorkspaceCopilotSession(app, workspaceId, textPromptName)
+  );
+  await validateSession(
+    'should create pinned session with text prompt',
+    workspaceId,
+    createPinnedCopilotSession(app, workspaceId, 'pinned-doc', textPromptName)
+  );
+  await validateSession(
+    'should create doc session with text prompt',
+    workspaceId,
+    createDocCopilotSession(app, workspaceId, 'normal-doc', textPromptName)
+  );
+});
+
+test('should list histories for different session types correctly', async t => {
+  const { app } = t.context;
+  const { id: workspaceId } = await createWorkspace(app);
+  const pinnedDocId = 'pinned-doc';
+  const docId = 'normal-doc';
+
+  // create sessions and add messages
+  const [workspaceSessionId, pinnedSessionId, docSessionId] = await Promise.all(
+    [
+      createWorkspaceCopilotSession(app, workspaceId, textPromptName),
+      createPinnedCopilotSession(app, workspaceId, pinnedDocId, textPromptName),
+      createDocCopilotSession(app, workspaceId, docId, textPromptName),
+    ]
+  );
+
+  await Promise.all([
+    createCopilotMessage(app, workspaceSessionId, 'workspace message'),
+    createCopilotMessage(app, pinnedSessionId, 'pinned message'),
+    createCopilotMessage(app, docSessionId, 'doc message'),
+  ]);
+
+  const testHistoryQuery = async (
+    queryFn: () => Promise<any[]>,
+    opts: {
+      sessionIds?: string[];
+      sessionId?: string;
+      pinned?: boolean;
+      isEmpty?: boolean;
+    },
+    description: string
+  ) => {
+    const s = await queryFn();
+
+    if (opts.isEmpty) {
+      t.is(s.length, 0, `should return ${description}`);
+      return;
+    }
+
+    if (opts.sessionIds) {
+      t.is(s.length, opts.sessionIds.length, `should return ${description}`);
+      const ids = s.map(h => h.sessionId).sort((a, b) => a.localeCompare(b));
+      const expectedIds = opts.sessionIds.sort((a, b) => a.localeCompare(b));
+      t.deepEqual(ids, expectedIds, `should return correct ${description}`);
+    } else if (opts.sessionId) {
+      t.is(s.length, 1, `should return ${description}`);
+      t.is(
+        s[0].sessionId,
+        opts.sessionId,
+        `should return correct ${description}`
+      );
+      if (opts.pinned !== undefined) {
+        t.is(s[0].pinned, opts.pinned, `pinned status for ${description}`);
+      }
+    }
+  };
+
+  // test for getHistories
+  await testHistoryQuery(
+    () => getHistories(app, { workspaceId, docId: null }),
+    { sessionId: workspaceSessionId },
+    'workspace session history'
+  );
+  await testHistoryQuery(
+    () => getHistories(app, { workspaceId, docId: pinnedDocId }),
+    { sessionId: pinnedSessionId },
+    'pinned session history'
+  );
+  await testHistoryQuery(
+    () => getHistories(app, { workspaceId, docId }),
+    { sessionId: docSessionId },
+    'doc session history'
+  );
+
+  // test for getWorkspaceSessions
+  await testHistoryQuery(
+    () => getWorkspaceSessions(app, { workspaceId }),
+    { sessionId: workspaceSessionId, pinned: false },
+    'workspace-level sessions'
+  );
+
+  // test for getDocSessions
+  await testHistoryQuery(
+    () =>
+      getDocSessions(app, { workspaceId, docId, options: { pinned: false } }),
+    { sessionId: docSessionId, pinned: false },
+    'doc sessions'
+  );
+
+  await testHistoryQuery(
+    () => getDocSessions(app, { workspaceId, docId: pinnedDocId }),
+    { sessionId: pinnedSessionId, pinned: true },
+    'pinned doc sessions'
+  );
+
+  // test for getPinnedSessions
+  await testHistoryQuery(
+    () => getPinnedSessions(app, { workspaceId }),
+    { sessionId: pinnedSessionId, pinned: true },
+    'pinned sessions'
+  );
+
+  await testHistoryQuery(
+    () => getPinnedSessions(app, { workspaceId, docId: pinnedDocId }),
+    { sessionId: pinnedSessionId, pinned: true },
+    'pinned session for specific doc'
+  );
+
+  await testHistoryQuery(
+    () => getPinnedSessions(app, { workspaceId, docId }),
+    { isEmpty: true },
+    'no pinned sessions for non-pinned doc'
+  );
 });

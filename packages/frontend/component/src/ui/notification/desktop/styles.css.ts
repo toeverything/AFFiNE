@@ -55,14 +55,14 @@ export const title = style({
   fontSize: 15,
   marginRight: 10,
 });
-export const action = style({
-  marginRight: 16,
-});
+
 export const actionButton = style({
   color: actionTextColor,
   position: 'relative',
   background: 'transparent',
   border: 'none',
+  fontSize: cssVar('fontSm'),
+  lineHeight: '22px',
 });
 export const closeButton = style({
   selectors: {

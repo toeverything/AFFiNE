@@ -23,7 +23,7 @@ import {
   MindmapStyleOne,
   MindmapStyleThree,
   MindmapStyleTwo,
-} from '../view';
+} from '../view/index';
 
 const MINDMAP_STYLE_LIST = [
   {

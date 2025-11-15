@@ -1,3 +1,4 @@
+import { Scrollable } from '@affine/component';
 import { Avatar } from '@affine/component/ui/avatar';
 import { UserPlanButton } from '@affine/core/components/affine/auth/user-plan-button';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
@@ -111,6 +112,7 @@ type SettingSidebarItemProps = {
   title: string;
   key: string;
   testId?: string;
+  beta?: boolean;
 } & HTMLAttributes<HTMLDivElement>;
 
 const SettingSidebarItem = ({
@@ -118,6 +120,7 @@ const SettingSidebarItem = ({
   icon,
   title,
   testId,
+  beta,
   ...props
 }: SettingSidebarItemProps) => {
   return (
@@ -131,6 +134,7 @@ const SettingSidebarItem = ({
     >
       <div className={style.sidebarSelectItemIcon}>{icon}</div>
       <div className={style.sidebarSelectItemName}>{title}</div>
+      {beta ? <div className={style.sidebarSelectItemBeta}>Beta</div> : null}
     </div>
   );
 };
@@ -222,13 +226,18 @@ export const SettingSidebar = ({
         </Suspense>
       ) : null}
 
-      {groups.map(group => (
-        <SettingSidebarGroup
-          key={group.key}
-          title={group.title}
-          items={group.items}
-        />
-      ))}
+      <Scrollable.Root>
+        <Scrollable.Viewport>
+          {groups.map(group => (
+            <SettingSidebarGroup
+              key={group.key}
+              title={group.title}
+              items={group.items}
+            />
+          ))}
+          <Scrollable.Scrollbar />
+        </Scrollable.Viewport>
+      </Scrollable.Root>
     </div>
   );
 };

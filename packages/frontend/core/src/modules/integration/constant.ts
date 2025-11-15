@@ -13,7 +13,7 @@ import type { IntegrationProperty, IntegrationType } from './type';
 // name
 export const INTEGRATION_TYPE_NAME_MAP: Record<IntegrationType, I18nString> = {
   readwise: 'com.affine.integration.name.readwise',
-  zotero: 'Zotero',
+  // zotero: 'Zotero',
 };
 
 // schema
@@ -50,7 +50,7 @@ export const INTEGRATION_PROPERTY_SCHEMA: {
       icon: HistoryIcon,
     },
   },
-  zotero: {},
+  // zotero: {},
 };
 
 // icon
@@ -59,5 +59,5 @@ export const INTEGRATION_ICON_MAP: Record<
   React.ComponentType<SVGProps<SVGSVGElement>>
 > = {
   readwise: ReadwiseLogoDuotoneIcon,
-  zotero: () => null,
+  // zotero: () => null,
 };

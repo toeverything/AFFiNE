@@ -15,7 +15,7 @@ import { computed } from '@preact/signals-core';
 import { html, nothing, type PropertyValues } from 'lit';
 import { createRef, ref } from 'lit/directives/ref.js';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import {
   inlineLinkNodeStyle,
   linkCellStyle,
@@ -26,7 +26,7 @@ import {
   linkIconStyle,
   normalTextStyle,
   showLinkIconStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 import { linkPropertyModelConfig } from './define.js';
 
 export class LinkCell extends BaseCellRenderer<string, string> {
@@ -88,7 +88,7 @@ export class LinkCell extends BaseCellRenderer<string, string> {
   };
 
   get std() {
-    const host = this.view.contextGet(HostContextKey);
+    const host = this.view.serviceGet(EditorHostKey);
     return host?.std;
   }
 

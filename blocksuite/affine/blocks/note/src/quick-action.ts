@@ -58,7 +58,7 @@ export const quickActionConfig: QuickActionConfig[] = [
             draftedModels,
             title
           ).catch(console.error);
-          notifyDocCreated(std, doc);
+          notifyDocCreated(std);
         })
         .catch(console.error);
     },

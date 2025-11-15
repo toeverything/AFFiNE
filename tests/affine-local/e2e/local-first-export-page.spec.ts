@@ -24,7 +24,7 @@ test.skip('New a page ,then open it and export html', async ({
   const cell = page.getByRole('cell', {
     name: 'this is a new page to export html content',
   });
-  expect(cell).not.toBeUndefined();
+  await expect(cell).toBeVisible();
 
   await cell.click();
   await clickPageMoreActions(page);
@@ -57,7 +57,7 @@ test.skip('New a page ,then open it and export markdown', async ({
   const cell = page.getByRole('cell', {
     name: 'this is a new page to export markdown content',
   });
-  expect(cell).not.toBeUndefined();
+  await expect(cell).toBeVisible();
 
   await cell.click();
   await clickPageMoreActions(page);

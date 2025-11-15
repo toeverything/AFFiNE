@@ -73,35 +73,3 @@ export function substringMatchScore(name: string, query: string) {
   // normalize
   return 0.5 * score;
 }
-
-/**
- * Checks if the prefix is a markdown prefix.
- * Ex. 1. 2. 3. - * [] [ ] [x] # ## ### #### ##### ###### --- *** ___ > ```
- */
-export function isMarkdownPrefix(prefix: string) {
-  return (
-    !!prefix.match(
-      /^(\d+\.|-|\*|\[ ?\]|\[x\]|(#){1,6}|>|```([a-zA-Z0-9]*))$/
-    ) || isHorizontalRuleMarkdown(prefix)
-  );
-}
-
-/**
- * Checks if the prefix is a valid markdown horizontal rule - https://www.markdownguide.org/basic-syntax/#horizontal-rules
- * @param prefix - The string to check for horizontal rule syntax
- * @returns boolean - True if the string represents a valid horizontal rule
- *
- * Valid horizontal rules:
- * - Three or more consecutive hyphens (e.g., "---", "----")
- * - Three or more consecutive asterisks (e.g., "***", "****")
- * - Three or more consecutive underscores (e.g., "___", "____")
- *
- * Invalid examples:
- * - Mixed characters (e.g., "--*", "-*-")
- * - Less than three characters (e.g., "--", "**")
- */
-export function isHorizontalRuleMarkdown(prefix: string) {
-  const horizontalRulePattern = /^(-{3,}|\*{3,}|_{3,})$/;
-
-  return !!prefix.match(horizontalRulePattern);
-}

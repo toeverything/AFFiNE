@@ -7,7 +7,11 @@ import {
   BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
   EDGELESS_TOP_CONTENTEDITABLE_SELECTOR,
 } from '@blocksuite/affine-shared/consts';
-import { DocModeProvider } from '@blocksuite/affine-shared/services';
+import {
+  BlockElementCommentManager,
+  CitationProvider,
+  DocModeProvider,
+} from '@blocksuite/affine-shared/services';
 import {
   calculateCollapsedSiblings,
   getNearestHeadingBefore,
@@ -23,6 +27,7 @@ import { computed, effect, signal } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
@@ -63,6 +68,10 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
       ?.getPlaceholder(this.model);
   }
 
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   get attributeRenderer() {
     return this.inlineManager.getRenderer();
   }
@@ -92,6 +101,20 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
 
   get inlineManager() {
     return this.std.get(DefaultInlineManagerExtension.identifier);
+  }
+
+  get hasCitationSiblings() {
+    return this.collapsedSiblings.some(sibling =>
+      this.citationService.isCitationModel(sibling)
+    );
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   override get topContenteditableElement() {
@@ -125,7 +148,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
     this.disposables.add(
       effect(() => {
         const composing = this._composing.value;
-        if (composing || this.doc.readonly) {
+        if (composing || this.store.readonly) {
           this._displayPlaceholder.value = false;
           return;
         }
@@ -197,7 +220,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
             nearestHeading &&
             nearestHeading.props.type.startsWith('h') &&
             nearestHeading.props.collapsed &&
-            !this.doc.readonly
+            !this.store.readonly
           ) {
             nearestHeading.props.collapsed = false;
           }
@@ -214,8 +237,14 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
   }
 
   override renderBlock(): TemplateResult<1> {
+    const widgets = html`${repeat(
+      Object.entries(this.widgets),
+      ([id]) => id,
+      ([_, widget]) => widget
+    )}`;
+
     const { type$ } = this.model.props;
-    const collapsed = this.doc.readonly
+    const collapsed = this.store.readonly
       ? this._readonlyCollapsed
       : this.model.props.collapsed;
     const collapsedSiblings = this.collapsedSiblings;
@@ -234,6 +263,10 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
         </style>
       `;
     }
+
+    const textAlignStyle = styleMap({
+      textAlign: this.model.props.textAlign$?.value,
+    });
 
     const children = html`<div
       class="affine-block-children-container"
@@ -255,7 +288,11 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
         }
       </style>
       <div
-        class="affine-paragraph-block-container"
+        class=${classMap({
+          'affine-paragraph-block-container': true,
+          'highlight-comment': this.isCommentHighlighted,
+        })}
+        style="${textAlignStyle}"
         data-has-collapsed-siblings="${collapsedSiblings.length > 0}"
       >
         <div
@@ -278,12 +315,19 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
                 <blocksuite-toggle-button
                   .collapsed=${collapsed}
                   .updateCollapsed=${(value: boolean) => {
-                    if (this.doc.readonly) {
+                    if (this.store.readonly) {
                       this._readonlyCollapsed = value;
                     } else {
-                      this.doc.captureSync();
-                      this.doc.updateBlock(this.model, {
+                      this.store.captureSync();
+                      this.store.updateBlock(this.model, {
                         collapsed: value,
+                      });
+                    }
+
+                    if (this.hasCitationSiblings) {
+                      this.citationService.trackEvent('Expand', {
+                        control: 'Source Button',
+                        type: value ? 'Hide' : 'Show',
                       });
                     }
                   }}
@@ -293,12 +337,12 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
           <rich-text
             .yText=${this.model.props.text.yText}
             .inlineEventSource=${this.topContenteditableElement ?? nothing}
-            .undoManager=${this.doc.history}
+            .undoManager=${this.store.history.undoManager}
             .attributesSchema=${this.attributesSchema}
             .attributeRenderer=${this.attributeRenderer}
             .markdownMatches=${this.inlineManager?.markdownMatches}
             .embedChecker=${this.embedChecker}
-            .readonly=${this.doc.readonly}
+            .readonly=${this.store.readonly}
             .inlineRangeProvider=${this._inlineRangeProvider}
             .enableClipboard=${false}
             .enableUndoRedo=${false}
@@ -320,7 +364,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
               `}
         </div>
 
-        ${children}
+        ${children} ${widgets}
       </div>
     `;
   }

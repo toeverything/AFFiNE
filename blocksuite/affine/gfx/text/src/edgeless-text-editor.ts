@@ -1,11 +1,12 @@
 import {
   CanvasElementType,
+  DefaultTool,
   EdgelessCRUDIdentifier,
   getSurfaceBlock,
   type IModelCoord,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
-import { TextElementModel } from '@blocksuite/affine-model';
+import { DefaultTheme, TextElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
@@ -53,8 +54,7 @@ export function mountTextElementEditor(
 
   const gfx = edgeless.std.get(GfxControllerIdentifier);
 
-  // @ts-expect-error TODO: refactor gfx tool
-  gfx.tool.setTool('default');
+  gfx.tool.setTool(DefaultTool);
   gfx.selection.set({
     elements: [textElement.id],
     editing: true,
@@ -83,7 +83,7 @@ export function addText(edgeless: BlockComponent, event: PointerEventState) {
       });
     if (!id) return;
 
-    edgeless.doc.captureSync();
+    edgeless.store.captureSync();
     const textElement = crud.getElementById(id);
     if (!textElement) return;
     if (textElement instanceof TextElementModel) {
@@ -432,7 +432,7 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
     const isEmpty = !text.length && !this._isComposition;
     const color = this.std
       .get(ThemeProvider)
-      .generateColorProperty(this.element.color, '#000000');
+      .generateColorProperty(this.element.color, DefaultTheme.textColor);
 
     return html`<div
       style=${styleMap({

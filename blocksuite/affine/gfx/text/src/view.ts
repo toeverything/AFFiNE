@@ -1,28 +1,32 @@
-import type { TextElementModel } from '@blocksuite/affine-model';
-import { GfxElementModelView } from '@blocksuite/std/gfx';
+import {
+  type ViewExtensionContext,
+  ViewExtensionProvider,
+} from '@blocksuite/affine-ext-loader';
 
-import { mountTextElementEditor } from './edgeless-text-editor';
+import { DblClickAddEdgelessText } from './dblclick-add-edgeless-text';
+import { effects } from './effects';
+import { TextElementRendererExtension } from './element-renderer';
+import { TextElementView, TextInteraction } from './element-view';
+import { TextTool } from './tool';
+import { textToolbarExtension } from './toolbar';
 
-export class TextElementView extends GfxElementModelView<TextElementModel> {
-  static override type: string = 'text';
+export class TextViewExtension extends ViewExtensionProvider {
+  override name = 'affine-text-gfx';
 
-  override onCreated(): void {
-    super.onCreated();
-
-    this._initDblClickToEdit();
+  override effect(): void {
+    super.effect();
+    effects();
   }
 
-  private _initDblClickToEdit(): void {
-    this.on('dblclick', evt => {
-      const edgeless = this.std.view.getBlock(this.std.store.root!.id);
-      const [x, y] = this.gfx.viewport.toModelCoord(evt.x, evt.y);
-
-      if (edgeless && !this.model.isLocked()) {
-        mountTextElementEditor(this.model, edgeless, {
-          x,
-          y,
-        });
-      }
-    });
+  override setup(context: ViewExtensionContext) {
+    super.setup(context);
+    context.register(TextElementView);
+    context.register(TextElementRendererExtension);
+    if (this.isEdgeless(context.scope)) {
+      context.register(TextTool);
+      context.register(textToolbarExtension);
+      context.register(DblClickAddEdgelessText);
+      context.register(TextInteraction);
+    }
   }
 }

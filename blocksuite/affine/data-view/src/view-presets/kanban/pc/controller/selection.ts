@@ -12,7 +12,7 @@ import type {
 import { KanbanCard } from '../card.js';
 import { KanbanCell } from '../cell.js';
 import type { KanbanGroup } from '../group.js';
-import type { DataViewKanban } from '../kanban-view.js';
+import type { KanbanViewUILogic } from '../kanban-view-ui-logic.js';
 
 export class KanbanSelectionController implements ReactiveController {
   private _selection?: KanbanViewSelectionWithType;
@@ -47,52 +47,62 @@ export class KanbanSelectionController implements ReactiveController {
   }
 
   set selection(data: KanbanViewSelection | undefined) {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     if (!data) {
-      this.host.props.setSelection();
+      this.logic.setSelection();
       return;
     }
     const selection: KanbanViewSelectionWithType = {
       ...data,
-      viewId: this.host.props.view.id,
+      viewId: this.logic.view.id,
       type: 'kanban',
     };
 
     if (selection.selectionType === 'cell' && selection.isEditing) {
-      const container = getFocusCell(this.host, selection);
+      const container = getFocusCell(host, selection);
       const cell = container?.cell;
       const isEditing = cell
         ? cell.beforeEnterEditMode()
           ? selection.isEditing
           : false
         : false;
-      this.host.props.setSelection({
+      this.logic.setSelection({
         ...selection,
         isEditing,
       });
     } else {
-      this.host.props.setSelection(selection);
+      this.logic.setSelection(selection);
     }
   }
 
   get view() {
-    return this.host.props.view;
+    return this.logic.view;
   }
 
-  constructor(private readonly host: DataViewKanban) {
-    this.host.addController(this);
+  get host() {
+    return this.logic.ui$.value;
   }
+
+  constructor(public logic: KanbanViewUILogic) {}
 
   blur(selection: KanbanViewSelection) {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     if (selection.selectionType !== 'cell') {
       const selectCards = getSelectedCards(this.host, selection);
-      selectCards.forEach(card => (card.isFocus = false));
+      selectCards.forEach(card => (card.isFocus$.value = false));
       return;
     }
     const container = getFocusCell(this.host, selection);
     if (!container) {
       return;
     }
-    container.isFocus = false;
+    container.isFocus$.value = false;
     const cell = container?.cell;
 
     if (selection.isEditing) {
@@ -116,19 +126,24 @@ export class KanbanSelectionController implements ReactiveController {
       return;
     }
     if (selection.selectionType === 'card') {
-      this.host.props.view.rowDelete(selection.cards.map(v => v.cardId));
+      this.view.rowsDelete(selection.cards.map(v => v.cardId));
       this.selection = undefined;
+      this.logic.ui$.value?.requestUpdate();
     }
   }
 
   focus(selection: KanbanViewSelection) {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     if (selection.selectionType !== 'cell') {
       const selectCards = getSelectedCards(this.host, selection);
       selectCards.forEach((card, index) => {
         if (index === 0) {
           card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
-        card.isFocus = true;
+        card.isFocus$.value = true;
       });
       return;
     }
@@ -137,7 +152,7 @@ export class KanbanSelectionController implements ReactiveController {
       return;
     }
     container.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    container.isFocus = true;
+    container.isFocus$.value = true;
     const cell = container?.cell;
     if (selection.isEditing) {
       if (cell?.focusCell()) {
@@ -153,14 +168,14 @@ export class KanbanSelectionController implements ReactiveController {
   }
 
   focusFirstCell() {
-    const group = this.host.groupManager?.groupsDataList$.value?.[0];
+    const group = this.logic.groups$.value?.[0];
     const card = group?.rows[0];
-    const columnId = card && this.host.props.view.getHeaderTitle(card)?.id;
+    const columnId = card && this.view.getHeaderTitle(card.rowId)?.id;
     if (group && card && columnId) {
       this.selection = {
         selectionType: 'cell',
         groupKey: group.key,
-        cardId: card,
+        cardId: card.rowId,
         columnId,
         isEditing: false,
       };
@@ -168,6 +183,10 @@ export class KanbanSelectionController implements ReactiveController {
   }
 
   focusIn() {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     const selection = this.selection;
     if (!selection) return;
     if (selection.selectionType === 'cell' && selection.isEditing) return;
@@ -197,6 +216,10 @@ export class KanbanSelectionController implements ReactiveController {
   }
 
   focusNext(position: 'up' | 'down' | 'left' | 'right') {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     const selection = this.selection;
     if (!selection) {
       return;
@@ -221,7 +244,7 @@ export class KanbanSelectionController implements ReactiveController {
       }
     } else if (selection.selectionType === 'card') {
       // card focus
-      const group = this.host.querySelector(
+      const group = this.host?.querySelector(
         `affine-data-view-kanban-group[data-key="${selection.cards[0].groupKey}"]`
       );
       const cardElements = Array.from(
@@ -291,7 +314,11 @@ export class KanbanSelectionController implements ReactiveController {
         cards: KanbanCardSelectionCard[];
       }
     | undefined {
-    const group = this.host.querySelector(
+    const host = this.host;
+    if (!host) {
+      return;
+    }
+    const group = host.querySelector(
       `affine-data-view-kanban-group[data-key="${selection.cards[0].groupKey}"]`
     );
     const kanbanCards = Array.from(
@@ -331,7 +358,7 @@ export class KanbanSelectionController implements ReactiveController {
     }
 
     const groups = Array.from(
-      this.host.querySelectorAll('affine-data-view-kanban-group')
+      this.host?.querySelectorAll('affine-data-view-kanban-group') ?? []
     );
 
     if (nextPosition === 'right') {
@@ -368,6 +395,10 @@ export class KanbanSelectionController implements ReactiveController {
         groupKey?: string;
       }
     | undefined {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     const kanbanCells = getCardCellsBySelection(this.host, selection);
     const group = this.host.querySelector(
       `affine-data-view-kanban-group[data-key="${selection.groupKey}"]`
@@ -425,7 +456,7 @@ export class KanbanSelectionController implements ReactiveController {
     }
 
     const groups = Array.from(
-      this.host.querySelectorAll('affine-data-view-kanban-group')
+      this.host?.querySelectorAll('affine-data-view-kanban-group') ?? []
     );
 
     if (nextPosition === 'right') {
@@ -452,8 +483,8 @@ export class KanbanSelectionController implements ReactiveController {
   }
 
   hostConnected() {
-    this.host.disposables.add(
-      this.host.props.selection$.subscribe(selection => {
+    this.host?.disposables.add(
+      this.logic.selection$.subscribe(selection => {
         const old = this._selection;
         if (old) {
           this.blur(old);

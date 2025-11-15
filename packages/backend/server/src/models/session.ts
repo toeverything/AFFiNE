@@ -37,7 +37,9 @@ export class SessionModel extends BaseModel {
         id,
       },
     });
-    this.logger.log(`Deleted session success by id: ${id}`);
+    if (count > 0) {
+      this.logger.log(`Deleted session success by id: ${id}`);
+    }
     return count;
   }
 
@@ -134,20 +136,24 @@ export class SessionModel extends BaseModel {
         sessionId,
       },
     });
-    this.logger.log(
-      `Deleted user sessions success by userId: ${userId} and sessionId: ${sessionId}`
-    );
+    if (count > 0) {
+      this.logger.log(
+        `Deleted user sessions success by userId: ${userId} and sessionId: ${sessionId}`
+      );
+    }
     return count;
   }
 
   async cleanExpiredUserSessions() {
-    const result = await this.db.userSession.deleteMany({
+    const { count } = await this.db.userSession.deleteMany({
       where: {
         expiresAt: {
           lte: new Date(),
         },
       },
     });
-    this.logger.log(`Cleaned ${result.count} expired user sessions`);
+    if (count > 0) {
+      this.logger.log(`Cleaned ${count} expired user sessions`);
+    }
   }
 }

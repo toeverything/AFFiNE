@@ -10,6 +10,7 @@
     { "path": "../../blocks/frame" },
     { "path": "../../blocks/surface" },
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

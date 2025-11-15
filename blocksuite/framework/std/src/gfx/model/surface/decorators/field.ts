@@ -38,7 +38,7 @@ export function field<V, T extends GfxPrimitiveElementModel>(fallback?: V) {
 
         if (this.yMap) {
           if (this.yMap.doc) {
-            this.surface.doc.transact(() => {
+            this.surface.store.transact(() => {
               this.yMap.set(prop as string, v);
             });
           } else {
@@ -69,7 +69,7 @@ export function field<V, T extends GfxPrimitiveElementModel>(fallback?: V) {
           : convertProps(prop, originalVal, this);
 
         if (this.yMap.doc) {
-          this.surface.doc.transact(() => {
+          this.surface.store.transact(() => {
             this.yMap.set(prop as string, val);
           });
         } else {

@@ -46,7 +46,7 @@ export class EmbedCardCreateModal extends SignalWatcher(
         flavour = embedOptions.flavour;
       }
 
-      this.host.doc.addBlock(
+      this.host.store.addBlock(
         flavour as never,
         {
           url,
@@ -62,13 +62,8 @@ export class EmbedCardCreateModal extends SignalWatcher(
       }
 
       this.createOptions.onSave(url);
-
-      gfx.tool.setTool(
-        // @ts-expect-error FIXME: resolve after gfx tool refactor
-        'default'
-      );
     }
-    this.onConfirm();
+    this.onConfirm({ mode });
     this.remove();
   };
 
@@ -176,7 +171,7 @@ export class EmbedCardCreateModal extends SignalWatcher(
   accessor input!: HTMLInputElement;
 
   @property({ attribute: false })
-  accessor onConfirm!: () => void;
+  accessor onConfirm!: (options: { mode: 'edgeless' | 'page' }) => void;
 
   @property({ attribute: false })
   accessor titleText!: string;
@@ -195,7 +190,8 @@ export async function toggleEmbedCardCreateModal(
     | {
         mode: 'edgeless';
         onSave: (url: string) => void;
-      }
+      },
+  onConfirm: (options: { mode: 'page' | 'edgeless' }) => void
 ): Promise<void> {
   host.selection.clear();
 
@@ -208,7 +204,10 @@ export async function toggleEmbedCardCreateModal(
   document.body.append(embedCardCreateModal);
 
   return new Promise(resolve => {
-    embedCardCreateModal.onConfirm = () => resolve();
+    embedCardCreateModal.onConfirm = options => {
+      onConfirm(options);
+      resolve();
+    };
   });
 }
 

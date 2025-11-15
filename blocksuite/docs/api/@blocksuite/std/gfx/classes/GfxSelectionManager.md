@@ -9,10 +9,6 @@
 GfxSelectionManager is just a wrapper of std selection providing
 convenient method and states in gfx
 
-## Extends
-
-- `GfxExtension`
-
 ## Methods
 
 ### has()

@@ -1,0 +1,13 @@
+{{- if eq .Values.global.deployment.platform "gcp" -}}
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: "{{ .Release.Name }}-monitoring"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  endpoints:
+    - port: 9464
+      interval: 30s
+{{- end }}

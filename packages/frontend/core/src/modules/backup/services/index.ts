@@ -7,7 +7,7 @@ import {
   onStart,
   Service,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
 import type { DesktopApiService } from '../../desktop-api';
 import type { WorkspacesService } from '../../workspace';
@@ -37,9 +37,8 @@ export class BackupService extends Service {
       fromPromise(async () => {
         return this.desktopApiService.handler.workspace.getBackupWorkspaces();
       }).pipe(
-        mergeMap(data => {
+        tap(data => {
           this.pageBackupWorkspaces$.setValue(data);
-          return EMPTY;
         }),
         catchErrorInto(this.error$),
         onStart(() => this.isLoading$.setValue(true)),

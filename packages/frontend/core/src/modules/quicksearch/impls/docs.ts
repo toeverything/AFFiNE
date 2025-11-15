@@ -1,3 +1,5 @@
+import { ServerFeature } from '@affine/graphql';
+import { SearchIcon } from '@blocksuite/icons/rc';
 import {
   effect,
   Entity,
@@ -6,11 +8,14 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { truncate } from 'lodash-es';
-import { EMPTY, map, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, EMPTY, map, of, switchMap, tap, throttleTime } from 'rxjs';
 
+import type { WorkspaceServerService } from '../../cloud';
 import type { DocRecord, DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
+import type { FeatureFlagService } from '../../feature-flag';
+import type { WorkspaceService } from '../../workspace';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { QuickSearchItem } from '../types/item';
 
@@ -26,12 +31,23 @@ export class DocsQuickSearchSession
   implements QuickSearchSession<'docs', DocsPayload>
 {
   constructor(
+    private readonly workspaceService: WorkspaceService,
+    private readonly workspaceServerService: WorkspaceServerService,
     private readonly docsSearchService: DocsSearchService,
     private readonly docsService: DocsService,
-    private readonly docDisplayMetaService: DocDisplayMetaService
+    private readonly docDisplayMetaService: DocDisplayMetaService,
+    private readonly featureFlagService: FeatureFlagService
   ) {
     super();
   }
+
+  private readonly isSupportServerIndexer = () =>
+    this.workspaceServerService.server?.config$.value.features.includes(
+      ServerFeature.Indexer
+    ) ?? false;
+
+  private readonly isEnableBatterySaveMode = () =>
+    this.featureFlagService.flags.enable_battery_save_mode.value;
 
   private readonly isIndexerLoading$ = this.docsSearchService.indexerState$.map(
     ({ completed }) => {
@@ -41,15 +57,51 @@ export class DocsQuickSearchSession
 
   private readonly isQueryLoading$ = new LiveData(false);
 
+  isCloudWorkspace = this.workspaceService.workspace.flavour !== 'local';
+
+  searchLocallyItem = {
+    id: 'search-locally',
+    source: 'docs',
+    label: {
+      title: {
+        i18nKey: 'com.affine.quicksearch.search-locally',
+      },
+    },
+    score: 1000,
+    icon: SearchIcon,
+    payload: {
+      docId: '',
+    },
+    beforeSubmit: () => {
+      this.searchLocally = true;
+      this.query(this.lastQuery);
+      return false;
+    },
+  } as QuickSearchItem<'docs', DocsPayload>;
+
   isLoading$ = LiveData.computed(get => {
-    return get(this.isIndexerLoading$) || get(this.isQueryLoading$);
+    return (
+      (this.isCloudWorkspace ? false : get(this.isIndexerLoading$)) ||
+      get(this.isQueryLoading$)
+    );
   });
 
-  query$ = new LiveData('');
+  error$ = new LiveData<any>(null);
+
+  lastQuery = '';
 
   items$ = new LiveData<QuickSearchItem<'docs', DocsPayload>[]>([]);
 
+  searchLocally = !this.isCloudWorkspace;
+
   query = effect(
+    tap(query => {
+      this.lastQuery = query;
+    }),
+    throttleTime<string>(500, undefined, {
+      leading: false,
+      trailing: true,
+    }),
     switchMap((query: string) => {
       let out;
       if (!query) {
@@ -74,7 +126,9 @@ export class DocsQuickSearchSession
                   group: {
                     id: 'docs',
                     label: {
-                      i18nKey: 'com.affine.quicksearch.group.searchfor',
+                      i18nKey: this.searchLocally
+                        ? 'com.affine.quicksearch.group.searchfor-locally'
+                        : 'com.affine.quicksearch.group.searchfor',
                       options: { query: truncate(query) },
                     },
                     score: 5,
@@ -93,14 +147,38 @@ export class DocsQuickSearchSession
         );
       }
       return out.pipe(
-        mergeMap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
-          this.items$.next(items);
+        tap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
+          this.items$.next(
+            this.isSupportServerIndexer() &&
+              !this.searchLocally &&
+              !this.isEnableBatterySaveMode()
+              ? [...items, this.searchLocallyItem]
+              : items
+          );
           this.isQueryLoading$.next(false);
-          return EMPTY;
         }),
         onStart(() => {
-          this.items$.next([]);
+          this.error$.next(null);
+          this.items$.next(
+            this.isSupportServerIndexer() &&
+              !this.searchLocally &&
+              !this.isEnableBatterySaveMode()
+              ? [this.searchLocallyItem]
+              : []
+          );
           this.isQueryLoading$.next(true);
+        }),
+        catchError(err => {
+          this.error$.next(err instanceof Error ? err.message : err);
+          this.items$.next(
+            this.isSupportServerIndexer() &&
+              !this.searchLocally &&
+              !this.isEnableBatterySaveMode()
+              ? [this.searchLocallyItem]
+              : []
+          );
+          this.isQueryLoading$.next(false);
+          return EMPTY;
         }),
         onComplete(() => {})
       );
@@ -109,7 +187,7 @@ export class DocsQuickSearchSession
 
   // TODO(@EYHN): load more
 
-  setQuery(query: string) {
-    this.query$.next(query);
+  override dispose(): void {
+    this.query.unsubscribe();
   }
 }

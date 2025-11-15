@@ -3,8 +3,8 @@ import { Logger } from '@nestjs/common';
 import { AiPrompt } from '@prisma/client';
 import Mustache from 'mustache';
 
+import { getTokenEncoder } from '../../../native';
 import { PromptConfig, PromptMessage, PromptParams } from '../providers';
-import { getTokenEncoder } from '../types';
 
 // disable escaping
 Mustache.escape = (text: string) => text;
@@ -41,6 +41,7 @@ export class ChatPrompt {
       options.name,
       options.action || undefined,
       options.model,
+      options.optionalModels,
       options.config,
       options.messages
     );
@@ -50,12 +51,12 @@ export class ChatPrompt {
     public readonly name: string,
     public readonly action: string | undefined,
     public readonly model: string,
+    public readonly optionalModels: string[],
     public readonly config: PromptConfig | undefined,
     private readonly messages: PromptMessage[]
   ) {
     this.encoder = getTokenEncoder(model);
-    this.promptTokenSize =
-      this.encoder?.count(messages.map(m => m.content).join('') || '') || 0;
+    this.promptTokenSize = this.encode(messages.map(m => m.content).join(''));
     this.templateParamKeys = extractMustacheParams(
       messages.map(m => m.content).join('')
     );
@@ -117,6 +118,26 @@ export class ChatPrompt {
     }
   }
 
+  private preDefinedParams(params: PromptParams) {
+    const {
+      language,
+      timezone,
+      docs,
+      contextFiles: files,
+      selectedMarkdown,
+      selectedSnapshot,
+      html,
+    } = params;
+    return {
+      'affine::date': new Date().toLocaleDateString(),
+      'affine::language': language || 'same language as the user query',
+      'affine::timezone': timezone || 'no preference',
+      'affine::hasDocsRef': Array.isArray(docs) && docs.length > 0,
+      'affine::hasFilesRef': Array.isArray(files) && files.length > 0,
+      'affine::hasSelected': !!selectedMarkdown || !!selectedSnapshot || !!html,
+    };
+  }
+
   /**
    * render prompt messages with params
    * @param params record of params, e.g. { name: 'Alice' }
@@ -125,7 +146,9 @@ export class ChatPrompt {
   finish(params: PromptParams, sessionId?: string): PromptMessage[] {
     this.checkParams(params, sessionId);
 
-    const { attachments: attach, ...restParams } = params;
+    const { attachments: attach, ...restParams } = Object.fromEntries(
+      Object.entries(params).filter(([k]) => !k.startsWith('affine::'))
+    );
     const paramsAttach = Array.isArray(attach) ? attach : [];
 
     return this.messages.map(
@@ -133,7 +156,10 @@ export class ChatPrompt {
         const result: PromptMessage = {
           ...rest,
           params,
-          content: Mustache.render(content, restParams),
+          content: Mustache.render(
+            content,
+            Object.assign({}, restParams, this.preDefinedParams(restParams))
+          ),
         };
 
         const attachments = [

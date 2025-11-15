@@ -7,6 +7,7 @@ import { BaseModel } from './base';
 export const UserSettingsSchema = z.object({
   receiveInvitationEmail: z.boolean().default(true),
   receiveMentionEmail: z.boolean().default(true),
+  receiveCommentEmail: z.boolean().default(true),
 });
 
 export type UserSettingsInput = z.input<typeof UserSettingsSchema>;
@@ -36,7 +37,7 @@ export class UserSettingsModel extends BaseModel {
         payload,
       },
     });
-    this.logger.log(`UserSettings updated for user ${userId}`);
+    this.logger.debug(`UserSettings updated for user ${userId}`);
     return payload;
   }
 

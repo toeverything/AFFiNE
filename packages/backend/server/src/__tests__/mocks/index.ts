@@ -4,8 +4,11 @@ export * from './user.mock';
 export * from './workspace.mock';
 export * from './workspace-user.mock';
 
+import { MockAccessToken } from './access-token.mock';
 import { MockCopilotProvider } from './copilot.mock';
 import { MockDocMeta } from './doc-meta.mock';
+import { MockDocSnapshot } from './doc-snapshot.mock';
+import { MockDocUser } from './doc-user.mock';
 import { MockEventBus } from './eventbus.mock';
 import { MockMailer } from './mailer.mock';
 import { MockJobQueue } from './queue.mock';
@@ -22,6 +25,9 @@ export const Mockers = {
   WorkspaceUser: MockWorkspaceUser,
   UserSettings: MockUserSettings,
   DocMeta: MockDocMeta,
+  DocSnapshot: MockDocSnapshot,
+  DocUser: MockDocUser,
+  AccessToken: MockAccessToken,
 };
 
 export { MockCopilotProvider, MockEventBus, MockJobQueue, MockMailer };

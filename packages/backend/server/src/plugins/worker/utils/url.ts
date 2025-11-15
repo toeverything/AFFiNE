@@ -1,7 +1,5 @@
 import { getDomain, getSubdomain } from 'tldts';
 
-import { imageProxyBuilder } from './proxy';
-
 const localhost = new Set(['localhost', '127.0.0.1']);
 
 const URL_FIXERS: Record<string, (url: URL) => URL> = {
@@ -58,11 +56,6 @@ export function appendUrl(url: string | null, array?: string[]) {
   }
 }
 
-export async function reduceUrls(baseUrl: string, urls?: string[]) {
-  if (urls && urls.length > 0) {
-    const imageProxy = imageProxyBuilder(baseUrl);
-    const newUrls = await Promise.all(urls.map(imageProxy));
-    return newUrls.filter((x): x is string => !!x);
-  }
-  return [];
+export async function reduceUrls(urls: string[] = []) {
+  return Array.from(new Set(urls.filter(Boolean) as string[]));
 }

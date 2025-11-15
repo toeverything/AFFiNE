@@ -1,5 +1,4 @@
 import '@affine/core/bootstrap/electron';
-import '@affine/core/bootstrap/blocksuite';
 import '@affine/core/bootstrap/cleanup';
 import '@affine/component/theme';
 import './global.css';

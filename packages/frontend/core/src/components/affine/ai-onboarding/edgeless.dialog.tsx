@@ -1,4 +1,5 @@
-import { Button, FlexWrapper, notify } from '@affine/component';
+import { notify } from '@affine/component';
+import { type Notification } from '@affine/component/ui/notification';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { EditorService } from '@affine/core/modules/editor';
@@ -63,6 +64,38 @@ export const AIOnboardingEdgeless = () => {
     });
   }, [workspaceDialogService]);
 
+  const actions = useMemo(() => {
+    const result: NonNullable<Notification['actions']> = [
+      {
+        key: 'get-started',
+        label: (
+          <span className={styles.getStartedButtonText}>
+            {t['com.affine.ai-onboarding.edgeless.get-started']()}
+          </span>
+        ),
+        onClick: () => {
+          toggleEdgelessAIOnboarding(false);
+        },
+      },
+    ];
+
+    if (!aiSubscription) {
+      result.push({
+        key: 'purchase',
+        label: (
+          <span className={styles.purchaseButtonText}>
+            {t['com.affine.ai-onboarding.edgeless.purchase']()}
+          </span>
+        ),
+        onClick: () => {
+          goToPricingPlans();
+          toggleEdgelessAIOnboarding(false);
+        },
+      });
+    }
+    return result;
+  }, [aiSubscription, goToPricingPlans, t]);
+
   useEffect(() => {
     if (generalAIOnboardingOpened) return;
     if (notifyId) return;
@@ -83,50 +116,13 @@ export const AIOnboardingEdgeless = () => {
           thumb: <EdgelessOnboardingAnimation />,
           alignMessage: 'icon',
           onDismiss: () => toggleEdgelessAIOnboarding(false),
-          footer: (
-            <FlexWrapper marginTop={8} justifyContent="flex-end" gap="12px">
-              <Button
-                onClick={() => {
-                  notify.dismiss(id);
-                  toggleEdgelessAIOnboarding(false);
-                }}
-                variant="plain"
-                className={styles.actionButton}
-              >
-                <span className={styles.getStartedButtonText}>
-                  {t['com.affine.ai-onboarding.edgeless.get-started']()}
-                </span>
-              </Button>
-              {aiSubscription ? null : (
-                <Button
-                  className={styles.actionButton}
-                  variant="plain"
-                  onClick={() => {
-                    goToPricingPlans();
-                    notify.dismiss(id);
-                    toggleEdgelessAIOnboarding(false);
-                  }}
-                >
-                  <span className={styles.purchaseButtonText}>
-                    {t['com.affine.ai-onboarding.edgeless.purchase']()}
-                  </span>
-                </Button>
-              )}
-            </FlexWrapper>
-          ),
+          actions,
         },
         { duration: 1000 * 60 * 10 }
       );
       edgelessNotifyId$.next(id);
     }, 1000);
-  }, [
-    aiSubscription,
-    generalAIOnboardingOpened,
-    goToPricingPlans,
-    mode,
-    notifyId,
-    t,
-  ]);
+  }, [actions, generalAIOnboardingOpened, mode, notifyId, t]);
 
   return null;
 };

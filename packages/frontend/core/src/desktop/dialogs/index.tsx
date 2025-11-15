@@ -10,6 +10,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { ChangePasswordDialog } from './change-password';
 import { CollectionEditorDialog } from './collection-editor';
 import { CreateWorkspaceDialog } from './create-workspace';
+import { DeletedAccountDialog } from './deleted-account';
 import { DocInfoDialog } from './doc-info';
 import { EnableCloudDialog } from './enable-cloud';
 import { ImportDialog } from './import';
@@ -31,6 +32,7 @@ const GLOBAL_DIALOGS = {
   'change-password': ChangePasswordDialog,
   'verify-email': VerifyEmailDialog,
   'enable-cloud': EnableCloudDialog,
+  'deleted-account': DeletedAccountDialog,
 } satisfies {
   [key in keyof GLOBAL_DIALOG_SCHEMA]?: React.FC<
     DialogComponentProps<GLOBAL_DIALOG_SCHEMA[key]>

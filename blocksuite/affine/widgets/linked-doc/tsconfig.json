@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../blocks/image" },
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../../inlines/reference" },
     { "path": "../../model" },
     { "path": "../../rich-text" },

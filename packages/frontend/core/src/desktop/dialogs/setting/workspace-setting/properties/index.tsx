@@ -1,8 +1,8 @@
 import { Button, Menu } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
-import { DocPropertyManager } from '@affine/core/components/doc-properties/manager';
-import { CreatePropertyMenuItems } from '@affine/core/components/doc-properties/menu/create-doc-property';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
+import { WorkspacePropertyManager } from '@affine/core/components/properties/manager';
+import { CreatePropertyMenuItems } from '@affine/core/components/properties/menu/create-doc-property';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { Trans, useI18n } from '@affine/i18n';
@@ -41,7 +41,7 @@ const WorkspaceSettingPropertiesMain = () => {
           </Button>
         </Menu>
       </div>
-      <DocPropertyManager onPropertyInfoChange={onPropertyInfoChange} />
+      <WorkspacePropertyManager onPropertyInfoChange={onPropertyInfoChange} />
     </div>
   );
 };

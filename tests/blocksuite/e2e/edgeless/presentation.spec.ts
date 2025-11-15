@@ -313,4 +313,33 @@ test.describe('presentation', () => {
     await prevButton.click();
     await expect(note).toBeVisible();
   });
+
+  test('should disable black background when space+drag in presentation mode', async ({
+    page,
+  }) => {
+    await edgelessCommonSetup(page);
+    await createNote(page, [300, 100], 'hello');
+    await setEdgelessTool(page, 'frame');
+    await dragBetweenViewCoords(page, [240, 0], [800, 200]);
+
+    expect(await page.locator('affine-frame').count()).toBe(1);
+    await enterPresentationMode(page);
+    await waitNextFrame(page, 300);
+
+    await assertEdgelessTool(page, 'frameNavigator');
+
+    // Verify black background is initially visible
+    const navigatorBlackBackground = page.locator(
+      '.edgeless-navigator-black-background'
+    );
+    await expect(navigatorBlackBackground).toBeVisible();
+
+    // Press space and drag to trigger the black background disable logic
+    await page.keyboard.down('Space');
+    await dragBetweenViewCoords(page, [400, 300], [500, 400]);
+    await page.keyboard.up('Space');
+
+    await waitNextFrame(page, 100);
+    await expect(navigatorBlackBackground).toBeHidden();
+  });
 });

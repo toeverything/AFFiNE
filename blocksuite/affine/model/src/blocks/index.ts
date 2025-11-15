@@ -15,4 +15,3 @@ export * from './paragraph/index.js';
 export * from './root/index.js';
 export * from './surface-ref/index.js';
 export * from './table';
-export * from './transcription';

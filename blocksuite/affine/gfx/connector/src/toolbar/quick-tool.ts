@@ -9,6 +9,7 @@ export const connectorQuickTool = QuickToolExtension(
       content: html`<edgeless-connector-tool-button
         .edgeless=${block}
       ></edgeless-connector-tool-button>`,
+      priority: 80,
     };
   }
 );

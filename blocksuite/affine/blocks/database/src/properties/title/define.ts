@@ -3,7 +3,7 @@ import { Text } from '@blocksuite/store';
 import { Doc } from 'yjs';
 import zod from 'zod';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import { isLinkedDoc } from '../../utils/title-doc.js';
 
 export const titleColumnType = propertyType('title');
@@ -28,7 +28,7 @@ export const titlePropertyModelConfig = titleColumnType.modelConfig({
     },
     toJson: ({ value, dataSource }) => {
       if (!value) return '';
-      const host = dataSource.contextGet(HostContextKey);
+      const host = dataSource.serviceGet(EditorHostKey);
       if (host) {
         const collection = host.std.workspace;
         const deltas = value.deltas$.value;

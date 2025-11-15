@@ -1,10 +1,23 @@
-import { StoreExtension } from '@blocksuite/store';
+import { type Container, createIdentifier } from '@blocksuite/global/di';
+import { Extension } from '@blocksuite/store';
 
-// bytes.parse('2GB')
-const maxFileSize = 2 * 1024 * 1024 * 1024;
+export interface IFileSizeLimitService {
+  maxFileSize: number;
+  onOverFileSize?: () => void;
+}
 
-export class FileSizeLimitService extends StoreExtension {
-  static override key = 'file-size-limit';
+export const FileSizeLimitProvider = createIdentifier<IFileSizeLimitService>(
+  'FileSizeLimitService'
+);
 
-  maxFileSize = maxFileSize;
+export class FileSizeLimitService
+  extends Extension
+  implements IFileSizeLimitService
+{
+  // 2GB
+  maxFileSize = 2 * 1024 * 1024 * 1024;
+
+  static override setup(di: Container) {
+    di.addImpl(FileSizeLimitProvider, FileSizeLimitService);
+  }
 }

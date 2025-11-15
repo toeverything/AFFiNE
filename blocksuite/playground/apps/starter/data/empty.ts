@@ -21,7 +21,7 @@ export const empty: InitFn = (collection: Workspace, id: string) => {
     store.addBlock('affine:paragraph', {}, noteId);
   });
 
-  doc.resetHistory();
+  store.resetHistory();
 };
 
 empty.id = 'empty';

@@ -100,6 +100,14 @@ export class UserNotificationResolver {
     await this.service.markAsRead(me.id, notificationId);
     return true;
   }
+
+  @Mutation(() => Boolean, {
+    description: 'mark all notifications as read',
+  })
+  async readAllNotifications(@CurrentUser() me: UserType) {
+    await this.service.markAllAsRead(me.id);
+    return true;
+  }
 }
 
 @Resolver(() => NotificationObjectType)

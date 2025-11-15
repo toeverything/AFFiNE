@@ -1,3 +1,4 @@
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
@@ -6,7 +7,6 @@ import { NavigationGestureProvider } from '@affine/core/mobile/modules/navigatio
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
-import { AIButtonProvider } from '@affine/core/modules/ai-button';
 import {
   AuthProvider,
   AuthService,
@@ -14,12 +14,15 @@ import {
   ServerScope,
   ServerService,
   ServersService,
+  SubscriptionService,
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
+import { NativePaywallProvider } from '@affine/core/modules/paywall';
 import {
   configureLocalStorageStateStorageImpls,
   NbstoreProvider,
@@ -36,9 +39,12 @@ import {
 } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
+import {
+  refreshSubscriptionMutation,
+  requestApplySubscriptionMutation,
+} from '@affine/graphql';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
-import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
 import { Container } from '@blocksuite/affine/global/di';
 import {
   docLinkBaseURLMiddleware,
@@ -53,6 +59,7 @@ import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
+import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -61,8 +68,8 @@ import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
 import { ModalConfigProvider } from './modal-config';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
-import { Intelligents } from './plugins/intelligents';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { PayWall } from './plugins/paywall';
 import { writeEndpointToken } from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
 
@@ -121,9 +128,9 @@ framework.impl(VirtualKeyboardProvider, {
     };
 
     Promise.all([
-      Keyboard.addListener('keyboardDidShow', info => {
+      Keyboard.addListener('keyboardWillShow', info => {
         callback({
-          visible: true,
+          visible: info.keyboardHeight !== 0,
           height: info.keyboardHeight,
         });
       }),
@@ -160,14 +167,6 @@ framework.impl(HapticProvider, {
   selectionStart: () => Haptics.selectionStart(),
   selectionChanged: () => Haptics.selectionChanged(),
   selectionEnd: () => Haptics.selectionEnd(),
-});
-framework.impl(AIButtonProvider, {
-  presentAIButton: () => {
-    return Intelligents.presentIntelligentsButton();
-  },
-  dismissAIButton: () => {
-    return Intelligents.dismissIntelligentsButton();
-  },
 });
 framework.scope(ServerScope).override(AuthProvider, resolver => {
   const serverService = resolver.get(ServerService);
@@ -206,6 +205,11 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
     },
   };
 });
+framework.impl(NativePaywallProvider, {
+  showPaywall: async (type: 'Pro' | 'AI') => {
+    await PayWall.showPayWall({ type });
+  },
+});
 
 const frameworkProvider = framework.provider();
 
@@ -223,6 +227,10 @@ const frameworkProvider = framework.provider();
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
 };
+(window as any).getAiButtonFeatureFlag = () => {
+  const featureFlagService = frameworkProvider.get(FeatureFlagService);
+  return featureFlagService.flags.enable_mobile_ai_button.value;
+};
 (window as any).getCurrentWorkspaceId = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.workspaceId.get();
@@ -230,6 +238,16 @@ const frameworkProvider = framework.provider();
 (window as any).getCurrentDocId = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.docId.get();
+};
+(window as any).getCurrentUserIdentifier = () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  return currentServer.account$.value?.id;
 };
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
@@ -243,6 +261,7 @@ const frameworkProvider = framework.provider();
   if (!workspaceRef) {
     return;
   }
+
   const { workspace, dispose: disposeWorkspace } = workspaceRef;
 
   const docsService = workspace.scope.get(DocsService);
@@ -262,9 +281,12 @@ const frameworkProvider = framework.provider();
     const snapshot = transformer.docToSnapshot(blockSuiteDoc);
 
     const container = new Container();
-    getMarkdownAdapterExtensions().forEach(ext => {
-      ext.setup(container);
-    });
+    getStoreManager()
+      .config.init()
+      .value.get('store')
+      .forEach(ext => {
+        ext.setup(container);
+      });
     const provider = container.provider();
 
     const adapter = new MarkdownAdapter(transformer, provider);
@@ -306,6 +328,7 @@ const frameworkProvider = framework.provider();
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),
       markdown,
+      extensions: getStoreManager().config.init().value.get('store'),
     });
     const docsService = workspace.scope.get(DocsService);
     if (docId) {
@@ -320,6 +343,54 @@ const frameworkProvider = framework.provider();
   } finally {
     workspaceRef?.dispose();
   }
+};
+(window as any).getSubscriptionState = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  await subscriptionService.subscription.waitForRevalidation();
+  return {
+    pro: subscriptionService.subscription.pro$.value,
+    ai: subscriptionService.subscription.ai$.value,
+  };
+};
+(window as any).updateSubscriptionState = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  await currentServer
+    .gql({
+      query: refreshSubscriptionMutation,
+    })
+    .catch(console.error);
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  subscriptionService.subscription.revalidate();
+};
+(window as any).requestApplySubscription = async (transactionId: string) => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  await currentServer
+    .gql({
+      query: requestApplySubscriptionMutation,
+      variables: { transactionId },
+    })
+    .catch(console.error);
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  subscriptionService.subscription.revalidate();
 };
 
 // setup application lifecycle events, and emit application start event
@@ -372,6 +443,10 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   }
 }).catch(e => {
   console.error(e);
+});
+
+AppTrackingTransparency.requestPermission().catch(e => {
+  console.error('Failed to request app tracking transparency permission', e);
 });
 
 const KeyboardThemeProvider = () => {

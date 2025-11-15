@@ -6,7 +6,7 @@ import { BaseCellRenderer } from '../../core/property/index.js';
 import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { stopPropagation } from '../../core/utils/event.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
-import { numberInputStyle, numberStyle } from './cell-renderer.css.js';
+import { numberInputStyle, numberStyle } from './cell-renderer-css.js';
 import { numberPropertyModelConfig } from './define.js';
 import type { NumberPropertyDataType } from './types.js';
 import {

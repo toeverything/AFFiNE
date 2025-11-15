@@ -31,7 +31,7 @@ export interface BlockStdOptions {
   extensions: ExtensionType[];
 }
 
-const internalExtensions = [
+export const internalExtensions = [
   ServiceManager,
   CommandManager,
   UIEventDispatcher,
@@ -152,7 +152,7 @@ export class BlockStdScope {
   render() {
     const element = new EditorHost();
     element.std = this;
-    element.doc = this.store;
+    element.store = this.store;
     this._host = element;
     this._lifeCycleWatchers.forEach(watcher => {
       watcher.rendered();

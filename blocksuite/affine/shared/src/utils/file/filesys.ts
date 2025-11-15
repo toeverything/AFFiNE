@@ -120,21 +120,11 @@ type AcceptTypes =
   | 'Zip'
   | 'Docx'
   | 'MindMap';
-export function openFileOrFiles(options?: {
-  acceptType?: AcceptTypes;
-}): Promise<File | null>;
-export function openFileOrFiles(options: {
-  acceptType?: AcceptTypes;
-  multiple: false;
-}): Promise<File | null>;
-export function openFileOrFiles(options: {
-  acceptType?: AcceptTypes;
-  multiple: true;
-}): Promise<File[] | null>;
-export async function openFileOrFiles({
-  acceptType = 'Any',
-  multiple = false,
-} = {}) {
+
+export async function openFilesWith(
+  acceptType: AcceptTypes = 'Any',
+  multiple: boolean = true
+): Promise<File[] | null> {
   // Feature detection. The API needs to be supported
   // and the app not run in an iframe.
   const supportsFileSystemAccess =
@@ -146,6 +136,7 @@ export async function openFileOrFiles({
         return false;
       }
     })();
+
   // If the File System Access API is supported…
   if (supportsFileSystemAccess && window.showOpenFilePicker) {
     try {
@@ -161,30 +152,14 @@ export async function openFileOrFiles({
       } satisfies OpenFilePickerOptions;
       // Show the file picker, optionally allowing multiple files.
       const handles = await window.showOpenFilePicker(pickerOpts);
-      // Only one file is requested.
-      if (!multiple) {
-        // Add the `FileSystemFileHandle` as `.handle`.
-        const file = await handles[0].getFile();
-        // Add the `FileSystemFileHandle` as `.handle`.
-        // file.handle = handles[0];
-        return file;
-      } else {
-        const files = await Promise.all(
-          handles.map(async handle => {
-            const file = await handle.getFile();
-            // Add the `FileSystemFileHandle` as `.handle`.
-            // file.handle = handles[0];
-            return file;
-          })
-        );
-        return files;
-      }
+
+      return await Promise.all(handles.map(handle => handle.getFile()));
     } catch (err) {
-      console.error('Error opening file');
       console.error(err);
       return null;
     }
   }
+
   // Fallback if the File System Access API is not supported.
   return new Promise(resolve => {
     // Append a new `<input type="file" multiple? />` and hide it.
@@ -192,9 +167,8 @@ export async function openFileOrFiles({
     input.classList.add('affine-upload-input');
     input.style.display = 'none';
     input.type = 'file';
-    if (multiple) {
-      input.multiple = true;
-    }
+    input.multiple = multiple;
+
     if (acceptType !== 'Any') {
       // For example, `accept="image/*"` or `accept="video/*,audio/*"`.
       input.accept = Object.keys(
@@ -206,22 +180,11 @@ export async function openFileOrFiles({
     input.addEventListener('change', () => {
       // Remove the `<input type="file" multiple? />` again from the DOM.
       input.remove();
-      // If no files were selected, return.
-      if (!input.files) {
-        resolve(null);
-        return;
-      }
-      // Return all files or just one file.
-      if (multiple) {
-        resolve(Array.from(input.files));
-        return;
-      }
-      resolve(input.files[0]);
+
+      resolve(input.files ? Array.from(input.files) : null);
     });
     // The `cancel` event fires when the user cancels the dialog.
-    input.addEventListener('cancel', () => {
-      resolve(null);
-    });
+    input.addEventListener('cancel', () => resolve(null));
     // Show the picker.
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
@@ -231,13 +194,16 @@ export async function openFileOrFiles({
   });
 }
 
+export async function openSingleFileWith(
+  acceptType?: AcceptTypes
+): Promise<File | null> {
+  const files = await openFilesWith(acceptType, false);
+  return files?.at(0) ?? null;
+}
+
 export async function getImageFilesFromLocal() {
-  const imageFiles = await openFileOrFiles({
-    acceptType: 'Images',
-    multiple: true,
-  });
-  if (!imageFiles) return [];
-  return imageFiles;
+  const files = await openFilesWith('Images');
+  return files ?? [];
 }
 
 export function downloadBlob(blob: Blob, name: string) {

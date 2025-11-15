@@ -30,7 +30,9 @@ export class NoteLayoutHandlerExtension extends BlockLayoutHandlerExtension<Note
     host: EditorHost,
     viewportRecord: ViewportRecord
   ): NoteLayout | null {
-    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
+    const component = host.std.view.getBlock(
+      model.id
+    ) as GfxBlockComponent | null;
     if (!component) return null;
 
     // Get the note container element

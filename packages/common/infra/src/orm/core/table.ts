@@ -273,6 +273,62 @@ export class Table<T extends TableSchemaBuilder> {
     });
   }
 
+  select<Key extends keyof Entity<T>>(
+    selectKey: Key,
+    where?: FindEntityInput<T>
+  ): Pick<Entity<T>, Key | PrimaryKeyField<T>>[] {
+    const items = this.adapter.find({
+      where: !where
+        ? undefined
+        : Object.entries(where)
+            .map(([field, value]) => ({
+              field,
+              value,
+            }))
+            .filter(({ value }) => value !== undefined),
+    });
+
+    return items.map(item => {
+      const { [this.keyField]: key, [selectKey]: selected } = item;
+      return {
+        [this.keyField]: key,
+        [selectKey]: selected,
+      } as Pick<Entity<T>, Key | PrimaryKeyField<T>>;
+    });
+  }
+
+  select$<Key extends keyof Entity<T>>(
+    selectKey: Key,
+    where?: FindEntityInput<T>
+  ): Observable<Pick<Entity<T>, Key | PrimaryKeyField<T>>[]> {
+    return new Observable(subscriber => {
+      const unsubscribe = this.adapter.observe({
+        where: !where
+          ? undefined
+          : Object.entries(where)
+              .map(([field, value]) => ({
+                field,
+                value,
+              }))
+              .filter(({ value }) => value !== undefined),
+        select: [this.keyField, selectKey as string],
+        callback: data => {
+          subscriber.next(
+            data.map(item => {
+              const { [this.keyField]: key, [selectKey]: selected } = item;
+              return {
+                [this.keyField]: key,
+                [selectKey]: selected,
+              } as Pick<Entity<T>, Key | PrimaryKeyField<T>>;
+            })
+          );
+        },
+      });
+
+      return unsubscribe;
+    });
+  }
+
   keys(): PrimaryKeyFieldType<T>[] {
     return this.adapter.find({
       select: 'key',

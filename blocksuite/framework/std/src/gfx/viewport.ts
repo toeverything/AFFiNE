@@ -591,8 +591,20 @@ export class Viewport {
     return new Bound(x, y, w / this.zoom, h / this.zoom);
   }
 
-  toModelCoord(viewX: number, viewY: number): IVec {
-    const { viewportX, viewportY, zoom, viewScale } = this;
+  toModelCoord(
+    viewX: number,
+    viewY: number,
+    zoom = this.zoom,
+    center?: IPoint
+  ): IVec {
+    const { viewScale } = this;
+    const viewportX = center
+      ? center.x - this.width / 2 / zoom
+      : this.viewportX;
+    const viewportY = center
+      ? center.y - this.height / 2 / zoom
+      : this.viewportY;
+
     return [
       viewportX + viewX / zoom / viewScale,
       viewportY + viewY / zoom / viewScale,

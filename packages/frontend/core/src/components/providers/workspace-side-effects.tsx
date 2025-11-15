@@ -12,6 +12,7 @@ import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/aff
 import { useRegisterWorkspaceCommands } from '@affine/core/components/hooks/use-register-workspace-commands';
 import { OverCapacityNotification } from '@affine/core/components/over-capacity';
 import {
+  AuthService,
   EventSourceService,
   FetchService,
   GraphQLService,
@@ -43,14 +44,7 @@ import {
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useEffect } from 'react';
-import {
-  catchError,
-  EMPTY,
-  finalize,
-  mergeMap,
-  switchMap,
-  timeout,
-} from 'rxjs';
+import { catchError, EMPTY, finalize, switchMap, tap, timeout } from 'rxjs';
 
 /**
  * @deprecated just for legacy code, will be removed in the future
@@ -87,12 +81,11 @@ export const WorkspaceSideEffects = () => {
           return { doc, mode };
         }).pipe(
           timeout(10000 /* 10s */),
-          mergeMap(({ mode, doc }) => {
+          tap(({ mode, doc }) => {
             if (doc) {
               docsList.setPrimaryMode(doc.id, mode as DocMode);
               workbench.openDoc(doc.id);
             }
-            return EMPTY;
           }),
           onStart(() => {
             pushGlobalLoadingEvent({
@@ -148,6 +141,7 @@ export const WorkspaceSideEffects = () => {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const fetchService = useService(FetchService);
+  const authService = useService(AuthService);
 
   useEffect(() => {
     const dispose = setupAIProvider(
@@ -156,7 +150,8 @@ export const WorkspaceSideEffects = () => {
         fetchService.fetch,
         eventSourceService.eventSource
       ),
-      globalDialogService
+      globalDialogService,
+      authService
     );
     return () => {
       dispose();
@@ -167,6 +162,7 @@ export const WorkspaceSideEffects = () => {
     workspaceDialogService,
     graphqlService,
     globalDialogService,
+    authService,
   ]);
 
   useRegisterWorkspaceCommands();

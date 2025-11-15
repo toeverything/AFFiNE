@@ -17,7 +17,7 @@ import {
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { BaseSelection, UserInfo } from '@blocksuite/store';
 import { computed, effect } from '@preact/signals-core';
-import { css, html, nothing, type PropertyValues } from 'lit';
+import { css, html, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import throttle from 'lodash-es/throttle';
@@ -58,7 +58,7 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
   private _remoteColorManager: RemoteColorManager | null = null;
 
   private readonly _remoteSelections = computed(() => {
-    const status = this.doc.awarenessStore.getStates();
+    const status = this.store.awarenessStore.getStates();
     return [...this.std.selection.remoteSelections.entries()].map(
       ([id, selections]) => {
         return {
@@ -269,6 +269,32 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
     });
 
     this._remoteColorManager = new RemoteColorManager(this.std);
+
+    this.disposables.add(
+      effect(() => {
+        const selections = this._remoteSelections.value;
+        this._updateSelectionsThrottled(selections);
+      })
+    );
+    this.disposables.add(
+      this.std.store.slots.blockUpdated.subscribe(() => {
+        this._updateSelectionsThrottled(this._remoteSelections.peek());
+      })
+    );
+    const gfx = this.std.get(GfxControllerIdentifier);
+    this.disposables.add(
+      gfx.viewport.viewportUpdated.subscribe(() => {
+        const selections = this._remoteSelections.peek();
+        this._updateSelections(selections);
+      })
+    );
+    this.disposables.add(
+      this.std.event.active$.subscribe(value => {
+        if (!value) {
+          this.std.selection.clearRemote();
+        }
+      })
+    );
   }
 
   override disconnectedCallback() {
@@ -301,37 +327,6 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
     this._updateSelections,
     60
   );
-
-  protected override firstUpdated(_changedProperties: PropertyValues): void {
-    this.disposables.add(
-      effect(() => {
-        const selections = this._remoteSelections.value;
-        this._updateSelectionsThrottled(selections);
-      })
-    );
-
-    this.disposables.add(
-      this.std.store.slots.blockUpdated.subscribe(() => {
-        this._updateSelectionsThrottled(this._remoteSelections.peek());
-      })
-    );
-
-    const gfx = this.std.get(GfxControllerIdentifier);
-    this.disposables.add(
-      gfx.viewport.viewportUpdated.subscribe(() => {
-        const selections = this._remoteSelections.peek();
-        this._updateSelections(selections);
-      })
-    );
-
-    this.disposables.add(
-      this.std.event.active$.subscribe(value => {
-        if (!value) {
-          this.std.selection.clearRemote();
-        }
-      })
-    );
-  }
 
   override render() {
     if (this._selections.length === 0) {

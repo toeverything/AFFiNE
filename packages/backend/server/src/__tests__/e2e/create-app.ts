@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { gqlFetcherFactory } from '@affine/graphql';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ModuleMetadata } from '@nestjs/common';
 import { NestApplication } from '@nestjs/core';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -21,10 +21,10 @@ import {
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
 import { Mailer } from '../../core/mail';
+import { Models } from '../../models';
 import {
   createFactory,
   MockedUser,
-  MockEventBus,
   MockJobQueue,
   MockMailer,
   MockUser,
@@ -35,6 +35,7 @@ import { parseCookies, TEST_LOG_LEVEL } from '../utils';
 interface TestingAppMetadata {
   tapModule?(m: TestingModuleBuilder): void;
   tapApp?(app: INestApplication): void;
+  imports?: ModuleMetadata['imports'];
 }
 
 export class TestingApp extends NestApplication {
@@ -45,6 +46,8 @@ export class TestingApp extends NestApplication {
   create = createFactory(this.get(PrismaClient, { strict: false }));
   mails = this.get(Mailer, { strict: false }) as MockMailer;
   queue = this.get(JobQueue, { strict: false }) as MockJobQueue;
+  eventBus = this.get(EventBus, { strict: false });
+  models = this.get(Models, { strict: false });
 
   get url() {
     const server = this.getHttpServer();
@@ -75,10 +78,23 @@ export class TestingApp extends NestApplication {
     assert(init.body, 'body is required for gql request');
     assert(init.headers, 'headers is required for gql request');
 
-    const res = await this.request('post', '/graphql')
-      .send(init?.body)
+    const req = this.request('post', '/graphql')
       .set('accept', 'application/json')
       .set(init.headers as Record<string, string>);
+
+    if (init.body instanceof FormData) {
+      for (const [key, value] of init.body.entries()) {
+        if (value instanceof File) {
+          req.attach(key, Buffer.from(await value.arrayBuffer()));
+        } else {
+          req.field(key, value);
+        }
+      }
+    } else {
+      req.send(init.body);
+    }
+
+    const res = await req;
 
     return new Response(Buffer.from(JSON.stringify(res.body)), {
       status: res.status,
@@ -139,12 +155,10 @@ export class TestingApp extends NestApplication {
   }
 
   async login(user: MockedUser) {
-    await this.POST('/api/auth/sign-in')
-      .send({
-        email: user.email,
-        password: user.password,
-      })
-      .expect(200);
+    return await this.POST('/api/auth/sign-in').send({
+      email: user.email,
+      password: user.password,
+    });
   }
 
   async switchUser(userOrId: string | { id: string }) {
@@ -190,12 +204,11 @@ export async function createApp(
   const { tapModule, tapApp } = metadata;
 
   const builder = Test.createTestingModule({
-    imports: [buildAppModule(globalThis.env)],
+    imports: [buildAppModule(globalThis.env), ...(metadata.imports ?? [])],
   });
 
   builder.overrideProvider(Mailer).useValue(new MockMailer());
   builder.overrideProvider(JobQueue).useValue(new MockJobQueue());
-  builder.overrideProvider(EventBus).useValue(new MockEventBus());
 
   // when custom override happens
   if (tapModule) {
@@ -219,7 +232,7 @@ export async function createApp(
   app.useBodyParser('raw', { limit: 1 * OneMB });
   app.use(
     graphqlUploadExpress({
-      maxFileSize: 10 * OneMB,
+      maxFileSize: 100 * OneMB,
       maxFiles: 5,
     })
   );

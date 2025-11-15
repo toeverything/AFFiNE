@@ -15,14 +15,15 @@ export class EdgelessCopilotPanel extends WithDisposable(LitElement) {
     :host {
       display: flex;
       position: absolute;
+      max-height: 374px;
     }
 
     .edgeless-copilot-panel {
       box-sizing: border-box;
       padding: 8px 4px 8px 8px;
       min-width: 330px;
-      max-height: 374px;
       overflow-y: auto;
+      overscroll-behavior: contain;
       background: ${unsafeCSSVar('--affine-background-overlay-panel-color')};
       box-shadow: ${unsafeCSSVar('--affine-overlay-shadow')};
       border-radius: 8px;

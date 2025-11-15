@@ -1,4 +1,7 @@
-import { OverlayIdentifier } from '@blocksuite/affine-block-surface';
+import {
+  DefaultTool,
+  OverlayIdentifier,
+} from '@blocksuite/affine-block-surface';
 import type { FrameBlockModel } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
@@ -39,8 +42,7 @@ export class FrameTool extends BaseTool {
     if (this._frame) {
       const frame = this._frame;
       frame.pop('xywh');
-      // @ts-expect-error TODO: refactor gfx tool
-      this.gfx.tool.setTool('default');
+      this.gfx.tool.setTool(DefaultTool);
       this.gfx.selection.set({
         elements: [frame.id],
         editing: false,

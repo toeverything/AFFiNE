@@ -1,7 +1,4 @@
-import {
-  ConnectorUtils,
-  EdgelessCRUDIdentifier,
-} from '@blocksuite/affine-block-surface';
+import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import {
   packColor,
   type PickColorEvent,
@@ -61,6 +58,7 @@ import { BlockFlavourIdentifier } from '@blocksuite/std';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { isConnectorWithLabel } from '../connector-manager';
 import { mountConnectorLabelEditor } from '../text';
 
 const FRONT_ENDPOINT_STYLE_LIST = [
@@ -150,19 +148,30 @@ export const connectorToolbarConfig = {
           ) ?? resolveColor(DefaultTheme.connectorColor, theme);
 
         const onPickColor = (e: PickColorEvent) => {
-          if (e.type === 'pick') {
-            const color = e.detail.value;
-            for (const model of models) {
-              const props = packColor(field, color);
-              ctx.std
-                .get(EdgelessCRUDIdentifier)
-                .updateElement(model.id, props);
-            }
-            return;
-          }
-
-          for (const model of models) {
-            model[e.type === 'start' ? 'stash' : 'pop'](field);
+          switch (e.type) {
+            case 'pick':
+              {
+                const color = e.detail.value;
+                const props = packColor(field, color);
+                const crud = ctx.std.get(EdgelessCRUDIdentifier);
+                models.forEach(model => {
+                  crud.updateElement(model.id, props);
+                });
+              }
+              break;
+            case 'start':
+              ctx.store.captureSync();
+              models.forEach(model => {
+                model.stash(field);
+              });
+              break;
+            case 'end':
+              ctx.store.transact(() => {
+                models.forEach(model => {
+                  model.pop(field);
+                });
+              });
+              break;
           }
         };
 
@@ -350,7 +359,7 @@ export const connectorToolbarConfig = {
       ConnectorElementModel,
       'connector',
       (ctx, model, props) => {
-        if (!ConnectorUtils.isConnectorWithLabel(model)) return;
+        if (!isConnectorWithLabel(model)) return;
 
         const labelStyle = { ...model.labelStyle, ...props };
 

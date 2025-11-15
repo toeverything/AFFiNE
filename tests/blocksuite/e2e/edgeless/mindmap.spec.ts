@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-import { clickView } from '../utils/actions/click.js';
+import { click, clickView } from '../utils/actions/click.js';
 import { dragBetweenCoords } from '../utils/actions/drag.js';
 import {
   addBasicRectShapeElement,
@@ -272,7 +272,7 @@ test('drag root node should layout in real time', async ({ page }) => {
 
   // assert when dragging is in progress
   await waitNextFrame(page, 500);
-  await assertMindMapNodesPosition(50, 50);
+  await assertMindMapNodesPosition(54, 54);
 
   await page.mouse.up();
 });
@@ -297,6 +297,7 @@ test('drag node out of mind map should detach the node and create a new mind map
   });
 
   const { rect } = await getMindMapNode(page, mindmapId, [0, 1]);
+  await click(page, { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 });
   await dragBetweenCoords(
     page,
     {

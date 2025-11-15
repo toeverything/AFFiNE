@@ -1,10 +1,7 @@
 import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
 import { FileDropConfigExtension } from '@blocksuite/affine-components/drop-indicator';
 import { AttachmentBlockSchema } from '@blocksuite/affine-model';
-import {
-  FileSizeLimitService,
-  TelemetryProvider,
-} from '@blocksuite/affine-shared/services';
+import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import {
   isInsideEdgelessEditor,
   matchModels,
@@ -22,13 +19,10 @@ export const AttachmentDropOption = FileDropConfigExtension({
     );
     if (!attachmentFiles.length) return false;
 
-    const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-
     if (targetModel && !matchModels(targetModel, [SurfaceBlockModel])) {
       addSiblingAttachmentBlocks(
-        std.host,
+        std,
         attachmentFiles,
-        maxFileSize,
         targetModel,
         placement
       ).catch(console.error);

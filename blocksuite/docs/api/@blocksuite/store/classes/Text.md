@@ -4,7 +4,7 @@
 
 [BlockSuite API Documentation](../../../README.md) / [@blocksuite/store](../README.md) / Text
 
-# Class: Text
+# Class: Text\<TextAttributes\>
 
 Text is an abstraction of Y.Text.
 It provides useful methods to manipulate the text content.
@@ -22,11 +22,17 @@ text.split(7, 1);
 
 Text [delta](https://docs.yjs.dev/api/delta-format) is a format from Y.js.
 
+## Type Parameters
+
+### TextAttributes
+
+`TextAttributes` *extends* `BaseTextAttributes` = `BaseTextAttributes`
+
 ## Constructors
 
 ### Constructor
 
-> **new Text**(`input?`): `Text`
+> **new Text**\<`TextAttributes`\>(`input?`): `Text`\<`TextAttributes`\>
 
 #### Parameters
 
@@ -34,11 +40,11 @@ Text [delta](https://docs.yjs.dev/api/delta-format) is a format from Y.js.
 
 The input can be a string, a Y.Text instance, or an array of DeltaInsert.
 
-`string` | `YText` | `DeltaInsert`[]
+`string` | `YText` | `DeltaInsert`\<`TextAttributes`\>[]
 
 #### Returns
 
-`Text`
+`Text`\<`TextAttributes`\>
 
 ## Accessors
 
@@ -97,13 +103,13 @@ Clear the text content.
 
 ### clone()
 
-> **clone**(): `Text`
+> **clone**(): `Text`\<\{ `bold?`: `null` \| `true`; `code?`: `null` \| `true`; `italic?`: `null` \| `true`; `link?`: `null` \| `string`; `strike?`: `null` \| `true`; `underline?`: `null` \| `true`; \}\>
 
 Clone the text to a new Text instance.
 
 #### Returns
 
-`Text`
+`Text`\<\{ `bold?`: `null` \| `true`; `code?`: `null` \| `true`; `italic?`: `null` \| `true`; `link?`: `null` \| `string`; `strike?`: `null` \| `true`; `underline?`: `null` \| `true`; \}\>
 
 A new Text instance.
 

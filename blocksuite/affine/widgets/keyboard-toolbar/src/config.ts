@@ -16,8 +16,9 @@ import {
   dedentParagraphCommand,
   indentParagraphCommand,
 } from '@blocksuite/affine-block-paragraph';
-import { getSurfaceBlock } from '@blocksuite/affine-block-surface';
+import { DefaultTool, getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import { insertSurfaceRefBlockCommand } from '@blocksuite/affine-block-surface-ref';
+import { insertTableBlockCommand } from '@blocksuite/affine-block-table';
 import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { toast } from '@blocksuite/affine-components/toast';
 import { insertInlineLatex } from '@blocksuite/affine-inline-latex';
@@ -26,7 +27,7 @@ import {
   formatBlockCommand,
   formatNativeCommand,
   formatTextCommand,
-  getTextStyle,
+  getTextAttributes,
   toggleBold,
   toggleCode,
   toggleItalic,
@@ -40,16 +41,18 @@ import {
   deleteSelectedModelsCommand,
   draftSelectedModelsCommand,
   duplicateSelectedModelsCommand,
+  focusBlockEnd,
   getBlockSelectionsCommand,
   getSelectedModelsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
-import { FileSizeLimitService } from '@blocksuite/affine-shared/services';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { TelemetryProvider } from '@blocksuite/affine-shared/services';
+import type { AffineTextStyleAttributes } from '@blocksuite/affine-shared/types';
 import {
   createDefaultDoc,
-  openFileOrFiles,
+  isInsideBlockByFlavour,
+  openSingleFileWith,
   type Signal,
 } from '@blocksuite/affine-shared/utils';
 import type { AffineLinkedDocWidget } from '@blocksuite/affine-widget-linked-doc';
@@ -88,6 +91,7 @@ import {
   RedoIcon,
   RightTabIcon,
   StrikeThroughIcon,
+  TableIcon,
   TeXIcon,
   TextIcon,
   TodayIcon,
@@ -102,6 +106,7 @@ import {
   type BlockStdScope,
   ConfigExtensionFactory,
 } from '@blocksuite/std';
+import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import { computed } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import type { TemplateResult } from 'lit';
@@ -160,10 +165,6 @@ export type KeyboardSubToolbarConfig = {
 export type KeyboardToolbarContext = {
   std: BlockStdScope;
   rootComponent: BlockComponent;
-  /**
-   * Close tool bar, and blur the focus if blur is true, default is false
-   */
-  closeToolbar: (blur?: boolean) => void;
   /**
    * Close current tool panel and show virtual keyboard
    */
@@ -256,6 +257,63 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
         .pipe(getTextSelectionCommand)
         .pipe(insertInlineLatex)
         .run();
+    },
+  },
+  {
+    name: 'Table',
+    icon: TableIcon(),
+    showWhen: ({ std, rootComponent: { model } }) =>
+      std.store.schema.flavourSchemaMap.has('affine:table') &&
+      !isInsideBlockByFlavour(std.store, model, 'affine:edgeless-text'),
+    action: ({ std }) => {
+      std.command
+        .chain()
+        .pipe(getSelectedModelsCommand)
+        .pipe(insertTableBlockCommand, {
+          place: 'after',
+          removeEmptyLine: true,
+        })
+        .pipe(({ insertedTableBlockId }) => {
+          if (insertedTableBlockId) {
+            const telemetry = std.getOptional(TelemetryProvider);
+            telemetry?.track('BlockCreated', {
+              blockType: 'affine:table',
+            });
+          }
+        })
+        .run();
+    },
+  },
+  {
+    name: 'Callout',
+    icon: FontIcon(),
+    showWhen: ({ rootComponent: { model } }) => {
+      return !isInsideBlockByFlavour(
+        model.store,
+        model,
+        'affine:edgeless-text'
+      );
+    },
+    action: ({ rootComponent: { model }, std }) => {
+      const { store } = model;
+      const parent = store.getParent(model);
+      if (!parent) return;
+
+      const index = parent.children.indexOf(model);
+      if (index === -1) return;
+      const calloutId = store.addBlock('affine:callout', {}, parent, index + 1);
+      if (!calloutId) return;
+      const paragraphId = store.addBlock('affine:paragraph', {}, calloutId);
+      if (!paragraphId) return;
+      std.host.updateComplete
+        .then(() => {
+          const paragraph = std.view.getBlock(paragraphId);
+          if (!paragraph) return;
+          std.command.exec(focusBlockEnd, {
+            focusBlock: paragraph,
+          });
+        })
+        .catch(console.error);
     },
   },
 ];
@@ -394,7 +452,13 @@ const contentMediaToolGroup: KeyboardToolPanelGroup = {
           std.host,
           'Links',
           'The added link will be displayed as a card view.',
-          { mode: 'page', parentModel, index }
+          { mode: 'page', parentModel, index },
+          ({ mode }) => {
+            if (mode === 'edgeless') {
+              const gfx = std.get(GfxControllerIdentifier);
+              gfx.tool.setTool(DefaultTool);
+            }
+          }
         );
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
@@ -412,12 +476,10 @@ const contentMediaToolGroup: KeyboardToolPanelGroup = {
         const model = selectedModels?.[0];
         if (!model) return;
 
-        const file = await openFileOrFiles();
+        const file = await openSingleFileWith();
         if (!file) return;
 
-        const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-
-        await addSiblingAttachmentBlocks(std.host, [file], maxFileSize, model);
+        await addSiblingAttachmentBlocks(std, [file], model);
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
         }
@@ -489,7 +551,13 @@ const embedToolGroup: KeyboardToolPanelGroup = {
           std.host,
           'YouTube',
           'The added YouTube video link will be displayed as an embed view.',
-          { mode: 'page', parentModel, index }
+          { mode: 'page', parentModel, index },
+          ({ mode }) => {
+            if (mode === 'edgeless') {
+              const gfx = std.get(GfxControllerIdentifier);
+              gfx.tool.setTool(DefaultTool);
+            }
+          }
         );
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
@@ -516,7 +584,13 @@ const embedToolGroup: KeyboardToolPanelGroup = {
           std.host,
           'GitHub',
           'The added GitHub issue or pull request link will be displayed as a card view.',
-          { mode: 'page', parentModel, index }
+          { mode: 'page', parentModel, index },
+          ({ mode }) => {
+            if (mode === 'edgeless') {
+              const gfx = std.get(GfxControllerIdentifier);
+              gfx.tool.setTool(DefaultTool);
+            }
+          }
         );
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
@@ -544,7 +618,13 @@ const embedToolGroup: KeyboardToolPanelGroup = {
           std.host,
           'Figma',
           'The added Figma link will be displayed as an embed view.',
-          { mode: 'page', parentModel, index }
+          { mode: 'page', parentModel, index },
+          ({ mode }) => {
+            if (mode === 'edgeless') {
+              const gfx = std.get(GfxControllerIdentifier);
+              gfx.tool.setTool(DefaultTool);
+            }
+          }
         );
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
@@ -571,7 +651,13 @@ const embedToolGroup: KeyboardToolPanelGroup = {
           std.host,
           'Loom',
           'The added Loom video link will be displayed as an embed view.',
-          { mode: 'page', parentModel, index }
+          { mode: 'page', parentModel, index },
+          ({ mode }) => {
+            if (mode === 'edgeless') {
+              const gfx = std.get(GfxControllerIdentifier);
+              gfx.tool.setTool(DefaultTool);
+            }
+          }
         );
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
@@ -789,8 +875,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Bold',
     icon: BoldIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.bold ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.bold ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleBold);
@@ -800,8 +886,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Italic',
     icon: ItalicIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.italic ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.italic ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleItalic);
@@ -811,8 +897,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'UnderLine',
     icon: UnderLineIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.underline ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.underline ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleUnderline);
@@ -822,8 +908,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'StrikeThrough',
     icon: StrikeThroughIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.strike ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.strike ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleStrike);
@@ -833,8 +919,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Code',
     icon: CodeIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.code ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.code ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleCode);
@@ -844,8 +930,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Link',
     icon: LinkIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.link ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.link ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleLink);
@@ -855,9 +941,9 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
 
 const highlightToolPanel: KeyboardToolPanelConfig = {
   icon: ({ std }) => {
-    const [_, { textStyle }] = std.command.exec(getTextStyle);
-    if (textStyle?.color) {
-      return HighLightDuotoneIcon(textStyle.color);
+    const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+    if (textAttributes?.color) {
+      return HighLightDuotoneIcon(textAttributes.color);
     } else {
       return HighLightDuotoneIcon(cssVarV2('icon/primary'));
     }
@@ -888,7 +974,7 @@ const highlightToolPanel: KeyboardToolPanelConfig = {
             const payload = {
               styles: {
                 color: cssVarV2(`text/highlight/fg/${color}`),
-              } satisfies AffineTextAttributes,
+              } satisfies AffineTextStyleAttributes,
             };
             std.command
               .chain()
@@ -933,7 +1019,7 @@ const highlightToolPanel: KeyboardToolPanelConfig = {
             const payload = {
               styles: {
                 background: cssVarV2(`text/highlight/bg/${color}`),
-              } satisfies AffineTextAttributes,
+              } satisfies AffineTextStyleAttributes,
             };
             std.command
               .chain()
@@ -1012,12 +1098,10 @@ export const defaultKeyboardToolbarConfig: KeyboardToolbarConfig = {
         const model = selectedModels?.[0];
         if (!model) return;
 
-        const file = await openFileOrFiles();
+        const file = await openSingleFileWith();
         if (!file) return;
 
-        const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-
-        await addSiblingAttachmentBlocks(std.host, [file], maxFileSize, model);
+        await addSiblingAttachmentBlocks(std, [file], model);
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
         }
@@ -1111,7 +1195,6 @@ export const defaultKeyboardToolbarConfig: KeyboardToolbarConfig = {
         std.command
           .chain()
           .pipe(getSelectedModelsCommand)
-          .pipe(draftSelectedModelsCommand)
           .pipe(duplicateSelectedModelsCommand)
           .run();
       },

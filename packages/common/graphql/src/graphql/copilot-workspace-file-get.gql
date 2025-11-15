@@ -1,0 +1,23 @@
+query getWorkspaceEmbeddingFiles($workspaceId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    embedding {
+      files(pagination: $pagination) {
+        totalCount
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        edges {
+          node {
+            fileId
+            fileName
+            blobId
+            mimeType
+            size
+            createdAt
+          }
+        }
+      }
+    }
+  }
+}

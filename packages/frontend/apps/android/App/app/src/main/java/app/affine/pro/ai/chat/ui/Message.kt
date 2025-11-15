@@ -7,23 +7,22 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.affine.pro.R
 import app.affine.pro.ai.chat.ChatMessage
+import app.affine.pro.components.AFFiNEIcon
+import app.affine.pro.components.Markdown
+import app.affine.pro.theme.AFFiNETheme
 import kotlinx.datetime.Clock
 
 @Composable
@@ -44,11 +43,9 @@ fun Message(message: ChatMessage) {
             .padding(8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.ic_ai),
-                contentDescription = null,
-                tint = Color(0XFF1E96EB),
-                modifier = Modifier.size(24.dp)
+            AFFiNEIcon(
+                R.drawable.ic_ai,
+                tint = AFFiNETheme.colors.iconActivated
             )
             Spacer(Modifier.width(6.dp))
             Text(
@@ -56,17 +53,21 @@ fun Message(message: ChatMessage) {
                     ChatMessage.Role.User -> "You"
                     ChatMessage.Role.AI -> "Affine AI"
                 },
-                color = Color.White,
+                color = AFFiNETheme.colors.textPrimary,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         }
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = message.content,
-            color = Color.White,
-            fontSize = 16.sp,
-        )
+        when (message.role) {
+            ChatMessage.Role.User -> Text(
+                text = message.content,
+                color = Color.White,
+                fontSize = 16.sp,
+            )
+
+            ChatMessage.Role.AI -> Markdown(markdown = message.content)
+        }
     }
 }
 

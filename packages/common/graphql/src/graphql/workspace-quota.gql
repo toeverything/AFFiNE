@@ -8,12 +8,15 @@ query workspaceQuota($id: String!) {
       historyPeriod
       memberLimit
       memberCount
+      overcapacityMemberCount
       humanReadable {
         name
         blobLimit
         storageQuota
         historyPeriod
         memberLimit
+        memberCount
+        overcapacityMemberCount
       }
     }
   }

@@ -188,8 +188,7 @@ export class AudioMediaManagerService extends Service {
     if (!stats || !currentState) {
       return;
     }
-    const seekOffset =
-      currentState.seekOffset + (Date.now() - currentState.updateTime) / 1000;
+    const seekOffset = currentState.seekOffset;
     this.globalMediaState.updatePlaybackState({
       state: 'playing',
       // rewind to the beginning if the seek offset is greater than the duration
@@ -207,7 +206,9 @@ export class AudioMediaManagerService extends Service {
 
     this.globalMediaState.updatePlaybackState({
       state: 'paused',
-      seekOffset: (Date.now() - state.updateTime) / 1000 + state.seekOffset,
+      seekOffset:
+        ((Date.now() - state.updateTime) / 1000) * (state.playbackRate || 1.0) +
+        state.seekOffset,
       updateTime: Date.now(),
     });
   }
@@ -307,8 +308,8 @@ export class AudioMediaManagerService extends Service {
         key: attachmentBlockAudioMediaKey({
           blobId: input.props.sourceId,
           blockId: input.id,
-          docId: input.doc.id,
-          workspaceId: input.doc.rootDoc.guid,
+          docId: input.store.id,
+          workspaceId: input.store.rootDoc.guid,
         }),
         name: input.props.name,
         size: input.props.size,

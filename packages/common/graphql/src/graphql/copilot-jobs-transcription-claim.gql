@@ -4,6 +4,7 @@ mutation claimAudioTranscription($jobId: String!) {
     status
     title
     summary
+    actions
     transcription {
       speaker
       start

@@ -87,14 +87,17 @@ const BackupWorkspaceItem = ({ item }: { item: BackupWorkspaceItem }) => {
     }
     notify.success({
       title: t['com.affine.settings.workspace.backup.import.success'](),
-      action: {
-        label:
-          t['com.affine.settings.workspace.backup.import.success.action'](),
-        onClick: () => {
-          jumpToPage(workspaceId, 'all');
+      actions: [
+        {
+          key: 'open',
+          label:
+            t['com.affine.settings.workspace.backup.import.success.action'](),
+          onClick: () => {
+            jumpToPage(workspaceId, 'all');
+          },
+          autoClose: false,
         },
-        autoClose: false,
-      },
+      ],
     });
     setMenuOpen(false);
     setImporting(false);

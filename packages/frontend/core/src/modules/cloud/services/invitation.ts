@@ -9,7 +9,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { EMPTY, switchMap, tap } from 'rxjs';
 
 import type { AcceptInviteStore } from '../stores/accept-invite';
 import type { InviteInfoStore } from '../stores/invite-info';
@@ -36,9 +36,8 @@ export class InvitationService extends Service {
       return fromPromise(async () => {
         return await this.inviteInfoStore.getInviteInfo(inviteId);
       }).pipe(
-        mergeMap(res => {
+        tap(res => {
           this.inviteInfo$.setValue(res);
-          return EMPTY;
         }),
         smartRetry({
           count: 1,
@@ -64,8 +63,7 @@ export class InvitationService extends Service {
     }
     return await this.acceptInviteStore.acceptInvite(
       this.inviteInfo$.value.workspace.id,
-      inviteId,
-      true
+      inviteId
     );
   }
 

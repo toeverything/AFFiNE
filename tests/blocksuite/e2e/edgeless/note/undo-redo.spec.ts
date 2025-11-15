@@ -13,6 +13,7 @@ import {
   initEmptyEdgelessState,
   initSixParagraphs,
   pasteByKeyboard,
+  pressEscape,
   redoByClick,
   redoByKeyboard,
   selectNoteInEdgeless,
@@ -56,18 +57,17 @@ test('undo/redo should work correctly after resizing', async ({ page }) => {
   await switchEditorMode(page);
   await zoomResetByKeyboard(page);
   await activeNoteInEdgeless(page, noteId);
-  await waitNextFrame(page, 400);
+  await waitNextFrame(page, 600);
   // current implementation may be a little inefficient
   await fillLine(page, true);
   await page.mouse.click(0, 0);
-  await waitNextFrame(page, 400);
+  await waitNextFrame(page, 600);
   await selectNoteInEdgeless(page, noteId);
 
   const initRect = await getNoteRect(page, noteId);
   const rightHandle = page.locator('.handle[aria-label="right"] .resize');
   const box = await rightHandle.boundingBox();
   if (box === null) throw new Error();
-
   await dragBetweenCoords(
     page,
     { x: box.x + 5, y: box.y + 5 },
@@ -137,4 +137,64 @@ test('continuous undo and redo (note block add operation) should work', async ({
   await redoByClick(page);
   count = await countBlock(page, 'affine-edgeless-note');
   expect(count).toBe(4);
+});
+
+test('undo/redo should work when change note custom background', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  const { noteId } = await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await selectNoteInEdgeless(page, noteId);
+
+  const getNoteBackground = async () => {
+    return page.locator('edgeless-note-background').evaluate(el => {
+      return getComputedStyle(el).backgroundColor;
+    });
+  };
+
+  const stylePanel = page.locator('edgeless-note-style-panel');
+
+  let prevBackground = await getNoteBackground();
+
+  // preset color
+  {
+    await stylePanel.click();
+    await stylePanel.getByLabel('Red').click();
+    await pressEscape(page);
+
+    expect(await getNoteBackground()).not.toBe(prevBackground);
+    await undoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getNoteBackground()).toBe(prevBackground);
+
+    await redoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getNoteBackground()).not.toBe(prevBackground);
+  }
+
+  prevBackground = await getNoteBackground();
+
+  // custom color
+  {
+    await selectNoteInEdgeless(page, noteId);
+    await stylePanel.click();
+    await stylePanel.locator('edgeless-color-custom-button').click();
+    await stylePanel.locator('.color-palette').click({
+      position: {
+        x: 100,
+        y: 100,
+      },
+    });
+    await pressEscape(page);
+
+    expect(await getNoteBackground()).not.toBe(prevBackground);
+    await undoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getNoteBackground()).toBe(prevBackground);
+
+    await redoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getNoteBackground()).not.toBe(prevBackground);
+  }
 });

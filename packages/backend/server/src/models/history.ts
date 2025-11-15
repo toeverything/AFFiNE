@@ -47,7 +47,7 @@ export class HistoryModel extends BaseModel {
         expiredAt: new Date(Date.now() + maxAge),
       },
     });
-    this.logger.log(
+    this.logger.debug(
       `Created history ${row.timestamp} for ${snapshot.docId} in ${snapshot.spaceId}`
     );
     return {
@@ -163,7 +163,9 @@ export class HistoryModel extends BaseModel {
         },
       },
     });
-    this.logger.log(`Deleted ${count} expired histories`);
+    if (count > 0) {
+      this.logger.log(`Deleted ${count} expired histories`);
+    }
     return count;
   }
 }

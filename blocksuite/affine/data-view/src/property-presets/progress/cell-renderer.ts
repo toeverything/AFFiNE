@@ -14,7 +14,7 @@ import {
   progressDragHandleStyle,
   progressFgStyle,
   progressNumberStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 import { progressPropertyModelConfig } from './define.js';
 
 const progressColors = {

@@ -14,7 +14,9 @@ if (typeof localStorage !== 'undefined') {
   }
 
   if (!enabled) {
-    mixpanel.opt_out_tracking();
+    // NOTE(@forehalo): mixpanel will read local storage flag and doesn't need to be manually opt_out at startup time.
+    // see: https://docs.mixpanel.com/docs/privacy/protecting-user-data
+    // mixpanel.opt_out_tracking();
     sentry.disable();
   }
 }

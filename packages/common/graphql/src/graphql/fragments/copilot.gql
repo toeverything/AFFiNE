@@ -1,0 +1,49 @@
+fragment CopilotChatMessage on ChatMessage {
+  id
+  role
+  content
+  attachments
+  streamObjects {
+    type
+    textDelta
+    toolCallId
+    toolName
+    args
+    result
+  }
+  createdAt
+}
+
+fragment CopilotChatHistory on CopilotHistories {
+  sessionId
+  workspaceId
+  docId
+  parentSessionId
+  promptName
+  model
+  optionalModels
+  action
+  pinned
+  title
+  tokens
+  messages {
+    ...CopilotChatMessage
+  }
+  createdAt
+  updatedAt
+}
+
+fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
+  pageInfo {
+    hasNextPage
+    hasPreviousPage
+    startCursor
+    endCursor
+  }
+  edges {
+    cursor
+    node {
+      ...CopilotChatHistory
+    }
+  }
+}

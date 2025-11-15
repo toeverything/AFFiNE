@@ -27,7 +27,9 @@ export class ListLayoutHandlerExtension extends BlockLayoutHandlerExtension<List
     host: EditorHost,
     viewportRecord: ViewportRecord
   ): ListLayout | null {
-    const component = host.std.view.getBlock(model.id) as GfxBlockComponent;
+    const component = host.std.view.getBlock(
+      model.id
+    ) as GfxBlockComponent | null;
     if (!component) return null;
 
     // Find the list items within this specific list component

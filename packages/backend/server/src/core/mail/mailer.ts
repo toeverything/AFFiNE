@@ -10,18 +10,33 @@ export class Mailer {
     private readonly sender: MailSender
   ) {}
 
-  get enabled() {
-    // @ts-expect-error internal api
-    return this.sender.smtp !== null;
+  /**
+   * try to send mail
+   *
+   * @note never throw
+   */
+  async trySend(command: Omit<Jobs['notification.sendMail'], 'startTime'>) {
+    return this.send(command, true);
   }
 
-  async send(command: Jobs['notification.sendMail']) {
-    if (!this.enabled) {
+  async send(
+    command: Omit<Jobs['notification.sendMail'], 'startTime'>,
+    suppressError = false
+  ) {
+    if (!this.sender.configured) {
+      if (suppressError) {
+        return false;
+      }
       throw new EmailServiceNotConfigured();
     }
 
     try {
-      await this.queue.add('notification.sendMail', command);
+      await this.queue.add(
+        'notification.sendMail',
+        Object.assign({}, command, {
+          startTime: Date.now(),
+        }) as Jobs['notification.sendMail']
+      );
       return true;
     } catch {
       return false;

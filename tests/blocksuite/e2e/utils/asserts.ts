@@ -440,7 +440,7 @@ export async function assertParentBlockId(
       if (!model) {
         throw new Error(`Block with id ${blockId} not found`);
       }
-      return model.doc.getParent(model)?.id;
+      return model.store.getParent(model)?.id;
     },
     { blockId }
   );
@@ -458,7 +458,7 @@ export async function assertParentBlockFlavour(
       if (!model) {
         throw new Error(`Block with id ${blockId} not found`);
       }
-      return model.doc.getParent(model)?.flavour;
+      return model.store.getParent(model)?.flavour;
     },
     { blockId }
   );
@@ -962,7 +962,7 @@ export async function assertEdgelessColorSameWithHexColor(
   edgelessColor: string,
   hexColor: `#${string}`
 ) {
-  const themeColor = edgelessColor.startsWith('---')
+  const themeColor = edgelessColor.startsWith('--')
     ? await getCurrentThemeCSSPropertyValue(page, edgelessColor)
     : edgelessColor;
   expect(themeColor).toBeTruthy();

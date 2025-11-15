@@ -3,7 +3,7 @@ import { css, html } from 'lit';
 
 import { BaseGroup } from './base.js';
 
-export class BooleanGroupView extends BaseGroup<NonNullable<unknown>, boolean> {
+export class BooleanGroupView extends BaseGroup<boolean, NonNullable<unknown>> {
   static override styles = css`
     .data-view-group-title-boolean-view {
       display: flex;

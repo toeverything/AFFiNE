@@ -1,17 +1,11 @@
 import '@toeverything/theme/style.css';
 import '@toeverything/theme/fonts.css';
 
-import { effects as blocksEffects } from '@blocksuite/affine/effects';
-import {
-  EdgelessEditorBlockSpecs,
-  PageEditorBlockSpecs,
-  registerStoreSpecs,
-  StoreExtensions,
-} from '@blocksuite/affine/extensions';
 import type { DocMode } from '@blocksuite/affine/model';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
 import {
   CommunityCanvasTextFonts,
+  FeatureFlagService,
   FontConfigExtension,
 } from '@blocksuite/affine/shared/services';
 import {
@@ -27,10 +21,14 @@ import {
 
 import { effects } from '../../effects.js';
 import { TestAffineEditorContainer } from '../../index.js';
+import { getTestStoreManager } from '../../store.js';
+import { getTestViewManager } from '../../view.js';
 
-registerStoreSpecs();
-blocksEffects();
+const storeManager = getTestStoreManager();
+const viewManager = getTestViewManager();
 effects();
+
+const storeExtensions = storeManager.get('store');
 
 export function getRenderer() {
   return editor.std.get(
@@ -50,11 +48,6 @@ function createCollectionOptions() {
     id: room,
     schema,
     idGenerator,
-    defaultFlags: {
-      readonly: {
-        'doc:home': false,
-      },
-    },
   };
 }
 
@@ -85,12 +78,12 @@ async function createEditor(
   editor.doc = doc;
   editor.mode = mode;
   editor.pageSpecs = [
-    ...PageEditorBlockSpecs,
+    ...viewManager.get('page'),
     FontConfigExtension(CommunityCanvasTextFonts),
     ...extensions,
   ];
   editor.edgelessSpecs = [
-    ...EdgelessEditorBlockSpecs,
+    ...viewManager.get('edgeless'),
     FontConfigExtension(CommunityCanvasTextFonts),
     ...extensions,
   ];
@@ -118,33 +111,50 @@ export function createPainterWorker() {
   return worker;
 }
 
+type SetupEditorOptions = {
+  extensions?: ExtensionType[];
+  enableDomRenderer?: boolean;
+};
+
 export async function setupEditor(
   mode: DocMode = 'page',
-  extensions: ExtensionType[] = []
+  extensionsInput?: ExtensionType[],
+  optionsInput?: SetupEditorOptions
 ) {
+  const extensions: ExtensionType[] = extensionsInput ?? [];
+  const options: SetupEditorOptions = optionsInput ?? {};
+  const enableDomRenderer = options?.enableDomRenderer ?? false;
+
   const collection = new TestWorkspace(createCollectionOptions());
-  collection.storeExtensions = StoreExtensions;
+  collection.storeExtensions = storeExtensions;
   collection.meta.initialize();
 
   window.collection = collection;
 
   initCollection(collection);
+
+  if (enableDomRenderer) {
+    const docStore = window.collection.docs.get('doc:home')?.getStore();
+    const featureFlagService = docStore?.get(FeatureFlagService);
+    featureFlagService?.setFlag('enable_dom_renderer', true);
+  }
+
   const appElement = await createEditor(collection, mode, extensions);
 
   return () => {
-    appElement.remove();
+    appElement?.remove();
     cleanup();
   };
 }
 
 export function cleanup() {
-  window.editor.remove();
+  window.editor?.remove();
 
   delete (window as any).collection;
 
   delete (window as any).editor;
 
-  delete (window as any).doc;
+  delete (window as any).store;
 }
 
 declare global {

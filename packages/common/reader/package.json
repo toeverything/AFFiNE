@@ -1,0 +1,27 @@
+{
+  "name": "@affine/reader",
+  "type": "module",
+  "version": "0.25.2",
+  "private": true,
+  "sideEffects": false,
+  "module": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dist": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "yarn bundle",
+    "bundle": "node esbuild.config.js"
+  },
+  "dependencies": {
+    "lodash-es": "^4.17.21",
+    "yjs": "^13.6.21"
+  },
+  "devDependencies": {
+    "@blocksuite/affine": "workspace:*",
+    "vitest": "3.1.3"
+  },
+  "peerDependencies": {
+    "@blocksuite/affine": "workspace:*"
+  }
+}

@@ -1,5 +1,4 @@
-import { FileSizeLimitService } from '@blocksuite/affine-shared/services';
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
+import { openSingleFileWith } from '@blocksuite/affine-shared/utils';
 import { type SlashMenuConfig } from '@blocksuite/affine-widget-slash-menu';
 import { ExportToPdfIcon, FileIcon } from '@blocksuite/icons/lit';
 
@@ -19,19 +18,13 @@ export const attachmentSlashMenuConfig: SlashMenuConfig = {
       searchAlias: ['file'],
       group: '4_Content & Media@3',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:attachment'),
+        model.store.schema.flavourSchemaMap.has('affine:attachment'),
       action: ({ std, model }) => {
         (async () => {
-          const file = await openFileOrFiles();
+          const file = await openSingleFileWith();
           if (!file) return;
-          const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-          await addSiblingAttachmentBlocks(
-            std.host,
-            [file],
-            maxFileSize,
-            model,
-            'after'
-          );
+
+          await addSiblingAttachmentBlocks(std, [file], model);
           if (model.text?.length === 0) {
             std.store.deleteBlock(model);
           }
@@ -48,21 +41,13 @@ export const attachmentSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@4',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:attachment'),
+        model.store.schema.flavourSchemaMap.has('affine:attachment'),
       action: ({ std, model }) => {
         (async () => {
-          const file = await openFileOrFiles();
+          const file = await openSingleFileWith();
           if (!file) return;
 
-          const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-
-          await addSiblingAttachmentBlocks(
-            std.host,
-            [file],
-            maxFileSize,
-            model,
-            'after'
-          );
+          await addSiblingAttachmentBlocks(std, [file], model);
           if (model.text?.length === 0) {
             std.store.deleteBlock(model);
           }

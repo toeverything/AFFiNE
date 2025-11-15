@@ -197,4 +197,107 @@ test('retry when error', async () => {
     expect(connection.status).toBe('connected');
     expect(connection.error).toBeUndefined();
   });
+
+  // do not reconnect if the connection is closed
+  connection.disconnect();
+  connection.triggerError(new Error('test error2'));
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  expect(connection.connectCount).toBe(2);
+  expect(connection.status).toBe('closed');
+});
+
+test('connecting timeout', async () => {
+  class TestConnection extends AutoReconnectConnection {
+    override connectingTimeout = 150;
+    override retryDelay = 150;
+    connectCount = 0;
+    disconnectCount = 0;
+    override async doConnect() {
+      this.connectCount++;
+      if (this.connectCount === 3) {
+        return { foo: 'bar' };
+      }
+      await new Promise(resolve => setTimeout(resolve, 300));
+      throw new Error('not connected, count: ' + this.connectCount);
+    }
+    override doDisconnect(conn: any) {
+      this.disconnectCount++;
+      expect(conn).toEqual({
+        foo: 'bar',
+      });
+    }
+    triggerError(error: Error) {
+      this.error = error;
+    }
+  }
+
+  const connection = new TestConnection();
+  connection.connect();
+
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(1);
+    expect(connection.disconnectCount).toBe(0);
+    expect(connection.status).toBe('error');
+    expect(connection.error?.message).toBe('connecting timeout');
+  });
+
+  // wait for reconnect
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(2);
+    expect(connection.disconnectCount).toBe(0);
+    expect(connection.status).toBe('connecting');
+    expect(connection.error?.message).toBe('connecting timeout');
+  });
+
+  // trigger error while connecting
+  connection.triggerError(new Error('test error2'));
+  connection.triggerError(new Error('test error2'));
+
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(2);
+    expect(connection.disconnectCount).toBe(0);
+    expect(connection.status).toBe('error');
+    expect(connection.error?.message).toBe('test error2');
+  });
+
+  // wait for reconnect
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(3);
+    expect(connection.disconnectCount).toBe(0);
+    expect(connection.status).toBe('connected');
+    expect(connection.error).toBeUndefined();
+  });
+
+  // trigger error after connected
+  connection.triggerError(new Error('test error3'));
+
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(3);
+    expect(connection.disconnectCount).toBe(1); // previous connect is disconnected
+    expect(connection.status).toBe('error');
+    expect(connection.error?.message).toBe('test error3');
+  });
+
+  // reconnect and timeout again
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(4);
+  });
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(4);
+    expect(connection.disconnectCount).toBe(1);
+    expect(connection.status).toBe('error');
+    expect(connection.error?.message).toBe('connecting timeout');
+  });
+
+  await vitest.waitFor(() => {
+    expect(connection.connectCount).toBe(5);
+  });
+
+  connection.disconnect();
+
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // no reconnect after disconnect
+  expect(connection.connectCount).toBe(5);
+  expect(connection.status).toBe('closed');
 });

@@ -1,4 +1,5 @@
 import {
+  DefaultTool,
   EdgelessCRUDIdentifier,
   SurfaceBlockComponent,
 } from '@blocksuite/affine-block-surface';
@@ -55,10 +56,10 @@ export const insertEmbedIframeWithUrlCommand: Command<
   if (selectedBlockId) {
     const block = host.view.getBlock(selectedBlockId);
     if (!block) return;
-    const parent = host.doc.getParent(block.model);
+    const parent = host.store.getParent(block.model);
     if (!parent) return;
     const index = parent.children.indexOf(block.model);
-    newBlockId = host.doc.addBlock(flavour, props, parent, index + 1);
+    newBlockId = host.store.addBlock(flavour, props, parent, index + 1);
   } else {
     // When there is no selected block and in edgeless mode
     // We should insert the embed iframe block to surface
@@ -90,10 +91,7 @@ export const insertEmbedIframeWithUrlCommand: Command<
       surfaceBlock.model
     );
 
-    gfx.tool.setTool(
-      // @ts-expect-error FIXME: resolve after gfx tool refactor
-      'default'
-    );
+    gfx.tool.setTool(DefaultTool);
 
     gfx.selection.set({
       elements: [newBlockId],

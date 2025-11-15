@@ -1,4 +1,5 @@
 import {
+  DefaultTool,
   EdgelessCRUDIdentifier,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
@@ -49,8 +50,7 @@ export function mountShapeTextEditor(
     return;
   }
 
-  // @ts-expect-error FIXME: resolve after gfx tool refactor
-  gfx.tool.setTool('default');
+  gfx.tool.setTool(DefaultTool);
   gfx.selection.set({
     elements: [shapeElement.id],
     editing: true,

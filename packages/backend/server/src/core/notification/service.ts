@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 
 import { NotificationNotFound, PaginationInput, URLHelper } from '../../base';
 import {
+  CommentNotification,
+  CommentNotificationCreate,
   DEFAULT_WORKSPACE_NAME,
   InvitationNotificationCreate,
   InvitationReviewDeclinedNotificationCreate,
@@ -36,6 +38,58 @@ export class NotificationService {
     return await this.models.notification.cleanExpiredNotifications();
   }
 
+  async createComment(input: CommentNotificationCreate, isMention?: boolean) {
+    const notification = isMention
+      ? await this.models.notification.createCommentMention(input)
+      : await this.models.notification.createComment(input);
+    await this.sendCommentEmail(input, isMention);
+    return notification;
+  }
+
+  private async sendCommentEmail(
+    input: CommentNotificationCreate,
+    isMention?: boolean
+  ) {
+    const userSetting = await this.models.userSettings.get(input.userId);
+    if (!userSetting.receiveCommentEmail) {
+      return;
+    }
+    const receiver = await this.models.user.getWorkspaceUser(input.userId);
+    if (!receiver) {
+      return;
+    }
+    const doc = await this.models.doc.getMeta(
+      input.body.workspaceId,
+      input.body.doc.id
+    );
+    const title = doc?.title || input.body.doc.title;
+    const url = this.url.link(
+      generateDocPath({
+        workspaceId: input.body.workspaceId,
+        docId: input.body.doc.id,
+        mode: input.body.doc.mode,
+        blockId: input.body.doc.blockId,
+        elementId: input.body.doc.elementId,
+        commentId: input.body.commentId,
+        replyId: input.body.replyId,
+      })
+    );
+    await this.mailer.trySend({
+      name: isMention ? 'CommentMention' : 'Comment',
+      to: receiver.email,
+      props: {
+        user: {
+          $$userId: input.body.createdByUserId,
+        },
+        doc: {
+          title,
+          url,
+        },
+      },
+    });
+    this.logger.debug(`Comment email sent to user ${receiver.id}`);
+  }
+
   async createMention(input: MentionNotificationCreate) {
     const notification = await this.models.notification.createMention(input);
     await this.sendMentionEmail(input);
@@ -65,7 +119,7 @@ export class NotificationService {
         elementId: input.body.doc.elementId,
       })
     );
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'Mention',
       to: receiver.email,
       props: {
@@ -78,7 +132,7 @@ export class NotificationService {
         },
       },
     });
-    this.logger.log(`Mention email sent to user ${receiver.id}`);
+    this.logger.debug(`Mention email sent to user ${receiver.id}`);
   }
 
   async createInvitation(input: InvitationNotificationCreate) {
@@ -110,7 +164,7 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'MemberInvitation',
       to: receiver.email,
       props: {
@@ -123,7 +177,7 @@ export class NotificationService {
         url: inviteUrl,
       },
     });
-    this.logger.log(
+    this.logger.debug(
       `Invitation email sent to user ${receiver.id} for workspace ${input.body.workspaceId}`
     );
   }
@@ -161,7 +215,7 @@ export class NotificationService {
     if (!inviter) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'MemberAccepted',
       to: inviter.email,
       props: {
@@ -179,7 +233,7 @@ export class NotificationService {
         ),
       },
     });
-    this.logger.log(
+    this.logger.debug(
       `Invitation accepted email sent to user ${inviter.id} for workspace ${workspaceId}`
     );
   }
@@ -226,7 +280,7 @@ export class NotificationService {
     if (!reviewer) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'LinkInvitationReviewRequest',
       to: reviewer.email,
       props: {
@@ -244,7 +298,7 @@ export class NotificationService {
         ),
       },
     });
-    this.logger.log(
+    this.logger.debug(
       `Invitation review request email sent to user ${reviewer.id} for workspace ${workspaceId}`
     );
   }
@@ -273,7 +327,7 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'LinkInvitationApprove',
       to: receiver.email,
       props: {
@@ -283,7 +337,7 @@ export class NotificationService {
         url: this.url.link(`/workspace/${workspaceId}`),
       },
     });
-    this.logger.log(
+    this.logger.debug(
       `Invitation review approved email sent to user ${receiver.id} for workspace ${workspaceId}`
     );
   }
@@ -312,7 +366,7 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'LinkInvitationDecline',
       to: receiver.email,
       props: {
@@ -321,7 +375,7 @@ export class NotificationService {
         },
       },
     });
-    this.logger.log(
+    this.logger.debug(
       `Invitation review declined email sent to user ${receiver.id} for workspace ${workspaceId}`
     );
   }
@@ -343,6 +397,10 @@ export class NotificationService {
       }
       throw err;
     }
+  }
+
+  async markAllAsRead(userId: string) {
+    await this.models.notification.markAllAsRead(userId);
   }
 
   /**
@@ -370,8 +428,11 @@ export class NotificationService {
 
     // fill latest doc title
     const mentions = notifications.filter(
-      n => n.type === NotificationType.Mention
-    ) as MentionNotification[];
+      n =>
+        n.type === NotificationType.Mention ||
+        n.type === NotificationType.CommentMention ||
+        n.type === NotificationType.Comment
+    ) as (MentionNotification | CommentNotification)[];
     const mentionDocs = await this.models.doc.findMetas(
       mentions.map(m => ({
         workspaceId: m.body.workspaceId,

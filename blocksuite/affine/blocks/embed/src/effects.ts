@@ -12,13 +12,8 @@ import { EmbedIframeLinkInputPopup } from './embed-iframe-block/components/embed
 import { EmbedIframeLoadingCard } from './embed-iframe-block/components/embed-iframe-loading-card';
 import { EmbedEdgelessIframeBlockComponent } from './embed-iframe-block/embed-edgeless-iframe-block';
 import { EmbedIframeBlockComponent } from './embed-iframe-block/embed-iframe-block';
-import { EmbedLinkedDocBlockComponent } from './embed-linked-doc-block';
-import { EmbedEdgelessLinkedDocBlockComponent } from './embed-linked-doc-block/embed-edgeless-linked-doc-block';
 import { EmbedLoomBlockComponent } from './embed-loom-block';
 import { EmbedEdgelessLoomBlockComponent } from './embed-loom-block/embed-edgeless-loom-bock';
-import { EmbedSyncedDocBlockComponent } from './embed-synced-doc-block';
-import { EmbedSyncedDocCard } from './embed-synced-doc-block/components/embed-synced-doc-card';
-import { EmbedEdgelessSyncedDocBlockComponent } from './embed-synced-doc-block/embed-edgeless-synced-doc-block';
 import { EmbedYoutubeBlockComponent } from './embed-youtube-block';
 import { EmbedEdgelessYoutubeBlockComponent } from './embed-youtube-block/embed-edgeless-youtube-block';
 
@@ -60,26 +55,6 @@ export function effects() {
   );
   customElements.define('affine-embed-loom-block', EmbedLoomBlockComponent);
 
-  customElements.define('affine-embed-synced-doc-card', EmbedSyncedDocCard);
-
-  customElements.define(
-    'affine-embed-edgeless-linked-doc-block',
-    EmbedEdgelessLinkedDocBlockComponent
-  );
-  customElements.define(
-    'affine-embed-linked-doc-block',
-    EmbedLinkedDocBlockComponent
-  );
-
-  customElements.define(
-    'affine-embed-edgeless-synced-doc-block',
-    EmbedEdgelessSyncedDocBlockComponent
-  );
-  customElements.define(
-    'affine-embed-synced-doc-block',
-    EmbedSyncedDocBlockComponent
-  );
-
   customElements.define(
     'affine-embed-edgeless-iframe-block',
     EmbedEdgelessIframeBlockComponent
@@ -111,11 +86,6 @@ declare global {
     'affine-embed-loom-block': EmbedLoomBlockComponent;
     'affine-embed-youtube-block': EmbedYoutubeBlockComponent;
     'affine-embed-edgeless-youtube-block': EmbedEdgelessYoutubeBlockComponent;
-    'affine-embed-synced-doc-card': EmbedSyncedDocCard;
-    'affine-embed-synced-doc-block': EmbedSyncedDocBlockComponent;
-    'affine-embed-edgeless-synced-doc-block': EmbedEdgelessSyncedDocBlockComponent;
-    'affine-embed-linked-doc-block': EmbedLinkedDocBlockComponent;
-    'affine-embed-edgeless-linked-doc-block': EmbedEdgelessLinkedDocBlockComponent;
     'affine-embed-iframe-block': EmbedIframeBlockComponent;
     'embed-iframe-link-input-popup': EmbedIframeLinkInputPopup;
     'embed-iframe-loading-card': EmbedIframeLoadingCard;

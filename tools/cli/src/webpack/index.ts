@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { getBuildConfig } from '@affine-tools/utils/build-config';
-import { ProjectRoot } from '@affine-tools/utils/path';
+import { Path, ProjectRoot } from '@affine-tools/utils/path';
 import { Package } from '@affine-tools/utils/workspace';
 import { PerfseePlugin } from '@perfsee/webpack';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
@@ -75,10 +75,7 @@ export function createHTMLTargetConfig(
     },
     entry,
     output: {
-      environment: {
-        module: true,
-        dynamicImport: true,
-      },
+      environment: { module: true, dynamicImport: true },
       filename: buildConfig.debug
         ? 'js/[name].js'
         : 'js/[name].[contenthash:8].js',
@@ -127,12 +124,7 @@ export function createHTMLTargetConfig(
       },
       //#region rules
       rules: [
-        {
-          test: /\.m?js?$/,
-          resolve: {
-            fullySpecified: false,
-          },
-        },
+        { test: /\.m?js?$/, resolve: { fullySpecified: false } },
         {
           test: /\.js$/,
           enforce: 'pre',
@@ -185,9 +177,7 @@ export function createHTMLTargetConfig(
                   target: 'es2022',
                   externalHelpers: false,
                   transform: {
-                    react: {
-                      runtime: 'automatic',
-                    },
+                    react: { runtime: 'automatic' },
                     useDefineForClassFields: false,
                     decoratorVersion: '2022-03',
                   },
@@ -200,18 +190,9 @@ export function createHTMLTargetConfig(
               test: /\.(png|jpg|gif|svg|webp|mp4|zip)$/,
               type: 'asset/resource',
             },
-            {
-              test: /\.(ttf|eot|woff|woff2)$/,
-              type: IN_CI ? 'asset/inline' : 'asset/resource',
-            },
-            {
-              test: /\.txt$/,
-              type: 'asset/source',
-            },
-            {
-              test: /\.inline\.svg$/,
-              type: 'asset/inline',
-            },
+            { test: /\.(ttf|eot|woff|woff2)$/, type: 'asset/resource' },
+            { test: /\.txt$/, type: 'asset/source' },
+            { test: /\.inline\.svg$/, type: 'asset/inline' },
             {
               test: /\.css$/,
               use: [
@@ -242,12 +223,7 @@ export function createHTMLTargetConfig(
                           ]
                         : [
                             cssnano({
-                              preset: [
-                                'default',
-                                {
-                                  convertValues: false,
-                                },
-                              ],
+                              preset: ['default', { convertValues: false }],
                             }),
                           ],
                     },
@@ -298,9 +274,7 @@ export function createHTMLTargetConfig(
         new WebpackS3Plugin(),
       !buildConfig.debug &&
         process.env.PERFSEE_TOKEN &&
-        new PerfseePlugin({
-          project: 'affine-toeverything',
-        }),
+        new PerfseePlugin({ project: 'affine-toeverything' }),
       process.env.SENTRY_AUTH_TOKEN &&
         process.env.SENTRY_ORG &&
         process.env.SENTRY_PROJECT &&
@@ -325,9 +299,7 @@ export function createHTMLTargetConfig(
     ]),
     //#endregion
 
-    stats: {
-      errorDetails: true,
-    },
+    stats: { errorDetails: true },
 
     //#region optimization
     optimization: {
@@ -339,12 +311,8 @@ export function createHTMLTargetConfig(
           extractComments: true,
           terserOptions: {
             ecma: 2020,
-            compress: {
-              unused: true,
-            },
-            mangle: {
-              keep_classnames: true,
-            },
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
           },
         }),
       ],
@@ -353,9 +321,7 @@ export function createHTMLTargetConfig(
       usedExports: true,
       sideEffects: true,
       removeAvailableModules: true,
-      runtimeChunk: {
-        name: 'runtime',
-      },
+      runtimeChunk: { name: 'runtime' },
       splitChunks: {
         chunks: 'all',
         minSize: 1,
@@ -382,11 +348,7 @@ export function createHTMLTargetConfig(
             priority: -10,
             reuseExistingChunk: true,
           },
-          default: {
-            minChunks: 2,
-            priority: -20,
-            reuseExistingChunk: true,
-          },
+          default: { minChunks: 2, priority: -20, reuseExistingChunk: true },
           styles: {
             name: 'styles',
             type: 'css/mini-extract',
@@ -416,9 +378,7 @@ export function createWorkerTargetConfig(
       outputModule: false,
       syncWebAssembly: true,
     },
-    entry: {
-      [workerName]: entry,
-    },
+    entry: { [workerName]: entry },
     output: {
       filename: `js/${workerName}-${buildConfig.appVersion}.worker.js`,
       path: pkg.distPath.value,
@@ -432,14 +392,9 @@ export function createWorkerTargetConfig(
     devtool: buildConfig.debug ? 'cheap-module-source-map' : 'source-map',
     resolve: {
       symlinks: true,
-      extensionAlias: {
-        '.js': ['.js', '.ts'],
-        '.mjs': ['.mjs', '.mts'],
-      },
+      extensionAlias: { '.js': ['.js', '.ts'], '.mjs': ['.mjs', '.mts'] },
       extensions: ['.js', '.ts'],
-      alias: {
-        yjs: ProjectRoot.join('node_modules', 'yjs').value,
-      },
+      alias: { yjs: ProjectRoot.join('node_modules', 'yjs').value },
     },
 
     module: {
@@ -454,12 +409,7 @@ export function createWorkerTargetConfig(
         },
       },
       rules: [
-        {
-          test: /\.m?js?$/,
-          resolve: {
-            fullySpecified: false,
-          },
-        },
+        { test: /\.m?js?$/, resolve: { fullySpecified: false } },
         {
           test: /\.js$/,
           enforce: 'pre',
@@ -508,9 +458,7 @@ export function createWorkerTargetConfig(
           {} as Record<string, string>
         )
       ),
-      new webpack.optimize.LimitChunkCountPlugin({
-        maxChunks: 1,
-      }),
+      new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
       process.env.SENTRY_AUTH_TOKEN &&
         process.env.SENTRY_ORG &&
         process.env.SENTRY_PROJECT &&
@@ -520,9 +468,7 @@ export function createWorkerTargetConfig(
           authToken: process.env.SENTRY_AUTH_TOKEN,
         }),
     ]),
-    stats: {
-      errorDetails: true,
-    },
+    stats: { errorDetails: true },
     optimization: {
       minimize: !buildConfig.debug,
       minimizer: [
@@ -532,12 +478,8 @@ export function createWorkerTargetConfig(
           extractComments: true,
           terserOptions: {
             ecma: 2020,
-            compress: {
-              unused: true,
-            },
-            mangle: {
-              keep_classnames: true,
-            },
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
           },
         }),
       ],
@@ -549,8 +491,123 @@ export function createWorkerTargetConfig(
       runtimeChunk: false,
       splitChunks: false,
     },
-    performance: {
-      hints: false,
+    performance: { hints: false },
+  };
+}
+
+export function createNodeTargetConfig(
+  pkg: Package,
+  entry: string
+): Omit<webpack.Configuration, 'name'> & { name: string } {
+  return {
+    name: entry,
+    context: ProjectRoot.value,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: pkg.packageJson.type === 'module',
+      syncWebAssembly: true,
     },
+    entry: { index: entry },
+    output: {
+      filename: `main.js`,
+      path: pkg.distPath.value,
+      clean: true,
+      globalObject: 'globalThis',
+    },
+    target: ['node', 'es2022'],
+    externals: (data, callback) => {
+      if (
+        data.request &&
+        // import ... from 'module'
+        /^[a-zA-Z@]/.test(data.request) &&
+        // not workspace deps
+        !pkg.deps.some(dep => data.request!.startsWith(dep.name))
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    externalsPresets: { node: true },
+    node: { __dirname: false, __filename: false },
+    mode: 'none',
+    devtool: 'source-map',
+    resolve: {
+      symlinks: true,
+      extensionAlias: { '.js': ['.js', '.ts'], '.mjs': ['.mjs', '.mts'] },
+      extensions: ['.js', '.ts', '.tsx', '.node'],
+      alias: { yjs: ProjectRoot.join('node_modules', 'yjs').value },
+    },
+    module: {
+      parser: {
+        javascript: { url: false, importMeta: false, createRequire: false },
+      },
+      rules: [
+        {
+          test: /\.js$/,
+          enforce: 'pre',
+          include: /@blocksuite/,
+          use: ['source-map-loader'],
+        },
+        {
+          test: /\.node$/,
+          loader: Path.dir(import.meta.url).join('node-loader.js').value,
+        },
+        {
+          test: /\.tsx?$/,
+          exclude: /node_modules/,
+          loader: 'swc-loader',
+          options: {
+            // https://swc.rs/docs/configuring-swc/
+            jsc: {
+              preserveAllComments: true,
+              parser: {
+                syntax: 'typescript',
+                dynamicImport: true,
+                topLevelAwait: true,
+                tsx: true,
+                decorators: true,
+              },
+              target: 'es2022',
+              externalHelpers: false,
+              transform: {
+                legacyDecorator: true,
+                decoratorMetadata: true,
+                react: { runtime: 'automatic' },
+              },
+            },
+            sourceMaps: true,
+            inlineSourcesContent: true,
+          },
+        },
+      ],
+    },
+    plugins: compact([
+      new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+      new webpack.IgnorePlugin({
+        checkResource(resource) {
+          const lazyImports = [
+            '@nestjs/microservices',
+            '@nestjs/websockets/socket-module',
+            '@apollo/subgraph',
+            '@apollo/gateway',
+            '@as-integrations/fastify',
+            'ts-morph',
+            'class-validator',
+            'class-transformer',
+          ];
+          return lazyImports.some(lazyImport =>
+            resource.startsWith(lazyImport)
+          );
+        },
+      }),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': '"production"',
+      }),
+    ]),
+    stats: { errorDetails: true },
+    optimization: { nodeEnv: false },
+    performance: { hints: false },
+    ignoreWarnings: [/^(?!CriticalDependenciesWarning$)/],
   };
 }

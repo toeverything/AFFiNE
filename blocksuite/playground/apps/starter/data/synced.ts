@@ -1,5 +1,6 @@
 import { Text, type Workspace } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import { getTestStoreManager } from '@blocksuite/integration-test/store';
 
 import type { InitFn } from './utils';
 
@@ -44,6 +45,7 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
       doc: docSyncedPage,
       blockId: noteId,
       markdown: syncedDocMarkdown,
+      extensions: getTestStoreManager().get('store'),
     }).catch(console.error);
   });
 
@@ -63,6 +65,7 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
       doc: docSyncedEdgeless,
       blockId: noteId,
       markdown: syncedDocMarkdown,
+      extensions: getTestStoreManager().get('store'),
     }).catch(console.error);
   });
 
@@ -80,6 +83,7 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
       doc: docMain,
       blockId: noteId,
       markdown: syncedDocMarkdown,
+      extensions: getTestStoreManager().get('store'),
     })
       .then(() => {
         // Add synced block - self

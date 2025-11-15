@@ -2,12 +2,11 @@ import { ImageBlockSchema } from '@blocksuite/affine-model';
 import {
   BlockHtmlAdapterExtension,
   type BlockHtmlAdapterMatcher,
-  FetchUtils,
   HastUtils,
 } from '@blocksuite/affine-shared/adapters';
-import { getFilenameFromContentDisposition } from '@blocksuite/affine-shared/utils';
-import { sha } from '@blocksuite/global/utils';
-import { getAssetName, nanoid } from '@blocksuite/store';
+import { getAssetName } from '@blocksuite/store';
+
+import { processImageNodeToBlock } from './utils';
 
 export const imageBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
   flavour: ImageBlockSchema.model.flavour,
@@ -25,64 +24,10 @@ export const imageBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
       const image = o.node;
       const imageURL =
         typeof image?.properties.src === 'string' ? image.properties.src : '';
-      if (imageURL) {
-        let blobId = '';
-        if (!FetchUtils.fetchable(imageURL)) {
-          const imageURLSplit = imageURL.split('/');
-          while (imageURLSplit.length > 0) {
-            const key = assets
-              .getPathBlobIdMap()
-              .get(decodeURIComponent(imageURLSplit.join('/')));
-            if (key) {
-              blobId = key;
-              break;
-            }
-            imageURLSplit.shift();
-          }
-        } else {
-          try {
-            const res = await FetchUtils.fetchImage(
-              imageURL,
-              undefined,
-              configs.get('imageProxy') as string
-            );
-            if (!res) {
-              return;
-            }
-            const clonedRes = res.clone();
-            const name =
-              getFilenameFromContentDisposition(
-                res.headers.get('Content-Disposition') ?? ''
-              ) ??
-              (imageURL.split('/').at(-1) ?? 'image') +
-                '.' +
-                (res.headers.get('Content-Type')?.split('/').at(-1) ?? 'png');
-            const file = new File([await res.blob()], name, {
-              type: res.headers.get('Content-Type') ?? '',
-            });
-            blobId = await sha(await clonedRes.arrayBuffer());
-            assets?.getAssets().set(blobId, file);
-            await assets?.writeToBlob(blobId);
-          } catch {
-            return;
-          }
-        }
-        walkerContext
-          .openNode(
-            {
-              type: 'block',
-              id: nanoid(),
-              flavour: 'affine:image',
-              props: {
-                sourceId: blobId,
-              },
-              children: [],
-            },
-            'children'
-          )
-          .closeNode();
-        walkerContext.skipAllChildren();
+      if (!imageURL) {
+        return;
       }
+      await processImageNodeToBlock(imageURL, walkerContext, assets, configs);
     },
   },
   fromBlockSnapshot: {

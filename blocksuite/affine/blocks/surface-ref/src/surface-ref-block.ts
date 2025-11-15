@@ -1,4 +1,4 @@
-import { type FrameBlockComponent } from '@blocksuite/affine-block-frame';
+import { FrameBlockComponent } from '@blocksuite/affine-block-frame';
 import {
   EdgelessCRUDIdentifier,
   getSurfaceBlock,
@@ -6,12 +6,14 @@ import {
 import type { BlockCaptionEditor } from '@blocksuite/affine-components/caption';
 import { whenHover } from '@blocksuite/affine-components/hover';
 import { Peekable } from '@blocksuite/affine-components/peek';
+import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import { RefNodeSlotsProvider } from '@blocksuite/affine-inline-reference';
 import {
   FrameBlockModel,
   type SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import {
+  BlockElementCommentManager,
   DocModeProvider,
   EditPropsStore,
   type OpenDocMode,
@@ -20,18 +22,10 @@ import {
   ViewportElementExtension,
 } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import {
-  requestConnectedFrame,
-  SpecProvider,
-} from '@blocksuite/affine-shared/utils';
+import { requestConnectedFrame } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import {
-  Bound,
-  deserializeXYWH,
-  type SerializedXYWH,
-} from '@blocksuite/global/gfx';
-import { assertType } from '@blocksuite/global/utils';
+import { Bound, type SerializedXYWH } from '@blocksuite/global/gfx';
 import {
   BlockComponent,
   BlockSelection,
@@ -46,7 +40,7 @@ import {
   type GfxModel,
   GfxPrimitiveElementModel,
 } from '@blocksuite/std/gfx';
-import type { BaseSelection, Store } from '@blocksuite/store';
+import type { BaseSelection, ExtensionType, Store } from '@blocksuite/store';
 import { effect, signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { query } from 'lit/decorators.js';
@@ -83,6 +77,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       border-color: ${unsafeCSSVarV2('edgeless/frame/border/active')};
     }
 
+    .affine-surface-ref.comment-highlighted {
+      outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+    }
+
     @media print {
       .affine-surface-ref {
         outline: none !important;
@@ -114,12 +112,22 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   private _previewDoc: Store | null = null;
 
-  private readonly _previewSpec = SpecProvider._.getSpec(
-    'preview:edgeless'
-  ).extend([ViewportElementExtension('.ref-viewport')]);
+  private _runtimePreviewExt: ExtensionType[] = [];
+
+  private get _viewExtensionManager() {
+    return this.std.get(ViewExtensionManagerIdentifier);
+  }
+
+  private get _previewSpec() {
+    return [
+      ...this._viewExtensionManager.get('preview-edgeless'),
+      ViewportElementExtension('.ref-viewport'),
+    ];
+  }
 
   private _referencedModel: GfxModel | null = null;
 
+  // since the xywh of edgeless element is not a signal, we need to use a signal to store the xywh
   private readonly _referenceXYWH$ = signal<SerializedXYWH | null>(null);
 
   private get _shouldRender() {
@@ -134,6 +142,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     return this._referencedModel;
   }
 
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
+  }
+
   private readonly _handleClick = () => {
     this.selection.update(() => {
       return [this.selection.create(BlockSelection, { blockId: this.blockId })];
@@ -143,14 +159,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
   private _initHotkey() {
     const selection = this.host.selection;
     const addParagraph = () => {
-      if (!this.doc.getParent(this.model)) return;
+      if (!this.store.getParent(this.model)) return;
 
-      const [paragraphId] = this.doc.addSiblingBlocks(this.model, [
+      const [paragraphId] = this.store.addSiblingBlocks(this.model, [
         {
           flavour: 'affine:paragraph',
         },
       ]);
-      const model = this.doc.getModelById(paragraphId);
+      const model = this.store.getModelById(paragraphId);
       if (!model) return;
 
       requestConnectedFrame(() => {
@@ -182,7 +198,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   private _initReferencedModel() {
     const findReferencedModel = (): [GfxModel | null, string] => {
-      if (!this.model.props.reference) return [null, this.doc.id];
+      if (!this.model.props.reference) return [null, this.store.id];
       const referenceId = this.model.props.reference;
 
       const find = (doc: Store): [GfxModel | null, string] => {
@@ -200,7 +216,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       };
 
       // find current doc first
-      let result = find(this.doc);
+      let result = find(this.store);
       if (result[0]) return result;
 
       for (const doc of this.std.workspace.docs.values()) {
@@ -208,7 +224,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         if (result[0]) return result;
       }
 
-      return [null, this.doc.id];
+      return [null, this.store.id];
     };
 
     const init = () => {
@@ -217,7 +233,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       this._referencedModel =
         referencedModel && referencedModel.xywh ? referencedModel : null;
       // TODO(@L-Sun): clear query cache
-      const doc = this.doc.workspace.getDoc(docId);
+      const doc = this.store.workspace.getDoc(docId);
       this._previewDoc = doc?.getStore({ readonly: true }) ?? null;
     };
 
@@ -246,7 +262,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     if (this._referencedModel instanceof GfxBlockElementModel) {
       this._disposables.add(
-        this.doc.slots.blockUpdated.subscribe(({ type, id }) => {
+        this.store.slots.blockUpdated.subscribe(({ type, id }) => {
           if (type === 'delete' && id === this.model.props.reference) {
             init();
           }
@@ -256,6 +272,8 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
   }
 
   private _initViewport() {
+    this._referenceXYWH$.value = this.referenceModel?.xywh ?? null;
+
     const refreshViewport = () => {
       if (!this._referenceXYWH$.value) return;
       const previewEditorHost = this.previewEditor;
@@ -263,14 +281,12 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       const gfx = previewEditorHost.std.get(GfxControllerIdentifier);
       const viewport = gfx.viewport;
 
-      let bound = Bound.deserialize(this._referenceXYWH$.value);
-      const w = Math.max(this.getBoundingClientRect().width, bound.w);
-      const aspectRatio = bound.w / bound.h;
-      const h = w / aspectRatio;
-
-      bound = Bound.fromCenter(bound.center, w, h);
-
-      viewport.setViewportByBound(bound);
+      viewport.setViewportByBound(
+        Bound.deserialize(this._referenceXYWH$.value),
+        this.referenceModel instanceof FrameBlockModel
+          ? undefined
+          : [20, 20, 20, 20]
+      );
     };
     this.disposables.add(effect(refreshViewport));
 
@@ -297,28 +313,15 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         referenceXYWH$.value = referenceElement.xywh;
 
         const { _disposable } = this;
+        refreshViewport();
         _disposable.add(viewport.sizeUpdated.subscribe(refreshViewport));
 
-        if (referenceElement instanceof FrameBlockModel) {
+        if (referenceElement instanceof GfxBlockElementModel) {
           _disposable.add(
             referenceElement.xywh$.subscribe(xywh => {
               referenceXYWH$.value = xywh;
             })
           );
-          const subscription = this.std.view.viewUpdated.subscribe(
-            ({ id, type, method, view }) => {
-              if (
-                id === referenceElement.id &&
-                type === 'block' &&
-                method === 'add'
-              ) {
-                assertType<FrameBlockComponent>(view);
-                view.showBorder = false;
-                subscription.unsubscribe();
-              }
-            }
-          );
-          _disposable.add(subscription);
         } else if (referenceElement instanceof GfxPrimitiveElementModel) {
           _disposable.add(
             surface.elementUpdated.subscribe(({ id, oldValues }) => {
@@ -331,6 +334,21 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
             })
           );
         }
+
+        const subscription = this.std.view.viewUpdated.subscribe(
+          ({ id, type, method, view }) => {
+            if (
+              id === referenceElement.id &&
+              type === 'block' &&
+              method === 'add' &&
+              view instanceof FrameBlockComponent
+            ) {
+              view.showBorder = false;
+              subscription.unsubscribe();
+            }
+          }
+        );
+        _disposable.add(subscription);
       }
 
       override unmounted() {
@@ -338,7 +356,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       }
     }
 
-    this._previewSpec.extend([SurfaceRefViewportWatcher]);
+    this._runtimePreviewExt = [SurfaceRefViewportWatcher];
   }
 
   private _initHover() {
@@ -364,16 +382,20 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     this._disposables.add(dispose);
   }
 
-  private _renderRefContent(referencedModel: GfxModel) {
-    const [, , w, h] = deserializeXYWH(referencedModel.xywh);
-    const _previewSpec = this._previewSpec.value;
+  private _renderRefContent() {
+    if (!this._referenceXYWH$.value) return nothing;
+    const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
+    const aspectRatio = h !== 0 ? w / h : 1;
+    const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
+    const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
     return html`<div class="ref-content">
       <div
         class="ref-viewport"
         style=${styleMap({
-          aspectRatio: `${w} / ${h}`,
+          aspectRatio: `${aspectRatio}`,
         })}
+        data-theme=${edgelessTheme}
       >
         ${guard(this._previewDoc, () => {
           return this._previewDoc
@@ -395,7 +417,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     openMode?: OpenDocMode;
     event?: MouseEvent;
   } = {}) => {
-    const pageId = this.referenceModel?.surface?.doc.id;
+    const pageId = this.referenceModel?.surface?.store.id;
     if (!pageId) return;
 
     this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.next({
@@ -417,9 +439,9 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     if (!this._shouldRender) return;
 
+    this._initReferencedModel();
     this._initHotkey();
     this._initViewport();
-    this._initReferencedModel();
   }
 
   override firstUpdated() {
@@ -433,21 +455,22 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     const { _referencedModel, model } = this;
     const isEmpty = !_referencedModel || !_referencedModel.xywh;
+    const theme = this.std.get(ThemeProvider).theme$.value;
     const content = isEmpty
       ? html`<surface-ref-placeholder
           .referenceModel=${_referencedModel}
           .refFlavour=${model.props.refFlavour$.value}
+          .theme=${theme}
         ></surface-ref-placeholder>`
-      : this._renderRefContent(_referencedModel);
-    const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
+      : this._renderRefContent();
 
     return html`
       <div
         class=${classMap({
           'affine-surface-ref': true,
           focused: this.selected$.value,
+          'comment-highlighted': this.isCommentHighlighted,
         })}
-        data-theme=${edgelessTheme}
         @click=${this._handleClick}
       >
         ${content}
@@ -464,7 +487,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     const viewport = {
       xywh: this._referenceXYWH$.value,
-      padding: [60, 20, 20, 20] as [number, number, number, number],
+      padding: [20, 20, 20, 20] as [number, number, number, number],
     };
 
     this.std.get(EditPropsStore).setStorage('viewport', viewport);

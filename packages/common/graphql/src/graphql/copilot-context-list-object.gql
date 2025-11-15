@@ -6,15 +6,20 @@ query listContextObject(
   currentUser {
     copilot(workspaceId: $workspaceId) {
       contexts(sessionId: $sessionId, contextId: $contextId) {
+        blobs {
+          id
+          status
+          createdAt
+        }
         docs {
           id
           status
-          error
           createdAt
         }
         files {
           id
           name
+          mimeType
           blobId
           chunkSize
           error

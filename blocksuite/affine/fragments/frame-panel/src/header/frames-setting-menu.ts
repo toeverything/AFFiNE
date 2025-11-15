@@ -138,7 +138,7 @@ export class FramesSettingMenu extends WithDisposable(LitElement) {
         <div class="action-label">Fill Screen</div>
         <div class="toggle-button">
           <toggle-switch
-            .subscribe=${this.fillScreen}
+            .on=${this.fillScreen}
             .onChange=${this._onFillScreenChange}
           ></toggle-switch>
         </div>
@@ -153,7 +153,7 @@ export class FramesSettingMenu extends WithDisposable(LitElement) {
         <div class="action-label">Dark background</div>
         <div class="toggle-button">
           <toggle-switch
-            .subscribe=${this.blackBackground}
+            .on=${this.blackBackground}
             .onChange=${this._onBlackBackgroundChange}
           ></toggle-switch>
         </div>
@@ -162,7 +162,7 @@ export class FramesSettingMenu extends WithDisposable(LitElement) {
         <div class="action-label">Hide toolbar</div>
         <div class="toggle-button">
           <toggle-switch
-            .subscribe=${this.hideToolbar}
+            .on=${this.hideToolbar}
             .onChange=${this._onHideToolBarChange}
           ></toggle-switch>
         </div>

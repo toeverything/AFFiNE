@@ -22,7 +22,7 @@ export class RangeBinding {
     let parent: BlockModel | null = block;
     while (parent) {
       path.unshift(parent.id);
-      parent = this.host.doc.getParent(parent);
+      parent = this.host.store.getParent(parent);
     }
 
     return path;
@@ -54,7 +54,7 @@ export class RangeBinding {
 
     event.preventDefault();
 
-    this.host.doc.transact(() => {
+    this.host.store.transact(() => {
       startText.delete(from.index, from.length);
       startText.insert(event.data ?? '', from.index);
       endText.delete(0, to.length);
@@ -65,9 +65,9 @@ export class RangeBinding {
         // delete from lowest to highest
         .reverse()
         .forEach(block => {
-          const parent = this.host.doc.getParent(block.model);
+          const parent = this.host.store.getParent(block.model);
           if (!parent) return;
-          this.host.doc.deleteBlock(block.model, {
+          this.host.store.deleteBlock(block.model, {
             bringChildrenTo: parent,
           });
         });
@@ -129,9 +129,9 @@ export class RangeBinding {
       this.host.requestUpdate();
       await this.host.updateComplete;
 
-      this.host.doc.captureSync();
+      this.host.store.captureSync();
 
-      this.host.doc.transact(() => {
+      this.host.store.transact(() => {
         endText.delete(0, to.length);
         startText.delete(from.index, from.length);
         startText.insert(event.data, from.index);
@@ -142,9 +142,9 @@ export class RangeBinding {
           // delete from lowest to highest
           .reverse()
           .forEach(block => {
-            const parent = this.host.doc.getParent(block.model);
+            const parent = this.host.store.getParent(block.model);
             if (!parent) return;
-            this.host.doc.deleteBlock(block.model, {
+            this.host.store.deleteBlock(block.model, {
               bringChildrenTo: parent,
             });
           });
@@ -256,7 +256,7 @@ export class RangeBinding {
       return;
     }
 
-    const model = this.host.doc.getModelById(textSelection.blockId);
+    const model = this.host.store.getModelById(textSelection.blockId);
     // If the model is not found, the selection maybe in another editor
     if (!model) return;
 
@@ -278,6 +278,21 @@ export class RangeBinding {
       selections.find((selection): selection is TextSelection =>
         selection.is(TextSelection)
       ) ?? null;
+
+    if (!text && selections.length > 0) {
+      const hasRecoverable = selections.find(selection => {
+        const selectionConstructor =
+          selection.constructor as typeof BaseSelection;
+        return selectionConstructor.recoverable;
+      });
+      if (!hasRecoverable) {
+        // prevent focus to top-level content-editable element
+        // if the browser focus to the top-level content-editable element,
+        // when switching between tabs,
+        // the browser will focus to the top-level content-editable element
+        this.host.focus({ preventScroll: true });
+      }
+    }
 
     if (text === this._prevTextSelection) {
       return;

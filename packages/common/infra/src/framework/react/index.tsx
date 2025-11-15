@@ -12,9 +12,7 @@ export function useFramework(): FrameworkProvider {
   return useContext(FrameworkProviderContext); // never null, because the default value
 }
 
-export function useService<T extends Service>(
-  identifier: GeneralIdentifier<T>
-): T {
+export function useService<T>(identifier: GeneralIdentifier<T>): T {
   return useContext(FrameworkProviderContext).get(identifier);
 }
 

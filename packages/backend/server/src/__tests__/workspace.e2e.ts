@@ -122,7 +122,7 @@ test('should be able to get workspace doc', async t => {
   const u1 = await app.signupV1('u1@affine.pro');
   const u2 = await app.signupV1('u2@affine.pro');
 
-  app.switchUser(u1.id);
+  await app.switchUser(u1.id);
   const workspace = await createWorkspace(app);
 
   const res1 = await app
@@ -136,7 +136,7 @@ test('should be able to get workspace doc', async t => {
     'failed to get doc with u1 token'
   );
 
-  app.switchUser(u2.id);
+  await app.switchUser(u2.id);
   await app
     .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(403);

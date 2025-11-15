@@ -1,8 +1,8 @@
 import { shallowEqual } from '@affine/component';
+import type { TranscriptionBlockProps } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { DebugLogger } from '@affine/debug';
 import { UserFriendlyError } from '@affine/error';
 import { AiJobStatus } from '@affine/graphql';
-import type { TranscriptionBlockProps } from '@blocksuite/affine/model';
 import { Entity, LiveData } from '@toeverything/infra';
 
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
@@ -244,6 +244,7 @@ export class AudioTranscriptionJob extends Entity<{
       const result: TranscriptionResult = {
         summary: claimedJob.summary ?? '',
         title: claimedJob.title ?? '',
+        actions: claimedJob.actions ?? '',
         segments:
           claimedJob.transcription?.map(segment => ({
             speaker: segment.speaker,

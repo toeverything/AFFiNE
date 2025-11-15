@@ -1,0 +1,70 @@
+[package]
+authors = ["x1a0t <405028157@qq.com>", "DarkSky <darksky2048@gmail.com>"]
+edition = "2021"
+license = "MIT"
+name    = "y-octo-utils"
+version = "0.0.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+bench   = ["regex"]
+default = ["merger"]
+fuzz    = ["arbitrary", "phf"]
+merger  = ["clap", "y-octo/large_refs"]
+
+[dependencies]
+arbitrary   = { workspace = true, features = ["derive"], optional = true }
+clap        = { workspace = true, features = ["derive"], optional = true }
+lib0        = { workspace = true, features = ["lib0-serde"] }
+phf         = { workspace = true, features = ["macros"], optional = true }
+rand        = { workspace = true }
+rand_chacha = { workspace = true }
+regex       = { workspace = true, optional = true }
+y-octo      = { workspace = true }
+yrs         = { workspace = true }
+
+[dev-dependencies]
+criterion       = { workspace = true }
+path-ext        = { workspace = true }
+proptest        = { workspace = true }
+proptest-derive = { workspace = true }
+
+[[bin]]
+name = "bench_result_render"
+path = "bin/bench_result_render.rs"
+
+[[bin]]
+name = "doc_merger"
+path = "bin/doc_merger.rs"
+
+[[bin]]
+name = "memory_leak_test"
+path = "bin/memory_leak_test.rs"
+
+[[bench]]
+harness = false
+name    = "array_ops_benchmarks"
+
+[[bench]]
+harness = false
+name    = "codec_benchmarks"
+
+[[bench]]
+harness = false
+name    = "map_ops_benchmarks"
+
+[[bench]]
+harness = false
+name    = "text_ops_benchmarks"
+
+[[bench]]
+harness = false
+name    = "apply_benchmarks"
+
+[[bench]]
+harness = false
+name    = "update_benchmarks"
+
+[lib]
+bench = true

@@ -13,25 +13,26 @@ import type { Request, Response } from 'express';
 import {
   BehaviorSubject,
   catchError,
-  concatMap,
   connect,
-  EMPTY,
   filter,
   finalize,
   from,
+  ignoreElements,
   interval,
   lastValueFrom,
   map,
   merge,
   mergeMap,
   Observable,
+  reduce,
   Subject,
   take,
   takeUntil,
-  toArray,
+  tap,
 } from 'rxjs';
 
 import {
+  applyAttachHeaders,
   BlobNotFound,
   CallMetric,
   Config,
@@ -44,15 +45,21 @@ import {
   NoCopilotProviderAvailable,
   UnsplashIsNotConfigured,
 } from '../../base';
+import { ServerFeature, ServerService } from '../../core';
 import { CurrentUser, Public } from '../../core/auth';
+import { CopilotContextService } from './context';
 import {
-  CopilotCapability,
+  CopilotProvider,
   CopilotProviderFactory,
-  CopilotTextProvider,
+  ModelInputType,
+  ModelOutputType,
+  StreamObject,
 } from './providers';
+import { StreamObjectParser } from './providers/utils';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
-import { ChatMessage } from './types';
+import { ChatMessage, ChatQuerySchema } from './types';
+import { getSignal, getTools } from './utils';
 import { CopilotWorkflowService, GraphExecutorState } from './workflow';
 
 export interface ChatEvent {
@@ -60,11 +67,6 @@ export interface ChatEvent {
   id?: string;
   data: string | object;
 }
-
-type CheckResult = {
-  model: string | undefined;
-  hasAttachment?: boolean;
-};
 
 const PING_INTERVAL = 5000;
 
@@ -75,7 +77,9 @@ export class CopilotController implements BeforeApplicationShutdown {
 
   constructor(
     private readonly config: Config,
+    private readonly server: ServerService,
     private readonly chatSession: ChatSessionService,
+    private readonly context: CopilotContextService,
     private readonly provider: CopilotProviderFactory,
     private readonly workflow: CopilotWorkflowService,
     private readonly storage: CopilotStorage
@@ -91,54 +95,44 @@ export class CopilotController implements BeforeApplicationShutdown {
     this.ongoingStreamCount$.complete();
   }
 
-  private async checkRequest(
+  private async chooseProvider(
+    outputType: ModelOutputType,
     userId: string,
     sessionId: string,
-    messageId?: string
-  ): Promise<CheckResult> {
-    await this.chatSession.checkQuota(userId);
-    const session = await this.chatSession.get(sessionId);
+    messageId?: string,
+    modelId?: string
+  ): Promise<{
+    provider: CopilotProvider;
+    model: string;
+    hasAttachment: boolean;
+  }> {
+    const [, session] = await Promise.all([
+      this.chatSession.checkQuota(userId),
+      this.chatSession.get(sessionId),
+    ]);
+
     if (!session || session.config.userId !== userId) {
       throw new CopilotSessionNotFound();
     }
 
-    const ret: CheckResult = { model: session.model };
-
-    if (messageId && typeof messageId === 'string') {
-      const message = await session.getMessageById(messageId);
-      ret.hasAttachment =
-        Array.isArray(message.attachments) && !!message.attachments.length;
-    }
-
-    return ret;
-  }
-
-  private async chooseTextProvider(
-    userId: string,
-    sessionId: string,
-    messageId?: string
-  ): Promise<CopilotTextProvider> {
-    const { hasAttachment, model } = await this.checkRequest(
-      userId,
-      sessionId,
-      messageId
+    const model = await session.resolveModel(
+      this.server.features.includes(ServerFeature.Payment),
+      modelId
     );
-    let provider = await this.provider.getProviderByCapability(
-      CopilotCapability.TextToText,
-      { model }
-    );
-    // fallback to image to text if text to text is not available
-    if (!provider && hasAttachment) {
-      provider = await this.provider.getProviderByCapability(
-        CopilotCapability.ImageToText,
-        { model }
-      );
-    }
+
+    const hasAttachment = messageId
+      ? !!(await session.getMessageById(messageId)).attachments?.length
+      : false;
+
+    const provider = await this.provider.getProvider({
+      outputType,
+      modelId: model,
+    });
     if (!provider) {
-      throw new NoCopilotProviderAvailable();
+      throw new NoCopilotProviderAvailable({ modelId: model });
     }
 
-    return provider;
+    return { provider, model, hasAttachment };
   }
 
   private async appendSessionMessage(
@@ -169,28 +163,6 @@ export class CopilotController implements BeforeApplicationShutdown {
     return [latestMessage, session];
   }
 
-  private prepareParams(params: Record<string, string | string[]>) {
-    const messageId = Array.isArray(params.messageId)
-      ? params.messageId[0]
-      : params.messageId;
-    const retry = Array.isArray(params.retry)
-      ? Boolean(params.retry[0])
-      : Boolean(params.retry);
-    delete params.messageId;
-    delete params.retry;
-    return { messageId, retry, params };
-  }
-
-  private getSignal(req: Request) {
-    const controller = new AbortController();
-    req.socket.on('close', hasError => {
-      if (hasError) {
-        controller.abort();
-      }
-    });
-    return controller.signal;
-  }
-
   private parseNumber(value: string | string[] | undefined) {
     if (!value) {
       return undefined;
@@ -215,48 +187,95 @@ export class CopilotController implements BeforeApplicationShutdown {
     return merge(source$.pipe(finalize(() => subject$.next(null))), ping$);
   }
 
+  private async prepareChatSession(
+    user: CurrentUser,
+    sessionId: string,
+    query: Record<string, string | string[]>,
+    outputType: ModelOutputType
+  ) {
+    let { messageId, retry, modelId, params } = ChatQuerySchema.parse(query);
+
+    const { provider, model } = await this.chooseProvider(
+      outputType,
+      user.id,
+      sessionId,
+      messageId,
+      modelId
+    );
+
+    const [latestMessage, session] = await this.appendSessionMessage(
+      sessionId,
+      messageId,
+      retry
+    );
+
+    const context = await this.context.getBySessionId(sessionId);
+    const contextParams =
+      (Array.isArray(context?.files) && context.files.length > 0) ||
+      (Array.isArray(context?.blobs) && context.blobs.length > 0)
+        ? {
+            contextFiles: [
+              ...context.files,
+              ...(await context.getBlobMetadata()),
+            ],
+          }
+        : {};
+    const lastParams = latestMessage
+      ? {
+          ...latestMessage.params,
+          content: latestMessage.content,
+          attachments: latestMessage.attachments,
+        }
+      : {};
+
+    const finalMessage = session.finish({
+      ...params,
+      ...lastParams,
+      ...contextParams,
+    });
+
+    return {
+      provider,
+      model,
+      session,
+      finalMessage,
+    };
+  }
+
   @Get('/chat/:sessionId')
   @CallMetric('ai', 'chat', { timer: true })
   async chat(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query() params: Record<string, string | string[]>
+    @Query() query: Record<string, string | string[]>
   ): Promise<string> {
-    const info: any = { sessionId, params };
+    const info: any = { sessionId, params: query };
 
     try {
-      const { messageId, retry } = this.prepareParams(params);
+      const { provider, model, session, finalMessage } =
+        await this.prepareChatSession(
+          user,
+          sessionId,
+          query,
+          ModelOutputType.Text
+        );
 
-      const provider = await this.chooseTextProvider(
-        user.id,
-        sessionId,
-        messageId
-      );
-
-      const [latestMessage, session] = await this.appendSessionMessage(
-        sessionId,
-        messageId,
-        retry
-      );
-
-      info.model = session.model;
-      metrics.ai.counter('chat_calls').add(1, { model: session.model });
-
-      if (latestMessage) {
-        params = Object.assign({}, params, latestMessage.params, {
-          content: latestMessage.content,
-          attachments: latestMessage.attachments,
-        });
-      }
-
-      const finalMessage = session.finish(params);
+      info.model = model;
       info.finalMessage = finalMessage.filter(m => m.role !== 'system');
+      metrics.ai.counter('chat_calls').add(1, { model });
 
-      const content = await provider.generateText(finalMessage, session.model, {
+      const { reasoning, webSearch, toolsConfig } =
+        ChatQuerySchema.parse(query);
+      const content = await provider.text({ modelId: model }, finalMessage, {
         ...session.config.promptConfig,
-        signal: this.getSignal(req),
+        signal: getSignal(req).signal,
         user: user.id,
+        session: session.config.sessionId,
+        workspace: session.config.workspaceId,
+        reasoning,
+        webSearch,
+        tools: getTools(session.config.promptConfig?.tools, toolsConfig),
       });
 
       session.push({
@@ -284,44 +303,45 @@ export class CopilotController implements BeforeApplicationShutdown {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query() params: Record<string, string>
+    @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params, throwInStream: false };
+    const info: any = { sessionId, params: query, throwInStream: false };
 
     try {
-      const { messageId, retry } = this.prepareParams(params);
+      const { provider, model, session, finalMessage } =
+        await this.prepareChatSession(
+          user,
+          sessionId,
+          query,
+          ModelOutputType.Text
+        );
 
-      const provider = await this.chooseTextProvider(
-        user.id,
-        sessionId,
-        messageId
-      );
-
-      const [latestMessage, session] = await this.appendSessionMessage(
-        sessionId,
-        messageId,
-        retry
-      );
-
-      info.model = session.model;
-      metrics.ai.counter('chat_stream_calls').add(1, { model: session.model });
-
-      if (latestMessage) {
-        params = Object.assign({}, params, latestMessage.params, {
-          content: latestMessage.content,
-          attachments: latestMessage.attachments,
-        });
-      }
-
-      this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
-      const finalMessage = session.finish(params);
+      info.model = model;
       info.finalMessage = finalMessage.filter(m => m.role !== 'system');
+      metrics.ai.counter('chat_stream_calls').add(1, { model });
+      this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
+
+      const { signal, onConnectionClosed } = getSignal(req);
+      let endBeforePromiseResolve = false;
+      onConnectionClosed(isAborted => {
+        if (isAborted) {
+          endBeforePromiseResolve = true;
+        }
+      });
+
+      const { messageId, reasoning, webSearch, toolsConfig } =
+        ChatQuerySchema.parse(query);
 
       const source$ = from(
-        provider.generateTextStream(finalMessage, session.model, {
+        provider.streamText({ modelId: model }, finalMessage, {
           ...session.config.promptConfig,
-          signal: this.getSignal(req),
+          signal,
           user: user.id,
+          session: session.config.sessionId,
+          workspace: session.config.workspaceId,
+          reasoning,
+          webSearch,
+          tools: getTools(session.config.promptConfig?.tools, toolsConfig),
         })
       ).pipe(
         connect(shared$ =>
@@ -332,16 +352,25 @@ export class CopilotController implements BeforeApplicationShutdown {
             ),
             // save the generated text to the session
             shared$.pipe(
-              toArray(),
-              concatMap(values => {
+              reduce((acc, chunk) => acc + chunk, ''),
+              tap(buffer => {
                 session.push({
                   role: 'assistant',
-                  content: values.join(''),
+                  content: endBeforePromiseResolve
+                    ? '> Request aborted'
+                    : buffer,
                   createdAt: new Date(),
                 });
-                return from(session.save());
+                void session
+                  .save()
+                  .catch(err =>
+                    this.logger.error(
+                      'Failed to save session in sse stream',
+                      err
+                    )
+                  );
               }),
-              mergeMap(() => EMPTY)
+              ignoreElements()
             )
           )
         ),
@@ -355,9 +384,107 @@ export class CopilotController implements BeforeApplicationShutdown {
         })
       );
 
-      return this.mergePingStream(messageId, source$);
+      return this.mergePingStream(messageId || '', source$);
     } catch (err) {
       metrics.ai.counter('chat_stream_errors').add(1, info);
+      return mapSseError(err, info);
+    }
+  }
+
+  @Sse('/chat/:sessionId/stream-object')
+  @CallMetric('ai', 'chat_object_stream', { timer: true })
+  async chatStreamObject(
+    @CurrentUser() user: CurrentUser,
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Query() query: Record<string, string>
+  ): Promise<Observable<ChatEvent>> {
+    const info: any = { sessionId, params: query, throwInStream: false };
+
+    try {
+      const { provider, model, session, finalMessage } =
+        await this.prepareChatSession(
+          user,
+          sessionId,
+          query,
+          ModelOutputType.Object
+        );
+
+      info.model = model;
+      info.finalMessage = finalMessage.filter(m => m.role !== 'system');
+      metrics.ai.counter('chat_object_stream_calls').add(1, { model });
+      this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
+
+      const { signal, onConnectionClosed } = getSignal(req);
+      let endBeforePromiseResolve = false;
+      onConnectionClosed(isAborted => {
+        if (isAborted) {
+          endBeforePromiseResolve = true;
+        }
+      });
+
+      const { messageId, reasoning, webSearch, toolsConfig } =
+        ChatQuerySchema.parse(query);
+
+      const source$ = from(
+        provider.streamObject({ modelId: model }, finalMessage, {
+          ...session.config.promptConfig,
+          signal,
+          user: user.id,
+          session: session.config.sessionId,
+          workspace: session.config.workspaceId,
+          reasoning,
+          webSearch,
+          tools: getTools(session.config.promptConfig?.tools, toolsConfig),
+        })
+      ).pipe(
+        connect(shared$ =>
+          merge(
+            // actual chat event stream
+            shared$.pipe(
+              map(data => ({ type: 'message' as const, id: messageId, data }))
+            ),
+            // save the generated text to the session
+            shared$.pipe(
+              reduce((acc, chunk) => acc.concat([chunk]), [] as StreamObject[]),
+              tap(result => {
+                const parser = new StreamObjectParser();
+                const streamObjects = parser.mergeTextDelta(result);
+                const content = parser.mergeContent(streamObjects);
+                session.push({
+                  role: 'assistant',
+                  content: endBeforePromiseResolve
+                    ? '> Request aborted'
+                    : content,
+                  streamObjects: endBeforePromiseResolve ? null : streamObjects,
+                  createdAt: new Date(),
+                });
+                void session
+                  .save()
+                  .catch(err =>
+                    this.logger.error(
+                      'Failed to save session in sse stream',
+                      err
+                    )
+                  );
+              }),
+              ignoreElements()
+            )
+          )
+        ),
+        catchError(e => {
+          metrics.ai.counter('chat_object_stream_errors').add(1);
+          info.throwInStream = true;
+          return mapSseError(e, info);
+        }),
+        finalize(() => {
+          this.ongoingStreamCount$.next(this.ongoingStreamCount$.value - 1);
+        })
+      );
+
+      return this.mergePingStream(messageId || '', source$);
+    } catch (err) {
+      metrics.ai.counter('chat_object_stream_errors').add(1, info);
       return mapSseError(err, info);
     }
   }
@@ -368,11 +495,11 @@ export class CopilotController implements BeforeApplicationShutdown {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query() params: Record<string, string>
+    @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params, throwInStream: false };
+    const info: any = { sessionId, params: query, throwInStream: false };
     try {
-      const { messageId } = this.prepareParams(params);
+      let { messageId, params } = ChatQuerySchema.parse(query);
 
       const [, session] = await this.appendSessionMessage(sessionId, messageId);
       info.model = session.model;
@@ -389,11 +516,22 @@ export class CopilotController implements BeforeApplicationShutdown {
         });
       }
       this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
+
+      const { signal, onConnectionClosed } = getSignal(req);
+      let endBeforePromiseResolve = false;
+      onConnectionClosed(isAborted => {
+        if (isAborted) {
+          endBeforePromiseResolve = true;
+        }
+      });
+
       const source$ = from(
         this.workflow.runGraph(params, session.model, {
           ...session.config.promptConfig,
-          signal: this.getSignal(req),
+          signal,
           user: user.id,
+          session: session.config.sessionId,
+          workspace: session.config.workspaceId,
         })
       ).pipe(
         connect(shared$ =>
@@ -429,19 +567,30 @@ export class CopilotController implements BeforeApplicationShutdown {
             ),
             // save the generated text to the session
             shared$.pipe(
-              toArray(),
-              concatMap(values => {
+              reduce((acc, chunk) => {
+                if (chunk.status === GraphExecutorState.EmitContent) {
+                  acc += chunk.content;
+                }
+                return acc;
+              }, ''),
+              tap(content => {
                 session.push({
                   role: 'assistant',
-                  content: values
-                    .filter(v => v.status === GraphExecutorState.EmitContent)
-                    .map(v => v.content)
-                    .join(''),
+                  content: endBeforePromiseResolve
+                    ? '> Request aborted'
+                    : content,
                   createdAt: new Date(),
                 });
-                return from(session.save());
+                void session
+                  .save()
+                  .catch(err =>
+                    this.logger.error(
+                      'Failed to save session in sse stream',
+                      err
+                    )
+                  );
               }),
-              mergeMap(() => EMPTY)
+              ignoreElements()
             )
           )
         ),
@@ -455,7 +604,7 @@ export class CopilotController implements BeforeApplicationShutdown {
         )
       );
 
-      return this.mergePingStream(messageId, source$);
+      return this.mergePingStream(messageId || '', source$);
     } catch (err) {
       metrics.ai.counter('workflow_errors').add(1, info);
       return mapSseError(err, info);
@@ -468,35 +617,25 @@ export class CopilotController implements BeforeApplicationShutdown {
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
     @Param('sessionId') sessionId: string,
-    @Query() params: Record<string, string>
+    @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params, throwInStream: false };
+    const info: any = { sessionId, params: query, throwInStream: false };
     try {
-      const { messageId } = this.prepareParams(params);
+      let { messageId, params } = ChatQuerySchema.parse(query);
 
-      const { model, hasAttachment } = await this.checkRequest(
+      const { provider, model, hasAttachment } = await this.chooseProvider(
+        ModelOutputType.Image,
         user.id,
         sessionId,
         messageId
       );
-      const provider = await this.provider.getProviderByCapability(
-        hasAttachment
-          ? CopilotCapability.ImageToImage
-          : CopilotCapability.TextToImage,
-        { model }
-      );
-      if (!provider) {
-        throw new NoCopilotProviderAvailable();
-      }
 
       const [latestMessage, session] = await this.appendSessionMessage(
         sessionId,
         messageId
       );
-      info.model = session.model;
-      metrics.ai
-        .counter('images_stream_calls')
-        .add(1, { model: session.model });
+      info.model = model;
+      metrics.ai.counter('images_stream_calls').add(1, { model });
 
       if (latestMessage) {
         params = Object.assign({}, params, latestMessage.params, {
@@ -511,13 +650,34 @@ export class CopilotController implements BeforeApplicationShutdown {
         sessionId
       );
       this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
+
+      const { signal, onConnectionClosed } = getSignal(req);
+      let endBeforePromiseResolve = false;
+      onConnectionClosed(isAborted => {
+        if (isAborted) {
+          endBeforePromiseResolve = true;
+        }
+      });
+
       const source$ = from(
-        provider.generateImagesStream(session.finish(params), session.model, {
-          ...session.config.promptConfig,
-          seed: this.parseNumber(params.seed),
-          signal: this.getSignal(req),
-          user: user.id,
-        })
+        provider.streamImages(
+          {
+            modelId: model,
+            inputTypes: hasAttachment
+              ? [ModelInputType.Image]
+              : [ModelInputType.Text],
+          },
+          session.finish(params),
+          {
+            ...session.config.promptConfig,
+            quality: params.quality || undefined,
+            seed: this.parseNumber(params.seed),
+            signal,
+            user: user.id,
+            session: session.config.sessionId,
+            workspace: session.config.workspaceId,
+          }
+        )
       ).pipe(
         mergeMap(handleRemoteLink),
         connect(shared$ =>
@@ -532,17 +692,24 @@ export class CopilotController implements BeforeApplicationShutdown {
             ),
             // save the generated text to the session
             shared$.pipe(
-              toArray(),
-              concatMap(attachments => {
+              reduce((acc, chunk) => acc.concat([chunk]), [] as string[]),
+              tap(attachments => {
                 session.push({
                   role: 'assistant',
-                  content: '',
-                  attachments: attachments,
+                  content: endBeforePromiseResolve ? '> Request aborted' : '',
+                  attachments: endBeforePromiseResolve ? [] : attachments,
                   createdAt: new Date(),
                 });
-                return from(session.save());
+                void session
+                  .save()
+                  .catch(err =>
+                    this.logger.error(
+                      'Failed to save session in sse stream',
+                      err
+                    )
+                  );
               }),
-              mergeMap(() => EMPTY)
+              ignoreElements()
             )
           )
         ),
@@ -556,7 +723,7 @@ export class CopilotController implements BeforeApplicationShutdown {
         )
       );
 
-      return this.mergePingStream(messageId, source$);
+      return this.mergePingStream(messageId || '', source$);
     } catch (err) {
       metrics.ai.counter('images_stream_errors').add(1, info);
       return mapSseError(err, info);
@@ -580,7 +747,7 @@ export class CopilotController implements BeforeApplicationShutdown {
       `https://api.unsplash.com/search/photos?${query}`,
       {
         headers: { Authorization: `Client-ID ${key}` },
-        signal: this.getSignal(req),
+        signal: getSignal(req).signal,
       }
     );
 
@@ -629,6 +796,10 @@ export class CopilotController implements BeforeApplicationShutdown {
     } else {
       this.logger.warn(`Blob ${workspaceId}/${key} has no metadata`);
     }
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: key,
+    });
 
     res.setHeader('cache-control', 'public, max-age=2592000, immutable');
     body.pipe(res);

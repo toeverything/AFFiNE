@@ -1,11 +1,10 @@
-import type * as BlocksuiteEffects from '@blocksuite/affine/effects';
+import '@blocksuite/affine/effects';
+
 import type { IVec, XYWH } from '@blocksuite/affine/global/gfx';
 import type { CodeBlockComponent } from '@blocksuite/affine-block-code';
 import type { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
 import type { BlockComponent } from '@blocksuite/std';
 import { expect, type Locator, type Page } from '@playwright/test';
-
-declare type _GLOBAL_ = typeof BlocksuiteEffects;
 
 const EDGELESS_TOOLBAR_WIDGET = 'edgeless-toolbar-widget';
 export const ZERO_WIDTH_FOR_EMPTY_LINE =
@@ -68,6 +67,14 @@ export function locateEditorContainer(page: Page, editorIndex = 0) {
 
 export function locateDocTitle(page: Page, editorIndex = 0) {
   return locateEditorContainer(page, editorIndex).locator('doc-title');
+}
+
+export function isDocTitleFocused(page: Page, editorIndex = 0) {
+  return locateDocTitle(page, editorIndex)
+    .locator('.inline-editor')
+    .evaluate(inlineEditor => {
+      return document.activeElement === inlineEditor;
+    });
 }
 
 export async function focusDocTitle(page: Page, editorIndex = 0) {
@@ -162,6 +169,17 @@ export async function setViewportZoom(page: Page, zoom = 1, editorIndex = 0) {
     }
     root.gfx.viewport.setZoom(zoom);
   }, zoom);
+}
+
+export async function fitViewportToContent(page: Page, editorIndex = 0) {
+  const container = locateEditorContainer(page, editorIndex);
+  return container.evaluate(container => {
+    const root = container.querySelector('affine-edgeless-root');
+    if (!root) {
+      throw new Error('Edgeless root not found');
+    }
+    root.gfx.fitToScreen();
+  });
 }
 
 /**
@@ -444,6 +462,10 @@ export async function resizeElementByHandle(
   page: Page,
   delta: IVec,
   corner:
+    | 'right'
+    | 'left'
+    | 'top'
+    | 'bottom'
     | 'top-left'
     | 'top-right'
     | 'bottom-right'
@@ -462,6 +484,25 @@ export async function resizeElementByHandle(
   await dragView(page, from, to, editorIndex);
 }
 
+export async function scaleElementByHandle(
+  page: Page,
+  delta: IVec,
+  corner:
+    | 'right'
+    | 'left'
+    | 'top'
+    | 'bottom'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-right'
+    | 'bottom-left' = 'top-left',
+  editorIndex = 0
+) {
+  await page.keyboard.down('Shift');
+  await resizeElementByHandle(page, delta, corner, editorIndex);
+  await page.keyboard.up('Shift');
+}
+
 /**
  * Create a not block in canvas
  * @param position the position or xwyh of the note block in canvas
@@ -473,7 +514,7 @@ export async function createEdgelessNoteBlock(
 ) {
   await setEdgelessTool(page, 'note', undefined, editorIndex);
   if (position.length === 4) {
-    dragView(
+    await dragView(
       page,
       [position[0], position[1]],
       [position[0] + position[2], position[1] + position[3]]

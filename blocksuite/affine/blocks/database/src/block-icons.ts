@@ -14,7 +14,19 @@ import {
 } from '@blocksuite/icons/lit';
 import type { BlockModel } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
-
+const icons: Record<string, TemplateResult> = {
+  text: TextIcon(),
+  quote: QuoteIcon(),
+  h1: Heading1Icon(),
+  h2: Heading2Icon(),
+  h3: Heading3Icon(),
+  h4: Heading4Icon(),
+  h5: Heading5Icon(),
+  h6: Heading6Icon(),
+  bulleted: BulletedListIcon(),
+  numbered: NumberedListIcon(),
+  todo: CheckBoxCheckLinearIcon(),
+};
 export const getIcon = (
   model: BlockModel & {
     props: {
@@ -24,27 +36,10 @@ export const getIcon = (
 ): TemplateResult => {
   if (model.flavour === 'affine:paragraph') {
     const type = model.props.type as ParagraphType;
-    return (
-      {
-        text: TextIcon(),
-        quote: QuoteIcon(),
-        h1: Heading1Icon(),
-        h2: Heading2Icon(),
-        h3: Heading3Icon(),
-        h4: Heading4Icon(),
-        h5: Heading5Icon(),
-        h6: Heading6Icon(),
-      } as Record<ParagraphType, TemplateResult>
-    )[type];
+    return icons[type] ?? TextIcon();
   }
   if (model.flavour === 'affine:list') {
-    return (
-      {
-        bulleted: BulletedListIcon(),
-        numbered: NumberedListIcon(),
-        todo: CheckBoxCheckLinearIcon(),
-      }[model.props.type ?? 'bulleted'] ?? BulletedListIcon()
-    );
+    return icons[model.props.type ?? 'bulleted'] ?? BulletedListIcon();
   }
   return TextIcon();
 };

@@ -124,23 +124,55 @@ export const AudioWaveform = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDraggingRef = useRef(false);
 
-  // Handle click events for seeking
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const availableWidth = rect.width - horizontalPadding * 2;
-      const newProgress = Math.max(
-        0,
-        Math.min(1, (x - horizontalPadding) / availableWidth)
-      );
+  // Calculate progress from pointer position
+  const calculateProgress = useCallback((clientX: number) => {
+    if (!containerRef.current) return 0;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const availableWidth = rect.width - horizontalPadding * 2;
+    return clamp((x - horizontalPadding) / availableWidth, 0, 1);
+  }, []);
+
+  // Handle pointer events for seeking
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const newProgress = calculateProgress(e.clientX);
       onManualSeek(newProgress);
+      isDraggingRef.current = true;
+      e.preventDefault();
+    },
+    [calculateProgress, onManualSeek]
+  );
+
+  const stopPropagation = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
       e.stopPropagation();
     },
-    [onManualSeek]
+    []
   );
+
+  // Add and remove global event listeners
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      const newProgress = calculateProgress(e.clientX);
+      onManualSeek(newProgress);
+      e.preventDefault();
+    };
+
+    const handlePointerUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [calculateProgress, onManualSeek]);
 
   // Draw on resize
   useEffect(() => {
@@ -173,11 +205,13 @@ export const AudioWaveform = ({
     <div
       ref={containerRef}
       className={styles.root}
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onClick={stopPropagation}
       role="slider"
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={progress * 100}
+      draggable="false"
     >
       {loading ? (
         <Skeleton />

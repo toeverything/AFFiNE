@@ -299,7 +299,10 @@ export default tseslint.config(
       '**/e2e/**/*',
     ],
     rules: {
-      '@typescript-eslint/no-floating-promises': 0,
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        { ignoreVoid: true },
+      ],
       '@typescript-eslint/no-misused-promises': 0,
       '@typescript-eslint/no-restricted-imports': 0,
     },

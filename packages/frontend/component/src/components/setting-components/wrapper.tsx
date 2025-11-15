@@ -7,6 +7,7 @@ interface SettingWrapperProps {
   id?: string;
   title?: ReactNode;
   disabled?: boolean;
+  testId?: string;
 }
 
 export const SettingWrapper = ({
@@ -14,9 +15,15 @@ export const SettingWrapper = ({
   title,
   children,
   disabled,
+  testId,
 }: PropsWithChildren<SettingWrapperProps>) => {
   return (
-    <div id={id} className={clsx(wrapper, disabled && wrapperDisabled)}>
+    <div
+      id={id}
+      className={clsx(wrapper, disabled && wrapperDisabled)}
+      data-testid={testId}
+      aria-disabled={disabled}
+    >
       {title ? <div className="title">{title}</div> : null}
       {children}
     </div>

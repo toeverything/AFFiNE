@@ -26,7 +26,8 @@
         "nbstore",
         "infra",
         "editor",
-        "tools"
+        "tools",
+        "y-octo"
       ]
     ]
   }

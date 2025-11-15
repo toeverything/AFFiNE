@@ -1,7 +1,3 @@
-import { footnoteReferenceDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-footnote';
-import { latexDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-latex';
-import { linkDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-link';
-import { referenceDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-reference';
 import { InlineDeltaToMarkdownAdapterExtension } from '@blocksuite/affine-shared/adapters';
 
 export const boldDeltaToMarkdownAdapterMatcher =
@@ -54,12 +50,8 @@ export const inlineCodeDeltaToMarkdownAdapterMatcher =
   });
 
 export const InlineDeltaToMarkdownAdapterExtensions = [
-  referenceDeltaToMarkdownAdapterMatcher,
-  linkDeltaToMarkdownAdapterMatcher,
   inlineCodeDeltaToMarkdownAdapterMatcher,
   boldDeltaToMarkdownAdapterMatcher,
   italicDeltaToMarkdownAdapterMatcher,
   strikeDeltaToMarkdownAdapterMatcher,
-  latexDeltaToMarkdownAdapterMatcher,
-  footnoteReferenceDeltaToMarkdownAdapterMatcher,
 ];

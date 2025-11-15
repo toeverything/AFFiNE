@@ -10,7 +10,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { exhaustMap, tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceShareSettingStore } from '../stores/share-setting';
@@ -45,13 +45,12 @@ export class WorkspaceShareSetting extends Entity {
         )
       ).pipe(
         smartRetry(),
-        mergeMap(value => {
+        tap(value => {
           if (value) {
             this.enableAi$.next(value.enableAi);
             this.enableUrlPreview$.next(value.enableUrlPreview);
             this.inviteLink$.next(value.inviteLink);
           }
-          return EMPTY;
         }),
         catchErrorInto(this.error$, error => {
           logger.error('Failed to fetch enableUrlPreview', error);

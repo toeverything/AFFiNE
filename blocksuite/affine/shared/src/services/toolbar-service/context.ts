@@ -59,7 +59,7 @@ abstract class ToolbarContextBase {
   }
 
   get history() {
-    return this.store.history;
+    return this.store.history.undoManager;
   }
 
   get view() {
@@ -146,9 +146,11 @@ abstract class ToolbarContextBase {
     if (this.hasSelectedSurfaceModels) {
       const flavour = this.flavour$.peek();
       const elementsMap = this.elementsMap$.peek();
-      const elements = ['affine:surface', 'affine:surface:locked'].includes(
-        flavour
-      )
+      const elements = [
+        'affine:surface',
+        'affine:surface:locked',
+        'affine:surface:alignment',
+      ].includes(flavour)
         ? Array.from(elementsMap.values()).flat()
         : elementsMap.get(flavour);
       return elements ?? [];

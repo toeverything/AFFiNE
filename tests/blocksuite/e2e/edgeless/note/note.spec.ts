@@ -10,10 +10,13 @@ import {
   dragBetweenViewCoords,
   getSelectedBound,
   getSelectedBoundCount,
+  getViewportCenter,
   locatorComponentToolbar,
   locatorEdgelessZoomToolButton,
+  resizeElementByHandle,
   selectNoteInEdgeless,
   setEdgelessTool,
+  setViewportCenter,
   switchEditorMode,
   triggerComponentToolbarAction,
   zoomOutByKeyboard,
@@ -34,6 +37,7 @@ import {
   pressArrowUp,
   pressBackspace,
   pressEnter,
+  pressEscape,
   pressTab,
   selectAllByKeyboard,
   type,
@@ -313,7 +317,7 @@ test('change note color', async ({ page }) => {
   );
 
   await selectNoteInEdgeless(page, noteId);
-  await triggerComponentToolbarAction(page, 'changeNoteColor');
+  await triggerComponentToolbarAction(page, 'changeNoteStyle');
   await changeEdgelessNoteBackground(page, 'Green');
   await assertEdgelessNoteBackground(
     page,
@@ -575,4 +579,112 @@ test('should not select doc only note', async ({ page }) => {
     [noteBound[0] + noteBound[2] + 10, noteBound[1] + noteBound[3] + 10]
   );
   expect(await getSelectedBoundCount(page)).toBe(0);
+});
+
+test.describe('visibility of hidden content of edgeless note', () => {
+  test.beforeEach(async ({ page }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await switchEditorMode(page);
+
+    const note = page.locator('affine-edgeless-note');
+    await note.click({ clickCount: 3 });
+    await type(page, 'hello');
+    await pressEnter(page, 30);
+    await type(page, 'world');
+    await pressEscape(page, 3);
+
+    const vpCenter = await getViewportCenter(page);
+    vpCenter[1] += 1000;
+    await setViewportCenter(page, vpCenter);
+
+    await note.click();
+    await resizeElementByHandle(page, { x: 0, y: -300 }, 'bottom-right');
+  });
+
+  test('should hide content when note is not selected or hovered when selected', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const lastParagraph = page.locator('affine-paragraph').last();
+
+    await pressEscape(page, 3);
+    await expect(lastParagraph).not.toBeInViewport();
+
+    const noteBound = await note.boundingBox();
+    if (!noteBound) {
+      test.fail();
+      return;
+    }
+    await note.click();
+    // move out to right side
+    await page.mouse.move(
+      noteBound.x + noteBound.width + 10,
+      noteBound.y + noteBound.height - 10
+    );
+    await expect(lastParagraph).not.toBeInViewport();
+  });
+
+  test('should show hidden content when hover on selected note', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const lastParagraph = page.locator('affine-paragraph').last();
+
+    const noteBound = await note.boundingBox();
+    if (!noteBound) {
+      test.fail();
+      return;
+    }
+
+    // move in right side
+    await page.mouse.move(
+      noteBound.x + noteBound.width - 10,
+      noteBound.y + noteBound.height - 10
+    );
+    await expect(lastParagraph).toBeInViewport();
+
+    // move to hidden content
+    await page.mouse.move(
+      noteBound.x + noteBound.width - 10,
+      noteBound.y + noteBound.height + 100
+    );
+    await expect(lastParagraph).toBeInViewport();
+  });
+
+  test('should show hidden content when the note is being edited', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const lastParagraph = page.locator('affine-paragraph').last();
+
+    await note.click({ clickCount: 3 });
+    await page.locator('affine-paragraph').nth(22).click();
+    await type(page, 'test');
+
+    await expect(lastParagraph).toBeInViewport();
+
+    await note.click({ clickCount: 3 });
+    await page.locator('affine-paragraph').nth(22).click();
+
+    const noteBound = await note.boundingBox();
+    if (!noteBound) {
+      test.fail();
+      return;
+    }
+    await page.mouse.move(
+      noteBound.x + noteBound.width - 10,
+      noteBound.y + noteBound.height - 10
+    );
+    await expect(lastParagraph).toBeInViewport();
+
+    await note.click({ clickCount: 3 });
+    await page.locator('affine-paragraph').nth(22).click();
+
+    await page.mouse.wheel(0, 200);
+    await expect(
+      lastParagraph,
+      'editing note but out of viewport should also show hidden content'
+    ).toBeInViewport();
+  });
 });

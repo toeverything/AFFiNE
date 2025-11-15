@@ -9,7 +9,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import type { AuthService } from '../services/auth';
 import type { ServerService } from '../services/server';
@@ -54,7 +54,7 @@ export class UserCopilotQuota extends Entity {
           return aiQuota;
         }).pipe(
           smartRetry(),
-          mergeMap(data => {
+          tap(data => {
             if (data) {
               const { limit, used } = data;
               this.copilotActionUsed$.next(used);
@@ -65,7 +65,6 @@ export class UserCopilotQuota extends Entity {
               this.copilotActionUsed$.next(null);
               this.copilotActionLimit$.next(null);
             }
-            return EMPTY;
           }),
           catchErrorInto(this.error$),
           onStart(() => this.isRevalidating$.next(true)),

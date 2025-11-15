@@ -1,11 +1,7 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
-export const actionButton = style({
-  width: 0,
-  flex: 1,
-  height: '100%',
-});
+export const actionButton = style({});
 
 export const connectDialog = style({
   width: 480,

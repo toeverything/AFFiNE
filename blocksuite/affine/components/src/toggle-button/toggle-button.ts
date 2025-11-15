@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ToggleDownIcon, ToggleRightIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
@@ -43,6 +44,12 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
     .with-drag-handle .affine-block-children-container .toggle-icon {
       opacity: 0;
     }
+
+    .toggle-icon {
+      svg {
+        color: ${unsafeCSSVarV2('icon/primary', '#77757D')};
+      }
+    }
   `;
 
   override render() {
@@ -55,7 +62,6 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
         ${ToggleDownIcon({
           width: '16px',
           height: '16px',
-          style: 'color: #77757D',
         })}
       </div>
     `;
@@ -70,7 +76,6 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
         ${ToggleRightIcon({
           width: '16px',
           height: '16px',
-          style: 'color: #77757D',
         })}
       </div>
     `;

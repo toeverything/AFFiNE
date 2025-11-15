@@ -9,20 +9,40 @@ import * as styles from './styles.css';
 export const BlocksuiteEditorJournalDocTitle = ({ page }: { page: Store }) => {
   const journalService = useService(JournalService);
   const journalDateStr = useLiveData(journalService.journalDate$(page.id));
-  const journalDate = journalDateStr ? dayjs(journalDateStr) : null;
-  const isTodayJournal = useLiveData(journalService.journalToday$(page.id));
-  const localizedJournalDate = i18nTime(journalDateStr, {
+
+  return <BlocksuiteEditorJournalDocTitleUI date={journalDateStr} />;
+};
+
+export const BlocksuiteEditorJournalDocTitleUI = ({
+  date: dateStr,
+  overrideClassName,
+}: {
+  date?: string;
+  /**
+   * The `doc-title-container` class style is defined in editor,
+   * which means if we use this component outside editor, the style will not work,
+   * so we provide a className to override
+   */
+  overrideClassName?: string;
+}) => {
+  const localizedJournalDate = i18nTime(dateStr, {
     absolute: { accuracy: 'day' },
   });
   const t = useI18n();
 
   // TODO(catsjuice): i18n
-  const day = journalDate?.format('dddd') ?? null;
+  const today = dayjs();
+  const date = dayjs(dateStr);
+  const day = dayjs(date).format('dddd') ?? null;
+  const isToday = date.isSame(today, 'day');
 
   return (
-    <div className="doc-title-container" data-testid="journal-title">
+    <div
+      className={overrideClassName ?? 'doc-title-container'}
+      data-testid="journal-title"
+    >
       <span data-testid="date">{localizedJournalDate}</span>
-      {isTodayJournal ? (
+      {isToday ? (
         <span className={styles.titleTodayTag} data-testid="date-today-label">
           {t['com.affine.today']()}
         </span>

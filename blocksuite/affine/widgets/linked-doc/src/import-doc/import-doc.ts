@@ -6,9 +6,12 @@ import {
   NewIcon,
   NotionIcon,
 } from '@blocksuite/affine-components/icons';
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
+import {
+  openFilesWith,
+  openSingleFileWith,
+} from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
-import type { Schema, Workspace } from '@blocksuite/store';
+import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
 import { html, LitElement, type PropertyValues } from 'lit';
 import { query, state } from 'lit/decorators.js';
 
@@ -32,6 +35,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   constructor(
     private readonly collection: Workspace,
     private readonly schema: Schema,
+    private readonly extensions: ExtensionType[],
     private readonly onSuccess?: OnSuccessHandler,
     private readonly onFail?: OnFailHandler,
     private readonly abortController = new AbortController()
@@ -49,7 +53,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importHtml() {
-    const files = await openFileOrFiles({ acceptType: 'Html', multiple: true });
+    const files = await openFilesWith('Html');
     if (!files) return;
     const pageIds: string[] = [];
     for (const file of files) {
@@ -65,6 +69,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
       const pageId = await HtmlTransformer.importHTMLToDoc({
         collection: this.collection,
         schema: this.schema,
+        extensions: this.extensions,
         html: text,
         fileName,
       });
@@ -77,10 +82,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importMarkDown() {
-    const files = await openFileOrFiles({
-      acceptType: 'Markdown',
-      multiple: true,
-    });
+    const files = await openFilesWith('Markdown');
     if (!files) return;
     const pageIds: string[] = [];
     for (const file of files) {
@@ -98,6 +100,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
         schema: this.schema,
         markdown: text,
         fileName,
+        extensions: this.extensions,
       });
       needLoading && this.abortController.abort();
       if (pageId) {
@@ -108,7 +111,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importNotion() {
-    const file = await openFileOrFiles({ acceptType: 'Zip' });
+    const file = await openSingleFileWith('Zip');
     if (!file) return;
     const needLoading = file.size > SHOW_LOADING_SIZE;
     if (needLoading) {
@@ -122,6 +125,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
         collection: this.collection,
         schema: this.schema,
         imported: file,
+        extensions: this.extensions,
       });
     needLoading && this.abortController.abort();
     if (hasMarkdown) {
@@ -130,7 +134,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
       );
       return;
     }
-    this._onImportSuccess([entryId], {
+    this._onImportSuccess(entryId ? [entryId] : [], {
       isWorkspaceFile,
       importedCount: pageIds.length,
     });

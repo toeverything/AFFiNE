@@ -30,9 +30,12 @@ impl CATapDescription {
       NSArray::from_retained_slice(&[NSNumber::initWithUnsignedInt(NSNumber::alloc(), process)]);
     let obj: *mut AnyObject =
       unsafe { msg_send![obj, initStereoMixdownOfProcesses: &*processes_array] };
-    let obj: *mut AnyObject = unsafe { msg_send![obj, setMuteBehavior: 0 ] };
     if obj.is_null() {
       return Err(CoreAudioError::InitStereoMixdownOfProcessesFailed);
+    }
+
+    unsafe {
+      let _: () = msg_send![obj, setMuteBehavior: 0_i64];
     }
 
     Ok(Self { inner: obj })

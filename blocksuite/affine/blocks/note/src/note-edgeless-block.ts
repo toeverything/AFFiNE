@@ -1,6 +1,6 @@
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import type { DocTitle } from '@blocksuite/affine-fragment-doc-title';
-import { NoteDisplayMode } from '@blocksuite/affine-model';
+import { NoteBlockSchema, NoteDisplayMode } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_BLOCK_CHILD_PADDING } from '@blocksuite/affine-shared/consts';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
@@ -10,7 +10,10 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
 import { toGfxBlockComponent } from '@blocksuite/std';
-import type { SelectedContext } from '@blocksuite/std/gfx';
+import {
+  type BoxSelectionContext,
+  GfxViewInteractionExtension,
+} from '@blocksuite/std/gfx';
 import { html, nothing, type PropertyValues } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -31,10 +34,10 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
 ) {
   private get _isShowCollapsedContent() {
     return (
-      this.model.props.edgeless.collapse &&
-      this.gfx.selection.has(this.model.id) &&
+      !!this.model.props.edgeless.collapse &&
+      this.selected$.value &&
       !this._dragging &&
-      (this._isResizing || this._isHover)
+      (this._isResizing || this._isHover || this._editing)
     );
   }
 
@@ -93,12 +96,33 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
         sel => sel.type === 'surface' && sel.blockId === this.model.id
       )
     ) {
+      if (this._hoverTimeout) {
+        clearTimeout(this._hoverTimeout);
+        this._hoverTimeout = null;
+      }
       this._isHover = true;
     }
   }
 
-  private _leaved() {
-    if (this._isHover) {
+  private _hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  private _leaved(e: MouseEvent) {
+    if (this._hoverTimeout) {
+      clearTimeout(this._hoverTimeout);
+      this._hoverTimeout = null;
+    }
+    const rect = this.getBoundingClientRect();
+    const threshold = -10;
+    const leavedFromBottom =
+      e.clientY - rect.bottom > threshold &&
+      rect.left < e.clientX &&
+      e.clientX < rect.right;
+
+    if (leavedFromBottom) {
+      this._hoverTimeout = setTimeout(() => {
+        this._isHover = false;
+      }, 300);
+    } else {
       this._isHover = false;
     }
   }
@@ -109,14 +133,14 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     const { collapse, collapsedHeight } = this.model.props.edgeless;
 
     if (collapse) {
-      this.model.doc.updateBlock(this.model, () => {
+      this.model.store.updateBlock(this.model, () => {
         this.model.props.edgeless.collapse = false;
       });
     } else if (collapsedHeight) {
       const { xywh, edgeless } = this.model.props;
       const bound = Bound.deserialize(xywh);
       bound.h = collapsedHeight * (edgeless.scale ?? 1);
-      this.model.doc.updateBlock(this.model, () => {
+      this.model.store.updateBlock(this.model, () => {
         this.model.props.edgeless.collapse = true;
         this.model.props.xywh = bound.serialize();
       });
@@ -142,6 +166,14 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     );
 
     this.disposables.addFromEvent(this, 'keydown', this._handleKeyDown);
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._hoverTimeout) {
+      clearTimeout(this._hoverTimeout);
+      this._hoverTimeout = null;
+    }
   }
 
   get edgelessSlots() {
@@ -269,7 +301,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
               .note=${this.model}
             ></edgeless-page-block-title>
             <div
-              contenteditable=${String(!this.doc.readonly$.value)}
+              contenteditable=${String(!this.store.readonly$.value)}
               class="edgeless-note-page-content"
             >
               ${this.renderPageContent()}
@@ -309,67 +341,8 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     `;
   }
 
-  override onSelected(context: SelectedContext) {
-    const { selected, multiSelect, event: e } = context;
-    const { editing } = this.gfx.selection;
-    const alreadySelected = this.gfx.selection.has(this.model.id);
-
-    if (!multiSelect && selected && (alreadySelected || editing)) {
-      if (this.model.isLocked()) return;
-
-      if (alreadySelected && editing) {
-        return;
-      }
-
-      this.gfx.selection.set({
-        elements: [this.model.id],
-        editing: true,
-      });
-
-      this.updateComplete
-        .then(() => {
-          if (!this.isConnected) {
-            return;
-          }
-
-          if (this.model.children.length === 0) {
-            const blockId = this.doc.addBlock(
-              'affine:paragraph',
-              { type: 'text' },
-              this.model.id
-            );
-
-            if (blockId) {
-              focusTextModel(this.std, blockId);
-            }
-          } else {
-            const rect = this.querySelector(
-              '.affine-block-children-container'
-            )?.getBoundingClientRect();
-
-            if (rect) {
-              const offsetY = 8 * this.gfx.viewport.zoom;
-              const offsetX = 2 * this.gfx.viewport.zoom;
-              const x = clamp(
-                e.clientX,
-                rect.left + offsetX,
-                rect.right - offsetX
-              );
-              const y = clamp(
-                e.clientY,
-                rect.top + offsetY,
-                rect.bottom - offsetY
-              );
-              handleNativeRangeAtPoint(x, y);
-            } else {
-              handleNativeRangeAtPoint(e.clientX, e.clientY);
-            }
-          }
-        })
-        .catch(console.error);
-    } else {
-      super.onSelected(context);
-    }
+  override onBoxSelected(_: BoxSelectionContext) {
+    return this.model.props.displayMode !== NoteDisplayMode.DocOnly;
   }
 
   @state()
@@ -399,3 +372,128 @@ declare global {
     [AFFINE_EDGELESS_NOTE]: EdgelessNoteBlockComponent;
   }
 }
+
+export const EdgelessNoteInteraction =
+  GfxViewInteractionExtension<EdgelessNoteBlockComponent>(
+    NoteBlockSchema.model.flavour,
+    {
+      resizeConstraint: {
+        minWidth: 170 + 24 * 2,
+        minHeight: 92,
+      },
+      handleRotate: () => {
+        return {
+          beforeRotate(context) {
+            context.set({
+              rotatable: false,
+            });
+          },
+        };
+      },
+      handleResize: ({ model }) => {
+        const initialScale: number = model.props.edgeless.scale ?? 1;
+        return {
+          onResizeStart(context): void {
+            context.default(context);
+            model.stash('edgeless');
+          },
+
+          onResizeMove(context): void {
+            const { originalBound, newBound, lockRatio, constraint } = context;
+            const { minWidth, minHeight, maxHeight, maxWidth } = constraint;
+
+            let scale = initialScale;
+            let edgelessProp = { ...model.props.edgeless };
+            const originalRealWidth = originalBound.w / scale;
+
+            if (lockRatio) {
+              scale = newBound.w / originalRealWidth;
+              edgelessProp.scale = scale;
+            }
+
+            newBound.w = clamp(newBound.w, minWidth * scale, maxWidth);
+            newBound.h = clamp(newBound.h, minHeight * scale, maxHeight);
+
+            if (newBound.h > minHeight * scale) {
+              edgelessProp.collapse = true;
+              edgelessProp.collapsedHeight = newBound.h / scale;
+            }
+
+            model.props.edgeless = edgelessProp;
+            model.props.xywh = newBound.serialize();
+          },
+
+          onResizeEnd(context): void {
+            context.default(context);
+            model.pop('edgeless');
+          },
+        };
+      },
+      handleSelection: ({ std, gfx, view, model }) => {
+        return {
+          onSelect(context) {
+            const { selected, multiSelect, event: e } = context;
+            const { editing } = gfx.selection;
+            const alreadySelected = gfx.selection.has(model.id);
+
+            if (!multiSelect && selected && (alreadySelected || editing)) {
+              if (model.isLocked()) return;
+
+              if (alreadySelected && editing) {
+                return;
+              }
+
+              gfx.selection.set({
+                elements: [model.id],
+                editing: true,
+              });
+
+              view.updateComplete
+                .then(() => {
+                  if (!view.isConnected) {
+                    return;
+                  }
+
+                  if (model.children.length === 0) {
+                    const blockId = std.store.addBlock(
+                      'affine:paragraph',
+                      { type: 'text' },
+                      model.id
+                    );
+
+                    if (blockId) {
+                      focusTextModel(std, blockId);
+                    }
+                  } else {
+                    const rect = view
+                      .querySelector('.affine-block-children-container')
+                      ?.getBoundingClientRect();
+
+                    if (rect) {
+                      const offsetY = 8 * gfx.viewport.zoom;
+                      const offsetX = 2 * gfx.viewport.zoom;
+                      const x = clamp(
+                        e.clientX,
+                        rect.left + offsetX,
+                        rect.right - offsetX
+                      );
+                      const y = clamp(
+                        e.clientY,
+                        rect.top + offsetY,
+                        rect.bottom - offsetY
+                      );
+                      handleNativeRangeAtPoint(x, y);
+                    } else {
+                      handleNativeRangeAtPoint(e.clientX, e.clientY);
+                    }
+                  }
+                })
+                .catch(console.error);
+            } else {
+              context.default(context);
+            }
+          },
+        };
+      },
+    }
+  );

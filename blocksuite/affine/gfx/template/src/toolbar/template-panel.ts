@@ -1,3 +1,4 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import {
   darkToolbarStyles,
   lightToolbarStyles,
@@ -314,8 +315,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
       }
     } finally {
       this._loadingTemplate = null;
-      // @ts-expect-error FIXME: resolve after gfx tool refactor
-      this.gfx.tool.setTool('default');
+      this.gfx.tool.setTool(DefaultTool);
     }
   }
 

@@ -65,6 +65,14 @@ const typeFilters = {
     model instanceof GfxLocalElementModel,
 };
 
+export type BuiltInFilterModelMap = {
+  block: GfxBlockElementModel;
+  canvas: GfxPrimitiveElementModel;
+  local: GfxLocalElementModel;
+};
+
+export type BuiltInFilterType = keyof typeof typeFilters;
+
 type FilterFunc = (model: GfxModel | GfxLocalElementModel) => boolean;
 
 export class GridManager extends GfxExtension {
@@ -280,7 +288,7 @@ export class GridManager extends GfxExtension {
    * @param bound
    * @param options
    */
-  search<T extends keyof typeof typeFilters>(
+  search<T extends BuiltInFilterType = 'canvas' | 'block'>(
     bound: IBound,
     options?: {
       /**
@@ -297,16 +305,16 @@ export class GridManager extends GfxExtension {
        */
       filter?: (T | FilterFunc)[] | FilterFunc;
     }
-  ): T extends 'local'[] ? (GfxModel | GfxLocalElementModel)[] : GfxModel[];
-  search<T extends keyof typeof typeFilters>(
+  ): BuiltInFilterModelMap[T][];
+  search<T extends BuiltInFilterType = 'canvas' | 'block'>(
     bound: IBound,
     options: {
       strict?: boolean | undefined;
       useSet: true;
       filter?: (T | FilterFunc)[] | FilterFunc;
     }
-  ): T extends 'local'[] ? Set<GfxModel | GfxLocalElementModel> : Set<GfxModel>;
-  search<T extends keyof typeof typeFilters>(
+  ): Set<BuiltInFilterModelMap[T]>;
+  search<T extends BuiltInFilterType = 'canvas' | 'block'>(
     bound: IBound,
     options: {
       strict?: boolean;
@@ -389,22 +397,14 @@ export class GridManager extends GfxExtension {
         if (payload.type === 'add' && canBeRenderedAsGfxBlock(payload.model)) {
           this.add(payload.model);
         }
-
         if (payload.type === 'update') {
-          const model = store.getBlock(payload.id)
-            ?.model as GfxBlockElementModel;
-
-          if (!model) {
-            return;
-          }
+          const model = store.getModelById(payload.id);
+          if (!model) return;
 
           if (payload.props.key === 'xywh' && canBeRenderedAsGfxBlock(model)) {
-            this.update(
-              store.getBlock(payload.id)?.model as GfxBlockElementModel
-            );
+            this.update(model);
           }
         }
-
         if (
           payload.type === 'delete' &&
           payload.model instanceof GfxBlockElementModel
@@ -421,22 +421,28 @@ export class GridManager extends GfxExtension {
     });
 
     const watchSurface = (surface: SurfaceBlockModel) => {
-      let lastChildMap = new Map(surface.childMap.peek());
+      let lastChildMap = new Map<string, number>(surface.childMap.peek());
       disposables.add(
-        surface.childMap.subscribe(val => {
-          val.forEach((_, id) => {
+        surface.childMap.subscribe(currentChildMap => {
+          currentChildMap.forEach((_, id) => {
             if (lastChildMap.has(id)) {
               lastChildMap.delete(id);
               return;
             }
           });
           lastChildMap.forEach((_, id) => {
-            const block = store.getBlock(id);
-            if (block?.model) {
-              this.remove(block.model as GfxBlockElementModel);
+            const model = store.getModelById(id);
+            if (model) {
+              this.remove(model as GfxBlockElementModel);
             }
           });
-          lastChildMap = new Map(val);
+          currentChildMap.forEach((_, id) => {
+            const model = store.getModelById(id);
+            if (model) {
+              this.add(model as GfxBlockElementModel);
+            }
+          });
+          lastChildMap = new Map(currentChildMap);
         })
       );
 

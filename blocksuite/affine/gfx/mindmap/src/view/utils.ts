@@ -116,7 +116,7 @@ function moveNodePosition(
         )
       : (node.detail.index ?? undefined);
 
-  mindmap.surface.doc.transact(() => {
+  mindmap.surface.store.transact(() => {
     const val: NodeDetail = {
       ...node.detail,
       index,
@@ -139,7 +139,7 @@ export function applyStyle(
   mindmap: MindmapElementModel,
   shouldFitContent: boolean = false
 ) {
-  mindmap.surface.doc.transact(() => {
+  mindmap.surface.store.transact(() => {
     const style = mindmap.styleGetter;
 
     if (!style) return;
@@ -208,7 +208,7 @@ export function addNode(
         )
       : node.detail.index;
 
-  mindmap.surface.doc.transact(() => {
+  mindmap.surface.store.transact(() => {
     mindmap.children.set(node.id, {
       ...node.detail,
       index,
@@ -281,7 +281,7 @@ export function addTree(
 
   if (!('text' in tree)) {
     // Modify the children ymap directly hence need transaction
-    mindmap.surface.doc.transact(() => {
+    mindmap.surface.store.transact(() => {
       traverse(tree, parent, sibling);
     });
 
@@ -328,7 +328,7 @@ export function detachMindmap(
     subtree.children.forEach(child => traverse(child));
   };
 
-  mindmap.surface.doc.transact(() => {
+  mindmap.surface.store.transact(() => {
     traverse(subtree);
   });
 
@@ -351,7 +351,7 @@ export function handleLayout(
     applyStyle(mindmap, true);
   }
 
-  mindmap.surface.doc.transact(() => {
+  mindmap.surface.store.transact(() => {
     const path = mindmap.getPath(tree.id);
     layout(tree, mindmap, layoutType ?? mindmap.getLayoutDir(tree.id), path);
   });

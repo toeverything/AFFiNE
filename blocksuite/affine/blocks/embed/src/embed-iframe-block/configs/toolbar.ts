@@ -230,7 +230,7 @@ export const builtinToolbarConfig = {
               draftedModels,
               title
             );
-            notifyDocCreated(std, store);
+            notifyDocCreated(std);
 
             track('DocCreated', {
               segment: 'doc',

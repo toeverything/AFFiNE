@@ -14,6 +14,7 @@
     { "path": "../../blocks/paragraph" },
     { "path": "../../blocks/surface" },
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../../model" },
     { "path": "../../shared" },
     { "path": "../../../framework/global" },

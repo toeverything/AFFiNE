@@ -1,4 +1,3 @@
-import { ChatHistoryOrder } from '@affine/graphql';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine/blocks/surface';
 import {
   Bound,
@@ -34,6 +33,7 @@ import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { Store } from '@blocksuite/affine/store';
 import {
   BlockIcon,
+  EdgelessIcon,
   InsertBleowIcon as InsertBelowIcon,
   LinkedPageIcon,
   PageIcon,
@@ -68,14 +68,15 @@ export type ChatAction = {
 
 export async function queryHistoryMessages(
   workspaceId: string,
-  docId: string,
-  forkSessionId: string
+  forkSessionId: string,
+  docId?: string
 ) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(workspaceId, docId, {
-    sessionId: forkSessionId,
-    messageOrder: ChatHistoryOrder.asc,
-  });
+  const histories = await AIProvider.histories?.chats(
+    workspaceId,
+    forkSessionId,
+    docId
+  );
 
   if (!histories || !histories.length) {
     return [];
@@ -90,7 +91,7 @@ export function constructUserInfoWithMessages(
   userInfo: AIUserInfo | null
 ) {
   return messages.map(message => {
-    const { role, id, content, createdAt } = message;
+    const { role, streamObjects } = message;
     const isUser = role === 'user';
     const userInfoProps = isUser
       ? {
@@ -100,12 +101,10 @@ export function constructUserInfoWithMessages(
         }
       : {};
     return {
-      id,
-      role,
-      content,
-      createdAt,
-      attachments: [],
+      ...message,
       ...userInfoProps,
+      attachments: [],
+      streamObjects: streamObjects || [],
     };
   });
 }
@@ -116,11 +115,11 @@ export async function constructRootChatBlockMessages(
 ) {
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
-  const forkMessages = await queryHistoryMessages(
+  const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
-    doc.id,
-    forkSessionId
-  );
+    forkSessionId,
+    doc.id
+  )) as ChatMessage[];
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
@@ -160,8 +159,8 @@ function addAIChatBlock(
     return;
   }
 
-  const { doc } = host;
-  const surfaceBlock = doc
+  const { store } = host;
+  const surfaceBlock = store
     .getAllModels()
     .find(block => block.flavour === 'affine:surface');
   if (!surfaceBlock) {
@@ -174,15 +173,15 @@ function addAIChatBlock(
   const x = viewportCenter.x - width / 2;
   const y = viewportCenter.y - height / 2;
   const bound = new Bound(x, y, width, height);
-  const aiChatBlockId = doc.addBlock(
+  const aiChatBlockId = store.addBlock(
     'affine:embed-ai-chat',
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
       index,
       sessionId,
-      rootWorkspaceId: doc.workspace.id,
-      rootDocId: doc.id,
+      rootWorkspaceId: store.workspace.id,
+      rootDocId: store.id,
     },
     surfaceBlock.id
   );
@@ -253,7 +252,7 @@ async function insertBelowBlock(
   return true;
 }
 
-const PAGE_INSERT = {
+export const PAGE_INSERT = {
   icon: InsertBelowIcon({ width: '20px', height: '20px' }),
   title: 'Insert',
   showWhen: (host: EditorHost) => {
@@ -292,7 +291,7 @@ const PAGE_INSERT = {
   },
 };
 
-const EDGELESS_INSERT = {
+export const EDGELESS_INSERT = {
   ...PAGE_INSERT,
   handler: async (
     host: EditorHost,
@@ -379,8 +378,8 @@ const SAVE_AS_BLOCK: ChatAction = {
 
     try {
       const newSessionId = await AIProvider.forkChat?.({
-        workspaceId: host.doc.workspace.id,
-        docId: host.doc.id,
+        workspaceId: host.store.workspace.id,
+        docId: host.store.id,
         sessionId: parentSessionId,
         latestMessageId: messageId,
       });
@@ -391,7 +390,7 @@ const SAVE_AS_BLOCK: ChatAction = {
 
       // Get messages before the latest message
       const messages = await constructRootChatBlockMessages(
-        host.doc,
+        host.store,
         newSessionId
       );
 
@@ -430,7 +429,7 @@ const SAVE_AS_BLOCK: ChatAction = {
 };
 
 const ADD_TO_EDGELESS_AS_NOTE = {
-  icon: PageIcon({ width: '20px', height: '20px' }),
+  icon: EdgelessIcon({ width: '20px', height: '20px' }),
   title: 'Add to edgeless as note',
   showWhen: (host: EditorHost) => {
     if (host.std.store.readonly$.value) {
@@ -441,7 +440,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   toast: 'New note created',
   handler: async (host: EditorHost, content: string): Promise<boolean> => {
     reportResponse('result:add-note');
-    const { doc } = host;
+    const { store } = host;
 
     const gfx = host.std.get(GfxControllerIdentifier);
     const elements = gfx.selection.selectedElements;
@@ -457,9 +456,9 @@ const ADD_TO_EDGELESS_AS_NOTE = {
       props.xywh = newBound.serialize();
     }
 
-    const id = doc.addBlock('affine:note', props, doc.root?.id);
+    const id = store.addBlock('affine:note', props, store.root?.id);
 
-    await insertFromMarkdown(host, content, doc, id, 0);
+    await insertFromMarkdown(host, content, store, id, 0);
 
     gfx.selection.set({
       elements: [id],
@@ -470,14 +469,14 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
 };
 
-const SAVE_AS_DOC = {
+export const SAVE_AS_DOC = {
   icon: PageIcon({ width: '20px', height: '20px' }),
   title: 'Save as doc',
   showWhen: () => true,
   toast: 'New doc created',
   handler: (host: EditorHost, content: string) => {
     reportResponse('result:add-page');
-    const doc = host.doc.workspace.createDoc();
+    const doc = host.store.workspace.createDoc();
     const newDoc = doc.getStore();
     newDoc.load();
     const rootId = newDoc.addBlock('affine:page');
@@ -498,8 +497,10 @@ const SAVE_AS_DOC = {
         return;
       }
       complete = true;
-      const { doc } = newHost;
-      insertFromMarkdown(newHost, content, doc, noteId, 0).catch(console.error);
+      const { store } = newHost;
+      insertFromMarkdown(newHost, content, store, noteId, 0).catch(
+        console.error
+      );
     })();
 
     return true;
@@ -519,8 +520,8 @@ const CREATE_AS_LINKED_DOC = {
   handler: async (host: EditorHost, content: string) => {
     reportResponse('result:add-page');
 
-    const { doc } = host;
-    const surfaceBlock = doc
+    const { store } = host;
+    const surfaceBlock = store
       .getAllModels()
       .find(block => block.flavour === 'affine:surface');
     if (!surfaceBlock) {
@@ -534,7 +535,7 @@ const CREATE_AS_LINKED_DOC = {
     }
 
     // Create a new doc and add the content to it
-    const newDoc = host.doc.workspace.createDoc().getStore();
+    const newDoc = host.store.workspace.createDoc().getStore();
     newDoc.load();
     const rootId = newDoc.addBlock('affine:page');
     newDoc.addBlock('affine:surface', {}, rootId);

@@ -26,10 +26,10 @@ export const cardPreview = style({
   borderRadius: '4px',
   cursor: 'default',
   userSelect: 'none',
-  ':hover': {
-    background: cssVarV2('layer/background/hoverOverlay'),
-  },
   selectors: {
+    [`${outlineCard}[data-sortable="true"] &:hover`]: {
+      background: cssVarV2('layer/background/hoverOverlay'),
+    },
     [`${outlineCard}[data-status="selected"] &`]: {
       background: cssVarV2('layer/background/hoverOverlay'),
     },

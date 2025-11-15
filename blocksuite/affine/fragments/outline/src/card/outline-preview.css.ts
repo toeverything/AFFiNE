@@ -1,6 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const outlineBlockPreview = style({
   fontFamily: cssVar('fontFamily'),
@@ -106,6 +106,11 @@ export const linkedDocText = style({
 
 export const linkedDocPreviewUnavailable = style({
   color: cssVarV2('text/disable'),
+});
+
+export const linkedDocPreviewAvailable = style({});
+globalStyle(`${linkedDocPreviewAvailable} > svg`, {
+  marginBottom: '0.1em',
 });
 
 export const linkedDocTextUnavailable = style({

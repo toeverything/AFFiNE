@@ -7,5 +7,6 @@ export {
   getSelectionRectsCommand,
   type SelectionRect,
 } from './get-selection-rects';
+export { getSurfaceSelectionCommand } from './get-surface-selection';
 export { getTextSelectionCommand } from './get-text-selection.js';
 export { isNothingSelectedCommand } from './is-nothing-selected.js';

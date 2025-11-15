@@ -17,12 +17,13 @@ export class BlockZeroWidth extends LitElement {
 
   _handleClick = (e: MouseEvent) => {
     stopPropagation(e);
-    if (this.block.doc.readonly) return;
-    const nextBlock = this.block.doc.getNext(this.block.model);
+    if (this.block.store.readonly) return;
+    const nextBlock = this.block.store.getNext(this.block.model);
     if (nextBlock?.flavour !== 'affine:paragraph') {
-      const [paragraphId] = this.block.doc.addSiblingBlocks(this.block.model, [
-        { flavour: 'affine:paragraph' },
-      ]);
+      const [paragraphId] = this.block.store.addSiblingBlocks(
+        this.block.model,
+        [{ flavour: 'affine:paragraph' }]
+      );
       const std = this.block.std;
       std.selection.setGroup('note', [
         std.selection.create(TextSelection, {

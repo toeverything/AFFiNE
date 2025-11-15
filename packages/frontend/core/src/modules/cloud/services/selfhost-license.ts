@@ -10,7 +10,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { SelfhostLicenseStore } from '../stores/selfhost-license';
@@ -36,12 +36,10 @@ export class SelfhostLicenseService extends Service {
         return await this.store.getLicense(currentWorkspaceId, signal);
       }).pipe(
         smartRetry(),
-        mergeMap(data => {
+        tap(data => {
           if (data) {
             this.license$.next(data);
           }
-
-          return EMPTY;
         }),
         catchErrorInto(this.error$),
         onStart(() => this.isRevalidating$.next(true)),
@@ -56,6 +54,10 @@ export class SelfhostLicenseService extends Service {
 
   async deactivateLicense(workspaceId: string) {
     return await this.store.deactivate(workspaceId);
+  }
+
+  async installLicense(workspaceId: string, licenseFile: File) {
+    return await this.store.installLicense(workspaceId, licenseFile);
   }
 
   clear() {

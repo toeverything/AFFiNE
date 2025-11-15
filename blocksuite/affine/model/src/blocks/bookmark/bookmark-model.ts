@@ -15,17 +15,20 @@ import type {
   LinkPreviewData,
 } from '../../utils/index.js';
 
-export const BookmarkStyles: EmbedCardStyle[] = [
+export const BookmarkStyles = [
   'vertical',
   'horizontal',
   'list',
   'cube',
-] as const;
+  'citation',
+] as const satisfies EmbedCardStyle[];
 
 export type BookmarkBlockProps = {
   style: (typeof BookmarkStyles)[number];
   url: string;
   caption: string | null;
+  footnoteIdentifier: string | null;
+  comments?: Record<string, boolean>;
 } & LinkPreviewData &
   Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
@@ -48,6 +51,9 @@ const defaultBookmarkProps: BookmarkBlockProps = {
   'meta:updatedAt': undefined,
   'meta:createdBy': undefined,
   'meta:updatedBy': undefined,
+
+  footnoteIdentifier: null,
+  comments: undefined,
 };
 
 export const BookmarkBlockSchema = defineBlockSchema({

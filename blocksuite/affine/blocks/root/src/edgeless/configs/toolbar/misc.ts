@@ -3,6 +3,7 @@ import {
   EdgelessCRUDIdentifier,
   getSurfaceComponent,
 } from '@blocksuite/affine-block-surface';
+import { ConnectorTool } from '@blocksuite/affine-gfx-connector';
 import {
   createGroupCommand,
   createGroupFromSelectedCommand,
@@ -16,6 +17,7 @@ import {
 } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
+  blockCommentToolbarButton,
   type ElementLockEvent,
   type ToolbarAction,
   type ToolbarContext,
@@ -196,9 +198,9 @@ export const builtinMiscToolbarConfig = {
           const point = ctx.gfx.viewport.toViewCoordFromClientCoord([x, y]);
 
           ctx.store.captureSync();
-          ctx.gfx.tool.setTool('connector', { mode: DEFAULT_CONNECTOR_MODE });
+          ctx.gfx.tool.setTool(ConnectorTool, { mode: DEFAULT_CONNECTOR_MODE });
 
-          const ctc = ctx.gfx.tool.get('connector');
+          const ctc = ctx.gfx.tool.get(ConnectorTool);
           ctc.quickConnect(point, models[0]);
         };
 
@@ -302,6 +304,12 @@ export const builtinMiscToolbarConfig = {
           elements: elements.map(e => e.id),
         });
       },
+    },
+
+    {
+      placement: ActionPlacement.End,
+      id: 'c.comment',
+      ...blockCommentToolbarButton,
     },
 
     // More actions

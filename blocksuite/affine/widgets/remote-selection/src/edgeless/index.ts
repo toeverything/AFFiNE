@@ -90,7 +90,7 @@ export class EdgelessRemoteSelectionWidget extends WidgetComponent<RootBlockMode
   private readonly _updateRemoteCursor = () => {
     const remoteCursors: EdgelessRemoteSelectionWidget['_remoteCursors'] =
       new Map();
-    const status = this.doc.awarenessStore.getStates();
+    const status = this.store.awarenessStore.getStates();
 
     this.selection.remoteCursorSelectionMap.forEach(
       (cursorSelection, clientId) => {
@@ -177,7 +177,7 @@ export class EdgelessRemoteSelectionWidget extends WidgetComponent<RootBlockMode
   override connectedCallback() {
     super.connectedCallback();
 
-    const { _disposables, doc } = this;
+    const { _disposables, store } = this;
 
     if (this.surface) {
       _disposables.add(
@@ -192,7 +192,7 @@ export class EdgelessRemoteSelectionWidget extends WidgetComponent<RootBlockMode
     }
 
     _disposables.add(
-      doc.slots.blockUpdated.subscribe(this._updateOnElementChange)
+      store.slots.blockUpdated.subscribe(this._updateOnElementChange)
     );
 
     _disposables.add(

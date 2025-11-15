@@ -25,7 +25,7 @@ import { inputConfig, typeConfig } from '../../../core/common/property-menu.js';
 import type { Property } from '../../../core/view-manager/property.js';
 import { numberFormats } from '../../../property-presets/number/utils/formats.js';
 import { DEFAULT_COLUMN_TITLE_HEIGHT } from '../consts.js';
-import type { TableColumn, TableSingleView } from '../table-view-manager.js';
+import type { TableProperty, TableSingleView } from '../table-view-manager.js';
 
 export class MobileTableColumnHeader extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -174,16 +174,14 @@ export class MobileTableColumnHeader extends SignalWatcher(
               menu.action({
                 name: 'Move Left',
                 prefix: MoveLeftIcon(),
-                hide: () => this.column.isFirst,
+                hide: () => this.column.isFirst$.value,
                 select: () => {
-                  const preId = this.tableViewManager.propertyPreGet(
-                    this.column.id
-                  )?.id;
-                  if (!preId) {
+                  const pre = this.column.prev$.value;
+                  if (!pre) {
                     return;
                   }
-                  this.tableViewManager.propertyMove(this.column.id, {
-                    id: preId,
+                  this.column.move({
+                    id: pre.id,
                     before: true,
                   });
                 },
@@ -191,16 +189,14 @@ export class MobileTableColumnHeader extends SignalWatcher(
               menu.action({
                 name: 'Move Right',
                 prefix: MoveRightIcon(),
-                hide: () => this.column.isLast,
+                hide: () => this.column.isLast$.value,
                 select: () => {
-                  const nextId = this.tableViewManager.propertyNextGet(
-                    this.column.id
-                  )?.id;
-                  if (!nextId) {
+                  const next = this.column.next$.value;
+                  if (!next) {
                     return;
                   }
-                  this.tableViewManager.propertyMove(this.column.id, {
-                    id: nextId,
+                  this.column.move({
+                    id: next.id,
                     before: false,
                   });
                 },
@@ -256,7 +252,7 @@ export class MobileTableColumnHeader extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor tableViewManager!: TableSingleView;

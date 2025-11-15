@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use affine_common::hashcash::Stamp;
-use napi::{bindgen_prelude::AsyncTask, Env, JsBoolean, JsString, Result as NapiResult, Task};
+use napi::{bindgen_prelude::AsyncTask, Env, Result as NapiResult, Task};
 use napi_derive::napi;
 
 pub struct AsyncVerifyChallengeResponse {
@@ -13,7 +13,7 @@ pub struct AsyncVerifyChallengeResponse {
 #[napi]
 impl Task for AsyncVerifyChallengeResponse {
   type Output = bool;
-  type JsValue = JsBoolean;
+  type JsValue = bool;
 
   fn compute(&mut self) -> NapiResult<Self::Output> {
     Ok(if let Ok(stamp) = Stamp::try_from(self.response.as_str()) {
@@ -23,8 +23,8 @@ impl Task for AsyncVerifyChallengeResponse {
     })
   }
 
-  fn resolve(&mut self, env: Env, output: bool) -> NapiResult<Self::JsValue> {
-    env.get_boolean(output)
+  fn resolve(&mut self, _: Env, output: bool) -> NapiResult<Self::JsValue> {
+    Ok(output)
   }
 }
 
@@ -49,14 +49,14 @@ pub struct AsyncMintChallengeResponse {
 #[napi]
 impl Task for AsyncMintChallengeResponse {
   type Output = String;
-  type JsValue = JsString;
+  type JsValue = String;
 
   fn compute(&mut self) -> NapiResult<Self::Output> {
     Ok(Stamp::mint(self.resource.clone(), self.bits).format())
   }
 
-  fn resolve(&mut self, env: Env, output: String) -> NapiResult<Self::JsValue> {
-    env.create_string(&output)
+  fn resolve(&mut self, _: Env, output: String) -> NapiResult<Self::JsValue> {
+    Ok(output)
   }
 }
 

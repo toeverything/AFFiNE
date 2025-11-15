@@ -13,7 +13,7 @@ import {
 } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import bytes from 'bytes';
-import { EMPTY, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceQuotaStore } from '../stores/quota';
@@ -76,7 +76,7 @@ export class WorkspaceQuota extends Entity {
         return { quota: data, used: data.usedStorageQuota };
       }).pipe(
         smartRetry(),
-        mergeMap(data => {
+        tap(data => {
           if (data) {
             const { quota, used } = data;
             this.quota$.next(quota);
@@ -85,7 +85,6 @@ export class WorkspaceQuota extends Entity {
             this.quota$.next(null);
             this.used$.next(null);
           }
-          return EMPTY;
         }),
         catchErrorInto(this.error$, error => {
           logger.error('Failed to fetch workspace quota', error);

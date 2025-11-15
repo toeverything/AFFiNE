@@ -321,7 +321,7 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       peer,
       blobId,
     });
-    return result.uploadedAt ? new Date(result.uploadedAt) : null;
+    return result?.uploadedAt ? new Date(result.uploadedAt) : null;
   },
   setBlobUploadedAt: async function (
     id: string,

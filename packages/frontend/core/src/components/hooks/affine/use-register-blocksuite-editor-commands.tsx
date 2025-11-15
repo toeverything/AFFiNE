@@ -76,6 +76,9 @@ export function useRegisterBlocksuiteEditorCommands(
         title: doc.title$.value || t['Untitled'](),
       }),
       cancelText: t['com.affine.confirmModal.button.cancel'](),
+      confirmButtonOptions: {
+        variant: 'error',
+      },
       confirmText: t.Delete(),
       onConfirm: async () => {
         try {
@@ -379,7 +382,7 @@ export function useRegisterBlocksuiteEditorCommands(
         label: '',
         icon: null,
         run() {
-          toast(t['Save']());
+          // do nothing
         },
       })
     );

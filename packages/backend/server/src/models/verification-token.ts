@@ -122,7 +122,11 @@ export class VerificationTokenModel extends BaseModel {
         type,
       },
     });
-    this.logger.log(`Deleted token success by type ${type} and token ${token}`);
+    if (count > 0) {
+      this.logger.log(
+        `Deleted token success by type ${type} and token ${token}`
+      );
+    }
     return count;
   }
 
@@ -137,7 +141,9 @@ export class VerificationTokenModel extends BaseModel {
         },
       },
     });
-    this.logger.log(`Cleaned ${count} expired tokens`);
+    if (count > 0) {
+      this.logger.log(`Cleaned ${count} expired tokens`);
+    }
     return count;
   }
 }

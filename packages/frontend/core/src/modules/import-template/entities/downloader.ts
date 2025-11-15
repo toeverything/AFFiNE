@@ -8,7 +8,7 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
 import type { TemplateDownloaderStore } from '../store/downloader';
 
@@ -24,9 +24,8 @@ export class TemplateDownloader extends Entity {
   readonly download = effect(
     switchMap(({ snapshotUrl }: { snapshotUrl: string }) => {
       return fromPromise(() => this.store.download(snapshotUrl)).pipe(
-        mergeMap(({ data }) => {
+        tap(({ data }) => {
           this.data$.next(data);
-          return EMPTY;
         }),
         smartRetry(),
         catchErrorInto(this.error$),

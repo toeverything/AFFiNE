@@ -23,7 +23,7 @@ export const getLastBlockCommand: Command<
     lastBlock: BlockModel | null;
   }
 > = (ctx, next) => {
-  const root = ctx.root || ctx.std.host.doc.root;
+  const root = ctx.root || ctx.std.host.store.root;
   if (!root) {
     next({
       lastBlock: null,
