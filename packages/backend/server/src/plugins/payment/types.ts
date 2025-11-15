@@ -99,6 +99,7 @@ declare global {
   interface Jobs {
     'nightly.revenuecat.subscription.refresh': {
       userId: User['id'];
+      externalRef: string;
       startTime: number;
     };
     'nightly.revenuecat.subscription.refresh.anonymous': {
