@@ -1467,6 +1467,8 @@ export interface Mutation {
   /** Remove workspace embedding files */
   removeWorkspaceEmbeddingFiles: Scalars['Boolean']['output'];
   removeWorkspaceFeature: Scalars['Boolean']['output'];
+  /** Request to apply the subscription in advance */
+  requestApplySubscription: Array<SubscriptionType>;
   /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
@@ -1786,6 +1788,10 @@ export interface MutationRemoveWorkspaceEmbeddingFilesArgs {
 export interface MutationRemoveWorkspaceFeatureArgs {
   feature: FeatureType;
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRequestApplySubscriptionArgs {
+  transactionId: Scalars['String']['input'];
 }
 
 export interface MutationResolveCommentArgs {
@@ -6018,6 +6024,26 @@ export type RefreshSubscriptionMutation = {
   }>;
 };
 
+export type RequestApplySubscriptionMutationVariables = Exact<{
+  transactionId: Scalars['String']['input'];
+}>;
+
+export type RequestApplySubscriptionMutation = {
+  __typename?: 'Mutation';
+  requestApplySubscription: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
 export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
 
 export type SubscriptionQuery = {
@@ -7107,6 +7133,11 @@ export type Mutations =
       name: 'refreshSubscriptionMutation';
       variables: RefreshSubscriptionMutationVariables;
       response: RefreshSubscriptionMutation;
+    }
+  | {
+      name: 'requestApplySubscriptionMutation';
+      variables: RequestApplySubscriptionMutationVariables;
+      response: RequestApplySubscriptionMutation;
     }
   | {
       name: 'updateDocDefaultRoleMutation';

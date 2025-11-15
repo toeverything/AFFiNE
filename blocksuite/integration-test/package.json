@@ -41,10 +41,10 @@
   ],
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
-    "vite": "^6.1.0",
+    "vite": "^7.0.0",
     "vite-plugin-istanbul": "^7.0.0",
     "vite-plugin-wasm": "^3.4.1",
     "vitest": "3.1.3"
   },
-  "version": "0.22.4"
+  "version": "0.25.2"
 }

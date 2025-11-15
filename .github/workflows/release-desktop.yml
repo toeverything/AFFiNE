@@ -25,7 +25,7 @@ env:
   RELEASE_VERSION: ${{ inputs.app-version }}
   DEBUG: 'affine:*,napi:*'
   APP_NAME: affine
-  MACOSX_DEPLOYMENT_TARGET: '10.13'
+  MACOSX_DEPLOYMENT_TARGET: '11.6'
 
 jobs:
   before-make:
@@ -466,6 +466,4 @@ jobs:
           draft: ${{ inputs.build-type == 'stable' }}
           prerelease: ${{ inputs.build-type != 'stable' }}
           tag_name: v${{ env.RELEASE_VERSION}}
-          files: |
-            ./release/*
-            ./release/.env.example
+          files: ./release/*

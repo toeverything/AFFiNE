@@ -2237,6 +2237,25 @@ export const refreshSubscriptionMutation = {
   deprecations: ["'id' is deprecated: removed"],
 };
 
+export const requestApplySubscriptionMutation = {
+  id: 'requestApplySubscriptionMutation' as const,
+  op: 'requestApplySubscription',
+  query: `mutation requestApplySubscription($transactionId: String!) {
+  requestApplySubscription(transactionId: $transactionId) {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}`,
+  deprecations: ["'id' is deprecated: removed"],
+};
+
 export const subscriptionQuery = {
   id: 'subscriptionQuery' as const,
   op: 'subscription',
