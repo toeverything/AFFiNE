@@ -95,16 +95,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: true,
   },
-  enable_callout: {
-    category: 'blocksuite',
-    bsFlag: 'enable_callout',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-callout.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-callout.description',
-    configurable: isCanaryBuild,
-    defaultState: isCanaryBuild,
-  },
 
   enable_emoji_folder_icon: {
     category: 'affine',

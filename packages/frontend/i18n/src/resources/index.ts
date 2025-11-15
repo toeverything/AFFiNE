@@ -1,4 +1,4 @@
-import en from './en.json' assert { type: 'json' };
+import en from './en.json' with { type: 'json' };
 
 export type Language =
   | 'en'

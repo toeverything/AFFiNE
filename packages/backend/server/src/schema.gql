@@ -1323,6 +1323,9 @@ type Mutation {
   removeWorkspaceEmbeddingFiles(fileId: String!, workspaceId: String!): Boolean!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
 
+  """Request to apply the subscription in advance"""
+  requestApplySubscription(transactionId: String!): [SubscriptionType!]!
+
   """Resolve a comment or not"""
   resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!

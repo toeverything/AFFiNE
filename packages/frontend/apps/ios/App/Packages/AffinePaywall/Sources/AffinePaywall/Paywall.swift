@@ -5,11 +5,29 @@
 //  Created by qaq on 9/18/25.
 //
 
+import RevenueCat
 import SwiftUI
 import UIKit
 import WebKit
 
 public enum Paywall {
+  package static let revenueCatToken: String = "appl_FIzFhieVpSSmJRYJWwhVrgtnsVf"
+  package static let revenueCatProxyEndpoit = URL(string: "https://iap.affine.pro/")!
+  package static var isPurchasesConfigured = false
+
+  private static let setupExecution: Void = {
+    #if DEBUG
+      Purchases.logLevel = .debug
+    #endif
+    Purchases.proxyURL = revenueCatProxyEndpoit
+    return ()
+  }()
+
+  nonisolated
+  public static func setup() {
+    _ = setupExecution
+  }
+
   @MainActor
   public static func presentWall(
     toController controller: UIViewController,

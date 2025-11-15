@@ -992,6 +992,42 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.menubar.description"](): string;
     /**
+      * `Window behavior`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.title"](): string;
+    /**
+      * `Quick open from tray icon`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.toggle"](): string;
+    /**
+      * `Open AFFiNE when left‑clicking the tray icon.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.description"](): string;
+    /**
+      * `Minimize to tray`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.toggle"](): string;
+    /**
+      * `Minimize AFFiNE to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.description"](): string;
+    /**
+      * `Close to tray`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.toggle"](): string;
+    /**
+      * `Close AFFiNE to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.closeToTray.description"](): string;
+    /**
+      * `Start minimized`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.toggle"](): string;
+    /**
+      * `Start AFFiNE minimized to the system tray.`
+      */
+    ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.description"](): string;
+    /**
       * `Theme`
       */
     ["com.affine.appearanceSettings.theme.title"](): string;
@@ -2376,6 +2412,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.affine-workspace-data"](): string;
     /**
+      * `Docx`
+      */
+    ["com.affine.import.docx"](): string;
+    /**
+      * `Import your .docx file.`
+      */
+    ["com.affine.import.docx.tooltip"](): string;
+    /**
       * `HTML`
       */
     ["com.affine.import.html-files"](): string;
@@ -2771,6 +2815,10 @@ export function useAFFiNEI18N(): {
       * `Star us on GitHub`
       */
     ["com.affine.mobile.setting.others.github"](): string;
+    /**
+      * `Discord Group`
+      */
+    ["com.affine.mobile.setting.others.discord"](): string;
     /**
       * `Privacy`
       */

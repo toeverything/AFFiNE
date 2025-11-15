@@ -11,6 +11,7 @@ affine_common = { workspace = true, features = ["doc-loader"] }
 chrono        = { workspace = true }
 file-format   = { workspace = true }
 infer         = { workspace = true }
+mp4parse      = { workspace = true }
 napi          = { workspace = true, features = ["async"] }
 napi-derive   = { workspace = true }
 rand          = { workspace = true }

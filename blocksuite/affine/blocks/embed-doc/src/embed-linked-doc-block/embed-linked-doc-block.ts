@@ -323,7 +323,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
 
   private readonly _renderEmbedView = () => {
     const linkedDoc = this.linkedDoc;
-    const isDeleted = !linkedDoc;
+    const trash = linkedDoc?.meta?.trash;
+    const isDeleted = trash || !linkedDoc;
     const isLoading = this._loading;
     const isError = this.isError;
     const isEmpty = this._isDocEmpty() && this.isBannerEmpty;
@@ -521,11 +522,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       );
 
       this._setDocUpdatedAt();
-      this.disposables.add(
-        this.store.workspace.slots.docListUpdated.subscribe(() => {
-          this._setDocUpdatedAt();
-        })
-      );
 
       if (this._referenceToNode) {
         this._linkedDocMode = this.model.props.params?.mode ?? 'page';
@@ -551,6 +547,13 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
             this.isError = true;
           });
         }
+      })
+    );
+
+    this.disposables.add(
+      this.store.workspace.slots.docListUpdated.subscribe(() => {
+        this._setDocUpdatedAt();
+        this.refreshData();
       })
     );
 

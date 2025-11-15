@@ -235,7 +235,6 @@
   "com.affine.appearanceSettings.subtitle": "Настройте внешний вид AFFiNE",
   "com.affine.appearanceSettings.menubar.title": "Меню",
   "com.affine.appearanceSettings.menubar.toggle": "Включить приложение меню",
-  "com.affine.appearanceSettings.menubar.description": "Отображать приложение в строке меню для быстрого доступа к AFFiNE или записям встреч.",
   "com.affine.appearanceSettings.theme.title": "Оформление",
   "com.affine.appearanceSettings.title": "Настройки внешнего вида",
   "com.affine.appearanceSettings.translucentUI.description": "Используйте эффект прозрачности на боковой панели.",

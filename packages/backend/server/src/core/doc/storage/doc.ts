@@ -79,11 +79,15 @@ export abstract class DocStorageAdapter extends Connection {
     const updates = await this.getDocUpdates(spaceId, docId);
 
     if (updates.length) {
+      const docUpdate = await this.squash(
+        snapshot ? [snapshot, ...updates] : updates
+      );
       return await this.squashUpdatesToSnapshot(
         spaceId,
         docId,
         updates,
-        snapshot
+        snapshot,
+        docUpdate
       );
     }
 
@@ -95,15 +99,14 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string,
     updates: DocUpdate[],
-    snapshot: DocRecord | null
+    snapshot: DocRecord | null,
+    finalUpdate: DocUpdate
   ) {
     this.logger.log(
       `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
     );
-    const { timestamp, bin, editor } = await this.squash(
-      snapshot ? [snapshot, ...updates] : updates
-    );
 
+    const { bin, timestamp, editor } = finalUpdate;
     const newSnapshot: DocRecord = {
       spaceId,
       docId,
