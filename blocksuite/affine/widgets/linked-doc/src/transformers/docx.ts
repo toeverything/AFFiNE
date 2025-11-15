@@ -1,5 +1,6 @@
 import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
-import { convertToHtml } from 'mammoth';
+// @ts-ignore
+import { convertToHtml } from 'mammoth/mammoth.browser';
 
 import { HtmlTransformer } from './html';
 
@@ -25,15 +26,20 @@ async function importDocx({
   imported,
   extensions,
 }: ImportDocxOptions) {
-  const { value } = await convertToHtml({
-    arrayBuffer: await imported.arrayBuffer(),
-  });
-  return await HtmlTransformer.importHTMLToDoc({
-    collection,
-    schema,
-    html: value,
-    extensions,
-  });
+  try {
+    const { value } = await convertToHtml({
+      arrayBuffer: await imported.arrayBuffer(),
+    });
+    return await HtmlTransformer.importHTMLToDoc({
+      collection,
+      schema,
+      html: value,
+      extensions,
+    });
+  } catch (e) {
+    console.error('Failed to import .docx file:', e);
+    return undefined;
+  }
 }
 
 export const DocxTransformer = {
