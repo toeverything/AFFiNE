@@ -56,8 +56,8 @@ defineModuleConfig('mailer', {
     env: 'MAILER_PASSWORD',
   },
   'SMTP.sender': {
-    desc: 'Sender of all the emails (e.g. "AFFiNE Team <noreply@affine.pro>")',
-    default: '',
+    desc: 'Sender of all the emails (e.g. "AFFiNE Self Hosted \<noreply@example.com\>")',
+    default: 'AFFiNE Self Hosted <noreply@example.com>',
     env: 'MAILER_SENDER',
   },
   'SMTP.ignoreTLS': {
@@ -92,7 +92,7 @@ defineModuleConfig('mailer', {
     default: '',
   },
   'fallbackSMTP.sender': {
-    desc: 'Sender of all the emails (e.g. "AFFiNE Team <noreply@affine.pro>")',
+    desc: 'Sender of all the emails (e.g. "AFFiNE Self Hosted \<noreply@example.com\>")',
     default: '',
   },
   'fallbackSMTP.ignoreTLS': {
