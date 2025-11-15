@@ -19,7 +19,7 @@
     "@aws-sdk/client-s3": "^3.709.0",
     "@clack/core": "^0.4.0",
     "@clack/prompts": "^0.10.0",
-    "@napi-rs/simple-git": "^0.1.19",
+    "@napi-rs/simple-git": "^0.1.22",
     "@perfsee/webpack": "^1.13.0",
     "@sentry/webpack-plugin": "^3.0.0",
     "@swc/core": "^1.10.1",
@@ -49,7 +49,7 @@
     "ts-node": "^10.9.2",
     "typanion": "^3.14.0",
     "typescript": "^5.5.4",
-    "webpack": "^5.97.1",
+    "webpack": "^5.102.1",
     "webpack-dev-server": "^5.2.0",
     "webpack-merge": "^6.0.1"
   },
