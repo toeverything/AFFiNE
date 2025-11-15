@@ -1,7 +1,8 @@
-use super::{history::StoreHistory, store::StoreRef, *};
-use crate::sync::{Arc, RwLock};
 #[cfg(feature = "events")]
 use publisher::DocPublisher;
+
+use super::{history::StoreHistory, store::StoreRef, *};
+use crate::sync::{Arc, RwLock};
 
 #[cfg(feature = "debug")]
 #[derive(Debug, Clone)]
