@@ -2412,6 +2412,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.affine-workspace-data"](): string;
     /**
+      * `Docx`
+      */
+    ["com.affine.import.docx"](): string;
+    /**
+      * `Import your .docx file.`
+      */
+    ["com.affine.import.docx.tooltip"](): string;
+    /**
       * `HTML`
       */
     ["com.affine.import.html-files"](): string;

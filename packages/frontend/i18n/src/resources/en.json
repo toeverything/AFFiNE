@@ -602,6 +602,8 @@
   "com.affine.import-clipper.dialog.errorLoad": "Failed to load content, please try again.",
   "com.affine.import_file": "Support Markdown/Notion",
   "com.affine.import.affine-workspace-data": "AFFiNE workspace data",
+  "com.affine.import.docx": "Docx",
+  "com.affine.import.docx.tooltip": "Import your .docx file.",
   "com.affine.import.html-files": "HTML",
   "com.affine.import.html-files.tooltip": "This is an experimental feature that is not perfect and may cause your data to be missing after import.",
   "com.affine.import.markdown-files": "Markdown files (.md)",

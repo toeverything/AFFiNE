@@ -46,7 +46,7 @@
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.16",
     "@types/lodash-es": "^4.17.12",
-    "dompurify": "^3.2.4",
+    "dompurify": "^3.3.0",
     "html2canvas": "^1.4.1",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",

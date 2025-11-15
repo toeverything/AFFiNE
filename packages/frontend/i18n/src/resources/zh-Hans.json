@@ -592,6 +592,8 @@
   "com.affine.import-clipper.dialog.errorLoad": "读取内容失败，请重试。",
   "com.affine.import_file": "支持 Markdown/Notion",
   "com.affine.import.affine-workspace-data": "AFFiNE 工作区数据",
+  "com.affine.import.docx": "Docx",
+  "com.affine.import.docx.tooltip": "导入您的 Microsoft Office Word 文档。",
   "com.affine.import.html-files": "HTML",
   "com.affine.import.html-files.tooltip": "这是一个实验性功能，可能不完全完美，导入后可能会导致数据丢失。",
   "com.affine.import.markdown-files": "Markdown 文件 (.md)",

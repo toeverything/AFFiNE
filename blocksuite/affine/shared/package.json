@@ -24,7 +24,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/mdast": "^4.0.4",
     "bytes": "^3.1.2",
-    "dompurify": "^3.2.4",
+    "dompurify": "^3.3.0",
     "fractional-indexing": "^3.2.0",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",
