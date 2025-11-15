@@ -449,20 +449,18 @@ const importConfigs: Record<ImportType, ImportConfig> = {
   docx: {
     fileOptions: { acceptType: 'Docx', multiple: false },
     importFunction: async (docCollection, file) => {
-      if (Array.isArray(file)) {
-        throw new Error('Expected a single .docx file for Docx import');
-      }
+      const files = Array.isArray(file) ? file : [file];
       const docIds: string[] = [];
-      const docId = await DocxTransformer.importDocx({
-        collection: docCollection,
-        schema: getAFFiNEWorkspaceSchema(),
-        imported: file,
-        extensions: getStoreManager().config.init().value.get('store'),
-      });
-      if (docId) docIds.push(docId);
-      return {
-        docIds,
-      };
+      for (const file of files) {
+        const docId = await DocxTransformer.importDocx({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          imported: file,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+        if (docId) docIds.push(docId);
+      }
+      return { docIds };
     },
   },
   snapshot: {
