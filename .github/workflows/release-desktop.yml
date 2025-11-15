@@ -165,7 +165,7 @@ jobs:
           mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.zip
           mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.appimage
           mv packages/frontend/apps/electron/out/*/make/deb/${{ matrix.spec.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.deb
-          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
+          # mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
 
       - uses: actions/attest-build-provenance@v2
         if: ${{ matrix.spec.platform == 'darwin' }}
