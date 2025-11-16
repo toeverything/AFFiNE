@@ -20,8 +20,13 @@ type SelectionEntry = {
 const pointerUpHandlers: unknown[] = [];
 const pointerUpDisposers: Array<ReturnType<typeof vi.fn>> = [];
 
-vi.mock('@blocksuite/affine-shared/utils', () => {
+vi.mock('@blocksuite/affine-shared/utils', async () => {
+  const actual = await vi.importActual<
+    typeof import('@blocksuite/affine-shared/utils')
+  >('@blocksuite/affine-shared/utils');
+
   return {
+    ...actual,
     on: vi.fn(
       (
         _target: Document,
@@ -95,6 +100,9 @@ const createPanToolHarness = (
       setTool,
     },
   };
+
+  // Ensure a global document exists for PanTool's middle mouse handler in Node test env
+  (globalThis as any).document ??= {};
 
   const panTool = new PanTool(gfx as unknown as any);
   let pointerDownHandler: ((evt: PointerEventState) => void | boolean) | null =
