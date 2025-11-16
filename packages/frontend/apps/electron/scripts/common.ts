@@ -10,7 +10,7 @@ export const electronDir = fileURLToPath(new URL('..', import.meta.url));
 
 export const rootDir = resolve(electronDir, '..', '..', '..', '..');
 
-export const NODE_MAJOR_VERSION = 18;
+export const NODE_MAJOR_VERSION = 22;
 
 export const mode = (process.env.NODE_ENV =
   process.env.NODE_ENV || 'development');

@@ -112,6 +112,10 @@ export const Subscription = z.object({
   duration: z.string().nullable(),
 });
 
+const IdentifyUserResponse = z.object({
+  was_created: z.boolean(),
+});
+
 export type Subscription = z.infer<typeof Subscription>;
 type Entitlement = z.infer<typeof zRcV2RawEntitlementItem>;
 type Product = z.infer<typeof zRcV2RawProduct>;
@@ -137,6 +141,41 @@ export class RevenueCatService {
       throw new Error('RevenueCat Project ID is not configured');
     }
     return id;
+  }
+
+  async identifyUser(userId: string, newUserId: string): Promise<boolean> {
+    try {
+      const res = await fetch(
+        `https://api.revenuecat.com/v1/subscribers/identify`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            app_user_id: userId,
+            new_app_user_id: newUserId,
+          }),
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const json = await res.json();
+      const parsed = IdentifyUserResponse.safeParse(json);
+      if (parsed.success) {
+        return parsed.data.was_created;
+      } else {
+        this.logger.error(
+          `RevenueCat identifyUser parse failed: ${JSON.stringify(
+            parsed.error.format()
+          )}`
+        );
+        return false;
+      }
+    } catch (e: any) {
+      this.logger.error(`RevenueCat identifyUser failed: ${e.message}`);
+      return false;
+    }
   }
 
   async getProducts(ent: Entitlement): Promise<Product[] | null> {
@@ -182,7 +221,10 @@ export class RevenueCatService {
     return null;
   }
 
-  async getCustomerAlias(customerId: string): Promise<string[] | null> {
+  async getCustomerAlias(
+    customerId: string,
+    filterAlias = true
+  ): Promise<string[] | null> {
     const res = await fetch(
       `https://api.revenuecat.com/v2/projects/${this.projectId}/customers/${customerId}/aliases`,
       {
@@ -204,9 +246,12 @@ export class RevenueCatService {
     const customerParsed = zRcV2RawCustomerAliasEnvelope.safeParse(json);
 
     if (customerParsed.success) {
-      return customerParsed.data.items
-        .map(alias => alias.id)
-        .filter(id => !id.startsWith('$RCAnonymousID:'));
+      const customer = customerParsed.data.items.map(alias => alias.id);
+      if (filterAlias) {
+        return customer.filter(id => !id.startsWith('$RCAnonymousID:'));
+      } else {
+        return customer;
+      }
     }
     this.logger.error(
       `RevenueCat customer ${customerId} parse failed: ${JSON.stringify(
