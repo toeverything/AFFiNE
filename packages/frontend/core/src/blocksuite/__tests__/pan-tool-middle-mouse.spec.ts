@@ -1,6 +1,4 @@
-import { Signal } from '@preact/signals-core';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
-
+// eslint-disable-next-line import-x/no-extraneous-dependencies
 import { PanTool } from '@blocksuite/affine-gfx-pointer';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
@@ -10,6 +8,7 @@ import {
   type ToolOptionWithType,
   type ToolType,
 } from '@blocksuite/std/gfx';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 type SelectionEntry = {
   blockId: string;
@@ -18,8 +17,7 @@ type SelectionEntry = {
   inoperable?: boolean;
 };
 
-const pointerUpHandlers: Array<(event: Pick<PointerEvent, 'button'>) => void> =
-  [];
+const pointerUpHandlers: unknown[] = [];
 const pointerUpDisposers: Array<ReturnType<typeof vi.fn>> = [];
 
 vi.mock('@blocksuite/affine-shared/utils', () => {
@@ -28,7 +26,7 @@ vi.mock('@blocksuite/affine-shared/utils', () => {
       (
         _target: Document,
         eventName: string,
-        handler: (event: PointerEvent) => void
+        handler: (event: Pick<PointerEvent, 'button'>) => void
       ) => {
         if (eventName === 'pointerup') {
           pointerUpHandlers.push(handler);
@@ -55,7 +53,7 @@ const createPointerEventState = (
       button,
       preventDefault: vi.fn(),
     },
-  } as unknown as PointerEventState);
+  }) as unknown as PointerEventState;
 
 const createPanToolHarness = (
   toolName = 'default',
@@ -73,10 +71,10 @@ const createPanToolHarness = (
   };
 
   const originalToolType = { toolName } as unknown as ToolType<BaseTool>;
-  const currentToolOption$ = new Signal<ToolOptionWithType>({
+  const currentToolOption = {
     toolType: originalToolType,
     options: options as ToolOptionWithType['options'],
-  });
+  };
 
   const setTool = vi.fn();
   const navigatorSettingUpdated = { next: vi.fn() };
@@ -88,7 +86,12 @@ const createPanToolHarness = (
       }),
     },
     tool: {
-      currentToolOption$,
+      ['currentToolOption$']: {
+        peek: () => currentToolOption,
+        get value() {
+          return currentToolOption;
+        },
+      },
       setTool,
     },
   };
@@ -112,7 +115,9 @@ const createPanToolHarness = (
   }
 
   return {
-    pointerDownHandler,
+    pointerDownHandler: pointerDownHandler as (
+      evt: PointerEventState
+    ) => void | boolean,
     selection,
     selectionEntry,
     originalToolType,
@@ -154,7 +159,10 @@ describe('PanTool middle mouse behavior', () => {
       editing: false,
     };
 
-    pointerUpHandlers[0]!({ button: MouseButton.MIDDLE } as PointerEvent);
+    const middlePointerUpHandler = pointerUpHandlers[0]! as (
+      event: Pick<PointerEvent, 'button'>
+    ) => void;
+    middlePointerUpHandler({ button: MouseButton.MIDDLE });
 
     expect(selection.set).toHaveBeenCalledWith([selectionEntry]);
     expect(setTool).toHaveBeenNthCalledWith(
@@ -179,7 +187,10 @@ describe('PanTool middle mouse behavior', () => {
       blackBackground: false,
     });
 
-    pointerUpHandlers[0]!({ button: MouseButton.MIDDLE } as PointerEvent);
+    const frameNavigatorPointerUpHandler = pointerUpHandlers[0]! as (
+      event: Pick<PointerEvent, 'button'>
+    ) => void;
+    frameNavigatorPointerUpHandler({ button: MouseButton.MIDDLE });
 
     expect(setTool).toHaveBeenNthCalledWith(2, originalToolType, {
       ...frameOptions,
