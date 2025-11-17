@@ -36,6 +36,7 @@ thiserror     = { workspace = true }
 [features]
 bench      = []
 debug      = []
+events     = []
 large_refs = []
 serde_json = []
 

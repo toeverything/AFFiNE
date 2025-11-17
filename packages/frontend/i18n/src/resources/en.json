@@ -1342,6 +1342,8 @@
   "com.affine.settings.editorSettings.general.font-family.custom.title": "Custom font family",
   "com.affine.settings.editorSettings.general.font-family.description": "Choose your editor's font family.",
   "com.affine.settings.editorSettings.general.font-family.title": "Font family",
+  "com.affine.settings.editorSettings.general.font-size.description": "Adjust the base font size for better readability.",
+  "com.affine.settings.editorSettings.general.font-size.title": "Font size",
   "com.affine.settings.editorSettings.general.spell-check.description": "Automatically detect and correct spelling errors.",
   "com.affine.settings.editorSettings.general.spell-check.title": "Spell check",
   "com.affine.settings.editorSettings.general.spell-check.restart-hint": "Settings changed; please restart the app. <1>Restart</1>",

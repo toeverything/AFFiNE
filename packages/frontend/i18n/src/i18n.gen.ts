@@ -5388,6 +5388,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.general.font-family.title"](): string;
     /**
+      * `Adjust the base font size for better readability.`
+      */
+    ["com.affine.settings.editorSettings.general.font-size.description"](): string;
+    /**
+      * `Font size`
+      */
+    ["com.affine.settings.editorSettings.general.font-size.title"](): string;
+    /**
       * `Automatically detect and correct spelling errors.`
       */
     ["com.affine.settings.editorSettings.general.spell-check.description"](): string;

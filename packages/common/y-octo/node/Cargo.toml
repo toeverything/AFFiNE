@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 anyhow      = { workspace = true }
 napi        = { workspace = true, features = ["anyhow", "napi4"] }
 napi-derive = { workspace = true }
-y-octo      = { workspace = true, features = ["large_refs"] }
+y-octo      = { workspace = true, features = ["events", "large_refs"] }
 
 [build-dependencies]
 napi-build = { workspace = true }
