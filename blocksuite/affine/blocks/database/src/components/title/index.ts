@@ -175,9 +175,9 @@ export class DatabaseTitle extends SignalWatcher(
   private readonly isComposing$ = signal(false);
   private readonly isFocus$ = signal(false);
 
-  private onPressEnterKey() {
-    this.dataViewLogic.addRow?.('start');
-  }
+  // private onPressEnterKey() {
+  //   this.dataViewLogic.addRow?.('start');
+  // }
 
   get readonly$() {
     return this.dataViewLogic.view.readonly$;
