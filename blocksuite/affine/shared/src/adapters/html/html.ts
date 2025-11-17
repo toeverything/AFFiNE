@@ -20,6 +20,7 @@ import {
   type ToDocSnapshotPayload,
   type Transformer,
 } from '@blocksuite/store';
+import DOMPurify from 'dompurify';
 import type { Root } from 'hast';
 import rehypeParse from 'rehype-parse';
 import rehypeStringify from 'rehype-stringify';
@@ -297,7 +298,8 @@ export class HtmlAdapter extends BaseAdapter<Html> {
   override async toDocSnapshot(
     payload: ToDocSnapshotPayload<string>
   ): Promise<DocSnapshot> {
-    const htmlAst = this._htmlToAst(payload.file);
+    const sanitized = DOMPurify.sanitize(payload.file);
+    const htmlAst = this._htmlToAst(sanitized);
     const titleAst = HastUtils.querySelector(htmlAst, 'title');
     const blockSnapshotRoot = {
       type: 'block',

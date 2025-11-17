@@ -1,7 +1,7 @@
 {
   "name": "@affine/nbstore",
   "type": "module",
-  "version": "0.25.2",
+  "version": "0.25.5",
   "private": true,
   "sideEffects": false,
   "exports": {

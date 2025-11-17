@@ -93,6 +93,13 @@ const FileTypes: NonNullable<OpenFilePickerOptions['types']> = [
     },
   },
   {
+    description: 'Docx',
+    accept: {
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
+    },
+  },
+  {
     description: 'MindMap',
     accept: {
       'text/xml': ['.mm', '.opml', '.xml'],
@@ -111,6 +118,7 @@ type AcceptTypes =
   | 'Markdown'
   | 'Html'
   | 'Zip'
+  | 'Docx'
   | 'MindMap';
 
 export async function openFilesWith(

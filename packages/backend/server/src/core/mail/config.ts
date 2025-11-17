@@ -56,12 +56,12 @@ defineModuleConfig('mailer', {
     env: 'MAILER_PASSWORD',
   },
   'SMTP.sender': {
-    desc: 'Sender of all the emails (e.g. "AFFiNE Team <noreply@affine.pro>")',
-    default: '',
+    desc: 'Sender of all the emails (e.g. "AFFiNE Self Hosted \<noreply@example.com\>")',
+    default: 'AFFiNE Self Hosted <noreply@example.com>',
     env: 'MAILER_SENDER',
   },
   'SMTP.ignoreTLS': {
-    desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+    desc: "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
     default: false,
     env: ['MAILER_IGNORE_TLS', 'boolean'],
   },
@@ -92,11 +92,11 @@ defineModuleConfig('mailer', {
     default: '',
   },
   'fallbackSMTP.sender': {
-    desc: 'Sender of all the emails (e.g. "AFFiNE Team <noreply@affine.pro>")',
+    desc: 'Sender of all the emails (e.g. "AFFiNE Self Hosted \<noreply@example.com\>")',
     default: '',
   },
   'fallbackSMTP.ignoreTLS': {
-    desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+    desc: "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
     default: false,
   },
 });

@@ -222,12 +222,12 @@
         },
         "SMTP.sender": {
           "type": "string",
-          "description": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")\n@default \"\"\n@environment `MAILER_SENDER`",
-          "default": ""
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")\n@default \"AFFiNE Self Hosted <noreply@example.com>\"\n@environment `MAILER_SENDER`",
+          "default": "AFFiNE Self Hosted <noreply@example.com>"
         },
         "SMTP.ignoreTLS": {
           "type": "boolean",
-          "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
+          "description": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
           "default": false
         },
         "fallbackDomains": {
@@ -262,12 +262,12 @@
         },
         "fallbackSMTP.sender": {
           "type": "string",
-          "description": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")\n@default \"\"",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")\n@default \"\"",
           "default": ""
         },
         "fallbackSMTP.ignoreTLS": {
           "type": "boolean",
-          "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false",
+          "description": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.\n@default false",
           "default": false
         }
       }

@@ -70,8 +70,14 @@ export class RevenueCatWebhookHandler {
       externalRef,
       new Date(Date.now() + 10 * OneMinute) // expire after 10 minutes
     );
+    this.logger.log('Sync subscription by externalRef completed', {
+      appUserId,
+      externalRef,
+      subscriptions: subscriptions.map(s => s.identifier),
+    });
     await this.queue.add('nightly.revenuecat.subscription.refresh', {
       userId: appUserId,
+      externalRef: externalRef,
       startTime: Date.now(),
     });
 
@@ -311,10 +317,9 @@ export class RevenueCatWebhookHandler {
   }
 
   @OnJob('nightly.revenuecat.subscription.refresh.anonymous')
-  async onSubscriptionRefreshAnonymousUser(evt: {
-    externalRef: string;
-    startTime: number;
-  }) {
+  async onSubscriptionRefreshAnonymousUser(
+    evt: Jobs['nightly.revenuecat.subscription.refresh.anonymous']
+  ) {
     if (!this.config.payment.revenuecat?.enabled) return;
     if (Date.now() - evt.startTime > REFRESH_MAX_TIMES) {
       this.logger.warn(
@@ -377,17 +382,47 @@ export class RevenueCatWebhookHandler {
   }
 
   @OnJob('nightly.revenuecat.subscription.refresh')
-  async onSubscriptionRefresh(evt: { userId: string; startTime: number }) {
+  async onSubscriptionRefresh(
+    evt: Jobs['nightly.revenuecat.subscription.refresh']
+  ) {
     if (!this.config.payment.revenuecat?.enabled) return;
-    if (Date.now() - evt.startTime > REFRESH_MAX_TIMES) {
-      this.logger.warn(
-        `RevenueCat subscription refresh timed out for user ${evt.userId}`
-      );
-      return;
-    }
+    const isTimeout = Date.now() - evt.startTime > REFRESH_MAX_TIMES;
+
     const startTime = Date.now();
+    if (isTimeout) {
+      const subs = await this.rc.getSubscriptionByExternalRef(evt.externalRef);
+      const customers = Array.from(
+        new Set(
+          (subs?.map(sub => sub.customerId).filter(Boolean) as string[]) || []
+        )
+      );
+      const customerAliases = await Promise.all(
+        customers.map(custId =>
+          this.rc
+            .getCustomerAlias(custId, false)
+            .then(aliases =>
+              aliases?.length &&
+              aliases.filter(a => !a.startsWith('$RCAnonymousID:')).length === 0
+                ? aliases[0]
+                : null
+            )
+        )
+      );
+      for (const oldUserId of customerAliases) {
+        if (oldUserId) {
+          await this.rc.identifyUser(oldUserId, evt.userId);
+        }
+      }
+    }
     const success = await this.syncAppUser(evt.userId);
     if (success) return;
+    if (isTimeout) {
+      this.logger.warn(`RevenueCat subscription refresh timed out`, {
+        userId: evt.userId,
+        externalRef: evt.externalRef,
+      });
+      return;
+    }
 
     const elapsed = Date.now() - startTime;
     if (elapsed < REFRESH_INTERVAL) {
