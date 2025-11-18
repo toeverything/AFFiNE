@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import {
   applyUpdate,
   diffUpdate,
@@ -94,7 +95,7 @@ export abstract class DocStorageAdapter extends Connection {
     return snapshot;
   }
 
-  @Transactional()
+  @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
   private async squashUpdatesToSnapshot(
     spaceId: string,
     docId: string,
