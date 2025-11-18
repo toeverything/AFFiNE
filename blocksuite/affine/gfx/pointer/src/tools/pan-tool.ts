@@ -60,12 +60,20 @@ export class PanTool extends BaseTool<PanToolOption> {
         return;
       }
 
+      const currentTool = this.controller.currentToolOption$.peek();
+      const { toolType, options: originalToolOptions } = currentTool;
+
+      if (toolType?.toolName === PanTool.toolName) {
+        return;
+      }
+
       evt.raw.preventDefault();
 
-      const currentTool = this.controller.currentToolOption$.peek();
+      const selectionToRestore = this.gfx.selection.surfaceSelections.slice();
+
       const restoreToPrevious = () => {
-        const { toolType, options: originalToolOptions } = currentTool;
-        const selectionToRestore = this.gfx.selection.surfaceSelections;
+        this.gfx.selection.set(selectionToRestore);
+
         if (!toolType) return;
         // restore to DefaultTool if previous tool is CopilotTool
         if (toolType.toolName === 'copilot') {
@@ -88,21 +96,18 @@ export class PanTool extends BaseTool<PanToolOption> {
           } as RestorablePresentToolOptions;
         }
         this.controller.setTool(toolType, finalOptions);
-        this.gfx.selection.set(selectionToRestore);
       };
 
       // If in presentation mode, disable black background after middle mouse drag
-      if (currentTool.toolType?.toolName === 'frameNavigator') {
+      if (toolType?.toolName === 'frameNavigator') {
         const slots = this.std.get(EdgelessLegacySlotIdentifier);
         slots.navigatorSettingUpdated.next({
           blackBackground: false,
         });
       }
 
-      requestAnimationFrame(() => {
-        this.controller.setTool(PanTool, {
-          panning: true,
-        });
+      this.controller.setTool(PanTool, {
+        panning: true,
       });
 
       const dispose = on(document, 'pointerup', evt => {
