@@ -25,6 +25,7 @@ import type { PromptKey } from '../provider/prompt';
 
 export const translateLangs = [
   'English',
+  'Brazilian Portuguese',
   'Spanish',
   'German',
   'French',

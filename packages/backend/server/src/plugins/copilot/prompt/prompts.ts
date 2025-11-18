@@ -689,6 +689,7 @@ You are a highly accomplished professional translator, demonstrating profound pr
         params: {
           language: [
             'English',
+            'Brazilian Portuguese',
             'Spanish',
             'German',
             'French',
@@ -708,6 +709,7 @@ You are a highly accomplished professional translator, demonstrating profound pr
         params: {
           language: [
             'English',
+            'Brazilian Portuguese',
             'Spanish',
             'German',
             'French',
