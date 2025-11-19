@@ -176,7 +176,7 @@ export class DatabaseTitle extends SignalWatcher(
   private readonly isFocus$ = signal(false);
 
   private onPressEnterKey() {
-    this.input.blur();
+    this.dataViewLogic.addRow?.('start');
   }
 
   get readonly$() {
