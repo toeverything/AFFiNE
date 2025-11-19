@@ -149,7 +149,7 @@ export class LicenseController {
       throw new LicenseNotFound();
     }
 
-    if (license.validateKey && license.validateKey !== revalidateKey) {
+    if (!license.validateKey || license.validateKey !== revalidateKey) {
       throw new InvalidLicenseToActivate({
         reason: 'Invalid validate key',
       });
