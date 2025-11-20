@@ -13,7 +13,7 @@ import { OAuthAccount, OAuthProvider, Tokens } from './def';
 const OIDCTokenSchema = z.object({
   access_token: z.string(),
   expires_in: z.number(),
-  refresh_token: z.string(),
+  refresh_token: z.string().optional(),
   scope: z.string().optional(),
   token_type: z.string(),
 });
