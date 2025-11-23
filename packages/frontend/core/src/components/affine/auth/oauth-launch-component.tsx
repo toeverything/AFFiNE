@@ -23,7 +23,8 @@ export function OAuthLaunchComponent({
   const loginStatus = useLiveData(auth.session.status$);
   const t = useI18n();
 
-  redirectUrl = redirectUrl ?? serverService.server.baseUrl + '/oauth/callback';
+  const effectiveRedirectUrl =
+    redirectUrl ?? serverService.server.baseUrl + '/oauth/callback';
 
   const onContinue = useAsyncCallback(
     async (provider: OAuthProviderType) => {
@@ -47,8 +48,8 @@ export function OAuthLaunchComponent({
 
             params.set('provider', provider);
 
-            if (redirectUrl) {
-              params.set('redirect_uri', redirectUrl);
+            if (effectiveRedirectUrl) {
+              params.set('redirect_uri', effectiveRedirectUrl);
             }
 
             const oauthUrl =
@@ -64,7 +65,7 @@ export function OAuthLaunchComponent({
         await ret;
       }
     },
-    [urlService, redirectUrl, serverService, auth]
+    [urlService, effectiveRedirectUrl, serverService, auth]
   );
 
   const provider = OAuthProviderType.OIDC;
@@ -76,9 +77,12 @@ export function OAuthLaunchComponent({
         message: t['com.affine.auth.toast.message.signed-in'](),
       });
     }
-    onContinue(provider);
     onAuthenticated?.(loginStatus);
-  }, [loginStatus, onAuthenticated, t, onContinue, provider]);
+  }, [loginStatus, onAuthenticated, t]);
+
+  useEffect(() => {
+    onContinue(provider);
+  }, [onContinue, provider]);
 
   return <h1>Logging in with OIDC</h1>;
 }

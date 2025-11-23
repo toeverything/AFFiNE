@@ -46,6 +46,7 @@ export const OAuthLaunch = ({
         if (redirectUrl) {
           if (redirectUrl.toUpperCase() === 'CLOSE_POPUP') {
             window.close();
+            return;
           }
           navigate(redirectUrl, {
             replace: true,
