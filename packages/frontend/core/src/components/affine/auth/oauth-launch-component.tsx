@@ -12,8 +12,10 @@ import { useEffect } from 'react';
 
 export function OAuthLaunchComponent({
   onAuthenticated,
+  redirectUrl,
 }: {
   onAuthenticated?: (status: AuthSessionStatus) => void;
+  redirectUrl?: string;
 }) {
   const serverService = useService(ServerService);
   const urlService = useService(UrlService);
@@ -21,7 +23,7 @@ export function OAuthLaunchComponent({
   const loginStatus = useLiveData(auth.session.status$);
   const t = useI18n();
 
-  const redirectUrl = serverService.server.baseUrl + '/oauth/callback';
+  redirectUrl = redirectUrl ?? serverService.server.baseUrl + '/oauth/callback';
 
   const onContinue = useAsyncCallback(
     async (provider: OAuthProviderType) => {
@@ -67,10 +69,6 @@ export function OAuthLaunchComponent({
 
   const provider = OAuthProviderType.OIDC;
 
-  // if (!oauth) {
-  //   return null;
-  // }
-
   useEffect(() => {
     if (loginStatus === 'authenticated') {
       notify.success({
@@ -82,5 +80,5 @@ export function OAuthLaunchComponent({
     onAuthenticated?.(loginStatus);
   }, [loginStatus, onAuthenticated, t, onContinue, provider]);
 
-  return <h1>Logining in with oauth</h1>;
+  return <h1>Logging in with OIDC</h1>;
 }
