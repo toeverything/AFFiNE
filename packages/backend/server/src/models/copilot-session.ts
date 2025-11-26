@@ -580,7 +580,6 @@ export class CopilotSessionModel extends BaseModel {
       .reduce((prev, cost) => prev + cost, 0);
   }
 
-  @Transactional()
   async cleanupEmptySessions(earlyThen: Date) {
     // delete never used sessions
     const { count: removed } = await this.db.aiSession.deleteMany({
