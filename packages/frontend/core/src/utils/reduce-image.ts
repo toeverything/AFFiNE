@@ -37,6 +37,6 @@ export const validateAndReduceImage = async (file: File): Promise<File> => {
 
     return new File([reducedBlob], file.name, { type: file.type });
   } catch (error) {
-    throw new Error('Image could not be reduce :' + error);
+    throw new Error('Image could not be reduced :' + error);
   }
 };
