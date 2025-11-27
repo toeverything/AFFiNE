@@ -12,6 +12,22 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import type { BlockModel } from '@blocksuite/store';
 
+/**
+ * Add a new column to the database model.
+ *
+ * @description
+ * This function handles the addition of new columns to database tables, with special
+ * handling for ID columns. It enforces the following constraints:
+ *   - Only one ID column per table (throws an error if attempting to add a second)
+ *   - Ensures ID uniqueness through the model's ID generator
+ *   - Supports proper column positioning in the table
+ *
+ * @param model - The database block model to modify
+ * @param position - Where to insert the new column
+ * @param column - Column configuration object
+ * @returns The ID of the newly created column
+ * @throws Error if attempting to add a second ID column to a table
+ */
 export function addProperty(
   model: DatabaseBlockModel,
   position: InsertToPosition,
@@ -20,8 +36,13 @@ export function addProperty(
   }
 ): string {
   const id = column.id ?? model.store.workspace.idGenerator();
+  // Prevent duplicate column IDs
   if (model.props.columns.some(v => v.id === id)) {
     return id;
+  }
+  // Enforce only one ID column per table - this is a core constraint for ID columns
+  if (column.type === 'id' && model.props.columns.some(v => v.type === 'id')) {
+    throw new Error('Only one ID column is allowed per table.');
   }
   model.store.transact(() => {
     const col: ColumnDataType = {
