@@ -22,8 +22,8 @@ const OIDCUserInfoSchema = z
   .object({
     sub: z.string(),
     preferred_username: z.string().optional(),
-    email: z.string().email(),
-    name: z.string(),
+    email: z.string().email().optional(),
+    name: z.string().optional(),
     groups: z.array(z.string()).optional(),
   })
   .passthrough();
