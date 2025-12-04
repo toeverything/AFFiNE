@@ -13,7 +13,7 @@ export const inputConfig = (property: Property) => {
     `,
     initialValue: property.name$.value,
     placeholder: 'Property name',
-    onChange: text => {
+    onBlur: text => {
       property.nameSet(text);
     },
   });
