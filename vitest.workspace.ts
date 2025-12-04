@@ -1,7 +1,11 @@
-import { defineWorkspace } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
-export default defineWorkspace([
-  '.',
-  './packages/frontend/apps/electron',
-  './blocksuite/**/*/vitest.config.ts',
-]);
+export default defineConfig({
+  test: {
+    projects: [
+      '.',
+      './packages/frontend/apps/electron',
+      './blocksuite/**/*/vitest.config.ts',
+    ],
+  },
+});

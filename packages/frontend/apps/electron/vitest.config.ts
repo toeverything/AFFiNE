@@ -24,11 +24,8 @@ export default defineConfig({
     setupFiles: [resolve(rootDir, './scripts/setup/global.ts')],
     include: ['./test/**/*.spec.ts'],
     testTimeout: 5000,
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    maxWorkers: 1,
+    isolate: false,
     coverage: {
       provider: 'istanbul', // or 'c8'
       reporter: ['lcov'],

@@ -1,9 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { afterEach } from 'node:test';
-
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { resolveLinkToDoc, toURLSearchParams } from '../utils';
 
