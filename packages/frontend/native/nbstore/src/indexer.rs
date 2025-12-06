@@ -1,11 +1,11 @@
 use affine_common::doc_parser::{
   parse_doc_from_binary, BlockInfo, CrawlDocInput, CrawlResult, ParseError,
 };
+use napi_derive::napi;
 use serde::Serialize;
+use y_octo::DocOptions;
 
 use super::{error::Result, storage::SqliteDocStorage};
-use napi_derive::napi;
-use y_octo::DocOptions;
 
 #[napi(object)]
 #[derive(Debug, Serialize)]
@@ -123,13 +123,15 @@ fn merge_updates(mut segments: Vec<Vec<u8>>, guid: &str) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-  use super::{super::error::Error, *};
+  use std::path::PathBuf;
+
   use affine_common::doc_parser::ParseError;
   use chrono::Utc;
   use serde_json::Value;
-  use std::path::PathBuf;
   use tokio::fs;
   use uuid::Uuid;
+
+  use super::{super::error::Error, *};
 
   const DEMO_BIN: &[u8] = include_bytes!("../../../../common/native/fixtures/demo.ydoc");
   const DEMO_JSON: &[u8] = include_bytes!("../../../../common/native/fixtures/demo.ydoc.json");

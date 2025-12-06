@@ -16,7 +16,6 @@ import { applyUpdate, Doc as YDoc } from 'yjs';
 import {
   type AggregateOptions,
   type AggregateResult,
-  type CrawlResult,
   type DocStorage,
   IndexerDocument,
   type IndexerSchema,
