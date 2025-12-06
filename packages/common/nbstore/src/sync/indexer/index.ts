@@ -16,6 +16,7 @@ import { applyUpdate, Doc as YDoc } from 'yjs';
 import {
   type AggregateOptions,
   type AggregateResult,
+  type CrawlResult,
   type DocStorage,
   IndexerDocument,
   type IndexerSchema,
@@ -407,33 +408,40 @@ export class IndexerSyncImpl implements IndexerSync {
             continue;
           }
 
-          const docBin = await this.doc.getDoc(docId);
-          if (!docBin) {
-            // doc is deleted, just skip
-            continue;
-          }
           console.log('[indexer] start indexing doc', docId);
-          const docYDoc = new YDoc({ guid: docId });
-          applyUpdate(docYDoc, docBin.bin);
 
           let blocks: IndexerDocument<'block'>[] = [];
           let preview: string | undefined;
 
-          try {
-            const result = await crawlingDocData({
-              ydoc: docYDoc,
-              rootYDoc: this.status.rootDoc,
-              spaceId: this.status.rootDocId,
-              docId,
-            });
-            if (!result) {
-              // doc is empty without root block, just skip
+          const nativeResult = await this.tryNativeCrawlDocData(docId);
+          if (nativeResult) {
+            blocks = nativeResult.block;
+            preview = nativeResult.summary;
+          } else {
+            const docBin = await this.doc.getDoc(docId);
+            if (!docBin) {
+              // doc is deleted, just skip
               continue;
             }
-            blocks = result.blocks;
-            preview = result.preview;
-          } catch (error) {
-            console.error('error crawling doc', error);
+            const docYDoc = new YDoc({ guid: docId });
+            applyUpdate(docYDoc, docBin.bin);
+
+            try {
+              const result = await crawlingDocData({
+                ydoc: docYDoc,
+                rootYDoc: this.status.rootDoc,
+                spaceId: this.status.rootDocId,
+                docId,
+              });
+              if (!result) {
+                // doc is empty without root block, just skip
+                continue;
+              }
+              blocks = result.blocks;
+              preview = result.preview;
+            } catch (error) {
+              console.error('error crawling doc', error);
+            }
           }
 
           await this.indexer.deleteByQuery('block', {
@@ -482,6 +490,36 @@ export class IndexerSyncImpl implements IndexerSync {
     return readAllDocsFromRootDoc(this.status.rootDoc, {
       includeTrash: false,
     });
+  }
+
+  private async tryNativeCrawlDocData(docId: string) {
+    try {
+      const result = await this.doc.crawlDocData?.(docId);
+      if (result) {
+        return {
+          title: result.title,
+          block: result.blocks.map(block =>
+            IndexerDocument.from<'block'>(`${docId}:${block.blockId}`, {
+              docId,
+              blockId: block.blockId,
+              content: block.content,
+              flavour: block.flavour,
+              blob: block.blob,
+              refDocId: block.refDocId,
+              ref: block.refInfo,
+              parentFlavour: block.parentFlavour,
+              parentBlockId: block.parentBlockId,
+              additional: block.additional,
+            })
+          ),
+          summary: result.summary,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.warn('[indexer] native crawlDocData failed', docId, error);
+      return null;
+    }
   }
 
   private async getAllDocsFromIndexer() {

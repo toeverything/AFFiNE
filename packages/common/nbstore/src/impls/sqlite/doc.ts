@@ -1,5 +1,6 @@
 import { share } from '../../connection';
 import {
+  type CrawlResult,
   type DocClocks,
   type DocRecord,
   DocStorageBase,
@@ -78,5 +79,9 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
       docId,
       updates.map(update => update.timestamp)
     );
+  }
+
+  override async crawlDocData(docId: string): Promise<CrawlResult | null> {
+    return this.db.crawlDocData(docId);
   }
 }

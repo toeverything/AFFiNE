@@ -91,7 +91,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: vec![0, 0].into(),
           mime: "text/plain".to_string(),
         })
         .await
@@ -131,7 +131,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: vec![0, 0].into(),
           mime: "text/plain".to_string(),
         })
         .await
@@ -179,7 +179,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: vec![0, 0].into(),
           mime: "text/plain".to_string(),
         })
         .await
