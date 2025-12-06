@@ -2,6 +2,7 @@ import { JsonWebKey } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { z } from 'zod';
 
 import {
   InternalServerError,
@@ -19,12 +20,54 @@ interface AuthTokenResponse {
   expires_in: number;
 }
 
+const AppleProviderArgsSchema = z.object({
+  privateKey: z.string().nonempty(),
+  keyId: z.string().nonempty(),
+  teamId: z.string().nonempty(),
+});
+
 @Injectable()
 export class AppleOAuthProvider extends OAuthProvider {
   provider = OAuthProviderName.Apple;
+  private readonly args: z.infer<typeof AppleProviderArgsSchema> | null;
 
   constructor(private readonly url: URLHelper) {
     super();
+    const result = AppleProviderArgsSchema.safeParse(this.config?.args);
+    if (result.success) {
+      this.args = result.data;
+    } else {
+      this.args = null;
+    }
+  }
+
+  override get configured() {
+    return (
+      !!this.config &&
+      !!this.config.clientId &&
+      (!!this.config.clientSecret || !!this.args)
+    );
+  }
+
+  private get clientSecret() {
+    if (this.config.clientSecret) {
+      return this.config.clientSecret;
+    }
+
+    if (!this.args) {
+      throw new Error('Missing Apple OAuth configuration');
+    }
+
+    const { privateKey, keyId, teamId } = this.args;
+
+    return jwt.sign({}, privateKey, {
+      algorithm: 'ES256',
+      keyid: keyId,
+      expiresIn: '5m',
+      issuer: teamId,
+      audience: 'https://appleid.apple.com',
+      subject: this.config.clientId,
+    });
   }
 
   getAuthUrl(state: string, clientNonce?: string): string {
@@ -46,7 +89,7 @@ export class AppleOAuthProvider extends OAuthProvider {
       body: this.url.stringify({
         code,
         client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
+        client_secret: this.clientSecret,
         redirect_uri: this.url.link('/api/oauth/callback'),
         grant_type: 'authorization_code',
       }),
