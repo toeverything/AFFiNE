@@ -4,7 +4,7 @@ import { defineModuleConfig, JSONSchema } from '../../base';
 
 export interface OAuthProviderConfig {
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string;
   args?: Record<string, string>;
 }
 

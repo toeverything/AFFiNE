@@ -2,6 +2,7 @@ import { JsonWebKey } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { z } from 'zod';
 
 import {
   InternalServerError,
@@ -19,12 +20,73 @@ interface AuthTokenResponse {
   expires_in: number;
 }
 
+const AppleProviderArgsSchema = z.object({
+  privateKey: z.string().nonempty(),
+  keyId: z.string().nonempty(),
+  teamId: z.string().nonempty(),
+});
+
 @Injectable()
 export class AppleOAuthProvider extends OAuthProvider {
   provider = OAuthProviderName.Apple;
+  private args: z.infer<typeof AppleProviderArgsSchema> | null = null;
+  private _jwtCache: { token: string; expiresAt: number } | null = null;
 
   constructor(private readonly url: URLHelper) {
     super();
+  }
+
+  override get configured() {
+    if (this.config && !this.args) {
+      const result = AppleProviderArgsSchema.safeParse(this.config?.args);
+      if (result.success) {
+        this.args = result.data;
+      }
+    }
+
+    return (
+      !!this.config &&
+      !!this.config.clientId &&
+      (!!this.config.clientSecret || !!this.args)
+    );
+  }
+
+  private get clientSecret() {
+    if (this.config.clientSecret) {
+      return this.config.clientSecret;
+    }
+
+    if (!this.args) {
+      throw new Error('Missing Apple OAuth configuration');
+    }
+
+    if (this._jwtCache && this._jwtCache.expiresAt > Date.now()) {
+      return this._jwtCache.token;
+    }
+
+    const { privateKey, keyId, teamId } = this.args;
+    const expiresIn = 300; // 5 minutes
+
+    try {
+      const token = jwt.sign({}, privateKey, {
+        algorithm: 'ES256',
+        keyid: keyId,
+        expiresIn,
+        issuer: teamId,
+        audience: 'https://appleid.apple.com',
+        subject: this.config.clientId,
+      });
+
+      this._jwtCache = {
+        token,
+        expiresAt: Date.now() + (expiresIn - 30) * 1000,
+      };
+
+      return token;
+    } catch (e) {
+      this.logger.error('Failed to generate Apple client secret JWT', e);
+      throw new Error('Failed to generate client secret');
+    }
   }
 
   getAuthUrl(state: string, clientNonce?: string): string {
@@ -46,7 +108,7 @@ export class AppleOAuthProvider extends OAuthProvider {
       body: this.url.stringify({
         code,
         client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
+        client_secret: this.clientSecret,
         redirect_uri: this.url.link('/api/oauth/callback'),
         grant_type: 'authorization_code',
       }),
