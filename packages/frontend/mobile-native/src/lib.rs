@@ -52,8 +52,7 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
       doc_id: record.doc_id,
       bin: base64_simd::STANDARD
         .decode_to_vec(record.bin)
-        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
-        .into(),
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(record.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
@@ -159,8 +158,7 @@ impl TryFrom<SetBlob> for affine_nbstore::SetBlob {
       key: blob.key,
       data: base64_simd::STANDARD
         .decode_to_vec(blob.data)
-        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
-        .into(),
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
       mime: blob.mime,
     })
   }

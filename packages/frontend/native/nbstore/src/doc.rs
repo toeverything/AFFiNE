@@ -293,7 +293,7 @@ mod tests {
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        bin: vec![0, 0].into(),
+        bin: vec![0, 0],
         timestamp: Utc::now().naive_utc(),
       })
       .await
@@ -358,7 +358,7 @@ mod tests {
 
     assert_eq!(result.len(), 4);
     assert_eq!(
-      result.iter().map(|u| u.bin.as_ref()).collect::<Vec<_>>(),
+      result.iter().map(|u| u.bin.to_vec()).collect::<Vec<_>>(),
       updates
     );
   }
@@ -373,7 +373,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0].into(),
+      bin: vec![0, 0],
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -382,7 +382,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
   }
 
   #[tokio::test]
@@ -391,7 +391,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0].into(),
+      bin: vec![0, 0],
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -400,11 +400,11 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 1].into(),
+      bin: vec![0, 1],
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),
@@ -416,7 +416,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
   }
 
   #[tokio::test]

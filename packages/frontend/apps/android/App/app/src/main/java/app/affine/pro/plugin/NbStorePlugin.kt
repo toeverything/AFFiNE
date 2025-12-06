@@ -593,21 +593,24 @@ class NbStorePlugin : Plugin() {
           universalId = id,
           docId = docId,
         )
+        val blocks = JSArray(
+          result.blocks.map { block ->
+            JSObject()
+              .put("blockId", block.blockId)
+              .put("flavour", block.flavour)
+              .put("content", block.content)
+              .put("blob", block.blob)
+              .put("refDocId", block.refDocId)
+              .put("refInfo", block.refInfo)
+              .put("parentFlavour", block.parentFlavour)
+              .put("parentBlockId", block.parentBlockId)
+              .put("additional", block.additional)
+          }
+        )
         call.resolve(
           JSObject()
             .put("title", result.title)
-            .put("block", result.blocks.map { block ->
-              JSObject()
-                .put("blockId", block.blockId)
-                .put("flavour", block.flavour)
-                .put("content", block.content)
-                .put("blob", block.blob)
-                .put("refDocId", block.refDocId)
-                .put("refInfo", block.refInfo)
-                .put("parentFlavour", block.parentFlavour)
-                .put("parentBlockId", block.parentBlockId)
-                .put("additional", block.additional)
-            })
+            .put("block", blocks)
             .put("summary", result.summary)
         )
       } catch (e: Exception) {

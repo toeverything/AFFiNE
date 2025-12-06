@@ -123,7 +123,7 @@ fn merge_updates(mut segments: Vec<Vec<u8>>, guid: &str) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-  use std::path::PathBuf;
+  use std::path::{Path, PathBuf};
 
   use affine_common::doc_parser::ParseError;
   use chrono::Utc;
@@ -140,14 +140,14 @@ mod tests {
     std::env::temp_dir().join(format!("affine-native-{}", Uuid::new_v4()))
   }
 
-  async fn init_db(path: &PathBuf) -> SqliteDocStorage {
+  async fn init_db(path: &Path) -> SqliteDocStorage {
     fs::create_dir_all(path.parent().unwrap()).await.unwrap();
     let storage = SqliteDocStorage::new(path.to_string_lossy().into_owned());
     storage.connect().await.unwrap();
     storage
   }
 
-  async fn cleanup(path: &PathBuf) {
+  async fn cleanup(path: &Path) {
     let _ = fs::remove_dir_all(path.parent().unwrap()).await;
   }
 
