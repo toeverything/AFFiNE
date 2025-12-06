@@ -10,9 +10,7 @@ crate-type = ["cdylib", "rlib"]
 use-as-lib = ["napi-derive/noop", "napi/noop"]
 
 [dependencies]
-affine_common = { workspace = true, default-features = false, features = [
-  "ydoc-loader",
-] }
+affine_common = { workspace = true, features = ["ydoc-loader"] }
 affine_schema = { path = "../schema" }
 anyhow = { workspace = true }
 chrono = { workspace = true }
