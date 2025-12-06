@@ -341,6 +341,6 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     id: string,
     docId: string
   ): Promise<CrawlResult> {
-    return await NbStore.crawlDocData(id, docId);
+    return await NbStore.crawlDocData({ id, docId });
   },
 };

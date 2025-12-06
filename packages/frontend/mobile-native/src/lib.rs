@@ -52,7 +52,8 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
       doc_id: record.doc_id,
       bin: base64_simd::STANDARD
         .decode_to_vec(record.bin)
-        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
+        .into(),
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(record.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
@@ -158,7 +159,8 @@ impl TryFrom<SetBlob> for affine_nbstore::SetBlob {
       key: blob.key,
       data: base64_simd::STANDARD
         .decode_to_vec(blob.data)
-        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
+        .into(),
       mime: blob.mime,
     })
   }
@@ -179,6 +181,52 @@ impl From<affine_nbstore::ListedBlob> for ListedBlob {
       size: blob.size,
       mime: blob.mime,
       created_at: blob.created_at.and_utc().timestamp_millis(),
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct BlockInfo {
+  pub block_id: String,
+  pub flavour: String,
+  pub content: Option<Vec<String>>,
+  pub blob: Option<Vec<String>>,
+  pub ref_doc_id: Option<Vec<String>>,
+  pub ref_info: Option<Vec<String>>,
+  pub parent_flavour: Option<String>,
+  pub parent_block_id: Option<String>,
+  pub additional: Option<String>,
+}
+
+impl From<affine_nbstore::indexer::NativeBlockInfo> for BlockInfo {
+  fn from(value: affine_nbstore::indexer::NativeBlockInfo) -> Self {
+    Self {
+      block_id: value.block_id,
+      flavour: value.flavour,
+      content: value.content,
+      blob: value.blob,
+      ref_doc_id: value.ref_doc_id,
+      ref_info: value.ref_info,
+      parent_flavour: value.parent_flavour,
+      parent_block_id: value.parent_block_id,
+      additional: value.additional,
+    }
+  }
+}
+
+#[derive(uniffi::Record)]
+pub struct CrawlResult {
+  pub blocks: Vec<BlockInfo>,
+  pub title: String,
+  pub summary: String,
+}
+
+impl From<affine_nbstore::indexer::NativeCrawlResult> for CrawlResult {
+  fn from(value: affine_nbstore::indexer::NativeCrawlResult) -> Self {
+    Self {
+      blocks: value.blocks.into_iter().map(Into::into).collect(),
+      title: value.title,
+      summary: value.summary,
     }
   }
 }
@@ -642,5 +690,15 @@ impl DocStoragePool {
         .await?
         .map(|t| t.and_utc().timestamp_millis()),
     )
+  }
+
+  pub async fn crawl_doc_data(&self, universal_id: String, doc_id: String) -> Result<CrawlResult> {
+    let result = self
+      .inner
+      .get(universal_id.clone())
+      .await?
+      .crawl_doc_data(&universal_id, &doc_id)
+      .await?;
+    Ok(result.into())
   }
 }

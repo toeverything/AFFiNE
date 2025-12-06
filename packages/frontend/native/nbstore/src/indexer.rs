@@ -66,7 +66,7 @@ impl SqliteDocStorage {
     let doc_bin = self
       .load_doc_binary(doc_id)
       .await?
-      .ok_or_else(|| ParseError::DocNotFound)?;
+      .ok_or(ParseError::DocNotFound)?;
 
     let result = parse_doc_from_binary(CrawlDocInput {
       doc_bin,

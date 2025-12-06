@@ -151,5 +151,8 @@ export interface NbStorePlugin {
     uploadedAt: number | null;
   }) => Promise<void>;
   clearClocks: (options: { id: string }) => Promise<void>;
-  crawlDocData: (id: string, docId: string) => Promise<CrawlResult>;
+  crawlDocData: (options: {
+    id: string;
+    docId: string;
+  }) => Promise<CrawlResult>;
 }
