@@ -1,6 +1,4 @@
-use affine_common::doc_parser::{
-  parse_doc_from_binary, BlockInfo, CrawlDocInput, CrawlResult, ParseError,
-};
+use affine_common::doc_parser::{parse_doc_from_binary, BlockInfo, CrawlResult, ParseError};
 use napi_derive::napi;
 use serde::Serialize;
 use y_octo::DocOptions;
@@ -56,24 +54,13 @@ impl From<CrawlResult> for NativeCrawlResult {
 }
 
 impl SqliteDocStorage {
-  pub async fn crawl_doc_data(&self, space_id: &str, doc_id: &str) -> Result<NativeCrawlResult> {
-    let root_doc_bin = if doc_id == space_id {
-      None
-    } else {
-      self.load_doc_binary(space_id).await?
-    };
-
+  pub async fn crawl_doc_data(&self, doc_id: &str) -> Result<NativeCrawlResult> {
     let doc_bin = self
       .load_doc_binary(doc_id)
       .await?
       .ok_or(ParseError::DocNotFound)?;
 
-    let result = parse_doc_from_binary(CrawlDocInput {
-      doc_bin,
-      root_doc_bin,
-      space_id: space_id.to_string(),
-      doc_id: doc_id.to_string(),
-    })?;
+    let result = parse_doc_from_binary(doc_bin, doc_id.to_string())?;
     Ok(result.into())
   }
 
@@ -104,7 +91,7 @@ fn merge_updates(mut segments: Vec<Vec<u8>>, guid: &str) -> Result<Vec<u8>> {
   }
 
   if segments.len() == 1 {
-    return Ok(segments.pop().unwrap());
+    return segments.pop().ok_or(ParseError::DocNotFound.into());
   }
 
   let mut doc = DocOptions::new().with_guid(guid.to_string()).build();
@@ -166,10 +153,7 @@ mod tests {
       .await
       .unwrap();
 
-    let result = storage
-      .crawl_doc_data("demo-space", "demo-doc")
-      .await
-      .unwrap();
+    let result = storage.crawl_doc_data("demo-doc").await.unwrap();
 
     let expected: Value = serde_json::from_slice(DEMO_JSON).unwrap();
     let actual = serde_json::to_value(&result).unwrap();
@@ -187,10 +171,7 @@ mod tests {
 
     let storage = init_db(&db_path).await;
 
-    let err = storage
-      .crawl_doc_data("demo-space", "absent-doc")
-      .await
-      .unwrap_err();
+    let err = storage.crawl_doc_data("absent-doc").await.unwrap_err();
     assert!(matches!(err, Error::Parse(ParseError::DocNotFound)));
 
     storage.close().await;

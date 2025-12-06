@@ -125,9 +125,9 @@ impl DocStoragePool {
     doc_id: String,
   ) -> Result<indexer::NativeCrawlResult> {
     let result = self
-      .get(universal_id.clone())
+      .get(universal_id)
       .await?
-      .crawl_doc_data(&universal_id, &doc_id)
+      .crawl_doc_data(&doc_id)
       .await?;
     Ok(result)
   }

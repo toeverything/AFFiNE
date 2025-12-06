@@ -695,7 +695,7 @@ impl DocStoragePool {
       .inner
       .get(universal_id.clone())
       .await?
-      .crawl_doc_data(&universal_id, &doc_id)
+      .crawl_doc_data(&doc_id)
       .await?;
     Ok(result.into())
   }
