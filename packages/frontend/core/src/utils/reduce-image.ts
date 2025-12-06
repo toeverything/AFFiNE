@@ -32,7 +32,7 @@ export const validateAndReduceImage = async (file: File): Promise<File> => {
       } catch (error) {
         if (error instanceof Error) {
           throw new Error(
-            'Check if fingerprint protection is enabled in your browser.'
+            'Image processing failed. This can happen if fingerprint protection is enabled in your browser. Please check your browser settings and try again.'
           );
         } else {
           throw new Error('Unknown error occurred');
