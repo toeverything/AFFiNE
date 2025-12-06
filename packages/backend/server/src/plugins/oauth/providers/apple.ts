@@ -30,6 +30,7 @@ const AppleProviderArgsSchema = z.object({
 export class AppleOAuthProvider extends OAuthProvider {
   provider = OAuthProviderName.Apple;
   private args: z.infer<typeof AppleProviderArgsSchema> | null = null;
+  private _jwtCache: { token: string; expiresAt: number } | null = null;
 
   constructor(private readonly url: URLHelper) {
     super();
@@ -59,16 +60,33 @@ export class AppleOAuthProvider extends OAuthProvider {
       throw new Error('Missing Apple OAuth configuration');
     }
 
-    const { privateKey, keyId, teamId } = this.args;
+    if (this._jwtCache && this._jwtCache.expiresAt > Date.now()) {
+      return this._jwtCache.token;
+    }
 
-    return jwt.sign({}, privateKey, {
-      algorithm: 'ES256',
-      keyid: keyId,
-      expiresIn: '5m',
-      issuer: teamId,
-      audience: 'https://appleid.apple.com',
-      subject: this.config.clientId,
-    });
+    const { privateKey, keyId, teamId } = this.args;
+    const expiresIn = 300; // 5 minutes
+
+    try {
+      const token = jwt.sign({}, privateKey, {
+        algorithm: 'ES256',
+        keyid: keyId,
+        expiresIn,
+        issuer: teamId,
+        audience: 'https://appleid.apple.com',
+        subject: this.config.clientId,
+      });
+
+      this._jwtCache = {
+        token,
+        expiresAt: Date.now() + (expiresIn - 30) * 1000,
+      };
+
+      return token;
+    } catch (e) {
+      this.logger.error('Failed to generate Apple client secret JWT', e);
+      throw new Error('Failed to generate client secret');
+    }
   }
 
   getAuthUrl(state: string, clientNonce?: string): string {
