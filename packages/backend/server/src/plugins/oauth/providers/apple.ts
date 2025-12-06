@@ -29,19 +29,20 @@ const AppleProviderArgsSchema = z.object({
 @Injectable()
 export class AppleOAuthProvider extends OAuthProvider {
   provider = OAuthProviderName.Apple;
-  private readonly args: z.infer<typeof AppleProviderArgsSchema> | null;
+  private args: z.infer<typeof AppleProviderArgsSchema> | null = null;
 
   constructor(private readonly url: URLHelper) {
     super();
-    const result = AppleProviderArgsSchema.safeParse(this.config?.args);
-    if (result.success) {
-      this.args = result.data;
-    } else {
-      this.args = null;
-    }
   }
 
   override get configured() {
+    if (this.config && !this.args) {
+      const result = AppleProviderArgsSchema.safeParse(this.config?.args);
+      if (result.success) {
+        this.args = result.data;
+      }
+    }
+
     return (
       !!this.config &&
       !!this.config.clientId &&
