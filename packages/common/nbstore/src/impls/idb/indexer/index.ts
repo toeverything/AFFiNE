@@ -176,6 +176,21 @@ export class IndexedDBIndexerStorage extends IndexerStorageBase {
     this.emitTableUpdated(table);
   }
 
+  override async refreshIfNeed(): Promise<void> {
+    const needRefreshTable = Object.entries(this.pendingUpdates)
+      .filter(
+        ([, updates]) =>
+          updates.deleteByQueries.length > 0 ||
+          updates.deletes.length > 0 ||
+          updates.inserts.length > 0 ||
+          updates.updates.length > 0
+      )
+      .map(([table]) => table as keyof IndexerSchema);
+    for (const table of needRefreshTable) {
+      await this.refresh(table);
+    }
+  }
+
   private watchTableUpdated(table: keyof IndexerSchema) {
     return new Observable(subscriber => {
       const listener = (ev: MessageEvent) => {

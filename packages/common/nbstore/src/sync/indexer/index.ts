@@ -117,6 +117,8 @@ export class IndexerSyncImpl implements IndexerSync {
   private readonly indexer: IndexerStorage;
   private readonly remote?: IndexerStorage;
 
+  private lastRefreshed = Date.now();
+
   state$ = this.status.state$.pipe(
     // throttle the state to 1 second to avoid spamming the UI
     throttleTime(1000, undefined, {
@@ -378,8 +380,7 @@ export class IndexerSyncImpl implements IndexerSync {
               this.status.statusUpdatedSubject$.next(docId);
             }
           }
-          await this.indexer.refresh('block');
-          await this.indexer.refresh('doc');
+          await this.refreshIfNeed();
           // #endregion
         } else {
           // #region crawl doc
@@ -453,8 +454,6 @@ export class IndexerSyncImpl implements IndexerSync {
             await this.indexer.insert('block', block);
           }
 
-          await this.indexer.refresh('block');
-
           if (preview) {
             await this.indexer.update(
               'doc',
@@ -462,8 +461,9 @@ export class IndexerSyncImpl implements IndexerSync {
                 summary: preview,
               })
             );
-            await this.indexer.refresh('doc');
           }
+
+          await this.refreshIfNeed();
 
           await this.indexerSync.setDocIndexedClock({
             docId,
@@ -478,7 +478,16 @@ export class IndexerSyncImpl implements IndexerSync {
         this.status.completeJob();
       }
     } finally {
+      await this.refreshIfNeed();
       unsubscribe();
+    }
+  }
+
+  private async refreshIfNeed(): Promise<void> {
+    if (this.lastRefreshed + 100 < Date.now()) {
+      console.log('[indexer] refreshing indexer');
+      await this.indexer.refreshIfNeed();
+      this.lastRefreshed = Date.now();
     }
   }
 
