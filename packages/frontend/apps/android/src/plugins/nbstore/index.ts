@@ -336,4 +336,7 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       uploadedAt: uploadedAt ? uploadedAt.getTime() : null,
     });
   },
+  crawlDocData: async function (id: string, docId: string) {
+    return NbStore.crawlDocData({ id, docId });
+  },
 };

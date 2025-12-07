@@ -15,7 +15,7 @@ path = "uniffi-bindgen.rs"
 use-as-lib = ["affine_nbstore/use-as-lib"]
 
 [dependencies]
-affine_common  = { workspace = true }
+affine_common  = { workspace = true, features = ["hashcash"] }
 affine_nbstore = { workspace = true }
 anyhow         = { workspace = true }
 base64-simd    = { workspace = true }
