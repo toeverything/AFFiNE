@@ -24,7 +24,7 @@ interface ExportMenuItemProps<T> {
 
 interface ExportProps {
   exportHandler: (
-    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot'
+    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot' | 'pdfmake'
   ) => void;
   pageMode?: 'page' | 'edgeless';
   className?: string;
@@ -96,6 +96,13 @@ export const ExportMenuItems = ({
         type="markdown"
         icon={<ExportToMarkdownIcon />}
         label={t['Export to Markdown']()}
+      />
+      <ExportMenuItem
+        onSelect={() => exportHandler('pdfmake')}
+        className={className}
+        type="pdfmake"
+        icon={<PrinterIcon />}
+        label={t['Export to PDF']()}
       />
       <ExportMenuItem
         onSelect={() => exportHandler('snapshot')}

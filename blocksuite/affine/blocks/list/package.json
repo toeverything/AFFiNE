@@ -37,6 +37,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./turbo-painter": "./src/turbo/list-painter.worker.ts",
+    "./utils/get-number-prefix": "./src/utils/get-number-prefix.ts",
     "./view": "./src/view.ts",
     "./store": "./src/store.ts"
   },

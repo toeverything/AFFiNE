@@ -3791,6 +3791,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-shared@workspace:blocksuite/affine/shared"
   dependencies:
+    "@blocksuite/affine-block-list": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
@@ -3804,6 +3805,7 @@ __metadata:
     "@types/hast": "npm:^3.0.4"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/mdast": "npm:^4.0.4"
+    "@types/pdfmake": "npm:^0.2.12"
     bytes: "npm:^3.1.2"
     dompurify: "npm:^3.3.0"
     fractional-indexing: "npm:^3.2.0"
@@ -3821,6 +3823,7 @@ __metadata:
     micromark-extension-gfm-task-list-item: "npm:^2.1.0"
     micromark-util-combine-extensions: "npm:^2.0.0"
     minimatch: "npm:^10.0.1"
+    pdfmake: "npm:^0.2.12"
     quick-lru: "npm:^7.0.1"
     rehype-parse: "npm:^9.0.0"
     rehype-stringify: "npm:^10.0.0"
@@ -6146,6 +6149,52 @@ __metadata:
   version: 0.2.9
   resolution: "@floating-ui/utils@npm:0.2.9"
   checksum: 10/0ca786347db3dd8d9034b86d1449fabb96642788e5900cc5f2aee433cd7b243efbcd7a165bead50b004ee3f20a90ddebb6a35296fc41d43cfd361b6f01b69ffb
+  languageName: node
+  linkType: hard
+
+"@foliojs-fork/fontkit@npm:^1.9.2":
+  version: 1.9.2
+  resolution: "@foliojs-fork/fontkit@npm:1.9.2"
+  dependencies:
+    "@foliojs-fork/restructure": "npm:^2.0.2"
+    brotli: "npm:^1.2.0"
+    clone: "npm:^1.0.4"
+    deep-equal: "npm:^1.0.0"
+    dfa: "npm:^1.2.0"
+    tiny-inflate: "npm:^1.0.2"
+    unicode-properties: "npm:^1.2.2"
+    unicode-trie: "npm:^2.0.0"
+  checksum: 10/143724742532e6fb8288958cff10c99855a44a48ab0fd32708e8c55a84a1ae25118035360fda4ac4e27797332923f2bbe8026b409eacf36dede6deeb79efe4a0
+  languageName: node
+  linkType: hard
+
+"@foliojs-fork/linebreak@npm:^1.1.1, @foliojs-fork/linebreak@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@foliojs-fork/linebreak@npm:1.1.2"
+  dependencies:
+    base64-js: "npm:1.3.1"
+    unicode-trie: "npm:^2.0.0"
+  checksum: 10/5af61cb29a5f6bd055941b6a0251a89f21bb97fb22f56a56b56a4f15dcf59c6088e052bfbce8bdc62d9cd7d6ec14a494292587e60f171f52615bc02bda56d0da
+  languageName: node
+  linkType: hard
+
+"@foliojs-fork/pdfkit@npm:^0.15.3":
+  version: 0.15.3
+  resolution: "@foliojs-fork/pdfkit@npm:0.15.3"
+  dependencies:
+    "@foliojs-fork/fontkit": "npm:^1.9.2"
+    "@foliojs-fork/linebreak": "npm:^1.1.1"
+    crypto-js: "npm:^4.2.0"
+    jpeg-exif: "npm:^1.1.4"
+    png-js: "npm:^1.0.0"
+  checksum: 10/cefd13f5d2d4b4cb2f7e5f0f0852000c3b868d755dbc0761e59565f42d10e42385a158d8847defef9b255ec5d994a8106b5233c7f7b8aea609597866e3766129
+  languageName: node
+  linkType: hard
+
+"@foliojs-fork/restructure@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@foliojs-fork/restructure@npm:2.0.2"
+  checksum: 10/3b89107426b5887de2844424a4059ab07293715752fb81a1527887d2aafb2ab359b567c8a38ec9dd32a2c1781fc3ac4011a71980ef818cc9323ad80eb19d25ea
   languageName: node
   linkType: hard
 
@@ -16069,6 +16118,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/pdfkit@npm:*":
+  version: 0.17.3
+  resolution: "@types/pdfkit@npm:0.17.3"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/58208a7969be6a1219f211d590b2315f3c50667c0c11c7e153df93fdfc178fd24a34356c6f496d3d9473087d1ac499e3b43df67c86098cc8bc77bb294d426b10
+  languageName: node
+  linkType: hard
+
+"@types/pdfmake@npm:^0.2.12":
+  version: 0.2.12
+  resolution: "@types/pdfmake@npm:0.2.12"
+  dependencies:
+    "@types/node": "npm:*"
+    "@types/pdfkit": "npm:*"
+  checksum: 10/a1dff188ec30ac4f3aa995cb74a2d213e7ae229a2aa269390383e91b62e984da1061ce43ced52f358596e51e3b5b7d77a4d3db1234e74e632c6e765a397824d0
+  languageName: node
+  linkType: hard
+
 "@types/pg-pool@npm:2.0.6":
   version: 2.0.6
   resolution: "@types/pg-pool@npm:2.0.6"
@@ -18124,7 +18192,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-js@npm:^1.3.0, base64-js@npm:^1.3.1, base64-js@npm:^1.5.1":
+"base64-js@npm:1.3.1":
+  version: 1.3.1
+  resolution: "base64-js@npm:1.3.1"
+  checksum: 10/957b9ced0ea1b39588a117193f801b045a5fb2d6f1b9943dd304bcad46e5681bf837fe092105692b11653658e8443764139d6b11d3c4037093b96e8db4e1dbb2
+  languageName: node
+  linkType: hard
+
+"base64-js@npm:^1.1.2, base64-js@npm:^1.3.0, base64-js@npm:^1.3.1, base64-js@npm:^1.5.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: 10/669632eb3745404c2f822a18fc3a0122d2f9a7a13f7fb8b5823ee19d1d2ff9ee5b52c53367176ea4ad093c332fd5ab4bd0ebae5a8e27917a4105a4cfc86b1005
@@ -18382,6 +18457,15 @@ __metadata:
   dependencies:
     fill-range: "npm:^7.1.1"
   checksum: 10/fad11a0d4697a27162840b02b1fad249c1683cbc510cd5bf1a471f2f8085c046d41094308c577a50a03a579dd99d5a6b3724c4b5e8b14df2c4443844cfcda2c6
+  languageName: node
+  linkType: hard
+
+"brotli@npm:^1.2.0":
+  version: 1.3.3
+  resolution: "brotli@npm:1.3.3"
+  dependencies:
+    base64-js: "npm:^1.1.2"
+  checksum: 10/78b412f54be3c96b86e2d9805ddc26aa5a52bba45588ff7f8468b80aa84c90052c60eeb2e26ad032c39bab6baa58e0b0625cf4f738279961a31c34cbe4b4b490
   languageName: node
   linkType: hard
 
@@ -19411,7 +19495,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clone@npm:^1.0.2":
+"clone@npm:^1.0.2, clone@npm:^1.0.4":
   version: 1.0.4
   resolution: "clone@npm:1.0.4"
   checksum: 10/d06418b7335897209e77bdd430d04f882189582e67bd1f75a04565f3f07f5b3f119a9d670c943b6697d0afb100f03b866b3b8a1f91d4d02d72c4ecf2bb64b5dd
@@ -20197,6 +20281,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"crypto-js@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "crypto-js@npm:4.2.0"
+  checksum: 10/c7bcc56a6e01c3c397e95aa4a74e4241321f04677f9a618a8f48a63b5781617248afb9adb0629824792e7ec20ca0d4241a49b6b2938ae6f973ec4efc5c53c924
+  languageName: node
+  linkType: hard
+
 "css-declaration-sorter@npm:^7.2.0":
   version: 7.2.0
   resolution: "css-declaration-sorter@npm:7.2.0"
@@ -20979,6 +21070,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"deep-equal@npm:@nolyfill/deep-equal@^1":
+  version: 1.0.44
+  resolution: "@nolyfill/deep-equal@npm:1.0.44"
+  dependencies:
+    dequal: "npm:2.0.3"
+  checksum: 10/11f4d3f92b1a98d842a27982dc9d3c2ef7b78917917387acde7f056de55d1afa59b7ea4cc62fc5236246970a4b799d6592670ce1043bb8c97b38da662ea924b6
+  languageName: node
+  linkType: hard
+
 "deep-extend@npm:^0.6.0":
   version: 0.6.0
   resolution: "deep-extend@npm:0.6.0"
@@ -21105,7 +21205,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dequal@npm:^2.0.0, dequal@npm:^2.0.3":
+"dequal@npm:2.0.3, dequal@npm:^2.0.0, dequal@npm:^2.0.3":
   version: 2.0.3
   resolution: "dequal@npm:2.0.3"
   checksum: 10/6ff05a7561f33603df87c45e389c9ac0a95e3c056be3da1a0c4702149e3a7f6fe5ffbb294478687ba51a9e95f3a60e8b6b9005993acd79c292c7d15f71964b6b
@@ -21170,6 +21270,13 @@ __metadata:
     asap: "npm:^2.0.0"
     wrappy: "npm:1"
   checksum: 10/895389c6aead740d2ab5da4d3466d20fa30f738010a4d3f4dcccc9fc645ca31c9d10b7e1804ae489b1eb02c7986f9f1f34ba132d409b043082a86d9a4e745624
+  languageName: node
+  linkType: hard
+
+"dfa@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "dfa@npm:1.2.0"
+  checksum: 10/3b274fe6d2d70f41c1418ac961f7ae6e7f3b7445f20b98395a55943902100dd2491ef91a60c47c14a72645021f02248ccfad79fa65b10d6075bff34237a35bf8
   languageName: node
   linkType: hard
 
@@ -25732,6 +25839,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jpeg-exif@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "jpeg-exif@npm:1.1.4"
+  checksum: 10/75699bd7161de1be99e847166917957bfb405ed736655361c58f0390e7182cc28999b2cbc31e650b71b6d2ad38843789439a121ac64988b2ccaa00f6832bb3d9
+  languageName: node
+  linkType: hard
+
 "js-string-escape@npm:^1.0.1":
   version: 1.0.1
   resolution: "js-string-escape@npm:1.0.1"
@@ -29581,6 +29695,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pako@npm:^0.2.5":
+  version: 0.2.9
+  resolution: "pako@npm:0.2.9"
+  checksum: 10/627c6842e90af0b3a9ee47345bd66485a589aff9514266f4fa9318557ad819c46fedf97510f2cef9b6224c57913777966a05cb46caf6a9b31177a5401a06fe15
+  languageName: node
+  linkType: hard
+
 "pako@npm:^1.0.10, pako@npm:^1.0.11, pako@npm:^1.0.6, pako@npm:~1.0.2":
   version: 1.0.11
   resolution: "pako@npm:1.0.11"
@@ -29925,6 +30046,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pdfmake@npm:^0.2.12":
+  version: 0.2.20
+  resolution: "pdfmake@npm:0.2.20"
+  dependencies:
+    "@foliojs-fork/linebreak": "npm:^1.1.2"
+    "@foliojs-fork/pdfkit": "npm:^0.15.3"
+    iconv-lite: "npm:^0.6.3"
+    xmldoc: "npm:^2.0.1"
+  checksum: 10/524807370eb9f9c2a55b7aadfb2dfbd183ac81b2d7dbcba8e4f79566f220fcbf8e73d3a28e5988d42b38094615c82b966d7a039a07159db836c800a7395b5d44
+  languageName: node
+  linkType: hard
+
 "pe-library@npm:^0.4.1":
   version: 0.4.1
   resolution: "pe-library@npm:0.4.1"
@@ -30141,6 +30274,13 @@ __metadata:
   version: 8.0.0
   resolution: "pluralize@npm:8.0.0"
   checksum: 10/17877fdfdb7ddb3639ce257ad73a7c51a30a966091e40f56ea9f2f545b5727ce548d4928f8cb3ce38e7dc0c5150407d318af6a4ed0ea5265d378473b4c2c61ec
+  languageName: node
+  linkType: hard
+
+"png-js@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "png-js@npm:1.0.0"
+  checksum: 10/7762c5ec06da1b1a3e99bc78599bb15e7f0b04b49b4507e71f606b280006148122bdf937e2e1cba81d279d1c9966694f5c8c34ceb82fb11f328fac06db5b17cb
   languageName: node
   linkType: hard
 
@@ -34126,6 +34266,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tiny-inflate@npm:^1.0.0, tiny-inflate@npm:^1.0.2":
+  version: 1.0.3
+  resolution: "tiny-inflate@npm:1.0.3"
+  checksum: 10/f620114fb51ea4a16ea7b4c62d6dd753f8faf41808a133c53d431ed4bf2ca377b21443653a0096894f2be22ca11bb327f148e7e5431f9246068917724ec01ffc
+  languageName: node
+  linkType: hard
+
 "tiny-invariant@npm:^1.3.3":
   version: 1.3.3
   resolution: "tiny-invariant@npm:1.3.3"
@@ -34807,6 +34954,26 @@ __metadata:
   version: 7.10.0
   resolution: "undici@npm:7.10.0"
   checksum: 10/41d8ccd5b5e35bcd9035a5a640d9020f9ea1a2ef3dffb3e29518ff16ca01957833f1befe141b3a58db09015174681614732f9d322b0bc7f78855f51020bd744e
+  languageName: node
+  linkType: hard
+
+"unicode-properties@npm:^1.2.2":
+  version: 1.4.1
+  resolution: "unicode-properties@npm:1.4.1"
+  dependencies:
+    base64-js: "npm:^1.3.0"
+    unicode-trie: "npm:^2.0.0"
+  checksum: 10/f03d35036291b08aa2572dc51eff712e64fb1d8daaeb65e8add38a24c66c2b8bb3882ee19e6e8de424cfbbc6a4ebe14766816294c7f582b4bb5704402acbd089
+  languageName: node
+  linkType: hard
+
+"unicode-trie@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "unicode-trie@npm:2.0.0"
+  dependencies:
+    pako: "npm:^0.2.5"
+    tiny-inflate: "npm:^1.0.0"
+  checksum: 10/60404411dbd363bdcca9e81c9327fa80469f2e685737bac88ec693225ff20b9b545ac37ca2da13ec02f1552167dd010dfefd7c58b72a73d44a89fab1ca9c2479
   languageName: node
   linkType: hard
 
@@ -36270,6 +36437,15 @@ __metadata:
   version: 11.0.1
   resolution: "xmlbuilder@npm:11.0.1"
   checksum: 10/c8c3d208783718db5b285101a736cd8e6b69a5c265199a0739abaa93d1a1b7de5489fd16df4e776e18b2c98cb91f421a7349e99fd8c1ebeb44ecfed72a25091a
+  languageName: node
+  linkType: hard
+
+"xmldoc@npm:^2.0.1":
+  version: 2.0.2
+  resolution: "xmldoc@npm:2.0.2"
+  dependencies:
+    sax: "npm:^1.2.4"
+  checksum: 10/b62fe5b2de3c9f79e5d26d1737583a7988dcc19eb0bb1710480940b0500c50f5d565ebf9682b5be0b43658811ab919e05cab45b8ad5e8fee4bb9300a3e3cd758
   languageName: node
   linkType: hard
 
