@@ -474,6 +474,7 @@ export class IndexerSyncImpl implements IndexerSync {
         }
 
         console.log('[indexer] complete job', docId);
+        await this.refreshIfNeed();
 
         this.status.completeJob();
       }
