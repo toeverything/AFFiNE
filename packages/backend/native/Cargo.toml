@@ -7,7 +7,7 @@ version = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-affine_common = { workspace = true, features = ["doc-loader"] }
+affine_common = { workspace = true, features = ["doc-loader", "hashcash"] }
 chrono        = { workspace = true }
 file-format   = { workspace = true }
 infer         = { workspace = true }

@@ -1,3 +1,5 @@
+use affine_common::doc_parser::ParseError;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
@@ -8,4 +10,6 @@ pub enum Error {
   MigrateError(#[from] sqlx::migrate::MigrateError),
   #[error("Invalid operation")]
   InvalidOperation,
+  #[error(transparent)]
+  Parse(#[from] ParseError),
 }

@@ -1,6 +1,7 @@
 import { AutoReconnectConnection } from '../../connection';
 import type {
   BlobRecord,
+  CrawlResult,
   DocClock,
   DocRecord,
   ListedBlobRecord,
@@ -81,6 +82,7 @@ export interface NativeDBApis {
     peer: string,
     blobId: string
   ) => Promise<Date | null>;
+  crawlDocData: (id: string, docId: string) => Promise<CrawlResult>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs
