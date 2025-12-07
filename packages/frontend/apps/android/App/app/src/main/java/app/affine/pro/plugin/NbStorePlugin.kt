@@ -610,7 +610,7 @@ class NbStorePlugin : Plugin() {
         call.resolve(
           JSObject()
             .put("title", result.title)
-            .put("block", blocks)
+            .put("blocks", blocks)
             .put("summary", result.summary)
         )
       } catch (e: Exception) {
