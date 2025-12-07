@@ -45,5 +45,8 @@ export const validateAndReduceImage = async (file: File): Promise<File> => {
 
   const reducedBlob = await decodeAndReduceImage();
 
-  return new File([reducedBlob], file.name, { type: file.type, lastModified: file.lastModified });
+  return new File([reducedBlob], file.name, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
 };
