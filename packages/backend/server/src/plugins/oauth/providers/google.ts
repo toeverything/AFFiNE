@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
 import type { OAuthState } from '../types';
-import { OAuthProvider, Tokens } from './def';
+import { OAuthAccount, OAuthProvider, Tokens } from './def';
 
 interface GoogleOAuthTokenResponse {
   access_token: string;
@@ -41,8 +41,8 @@ export class GoogleOAuthProvider extends OAuthProvider {
     })}`;
   }
 
-  async getToken(code: string, _state: OAuthState) {
-    const ghToken = await this.postFormJson<GoogleOAuthTokenResponse>(
+  async getToken(code: string, _state: OAuthState): Promise<Tokens> {
+    const gToken = await this.postFormJson<GoogleOAuthTokenResponse>(
       'https://oauth2.googleapis.com/token',
       this.url.stringify({
         code,
@@ -54,14 +54,14 @@ export class GoogleOAuthProvider extends OAuthProvider {
     );
 
     return {
-      accessToken: ghToken.access_token,
-      refreshToken: ghToken.refresh_token,
-      expiresAt: new Date(Date.now() + ghToken.expires_in * 1000),
-      scope: ghToken.scope,
+      accessToken: gToken.access_token,
+      refreshToken: gToken.refresh_token,
+      expiresAt: new Date(Date.now() + gToken.expires_in * 1000),
+      scope: gToken.scope,
     };
   }
 
-  async getUser(tokens: Tokens, _state: OAuthState) {
+  async getUser(tokens: Tokens, _state: OAuthState): Promise<OAuthAccount> {
     const user = await this.fetchJson<UserInfo>(
       'https://www.googleapis.com/oauth2/v2/userinfo',
       {
@@ -76,6 +76,7 @@ export class GoogleOAuthProvider extends OAuthProvider {
       id: user.id,
       avatarUrl: user.picture,
       email: user.email,
+      name: user.name,
     };
   }
 }

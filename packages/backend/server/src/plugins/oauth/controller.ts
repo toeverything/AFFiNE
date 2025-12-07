@@ -260,6 +260,7 @@ export class OAuthController {
     }
 
     const user = await this.models.user.fulfill(externalAccount.email, {
+      name: externalAccount.name,
       avatarUrl: externalAccount.avatarUrl,
     });
 

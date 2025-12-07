@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
 import type { OAuthState } from '../types';
-import { OAuthProvider, Tokens } from './def';
+import { OAuthAccount, OAuthProvider, Tokens } from './def';
 
 interface AuthTokenResponse {
   access_token: string;
@@ -36,7 +36,7 @@ export class GithubOAuthProvider extends OAuthProvider {
     })}`;
   }
 
-  async getToken(code: string, _state: OAuthState) {
+  async getToken(code: string, _state: OAuthState): Promise<Tokens> {
     const ghToken = await this.postFormJson<AuthTokenResponse>(
       'https://github.com/login/oauth/access_token',
       this.url.stringify({
@@ -53,7 +53,7 @@ export class GithubOAuthProvider extends OAuthProvider {
     };
   }
 
-  async getUser(tokens: Tokens, _state: OAuthState) {
+  async getUser(tokens: Tokens, _state: OAuthState): Promise<OAuthAccount> {
     const user = await this.fetchJson<UserInfo>('https://api.github.com/user', {
       method: 'GET',
       headers: {
@@ -65,6 +65,7 @@ export class GithubOAuthProvider extends OAuthProvider {
       id: user.login,
       avatarUrl: user.avatar_url,
       email: user.email,
+      name: user.name,
     };
   }
 }

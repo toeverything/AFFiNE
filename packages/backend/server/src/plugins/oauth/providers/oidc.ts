@@ -12,12 +12,22 @@ import { OAuthOIDCProviderConfig, OAuthProviderName } from '../config';
 import type { OAuthState } from '../types';
 import { OAuthAccount, OAuthProvider, Tokens } from './def';
 
+const StatePayloadSchema = z.object({
+  state: z.string().optional(),
+  pkce: z
+    .object({
+      codeChallenge: z.string(),
+      codeChallengeMethod: z.string(),
+    })
+    .optional(),
+});
+
 const OIDCTokenSchema = z.object({
   access_token: z.string(),
   expires_in: z.number().positive().optional(),
   refresh_token: z.string().optional(),
   scope: z.string().optional(),
-  token_type: z.string().optional(),
+  token_type: z.string(),
   id_token: z.string(),
 });
 
@@ -207,18 +217,13 @@ export class OIDCProvider extends OAuthProvider {
   }
 
   private parseStatePayload(state: string) {
-    if (!state || !state.trim().startsWith('{')) {
+    if (!state) {
       return null;
     }
 
     try {
-      return JSON.parse(state) as {
-        state?: string;
-        pkce?: {
-          codeChallenge?: string;
-          codeChallengeMethod?: string;
-        };
-      };
+      const stateObj = JSON.parse(state);
+      return StatePayloadSchema.parse(stateObj);
     } catch {
       return null;
     }
@@ -248,7 +253,7 @@ export class OIDCProvider extends OAuthProvider {
         audience: this.config.clientId,
       });
 
-      if (payload.nonce && payload.nonce !== nonce) {
+      if (!payload.nonce || payload.nonce !== nonce) {
         throw new InvalidAuthState();
       }
 
@@ -309,7 +314,11 @@ export class OIDCProvider extends OAuthProvider {
     );
     const user = OIDCUserInfoSchema.parse(rawUser);
 
-    if (user.sub && idTokenClaims.sub && user.sub !== idTokenClaims.sub) {
+    if (!user.sub || !idTokenClaims.sub) {
+      throw new InvalidOauthResponse({
+        reason: 'Missing subject claim in OIDC response',
+      });
+    } else if (user.sub !== idTokenClaims.sub) {
       throw new InvalidOauthResponse({
         reason: 'Subject mismatch between ID token and userinfo response',
       });
@@ -345,7 +354,7 @@ export class OIDCProvider extends OAuthProvider {
       });
     }
 
-    if (!emailVerified) {
+    if (emailVerified === false) {
       throw new InvalidOauthResponse({
         reason: 'Email for this account is not verified',
       });

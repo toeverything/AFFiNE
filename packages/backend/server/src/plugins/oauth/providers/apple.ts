@@ -7,7 +7,6 @@ import { z } from 'zod';
 import {
   InternalServerError,
   InvalidAuthState,
-  InvalidOauthCallbackCode,
   URLHelper,
 } from '../../../base';
 import { OAuthProviderName } from '../config';
@@ -125,7 +124,7 @@ export class AppleOAuthProvider extends OAuthProvider {
   }
 
   async getUser(tokens: Tokens, state: OAuthState) {
-    if (!state.clientNonce || !tokens.idToken) {
+    if (!tokens.idToken) {
       throw new InvalidAuthState();
     }
     const { keys } = await this.fetchJson<{ keys: JsonWebKey[] }>(
