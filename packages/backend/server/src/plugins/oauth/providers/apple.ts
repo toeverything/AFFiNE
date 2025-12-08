@@ -6,10 +6,11 @@ import { z } from 'zod';
 
 import {
   InternalServerError,
-  InvalidOauthCallbackCode,
+  InvalidAuthState,
   URLHelper,
 } from '../../../base';
 import { OAuthProviderName } from '../config';
+import type { OAuthState } from '../types';
 import { OAuthProvider, Tokens } from './def';
 
 interface AuthTokenResponse {
@@ -102,54 +103,39 @@ export class AppleOAuthProvider extends OAuthProvider {
     })}`;
   }
 
-  async getToken(code: string) {
-    const response = await fetch('https://appleid.apple.com/auth/token', {
-      method: 'POST',
-      body: this.url.stringify({
+  async getToken(code: string, _state: OAuthState) {
+    const appleToken = await this.postFormJson<AuthTokenResponse>(
+      'https://appleid.apple.com/auth/token',
+      this.url.stringify({
         code,
         client_id: this.config.clientId,
         client_secret: this.clientSecret,
         redirect_uri: this.url.link('/api/oauth/callback'),
         grant_type: 'authorization_code',
-      }),
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+      })
+    );
 
-    if (response.ok) {
-      const appleToken = (await response.json()) as AuthTokenResponse;
-
-      return {
-        accessToken: appleToken.access_token,
-        refreshToken: appleToken.refresh_token,
-        expiresAt: new Date(Date.now() + appleToken.expires_in * 1000),
-        idToken: appleToken.id_token,
-      };
-    } else {
-      const body = await response.text();
-      if (response.status < 500) {
-        throw new InvalidOauthCallbackCode({ status: response.status, body });
-      }
-      throw new Error(
-        `Server responded with non-success status ${response.status}, body: ${body}`
-      );
-    }
+    return {
+      accessToken: appleToken.access_token,
+      refreshToken: appleToken.refresh_token,
+      expiresAt: new Date(Date.now() + appleToken.expires_in * 1000),
+      idToken: appleToken.id_token,
+    };
   }
 
-  async getUser(
-    tokens: Tokens & { idToken: string },
-    state: { clientNonce: string }
-  ) {
-    const keysReq = await fetch('https://appleid.apple.com/auth/keys', {
-      method: 'GET',
-    });
-    const { keys } = (await keysReq.json()) as { keys: JsonWebKey[] };
+  async getUser(tokens: Tokens, state: OAuthState) {
+    if (!tokens.idToken) {
+      throw new InvalidAuthState();
+    }
+    const { keys } = await this.fetchJson<{ keys: JsonWebKey[] }>(
+      'https://appleid.apple.com/auth/keys',
+      { method: 'GET' },
+      { treatServerErrorAsInvalid: true }
+    );
 
     const payload = await new Promise<JwtPayload>((resolve, reject) => {
       jwt.verify(
-        tokens.idToken,
+        tokens.idToken!,
         (header, callback) => {
           const key = keys.find(key => key.kid === header.kid);
           if (!key) {
