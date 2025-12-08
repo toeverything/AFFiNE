@@ -932,8 +932,8 @@ __metadata:
     "@aws-sdk/s3-request-presigner": "npm:^3.779.0"
     "@faker-js/faker": "npm:^10.0.0"
     "@fal-ai/serverless-client": "npm:^0.15.0"
-    "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^2.4.1"
-    "@google-cloud/opentelemetry-resource-util": "npm:^2.4.0"
+    "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^3.0.0"
+    "@google-cloud/opentelemetry-resource-util": "npm:^3.0.0"
     "@modelcontextprotocol/sdk": "npm:^1.24.3"
     "@nestjs-cls/transactional": "npm:^2.6.1"
     "@nestjs-cls/transactional-adapter-prisma": "npm:^1.2.19"
@@ -952,9 +952,9 @@ __metadata:
     "@node-rs/argon2": "npm:^2.0.2"
     "@node-rs/crc32": "npm:^1.10.6"
     "@opentelemetry/api": "npm:^1.9.0"
-    "@opentelemetry/core": "npm:^1.30.1"
+    "@opentelemetry/core": "npm:^2.0.0"
     "@opentelemetry/exporter-prometheus": "npm:^0.57.2"
-    "@opentelemetry/exporter-zipkin": "npm:^1.30.1"
+    "@opentelemetry/exporter-zipkin": "npm:^2.0.0"
     "@opentelemetry/host-metrics": "npm:^0.36.0"
     "@opentelemetry/instrumentation": "npm:^0.57.2"
     "@opentelemetry/instrumentation-graphql": "npm:^0.55.0"
@@ -962,10 +962,10 @@ __metadata:
     "@opentelemetry/instrumentation-ioredis": "npm:^0.55.0"
     "@opentelemetry/instrumentation-nestjs-core": "npm:^0.54.0"
     "@opentelemetry/instrumentation-socket.io": "npm:^0.54.0"
-    "@opentelemetry/resources": "npm:^1.30.1"
-    "@opentelemetry/sdk-metrics": "npm:^1.30.1"
+    "@opentelemetry/resources": "npm:^2.0.0"
+    "@opentelemetry/sdk-metrics": "npm:^2.0.0"
     "@opentelemetry/sdk-node": "npm:^0.57.2"
-    "@opentelemetry/sdk-trace-node": "npm:^1.30.1"
+    "@opentelemetry/sdk-trace-node": "npm:^2.0.0"
     "@opentelemetry/semantic-conventions": "npm:^1.28.0"
     "@prisma/client": "npm:^6.6.0"
     "@prisma/instrumentation": "npm:^6.7.0"
@@ -6182,32 +6182,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/opentelemetry-cloud-trace-exporter@npm:^2.4.1":
-  version: 2.4.1
-  resolution: "@google-cloud/opentelemetry-cloud-trace-exporter@npm:2.4.1"
+"@google-cloud/opentelemetry-cloud-trace-exporter@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@google-cloud/opentelemetry-cloud-trace-exporter@npm:3.0.0"
   dependencies:
-    "@google-cloud/opentelemetry-resource-util": "npm:^2.4.0"
+    "@google-cloud/opentelemetry-resource-util": "npm:^3.0.0"
     "@grpc/grpc-js": "npm:^1.1.8"
-    "@grpc/proto-loader": "npm:^0.7.0"
+    "@grpc/proto-loader": "npm:^0.8.0"
     google-auth-library: "npm:^9.0.0"
   peerDependencies:
     "@opentelemetry/api": ^1.0.0
-    "@opentelemetry/core": ^1.0.0
-    "@opentelemetry/resources": ^1.0.0
-    "@opentelemetry/sdk-trace-base": ^1.0.0
-  checksum: 10/81dca152f0e84141c76f8a79d7e3b07bee3063cd16a370b53f1ddadf3a0ee6f2547ef8d93cb6007b17780ed568770fe2937af7dbe85a3b66e0e08c364eef44b0
+    "@opentelemetry/core": ^2.0.0
+    "@opentelemetry/resources": ^2.0.0
+    "@opentelemetry/sdk-trace-base": ^2.0.0
+  checksum: 10/2f05f4a5bdea5cb9dc3913329cfa3ba078094685ecd07e0abc5c83c8f38f0bc4cd191377e774032393f3b6453217d18c2679cfbcd2067665644ea736563086c0
   languageName: node
   linkType: hard
 
-"@google-cloud/opentelemetry-resource-util@npm:^2.4.0":
-  version: 2.4.0
-  resolution: "@google-cloud/opentelemetry-resource-util@npm:2.4.0"
+"@google-cloud/opentelemetry-resource-util@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@google-cloud/opentelemetry-resource-util@npm:3.0.0"
   dependencies:
     "@opentelemetry/semantic-conventions": "npm:^1.22.0"
     gcp-metadata: "npm:^6.0.0"
   peerDependencies:
-    "@opentelemetry/resources": ^1.0.0
-  checksum: 10/119116a19549ea1a5c43d50f880959e2fe512860e316a1aa15e3e8088696629995c09c0287e7fcca42baa65fcacc5d3cd74eb3f6b0b9984dc523962d6cb36265
+    "@opentelemetry/core": ^2.0.0
+    "@opentelemetry/resources": ^2.0.0
+  checksum: 10/ee65838e03bb5ccbb3558ee16ea5c06b5e7ca6f1db9ebf8ad21ec7cd569818887218b29b6299f93158493c0e25e3cb7bd2798125dc9ad838b18023e6ca214f22
   languageName: node
   linkType: hard
 
@@ -6897,7 +6898,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grpc/proto-loader@npm:^0.7.0, @grpc/proto-loader@npm:^0.7.13":
+"@grpc/proto-loader@npm:^0.7.13":
   version: 0.7.15
   resolution: "@grpc/proto-loader@npm:0.7.15"
   dependencies:
@@ -6908,6 +6909,20 @@ __metadata:
   bin:
     proto-loader-gen-types: build/bin/proto-loader-gen-types.js
   checksum: 10/2e2b33ace8bc34211522751a9e654faf9ac997577a9e9291b1619b4c05d7878a74d2101c3bc43b2b2b92bca7509001678fb191d4eb100684cc2910d66f36c373
+  languageName: node
+  linkType: hard
+
+"@grpc/proto-loader@npm:^0.8.0":
+  version: 0.8.0
+  resolution: "@grpc/proto-loader@npm:0.8.0"
+  dependencies:
+    lodash.camelcase: "npm:^4.3.0"
+    long: "npm:^5.0.0"
+    protobufjs: "npm:^7.5.3"
+    yargs: "npm:^17.7.2"
+  bin:
+    proto-loader-gen-types: build/bin/proto-loader-gen-types.js
+  checksum: 10/216813bdca52cd3a84ac355ad93c2c3f54252be47327692fe666fd85baa5b1d50aa681ebc5626ab08926564fb2deae3b2ea435aa5bd883197650bbe56f2ae108
   languageName: node
   linkType: hard
 
@@ -10358,7 +10373,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/context-async-hooks@npm:^2.1.0":
+"@opentelemetry/context-async-hooks@npm:2.2.0, @opentelemetry/context-async-hooks@npm:^2.1.0":
   version: 2.2.0
   resolution: "@opentelemetry/context-async-hooks@npm:2.2.0"
   peerDependencies:
@@ -10367,7 +10382,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/core@npm:1.30.1, @opentelemetry/core@npm:^1.30.1":
+"@opentelemetry/core@npm:1.30.1":
   version: 1.30.1
   resolution: "@opentelemetry/core@npm:1.30.1"
   dependencies:
@@ -10557,7 +10572,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/exporter-zipkin@npm:1.30.1, @opentelemetry/exporter-zipkin@npm:^1.30.1":
+"@opentelemetry/exporter-zipkin@npm:1.30.1":
   version: 1.30.1
   resolution: "@opentelemetry/exporter-zipkin@npm:1.30.1"
   dependencies:
@@ -10568,6 +10583,20 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ^1.0.0
   checksum: 10/66c1074660f521bc48760309c053fb1216e9f709d3b546024de02a63c7a7c80ff817c24913c29e4d9e899a41f4722e594d42a9fc5a2c9dc83ba7628b8b568b18
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/exporter-zipkin@npm:^2.0.0":
+  version: 2.2.0
+  resolution: "@opentelemetry/exporter-zipkin@npm:2.2.0"
+  dependencies:
+    "@opentelemetry/core": "npm:2.2.0"
+    "@opentelemetry/resources": "npm:2.2.0"
+    "@opentelemetry/sdk-trace-base": "npm:2.2.0"
+    "@opentelemetry/semantic-conventions": "npm:^1.29.0"
+  peerDependencies:
+    "@opentelemetry/api": ^1.0.0
+  checksum: 10/5e7b1464810ab2de77cee437dfc4436ade5c5391a9b80cdd5c1495f3aa32cf8e4cf458cae327dc477260876a8a9ef01bdb5bb3a41d37aaaaf392f2a00185d238
   languageName: node
   linkType: hard
 
@@ -11035,7 +11064,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/resources@npm:1.30.1, @opentelemetry/resources@npm:^1.30.1":
+"@opentelemetry/resources@npm:1.30.1":
   version: 1.30.1
   resolution: "@opentelemetry/resources@npm:1.30.1"
   dependencies:
@@ -11047,7 +11076,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/resources@npm:2.2.0, @opentelemetry/resources@npm:^2.1.0":
+"@opentelemetry/resources@npm:2.2.0, @opentelemetry/resources@npm:^2.0.0, @opentelemetry/resources@npm:^2.1.0":
   version: 2.2.0
   resolution: "@opentelemetry/resources@npm:2.2.0"
   dependencies:
@@ -11072,7 +11101,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-metrics@npm:1.30.1, @opentelemetry/sdk-metrics@npm:^1.30.1":
+"@opentelemetry/sdk-metrics@npm:1.30.1":
   version: 1.30.1
   resolution: "@opentelemetry/sdk-metrics@npm:1.30.1"
   dependencies:
@@ -11081,6 +11110,18 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ">=1.3.0 <1.10.0"
   checksum: 10/cfdbef083eab77ee62cf4d3f29508a0f444a2a2413554b2977632ea1e238fbd472c964b48e09eb48e2131f6cdc1957ff079838d53de5777207a041b594dd917a
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/sdk-metrics@npm:^2.0.0":
+  version: 2.2.0
+  resolution: "@opentelemetry/sdk-metrics@npm:2.2.0"
+  dependencies:
+    "@opentelemetry/core": "npm:2.2.0"
+    "@opentelemetry/resources": "npm:2.2.0"
+  peerDependencies:
+    "@opentelemetry/api": ">=1.9.0 <1.10.0"
+  checksum: 10/d6dacce73319e038d55a67f5b1a7a153531a703ef881b03df52f2d76685a4d53d0d840e02a0e0b24eddae4bd7d11c694e3c146f8db78e19d353316372d04c065
   languageName: node
   linkType: hard
 
@@ -11127,7 +11168,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-trace-base@npm:^2.1.0":
+"@opentelemetry/sdk-trace-base@npm:2.2.0, @opentelemetry/sdk-trace-base@npm:^2.1.0":
   version: 2.2.0
   resolution: "@opentelemetry/sdk-trace-base@npm:2.2.0"
   dependencies:
@@ -11140,7 +11181,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-trace-node@npm:1.30.1, @opentelemetry/sdk-trace-node@npm:^1.30.1":
+"@opentelemetry/sdk-trace-node@npm:1.30.1":
   version: 1.30.1
   resolution: "@opentelemetry/sdk-trace-node@npm:1.30.1"
   dependencies:
@@ -11153,6 +11194,19 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ">=1.0.0 <1.10.0"
   checksum: 10/75d793718e3785abbfab337a6d8ab12cfdfdb2ec8c3c642c2657ebf8d589397beea10646b2fb094aaac106d4539a8105626bfcb3ad845eb852ff460148b3e34f
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/sdk-trace-node@npm:^2.0.0":
+  version: 2.2.0
+  resolution: "@opentelemetry/sdk-trace-node@npm:2.2.0"
+  dependencies:
+    "@opentelemetry/context-async-hooks": "npm:2.2.0"
+    "@opentelemetry/core": "npm:2.2.0"
+    "@opentelemetry/sdk-trace-base": "npm:2.2.0"
+  peerDependencies:
+    "@opentelemetry/api": ">=1.0.0 <1.10.0"
+  checksum: 10/4918bc6a66649203d7165a8beca5a3ebaf05d91a2b4910aa195f582a6b50658e86303e00a4fc53172e48cac3cc79b50906d70a3b989895b423dc90dad5e9b5da
   languageName: node
   linkType: hard
 
@@ -30694,9 +30748,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^7.2.5, protobufjs@npm:^7.3.0":
-  version: 7.5.1
-  resolution: "protobufjs@npm:7.5.1"
+"protobufjs@npm:^7.2.5, protobufjs@npm:^7.3.0, protobufjs@npm:^7.5.3":
+  version: 7.5.4
+  resolution: "protobufjs@npm:7.5.4"
   dependencies:
     "@protobufjs/aspromise": "npm:^1.1.2"
     "@protobufjs/base64": "npm:^1.1.2"
@@ -30710,7 +30764,7 @@ __metadata:
     "@protobufjs/utf8": "npm:^1.1.0"
     "@types/node": "npm:>=13.7.0"
     long: "npm:^5.0.0"
-  checksum: 10/e9f502a2e31831d7cb4e00864f1d134d96236983f7fd426954e3d6ea0392f02df35d7b30f6b706b94b2a91d884126ca78380c250aea6997a0d4a7dbc360427ef
+  checksum: 10/88d677bb6f11a2ecec63fdd053dfe6d31120844d04e865efa9c8fbe0674cd077d6624ecfdf014018a20dcb114ae2a59c1b21966dd8073e920650c71370966439
   languageName: node
   linkType: hard
 
