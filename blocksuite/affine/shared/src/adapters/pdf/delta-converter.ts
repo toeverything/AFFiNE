@@ -40,10 +40,12 @@ export function extractTextWithInline(
     if (attrs.italic === true) {
       styleObj.italics = true;
     }
+    styleObj.decoration = [];
     if (attrs.strike === true) {
-      styleObj.decoration = 'lineThrough';
-    } else if (attrs.underline === true) {
-      styleObj.decoration = 'underline';
+      styleObj.decoration.push('lineThrough');
+    }
+    if (attrs.underline === true) {
+      styleObj.decoration.push('underline');
     }
     if (attrs.code === true) {
       styleObj.font = 'Roboto';
