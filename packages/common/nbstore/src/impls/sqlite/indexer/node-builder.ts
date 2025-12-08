@@ -44,12 +44,6 @@ export async function createNode(
         id
       );
       if (text) {
-        let values: string[] = [text];
-        const parsed = tryParseArrayField(text);
-        if (parsed) {
-          values = parsed.map(v => String(v));
-        }
-
         const queryString = Array.from(queryStrings).join(' ');
         const matches = await connection.apis.ftsGetMatches(
           `${table}:${h.field as string}`,

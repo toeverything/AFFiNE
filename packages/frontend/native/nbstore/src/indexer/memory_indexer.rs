@@ -5,6 +5,9 @@ use super::{
   types::{DocData, SnapshotData},
 };
 
+type DirtyDoc = (String, String, String, i64);
+type DeletedDoc = HashMap<String, HashSet<String>>;
+
 #[derive(Default, Debug)]
 pub struct InMemoryIndex {
   pub docs: HashMap<String, HashMap<String, DocData>>,
@@ -192,12 +195,7 @@ impl InMemoryIndex {
     scores
   }
 
-  pub fn take_dirty_and_deleted(
-    &mut self,
-  ) -> (
-    Vec<(String, String, String, i64)>,
-    HashMap<String, HashSet<String>>,
-  ) {
+  pub fn take_dirty_and_deleted(&mut self) -> (Vec<DirtyDoc>, DeletedDoc) {
     let dirty = std::mem::take(&mut self.dirty);
     let deleted = std::mem::take(&mut self.deleted);
 

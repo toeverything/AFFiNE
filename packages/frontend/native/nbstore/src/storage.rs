@@ -1,13 +1,13 @@
+use std::sync::{Arc, RwLock};
+
 use affine_schema::get_migrator;
 use sqlx::{
   migrate::MigrateDatabase,
   sqlite::{Sqlite, SqliteConnectOptions, SqlitePoolOptions},
   Pool, Row,
 };
-use std::sync::{Arc, RwLock};
 
-use super::error::Result;
-use super::indexer::InMemoryIndex;
+use super::{error::Result, indexer::InMemoryIndex};
 
 pub struct SqliteDocStorage {
   pub pool: Pool<Sqlite>,

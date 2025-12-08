@@ -177,5 +177,11 @@ export interface NbStorePlugin {
     indexName: string;
     docId: string;
   }) => Promise<{ text: string | null }>;
+  ftsGetMatches: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+    query: string;
+  }) => Promise<Array<{ start: number; end: number }>>;
   ftsFlushIndex: (options: { id: string }) => Promise<void>;
 }

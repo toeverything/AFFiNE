@@ -388,6 +388,19 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     });
     return result.text;
   },
+  ftsGetMatches: async function (
+    id: string,
+    indexName: string,
+    docId: string,
+    query: string
+  ): Promise<{ start: number; end: number }[]> {
+    return await NbStore.ftsGetMatches({
+      id,
+      indexName,
+      docId,
+      query,
+    });
+  },
   ftsFlushIndex: async function (id: string): Promise<void> {
     await NbStore.ftsFlushIndex({
       id,

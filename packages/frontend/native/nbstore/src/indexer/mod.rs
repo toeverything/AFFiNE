@@ -1,18 +1,18 @@
-mod indexer;
+mod memory_indexer;
 mod tokenizer;
 mod types;
 
 use affine_common::doc_parser::{parse_doc_from_binary, ParseError};
+pub use memory_indexer::InMemoryIndex;
 use sqlx::Row;
+pub use types::{
+  DocData, NativeBlockInfo, NativeCrawlResult, NativeMatch, NativeSearchHit, SnapshotData,
+};
 use y_octo::DocOptions;
 
 use super::{
   error::{Error, Result},
   storage::SqliteDocStorage,
-};
-pub use indexer::InMemoryIndex;
-pub use types::{
-  DocData, NativeBlockInfo, NativeCrawlResult, NativeMatch, NativeSearchHit, SnapshotData,
 };
 
 impl SqliteDocStorage {
