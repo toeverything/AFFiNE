@@ -20,6 +20,7 @@ import {
   type ToSliceSnapshotPayload,
   type Transformer,
 } from '@blocksuite/store';
+import DOMPurify from 'dompurify';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type {
@@ -766,7 +767,10 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       const trimmedText = text.trim();
 
       if (trimmedText.startsWith('<svg')) {
-        const svgDimensions = extractSvgDimensions(trimmedText);
+        const svgContent = DOMPurify.sanitize(trimmedText, {
+          USE_PROFILES: { svg: true },
+        });
+        const svgDimensions = extractSvgDimensions(svgContent);
         const dimensions = calculateImageDimensions(
           blockWidth,
           blockHeight,
@@ -776,7 +780,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
 
         const content: Content[] = [
           {
-            svg: trimmedText,
+            svg: svgContent,
             ...(dimensions.width && { width: dimensions.width }),
             ...(dimensions.height && { height: dimensions.height }),
             margin: [0, 5, 0, 5],
