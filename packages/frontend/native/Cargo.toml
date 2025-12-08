@@ -7,7 +7,7 @@ version = "0.0.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-affine_common = { workspace = true }
+affine_common = { workspace = true, features = ["hashcash"] }
 affine_media_capture = { path = "./media_capture" }
 affine_nbstore = { path = "./nbstore" }
 affine_sqlite_v1 = { path = "./sqlite_v1" }
@@ -22,7 +22,13 @@ sqlx = { workspace = true, default-features = false, features = [
   "sqlite",
   "tls-rustls",
 ] }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+
+[dev-dependencies]
+chrono     = { workspace = true }
+serde_json = { workspace = true }
+uuid       = { workspace = true }
 
 [build-dependencies]
 napi-build = { workspace = true }

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-import { InvalidOauthCallbackCode, URLHelper } from '../../../base';
+import { URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
-import { OAuthProvider, Tokens } from './def';
+import type { OAuthState } from '../types';
+import { OAuthAccount, OAuthProvider, Tokens } from './def';
 
 interface AuthTokenResponse {
   access_token: string;
@@ -35,64 +36,36 @@ export class GithubOAuthProvider extends OAuthProvider {
     })}`;
   }
 
-  async getToken(code: string) {
-    const response = await fetch(
+  async getToken(code: string, _state: OAuthState): Promise<Tokens> {
+    const ghToken = await this.postFormJson<AuthTokenResponse>(
       'https://github.com/login/oauth/access_token',
-      {
-        method: 'POST',
-        body: this.url.stringify({
-          code,
-          client_id: this.config.clientId,
-          client_secret: this.config.clientSecret,
-          redirect_uri: this.url.link('/oauth/callback'),
-        }),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
+      this.url.stringify({
+        code,
+        client_id: this.config.clientId,
+        client_secret: this.config.clientSecret,
+        redirect_uri: this.url.link('/oauth/callback'),
+      })
     );
 
-    if (response.ok) {
-      const ghToken = (await response.json()) as AuthTokenResponse;
-
-      return {
-        accessToken: ghToken.access_token,
-        scope: ghToken.scope,
-      };
-    } else {
-      const body = await response.text();
-      if (response.status < 500) {
-        throw new InvalidOauthCallbackCode({ status: response.status, body });
-      }
-      throw new Error(
-        `Server responded with non-success status ${response.status}, body: ${body}`
-      );
-    }
+    return {
+      accessToken: ghToken.access_token,
+      scope: ghToken.scope,
+    };
   }
 
-  async getUser(tokens: Tokens) {
-    const response = await fetch('https://api.github.com/user', {
+  async getUser(tokens: Tokens, _state: OAuthState): Promise<OAuthAccount> {
+    const user = await this.fetchJson<UserInfo>('https://api.github.com/user', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${tokens.accessToken}`,
       },
     });
 
-    if (response.ok) {
-      const user = (await response.json()) as UserInfo;
-
-      return {
-        id: user.login,
-        avatarUrl: user.avatar_url,
-        email: user.email,
-      };
-    } else {
-      throw new Error(
-        `Server responded with non-success code ${
-          response.status
-        } ${await response.text()}`
-      );
-    }
+    return {
+      id: user.login,
+      avatarUrl: user.avatar_url,
+      email: user.email,
+      name: user.name,
+    };
   }
 }

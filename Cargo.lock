@@ -125,18 +125,23 @@ dependencies = [
  "affine_media_capture",
  "affine_nbstore",
  "affine_sqlite_v1",
+ "chrono",
  "napi",
  "napi-build",
  "napi-derive",
  "once_cell",
+ "serde_json",
  "sqlx",
+ "thiserror 2.0.12",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
 name = "affine_nbstore"
 version = "0.0.0"
 dependencies = [
+ "affine_common",
  "affine_schema",
  "anyhow",
  "chrono",
@@ -144,10 +149,14 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
+ "serde",
+ "serde_json",
  "sqlx",
  "thiserror 2.0.12",
  "tokio",
  "uniffi",
+ "uuid",
+ "y-octo",
 ]
 
 [[package]]

@@ -65,18 +65,37 @@ export class OAuthController {
       throw new UnknownOauthProvider({ name: unknownProviderName });
     }
 
+    const pkce = provider.requiresPkce ? this.oauth.createPkcePair() : null;
+
     const state = await this.oauth.saveOAuthState({
       provider: providerName,
       redirectUri,
       client,
       clientNonce,
+      ...(pkce
+        ? {
+            pkce: {
+              codeVerifier: pkce.codeVerifier,
+              codeChallengeMethod: pkce.codeChallengeMethod,
+            },
+          }
+        : {}),
     });
 
-    const stateStr = JSON.stringify({
+    const statePayload: Record<string, unknown> = {
       state,
       client,
       provider: unknownProviderName,
-    });
+    };
+
+    if (pkce) {
+      statePayload.pkce = {
+        codeChallenge: pkce.codeChallenge,
+        codeChallengeMethod: pkce.codeChallengeMethod,
+      };
+    }
+
+    const stateStr = JSON.stringify(statePayload);
 
     return {
       url: provider.getAuthUrl(stateStr, clientNonce),
@@ -124,6 +143,9 @@ export class OAuthController {
 
     if (!state) {
       throw new OauthStateExpired();
+    }
+    if (!state.token) {
+      state.token = stateStr;
     }
 
     if (
@@ -173,7 +195,7 @@ export class OAuthController {
 
     let tokens: Tokens;
     try {
-      tokens = await provider.getToken(code);
+      tokens = await provider.getToken(code, state);
     } catch (err) {
       let rayBodyString = '';
       if (req.rawBody) {
@@ -238,6 +260,7 @@ export class OAuthController {
     }
 
     const user = await this.models.user.fulfill(externalAccount.email, {
+      name: externalAccount.name,
       avatarUrl: externalAccount.avatarUrl,
     });
 

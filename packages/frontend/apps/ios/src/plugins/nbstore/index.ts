@@ -4,6 +4,7 @@ import {
 } from '@affine/core/modules/workspace-engine';
 import {
   type BlobRecord,
+  type CrawlResult,
   type DocClock,
   type DocRecord,
   type ListedBlobRecord,
@@ -335,5 +336,11 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       blobId,
       uploadedAt: uploadedAt ? uploadedAt.getTime() : null,
     });
+  },
+  crawlDocData: async function (
+    id: string,
+    docId: string
+  ): Promise<CrawlResult> {
+    return await NbStore.crawlDocData({ id, docId });
   },
 };

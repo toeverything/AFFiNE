@@ -2,13 +2,15 @@ import { JsonWebKey } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
+import { z } from 'zod';
 
 import {
   InternalServerError,
-  InvalidOauthCallbackCode,
+  InvalidAuthState,
   URLHelper,
 } from '../../../base';
 import { OAuthProviderName } from '../config';
+import type { OAuthState } from '../types';
 import { OAuthProvider, Tokens } from './def';
 
 interface AuthTokenResponse {
@@ -19,12 +21,73 @@ interface AuthTokenResponse {
   expires_in: number;
 }
 
+const AppleProviderArgsSchema = z.object({
+  privateKey: z.string().nonempty(),
+  keyId: z.string().nonempty(),
+  teamId: z.string().nonempty(),
+});
+
 @Injectable()
 export class AppleOAuthProvider extends OAuthProvider {
   provider = OAuthProviderName.Apple;
+  private args: z.infer<typeof AppleProviderArgsSchema> | null = null;
+  private _jwtCache: { token: string; expiresAt: number } | null = null;
 
   constructor(private readonly url: URLHelper) {
     super();
+  }
+
+  override get configured() {
+    if (this.config && !this.args) {
+      const result = AppleProviderArgsSchema.safeParse(this.config?.args);
+      if (result.success) {
+        this.args = result.data;
+      }
+    }
+
+    return (
+      !!this.config &&
+      !!this.config.clientId &&
+      (!!this.config.clientSecret || !!this.args)
+    );
+  }
+
+  private get clientSecret() {
+    if (this.config.clientSecret) {
+      return this.config.clientSecret;
+    }
+
+    if (!this.args) {
+      throw new Error('Missing Apple OAuth configuration');
+    }
+
+    if (this._jwtCache && this._jwtCache.expiresAt > Date.now()) {
+      return this._jwtCache.token;
+    }
+
+    const { privateKey, keyId, teamId } = this.args;
+    const expiresIn = 300; // 5 minutes
+
+    try {
+      const token = jwt.sign({}, privateKey, {
+        algorithm: 'ES256',
+        keyid: keyId,
+        expiresIn,
+        issuer: teamId,
+        audience: 'https://appleid.apple.com',
+        subject: this.config.clientId,
+      });
+
+      this._jwtCache = {
+        token,
+        expiresAt: Date.now() + (expiresIn - 30) * 1000,
+      };
+
+      return token;
+    } catch (e) {
+      this.logger.error('Failed to generate Apple client secret JWT', e);
+      throw new Error('Failed to generate client secret');
+    }
   }
 
   getAuthUrl(state: string, clientNonce?: string): string {
@@ -40,54 +103,39 @@ export class AppleOAuthProvider extends OAuthProvider {
     })}`;
   }
 
-  async getToken(code: string) {
-    const response = await fetch('https://appleid.apple.com/auth/token', {
-      method: 'POST',
-      body: this.url.stringify({
+  async getToken(code: string, _state: OAuthState) {
+    const appleToken = await this.postFormJson<AuthTokenResponse>(
+      'https://appleid.apple.com/auth/token',
+      this.url.stringify({
         code,
         client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
+        client_secret: this.clientSecret,
         redirect_uri: this.url.link('/api/oauth/callback'),
         grant_type: 'authorization_code',
-      }),
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+      })
+    );
 
-    if (response.ok) {
-      const appleToken = (await response.json()) as AuthTokenResponse;
-
-      return {
-        accessToken: appleToken.access_token,
-        refreshToken: appleToken.refresh_token,
-        expiresAt: new Date(Date.now() + appleToken.expires_in * 1000),
-        idToken: appleToken.id_token,
-      };
-    } else {
-      const body = await response.text();
-      if (response.status < 500) {
-        throw new InvalidOauthCallbackCode({ status: response.status, body });
-      }
-      throw new Error(
-        `Server responded with non-success status ${response.status}, body: ${body}`
-      );
-    }
+    return {
+      accessToken: appleToken.access_token,
+      refreshToken: appleToken.refresh_token,
+      expiresAt: new Date(Date.now() + appleToken.expires_in * 1000),
+      idToken: appleToken.id_token,
+    };
   }
 
-  async getUser(
-    tokens: Tokens & { idToken: string },
-    state: { clientNonce: string }
-  ) {
-    const keysReq = await fetch('https://appleid.apple.com/auth/keys', {
-      method: 'GET',
-    });
-    const { keys } = (await keysReq.json()) as { keys: JsonWebKey[] };
+  async getUser(tokens: Tokens, state: OAuthState) {
+    if (!tokens.idToken) {
+      throw new InvalidAuthState();
+    }
+    const { keys } = await this.fetchJson<{ keys: JsonWebKey[] }>(
+      'https://appleid.apple.com/auth/keys',
+      { method: 'GET' },
+      { treatServerErrorAsInvalid: true }
+    );
 
     const payload = await new Promise<JwtPayload>((resolve, reject) => {
       jwt.verify(
-        tokens.idToken,
+        tokens.idToken!,
         (header, callback) => {
           const key = keys.find(key => key.kid === header.kid);
           if (!key) {
