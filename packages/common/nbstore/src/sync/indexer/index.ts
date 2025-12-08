@@ -486,9 +486,11 @@ export class IndexerSyncImpl implements IndexerSync {
 
   private async refreshIfNeed(): Promise<void> {
     if (this.lastRefreshed + 100 < Date.now()) {
+      let ts = Date.now();
       console.log('[indexer] refreshing indexer');
       await this.indexer.refreshIfNeed();
       this.lastRefreshed = Date.now();
+      console.log('[indexer] refreshing indexer done', Date.now() - ts);
     }
   }
 
