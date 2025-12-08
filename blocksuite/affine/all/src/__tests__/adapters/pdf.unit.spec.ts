@@ -327,7 +327,10 @@ describe('snapshot to pdf', () => {
     const docSnapshot: DocSnapshot = {
       type: 'page',
       meta: {
+        id: 'testDocument',
         title: 'Test Document',
+        createDate: 1718225423102,
+        tags: [],
       },
       blocks: {
         type: 'block',
