@@ -45,5 +45,5 @@
     "electron": "*",
     "react-dom": "^19.0.0"
   },
-  "version": "0.25.5"
+  "version": "0.25.7"
 }

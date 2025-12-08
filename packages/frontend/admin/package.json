@@ -1,6 +1,6 @@
 {
   "name": "@affine/admin",
-  "version": "0.25.5",
+  "version": "0.25.7",
   "private": true,
   "dependencies": {
     "@affine/component": "workspace:*",
