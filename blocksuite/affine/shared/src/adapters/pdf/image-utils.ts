@@ -95,11 +95,17 @@ export async function extractImageDimensions(
   return new Promise(resolve => {
     const img = new Image();
     const url = URL.createObjectURL(blob);
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      resolve({});
+    }, 5000);
     img.onload = () => {
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
       resolve({ width: img.width, height: img.height });
     };
     img.onerror = () => {
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
       resolve({});
     };
