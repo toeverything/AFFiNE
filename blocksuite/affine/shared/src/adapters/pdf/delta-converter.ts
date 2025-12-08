@@ -91,7 +91,12 @@ export function extractTextWithInline(
         }
         styleObj.color = '#0066cc';
         if (!isPageFound) {
-          styleObj.decoration = 'lineThrough';
+          if (!Array.isArray(styleObj.decoration)) {
+            styleObj.decoration = [styleObj.decoration];
+          }
+          if (!styleObj.decoration.includes('lineThrough')) {
+            styleObj.decoration.push('lineThrough');
+          }
         }
         if (linkUrl) {
           styleObj.link = linkUrl;
