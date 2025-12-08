@@ -1,4 +1,3 @@
-import { getNumberPrefix } from '@blocksuite/affine-block-list/utils/get-number-prefix';
 import type { ServiceProvider } from '@blocksuite/global/di';
 import {
   BaseAdapter,
@@ -38,6 +37,7 @@ import {
 } from './svg-utils.js';
 import {
   BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
+  getNumberPrefix,
   hasTextContent,
   textContentToString,
 } from './utils.js';
