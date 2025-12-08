@@ -51,7 +51,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -73,7 +73,7 @@
     "!dist/__tests__"
   ],
   "devDependencies": {
-    "vitest": "3.1.3"
+    "vitest": "^3.2.4"
   },
   "version": "0.25.7"
 }
