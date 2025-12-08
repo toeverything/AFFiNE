@@ -71,7 +71,7 @@ export function extractTextWithInline(
     }
     if (attrs.link) {
       styleObj.link = attrs.link;
-      styleObj.color = attrs.color || '#0066cc';
+      styleObj.color = '#0066cc';
     }
     if (attrs.reference) {
       const ref = attrs.reference;
@@ -98,7 +98,7 @@ export function extractTextWithInline(
     if (attrs.latex) {
       styleObj.text = attrs.latex;
       styleObj.italics = true;
-      styleObj.color = attrs.color || '#666666';
+      styleObj.color = '#666666';
     }
 
     result.push(styleObj);
