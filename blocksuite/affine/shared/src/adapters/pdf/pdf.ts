@@ -810,6 +810,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         imageDimensions.height
       );
 
+      // pdfmake (via pdfkit) accepts ArrayBuffer for images, though the types don't reflect this
       const imageBuffer = arrayBuffer as never as string;
       const content: Content[] = [
         {
