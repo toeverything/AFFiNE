@@ -24,7 +24,7 @@ interface ExportMenuItemProps<T> {
 
 interface ExportProps {
   exportHandler: (
-    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot' | 'pdfmake'
+    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot' | 'pdf-export'
   ) => void;
   pageMode?: 'page' | 'edgeless';
   className?: string;

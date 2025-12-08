@@ -33,7 +33,13 @@ import { nanoid } from 'nanoid';
 
 import { useAsyncCallback } from '../affine-async-hooks';
 
-type ExportType = 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot' | 'pdfmake';
+type ExportType =
+  | 'pdf'
+  | 'html'
+  | 'png'
+  | 'markdown'
+  | 'snapshot'
+  | 'pdf-export';
 
 interface ExportHandlerOptions {
   page: Store;
@@ -165,7 +171,7 @@ async function exportHandler({
       await editorRoot?.std.get(ExportManager).exportPng();
       return;
     }
-    case 'pdfmake': {
+    case 'pdf-export': {
       await PdfTransformer.exportDoc(page);
       return;
     }
