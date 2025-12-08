@@ -735,8 +735,11 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
 
     try {
       const manager = assets ?? this.job.assetsManager;
-      await manager?.readFromBlob(sourceId);
-      const blob = manager?.getAssets().get(sourceId);
+      if (!manager) {
+        throw new Error('Asset manager not available');
+      }
+      await manager.readFromBlob(sourceId);
+      const blob = manager.getAssets().get(sourceId);
       if (!blob) {
         throw new Error('Image asset not found');
       }
