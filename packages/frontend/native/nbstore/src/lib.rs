@@ -3,6 +3,7 @@ pub mod blob_sync;
 pub mod doc;
 pub mod doc_sync;
 pub mod error;
+pub mod indexer;
 pub mod pool;
 pub mod storage;
 
@@ -115,6 +116,20 @@ impl DocStoragePool {
   pub async fn checkpoint(&self, universal_id: String) -> Result<()> {
     self.pool.get(universal_id).await?.checkpoint().await?;
     Ok(())
+  }
+
+  #[napi]
+  pub async fn crawl_doc_data(
+    &self,
+    universal_id: String,
+    doc_id: String,
+  ) -> Result<indexer::NativeCrawlResult> {
+    let result = self
+      .get(universal_id)
+      .await?
+      .crawl_doc_data(&doc_id)
+      .await?;
+    Ok(result)
   }
 
   #[napi]

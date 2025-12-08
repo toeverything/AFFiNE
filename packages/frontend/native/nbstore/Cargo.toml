@@ -10,11 +10,13 @@ crate-type = ["cdylib", "rlib"]
 use-as-lib = ["napi-derive/noop", "napi/noop"]
 
 [dependencies]
+affine_common = { workspace = true, features = ["ydoc-loader"] }
 affine_schema = { path = "../schema" }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 napi = { workspace = true }
 napi-derive = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
   "macros",
@@ -25,6 +27,7 @@ sqlx = { workspace = true, default-features = false, features = [
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+y-octo = { workspace = true }
 
 [target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
 uniffi = { workspace = true }
@@ -42,3 +45,8 @@ sqlx = { workspace = true, default-features = false, features = [
   "tls-rustls",
 ] }
 tokio = { workspace = true, features = ["full"] }
+
+
+[dev-dependencies]
+serde_json = { workspace = true }
+uuid       = { workspace = true, features = ["v4"] }

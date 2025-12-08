@@ -4,7 +4,7 @@ name    = "affine_common"
 version = "0.1.0"
 
 [features]
-default = ["hashcash"]
+default = []
 doc-loader = [
   "docx-parser",
   "infer",
@@ -35,7 +35,7 @@ tree-sitter = [
   "dep:tree-sitter-scala",
   "dep:tree-sitter-typescript",
 ]
-ydoc-loader = ["assert-json-diff", "y-octo"]
+ydoc-loader = ["assert-json-diff", "serde", "serde_json", "thiserror", "y-octo"]
 
 [dependencies]
 chrono = { workspace = true }
