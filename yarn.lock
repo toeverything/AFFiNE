@@ -3823,7 +3823,7 @@ __metadata:
     micromark-extension-gfm-task-list-item: "npm:^2.1.0"
     micromark-util-combine-extensions: "npm:^2.0.0"
     minimatch: "npm:^10.0.1"
-    pdfmake: "npm:^0.2.12"
+    pdfmake: "npm:^0.2.20"
     quick-lru: "npm:^7.0.1"
     rehype-parse: "npm:^9.0.0"
     rehype-stringify: "npm:^10.0.0"
@@ -30053,7 +30053,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pdfmake@npm:^0.2.12":
+"pdfmake@npm:^0.2.20":
   version: 0.2.20
   resolution: "pdfmake@npm:0.2.20"
   dependencies:
