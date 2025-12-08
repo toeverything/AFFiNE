@@ -1,13 +1,4 @@
 /**
- * CSS variable resolution utilities
- */
-
-const rootComputedStyle =
-  typeof document !== 'undefined'
-    ? getComputedStyle(document.documentElement)
-    : null;
-
-/**
  * Resolve CSS variable color (var(--affine-xxx)) using computed styles
  */
 export function resolveCssVariable(color: string): string | null {
@@ -17,9 +8,10 @@ export function resolveCssVariable(color: string): string | null {
   if (!color.startsWith('var(')) {
     return color;
   }
-  if (!rootComputedStyle) {
+  if (typeof document === 'undefined') {
     return null;
   }
+  const rootComputedStyle = getComputedStyle(document.documentElement);
   const match = color.match(/var\(([^)]+)\)/);
   if (!match || !match[1]) {
     return null;
