@@ -1,3 +1,5 @@
+import type { CrawlResult } from '@affine/nbstore';
+
 export interface Blob {
   key: string;
   // base64 encoded data
@@ -149,4 +151,8 @@ export interface NbStorePlugin {
     uploadedAt: number | null;
   }) => Promise<void>;
   clearClocks: (options: { id: string }) => Promise<void>;
+  crawlDocData: (options: {
+    id: string;
+    docId: string;
+  }) => Promise<CrawlResult>;
 }

@@ -2,7 +2,7 @@
   "name": "@affine/media-capture-playground",
   "private": true,
   "type": "module",
-  "version": "0.25.5",
+  "version": "0.25.7",
   "scripts": {
     "dev:web": "vite",
     "dev:server": "tsx --env-file=.env --watch server/main.ts"
@@ -25,7 +25,7 @@
     "multer": "^2.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-markdown": "^10.0.0",
+    "react-markdown": "^10.1.0",
     "socket.io": "^4.7.4",
     "socket.io-client": "^4.7.4",
     "swr": "^2.3.2",

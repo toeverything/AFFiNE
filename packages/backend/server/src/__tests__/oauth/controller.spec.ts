@@ -331,7 +331,6 @@ function mockOAuthProvider(
     clientNonce,
   });
 
-  // @ts-expect-error mock
   Sinon.stub(provider, 'getToken').resolves({ accessToken: '1' });
   Sinon.stub(provider, 'getUser').resolves({
     id: '1',
