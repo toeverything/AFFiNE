@@ -109,7 +109,7 @@ export class IndexerSyncImpl implements IndexerSync {
   /**
    * increase this number to re-index all docs
    */
-  readonly INDEXER_VERSION = 1;
+  readonly INDEXER_VERSION = 2;
   private abort: AbortController | null = null;
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
