@@ -32,7 +32,7 @@
     "y-indexeddb": "^9.0.12",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   },
   "license": "MIT",
   "devDependencies": {

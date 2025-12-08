@@ -68,7 +68,7 @@
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.0",
     "swr": "^2.2.5",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
@@ -86,7 +86,7 @@
     "typescript": "^5.7.2",
     "unplugin-swc": "^1.5.1",
     "vite": "^7.0.0",
-    "vitest": "3.1.3"
+    "vitest": "^3.2.4"
   },
   "version": "0.25.7"
 }
