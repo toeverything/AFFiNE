@@ -64,9 +64,9 @@
     "@types/node": "^22.0.0",
     "@typescript-eslint/parser": "^8.18.0",
     "@vanilla-extract/vite-plugin": "^5.0.0",
-    "@vitest/browser": "3.1.3",
-    "@vitest/coverage-istanbul": "3.1.3",
-    "@vitest/ui": "3.1.3",
+    "@vitest/browser": "^3.2.4",
+    "@vitest/coverage-istanbul": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
     "cross-env": "^7.0.3",
     "electron": "^36.0.0",
     "eslint": "^9.16.0",
@@ -90,7 +90,7 @@
     "typescript-eslint": "^8.18.0",
     "unplugin-swc": "^1.5.1",
     "vite": "^7.0.0",
-    "vitest": "3.1.3"
+    "vitest": "^3.2.4"
   },
   "packageManager": "yarn@4.9.1",
   "resolutions": {
