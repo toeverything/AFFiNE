@@ -33,7 +33,7 @@ pub fn tokenize(text: &str) -> Vec<Token> {
   let mut last_pos = 0;
   for term in ts_tokenize(text) {
     if term.chars().any(|c| c.is_alphanumeric()) {
-      if let Some(pos) = text[last_pos..].find(&term) {
+      if let Some(pos) = text[last_pos..].find(term) {
         let start = last_pos + pos;
         let end = start + term.len();
         tokens.push(Token {
@@ -77,9 +77,9 @@ pub fn tokenize(text: &str) -> Vec<Token> {
 
 fn is_hangul(c: char) -> bool {
   // Hangul Syllables
-  (c >= '\u{AC00}' && c <= '\u{D7AF}')
+  ('\u{AC00}'..='\u{D7AF}').contains(&c)
     // Hangul Jamo
-    || (c >= '\u{1100}' && c <= '\u{11FF}')
+    || ('\u{1100}'..='\u{11FF}').contains(&c)
     // Hangul Compatibility Jamo
-    || (c >= '\u{3130}' && c <= '\u{318F}')
+    || ('\u{3130}'..='\u{318F}').contains(&c)
 }

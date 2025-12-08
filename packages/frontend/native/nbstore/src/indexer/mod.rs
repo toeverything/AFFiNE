@@ -106,7 +106,7 @@ impl SqliteDocStorage {
     }
 
     let mut modified_indices = std::collections::HashSet::new();
-    for (index_name, _) in &deleted_docs {
+    for index_name in deleted_docs.keys() {
       modified_indices.insert(index_name.clone());
     }
     for (index_name, _, _, _) in &dirty_docs {
