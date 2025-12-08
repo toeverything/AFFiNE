@@ -54,6 +54,19 @@ export type PdfAdapterFile = {
   fileName: string;
 };
 
+/**
+ * PDF export adapter using pdfmake library.
+ *
+ * This adapter converts BlockSuite documents to PDF format. It is export-only
+ * and does not support importing from PDF.
+ *
+ * @example
+ * ```typescript
+ * const adapter = new PdfAdapter(job, provider);
+ * const result = await adapter.fromDocSnapshot({ snapshot, assets });
+ * download(result.file.blob, result.file.fileName);
+ * ```
+ */
 export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
   constructor(job: Transformer, provider: ServiceProvider) {
     super(job, provider);
