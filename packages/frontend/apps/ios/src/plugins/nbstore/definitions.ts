@@ -155,4 +155,27 @@ export interface NbStorePlugin {
     id: string;
     docId: string;
   }) => Promise<CrawlResult>;
+  ftsAddDocument: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+    text: string;
+    index: boolean;
+  }) => Promise<void>;
+  ftsDeleteDocument: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+  }) => Promise<void>;
+  ftsSearch: (options: {
+    id: string;
+    indexName: string;
+    query: string;
+  }) => Promise<{ id: string; score: number }[]>;
+  ftsGetDocument: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+  }) => Promise<{ text: string | null }>;
+  ftsFlushIndex: (options: { id: string }) => Promise<void>;
 }

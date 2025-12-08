@@ -450,6 +450,77 @@ impl DocStoragePool {
 
     Ok(result)
   }
+
+  #[napi]
+  pub async fn fts_add_document(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+    text: String,
+    index: bool,
+  ) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.fts_add(&index_name, &doc_id, &text, index).await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn fts_flush_index(&self, id: String) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.flush_index().await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn fts_delete_document(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+  ) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.fts_delete(&index_name, &doc_id).await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn fts_get_document(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+  ) -> Result<Option<String>> {
+    let storage = self.pool.get(id).await?;
+    Ok(storage.fts_get(&index_name, &doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn fts_search(
+    &self,
+    id: String,
+    index_name: String,
+    query: String,
+  ) -> Result<Vec<indexer::NativeSearchHit>> {
+    let storage = self.pool.get(id).await?;
+    Ok(storage.fts_search(&index_name, &query).await?)
+  }
+
+  #[napi]
+  pub async fn fts_get_matches(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+    query: String,
+  ) -> Result<Vec<indexer::NativeMatch>> {
+    let storage = self.pool.get(id).await?;
+    Ok(
+      storage
+        .fts_get_matches(&index_name, &doc_id, &query)
+        .await?,
+    )
+  }
 }
 
 #[napi]

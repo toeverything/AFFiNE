@@ -339,4 +339,58 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   crawlDocData: async function (id: string, docId: string) {
     return NbStore.crawlDocData({ id, docId });
   },
+  ftsAddDocument: async function (
+    id: string,
+    indexName: string,
+    docId: string,
+    text: string,
+    index: boolean
+  ): Promise<void> {
+    await NbStore.ftsAddDocument({
+      id,
+      indexName,
+      docId,
+      text,
+      index,
+    });
+  },
+  ftsDeleteDocument: async function (
+    id: string,
+    indexName: string,
+    docId: string
+  ): Promise<void> {
+    await NbStore.ftsDeleteDocument({
+      id,
+      indexName,
+      docId,
+    });
+  },
+  ftsSearch: async function (
+    id: string,
+    indexName: string,
+    query: string
+  ): Promise<{ id: string; score: number }[]> {
+    return await NbStore.ftsSearch({
+      id,
+      indexName,
+      query,
+    });
+  },
+  ftsGetDocument: async function (
+    id: string,
+    indexName: string,
+    docId: string
+  ): Promise<string | null> {
+    const result = await NbStore.ftsGetDocument({
+      id,
+      indexName,
+      docId,
+    });
+    return result.text;
+  },
+  ftsFlushIndex: async function (id: string): Promise<void> {
+    await NbStore.ftsFlushIndex({
+      id,
+    });
+  },
 };
