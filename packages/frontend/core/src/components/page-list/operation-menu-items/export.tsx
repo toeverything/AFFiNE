@@ -98,9 +98,9 @@ export const ExportMenuItems = ({
         label={t['Export to Markdown']()}
       />
       <ExportMenuItem
-        onSelect={() => exportHandler('pdfmake')}
+        onSelect={() => exportHandler('pdf-export')}
         className={className}
-        type="pdfmake"
+        type="pdf-export"
         icon={<PrinterIcon />}
         label={t['Export to PDF']()}
       />
