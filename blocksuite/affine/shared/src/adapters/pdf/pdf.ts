@@ -1,3 +1,8 @@
+import type {
+  TableCellSerialized,
+  TableColumn,
+  TableRow,
+} from '@blocksuite/affine-model';
 import type { ServiceProvider } from '@blocksuite/global/di';
 import {
   BaseAdapter,
@@ -849,14 +854,14 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
   private async _createTableContent(
     props: Record<string, any>
   ): Promise<Content | null> {
-    const columns = props.columns || {};
-    const rows = props.rows || {};
-    const cells = props.cells || {};
+    const columns: Record<string, TableColumn> = props.columns || {};
+    const rows: Record<string, TableRow> = props.rows || {};
+    const cells: Record<string, TableCellSerialized> = props.cells || {};
 
-    const sortedColumns = Object.values(columns).sort((a: any, b: any) =>
+    const sortedColumns = Object.values(columns).sort((a, b) =>
       (a.order || '').localeCompare(b.order || '')
     );
-    const sortedRows = Object.values(rows).sort((a: any, b: any) =>
+    const sortedRows = Object.values(rows).sort((a, b) =>
       (a.order || '').localeCompare(b.order || '')
     );
 
