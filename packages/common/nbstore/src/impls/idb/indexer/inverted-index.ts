@@ -288,18 +288,6 @@ export class FullTextInvertedIndex implements InvertedIndex {
           const score =
             bm25(termFreq, 1, totalCount, fieldLength, avgFieldLength) *
             (matchLength / originTokenTerm.length);
-          const match = {
-            score,
-            positions: new Map(),
-          };
-          const ranges = match.positions.get(position.i) || [];
-          ranges.push(
-            ...position.rs.map(
-              ([start, _end]) =>
-                [start, start + matchLength] as [number, number]
-            )
-          );
-          match.positions.set(position.i, ranges);
           submatched.push({
             nid: obj.nid,
             score,
@@ -445,8 +433,7 @@ export class FullTextInvertedIndex implements InvertedIndex {
 
     const newTotalCount = totalCount + terms.length;
     const newAvgFieldLength =
-      (avgFieldLength * totalCount + totalTermLength * terms.length) /
-      newTotalCount;
+      (avgFieldLength * totalCount + totalTermLength) / newTotalCount;
 
     promises.push(
       indexerMetadataStore.put({
