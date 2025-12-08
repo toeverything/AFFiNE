@@ -3791,7 +3791,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-shared@workspace:blocksuite/affine/shared"
   dependencies:
-    "@blocksuite/affine-block-list": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
