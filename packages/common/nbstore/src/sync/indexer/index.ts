@@ -484,12 +484,16 @@ export class IndexerSyncImpl implements IndexerSync {
     }
   }
 
+  // ensure the indexer is refreshed according to recommendRefreshInterval
+  // recommendRefreshInterval <= 0 means force refresh on each operation
+  // recommendRefreshInterval > 0 means refresh if the last refresh is older than recommendRefreshInterval
   private async refreshIfNeed(): Promise<void> {
     const recommendRefreshInterval = this.indexer.recommendRefreshInterval ?? 0;
     const needRefresh =
       recommendRefreshInterval > 0 &&
       this.lastRefreshed + recommendRefreshInterval < Date.now();
-    if (needRefresh) {
+    const forceRefresh = recommendRefreshInterval <= 0;
+    if (needRefresh || forceRefresh) {
       await this.indexer.refreshIfNeed();
       this.lastRefreshed = Date.now();
     }
