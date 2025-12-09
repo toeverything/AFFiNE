@@ -105,7 +105,7 @@ impl YMap {
   }
 
   #[napi]
-  pub fn to_json(&self, env: Env) -> Result<Object> {
+  pub fn to_json(&self, env: Env) -> Result<Object<'_>> {
     let mut js_object = Object::new(&env)?;
     for (key, value) in self.map.iter() {
       js_object.set(key, get_js_unknown_from_value(&env, value))?;
