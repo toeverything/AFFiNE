@@ -68,13 +68,16 @@ export class StringInvertedIndex implements InvertedIndex {
   }
 
   async insert(trx: DataStructRWTransaction, id: number, terms: string[]) {
-    for (const term of terms) {
-      await trx.objectStore('invertedIndex').put({
-        table: this.table,
-        key: InvertedIndexKey.forString(this.fieldKey, term).buffer(),
-        nid: id,
-      });
-    }
+    const uniqueTerms = new Set(terms);
+    await Promise.all(
+      Array.from(uniqueTerms).map(term =>
+        trx.objectStore('invertedIndex').put({
+          table: this.table,
+          key: InvertedIndexKey.forString(this.fieldKey, term).buffer(),
+          nid: id,
+        })
+      )
+    );
   }
 }
 
@@ -127,13 +130,16 @@ export class IntegerInvertedIndex implements InvertedIndex {
   }
 
   async insert(trx: DataStructRWTransaction, id: number, terms: string[]) {
-    for (const term of terms) {
-      await trx.objectStore('invertedIndex').put({
-        table: this.table,
-        key: InvertedIndexKey.forInt64(this.fieldKey, BigInt(term)).buffer(),
-        nid: id,
-      });
-    }
+    const uniqueTerms = new Set(terms);
+    await Promise.all(
+      Array.from(uniqueTerms).map(term =>
+        trx.objectStore('invertedIndex').put({
+          table: this.table,
+          key: InvertedIndexKey.forInt64(this.fieldKey, BigInt(term)).buffer(),
+          nid: id,
+        })
+      )
+    );
   }
 }
 
@@ -186,16 +192,19 @@ export class BooleanInvertedIndex implements InvertedIndex {
   }
 
   async insert(trx: DataStructRWTransaction, id: number, terms: string[]) {
-    for (const term of terms) {
-      await trx.objectStore('invertedIndex').put({
-        table: this.table,
-        key: InvertedIndexKey.forBoolean(
-          this.fieldKey,
-          term === 'true'
-        ).buffer(),
-        nid: id,
-      });
-    }
+    const uniqueTerms = new Set(terms);
+    await Promise.all(
+      Array.from(uniqueTerms).map(term =>
+        trx.objectStore('invertedIndex').put({
+          table: this.table,
+          key: InvertedIndexKey.forBoolean(
+            this.fieldKey,
+            term === 'true'
+          ).buffer(),
+          nid: id,
+        })
+      )
+    );
   }
 }
 
@@ -260,37 +269,37 @@ export class FullTextInvertedIndex implements InvertedIndex {
         const key = InvertedIndexKey.fromBuffer(obj.key);
         const originTokenTerm = key.asString();
         const matchLength = token.term.length;
-        const position = obj.pos ?? {
-          i: 0,
-          l: 0,
-          rs: [],
-        };
-        const termFreq = position.rs.length;
-        const totalCount = objs.length;
-        const fieldLength = position.l;
-        const score =
-          bm25(termFreq, 1, totalCount, fieldLength, avgFieldLength) *
-          (matchLength / originTokenTerm.length);
-        const match = {
-          score,
-          positions: new Map(),
-        };
-        const ranges = match.positions.get(position.i) || [];
-        ranges.push(
-          ...position.rs.map(([start, _end]) => [start, start + matchLength])
-        );
-        match.positions.set(position.i, ranges);
-        submatched.push({
-          nid: obj.nid,
-          score,
-          position: {
-            index: position.i,
-            ranges: position.rs.map(([start, _end]) => [
-              start,
-              start + matchLength,
-            ]),
-          },
-        });
+        let positions = obj.pos
+          ? Array.isArray(obj.pos)
+            ? obj.pos
+            : [obj.pos]
+          : [
+              {
+                i: 0,
+                l: 0,
+                rs: [] as [number, number][],
+              },
+            ];
+
+        for (const position of positions) {
+          const termFreq = position.rs.length;
+          const totalCount = objs.length;
+          const fieldLength = position.l;
+          const score =
+            bm25(termFreq, 1, totalCount, fieldLength, avgFieldLength) *
+            (matchLength / originTokenTerm.length);
+          submatched.push({
+            nid: obj.nid,
+            score,
+            position: {
+              index: position.i,
+              ranges: position.rs.map(([start, _end]) => [
+                start,
+                start + matchLength,
+              ]),
+            },
+          });
+        }
       }
 
       // normalize score
@@ -369,6 +378,13 @@ export class FullTextInvertedIndex implements InvertedIndex {
   }
 
   async insert(trx: DataStructRWTransaction, id: number, terms: string[]) {
+    const promises: Promise<any>[] = [];
+    const totalTermLength = terms.reduce((acc, term) => acc + term.length, 0);
+    const globalTokenMap = new Map<
+      string,
+      { l: number; i: number; rs: [number, number][] }[]
+    >();
+
     for (let i = 0; i < terms.length; i++) {
       const tokenMap = new Map<string, Token[]>();
       const originString = terms[i];
@@ -382,44 +398,57 @@ export class FullTextInvertedIndex implements InvertedIndex {
       }
 
       for (const [term, tokens] of tokenMap) {
-        await trx.objectStore('invertedIndex').put({
+        const entry = globalTokenMap.get(term) || [];
+        entry.push({
+          l: originString.length,
+          i: i,
+          rs: tokens.map(token => [token.start, token.end]),
+        });
+        globalTokenMap.set(term, entry);
+      }
+    }
+
+    for (const [term, positions] of globalTokenMap) {
+      promises.push(
+        trx.objectStore('invertedIndex').put({
           table: this.table,
           key: InvertedIndexKey.forString(this.fieldKey, term).buffer(),
           nid: id,
-          pos: {
-            l: originString.length,
-            i: i,
-            rs: tokens.map(token => [token.start, token.end]),
-          },
-        });
-      }
-
-      const indexerMetadataStore = trx.objectStore('indexerMetadata');
-      // update avg-field-length
-      const totalCount =
-        (
-          await indexerMetadataStore.get(
-            `full-text:field-count:${this.table}:${this.fieldKey}`
-          )
-        )?.value ?? 0;
-      const avgFieldLength =
-        (
-          await indexerMetadataStore.get(
-            `full-text:avg-field-length:${this.table}:${this.fieldKey}`
-          )
-        )?.value ?? 0;
-      await indexerMetadataStore.put({
-        key: `full-text:field-count:${this.table}:${this.fieldKey}`,
-        value: totalCount + 1,
-      });
-      await indexerMetadataStore.put({
-        key: `full-text:avg-field-length:${this.table}:${this.fieldKey}`,
-        value:
-          avgFieldLength +
-          (terms.reduce((acc, term) => acc + term.length, 0) - avgFieldLength) /
-            (totalCount + 1),
-      });
+          pos: positions,
+        })
+      );
     }
+
+    const indexerMetadataStore = trx.objectStore('indexerMetadata');
+    const countKey = `full-text:field-count:${this.table}:${this.fieldKey}`;
+    const avgKey = `full-text:avg-field-length:${this.table}:${this.fieldKey}`;
+
+    const [countObj, avgObj] = await Promise.all([
+      indexerMetadataStore.get(countKey),
+      indexerMetadataStore.get(avgKey),
+    ]);
+
+    const totalCount = countObj?.value ?? 0;
+    const avgFieldLength = avgObj?.value ?? 0;
+
+    const newTotalCount = totalCount + terms.length;
+    const newAvgFieldLength =
+      (avgFieldLength * totalCount + totalTermLength) / newTotalCount;
+
+    promises.push(
+      indexerMetadataStore.put({
+        key: countKey,
+        value: newTotalCount,
+      })
+    );
+    promises.push(
+      indexerMetadataStore.put({
+        key: avgKey,
+        value: isNaN(newAvgFieldLength) ? 0 : newAvgFieldLength,
+      })
+    );
+
+    await Promise.all(promises);
   }
 }
 

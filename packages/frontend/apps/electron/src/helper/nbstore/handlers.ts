@@ -48,4 +48,10 @@ export const nbstoreHandlers: NativeDBApis = {
   setBlobUploadedAt: POOL.setBlobUploadedAt.bind(POOL),
   getBlobUploadedAt: POOL.getBlobUploadedAt.bind(POOL),
   crawlDocData: POOL.crawlDocData.bind(POOL),
+  ftsAddDocument: POOL.ftsAddDocument.bind(POOL),
+  ftsDeleteDocument: POOL.ftsDeleteDocument.bind(POOL),
+  ftsSearch: POOL.ftsSearch.bind(POOL),
+  ftsGetDocument: POOL.ftsGetDocument.bind(POOL),
+  ftsGetMatches: POOL.ftsGetMatches.bind(POOL),
+  ftsFlushIndex: POOL.ftsFlushIndex.bind(POOL),
 };
