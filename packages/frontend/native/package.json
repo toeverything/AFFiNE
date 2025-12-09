@@ -25,10 +25,10 @@
     ]
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.89",
+    "@napi-rs/cli": "3.5.0",
     "@napi-rs/whisper": "^0.0.4",
     "@types/node": "^22.0.0",
-    "ava": "^6.2.0",
+    "ava": "^6.4.1",
     "rxjs": "^7.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"

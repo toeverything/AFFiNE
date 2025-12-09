@@ -66,7 +66,7 @@ impl CATapDescription {
     Ok(Self { inner: obj })
   }
 
-  pub fn get_uuid(&self) -> std::result::Result<ItemRef<CFString>, CoreAudioError> {
+  pub fn get_uuid(&self) -> std::result::Result<ItemRef<'_, CFString>, CoreAudioError> {
     let uuid: *mut NSUUID = unsafe { msg_send![self.inner, UUID] };
     if uuid.is_null() {
       return Err(CoreAudioError::GetCATapDescriptionUUIDFailed);
