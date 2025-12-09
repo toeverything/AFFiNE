@@ -107,15 +107,15 @@ export abstract class GfxBlockComponent<
 
   getCSSTransform() {
     const viewport = this.gfx.viewport;
-    const { translateX, translateY, zoom } = viewport;
+    const { translateX, translateY, zoom, viewScale } = viewport;
     const bound = Bound.deserialize(this.model.xywh);
 
-    const scaledX = bound.x * zoom;
-    const scaledY = bound.y * zoom;
+    const scaledX = (bound.x * zoom) / viewScale;
+    const scaledY = (bound.y * zoom) / viewScale;
     const deltaX = scaledX - bound.x;
     const deltaY = scaledY - bound.y;
 
-    return `translate(${translateX + deltaX}px, ${translateY + deltaY}px) scale(${zoom})`;
+    return `translate(${translateX / viewScale + deltaX}px, ${translateY / viewScale + deltaY}px) scale(${zoom / viewScale})`;
   }
 
   getRenderingRect() {
@@ -219,18 +219,8 @@ export function toGfxBlockComponent<
       handleGfxConnection(this);
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
     getCSSTransform() {
-      const viewport = this.gfx.viewport;
-      const { translateX, translateY, zoom } = viewport;
-      const bound = Bound.deserialize(this.model.xywh);
-
-      const scaledX = bound.x * zoom;
-      const scaledY = bound.y * zoom;
-      const deltaX = scaledX - bound.x;
-      const deltaY = scaledY - bound.y;
-
-      return `translate(${translateX + deltaX}px, ${translateY + deltaY}px) scale(${zoom})`;
+      return GfxBlockComponent.prototype.getCSSTransform.call(this);
     }
 
     // eslint-disable-next-line sonarjs/no-identical-functions
