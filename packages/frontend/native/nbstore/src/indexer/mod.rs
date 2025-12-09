@@ -52,7 +52,7 @@ impl SqliteDocStorage {
       .await?;
 
     {
-      let mut index = self.index.write().unwrap();
+      let mut index = self.index.write().await;
       for row in snapshots {
         let index_name: String = row.get("index_name");
         let data: Vec<u8> = row.get("data");
@@ -72,7 +72,7 @@ impl SqliteDocStorage {
 
   async fn compact_index(&self, index_name: &str) -> Result<()> {
     let snapshot_data = {
-      let index = self.index.read().unwrap();
+      let index = self.index.read().await;
       index.get_snapshot_data(index_name)
     };
 
@@ -97,7 +97,7 @@ impl SqliteDocStorage {
 
   pub async fn flush_index(&self) -> Result<()> {
     let (dirty_docs, deleted_docs) = {
-      let mut index = self.index.write().unwrap();
+      let mut index = self.index.write().await;
       index.take_dirty_and_deleted()
     };
 
@@ -127,24 +127,24 @@ impl SqliteDocStorage {
     text: &str,
     index: bool,
   ) -> Result<()> {
-    let mut idx = self.index.write().unwrap();
+    let mut idx = self.index.write().await;
     idx.add_doc(index_name, doc_id, text, index);
     Ok(())
   }
 
   pub async fn fts_delete(&self, index_name: &str, doc_id: &str) -> Result<()> {
-    let mut idx = self.index.write().unwrap();
+    let mut idx = self.index.write().await;
     idx.remove_doc(index_name, doc_id);
     Ok(())
   }
 
   pub async fn fts_get(&self, index_name: &str, doc_id: &str) -> Result<Option<String>> {
-    let idx = self.index.read().unwrap();
+    let idx = self.index.read().await;
     Ok(idx.get_doc(index_name, doc_id))
   }
 
   pub async fn fts_search(&self, index_name: &str, query: &str) -> Result<Vec<NativeSearchHit>> {
-    let idx = self.index.read().unwrap();
+    let idx = self.index.read().await;
     Ok(
       idx
         .search(index_name, query)
@@ -160,7 +160,7 @@ impl SqliteDocStorage {
     doc_id: &str,
     query: &str,
   ) -> Result<Vec<NativeMatch>> {
-    let idx = self.index.read().unwrap();
+    let idx = self.index.read().await;
     Ok(
       idx
         .get_matches(index_name, doc_id, query)

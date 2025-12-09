@@ -55,6 +55,8 @@ export async function matchAll(
   table: string
 ): Promise<Match> {
   const schema = IndexerSchema[table as keyof IndexerSchema];
+  if (!schema) return new Match();
+
   const match = new Match();
   for (const field of Object.keys(schema)) {
     const indexName = `${table}:${field}`;
