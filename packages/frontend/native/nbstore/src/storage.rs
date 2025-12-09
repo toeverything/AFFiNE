@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use affine_schema::get_migrator;
 use sqlx::{
@@ -7,6 +6,7 @@ use sqlx::{
   sqlite::{Sqlite, SqliteConnectOptions, SqlitePoolOptions},
   Pool, Row,
 };
+use tokio::sync::RwLock;
 
 use super::{error::Result, indexer::InMemoryIndex};
 
