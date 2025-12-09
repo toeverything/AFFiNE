@@ -21,7 +21,7 @@ import { getText, tryParseArrayField } from './utils';
 
 export class SqliteIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'SqliteIndexerStorage';
-  override readonly recommendRefreshInterval = 5 * 1000; // 5 seconds
+  override readonly recommendRefreshInterval = 30 * 1000; // 5 seconds
   readonly connection: NativeDBConnection;
   readonly isReadonly = false;
   private readonly tableUpdate$ = new Subject<string>();
