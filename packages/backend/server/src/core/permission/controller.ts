@@ -26,9 +26,9 @@ export function getAccessController<Type extends ResourceType>(
   return provider;
 }
 
-export abstract class AccessController<Type extends ResourceType>
-  implements OnModuleInit
-{
+export abstract class AccessController<
+  Type extends ResourceType,
+> implements OnModuleInit {
   protected abstract readonly type: Type;
   protected logger = new Logger(AccessController.name);
 

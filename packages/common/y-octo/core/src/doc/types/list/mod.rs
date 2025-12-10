@@ -60,7 +60,7 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
     self.as_inner().ty().unwrap().len
   }
 
-  fn iter_item(&self) -> ListIterator {
+  fn iter_item(&self) -> ListIterator<'_> {
     let inner = self.as_inner().ty().unwrap();
     ListIterator {
       cur: inner.start.clone(),

@@ -5,8 +5,7 @@ import { useEffect, useRef } from 'react';
 import * as styles from './styles.css';
 
 export interface ResizePanelProps
-  extends PropsWithChildren,
-    HTMLAttributes<HTMLDivElement> {
+  extends PropsWithChildren, HTMLAttributes<HTMLDivElement> {
   horizontal?: boolean;
   vertical?: boolean;
   width?: number;

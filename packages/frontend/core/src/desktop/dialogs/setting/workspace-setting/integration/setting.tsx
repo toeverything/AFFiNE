@@ -34,8 +34,7 @@ export const IntegrationSettingHeader = ({
 };
 
 // universal
-export interface IntegrationSettingItemProps
-  extends HTMLAttributes<HTMLDivElement> {
+export interface IntegrationSettingItemProps extends HTMLAttributes<HTMLDivElement> {
   name?: ReactNode;
   desc?: ReactNode;
 }

@@ -490,8 +490,11 @@ export interface GridGroupData {
   rows: string[];
 }
 
-export interface GridVirtualScrollOptions<GroupData, RowData, CellData>
-  extends VirtualScrollOptions {
+export interface GridVirtualScrollOptions<
+  GroupData,
+  RowData,
+  CellData,
+> extends VirtualScrollOptions {
   initGroupData: (group: GridGroup<GroupData, RowData, CellData>) => GroupData;
   initRowData: (row: GridRow<GroupData, RowData, CellData>) => RowData;
   initCellData: (cell: GridCell<GroupData, RowData, CellData>) => CellData;
