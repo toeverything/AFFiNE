@@ -29,8 +29,7 @@ pub fn hashcash_mint(resource: String, bits: u32) -> String {
 #[derive(uniffi::Record)]
 pub struct DocRecord {
   pub doc_id: String,
-  // base64 encoded data
-  pub bin: String,
+  pub bin: String,          // base64 encoded
   pub timestamp: i64,
 }
 
@@ -52,7 +51,8 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
       doc_id: record.doc_id,
       bin: base64_simd::STANDARD
         .decode_to_vec(record.bin)
-        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
+        .into(),
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(record.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
@@ -64,8 +64,7 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
 pub struct DocUpdate {
   pub doc_id: String,
   pub timestamp: i64,
-  // base64 encoded data
-  pub bin: String,
+  pub bin: String,         // base64 encoded
 }
 
 impl From<affine_nbstore::DocUpdate> for DocUpdate {
@@ -87,7 +86,10 @@ impl TryFrom<DocUpdate> for affine_nbstore::DocUpdate {
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(update.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
-      bin: update.bin.into(),
+      bin: base64_simd::STANDARD
+        .decode_to_vec(update.bin)
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
+        .into(),
     })
   }
 }
@@ -123,8 +125,7 @@ impl TryFrom<DocClock> for affine_nbstore::DocClock {
 #[derive(uniffi::Record)]
 pub struct Blob {
   pub key: String,
-  // base64 encoded data
-  pub data: String,
+  pub data: String,       // base64
   pub mime: String,
   pub size: i64,
   pub created_at: i64,
@@ -145,8 +146,7 @@ impl From<affine_nbstore::Blob> for Blob {
 #[derive(uniffi::Record)]
 pub struct SetBlob {
   pub key: String,
-  // base64 encoded data
-  pub data: String,
+  pub data: String,       // base64
   pub mime: String,
 }
 
@@ -158,7 +158,8 @@ impl TryFrom<SetBlob> for affine_nbstore::SetBlob {
       key: blob.key,
       data: base64_simd::STANDARD
         .decode_to_vec(blob.data)
-        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
+        .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?
+        .into(),
       mime: blob.mime,
     })
   }
@@ -236,14 +237,11 @@ pub struct DocStoragePool {
 
 #[uniffi::export]
 pub fn new_doc_storage_pool() -> DocStoragePool {
-  DocStoragePool {
-    inner: Default::default(),
-  }
+  DocStoragePool { inner: Default::default() }
 }
 
 #[uniffi::export(async_runtime = "tokio")]
 impl DocStoragePool {
-  /// Initialize the database and run migrations.
   pub async fn connect(&self, universal_id: String, path: String) -> Result<()> {
     Ok(self.inner.connect(universal_id, path).await?)
   }
@@ -254,14 +252,7 @@ impl DocStoragePool {
   }
 
   pub async fn set_space_id(&self, universal_id: String, space_id: String) -> Result<()> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .set_space_id(space_id)
-        .await?,
-    )
+    Ok(self.inner.get(universal_id).await?.set_space_id(space_id).await?)
   }
 
   pub async fn push_update(
@@ -275,12 +266,13 @@ impl DocStoragePool {
         .inner
         .get(universal_id)
         .await?
-        .push_update(
-          doc_id,
-          base64_simd::STANDARD
-            .decode_to_vec(update)
-            .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
-        )
+         .push_update(
+    doc_id,
+    base64_simd::STANDARD
+      .decode_to_vec(update)
+      .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
+)
+
         .await?
         .and_utc()
         .timestamp_millis(),
@@ -304,14 +296,7 @@ impl DocStoragePool {
   }
 
   pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .set_doc_snapshot(snapshot.try_into()?)
-        .await?,
-    )
+    Ok(self.inner.get(universal_id).await?.set_doc_snapshot(snapshot.try_into()?).await?)
   }
 
   pub async fn get_doc_updates(
@@ -359,14 +344,7 @@ impl DocStoragePool {
   }
 
   pub async fn delete_doc(&self, universal_id: String, doc_id: String) -> Result<()> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .delete_doc(doc_id)
-        .await?,
-    )
+    Ok(self.inner.get(universal_id).await?.delete_doc(doc_id).await?)
   }
 
   pub async fn get_doc_clocks(
@@ -424,14 +402,7 @@ impl DocStoragePool {
   }
 
   pub async fn set_blob(&self, universal_id: String, blob: SetBlob) -> Result<()> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .set_blob(blob.try_into()?)
-        .await?,
-    )
+    Ok(self.inner.get(universal_id).await?.set_blob(blob.try_into()?).await?)
   }
 
   pub async fn delete_blob(
@@ -440,14 +411,7 @@ impl DocStoragePool {
     key: String,
     permanently: bool,
   ) -> Result<()> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .delete_blob(key, permanently)
-        .await?,
-    )
+    Ok(self.inner.get(universal_id).await?.delete_blob(key, permanently).await?)
   }
 
   pub async fn release_blobs(&self, universal_id: String) -> Result<()> {
@@ -691,12 +655,7 @@ impl DocStoragePool {
   }
 
   pub async fn crawl_doc_data(&self, universal_id: String, doc_id: String) -> Result<CrawlResult> {
-    let result = self
-      .inner
-      .get(universal_id.clone())
-      .await?
-      .crawl_doc_data(&doc_id)
-      .await?;
+    let result = self.inner.get(universal_id.clone()).await?.crawl_doc_data(&doc_id).await?;
     Ok(result.into())
   }
 }
