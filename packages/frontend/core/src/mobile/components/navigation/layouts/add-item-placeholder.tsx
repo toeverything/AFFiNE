@@ -7,8 +7,7 @@ import { type HTMLAttributes, useContext } from 'react';
 import { levelIndent } from '../tree/node.css';
 import * as styles from './add-item-placeholder.css';
 
-export interface AddItemPlaceholderProps
-  extends HTMLAttributes<HTMLDivElement> {
+export interface AddItemPlaceholderProps extends HTMLAttributes<HTMLDivElement> {
   onClick?: () => void;
   label?: string;
   icon?: React.ReactNode;

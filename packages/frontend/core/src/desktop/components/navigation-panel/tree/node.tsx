@@ -90,8 +90,7 @@ type ExplorerIconConfig = {
   where: ExplorerType;
   id: string;
 };
-interface WebNavigationPanelTreeNodeProps
-  extends BaseNavigationPanelTreeNodeProps {
+interface WebNavigationPanelTreeNodeProps extends BaseNavigationPanelTreeNodeProps {
   renameable?: boolean;
   onRename?: (newName: string) => void;
   renameableGuard?: { docId: string; action: DocPermissionActions };

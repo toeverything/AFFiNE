@@ -20,8 +20,10 @@ import {
 
 import * as styles from './server-selector.css';
 
-export interface ServerSelectorProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
+export interface ServerSelectorProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'onChange'
+> {
   selectedId: Server['id'];
   onChange: (id: Server['id']) => void;
   placeholder?: ReactNode;

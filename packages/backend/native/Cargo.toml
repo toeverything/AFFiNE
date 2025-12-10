@@ -1,7 +1,8 @@
 [package]
-edition = "2021"
-name    = "affine_server_native"
-version = "1.0.0"
+edition      = "2021"
+license-file = "LICENSE"
+name         = "affine_server_native"
+version      = "1.0.0"
 
 [lib]
 crate-type = ["cdylib"]

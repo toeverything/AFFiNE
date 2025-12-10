@@ -108,8 +108,10 @@ export const ConfigRow = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement>>(
   }
 );
 
-export interface SettingGroupProps
-  extends Omit<HTMLProps<HTMLDivElement>, 'title'> {
+export interface SettingGroupProps extends Omit<
+  HTMLProps<HTMLDivElement>,
+  'title'
+> {
   title?: ReactNode;
   contentClassName?: string;
   contentStyle?: CSSProperties;

@@ -6,8 +6,8 @@ import type { DataViewUILogicBase } from '../view/data-view-base.js';
 import type { DataViewWidgetProps } from './types.js';
 
 export class WidgetBase<
-    ViewLogic extends DataViewUILogicBase = DataViewUILogicBase,
-  >
+  ViewLogic extends DataViewUILogicBase = DataViewUILogicBase,
+>
   extends SignalWatcher(WithDisposable(ShadowlessElement))
   implements DataViewWidgetProps<ViewLogic>
 {
