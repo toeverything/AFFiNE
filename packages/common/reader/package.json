@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "lodash-es": "^4.17.21",
-    "yjs": "^13.6.21"
+    "yjs": "^13.6.27"
   },
   "devDependencies": {
     "@blocksuite/affine": "workspace:*",

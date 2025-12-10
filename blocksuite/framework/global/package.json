@@ -56,9 +56,9 @@
   ],
   "dependencies": {
     "@preact/signals-core": "^1.8.0",
-    "lib0": "^0.2.97",
+    "lib0": "^0.2.114",
     "lit": "^3.2.0",
-    "rxjs": "^7.8.1",
+    "rxjs": "^7.8.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
