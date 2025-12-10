@@ -25,8 +25,7 @@ export interface IconAndNameEditorContentProps extends IconEditorProps {
 }
 
 export interface IconAndNameEditorMenuProps
-  extends Omit<MenuProps, 'items'>,
-    IconAndNameEditorContentProps {
+  extends Omit<MenuProps, 'items'>, IconAndNameEditorContentProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 

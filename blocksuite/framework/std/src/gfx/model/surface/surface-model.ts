@@ -351,10 +351,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
         val,
         {
           onChange: payload => {
-            this.elementUpdated.next(payload),
+            (this.elementUpdated.next(payload),
               Object.keys(payload.props).forEach(key => {
                 model.model.propsUpdated.next({ key });
-              });
+              }));
           },
           skipFieldInit: true,
         }
