@@ -66,8 +66,7 @@ export type SerializedElement = Record<string, unknown> & {
 };
 export abstract class GfxPrimitiveElementModel<
   Props extends BaseElementProps = BaseElementProps,
-> implements GfxCompatibleInterface
-{
+> implements GfxCompatibleInterface {
   private _lastXYWH!: SerializedXYWH;
 
   protected _disposable = new DisposableGroup();
@@ -380,8 +379,8 @@ export abstract class GfxPrimitiveElementModel<
 }
 
 export abstract class GfxGroupLikeElementModel<
-    Props extends BaseElementProps = BaseElementProps,
-  >
+  Props extends BaseElementProps = BaseElementProps,
+>
   extends GfxPrimitiveElementModel<Props>
   implements GfxGroupCompatibleInterface
 {

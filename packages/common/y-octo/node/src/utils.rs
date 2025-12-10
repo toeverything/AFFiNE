@@ -9,7 +9,7 @@ use super::*;
 pub type MixedYType<'a> = Either4<YArray, YMap, YText, Unknown<'a>>;
 pub type MixedRefYType<'a> = Either4<&'a YArray, &'a YMap, &'a YText, Unknown<'a>>;
 
-pub fn get_js_unknown_from_any(env: &Env, any: Any) -> Result<Unknown> {
+pub fn get_js_unknown_from_any(env: &Env, any: Any) -> Result<Unknown<'_>> {
   match any {
     Any::Null | Any::Undefined => Null.into_unknown(env),
     Any::True => true.into_unknown(env),
@@ -33,7 +33,7 @@ pub fn get_js_unknown_from_any(env: &Env, any: Any) -> Result<Unknown> {
   }
 }
 
-pub fn get_js_unknown_from_value(env: &Env, value: Value) -> Result<Unknown> {
+pub fn get_js_unknown_from_value(env: &Env, value: Value) -> Result<Unknown<'_>> {
   match value {
     Value::Any(any) => get_js_unknown_from_any(env, any),
     Value::Array(array) => {

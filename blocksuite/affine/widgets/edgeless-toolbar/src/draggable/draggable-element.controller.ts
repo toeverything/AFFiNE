@@ -42,9 +42,9 @@ interface EventCache {
   onTouchEnd?: (e: TouchEvent) => void;
 }
 
-export class EdgelessDraggableElementController<T>
-  implements ReactiveController
-{
+export class EdgelessDraggableElementController<
+  T,
+> implements ReactiveController {
   clearTimeout: ReturnType<typeof setTimeout> | null = null;
 
   events: EventCache = {};

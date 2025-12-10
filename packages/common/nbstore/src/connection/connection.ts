@@ -21,9 +21,9 @@ export interface Connection<T = any> {
   ): () => void;
 }
 
-export abstract class AutoReconnectConnection<T = any>
-  implements Connection<T>
-{
+export abstract class AutoReconnectConnection<
+  T = any,
+> implements Connection<T> {
   private readonly event = new EventEmitter2({
     maxListeners: 100,
   });
