@@ -54,7 +54,6 @@ export class FnTypeInstance<
   unify(ctx: TypeVarContext, template: FnTypeInstance, unify: Unify): boolean {
     const newCtx = { ...ctx };
 
-     
     for (let i = 0; i < template.args.length; i++) {
       const arg = template.args[i];
       const realArg = this.args[i];
