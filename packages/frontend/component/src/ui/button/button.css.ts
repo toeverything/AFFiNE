@@ -196,6 +196,10 @@ export const content = style({
   overflow: 'hidden',
 });
 
+globalStyle(`${button}[data-icon-type='emoji'] > ${content}`, {
+  overflow: 'visible',
+});
+
 export const icon = style({
   flexShrink: 0,
   // There are two kinds of icon size:
