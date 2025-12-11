@@ -15,6 +15,7 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
         () => {
           return html` <date-picker
             .padding="${8}"
+            .size="${20}"
             .value="${value.value}"
             .onChange="${(date: Date) => {
               onChange(date.getTime());
