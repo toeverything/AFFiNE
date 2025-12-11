@@ -4,6 +4,7 @@ import { Extension } from '@blocksuite/store';
 export interface IFileSizeLimitService {
   maxFileSize: number;
   onOverFileSize?: () => void;
+  onProxySizeLimit?: () => void;
 }
 
 export const FileSizeLimitProvider = createIdentifier<IFileSizeLimitService>(

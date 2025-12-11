@@ -2,7 +2,11 @@ import { difference } from 'lodash-es';
 import { filter, Observable, ReplaySubject, share, Subject } from 'rxjs';
 
 import type { BlobRecord, BlobStorage } from '../../storage';
-import { OverCapacityError, OverSizeError } from '../../storage';
+import {
+  OverCapacityError,
+  OverSizeError,
+  ProxyLimitError,
+} from '../../storage';
 import type { BlobSyncStorage } from '../../storage/blob-sync';
 import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
 
@@ -19,6 +23,7 @@ export interface BlobSyncPeerBlobState {
   uploading: boolean;
   downloading: boolean;
   overSize: boolean;
+  proxyLimit: boolean;
   errorMessage?: string | null;
 }
 
@@ -194,6 +199,8 @@ export class BlobSyncPeer {
           this.status.blobError(blob.key, 'Remote storage over capacity');
         } else if (err instanceof OverSizeError) {
           this.status.blobOverSizeWithError(blob.key, err.message);
+        } else if (err instanceof ProxyLimitError) {
+          this.status.blobProxyLimitWithError(blob.key, err.message);
         } else {
           this.status.blobError(
             blob.key,
@@ -391,6 +398,7 @@ class BlobSyncPeerStatus {
   willDownload = new Set<string>();
   error = new Map<string, string>();
   overSize = new Set<string>();
+  proxyLimit = new Set<string>();
 
   peerState$ = new Observable<BlobSyncPeerState>(subscribe => {
     const next = () => {
@@ -425,6 +433,7 @@ class BlobSyncPeerStatus {
             this.willDownload.has(blobId) || this.downloading.has(blobId),
           errorMessage: this.error.get(blobId) ?? null,
           overSize: this.overSize.has(blobId),
+          proxyLimit: this.proxyLimit.has(blobId),
         });
       };
       next();
@@ -569,10 +578,17 @@ class BlobSyncPeerStatus {
     this.statusUpdatedSubject$.next(blobId);
   }
 
+  blobProxyLimitWithError(blobId: string, errorMessage: string) {
+    this.proxyLimit.add(blobId);
+    this.error.set(blobId, errorMessage);
+    this.statusUpdatedSubject$.next(blobId);
+  }
+
   blobErrorFree(blobId: string) {
     let deleted = false;
     deleted = this.error.delete(blobId) || deleted;
     deleted = this.overSize.delete(blobId) || deleted;
+    deleted = this.proxyLimit.delete(blobId) || deleted;
     if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }
@@ -588,6 +604,7 @@ class BlobSyncPeerStatus {
     deleted = this.downloading.delete(blobId) || deleted;
     deleted = this.error.delete(blobId) || deleted;
     deleted = this.overSize.delete(blobId) || deleted;
+    deleted = this.proxyLimit.delete(blobId) || deleted;
     if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }

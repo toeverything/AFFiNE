@@ -12,6 +12,7 @@ import {
   BlobStorageBase,
   OverCapacityError,
   OverSizeError,
+  ProxyLimitError,
 } from '../../storage';
 import { HttpConnection } from './http';
 
@@ -116,10 +117,7 @@ export class CloudBlobStorage extends BlobStorageBase {
         throw new OverSizeError(this.humanReadableBlobSizeLimitCache);
       }
       if (userFriendlyError.is('CONTENT_TOO_LARGE')) {
-        throw new OverSizeError(
-          null,
-          'Upload stopped by network proxy: file size exceeds the set limit.'
-        );
+        throw new ProxyLimitError(null);
       }
       throw err;
     }
