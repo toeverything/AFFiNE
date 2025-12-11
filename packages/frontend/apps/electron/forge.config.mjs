@@ -30,7 +30,7 @@ const makers = [
     platform === 'darwin' && {
       name: '@electron-forge/maker-dmg',
       config: {
-        format: 'ULFO',
+        format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
