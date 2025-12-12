@@ -17,7 +17,7 @@
     "@graphql-codegen/typescript": "^4.1.2",
     "@graphql-codegen/typescript-operations": "^4.4.0",
     "@types/lodash-es": "^4.17.12",
-    "prettier": "^3.4.2",
+    "prettier": "^3.7.4",
     "vitest": "^3.2.4"
   },
   "scripts": {

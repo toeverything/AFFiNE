@@ -82,6 +82,12 @@ export declare class DocStoragePool {
   clearClocks(universalId: string): Promise<void>
   setBlobUploadedAt(universalId: string, peer: string, blobId: string, uploadedAt?: Date | undefined | null): Promise<void>
   getBlobUploadedAt(universalId: string, peer: string, blobId: string): Promise<Date | null>
+  ftsAddDocument(id: string, indexName: string, docId: string, text: string, index: boolean): Promise<void>
+  ftsFlushIndex(id: string): Promise<void>
+  ftsDeleteDocument(id: string, indexName: string, docId: string): Promise<void>
+  ftsGetDocument(id: string, indexName: string, docId: string): Promise<string | null>
+  ftsSearch(id: string, indexName: string, query: string): Promise<Array<NativeSearchHit>>
+  ftsGetMatches(id: string, indexName: string, docId: string, query: string): Promise<Array<NativeMatch>>
 }
 
 export interface Blob {
@@ -134,6 +140,16 @@ export interface NativeCrawlResult {
   summary: string
 }
 
+export interface NativeMatch {
+  start: number
+  end: number
+}
+
+export interface NativeSearchHit {
+  id: string
+  score: number
+}
+
 export interface SetBlob {
   key: string
   data: Uint8Array
@@ -170,8 +186,7 @@ export declare class SqliteConnection {
   get isClose(): boolean
   static validate(path: string): Promise<ValidationResult>
   migrateAddDocId(): Promise<void>
-  /**
-   * Flush the WAL file to the database file.
+  /** * Flush the WAL file to the database file.
    * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
    */
   checkpoint(): Promise<void>

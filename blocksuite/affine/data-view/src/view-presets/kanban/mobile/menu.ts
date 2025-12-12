@@ -25,6 +25,9 @@ export const popCardMenu = (
   if (!groupTrait) {
     return;
   }
+  const groups = (groupTrait.groupsDataList$.value ?? []).filter(
+    (v): v is NonNullable<typeof v> => v != null
+  );
   popFilterableSimpleMenu(ele, [
     menu.group({
       items: [
@@ -47,12 +50,10 @@ export const popCardMenu = (
           prefix: ArrowRightBigIcon(),
           options: {
             items:
-              groupTrait.groupsDataList$.value
-                ?.filter(v => {
-                  return v.key !== groupKey;
-                })
-                .map(group => {
-                  return menu.action({
+              groups
+                .filter(v => v.key !== groupKey)
+                .map(group =>
+                  menu.action({
                     name: group.value != null ? group.name$.value : 'Ungroup',
                     select: () => {
                       groupTrait.moveCardTo(
@@ -62,8 +63,8 @@ export const popCardMenu = (
                         'start'
                       );
                     },
-                  });
-                }) ?? [],
+                  })
+                ) ?? [],
           },
         }),
       ],

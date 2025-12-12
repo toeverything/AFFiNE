@@ -21,9 +21,11 @@ test.describe('AIChatWith/EdgelessMindMap', () => {
         id = await utils.editor.createMindmap(page);
       },
       async () => {
-        const { id: rootId } = await utils.editor.getMindMapNode(page, id!, [
-          0,
-        ]);
+        const { id: rootId } = await utils.editor.getMindMapNode(
+          page,
+          id!,
+          [0]
+        );
         await utils.editor.selectElementInEdgeless(page, [rootId]);
       }
     );

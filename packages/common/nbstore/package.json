@@ -22,13 +22,13 @@
     "@toeverything/infra": "workspace:*",
     "eventemitter2": "^6.4.9",
     "graphemer": "^1.4.0",
-    "lib0": "^0.2.99",
+    "lib0": "^0.2.114",
     "lodash-es": "^4.17.21",
-    "nanoid": "^5.0.9",
-    "rxjs": "^7.8.1",
-    "uuid": "^11.0.3",
+    "nanoid": "^5.1.6",
+    "rxjs": "^7.8.2",
+    "uuid": "^11.1.0",
     "y-protocols": "^1.0.6",
-    "yjs": "^13.6.21"
+    "yjs": "^13.6.27"
   },
   "devDependencies": {
     "@affine/error": "workspace:*",

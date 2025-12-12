@@ -50,8 +50,8 @@ export type GfxCommonBlockProps = GfxCompatibleProps & {
  * You can use `GfxCompatibleBlockModel` to convert a BlockModel to a subclass that extends it.
  */
 export class GfxBlockElementModel<
-    Props extends GfxCompatibleProps = GfxCompatibleProps,
-  >
+  Props extends GfxCompatibleProps = GfxCompatibleProps,
+>
   extends BlockModel<Props>
   implements GfxCompatibleInterface
 {

@@ -11,7 +11,7 @@
 This type include the common props for the graphic block model.
 You can use this type with Omit to define the props of a graphic block model.
 
-## Type declaration
+## Type Declaration
 
 ### rotate
 

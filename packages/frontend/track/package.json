@@ -8,9 +8,9 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@sentry/react": "^9.2.0",
+    "@sentry/react": "^9.47.1",
     "mixpanel-browser": "^2.56.0",
-    "react-router-dom": "6.30.0"
+    "react-router-dom": "^6.30.2"
   },
   "devDependencies": {
     "@types/mixpanel-browser": "^2.50.2",

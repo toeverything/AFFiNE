@@ -22,9 +22,8 @@
     "@magic-works/i18n-codegen": "^0.6.1",
     "dayjs": "^1.11.13",
     "i18next": "^25.0.0",
-    "react": "^19.0.0",
-    "react-i18next": "^15.2.0",
-    "undici": "^7.1.0"
+    "react": "^19.2.1",
+    "react-i18next": "^15.2.0"
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",

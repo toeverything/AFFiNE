@@ -1,29 +1,35 @@
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
 import { Global, Injectable, Module, Provider } from '@nestjs/common';
-import { getEnv } from '@opentelemetry/core';
-import { Resource } from '@opentelemetry/resources';
+import {
+  type Resource,
+  resourceFromAttributes,
+} from '@opentelemetry/resources';
 import { SpanExporter } from '@opentelemetry/sdk-trace-node';
 import {
-  SEMRESATTRS_CONTAINER_NAME,
-  SEMRESATTRS_K8S_POD_NAME,
-} from '@opentelemetry/semantic-conventions';
+  ATTR_CONTAINER_NAME,
+  ATTR_K8S_POD_NAME,
+} from '@opentelemetry/semantic-conventions/incubating';
 
 import { OpentelemetryOptionsFactory } from '../../base/metrics';
 
 @Injectable()
 export class GCloudOpentelemetryOptionsFactory extends OpentelemetryOptionsFactory {
   override getResource(): Resource {
-    const env = getEnv();
+    const envAttrs: Record<string, string> = {};
+    if (process.env.HOSTNAME) {
+      envAttrs[ATTR_K8S_POD_NAME] = process.env.HOSTNAME;
+    }
+    if (process.env.CONTAINER_NAME) {
+      envAttrs[ATTR_CONTAINER_NAME] = process.env.CONTAINER_NAME;
+    }
+
+    const detected = new GcpDetectorSync().detect();
+
     return super
       .getResource()
-      .merge(
-        new Resource({
-          [SEMRESATTRS_K8S_POD_NAME]: env.HOSTNAME,
-          [SEMRESATTRS_CONTAINER_NAME]: env.CONTAINER_NAME,
-        })
-      )
-      .merge(new GcpDetectorSync().detect());
+      .merge(resourceFromAttributes(envAttrs))
+      .merge(resourceFromAttributes(detected.attributes ?? {}));
   }
 
   override getSpanExporter(): SpanExporter {
