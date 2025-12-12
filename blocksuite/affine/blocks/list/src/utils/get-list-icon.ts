@@ -1,4 +1,5 @@
 import type { ListBlockModel } from '@blocksuite/affine-model';
+import { getNumberPrefix } from '@blocksuite/affine-shared/utils';
 import {
   BulletedList01Icon,
   BulletedList02Icon,
@@ -10,8 +11,6 @@ import {
   ToggleRightIcon,
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
-
-import { getNumberPrefix } from './get-number-prefix.js';
 
 const getListDeep = (model: ListBlockModel): number => {
   let deep = 0;

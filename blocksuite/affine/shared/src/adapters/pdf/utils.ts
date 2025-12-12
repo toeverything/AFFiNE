@@ -2,9 +2,47 @@
  * Pure utility functions for PDF adapter
  */
 
+// Layout constants
 export const BLOCK_CHILDREN_CONTAINER_PADDING_LEFT = 24;
 export const MAX_PAPER_WIDTH = 550;
 export const MAX_PAPER_HEIGHT = 800;
+
+// Color constants
+export const PDF_COLORS = {
+  /** Primary link color */
+  link: '#0066cc',
+  /** Primary text color */
+  text: '#333333',
+  /** Secondary/muted text color */
+  textMuted: '#666666',
+  /** Tertiary/disabled text color */
+  textDisabled: '#999999',
+  /** Border/divider color */
+  border: '#cccccc',
+  /** Code block background */
+  codeBackground: '#f5f5f5',
+  /** Card/container background */
+  cardBackground: '#f9f9f9',
+} as const;
+
+/**
+ * Table layout with no borders (for custom styled containers)
+ */
+export const TABLE_LAYOUT_NO_BORDERS = {
+  hLineWidth: () => 0,
+  vLineWidth: () => 0,
+  paddingLeft: () => 0,
+  paddingRight: () => 0,
+  paddingTop: () => 0,
+  paddingBottom: () => 0,
+} as const;
+
+/**
+ * Generate placeholder text for images that cannot be rendered
+ */
+export function getImagePlaceholder(caption?: string): string {
+  return caption ? `[Image: ${caption}]` : '[Image]';
+}
 
 /**
  * Check if text content has meaningful content
@@ -30,58 +68,4 @@ export function textContentToString(
   return textContent
     .map(item => (typeof item === 'string' ? item : item.text))
     .join('');
-}
-
-// Copied from blocksuite/affine/blocks/list/src/utils/get-number-prefix.ts
-function number2letter(n: number) {
-  const ordA = 'a'.charCodeAt(0);
-  const ordZ = 'z'.charCodeAt(0);
-  const len = ordZ - ordA + 1;
-  let s = '';
-  while (n >= 0) {
-    s = String.fromCharCode((n % len) + ordA) + s;
-    n = Math.floor(n / len) - 1;
-  }
-  return s;
-}
-
-// Derive from https://gist.github.com/imilu/00f32c61e50b7ca296f91e9d96d8e976
-export function number2roman(num: number) {
-  const lookup: Record<string, number> = {
-    M: 1000,
-    CM: 900,
-    D: 500,
-    CD: 400,
-    C: 100,
-    XC: 90,
-    L: 50,
-    XL: 40,
-    X: 10,
-    IX: 9,
-    V: 5,
-    IV: 4,
-    I: 1,
-  };
-  let romanStr = '';
-  for (const i in lookup) {
-    while (num >= lookup[i]) {
-      romanStr += i;
-      num -= lookup[i];
-    }
-  }
-  return romanStr;
-}
-
-function getPrefix(depth: number, index: number) {
-  const map = [
-    () => index,
-    () => number2letter(index - 1),
-    () => number2roman(index),
-  ];
-  return map[depth % map.length]();
-}
-
-export function getNumberPrefix(index: number, depth: number) {
-  const prefix = getPrefix(depth, index);
-  return `${prefix}.`;
 }

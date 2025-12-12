@@ -11,7 +11,7 @@ function number2letter(n: number) {
 }
 
 // Derive from https://gist.github.com/imilu/00f32c61e50b7ca296f91e9d96d8e976
-export function number2roman(num: number) {
+function number2roman(num: number) {
   const lookup: Record<string, number> = {
     M: 1000,
     CM: 900,
@@ -28,12 +28,13 @@ export function number2roman(num: number) {
     I: 1,
   };
   let romanStr = '';
-  for (const i in lookup) {
-    while (num >= lookup[i]) {
-      romanStr += i;
-      num -= lookup[i];
+  for (const [key, value] of Object.entries(lookup)) {
+    while (num >= value) {
+      romanStr += key;
+      num -= value;
     }
   }
+
   return romanStr;
 }
 

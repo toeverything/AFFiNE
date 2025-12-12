@@ -29,6 +29,7 @@ import type {
   TDocumentDefinitions,
 } from 'pdfmake/interfaces';
 
+import { getNumberPrefix } from '../../utils';
 import { resolveCssVariable } from './css-utils.js';
 import { extractTextWithInline } from './delta-converter.js';
 import {
@@ -43,8 +44,10 @@ import {
 } from './svg-utils.js';
 import {
   BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
-  getNumberPrefix,
+  getImagePlaceholder,
   hasTextContent,
+  PDF_COLORS,
+  TABLE_LAYOUT_NO_BORDERS,
   textContentToString,
 } from './utils.js';
 
@@ -215,7 +218,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
             x2: 515,
             y2: 0,
             lineWidth: 1,
-            lineColor: '#cccccc',
+            lineColor: PDF_COLORS.border,
           },
         ],
         margin: [0, 10, 0, 10],
@@ -235,7 +238,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       content.push({
         text: props.title || props.url || '',
         link: props.url,
-        color: '#0066cc',
+        color: PDF_COLORS.link,
         margin: [0, 2, 0, 2],
       });
     } else if (flavour === 'affine:image') {
@@ -253,7 +256,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         text: props.latex || '',
         margin: [baseIndent, 5, 0, 5],
         italics: true,
-        color: '#666666',
+        color: PDF_COLORS.textMuted,
         alignment: 'center',
       });
     } else if (flavour === 'affine:database') {
@@ -367,19 +370,14 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       });
     }
 
-    if (block.children && block.children.length) {
-      for (const child of block.children) {
-        const childContent = await this._blockToContent(
-          child,
-          assets,
-          depth,
-          0,
-          0
-        );
-        const adjustedContent = this._adjustMargins(childContent, 0, 10);
-        quoteContent.push(...adjustedContent);
-      }
-    }
+    const childrenContent = await this._processChildrenWithMargins(
+      block,
+      assets,
+      depth,
+      0,
+      10
+    );
+    quoteContent.push(...childrenContent);
 
     return [
       {
@@ -387,7 +385,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
           widths: [2, '*'],
           body: [
             [
-              { text: ' ', fillColor: '#cccccc' },
+              { text: ' ', fillColor: PDF_COLORS.border },
               {
                 stack: quoteContent.length > 0 ? quoteContent : [{ text: ' ' }],
                 margin: [10, 0, 0, 0],
@@ -396,14 +394,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
           ],
         },
         margin: [baseIndent, 5, 0, 5],
-        layout: {
-          hLineWidth: () => 0,
-          vLineWidth: () => 0,
-          paddingLeft: () => 0,
-          paddingRight: () => 0,
-          paddingTop: () => 0,
-          paddingBottom: () => 0,
-        },
+        layout: TABLE_LAYOUT_NO_BORDERS,
       },
     ];
   }
@@ -473,14 +464,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
           body: [[iconCell, textCell]],
         },
         margin: [baseIndent, 2, 0, 2],
-        layout: {
-          hLineWidth: () => 0,
-          vLineWidth: () => 0,
-          paddingLeft: () => 0,
-          paddingRight: () => 0,
-          paddingTop: () => 0,
-          paddingBottom: () => 0,
-        },
+        layout: TABLE_LAYOUT_NO_BORDERS,
       },
     ];
   }
@@ -511,13 +495,13 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
             text: lineNum,
             style: 'code',
             alignment: 'right',
-            fillColor: '#f5f5f5',
+            fillColor: PDF_COLORS.codeBackground,
             margin: [5, isFirstLine ? 20 : 0, 5, isLastLine ? 20 : 0],
           },
           {
             text: lines[i],
             style: 'code',
-            fillColor: '#f5f5f5',
+            fillColor: PDF_COLORS.codeBackground,
             margin: [5, isFirstLine ? 20 : 0, 10, isLastLine ? 20 : 0],
           },
         ]);
@@ -527,7 +511,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         {
           text: codeText,
           style: 'code',
-          fillColor: '#f5f5f5',
+          fillColor: PDF_COLORS.codeBackground,
           margin: [10, 5, 10, 5],
           colSpan: 2,
         },
@@ -550,7 +534,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       codeBlockContent.push({
         text: `Language: ${language}`,
         fontSize: 9,
-        color: '#999999',
+        color: PDF_COLORS.textDisabled,
         margin: [baseIndent + 10, 0, 0, 5],
         italics: true,
       });
@@ -583,19 +567,14 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       });
     }
 
-    if (block.children && block.children.length) {
-      for (const child of block.children) {
-        const childContent = await this._blockToContent(
-          child,
-          assets,
-          depth,
-          0,
-          0
-        );
-        const adjustedContent = this._adjustMargins(childContent, 10, 10);
-        calloutContent.push(...adjustedContent);
-      }
-    }
+    const childrenContent = await this._processChildrenWithMargins(
+      block,
+      assets,
+      depth,
+      10,
+      10
+    );
+    calloutContent.push(...childrenContent);
 
     return [
       {
@@ -647,7 +626,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
     content.push({
       text: '[Data View - Not exported]',
       italics: true,
-      color: '#999999',
+      color: PDF_COLORS.textDisabled,
       margin: [0, 2, 0, 5],
     });
 
@@ -702,7 +681,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         fontSize: 14,
         margin: [15, 10, 15, 5],
         decoration: isPageFound ? undefined : 'lineThrough',
-        color: isPageFound ? '#333333' : '#999999',
+        color: isPageFound ? PDF_COLORS.text : PDF_COLORS.textDisabled,
         link: linkUrl || undefined,
       },
     ];
@@ -711,7 +690,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       linkedDocContent.push({
         text: 'Linked Document',
         fontSize: 10,
-        color: '#666666',
+        color: PDF_COLORS.textMuted,
         margin: [15, 0, 15, 10],
       });
     }
@@ -723,7 +702,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
           [
             {
               stack: linkedDocContent,
-              fillColor: '#f9f9f9',
+              fillColor: PDF_COLORS.cardBackground,
             },
           ],
         ],
@@ -742,14 +721,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
     blockHeight?: number
   ): Promise<Content[]> {
     if (!sourceId) {
-      return [
-        {
-          text: caption ? `[Image: ${caption}]` : '[Image]',
-          italics: true,
-          color: '#666666',
-          margin: [0, 5, 0, 5],
-        },
-      ];
+      return [this._getImagePlaceholderContent(caption)];
     }
 
     try {
@@ -793,7 +765,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
             text: caption,
             italics: true,
             fontSize: 10,
-            color: '#666666',
+            color: PDF_COLORS.textMuted,
             margin: [0, 2, 0, 10],
             alignment: textAlign as 'left' | 'center' | 'right',
           });
@@ -814,14 +786,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         data[3] === 0x47;
 
       if (!isJPEG && !isPNG) {
-        return [
-          {
-            text: caption ? `[Image: ${caption}]` : '[Image]',
-            italics: true,
-            color: '#666666',
-            margin: [0, 5, 0, 5],
-          },
-        ];
+        return [this._getImagePlaceholderContent(caption)];
       }
 
       const imageDimensions = await extractImageDimensions(blob);
@@ -849,7 +814,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
           text: caption,
           italics: true,
           fontSize: 10,
-          color: '#666666',
+          color: PDF_COLORS.textMuted,
           margin: [0, 2, 0, 10],
           alignment: textAlign as 'left' | 'center' | 'right',
         });
@@ -857,14 +822,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
 
       return content;
     } catch {
-      return [
-        {
-          text: caption ? `[Image: ${caption}]` : '[Image]',
-          italics: true,
-          color: '#666666',
-          margin: [0, 5, 0, 5],
-        },
-      ];
+      return [this._getImagePlaceholderContent(caption)];
     }
   }
 
@@ -918,13 +876,50 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
           return 0.5;
         },
         vLineWidth: () => 0.5,
-        hLineColor: () => '#cccccc',
-        vLineColor: () => '#cccccc',
+        hLineColor: () => PDF_COLORS.border,
+        vLineColor: () => PDF_COLORS.border,
         paddingLeft: () => 5,
         paddingRight: () => 5,
         paddingTop: () => 5,
         paddingBottom: () => 5,
       },
+    };
+  }
+
+  private async _processChildrenWithMargins(
+    block: BlockSnapshot,
+    assets: FromDocSnapshotPayload['assets'] | undefined,
+    depth: number,
+    leftAdjustment: number,
+    rightAdjustment: number
+  ): Promise<Content[]> {
+    const content: Content[] = [];
+    if (block.children && block.children.length) {
+      for (const child of block.children) {
+        const childContent = await this._blockToContent(
+          child,
+          assets,
+          depth,
+          0,
+          0
+        );
+        const adjustedContent = this._adjustMargins(
+          childContent,
+          leftAdjustment,
+          rightAdjustment
+        );
+        content.push(...adjustedContent);
+      }
+    }
+    return content;
+  }
+
+  private _getImagePlaceholderContent(caption: string): Content {
+    return {
+      text: getImagePlaceholder(caption),
+      italics: true,
+      color: PDF_COLORS.textMuted,
+      margin: [0, 5, 0, 5],
     };
   }
 
@@ -975,8 +970,8 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         code: {
           fontSize: 10,
           font: 'Roboto',
-          color: '#333333',
-          background: '#f5f5f5',
+          color: PDF_COLORS.text,
+          background: PDF_COLORS.codeBackground,
         },
       },
       defaultStyle: {
