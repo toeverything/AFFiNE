@@ -59,7 +59,7 @@
     "builder-util-runtime": "^9.5.0",
     "cross-env": "^10.1.0",
     "debug": "^4.4.0",
-    "electron": "^36.0.0",
+    "electron": "^35.0.0",
     "electron-log": "^5.4.3",
     "electron-squirrel-startup": "1.0.1",
     "electron-window-state": "^5.0.3",
