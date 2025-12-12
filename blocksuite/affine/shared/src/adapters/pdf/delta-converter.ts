@@ -51,7 +51,7 @@ export function extractTextWithInline(
       styleObj.decoration = decorations;
     }
     if (attrs.code === true) {
-      styleObj.font = 'Roboto';
+      styleObj.font = 'Inter';
       styleObj.background = '#f5f5f5';
       styleObj.fontSize = 10;
       styleObj.text = ' ' + text + ' ';
@@ -90,7 +90,7 @@ export function extractTextWithInline(
           styleObj.text = displayTitle;
         }
         styleObj.color = '#0066cc';
-        if (!isPageFound) {
+        if (!isPageFound && styleObj.decoration) {
           if (!Array.isArray(styleObj.decoration)) {
             styleObj.decoration = [styleObj.decoration];
           }

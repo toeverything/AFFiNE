@@ -22,7 +22,6 @@ import {
 } from '@blocksuite/store';
 import DOMPurify from 'dompurify';
 import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type {
   Content,
   ContentText,
@@ -51,7 +50,20 @@ import {
   textContentToString,
 } from './utils.js';
 
-(<any>pdfMake).addVirtualFileSystem(pdfFonts);
+pdfMake.fonts = {
+  Inter: {
+    normal: 'https://cdn.affine.pro/fonts/Inter-Regular.woff',
+    bold: 'https://cdn.affine.pro/fonts/Inter-SemiBold.woff',
+    italics: 'https://cdn.affine.pro/fonts/Inter-Italic.woff',
+    bolditalics: 'https://cdn.affine.pro/fonts/Inter-SemiBoldItalic.woff',
+  },
+  SarasaGothicCL: {
+    normal: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
+    bold: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
+    italics: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
+    bolditalics: 'https://cdn.affine.pro/fonts/SarasaGothicCL-Regular.ttf',
+  },
+};
 
 export type PdfAdapterFile = {
   blob: Blob;
@@ -699,12 +711,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       table: {
         widths: ['*'],
         body: [
-          [
-            {
-              stack: linkedDocContent,
-              fillColor: PDF_COLORS.cardBackground,
-            },
-          ],
+          [{ stack: linkedDocContent, fillColor: PDF_COLORS.cardBackground }],
         ],
       },
       margin: [baseIndent, 5, 0, 5],
@@ -969,13 +976,13 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
         },
         code: {
           fontSize: 10,
-          font: 'Roboto',
+          font: 'Inter',
           color: PDF_COLORS.text,
           background: PDF_COLORS.codeBackground,
         },
       },
       defaultStyle: {
-        font: 'Roboto',
+        font: 'SarasaGothicCL',
         fontSize: 12,
         lineHeight: 1.5,
       },
