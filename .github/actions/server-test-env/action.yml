@@ -4,11 +4,6 @@ description: 'Prepare Server Test Environment'
 runs:
   using: 'composite'
   steps:
-    - name: Bundle @affine/reader
-      shell: bash
-      run: |
-        yarn affine @affine/reader build
-
     - name: Initialize database
       shell: bash
       run: |
