@@ -132,7 +132,7 @@ pub fn parse_doc_to_markdown(
 
   let mut queue: Vec<(Option<String>, String)> = vec![(None, root_block_id.clone())];
   let mut visited: HashSet<String> = HashSet::from([root_block_id.clone()]);
-  let mut doc_title = String::new();
+  let mut doc_title = String::from("Untitled");
   let mut markdown = String::new();
 
   while let Some((parent_block_id, block_id)) = queue.pop() {
@@ -188,9 +188,11 @@ pub fn parse_doc_to_markdown(
           }
         }
 
+        let escape_table = |s: &str| s.replace('|', "\\|").replace('\n', "<br>");
+
         markdown.push('|');
         for (_, name, _, _) in &columns {
-          markdown.push_str(name);
+          markdown.push_str(&escape_table(name));
           markdown.push('|');
         }
         markdown.push('\n');
@@ -221,7 +223,7 @@ pub fn parse_doc_to_markdown(
                 }
               }
             }
-            markdown.push_str(&cell_text.replace('\n', "<br>"));
+            markdown.push_str(&escape_table(&cell_text));
             markdown.push('|');
           }
           markdown.push('\n');
