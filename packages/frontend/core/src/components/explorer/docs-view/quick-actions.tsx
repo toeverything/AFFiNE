@@ -1,3 +1,4 @@
+import type { Store } from '@blocksuite/affine/store';
 import {
   Checkbox,
   IconButton,
@@ -8,7 +9,6 @@ import {
 } from '@affine/component';
 import {
   ATTACHMENT_TRASH_CUSTOM_PROPERTY,
-  ATTACHMENT_TRASH_META_KEY,
   parseAttachmentTrashMetadata,
 } from '@affine/core/blocksuite/block-suite-editor/attachment-trash';
 import { type DocRecord, DocsService } from '@affine/core/modules/doc';
@@ -43,7 +43,7 @@ function cloneAttachmentProps(props: Record<string, unknown>) {
   return JSON.parse(JSON.stringify(props));
 }
 
-function resolveAttachmentParent(store: any, parentId: string | null) {
+function resolveAttachmentParent(store: Store, parentId: string | null) {
   if (parentId) {
     const parent = store.getModelById(parentId);
     if (parent) {
@@ -428,9 +428,6 @@ export const QuickRestore = memo(function QuickRestore({
 
           // Now permanently delete the trash document
           permanentlyDeletePage(doc.id);
-
-          // Clear metadata
-          doc.setCustomProperty(ATTACHMENT_TRASH_META_KEY, '');
 
           notify.success({
             title: 'Attachment restored',
