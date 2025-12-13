@@ -913,7 +913,6 @@ __metadata:
     "@affine-tools/cli": "workspace:*"
     "@affine-tools/utils": "workspace:*"
     "@affine/graphql": "workspace:*"
-    "@affine/reader": "workspace:*"
     "@affine/server-native": "workspace:*"
     "@ai-sdk/anthropic": "npm:^2.0.54"
     "@ai-sdk/google": "npm:^2.0.45"

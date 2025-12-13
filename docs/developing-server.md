@@ -35,12 +35,6 @@ Server also requires native packages to be built, you can build them by running 
 yarn affine @affine/server-native build
 ```
 
-## Build @affine/reader package
-
-```sh
-yarn affine @affine/reader build
-```
-
 ## Prepare dev environment
 
 ```sh

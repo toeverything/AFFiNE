@@ -8,18 +8,22 @@ version      = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-affine_common = { workspace = true, features = ["doc-loader", "hashcash"] }
-chrono        = { workspace = true }
-file-format   = { workspace = true }
-infer         = { workspace = true }
-mp4parse      = { workspace = true }
-napi          = { workspace = true, features = ["async"] }
-napi-derive   = { workspace = true }
-rand          = { workspace = true }
-sha3          = { workspace = true }
-tiktoken-rs   = { workspace = true }
-v_htmlescape  = { workspace = true }
-y-octo        = { workspace = true, features = ["large_refs"] }
+affine_common = { workspace = true, features = [
+  "doc-loader",
+  "hashcash",
+  "ydoc-loader",
+] }
+chrono = { workspace = true }
+file-format = { workspace = true }
+infer = { workspace = true }
+mp4parse = { workspace = true }
+napi = { workspace = true, features = ["async"] }
+napi-derive = { workspace = true }
+rand = { workspace = true }
+sha3 = { workspace = true }
+tiktoken-rs = { workspace = true }
+v_htmlescape = { workspace = true }
+y-octo = { workspace = true, features = ["large_refs"] }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }
