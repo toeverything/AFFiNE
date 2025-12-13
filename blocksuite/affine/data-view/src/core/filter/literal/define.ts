@@ -21,7 +21,6 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
   createLiteral({
     type: t.date.instance(),
     getItems: (_type, value, onChange) => {
-      // Use current date as default if value is not a valid number
       const dateValue =
         typeof value.value === 'number' && Number.isFinite(value.value)
           ? value.value
