@@ -158,6 +158,7 @@ const McpServerSetting = () => {
             variant="primary"
             onClick={() => {
               if (!code) return;
+              // eslint-disable-next-line @typescript-eslint/no-floating-promises
               navigator.clipboard.writeText(code);
               notify.success({
                 title: t['Copied to clipboard'](),

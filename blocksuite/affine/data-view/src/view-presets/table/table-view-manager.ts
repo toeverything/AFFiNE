@@ -101,12 +101,15 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
           };
         });
       },
-      sortGroup: ids =>
-        sortByManually(
+      sortGroup: (ids, asc) => {
+        const sorted = sortByManually(
           ids,
           v => v,
           this.groupProperties.map(v => v.key)
-        ),
+        );
+        // If descending order is requested, reverse the sorted array
+        return asc === false ? sorted.reverse() : sorted;
+      },
       sortRow: (key, rows) => {
         const property = this.groupProperties.find(v => v.key === key);
         return sortByManually(
@@ -161,6 +164,30 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
               }
             }),
           };
+        });
+      },
+      changeGroupHide: (key, hide) => {
+        this.dataUpdate(() => {
+          const list = [...this.groupProperties];
+          const idx = list.findIndex(g => g.key === key);
+          if (idx >= 0) {
+            const target = list[idx];
+            if (!target) {
+              return { groupProperties: list };
+            }
+            list[idx] = { ...target, hide };
+          } else {
+            const order = (this.groupTrait.groupsDataListAll$.value ?? [])
+              .map(g => g?.key)
+              .filter((k): k is string => !!k);
+            let insertPos = 0;
+            for (const k of order) {
+              if (k === key) break;
+              if (list.some(g => g.key === k)) insertPos++;
+            }
+            list.splice(insertPos, 0, { key, hide, manuallyCardSort: [] });
+          }
+          return { groupProperties: list };
         });
       },
     })

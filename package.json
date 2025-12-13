@@ -68,7 +68,7 @@
     "@vitest/coverage-istanbul": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "cross-env": "^10.1.0",
-    "electron": "^36.0.0",
+    "electron": "^35.0.0",
     "eslint": "^9.16.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-import-resolver-typescript": "^4.0.0",
