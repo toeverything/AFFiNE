@@ -60,7 +60,10 @@ export const dateFilter = [
     self: t.date.instance(),
     args: [t.date.instance()] as const,
     label: 'Before',
-    shortString: v => (v ? ` < ${format(v.value, 'yyyy/MM/dd')}` : undefined),
+    shortString: v =>
+      typeof v?.value === 'number' && Number.isFinite(v.value)
+        ? `: Before ${format(v.value, 'yyyy/MM/dd')}`
+        : undefined,
     impl: (self, value) => (self == null ? false : self < value),
     defaultValue: args => subDays(args[0], 1).getTime(),
   }),
@@ -69,7 +72,10 @@ export const dateFilter = [
     self: t.date.instance(),
     args: [t.date.instance()] as const,
     label: 'After',
-    shortString: v => (v ? ` > ${format(v.value, 'yyyy/MM/dd')}` : undefined),
+    shortString: v =>
+      typeof v?.value === 'number' && Number.isFinite(v.value)
+        ? `: After ${format(v.value, 'yyyy/MM/dd')}`
+        : undefined,
     impl: (self, value) => (self == null ? false : self > value),
     defaultValue: args => addDays(args[0], 1).getTime(),
   }),
@@ -79,10 +85,12 @@ export const dateFilter = [
     self: t.date.instance(),
     args: [t.relativeDate.instance()] as const,
     label: 'Is relative to today',
-    shortString: arg =>
-      arg
-        ? `: ${arg.value[0].charAt(0).toUpperCase() + arg.value[0].slice(1)} ${arg.value[1]}`
-        : undefined,
+    shortString: arg => {
+      const dir = arg?.value?.[0];
+      const unit = arg?.value?.[1];
+      if (!dir || !unit) return undefined;
+      return `: ${dir.charAt(0).toUpperCase() + dir.slice(1)} ${unit}`;
+    },
     impl: (self, arg) => {
       if (self == null) return false;
       const [dir, unit] = arg as [Direction, Unit];
