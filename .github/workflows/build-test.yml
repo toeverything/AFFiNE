@@ -152,11 +152,6 @@ jobs:
           name: server-native.node
           path: ./packages/backend/native
 
-      - name: Bundle @affine/reader
-        shell: bash
-        run: |
-          yarn workspace @affine/reader build
-
       - name: Run Check
         run: |
           yarn affine init

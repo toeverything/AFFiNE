@@ -79,6 +79,245 @@ impl From<JwstCodecError> for ParseError {
   }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MarkdownResult {
+  pub title: String,
+  pub markdown: String,
+}
+
+pub fn parse_doc_to_markdown(
+  doc_bin: Vec<u8>,
+  doc_id: String,
+  ai_editable: bool,
+) -> Result<MarkdownResult, ParseError> {
+  if doc_bin.is_empty() || doc_bin == [0, 0] {
+    return Err(ParseError::InvalidBinary);
+  }
+
+  let mut doc = DocOptions::new().with_guid(doc_id.clone()).build();
+  doc
+    .apply_update_from_binary_v1(&doc_bin)
+    .map_err(|_| ParseError::InvalidBinary)?;
+
+  let blocks_map = doc.get_map("blocks")?;
+  if blocks_map.is_empty() {
+    return Ok(MarkdownResult {
+      title: "".into(),
+      markdown: "".into(),
+    });
+  }
+
+  let mut block_pool: HashMap<String, Map> = HashMap::new();
+  let mut parent_lookup: HashMap<String, String> = HashMap::new();
+
+  for (_, value) in blocks_map.iter() {
+    if let Some(block_map) = value.to_map() {
+      if let Some(block_id) = get_block_id(&block_map) {
+        for child_id in collect_child_ids(&block_map) {
+          parent_lookup.insert(child_id, block_id.clone());
+        }
+        block_pool.insert(block_id, block_map);
+      }
+    }
+  }
+
+  let root_block_id = block_pool
+    .iter()
+    .find_map(|(id, block)| {
+      get_flavour(block)
+        .filter(|flavour| flavour == PAGE_FLAVOUR)
+        .map(|_| id.clone())
+    })
+    .ok_or_else(|| ParseError::ParserError("root block not found".into()))?;
+
+  let mut queue: Vec<(Option<String>, String)> = vec![(None, root_block_id.clone())];
+  let mut visited: HashSet<String> = HashSet::from([root_block_id.clone()]);
+  let mut doc_title = String::from("Untitled");
+  let mut markdown = String::new();
+
+  while let Some((parent_block_id, block_id)) = queue.pop() {
+    let block = match block_pool.get(&block_id) {
+      Some(block) => block,
+      None => continue,
+    };
+
+    let flavour = match get_flavour(block) {
+      Some(flavour) => flavour,
+      None => continue,
+    };
+
+    let parent_id = parent_lookup.get(&block_id);
+    let parent_flavour = parent_id
+      .and_then(|id| block_pool.get(id))
+      .and_then(get_flavour);
+
+    if parent_flavour.as_deref() == Some("affine:database") {
+      continue;
+    }
+
+    // enqueue children first to keep traversal order similar to JS implementation
+    let mut child_ids = collect_child_ids(block);
+    for child_id in child_ids.drain(..).rev() {
+      if visited.insert(child_id.clone()) {
+        queue.push((Some(block_id.clone()), child_id));
+      }
+    }
+
+    if flavour == PAGE_FLAVOUR {
+      let title = get_string(block, "prop:title").unwrap_or_default();
+      doc_title = title.clone();
+      continue;
+    }
+
+    if flavour == "affine:database" {
+      let title = get_string(block, "prop:title").unwrap_or_default();
+      markdown.push_str(&format!("\n### {}\n", title));
+
+      let columns_array = block.get("prop:columns").and_then(|v| v.to_array());
+      let cells_map = block.get("prop:cells").and_then(|v| v.to_map());
+
+      if let (Some(columns_array), Some(cells_map)) = (columns_array, cells_map) {
+        let mut columns = Vec::new();
+        for col_val in columns_array.iter() {
+          if let Some(col_map) = col_val.to_map() {
+            let id = get_string(&col_map, "id").unwrap_or_default();
+            let name = get_string(&col_map, "name").unwrap_or_default();
+            let type_ = get_string(&col_map, "type").unwrap_or_default();
+            let data = col_map.get("data").and_then(|v| v.to_map());
+            columns.push((id, name, type_, data));
+          }
+        }
+
+        let escape_table = |s: &str| s.replace('|', "\\|").replace('\n', "<br>");
+
+        markdown.push('|');
+        for (_, name, _, _) in &columns {
+          markdown.push_str(&escape_table(name));
+          markdown.push('|');
+        }
+        markdown.push('\n');
+
+        markdown.push('|');
+        for _ in &columns {
+          markdown.push_str("---|");
+        }
+        markdown.push('\n');
+
+        let child_ids = collect_child_ids(block);
+        for child_id in child_ids {
+          markdown.push('|');
+          let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
+
+          for (col_id, _, col_type, col_data) in &columns {
+            let mut cell_text = String::new();
+            if col_type == "title" {
+              if let Some(child_block) = block_pool.get(&child_id) {
+                if let Some((text, _)) = text_content(child_block, "prop:text") {
+                  cell_text = text;
+                }
+              }
+            } else if let Some(row_cells) = &row_cells {
+              if let Some(cell_val) = row_cells.get(col_id).and_then(|v| v.to_map()) {
+                if let Some(value) = cell_val.get("value").and_then(|v| v.to_any()) {
+                  cell_text = format_cell_value(&value, col_type, col_data.as_ref());
+                }
+              }
+            }
+            markdown.push_str(&escape_table(&cell_text));
+            markdown.push('|');
+          }
+          markdown.push('\n');
+        }
+      }
+      continue;
+    }
+
+    if flavour == "affine:table" {
+      let contents = gather_table_contents(block);
+      markdown.push_str(&contents.join("|"));
+      markdown.push('\n');
+      continue;
+    }
+
+    if ai_editable && parent_block_id.as_ref() == Some(&root_block_id) {
+      markdown.push_str(&format!(
+        "<!-- block_id={} flavour={} -->\n",
+        block_id, flavour
+      ));
+    }
+
+    if flavour == "affine:paragraph" {
+      if let Some((text, _)) = text_content(block, "prop:text") {
+        let type_ = get_string(block, "prop:type").unwrap_or_default();
+        let prefix = match type_.as_str() {
+          "h1" => "# ",
+          "h2" => "## ",
+          "h3" => "### ",
+          "h4" => "#### ",
+          "h5" => "##### ",
+          "h6" => "###### ",
+          "quote" => "> ",
+          _ => "",
+        };
+        markdown.push_str(prefix);
+        markdown.push_str(&text);
+        markdown.push('\n');
+      }
+      continue;
+    }
+
+    if flavour == "affine:list" {
+      if let Some((text, _)) = text_content(block, "prop:text") {
+        let depth = get_list_depth(&block_id, &parent_lookup, &block_pool);
+        let indent = "    ".repeat(depth);
+        markdown.push_str(&indent);
+        markdown.push_str("- ");
+        markdown.push_str(&text);
+        markdown.push('\n');
+      }
+      continue;
+    }
+
+    if flavour == "affine:code" {
+      if let Some((text, _)) = text_content(block, "prop:text") {
+        let lang = get_string(block, "prop:language").unwrap_or_default();
+        markdown.push_str("```");
+        markdown.push_str(&lang);
+        markdown.push('\n');
+        markdown.push_str(&text);
+        markdown.push_str("\n```\n");
+      }
+      continue;
+    }
+  }
+
+  Ok(MarkdownResult {
+    title: doc_title,
+    markdown,
+  })
+}
+
+fn get_list_depth(
+  block_id: &str,
+  parent_lookup: &HashMap<String, String>,
+  blocks: &HashMap<String, Map>,
+) -> usize {
+  let mut depth = 0;
+  let mut current_id = block_id.to_string();
+
+  while let Some(parent_id) = parent_lookup.get(&current_id) {
+    if let Some(parent_block) = blocks.get(parent_id) {
+      if get_flavour(parent_block).as_deref() == Some("affine:list") {
+        depth += 1;
+        current_id = parent_id.clone();
+        continue;
+      }
+    }
+    break;
+  }
+  depth
+}
+
 pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlResult, ParseError> {
   if doc_bin.is_empty() || doc_bin == [0, 0] {
     return Err(ParseError::InvalidBinary);
@@ -284,6 +523,49 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
   })
 }
 
+pub fn get_doc_ids_from_binary(
+  doc_bin: Vec<u8>,
+  include_trash: bool,
+) -> Result<Vec<String>, ParseError> {
+  if doc_bin.is_empty() || doc_bin == [0, 0] {
+    return Err(ParseError::InvalidBinary);
+  }
+
+  let mut doc = DocOptions::new().build();
+  doc
+    .apply_update_from_binary_v1(&doc_bin)
+    .map_err(|_| ParseError::InvalidBinary)?;
+
+  let meta = doc.get_map("meta")?;
+  let pages = match meta.get("pages").and_then(|v| v.to_array()) {
+    Some(arr) => arr,
+    None => return Ok(vec![]),
+  };
+
+  let mut doc_ids = Vec::new();
+  for page_val in pages.iter() {
+    if let Some(page) = page_val.to_map() {
+      let id = get_string(&page, "id");
+      if let Some(id) = id {
+        let trash = page
+          .get("trash")
+          .and_then(|v| match v.to_any() {
+            Some(Any::True) => Some(true),
+            Some(Any::False) => Some(false),
+            _ => None,
+          })
+          .unwrap_or(false);
+
+        if include_trash || !trash {
+          doc_ids.push(id);
+        }
+      }
+    }
+  }
+
+  Ok(doc_ids)
+}
+
 fn collect_child_ids(block: &Map) -> Vec<String> {
   block
     .get("sys:children")
@@ -452,6 +734,56 @@ fn gather_table_contents(block: &Map) -> Vec<String> {
     }
   }
   contents
+}
+
+fn format_cell_value(value: &Any, col_type: &str, col_data: Option<&Map>) -> String {
+  match col_type {
+    "select" => {
+      if let Any::String(id) = value {
+        if let Some(options) = col_data
+          .and_then(|d| d.get("options"))
+          .and_then(|v| v.to_array())
+        {
+          for opt in options.iter() {
+            if let Some(opt_map) = opt.to_map() {
+              if let Some(opt_id) = get_string(&opt_map, "id") {
+                if opt_id == *id {
+                  return get_string(&opt_map, "value").unwrap_or_default();
+                }
+              }
+            }
+          }
+        }
+      }
+      String::new()
+    }
+    "multi-select" => {
+      if let Any::Array(ids) = value {
+        let mut selected = Vec::new();
+        if let Some(options) = col_data
+          .and_then(|d| d.get("options"))
+          .and_then(|v| v.to_array())
+        {
+          for id_val in ids.iter() {
+            if let Any::String(id) = id_val {
+              for opt in options.iter() {
+                if let Some(opt_map) = opt.to_map() {
+                  if let Some(opt_id) = get_string(&opt_map, "id") {
+                    if opt_id == *id {
+                      selected.push(get_string(&opt_map, "value").unwrap_or_default());
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        return selected.join(", ");
+      }
+      String::new()
+    }
+    _ => any_to_string(value).unwrap_or_default(),
+  }
 }
 
 fn value_to_string(value: &Value) -> Option<String> {
