@@ -26,6 +26,7 @@ export interface TextConversionConfig {
   description?: string;
   hotkey: string[] | null;
   icon: TemplateResult<1>;
+  searchAlias?: string[];
 }
 
 export const textConversionConfigs: TextConversionConfig[] = [
