@@ -190,7 +190,7 @@ pub fn parse_doc_to_markdown(
 
         markdown.push('|');
         for (_, name, _, _) in &columns {
-          markdown.push_str(&name);
+          markdown.push_str(name);
           markdown.push('|');
         }
         markdown.push('\n');
