@@ -148,9 +148,6 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
             .padding="${8}"
             .size="${20}"
             .value="${Date.now()}"
-            .onChange="${(date: Date) => {
-              onChange([currentDir, currentUnit]);
-            }}"
           ></date-picker>
         `,
       ];

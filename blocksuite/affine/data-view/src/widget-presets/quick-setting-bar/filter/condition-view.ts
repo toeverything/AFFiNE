@@ -223,9 +223,40 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
         name: v.label,
         isSelected: selected,
         select: () => {
+          // Check if we need to initialize args for the new filter
+          const currentConfig = filterMatcher.getFilterByName(filter.function);
+          const newConfig = filterMatcher.getFilterByName(v.name);
+
+          let newArgs = filter.args;
+
+          // If switching between different arg types, use defaults
+          if (currentConfig && newConfig) {
+            const currentArgType = (currentConfig.args[0] as { name?: string })
+              ?.name;
+            const newArgType = (newConfig.args[0] as { name?: string })?.name;
+
+            if (currentArgType !== newArgType) {
+              // Different arg types - initialize with defaults
+              newArgs = newConfig.args.map(argType => {
+                const typeName = (argType as { name?: string }).name;
+                if (typeName === 'Date') {
+                  return { type: 'literal' as const, value: Date.now() };
+                }
+                if (typeName === 'RelativeDate') {
+                  return {
+                    type: 'literal' as const,
+                    value: ['this', 'day'] as const,
+                  };
+                }
+                return { type: 'literal' as const, value: undefined };
+              });
+            }
+          }
+
           this.setFilter({
             ...filter,
             function: v.name,
+            args: newArgs,
           });
           onSelect?.();
           this.popConditionEdit(target);
