@@ -17,6 +17,7 @@ export type MenuInputData = {
   class?: string;
   onComplete?: (value: string) => void;
   onChange?: (value: string) => void;
+  onBlur?: (value: string) => void;
   disableAutoFocus?: boolean;
 };
 
@@ -47,6 +48,10 @@ export class MenuInput extends MenuFocusable {
 
   private readonly onCompositionEnd = () => {
     this.data.onChange?.(this.inputRef.value);
+  };
+
+  private readonly onBlur = () => {
+    this.data.onBlur?.(this.inputRef.value);
   };
 
   private readonly onInput = (e: InputEvent) => {
@@ -109,6 +114,7 @@ export class MenuInput extends MenuFocusable {
       @focus="${() => {
         this.menu.setFocusOnly(this);
       }}"
+      @blur="${this.onBlur}"
       @input="${this.onInput}"
       placeholder="${this.data.placeholder ?? ''}"
       @keypress="${this.stopPropagation}"
@@ -215,6 +221,7 @@ export const menuInputItems = {
       prefix?: TemplateResult;
       onComplete?: (value: string) => void;
       onChange?: (value: string) => void;
+      onBlur?: (value: string) => void;
       class?: string;
       style?: Readonly<StyleInfo>;
     }) =>
@@ -228,6 +235,7 @@ export const menuInputItems = {
         class: config.class,
         onComplete: config.onComplete,
         onChange: config.onChange,
+        onBlur: config.onBlur,
       };
       const style = styleMap({
         display: 'flex',

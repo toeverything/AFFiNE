@@ -25,7 +25,7 @@ env:
   RELEASE_VERSION: ${{ inputs.app-version }}
   DEBUG: 'affine:*,napi:*'
   APP_NAME: affine
-  MACOSX_DEPLOYMENT_TARGET: '10.13'
+  MACOSX_DEPLOYMENT_TARGET: '11.6'
 
 jobs:
   before-make:
@@ -165,7 +165,7 @@ jobs:
           mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.zip
           mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.appimage
           mv packages/frontend/apps/electron/out/*/make/deb/${{ matrix.spec.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.deb
-          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
+          # mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
 
       - uses: actions/attest-build-provenance@v2
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -466,6 +466,4 @@ jobs:
           draft: ${{ inputs.build-type == 'stable' }}
           prerelease: ${{ inputs.build-type != 'stable' }}
           tag_name: v${{ env.RELEASE_VERSION}}
-          files: |
-            ./release/*
-            ./release/.env.example
+          files: ./release/*

@@ -390,9 +390,9 @@ export class DatePicker extends WithDisposable(LitElement) {
   /** navigate decades in the “year” view */
   private _modeDecade(offset: number) {
     this._yearCursor = clamp(
+      this._yearCursor + offset,
       this._minYear,
-      this._maxYear,
-      this._yearCursor + offset
+      this._maxYear
     );
     this._getYearMatrix();
   }

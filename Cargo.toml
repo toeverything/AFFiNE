@@ -50,7 +50,7 @@ resolver = "3"
   mimalloc = "0.1"
   mp4parse = "0.17"
   nanoid = "0.4"
-  napi = { version = "3.0.0-beta.3", features = [
+  napi = { version = "3.7.0", features = [
     "async",
     "chrono_date",
     "error_anyhow",
@@ -58,7 +58,7 @@ resolver = "3"
     "serde",
   ] }
   napi-build = { version = "2" }
-  napi-derive = { version = "3.0.0-beta.3" }
+  napi-derive = { version = "3.4" }
   nom = "8"
   notify = { version = "8", features = ["serde"] }
   objc2 = "0.6"

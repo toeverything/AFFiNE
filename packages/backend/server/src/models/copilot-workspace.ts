@@ -185,7 +185,6 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     return { workspaceId, AND: condition };
   }
 
-  @Transactional()
   async listEmbeddableDocIds(workspaceId: string) {
     const condition = this.getEmbeddableCondition(workspaceId);
     const rows = await this.db.snapshot.findMany({

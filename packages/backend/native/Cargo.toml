@@ -1,13 +1,14 @@
 [package]
-edition = "2021"
-name    = "affine_server_native"
-version = "1.0.0"
+edition      = "2021"
+license-file = "LICENSE"
+name         = "affine_server_native"
+version      = "1.0.0"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-affine_common = { workspace = true, features = ["doc-loader"] }
+affine_common = { workspace = true, features = ["doc-loader", "hashcash"] }
 chrono        = { workspace = true }
 file-format   = { workspace = true }
 infer         = { workspace = true }

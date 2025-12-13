@@ -416,12 +416,12 @@ export class CopilotEmbeddingJob {
           workspaceId,
           docId
         );
-      this.logger.log(
+      this.logger.debug(
         `Check if doc ${docId} in workspace ${workspaceId} needs embedding: ${needEmbedding}`
       );
       if (needEmbedding) {
         if (signal.aborted) {
-          this.logger.log(
+          this.logger.debug(
             `Doc ${docId} in workspace ${workspaceId} is aborted, skipping embedding.`
           );
           return;
@@ -442,7 +442,7 @@ export class CopilotEmbeddingJob {
               existsContent &&
               this.normalize(existsContent) === this.normalize(fragment.summary)
             ) {
-              this.logger.log(
+              this.logger.debug(
                 `Doc ${docId} in workspace ${workspaceId} has no content change, skipping embedding.`
               );
               return;
@@ -464,12 +464,12 @@ export class CopilotEmbeddingJob {
                 chunks
               );
             }
-            this.logger.log(
+            this.logger.debug(
               `Doc ${docId} in workspace ${workspaceId} has summary, embedding done.`
             );
           } else {
             // for empty doc, insert empty embedding
-            this.logger.warn(
+            this.logger.debug(
               `Doc ${docId} in workspace ${workspaceId} has no summary, fulfilling empty embedding.`
             );
             await this.models.copilotContext.fulfillEmptyEmbedding(
@@ -478,7 +478,7 @@ export class CopilotEmbeddingJob {
             );
           }
         } else {
-          this.logger.warn(
+          this.logger.debug(
             `Doc ${docId} in workspace ${workspaceId} has no fragment, fulfilling empty embedding.`
           );
           await this.models.copilotContext.fulfillEmptyEmbedding(
@@ -498,7 +498,7 @@ export class CopilotEmbeddingJob {
         error instanceof CopilotContextFileNotSupported &&
         error.message.includes('no content found')
       ) {
-        this.logger.warn(
+        this.logger.debug(
           `Doc ${docId} in workspace ${workspaceId} has no content, fulfilling empty embedding.`
         );
         // if the doc is empty, we still need to fulfill the embedding

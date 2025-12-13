@@ -61,7 +61,7 @@ defineModuleConfig('mailer', {
     env: 'MAILER_SENDER',
   },
   'SMTP.ignoreTLS': {
-    desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+    desc: "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
     default: false,
     env: ['MAILER_IGNORE_TLS', 'boolean'],
   },
@@ -96,7 +96,7 @@ defineModuleConfig('mailer', {
     default: '',
   },
   'fallbackSMTP.ignoreTLS': {
-    desc: "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+    desc: "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
     default: false,
   },
 });

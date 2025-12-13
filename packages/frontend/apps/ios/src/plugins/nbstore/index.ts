@@ -4,6 +4,7 @@ import {
 } from '@affine/core/modules/workspace-engine';
 import {
   type BlobRecord,
+  type CrawlResult,
   type DocClock,
   type DocRecord,
   type ListedBlobRecord,
@@ -334,6 +335,79 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       peer,
       blobId,
       uploadedAt: uploadedAt ? uploadedAt.getTime() : null,
+    });
+  },
+  crawlDocData: async function (
+    id: string,
+    docId: string
+  ): Promise<CrawlResult> {
+    return await NbStore.crawlDocData({ id, docId });
+  },
+  ftsAddDocument: async function (
+    id: string,
+    indexName: string,
+    docId: string,
+    text: string,
+    index: boolean
+  ): Promise<void> {
+    await NbStore.ftsAddDocument({
+      id,
+      indexName,
+      docId,
+      text,
+      index,
+    });
+  },
+  ftsDeleteDocument: async function (
+    id: string,
+    indexName: string,
+    docId: string
+  ): Promise<void> {
+    await NbStore.ftsDeleteDocument({
+      id,
+      indexName,
+      docId,
+    });
+  },
+  ftsSearch: async function (
+    id: string,
+    indexName: string,
+    query: string
+  ): Promise<{ id: string; score: number }[]> {
+    return await NbStore.ftsSearch({
+      id,
+      indexName,
+      query,
+    });
+  },
+  ftsGetDocument: async function (
+    id: string,
+    indexName: string,
+    docId: string
+  ): Promise<string | null> {
+    const result = await NbStore.ftsGetDocument({
+      id,
+      indexName,
+      docId,
+    });
+    return result.text;
+  },
+  ftsGetMatches: async function (
+    id: string,
+    indexName: string,
+    docId: string,
+    query: string
+  ): Promise<{ start: number; end: number }[]> {
+    return await NbStore.ftsGetMatches({
+      id,
+      indexName,
+      docId,
+      query,
+    });
+  },
+  ftsFlushIndex: async function (id: string): Promise<void> {
+    await NbStore.ftsFlushIndex({
+      id,
     });
   },
 };

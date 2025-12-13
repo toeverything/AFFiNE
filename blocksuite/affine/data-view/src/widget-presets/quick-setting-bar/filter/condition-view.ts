@@ -12,7 +12,7 @@ import {
   DeleteIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import { autoPlacement, offset } from '@floating-ui/dom';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { addDays } from 'date-fns/addDays';
 import { subDays } from 'date-fns/subDays';
@@ -75,97 +75,109 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     );
   }
 
-  private get leftVar$() {
-    return this.vars.value.find(v => v.id === this.filter$?.left.name);
-  }
+private get leftVar$() {
+  return this.vars.value.find(v => v.id === this.filter$?.left.name);
+}
 
-  private setFilter(filter: SingleFilter) {
-    const list = this.value.value.slice();
-    list[this.index] = filter;
-    this.onChange(list);
-  }
+private setFilter(filter: SingleFilter) {
+  const list = this.value.value.slice();
+  list[this.index] = filter;
+  this.onChange(list);
+}
 
-  private getArgsItems(): MenuConfig[] {
-    const f = this.filter$;
-    const fnType = this.fnType$;
-    if (!f || !fnType) return [];
+private getArgsItems(): MenuConfig[] {
+  const f = this.filter$;
+  const fnType = this.fnType$;
+  if (!f || !fnType) return [];
 
-    return fnType.args.slice(1).flatMap((argType, argIndex) =>
-      literalItemsMatcher.getItems(
-        argType,
-        computed(() => f.args[argIndex]?.value),
-        (newValue: unknown) => {
-          const newArgs = f.args.slice();
-          newArgs[argIndex] = { type: 'literal', value: newValue };
-          this.setFilter({ ...f, args: newArgs });
+  return fnType.args.slice(1).flatMap((argType, argIndex) =>
+    literalItemsMatcher.getItems(
+      argType,
+      computed(() => f.args[argIndex]?.value),
+      (newValue: unknown) => {
+        const newArgs = f.args.slice();
+        newArgs[argIndex] = { type: 'literal', value: newValue };
+        this.setFilter({ ...f, args: newArgs });
+      }
+    )
+  );
+}
+
+private getFunctionItems(_target?: PopupTarget, closeParent?: () => void) {
+  const filter = this.filter$.value;
+  if (!filter) return [];
+
+  const refType = getRefType(this.vars.value, filter.left);
+  if (!refType) return [];
+
+  return filterMatcher.filterListBySelfType(refType).map(v =>
+    menu.action({
+      name: v.label,
+      isSelected: v.name === filter.function,
+      select: () => {
+        const next: SingleFilter = {
+          ...filter,
+          function: v.name,
+          args: [],
+        };
+
+        if (v.name === 'relativeToToday') {
+          next.args = [{ type: 'literal', value: ['this', 'week'] }];
+        } else if (v.name === 'before' || v.name === 'after') {
+          // Default date using date-fns to avoid DST edge weirdness.
+          const defaultDate =
+            v.name === 'before'
+              ? subDays(new Date(), 1).getTime()
+              : addDays(new Date(), 1).getTime();
+
+          next.args = [{ type: 'literal', value: defaultDate }];
         }
-      )
-    );
+
+        this.setFilter(next);
+
+        // Close the parent menu so the main menu refreshes.
+        closeParent?.();
+
+        // Close the submenu.
+        return false;
+      },
+    })
+  );
+}
+
+private readonly popConditionEdit = (target: PopupTarget) => {
+  const type = this.leftVar$.value?.type;
+  if (!type) return;
+
+  const fn = this.fnConfig$.value;
+  if (!fn) {
+    popFilterableSimpleMenu(target, this.getFunctionItems(target));
+    return;
   }
 
-  private getFunctionItems() {
-    const filter = this.filter$;
-    if (!filter) return [];
-    const refType = getRefType(this.vars.value, filter.left);
-    if (!refType) return [];
+  const handler = popMenu(target, {
+    middleware: [
+      autoPlacement({
+        allowedPlacements: ['bottom-start', 'bottom', 'top-start', 'top'],
+      }),
+      offset({ mainAxis: 4, crossAxis: 0 }),
+      shift({ crossAxis: true }),
+    ],
+    options: {
+      items: [
+        menu.dynamic(() => {
+          const currentFn = this.fnConfig$.value;
+          if (!currentFn) return [];
 
-    return filterMatcher.filterListBySelfType(refType).map(v => {
-      return menu.action({
-        name: v.label,
-        isSelected: v.name === filter.function,
-        select: () => {
-          const next: SingleFilter = {
-            ...filter,
-            function: v.name,
-            args: [],
-          };
-          if (v.name === 'relativeToToday') {
-            next.args = [{ type: 'literal', value: ['this', 'week'] }];
-          } else if (v.name === 'before' || v.name === 'after') {
-            // Set a default date for before/after filters using date-fns to handle DST
-            const defaultDate =
-              v.name === 'before'
-                ? subDays(new Date(), 1).getTime()
-                : addDays(new Date(), 1).getTime();
-            next.args = [{ type: 'literal', value: defaultDate }];
-          }
-          this.setFilter(next);
-          // Close submenu after selection to refresh the main menu
-          return false;
-        },
-      });
-    });
-  }
-
-  private popConditionEdit(target: PopupTarget) {
-    const filter = this.filter$;
-    const fnConfig = this.fnConfig$;
-    const leftVar = this.leftVar$;
-    if (!filter || !fnConfig || !leftVar) return;
-
-    const origTarget = target;
-
-    popMenu(origTarget, {
-      options: {
-        items: [
-          // Dynamic function selector that updates when filter changes
-          menu.dynamic(() => {
-            const currentFilter = this.filter$;
-            const currentFnConfig = this.fnConfig$;
-            if (!currentFilter || !currentFnConfig) return [];
-
-            return [
-              menu.group({
-                items: [
-                  menu.action({
-                    name: currentFnConfig.label,
-                    postfix: ArrowRightSmallIcon(),
-                    select: ele => {
-                      // Dynamically create function items each time to get updated selection
-                      const fnItems = this.getFunctionItems();
-
-                      // Create custom middleware for dropdown positioning below the button
-                      const dropdownMiddleware = [
+          return [
+            menu.group({
+              items: [
+                menu.action({
+                  name: currentFn.label,
+                  postfix: ArrowRightSmallIcon(),
+                  select: ele => {
+                    popMenu(popupTargetFromElement(ele), {
+                      middleware: [
                         offset({ mainAxis: 4, crossAxis: 0 }),
                         autoPlacement({
                           allowedPlacements: [
@@ -175,7 +187,34 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                             'top',
                           ],
                         }),
-                      ];
+                        shift({ crossAxis: true }),
+                      ],
+                      options: {
+                        items: [
+                          menu.group({
+                            items: this.getFunctionItems(target, () => {
+                              handler.close();
+                            }),
+                          }),
+                        ],
+                      },
+                    });
+
+                    // Keep the main menu open while the submenu is shown.
+                    return false;
+                  },
+                }),
+              ],
+            }),
+          ];
+        }),
+      ],
+    },
+  });
+
+  return handler;
+};
+
 
                       // Pop submenu on click below the button
                       const { menu: dropdownMenu } = popMenu(
@@ -199,8 +238,20 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                       // Keep main menu open
                       return false;
                     },
-                  }),
-                ],
+                    middleware: [
+                      autoPlacement({
+                        allowedPlacements: ['bottom-start'],
+                      }),
+                      offset({ mainAxis: 4, crossAxis: 0 }),
+                      shift({ crossAxis: true }),
+                    ],
+                  });
+                  // allow submenu height and width to adjust to content
+                  subHandler.menu.menuElement.style.minHeight = 'fit-content';
+                  subHandler.menu.menuElement.style.maxHeight = 'fit-content';
+                  subHandler.menu.menuElement.style.minWidth = '200px';
+                  return false;
+                },
               }),
             ];
           }),
@@ -228,7 +279,11 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
         ],
       },
     });
-  }
+    // allow main menu height and width to adjust to calendar size
+    handler.menu.menuElement.style.minHeight = 'fit-content';
+    handler.menu.menuElement.style.maxHeight = 'fit-content';
+    handler.menu.menuElement.style.minWidth = '200px';
+  };
 
   private get buttonText() {
     const name = this.leftVar$?.name ?? '';

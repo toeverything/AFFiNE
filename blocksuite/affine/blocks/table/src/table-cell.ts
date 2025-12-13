@@ -418,6 +418,7 @@ export class TableCell extends SignalWatcher(
                   name: 'Paste',
                   prefix: PasteIcon(),
                   select: () => {
+                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
                     navigator.clipboard.readText().then(text => {
                       this.selectionController.doPaste(text, selected);
                     });

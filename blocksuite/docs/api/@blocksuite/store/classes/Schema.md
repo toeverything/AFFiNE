@@ -35,7 +35,7 @@ Returns an object mapping each registered flavour to its version number.
 
 ### get()
 
-> **get**(`flavour`): `undefined` \| \{ `model`: \{ `children?`: `string`[]; `flavour`: `string`; `isFlatData?`: `boolean`; `parent?`: `string`[]; `props?`: (...`args`) => `Record`\<`string`, `any`\>; `role`: `string`; `toModel?`: (...`args`) => `BlockModel`\<`object`\>; \}; `transformer?`: (...`args`) => `BaseBlockTransformer`\<`object`\>; `version`: `number`; \}
+> **get**(`flavour`): \{ `model`: \{ `children?`: `string`[]; `flavour`: `string`; `isFlatData?`: `boolean`; `parent?`: `string`[]; `props?`: (...`args`) => `Record`\<`string`, `any`\>; `role`: `string`; `toModel?`: (...`args`) => `BlockModel`\<`object`\>; \}; `transformer?`: (...`args`) => `BaseBlockTransformer`\<`object`\>; `version`: `number`; \} \| `undefined`
 
 Retrieves the schema for a given block flavour.
 
@@ -49,7 +49,7 @@ The block flavour name.
 
 #### Returns
 
-`undefined` \| \{ `model`: \{ `children?`: `string`[]; `flavour`: `string`; `isFlatData?`: `boolean`; `parent?`: `string`[]; `props?`: (...`args`) => `Record`\<`string`, `any`\>; `role`: `string`; `toModel?`: (...`args`) => `BlockModel`\<`object`\>; \}; `transformer?`: (...`args`) => `BaseBlockTransformer`\<`object`\>; `version`: `number`; \}
+\{ `model`: \{ `children?`: `string`[]; `flavour`: `string`; `isFlatData?`: `boolean`; `parent?`: `string`[]; `props?`: (...`args`) => `Record`\<`string`, `any`\>; `role`: `string`; `toModel?`: (...`args`) => `BlockModel`\<`object`\>; \}; `transformer?`: (...`args`) => `BaseBlockTransformer`\<`object`\>; `version`: `number`; \} \| `undefined`
 
 The corresponding BlockSchemaType or undefined if not found.
 

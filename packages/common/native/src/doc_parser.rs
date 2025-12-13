@@ -17,14 +17,6 @@ const BOOKMARK_FLAVOURS: [&str; 5] = [
   "affine:embed-loom",
 ];
 
-#[derive(Debug, Clone)]
-pub struct CrawlDocInput {
-  pub doc_bin: Vec<u8>,
-  pub root_doc_bin: Option<Vec<u8>>,
-  pub space_id: String,
-  pub doc_id: String,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockInfo {
   pub block_id: String,
@@ -87,15 +79,8 @@ impl From<JwstCodecError> for ParseError {
   }
 }
 
-pub fn parse_doc_from_binary(input: CrawlDocInput) -> Result<CrawlResult, ParseError> {
-  let CrawlDocInput {
-    doc_bin,
-    root_doc_bin: _,
-    space_id: _,
-    doc_id,
-  } = input;
-
-  if doc_bin.is_empty() {
+pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlResult, ParseError> {
+  if doc_bin.is_empty() || doc_bin == [0, 0] {
     return Err(ParseError::InvalidBinary);
   }
 
@@ -509,14 +494,10 @@ mod tests {
   #[test]
   fn test_parse_doc_from_binary() {
     let json = include_bytes!("../fixtures/demo.ydoc.json");
-    let input = CrawlDocInput {
-      doc_bin: include_bytes!("../fixtures/demo.ydoc").to_vec(),
-      root_doc_bin: None,
-      space_id: "o9WCLGyxkLxdULZ-f2B9V".to_string(),
-      doc_id: "dYpV7PPhk8amRkY5IAcVO".to_string(),
-    };
+    let doc_bin = include_bytes!("../fixtures/demo.ydoc").to_vec();
+    let doc_id = "dYpV7PPhk8amRkY5IAcVO".to_string();
 
-    let result = parse_doc_from_binary(input).unwrap();
+    let result = parse_doc_from_binary(doc_bin, doc_id).unwrap();
     let config = assert_json_diff::Config::new(assert_json_diff::CompareMode::Strict)
       .numeric_mode(assert_json_diff::NumericMode::AssumeFloat);
     assert_json_diff::assert_json_matches!(

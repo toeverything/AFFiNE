@@ -14,8 +14,7 @@ export interface VirtualKeyboardProvider {
   readonly appTabSafeArea$: ReadonlySignal<string>;
 }
 
-export interface VirtualKeyboardProviderWithAction
-  extends VirtualKeyboardProvider {
+export interface VirtualKeyboardProviderWithAction extends VirtualKeyboardProvider {
   show: () => void;
   hide: () => void;
 }

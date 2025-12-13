@@ -8,7 +8,7 @@
   "license": "MPL-2.0",
   "type": "module",
   "devDependencies": {
-    "typedoc": "^0.28.0",
+    "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.5.0"
   },
   "scripts": {
@@ -17,5 +17,5 @@
   "dependencies": {
     "@blocksuite/affine": "workspace:*"
   },
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

@@ -24,15 +24,15 @@
     "@types/katex": "^0.16.7",
     "browser-fs-access": "^0.37.0",
     "jszip": "^3.10.1",
-    "katex": "^0.16.11",
+    "katex": "^0.16.27",
     "lit": "^3.2.0",
     "lz-string": "^1.5.0",
-    "rxjs": "^7.8.1",
-    "tweakpane": "^4.0.4",
+    "rxjs": "^7.8.2",
+    "tweakpane": "^4.0.5",
     "y-indexeddb": "^9.0.12",
     "y-protocols": "^1.0.6",
-    "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "yjs": "^13.6.27",
+    "zod": "^3.25.76"
   },
   "license": "MIT",
   "devDependencies": {
@@ -40,11 +40,11 @@
     "@types/micromatch": "^4.0.9",
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "graphql": "^16.9.0",
-    "magic-string": "^0.30.11",
-    "vite": "^7.0.0",
-    "vite-plugin-istanbul": "^7.0.0",
-    "vite-plugin-wasm": "^3.3.0",
+    "magic-string": "^0.30.21",
+    "vite": "^7.2.7",
+    "vite-plugin-istanbul": "^7.2.1",
+    "vite-plugin-wasm": "^3.5.0",
     "vite-plugin-web-components-hmr": "^0.1.3"
   },
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

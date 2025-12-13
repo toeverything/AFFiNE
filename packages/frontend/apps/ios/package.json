@@ -1,6 +1,6 @@
 {
   "name": "@affine/ios",
-  "version": "0.25.2",
+  "version": "0.25.7",
   "description": "AFFiNE Desktop Web application",
   "type": "module",
   "private": true,
@@ -28,16 +28,16 @@
     "@capacitor/haptics": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
-    "@sentry/react": "^9.2.0",
+    "@sentry/react": "^9.47.1",
     "@toeverything/infra": "workspace:^",
     "async-call-rpc": "^6.4.2",
     "capacitor-plugin-app-tracking-transparency": "^2.0.5",
     "idb": "^8.0.0",
     "next-themes": "^0.4.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^6.28.0",
-    "yjs": "^13.6.21"
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-router-dom": "^6.30.2",
+    "yjs": "^13.6.27"
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
@@ -46,7 +46,7 @@
     "@capacitor/cli": "^7.0.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "typescript": "^5.7.2"
   }
 }

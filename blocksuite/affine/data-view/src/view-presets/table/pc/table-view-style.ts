@@ -92,6 +92,17 @@ export const addGroupIconStyle = css({
     fill: 'var(--affine-icon-color)',
   },
 });
+export const groupsHiddenMessageStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  height: '80px',
+  zIndex: 0,
+  color: 'var(--affine-text-secondary-color)',
+  fontSize: '14px',
+  textAlign: 'center',
+});
 const cellDividerStyle = css({
   width: '1px',
   height: '100%',

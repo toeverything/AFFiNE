@@ -13,13 +13,13 @@
     "@blocksuite/global": "workspace:*",
     "@types/lodash-es": "^4.17.12",
     "idb": "^8.0.0",
-    "idb-keyval": "^6.2.1",
+    "idb-keyval": "^6.2.2",
     "lodash-es": "^4.17.21",
-    "rxjs": "^7.8.1",
+    "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6"
   },
   "devDependencies": {
-    "vitest": "3.1.3"
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "yjs": "*"
@@ -33,5 +33,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@affine/server-native",
-  "version": "0.25.2",
+  "version": "0.25.7",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
@@ -32,10 +32,7 @@
     "build:debug": "napi build"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.89",
-    "lib0": "^0.2.99",
-    "tiktoken": "^1.0.17",
-    "tinybench": "^4.0.0",
-    "yjs": "^13.6.21"
+    "@napi-rs/cli": "3.5.0",
+    "tiktoken": "^1.0.17"
   }
 }

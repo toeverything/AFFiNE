@@ -95,7 +95,14 @@ export class VirtualTableViewUILogic extends DataViewUILogicBase<
         },
       ];
     }
-    return groupTrait.groupsDataList$.value.map(group => ({
+    const groups = groupTrait.groupsDataList$.value.filter(
+      (
+        group
+      ): group is NonNullable<
+        (typeof groupTrait.groupsDataList$.value)[number]
+      > => group != null
+    );
+    return groups.map(group => ({
       id: group.key,
       rows: group.rows.map(v => v.rowId),
     }));

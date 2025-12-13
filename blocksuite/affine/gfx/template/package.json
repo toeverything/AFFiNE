@@ -29,10 +29,10 @@
     "@types/lodash-es": "^4.17.12",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",
-    "minimatch": "^10.0.1",
-    "rxjs": "^7.8.1",
-    "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "minimatch": "^10.1.1",
+    "rxjs": "^7.8.2",
+    "yjs": "^13.6.27",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -44,5 +44,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

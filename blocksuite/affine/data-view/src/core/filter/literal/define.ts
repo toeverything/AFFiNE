@@ -60,26 +60,22 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
           <style>
             ${DROPDOWN_BUTTON_CSS}
           </style>
-          <div
-            style="padding:8px; display:flex; flex-direction:column; gap:12px;"
-          >
+
+          <div style="padding:8px; display:flex; flex-direction:column; gap:12px;">
             <div style="display:flex; gap:8px;">
               <button
                 class="affine-dropdown-button"
                 @click=${(e: MouseEvent) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  const tgt = popupTargetFromElement(
-                    e.currentTarget as HTMLElement
-                  );
+                  const tgt = popupTargetFromElement(e.currentTarget as HTMLElement);
                   popMenu(tgt, {
                     middleware: createRelativeDropdownMiddleware(),
                     options: {
                       items: [
                         menu.group({
                           items: DIRECTIONS.map(d => {
-                            const label =
-                              d.charAt(0).toUpperCase() + d.slice(1);
+                            const label = d.charAt(0).toUpperCase() + d.slice(1);
                             return menu.action({
                               name: label,
                               isSelected: d === dir,
@@ -101,17 +97,14 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
                 @click=${(e: MouseEvent) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  const tgt = popupTargetFromElement(
-                    e.currentTarget as HTMLElement
-                  );
+                  const tgt = popupTargetFromElement(e.currentTarget as HTMLElement);
                   popMenu(tgt, {
                     middleware: createRelativeDropdownMiddleware(),
                     options: {
                       items: [
                         menu.group({
                           items: UNITS.map(u => {
-                            const label =
-                              u.charAt(0).toUpperCase() + u.slice(1);
+                            const label = u.charAt(0).toUpperCase() + u.slice(1);
                             return menu.action({
                               name: label,
                               isSelected: u === unit,
@@ -129,13 +122,15 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
               </button>
             </div>
 
-            <!-- calendar below -->
             <date-picker
               .padding=${8}
+              .size=${20}
               .direction=${dir}
               .unit=${unit}
               .rangeStart=${start}
               .rangeEnd=${end}
+              .value=${value.value}
+              .onChange=${(date: Date) => onDateChange(date.getTime())}
             ></date-picker>
           </div>
         `,

@@ -30,8 +30,10 @@ export const SeeAllLink = () => {
   );
 };
 
-interface PricingCollapsibleProps
-  extends Omit<HtmlHTMLAttributes<HTMLDivElement>, 'title'> {
+interface PricingCollapsibleProps extends Omit<
+  HtmlHTMLAttributes<HTMLDivElement>,
+  'title'
+> {
   title?: ReactNode;
   caption?: ReactNode;
 }
