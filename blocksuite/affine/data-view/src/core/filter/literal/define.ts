@@ -1,153 +1,29 @@
-import {
-  menu,
-  popMenu,
-  popupTargetFromElement,
-} from '@blocksuite/affine-components/context-menu';
+import { menu } from '@blocksuite/affine-components/context-menu';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import {
-  ArrowDownSmallIcon,
-  CheckBoxCheckSolidIcon,
-  CheckBoxUnIcon,
-} from '@blocksuite/icons/lit';
-import { autoPlacement, offset } from '@floating-ui/dom';
-import { css, html } from 'lit';
+import { CheckBoxCheckSolidIcon, CheckBoxUnIcon } from '@blocksuite/icons/lit';
+import { html } from 'lit';
 
 import { t } from '../../logical/type-presets.js';
-import { getRange } from '../filter-fn/date.js';
 import { createLiteral } from './create.js';
 import type { LiteralItemsConfig } from './types.js';
 
-const DROPDOWN_BUTTON_CSS = css`
-  .affine-dropdown-button {
-    all: unset;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .affine-dropdown-button:hover {
-    background: var(--affine-hover-color);
-  }
-  .affine-dropdown-button svg {
-    margin-left: 4px;
-    width: 12px;
-    height: 12px;
-  }
-`;
-
-const DIRECTIONS = ['past', 'this', 'next'] as const;
-const UNITS = ['day', 'week', 'month', 'year'] as const;
-const createRelativeDropdownMiddleware = () => [
-  offset({ mainAxis: 4, crossAxis: 0 }),
-  autoPlacement({
-    allowedPlacements: ['bottom-start', 'bottom', 'top-start', 'top'],
-  }),
-];
-
 export const allLiteralConfig: LiteralItemsConfig[] = [
   createLiteral({
-    type: t.relativeDate.instance(),
+    type: t.date.instance(),
     getItems: (_type, value, onChange) => {
-      const [dirRaw, unitRaw] = value.value ?? ['this', 'day'];
-      const dir = dirRaw ?? 'this';
-      const unit = unitRaw ?? 'day';
-      const [start, end] = getRange(dir, unit);
-
       return [
-        () => html`
-          <style>
-            ${DROPDOWN_BUTTON_CSS}
-          </style>
-
-          <div style="padding:8px; display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:8px;">
-              <button
-                class="affine-dropdown-button"
-                @click=${(e: MouseEvent) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  const tgt = popupTargetFromElement(e.currentTarget as HTMLElement);
-                  popMenu(tgt, {
-                    middleware: createRelativeDropdownMiddleware(),
-                    options: {
-                      items: [
-                        menu.group({
-                          items: DIRECTIONS.map(d => {
-                            const label = d.charAt(0).toUpperCase() + d.slice(1);
-                            return menu.action({
-                              name: label,
-                              isSelected: d === dir,
-                              select: () => onChange([d, unit]),
-                            });
-                          }),
-                        }),
-                      ],
-                    },
-                  });
-                }}
-              >
-                ${dir.charAt(0).toUpperCase() + dir.slice(1)}
-                ${ArrowDownSmallIcon()}
-              </button>
-
-              <button
-                class="affine-dropdown-button"
-                @click=${(e: MouseEvent) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  const tgt = popupTargetFromElement(e.currentTarget as HTMLElement);
-                  popMenu(tgt, {
-                    middleware: createRelativeDropdownMiddleware(),
-                    options: {
-                      items: [
-                        menu.group({
-                          items: UNITS.map(u => {
-                            const label = u.charAt(0).toUpperCase() + u.slice(1);
-                            return menu.action({
-                              name: label,
-                              isSelected: u === unit,
-                              select: () => onChange([dir, u]),
-                            });
-                          }),
-                        }),
-                      ],
-                    },
-                  });
-                }}
-              >
-                ${unit.charAt(0).toUpperCase() + unit.slice(1)}
-                ${ArrowDownSmallIcon()}
-              </button>
-            </div>
-
-            <date-picker
-              .padding=${8}
-              .size=${20}
-              .direction=${dir}
-              .unit=${unit}
-              .rangeStart=${start}
-              .rangeEnd=${end}
-              .value=${value.value}
-              .onChange=${(date: Date) => onDateChange(date.getTime())}
-            ></date-picker>
-          </div>
-        `,
+        () => {
+          return html` <date-picker
+            .padding="${8}"
+            .size="${20}"
+            .value="${value.value}"
+            .onChange="${(date: Date) => {
+              onChange(date.getTime());
+            }}"
+          ></date-picker>`;
+        },
       ];
     },
-  }),
-  createLiteral({
-    type: t.date.instance(),
-    getItems: (_type, value, onChange) => [
-      () => html`
-        <date-picker
-          .padding=${8}
-          .value=${value.value}
-          .onChange=${(d: Date) => onChange(d.getTime())}
-        ></date-picker>
-      `,
-    ],
   }),
   createLiteral({
     type: t.boolean.instance(),
