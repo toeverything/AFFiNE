@@ -6,7 +6,7 @@ import {
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import {
   type CalloutBlockModel,
-  ParagraphBlockModel,
+  type ParagraphBlockModel,
 } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';

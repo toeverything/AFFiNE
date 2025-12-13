@@ -16,6 +16,14 @@ export class BooleanGroupView extends BaseGroup<boolean, NonNullable<unknown>> {
   `;
 
   protected override render(): unknown {
+    // Handle null/undefined values
+    if (this.value == null) {
+      const displayName = `No ${this.group.property.name$.value ?? 'value'}`;
+      return html` <div class="data-view-group-title-boolean-view">
+        ${displayName}
+      </div>`;
+    }
+
     return html` <div class="data-view-group-title-boolean-view">
       ${this.value
         ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })

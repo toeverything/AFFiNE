@@ -1,5 +1,4 @@
 import { focusBlockEnd } from '@blocksuite/affine-shared/commands';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { isInsideBlockByFlavour } from '@blocksuite/affine-shared/utils';
 import { type SlashMenuConfig } from '@blocksuite/affine-widget-slash-menu';
 import { FontIcon } from '@blocksuite/icons/lit';
@@ -18,10 +17,11 @@ export const calloutSlashMenuConfig: SlashMenuConfig = {
       },
       searchAlias: ['callout'],
       group: '0_Basic@9',
-      when: ({ std, model }) => {
-        return (
-          std.get(FeatureFlagService).getFlag('enable_callout') &&
-          !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text')
+      when: ({ model }) => {
+        return !isInsideBlockByFlavour(
+          model.store,
+          model,
+          'affine:edgeless-text'
         );
       },
       action: ({ model, std }) => {

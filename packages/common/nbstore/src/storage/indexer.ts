@@ -14,6 +14,7 @@ import type { Storage } from './storage';
 export interface IndexerStorage extends Storage {
   readonly storageType: 'indexer';
   readonly isReadonly: boolean;
+  readonly recommendRefreshInterval: number; // 100ms
 
   search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
     table: T,
@@ -62,6 +63,7 @@ export interface IndexerStorage extends Storage {
   ): Promise<void>;
 
   refresh<T extends keyof IndexerSchema>(table: T): Promise<void>;
+  refreshIfNeed(): Promise<void>;
 }
 
 type ResultPagination = {
@@ -119,6 +121,7 @@ export type AggregateResult<
 
 export abstract class IndexerStorageBase implements IndexerStorage {
   readonly storageType = 'indexer';
+  readonly recommendRefreshInterval: number = 100; // 100ms
   abstract readonly connection: Connection;
   abstract readonly isReadonly: boolean;
 
@@ -173,4 +176,6 @@ export abstract class IndexerStorageBase implements IndexerStorage {
   ): Promise<void>;
 
   abstract refresh<T extends keyof IndexerSchema>(table: T): Promise<void>;
+
+  abstract refreshIfNeed(): Promise<void>;
 }

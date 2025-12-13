@@ -21,8 +21,7 @@ type FnValueType<
 export class FnTypeInstance<
   Args extends readonly TypeInstance[] = readonly TypeInstance[],
   Return extends TypeInstance = TypeInstance,
-> implements TypeInstance
-{
+> implements TypeInstance {
   _validate = fnSchema;
 
   readonly _valueType = undefined as never as FnValueType<Args, Return>;
@@ -55,7 +54,6 @@ export class FnTypeInstance<
   unify(ctx: TypeVarContext, template: FnTypeInstance, unify: Unify): boolean {
     const newCtx = { ...ctx };
 
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < template.args.length; i++) {
       const arg = template.args[i];
       const realArg = this.args[i];
@@ -79,9 +77,9 @@ export class FnTypeInstance<
 
 const fnSchema = Zod.function();
 
-export class ArrayTypeInstance<Element extends TypeInstance = TypeInstance>
-  implements TypeInstance
-{
+export class ArrayTypeInstance<
+  Element extends TypeInstance = TypeInstance,
+> implements TypeInstance {
   readonly _validate;
 
   readonly _valueType = undefined as never as ValueTypeOf<Element>[];

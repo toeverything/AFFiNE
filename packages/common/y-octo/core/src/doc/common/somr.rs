@@ -94,7 +94,7 @@ impl<T> SomrInner<T> {
     self.data.as_ref().map(|x| unsafe { &*x.get() })
   }
 
-  fn data_mut(&self) -> Option<InnerRefMut<T>> {
+  fn data_mut(&self) -> Option<InnerRefMut<'_, T>> {
     self.data.as_ref().map(|x| InnerRefMut {
       inner: unsafe { NonNull::new_unchecked(x.get()) },
       _marker: PhantomData,
@@ -145,7 +145,7 @@ impl<T> Somr<T> {
   }
 
   #[allow(unused)]
-  pub unsafe fn get_mut_from_ref(&self) -> Option<InnerRefMut<T>> {
+  pub unsafe fn get_mut_from_ref(&self) -> Option<InnerRefMut<'_, T>> {
     if !self.is_owned() || self.dangling() {
       return None;
     }

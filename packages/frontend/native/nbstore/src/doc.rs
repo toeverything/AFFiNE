@@ -103,7 +103,7 @@ impl SqliteDocStorage {
 
     sqlx::query(r#"INSERT INTO updates (doc_id, data, created_at) VALUES ($1, $2, $3);"#)
       .bind(doc_id)
-      .bind(update.as_ref())
+      .bind(update)
       .bind(timestamp)
       .execute(&mut *tx)
       .await?;
@@ -358,7 +358,7 @@ mod tests {
 
     assert_eq!(result.len(), 4);
     assert_eq!(
-      result.iter().map(|u| u.bin.as_ref()).collect::<Vec<_>>(),
+      result.iter().map(|u| u.bin.to_vec()).collect::<Vec<_>>(),
       updates
     );
   }
@@ -382,7 +382,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
   }
 
   #[tokio::test]
@@ -400,7 +400,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
@@ -416,7 +416,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
   }
 
   #[tokio::test]

@@ -49,8 +49,10 @@ const CountDisplay = ({
 }: { count: number; max?: number } & HTMLAttributes<HTMLSpanElement>) => {
   return <span {...attrs}>{count > max ? `${max}+` : count}</span>;
 };
-interface PageItemProps
-  extends Omit<HTMLAttributes<HTMLAnchorElement>, 'onClick'> {
+interface PageItemProps extends Omit<
+  HTMLAttributes<HTMLAnchorElement>,
+  'onClick'
+> {
   docId: string;
   right?: ReactNode;
   duplicate?: boolean;
@@ -321,8 +323,7 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
 
 const MAX_CONFLICT_COUNT = 5;
 interface ConflictListProps
-  extends PropsWithChildren,
-    HTMLAttributes<HTMLDivElement> {
+  extends PropsWithChildren, HTMLAttributes<HTMLDivElement> {
   docRecords: DocRecord[];
 }
 const ConflictList = ({

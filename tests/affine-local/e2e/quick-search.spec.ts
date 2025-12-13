@@ -178,7 +178,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await assertTitle(page, 'test123456');
   await openQuickSearchByShortcut(page);
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
@@ -188,7 +188,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
@@ -388,7 +388,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, '123456');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertResultList(page, [
     'this is a new page to search for content',
     '123456',
@@ -420,11 +420,11 @@ test('Create a new page with special characters in the title and search for this
   await openQuickSearchByShortcut(page);
 
   await insertInputText(page, specialTitle);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
 
   await assertResultList(page, [specialTitle, specialTitle]);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertTitle(page, specialTitle);
 });
 

@@ -55,6 +55,7 @@ export declare class DocStoragePool {
   connect(universalId: string, path: string): Promise<void>
   disconnect(universalId: string): Promise<void>
   checkpoint(universalId: string): Promise<void>
+  crawlDocData(universalId: string, docId: string): Promise<NativeCrawlResult>
   setSpaceId(universalId: string, spaceId: string): Promise<void>
   pushUpdate(universalId: string, docId: string, update: Uint8Array): Promise<Date>
   getDocSnapshot(universalId: string, docId: string): Promise<DocRecord | null>
@@ -81,6 +82,12 @@ export declare class DocStoragePool {
   clearClocks(universalId: string): Promise<void>
   setBlobUploadedAt(universalId: string, peer: string, blobId: string, uploadedAt?: Date | undefined | null): Promise<void>
   getBlobUploadedAt(universalId: string, peer: string, blobId: string): Promise<Date | null>
+  ftsAddDocument(id: string, indexName: string, docId: string, text: string, index: boolean): Promise<void>
+  ftsFlushIndex(id: string): Promise<void>
+  ftsDeleteDocument(id: string, indexName: string, docId: string): Promise<void>
+  ftsGetDocument(id: string, indexName: string, docId: string): Promise<string | null>
+  ftsSearch(id: string, indexName: string, query: string): Promise<Array<NativeSearchHit>>
+  ftsGetMatches(id: string, indexName: string, docId: string, query: string): Promise<Array<NativeMatch>>
 }
 
 export interface Blob {
@@ -113,6 +120,34 @@ export interface ListedBlob {
   size: number
   mime: string
   createdAt: Date
+}
+
+export interface NativeBlockInfo {
+  blockId: string
+  flavour: string
+  content?: Array<string>
+  blob?: Array<string>
+  refDocId?: Array<string>
+  refInfo?: Array<string>
+  parentFlavour?: string
+  parentBlockId?: string
+  additional?: string
+}
+
+export interface NativeCrawlResult {
+  blocks: Array<NativeBlockInfo>
+  title: string
+  summary: string
+}
+
+export interface NativeMatch {
+  start: number
+  end: number
+}
+
+export interface NativeSearchHit {
+  id: string
+  score: number
 }
 
 export interface SetBlob {
@@ -151,8 +186,7 @@ export declare class SqliteConnection {
   get isClose(): boolean
   static validate(path: string): Promise<ValidationResult>
   migrateAddDocId(): Promise<void>
-  /**
-   * Flush the WAL file to the database file.
+  /** * Flush the WAL file to the database file.
    * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
    */
   checkpoint(): Promise<void>

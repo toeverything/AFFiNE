@@ -22,6 +22,7 @@ import {
   AccessDenied,
   AuthenticationRequired,
   FailedToCheckout,
+  InvalidSubscriptionParameters,
   Throttle,
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
@@ -541,6 +542,56 @@ export class UserSubscriptionResolver {
         createdAt: 'desc',
       },
     });
+  }
+
+  @Throttle('strict')
+  @Mutation(() => [SubscriptionType], {
+    description: 'Request to apply the subscription in advance',
+  })
+  async requestApplySubscription(
+    @CurrentUser() user: CurrentUser,
+    @Args('transactionId') transactionId: string
+  ): Promise<Subscription[]> {
+    if (!user) {
+      throw new AuthenticationRequired();
+    }
+
+    let existsSubscription = await this.db.subscription.findFirst({
+      where: { rcExternalRef: transactionId },
+    });
+
+    // subscription with the transactionId already exists
+    if (existsSubscription) {
+      if (existsSubscription.targetId !== user.id) {
+        throw new InvalidSubscriptionParameters();
+      } else {
+        this.normalizeSubscription(existsSubscription);
+        return [existsSubscription];
+      }
+    }
+
+    let current: Subscription[] = [];
+
+    try {
+      await this.rcHandler.syncAppUserWithExternalRef(user.id, transactionId);
+      current = await this.db.subscription.findMany({
+        where: {
+          targetId: user.id,
+          status: {
+            in: [
+              SubscriptionStatus.Active,
+              SubscriptionStatus.Trialing,
+              SubscriptionStatus.PastDue,
+            ],
+          },
+        },
+      });
+      // ignore errors
+    } catch {}
+
+    current.forEach(subscription => this.normalizeSubscription(subscription));
+
+    return current;
   }
 
   @Throttle('strict')

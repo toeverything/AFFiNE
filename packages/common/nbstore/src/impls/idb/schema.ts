@@ -162,7 +162,7 @@ export interface DocStorageSchema extends DBSchema {
         i: number /* index */;
         l: number /* length */;
         rs: [number, number][] /* ranges: [start, end] */;
-      };
+      }[];
       key: ArrayBuffer;
     };
     indexes: { key: [string, ArrayBuffer]; nid: number };

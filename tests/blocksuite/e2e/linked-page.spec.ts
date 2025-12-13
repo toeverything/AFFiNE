@@ -1010,63 +1010,62 @@ test.describe.skip('Customize linked doc title and description', () => {
   });
 
   // Embed View
-  test.fixme(
-    'should automatically switch to card view and set a custom title and description on edgeless',
-    async ({ page }) => {
-      await enterPlaygroundRoom(page);
-      await initEmptyEdgelessState(page);
-      await focusRichText(page);
-      await createAndConvertToEmbedLinkedDoc(page);
+  test.fixme('should automatically switch to card view and set a custom title and description on edgeless', async ({
+    page,
+  }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await focusRichText(page);
+    await createAndConvertToEmbedLinkedDoc(page);
 
-      await switchEditorMode(page);
-      await page.mouse.dblclick(450, 450);
+    await switchEditorMode(page);
+    await page.mouse.dblclick(450, 450);
 
-      await dragBlockToPoint(page, '9', { x: 200, y: 200 });
+    await dragBlockToPoint(page, '9', { x: 200, y: 200 });
 
-      await waitNextFrame(page);
+    await waitNextFrame(page);
 
-      const toolbar = page.locator('editor-toolbar');
-      await toolbar.getByRole('button', { name: 'Switch view' }).click();
-      await toolbar.getByRole('button', { name: 'Embed view' }).click();
+    const toolbar = page.locator('editor-toolbar');
+    await toolbar.getByRole('button', { name: 'Switch view' }).click();
+    await toolbar.getByRole('button', { name: 'Embed view' }).click();
 
-      await waitNextFrame(page);
+    await waitNextFrame(page);
 
-      await toolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
-      await waitNextFrame(page);
-      const editModal = page.locator('embed-card-edit-modal');
-      const saveButton = editModal.getByRole('button', { name: 'Save' });
+    await waitNextFrame(page);
+    const editModal = page.locator('embed-card-edit-modal');
+    const saveButton = editModal.getByRole('button', { name: 'Save' });
 
-      // title alias
-      await type(page, 'page0-title0');
-      await page.keyboard.press('Tab');
-      // description alias
-      await type(page, 'This is a new description');
+    // title alias
+    await type(page, 'page0-title0');
+    await page.keyboard.press('Tab');
+    // description alias
+    await type(page, 'This is a new description');
 
-      // saves aliases
-      await saveButton.click();
+    // saves aliases
+    await saveButton.click();
 
-      await waitNextFrame(page);
+    await waitNextFrame(page);
 
-      const syncedDocBlock = page.locator(
-        'affine-embed-edgeless-synced-doc-block'
-      );
+    const syncedDocBlock = page.locator(
+      'affine-embed-edgeless-synced-doc-block'
+    );
 
-      await expect(syncedDocBlock).toBeHidden();
+    await expect(syncedDocBlock).toBeHidden();
 
-      const linkedDocBlock = page.locator(
-        'affine-embed-edgeless-linked-doc-block'
-      );
+    const linkedDocBlock = page.locator(
+      'affine-embed-edgeless-linked-doc-block'
+    );
 
-      await expect(linkedDocBlock).toBeVisible();
+    await expect(linkedDocBlock).toBeVisible();
 
-      const linkedDocBlockTitle = linkedDocBlock.locator(
-        '.affine-embed-linked-doc-content-title-text'
-      );
-      await expect(linkedDocBlockTitle).toHaveText('page0-title0');
-      await expect(
-        linkedDocBlock.locator('.affine-embed-linked-doc-content-note.alias')
-      ).toHaveText('This is a new description');
-    }
-  );
+    const linkedDocBlockTitle = linkedDocBlock.locator(
+      '.affine-embed-linked-doc-content-title-text'
+    );
+    await expect(linkedDocBlockTitle).toHaveText('page0-title0');
+    await expect(
+      linkedDocBlock.locator('.affine-embed-linked-doc-content-note.alias')
+    ).toHaveText('This is a new description');
+  });
 });

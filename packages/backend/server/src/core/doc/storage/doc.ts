@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import {
   applyUpdate,
   diffUpdate,
@@ -79,31 +80,34 @@ export abstract class DocStorageAdapter extends Connection {
     const updates = await this.getDocUpdates(spaceId, docId);
 
     if (updates.length) {
+      const docUpdate = await this.squash(
+        snapshot ? [snapshot, ...updates] : updates
+      );
       return await this.squashUpdatesToSnapshot(
         spaceId,
         docId,
         updates,
-        snapshot
+        snapshot,
+        docUpdate
       );
     }
 
     return snapshot;
   }
 
-  @Transactional()
+  @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
   private async squashUpdatesToSnapshot(
     spaceId: string,
     docId: string,
     updates: DocUpdate[],
-    snapshot: DocRecord | null
+    snapshot: DocRecord | null,
+    finalUpdate: DocUpdate
   ) {
     this.logger.log(
       `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
     );
-    const { timestamp, bin, editor } = await this.squash(
-      snapshot ? [snapshot, ...updates] : updates
-    );
 
+    const { bin, timestamp, editor } = finalUpdate;
     const newSnapshot: DocRecord = {
       spaceId,
       docId,

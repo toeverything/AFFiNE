@@ -18,6 +18,7 @@ const Store = z.enum([
 const zRcV2RawProduct = z
   .object({
     id: z.string().nonempty(),
+    display_name: z.string().nonempty(),
     store_identifier: z.string().nonempty(),
     subscription: z
       .object({ duration: z.string().nullable() })
@@ -47,6 +48,7 @@ const zRcV2RawSubscription = z
   .object({
     object: z.enum(['subscription']),
     id: z.string().nonempty(),
+    customer_id: z.string().nonempty().nullish(),
     product_id: z.string().nonempty().nullable(),
     entitlements: zRcV2RawEntitlements,
     starts_at: z.number(),
@@ -74,11 +76,25 @@ const zRcV2RawSubscription = z
   })
   .passthrough();
 
-const zRcV2RawEnvelope = z
+const zRcV2RawSubscriptionEnvelope = z
   .object({
     app_user_id: z.string().optional(),
     id: z.string().optional(),
     items: z.array(zRcV2RawSubscription).default([]),
+  })
+  .passthrough();
+
+const zRcV2RawCustomerAlias = z
+  .object({
+    object: z.literal('customer.alias'),
+    id: z.string().nonempty(),
+    created_at: z.number(),
+  })
+  .passthrough();
+
+const zRcV2RawCustomerAliasEnvelope = z
+  .object({
+    items: z.array(zRcV2RawCustomerAlias).default([]),
   })
   .passthrough();
 
@@ -89,10 +105,15 @@ export const Subscription = z.object({
   isActive: z.boolean(),
   latestPurchaseDate: z.date().nullable(),
   expirationDate: z.date().nullable(),
+  customerId: z.string().optional(),
   productId: z.string(),
   store: Store,
   willRenew: z.boolean(),
   duration: z.string().nullable(),
+});
+
+const IdentifyUserResponse = z.object({
+  was_created: z.boolean(),
 });
 
 export type Subscription = z.infer<typeof Subscription>;
@@ -122,13 +143,49 @@ export class RevenueCatService {
     return id;
   }
 
+  async identifyUser(userId: string, newUserId: string): Promise<boolean> {
+    try {
+      const res = await fetch(
+        `https://api.revenuecat.com/v1/subscribers/identify`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            app_user_id: userId,
+            new_app_user_id: newUserId,
+          }),
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const json = await res.json();
+      const parsed = IdentifyUserResponse.safeParse(json);
+      if (parsed.success) {
+        return parsed.data.was_created;
+      } else {
+        this.logger.error(
+          `RevenueCat identifyUser parse failed: ${JSON.stringify(
+            parsed.error.format()
+          )}`
+        );
+        return false;
+      }
+    } catch (e: any) {
+      this.logger.error(`RevenueCat identifyUser failed: ${e.message}`);
+      return false;
+    }
+  }
+
   async getProducts(ent: Entitlement): Promise<Product[] | null> {
     if (ent.products?.items && ent.products.items.length > 0) {
       return ent.products.items;
     }
     const entId = ent.id;
-    if (this.productsCache.has(entId)) {
-      return this.productsCache.get(entId)!;
+    const cachedProduct = this.productsCache.get(entId);
+    if (cachedProduct) {
+      return cachedProduct;
     }
 
     const res = await fetch(
@@ -165,6 +222,83 @@ export class RevenueCatService {
     return null;
   }
 
+  async getCustomerAlias(
+    customerId: string,
+    filterAlias = true
+  ): Promise<string[] | null> {
+    const res = await fetch(
+      `https://api.revenuecat.com/v2/projects/${this.projectId}/customers/${customerId}/aliases`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `RevenueCat getCustomerAlias failed: ${res.status} ${res.statusText} - ${text}`
+      );
+    }
+
+    const json = await res.json();
+    const customerParsed = zRcV2RawCustomerAliasEnvelope.safeParse(json);
+
+    if (customerParsed.success) {
+      const customer = customerParsed.data.items.map(alias => alias.id);
+      if (filterAlias) {
+        return customer.filter(id => !id.startsWith('$RCAnonymousID:'));
+      } else {
+        return customer;
+      }
+    }
+    this.logger.error(
+      `RevenueCat customer ${customerId} parse failed: ${JSON.stringify(
+        customerParsed.error.format()
+      )}`
+    );
+    return null;
+  }
+
+  async getSubscriptionByExternalRef(
+    externalRef: string
+  ): Promise<Subscription[] | null> {
+    const res = await fetch(
+      `https://api.revenuecat.com/v2/projects/${this.projectId}/subscriptions?store_subscription_identifier=${encodeURIComponent(externalRef)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `RevenueCat getSubscriptionByExternalRef failed: ${res.status} ${res.statusText} - ${text}`
+      );
+    }
+
+    const json = await res.json();
+    const envParsed = zRcV2RawSubscriptionEnvelope.safeParse(json);
+
+    if (envParsed.success) {
+      const parsedSubs = await Promise.all(
+        envParsed.data.items.flatMap(async sub => this.parseSubscription(sub))
+      );
+      return parsedSubs.filter((s): s is Subscription => s !== null);
+    }
+    this.logger.error(
+      `RevenueCat subscription parse failed: ${JSON.stringify(
+        envParsed.error.format()
+      )}`
+    );
+    return null;
+  }
+
   async getSubscriptions(customerId: string): Promise<Subscription[] | null> {
     const res = await fetch(
       `https://api.revenuecat.com/v2/projects/${this.projectId}/customers/${customerId}/subscriptions`,
@@ -184,42 +318,11 @@ export class RevenueCatService {
     }
 
     const json = await res.json();
-    const envParsed = zRcV2RawEnvelope.safeParse(json);
+    const envParsed = zRcV2RawSubscriptionEnvelope.safeParse(json);
 
     if (envParsed.success) {
       const parsedSubs = await Promise.all(
-        envParsed.data.items.flatMap(async sub => {
-          const items = sub.entitlements.items ?? [];
-          const products = (
-            await Promise.all(items.map(this.getProducts.bind(this)))
-          )
-            .filter((p): p is Product[] => p !== null)
-            .flat();
-          const product = products.find(p => p.id === sub.product_id);
-          if (!product) {
-            this.logger.warn(
-              `RevenueCat subscription ${sub.id} missing product for product_id=${sub.product_id}`
-            );
-            return null;
-          }
-
-          return {
-            identifier: product.display_name,
-            isTrial: sub.status === 'trialing',
-            isActive:
-              sub.gives_access === true ||
-              sub.status === 'active' ||
-              sub.status === 'trialing',
-            latestPurchaseDate: sub.starts_at ? new Date(sub.starts_at) : null,
-            expirationDate: sub.current_period_ends_at
-              ? new Date(sub.current_period_ends_at)
-              : null,
-            productId: product.store_identifier,
-            store: sub.store ?? product.app?.type,
-            willRenew: sub.auto_renewal_status === 'will_renew',
-            duration: product.subscription?.duration ?? null,
-          };
-        })
+        envParsed.data.items.flatMap(async sub => this.parseSubscription(sub))
       );
       return parsedSubs.filter((s): s is Subscription => s !== null);
     }
@@ -229,5 +332,40 @@ export class RevenueCatService {
       )}`
     );
     return null;
+  }
+
+  private async parseSubscription(
+    sub: z.infer<typeof zRcV2RawSubscription>
+  ): Promise<Subscription | null> {
+    const items = sub.entitlements.items ?? [];
+    const products = (await Promise.all(items.map(this.getProducts.bind(this))))
+      .filter((p): p is Product[] => p !== null)
+      .flat();
+    const product = products.find(p => p.id === sub.product_id);
+    if (!product) {
+      this.logger.warn(
+        `RevenueCat subscription ${sub.id} missing product for product_id=${sub.product_id}`,
+        products
+      );
+      return null;
+    }
+
+    return {
+      identifier: product.display_name,
+      isTrial: sub.status === 'trialing',
+      isActive:
+        sub.gives_access === true ||
+        sub.status === 'active' ||
+        sub.status === 'trialing',
+      latestPurchaseDate: sub.starts_at ? new Date(sub.starts_at) : null,
+      expirationDate: sub.current_period_ends_at
+        ? new Date(sub.current_period_ends_at)
+        : null,
+      customerId: sub.customer_id || undefined,
+      productId: product.store_identifier,
+      store: sub.store ?? product.app?.type,
+      willRenew: sub.auto_renewal_status === 'will_renew',
+      duration: product.subscription?.duration ?? null,
+    };
   }
 }

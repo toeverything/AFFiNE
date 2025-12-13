@@ -26,13 +26,10 @@ const GroupTitleMobile = (
   const type = groupData.tType;
   if (!type) return nothing;
 
-  const icon =
-    groupData.value == null
-      ? ''
-      : html` <uni-lit
-          class="group-header-icon"
-          .uni="${groupData.property.icon}"
-        ></uni-lit>`;
+  const icon = html` <uni-lit
+    class="group-header-icon"
+    .uni="${groupData.property.icon}"
+  ></uni-lit>`;
   const props: GroupRenderProps = {
     group: groupData,
     readonly: ops.readonly,
@@ -126,13 +123,10 @@ export const GroupTitle = (
   const type = groupData.tType;
   if (!type) return nothing;
 
-  const icon =
-    groupData.value == null
-      ? ''
-      : html` <uni-lit
-          class="group-header-icon"
-          .uni="${groupData.property.icon}"
-        ></uni-lit>`;
+  const icon = html` <uni-lit
+    class="group-header-icon"
+    .uni="${groupData.property.icon}"
+  ></uni-lit>`;
   const props: GroupRenderProps = {
     group: groupData,
     readonly: ops.readonly,

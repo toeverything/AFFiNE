@@ -1,3 +1,5 @@
+import type { CrawlResult } from '@affine/nbstore';
+
 export interface Blob {
   key: string;
   // base64 encoded data
@@ -149,4 +151,37 @@ export interface NbStorePlugin {
     uploadedAt: number | null;
   }) => Promise<void>;
   clearClocks: (options: { id: string }) => Promise<void>;
+  crawlDocData: (options: {
+    id: string;
+    docId: string;
+  }) => Promise<CrawlResult>;
+  ftsAddDocument: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+    text: string;
+    index: boolean;
+  }) => Promise<void>;
+  ftsDeleteDocument: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+  }) => Promise<void>;
+  ftsSearch: (options: {
+    id: string;
+    indexName: string;
+    query: string;
+  }) => Promise<{ id: string; score: number }[]>;
+  ftsGetDocument: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+  }) => Promise<{ text: string | null }>;
+  ftsGetMatches: (options: {
+    id: string;
+    indexName: string;
+    docId: string;
+    query: string;
+  }) => Promise<Array<{ start: number; end: number }>>;
+  ftsFlushIndex: (options: { id: string }) => Promise<void>;
 }

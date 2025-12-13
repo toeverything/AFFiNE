@@ -109,13 +109,15 @@ export class IndexerSyncImpl implements IndexerSync {
   /**
    * increase this number to re-index all docs
    */
-  readonly INDEXER_VERSION = 1;
+  readonly INDEXER_VERSION = 2;
   private abort: AbortController | null = null;
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
 
   private readonly indexer: IndexerStorage;
   private readonly remote?: IndexerStorage;
+
+  private lastRefreshed = Date.now();
 
   state$ = this.status.state$.pipe(
     // throttle the state to 1 second to avoid spamming the UI
@@ -378,8 +380,7 @@ export class IndexerSyncImpl implements IndexerSync {
               this.status.statusUpdatedSubject$.next(docId);
             }
           }
-          await this.indexer.refresh('block');
-          await this.indexer.refresh('doc');
+          await this.refreshIfNeed();
           // #endregion
         } else {
           // #region crawl doc
@@ -407,33 +408,40 @@ export class IndexerSyncImpl implements IndexerSync {
             continue;
           }
 
-          const docBin = await this.doc.getDoc(docId);
-          if (!docBin) {
-            // doc is deleted, just skip
-            continue;
-          }
           console.log('[indexer] start indexing doc', docId);
-          const docYDoc = new YDoc({ guid: docId });
-          applyUpdate(docYDoc, docBin.bin);
 
           let blocks: IndexerDocument<'block'>[] = [];
           let preview: string | undefined;
 
-          try {
-            const result = await crawlingDocData({
-              ydoc: docYDoc,
-              rootYDoc: this.status.rootDoc,
-              spaceId: this.status.rootDocId,
-              docId,
-            });
-            if (!result) {
-              // doc is empty without root block, just skip
+          const nativeResult = await this.tryNativeCrawlDocData(docId);
+          if (nativeResult) {
+            blocks = nativeResult.block;
+            preview = nativeResult.summary;
+          } else {
+            const docBin = await this.doc.getDoc(docId);
+            if (!docBin) {
+              // doc is deleted, just skip
               continue;
             }
-            blocks = result.blocks;
-            preview = result.preview;
-          } catch (error) {
-            console.error('error crawling doc', error);
+            const docYDoc = new YDoc({ guid: docId });
+            applyUpdate(docYDoc, docBin.bin);
+
+            try {
+              const result = await crawlingDocData({
+                ydoc: docYDoc,
+                rootYDoc: this.status.rootDoc,
+                spaceId: this.status.rootDocId,
+                docId,
+              });
+              if (!result) {
+                // doc is empty without root block, just skip
+                continue;
+              }
+              blocks = result.blocks;
+              preview = result.preview;
+            } catch (error) {
+              console.error('error crawling doc', error);
+            }
           }
 
           await this.indexer.deleteByQuery('block', {
@@ -446,8 +454,6 @@ export class IndexerSyncImpl implements IndexerSync {
             await this.indexer.insert('block', block);
           }
 
-          await this.indexer.refresh('block');
-
           if (preview) {
             await this.indexer.update(
               'doc',
@@ -455,8 +461,9 @@ export class IndexerSyncImpl implements IndexerSync {
                 summary: preview,
               })
             );
-            await this.indexer.refresh('doc');
           }
+
+          await this.refreshIfNeed();
 
           await this.indexerSync.setDocIndexedClock({
             docId,
@@ -467,11 +474,28 @@ export class IndexerSyncImpl implements IndexerSync {
         }
 
         console.log('[indexer] complete job', docId);
+        await this.refreshIfNeed();
 
         this.status.completeJob();
       }
     } finally {
+      await this.refreshIfNeed();
       unsubscribe();
+    }
+  }
+
+  // ensure the indexer is refreshed according to recommendRefreshInterval
+  // recommendRefreshInterval <= 0 means force refresh on each operation
+  // recommendRefreshInterval > 0 means refresh if the last refresh is older than recommendRefreshInterval
+  private async refreshIfNeed(): Promise<void> {
+    const recommendRefreshInterval = this.indexer.recommendRefreshInterval ?? 0;
+    const needRefresh =
+      recommendRefreshInterval > 0 &&
+      this.lastRefreshed + recommendRefreshInterval < Date.now();
+    const forceRefresh = recommendRefreshInterval <= 0;
+    if (needRefresh || forceRefresh) {
+      await this.indexer.refreshIfNeed();
+      this.lastRefreshed = Date.now();
     }
   }
 
@@ -482,6 +506,36 @@ export class IndexerSyncImpl implements IndexerSync {
     return readAllDocsFromRootDoc(this.status.rootDoc, {
       includeTrash: false,
     });
+  }
+
+  private async tryNativeCrawlDocData(docId: string) {
+    try {
+      const result = await this.doc.crawlDocData?.(docId);
+      if (result) {
+        return {
+          title: result.title,
+          block: result.blocks.map(block =>
+            IndexerDocument.from<'block'>(`${docId}:${block.blockId}`, {
+              docId,
+              blockId: block.blockId,
+              content: block.content,
+              flavour: block.flavour,
+              blob: block.blob,
+              refDocId: block.refDocId,
+              ref: block.refInfo,
+              parentFlavour: block.parentFlavour,
+              parentBlockId: block.parentBlockId,
+              additional: block.additional,
+            })
+          ),
+          summary: result.summary,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.warn('[indexer] native crawlDocData failed', docId, error);
+      return null;
+    }
   }
 
   private async getAllDocsFromIndexer() {

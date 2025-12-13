@@ -58,6 +58,10 @@ export type SpellCheckStateSchema = z.infer<typeof SpellCheckStateSchema>;
 export const MenubarStateKey = 'menubarState' as const;
 export const MenubarStateSchema = z.object({
   enabled: z.boolean().default(true),
+  openOnLeftClick: z.boolean().default(false),
+  minimizeToTray: z.boolean().default(false),
+  closeToTray: z.boolean().default(false),
+  startMinimized: z.boolean().default(false),
 });
 
 export type MenubarStateSchema = z.infer<typeof MenubarStateSchema>;
