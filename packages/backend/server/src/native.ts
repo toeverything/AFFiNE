@@ -40,6 +40,10 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
 export const getMime = serverNativeModule.getMime;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
+export const parseYDocFromBinary = serverNativeModule.parseDocFromBinary;
+export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
+export const readAllDocIdsFromRootDoc =
+  serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;

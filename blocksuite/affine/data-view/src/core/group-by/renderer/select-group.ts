@@ -84,10 +84,11 @@ export class SelectGroupView extends BaseGroup<
   protected override render(): unknown {
     const tag = this.tag;
     if (!tag) {
+      const displayName = `No ${this.group.property.name$.value}`;
       return html` <div
         style="font-size: 14px;color: var(--affine-text-primary-color);line-height: 22px;"
       >
-        Ungroups
+        ${displayName}
       </div>`;
     }
     const style = styleMap({

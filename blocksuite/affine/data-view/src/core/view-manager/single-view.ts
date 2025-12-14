@@ -20,6 +20,7 @@ export type MainProperties = {
 };
 
 export interface SingleView {
+  data$: any;
   readonly id: string;
   readonly type: string;
   readonly manager: ViewManager;

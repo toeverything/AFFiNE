@@ -37,6 +37,9 @@ export const popCardMenu = (
   rowId: string,
   selection: KanbanSelectionController
 ) => {
+  const groups = (selection.view.groupTrait.groupsDataList$.value ?? []).filter(
+    (v): v is NonNullable<typeof v> => v != null
+  );
   popFilterableSimpleMenu(ele, [
     menu.action({
       name: 'Expand Card',
@@ -50,22 +53,23 @@ export const popCardMenu = (
       prefix: ArrowRightBigIcon(),
       options: {
         items:
-          selection.view.groupTrait.groupsDataList$.value
-            ?.filter(v => {
+          groups
+            .filter(v => {
               const cardSelection = selection.selection;
               if (cardSelection?.selectionType === 'card') {
-                return v.key !== cardSelection?.cards[0].groupKey;
+                const currentGroup = cardSelection.cards[0]?.groupKey;
+                return currentGroup ? v.key !== currentGroup : true;
               }
               return false;
             })
-            .map(group => {
-              return menu.action({
+            .map(group =>
+              menu.action({
                 name: group.value != null ? group.name$.value : 'Ungroup',
                 select: () => {
                   selection.moveCard(rowId, group.key);
                 },
-              });
-            }) ?? [],
+              })
+            ) ?? [],
       },
     }),
     menu.group({
