@@ -1205,11 +1205,6 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       this.dialogEl?.addEventListener('close', this.closeDataDialog);
     }
     if (!this.dialogEl) {
-      this.dialogEl = this.renderRoot.querySelector('#data-dialog') as
-        | HTMLDialogElement
-        | undefined;
-    }
-    if (!this.dialogEl) {
       return;
     }
     if (!this.dialogEl.open) {
