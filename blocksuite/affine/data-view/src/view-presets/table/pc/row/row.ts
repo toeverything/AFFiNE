@@ -265,8 +265,7 @@ export class TableRowView extends SignalWatcher(
               </dv-table-view-cell-container>
               <div class="${cellDivider}"></div>
             </div>
-            ${!column.readonly$.value &&
-            column.view.mainProperties$.value.titleColumn === column.id
+            ${column.view.mainProperties$.value.titleColumn === column.id
               ? html`<div class="row-ops show-on-hover-row">
                   <div class="row-op" @click="${clickDetail}">
                     ${CenterPeekIcon()}

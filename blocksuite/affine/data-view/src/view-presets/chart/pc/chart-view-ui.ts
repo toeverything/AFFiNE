@@ -1,4 +1,4 @@
-import { signal } from '@preact/signals-core';
+import { computed, signal } from '@preact/signals-core';
 import Chart from 'chart.js/auto';
 import { css, html, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
@@ -22,6 +22,9 @@ class DialogTableView extends TableSingleView {
   private readonly _data: ReturnType<typeof signal<TableViewData>>;
   override data$: ReturnType<typeof signal<TableViewData>>;
   private readonly visibleRowIds$ = signal<Set<string> | undefined>(undefined);
+
+  // Force read-only mode: no edits, no meatball menu, no add row
+  override readonly$ = computed(() => true);
 
   constructor(manager: ViewManager, data: TableViewData) {
     super(manager, 'dialog-table');
@@ -1246,7 +1249,9 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     if (!this.dialogLogic) return html``;
 
     return html`
-      <div class="dialog-content affine-database-table ${tableViewStyle}">
+      <div
+        class="dialog-content affine-database-table ${tableViewStyle} data-view-popup-container"
+      >
         <div class="dialog-header">
           <data-view-header-tools-search
             .dataViewLogic=${this.dialogLogic}
@@ -1427,7 +1432,11 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
 
   override updated(changedProps: Map<string, unknown>) {
     super.updated(changedProps);
-    // Whenever new data arrives, re-draw the chart
+    // Skip chart recreation when only selectedCategory changes (dialog open/close)
+    // This prevents the chart from re-animating when closing the row data dialog
+    if (changedProps.has('selectedCategory') && changedProps.size === 1) {
+      return;
+    }
     this.createOrUpdateChart();
   }
 }
