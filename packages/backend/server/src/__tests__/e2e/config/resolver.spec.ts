@@ -31,3 +31,9 @@ e2e('should enable local workspace feature by default', async t => {
     JSON.stringify(serverConfig, null, 2)
   );
 });
+
+e2e('should return customCss field in serverConfig', async t => {
+  const { serverConfig } = await app.gql({ query: serverConfigQuery });
+
+  t.is(typeof serverConfig.customCss, 'string');
+});

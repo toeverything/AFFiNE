@@ -136,3 +136,21 @@ test('should emit config changed event', async t => {
     })
   );
 });
+
+test('should update appearance.customCss config', async t => {
+  const customCss = ':root { --test-color: red; }';
+
+  await service.updateConfig(user.id, [
+    {
+      module: 'appearance',
+      key: 'customCss',
+      value: customCss,
+    },
+  ]);
+
+  t.is(service.getConfig().appearance.customCss, customCss);
+});
+
+test('should default appearance.customCss to empty string', async t => {
+  t.is(typeof service.getConfig().appearance.customCss, 'string');
+});
