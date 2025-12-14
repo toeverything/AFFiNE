@@ -9,6 +9,7 @@ import { CheckBoxCheckSolidIcon, CheckBoxUnIcon } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
 import { t } from '../../logical/type-presets.js';
+import { getRange } from '../filter-fn/date.js';
 import { createLiteral } from './create.js';
 import type { LiteralItemsConfig } from './types.js';
 
@@ -143,13 +144,20 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
             </button>
           </div>
         `,
-        () => html`
-          <date-picker
-            .padding="${8}"
-            .size="${20}"
-            .value="${Date.now()}"
-          ></date-picker>
-        `,
+        () => {
+          const dir = currentDir as 'past' | 'this' | 'next';
+          const unit = currentUnit as 'day' | 'week' | 'month' | 'year';
+          const [start, end] = getRange(dir, unit);
+          const displayValue =
+            dir === 'past' ? end : dir === 'next' ? start : Date.now();
+          return html`
+            <date-picker
+              .padding="${8}"
+              .size="${20}"
+              .value="${displayValue}"
+            ></date-picker>
+          `;
+        },
       ];
     },
   }),

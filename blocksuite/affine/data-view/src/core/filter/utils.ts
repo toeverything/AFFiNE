@@ -5,7 +5,7 @@ import type { Value, Variable, VariableRef } from '../expression/types.js';
 import { filterMatcher } from './filter-fn/matcher.js';
 import type { FilterGroup, SingleFilter } from './types.js';
 
-const getDefaultArgsForFilter = (filterName?: string): Value[] => {
+export const getDefaultArgsForFilter = (filterName?: string): Value[] => {
   if (!filterName) return [];
 
   const filterConfig = filterMatcher.getFilterByName(filterName);
