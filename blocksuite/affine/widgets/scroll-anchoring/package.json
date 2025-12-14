@@ -18,7 +18,7 @@
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.16",
     "lit": "^3.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.2"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -30,5 +30,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

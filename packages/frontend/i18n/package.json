@@ -1,6 +1,6 @@
 {
   "name": "@affine/i18n",
-  "version": "0.25.2",
+  "version": "0.25.7",
   "description": "",
   "type": "module",
   "private": true,
@@ -22,14 +22,13 @@
     "@magic-works/i18n-codegen": "^0.6.1",
     "dayjs": "^1.11.13",
     "i18next": "^25.0.0",
-    "react": "^19.0.0",
-    "react-i18next": "^15.2.0",
-    "undici": "^7.1.0"
+    "react": "^19.2.1",
+    "react-i18next": "^15.2.0"
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
     "glob": "^11.0.0",
-    "vitest": "3.1.3"
+    "vitest": "^3.2.4"
   }
 }

@@ -74,12 +74,15 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
           };
         });
       },
-      sortGroup: ids =>
-        sortByManually(
+      sortGroup: (ids, asc) => {
+        const sorted = sortByManually(
           ids,
           v => v,
           this.view?.groupProperties.map(v => v.key) ?? []
-        ),
+        );
+        // If descending order is requested, reverse the sorted array
+        return asc === false ? sorted.reverse() : sorted;
+      },
       sortRow: (key, rows) => {
         const property = this.view?.groupProperties.find(v => v.key === key);
         return sortByManually(
@@ -134,6 +137,33 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
               }
             }),
           };
+        });
+      },
+      changeGroupHide: (key, hide) => {
+        this.dataUpdate(() => {
+          const list = [...(this.view?.groupProperties ?? [])];
+          const idx = list.findIndex(g => g.key === key);
+          if (idx >= 0) {
+            const target = list[idx];
+            if (!target) {
+              return { groupProperties: list };
+            }
+            list[idx] = { ...target, hide };
+          } else {
+            // maintain existing order when inserting a new entry
+            const order = (this.groupTrait.groupsDataListAll$.value ?? [])
+              .map(g => g?.key)
+              .filter((k): k is string => typeof k === 'string');
+            let insertPos = 0;
+            for (const k of order) {
+              if (k === key) break;
+              if (list.findIndex(g => g.key === k) !== -1) {
+                insertPos++;
+              }
+            }
+            list.splice(insertPos, 0, { key, hide, manuallyCardSort: [] });
+          }
+          return { groupProperties: list };
         });
       },
     })

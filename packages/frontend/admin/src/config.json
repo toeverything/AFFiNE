@@ -116,12 +116,12 @@
     },
     "SMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")",
       "env": "MAILER_SENDER"
     },
     "SMTP.ignoreTLS": {
       "type": "Boolean",
-      "desc": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+      "desc": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
       "env": "MAILER_IGNORE_TLS"
     },
     "fallbackDomains": {
@@ -150,11 +150,11 @@
     },
     "fallbackSMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")"
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")"
     },
     "fallbackSMTP.ignoreTLS": {
       "type": "Boolean",
-      "desc": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates."
+      "desc": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates."
     }
   },
   "doc": {

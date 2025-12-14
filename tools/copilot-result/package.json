@@ -1,6 +1,6 @@
 {
   "name": "@affine/copilot-result",
-  "version": "0.25.2",
+  "version": "0.25.7",
   "type": "module",
   "main": "index.js",
   "private": true,
@@ -8,7 +8,7 @@
   "dependencies": {
     "@slack/web-api": "^7.8.0",
     "jsx-slack": "^6.1.2",
-    "marked": "^15.0.3"
+    "marked": "^15.0.12"
   },
   "devDependencies": {
     "@types/node": "^22.0.0"

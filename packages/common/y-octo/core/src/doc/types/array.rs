@@ -45,7 +45,7 @@ impl Array {
     })
   }
 
-  pub fn iter(&self) -> ArrayIter {
+  pub fn iter(&self) -> ArrayIter<'_> {
     ArrayIter(self.iter_item())
   }
 

@@ -1,25 +1,10 @@
 import { menu } from '@blocksuite/affine-components/context-menu';
-import { IS_MOBILE } from '@blocksuite/global/env';
 import { html } from 'lit/static-html.js';
 
 import { renderUniLit } from '../utils/uni-component/index.js';
 import type { Property } from '../view-manager/property.js';
 
 export const inputConfig = (property: Property) => {
-  if (IS_MOBILE) {
-    return menu.input({
-      prefix: html`
-        <div class="affine-database-column-type-menu-icon">
-          ${renderUniLit(property.icon)}
-        </div>
-      `,
-      initialValue: property.name$.value,
-      placeholder: 'Property name',
-      onChange: text => {
-        property.nameSet(text);
-      },
-    });
-  }
   return menu.input({
     prefix: html`
       <div class="affine-database-column-type-menu-icon">
@@ -28,7 +13,7 @@ export const inputConfig = (property: Property) => {
     `,
     initialValue: property.name$.value,
     placeholder: 'Property name',
-    onComplete: text => {
+    onBlur: text => {
       property.nameSet(text);
     },
   });

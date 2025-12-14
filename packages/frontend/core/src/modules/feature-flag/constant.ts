@@ -288,6 +288,15 @@ export const AFFINE_FLAGS = {
     configurable: isMobile,
     defaultState: false,
   },
+  enable_pdfmake_export: {
+    category: 'blocksuite',
+    bsFlag: 'enable_pdfmake_export',
+    displayName: 'Enable PDF Export',
+    description:
+      'Experimental export PDFs support, it may contain the wrong style.',
+    configurable: true,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

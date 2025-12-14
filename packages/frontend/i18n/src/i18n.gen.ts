@@ -2412,6 +2412,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.affine-workspace-data"](): string;
     /**
+      * `Docx`
+      */
+    ["com.affine.import.docx"](): string;
+    /**
+      * `Import your .docx file.`
+      */
+    ["com.affine.import.docx.tooltip"](): string;
+    /**
       * `HTML`
       */
     ["com.affine.import.html-files"](): string;
@@ -5379,6 +5387,14 @@ export function useAFFiNEI18N(): {
       * `Font family`
       */
     ["com.affine.settings.editorSettings.general.font-family.title"](): string;
+    /**
+      * `Adjust the base font size for better readability.`
+      */
+    ["com.affine.settings.editorSettings.general.font-size.description"](): string;
+    /**
+      * `Font size`
+      */
+    ["com.affine.settings.editorSettings.general.font-size.title"](): string;
     /**
       * `Automatically detect and correct spelling errors.`
       */

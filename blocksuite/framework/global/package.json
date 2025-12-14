@@ -56,13 +56,13 @@
   ],
   "dependencies": {
     "@preact/signals-core": "^1.8.0",
-    "lib0": "^0.2.97",
+    "lib0": "^0.2.114",
     "lit": "^3.2.0",
-    "rxjs": "^7.8.1",
-    "zod": "^3.23.8"
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "vitest": "3.1.3"
+    "vitest": "^3.2.4"
   },
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

@@ -1,4 +1,4 @@
-import en from './en.json' assert { type: 'json' };
+import en from './en.json' with { type: 'json' };
 
 export type Language =
   | 'en'
@@ -8,6 +8,7 @@ export type Language =
   | 'es'
   | 'es-AR'
   | 'es-CL'
+  | 'pl'
   | 'de'
   | 'ru'
   | 'ja'
@@ -88,6 +89,12 @@ export const SUPPORTED_LANGUAGES: Record<
     originalName: 'español (Chile)',
     flagEmoji: '🇨🇱',
     resource: () => import('./es-CL.json'),
+  },
+  pl: {
+    name: 'Polish',
+    originalName: 'Polski',
+    flagEmoji: '🇵🇱',
+    resource: () => import('./pl.json'),
   },
   de: {
     name: 'German',

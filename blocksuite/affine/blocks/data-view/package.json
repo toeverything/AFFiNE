@@ -27,9 +27,9 @@
     "@toeverything/theme": "^1.1.16",
     "@types/mdast": "^4.0.4",
     "lit": "^3.2.0",
-    "minimatch": "^10.0.1",
-    "rxjs": "^7.8.1",
-    "zod": "^3.23.8"
+    "minimatch": "^10.1.1",
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -42,5 +42,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

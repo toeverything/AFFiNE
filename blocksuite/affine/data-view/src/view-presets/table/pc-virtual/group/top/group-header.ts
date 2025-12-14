@@ -35,9 +35,11 @@ export class TableGroupHeader extends SignalWatcher(
   }
 
   group$ = computed(() => {
-    return this.tableViewLogic.groupTrait$.value?.groupsDataList$.value?.find(
-      g => g.key === this.gridGroup.groupId
-    );
+    const groups =
+      this.tableViewLogic.groupTrait$.value?.groupsDataList$.value ?? [];
+    return groups
+      .filter((group): group is NonNullable<typeof group> => group != null)
+      .find(g => g.key === this.gridGroup.groupId);
   });
 
   groupKey$ = computed(() => {

@@ -2,7 +2,7 @@
   "name": "@affine/media-capture-playground",
   "private": true,
   "type": "module",
-  "version": "0.25.2",
+  "version": "0.25.7",
   "scripts": {
     "dev:web": "vite",
     "dev:server": "tsx --env-file=.env --watch server/main.ts"
@@ -22,16 +22,16 @@
     "express-rate-limit": "^7.1.5",
     "fs-extra": "^11.3.0",
     "lodash-es": "^4.17.21",
-    "multer": "^2.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-markdown": "^10.0.0",
+    "multer": "^2.0.2",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-markdown": "^10.1.0",
     "socket.io": "^4.7.4",
     "socket.io-client": "^4.7.4",
-    "swr": "^2.3.2",
-    "tailwindcss": "^4.0.6",
+    "swr": "^2.3.7",
+    "tailwindcss": "^4.1.17",
     "tsx": "^4.19.2",
-    "vite": "^7.0.0"
+    "vite": "^7.2.7"
   },
   "devDependencies": {
     "@types/fs-extra": "^11",

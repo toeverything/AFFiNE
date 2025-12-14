@@ -99,11 +99,11 @@ impl Update {
     Ok(encoder.into_inner())
   }
 
-  pub(crate) fn iter(&mut self, state: StateVector) -> UpdateIterator {
+  pub(crate) fn iter(&mut self, state: StateVector) -> UpdateIterator<'_> {
     UpdateIterator::new(self, state)
   }
 
-  pub fn delete_set_iter(&mut self, state: StateVector) -> DeleteSetIterator {
+  pub fn delete_set_iter(&mut self, state: StateVector) -> DeleteSetIterator<'_> {
     DeleteSetIterator::new(self, state)
   }
 

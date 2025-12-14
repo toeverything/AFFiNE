@@ -93,13 +93,12 @@ type FolderEvents =
 type TagEvents = 'createTag' | 'deleteTag' | 'renameTag' | 'tagDoc';
 type FavoriteEvents = 'toggleFavorite';
 type OrganizeItemEvents = // doc, link, folder, collection, tag
-
-    | 'createOrganizeItem'
-    | 'renameOrganizeItem'
-    | 'moveOrganizeItem'
-    | 'deleteOrganizeItem'
-    | 'orderOrganizeItem'
-    | 'removeOrganizeItem';
+  | 'createOrganizeItem'
+  | 'renameOrganizeItem'
+  | 'moveOrganizeItem'
+  | 'deleteOrganizeItem'
+  | 'orderOrganizeItem'
+  | 'removeOrganizeItem';
 type OrganizeEvents =
   | OrganizeItemEvents
   | CollectionEvents

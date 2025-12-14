@@ -30,7 +30,7 @@ const makers = [
     platform === 'darwin' && {
       name: '@electron-forge/maker-dmg',
       config: {
-        format: 'ULFO',
+        format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
@@ -111,56 +111,57 @@ const makers = [
       },
     },
   },
-  !process.env.SKIP_BUNDLE && {
-    name: '@electron-forge/maker-flatpak',
-    platforms: ['linux'],
-    /** @type {import('@electron-forge/maker-flatpak').MakerFlatpakConfig} */
-    config: {
-      options: {
-        mimeType: linuxMimeTypes,
-        productName,
-        bin: productName,
-        id: fromBuildIdentifier(appIdMap),
-        icon: iconPngPath, // not working yet
-        branch: buildType,
-        files: [
-          [
-            './resources/affine.metainfo.xml',
-            '/usr/share/metainfo/affine.metainfo.xml',
-          ],
-        ],
-        runtimeVersion: '24.08',
-        modules: [
-          {
-            name: 'zypak',
-            sources: [
-              {
-                type: 'git',
-                url: 'https://github.com/refi64/zypak',
-                tag: 'v2024.01.17',
-              },
+  !process.env.SKIP_BUNDLE &&
+    false && {
+      name: '@electron-forge/maker-flatpak',
+      platforms: ['linux'],
+      /** @type {import('@electron-forge/maker-flatpak').MakerFlatpakConfig} */
+      config: {
+        options: {
+          mimeType: linuxMimeTypes,
+          productName,
+          bin: productName,
+          id: fromBuildIdentifier(appIdMap),
+          icon: iconPngPath, // not working yet
+          branch: buildType,
+          files: [
+            [
+              './resources/affine.metainfo.xml',
+              '/usr/share/metainfo/affine.metainfo.xml',
             ],
-          },
-        ],
-        finishArgs: [
-          // Wayland/X11 Rendering
-          '--socket=wayland',
-          '--socket=x11',
-          '--share=ipc',
-          // Open GL
-          '--device=dri',
-          // Audio output
-          '--socket=pulseaudio',
-          // Read/write home directory access
-          '--filesystem=home',
-          // Allow communication with network
-          '--share=network',
-          // System notifications with libnotify
-          '--talk-name=org.freedesktop.Notifications',
-        ],
+          ],
+          runtimeVersion: '25.08',
+          modules: [
+            {
+              name: 'zypak',
+              sources: [
+                {
+                  type: 'git',
+                  url: 'https://github.com/refi64/zypak',
+                  tag: 'v2025.09',
+                },
+              ],
+            },
+          ],
+          finishArgs: [
+            // Wayland/X11 Rendering
+            '--socket=wayland',
+            '--socket=x11',
+            '--share=ipc',
+            // Open GL
+            '--device=dri',
+            // Audio output
+            '--socket=pulseaudio',
+            // Read/write home directory access
+            '--filesystem=home',
+            // Allow communication with network
+            '--share=network',
+            // System notifications with libnotify
+            '--talk-name=org.freedesktop.Notifications',
+          ],
+        },
       },
     },
-  },
 ].filter(Boolean);
 
 /**

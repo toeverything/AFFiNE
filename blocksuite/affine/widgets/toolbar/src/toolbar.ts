@@ -279,10 +279,10 @@ export class AffineToolbarWidget extends WidgetComponent {
         const range = std.range.value ?? null;
         const activated = Boolean(
           context.activated &&
-            range &&
-            result &&
-            !result.isCollapsed() &&
-            result.from.length + (result.to?.length ?? 0)
+          range &&
+          result &&
+          !result.isCollapsed() &&
+          result.from.length + (result.to?.length ?? 0)
         );
 
         batch(() => {

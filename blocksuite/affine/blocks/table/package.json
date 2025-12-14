@@ -10,7 +10,7 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
+    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-inline-preset": "workspace:*",
@@ -27,9 +27,9 @@
     "@floating-ui/dom": "^1.6.13",
     "@preact/signals-core": "^1.8.0",
     "lit": "^3.2.0",
-    "rxjs": "^7.8.1",
-    "yjs": "^13.6.21",
-    "zod": "^3.24.1"
+    "rxjs": "^7.8.2",
+    "yjs": "^13.6.27",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -42,5 +42,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.2"
+  "version": "0.25.7"
 }

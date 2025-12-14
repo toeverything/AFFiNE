@@ -21,6 +21,7 @@ export interface BlockSuiteFlags {
   enable_table_virtual_scroll: boolean;
   enable_turbo_renderer: boolean;
   enable_dom_renderer: boolean;
+  enable_pdfmake_export: boolean;
 }
 
 export class FeatureFlagService extends StoreExtension {
@@ -46,6 +47,7 @@ export class FeatureFlagService extends StoreExtension {
     enable_table_virtual_scroll: false,
     enable_turbo_renderer: false,
     enable_dom_renderer: false,
+    enable_pdfmake_export: false,
   });
 
   setFlag(key: keyof BlockSuiteFlags, value: boolean) {
