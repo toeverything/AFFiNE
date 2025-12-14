@@ -2476,6 +2476,8 @@ export interface ServerConfigType {
   baseUrl: Scalars['String']['output'];
   /** credentials requirement */
   credentialsRequirement: CredentialsRequirementType;
+  /** Custom CSS for platform-wide styling */
+  customCss: Maybe<Scalars['String']['output']>;
   /** enabled server features */
   features: Array<ServerFeature>;
   /** whether server has been initialized */
@@ -5983,6 +5985,7 @@ export type ServerConfigQuery = {
     features: Array<ServerFeature>;
     type: ServerDeploymentType;
     initialized: boolean;
+    customCss: string | null;
     credentialsRequirement: {
       __typename?: 'CredentialsRequirementType';
       password: {

@@ -51,6 +51,17 @@ export const KNOWN_CONFIG_GROUPS = [
     fields: ['externalUrl', 'name', 'hosts'],
   } as ConfigGroup<'server'>,
   {
+    name: 'Appearance',
+    module: 'appearance',
+    fields: [
+      {
+        key: 'customCss',
+        type: 'Textarea',
+        desc: 'Custom CSS applied to all users platform-wide. Use for branding and styling.',
+      },
+    ],
+  } as ConfigGroup<'appearance'>,
+  {
     name: 'Auth',
     module: 'auth',
     fields: [

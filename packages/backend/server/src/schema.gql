@@ -1859,6 +1859,9 @@ type ServerConfigType {
   """credentials requirement"""
   credentialsRequirement: CredentialsRequirementType!
 
+  """Custom CSS for platform-wide styling"""
+  customCss: String
+
   """enabled server features"""
   features: [ServerFeature!]!
 

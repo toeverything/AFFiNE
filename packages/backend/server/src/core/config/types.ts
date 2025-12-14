@@ -47,4 +47,10 @@ export class ServerConfigType {
       'This field is deprecated, please use `features` instead. Will be removed in 0.25.0',
   })
   allowGuestDemoWorkspace!: boolean;
+
+  @Field({
+    description: 'Custom CSS for platform-wide styling',
+    nullable: true,
+  })
+  customCss?: string;
 }

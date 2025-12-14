@@ -19,6 +19,9 @@ declare global {
       name?: string;
     };
     flags: ServerFlags;
+    appearance: {
+      customCss: string;
+    };
   }
 }
 
@@ -68,6 +71,15 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
     desc: 'Subpath where the server get deployed if there is one.(e.g. /affine)',
     default: '',
     env: 'AFFINE_SERVER_SUB_PATH',
+  },
+});
+
+defineModuleConfig('appearance', {
+  customCss: {
+    desc: 'Custom CSS to be applied platform-wide for all users. Useful for branding and styling customizations.',
+    default: '',
+    env: 'AFFINE_APPEARANCE_CUSTOM_CSS',
+    shape: z.string(),
   },
 });
 

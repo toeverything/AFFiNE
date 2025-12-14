@@ -227,6 +227,13 @@
       "env": "AFFINE_SERVER_SUB_PATH"
     }
   },
+  "appearance": {
+    "customCss": {
+      "type": "String",
+      "desc": "Custom CSS to be applied platform-wide for all users. Useful for branding and styling customizations.",
+      "env": "AFFINE_APPEARANCE_CUSTOM_CSS"
+    }
+  },
   "flags": {
     "earlyAccessControl": {
       "type": "Boolean",

@@ -86,6 +86,7 @@ export class Server extends Entity<{
             type: config.type,
             version: config.version,
             initialized: config.initialized,
+            customCss: config.customCss,
           });
         }),
         onStart(() => {

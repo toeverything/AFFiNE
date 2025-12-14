@@ -2199,6 +2199,7 @@ export const serverConfigQuery = {
     features
     type
     initialized
+    customCss
     credentialsRequirement {
       ...CredentialsRequirements
     }

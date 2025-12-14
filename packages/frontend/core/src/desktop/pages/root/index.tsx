@@ -1,4 +1,5 @@
 import { NotificationCenter } from '@affine/component';
+import { CustomCssInjector } from '@affine/core/components/custom-css';
 import { DefaultServerService } from '@affine/core/modules/cloud';
 import { FrameworkScope, useService } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
@@ -30,6 +31,7 @@ export const RootWrapper = () => {
       <NotificationCenter />
       <Outlet />
       <CustomThemeModifier />
+      <CustomCssInjector />
       {BUILD_CONFIG.isElectron && <FindInPagePopup />}
     </FrameworkScope>
   );

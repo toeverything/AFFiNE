@@ -19,4 +19,5 @@ export interface ServerConfig {
   initialized?: boolean;
   version?: string;
   credentialsRequirement: CredentialsRequirementType;
+  customCss?: string;
 }

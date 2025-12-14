@@ -9,6 +9,7 @@ query serverConfig {
     features
     type
     initialized
+    customCss
     credentialsRequirement {
       ...CredentialsRequirements
     }

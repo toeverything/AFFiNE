@@ -87,6 +87,7 @@ export class ServerConfigResolver {
       features: this.server.features,
       // TODO(@fengmk2): remove this field after the feature 0.25.0 is released
       allowGuestDemoWorkspace: this.config.flags.allowGuestDemoWorkspace,
+      customCss: this.config.appearance.customCss || '',
     };
   }
 

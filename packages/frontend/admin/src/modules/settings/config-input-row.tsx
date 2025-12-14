@@ -19,7 +19,7 @@ export type ConfigInputProps = {
   error?: string;
 } & (
   | {
-      type: 'String' | 'Number' | 'Boolean' | 'JSON';
+      type: 'String' | 'Number' | 'Boolean' | 'JSON' | 'Textarea';
     }
   | {
       type: 'Enum';
@@ -105,6 +105,20 @@ const Inputs: Record<
           ))}
         </SelectContent>
       </Select>
+    );
+  },
+  Textarea: function TextareaInput({ defaultValue, onChange }) {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onChange(e.target.value);
+    };
+
+    return (
+      <Textarea
+        defaultValue={defaultValue ?? ''}
+        onChange={handleInputChange}
+        className="w-full min-h-[200px] font-mono text-sm"
+        placeholder="/* Enter custom CSS here */"
+      />
     );
   },
 };
