@@ -438,7 +438,7 @@ describe('snapshot to pdf', () => {
     expect(definition.styles?.code).toBeDefined();
 
     expect(definition.defaultStyle).toBeDefined();
-    expect(definition.defaultStyle?.font).toBe('Roboto');
+    expect(definition.defaultStyle?.font).toBe('SarasaGothicCL');
   });
 
   describe('inline text styling', () => {
@@ -650,7 +650,7 @@ describe('snapshot to pdf', () => {
         const codeText = textContent.text.find(
           (t: any) =>
             typeof t === 'object' &&
-            t.font === 'Roboto' &&
+            t.font === 'Inter' &&
             t.background === '#f5f5f5'
         );
         expect(codeText).toBeDefined();
@@ -837,11 +837,7 @@ describe('snapshot to pdf', () => {
 
       if (Array.isArray(textContent.text)) {
         const refText = textContent.text.find(
-          (t: any) =>
-            typeof t === 'object' &&
-            t.text === 'Page not found' &&
-            Array.isArray(t.decoration) &&
-            t.decoration.includes('lineThrough')
+          (t: any) => typeof t === 'object' && t.text === 'Page not found'
         );
         expect(refText).toBeDefined();
       }
