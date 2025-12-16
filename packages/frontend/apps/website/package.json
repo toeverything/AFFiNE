@@ -1,0 +1,22 @@
+{
+    "name": "@affine/website",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "next": "15.1.0",
+        "react": "^19.2.1",
+        "react-dom": "^19.2.1"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "@types/react": "^19.0.1",
+        "@types/react-dom": "^19.0.2",
+        "typescript": "^5.7.2"
+    }
+}

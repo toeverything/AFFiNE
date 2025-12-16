@@ -12,13 +12,11 @@
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
-
     // Modules
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "typeRoots": ["./tools/@types", "./node_modules/@types"],
-
     // Emit
     "lib": ["ES2024"],
     "target": "ES2024",
@@ -27,15 +25,12 @@
     "declarationMap": true,
     "sourceMap": true,
     "importsNotUsedAsValues": "remove",
-
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
-
     // Composite
     "composite": true,
-
     // NOTE(@forehalo):
     //   We now "fully" resolve package exports by standard "exports" field in package.json
     //   but core's exports are lit bit complex, so we left it here and will fix it when repos reorganization is done
@@ -140,6 +135,7 @@
     { "path": "./packages/frontend/apps/ios" },
     { "path": "./packages/frontend/apps/mobile" },
     { "path": "./packages/frontend/apps/web" },
+    { "path": "./packages/frontend/apps/website" },
     { "path": "./packages/frontend/component" },
     { "path": "./packages/frontend/core" },
     { "path": "./packages/frontend/electron-api" },

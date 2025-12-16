@@ -1323,6 +1323,11 @@ export const PackageList = [
     ],
   },
   {
+    location: 'packages/frontend/apps/website',
+    name: '@affine/website',
+    workspaceDependencies: [],
+  },
+  {
     location: 'packages/frontend/component',
     name: '@affine/component',
     workspaceDependencies: [
@@ -1580,6 +1585,7 @@ export type PackageName =
   | '@affine/ios'
   | '@affine/mobile'
   | '@affine/web'
+  | '@affine/website'
   | '@affine/component'
   | '@affine/core'
   | '@affine/electron-api'
