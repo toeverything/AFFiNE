@@ -86,7 +86,7 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
       [t('goBack')]: ['Ctrl', '['],
       [t('goForward')]: ['Ctrl', ']'],
-      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
+      [t('copy-private-link')]: ['Ctrl', '⇧', 'C'],
     }),
     [t]
   );
