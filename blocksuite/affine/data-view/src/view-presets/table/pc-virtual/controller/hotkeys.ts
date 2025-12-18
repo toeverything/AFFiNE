@@ -11,7 +11,7 @@ import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 export class TableHotkeysController implements ReactiveController {
   disposables = new DisposableGroup();
   get selectionController() {
-    return this.logic.selection;
+    return this.logic.selectionController;
   }
 
   constructor(private readonly logic: VirtualTableViewUILogic) {}
