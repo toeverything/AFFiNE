@@ -189,9 +189,12 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const journalService = useService(JournalService);
 
-  const isJournal = (docId: string): boolean => {
-    return !!journalService.journalDate$(docId).value;
-  };
+  const isJournal = useCallback(
+    (docId: string): boolean => {
+      return !!journalService.journalDate$(docId).value;
+    },
+    [journalService]
+  );
 
   const onLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
@@ -200,20 +203,26 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
       // Check if journal and handle accordingly to set focus on input block.
       if (isJournal(doc.id)) {
-        setTimeout(() => {
-          const page = editorContainer.page;
-          const note = getLastNoteBlock(page);
-          const std = editorContainer.std;
-          if (note) {
-            const lastBlock = note.lastChild();
-            if (lastBlock) {
-              const focusBlock = std.view.getBlock(lastBlock.id) ?? undefined;
-              std.command.exec(focusBlockEnd, { focusBlock, force: true });
-              return;
+        const rafId = requestAnimationFrame(() => {
+          try {
+            if (!editorContainer.isConnected) return;
+            const page = editorContainer.page;
+            const note = getLastNoteBlock(page);
+            const std = editorContainer.std;
+            if (note) {
+              const lastBlock = note.lastChild();
+              if (lastBlock) {
+                const focusBlock = std.view.getBlock(lastBlock.id) ?? undefined;
+                std.command.exec(focusBlockEnd, { focusBlock, force: true });
+                return;
+              }
             }
+            std.command.exec(focusBlockEnd, { force: true });
+          } catch (error) {
+            console.error('Failed to focus journal body', error);
           }
-          std.command.exec(focusBlockEnd, { force: true });
-        }, 100);
+        });
+        disposable.add(() => cancelAnimationFrame(rafId));
       }
       if (std) {
         const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
