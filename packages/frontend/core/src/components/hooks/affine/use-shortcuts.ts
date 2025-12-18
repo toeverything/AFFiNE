@@ -86,7 +86,7 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
       [t('goBack')]: ['Ctrl', '['],
       [t('goForward')]: ['Ctrl', ']'],
-      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
+      [t('copy-private-link')]: ['Ctrl', '⇧', 'C'],
     }),
     [t]
   );
@@ -237,7 +237,7 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [t('strikethrough')]: ['Ctrl', 'Shift', 'S'],
       [t('inlineCode')]: [' Ctrl', 'E'],
       [t('codeBlock')]: ['Ctrl', 'Alt', 'C'],
-      [t('link')]: ['Ctr', 'K'],
+      [t('link')]: ['Ctrl', 'K'],
       [t('quickSearch')]: ['Ctrl', 'K'],
       [t('bodyText')]: ['Ctrl', 'Shift', '0'],
       [tH('1')]: ['Ctrl', 'Shift', '1'],
