@@ -22,7 +22,8 @@ export type Language =
   | 'uk'
   | 'ko'
   | 'pt-BR'
-  | 'fa';
+  | 'fa'
+  | 'nb-NO';
 
 export type LanguageResource = typeof en;
 export const SUPPORTED_LANGUAGES: Record<
@@ -167,5 +168,11 @@ export const SUPPORTED_LANGUAGES: Record<
     originalName: 'українська',
     flagEmoji: '🇺🇦',
     resource: () => import('./uk.json'),
+  },
+  'nb-NO': {
+    name: 'Norwegian',
+    originalName: 'Norsk (Bokmål)',
+    flagEmoji: '🇳🇴',
+    resource: () => import('./nb-NO.json'),
   },
 };
