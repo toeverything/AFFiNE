@@ -292,7 +292,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         disposable.dispose();
       };
     },
-    [editor, workbench, peekView]
+    [editor, workbench, peekView, doc.id, isJournal]
   );
 
   const [hasScrollTop, setHasScrollTop] = useState(false);
