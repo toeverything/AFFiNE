@@ -188,13 +188,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   useRegisterBlocksuiteEditorCommands(editor, isActiveView);
 
   const journalService = useService(JournalService);
-
-  const isJournal = useCallback(
-    (docId: string): boolean => {
-      return !!journalService.journalDate$(docId).value;
-    },
-    [journalService]
-  );
+  const isJournal = !!useLiveData(journalService.journalDate$(doc.id));
 
   const onLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
@@ -202,7 +196,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       const disposable = new DisposableGroup();
 
       // Check if journal and handle accordingly to set focus on input block.
-      if (isJournal(doc.id)) {
+      if (isJournal) {
         const rafId = requestAnimationFrame(() => {
           try {
             if (!editorContainer.isConnected) return;
@@ -301,7 +295,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         disposable.dispose();
       };
     },
-    [editor, workbench, peekView, doc.id, isJournal]
+    [editor, workbench, peekView, isJournal]
   );
 
   const [hasScrollTop, setHasScrollTop] = useState(false);
