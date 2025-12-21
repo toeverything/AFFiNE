@@ -569,23 +569,60 @@ fn is_inline_attribute(attr: &str) -> bool {
 }
 
 fn encode_link(link: &str) -> String {
-  let mut encoded = String::new();
-  for b in link.bytes() {
+  const HEX: &[u8; 16] = b"0123456789abcdef";
+
+  #[inline]
+  fn push_pct(out: &mut String, b: u8) {
+    out.push('%');
+    out.push(HEX[(b >> 4) as usize] as char);
+    out.push(HEX[(b & 0x0f) as usize] as char);
+  }
+
+  #[inline]
+  fn is_allowed(b: u8) -> bool {
+    matches!(
+        b,
+        b'A'..=b'Z'
+            | b'a'..=b'z'
+            | b'0'..=b'9'
+            | b'-'
+            | b'_'
+            | b'.'
+            | b'!'
+            | b'~'
+            | b'*'
+            | b'\''
+            | b';'
+            | b','
+            | b'/'
+            | b'?'
+            | b':'
+            | b'@'
+            | b'&'
+            | b'='
+            | b'+'
+            | b'$'
+            | b'#'
+    )
+  }
+
+  let mut out = String::with_capacity(link.len());
+
+  for &b in link.as_bytes() {
     match b {
-      b'(' => encoded.push_str("%28"),
-      b')' => encoded.push_str("%29"),
-      _ => encoded.push(b as char),
+      b'(' | b')' => push_pct(&mut out, b),
+      b if is_allowed(b) => out.push(b as char),
+      b => push_pct(&mut out, b),
     }
   }
 
-  if let Some((head, _)) = encoded.split_once("?response-content-disposition=attachment") {
-    return head.to_string();
-  }
-  if let Some((head, _)) = encoded.split_once("&response-content-disposition=attachment") {
-    return head.to_string();
+  if let Some(i) = out.find("?response-content-disposition=attachment") {
+    out.truncate(i);
+  } else if let Some(i) = out.find("&response-content-disposition=attachment") {
+    out.truncate(i);
   }
 
-  encoded
+  out
 }
 
 #[derive(Debug)]
