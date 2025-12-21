@@ -1,7 +1,8 @@
 [package]
-edition = "2021"
-name    = "affine_common"
-version = "0.1.0"
+edition      = "2021"
+license-file = "LICENSE"
+name         = "affine_common"
+version      = "0.1.0"
 
 [features]
 default = []

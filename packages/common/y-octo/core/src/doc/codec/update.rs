@@ -166,7 +166,7 @@ impl Update {
             // merge two nodes, mark the index
             merged_index.push(index + 1);
           } else {
-            debug!("merge failed: {:?} {:?}", cur, next)
+            debug!("merge failed: {cur:?} {next:?}")
           }
         }
 

@@ -192,7 +192,12 @@ export class DatabaseDocReader extends DocReader {
     if (!doc) {
       return null;
     }
-    return parseDocToMarkdownFromDocSnapshot(docId, doc.bin, aiEditable);
+    return parseDocToMarkdownFromDocSnapshot(
+      workspaceId,
+      docId,
+      doc.bin,
+      aiEditable
+    );
   }
 
   async getDocDiff(
