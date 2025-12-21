@@ -1,9 +1,21 @@
-use std::collections::{HashMap, HashSet};
-
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 use y_octo::{Any, DocOptions, JwstCodecError, Map, Value};
+
+use super::{
+  blocksuite::{
+    collect_child_ids, get_block_id, get_flavour, get_list_depth, get_string, nearest_by_flavour,
+    DocContext,
+  },
+  delta_markdown::{
+    delta_value_to_inline_markdown, extract_inline_references, text_to_inline_markdown,
+    text_to_markdown, DeltaToMdOptions,
+  },
+  value::{
+    any_as_string, any_truthy, build_reference_payload, params_value_to_json, value_to_string,
+  },
+};
 
 const SUMMARY_LIMIT: usize = 1000;
 const PAGE_FLAVOUR: &str = "affine:page";
@@ -89,6 +101,7 @@ pub fn parse_doc_to_markdown(
   doc_bin: Vec<u8>,
   doc_id: String,
   ai_editable: bool,
+  doc_url_prefix: Option<String>,
 ) -> Result<MarkdownResult, ParseError> {
   if doc_bin.is_empty() || doc_bin == [0, 0] {
     return Err(ParseError::InvalidBinary);
@@ -107,36 +120,16 @@ pub fn parse_doc_to_markdown(
     });
   }
 
-  let mut block_pool: HashMap<String, Map> = HashMap::new();
-  let mut parent_lookup: HashMap<String, String> = HashMap::new();
-
-  for (_, value) in blocks_map.iter() {
-    if let Some(block_map) = value.to_map() {
-      if let Some(block_id) = get_block_id(&block_map) {
-        for child_id in collect_child_ids(&block_map) {
-          parent_lookup.insert(child_id, block_id.clone());
-        }
-        block_pool.insert(block_id, block_map);
-      }
-    }
-  }
-
-  let root_block_id = block_pool
-    .iter()
-    .find_map(|(id, block)| {
-      get_flavour(block)
-        .filter(|flavour| flavour == PAGE_FLAVOUR)
-        .map(|_| id.clone())
-    })
+  let context = DocContext::from_blocks_map(&blocks_map, PAGE_FLAVOUR)
     .ok_or_else(|| ParseError::ParserError("root block not found".into()))?;
-
-  let mut queue: Vec<(Option<String>, String)> = vec![(None, root_block_id.clone())];
-  let mut visited: HashSet<String> = HashSet::from([root_block_id.clone()]);
+  let root_block_id = context.root_block_id.clone();
+  let mut walker = context.walker();
   let mut doc_title = String::from("Untitled");
   let mut markdown = String::new();
+  let md_options = DeltaToMdOptions::new(doc_url_prefix);
 
-  while let Some((parent_block_id, block_id)) = queue.pop() {
-    let block = match block_pool.get(&block_id) {
+  while let Some((parent_block_id, block_id)) = walker.next() {
+    let block = match context.block_pool.get(&block_id) {
       Some(block) => block,
       None => continue,
     };
@@ -146,9 +139,9 @@ pub fn parse_doc_to_markdown(
       None => continue,
     };
 
-    let parent_id = parent_lookup.get(&block_id);
+    let parent_id = context.parent_lookup.get(&block_id);
     let parent_flavour = parent_id
-      .and_then(|id| block_pool.get(id))
+      .and_then(|id| context.block_pool.get(id))
       .and_then(get_flavour);
 
     if parent_flavour.as_deref() == Some("affine:database") {
@@ -156,12 +149,7 @@ pub fn parse_doc_to_markdown(
     }
 
     // enqueue children first to keep traversal order similar to JS implementation
-    let mut child_ids = collect_child_ids(block);
-    for child_id in child_ids.drain(..).rev() {
-      if visited.insert(child_id.clone()) {
-        queue.push((Some(block_id.clone()), child_id));
-      }
-    }
+    walker.enqueue_children(&block_id, block);
 
     if flavour == PAGE_FLAVOUR {
       let title = get_string(block, "prop:title").unwrap_or_default();
@@ -171,109 +159,103 @@ pub fn parse_doc_to_markdown(
 
     if flavour == "affine:database" {
       let title = get_string(block, "prop:title").unwrap_or_default();
-      markdown.push_str(&format!("\n### {}\n", title));
+      markdown.push_str(&format!("\n### {title}\n"));
 
-      let columns_array = block.get("prop:columns").and_then(|v| v.to_array());
+      let columns = parse_database_columns(block);
       let cells_map = block.get("prop:cells").and_then(|v| v.to_map());
 
-      if let (Some(columns_array), Some(cells_map)) = (columns_array, cells_map) {
-        let mut columns = Vec::new();
-        for col_val in columns_array.iter() {
-          if let Some(col_map) = col_val.to_map() {
-            let id = get_string(&col_map, "id").unwrap_or_default();
-            let name = get_string(&col_map, "name").unwrap_or_default();
-            let type_ = get_string(&col_map, "type").unwrap_or_default();
-            let data = col_map.get("data").and_then(|v| v.to_map());
-            columns.push((id, name, type_, data));
-          }
-        }
-
+      if let (Some(columns), Some(cells_map)) = (columns, cells_map) {
         let escape_table = |s: &str| s.replace('|', "\\|").replace('\n', "<br>");
+        let mut table = String::new();
 
-        markdown.push('|');
-        for (_, name, _, _) in &columns {
-          markdown.push_str(&escape_table(name));
-          markdown.push('|');
+        table.push('|');
+        for column in &columns {
+          table.push_str(&escape_table(column.name.as_deref().unwrap_or_default()));
+          table.push('|');
         }
-        markdown.push('\n');
+        table.push('\n');
 
-        markdown.push('|');
+        table.push('|');
         for _ in &columns {
-          markdown.push_str("---|");
+          table.push_str("---|");
         }
-        markdown.push('\n');
+        table.push('\n');
 
         let child_ids = collect_child_ids(block);
         for child_id in child_ids {
-          markdown.push('|');
+          table.push('|');
           let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
 
-          for (col_id, _, col_type, col_data) in &columns {
+          for column in &columns {
             let mut cell_text = String::new();
-            if col_type == "title" {
-              if let Some(child_block) = block_pool.get(&child_id) {
-                if let Some((text, _)) = text_content(child_block, "prop:text") {
+            if column.col_type == "title" {
+              if let Some(child_block) = context.block_pool.get(&child_id) {
+                if let Some(text_md) =
+                  text_to_inline_markdown(child_block, "prop:text", &md_options)
+                {
+                  cell_text = text_md;
+                } else if let Some((text, _)) = text_content(child_block, "prop:text") {
                   cell_text = text;
                 }
               }
             } else if let Some(row_cells) = &row_cells {
-              if let Some(cell_val) = row_cells.get(col_id).and_then(|v| v.to_map()) {
-                if let Some(value) = cell_val.get("value").and_then(|v| v.to_any()) {
-                  cell_text = format_cell_value(&value, col_type, col_data.as_ref());
+              if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
+                if let Some(value) = cell_val.get("value") {
+                  if let Some(text_md) = delta_value_to_inline_markdown(&value, &md_options) {
+                    cell_text = text_md;
+                  } else {
+                    cell_text = format_cell_value(&value, column);
+                  }
                 }
               }
             }
-            markdown.push_str(&escape_table(&cell_text));
-            markdown.push('|');
+            table.push_str(&escape_table(&cell_text));
+            table.push('|');
           }
-          markdown.push('\n');
+          table.push('\n');
         }
+        append_table_block(&mut markdown, &table);
       }
       continue;
     }
 
     if flavour == "affine:table" {
       let contents = gather_table_contents(block);
-      markdown.push_str(&contents.join("|"));
-      markdown.push('\n');
+      let table = contents.join("|");
+      append_table_block(&mut markdown, &table);
       continue;
     }
 
     if ai_editable && parent_block_id.as_ref() == Some(&root_block_id) {
-      markdown.push_str(&format!(
-        "<!-- block_id={} flavour={} -->\n",
-        block_id, flavour
-      ));
+      markdown.push_str(&format!("<!-- block_id={block_id} flavour={flavour} -->\n"));
     }
 
     if flavour == "affine:paragraph" {
-      if let Some((text, _)) = text_content(block, "prop:text") {
-        let type_ = get_string(block, "prop:type").unwrap_or_default();
-        let prefix = match type_.as_str() {
-          "h1" => "# ",
-          "h2" => "## ",
-          "h3" => "### ",
-          "h4" => "#### ",
-          "h5" => "##### ",
-          "h6" => "###### ",
-          "quote" => "> ",
-          _ => "",
-        };
-        markdown.push_str(prefix);
-        markdown.push_str(&text);
-        markdown.push('\n');
+      let type_ = get_string(block, "prop:type").unwrap_or_default();
+      let prefix = paragraph_prefix(type_.as_str());
+      if let Some(text_md) = text_to_markdown(block, "prop:text", &md_options) {
+        append_paragraph(&mut markdown, prefix, &text_md);
+      } else if let Some((text, _)) = text_content(block, "prop:text") {
+        append_paragraph(&mut markdown, prefix, &text);
       }
       continue;
     }
 
     if flavour == "affine:list" {
-      if let Some((text, _)) = text_content(block, "prop:text") {
-        let depth = get_list_depth(&block_id, &parent_lookup, &block_pool);
-        let indent = "    ".repeat(depth);
-        markdown.push_str(&indent);
-        markdown.push_str("- ");
-        markdown.push_str(&text);
-        markdown.push('\n');
+      let type_ = get_string(block, "prop:type").unwrap_or_default();
+      let checked = block
+        .get("prop:checked")
+        .and_then(|value| value.to_any())
+        .as_ref()
+        .map(any_truthy)
+        .unwrap_or(false);
+      let prefix = list_prefix(type_.as_str(), checked);
+      let depth = get_list_depth(&block_id, &context.parent_lookup, &context.block_pool);
+      let indent = list_indent(depth);
+      if let Some(text_md) = text_to_markdown(block, "prop:text", &md_options) {
+        append_list_item(&mut markdown, &indent, prefix, &text_md);
+      } else if let Some((text, _)) = text_content(block, "prop:text") {
+        append_list_item(&mut markdown, &indent, prefix, &text);
       }
       continue;
     }
@@ -281,11 +263,7 @@ pub fn parse_doc_to_markdown(
     if flavour == "affine:code" {
       if let Some((text, _)) = text_content(block, "prop:text") {
         let lang = get_string(block, "prop:language").unwrap_or_default();
-        markdown.push_str("```");
-        markdown.push_str(&lang);
-        markdown.push('\n');
-        markdown.push_str(&text);
-        markdown.push_str("\n```\n");
+        append_code_block(&mut markdown, &lang, &text);
       }
       continue;
     }
@@ -295,27 +273,6 @@ pub fn parse_doc_to_markdown(
     title: doc_title,
     markdown,
   })
-}
-
-fn get_list_depth(
-  block_id: &str,
-  parent_lookup: &HashMap<String, String>,
-  blocks: &HashMap<String, Map>,
-) -> usize {
-  let mut depth = 0;
-  let mut current_id = block_id.to_string();
-
-  while let Some(parent_id) = parent_lookup.get(&current_id) {
-    if let Some(parent_block) = blocks.get(parent_id) {
-      if get_flavour(parent_block).as_deref() == Some("affine:list") {
-        depth += 1;
-        current_id = parent_id.clone();
-        continue;
-      }
-    }
-    break;
-  }
-  depth
 }
 
 pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlResult, ParseError> {
@@ -333,38 +290,16 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
     return Err(ParseError::ParserError("blocks map is empty".into()));
   }
 
-  let mut block_pool: HashMap<String, Map> = HashMap::new();
-  let mut parent_lookup: HashMap<String, String> = HashMap::new();
-
-  for (_, value) in blocks_map.iter() {
-    if let Some(block_map) = value.to_map() {
-      if let Some(block_id) = get_block_id(&block_map) {
-        for child_id in collect_child_ids(&block_map) {
-          parent_lookup.insert(child_id, block_id.clone());
-        }
-        block_pool.insert(block_id, block_map);
-      }
-    }
-  }
-
-  let root_block_id = block_pool
-    .iter()
-    .find_map(|(id, block)| {
-      get_flavour(block)
-        .filter(|flavour| flavour == PAGE_FLAVOUR)
-        .map(|_| id.clone())
-    })
+  let context = DocContext::from_blocks_map(&blocks_map, PAGE_FLAVOUR)
     .ok_or_else(|| ParseError::ParserError("root block not found".into()))?;
-
-  let mut queue: Vec<(Option<String>, String)> = vec![(None, root_block_id.clone())];
-  let mut visited: HashSet<String> = HashSet::from([root_block_id.clone()]);
-  let mut blocks: Vec<BlockInfo> = Vec::with_capacity(block_pool.len());
+  let mut walker = context.walker();
+  let mut blocks: Vec<BlockInfo> = Vec::with_capacity(context.block_pool.len());
   let mut doc_title = String::new();
   let mut summary = String::new();
   let mut summary_remaining = SUMMARY_LIMIT as isize;
 
-  while let Some((parent_block_id, block_id)) = queue.pop() {
-    let block = match block_pool.get(&block_id) {
+  while let Some((parent_block_id, block_id)) = walker.next() {
+    let block = match context.block_pool.get(&block_id) {
       Some(block) => block,
       None => continue,
     };
@@ -374,20 +309,22 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       None => continue,
     };
 
-    let parent_block = parent_block_id.as_ref().and_then(|id| block_pool.get(id));
+    let parent_block = parent_block_id
+      .as_ref()
+      .and_then(|id| context.block_pool.get(id));
     let parent_flavour = parent_block.and_then(get_flavour);
 
-    let note_block = nearest_by_flavour(&block_id, NOTE_FLAVOUR, &parent_lookup, &block_pool);
+    let note_block = nearest_by_flavour(
+      &block_id,
+      NOTE_FLAVOUR,
+      &context.parent_lookup,
+      &context.block_pool,
+    );
     let note_block_id = note_block.as_ref().and_then(get_block_id);
     let display_mode = determine_display_mode(note_block.as_ref());
 
     // enqueue children first to keep traversal order similar to JS implementation
-    let mut child_ids = collect_child_ids(block);
-    for child_id in child_ids.drain(..).rev() {
-      if visited.insert(child_id.clone()) {
-        queue.push((Some(block_id.clone()), child_id));
-      }
-    }
+    walker.enqueue_children(&block_id, block);
 
     let build_block = |database_name: Option<&String>| {
       BlockInfo::base(
@@ -412,7 +349,7 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       flavour.as_str(),
       "affine:paragraph" | "affine:list" | "affine:code"
     ) {
-      if let Some((text, text_len)) = text_content(block, "prop:text") {
+      if let Some(text) = block.get("prop:text").and_then(|value| value.to_text()) {
         let database_name = if flavour == "affine:paragraph"
           && parent_flavour.as_deref() == Some("affine:database")
         {
@@ -421,10 +358,18 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
           None
         };
 
+        let content = text.to_string();
+        let text_len = text.len() as usize;
+        let refs = extract_inline_references(&text.to_delta());
+
         let mut info = build_block(database_name.as_ref());
-        info.content = Some(vec![text.clone()]);
+        info.content = Some(vec![content.clone()]);
+        if !refs.is_empty() {
+          info.ref_doc_id = Some(refs.iter().map(|r| r.doc_id.clone()).collect());
+          info.ref_info = Some(refs.into_iter().map(|r| r.payload).collect());
+        }
         blocks.push(info);
-        append_summary(&mut summary, &mut summary_remaining, text_len, &text);
+        append_summary(&mut summary, &mut summary_remaining, text_len, &content);
       }
       continue;
     }
@@ -435,10 +380,8 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
     ) {
       if let Some(page_id) = get_string(block, "prop:pageId") {
         let mut info = build_block(None);
-        info.ref_doc_id = Some(vec![page_id.clone()]);
-        if let Some(payload) = embed_ref_payload(block, &page_id) {
-          info.ref_info = Some(vec![payload]);
-        }
+        let payload = embed_ref_payload(block, &page_id);
+        apply_doc_ref(&mut info, page_id, payload);
         blocks.push(info);
       }
       continue;
@@ -447,8 +390,8 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
     if flavour == "affine:attachment" {
       if let Some(blob_id) = get_string(block, "prop:sourceId") {
         let mut info = build_block(None);
-        info.blob = Some(vec![blob_id]);
-        info.content = Some(vec![get_string(block, "prop:name").unwrap_or_default()]);
+        let name = get_string(block, "prop:name").unwrap_or_default();
+        apply_blob_info(&mut info, blob_id, name);
         blocks.push(info);
       }
       continue;
@@ -457,8 +400,8 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
     if flavour == "affine:image" {
       if let Some(blob_id) = get_string(block, "prop:sourceId") {
         let mut info = build_block(None);
-        info.blob = Some(vec![blob_id]);
-        info.content = Some(vec![get_string(block, "prop:caption").unwrap_or_default()]);
+        let caption = get_string(block, "prop:caption").unwrap_or_default();
+        apply_blob_info(&mut info, blob_id, caption);
         blocks.push(info);
       }
       continue;
@@ -566,29 +509,73 @@ pub fn get_doc_ids_from_binary(
   Ok(doc_ids)
 }
 
-fn collect_child_ids(block: &Map) -> Vec<String> {
-  block
-    .get("sys:children")
-    .and_then(|value| value.to_array())
-    .map(|array| {
-      array
-        .iter()
-        .filter_map(|value| value_to_string(&value))
-        .collect::<Vec<_>>()
-    })
-    .unwrap_or_default()
+fn paragraph_prefix(type_: &str) -> &'static str {
+  match type_ {
+    "h1" => "# ",
+    "h2" => "## ",
+    "h3" => "### ",
+    "h4" => "#### ",
+    "h5" => "##### ",
+    "h6" => "###### ",
+    "quote" => "> ",
+    _ => "",
+  }
 }
 
-fn get_block_id(block: &Map) -> Option<String> {
-  get_string(block, "sys:id")
+fn list_prefix(type_: &str, checked: bool) -> &'static str {
+  match type_ {
+    "bulleted" => "* ",
+    "todo" => {
+      if checked {
+        "- [x] "
+      } else {
+        "- [ ] "
+      }
+    }
+    _ => "1. ",
+  }
 }
 
-fn get_flavour(block: &Map) -> Option<String> {
-  get_string(block, "sys:flavour")
+fn list_indent(depth: usize) -> String {
+  "    ".repeat(depth)
 }
 
-fn get_string(block: &Map, key: &str) -> Option<String> {
-  block.get(key).and_then(|value| value_to_string(&value))
+fn append_paragraph(markdown: &mut String, prefix: &str, text: &str) {
+  markdown.push_str(prefix);
+  markdown.push_str(text);
+  if !text.ends_with('\n') {
+    markdown.push('\n');
+  }
+  markdown.push('\n');
+}
+
+fn append_list_item(markdown: &mut String, indent: &str, prefix: &str, text: &str) {
+  markdown.push_str(indent);
+  markdown.push_str(prefix);
+  markdown.push_str(text);
+  if !text.ends_with('\n') {
+    markdown.push('\n');
+  }
+}
+
+fn append_code_block(markdown: &mut String, lang: &str, text: &str) {
+  markdown.push_str("```");
+  markdown.push_str(lang);
+  markdown.push('\n');
+  markdown.push_str(text);
+  markdown.push_str("\n```\n\n");
+}
+
+fn append_table_block(markdown: &mut String, table: &str) {
+  if table.is_empty() {
+    markdown.push('\n');
+    return;
+  }
+  markdown.push_str(table);
+  if !table.ends_with('\n') {
+    markdown.push('\n');
+  }
+  markdown.push('\n');
 }
 
 fn text_content(block: &Map, key: &str) -> Option<(String, usize)> {
@@ -599,24 +586,6 @@ fn text_content(block: &Map, key: &str) -> Option<(String, usize)> {
       (content, len)
     })
   })
-}
-
-fn nearest_by_flavour(
-  start: &str,
-  flavour: &str,
-  parent_lookup: &HashMap<String, String>,
-  blocks: &HashMap<String, Map>,
-) -> Option<Map> {
-  let mut cursor = Some(start.to_string());
-  while let Some(node) = cursor {
-    if let Some(block) = blocks.get(&node) {
-      if get_flavour(block).as_deref() == Some(flavour) {
-        return Some(block.clone());
-      }
-    }
-    cursor = parent_lookup.get(&node).cloned();
-  }
-  None
 }
 
 fn determine_display_mode(note_block: Option<&Map>) -> String {
@@ -646,19 +615,24 @@ fn compose_additional(
   Some(JsonValue::Object(payload).to_string())
 }
 
-fn embed_ref_payload(block: &Map, page_id: &str) -> Option<String> {
-  let mut payload = JsonMap::new();
-  payload.insert("docId".into(), JsonValue::String(page_id.to_string()));
+fn apply_blob_info(info: &mut BlockInfo, blob_id: String, content: String) {
+  info.blob = Some(vec![blob_id]);
+  info.content = Some(vec![content]);
+}
 
-  if let Some(params_value) = block.get("prop:params") {
-    if let Ok(JsonValue::Object(params)) = serde_json::to_value(&params_value) {
-      for (key, value) in params.into_iter() {
-        payload.insert(key, value);
-      }
-    }
+fn apply_doc_ref(info: &mut BlockInfo, page_id: String, payload: Option<String>) {
+  info.ref_doc_id = Some(vec![page_id]);
+  if let Some(payload) = payload {
+    info.ref_info = Some(vec![payload]);
   }
+}
 
-  Some(JsonValue::Object(payload).to_string())
+fn embed_ref_payload(block: &Map, page_id: &str) -> Option<String> {
+  let params = block
+    .get("prop:params")
+    .as_ref()
+    .and_then(params_value_to_json);
+  Some(build_reference_payload(page_id, params))
 }
 
 fn gather_surface_texts(block: &Map) -> Vec<String> {
@@ -698,22 +672,14 @@ fn gather_database_texts(block: &Map) -> (Vec<String>, Option<String>) {
     texts.push(title.clone());
   }
 
-  if let Some(columns) = block.get("prop:columns").and_then(|value| value.to_array()) {
-    for column_value in columns.iter() {
-      if let Some(column) = column_value.to_map() {
-        if let Some(name) = get_string(&column, "name") {
-          texts.push(name);
-        }
-        if let Some(data) = column.get("data").and_then(|value| value.to_map()) {
-          if let Some(options) = data.get("options").and_then(|value| value.to_array()) {
-            for option_value in options.iter() {
-              if let Some(option) = option_value.to_map() {
-                if let Some(value) = get_string(&option, "value") {
-                  texts.push(value);
-                }
-              }
-            }
-          }
+  if let Some(columns) = parse_database_columns(block) {
+    for column in columns.iter() {
+      if let Some(name) = column.name.as_ref() {
+        texts.push(name.clone());
+      }
+      for option in column.options.iter() {
+        if let Some(value) = option.value.as_ref() {
+          texts.push(value.clone());
         }
       }
     }
@@ -736,79 +702,118 @@ fn gather_table_contents(block: &Map) -> Vec<String> {
   contents
 }
 
-fn format_cell_value(value: &Any, col_type: &str, col_data: Option<&Map>) -> String {
-  match col_type {
+struct DatabaseOption {
+  id: Option<String>,
+  value: Option<String>,
+  color: Option<String>,
+}
+
+struct DatabaseColumn {
+  id: String,
+  name: Option<String>,
+  col_type: String,
+  options: Vec<DatabaseOption>,
+}
+
+fn parse_database_columns(block: &Map) -> Option<Vec<DatabaseColumn>> {
+  let columns = block
+    .get("prop:columns")
+    .and_then(|value| value.to_array())?;
+  let mut parsed = Vec::new();
+  for column_value in columns.iter() {
+    if let Some(column) = column_value.to_map() {
+      let id = get_string(&column, "id").unwrap_or_default();
+      let name = get_string(&column, "name");
+      let col_type = get_string(&column, "type").unwrap_or_default();
+      let options = parse_database_options(&column);
+      parsed.push(DatabaseColumn {
+        id,
+        name,
+        col_type,
+        options,
+      });
+    }
+  }
+  Some(parsed)
+}
+
+fn parse_database_options(column: &Map) -> Vec<DatabaseOption> {
+  let Some(data) = column.get("data").and_then(|value| value.to_map()) else {
+    return Vec::new();
+  };
+  let Some(options) = data.get("options").and_then(|value| value.to_array()) else {
+    return Vec::new();
+  };
+
+  let mut parsed = Vec::new();
+  for option_value in options.iter() {
+    if let Some(option) = option_value.to_map() {
+      parsed.push(DatabaseOption {
+        id: get_string(&option, "id"),
+        value: get_string(&option, "value"),
+        color: get_string(&option, "color"),
+      });
+    }
+  }
+  parsed
+}
+
+fn format_option_tag(option: &DatabaseOption) -> String {
+  let id = option.id.as_deref().unwrap_or_default();
+  let value = option.value.as_deref().unwrap_or_default();
+  let color = option.color.as_deref().unwrap_or_default();
+
+  format!(
+    "<span data-affine-option data-value=\"{id}\" data-option-color=\"{color}\">{value}</span>"
+  )
+}
+
+fn format_cell_value(value: &Value, column: &DatabaseColumn) -> String {
+  match column.col_type.as_str() {
     "select" => {
-      if let Any::String(id) = value {
-        if let Some(options) = col_data
-          .and_then(|d| d.get("options"))
-          .and_then(|v| v.to_array())
-        {
-          for opt in options.iter() {
-            if let Some(opt_map) = opt.to_map() {
-              if let Some(opt_id) = get_string(&opt_map, "id") {
-                if opt_id == *id {
-                  return get_string(&opt_map, "value").unwrap_or_default();
-                }
-              }
-            }
+      let id = match value {
+        Value::Any(any) => any_as_string(any).map(str::to_string),
+        Value::Text(text) => Some(text.to_string()),
+        _ => None,
+      };
+      if let Some(id) = id {
+        for option in column.options.iter() {
+          if option.id.as_deref() == Some(id.as_str()) {
+            return format_option_tag(option);
           }
         }
       }
       String::new()
     }
     "multi-select" => {
-      if let Any::Array(ids) = value {
-        let mut selected = Vec::new();
-        if let Some(options) = col_data
-          .and_then(|d| d.get("options"))
-          .and_then(|v| v.to_array())
-        {
-          for id_val in ids.iter() {
-            if let Any::String(id) = id_val {
-              for opt in options.iter() {
-                if let Some(opt_map) = opt.to_map() {
-                  if let Some(opt_id) = get_string(&opt_map, "id") {
-                    if opt_id == *id {
-                      selected.push(get_string(&opt_map, "value").unwrap_or_default());
-                    }
-                  }
-                }
-              }
-            }
+      let ids: Vec<String> = match value {
+        Value::Any(Any::Array(ids)) => ids
+          .iter()
+          .filter_map(any_as_string)
+          .map(str::to_string)
+          .collect(),
+        Value::Array(array) => array
+          .iter()
+          .filter_map(|id_val| value_to_string(&id_val))
+          .collect(),
+        _ => Vec::new(),
+      };
+
+      if ids.is_empty() {
+        return String::new();
+      }
+
+      let mut selected = Vec::new();
+      for id in ids.iter() {
+        for option in column.options.iter() {
+          if option.id.as_deref() == Some(id.as_str()) {
+            selected.push(format_option_tag(option));
           }
         }
-        return selected.join(", ");
       }
-      String::new()
+      selected.join("")
     }
-    _ => any_to_string(value).unwrap_or_default(),
-  }
-}
-
-fn value_to_string(value: &Value) -> Option<String> {
-  if let Some(text) = value.to_text() {
-    return Some(text.to_string());
-  }
-
-  if let Some(any) = value.to_any() {
-    return any_to_string(&any);
-  }
-
-  None
-}
-
-fn any_to_string(any: &Any) -> Option<String> {
-  match any {
-    Any::String(value) => Some(value.to_string()),
-    Any::Integer(value) => Some(value.to_string()),
-    Any::Float32(value) => Some(value.0.to_string()),
-    Any::Float64(value) => Some(value.0.to_string()),
-    Any::BigInt64(value) => Some(value.to_string()),
-    Any::True => Some("true".into()),
-    Any::False => Some("false".into()),
-    Any::Null | Any::Undefined => None,
-    Any::Array(_) | Any::Object(_) | Any::Binary(_) => serde_json::to_string(any).ok(),
+    _ => value_to_string(value).unwrap_or_default(),
   }
 }
 
@@ -825,8 +830,8 @@ mod tests {
 
   #[test]
   fn test_parse_doc_from_binary() {
-    let json = include_bytes!("../fixtures/demo.ydoc.json");
-    let doc_bin = include_bytes!("../fixtures/demo.ydoc").to_vec();
+    let json = include_bytes!("../../fixtures/demo.ydoc.json");
+    let doc_bin = include_bytes!("../../fixtures/demo.ydoc").to_vec();
     let doc_id = "dYpV7PPhk8amRkY5IAcVO".to_string();
 
     let result = parse_doc_from_binary(doc_bin, doc_id).unwrap();
@@ -837,5 +842,45 @@ mod tests {
       serde_json::json!(result),
       config
     );
+  }
+
+  #[test]
+  fn test_paragraph_newlines() {
+    let mut markdown = String::new();
+    append_paragraph(&mut markdown, "# ", "Title\n");
+    assert_eq!(markdown, "# Title\n\n");
+
+    markdown.clear();
+    append_paragraph(&mut markdown, "", "Plain");
+    assert_eq!(markdown, "Plain\n\n");
+  }
+
+  #[test]
+  fn test_list_newlines() {
+    let mut markdown = String::new();
+    append_list_item(&mut markdown, "    ", "* ", "Item\n");
+    assert_eq!(markdown, "    * Item\n");
+
+    markdown.clear();
+    append_list_item(&mut markdown, "", "- [ ] ", "Task");
+    assert_eq!(markdown, "- [ ] Task\n");
+  }
+
+  #[test]
+  fn test_code_block_newlines() {
+    let mut markdown = String::new();
+    append_code_block(&mut markdown, "rs", "fn main() {}");
+    assert_eq!(markdown, "```rs\nfn main() {}\n```\n\n");
+  }
+
+  #[test]
+  fn test_table_newlines() {
+    let mut markdown = String::new();
+    append_table_block(&mut markdown, "|a|b|\n|---|---|\n|1|2|\n");
+    assert_eq!(markdown, "|a|b|\n|---|---|\n|1|2|\n\n");
+
+    markdown.clear();
+    append_table_block(&mut markdown, "|a|b|");
+    assert_eq!(markdown, "|a|b|\n\n");
   }
 }

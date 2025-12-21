@@ -59,7 +59,7 @@ export declare function parseDoc(filePath: string, doc: Buffer): Promise<ParsedD
 
 export declare function parseDocFromBinary(docBin: Buffer, docId: string): NativeCrawlResult
 
-export declare function parseDocToMarkdown(docBin: Buffer, docId: string, aiEditable?: boolean | undefined | null): NativeMarkdownResult
+export declare function parseDocToMarkdown(docBin: Buffer, docId: string, aiEditable?: boolean | undefined | null, docUrlPrefix?: string | undefined | null): NativeMarkdownResult
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 

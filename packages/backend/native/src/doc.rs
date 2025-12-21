@@ -75,10 +75,15 @@ pub fn parse_doc_to_markdown(
   doc_bin: Buffer,
   doc_id: String,
   ai_editable: Option<bool>,
+  doc_url_prefix: Option<String>,
 ) -> Result<NativeMarkdownResult> {
-  let result =
-    doc_parser::parse_doc_to_markdown(doc_bin.into(), doc_id, ai_editable.unwrap_or(false))
-      .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = doc_parser::parse_doc_to_markdown(
+    doc_bin.into(),
+    doc_id,
+    ai_editable.unwrap_or(false),
+    doc_url_prefix,
+  )
+  .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result.into())
 }
 

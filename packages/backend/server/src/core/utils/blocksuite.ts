@@ -188,14 +188,17 @@ export async function readAllBlocksFromDocSnapshot(
 }
 
 export function parseDocToMarkdownFromDocSnapshot(
+  workspaceId: string,
   docId: string,
   docSnapshot: Uint8Array,
   aiEditable = false
 ) {
+  const docUrlPrefix = workspaceId ? `/workspace/${workspaceId}` : undefined;
   const parsed = parseYDocToMarkdown(
     Buffer.from(docSnapshot),
     docId,
-    aiEditable
+    aiEditable,
+    docUrlPrefix
   );
 
   return {
