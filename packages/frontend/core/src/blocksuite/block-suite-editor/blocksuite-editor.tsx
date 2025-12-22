@@ -72,14 +72,13 @@ const BlockSuiteEditorImpl = ({
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-  const featureFlags = useService(FeatureFlagService).flags;
-  const enableEditorRTL = useLiveData(featureFlags.enable_editor_rtl.$);
   const editorSetting = useService(EditorSettingService).editorSetting;
   const server = useService(ServerService).server;
 
-  const { enableMiddleClickPaste } = useLiveData(
+  const { enableMiddleClickPaste, rtlMode } = useLiveData(
     editorSetting.settings$.selector(s => ({
       enableMiddleClickPaste: s.enableMiddleClickPaste,
+      rtlMode: s.rtlMode,
     }))
   );
 
@@ -246,11 +245,12 @@ const BlockSuiteEditorImpl = ({
     <div
       {...props}
       data-testid={`editor-${page.id}`}
-      dir={enableEditorRTL ? 'rtl' : 'ltr'}
+      dir={rtlMode ? 'rtl' : 'ltr'}
       className={clsx(
         `editor-wrapper ${mode}-mode`,
         styles.docEditorRoot,
-        className
+        className,
+        rtlMode && 'affine-editor-rtl'
       )}
       style={style}
       data-affine-editor-container

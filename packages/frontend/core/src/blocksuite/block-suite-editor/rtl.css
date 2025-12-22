@@ -1,0 +1,37 @@
+.affine-editor-rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* 
+ * Flip indentation for nested blocks.
+ * Default BlockSuite indentation is 26px (BLOCK_CHILDREN_CONTAINER_PADDING_LEFT).
+ * We override padding-left to 0 and apply it to padding-right.
+ */
+.affine-editor-rtl .affine-block-children-container {
+  padding-left: 0 !important;
+  padding-right: 26px !important;
+}
+
+/* Ensure flex containers for lists flow from right to left */
+.affine-editor-rtl .affine-list-rich-text-wrapper {
+  direction: rtl;
+  text-align: right;
+}
+
+/* 
+ * Mirroring markers:
+ * Since BlockSuite uses Flexbox for list items, direction: rtl on the container 
+ * automatically reorders the visual presentation (Start -> Right).
+ * So [Marker] [Text] becomes [Marker] (Right) ... [Text] (Left).
+ */
+
+/* Adjust specific margins if necessary */
+/* Example: If markers have margin-right in LTR (spacing from text), it should be margin-left in RTL. */
+/* However, styles.ts showed margin-left on numbered markers. In LTR [Marker] [Text], margin-left on Marker puts space before it? */
+/* Or maybe DOM order is different? If DOM is [Marker] [Text], margin-left on Marker pushes it from container edge. */
+/* If so, in RTL we want margin-right. */
+.affine-editor-rtl .affine-list-block__numbered {
+  margin-left: 0 !important;
+  margin-right: 2px !important;
+}

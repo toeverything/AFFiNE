@@ -536,6 +536,27 @@ const SpellCheckSettings = () => {
   );
 };
 
+const RTLSettings = () => {
+  const editorSettingService = useService(EditorSettingService);
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const onToggleRTL = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set('rtlMode', checked);
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  return (
+    <SettingRow
+      name="Right-to-Left (RTL)"
+      desc="Enable Right-to-Left text direction for the editor."
+    >
+      <Switch checked={settings.rtlMode} onChange={onToggleRTL} />
+    </SettingRow>
+  );
+};
+
 const MiddleClickPasteSettings = () => {
   const t = useI18n();
   const editorSettingService = useService(EditorSettingService);
@@ -574,6 +595,7 @@ export const General = () => {
       <FontSizeSettings />
       <NewDocDefaultModeSettings />
       {BUILD_CONFIG.isElectron && <SpellCheckSettings />}
+      <RTLSettings />
       {environment.isLinux && <MiddleClickPasteSettings />}
       {/* // TODO(@akumatus): implement these settings
         <DeFaultCodeBlockSettings />
