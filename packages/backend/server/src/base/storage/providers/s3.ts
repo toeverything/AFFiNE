@@ -2,6 +2,9 @@
 import { Readable } from 'node:stream';
 
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -11,6 +14,7 @@ import {
   PutObjectCommand,
   S3Client,
   S3ClientConfig,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Logger } from '@nestjs/common';
@@ -19,6 +23,9 @@ import {
   BlobInputType,
   GetObjectMetadata,
   ListObjectsMetadata,
+  MultipartUploadInit,
+  MultipartUploadPart,
+  PresignedUpload,
   PutObjectMetadata,
   StorageProvider,
 } from './provider';
@@ -87,6 +94,107 @@ export class S3StorageProvider implements StorageProvider {
       );
       throw e;
     }
+  }
+
+  async presignPut(
+    key: string,
+    metadata: PutObjectMetadata = {}
+  ): Promise<PresignedUpload | undefined> {
+    const contentType = metadata.contentType ?? 'application/octet-stream';
+    const url = await getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: contentType,
+      }),
+      { expiresIn: SIGNED_URL_EXPIRED }
+    );
+
+    return {
+      url,
+      headers: { 'Content-Type': contentType },
+      expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+    };
+  }
+
+  async createMultipartUpload(
+    key: string,
+    metadata: PutObjectMetadata = {}
+  ): Promise<MultipartUploadInit | undefined> {
+    const contentType = metadata.contentType ?? 'application/octet-stream';
+    const response = await this.client.send(
+      new CreateMultipartUploadCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: contentType,
+      })
+    );
+
+    if (!response.UploadId) {
+      return;
+    }
+
+    return {
+      uploadId: response.UploadId,
+      expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+    };
+  }
+
+  async presignUploadPart(
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ): Promise<PresignedUpload | undefined> {
+    const url = await getSignedUrl(
+      this.client,
+      new UploadPartCommand({
+        Bucket: this.bucket,
+        Key: key,
+        UploadId: uploadId,
+        PartNumber: partNumber,
+      }),
+      { expiresIn: SIGNED_URL_EXPIRED }
+    );
+
+    return {
+      url,
+      expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+    };
+  }
+
+  async completeMultipartUpload(
+    key: string,
+    uploadId: string,
+    parts: MultipartUploadPart[]
+  ): Promise<void> {
+    const orderedParts = [...parts].sort(
+      (left, right) => left.partNumber - right.partNumber
+    );
+
+    await this.client.send(
+      new CompleteMultipartUploadCommand({
+        Bucket: this.bucket,
+        Key: key,
+        UploadId: uploadId,
+        MultipartUpload: {
+          Parts: orderedParts.map(part => ({
+            ETag: part.etag,
+            PartNumber: part.partNumber,
+          })),
+        },
+      })
+    );
+  }
+
+  async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+    await this.client.send(
+      new AbortMultipartUploadCommand({
+        Bucket: this.bucket,
+        Key: key,
+        UploadId: uploadId,
+      })
+    );
   }
 
   async head(key: string) {

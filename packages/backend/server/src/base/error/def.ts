@@ -506,6 +506,10 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
   },
+  blob_invalid: {
+    type: 'invalid_input',
+    message: 'Blob is invalid.',
+  },
   expect_to_publish_doc: {
     type: 'invalid_input',
     message: 'Expected to publish a doc, not a Space.',

@@ -383,6 +383,60 @@ export const setBlobMutation = {
   file: true,
 };
 
+export const abortBlobUploadMutation = {
+  id: 'abortBlobUploadMutation' as const,
+  op: 'abortBlobUpload',
+  query: `mutation abortBlobUpload($workspaceId: String!, $key: String!, $uploadId: String!) {
+  abortBlobUpload(workspaceId: $workspaceId, key: $key, uploadId: $uploadId)
+}`,
+};
+
+export const completeBlobUploadMutation = {
+  id: 'completeBlobUploadMutation' as const,
+  op: 'completeBlobUpload',
+  query: `mutation completeBlobUpload($workspaceId: String!, $key: String!, $uploadId: String, $parts: [BlobUploadPartInput!]) {
+  completeBlobUpload(
+    workspaceId: $workspaceId
+    key: $key
+    uploadId: $uploadId
+    parts: $parts
+  )
+}`,
+};
+
+export const createBlobUploadMutation = {
+  id: 'createBlobUploadMutation' as const,
+  op: 'createBlobUpload',
+  query: `mutation createBlobUpload($workspaceId: String!, $key: String!, $size: Int!, $mime: String!) {
+  createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
+    method
+    blobKey
+    uploadUrl
+    headers
+    expiresAt
+    uploadId
+    partSize
+  }
+}`,
+};
+
+export const getBlobUploadPartUrlMutation = {
+  id: 'getBlobUploadPartUrlMutation' as const,
+  op: 'getBlobUploadPartUrl',
+  query: `mutation getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+  getBlobUploadPartUrl(
+    workspaceId: $workspaceId
+    key: $key
+    uploadId: $uploadId
+    partNumber: $partNumber
+  ) {
+    uploadUrl
+    headers
+    expiresAt
+  }
+}`,
+};
+
 export const cancelSubscriptionMutation = {
   id: 'cancelSubscriptionMutation' as const,
   op: 'cancelSubscription',
