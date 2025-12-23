@@ -60,6 +60,10 @@ export interface StorageProvider {
     uploadId: string,
     partNumber: number
   ): Promise<PresignedUpload | undefined>;
+  listMultipartUploadParts?(
+    key: string,
+    uploadId: string
+  ): Promise<MultipartUploadPart[] | undefined>;
   completeMultipartUpload?(
     key: string,
     uploadId: string,

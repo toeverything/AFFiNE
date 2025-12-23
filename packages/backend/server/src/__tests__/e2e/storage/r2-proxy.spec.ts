@@ -21,6 +21,7 @@ import { R2UploadController } from '../../../core/storage/r2-proxy';
 import { app, e2e, Mockers } from '../test';
 
 class MockR2Provider extends R2StorageProvider {
+  createMultipartCalls = 0;
   putCalls: {
     key: string;
     body: Buffer;
@@ -31,6 +32,7 @@ class MockR2Provider extends R2StorageProvider {
     key: string;
     uploadId: string;
     partNumber: number;
+    etag: string;
     body: Buffer;
     contentLength?: number;
   }[] = [];
@@ -64,21 +66,37 @@ class MockR2Provider extends R2StorageProvider {
     body: any,
     options: { contentLength?: number } = {}
   ) {
+    const etag = `"etag-${partNumber}"`;
     this.partCalls.push({
       key,
       uploadId,
       partNumber,
+      etag,
       body: await toBuffer(body),
       contentLength: options.contentLength,
     });
-    return `"etag-${partNumber}"`;
+    return etag;
   }
 
   override async createMultipartUpload() {
+    this.createMultipartCalls += 1;
     return {
       uploadId: 'upload-id',
       expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
     };
+  }
+
+  override async listMultipartUploadParts(key: string, uploadId: string) {
+    const latest = new Map<number, string>();
+    for (const part of this.partCalls) {
+      if (part.key !== key || part.uploadId !== uploadId) {
+        continue;
+      }
+      latest.set(part.partNumber, part.etag);
+    }
+    return [...latest.entries()]
+      .sort((left, right) => left[0] - right[0])
+      .map(([partNumber, etag]) => ({ partNumber, etag }));
   }
 }
 
@@ -186,9 +204,14 @@ async function createBlobUpload(
         createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
           method
           blobKey
+          alreadyUploaded
           uploadUrl
           uploadId
           partSize
+          uploadedParts {
+            partNumber
+            etag
+          }
         }
       }
     `,
@@ -286,6 +309,7 @@ e2e('should proxy multipart upload and return etag', async t => {
 
   t.is(init.method, 'MULTIPART');
   t.is(init.uploadId, 'upload-id');
+  t.deepEqual(init.uploadedParts, []);
 
   const part = await getBlobUploadPartUrl(workspace.id, key, init.uploadId, 1);
   const partUrl = new URL(part.uploadUrl, app.url);
@@ -307,6 +331,33 @@ e2e('should proxy multipart upload and return etag', async t => {
   t.is(calls[0].partNumber, 1);
   t.is(calls[0].contentLength, payload.length);
   t.deepEqual(calls[0].body, payload);
+});
+
+e2e('should resume multipart upload and return uploaded parts', async t => {
+  const { workspace } = await setupWorkspace();
+  const key = 'multipart-resume';
+  const totalSize = MULTIPART_THRESHOLD + 1024;
+
+  const init1 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
+  t.is(init1.method, 'MULTIPART');
+  t.is(init1.uploadId, 'upload-id');
+  t.deepEqual(init1.uploadedParts, []);
+  t.is(getProvider().createMultipartCalls, 1);
+
+  const part = await getBlobUploadPartUrl(workspace.id, key, init1.uploadId, 1);
+  const payload = Buffer.from('part-body');
+  const partUrl = new URL(part.uploadUrl, app.url);
+  await app
+    .PUT(partUrl.pathname + partUrl.search)
+    .set('content-length', payload.length.toString())
+    .send(payload)
+    .expect(200);
+
+  const init2 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
+  t.is(init2.method, 'MULTIPART');
+  t.is(init2.uploadId, 'upload-id');
+  t.deepEqual(init2.uploadedParts, [{ partNumber: 1, etag: '"etag-1"' }]);
+  t.is(getProvider().createMultipartCalls, 1);
 });
 
 e2e('should reject upload when token is invalid', async t => {

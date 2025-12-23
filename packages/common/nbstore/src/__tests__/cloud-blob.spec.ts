@@ -45,6 +45,7 @@ test('uses graphql upload when server returns GRAPHQL method', async () => {
         createBlobUpload: {
           method: BlobUploadMethod.GRAPHQL,
           blobKey: 'blob-key',
+          alreadyUploaded: false,
         },
       };
     }
@@ -78,6 +79,7 @@ test('falls back to graphql when presigned upload fails', async () => {
         createBlobUpload: {
           method: BlobUploadMethod.PRESIGNED,
           blobKey: 'blob-key',
+          alreadyUploaded: false,
           uploadUrl: 'https://upload.example.com/blob',
         },
       };
@@ -119,8 +121,10 @@ test('falls back to graphql and aborts when multipart upload fails', async () =>
         createBlobUpload: {
           method: BlobUploadMethod.MULTIPART,
           blobKey: 'blob-key',
+          alreadyUploaded: false,
           uploadId: 'upload-1',
           partSize: 2,
+          uploadedParts: [],
         },
       };
     }

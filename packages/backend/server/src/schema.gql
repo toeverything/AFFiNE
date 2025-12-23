@@ -97,6 +97,7 @@ type BlobNotFoundDataType {
 }
 
 type BlobUploadInit {
+  alreadyUploaded: Boolean
   blobKey: String!
   expiresAt: DateTime
   headers: JSONObject
@@ -104,9 +105,10 @@ type BlobUploadInit {
   partSize: Int
   uploadId: String
   uploadUrl: String
+  uploadedParts: [BlobUploadedPart!]
 }
 
-"""Blob upload method."""
+"""Blob upload method"""
 enum BlobUploadMethod {
   GRAPHQL
   MULTIPART
@@ -120,6 +122,11 @@ type BlobUploadPart {
 }
 
 input BlobUploadPartInput {
+  etag: String!
+  partNumber: Int!
+}
+
+type BlobUploadedPart {
   etag: String!
   partNumber: Int!
 }

@@ -116,6 +116,17 @@ export class WorkspaceBlobStorage {
     );
   }
 
+  async listMultipartUploadParts(
+    workspaceId: string,
+    key: string,
+    uploadId: string
+  ) {
+    return this.provider.listMultipartUploadParts?.(
+      `${workspaceId}/${key}`,
+      uploadId
+    );
+  }
+
   async completeMultipartUpload(
     workspaceId: string,
     key: string,
@@ -165,7 +176,7 @@ export class WorkspaceBlobStorage {
       return { ok: false, reason: 'size_mismatch' };
     }
 
-    if (metadata.contentType !== expected.mime) {
+    if (expected.mime && metadata.contentType !== expected.mime) {
       return { ok: false, reason: 'mime_mismatch' };
     }
 

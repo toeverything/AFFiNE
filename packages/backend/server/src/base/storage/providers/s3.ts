@@ -9,7 +9,9 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
+  ListPartsCommand,
   NoSuchKey,
+  NoSuchUpload,
   NotFound,
   PutObjectCommand,
   S3Client,
@@ -161,6 +163,56 @@ export class S3StorageProvider implements StorageProvider {
       url,
       expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
     };
+  }
+
+  async listMultipartUploadParts(
+    key: string,
+    uploadId: string
+  ): Promise<MultipartUploadPart[] | undefined> {
+    const parts: MultipartUploadPart[] = [];
+    let partNumberMarker: string | undefined;
+
+    try {
+      // ListParts is paginated by part number marker
+      // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListParts.html
+      // R2 follows S3 semantics here.
+      while (true) {
+        const response = await this.client.send(
+          new ListPartsCommand({
+            Bucket: this.bucket,
+            Key: key,
+            UploadId: uploadId,
+            PartNumberMarker: partNumberMarker,
+          })
+        );
+
+        for (const part of response.Parts ?? []) {
+          if (!part.PartNumber || !part.ETag) {
+            continue;
+          }
+          parts.push({ partNumber: part.PartNumber, etag: part.ETag });
+        }
+
+        if (!response.IsTruncated) {
+          break;
+        }
+
+        if (response.NextPartNumberMarker === undefined) {
+          break;
+        }
+
+        partNumberMarker = response.NextPartNumberMarker;
+      }
+
+      return parts;
+    } catch (e) {
+      // the upload may have been aborted/expired by provider lifecycle rules
+      if (e instanceof NoSuchUpload || e instanceof NotFound) {
+        return undefined;
+      }
+      this.logger.error(`Failed to list multipart upload parts for \`${key}\``);
+      throw e;
+    }
   }
 
   async completeMultipartUpload(

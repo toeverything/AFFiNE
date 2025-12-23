@@ -43,8 +43,17 @@ enum BlobUploadMethod {
 
 registerEnumType(BlobUploadMethod, {
   name: 'BlobUploadMethod',
-  description: 'Blob upload method.',
+  description: 'Blob upload method',
 });
+
+@ObjectType()
+class BlobUploadedPart {
+  @Field(() => Int)
+  partNumber!: number;
+
+  @Field()
+  etag!: string;
+}
 
 @ObjectType()
 class BlobUploadInit {
@@ -53,6 +62,9 @@ class BlobUploadInit {
 
   @Field()
   blobKey!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  alreadyUploaded?: boolean;
 
   @Field(() => String, { nullable: true })
   uploadUrl?: string;
@@ -68,6 +80,9 @@ class BlobUploadInit {
 
   @Field(() => Int, { nullable: true })
   partSize?: number;
+
+  @Field(() => [BlobUploadedPart], { nullable: true })
+  uploadedParts?: BlobUploadedPart[];
 }
 
 @ObjectType()
@@ -202,6 +217,44 @@ export class WorkspaceBlobResolver {
     const metadata = { contentType: mime, contentLength: size };
     let init: BlobUploadInit | null = null;
     let uploadIdForRecord: string | null = null;
+
+    const existing = await this.models.blob.get(workspaceId, key);
+    if (existing) {
+      if (existing.size !== size) {
+        throw new BlobInvalid('Blob size mismatch');
+      }
+      if (existing.mime !== mime) {
+        throw new BlobInvalid('Blob mime mismatch');
+      }
+
+      if (existing.status === 'completed') {
+        return {
+          method: BlobUploadMethod.GRAPHQL,
+          blobKey: key,
+          alreadyUploaded: true,
+        };
+      }
+
+      // try to resume multipart uploads
+      if (existing.uploadId) {
+        const uploadedParts = await this.storage.listMultipartUploadParts(
+          workspaceId,
+          key,
+          existing.uploadId
+        );
+
+        if (uploadedParts) {
+          return {
+            method: BlobUploadMethod.MULTIPART,
+            blobKey: key,
+            uploadId: existing.uploadId,
+            partSize: MULTIPART_PART_SIZE,
+            uploadedParts,
+          };
+        }
+      }
+    }
+
     if (size >= MULTIPART_THRESHOLD) {
       const multipart = await this.storage.createMultipartUpload(
         workspaceId,
@@ -216,6 +269,7 @@ export class WorkspaceBlobResolver {
           uploadId: multipart.uploadId,
           partSize: MULTIPART_PART_SIZE,
           expiresAt: multipart.expiresAt,
+          uploadedParts: [],
         };
       }
     }
@@ -276,7 +330,7 @@ export class WorkspaceBlobResolver {
 
     const record = await this.models.blob.get(workspaceId, key);
     if (!record) {
-      throw new BlobInvalid('Blob upload is not initialized.');
+      throw new BlobNotFound({ spaceId: workspaceId, blobId: key });
     }
     if (record.status === 'completed') {
       return key;
@@ -288,11 +342,11 @@ export class WorkspaceBlobResolver {
     if (hasMultipartRecord) {
       if (!uploadId || !parts || parts.length === 0) {
         throw new BlobInvalid(
-          'Multipart upload requires both uploadId and parts.'
+          'Multipart upload requires both uploadId and parts'
         );
       }
       if (uploadId !== record.uploadId) {
-        throw new BlobInvalid('Upload id mismatch.');
+        throw new BlobInvalid('Upload id mismatch');
       }
 
       const metadata = await this.storage.head(workspaceId, key);
@@ -304,11 +358,11 @@ export class WorkspaceBlobResolver {
           parts
         );
         if (!completed) {
-          throw new BlobInvalid('Multipart upload is not supported.');
+          throw new BlobInvalid('Multipart upload is not supported');
         }
       }
     } else if (hasMultipartInput) {
-      throw new BlobInvalid('Multipart upload is not initialized.');
+      throw new BlobInvalid('Multipart upload is not initialized');
     }
 
     const result = await this.storage.complete(workspaceId, key, {
@@ -323,12 +377,12 @@ export class WorkspaceBlobResolver {
         });
       }
       if (result.reason === 'size_mismatch') {
-        throw new BlobInvalid('Blob size mismatch.');
+        throw new BlobInvalid('Blob size mismatch');
       }
       if (result.reason === 'mime_mismatch') {
-        throw new BlobInvalid('Blob mime mismatch.');
+        throw new BlobInvalid('Blob mime mismatch');
       }
-      throw new BlobInvalid('Blob key mismatch.');
+      throw new BlobInvalid('Blob key mismatch');
     }
 
     return key;
@@ -354,7 +408,7 @@ export class WorkspaceBlobResolver {
       partNumber
     );
     if (!part) {
-      throw new BlobInvalid('Multipart upload is not supported.');
+      throw new BlobInvalid('Multipart upload is not supported');
     }
 
     return {

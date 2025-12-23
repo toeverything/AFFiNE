@@ -139,6 +139,7 @@ export interface BlobNotFoundDataType {
 
 export interface BlobUploadInit {
   __typename?: 'BlobUploadInit';
+  alreadyUploaded: Maybe<Scalars['Boolean']['output']>;
   blobKey: Scalars['String']['output'];
   expiresAt: Maybe<Scalars['DateTime']['output']>;
   headers: Maybe<Scalars['JSONObject']['output']>;
@@ -146,9 +147,10 @@ export interface BlobUploadInit {
   partSize: Maybe<Scalars['Int']['output']>;
   uploadId: Maybe<Scalars['String']['output']>;
   uploadUrl: Maybe<Scalars['String']['output']>;
+  uploadedParts: Maybe<Array<BlobUploadedPart>>;
 }
 
-/** Blob upload method. */
+/** Blob upload method */
 export enum BlobUploadMethod {
   GRAPHQL = 'GRAPHQL',
   MULTIPART = 'MULTIPART',
@@ -165,6 +167,12 @@ export interface BlobUploadPart {
 export interface BlobUploadPartInput {
   etag: Scalars['String']['input'];
   partNumber: Scalars['Int']['input'];
+}
+
+export interface BlobUploadedPart {
+  __typename?: 'BlobUploadedPart';
+  etag: Scalars['String']['output'];
+  partNumber: Scalars['Int']['output'];
 }
 
 export enum ChatHistoryOrder {
@@ -3509,11 +3517,17 @@ export type CreateBlobUploadMutation = {
     __typename?: 'BlobUploadInit';
     method: BlobUploadMethod;
     blobKey: string;
+    alreadyUploaded: boolean | null;
     uploadUrl: string | null;
     headers: any | null;
     expiresAt: string | null;
     uploadId: string | null;
     partSize: number | null;
+    uploadedParts: Array<{
+      __typename?: 'BlobUploadedPart';
+      partNumber: number;
+      etag: string;
+    }> | null;
   };
 };
 

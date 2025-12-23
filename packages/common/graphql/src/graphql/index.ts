@@ -411,11 +411,16 @@ export const createBlobUploadMutation = {
   createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
     method
     blobKey
+    alreadyUploaded
     uploadUrl
     headers
     expiresAt
     uploadId
     partSize
+    uploadedParts {
+      partNumber
+      etag
+    }
   }
 }`,
 };

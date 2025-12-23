@@ -116,6 +116,9 @@ export class CloudBlobStorage extends BlobStorageBase {
       });
 
       const upload = init.createBlobUpload;
+      if (upload.alreadyUploaded) {
+        return;
+      }
       if (upload.method === BlobUploadMethod.GRAPHQL) {
         await this.uploadViaGraphql(blob, signal);
         return;
@@ -144,6 +147,7 @@ export class CloudBlobStorage extends BlobStorageBase {
             upload.uploadId!,
             upload.partSize!,
             blob.data,
+            upload.uploadedParts,
             signal
           );
           await this.completeUpload(blob.key, upload.uploadId!, parts, signal);
@@ -241,13 +245,20 @@ export class CloudBlobStorage extends BlobStorageBase {
     uploadId: string,
     partSize: number,
     data: Uint8Array,
+    uploadedParts: { partNumber: number; etag: string }[] | null | undefined,
     signal?: AbortSignal
   ) {
-    const parts: { partNumber: number; etag: string }[] = [];
+    const partsMap = new Map<number, string>();
+    for (const part of uploadedParts ?? []) {
+      partsMap.set(part.partNumber, part.etag);
+    }
     const total = data.byteLength;
     const totalParts = Math.ceil(total / partSize);
 
     for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
+      if (partsMap.has(partNumber)) {
+        continue;
+      }
       const start = (partNumber - 1) * partSize;
       const end = Math.min(start + partSize, total);
       const chunk = data.subarray(start, end);
@@ -278,10 +289,16 @@ export class CloudBlobStorage extends BlobStorageBase {
       if (!etag) {
         throw new Error(`Missing ETag for part ${partNumber}.`);
       }
-      parts.push({ partNumber, etag });
+      partsMap.set(partNumber, etag);
     }
 
-    return parts;
+    if (partsMap.size !== totalParts) {
+      throw new Error('Multipart upload has missing parts.');
+    }
+
+    return [...partsMap.entries()]
+      .sort((left, right) => left[0] - right[0])
+      .map(([partNumber, etag]) => ({ partNumber, etag }));
   }
 
   private async completeUpload(
