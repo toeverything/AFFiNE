@@ -158,7 +158,7 @@ test('should reject complete when blob key mismatched', async t => {
   });
 
   await t.throwsAsync(() => completeBlobUpload(app, workspace.id, wrongKey), {
-    message: 'Blob key mismatch.',
+    message: 'Blob key mismatch',
   });
 });
 
@@ -170,7 +170,7 @@ test('should reject multipart upload part url on fs provider', async t => {
   await t.throwsAsync(
     () => getBlobUploadPartUrl(app, workspace.id, 'blob-key', 'upload', 1),
     {
-      message: 'Multipart upload is not supported.',
+      message: 'Multipart upload is not supported',
     }
   );
 });

@@ -324,7 +324,7 @@ export class S3StorageProvider implements StorageProvider {
         body: obj.Body,
         metadata: {
           // always set when putting object
-          contentType: obj.ContentType!,
+          contentType: obj.ContentType ?? 'application/octet-stream',
           contentLength: obj.ContentLength!,
           lastModified: obj.LastModified!,
           checksumCRC32: obj.ChecksumCRC32,

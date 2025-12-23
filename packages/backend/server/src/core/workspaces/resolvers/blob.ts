@@ -206,6 +206,7 @@ export class WorkspaceBlobResolver {
       .assert('Workspace.Blobs.Write');
 
     let record = await this.models.blob.get(workspaceId, key);
+    mime = mime || 'application/octet-stream';
     if (record) {
       if (record.size !== size) {
         throw new BlobInvalid('Blob size mismatch');
