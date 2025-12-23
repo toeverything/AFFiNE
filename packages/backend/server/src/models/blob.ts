@@ -21,12 +21,16 @@ export class BlobModel extends BaseModel {
       update: {
         mime: blob.mime,
         size: blob.size,
+        status: blob.status,
+        uploadId: blob.uploadId,
       },
       create: {
         workspaceId: blob.workspaceId,
         key: blob.key,
         mime: blob.mime,
         size: blob.size,
+        status: blob.status,
+        uploadId: blob.uploadId,
       },
     });
   }
@@ -76,8 +80,36 @@ export class BlobModel extends BaseModel {
         ...options?.where,
         workspaceId,
         deletedAt: null,
+        status: 'completed',
       },
       select: options?.select,
+    });
+  }
+
+  async hasAny(workspaceId: string) {
+    const count = await this.db.blob.count({
+      where: {
+        workspaceId,
+        deletedAt: null,
+      },
+    });
+    return count > 0;
+  }
+
+  async listPendingExpired(before: Date) {
+    return await this.db.blob.findMany({
+      where: {
+        status: 'pending',
+        deletedAt: null,
+        createdAt: {
+          lt: before,
+        },
+      },
+      select: {
+        workspaceId: true,
+        key: true,
+        uploadId: true,
+      },
     });
   }
 

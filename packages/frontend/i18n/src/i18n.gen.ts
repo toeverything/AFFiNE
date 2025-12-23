@@ -8681,6 +8681,10 @@ export function useAFFiNEI18N(): {
         spaceId: string;
     }>): string;
     /**
+      * `Blob is invalid.`
+      */
+    ["error.BLOB_INVALID"](): string;
+    /**
       * `Expected to publish a doc, not a Space.`
       */
     ["error.EXPECT_TO_PUBLISH_DOC"](): string;

@@ -137,6 +137,44 @@ export interface BlobNotFoundDataType {
   spaceId: Scalars['String']['output'];
 }
 
+export interface BlobUploadInit {
+  __typename?: 'BlobUploadInit';
+  alreadyUploaded: Maybe<Scalars['Boolean']['output']>;
+  blobKey: Scalars['String']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  headers: Maybe<Scalars['JSONObject']['output']>;
+  method: BlobUploadMethod;
+  partSize: Maybe<Scalars['Int']['output']>;
+  uploadId: Maybe<Scalars['String']['output']>;
+  uploadUrl: Maybe<Scalars['String']['output']>;
+  uploadedParts: Maybe<Array<BlobUploadedPart>>;
+}
+
+/** Blob upload method */
+export enum BlobUploadMethod {
+  GRAPHQL = 'GRAPHQL',
+  MULTIPART = 'MULTIPART',
+  PRESIGNED = 'PRESIGNED',
+}
+
+export interface BlobUploadPart {
+  __typename?: 'BlobUploadPart';
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  headers: Maybe<Scalars['JSONObject']['output']>;
+  uploadUrl: Scalars['String']['output'];
+}
+
+export interface BlobUploadPartInput {
+  etag: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+}
+
+export interface BlobUploadedPart {
+  __typename?: 'BlobUploadedPart';
+  etag: Scalars['String']['output'];
+  partNumber: Scalars['Int']['output'];
+}
+
 export enum ChatHistoryOrder {
   asc = 'asc',
   desc = 'desc',
@@ -838,6 +876,7 @@ export enum ErrorNames {
   ALREADY_IN_SPACE = 'ALREADY_IN_SPACE',
   AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
   BAD_REQUEST = 'BAD_REQUEST',
+  BLOB_INVALID = 'BLOB_INVALID',
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
   BLOB_QUOTA_EXCEEDED = 'BLOB_QUOTA_EXCEEDED',
   CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE = 'CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE',
@@ -1370,6 +1409,7 @@ export interface MissingOauthQueryParameterDataType {
 
 export interface Mutation {
   __typename?: 'Mutation';
+  abortBlobUpload: Scalars['Boolean']['output'];
   acceptInviteById: Scalars['Boolean']['output'];
   activateLicense: License;
   /** add a blob to context */
@@ -1392,6 +1432,8 @@ export interface Mutation {
   claimAudioTranscription: Maybe<TranscriptionResultType>;
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
+  completeBlobUpload: Scalars['String']['output'];
+  createBlobUpload: BlobUploadInit;
   /** Create change password url */
   createChangePasswordUrl: Scalars['String']['output'];
   /** Create a subscription checkout link of stripe */
@@ -1430,6 +1472,7 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   generateUserAccessToken: RevealedAccessToken;
+  getBlobUploadPartUrl: BlobUploadPart;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1527,6 +1570,12 @@ export interface Mutation {
   verifyEmail: Scalars['Boolean']['output'];
 }
 
+export interface MutationAbortBlobUploadArgs {
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationAcceptInviteByIdArgs {
   inviteId: Scalars['String']['input'];
   sendAcceptMail?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1597,6 +1646,20 @@ export interface MutationClaimAudioTranscriptionArgs {
 
 export interface MutationCleanupCopilotSessionArgs {
   options: DeleteSessionInput;
+}
+
+export interface MutationCompleteBlobUploadArgs {
+  key: Scalars['String']['input'];
+  parts?: InputMaybe<Array<BlobUploadPartInput>>;
+  uploadId?: InputMaybe<Scalars['String']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationCreateBlobUploadArgs {
+  key: Scalars['String']['input'];
+  mime: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationCreateChangePasswordUrlArgs {
@@ -1691,6 +1754,13 @@ export interface MutationGenerateLicenseKeyArgs {
 
 export interface MutationGenerateUserAccessTokenArgs {
   input: GenerateAccessTokenInput;
+}
+
+export interface MutationGetBlobUploadPartUrlArgs {
+  key: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+  uploadId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationGrantDocUserRolesArgs {
@@ -3410,6 +3480,73 @@ export type SetBlobMutationVariables = Exact<{
 }>;
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
+
+export type AbortBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+}>;
+
+export type AbortBlobUploadMutation = {
+  __typename?: 'Mutation';
+  abortBlobUpload: boolean;
+};
+
+export type CompleteBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId?: InputMaybe<Scalars['String']['input']>;
+  parts?: InputMaybe<Array<BlobUploadPartInput> | BlobUploadPartInput>;
+}>;
+
+export type CompleteBlobUploadMutation = {
+  __typename?: 'Mutation';
+  completeBlobUpload: string;
+};
+
+export type CreateBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  mime: Scalars['String']['input'];
+}>;
+
+export type CreateBlobUploadMutation = {
+  __typename?: 'Mutation';
+  createBlobUpload: {
+    __typename?: 'BlobUploadInit';
+    method: BlobUploadMethod;
+    blobKey: string;
+    alreadyUploaded: boolean | null;
+    uploadUrl: string | null;
+    headers: any | null;
+    expiresAt: string | null;
+    uploadId: string | null;
+    partSize: number | null;
+    uploadedParts: Array<{
+      __typename?: 'BlobUploadedPart';
+      partNumber: number;
+      etag: string;
+    }> | null;
+  };
+};
+
+export type GetBlobUploadPartUrlMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+}>;
+
+export type GetBlobUploadPartUrlMutation = {
+  __typename?: 'Mutation';
+  getBlobUploadPartUrl: {
+    __typename?: 'BlobUploadPart';
+    uploadUrl: string;
+    headers: any | null;
+    expiresAt: string | null;
+  };
+};
 
 export type CancelSubscriptionMutationVariables = Exact<{
   plan?: InputMaybe<SubscriptionPlan>;
@@ -6823,6 +6960,26 @@ export type Mutations =
       name: 'setBlobMutation';
       variables: SetBlobMutationVariables;
       response: SetBlobMutation;
+    }
+  | {
+      name: 'abortBlobUploadMutation';
+      variables: AbortBlobUploadMutationVariables;
+      response: AbortBlobUploadMutation;
+    }
+  | {
+      name: 'completeBlobUploadMutation';
+      variables: CompleteBlobUploadMutationVariables;
+      response: CompleteBlobUploadMutation;
+    }
+  | {
+      name: 'createBlobUploadMutation';
+      variables: CreateBlobUploadMutationVariables;
+      response: CreateBlobUploadMutation;
+    }
+  | {
+      name: 'getBlobUploadPartUrlMutation';
+      variables: GetBlobUploadPartUrlMutationVariables;
+      response: GetBlobUploadPartUrlMutation;
     }
   | {
       name: 'cancelSubscriptionMutation';
