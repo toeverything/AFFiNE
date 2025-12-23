@@ -205,9 +205,37 @@ export class WorkspaceBlobResolver {
       .workspace(workspaceId)
       .assert('Workspace.Blobs.Write');
 
+    let record = await this.models.blob.get(workspaceId, key);
+    if (record) {
+      if (record.size !== size) {
+        throw new BlobInvalid('Blob size mismatch');
+      }
+      if (record.mime !== mime) {
+        throw new BlobInvalid('Blob mime mismatch');
+      }
+
+      if (record.status === 'completed') {
+        const existingMetadata = await this.storage.head(workspaceId, key);
+        if (!existingMetadata) {
+          // record exists but object is missing, treat as a new upload
+          record = null;
+        } else if (existingMetadata.contentLength !== size) {
+          throw new BlobInvalid('Blob size mismatch');
+        } else if (existingMetadata.contentType !== mime) {
+          throw new BlobInvalid('Blob mime mismatch');
+        } else {
+          return {
+            method: BlobUploadMethod.GRAPHQL,
+            blobKey: key,
+            alreadyUploaded: true,
+          };
+        }
+      }
+    }
+
     const checkExceeded =
       await this.quota.getWorkspaceQuotaCalculator(workspaceId);
-    const result = checkExceeded(size);
+    const result = checkExceeded(record ? 0 : size);
     if (result?.blobQuotaExceeded) {
       throw new BlobQuotaExceeded();
     } else if (result?.storageQuotaExceeded) {
@@ -218,40 +246,22 @@ export class WorkspaceBlobResolver {
     let init: BlobUploadInit | null = null;
     let uploadIdForRecord: string | null = null;
 
-    const existing = await this.models.blob.get(workspaceId, key);
-    if (existing) {
-      if (existing.size !== size) {
-        throw new BlobInvalid('Blob size mismatch');
-      }
-      if (existing.mime !== mime) {
-        throw new BlobInvalid('Blob mime mismatch');
-      }
+    // try to resume multipart uploads
+    if (record && record.uploadId) {
+      const uploadedParts = await this.storage.listMultipartUploadParts(
+        workspaceId,
+        key,
+        record.uploadId
+      );
 
-      if (existing.status === 'completed') {
+      if (uploadedParts) {
         return {
-          method: BlobUploadMethod.GRAPHQL,
+          method: BlobUploadMethod.MULTIPART,
           blobKey: key,
-          alreadyUploaded: true,
+          uploadId: record.uploadId,
+          partSize: MULTIPART_PART_SIZE,
+          uploadedParts,
         };
-      }
-
-      // try to resume multipart uploads
-      if (existing.uploadId) {
-        const uploadedParts = await this.storage.listMultipartUploadParts(
-          workspaceId,
-          key,
-          existing.uploadId
-        );
-
-        if (uploadedParts) {
-          return {
-            method: BlobUploadMethod.MULTIPART,
-            blobKey: key,
-            uploadId: existing.uploadId,
-            partSize: MULTIPART_PART_SIZE,
-            uploadedParts,
-          };
-        }
       }
     }
 
