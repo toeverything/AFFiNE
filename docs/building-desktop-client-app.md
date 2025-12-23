@@ -18,7 +18,7 @@ Building the desktop client app for the moment is a bit more complicated than bu
 
 1. `packages/frontend/core`: the web app
 2. `packages/frontend/native`: the native modules written in Rust (mostly the sqlite bindings)
-3. `packages/frontend/electron`: the Electron app (containing main & helper process, and the electron entry point in `packages/frontend/electron-renderer`)
+3. `packages/frontend/apps/electron`: the Electron app (containing main & helper process, and the electron entry point in `packages/frontend/apps/electron-renderer`)
 
 #3 is dependent on #1 and #2, and relies on electron-forge to make the final app & installer. To get a deep understanding of how the desktop client app is built, you may want to read the workflow file in [release-desktop.yml](/.github/workflows/release-desktop.yml).
 
@@ -91,7 +91,7 @@ yarn install
 
 #### Mac & Linux
 
-Note: you need to comment out `osxSign` and `osxNotarize` in `forge.config.js` to skip signing and notarizing the app.
+Note: you need to comment out `osxSign` and `osxNotarize` in `forge.config.mjs` to skip signing and notarizing the app.
 
 ```shell
 BUILD_TYPE=canary SKIP_WEB_BUILD=1 HOIST_NODE_MODULES=1 yarn affine @affine/electron make
