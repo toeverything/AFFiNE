@@ -156,10 +156,6 @@ export class WorkspaceBlobStorage {
       return { ok: false, reason: 'size_mismatch' };
     }
 
-    if (metadata.contentType !== expected.mime) {
-      return { ok: false, reason: 'mime_mismatch' };
-    }
-
     await this.models.blob.upsert({
       workspaceId,
       key,
