@@ -17,7 +17,7 @@ import {
   SubscriptionStatus,
 } from '../types';
 import { RcEvent } from './controller';
-import { resolveProductMapping } from './map';
+import { ProductMapping, resolveProductMapping } from './map';
 import { RevenueCatService, Subscription } from './service';
 
 const REFRESH_INTERVAL = 5 * 1000; // 5 seconds
@@ -117,6 +117,19 @@ export class RevenueCatWebhookHandler {
       where: cond,
     });
     const productOverride = this.config.payment.revenuecat?.productMap;
+    const removeExists = (mapping: ProductMapping, sub: Subscription) => {
+      // Remove from cleanup list
+      const index = toBeCleanup.findIndex(s => {
+        return (
+          s.targetId === appUserId &&
+          s.rcProductId === sub.productId &&
+          s.plan === mapping.plan
+        );
+      });
+      if (index >= 0) {
+        toBeCleanup.splice(index, 1);
+      }
+    };
 
     let success = 0;
     for (const sub of subscriptions) {
@@ -190,6 +203,7 @@ export class RevenueCatWebhookHandler {
             recurring: mapping.recurring,
           });
         }
+        removeExists(mapping, sub);
         continue;
       }
 
@@ -258,13 +272,7 @@ export class RevenueCatWebhookHandler {
         });
       }
 
-      // Remove from cleanup list
-      const index = toBeCleanup.findIndex(
-        s => s.plan === mapping.plan && s.targetId === appUserId
-      );
-      if (index >= 0) {
-        toBeCleanup.splice(index, 1);
-      }
+      removeExists(mapping, sub);
     }
 
     if (toBeCleanup.length) {
