@@ -295,8 +295,6 @@ export class RevenueCatWebhookHandler {
           })),
         }
       );
-
-      return false;
     }
 
     return success > 0;
