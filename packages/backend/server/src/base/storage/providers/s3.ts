@@ -102,45 +102,67 @@ export class S3StorageProvider implements StorageProvider {
     key: string,
     metadata: PutObjectMetadata = {}
   ): Promise<PresignedUpload | undefined> {
-    const contentType = metadata.contentType ?? 'application/octet-stream';
-    const url = await getSignedUrl(
-      this.client,
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        ContentType: contentType,
-      }),
-      { expiresIn: SIGNED_URL_EXPIRED }
-    );
+    try {
+      const contentType = metadata.contentType ?? 'application/octet-stream';
+      const url = await getSignedUrl(
+        this.client,
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ContentType: contentType,
+        }),
+        { expiresIn: SIGNED_URL_EXPIRED }
+      );
 
-    return {
-      url,
-      headers: { 'Content-Type': contentType },
-      expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
-    };
+      return {
+        url,
+        headers: { 'Content-Type': contentType },
+        expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+      };
+    } catch (e) {
+      this.logger.error(
+        `Failed to presign put object (${JSON.stringify({
+          key,
+          bucket: this.bucket,
+          metadata,
+        })}`
+      );
+      throw e;
+    }
   }
 
   async createMultipartUpload(
     key: string,
     metadata: PutObjectMetadata = {}
   ): Promise<MultipartUploadInit | undefined> {
-    const contentType = metadata.contentType ?? 'application/octet-stream';
-    const response = await this.client.send(
-      new CreateMultipartUploadCommand({
-        Bucket: this.bucket,
-        Key: key,
-        ContentType: contentType,
-      })
-    );
+    try {
+      const contentType = metadata.contentType ?? 'application/octet-stream';
+      const response = await this.client.send(
+        new CreateMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ContentType: contentType,
+        })
+      );
 
-    if (!response.UploadId) {
-      return;
+      if (!response.UploadId) {
+        return;
+      }
+
+      return {
+        uploadId: response.UploadId,
+        expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+      };
+    } catch (e) {
+      this.logger.error(
+        `Failed to create multipart upload (${JSON.stringify({
+          key,
+          bucket: this.bucket,
+          metadata,
+        })}`
+      );
+      throw e;
     }
-
-    return {
-      uploadId: response.UploadId,
-      expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
-    };
   }
 
   async presignUploadPart(
@@ -148,21 +170,28 @@ export class S3StorageProvider implements StorageProvider {
     uploadId: string,
     partNumber: number
   ): Promise<PresignedUpload | undefined> {
-    const url = await getSignedUrl(
-      this.client,
-      new UploadPartCommand({
-        Bucket: this.bucket,
-        Key: key,
-        UploadId: uploadId,
-        PartNumber: partNumber,
-      }),
-      { expiresIn: SIGNED_URL_EXPIRED }
-    );
+    try {
+      const url = await getSignedUrl(
+        this.client,
+        new UploadPartCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+        }),
+        { expiresIn: SIGNED_URL_EXPIRED }
+      );
 
-    return {
-      url,
-      expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
-    };
+      return {
+        url,
+        expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+      };
+    } catch (e) {
+      this.logger.error(
+        `Failed to presign upload part (${JSON.stringify({ key, bucket: this.bucket, uploadId, partNumber })}`
+      );
+      throw e;
+    }
   }
 
   async listMultipartUploadParts(
@@ -220,33 +249,43 @@ export class S3StorageProvider implements StorageProvider {
     uploadId: string,
     parts: MultipartUploadPart[]
   ): Promise<void> {
-    const orderedParts = [...parts].sort(
-      (left, right) => left.partNumber - right.partNumber
-    );
+    try {
+      const orderedParts = [...parts].sort(
+        (left, right) => left.partNumber - right.partNumber
+      );
 
-    await this.client.send(
-      new CompleteMultipartUploadCommand({
-        Bucket: this.bucket,
-        Key: key,
-        UploadId: uploadId,
-        MultipartUpload: {
-          Parts: orderedParts.map(part => ({
-            ETag: part.etag,
-            PartNumber: part.partNumber,
-          })),
-        },
-      })
-    );
+      await this.client.send(
+        new CompleteMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+          MultipartUpload: {
+            Parts: orderedParts.map(part => ({
+              ETag: part.etag,
+              PartNumber: part.partNumber,
+            })),
+          },
+        })
+      );
+    } catch (e) {
+      this.logger.error(`Failed to complete multipart upload for \`${key}\``);
+      throw e;
+    }
   }
 
   async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
-    await this.client.send(
-      new AbortMultipartUploadCommand({
-        Bucket: this.bucket,
-        Key: key,
-        UploadId: uploadId,
-      })
-    );
+    try {
+      await this.client.send(
+        new AbortMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+        })
+      );
+    } catch (e) {
+      this.logger.error(`Failed to abort multipart upload for \`${key}\``);
+      throw e;
+    }
   }
 
   async head(key: string) {
