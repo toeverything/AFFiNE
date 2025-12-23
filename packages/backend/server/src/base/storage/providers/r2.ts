@@ -3,7 +3,11 @@ import { Readable } from 'node:stream';
 
 import { Logger } from '@nestjs/common';
 
-import { GetObjectMetadata } from './provider';
+import {
+  GetObjectMetadata,
+  PresignedUpload,
+  PutObjectMetadata,
+} from './provider';
 import { S3StorageConfig, S3StorageProvider } from './s3';
 
 export interface R2StorageConfig extends S3StorageConfig {
@@ -57,6 +61,37 @@ export class R2StorageProvider extends S3StorageProvider {
     const base64Mac = Buffer.from(mac).toString('base64');
     url.searchParams.set('sign', `${timestamp}-${base64Mac}`);
     return url.toString();
+  }
+
+  override async presignPut(
+    key: string,
+    metadata: PutObjectMetadata = {}
+  ): Promise<PresignedUpload | undefined> {
+    const ret = await super.presignPut(key, metadata);
+    if (ret && this.config.usePresignedURL?.enabled) {
+      const url = new URL(
+        ret.url,
+        this.config.usePresignedURL.urlPrefix
+      ).toString();
+      return { ...ret, url };
+    }
+    return ret;
+  }
+
+  override async presignUploadPart(
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ): Promise<PresignedUpload | undefined> {
+    const ret = await super.presignUploadPart(key, uploadId, partNumber);
+    if (ret && this.config.usePresignedURL?.enabled) {
+      const url = new URL(
+        ret.url,
+        this.config.usePresignedURL.urlPrefix
+      ).toString();
+      return { ...ret, url };
+    }
+    return ret;
   }
 
   override async get(
