@@ -50,6 +50,68 @@ jobs:
         id: prepare
         uses: ./.github/actions/prepare-release
 
+  canary-gate:
+    name: Canary Gate
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+    outputs:
+      SHOULD_RELEASE: ${{ steps.decide.outputs.SHOULD_RELEASE }}
+      LAST_CANARY_TAG: ${{ steps.decide.outputs.LAST_CANARY_TAG }}
+      LAST_CANARY_SHA: ${{ steps.decide.outputs.LAST_CANARY_SHA }}
+    steps:
+      - name: Decide whether to release
+        id: decide
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildType = '${{ needs.prepare.outputs.BUILD_TYPE }}'
+            if (buildType !== 'canary') {
+              core.setOutput('SHOULD_RELEASE', 'true')
+              return
+            }
+
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const currentSha = context.sha
+            const canaryTagRe = /^v\d+\.\d+\.\d+-canary\.[0-9a-f]+$/i
+
+            let page = 1
+            const perPage = 100
+            let lastCanary = null
+
+            while (!lastCanary && page <= 10) {
+              const { data } = await github.rest.repos.listTags({
+                owner,
+                repo,
+                per_page: perPage,
+                page,
+              })
+
+              for (const tag of data) {
+                if (canaryTagRe.test(tag.name)) {
+                  lastCanary = tag
+                  break
+                }
+              }
+
+              if (data.length < perPage) break
+              page++
+            }
+
+            if (!lastCanary) {
+              core.warning('No canary tags found; proceeding with canary release.')
+              core.setOutput('SHOULD_RELEASE', 'true')
+              return
+            }
+
+            core.setOutput('LAST_CANARY_TAG', lastCanary.name)
+            core.setOutput('LAST_CANARY_SHA', lastCanary.commit.sha)
+
+            const shouldRelease = lastCanary.commit.sha !== currentSha
+            core.info(`Latest canary tag ${lastCanary.name} -> ${lastCanary.commit.sha}; current ${currentSha}; should_release=${shouldRelease}`)
+            core.setOutput('SHOULD_RELEASE', shouldRelease ? 'true' : 'false')
+
   cloud:
     name: Release Cloud
     if: ${{ inputs.web || github.event_name != 'workflow_dispatch' }}
@@ -64,9 +126,11 @@ jobs:
 
   image:
     name: Release Docker Image
+    if: ${{ needs.canary-gate.outputs.SHOULD_RELEASE == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - prepare
+      - canary-gate
       - cloud
     steps:
       - uses: trstringer/manual-approval@v1
@@ -102,9 +166,10 @@ jobs:
 
   desktop:
     name: Release Desktop
-    if: ${{ inputs.desktop || github.event_name != 'workflow_dispatch' }}
+    if: ${{ inputs.desktop || github.event_name != 'workflow_dispatch' && needs.canary-gate.outputs.SHOULD_RELEASE == 'true' }}
     needs:
       - prepare
+      - canary-gate
     uses: ./.github/workflows/release-desktop.yml
     secrets: inherit
     with:
