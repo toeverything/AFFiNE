@@ -21,7 +21,6 @@ import {
   BlobNotFound,
   BlobQuotaExceeded,
   CloudThrottlerGuard,
-  OneMB,
   readBuffer,
   StorageQuotaExceeded,
 } from '../../../base';
@@ -30,6 +29,10 @@ import { CurrentUser } from '../../auth';
 import { AccessController } from '../../permission';
 import { QuotaService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
+import {
+  MULTIPART_PART_SIZE,
+  MULTIPART_THRESHOLD,
+} from '../../storage/constants';
 import { WorkspaceBlobSizes, WorkspaceType } from '../types';
 
 enum BlobUploadMethod {
@@ -42,9 +45,6 @@ registerEnumType(BlobUploadMethod, {
   name: 'BlobUploadMethod',
   description: 'Blob upload method.',
 });
-
-const MULTIPART_PART_SIZE = 8 * OneMB;
-const MULTIPART_THRESHOLD = 16 * OneMB;
 
 @ObjectType()
 class BlobUploadInit {
@@ -199,7 +199,7 @@ export class WorkspaceBlobResolver {
       throw new StorageQuotaExceeded();
     }
 
-    const metadata = { contentType: mime };
+    const metadata = { contentType: mime, contentLength: size };
     let init: BlobUploadInit | null = null;
     let uploadIdForRecord: string | null = null;
     if (size >= MULTIPART_THRESHOLD) {
@@ -325,7 +325,10 @@ export class WorkspaceBlobResolver {
       if (result.reason === 'size_mismatch') {
         throw new BlobInvalid('Blob size mismatch.');
       }
-      throw new BlobInvalid('Blob mime mismatch.');
+      if (result.reason === 'mime_mismatch') {
+        throw new BlobInvalid('Blob mime mismatch.');
+      }
+      throw new BlobInvalid('Blob key mismatch.');
     }
 
     return key;

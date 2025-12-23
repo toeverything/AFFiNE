@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
@@ -29,7 +31,14 @@ declare global {
 
 type BlobCompleteResult =
   | { ok: true; metadata: GetObjectMetadata }
-  | { ok: false; reason: 'not_found' | 'size_mismatch' | 'mime_mismatch' };
+  | {
+      ok: false;
+      reason:
+        | 'not_found'
+        | 'size_mismatch'
+        | 'mime_mismatch'
+        | 'checksum_mismatch';
+    };
 
 @Injectable()
 export class WorkspaceBlobStorage {
@@ -154,6 +163,38 @@ export class WorkspaceBlobStorage {
 
     if (metadata.contentLength !== expected.size) {
       return { ok: false, reason: 'size_mismatch' };
+    }
+
+    if (metadata.contentType !== expected.mime) {
+      return { ok: false, reason: 'mime_mismatch' };
+    }
+
+    const object = await this.provider.get(`${workspaceId}/${key}`);
+    if (!object.body) {
+      return { ok: false, reason: 'not_found' };
+    }
+
+    const checksum = createHash('sha256');
+    try {
+      for await (const chunk of object.body) {
+        checksum.update(chunk as Buffer);
+      }
+    } catch (e) {
+      this.logger.error('failed to read blob for checksum verification', e);
+      return { ok: false, reason: 'checksum_mismatch' };
+    }
+
+    const base64 = checksum.digest('base64');
+    const base64urlWithPadding = base64.replace(/\+/g, '-').replace(/\//g, '_');
+
+    if (base64urlWithPadding !== key) {
+      try {
+        await this.provider.delete(`${workspaceId}/${key}`);
+      } catch (e) {
+        // never throw
+        this.logger.error('failed to delete invalid blob', e);
+      }
+      return { ok: false, reason: 'checksum_mismatch' };
     }
 
     await this.models.blob.upsert({

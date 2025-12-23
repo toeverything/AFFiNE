@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import test from 'ava';
 import Sinon from 'sinon';
 
@@ -109,9 +111,9 @@ test('should complete pending blob upload', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
-  const key = `upload-${Math.random().toString(16).slice(2, 8)}`;
   const buffer = Buffer.from('done');
   const mime = 'text/plain';
+  const key = sha256Base64urlWithPadding(buffer);
 
   await createBlobUpload(app, workspace.id, key, buffer.length, mime);
 
@@ -134,6 +136,30 @@ test('should complete pending blob upload', async t => {
 
   const listed = await listBlobs(app, workspace.id);
   t.is(listed.length, 1);
+});
+
+test('should reject complete when blob key mismatched', async t => {
+  await app.signupV1('u1@affine.pro');
+
+  const workspace = await createWorkspace(app);
+  const buffer = Buffer.from('mismatch');
+  const mime = 'text/plain';
+
+  const wrongKey = sha256Base64urlWithPadding(Buffer.from('other'));
+  await createBlobUpload(app, workspace.id, wrongKey, buffer.length, mime);
+
+  const config = app.get(Config);
+  const factory = app.get(StorageProviderFactory);
+  const provider = factory.create(config.storages.blob.storage);
+
+  await provider.put(`${workspace.id}/${wrongKey}`, buffer, {
+    contentType: mime,
+    contentLength: buffer.length,
+  });
+
+  await t.throwsAsync(() => completeBlobUpload(app, workspace.id, wrongKey), {
+    message: 'Blob key mismatch.',
+  });
 });
 
 test('should reject multipart upload part url on fs provider', async t => {
@@ -254,3 +280,11 @@ test('should throw error when blob size large than max file size', async t => {
       'HTTP request error, message: File truncated as it exceeds the 10485760 byte size limit.',
   });
 });
+
+function sha256Base64urlWithPadding(buffer: Buffer) {
+  return createHash('sha256')
+    .update(buffer)
+    .digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
