@@ -118,7 +118,7 @@ export const StorageJSONSchema: JSONSchema = {
                 urlPrefix: {
                   type: 'string' as const,
                   description:
-                    'The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: "https://storage.example.com"\nExample rule: is_timed_hmac_valid_v0("your_secret", http.request.uri, 10800, http.request.timestamp.sec, 6)',
+                    'The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: "https://storage.example.com"\nExample rule: is_timed_hmac_valid_v0("your_secret", http.request.uri, 10800, http.request.timestamp.sec, 6)',
                 },
                 signKey: {
                   type: 'string' as const,
@@ -135,4 +135,12 @@ export const StorageJSONSchema: JSONSchema = {
 };
 
 export type * from './provider';
-export { applyAttachHeaders, autoMetadata, sniffMime, toBuffer } from './utils';
+export {
+  applyAttachHeaders,
+  autoMetadata,
+  PROXY_MULTIPART_PATH,
+  PROXY_UPLOAD_PATH,
+  sniffMime,
+  STORAGE_PROXY_ROOT,
+  toBuffer,
+} from './utils';
