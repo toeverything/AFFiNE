@@ -11,7 +11,11 @@ import {
   OnJob,
   sleep,
 } from '../../../base';
-import { SubscriptionStatus } from '../types';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from '../types';
 import { RcEvent } from './controller';
 import { resolveProductMapping } from './map';
 import { RevenueCatService, Subscription } from './service';
@@ -108,6 +112,10 @@ export class RevenueCatWebhookHandler {
     externalRef?: string,
     overrideExpirationDate?: Date
   ): Promise<boolean> {
+    const cond = { targetId: appUserId, provider: Provider.revenuecat };
+    const toBeCleanup = await this.db.subscription.findMany({
+      where: cond,
+    });
     const productOverride = this.config.payment.revenuecat?.productMap;
 
     let success = 0;
@@ -249,7 +257,40 @@ export class RevenueCatWebhookHandler {
           recurring: mapping.recurring,
         });
       }
+
+      // Remove from cleanup list
+      const index = toBeCleanup.findIndex(
+        s => s.plan === mapping.plan && s.targetId === appUserId
+      );
+      if (index >= 0) {
+        toBeCleanup.splice(index, 1);
+      }
     }
+
+    if (toBeCleanup.length) {
+      for (const sub of toBeCleanup) {
+        await this.db.subscription.deleteMany({ where: { id: sub.id } });
+        this.event.emit('user.subscription.canceled', {
+          userId: appUserId,
+          plan: sub.plan as SubscriptionPlan,
+          recurring: sub.recurring as SubscriptionRecurring,
+        });
+      }
+      this.logger.log(
+        `Cleanup ${toBeCleanup.length} subscriptions for ${appUserId}`,
+        {
+          appUserId,
+          subscriptions: toBeCleanup.map(s => ({
+            plan: s.plan,
+            recurring: s.recurring,
+            end: s.end,
+          })),
+        }
+      );
+
+      return false;
+    }
+
     return success > 0;
   }
 
