@@ -223,7 +223,7 @@ async function getBlobUploadPartUrl(
 }
 
 async function setupWorkspace() {
-  const owner = await app.signup();
+  const owner = await app.signup({ feature: 'pro_plan_v1' });
   const workspace = await app.create(Mockers.Workspace, { owner });
   return { owner, workspace };
 }

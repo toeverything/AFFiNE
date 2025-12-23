@@ -19,8 +19,12 @@ class Redis extends IORedis implements OnModuleInit, OnModuleDestroy {
     this.on('error', this.errorHandler);
   }
 
-  onModuleDestroy() {
-    this.disconnect();
+  async onModuleDestroy() {
+    try {
+      await this.quit();
+    } catch {
+      this.disconnect();
+    }
   }
 
   override duplicate(override?: Partial<RedisOptions>): IORedis {
