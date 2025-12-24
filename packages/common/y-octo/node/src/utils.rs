@@ -78,7 +78,6 @@ pub fn get_any_from_js_object(object: Object) -> Result<Any> {
           })
         }) {
           if let Ok(value) = object.get_named_property_unchecked::<Unknown>(&key) {
-            println!("key: {}", key);
             map.insert(key, get_any_from_js_unknown(value)?);
           }
         }

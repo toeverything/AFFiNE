@@ -1,19 +1,96 @@
-mod memory_indexer;
-mod tokenizer;
-mod types;
-
-use affine_common::doc_parser::{parse_doc_from_binary, ParseError};
-pub use memory_indexer::InMemoryIndex;
+use affine_common::doc_parser::{parse_doc_from_binary, BlockInfo, CrawlResult, ParseError};
+use memory_indexer::{SearchHit, SnapshotData};
+use napi_derive::napi;
+use serde::Serialize;
 use sqlx::Row;
-pub use types::{
-  DocData, NativeBlockInfo, NativeCrawlResult, NativeMatch, NativeSearchHit, SnapshotData,
-};
 use y_octo::DocOptions;
 
 use super::{
   error::{Error, Result},
   storage::SqliteDocStorage,
 };
+
+#[napi(object)]
+#[derive(Debug, Serialize)]
+pub struct NativeBlockInfo {
+  pub block_id: String,
+  pub flavour: String,
+  pub content: Option<Vec<String>>,
+  pub blob: Option<Vec<String>>,
+  pub ref_doc_id: Option<Vec<String>>,
+  pub ref_info: Option<Vec<String>>,
+  pub parent_flavour: Option<String>,
+  pub parent_block_id: Option<String>,
+  pub additional: Option<String>,
+}
+
+impl From<BlockInfo> for NativeBlockInfo {
+  fn from(value: BlockInfo) -> Self {
+    Self {
+      block_id: value.block_id,
+      flavour: value.flavour,
+      content: value.content,
+      blob: value.blob,
+      ref_doc_id: value.ref_doc_id,
+      ref_info: value.ref_info,
+      parent_flavour: value.parent_flavour,
+      parent_block_id: value.parent_block_id,
+      additional: value.additional,
+    }
+  }
+}
+
+#[napi(object)]
+#[derive(Debug, Serialize)]
+pub struct NativeCrawlResult {
+  pub blocks: Vec<NativeBlockInfo>,
+  pub title: String,
+  pub summary: String,
+}
+
+impl From<CrawlResult> for NativeCrawlResult {
+  fn from(value: CrawlResult) -> Self {
+    Self {
+      blocks: value.blocks.into_iter().map(Into::into).collect(),
+      title: value.title,
+      summary: value.summary,
+    }
+  }
+}
+
+#[napi(object)]
+#[derive(Debug, Serialize)]
+pub struct NativeSearchHit {
+  pub id: String,
+  pub score: f64,
+  pub terms: Vec<String>,
+}
+
+impl From<SearchHit> for NativeSearchHit {
+  fn from(value: SearchHit) -> Self {
+    Self {
+      id: value.doc_id,
+      score: value.score,
+      terms: value.matched_terms.into_iter().map(|t| t.term).collect(),
+    }
+  }
+}
+
+#[napi(object)]
+#[derive(Debug, Serialize)]
+pub struct NativeMatch {
+  pub start: u32,
+  pub end: u32,
+}
+
+impl From<(u32, u32)> for NativeMatch {
+  fn from(value: (u32, u32)) -> Self {
+    Self {
+      start: value.0,
+      end: value.1,
+    }
+  }
+}
 
 impl SqliteDocStorage {
   pub async fn crawl_doc_data(&self, doc_id: &str) -> Result<NativeCrawlResult> {
@@ -53,14 +130,14 @@ impl SqliteDocStorage {
 
     {
       let mut index = self.index.write().await;
+      let config = bincode::config::standard();
       for row in snapshots {
         let index_name: String = row.get("index_name");
         let data: Vec<u8> = row.get("data");
         if let Ok(decompressed) = zstd::stream::decode_all(std::io::Cursor::new(&data)) {
-          if let Ok((snapshot, _)) = bincode::serde::decode_from_slice::<SnapshotData, _>(
-            &decompressed,
-            bincode::config::standard(),
-          ) {
+          if let Ok((snapshot, _)) =
+            bincode::serde::decode_from_slice::<SnapshotData, _>(&decompressed, config)
+          {
             index.load_snapshot(&index_name, snapshot);
           }
         }
@@ -79,7 +156,7 @@ impl SqliteDocStorage {
     if let Some(data) = snapshot_data {
       let blob = bincode::serde::encode_to_vec(&data, bincode::config::standard())
         .map_err(|e| Error::Serialization(e.to_string()))?;
-      let compressed = zstd::stream::encode_all(std::io::Cursor::new(&blob), 0)
+      let compressed = zstd::stream::encode_all(std::io::Cursor::new(&blob), 4)
         .map_err(|e| Error::Serialization(e.to_string()))?;
 
       let mut tx = self.pool.begin().await?;
@@ -147,9 +224,9 @@ impl SqliteDocStorage {
     let idx = self.index.read().await;
     Ok(
       idx
-        .search(index_name, query)
+        .search_hits(index_name, query)
         .into_iter()
-        .map(|(id, score)| NativeSearchHit { id, score })
+        .map(Into::into)
         .collect(),
     )
   }
@@ -165,7 +242,23 @@ impl SqliteDocStorage {
       idx
         .get_matches(index_name, doc_id, query)
         .into_iter()
-        .map(|(start, end)| NativeMatch { start, end })
+        .map(Into::into)
+        .collect(),
+    )
+  }
+
+  pub async fn fts_get_matches_for_terms(
+    &self,
+    index_name: &str,
+    doc_id: &str,
+    terms: Vec<String>,
+  ) -> Result<Vec<NativeMatch>> {
+    let idx = self.index.read().await;
+    Ok(
+      idx
+        .get_matches_for_terms(index_name, doc_id, &terms)
+        .into_iter()
+        .map(Into::into)
         .collect(),
     )
   }
@@ -206,8 +299,8 @@ mod tests {
 
   use super::{super::error::Error, *};
 
-  const DEMO_BIN: &[u8] = include_bytes!("../../../../../common/native/fixtures/demo.ydoc");
-  const DEMO_JSON: &[u8] = include_bytes!("../../../../../common/native/fixtures/demo.ydoc.json");
+  const DEMO_BIN: &[u8] = include_bytes!("../../../../common/native/fixtures/demo.ydoc");
+  const DEMO_JSON: &[u8] = include_bytes!("../../../../common/native/fixtures/demo.ydoc.json");
 
   fn temp_workspace_dir() -> PathBuf {
     std::env::temp_dir().join(format!("affine-native-{}", Uuid::new_v4()))

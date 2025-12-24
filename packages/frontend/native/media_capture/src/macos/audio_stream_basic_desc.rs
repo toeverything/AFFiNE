@@ -171,7 +171,7 @@ impl std::fmt::Display for AudioFormatFlags {
 
 impl std::fmt::Debug for AudioFormatFlags {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "AudioFormatFlags({})", self)
+    write!(f, "AudioFormatFlags({self})")
   }
 }
 
