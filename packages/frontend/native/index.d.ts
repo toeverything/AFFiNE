@@ -148,6 +148,7 @@ export interface NativeMatch {
 export interface NativeSearchHit {
   id: string
   score: number
+  terms: Array<string>
 }
 
 export interface SetBlob {
