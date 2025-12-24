@@ -51,7 +51,7 @@ function isImage({ tagName }: Element) {
 }
 
 function isDatabase({ tagName }: Element) {
-  return tagName === 'AFFINE-DATABASE-TABLE' || tagName === 'AFFINE-DATABASE';
+  return tagName === 'AFFINE-DATABASE';
 }
 
 /**

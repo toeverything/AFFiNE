@@ -34,7 +34,7 @@ import {
   LifeCycleWatcher,
 } from '@blocksuite/std';
 import { GfxControllerIdentifier, GfxExtension } from '@blocksuite/std/gfx';
-import { type GetBlocksOptions, type Query, Text } from '@blocksuite/store';
+import { type GetStoreOptions, type Query, Text } from '@blocksuite/store';
 import { computed, signal } from '@preact/signals-core';
 import { html, nothing, type PropertyValues } from 'lit';
 import { query, state } from 'lit/decorators.js';
@@ -48,13 +48,16 @@ import type { EmbedSyncedDocCard } from './components/embed-synced-doc-card.js';
 import { blockStyles } from './styles.js';
 
 @Peekable({
-  enableOn: ({ doc }: EmbedSyncedDocBlockComponent) => !doc.readonly,
+  enableOn: ({ store }: EmbedSyncedDocBlockComponent) => !store.readonly,
 })
 export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSyncedDocModel> {
   static override styles = blockStyles;
 
   // Caches total bounds, includes all blocks and elements.
   private _cachedBounds: Bound | null = null;
+
+  private _hasRenderedSyncedView = false;
+  private _hasInitedFitEffect = false;
 
   private readonly _initEdgelessFitEffect = () => {
     const fitToContent = () => {
@@ -232,6 +235,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
             surface: false,
             selected: this.selected$.value,
             'show-hover-border': true,
+            'comment-highlighted': this.isCommentHighlighted,
           })}
           @click=${this._handleClick}
           style=${containerStyleMap}
@@ -276,10 +280,10 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   });
 
   convertToCard = (aliasInfo?: AliasInfo) => {
-    const { doc } = this.model;
+    const { store } = this.model;
     const { caption } = this.model.props;
 
-    const parent = doc.getParent(this.model);
+    const parent = store.getParent(this.model);
     if (!parent) {
       console.error(
         `Trying to convert synced doc to card, but the parent is not found.`
@@ -288,14 +292,14 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     }
     const index = parent.children.indexOf(this.model);
 
-    const blockId = doc.addBlock(
+    const blockId = store.addBlock(
       'affine:embed-linked-doc',
       { caption, ...this.referenceInfo, ...aliasInfo },
       parent,
       index
     );
 
-    doc.deleteBlock(this.model);
+    store.deleteBlock(this.model);
 
     this.std.selection.setGroup('note', [
       this.std.selection.create(BlockSelection, { blockId }),
@@ -303,8 +307,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   };
 
   convertToInline = () => {
-    const { doc } = this.model;
-    const parent = doc.getParent(this.model);
+    const { store } = this.model;
+    const parent = store.getParent(this.model);
     if (!parent) {
       console.error(
         `Trying to convert synced doc to inline, but the parent is not found.`
@@ -323,7 +327,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     });
     const text = new Text(yText);
 
-    doc.addBlock(
+    store.addBlock(
       'affine:paragraph',
       {
         text,
@@ -332,7 +336,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
       index
     );
 
-    doc.deleteBlock(this.model);
+    store.deleteBlock(this.model);
   };
 
   protected override embedContainerStyle: StyleInfo = {
@@ -348,7 +352,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
 
   open = (event?: Partial<DocLinkClickedEvent>) => {
     const pageId = this.model.props.pageId;
-    if (pageId === this.doc.id) return;
+    if (pageId === this.store.id) return;
 
     this.std
       .getOptional(RefNodeSlotsProvider)
@@ -356,10 +360,14 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   };
 
   refreshData = () => {
-    this._load().catch(e => {
-      console.error(e);
-      this._error = true;
-    });
+    this._load()
+      .then(() => {
+        this._isEmptySyncedDoc = isEmptyDoc(this.syncedDoc, this.editorMode);
+      })
+      .catch(e => {
+        console.error(e);
+        this._error = true;
+      });
   };
 
   title$ = computed(() => {
@@ -403,7 +411,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   }
 
   get syncedDoc() {
-    const options: GetBlocksOptions = { readonly: true };
+    const options: GetStoreOptions = { readonly: true };
     if (this.isPageMode) options.query = this._pageFilter;
     const doc = this.std.workspace.getDoc(this.model.props.pageId);
     return doc?.getStore(options) ?? null;
@@ -413,7 +421,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     let editorHost: EditorHost | null = this.host;
     while (editorHost && !this._cycle) {
       this._cycle =
-        !!editorHost && editorHost.doc.id === this.model.props.pageId;
+        !!editorHost && editorHost.store.id === this.model.props.pageId;
       editorHost = editorHost.parentElement?.closest('editor-host') ?? null;
     }
   }
@@ -444,7 +452,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     this._cycle = false;
 
     const syncedDoc = this.syncedDoc;
-    if (!syncedDoc) {
+    const trash = syncedDoc?.meta?.trash;
+    if (trash || !syncedDoc) {
       this._deleted = true;
       this._loading = false;
       return;
@@ -482,7 +491,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   }
 
   private _setDocUpdatedAt() {
-    const meta = this.doc.workspace.meta.getDocMeta(this.model.props.pageId);
+    const meta = this.store.workspace.meta.getDocMeta(this.model.props.pageId);
     if (meta) {
       const date = meta.updatedDate || meta.createDate;
       this._docUpdatedAt = new Date(date);
@@ -518,8 +527,9 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
 
     this._setDocUpdatedAt();
     this.disposables.add(
-      this.doc.workspace.slots.docListUpdated.subscribe(() => {
+      this.store.workspace.slots.docListUpdated.subscribe(() => {
         this._setDocUpdatedAt();
+        this.refreshData();
       })
     );
 
@@ -551,8 +561,6 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
         this._selectBlock();
       }
     });
-
-    this._initEdgelessFitEffect();
   }
 
   override renderBlock() {
@@ -580,12 +588,21 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
       );
     }
 
+    !this._hasRenderedSyncedView && (this._hasRenderedSyncedView = true);
+
     return this._renderSyncedView();
   }
 
   override updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
     this.syncedDocCard?.requestUpdate();
+
+    if (!this._hasInitedFitEffect && this._hasRenderedSyncedView) {
+      /* Register the resizeObserver AFTER syncdView viewport's own resizeObserver
+       * so that viewport.onResize() use up-to-date boundingClientRect values */
+      this._hasInitedFitEffect = true;
+      this._initEdgelessFitEffect();
+    }
   }
 
   @state()

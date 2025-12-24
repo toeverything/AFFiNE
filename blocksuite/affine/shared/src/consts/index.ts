@@ -7,6 +7,7 @@ import {
   EmbedLoomModel,
   EmbedSyncedDocModel,
   EmbedYoutubeModel,
+  SYNCED_DEFAULT_WIDTH,
 } from '@blocksuite/affine-model';
 
 export const BLOCK_CHILDREN_CONTAINER_PADDING_LEFT = 24;
@@ -29,7 +30,7 @@ export const EMBED_CARD_WIDTH: Record<EmbedCardStyle, number> = {
   video: 752,
   figma: 752,
   html: 752,
-  syncedDoc: 800,
+  syncedDoc: SYNCED_DEFAULT_WIDTH,
   pdf: 537 + 24 + 2,
   citation: 752,
 };

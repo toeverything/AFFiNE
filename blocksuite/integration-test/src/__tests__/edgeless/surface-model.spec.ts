@@ -82,7 +82,7 @@ describe('group', () => {
     });
     const group = model.getElementById(groupId) as GroupElementModel;
 
-    model.doc.transact(() => {
+    model.store.transact(() => {
       group.children.delete(id);
       group.children.delete(id2);
     });

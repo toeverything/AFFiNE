@@ -8,9 +8,12 @@ import * as Y from 'yjs';
 import type { ExtensionType } from '../../extension/extension.js';
 import {
   BlockSchemaIdentifier,
+  type Doc,
+  HistoryExtension,
   StoreExtensionIdentifier,
   StoreSelectionExtension,
 } from '../../extension/index.js';
+import { DocIdentifier } from '../../extension/workspace/doc.js';
 import { Schema } from '../../schema/index.js';
 import type { TransformerMiddleware } from '../../transformer/middleware.js';
 import { Transformer } from '../../transformer/transformer.js';
@@ -19,9 +22,10 @@ import {
   type BlockModel,
   type BlockOptions,
   type BlockProps,
+  type BlockSysProps,
+  type PropsOfModel,
   type YBlock,
 } from '../block/index.js';
-import type { Doc } from '../doc.js';
 import { DocCRUD } from './crud.js';
 import { StoreIdentifier } from './identifier.js';
 import { type Query, runQuery } from './query.js';
@@ -162,10 +166,6 @@ export type StoreSlots = {
    *
    */
   blockUpdated: Subject<StoreBlockUpdatedPayloads>;
-  /**
-   * This fires when the history is updated.
-   */
-  historyUpdated: Subject<void>;
   /** @internal */
   yBlockUpdated: Subject<
     | {
@@ -181,7 +181,7 @@ export type StoreSlots = {
   >;
 };
 
-const internalExtensions = [StoreSelectionExtension];
+const internalExtensions = [StoreSelectionExtension, HistoryExtension];
 
 /**
  * Core store class that manages blocks and their lifecycle in BlockSuite
@@ -229,10 +229,6 @@ export class Store {
   });
 
   private readonly _schema: Schema;
-
-  private readonly _canRedo = signal(false);
-
-  private readonly _canUndo = signal(false);
 
   /**
    * Get the id of the store.
@@ -309,7 +305,7 @@ export class Store {
     if (this.readonly) {
       return false;
     }
-    return this._canRedo.peek();
+    return this._history.canRedo;
   }
 
   /**
@@ -321,7 +317,7 @@ export class Store {
     if (this.readonly) {
       return false;
     }
-    return this._canUndo.peek();
+    return this._history.canUndo;
   }
 
   /**
@@ -329,35 +325,35 @@ export class Store {
    *
    * @category History
    */
-  undo() {
+  undo = () => {
     if (this.readonly) {
       console.error('cannot undo in readonly mode');
       return;
     }
-    this._history.undo();
-  }
+    this._history.undoManager.undo();
+  };
 
   /**
    * Redo the last undone transaction.
    *
    * @category History
    */
-  redo() {
+  redo = () => {
     if (this.readonly) {
       console.error('cannot undo in readonly mode');
       return;
     }
-    this._history.redo();
-  }
+    this._history.undoManager.redo();
+  };
 
   /**
    * Reset the history of the store.
    *
    * @category History
    */
-  resetHistory() {
-    return this._history.clear();
-  }
+  resetHistory = () => {
+    return this._history.undoManager.clear();
+  };
 
   /**
    * Execute a transaction.
@@ -373,7 +369,7 @@ export class Store {
    * @category History
    */
   transact(fn: () => void, shouldTransact: boolean = this._shouldTransact) {
-    const spaceDoc = this.doc.spaceDoc;
+    const spaceDoc = this._doc.spaceDoc;
     spaceDoc.transact(
       () => {
         try {
@@ -385,7 +381,7 @@ export class Store {
           console.error(e);
         }
       },
-      shouldTransact ? this.rootDoc.clientID : null
+      shouldTransact ? this.spaceDoc.clientID : null
     );
   }
 
@@ -424,9 +420,9 @@ export class Store {
    *
    * @category History
    */
-  captureSync() {
-    this._history.stopCapturing();
-  }
+  captureSync = () => {
+    this._history.undoManager.stopCapturing();
+  };
 
   /**
    * Get the {@link Workspace} instance for current store.
@@ -554,21 +550,21 @@ export class Store {
 
   private _isDisposed = false;
 
-  private readonly _history!: Y.UndoManager;
+  private get _history() {
+    return this._provider.get(HistoryExtension);
+  }
 
   /**
    * @internal
    * In most cases, you don't need to use the constructor directly.
    * The store is created by the {@link Doc} instance.
    */
-  constructor({ doc, readonly, query, provider, extensions }: StoreOptions) {
-    this._doc = doc;
+  constructor({ readonly, query, provider, extensions }: StoreOptions) {
     this.slots = {
       ready: new Subject(),
       rootAdded: new Subject(),
       rootDeleted: new Subject(),
       blockUpdated: new Subject(),
-      historyUpdated: new Subject(),
       yBlockUpdated: new Subject(),
     };
     this._schema = new Schema();
@@ -590,6 +586,7 @@ export class Store {
     this._provider.getAll(BlockSchemaIdentifier).forEach(schema => {
       this._schema.register([schema]);
     });
+    this._doc = this._provider.get(DocIdentifier);
     this._crud = new DocCRUD(this._yBlocks, this._schema);
     if (readonly !== undefined) {
       this._readonly.value = readonly;
@@ -608,34 +605,8 @@ export class Store {
       this._onBlockAdded(id, false, true);
     });
 
-    this._history = new Y.UndoManager([this._yBlocks], {
-      trackedOrigins: new Set([this.doc.spaceDoc.clientID]),
-    });
-
-    this._updateCanUndoRedoSignals();
-    this._history.on('stack-cleared', this._historyObserver);
-    this._history.on('stack-item-added', this._historyObserver);
-    this._history.on('stack-item-popped', this._historyObserver);
-    this._history.on('stack-item-updated', this._historyObserver);
-
     this._subscribeToSlots();
   }
-
-  private readonly _updateCanUndoRedoSignals = () => {
-    const canRedo = this._history.canRedo();
-    const canUndo = this._history.canUndo();
-    if (this._canRedo.peek() !== canRedo) {
-      this._canRedo.value = canRedo;
-    }
-    if (this._canUndo.peek() !== canUndo) {
-      this._canUndo.value = canUndo;
-    }
-  };
-
-  private readonly _historyObserver = () => {
-    this._updateCanUndoRedoSignals();
-    this.slots.historyUpdated.next();
-  };
 
   private readonly _subscribeToSlots = () => {
     this.disposableGroup.add(
@@ -769,9 +740,9 @@ export class Store {
    *
    * @category Block CRUD
    */
-  addBlock(
+  addBlock<T extends BlockModel = BlockModel>(
     flavour: string,
-    blockProps: Partial<BlockProps & Omit<BlockProps, 'flavour'>> = {},
+    blockProps: Partial<(PropsOfModel<T> & BlockSysProps) | BlockProps> = {},
     parent?: BlockModel | string | null,
     parentIndex?: number
   ): string {
@@ -883,9 +854,12 @@ export class Store {
    *
    * @category Block CRUD
    */
-  updateBlock(
-    modelOrId: BlockModel | string,
-    callBackOrProps: (() => void) | Partial<BlockProps>
+
+  updateBlock<T extends BlockModel = BlockModel>(
+    modelOrId: T | string,
+    callBackOrProps:
+      | (() => void)
+      | Partial<(PropsOfModel<T> & BlockSysProps) | BlockProps>
   ) {
     if (this.readonly) {
       console.error('cannot modify data in readonly mode');
@@ -1269,14 +1243,13 @@ export class Store {
     this._provider.getAll(StoreExtensionIdentifier).forEach(ext => {
       ext.disposed();
     });
-    if (this.doc.ready) {
+    if (this._doc.ready) {
       this._yBlocks.unobserveDeep(this._handleYEvents);
     }
     this.slots.ready.complete();
     this.slots.rootAdded.complete();
     this.slots.rootDeleted.complete();
     this.slots.blockUpdated.complete();
-    this.slots.historyUpdated.complete();
     this.slots.yBlockUpdated.complete();
     this.disposableGroup.dispose();
     this._isDisposed = true;

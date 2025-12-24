@@ -5,6 +5,7 @@ import {
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
   EDGELESS_TEXT_BLOCK_MIN_WIDTH,
   type EdgelessTextBlockModel,
+  EdgelessTextBlockSchema,
   ListBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
@@ -21,7 +22,8 @@ import {
   GfxBlockComponent,
   TextSelection,
 } from '@blocksuite/std';
-import type { SelectedContext } from '@blocksuite/std/gfx';
+import { GfxViewInteractionExtension } from '@blocksuite/std/gfx';
+import { computed } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
@@ -44,7 +46,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
   `;
 
   private readonly _resizeObserver = new ResizeObserver(() => {
-    if (this.doc.readonly) {
+    if (this.store.readonly) {
       return;
     }
 
@@ -60,7 +62,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
     const rect = this._textContainer.getBoundingClientRect();
     bound.h = rect.height / this.gfx.viewport.zoom;
 
-    this.doc.updateBlock(this.model, {
+    this.store.updateBlock(this.model, {
       xywh: bound.serialize(),
     });
   }
@@ -73,10 +75,27 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
       EDGELESS_TEXT_BLOCK_MIN_WIDTH * this.gfx.viewport.zoom
     );
 
-    this.doc.updateBlock(this.model, {
+    this.store.updateBlock(this.model, {
       xywh: bound.serialize(),
     });
   }
+
+  private readonly _style$ = computed(() => {
+    const {
+      color$: { value: color },
+      fontFamily$: { value: fontFamily },
+      fontStyle$: { value: fontStyle },
+      fontWeight$: { value: fontWeight },
+      textAlign$: { value: textAlign },
+    } = this.model.props;
+    return {
+      color,
+      fontFamily,
+      fontStyle,
+      fontWeight,
+      textAlign,
+    };
+  });
 
   checkWidthOverflow(width: number) {
     let wValid = true;
@@ -169,7 +188,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
           !firstChild ||
           !matchModels(firstChild, [ListBlockModel, ParagraphBlockModel])
         ) {
-          newParagraphId = this.doc.addBlock(
+          newParagraphId = this.store.addBlock(
             'affine:paragraph',
             {},
             this.model.id,
@@ -182,7 +201,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
           !lastChild ||
           !matchModels(lastChild, [ListBlockModel, ParagraphBlockModel])
         ) {
-          newParagraphId = this.doc.addBlock(
+          newParagraphId = this.store.addBlock(
             'affine:paragraph',
             {},
             this.model.id
@@ -260,69 +279,6 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
     };
   }
 
-  override onSelected(context: SelectedContext): void | boolean {
-    const { selected, multiSelect, event: e } = context;
-    const { editing } = this.gfx.selection;
-    const alreadySelected = this.gfx.selection.has(this.model.id);
-
-    if (!multiSelect && selected && (alreadySelected || editing)) {
-      if (this.model.isLocked()) return;
-
-      if (alreadySelected && editing) {
-        return;
-      }
-
-      this.gfx.selection.set({
-        elements: [this.model.id],
-        editing: true,
-      });
-
-      this.updateComplete
-        .then(() => {
-          if (!this.isConnected) {
-            return;
-          }
-
-          if (this.model.children.length === 0) {
-            const blockId = this.doc.addBlock(
-              'affine:paragraph',
-              { type: 'text' },
-              this.model.id
-            );
-
-            if (blockId) {
-              focusTextModel(this.std, blockId);
-            }
-          } else {
-            const rect = this.querySelector(
-              '.affine-block-children-container'
-            )?.getBoundingClientRect();
-
-            if (rect) {
-              const offsetY = 8 * this.gfx.viewport.zoom;
-              const offsetX = 2 * this.gfx.viewport.zoom;
-              const x = clamp(
-                e.clientX,
-                rect.left + offsetX,
-                rect.right - offsetX
-              );
-              const y = clamp(
-                e.clientY,
-                rect.top + offsetY,
-                rect.bottom - offsetY
-              );
-              handleNativeRangeAtPoint(x, y);
-            } else {
-              handleNativeRangeAtPoint(e.clientX, e.clientY);
-            }
-          }
-        })
-        .catch(console.error);
-    } else {
-      return super.onSelected(context);
-    }
-  }
-
   override renderGfxBlock() {
     const { model } = this;
     const { rotate, hasMaxWidth } = model.props;
@@ -339,7 +295,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
       minWidth: !hasMaxWidth ? '220px' : undefined,
     };
 
-    this.contentEditable = String(editing && !this.doc.readonly$.value);
+    this.contentEditable = String(editing && !this.store.readonly$.value);
 
     return html`
       <div
@@ -361,7 +317,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
 
   override renderPageContent() {
     const { color, fontFamily, fontStyle, fontWeight, textAlign } =
-      this.model.props;
+      this._style$.value;
     const themeProvider = this.std.get(ThemeProvider);
     const textColor = themeProvider.generateColorProperty(
       color,
@@ -420,3 +376,137 @@ declare global {
     'affine-edgeless-text': EdgelessTextBlockComponent;
   }
 }
+
+export const EdgelessTextInteraction =
+  GfxViewInteractionExtension<EdgelessTextBlockComponent>(
+    EdgelessTextBlockSchema.model.flavour,
+    {
+      resizeConstraint: {
+        lockRatio: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+        allowedHandlers: [
+          'top-left',
+          'top-right',
+          'left',
+          'right',
+          'bottom-left',
+          'bottom-right',
+        ],
+        minWidth: EDGELESS_TEXT_BLOCK_MIN_WIDTH,
+      },
+      handleResize: context => {
+        const { model, view } = context;
+        const initialScale = model.props.scale;
+
+        return {
+          onResizeStart(context) {
+            context.default(context);
+            model.stash('scale');
+            model.stash('hasMaxWidth');
+          },
+          onResizeMove(context) {
+            const { originalBound, newBound, constraint, lockRatio } = context;
+
+            if (lockRatio) {
+              const originalRealWidth = originalBound.w / initialScale;
+              const newScale = newBound.w / originalRealWidth;
+
+              model.props.scale = newScale;
+              model.props.xywh = newBound.serialize();
+            } else {
+              if (!view.checkWidthOverflow(newBound.w)) {
+                return;
+              }
+
+              const newRealWidth = clamp(
+                newBound.w / initialScale,
+                constraint.minWidth,
+                constraint.maxWidth
+              );
+
+              const curBound = Bound.deserialize(model.xywh);
+
+              model.props.xywh = Bound.serialize({
+                ...newBound,
+                w: newRealWidth * initialScale,
+                h: curBound.h,
+              });
+              model.props.hasMaxWidth = true;
+            }
+          },
+          onResizeEnd(context) {
+            context.default(context);
+            model.pop('scale');
+            model.pop('hasMaxWidth');
+          },
+        };
+      },
+
+      handleSelection: context => {
+        const { gfx, std, view, model } = context;
+        return {
+          onSelect(context) {
+            const { selected, multiSelect, event: e } = context;
+            const { editing } = gfx.selection;
+            const alreadySelected = gfx.selection.has(model.id);
+
+            if (!multiSelect && selected && (alreadySelected || editing)) {
+              if (model.isLocked()) return;
+
+              if (alreadySelected && editing) {
+                return;
+              }
+
+              gfx.selection.set({
+                elements: [model.id],
+                editing: true,
+              });
+
+              view.updateComplete
+                .then(() => {
+                  if (!view.isConnected) {
+                    return;
+                  }
+
+                  if (model.children.length === 0) {
+                    const blockId = std.store.addBlock(
+                      'affine:paragraph',
+                      { type: 'text' },
+                      model.id
+                    );
+
+                    if (blockId) {
+                      focusTextModel(std, blockId);
+                    }
+                  } else {
+                    const rect = view
+                      .querySelector('.affine-block-children-container')
+                      ?.getBoundingClientRect();
+
+                    if (rect) {
+                      const offsetY = 8 * gfx.viewport.zoom;
+                      const offsetX = 2 * gfx.viewport.zoom;
+                      const x = clamp(
+                        e.clientX,
+                        rect.left + offsetX,
+                        rect.right - offsetX
+                      );
+                      const y = clamp(
+                        e.clientY,
+                        rect.top + offsetY,
+                        rect.bottom - offsetY
+                      );
+                      handleNativeRangeAtPoint(x, y);
+                    } else {
+                      handleNativeRangeAtPoint(e.clientX, e.clientY);
+                    }
+                  }
+                })
+                .catch(console.error);
+            } else {
+              return context.default(context);
+            }
+          },
+        };
+      },
+    }
+  );

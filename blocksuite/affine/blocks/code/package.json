@@ -13,6 +13,7 @@
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-gfx-turbo-renderer": "workspace:*",
+    "@blocksuite/affine-inline-comment": "workspace:*",
     "@blocksuite/affine-inline-latex": "workspace:*",
     "@blocksuite/affine-inline-link": "workspace:*",
     "@blocksuite/affine-inline-preset": "workspace:*",
@@ -21,23 +22,22 @@
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-slash-menu": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.12",
+    "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.14",
+    "@toeverything/theme": "^1.1.16",
     "@types/mdast": "^4.0.4",
     "lit": "^3.2.0",
-    "minimatch": "^10.0.1",
-    "rxjs": "^7.8.1",
-    "shiki": "^3.0.0",
-    "zod": "^3.23.8"
+    "minimatch": "^10.1.1",
+    "rxjs": "^7.8.2",
+    "shiki": "^3.19.0",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./effects": "./src/effects.ts",
     "./turbo-painter": "./src/turbo/code-painter.worker.ts",
     "./view": "./src/view.ts",
     "./store": "./src/store.ts"
@@ -48,5 +48,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.25.7"
 }

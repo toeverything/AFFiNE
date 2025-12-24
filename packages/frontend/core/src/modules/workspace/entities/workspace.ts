@@ -1,13 +1,19 @@
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { Workspace as WorkspaceInterface } from '@blocksuite/affine/store';
-import { Entity, LiveData } from '@toeverything/infra';
-import { Observable } from 'rxjs';
+import { Entity, LiveData, yjsGetPath } from '@toeverything/infra';
+import type { Observable } from 'rxjs';
+import { Doc as YDoc, transact } from 'yjs';
 
+import { DocsService } from '../../doc';
 import { WorkspaceImpl } from '../impls/workspace';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
 
 export class Workspace extends Entity {
-  constructor(public readonly scope: WorkspaceScope) {
+  constructor(
+    public readonly scope: WorkspaceScope,
+    public readonly featureFlagService: FeatureFlagService
+  ) {
     super();
   }
 
@@ -19,12 +25,16 @@ export class Workspace extends Entity {
 
   readonly flavour = this.meta.flavour;
 
+  readonly rootYDoc = new YDoc({ guid: this.openOptions.metadata.id });
+
   _docCollection: WorkspaceInterface | null = null;
 
   get docCollection() {
     if (!this._docCollection) {
       this._docCollection = new WorkspaceImpl({
         id: this.openOptions.metadata.id,
+        rootDoc: this.rootYDoc,
+        featureFlagService: this.featureFlagService,
         blobSource: {
           get: async key => {
             const record = await this.engine.blob.get(key);
@@ -48,19 +58,22 @@ export class Workspace extends Entity {
           },
           /* eslint-disable rxjs/finnish */
           blobState$: key => this.engine.blob.blobState$(key),
+          upload: key => this.engine.blob.upload(key),
           name: 'blob',
           readonly: false,
         },
         onLoadDoc: doc => this.engine.doc.connectDoc(doc),
         onLoadAwareness: awareness =>
           this.engine.awareness.connectAwareness(awareness),
+        onCreateDoc: docId =>
+          this.docs.createDoc({ id: docId, skipInit: true }).id,
       });
     }
     return this._docCollection;
   }
 
-  get rootYDoc() {
-    return this.docCollection.doc;
+  get docs() {
+    return this.scope.get(DocsService);
   }
 
   get canGracefulStop() {
@@ -73,28 +86,38 @@ export class Workspace extends Entity {
   }
 
   name$ = LiveData.from<string | undefined>(
-    new Observable(subscriber => {
-      subscriber.next(this.docCollection.meta.name);
-      const subscription =
-        this.docCollection.meta.commonFieldsUpdated.subscribe(() => {
-          subscriber.next(this.docCollection.meta.name);
-        });
-      return subscription.unsubscribe.bind(subscription);
-    }),
+    yjsGetPath(this.rootYDoc.getMap('meta'), 'name') as Observable<
+      string | undefined
+    >,
     undefined
   );
 
-  avatar$ = LiveData.from<string | undefined>(
-    new Observable(subscriber => {
-      subscriber.next(this.docCollection.meta.avatar);
-      const subscription =
-        this.docCollection.meta.commonFieldsUpdated.subscribe(() => {
-          subscriber.next(this.docCollection.meta.avatar);
-        });
-      return subscription.unsubscribe.bind(subscription);
-    }),
+  avatar$ = LiveData.from(
+    yjsGetPath(this.rootYDoc.getMap('meta'), 'avatar') as Observable<
+      string | undefined
+    >,
     undefined
   );
+
+  setAvatar(avatar: string) {
+    transact(
+      this.rootYDoc,
+      () => {
+        this.rootYDoc.getMap('meta').set('avatar', avatar);
+      },
+      { force: true }
+    );
+  }
+
+  setName(name: string) {
+    transact(
+      this.rootYDoc,
+      () => {
+        this.rootYDoc.getMap('meta').set('name', name);
+      },
+      { force: true }
+    );
+  }
 
   override dispose(): void {
     this.docCollection.dispose();

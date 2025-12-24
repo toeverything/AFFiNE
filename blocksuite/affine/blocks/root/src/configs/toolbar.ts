@@ -8,7 +8,11 @@ import {
   notifyDocCreated,
   promptDocTitle,
 } from '@blocksuite/affine-block-embed';
-import { updateBlockType } from '@blocksuite/affine-block-note';
+import {
+  updateBlockAlign,
+  updateBlockType,
+} from '@blocksuite/affine-block-note';
+import type { HighlightType } from '@blocksuite/affine-components/highlight-dropdown-menu';
 import { toast } from '@blocksuite/affine-components/toast';
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
 import {
@@ -19,7 +23,15 @@ import {
   isFormatSupported,
   textFormatConfigs,
 } from '@blocksuite/affine-inline-preset';
-import { textConversionConfigs } from '@blocksuite/affine-rich-text';
+import {
+  EmbedLinkedDocBlockSchema,
+  EmbedSyncedDocBlockSchema,
+  type TextAlign,
+} from '@blocksuite/affine-model';
+import {
+  textAlignConfigs,
+  textConversionConfigs,
+} from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
   deleteSelectedModelsCommand,
@@ -37,8 +49,11 @@ import type {
   ToolbarActionGroup,
   ToolbarModuleConfig,
 } from '@blocksuite/affine-shared/services';
-import { ActionPlacement } from '@blocksuite/affine-shared/services';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import {
+  ActionPlacement,
+  blockCommentToolbarButton,
+} from '@blocksuite/affine-shared/services';
+import { getMostCommonValue } from '@blocksuite/affine-shared/utils';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
   CopyIcon,
@@ -47,7 +62,11 @@ import {
   DuplicateIcon,
   LinkedPageIcon,
 } from '@blocksuite/icons/lit';
-import { type BlockComponent, BlockSelection } from '@blocksuite/std';
+import {
+  type BlockComponent,
+  BlockSelection,
+  BlockViewIdentifier,
+} from '@blocksuite/std';
 import { toDraftModel } from '@blocksuite/store';
 import { html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
@@ -119,6 +138,64 @@ const conversionsActionGroup = {
   },
 } as const satisfies ToolbarActionGenerator;
 
+const alignActionGroup = {
+  id: 'b.align',
+  when: ({ chain }) => isFormatSupported(chain).run()[0],
+  generate({ chain }) {
+    const [ok, { selectedModels = [] }] = chain
+      .tryAll(chain => [
+        chain.pipe(getTextSelectionCommand),
+        chain.pipe(getBlockSelectionsCommand),
+      ])
+      .pipe(getSelectedModelsCommand, { types: ['text', 'block'] })
+      .run();
+    if (!ok) return null;
+
+    const alignment =
+      textAlignConfigs.find(
+        ({ textAlign }) =>
+          textAlign ===
+          getMostCommonValue(
+            selectedModels.map(
+              ({ props }) => props as { textAlign?: TextAlign }
+            ),
+            'textAlign'
+          )
+      ) ?? textAlignConfigs[0];
+    const update = (textAlign: TextAlign) => {
+      chain.pipe(updateBlockAlign, { textAlign }).run();
+    };
+
+    return {
+      content: html`
+        <editor-menu-button
+          .contentPadding="${'8px'}"
+          .button=${html`
+            <editor-icon-button aria-label="Align" .tooltip="${'Align'}">
+              ${alignment.icon} ${EditorChevronDown}
+            </editor-icon-button>
+          `}
+        >
+          <div data-size="large" data-orientation="vertical">
+            ${repeat(
+              textAlignConfigs,
+              item => item.name,
+              ({ textAlign, name, icon }) => html`
+                <editor-menu-action
+                  aria-label=${name}
+                  @click=${() => update(textAlign)}
+                >
+                  ${icon}<span class="label">${name}</span>
+                </editor-menu-action>
+              `
+            )}
+          </div>
+        </editor-menu-button>
+      `,
+    };
+  },
+} as const satisfies ToolbarActionGenerator;
+
 const inlineTextActionGroup = {
   id: 'b.inline-text',
   when: ({ chain }) => isFormatSupported(chain).run()[0],
@@ -140,7 +217,7 @@ const highlightActionGroup = {
   id: 'c.highlight',
   when: ({ chain }) => isFormatSupported(chain).run()[0],
   content({ chain }) {
-    const updateHighlight = (styles: AffineTextAttributes) => {
+    const updateHighlight = (styles: HighlightType) => {
       const payload = { styles };
       chain
         .try(chain => [
@@ -161,7 +238,7 @@ const highlightActionGroup = {
 } as const satisfies ToolbarAction;
 
 const turnIntoDatabase = {
-  id: 'd.convert-to-database',
+  id: 'e.convert-to-database',
   tooltip: 'Create Table',
   icon: DatabaseTableViewIcon(),
   when({ chain }) {
@@ -208,10 +285,21 @@ const turnIntoDatabase = {
 } as const satisfies ToolbarAction;
 
 const turnIntoLinkedDoc = {
-  id: 'e.convert-to-linked-doc',
+  id: 'f.convert-to-linked-doc',
   tooltip: 'Create Linked Doc',
   icon: LinkedPageIcon(),
-  when({ chain }) {
+  when({ chain, std }) {
+    const supportFlavours = [
+      EmbedLinkedDocBlockSchema,
+      EmbedSyncedDocBlockSchema,
+    ].map(schema => schema.model.flavour);
+    if (
+      supportFlavours.some(
+        flavour => !std.getOptional(BlockViewIdentifier(flavour))
+      )
+    )
+      return false;
+
     const [ok, { selectedModels }] = chain
       .pipe(getSelectedModelsCommand, {
         types: ['block', 'text'],
@@ -269,10 +357,15 @@ const turnIntoLinkedDoc = {
 export const builtinToolbarConfig = {
   actions: [
     conversionsActionGroup,
+    alignActionGroup,
     inlineTextActionGroup,
     highlightActionGroup,
     turnIntoDatabase,
     turnIntoLinkedDoc,
+    {
+      id: 'g.comment',
+      ...blockCommentToolbarButton,
+    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

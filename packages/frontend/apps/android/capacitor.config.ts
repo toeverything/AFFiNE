@@ -25,6 +25,7 @@ const config: CapacitorConfig & AppConfig = {
       keystoreAliasPassword: process.env.AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD,
       releaseType: 'AAB',
     },
+    adjustMarginsForEdgeToEdge: 'force',
   },
   server: {
     cleartext: true,

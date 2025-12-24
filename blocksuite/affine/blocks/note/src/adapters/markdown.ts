@@ -6,7 +6,6 @@ import {
   isFootnoteDefinitionNode,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import type { Root } from 'mdast';
 
 const isRootNode = (node: MarkdownAST): node is Root => node.type === 'root';
@@ -66,34 +65,19 @@ const createNoteBlockMarkdownAdapterMatcher = (
         }
       });
 
-      const { provider } = context;
-      let enableCitation = false;
-      try {
-        const featureFlagService = provider?.get(FeatureFlagService);
-        enableCitation = !!featureFlagService?.getFlag('enable_citation');
-      } catch {
-        enableCitation = false;
-      }
-      if (enableCitation) {
-        // if there are footnoteDefinition nodes, add a heading node to the noteAst before the first footnoteDefinition node
-        const footnoteDefinitionIndex = noteAst.children.findIndex(child =>
-          isFootnoteDefinitionNode(child)
-        );
-        if (footnoteDefinitionIndex !== -1) {
-          noteAst.children.splice(footnoteDefinitionIndex, 0, {
-            type: 'heading',
-            depth: 6,
-            data: {
-              collapsed: true,
-            },
-            children: [{ type: 'text', value: 'Sources' }],
-          });
-        }
-      } else {
-        // Remove the footnoteDefinition node from the noteAst
-        noteAst.children = noteAst.children.filter(
-          child => !isFootnoteDefinitionNode(child)
-        );
+      // if there are footnoteDefinition nodes, add a heading node to the noteAst before the first footnoteDefinition node
+      const footnoteDefinitionIndex = noteAst.children.findIndex(child =>
+        isFootnoteDefinitionNode(child)
+      );
+      if (footnoteDefinitionIndex !== -1) {
+        noteAst.children.splice(footnoteDefinitionIndex, 0, {
+          type: 'heading',
+          depth: 6,
+          data: {
+            collapsed: true,
+          },
+          children: [{ type: 'text', value: 'Sources' }],
+        });
       }
     },
   },

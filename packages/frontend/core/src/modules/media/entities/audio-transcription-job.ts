@@ -244,6 +244,7 @@ export class AudioTranscriptionJob extends Entity<{
       const result: TranscriptionResult = {
         summary: claimedJob.summary ?? '',
         title: claimedJob.title ?? '',
+        actions: claimedJob.actions ?? '',
         segments:
           claimedJob.transcription?.map(segment => ({
             speaker: segment.speaker,

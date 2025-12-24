@@ -27,13 +27,14 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import type { AIItemGroupConfig } from '../../components/ai-item/types.js';
+import { AIProvider } from '../../provider/index.js';
+import { extractSelectedContent } from '../../utils/extract.js';
 import {
   AFFINE_AI_PANEL_WIDGET,
   AffineAIPanelWidget,
 } from '../ai-panel/ai-panel.js';
 import { EdgelessCopilotPanel } from '../edgeless-copilot-panel/index.js';
-
-export const AFFINE_EDGELESS_COPILOT_WIDGET = 'affine-edgeless-copilot-widget';
+import { AFFINE_EDGELESS_COPILOT_WIDGET } from './constant.js';
 
 export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
   static override styles = css`
@@ -52,6 +53,8 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
   private _listenClickOutsideId: number | null = null;
 
   private _selectionModelRect!: DOMRect;
+
+  private _autoUpdateCleanup: (() => void) | null = null;
 
   groups: AIItemGroupConfig[] = [];
 
@@ -85,7 +88,7 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
       if (!referenceElement || !referenceElement.isConnected) return;
 
       // show ai input
-      const rootBlockId = this.host.doc.root?.id;
+      const rootBlockId = this.host.store.root?.id;
       if (!rootBlockId) return;
 
       const input = this.host.view.getWidget(
@@ -95,6 +98,31 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
 
       if (input instanceof AffineAIPanelWidget) {
         input.setState('input', referenceElement);
+        const aiPanel = input;
+        // TODO: @xiaojun refactor these scattered config overrides
+        if (aiPanel.config && !aiPanel.config.generateAnswer) {
+          aiPanel.config.generateAnswer = ({ finish, input }) => {
+            finish('success');
+            aiPanel.hide();
+            extractSelectedContent(this.host)
+              .then(context => {
+                AIProvider.slots.requestSendWithChat.next({
+                  input,
+                  context,
+                  host: this.host,
+                });
+              })
+              .catch(console.error);
+          };
+          aiPanel.config.inputCallback = text => {
+            const panel = this.shadowRoot?.querySelector(
+              'edgeless-copilot-panel'
+            );
+            if (panel instanceof HTMLElement) {
+              panel.style.visibility = text ? 'hidden' : 'visible';
+            }
+          };
+        }
         requestAnimationFrame(() => {
           this._createCopilotPanel();
           this._updateCopilotPanel(input);
@@ -119,7 +147,8 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
 
     const originMaxHeight = window.getComputedStyle(panel).maxHeight;
 
-    autoUpdate(referenceElement, panel, () => {
+    this._autoUpdateCleanup?.();
+    this._autoUpdateCleanup = autoUpdate(referenceElement, panel, () => {
       computePosition(referenceElement, panel, {
         placement: 'bottom-start',
         middleware: [
@@ -241,6 +270,8 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
         this._copilotPanel = null;
       })
     );
+
+    this._disposables.add(() => this._autoUpdateCleanup?.());
   }
 
   determineInsertionBounds(width = 800, height = 95) {
@@ -314,3 +345,5 @@ declare global {
     [AFFINE_EDGELESS_COPILOT_WIDGET]: EdgelessCopilotWidget;
   }
 }
+
+export * from './constant';

@@ -20,6 +20,7 @@ import {
   type ToDocSnapshotPayload,
   type Transformer,
 } from '@blocksuite/store';
+import DOMPurify from 'dompurify';
 import type { Root } from 'hast';
 import rehypeParse from 'rehype-parse';
 import rehypeStringify from 'rehype-stringify';
@@ -40,6 +41,10 @@ import {
   HtmlDeltaConverter,
   InlineDeltaToHtmlAdapterMatcherIdentifier,
 } from './delta-converter';
+import {
+  rehypeInlineToBlock,
+  rehypeWrapInlineElements,
+} from './rehype-plugins';
 
 export type Html = string;
 
@@ -195,7 +200,12 @@ export class HtmlAdapter extends BaseAdapter<Html> {
   }
 
   private _htmlToAst(html: Html) {
-    return unified().use(rehypeParse).parse(html);
+    const processor = unified()
+      .use(rehypeParse)
+      .use(rehypeInlineToBlock)
+      .use(rehypeWrapInlineElements);
+    const ast = processor.parse(html);
+    return processor.runSync(ast);
   }
 
   override async fromBlockSnapshot(
@@ -288,7 +298,8 @@ export class HtmlAdapter extends BaseAdapter<Html> {
   override async toDocSnapshot(
     payload: ToDocSnapshotPayload<string>
   ): Promise<DocSnapshot> {
-    const htmlAst = this._htmlToAst(payload.file);
+    const sanitized = DOMPurify.sanitize(payload.file);
+    const htmlAst = this._htmlToAst(sanitized);
     const titleAst = HastUtils.querySelector(htmlAst, 'title');
     const blockSnapshotRoot = {
       type: 'block',

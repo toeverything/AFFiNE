@@ -1,3 +1,4 @@
+import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureDesktopBackupModule } from '@affine/core/modules/backup';
@@ -11,7 +12,6 @@ import {
   configureTraySettingModule,
 } from '@affine/core/modules/editor-setting';
 import { configureFindInPageModule } from '@affine/core/modules/find-in-page';
-import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
 import {
   ClientSchemeProvider,
   PopupWindowProvider,

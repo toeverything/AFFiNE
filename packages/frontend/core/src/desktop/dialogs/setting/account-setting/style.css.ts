@@ -39,3 +39,17 @@ globalStyle(`${avatarWrapper} .camera-icon-wrapper`, {
   color: cssVar('white'),
   fontSize: cssVar('fontH4'),
 });
+
+export const successDeleteAccountContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  gap: '12px',
+});
+export const confirmContent = style({
+  paddingLeft: '0',
+  paddingRight: '0',
+});
+export const inputWrapper = style({
+  marginTop: '12px',
+});

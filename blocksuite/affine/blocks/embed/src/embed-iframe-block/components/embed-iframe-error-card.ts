@@ -282,7 +282,7 @@ export class EmbedIframeErrorCard extends WithDisposable(LitElement) {
   }
 
   get readonly() {
-    return this.model.doc.readonly;
+    return this.model.store.readonly;
   }
 
   get telemetryService() {

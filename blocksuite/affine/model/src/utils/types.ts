@@ -1,4 +1,5 @@
 import type { GfxModel } from '@blocksuite/std/gfx';
+import { z } from 'zod';
 
 import type {
   BrushElementModel,
@@ -20,12 +21,14 @@ export type EmbedCardStyle =
   | 'pdf'
   | 'citation';
 
-export type LinkPreviewData = {
-  description: string | null;
-  icon: string | null;
-  image: string | null;
-  title: string | null;
-};
+export const LinkPreviewDataSchema = z.object({
+  description: z.string().nullable(),
+  icon: z.string().nullable(),
+  image: z.string().nullable(),
+  title: z.string().nullable(),
+});
+
+export type LinkPreviewData = z.infer<typeof LinkPreviewDataSchema>;
 
 export type Connectable = Exclude<
   GfxModel,

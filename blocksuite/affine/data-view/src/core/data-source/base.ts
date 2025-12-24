@@ -1,5 +1,11 @@
 import type { ColumnDataType } from '@blocksuite/affine-model';
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
+import {
+  Container,
+  createScope,
+  type GeneralServiceIdentifier,
+  type ServiceProvider,
+} from '@blocksuite/global/di';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 
 import type { TypeInstance } from '../logical/type.js';
@@ -8,7 +14,6 @@ import type { DatabaseFlags } from '../types.js';
 import type { ViewConvertConfig } from '../view/convert.js';
 import type { DataViewDataType, ViewMeta } from '../view/data-view.js';
 import type { ViewManager } from '../view-manager/view-manager.js';
-import type { DataViewContextKey } from './context.js';
 
 export interface DataSource {
   readonly$: ReadonlySignal<boolean>;
@@ -56,7 +61,10 @@ export interface DataSource {
   propertyMetaGet(type: string): PropertyMetaConfig | undefined;
   propertyAdd(
     insertToPosition: InsertToPosition,
-    type?: string
+    ops?: {
+      type?: string;
+      name?: string;
+    }
   ): string | undefined;
 
   propertyDuplicate(propertyId: string): string | undefined;
@@ -65,7 +73,9 @@ export interface DataSource {
   propertyDelete(id: string): void;
   propertyCanDelete(propertyId: string): boolean;
 
-  contextGet<T>(key: DataViewContextKey<T>): T;
+  provider: ServiceProvider;
+  serviceGet<T>(key: GeneralServiceIdentifier<T>): T | null;
+  serviceGetOrCreate<T>(key: GeneralServiceIdentifier<T>, create: () => T): T;
 
   viewConverts: ViewConvertConfig[];
   viewManager: ViewManager;
@@ -91,6 +101,8 @@ export interface DataSource {
   viewMetaGetById$(viewId: string): ReadonlySignal<ViewMeta | undefined>;
 }
 
+export const DataSourceScope = createScope('data-source');
+
 export abstract class DataSourceBase implements DataSource {
   propertyTypeCanSet(propertyId: string): boolean {
     return !this.isFixedProperty(propertyId);
@@ -101,7 +113,9 @@ export abstract class DataSourceBase implements DataSource {
   propertyCanDelete(propertyId: string): boolean {
     return !this.isFixedProperty(propertyId);
   }
-  context = new Map<symbol, unknown>();
+  protected container = new Container();
+
+  abstract get parentProvider(): ServiceProvider;
 
   abstract featureFlags$: ReadonlySignal<DatabaseFlags>;
 
@@ -144,17 +158,34 @@ export abstract class DataSourceBase implements DataSource {
     return computed(() => this.cellValueGet(rowId, propertyId));
   }
 
-  contextGet<T>(key: DataViewContextKey<T>): T {
-    return (this.context.get(key.key) as T) ?? key.defaultValue;
+  get provider() {
+    return this.container.provider(DataSourceScope, this.parentProvider);
   }
 
-  contextSet<T>(key: DataViewContextKey<T>, value: T): void {
-    this.context.set(key.key, value);
+  serviceGet<T>(key: GeneralServiceIdentifier<T>): T | null {
+    return this.provider.getOptional(key);
+  }
+
+  serviceSet<T>(key: GeneralServiceIdentifier<T>, value: T): void {
+    this.container.addValue(key, value, { scope: DataSourceScope });
+  }
+
+  serviceGetOrCreate<T>(key: GeneralServiceIdentifier<T>, create: () => T): T {
+    const result = this.serviceGet(key);
+    if (result != null) {
+      return result;
+    }
+    const value = create();
+    this.serviceSet(key, value);
+    return value;
   }
 
   abstract propertyAdd(
     insertToPosition: InsertToPosition,
-    type?: string
+    ops?: {
+      type?: string;
+      name?: string;
+    }
   ): string | undefined;
 
   abstract propertyDataGet(propertyId: string): Record<string, unknown>;

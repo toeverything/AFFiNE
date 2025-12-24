@@ -1,11 +1,14 @@
 import { test } from '@affine-test/kit/playwright';
+import { importFile } from '@affine-test/kit/utils/attachment';
 import { pasteContent } from '@affine-test/kit/utils/clipboard';
 import {
   clickEdgelessModeButton,
   clickPageModeButton,
+  clickView,
   getCodeBlockIds,
   getParagraphIds,
   locateEditorContainer,
+  toViewCoord,
 } from '@affine-test/kit/utils/editor';
 import {
   copyByKeyboard,
@@ -383,7 +386,7 @@ test.describe('paste to code block', () => {
     await pressEnter(page);
     await addCodeBlock(page);
     const plainTextCode = [
-      '  model: anthropic("claude-3-7-sonnet-20250219"),',
+      '  model: anthropic("claude-sonnet-4-5-20250929"),',
       '  prompt: How many people will live in the world in 2040?',
       '  providerOptions: {',
       '    anthropic: {',
@@ -448,7 +451,7 @@ test.describe('paste in readonly mode', () => {
       const pageRoot = document.querySelector(
         'affine-page-root'
       ) as PageRootBlockComponent;
-      pageRoot.doc.readonly = true;
+      pageRoot.store.readonly = true;
     });
 
     await setSelection(page, blockIds[0], 0, blockIds[0], 4);
@@ -469,4 +472,110 @@ test.describe('paste in readonly mode', () => {
 
     await verifyParagraphContent(page, 0, 'This is a test paragraph');
   });
+});
+
+test.describe('cross document clipboard regression', () => {
+  test('copy and paste paragraph content between docs', async ({ page }) => {
+    const container = locateEditorContainer(page);
+    await container.click();
+
+    const sourceText = "Cross-doc paste can't fail again";
+    await type(page, sourceText);
+
+    const { blockIds } = await getParagraphIds(page);
+    await setSelection(page, blockIds[0], 0, blockIds[0], sourceText.length);
+
+    await copyByKeyboard(page);
+
+    await clickNewPageButton(page, 'Clipboard Destination');
+    await waitForEditorLoad(page);
+
+    const destination = locateEditorContainer(page);
+    await destination.click();
+
+    await pasteByKeyboard(page);
+    await page.waitForTimeout(100);
+
+    const pastedTexts = await page.locator(paragraphLocator).allTextContents();
+    expect(pastedTexts.some(text => text.includes(sourceText))).toBe(true);
+  });
+
+  test('copied content remains available to external clipboard consumers', async ({
+    page,
+  }) => {
+    const container = locateEditorContainer(page);
+    await container.click();
+
+    const textForExternal = 'External clipboard visibility check';
+    await type(page, textForExternal);
+
+    const { blockIds } = await getParagraphIds(page);
+    await setSelection(
+      page,
+      blockIds[0],
+      0,
+      blockIds[0],
+      textForExternal.length
+    );
+
+    await copyByKeyboard(page);
+
+    const plainText = await page.evaluate(() => navigator.clipboard.readText());
+
+    expect(plainText).toBe(textForExternal);
+  });
+
+  test('copy and paste within a single document still duplicates content', async ({
+    page,
+  }) => {
+    const container = locateEditorContainer(page);
+    await container.click();
+
+    const intraDocText = 'Same doc paste regression guard';
+    await type(page, intraDocText);
+
+    const { blockIds } = await getParagraphIds(page);
+    await setSelection(page, blockIds[0], 0, blockIds[0], intraDocText.length);
+
+    await copyByKeyboard(page);
+
+    await pressEnter(page);
+    await pasteByKeyboard(page);
+    await page.waitForTimeout(100);
+
+    await verifyParagraphContent(page, 1, intraDocText);
+  });
+});
+
+test('should copy single image from edgeless and paste to page', async ({
+  page,
+}) => {
+  await clickEdgelessModeButton(page);
+
+  const button = page.locator('edgeless-mindmap-tool-button');
+  await button.click();
+
+  const menu = page.locator('edgeless-mindmap-menu');
+  const mediaItem = menu.locator('.media-item');
+  await mediaItem.click();
+
+  await importFile(page, 'large-image.png', async () => {
+    await toViewCoord(page, [100, 250]);
+    await clickView(page, [100, 250]);
+  });
+
+  const image = page.locator('affine-edgeless-image').first();
+  await image.click();
+
+  await copyByKeyboard(page);
+
+  await clickPageModeButton(page);
+  await waitForEditorLoad(page);
+
+  const container = locateEditorContainer(page);
+  await container.click();
+
+  await pasteByKeyboard(page);
+
+  await expect(page.locator('affine-page-image')).toBeVisible();
 });

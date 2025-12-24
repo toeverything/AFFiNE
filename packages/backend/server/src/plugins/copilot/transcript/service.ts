@@ -12,13 +12,15 @@ import {
   NoCopilotProviderAvailable,
   OnEvent,
   OnJob,
+  sniffMime,
 } from '../../../base';
 import { Models } from '../../../models';
 import { PromptService } from '../prompt';
 import {
-  CopilotCapability,
+  CopilotProvider,
   CopilotProviderFactory,
-  CopilotTextProvider,
+  CopilotProviderType,
+  ModelOutputType,
   PromptMessage,
 } from '../providers';
 import { CopilotStorage } from '../storage';
@@ -48,7 +50,17 @@ export class CopilotTranscriptionService {
     private readonly providerFactory: CopilotProviderFactory
   ) {}
 
-  async submitTranscriptionJob(
+  private async getModel(userId: string) {
+    const prompt = await this.prompt.get('Transcript audio');
+    const hasAccess = await this.models.userFeature.has(
+      userId,
+      'unlimited_copilot'
+    );
+    // choose the pro model if user has copilot plan
+    return prompt?.optionalModels[hasAccess ? 1 : 0];
+  }
+
+  async submitJob(
     userId: string,
     workspaceId: string,
     blobId: string,
@@ -74,15 +86,32 @@ export class CopilotTranscriptionService {
         `${blobId}-${idx}`,
         buffer
       );
-      infos.push({ url, mimeType: blob.mimetype });
+      infos.push({
+        url,
+        mimeType: sniffMime(buffer, blob.mimetype) || blob.mimetype,
+      });
     }
 
-    return await this.executeTranscriptionJob(jobId, infos);
+    const model = await this.getModel(userId);
+    return await this.executeJob(jobId, infos, model);
   }
 
-  async executeTranscriptionJob(
+  async retryJob(userId: string, workspaceId: string, jobId: string) {
+    const job = await this.queryJob(userId, workspaceId, jobId);
+    if (!job || !job.infos) {
+      throw new CopilotTranscriptionJobNotFound();
+    }
+
+    const model = await this.getModel(userId);
+    const jobResult = await this.executeJob(job.id, job.infos, model);
+
+    return jobResult;
+  }
+
+  async executeJob(
     jobId: string,
-    infos: AudioBlobInfos
+    infos: AudioBlobInfos,
+    modelId?: string
   ): Promise<TranscriptionJob> {
     const status = AiJobStatus.running;
     const success = await this.models.copilotJob.update(jobId, {
@@ -97,12 +126,13 @@ export class CopilotTranscriptionService {
     await this.job.add('copilot.transcript.submit', {
       jobId,
       infos,
+      modelId,
     });
 
     return { id: jobId, status };
   }
 
-  async claimTranscriptionJob(
+  async claimJob(
     userId: string,
     jobId: string
   ): Promise<TranscriptionJob | null> {
@@ -117,7 +147,7 @@ export class CopilotTranscriptionService {
     return null;
   }
 
-  async queryTranscriptionJob(
+  async queryJob(
     userId: string,
     workspaceId: string,
     jobId?: string,
@@ -141,11 +171,11 @@ export class CopilotTranscriptionService {
     if (payload.success) {
       let { url, mimeType, infos } = payload.data;
       infos = infos || [];
-      if (url && mimeType) {
+      if (url && mimeType && !infos.find(i => i.url === url)) {
         infos.push({ url, mimeType });
       }
 
-      ret.infos = this.mergeInfos(infos, url, mimeType);
+      ret.infos = infos;
       if (job.status === AiJobStatus.claimed) {
         ret.transcription = payload.data;
       }
@@ -154,14 +184,23 @@ export class CopilotTranscriptionService {
     return ret;
   }
 
-  private async getProvider(model: string): Promise<CopilotTextProvider> {
-    let provider = await this.providerFactory.getProviderByCapability(
-      CopilotCapability.TextToText,
-      { model }
+  private async getProvider(
+    modelId: string,
+    structured: boolean,
+    prefer?: CopilotProviderType
+  ): Promise<CopilotProvider> {
+    let provider = await this.providerFactory.getProvider(
+      {
+        outputType: structured
+          ? ModelOutputType.Structured
+          : ModelOutputType.Text,
+        modelId,
+      },
+      { prefer }
     );
 
     if (!provider) {
-      throw new NoCopilotProviderAvailable();
+      throw new NoCopilotProviderAvailable({ modelId });
     }
 
     return provider;
@@ -170,35 +209,34 @@ export class CopilotTranscriptionService {
   private async chatWithPrompt(
     promptName: string,
     message: Partial<PromptMessage>,
-    schema?: ZodType<any>
+    schema?: ZodType<any>,
+    prefer?: CopilotProviderType,
+    modelId?: string
   ): Promise<string> {
     const prompt = await this.prompt.get(promptName);
     if (!prompt) {
       throw new CopilotPromptNotFound({ name: promptName });
     }
 
-    const provider = await this.getProvider(prompt.model);
-    return provider.generateText(
-      [...prompt.finish({ schema }), { role: 'user', content: '', ...message }],
-      prompt.model,
-      Object.assign({}, prompt.config)
-    );
-  }
-
-  // TODO(@darkskygit): remove after old server down
-  private mergeInfos(
-    infos?: AudioBlobInfos | null,
-    url?: string | null,
-    mimeType?: string | null
-  ) {
-    if (url && mimeType) {
-      if (infos) {
-        infos.push({ url, mimeType });
-      } else {
-        infos = [{ url, mimeType }];
-      }
+    const cond = {
+      modelId:
+        modelId && prompt.optionalModels.includes(modelId)
+          ? modelId
+          : prompt.model,
+    };
+    const msg = { role: 'user' as const, content: '', ...message };
+    const config = Object.assign({}, prompt.config);
+    if (schema) {
+      const provider = await this.getProvider(prompt.model, true, prefer);
+      return provider.structure(
+        cond,
+        [...prompt.finish({ schema }), msg],
+        config
+      );
+    } else {
+      const provider = await this.getProvider(prompt.model, false);
+      return provider.text(cond, [...prompt.finish({}), msg], config);
     }
-    return infos || [];
   }
 
   private convertTime(time: number, offset = 0) {
@@ -212,14 +250,19 @@ export class CopilotTranscriptionService {
     return `${hoursStr}:${minutesStr}:${secondsStr}`;
   }
 
-  private async callTranscript(url: string, mimeType: string, offset: number) {
+  private async callTranscript(
+    url: string,
+    mimeType: string,
+    offset: number,
+    modelId?: string
+  ) {
+    // NOTE: Vertex provider not support transcription yet, we always use Gemini here
     const result = await this.chatWithPrompt(
       'Transcript audio',
-      {
-        attachments: [url],
-        params: { mimetype: mimeType },
-      },
-      TranscriptionResponseSchema
+      { attachments: [url], params: { mimetype: mimeType } },
+      TranscriptionResponseSchema,
+      CopilotProviderType.Gemini,
+      modelId
     );
 
     const transcription = TranscriptionResponseSchema.parse(
@@ -238,15 +281,12 @@ export class CopilotTranscriptionService {
   async transcriptAudio({
     jobId,
     infos,
-    // @deprecated
-    url,
-    mimeType,
+    modelId,
   }: Jobs['copilot.transcript.submit']) {
     try {
-      const blobInfos = this.mergeInfos(infos, url, mimeType);
       const transcriptions = await Promise.all(
-        Array.from(blobInfos.entries()).map(([idx, { url, mimeType }]) =>
-          this.callTranscript(url, mimeType, idx * 10 * 60)
+        Array.from(infos.entries()).map(([idx, { url, mimeType }]) =>
+          this.callTranscript(url, mimeType, idx * 10 * 60, modelId)
         )
       );
 

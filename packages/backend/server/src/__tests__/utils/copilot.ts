@@ -20,8 +20,9 @@ export const cleanObject = (
 export async function createCopilotSession(
   app: TestingApp,
   workspaceId: string,
-  docId: string,
-  promptName: string
+  docId: string | null,
+  promptName: string,
+  pinned: boolean = false
 ): Promise<string> {
   const res = await app.gql(
     `
@@ -29,10 +30,71 @@ export async function createCopilotSession(
       createCopilotSession(options: $options)
     }
   `,
-    { options: { workspaceId, docId, promptName } }
+    { options: { workspaceId, docId, promptName, pinned } }
   );
 
   return res.createCopilotSession;
+}
+
+export async function createWorkspaceCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, null, promptName);
+}
+
+export async function createPinnedCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  docId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, docId, promptName, true);
+}
+
+export async function createDocCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  docId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, docId, promptName);
+}
+
+export async function getCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  sessionId: string
+): Promise<{
+  id: string;
+  docId: string | null;
+  parentSessionId: string | null;
+  pinned: boolean;
+  promptName: string;
+}> {
+  const res = await app.gql(
+    `
+      query getCopilotSession(
+        $workspaceId: String!
+        $sessionId: String!
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            session(sessionId: $sessionId) {
+              id
+              docId
+              parentSessionId
+              pinned
+              promptName
+            }
+          }
+        }
+      }`,
+    { workspaceId, sessionId }
+  );
+
+  return res.currentUser?.copilot?.session;
 }
 
 export async function updateCopilotSession(
@@ -57,7 +119,7 @@ export async function forkCopilotSession(
   workspaceId: string,
   docId: string,
   sessionId: string,
-  latestMessageId: string
+  latestMessageId?: string
 ): Promise<string> {
   const res = await app.gql(
     `
@@ -307,7 +369,6 @@ export async function listContextDocAndFiles(
                 docs {
                   id
                   status
-                  error
                   createdAt
                 }
                 files {
@@ -371,7 +432,7 @@ export async function submitAudioTranscription(
   for (const [idx, buffer] of content.entries()) {
     resp = resp.attach(idx.toString(), buffer, {
       filename: fileName,
-      contentType: 'application/octet-stream',
+      contentType: 'audio/opus',
     });
   }
 
@@ -492,52 +553,73 @@ export async function createCopilotMessage(
   sessionId: string,
   content?: string,
   attachments?: string[],
+  blob?: File,
   blobs?: File[],
   params?: Record<string, string>
 ): Promise<string> {
-  let resp = app
-    .POST('/graphql')
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .field(
-      'operations',
-      JSON.stringify({
-        query: `
+  const gql = {
+    query: `
           mutation createCopilotMessage($options: CreateChatMessageInput!) {
             createCopilotMessage(options: $options)
           }
         `,
-        variables: {
-          options: { sessionId, content, attachments, blobs: [], params },
-        },
-      })
-    )
-    .field(
-      'map',
-      JSON.stringify(
-        Array.from<any>({ length: blobs?.length ?? 0 }).reduce(
-          (acc, _, idx) => {
-            acc[idx.toString()] = [`variables.options.blobs.${idx}`];
-            return acc;
-          },
-          {}
-        )
-      )
-    );
-  if (blobs && blobs.length) {
-    for (const [idx, file] of blobs.entries()) {
-      resp = resp.attach(
-        idx.toString(),
-        Buffer.from(await file.arrayBuffer()),
-        {
-          filename: file.name || `file${idx}`,
-          contentType: file.type || 'application/octet-stream',
-        }
+    variables: {
+      options: {
+        sessionId,
+        content,
+        attachments,
+        blob: null,
+        blobs: [],
+        params,
+      },
+    },
+  };
+
+  let resp = app
+    .POST('/graphql')
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' });
+  if (blob || blobs) {
+    resp = resp.field('operations', JSON.stringify(gql));
+
+    if (blob) {
+      resp = resp.field(
+        'map',
+        JSON.stringify({ '0': ['variables.options.blob'] })
       );
+      resp = resp.attach('0', Buffer.from(await blob.arrayBuffer()), {
+        filename: blob.name || 'file',
+        contentType: blob.type || 'application/octet-stream',
+      });
+    } else if (blobs && blobs.length) {
+      resp = resp.field(
+        'map',
+        JSON.stringify(
+          Array.from<any>({ length: blobs?.length ?? 0 }).reduce(
+            (acc, _, idx) => {
+              acc[idx.toString()] = [`variables.options.blobs.${idx}`];
+              return acc;
+            },
+            {}
+          )
+        )
+      );
+      for (const [idx, file] of blobs.entries()) {
+        resp = resp.attach(
+          idx.toString(),
+          Buffer.from(await file.arrayBuffer()),
+          {
+            filename: file.name || `file${idx}`,
+            contentType: file.type || 'application/octet-stream',
+          }
+        );
+      }
     }
+  } else {
+    resp = resp.send(gql);
   }
 
   const res = await resp.expect(200);
-
+  console.log('createCopilotMessage', res.body);
   return res.body.data.createCopilotMessage;
 }
 
@@ -580,6 +662,14 @@ export async function chatWithImages(
   messageId?: string
 ) {
   return chatWithText(app, sessionId, messageId, '/images');
+}
+
+export async function chatWithStreamObject(
+  app: TestingApp,
+  sessionId: string,
+  messageId?: string
+) {
+  return chatWithText(app, sessionId, messageId, '/stream-object');
 }
 
 export async function unsplashSearch(
@@ -639,26 +729,30 @@ type ChatMessage = {
 
 type History = {
   sessionId: string;
+  pinned: boolean;
   tokens: number;
   action: string | null;
   createdAt: string;
   messages: ChatMessage[];
 };
 
+type HistoryOptions = {
+  action?: boolean;
+  fork?: boolean;
+  pinned?: boolean;
+  limit?: number;
+  skip?: number;
+  sessionOrder?: 'asc' | 'desc';
+  messageOrder?: 'asc' | 'desc';
+  sessionId?: string;
+};
+
 export async function getHistories(
   app: TestingApp,
   variables: {
     workspaceId: string;
-    docId?: string;
-    options?: {
-      action?: boolean;
-      fork?: boolean;
-      limit?: number;
-      skip?: number;
-      sessionOrder?: 'asc' | 'desc';
-      messageOrder?: 'asc' | 'desc';
-      sessionId?: string;
-    };
+    docId?: string | null;
+    options?: HistoryOptions;
   }
 ): Promise<History[]> {
   const res = await app.gql(
@@ -672,6 +766,7 @@ export async function getHistories(
         copilot(workspaceId: $workspaceId) {
           histories(docId: $docId, options: $options) {
             sessionId
+            pinned
             tokens
             action
             createdAt
@@ -687,6 +782,152 @@ export async function getHistories(
       }
     }
     `,
+    variables
+  );
+
+  return res.currentUser?.copilot?.histories || [];
+}
+
+export async function getWorkspaceSessions(
+  app: TestingApp,
+  variables: {
+    workspaceId: string;
+    options?: HistoryOptions;
+  }
+): Promise<History[]> {
+  const res = await app.gql(
+    `query getCopilotWorkspaceSessions(
+        $workspaceId: String!
+        $options: QueryChatHistoriesInput
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: null, options: $options) {
+              sessionId
+              pinned
+              tokens
+              action
+              createdAt
+              messages {
+                id
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+                attachments
+                createdAt
+              }
+            }
+          }
+        }
+      }`,
+    variables
+  );
+
+  return res.currentUser?.copilot?.histories || [];
+}
+
+export async function getDocSessions(
+  app: TestingApp,
+  variables: {
+    workspaceId: string;
+    docId: string;
+    options?: HistoryOptions;
+  }
+): Promise<History[]> {
+  const res = await app.gql(
+    `query getCopilotDocSessions(
+        $workspaceId: String!
+        $docId: String!
+        $options: QueryChatHistoriesInput
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: $docId, options: $options) {
+              sessionId
+              pinned
+              tokens
+              action
+              createdAt
+              messages {
+                id
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+                attachments
+                createdAt
+              }
+            }
+          }
+        }
+      }`,
+    variables
+  );
+
+  return res.currentUser?.copilot?.histories || [];
+}
+
+export async function getPinnedSessions(
+  app: TestingApp,
+  variables: {
+    workspaceId: string;
+    docId?: string;
+    messageOrder?: 'asc' | 'desc';
+    withPrompt?: boolean;
+  }
+): Promise<History[]> {
+  const res = await app.gql(
+    `query getCopilotPinnedSessions(
+        $workspaceId: String!
+        $docId: String
+        $messageOrder: ChatHistoryOrder
+        $withPrompt: Boolean
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: $docId, options: {
+              limit: 1,
+              pinned: true,
+              messageOrder: $messageOrder,
+              withPrompt: $withPrompt
+            }) {
+              sessionId
+              pinned
+              tokens
+              action
+              createdAt
+              messages {
+                id
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+                attachments
+                createdAt
+              }
+            }
+          }
+        }
+      }`,
     variables
   );
 
@@ -802,4 +1043,6 @@ export const TestAssets = {
   SSOT: `In [information science](https://en.wikipedia.org/wiki/Information_science) and [information technology](https://en.wikipedia.org/wiki/Information_technology), **single source of truth** (**SSOT**) architecture, or **single point of truth** (**SPOT**) architecture, for [information systems](https://en.wikipedia.org/wiki/Information_system) is the practice of structuring [information models](https://en.wikipedia.org/wiki/Information_model) and associated [data schemas](https://en.wikipedia.org/wiki/Database_schema) such that every [data element](https://en.wikipedia.org/wiki/Data_element) is [mastered](https://en.wikipedia.org/wiki/Golden_record_(informatics)) (or edited) in only one place, providing [data normalization to a canonical form](https://en.wikipedia.org/wiki/Canonical_form#Computing) (for example, in [database normalization](https://en.wikipedia.org/wiki/Database_normalization) or content [transclusion](https://en.wikipedia.org/wiki/Transclusion)).\n\nThere are several scenarios with respect to copies and updates:\n\n* The master data is never copied and instead only references to it are made; this means that all reads and updates go directly to the SSOT.\n* The master data is copied but the copies are only read and only the master data is updated; if requests to read data are only made on copies, this is an instance of [CQRS](https://en.wikipedia.org/wiki/CQRS).\n* The master data is copied and the copies are updated; this needs a reconciliation mechanism when there are concurrent updates.\n  * Updates on copies can be thrown out whenever a concurrent update is made on the master, so they are not considered fully committed until propagated to the master. (many blockchains work that way.)\n  * Concurrent updates are merged. (if an automatic merge fails, it could fall back on another strategy, which could be the previous strategy or something else like manual intervention, which most source version control systems do.)\n\nThe advantages of SSOT architectures include easier prevention of mistaken inconsistencies (such as a duplicate value/copy somewhere being forgotten), and greatly simplified [version control](https://en.wikipedia.org/wiki/Version_control). Without a SSOT, dealing with inconsistencies implies either complex and error-prone consensus algorithms, or using a simpler architecture that's liable to lose data in the face of inconsistency (the latter may seem unacceptable but it is sometimes a very good choice; it is how most blockchains operate: a transaction is actually final only if it was included in the next block that is mined).\n\nIdeally, SSOT systems provide data that are authentic (and [authenticatable](https://en.wikipedia.org/wiki/Authentication)), relevant, and [referable](https://en.wikipedia.org/wiki/Reference_(computer_science)).[[1]](https://en.wikipedia.org/wiki/Single_source_of_truth#cite_note-1)\n\nDeployment of an SSOT architecture is becoming increasingly important in enterprise settings where incorrectly linked duplicate or de-normalized data elements (a direct consequence of intentional or unintentional [denormalization](https://en.wikipedia.org/wiki/Denormalization) of any explicit data model) pose a risk for retrieval of outdated, and therefore incorrect, information. Common examples (i.e., example classes of implementation) are as follows:\n\n* In [electronic health records](https://en.wikipedia.org/wiki/Electronic_health_record) (EHRs), it is imperative to accurately validate patient identity against a single referential repository, which serves as the SSOT. Duplicate representations of data within the enterprise would be implemented by the use of [pointers](https://en.wikipedia.org/wiki/Pointer_(computer_programming)) rather than duplicate database tables, rows, or cells. This ensures that data updates to elements in the authoritative location are comprehensively distributed to all [federated database](https://en.wikipedia.org/wiki/Federated_database) constituencies in the larger overall [enterprise architecture](https://en.wikipedia.org/wiki/Enterprise_architecture). EHRs are an excellent class for exemplifying how SSOT architecture is both poignantly necessary and challenging to achieve: it is challenging because inter-organization [health information exchange](https://en.wikipedia.org/wiki/Health_information_exchange) is inherently a [cybersecurity](https://en.wikipedia.org/wiki/Computer_security) competence hurdle, and nonetheless it is necessary, to prevent [medical errors](https://en.wikipedia.org/wiki/Medical_error), to prevent the wasted costs of inefficiency (such as duplicated work or rework), and to make the [primary care](https://en.wikipedia.org/wiki/Primary_care) and [medical home](https://en.wikipedia.org/wiki/Medical_home) concepts feasible (to achieve competent [care transitions](https://en.wikipedia.org/wiki/Transitional_care)).\n* [Single-source publishing](https://en.wikipedia.org/wiki/Single-source_publishing) as a general principle or ideal in [content management](https://en.wikipedia.org/wiki/Content_management) relies on having SSOTs, via [transclusion](https://en.wikipedia.org/wiki/Transclusion) or (otherwise, at least) substitution. Substitution happens via [libraries of objects](https://en.wikipedia.org/wiki/Library_(computing)#Object_libraries) that can be propagated as static copies which are later refreshed when necessary (that is, when refreshing of the [copy-paste](https://en.wikipedia.org/wiki/Cut,_copy,_and_paste) or [import](https://en.wikipedia.org/wiki/Import_and_export_of_data) is triggered by a larger updating event). [Component content management systems](https://en.wikipedia.org/wiki/Component_content_management_system) are a class of [content management systems](https://en.wikipedia.org/wiki/Content_management_system) that aim to provide competence on this level.`,
   Code: `fn euclidean_distance(a: &Vec<f64>, b: &Vec<f64>) -> f64 {\na.iter().zip(b.iter()).map(|(x, y)| (*x - *y).powi(2)).sum::<f64>().sqrt()\n}`,
   TODO: 'The PDF exporting feature in edgeless is flawed, which is not supposed to support rendering content with infinite logical size. We should remove this feature entry to user, but the current "export blob in surface ref" feature should be migrated and kept (which is base on the edgelessToCanvas API, which makes sense for exporting a partial viewport area for the page)',
+  AFFiNE:
+    'AFFiNE is a workspace with fully merged docs, whiteboards and databases.Get more things done, your creativity isn’t monotone.',
 };

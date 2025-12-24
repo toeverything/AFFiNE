@@ -9,6 +9,7 @@
     "**/node_modules",
     ".yarn",
     ".github/helm",
+    ".git",
     ".vscode",
     ".yarnrc.yml",
     ".docker",
@@ -38,7 +39,9 @@
     "packages/frontend/apps/ios/App/**",
     "tests/blocksuite/snapshots",
     "blocksuite/docs/api/**",
-    "packages/frontend/admin/src/config.json"
+    "packages/frontend/admin/src/config.json",
+    "**/test-docs.json",
+    "**/test-blocks.json"
   ],
   "rules": {
     "no-await-in-loop": "allow",
@@ -157,6 +160,7 @@
       }
     ],
     "unicorn/prefer-array-some": "error",
+    "unicorn/prefer-array-flat-map": "off",
     "unicorn/no-useless-promise-resolve-reject": "error",
     "unicorn/no-unnecessary-await": "error",
     "unicorn/no-useless-fallback-in-spread": "error",

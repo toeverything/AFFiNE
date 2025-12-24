@@ -1,16 +1,16 @@
 import { IconButton } from '@affine/component';
+import { RenameModal } from '@affine/component/rename-modal';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AddTagIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { NavigationPanelTagNode } from '../../nodes/tag';
 import { NavigationPanelTreeRoot } from '../../tree';
-import { NavigationPanelTreeNodeRenameModal as CreateTagModal } from '../../tree/node';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
@@ -19,8 +19,8 @@ export const NavigationPanelTags = () => {
     TagService,
     NavigationPanelService,
   });
-  const navigationPanelSection = navigationPanelService.sections.tags;
-  const collapsed = useLiveData(navigationPanelSection.collapsed$);
+  const path = useMemo(() => ['tags'], []);
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
   const [creating, setCreating] = useState(false);
   const tags = useLiveData(tagService.tagList.tags$);
 
@@ -30,9 +30,9 @@ export const NavigationPanelTags = () => {
     (name: string) => {
       tagService.tagList.createTag(name, tagService.randomTagColor());
       track.$.navigationPanel.organize.createOrganizeItem({ type: 'tag' });
-      navigationPanelSection.setCollapsed(false);
+      navigationPanelService.setCollapsed(path, false);
     },
-    [navigationPanelSection, tagService]
+    [navigationPanelService, path, tagService]
   );
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export const NavigationPanelTags = () => {
 
   return (
     <CollapsibleSection
-      name="tags"
+      path={path}
       testId="navigation-panel-tags"
       headerClassName={styles.draggedOverHighlight}
       title={t['com.affine.rootAppSidebar.tags']()}
@@ -62,11 +62,11 @@ export const NavigationPanelTags = () => {
             <AddTagIcon />
           </IconButton>
           {creating && (
-            <CreateTagModal
-              setRenaming={setCreating}
-              handleRename={handleCreateNewTag}
-              rawName={t['com.affine.rootAppSidebar.tags.new-tag']()}
-              className={styles.createModalAnchor}
+            <RenameModal
+              open
+              onOpenChange={setCreating}
+              onRename={handleCreateNewTag}
+              currentName={t['com.affine.rootAppSidebar.tags.new-tag']()}
             />
           )}
         </div>
@@ -81,6 +81,7 @@ export const NavigationPanelTags = () => {
             location={{
               at: 'navigation-panel:tags:list',
             }}
+            parentPath={path}
           />
         ))}
       </NavigationPanelTreeRoot>

@@ -1,0 +1,15 @@
+query indexerSearch($id: String!, $input: SearchInput!) {
+  workspace(id: $id) {
+    search(input: $input) {
+      nodes {
+        fields
+        highlights
+      }
+      pagination {
+        count
+        hasMore
+        nextCursor
+      }
+    }
+  }
+}

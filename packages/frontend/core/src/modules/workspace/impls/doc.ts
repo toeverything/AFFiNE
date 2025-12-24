@@ -1,27 +1,27 @@
-import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import {
   AwarenessStore,
   type Doc,
   type ExtensionType,
-  type GetBlocksOptions,
-  type Query,
-  Store,
-  type Workspace,
+  type GetStoreOptions,
+  StoreContainer,
   type YBlock,
 } from '@blocksuite/affine/store';
 import { Awareness } from 'y-protocols/awareness.js';
 import * as Y from 'yjs';
 
+import type { WorkspaceImpl } from './workspace';
+
 type DocOptions = {
   id: string;
-  collection: Workspace;
+  collection: WorkspaceImpl;
   doc: Y.Doc;
 };
 
 export class DocImpl implements Doc {
-  private readonly _collection: Workspace;
+  private readonly _collection: WorkspaceImpl;
 
-  private readonly _storeMap = new Map<string, Store>();
+  private readonly _storeContainer: StoreContainer;
 
   private readonly _initSpaceDoc = () => {
     {
@@ -105,19 +105,15 @@ export class DocImpl implements Doc {
 
     this._yBlocks = this._ySpaceDoc.getMap('blocks');
     this._collection = collection;
-  }
-
-  private _getReadonlyKey(readonly?: boolean): 'true' | 'false' {
-    return (readonly?.toString() as 'true' | 'false') ?? 'false';
+    this._storeContainer = new StoreContainer(this);
   }
 
   clear() {
     this._yBlocks.clear();
   }
 
-  clearQuery(query: Query, readonly?: boolean) {
-    const key = this._getQueryKey({ readonly, query });
-    this._storeMap.delete(key);
+  get removeStore() {
+    return this._storeContainer.removeStore;
   }
 
   private _destroy() {
@@ -134,58 +130,29 @@ export class DocImpl implements Doc {
     }
   }
 
-  private readonly _getQueryKey = (
-    idOrOptions: string | { readonly?: boolean; query?: Query }
-  ) => {
-    if (typeof idOrOptions === 'string') {
-      return idOrOptions;
-    }
-    const { readonly, query } = idOrOptions;
-    const readonlyKey = this._getReadonlyKey(readonly);
-    const key = JSON.stringify({
-      readonlyKey,
-      query,
-    });
-    return key;
-  };
-
   getStore({
     readonly,
     query,
     provider,
     extensions,
     id,
-  }: GetBlocksOptions = {}) {
-    let idOrOptions: string | { readonly?: boolean; query?: Query };
-    if (readonly || query) {
-      idOrOptions = { readonly, query };
-    } else if (!id) {
-      idOrOptions = this.workspace.idGenerator();
-    } else {
-      idOrOptions = id;
-    }
-    const key = this._getQueryKey(idOrOptions);
+  }: GetStoreOptions = {}) {
+    const storeExtensions = getStoreManager()
+      .config.init()
+      .featureFlag(this.workspace.featureFlagService)
+      .value.get('store');
+    const exts = storeExtensions
+      .concat(extensions ?? [])
+      .concat(this.storeExtensions);
+    const extensionSet = new Set(exts);
 
-    if (this._storeMap.has(key)) {
-      return this._storeMap.get(key) as Store;
-    }
-
-    const storeExtensions = getStoreManager().get('store');
-    const extensionSet = new Set(
-      storeExtensions.concat(extensions ?? []).concat(this.storeExtensions)
-    );
-
-    const doc = new Store({
-      doc: this,
+    return this._storeContainer.getStore({
+      id,
       readonly,
       query,
       provider,
       extensions: Array.from(extensionSet),
     });
-
-    this._storeMap.set(key, doc);
-
-    return doc;
   }
 
   load(initFn?: () => void): this {

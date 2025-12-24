@@ -601,6 +601,9 @@ export function createNodeTargetConfig(
           );
         },
       }),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': '"production"',
+      }),
     ]),
     stats: { errorDetails: true },
     optimization: { nodeEnv: false },

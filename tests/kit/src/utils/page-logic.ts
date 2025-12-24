@@ -30,8 +30,8 @@ export async function waitForEditorLoad(page: Page) {
 }
 
 export async function waitForAllPagesLoad(page: Page) {
-  // if filters tag is rendered, we believe all_pages is ready
-  await page.waitForSelector('[data-testid="create-first-filter"]', {
+  // if doc-list-item is rendered, we believe all_pages is ready
+  await page.waitForSelector('[data-testid="doc-list-item"]', {
     timeout: 20000,
   });
 }
@@ -72,6 +72,20 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
     .click();
 };
 
+export const createSyncedPageInEdgeless = async (
+  page: Page,
+  pageName?: string
+) => {
+  await page.keyboard.type('@', { delay: 50 });
+  const cmdkPopover = page.locator('[data-testid="cmdk-quick-search"]');
+  await expect(cmdkPopover).toBeVisible();
+  await type(page, pageName || 'Untitled');
+
+  await cmdkPopover
+    .locator('[cmdk-item][data-value="creation:create-page"]')
+    .click();
+};
+
 export const createTodayPage = async (page: Page) => {
   // fixme: workaround for @ popover not showing up when editor is not ready
   await page.waitForTimeout(500);
@@ -95,15 +109,19 @@ export async function clickPageMoreActions(page: Page) {
 }
 
 export const getPageOperationButton = (page: Page, id: string) => {
-  return getPageItem(page, id).getByTestId('page-list-operation-button');
+  return getPageItem(page, id).getByTestId('doc-list-operation-button');
 };
 
 export const getPageItem = (page: Page, id: string) => {
-  return page.locator(`[data-page-id="${id}"][data-testid="page-list-item"]`);
+  return page.locator(`[data-doc-id="${id}"][data-testid="doc-list-item"]`);
 };
 
 export const getPageByTitle = (page: Page, title: string) => {
-  return page.getByTestId('page-list-item').getByText(title);
+  return page.getByTestId('doc-list-item').filter({
+    has: page.locator(
+      `[data-testid="doc-list-item-title"]:has-text("${title}")`
+    ),
+  });
 };
 
 export type DragLocation =
@@ -233,10 +251,8 @@ export const addCodeBlock = async (page: Page) => {
   await page.getByTestId('Code Block').click();
 };
 
-export const addDatabaseRow = async (page: Page, databaseTitle: string) => {
-  const db = page.locator(`affine-database-table`, {
-    has: page.locator(`affine-database-title:has-text("${databaseTitle}")`),
-  });
+export const addDatabaseRow = async (page: Page, nth: number = 0) => {
+  const db = page.getByTestId('dv-table-view').nth(nth);
   await db.locator('.data-view-table-group-add-row-button').click();
 };
 

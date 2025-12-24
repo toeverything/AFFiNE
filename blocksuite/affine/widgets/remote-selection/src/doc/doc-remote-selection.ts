@@ -58,7 +58,7 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
   private _remoteColorManager: RemoteColorManager | null = null;
 
   private readonly _remoteSelections = computed(() => {
-    const status = this.doc.awarenessStore.getStates();
+    const status = this.store.awarenessStore.getStates();
     return [...this.std.selection.remoteSelections.entries()].map(
       ([id, selections]) => {
         return {

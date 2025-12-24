@@ -188,6 +188,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     });
     this._resizeObserver.observe(this.richText);
 
+    this.connector.stash('labelXYWH');
+
     this.updateComplete
       .then(() => {
         if (!this.inlineEditor) return;
@@ -257,7 +259,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             }
           }
 
-          connector.lableEditing = false;
+          connector.labelEditing = false;
+          connector.pop('labelXYWH');
 
           selection.set({
             elements: [],
@@ -293,7 +296,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           }
         );
 
-        connector.lableEditing = true;
+        connector.labelEditing = true;
       })
       .catch(console.error);
   }

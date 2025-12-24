@@ -1,3 +1,4 @@
+import type { DocCreateOptions } from '@affine/core/modules/doc/types';
 import {
   NoteDisplayMode,
   type NoteProps,
@@ -22,11 +23,15 @@ export interface DocProps {
   ) => void;
 }
 
-export function initDocFromProps(doc: Store, props?: DocProps) {
+export function initDocFromProps(
+  doc: Store,
+  props?: DocProps,
+  options: DocCreateOptions = {}
+) {
   doc.load(() => {
     const pageBlockId = doc.addBlock(
       'affine:page',
-      props?.page || { title: new Text('') }
+      props?.page || { title: new Text(options.title || '') }
     );
     const surfaceId = doc.addBlock(
       'affine:surface' as never,
@@ -51,6 +56,6 @@ export function initDocFromProps(doc: Store, props?: DocProps) {
       paragraphId: paragraphBlockId,
       surfaceId,
     });
-    doc.history.clear();
+    doc.history.undoManager.clear();
   });
 }

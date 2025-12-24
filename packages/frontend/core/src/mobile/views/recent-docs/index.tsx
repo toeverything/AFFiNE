@@ -24,7 +24,7 @@ export const RecentDocs = ({ max = 5 }: { max?: number }) => {
 
   return (
     <CollapsibleSection
-      name="recent"
+      path={['recent']}
       title="Recent"
       headerClassName={styles.header}
       className={styles.recentSection}

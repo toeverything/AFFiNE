@@ -12,17 +12,17 @@ import {
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import type { KanbanSelectionController } from './controller/selection.js';
+import type { KanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 export const openDetail = (
-  dataViewEle: DataViewRenderer,
+  kanbanViewLogic: KanbanViewUILogic,
   rowId: string,
   selection: KanbanSelectionController
 ) => {
   const old = selection.selection;
   selection.selection = undefined;
-  dataViewEle.openDetailPanel({
+  kanbanViewLogic.root.openDetailPanel({
     view: selection.view,
     rowId: rowId,
     onClose: () => {
@@ -32,17 +32,20 @@ export const openDetail = (
 };
 
 export const popCardMenu = (
-  dataViewEle: DataViewRenderer,
+  kanbanViewLogic: KanbanViewUILogic,
   ele: PopupTarget,
   rowId: string,
   selection: KanbanSelectionController
 ) => {
+  const groups = (selection.view.groupTrait.groupsDataList$.value ?? []).filter(
+    (v): v is NonNullable<typeof v> => v != null
+  );
   popFilterableSimpleMenu(ele, [
     menu.action({
       name: 'Expand Card',
       prefix: ExpandFullIcon(),
       select: () => {
-        openDetail(dataViewEle, rowId, selection);
+        openDetail(kanbanViewLogic, rowId, selection);
       },
     }),
     menu.subMenu({
@@ -50,22 +53,23 @@ export const popCardMenu = (
       prefix: ArrowRightBigIcon(),
       options: {
         items:
-          selection.view.groupTrait.groupsDataList$.value
-            ?.filter(v => {
+          groups
+            .filter(v => {
               const cardSelection = selection.selection;
               if (cardSelection?.selectionType === 'card') {
-                return v.key !== cardSelection?.cards[0].groupKey;
+                const currentGroup = cardSelection.cards[0]?.groupKey;
+                return currentGroup ? v.key !== currentGroup : true;
               }
               return false;
             })
-            .map(group => {
-              return menu.action({
-                name: group.value != null ? group.name : 'Ungroup',
+            .map(group =>
+              menu.action({
+                name: group.value != null ? group.name$.value : 'Ungroup',
                 select: () => {
                   selection.moveCard(rowId, group.key);
                 },
-              });
-            }) ?? [],
+              })
+            ) ?? [],
       },
     }),
     menu.group({

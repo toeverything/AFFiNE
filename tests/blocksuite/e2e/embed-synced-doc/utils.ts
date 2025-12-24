@@ -60,12 +60,12 @@ export async function initEmbedSyncedDocState(
       const getVisibleNote = (store: Store) => {
         const note = store
           .getModelsByFlavour('affine:note')
-          .filter((note): note is NoteBlockModel => {
+          .find((note): note is NoteBlockModel => {
             return (
               note instanceof NoteBlockModel &&
               note.props.displayMode === NoteDisplayMode.DocAndEdgeless
             );
-          })[0];
+          });
         return note ?? null;
       };
 

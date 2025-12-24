@@ -30,6 +30,9 @@ export interface Subscription {
   trialEnd: Date | null;
   nextBillAt: Date | null;
   canceledAt: Date | null;
+  // read-only metadata for IAP integration
+  provider?: string | null;
+  iapStore?: string | null;
 }
 
 export interface Invoice {
@@ -84,9 +87,14 @@ export abstract class SubscriptionManager {
     subscription: KnownStripeSubscription
   ): Promise<void>;
 
+  abstract getActiveSubscription(
+    identity: z.infer<typeof SubscriptionIdentity>
+  ): Promise<Subscription | null>;
+
   abstract getSubscription(
     identity: z.infer<typeof SubscriptionIdentity>
   ): Promise<Subscription | null>;
+
   abstract cancelSubscription(
     subscription: Subscription
   ): Promise<Subscription>;

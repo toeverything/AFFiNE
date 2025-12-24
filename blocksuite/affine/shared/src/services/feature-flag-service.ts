@@ -15,13 +15,13 @@ export interface BlockSuiteFlags {
   enable_shape_shadow_blur: boolean;
   enable_mobile_keyboard_toolbar: boolean;
   enable_mobile_linked_doc_menu: boolean;
+  enable_mobile_database_editing: boolean;
   enable_block_meta: boolean;
-  enable_callout: boolean;
   enable_edgeless_scribbled_style: boolean;
   enable_table_virtual_scroll: boolean;
-  enable_embed_doc_with_alias: boolean;
   enable_turbo_renderer: boolean;
-  enable_citation: boolean;
+  enable_dom_renderer: boolean;
+  enable_pdfmake_export: boolean;
 }
 
 export class FeatureFlagService extends StoreExtension {
@@ -42,12 +42,12 @@ export class FeatureFlagService extends StoreExtension {
     enable_mobile_keyboard_toolbar: false,
     enable_mobile_linked_doc_menu: false,
     enable_block_meta: true,
-    enable_callout: false,
+    enable_mobile_database_editing: false,
     enable_edgeless_scribbled_style: false,
     enable_table_virtual_scroll: false,
-    enable_embed_doc_with_alias: false,
     enable_turbo_renderer: false,
-    enable_citation: false,
+    enable_dom_renderer: false,
+    enable_pdfmake_export: false,
   });
 
   setFlag(key: keyof BlockSuiteFlags, value: boolean) {

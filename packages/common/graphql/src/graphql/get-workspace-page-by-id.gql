@@ -5,6 +5,8 @@ query getWorkspacePageById($workspaceId: String!, $pageId: String!) {
       mode
       defaultRole
       public
+      title
+      summary
     }
   }
 }

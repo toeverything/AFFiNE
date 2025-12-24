@@ -53,7 +53,7 @@ import {
   tagSelectInputContainerStyle,
   tagSelectInputStyle,
   tagTextStyle,
-} from './styles.css.js';
+} from './styles-css.js';
 
 type RenderOption = {
   value: string;

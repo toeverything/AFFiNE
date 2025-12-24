@@ -1,35 +1,41 @@
 import type { UniComponent } from '@blocksuite/affine-shared/types';
 
-import type { TypeInstance } from '../logical/type.js';
+import type { TypeInstance, ValueTypeOf } from '../logical/type.js';
+import type { Group } from './trait.js';
 export interface GroupRenderProps<
-  Data extends NonNullable<unknown> = NonNullable<unknown>,
   JsonValue = unknown,
+  Data extends Record<string, unknown> = Record<string, unknown>,
 > {
-  data: Data;
-  updateData?: (data: Data) => void;
-  value: JsonValue;
-  updateValue?: (value: JsonValue) => void;
+  group: Group<unknown, JsonValue, Data>;
   readonly: boolean;
 }
-
+type AddToGroup<GroupValue, MatchType> = (
+  value: GroupValue | null,
+  oldValue: ValueTypeOf<MatchType> | null
+) => ValueTypeOf<MatchType> | null;
 export type GroupByConfig<
-  JsonValue = unknown,
   Data extends NonNullable<unknown> = NonNullable<unknown>,
+  MatchType extends TypeInstance = TypeInstance,
+  GroupValue = unknown,
 > = {
   name: string;
-  groupName: (type: TypeInstance, value: unknown) => string;
-  defaultKeys: (type: TypeInstance) => {
+  matchType: MatchType;
+  groupName: (type: MatchType, value: GroupValue | null) => string;
+  defaultKeys: (type: MatchType) => {
     key: string;
-    value: JsonValue;
+    value: GroupValue | null;
   }[];
   valuesGroup: (
-    value: unknown,
-    type: TypeInstance
+    value: ValueTypeOf<MatchType> | null,
+    type: MatchType
   ) => {
     key: string;
-    value: JsonValue;
+    value: GroupValue | null;
   }[];
-  addToGroup?: (value: JsonValue, oldValue: JsonValue) => JsonValue;
-  removeFromGroup?: (value: JsonValue, oldValue: JsonValue) => JsonValue;
-  view: UniComponent<GroupRenderProps<Data, JsonValue>>;
+  addToGroup: AddToGroup<GroupValue, MatchType> | false;
+  removeFromGroup?: (
+    value: GroupValue | null,
+    oldValue: ValueTypeOf<MatchType> | null
+  ) => ValueTypeOf<MatchType> | null;
+  view: UniComponent<GroupRenderProps<GroupValue | null, Data>>;
 };

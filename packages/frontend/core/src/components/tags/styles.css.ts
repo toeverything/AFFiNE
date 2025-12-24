@@ -34,11 +34,13 @@ export const tagsMenu = style({
   left: '-3.5px',
   width: 'calc(var(--radix-popper-anchor-width) + 16px)',
   overflow: 'hidden',
+  minWidth: 400,
 });
 
 export const tagsEditorSelectedTags = style({
   display: 'flex',
-  flexWrap: 'wrap',
+  flexDirection: 'row',
+  flexWrap: 'nowrap',
   padding: '10px 12px 0px',
   minHeight: 42,
   selectors: {
@@ -48,6 +50,11 @@ export const tagsEditorSelectedTags = style({
       backgroundColor: cssVarV2('layer/background/primary'),
     },
   },
+});
+
+export const tagsEditorDoneButton = style({
+  height: '32px',
+  width: '28px',
 });
 
 export const tagDivider = style({

@@ -28,8 +28,8 @@ export class AudioAttachmentService extends Service {
     const key = attachmentBlockAudioMediaKey({
       blobId: model.props.sourceId,
       blockId: model.id,
-      docId: model.doc.id,
-      workspaceId: model.doc.rootDoc.guid,
+      docId: model.store.id,
+      workspaceId: model.store.rootDoc.guid,
     });
     let exists = this.pool.get(key);
     if (!exists) {

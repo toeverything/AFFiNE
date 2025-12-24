@@ -129,6 +129,7 @@ export const PDFPageRenderer = ({
         img={img}
         ref={canvasRef}
         err={error ? t['com.affine.pdf.page.render.error']() : null}
+        scale={scale}
       />
     </div>
   );
@@ -137,17 +138,19 @@ export const PDFPageRenderer = ({
 interface PageRendererInnerProps {
   img: ImageBitmap | null;
   err: string | null;
+  scale: number;
 }
 
 const PageRendererInner = forwardRef<HTMLCanvasElement, PageRendererInnerProps>(
-  ({ img, err }, ref) => {
+  ({ img, err, scale }, ref) => {
     if (img) {
+      const { width, height } = img;
       return (
         <PDFPageCanvas
           ref={ref}
           style={{
-            height: img.height / 2,
-            aspectRatio: `${img.width} / ${img.height}`,
+            height: height / scale,
+            aspectRatio: `${width} / ${height}`,
           }}
         />
       );

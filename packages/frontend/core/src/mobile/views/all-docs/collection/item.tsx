@@ -1,6 +1,6 @@
 import { IconButton } from '@affine/component';
-import type { CollectionMeta } from '@affine/core/components/page-list';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
+import type { CollectionMeta } from '@affine/core/modules/collection';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';

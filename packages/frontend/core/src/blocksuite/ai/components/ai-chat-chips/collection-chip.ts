@@ -1,4 +1,3 @@
-import type { Collection } from '@affine/env/filter';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { CollectionsIcon } from '@blocksuite/icons/lit';
@@ -18,7 +17,7 @@ export class ChatPanelCollectionChip extends SignalWatcher(
   accessor removeChip!: (chip: CollectionChip) => void;
 
   @property({ attribute: false })
-  accessor collection!: Collection;
+  accessor collection!: { id: string; name: string };
 
   override render() {
     const { state } = this.chip;

@@ -3,6 +3,7 @@ mutation addContextFile($content: Upload!, $options: AddContextFileInput!) {
     id
     createdAt
     name
+    mimeType
     chunkSize
     error
     status

@@ -126,19 +126,6 @@ export class DocDisplayMetaService
         }, pageId);
 
       this.disposables.push(disposable);
-      const docRemovedSubscription =
-        this.std.workspace.slots.docRemoved.subscribe(docId => {
-          if (docId === doc.id) {
-            docRemovedSubscription.unsubscribe();
-            const index = this.disposables.findIndex(d => d === disposable);
-            if (index !== -1) {
-              this.disposables.splice(index, 1);
-              disposable.unsubscribe();
-            }
-            this.iconMap.delete(store);
-          }
-        });
-      this.disposables.push(docRemovedSubscription);
       this.iconMap.set(store, icon$);
     }
 
@@ -188,19 +175,6 @@ export class DocDisplayMetaService
       );
 
       this.disposables.push(disposable);
-      const docRemovedSubscription =
-        this.std.workspace.slots.docRemoved.subscribe(docId => {
-          if (docId === doc.id) {
-            docRemovedSubscription.unsubscribe();
-            const index = this.disposables.findIndex(d => d === disposable);
-            if (index !== -1) {
-              this.disposables.splice(index, 1);
-              disposable.unsubscribe();
-            }
-            this.iconMap.delete(store);
-          }
-        });
-      this.disposables.push(docRemovedSubscription);
       this.titleMap.set(store, title$);
     }
 

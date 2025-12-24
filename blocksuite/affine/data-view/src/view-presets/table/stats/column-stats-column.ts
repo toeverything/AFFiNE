@@ -14,11 +14,11 @@ import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
 import { typeSystem } from '../../../core/index.js';
 import { statsFunctions } from '../../../core/statistics/index.js';
 import type { StatisticsConfig } from '../../../core/statistics/types.js';
-import type { TableColumn } from '../table-view-manager.js';
+import type { TableProperty } from '../table-view-manager.js';
 
 const styles = css`
   .stats-cell {
@@ -57,12 +57,12 @@ const styles = css`
     margin-inline: 5px;
   }
 
-  .label {
+  .stats-cell .label {
     text-transform: uppercase;
     color: var(--affine-text-secondary-color);
   }
 
-  .value {
+  .stats-cell .value {
     color: var(--affine-text-primary-color);
   }
 `;
@@ -73,12 +73,12 @@ export class DatabaseColumnStatsCell extends SignalWatcher(
   static override styles = styles;
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   cellValues$ = computed(() => {
     if (this.group) {
-      return this.group.rows.map(id => {
-        return this.column.valueGet(id);
+      return this.group.rows.map(row => {
+        return this.column.valueGet(row.rowId);
       });
     }
     return this.column.cells$.value.map(cell => cell.jsonValue$.value);
@@ -157,7 +157,7 @@ export class DatabaseColumnStatsCell extends SignalWatcher(
   values$ = signal<unknown[]>([]);
 
   statsResult$ = computed(() => {
-    const meta = this.column.view.propertyMetaGet(this.column.type$.value);
+    const meta = this.column.meta$.value;
     if (!meta) {
       return null;
     }
@@ -236,7 +236,7 @@ export class DatabaseColumnStatsCell extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor group: Group | undefined = undefined;
 }
 
 declare global {

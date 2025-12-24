@@ -1,10 +1,6 @@
 import { uniReactRoot } from '@affine/component';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
-import {
-  CloudQuotaModal,
-  LocalQuotaModal,
-} from '@affine/core/components/affine/quota-reached-modal';
 import { SWRConfigProvider } from '@affine/core/components/providers/swr-config-provider';
 import { WorkspaceSideEffects } from '@affine/core/components/providers/workspace-side-effects';
 import {
@@ -146,11 +142,6 @@ export const WorkspaceLayout = ({
 
             {/* ---- some side-effect components ---- */}
             <PeekViewManagerModal />
-            {workspace?.flavour !== 'local' ? (
-              <CloudQuotaModal />
-            ) : (
-              <LocalQuotaModal />
-            )}
             <AiLoginRequiredModal />
             <uniReactRoot.Root />
             <WorkspaceSideEffects />

@@ -10,6 +10,7 @@ import {
   QuickSearchTagIcon,
 } from '@affine/core/modules/quicksearch';
 import { TagService } from '@affine/core/modules/tag';
+import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
 import { sleep } from '@blocksuite/affine/global/utils';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
@@ -41,7 +42,7 @@ const RecentList = () => {
     TagService,
   });
   const recentDocsList = useLiveData(mobileSearchService.recentDocs.items$);
-  const collections = useLiveData(collectionService.collections$);
+  const collectionMetas = useLiveData(collectionService.collectionMetas$);
   const tags = useLiveData(
     LiveData.computed(get =>
       get(tagService.tagList.tags$).map(tag => ({
@@ -63,7 +64,7 @@ const RecentList = () => {
   );
 
   const collectionList = useMemo(() => {
-    return collections.slice(0, 3).map(item => {
+    return collectionMetas.slice(0, 3).map(item => {
       return {
         id: 'collection:' + item.id,
         source: 'collection',
@@ -72,7 +73,7 @@ const RecentList = () => {
         payload: { collectionId: item.id },
       } satisfies QuickSearchItem<'collection', { collectionId: string }>;
     });
-  }, [collections]);
+  }, [collectionMetas]);
 
   const tagList = useMemo(() => {
     return tags
@@ -105,13 +106,17 @@ const WithQueryList = () => {
   const docList = useLiveData(searchService.docs.items$);
   const tagList = useLiveData(searchService.tags.items$);
 
+  const error = useLiveData(searchService.docs.error$);
+
   const docs = useMemo(
     () =>
-      docList.map(item => ({
-        id: item.payload.docId,
-        icon: item.icon,
-        title: <SearchResLabel item={item} />,
-      })),
+      docList
+        .filter(item => item.id !== 'search-locally')
+        .map(item => ({
+          id: item.payload.docId,
+          icon: item.icon,
+          title: <SearchResLabel item={item} />,
+        })),
     [docList]
   );
 
@@ -121,6 +126,7 @@ const WithQueryList = () => {
       docs={docs}
       collections={collectionList}
       tags={tagList}
+      error={error ? UserFriendlyError.fromAny(error).message : null}
     />
   );
 };

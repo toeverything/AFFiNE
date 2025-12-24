@@ -32,13 +32,9 @@ declare global {
       docId: string;
       blob: Buffer;
     };
-    'doc.created': {
-      workspaceId: string;
-      docId: string;
-      editor?: string;
-    };
   }
 }
+
 @Injectable()
 export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   protected override readonly logger = new Logger(
@@ -104,7 +100,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
             {
               // keep it simple to let all update merged in one job
               jobId: `doc:merge-pending-updates:${workspaceId}:${docId}`,
-              delay: 30 * 1000 /* 30s */,
+              delay: 5 * 1000 /* 5s */,
               priority: 100,
             }
           );

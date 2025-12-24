@@ -20,7 +20,7 @@ export async function buildShowcaseWorkspace(
 ) {
   const meta = await workspacesService.create(flavour, async docCollection => {
     docCollection.meta.initialize();
-    docCollection.meta.setName(workspaceName);
+    docCollection.doc.getMap('meta').set('name', workspaceName);
     const blob = await (await fetch(onboardingUrl)).blob();
 
     await ZipTransformer.importDocs(

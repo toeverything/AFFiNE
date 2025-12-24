@@ -8,12 +8,15 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import GraphQLUpload, {
+  type FileUpload,
+} from 'graphql-upload/GraphQLUpload.mjs';
 
-import { UseNamedGuard } from '../../base';
+import { toBuffer, UseNamedGuard } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { AccessController } from '../../core/permission';
 import { WorkspaceType } from '../../core/workspaces';
-import { SubscriptionRecurring } from '../payment/types';
+import { SubscriptionRecurring, SubscriptionVariant } from '../payment/types';
 import { LicenseService } from './service';
 
 @ObjectType()
@@ -23,6 +26,9 @@ export class License {
 
   @Field(() => SubscriptionRecurring)
   recurring!: string;
+
+  @Field(() => SubscriptionVariant, { nullable: true })
+  variant!: string | null;
 
   @Field(() => Date)
   installedAt!: Date;
@@ -82,7 +88,7 @@ export class LicenseResolver {
       .workspace(workspaceId)
       .assert('Workspace.Payment.Manage');
 
-    return this.service.deactivateTeamLicense(workspaceId);
+    return this.service.removeTeamLicense(workspaceId);
   }
 
   @Mutation(() => String)
@@ -98,5 +104,23 @@ export class LicenseResolver {
     const { url } = await this.service.createCustomerPortal(workspaceId);
 
     return url;
+  }
+
+  @Mutation(() => License)
+  async installLicense(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('license', { type: () => GraphQLUpload }) licenseFile: FileUpload
+  ) {
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Payment.Manage');
+
+    const buffer = await toBuffer(licenseFile.createReadStream());
+
+    const license = await this.service.installLicense(workspaceId, buffer);
+
+    return license;
   }
 }

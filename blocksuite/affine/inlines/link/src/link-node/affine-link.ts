@@ -7,6 +7,7 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { affineTextStyles } from '@blocksuite/affine-shared/styles';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { normalizeUrl } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import type { BlockComponent, BlockStdScope } from '@blocksuite/std';
 import { BLOCK_ID_ATTR, ShadowlessElement } from '@blocksuite/std';
@@ -58,6 +59,7 @@ export class AffineLink extends WithDisposable(ShadowlessElement) {
 
     refNodeSlotsProvider.docLinkClicked.next({
       ...referenceInfo,
+      openMode: e?.button === 1 ? 'open-in-new-tab' : undefined,
       host: this.std.host,
     });
   };
@@ -120,7 +122,7 @@ export class AffineLink extends WithDisposable(ShadowlessElement) {
   }
 
   get link() {
-    return this.delta.attributes?.link ?? '';
+    return normalizeUrl(this.delta.attributes?.link ?? '');
   }
 
   get selfInlineRange() {
@@ -148,6 +150,7 @@ export class AffineLink extends WithDisposable(ShadowlessElement) {
       target="_blank"
       style=${styleMap(style)}
       @click=${this.openLink}
+      @auxclick=${this.openLink}
       @mouseup=${this._onMouseUp}
       ><v-text .str=${this.delta.insert}></v-text
     ></a>`;

@@ -4,6 +4,7 @@ import { DocID } from '../utils/doc';
 import { getAccessController } from './controller';
 import { Resource } from './resource';
 import { DocAction, WorkspaceAction } from './types';
+import { WorkspaceAccessController } from './workspace';
 
 @Injectable()
 export class AccessControllerBuilder {
@@ -64,6 +65,28 @@ class WorkspaceAccessControllerBuilder {
     return new DocAccessControllerBuilder({
       ...this.data,
       docId,
+    });
+  }
+
+  /**
+   * Filter items by doc access permission
+   * @param items - items to filter
+   * @param action - action to check
+   * @returns filtered items
+   */
+  async docs<T extends { docId: string }>(
+    items: T[],
+    action: DocAction
+  ): Promise<T[]> {
+    const docIds = items.map(item => item.docId);
+    const checker = getAccessController('ws') as WorkspaceAccessController;
+    const docRoles = await checker.docRoles(this.data, docIds);
+    const docRolesMap = new Map(
+      docRoles.map((role, index) => [docIds[index], role])
+    );
+
+    return items.filter(item => {
+      return docRolesMap.get(item.docId)?.permissions[action];
     });
   }
 

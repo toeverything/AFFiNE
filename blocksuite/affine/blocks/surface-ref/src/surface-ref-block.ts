@@ -13,6 +13,7 @@ import {
   type SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import {
+  BlockElementCommentManager,
   DocModeProvider,
   EditPropsStore,
   type OpenDocMode,
@@ -76,6 +77,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       border-color: ${unsafeCSSVarV2('edgeless/frame/border/active')};
     }
 
+    .affine-surface-ref.comment-highlighted {
+      outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+    }
+
     @media print {
       .affine-surface-ref {
         outline: none !important;
@@ -137,6 +142,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     return this._referencedModel;
   }
 
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
+  }
+
   private readonly _handleClick = () => {
     this.selection.update(() => {
       return [this.selection.create(BlockSelection, { blockId: this.blockId })];
@@ -146,14 +159,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
   private _initHotkey() {
     const selection = this.host.selection;
     const addParagraph = () => {
-      if (!this.doc.getParent(this.model)) return;
+      if (!this.store.getParent(this.model)) return;
 
-      const [paragraphId] = this.doc.addSiblingBlocks(this.model, [
+      const [paragraphId] = this.store.addSiblingBlocks(this.model, [
         {
           flavour: 'affine:paragraph',
         },
       ]);
-      const model = this.doc.getModelById(paragraphId);
+      const model = this.store.getModelById(paragraphId);
       if (!model) return;
 
       requestConnectedFrame(() => {
@@ -185,7 +198,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   private _initReferencedModel() {
     const findReferencedModel = (): [GfxModel | null, string] => {
-      if (!this.model.props.reference) return [null, this.doc.id];
+      if (!this.model.props.reference) return [null, this.store.id];
       const referenceId = this.model.props.reference;
 
       const find = (doc: Store): [GfxModel | null, string] => {
@@ -203,7 +216,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       };
 
       // find current doc first
-      let result = find(this.doc);
+      let result = find(this.store);
       if (result[0]) return result;
 
       for (const doc of this.std.workspace.docs.values()) {
@@ -211,7 +224,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         if (result[0]) return result;
       }
 
-      return [null, this.doc.id];
+      return [null, this.store.id];
     };
 
     const init = () => {
@@ -220,7 +233,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       this._referencedModel =
         referencedModel && referencedModel.xywh ? referencedModel : null;
       // TODO(@L-Sun): clear query cache
-      const doc = this.doc.workspace.getDoc(docId);
+      const doc = this.store.workspace.getDoc(docId);
       this._previewDoc = doc?.getStore({ readonly: true }) ?? null;
     };
 
@@ -249,7 +262,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     if (this._referencedModel instanceof GfxBlockElementModel) {
       this._disposables.add(
-        this.doc.slots.blockUpdated.subscribe(({ type, id }) => {
+        this.store.slots.blockUpdated.subscribe(({ type, id }) => {
           if (type === 'delete' && id === this.model.props.reference) {
             init();
           }
@@ -374,6 +387,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
     const aspectRatio = h !== 0 ? w / h : 1;
     const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
+    const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
     return html`<div class="ref-content">
       <div
@@ -381,6 +395,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         style=${styleMap({
           aspectRatio: `${aspectRatio}`,
         })}
+        data-theme=${edgelessTheme}
       >
         ${guard(this._previewDoc, () => {
           return this._previewDoc
@@ -402,7 +417,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     openMode?: OpenDocMode;
     event?: MouseEvent;
   } = {}) => {
-    const pageId = this.referenceModel?.surface?.doc.id;
+    const pageId = this.referenceModel?.surface?.store.id;
     if (!pageId) return;
 
     this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.next({
@@ -440,21 +455,22 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     const { _referencedModel, model } = this;
     const isEmpty = !_referencedModel || !_referencedModel.xywh;
+    const theme = this.std.get(ThemeProvider).theme$.value;
     const content = isEmpty
       ? html`<surface-ref-placeholder
           .referenceModel=${_referencedModel}
           .refFlavour=${model.props.refFlavour$.value}
+          .theme=${theme}
         ></surface-ref-placeholder>`
       : this._renderRefContent();
-    const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
     return html`
       <div
         class=${classMap({
           'affine-surface-ref': true,
           focused: this.selected$.value,
+          'comment-highlighted': this.isCommentHighlighted,
         })}
-        data-theme=${edgelessTheme}
         @click=${this._handleClick}
       >
         ${content}

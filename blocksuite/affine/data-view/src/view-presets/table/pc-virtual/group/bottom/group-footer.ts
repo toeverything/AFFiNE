@@ -6,29 +6,31 @@ import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { TableViewAreaSelection } from '../../../selection';
-import type { VirtualTableView } from '../../table-view';
+import type { VirtualTableViewUILogic } from '../../table-view-ui-logic';
 import type { TableGridGroup } from '../../types';
-import * as styles from './group-footer.css';
+import * as styles from './group-footer-css';
 
 export class TableGroupFooter extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
-  accessor tableView!: VirtualTableView;
+  accessor tableViewLogic!: VirtualTableViewUILogic;
 
   @property({ attribute: false })
   accessor gridGroup!: TableGridGroup;
 
   group$ = computed(() => {
-    return this.tableView.groupTrait$.value?.groupsDataList$.value?.find(
-      g => g.key === this.gridGroup.groupId
-    );
+    const groups =
+      this.tableViewLogic.groupTrait$.value?.groupsDataList$.value ?? [];
+    return groups
+      .filter((group): group is NonNullable<typeof group> => group != null)
+      .find(g => g.key === this.gridGroup.groupId);
   });
 
   get selectionController() {
-    return this.tableView.selectionController;
+    return this.tableViewLogic.selectionController;
   }
 
   get tableViewManager() {
-    return this.tableView.props.view;
+    return this.tableViewLogic.view;
   }
 
   override connectedCallback() {
@@ -45,6 +47,7 @@ export class TableGroupFooter extends WithDisposable(ShadowlessElement) {
   private readonly clickAddRow = () => {
     const group = this.group$.value;
     const rowId = this.tableViewManager.rowAdd('end', group?.key);
+    this.requestUpdate();
 
     requestAnimationFrame(() => {
       const rowIndex = this.selectionController.getRow(group?.key, rowId)

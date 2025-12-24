@@ -1,6 +1,7 @@
 import { AutoReconnectConnection } from '../../connection';
 import type {
   BlobRecord,
+  CrawlResult,
   DocClock,
   DocRecord,
   ListedBlobRecord,
@@ -81,6 +82,36 @@ export interface NativeDBApis {
     peer: string,
     blobId: string
   ) => Promise<Date | null>;
+  crawlDocData: (id: string, docId: string) => Promise<CrawlResult>;
+  ftsAddDocument: (
+    id: string,
+    indexName: string,
+    docId: string,
+    text: string,
+    index: boolean
+  ) => Promise<void>;
+  ftsDeleteDocument: (
+    id: string,
+    indexName: string,
+    docId: string
+  ) => Promise<void>;
+  ftsSearch: (
+    id: string,
+    indexName: string,
+    query: string
+  ) => Promise<{ id: string; score: number }[]>;
+  ftsGetDocument: (
+    id: string,
+    indexName: string,
+    docId: string
+  ) => Promise<string | null>;
+  ftsGetMatches: (
+    id: string,
+    indexName: string,
+    docId: string,
+    query: string
+  ) => Promise<{ start: number; end: number }[]>;
+  ftsFlushIndex: (id: string) => Promise<void>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs

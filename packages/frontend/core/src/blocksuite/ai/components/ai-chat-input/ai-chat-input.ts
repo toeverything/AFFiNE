@@ -1,37 +1,38 @@
-import { stopPropagation } from '@affine/core/utils';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
-import {
-  CloseIcon,
-  ImageIcon,
-  PublishIcon,
-  ThinkingIcon,
-} from '@blocksuite/icons/lit';
-import { type Signal, signal } from '@preact/signals-core';
-import { css, html, LitElement, nothing } from 'lit';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
+import { ArrowUpBigIcon, CloseIcon } from '@blocksuite/icons/lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { ChatAbortIcon, ChatSendIcon } from '../../_common/icons';
-import { type AIError, AIProvider } from '../../provider';
+import { ChatAbortIcon } from '../../_common/icons';
+import { type AIError, AIProvider, type AISendParams } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
-import type {
-  ChatChip,
-  DocDisplayConfig,
-  FileChip,
-} from '../ai-chat-chips/type';
+import { mergeStreamObjects } from '../../utils/stream-objects';
+import type { SearchMenuConfig } from '../ai-chat-add-context';
+import type { ChatChip, DocDisplayConfig } from '../ai-chat-chips/type';
+import { isDocChip } from '../ai-chat-chips/utils';
 import {
-  isCollectionChip,
-  isDocChip,
-  isFileChip,
-  isTagChip,
-} from '../ai-chat-chips/utils';
-import type { ChatMessage } from '../ai-chat-messages';
-import { MAX_IMAGE_COUNT } from './const';
+  type ChatMessage,
+  isChatMessage,
+  StreamObjectSchema,
+} from '../ai-chat-messages';
 import type {
   AIChatInputContext,
   AINetworkSearchConfig,
@@ -43,25 +44,61 @@ function getFirstTwoLines(text: string) {
   return lines.slice(0, 2);
 }
 
-export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
+export class AIChatInput extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     :host {
       width: 100%;
     }
+
+    [data-theme='dark'] .chat-panel-input {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 0px rgba(28, 158, 228, 0),
+        0px 0px 0px 2px transparent;
+    }
+    [data-theme='light'] .chat-panel-input,
     .chat-panel-input {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px transparent,
+        0px 2px 3px rgba(0, 0, 0, 0.05);
+    }
+    .chat-panel-input[data-if-focused='true'] {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px transparent,
+        0px 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme='dark'] .chat-panel-input[data-if-focused='true'] {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px rgba(28, 158, 228, 0.3),
+        0px 2px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-panel-input {
+      --input-border-width: 0.5px;
+      --input-border-color: var(--affine-v2-layer-insideBorder-border);
+      --border-shadow: 0px 0px 0px var(--input-border-width)
+        var(--input-border-color);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 12px;
+      gap: 4px;
       position: relative;
-      margin-top: 12px;
-      border-radius: 4px;
-      padding: 8px;
+      border-radius: 12px;
+      padding: 8px 6px 6px 8px;
       min-height: 94px;
       box-sizing: border-box;
-      border-width: 1px;
-      border-style: solid;
-      border-color: var(--affine-border-color);
+      transition: box-shadow 0.23s ease;
+      background-color: var(--affine-v2-input-background);
+
+      &[data-independent-mode='true'] {
+        padding: 12px;
+        border-radius: 16px;
+      }
 
       .chat-selection-quote {
         padding: 4px 0px 8px 0px;
@@ -182,15 +219,35 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
         color: var(--affine-text-primary-color);
         box-sizing: border-box;
         resize: none;
-        overflow-y: hidden;
+        overflow-y: scroll;
         background-color: transparent;
+      }
+
+      textarea::-webkit-scrollbar {
+        -webkit-appearance: none;
+        width: 4px;
+        display: block;
+      }
+
+      textarea::-webkit-scrollbar:horizontal {
+        height: 8px;
+      }
+
+      textarea::-webkit-scrollbar-thumb {
+        border-radius: 2px;
+        background-color: transparent;
+      }
+
+      textarea:hover::-webkit-scrollbar-thumb {
+        border-radius: 16px;
+        background-color: ${unsafeCSSVar('black30')};
       }
 
       textarea::placeholder {
         font-size: 14px;
         font-weight: 400;
         font-family: var(--affine-font-family);
-        color: var(--affine-placeholder-color);
+        color: var(--affine-v2-text-placeholder);
       }
 
       textarea:focus {
@@ -199,24 +256,67 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     }
 
     .chat-panel-input[data-if-focused='true'] {
-      border-color: var(--affine-primary-color);
-      box-shadow: var(--affine-active-shadow);
+      --input-border-width: 1px;
+      --input-border-color: var(--affine-v2-layer-insideBorder-primaryBorder);
       user-select: none;
     }
 
-    .chat-panel-send svg rect {
-      fill: var(--affine-primary-color);
+    .chat-panel-send {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      font-size: 20px;
+      background: var(--affine-v2-icon-activated);
+      color: var(--affine-v2-layer-pureWhite);
+      border: none;
+      padding: 0;
+      cursor: pointer;
     }
     .chat-panel-send[aria-disabled='true'] {
       cursor: not-allowed;
+      background: var(--affine-v2-button-disable);
     }
-    .chat-panel-send[aria-disabled='true'] svg rect {
-      fill: var(--affine-text-disable-color);
+    .chat-panel-stop {
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      font-size: 24px;
+      color: var(--affine-v2-icon-activated);
+      border: none;
+      padding: 0;
+      background: transparent;
+    }
+    .chat-input-footer-spacer {
+      flex: 1;
     }
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor workspaceId!: string;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
+
+  @property({ attribute: false })
+  accessor isContextProcessing!: boolean | undefined;
 
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
@@ -237,16 +337,18 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
   accessor chips: ChatChip[] = [];
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor createSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor getContextId!: () => Promise<string | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
+
+  @property({ attribute: false })
+  accessor addImages!: (images: File[]) => void;
+
+  @property({ attribute: false })
+  accessor addChip!: (chip: ChatChip, silent?: boolean) => Promise<void>;
 
   @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
@@ -258,22 +360,46 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
+  accessor searchMenuConfig!: SearchMenuConfig;
+
+  @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
+
+  @property({ attribute: false })
   accessor isRootSession: boolean = true;
 
   @property({ attribute: false })
   accessor onChatSuccess: (() => void) | undefined;
 
   @property({ attribute: false })
-  accessor trackOptions!: BlockSuitePresets.TrackerOptions;
+  accessor trackOptions: BlockSuitePresets.TrackerOptions | undefined;
 
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-panel-input-container';
 
   @property({ attribute: false })
-  accessor sideBarWidth: Signal<number | undefined> = signal(undefined);
-
-  @property({ attribute: false })
-  accessor addImages!: (images: File[]) => void;
+  accessor portalContainer: HTMLElement | null = null;
 
   private get _isNetworkActive() {
     return (
@@ -286,34 +412,65 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     return !!this.reasoningConfig.enabled.value;
   }
 
-  private get _isImageUploadDisabled() {
-    return this.chatContextValue.images.length >= MAX_IMAGE_COUNT;
-  }
-
   override connectedCallback() {
     super.connectedCallback();
+
     this._disposables.add(
       AIProvider.slots.requestSendWithChat.subscribe(
-        ({ input, context, host }) => {
+        (params: AISendParams | null) => {
+          if (!params) {
+            return;
+          }
+          const { input, context, host } = params;
           if (this.host === host) {
-            context && this.updateContext(context);
+            if (context) {
+              this.updateContext(context);
+            }
             setTimeout(() => {
               this.send(input).catch(console.error);
             }, 0);
           }
+          AIProvider.slots.requestSendWithChat.next(null);
         }
       )
     );
+
+    this._disposables.add(
+      AIProvider.slots.requestOpenWithChat.subscribe(params => {
+        if (!params) return;
+
+        const { input, host } = params;
+        if (this.host !== host) return;
+
+        if (input) {
+          this.textarea.value = input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        }
+      })
+    );
+  }
+
+  protected override firstUpdated(changedProperties: PropertyValues): void {
+    super.firstUpdated(changedProperties);
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.textarea.value = draft.input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        })
+        .catch(console.error);
+    }
   }
 
   protected override render() {
     const { images, status } = this.chatContextValue;
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
-    const showLabel = this.sideBarWidth.value && this.sideBarWidth.value > 400;
 
-    return html` <div
+    return html`<div
       class="chat-panel-input"
+      data-independent-mode=${this.independentMode}
       data-if-focused=${this.focused}
       style=${styleMap({
         maxHeight: `${maxHeight}px !important`,
@@ -363,63 +520,62 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
         data-testid="chat-panel-input"
       ></textarea>
       <div class="chat-panel-input-actions">
-        <div
-          class="chat-input-icon"
-          data-testid="chat-panel-input-image-upload"
-          aria-disabled=${this._isImageUploadDisabled}
-          @click=${this._uploadImageFiles}
-        >
-          ${ImageIcon()}
-          <affine-tooltip>Upload</affine-tooltip>
+        <div class="chat-input-icon">
+          <ai-chat-add-context
+            .docId=${this.docId}
+            .independentMode=${this.independentMode}
+            .addChip=${this.addChip}
+            .addImages=${this.addImages}
+            .docDisplayConfig=${this.docDisplayConfig}
+            .searchMenuConfig=${this.searchMenuConfig}
+            .portalContainer=${this.portalContainer}
+          ></ai-chat-add-context>
         </div>
-        ${this.networkSearchConfig.visible.value
-          ? html`
-              <div
-                class="chat-input-icon"
-                data-testid="chat-network-search"
-                data-active=${this._isNetworkActive}
-                @click=${this._toggleNetworkSearch}
-                @pointerdown=${stopPropagation}
-              >
-                ${PublishIcon()}
-                ${!showLabel
-                  ? html`<affine-tooltip>Search</affine-tooltip>`
-                  : nothing}
-                ${showLabel
-                  ? html`<span class="chat-input-icon-label">Search</span>`
-                  : nothing}
-              </div>
-            `
-          : nothing}
-        <div
-          class="chat-input-icon"
-          data-testid="chat-reasoning"
-          data-active=${this._isReasoningActive}
-          @click=${this._toggleReasoning}
-          @pointerdown=${stopPropagation}
-        >
-          ${ThinkingIcon()}
-          ${!showLabel
-            ? html`<affine-tooltip>Reason</affine-tooltip>`
-            : nothing}
-          ${showLabel
-            ? html`<span class="chat-input-icon-label">Reason</span>`
-            : nothing}
-        </div>
-        ${status === 'transmitting'
-          ? html`<div @click=${this._handleAbort} data-testid="chat-panel-stop">
+        <div class="chat-input-footer-spacer"></div>
+        <chat-input-preference
+          .session=${this.session}
+          .extendedThinking=${this._isReasoningActive}
+          .onExtendedThinkingChange=${this._toggleReasoning}
+          .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
+          .isNetworkActive=${this._isNetworkActive}
+          .onNetworkActiveChange=${this._toggleNetworkSearch}
+          .serverService=${this.serverService}
+          .toolsConfigService=${this.aiToolsConfigService}
+          .notificationService=${this.notificationService}
+          .subscriptionService=${this.subscriptionService}
+          .aiModelService=${this.aiModelService}
+          .onAISubscribe=${this.onAISubscribe}
+        ></chat-input-preference>
+        ${status === 'transmitting' || status === 'loading'
+          ? html`<button
+              class="chat-panel-stop"
+              @click=${this._handleAbort}
+              data-testid="chat-panel-stop"
+            >
               ${ChatAbortIcon}
-            </div>`
-          : html`<div
+            </button>`
+          : html`<button
               @click="${this._onTextareaSend}"
               class="chat-panel-send"
-              aria-disabled=${this.isInputEmpty}
+              aria-disabled=${this.isSendDisabled}
               data-testid="chat-panel-send"
             >
-              ${ChatSendIcon}
-            </div>`}
+              ${ArrowUpBigIcon()}
+            </button>`}
       </div>
     </div>`;
+  }
+
+  private get isSendDisabled() {
+    if (this.isInputEmpty) {
+      return true;
+    }
+
+    if (this.isContextProcessing) {
+      return true;
+    }
+
+    return false;
   }
 
   private readonly _handlePointerDown = (e: MouseEvent) => {
@@ -430,9 +586,11 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     }
   };
 
-  private readonly _handleInput = () => {
+  private readonly _handleInput = async () => {
     const { textarea } = this;
-    this.isInputEmpty = !textarea.value.trim();
+    const value = textarea.value.trim();
+    this.isInputEmpty = !value;
+
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
     let imagesHeight = this.imagePreviewGrid?.scrollHeight ?? 0;
@@ -440,6 +598,12 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     if (this.scrollHeight >= 200 + imagesHeight) {
       textarea.style.height = '148px';
       textarea.style.overflowY = 'scroll';
+    }
+
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: value,
+      });
     }
   };
 
@@ -450,6 +614,7 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
   };
 
   private readonly _handlePaste = (event: ClipboardEvent) => {
+    event.stopPropagation();
     const items = event.clipboardData?.items;
     if (!items) return;
 
@@ -469,37 +634,18 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     reportResponse('aborted:stop');
   };
 
-  private readonly _toggleNetworkSearch = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const enable = this.networkSearchConfig.enabled.value;
-    this.networkSearchConfig.setEnabled(!enable);
+  private readonly _toggleNetworkSearch = (isNetworkActive: boolean) => {
+    this.networkSearchConfig.setEnabled(isNetworkActive);
   };
 
-  private readonly _toggleReasoning = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const enable = this.reasoningConfig.enabled.value;
-    this.reasoningConfig.setEnabled(!enable);
+  private readonly _toggleReasoning = (extendedThinking: boolean) => {
+    this.reasoningConfig.setEnabled(extendedThinking);
   };
 
   private readonly _handleImageRemove = (index: number) => {
     const oldImages = this.chatContextValue.images;
     const newImages = oldImages.filter((_, i) => i !== index);
     this.updateContext({ images: newImages });
-  };
-
-  private readonly _uploadImageFiles = async (_e: MouseEvent) => {
-    if (this._isImageUploadDisabled) return;
-
-    const images = await openFileOrFiles({
-      acceptType: 'Images',
-      multiple: true,
-    });
-    if (!images) return;
-    this.addImages(images);
   };
 
   private readonly _onTextareaSend = async (e: MouseEvent | KeyboardEvent) => {
@@ -513,12 +659,25 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
     this.isInputEmpty = true;
     this.textarea.style.height = 'unset';
 
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: '',
+      });
+    }
     await this.send(value);
   };
 
   send = async (text: string) => {
     try {
-      const { status, markdown, images } = this.chatContextValue;
+      const {
+        status,
+        markdown,
+        images,
+        snapshot,
+        combinedElementsMarkdown,
+        html,
+      } = this.chatContextValue;
+
       if (status === 'loading' || status === 'transmitting') return;
       if (!text) return;
       if (!AIProvider.actions.chat) return;
@@ -533,42 +692,74 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
         abortController,
       });
 
-      const attachments = await Promise.all(
+      const imageAttachments = await Promise.all(
         images?.map(image => readBlobAsURL(image))
       );
       const userInput = (markdown ? `${markdown}\n` : '') + text;
 
       // optimistic update messages
-      await this._preUpdateMessages(userInput, attachments);
+      await this._preUpdateMessages(userInput, imageAttachments);
 
-      const sessionId = await this.createSessionId();
-      let contexts = await this._getMatchedContexts(userInput);
-      contexts = this._filterContexts(contexts);
+      const sessionId = (await this.createSession())?.sessionId;
+      let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
       }
+
+      const enableSendDetailedObject =
+        this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
+          .value;
+
+      const modelId = this.aiModelService.modelId.value;
       const stream = await AIProvider.actions.chat({
         sessionId,
         input: userInput,
-        contexts,
-        docId: this.host.doc.id,
+        contexts: {
+          ...contexts,
+          selectedSnapshot:
+            snapshot && enableSendDetailedObject ? snapshot : undefined,
+          selectedMarkdown:
+            combinedElementsMarkdown && enableSendDetailedObject
+              ? combinedElementsMarkdown
+              : undefined,
+          html: html || undefined,
+        },
+        docId: this.docId,
         attachments: images,
-        workspaceId: this.host.doc.workspace.id,
-        host: this.host,
+        workspaceId: this.workspaceId,
         stream: true,
         signal: abortController.signal,
         isRootSession: this.isRootSession,
-        where: this.trackOptions.where,
-        control: this.trackOptions.control,
+        where: this.trackOptions?.where,
+        control: this.trackOptions?.control,
         webSearch: this._isNetworkActive,
         reasoning: this._isReasoningActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
+        modelId,
       });
 
       for await (const text of stream) {
-        const messages = [...this.chatContextValue.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        last.content += text;
-        this.updateContext({ messages, status: 'transmitting' });
+        const messages = this.chatContextValue.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
+              ...(last.streamObjects ?? []),
+              parsed,
+            ]);
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
+          }
+          this.updateContext({ messages, status: 'transmitting' });
+        }
       }
 
       this.updateContext({ status: 'success' });
@@ -611,63 +802,27 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
   };
 
   private readonly _postUpdateMessages = async () => {
+    const sessionId = this.session?.sessionId;
+    if (!sessionId || !AIProvider.histories) return;
+
     const { messages } = this.chatContextValue;
     const last = messages[messages.length - 1] as ChatMessage;
     if (!last.id) {
-      const sessionId = await this.getSessionId();
-      const historyIds = await AIProvider.histories?.ids(
-        this.host.doc.workspace.id,
-        this.host.doc.id,
-        { sessionId }
+      const historyIds = await AIProvider.histories.ids(
+        this.workspaceId,
+        this.docId,
+        { sessionId, withMessages: true }
       );
       if (!historyIds || !historyIds[0]) return;
       last.id = historyIds[0].messages.at(-1)?.id ?? '';
     }
   };
 
-  private async _getMatchedContexts(userInput: string) {
-    const contextId = await this.getContextId();
-    if (!contextId) {
-      return { files: [], docs: [] };
-    }
-
+  private async _getMatchedContexts() {
     const docContexts = new Map<
       string,
       { docId: string; docContent: string }
     >();
-    const fileContexts = new Map<
-      string,
-      BlockSuitePresets.AIFileContextOption
-    >();
-
-    const { files: matchedFiles = [], docs: matchedDocs = [] } =
-      (await AIProvider.context?.matchContext(contextId, userInput)) ?? {};
-
-    matchedDocs.forEach(doc => {
-      docContexts.set(doc.docId, {
-        docId: doc.docId,
-        docContent: doc.content,
-      });
-    });
-
-    matchedFiles.forEach(file => {
-      const context = fileContexts.get(file.fileId);
-      if (context) {
-        context.fileContent += `\n${file.content}`;
-      } else {
-        const fileChip = this.chips.find(
-          chip => isFileChip(chip) && chip.fileId === file.fileId
-        ) as FileChip | undefined;
-        if (fileChip && fileChip.blobId) {
-          fileContexts.set(file.fileId, {
-            blobId: fileChip.blobId,
-            fileName: fileChip.file.name,
-            fileType: fileChip.file.type,
-            fileContent: file.content,
-          });
-        }
-      }
-    });
 
     this.chips.forEach(chip => {
       if (isDocChip(chip) && !!chip.markdown?.value) {
@@ -702,46 +857,7 @@ export class AIChatInput extends SignalWatcher(WithDisposable(LitElement)) {
       };
     });
 
-    return {
-      docs,
-      files: Array.from(fileContexts.values()),
-    };
-  }
-
-  // TODO: remove this function after workspace embedding is ready
-  private _filterContexts(contexts: {
-    docs: BlockSuitePresets.AIDocContextOption[];
-    files: BlockSuitePresets.AIFileContextOption[];
-  }) {
-    const docIds = this.chips.reduce((acc, chip) => {
-      if (isDocChip(chip)) {
-        acc.push(chip.docId);
-      }
-      if (isTagChip(chip)) {
-        const docIds = this.docDisplayConfig.getTagPageIds(chip.tagId);
-        acc.push(...docIds);
-      }
-      if (isCollectionChip(chip)) {
-        const docIds = this.docDisplayConfig.getCollectionPageIds(
-          chip.collectionId
-        );
-        acc.push(...docIds);
-      }
-      return acc;
-    }, [] as string[]);
-
-    const fileIds = this.chips.reduce((acc, chip) => {
-      if (isFileChip(chip) && chip.blobId) {
-        acc.push(chip.blobId);
-      }
-      return acc;
-    }, [] as string[]);
-
-    const { docs, files } = contexts;
-    return {
-      docs: docs.filter(doc => docIds.includes(doc.docId)),
-      files: files.filter(file => fileIds.includes(file.blobId)),
-    };
+    return { docs, files: [] };
   }
 }
 

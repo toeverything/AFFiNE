@@ -2,9 +2,14 @@ import { insertEmbedIframeWithUrlCommand } from '@blocksuite/affine-block-embed'
 import {
   type InsertedLinkType,
   insertEmbedLinkedDocCommand,
+  insertEmbedSyncedDocCommand,
   type LinkableFlavour,
 } from '@blocksuite/affine-block-embed-doc';
-import { QuickSearchProvider } from '@blocksuite/affine-shared/services';
+import {
+  DocModeProvider,
+  EditorSettingProvider,
+  QuickSearchProvider,
+} from '@blocksuite/affine-shared/services';
 import type { Command } from '@blocksuite/std';
 
 import { insertBookmarkCommand } from './insert-bookmark';
@@ -26,12 +31,26 @@ export const insertLinkByQuickSearchCommand: Command<
 
       // add linked doc
       if ('docId' in result) {
-        std.command.exec(insertEmbedLinkedDocCommand, {
+        const editorMode = std.get(DocModeProvider).getEditorMode();
+        const editorSettings = std.get(EditorSettingProvider);
+        let flavour: LinkableFlavour = 'affine:embed-linked-doc';
+        if (editorMode === 'edgeless') {
+          flavour =
+            editorSettings.setting$.value.docCanvasPreferView ?? flavour;
+        }
+
+        const insertCommand =
+          flavour === 'affine:embed-linked-doc'
+            ? insertEmbedLinkedDocCommand
+            : insertEmbedSyncedDocCommand;
+
+        std.command.exec(insertCommand, {
           docId: result.docId,
           params: result.params,
         });
+
         return {
-          flavour: 'affine:embed-linked-doc',
+          flavour,
         };
       }
 

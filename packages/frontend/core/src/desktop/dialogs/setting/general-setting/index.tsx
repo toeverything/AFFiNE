@@ -95,13 +95,18 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       });
     }
 
-    settings.push({
-      key: 'meetings',
-      title: t['com.affine.settings.meetings'](),
-      icon: <MeetingIcon />,
-      testId: 'meetings-panel-trigger',
-      beta: !meetingSettings?.enabled,
-    });
+    if (
+      (environment.isMacOs || environment.isWindows) &&
+      BUILD_CONFIG.isElectron
+    ) {
+      settings.push({
+        key: 'meetings',
+        title: t['com.affine.settings.meetings'](),
+        icon: <MeetingIcon />,
+        testId: 'meetings-panel-trigger',
+        beta: !meetingSettings?.enabled,
+      });
+    }
 
     if (hasPaymentFeature) {
       settings.splice(4, 0, {

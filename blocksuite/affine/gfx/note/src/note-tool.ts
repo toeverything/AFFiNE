@@ -47,20 +47,22 @@ export class NoteTool extends BaseTool<NoteToolOption> {
 
   private _noteOverlay: NoteOverlay | null = null;
 
+  private get _surfaceComponent() {
+    return this.gfx.surfaceComponent as SurfaceBlockComponent | null;
+  }
+
   // Ensure clear overlay before adding a new note
   private _clearOverlay() {
     this._noteOverlay = this._disposeOverlay(this._noteOverlay);
     this._draggingNoteOverlay = this._disposeOverlay(this._draggingNoteOverlay);
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+    this._surfaceComponent?.refresh();
   }
 
   private _disposeOverlay(overlay: NoteOverlay | null) {
     if (!overlay) return null;
 
     overlay.dispose();
-    (
-      this.gfx.surfaceComponent as SurfaceBlockComponent
-    )?.renderer.removeOverlay(overlay);
+    this._surfaceComponent?.renderer.removeOverlay(overlay);
     return null;
   }
 
@@ -69,7 +71,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
     if (!this._noteOverlay) return;
 
     this._noteOverlay.globalAlpha = 0;
-    (this.gfx.surfaceComponent as SurfaceBlockComponent)?.refresh();
+    this._surfaceComponent?.refresh();
   }
 
   private _resize(shift = false) {
@@ -102,7 +104,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
     if (!this._noteOverlay) return;
     this._noteOverlay.x = x;
     this._noteOverlay.y = y;
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+    this._surfaceComponent?.refresh();
   }
 
   override activate() {
@@ -111,9 +113,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
     const background = attributes.background;
     this._noteOverlay = new NoteOverlay(this.gfx, background);
     this._noteOverlay.text = this.activatedOption.tip;
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).renderer.addOverlay(
-      this._noteOverlay
-    );
+    this._surfaceComponent?.renderer.addOverlay(this._noteOverlay);
   }
 
   override click(e: PointerEventState): void {
@@ -176,9 +176,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
       this.std.get(EditPropsStore).lastProps$.value['affine:note'];
     const background = attributes.background;
     this._draggingNoteOverlay = new DraggingNoteOverlay(this.gfx, background);
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).renderer.addOverlay(
-      this._draggingNoteOverlay
-    );
+    this._surfaceComponent?.renderer.addOverlay(this._draggingNoteOverlay);
   }
 
   override mounted() {

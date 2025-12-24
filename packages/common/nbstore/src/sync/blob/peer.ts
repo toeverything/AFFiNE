@@ -14,6 +14,8 @@ export interface BlobSyncPeerState {
 }
 
 export interface BlobSyncPeerBlobState {
+  needUpload: boolean;
+  needDownload: boolean;
   uploading: boolean;
   downloading: boolean;
   overSize: boolean;
@@ -62,6 +64,7 @@ export class BlobSyncPeer {
     };
 
     const promise = new Promise<boolean>((resolve, reject) => {
+      this.status.markBlobToDownload(blobId);
       // mark the blob as downloading
       this.status.blobDownloading(blobId);
 
@@ -80,6 +83,8 @@ export class BlobSyncPeer {
               new Date()
             );
             await this.local.set(data, signal);
+
+            this.status.blobDownloadSuccess(blobId);
             resolve(true);
           } else {
             // if the blob is not found, maybe the uploader have't uploaded the blob yet, we will retry several times
@@ -161,6 +166,7 @@ export class BlobSyncPeer {
     }
 
     const promise = (async () => {
+      this.status.markBlobToUpload(blob.key);
       // mark the blob as uploading
       this.status.blobUploading(blob.key);
       await this.blobSync.setBlobUploadedAt(this.peerId, blob.key, null);
@@ -172,6 +178,8 @@ export class BlobSyncPeer {
           blob.key,
           new Date()
         );
+
+        this.status.blobUploadSuccess(blob.key);
 
         // free the remote storage over capacity flag
         this.status.remoteOverCapacityFree();
@@ -249,9 +257,9 @@ export class BlobSyncPeer {
       if (uploadedAt === null) {
         needUpload.push(blob.key);
       } else {
-        // if the blob has uploaded, we clear its error flag here.
+        // if the blob has uploaded, we clear its states flags here.
         // this ensures that the sync status seen by the user is clean.
-        this.status.blobErrorFree(blob.key);
+        this.status.blobStateClear(blob.key);
       }
     }
 
@@ -261,6 +269,7 @@ export class BlobSyncPeer {
 
     // mark all blobs as will upload
     for (const blobKey of needUpload) {
+      this.status.markBlobToUpload(blobKey);
       this.status.blobWillUpload(blobKey);
     }
 
@@ -339,6 +348,7 @@ export class BlobSyncPeer {
 
     // mark all blobs as will download
     for (const blobKey of needDownload) {
+      this.status.markBlobToDownload(blobKey);
       this.status.blobWillDownload(blobKey);
     }
 
@@ -370,6 +380,11 @@ export class BlobSyncPeer {
 
 class BlobSyncPeerStatus {
   overCapacity = false;
+
+  // blobs that need to be uploaded or downloaded
+  toUpload = new Set<string>();
+  toDownload = new Set<string>();
+
   willUpload = new Set<string>();
   uploading = new Set<string>();
   downloading = new Set<string>();
@@ -403,6 +418,8 @@ class BlobSyncPeerStatus {
     return new Observable<BlobSyncPeerBlobState>(subscribe => {
       const next = () => {
         subscribe.next({
+          needUpload: this.toUpload.has(blobId),
+          needDownload: this.toDownload.has(blobId),
           uploading: this.willUpload.has(blobId) || this.uploading.has(blobId),
           downloading:
             this.willDownload.has(blobId) || this.downloading.has(blobId),
@@ -430,9 +447,32 @@ class BlobSyncPeerStatus {
 
   private readonly statusUpdatedSubject$ = new Subject<string | true>();
 
+  markBlobToUpload(blobId: string) {
+    if (!this.toUpload.has(blobId)) {
+      this.toUpload.add(blobId);
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
+  markBlobToDownload(blobId: string) {
+    if (!this.toDownload.has(blobId)) {
+      this.toDownload.add(blobId);
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
   blobUploading(blobId: string) {
     if (!this.uploading.has(blobId)) {
       this.uploading.add(blobId);
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
+  blobUploadSuccess(blobId: string) {
+    this.blobUploadFinish(blobId);
+    this.blobErrorFree(blobId);
+    const deleted = this.toUpload.delete(blobId);
+    if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }
   }
@@ -467,6 +507,15 @@ class BlobSyncPeerStatus {
     }
   }
 
+  blobDownloadSuccess(blobId: string) {
+    this.blobDownloadFinish(blobId);
+    this.blobErrorFree(blobId);
+    const deleted = this.toDownload.delete(blobId);
+    if (deleted) {
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
   blobDownloadFinish(blobId: string) {
     let deleted = false;
     deleted = this.willDownload.delete(blobId) || deleted;
@@ -474,7 +523,6 @@ class BlobSyncPeerStatus {
     if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }
-    this.blobErrorFree(blobId);
   }
 
   blobWillDownload(blobId: string) {
@@ -523,6 +571,21 @@ class BlobSyncPeerStatus {
 
   blobErrorFree(blobId: string) {
     let deleted = false;
+    deleted = this.error.delete(blobId) || deleted;
+    deleted = this.overSize.delete(blobId) || deleted;
+    if (deleted) {
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
+  blobStateClear(blobId: string) {
+    let deleted = false;
+    deleted = this.toUpload.delete(blobId) || deleted;
+    deleted = this.toDownload.delete(blobId) || deleted;
+    deleted = this.willUpload.delete(blobId) || deleted;
+    deleted = this.willDownload.delete(blobId) || deleted;
+    deleted = this.uploading.delete(blobId) || deleted;
+    deleted = this.downloading.delete(blobId) || deleted;
     deleted = this.error.delete(blobId) || deleted;
     deleted = this.overSize.delete(blobId) || deleted;
     if (deleted) {

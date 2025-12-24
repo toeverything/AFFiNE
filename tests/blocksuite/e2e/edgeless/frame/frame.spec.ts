@@ -24,9 +24,11 @@ import {
 import {
   pressBackspace,
   pressEscape,
+  redoByKeyboard,
   SHORT_KEY,
   undoByKeyboard,
 } from '../../utils/actions/keyboard.js';
+import { waitNextFrame } from '../../utils/actions/misc.js';
 import {
   assertCanvasElementsCount,
   assertContainerChildCount,
@@ -419,4 +421,103 @@ test('undo should work when create a frame by dragging', async ({ page }) => {
   await dragBetweenViewCoords(page, [0, 0], [100, 100], { steps: 50 });
   await undoByKeyboard(page);
   await expect(page.locator('affine-frame')).toHaveCount(0);
+});
+
+test('undo/redo should work when change frame background', async ({ page }) => {
+  await createFrame(page, [50, 50], [450, 450]);
+  await pressEscape(page);
+
+  const frameTitle = page.locator('affine-frame-title');
+  await frameTitle.click();
+
+  const getFrameBackground = async () => {
+    return page.locator('affine-frame .affine-frame-container').evaluate(el => {
+      return getComputedStyle(el).backgroundColor;
+    });
+  };
+  const colorPanel = page.locator('edgeless-color-picker-button');
+
+  let prevBackground = await getFrameBackground();
+
+  // preset color
+  {
+    await colorPanel.click();
+    await colorPanel.getByLabel('LightRed').click();
+    expect(await getFrameBackground()).not.toBe(prevBackground);
+
+    await undoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getFrameBackground()).toBe(prevBackground);
+
+    await redoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getFrameBackground()).not.toBe(prevBackground);
+  }
+
+  prevBackground = await getFrameBackground();
+
+  // custom color
+  {
+    await colorPanel.click();
+    await colorPanel.locator('edgeless-color-custom-button').click();
+    await page.locator('.color-palette').click({
+      position: {
+        x: 100,
+        y: 100,
+      },
+    });
+    await pressEscape(page);
+
+    expect(await getFrameBackground()).not.toBe(prevBackground);
+    await undoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getFrameBackground()).toBe(prevBackground);
+
+    await redoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getFrameBackground()).not.toBe(prevBackground);
+  }
+});
+
+test('connector and shape created simultaneously with edgeless-auto-complete should both be added to frame', async ({
+  page,
+}) => {
+  // Create a larger frame to ensure everything fits
+  const frameId = await createFrame(page, [50, 50], [650, 650]);
+
+  // Create first shape inside the frame (well within bounds)
+  const shape1Id = await createShapeElement(
+    page,
+    [150, 150],
+    [250, 250],
+    Shape.Square
+  );
+
+  // Click on the existing shape to start connection
+  await clickView(page, [200, 200]);
+
+  const autoComplete = page.locator('edgeless-auto-complete');
+  const rightArrowButton = autoComplete
+    .locator('.edgeless-auto-complete-arrow')
+    .nth(0);
+
+  await rightArrowButton.click();
+
+  // Wait for async processing
+  await waitNextFrame(page);
+
+  // Verify that the frame contains 3 children: original shape + new shape + connector
+  await assertContainerChildCount(page, frameId, 3);
+
+  // Verify by moving the frame - all elements should move together
+  const frameTitle = page.locator('affine-frame-title');
+  await frameTitle.click();
+  await dragBetweenViewCoords(page, [60, 60], [110, 110]);
+
+  // Check that the original shape moved with the frame
+  await assertEdgelessElementBound(page, shape1Id, [200, 200, 100, 100]);
+  await assertEdgelessElementBound(page, frameId, [100, 100, 600, 600]);
+
+  // Frame should still contain all 3 elements after the move
+  await assertContainerChildCount(page, frameId, 3);
 });

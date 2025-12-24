@@ -62,7 +62,9 @@ export class LicenseController {
     await using lock = await this.mutex.acquire(`license-activation:${key}`);
 
     if (!lock) {
-      throw new InvalidLicenseToActivate();
+      throw new InvalidLicenseToActivate({
+        reason: 'Too Many Requests',
+      });
     }
 
     const license = await this.db.license.findUnique({
@@ -72,10 +74,12 @@ export class LicenseController {
     });
 
     if (!license) {
-      throw new InvalidLicenseToActivate();
+      throw new InvalidLicenseToActivate({
+        reason: 'License not found',
+      });
     }
 
-    const subscription = await this.manager.getSubscription({
+    const subscription = await this.manager.getActiveSubscription({
       key: license.key,
       plan: SubscriptionPlan.SelfHostedTeam,
     });
@@ -85,7 +89,9 @@ export class LicenseController {
       license.installedAt ||
       subscription.status !== SubscriptionStatus.Active
     ) {
-      throw new InvalidLicenseToActivate();
+      throw new InvalidLicenseToActivate({
+        reason: 'Invalid license',
+      });
     }
 
     const validateKey = randomUUID();
@@ -134,7 +140,7 @@ export class LicenseController {
       },
     });
 
-    const subscription = await this.manager.getSubscription({
+    const subscription = await this.manager.getActiveSubscription({
       key,
       plan: SubscriptionPlan.SelfHostedTeam,
     });
@@ -143,8 +149,10 @@ export class LicenseController {
       throw new LicenseNotFound();
     }
 
-    if (license.validateKey && license.validateKey !== revalidateKey) {
-      throw new InvalidLicenseToActivate();
+    if (!license.validateKey || license.validateKey !== revalidateKey) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Invalid validate key',
+      });
     }
 
     const validateKey = randomUUID();

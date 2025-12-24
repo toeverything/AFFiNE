@@ -8,10 +8,10 @@ import {
   type CellRenderProps,
   type DataViewCellLifeCycle,
   renderUniLit,
-  type SingleView,
 } from '../../../core/index.js';
 import { TableViewAreaSelection } from '../selection';
-import type { TableColumn } from '../table-view-manager.js';
+import type { TableProperty } from '../table-view-manager.js';
+import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
 
 export class MobileTableCell extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -38,17 +38,17 @@ export class MobileTableCell extends SignalWatcher(
   private readonly _cell = signal<DataViewCellLifeCycle>();
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor rowId!: string;
 
   cell$ = computed(() => {
-    return this.column.cellGet(this.rowId);
+    return this.column.cellGetOrCreate(this.rowId);
   });
 
   isSelectionEditing$ = computed(() => {
-    const selection = this.table?.props.selection$.value;
+    const selection = this.tableViewLogic.selection$.value;
     if (selection?.selectionType !== 'area') {
       return false;
     }
@@ -68,8 +68,10 @@ export class MobileTableCell extends SignalWatcher(
     if (this.view.readonly$.value) {
       return;
     }
-    const setSelection = this.table?.props.setSelection;
-    const viewId = this.table?.props.view.id;
+    const setSelection = this.tableViewLogic.setSelection.bind(
+      this.tableViewLogic
+    );
+    const viewId = this.tableViewLogic.view.id;
     if (setSelection && viewId) {
       if (editing && this.cell?.beforeEnterEditMode() === false) {
         return;
@@ -97,23 +99,19 @@ export class MobileTableCell extends SignalWatcher(
     return this.closest('mobile-table-group')?.group?.key;
   }
 
-  private get table() {
-    return this.closest('mobile-data-view-table');
-  }
-
   override connectedCallback() {
     super.connectedCallback();
     if (this.column.readonly$.value) return;
     this.disposables.add(
       effect(() => {
         const isEditing = this.isSelectionEditing$.value;
-        if (isEditing) {
+        if (isEditing && !this.isEditing$.peek()) {
           this.isEditing$.value = true;
           const cell = this._cell.value;
           requestAnimationFrame(() => {
             cell?.afterEnterEditingMode();
           });
-        } else {
+        } else if (!isEditing && this.isEditing$.peek()) {
           this._cell.value?.beforeExitEditingMode();
           this.isEditing$.value = false;
         }
@@ -160,7 +158,11 @@ export class MobileTableCell extends SignalWatcher(
   accessor rowIndex!: number;
 
   @property({ attribute: false })
-  accessor view!: SingleView;
+  accessor tableViewLogic!: MobileTableViewUILogic;
+
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

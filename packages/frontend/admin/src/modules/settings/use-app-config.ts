@@ -25,7 +25,7 @@ export const useAppConfig = () => {
     query: appConfigQuery,
   });
 
-  const { trigger } = useMutation({
+  const { trigger: saveUpdates } = useMutation({
     mutation: updateAppConfigMutation,
   });
 
@@ -50,7 +50,7 @@ export const useAppConfig = () => {
     );
 
     try {
-      const savedUpdates = await trigger({
+      const savedUpdates = await saveUpdates({
         updates: updateInputs,
       });
       await mutate(prev => {
@@ -69,7 +69,7 @@ export const useAppConfig = () => {
       });
       console.error(e);
     }
-  }, [updates, mutate, trigger]);
+  }, [updates, mutate, saveUpdates]);
 
   const update = useCallback(
     (path: string, value: any) => {

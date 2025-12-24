@@ -106,6 +106,10 @@ export class CalendarIntegration extends Entity {
     }
   }
 
+  getSubscription(url: string) {
+    return this.store.getSubscription(url);
+  }
+
   deleteSubscription(url: string) {
     this.store.removeSubscription(url);
   }

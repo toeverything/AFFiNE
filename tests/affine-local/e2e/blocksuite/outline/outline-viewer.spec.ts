@@ -179,6 +179,25 @@ test('should hide edgeless-only note headings', async ({ page }) => {
   await expect(h1InPanel).toContainText(['Heading 1']);
 });
 
+test('outline viewer should update after change heading in edgeless mode', async ({
+  page,
+}) => {
+  await createTitle(page);
+  await pressEnter(page);
+
+  await type(page, '# ');
+  await type(page, 'Heading 1');
+
+  await clickEdgelessModeButton(page);
+  const note = page.locator('affine-edgeless-note');
+  await note.dblclick();
+  await type(page, '# New Heading');
+  await clickPageModeButton(page);
+
+  const indicators = getIndicators(page);
+  await expect(indicators).toHaveCount(3);
+});
+
 test('outline viewer should be useable in doc peek preview', async ({
   page,
 }) => {

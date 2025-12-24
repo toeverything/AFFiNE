@@ -194,7 +194,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
             .value=${fillColor}
             .theme=${this._theme$.value}
             .palettes=${DefaultTheme.FillColorShortPalettes}
-            .hasTransparent=${!this.edgeless.doc
+            .hasTransparent=${!this.edgeless.store
               .get(FeatureFlagService)
               .getFlag('enable_color_picker')}
             @select=${(e: ColorEvent) => this._setFillColor(e.detail)}

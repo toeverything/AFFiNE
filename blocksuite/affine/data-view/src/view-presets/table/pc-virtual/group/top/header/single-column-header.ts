@@ -40,12 +40,13 @@ import {
 } from '../../../../../../core/utils/wc-dnd/dnd-context';
 import type { Property } from '../../../../../../core/view-manager/property';
 import { numberFormats } from '../../../../../../property-presets/number/utils/formats';
-import { ShowQuickSettingBarContextKey } from '../../../../../../widget-presets/quick-setting-bar/context';
+import {
+  createDefaultShowQuickSettingBar,
+  ShowQuickSettingBarKey,
+} from '../../../../../../widget-presets/quick-setting-bar/context';
 import { DEFAULT_COLUMN_TITLE_HEIGHT } from '../../../../consts';
-import type {
-  TableColumn,
-  TableSingleView,
-} from '../../../../table-view-manager';
+import type { TableProperty } from '../../../../table-view-manager';
+import type { VirtualTableViewUILogic } from '../../../table-view-ui-logic';
 import {
   getTableGroupRect,
   getVerticalIndicator,
@@ -86,9 +87,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
           return menu.action({
             name: config.config.name,
             isSelected: config.type === this.column.type$.value,
-            prefix: renderUniLit(
-              this.tableViewManager.propertyIconGet(config.type)
-            ),
+            prefix: renderUniLit(config.renderer.icon),
             select: () => {
               this.column.typeSet?.(config.type);
             },
@@ -172,7 +171,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
 
     const sortUtils = createSortUtils(
       sortTrait,
-      this.closest('affine-data-view-renderer')?.view?.eventTrace ?? (() => {})
+      this.tableViewLogic.eventTrace ?? (() => {})
     );
     const sortList = sortUtils.sortList$.value;
     const existingIndex = sortList.findIndex(
@@ -195,7 +194,10 @@ export class DatabaseHeaderColumn extends SignalWatcher(
   }
 
   private _toggleQuickSettingBar(show = true) {
-    const map = this.tableViewManager.contextGet(ShowQuickSettingBarContextKey);
+    const map = this.tableViewManager.serviceGetOrCreate(
+      ShowQuickSettingBarKey,
+      createDefaultShowQuickSettingBar
+    );
     map.value = {
       ...map.value,
       [this.tableViewManager.id]: show,
@@ -326,16 +328,14 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Move Left',
                 prefix: MoveLeftIcon(),
-                hide: () => this.column.isFirst,
+                hide: () => this.column.isFirst$.value,
                 select: () => {
-                  const preId = this.tableViewManager.propertyPreGet(
-                    this.column.id
-                  )?.id;
-                  if (!preId) {
+                  const pre = this.column.prev$.value;
+                  if (!pre) {
                     return;
                   }
-                  this.tableViewManager.propertyMove(this.column.id, {
-                    id: preId,
+                  this.column.move({
+                    id: pre.id,
                     before: true,
                   });
                 },
@@ -343,16 +343,14 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Move Right',
                 prefix: MoveRightIcon(),
-                hide: () => this.column.isLast,
+                hide: () => this.column.isLast$.value,
                 select: () => {
-                  const nextId = this.tableViewManager.propertyNextGet(
-                    this.column.id
-                  )?.id;
-                  if (!nextId) {
+                  const next = this.column.next$.value;
+                  if (!next) {
                     return;
                   }
-                  this.tableViewManager.propertyMove(this.column.id, {
-                    id: nextId,
+                  this.column.move({
+                    id: next.id,
                     before: false,
                   });
                 },
@@ -398,28 +396,25 @@ export class DatabaseHeaderColumn extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
-    const table = this.closest('affine-database-table');
-    if (table) {
-      this.disposables.add(
-        table.props.handleEvent('dragStart', context => {
-          if (this.tableViewManager.readonly$.value) {
-            return;
-          }
-          const event = context.get('pointerState').raw;
-          const target = event.target;
-          if (
-            target instanceof Element &&
-            this.widthDragBar.value?.contains(target)
-          ) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.widthDragStart(event);
-            return true;
-          }
-          return false;
-        })
-      );
-    }
+    this.disposables.add(
+      this.tableViewLogic.handleEvent('dragStart', context => {
+        if (this.tableViewManager.readonly$.value) {
+          return;
+        }
+        const event = context.get('pointerState').raw;
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          this.widthDragBar.value?.contains(target)
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.widthDragStart(event);
+          return true;
+        }
+        return false;
+      })
+    );
   }
 
   override render() {
@@ -475,13 +470,17 @@ export class DatabaseHeaderColumn extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor grabStatus: 'grabStart' | 'grabEnd' | 'grabbing' = 'grabEnd';
 
   @property({ attribute: false })
-  accessor tableViewManager!: TableSingleView;
+  accessor tableViewLogic!: VirtualTableViewUILogic;
+
+  get tableViewManager() {
+    return this.tableViewLogic.view;
+  }
 }
 
 function numberFormatConfig(column: Property): MenuConfig {

@@ -27,11 +27,15 @@ export class JobExecutor implements OnModuleDestroy {
 
   @OnEvent('config.init')
   async onConfigInit() {
-    const queues = env.flavors.graphql ? difference(QUEUES, [Queue.DOC]) : [];
+    const queues = env.flavors.graphql
+      ? difference(QUEUES, [Queue.DOC, Queue.INDEXER])
+      : [];
 
     // NOTE(@forehalo): only enable doc queue in doc service
     if (env.flavors.doc) {
       queues.push(Queue.DOC);
+      // NOTE(@fengmk2): Once the index task cannot be processed in time, it needs to be separated from the doc service and deployed independently.
+      queues.push(Queue.INDEXER);
     }
 
     await this.startWorkers(queues);
@@ -54,7 +58,8 @@ export class JobExecutor implements OnModuleDestroy {
 
   async run<T extends JobName>(
     name: T,
-    payload: Jobs[T]
+    payload: Jobs[T],
+    jobId?: string
   ): Promise<JOB_SIGNAL | undefined> {
     const ns = namespace(name);
     const handler = this.scanner.getHandler(name);
@@ -66,11 +71,11 @@ export class JobExecutor implements OnModuleDestroy {
 
     const fn = wrapCallMetric(
       async () => {
-        const signature = `[${name}] (${handler.name})`;
+        const signature = `[${name}] (${handler.name}, id=${jobId})`;
         try {
-          this.logger.debug(`Job started: ${signature}`);
+          this.logger.log(`Job started: ${signature}`);
           const ret = await handler.fn(payload);
-          this.logger.debug(`Job finished: ${signature}, signal=${ret}`);
+          this.logger.log(`Job finished: ${signature}, signal=${ret}`);
           return ret;
         } catch (e) {
           this.logger.error(`Job failed: ${signature}`, e);
@@ -125,7 +130,7 @@ export class JobExecutor implements OnModuleDestroy {
 
           return await cls.run(async () => {
             cls.set(CLS_ID, requestId);
-            return await this.run(job.name as JobName, payload);
+            return await this.run(job.name as JobName, payload, job.id);
           });
         },
         merge({}, this.config.job.queue, this.config.job.worker, queueOptions, {
@@ -157,7 +162,12 @@ export class JobExecutor implements OnModuleDestroy {
   async handleJobReturn(job: Job, result: JOB_SIGNAL) {
     if (result === JOB_SIGNAL.Repeat || result === JOB_SIGNAL.Retry) {
       try {
-        await this.getQueue(job.name).add(job.name, job.data, job.opts);
+        await this.getQueue(namespace(job.name as JobName)).add(
+          job.name,
+          job.data,
+          job.opts
+        );
+        this.logger.debug(`Added job [${job.name}] to queue, signal=${result}`);
       } catch (e) {
         this.logger.error(`Failed to add job [${job.name}]`, e);
       }

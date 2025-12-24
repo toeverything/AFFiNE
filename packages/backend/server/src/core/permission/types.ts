@@ -65,6 +65,13 @@ export const Actions = {
       Read: '',
       Manage: '',
     },
+    Comments: {
+      Read: '',
+      Create: '',
+      Update: '',
+      Delete: '',
+      Resolve: '',
+    },
   },
 } as const;
 
@@ -112,7 +119,12 @@ export const RoleActionsMap = {
   },
   DocRole: {
     get [DocRole.External]() {
-      return [Action.Doc.Read, Action.Doc.Copy, Action.Doc.Properties.Read];
+      return [
+        Action.Doc.Read,
+        Action.Doc.Copy,
+        Action.Doc.Properties.Read,
+        Action.Doc.Comments.Read,
+      ];
     },
     get [DocRole.Reader]() {
       return [
@@ -121,14 +133,20 @@ export const RoleActionsMap = {
         Action.Doc.Duplicate,
       ];
     },
+    get [DocRole.Commenter]() {
+      return [...this[DocRole.Reader], Action.Doc.Comments.Create];
+    },
     get [DocRole.Editor]() {
       return [
         ...this[DocRole.Reader],
+        ...this[DocRole.Commenter],
         Action.Doc.Trash,
         Action.Doc.Restore,
         Action.Doc.Delete,
         Action.Doc.Properties.Update,
         Action.Doc.Update,
+        Action.Doc.Comments.Resolve,
+        Action.Doc.Comments.Delete,
       ];
     },
     get [DocRole.Manager]() {
@@ -150,6 +168,8 @@ type ResourceActionName<T extends keyof typeof Actions> =
 export type WorkspaceAction = ResourceActionName<'Workspace'>;
 export type DocAction = ResourceActionName<'Doc'>;
 export type Action = WorkspaceAction | DocAction;
+export type WorkspaceActionPermissions = Record<WorkspaceAction, boolean>;
+export type DocActionPermissions = Record<DocAction, boolean>;
 
 const cache = new WeakMap<object, any>();
 const buildPathReader = (
@@ -194,13 +214,10 @@ export const DOC_ACTIONS = RoleActionsMap.DocRole[DocRole.Owner];
 export function mapWorkspaceRoleToPermissions(
   workspaceRole: WorkspaceRole | null
 ) {
-  const permissions = WORKSPACE_ACTIONS.reduce(
-    (map, action) => {
-      map[action] = false;
-      return map;
-    },
-    {} as Record<WorkspaceAction, boolean>
-  );
+  const permissions = WORKSPACE_ACTIONS.reduce((map, action) => {
+    map[action] = false;
+    return map;
+  }, {} as WorkspaceActionPermissions);
 
   if (workspaceRole === null) {
     return permissions;
@@ -214,13 +231,10 @@ export function mapWorkspaceRoleToPermissions(
 }
 
 export function mapDocRoleToPermissions(docRole: DocRole | null) {
-  const permissions = DOC_ACTIONS.reduce(
-    (map, action) => {
-      map[action] = false;
-      return map;
-    },
-    {} as Record<DocAction, boolean>
-  );
+  const permissions = DOC_ACTIONS.reduce((map, action) => {
+    map[action] = false;
+    return map;
+  }, {} as DocActionPermissions);
 
   if (docRole === null || docRole === DocRole.None) {
     return permissions;

@@ -41,7 +41,11 @@ import {
   SizeVariables,
   StyleVariables,
 } from '@blocksuite/affine/shared/theme';
-import { openFileOrFiles, printToPdf } from '@blocksuite/affine/shared/utils';
+import {
+  openFilesWith,
+  openSingleFileWith,
+  printToPdf,
+} from '@blocksuite/affine/shared/utils';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import {
@@ -70,7 +74,7 @@ import type { Pane } from 'tweakpane';
 import type { CommentPanel } from '../../comment/index.js';
 import { createTestEditor } from '../../starter/utils/extensions.js';
 import { mockEdgelessTheme } from '../mock-services.js';
-import { AdaptersPanel } from './adapters-panel.js';
+import type { CustomAdapterPanel } from './custom-adapter-panel.js';
 import type { CustomFramePanel } from './custom-frame-panel.js';
 import type { CustomOutlinePanel } from './custom-outline-panel.js';
 import type { CustomOutlineViewer } from './custom-outline-viewer.js';
@@ -339,10 +343,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importHTML() {
     try {
-      const files = await openFileOrFiles({
-        acceptType: 'Html',
-        multiple: true,
-      });
+      const files = await openFilesWith('Html');
 
       if (!files) return;
 
@@ -373,7 +374,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importHTMLZip() {
     try {
-      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      const file = await openSingleFileWith('Zip');
       if (!file) return;
       const result = await HtmlTransformer.importHTMLZip({
         collection: this.collection,
@@ -393,10 +394,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importMarkdown() {
     try {
-      const files = await openFileOrFiles({
-        acceptType: 'Markdown',
-        multiple: true,
-      });
+      const files = await openFilesWith('Markdown');
 
       if (!files) return;
 
@@ -427,7 +425,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importMarkdownZip() {
     try {
-      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      const file = await openSingleFileWith('Zip');
       if (!file) return;
       const result = await MarkdownTransformer.importMarkdownZip({
         collection: this.collection,
@@ -447,10 +445,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importNotionHTML() {
     try {
-      const file = await openFileOrFiles({
-        acceptType: 'Html',
-        multiple: false,
-      });
+      const file = await openSingleFileWith('Html');
       if (!file) return;
       const doc = this.editor.doc;
       const job = doc.getTransformer([defaultImageProxyMiddleware]);
@@ -467,7 +462,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importNotionHTMLZip() {
     try {
-      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      const file = await openSingleFileWith('Zip');
       if (!file) return;
       const result = await NotionHtmlTransformer.importNotionZip({
         collection: this.collection,
@@ -612,26 +607,6 @@ export class StarterDebugMenu extends ShadowlessElement {
     this._hasOffset = !this._hasOffset;
   }
 
-  private _toggleAdaptersPanel() {
-    const app = document.querySelector('#app');
-    if (!app) return;
-
-    const currentAdaptersPanel = app.querySelector('adapters-panel');
-    if (currentAdaptersPanel) {
-      currentAdaptersPanel.remove();
-      (app as HTMLElement).style.display = 'block';
-      this.editor.style.width = '100%';
-      this.editor.style.flex = '';
-      return;
-    }
-
-    const adaptersPanel = new AdaptersPanel();
-    adaptersPanel.editor = this.editor;
-    app.append(adaptersPanel);
-    this.editor.style.flex = '1';
-    (app as HTMLElement).style.display = 'flex';
-  }
-
   private _toggleCommentPanel() {
     document.body.append(this.commentPanel);
   }
@@ -647,6 +622,10 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private _toggleFramePanel() {
     this.framePanel.toggleDisplay();
+  }
+
+  private _toggleAdapterPanel() {
+    this.adapterPanel.toggleDisplay();
   }
 
   private _toggleMultipleEditors() {
@@ -746,7 +725,7 @@ export class StarterDebugMenu extends ShadowlessElement {
   }
 
   override firstUpdated() {
-    this.doc.slots.historyUpdated.subscribe(() => {
+    this.doc.history.onUpdated.subscribe(() => {
       this._canUndo = this.doc.canUndo;
       this._canRedo = this.doc.canRedo;
     });
@@ -926,8 +905,8 @@ export class StarterDebugMenu extends ShadowlessElement {
               <sl-menu-item @click="${this._toggleMultipleEditors}">
                 Toggle Multiple Editors
               </sl-menu-item>
-              <sl-menu-item @click="${this._toggleAdaptersPanel}">
-                Toggle Adapters Panel
+              <sl-menu-item @click="${this._toggleAdapterPanel}">
+                Toggle Adapter Panel
               </sl-menu-item>
             </sl-menu>
           </sl-dropdown>
@@ -1031,6 +1010,9 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   @property({ attribute: false })
   accessor framePanel!: CustomFramePanel;
+
+  @property({ attribute: false })
+  accessor adapterPanel!: CustomAdapterPanel;
 
   @property({ attribute: false })
   accessor leftSidePanel!: LeftSidePanel;

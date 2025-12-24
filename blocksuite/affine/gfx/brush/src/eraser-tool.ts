@@ -34,6 +34,10 @@ export class EraserTool extends BaseTool {
 
   private readonly _eraseTargets = new Set<GfxModel>();
 
+  private get _surfaceComponent() {
+    return this.gfx.surfaceComponent as SurfaceBlockComponent | null;
+  }
+
   private readonly _loop = () => {
     const now = Date.now();
     const elapsed = now - this._timestamp;
@@ -59,7 +63,7 @@ export class EraserTool extends BaseTool {
         })
       );
       this._overlay.d = d;
-      (this.gfx.surfaceComponent as SurfaceBlockComponent)?.refresh();
+      this._surfaceComponent?.refresh();
     }
     this._timer = requestAnimationFrame(this._loop);
   };
@@ -81,9 +85,7 @@ export class EraserTool extends BaseTool {
       return;
     }
 
-    (
-      this.gfx.surfaceComponent as SurfaceBlockComponent
-    )?.renderer.removeOverlay(this._overlay);
+    this._surfaceComponent?.renderer.removeOverlay(this._overlay);
     this._erasable.clear();
     this._eraseTargets.clear();
   }
@@ -150,8 +152,7 @@ export class EraserTool extends BaseTool {
       ...this.gfx.layer.blocks,
     ]);
     this._loop();
-    (this.gfx.surfaceComponent as SurfaceBlockComponent)?.renderer.addOverlay(
-      this._overlay
-    );
+
+    this._surfaceComponent?.renderer.addOverlay(this._overlay);
   }
 }

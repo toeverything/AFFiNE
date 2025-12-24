@@ -31,12 +31,15 @@ describe('frame', () => {
     );
     await wait();
 
-    const frameTitleWidget = service.std.view.getWidget(
-      'affine-frame-title-widget',
-      doc.root!.id
-    ) as AffineFrameTitleWidget | null;
+    const getFrameTitle = (frameId: string) => {
+      const frameTitleWidget = service.std.view.getWidget(
+        'affine-frame-title-widget',
+        frameId
+      ) as AffineFrameTitleWidget | null;
+      return frameTitleWidget?.shadowRoot?.querySelector('affine-frame-title');
+    };
 
-    const frameTitle = frameTitleWidget?.getFrameTitle(frame);
+    const frameTitle = getFrameTitle(frame);
     const rect = frameTitle?.getBoundingClientRect();
 
     expect(frameTitle).toBeTruthy();
@@ -58,7 +61,7 @@ describe('frame', () => {
     );
     await wait();
 
-    const nestedTitle = frameTitleWidget?.getFrameTitle(nestedFrame);
+    const nestedTitle = getFrameTitle(nestedFrame);
     expect(nestedTitle).toBeTruthy();
     if (!nestedTitle) return;
 

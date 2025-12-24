@@ -1,4 +1,5 @@
 import type { ListBlockModel } from '@blocksuite/affine-model';
+import { getNumberPrefix } from '@blocksuite/affine-shared/utils';
 import {
   BulletedList01Icon,
   BulletedList02Icon,
@@ -11,14 +12,12 @@ import {
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
-import { getNumberPrefix } from './get-number-prefix.js';
-
 const getListDeep = (model: ListBlockModel): number => {
   let deep = 0;
-  let parent = model.doc.getParent(model);
+  let parent = model.store.getParent(model);
   while (parent?.flavour === model.flavour) {
     deep++;
-    parent = model.doc.getParent(parent);
+    parent = model.store.getParent(parent);
   }
   return deep;
 };
@@ -56,7 +55,7 @@ export function getListIcon(
     case 'todo':
       return html`<div
         contenteditable="false"
-        class=${`affine-list-block__prefix affine-list-block__todo-prefix ${model.doc.readonly ? 'readonly' : ''}`}
+        class=${`affine-list-block__prefix affine-list-block__todo-prefix ${model.store.readonly ? 'readonly' : ''}`}
         @click=${onClick}
       >
         ${model.props.checked

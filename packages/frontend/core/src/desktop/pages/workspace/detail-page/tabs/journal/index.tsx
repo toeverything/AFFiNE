@@ -9,7 +9,6 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { Guard } from '@affine/core/components/guard';
-import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import {
   type DocRecord,
@@ -18,7 +17,10 @@ import {
 } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { JournalService } from '@affine/core/modules/journal';
-import { WorkbenchLink } from '@affine/core/modules/workbench';
+import {
+  WorkbenchLink,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { CalendarXmarkIcon, EditIcon } from '@blocksuite/icons/rc';
 import {
@@ -47,8 +49,10 @@ const CountDisplay = ({
 }: { count: number; max?: number } & HTMLAttributes<HTMLSpanElement>) => {
   return <span {...attrs}>{count > max ? `${max}+` : count}</span>;
 };
-interface PageItemProps
-  extends Omit<HTMLAttributes<HTMLAnchorElement>, 'onClick'> {
+interface PageItemProps extends Omit<
+  HTMLAttributes<HTMLAnchorElement>,
+  'onClick'
+> {
   docId: string;
   right?: ReactNode;
   duplicate?: boolean;
@@ -103,13 +107,25 @@ const mobile = environment.isMobile;
 export const EditorJournalPanel = () => {
   const t = useI18n();
   const doc = useServiceOptional(DocService)?.doc;
+  const workbench = useService(WorkbenchService).workbench;
   const journalService = useService(JournalService);
   const journalDateStr = useLiveData(
     doc ? journalService.journalDate$(doc.id) : null
   );
   const journalDate = journalDateStr ? dayjs(journalDateStr) : null;
   const isJournal = !!journalDate;
-  const { openJournal } = useJournalRouteHelper();
+
+  const openJournal = useCallback(
+    (date: string) => {
+      const docs = journalService.journalsByDate$(date).value;
+      if (docs.length > 0) {
+        workbench.openDoc(docs[0].id, { at: 'active' });
+      } else {
+        workbench.open(`/journals?date=${date}`, { at: 'active' });
+      }
+    },
+    [journalService, workbench]
+  );
 
   const onDateSelect = useCallback(
     (date: string) => {
@@ -307,8 +323,7 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
 
 const MAX_CONFLICT_COUNT = 5;
 interface ConflictListProps
-  extends PropsWithChildren,
-    HTMLAttributes<HTMLDivElement> {
+  extends PropsWithChildren, HTMLAttributes<HTMLDivElement> {
   docRecords: DocRecord[];
 }
 const ConflictList = ({

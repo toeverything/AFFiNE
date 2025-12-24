@@ -38,6 +38,9 @@ type KeyboardShortcutsI18NKeys =
   | 'bodyText'
   | 'increaseIndent'
   | 'reduceIndent'
+  | 'alignLeft'
+  | 'alignCenter'
+  | 'alignRight'
   | 'groupDatabase'
   | 'moveUp'
   | 'moveDown'
@@ -83,7 +86,7 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
       [t('goBack')]: ['Ctrl', '['],
       [t('goForward')]: ['Ctrl', ']'],
-      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
+      [t('copy-private-link')]: ['Ctrl', '⇧', 'C'],
     }),
     [t]
   );
@@ -185,6 +188,9 @@ export const useMacPageKeyboardShortcuts = (): ShortcutMap => {
       [tH('6')]: ['⌘', '⌥', '6'],
       [t('increaseIndent')]: ['Tab'],
       [t('reduceIndent')]: ['⇧', 'Tab'],
+      [t('alignLeft')]: ['⌘', '⇧', 'L'],
+      [t('alignCenter')]: ['⌘', '⇧', 'E'],
+      [t('alignRight')]: ['⌘', '⇧', 'R'],
       [t('groupDatabase')]: ['⌘', 'G'],
       [t('switch')]: ['⌥', 'S'],
       // not implement yet
@@ -231,7 +237,7 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [t('strikethrough')]: ['Ctrl', 'Shift', 'S'],
       [t('inlineCode')]: [' Ctrl', 'E'],
       [t('codeBlock')]: ['Ctrl', 'Alt', 'C'],
-      [t('link')]: ['Ctr', 'K'],
+      [t('link')]: ['Ctrl', 'K'],
       [t('quickSearch')]: ['Ctrl', 'K'],
       [t('bodyText')]: ['Ctrl', 'Shift', '0'],
       [tH('1')]: ['Ctrl', 'Shift', '1'],
@@ -242,6 +248,9 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [tH('6')]: ['Ctrl', 'Shift', '6'],
       [t('increaseIndent')]: ['Tab'],
       [t('reduceIndent')]: ['Shift+Tab'],
+      [t('alignLeft')]: ['Ctrl', 'Shift', 'L'],
+      [t('alignCenter')]: ['Ctrl', 'Shift', 'E'],
+      [t('alignRight')]: ['Ctrl', 'Shift', 'R'],
       [t('groupDatabase')]: ['Ctrl + G'],
       ['Switch']: ['Alt + S'],
       // not implement yet

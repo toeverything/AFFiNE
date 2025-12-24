@@ -4,7 +4,9 @@ import {
   deleteWorkspaceMutation,
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
+  Permission,
   ServerDeploymentType,
+  ServerFeature,
 } from '@affine/graphql';
 import type {
   BlobStorage,
@@ -46,7 +48,13 @@ import {
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { map, Observable, switchMap, tap } from 'rxjs';
-import { type Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  type Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  type Map as YMap,
+} from 'yjs';
 
 import type { Server, ServersService } from '../../cloud';
 import {
@@ -169,6 +177,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const docCollection = new WorkspaceImpl({
       id: workspaceId,
+      rootDoc: new YDoc({ guid: workspaceId }),
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
@@ -207,6 +216,13 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           bin: encodeStateAsUpdate(subdocs),
         });
       }
+
+      const accountId = this.authService.session.account$.value?.id;
+      await this.writeInitialDocProperties(
+        workspaceId,
+        docStorage,
+        accountId ?? ''
+      );
 
       docStorage.connection.disconnect();
       blobStorage.connection.disconnect();
@@ -319,15 +335,18 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     const localData = (await docStorage.getDoc(id))?.bin;
     const cloudData = (await cloudStorage.getDoc(id))?.bin;
 
+    const isEmpty = isEmptyUpdate(localData) && isEmptyUpdate(cloudData);
+
     docStorage.connection.disconnect();
 
     const info = await this.getWorkspaceInfo(id, signal);
 
     if (!cloudData && !localData) {
       return {
-        isOwner: info.isOwner,
-        isAdmin: info.isAdmin,
+        isOwner: info.workspace.role === Permission.Owner,
+        isAdmin: info.workspace.role === Permission.Admin,
         isTeam: info.workspace.team,
+        isEmpty,
       };
     }
 
@@ -341,11 +360,13 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return {
       name: result.name,
       avatar: result.avatar,
-      isOwner: info.isOwner,
-      isAdmin: info.isAdmin,
+      isOwner: info.workspace.role === Permission.Owner,
+      isAdmin: info.workspace.role === Permission.Admin,
       isTeam: info.workspace.team,
+      isEmpty,
     };
   }
+
   async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
     const storage = new this.BlobStorageType({
       id: id,
@@ -507,6 +528,19 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
                 ServerDeploymentType.Selfhosted,
             },
           },
+          indexer: this.server.config$.value.features.includes(
+            ServerFeature.Indexer
+          )
+            ? {
+                name: 'CloudIndexerStorage',
+                opts: {
+                  flavour: this.flavour,
+                  type: 'workspace',
+                  id: workspaceId,
+                  serverBaseUrl: this.server.serverMetadata.baseUrl,
+                },
+              }
+            : undefined,
         },
         v1: {
           doc: this.DocStorageV1Type
@@ -530,6 +564,45 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         },
       },
     };
+  }
+
+  async writeInitialDocProperties(
+    workspaceId: string,
+    docStorage: DocStorage,
+    creatorId: string
+  ) {
+    try {
+      const rootDocBuffer = await docStorage.getDoc(workspaceId);
+      const rootDoc = new YDoc({ guid: workspaceId });
+      if (rootDocBuffer) {
+        applyUpdate(rootDoc, rootDocBuffer.bin);
+      }
+
+      const docIds = (
+        rootDoc.getMap('meta').get('pages') as YArray<YMap<string>>
+      )
+        ?.map(page => page.get('id'))
+        .filter(Boolean) as string[];
+
+      const propertiesDBBuffer = await docStorage.getDoc('db$docProperties');
+      const propertiesDB = new YDoc({ guid: 'db$docProperties' });
+      if (propertiesDBBuffer) {
+        applyUpdate(propertiesDB, propertiesDBBuffer.bin);
+      }
+
+      for (const docId of docIds) {
+        const docProperties = propertiesDB.getMap(docId);
+        docProperties.set('id', docId);
+        docProperties.set('createdBy', creatorId);
+      }
+
+      await docStorage.pushDocUpdate({
+        docId: 'db$docProperties',
+        bin: encodeStateAsUpdate(propertiesDB),
+      });
+    } catch (error) {
+      logger.error('error to write initial doc properties', error);
+    }
   }
 
   private waitForLoaded() {
@@ -589,5 +662,15 @@ export class CloudWorkspaceFlavoursProvider
         obj.dispose();
       },
     }
+  );
+}
+
+export function isEmptyUpdate(binary: Uint8Array | undefined) {
+  if (!binary) {
+    return true;
+  }
+  return (
+    binary.byteLength === 0 ||
+    (binary.byteLength === 2 && binary[0] === 0 && binary[1] === 0)
   );
 }

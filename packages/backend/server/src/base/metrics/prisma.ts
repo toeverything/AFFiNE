@@ -1,11 +1,10 @@
 import { HrTime, ValueType } from '@opentelemetry/api';
 import { hrTime } from '@opentelemetry/core';
-import { Resource } from '@opentelemetry/resources';
+import { emptyResource } from '@opentelemetry/resources';
 import {
   AggregationTemporality,
   CollectionResult,
   DataPointType,
-  InstrumentType,
   MetricProducer,
   ScopeMetrics,
 } from '@opentelemetry/sdk-metrics';
@@ -24,7 +23,7 @@ export class PrismaMetricProducer implements MetricProducer {
   async collect(): Promise<CollectionResult> {
     const result: CollectionResult = {
       resourceMetrics: {
-        resource: Resource.EMPTY,
+        resource: emptyResource(),
         scopeMetrics: [],
       },
       errors: [],
@@ -51,7 +50,6 @@ export class PrismaMetricProducer implements MetricProducer {
           name: transformPrismaKey(counter.key),
           description: counter.description,
           unit: '1',
-          type: InstrumentType.COUNTER,
           valueType: ValueType.INT,
         },
         dataPointType: DataPointType.SUM,
@@ -74,7 +72,6 @@ export class PrismaMetricProducer implements MetricProducer {
           name: transformPrismaKey(gauge.key),
           description: gauge.description,
           unit: '1',
-          type: InstrumentType.UP_DOWN_COUNTER,
           valueType: ValueType.INT,
         },
         dataPointType: DataPointType.GAUGE,
@@ -102,7 +99,6 @@ export class PrismaMetricProducer implements MetricProducer {
           name: transformPrismaKey(histogram.key),
           description: histogram.description,
           unit: 'ms',
-          type: InstrumentType.HISTOGRAM,
           valueType: ValueType.DOUBLE,
         },
         dataPointType: DataPointType.HISTOGRAM,

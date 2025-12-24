@@ -8,7 +8,7 @@ export type EmbedFigmaBlockUrlData = {
   description: string | null;
 };
 
-export const EmbedFigmaStyles: EmbedCardStyle[] = ['figma'] as const;
+export const EmbedFigmaStyles = ['figma'] as const satisfies EmbedCardStyle[];
 
 export type EmbedFigmaBlockProps = {
   style: (typeof EmbedFigmaStyles)[number];

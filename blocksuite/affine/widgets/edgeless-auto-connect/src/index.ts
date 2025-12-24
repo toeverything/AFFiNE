@@ -317,7 +317,7 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<RootBlockModel> {
       })
     );
     this._disposables.add(
-      this.doc.slots.blockUpdated.subscribe(payload => {
+      this.store.slots.blockUpdated.subscribe(payload => {
         if (payload.flavour === 'affine:surface-ref') {
           switch (payload.type) {
             case 'add':
@@ -585,7 +585,7 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<RootBlockModel> {
   }
 
   override render() {
-    const advancedVisibilityEnabled = this.doc
+    const advancedVisibilityEnabled = this.store
       .get(FeatureFlagService)
       .getFlag('enable_advanced_block_visibility');
 

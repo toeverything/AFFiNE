@@ -52,6 +52,7 @@ export type BaseElementProps = {
   index: string;
   seed: number;
   lockedBySelf?: boolean;
+  comments?: Record<string, boolean>;
 };
 
 export type SerializedElement = Record<string, unknown> & {
@@ -60,12 +61,12 @@ export type SerializedElement = Record<string, unknown> & {
   id: string;
   index: string;
   lockedBySelf?: boolean;
+  comments?: Record<string, boolean>;
   props: Record<string, unknown>;
 };
 export abstract class GfxPrimitiveElementModel<
   Props extends BaseElementProps = BaseElementProps,
-> implements GfxCompatibleInterface
-{
+> implements GfxCompatibleInterface {
   private _lastXYWH!: SerializedXYWH;
 
   protected _disposable = new DisposableGroup();
@@ -256,7 +257,7 @@ export abstract class GfxPrimitiveElementModel<
   }
 
   lock() {
-    lockElementImpl(this.surface.doc, this);
+    lockElementImpl(this.surface.store, this);
   }
 
   onCreated() {}
@@ -278,9 +279,7 @@ export abstract class GfxPrimitiveElementModel<
 
     if (getFieldPropsSet(this).has(prop as string)) {
       if (!isEqual(value, this.yMap.get(prop as string))) {
-        this.surface.doc.transact(() => {
-          this.yMap.set(prop as string, value);
-        });
+        this.yMap.set(prop as string, value);
       }
     } else {
       console.warn('pop a prop that is not field or local:', prop);
@@ -339,7 +338,7 @@ export abstract class GfxPrimitiveElementModel<
   }
 
   unlock() {
-    unlockElementImpl(this.surface.doc, this);
+    unlockElementImpl(this.surface.store, this);
   }
 
   @local()
@@ -374,11 +373,14 @@ export abstract class GfxPrimitiveElementModel<
 
   @field()
   accessor seed!: number;
+
+  @field()
+  accessor comments: Record<string, boolean> | undefined = undefined;
 }
 
 export abstract class GfxGroupLikeElementModel<
-    Props extends BaseElementProps = BaseElementProps,
-  >
+  Props extends BaseElementProps = BaseElementProps,
+>
   extends GfxPrimitiveElementModel<Props>
   implements GfxGroupCompatibleInterface
 {
@@ -396,7 +398,7 @@ export abstract class GfxGroupLikeElementModel<
     for (const key of this.childIds) {
       const element =
         this.surface.getElementById(key) ||
-        (this.surface.doc.getModelById(key) as GfxBlockElementModel);
+        (this.surface.store.getModelById(key) as GfxBlockElementModel);
 
       element && elements.push(element);
     }

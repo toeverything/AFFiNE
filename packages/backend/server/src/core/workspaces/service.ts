@@ -107,7 +107,7 @@ export class WorkspaceService {
     const admins = await this.models.workspaceUser.getAdmins(workspaceId);
 
     const link = this.url.link(`/workspace/${workspaceId}`);
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'TeamWorkspaceUpgraded',
       to: owner.email,
       props: {
@@ -121,7 +121,7 @@ export class WorkspaceService {
 
     await Promise.allSettled(
       admins.map(async user => {
-        await this.mailer.send({
+        await this.mailer.trySend({
           name: 'TeamWorkspaceUpgraded',
           to: user.email,
           props: {
@@ -188,7 +188,7 @@ export class WorkspaceService {
     }
 
     if (ws.role === WorkspaceRole.Admin) {
-      await this.mailer.send({
+      await this.mailer.trySend({
         name: 'TeamBecomeAdmin',
         to: user.email,
         props: {
@@ -199,7 +199,7 @@ export class WorkspaceService {
         },
       });
     } else {
-      await this.mailer.send({
+      await this.mailer.trySend({
         name: 'TeamBecomeCollaborator',
         to: user.email,
         props: {
@@ -213,7 +213,7 @@ export class WorkspaceService {
   }
 
   async sendOwnershipTransferredEmail(email: string, ws: { id: string }) {
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'OwnershipTransferred',
       to: email,
       props: {
@@ -225,7 +225,7 @@ export class WorkspaceService {
   }
 
   async sendOwnershipReceivedEmail(email: string, ws: { id: string }) {
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'OwnershipReceived',
       to: email,
       props: {
@@ -238,7 +238,7 @@ export class WorkspaceService {
 
   async sendLeaveEmail(workspaceId: string, userId: string) {
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'MemberLeave',
       to: owner.email,
       props: {
@@ -257,6 +257,11 @@ export class WorkspaceService {
       workspaceId,
       quantity
     );
+
+    if (!pendings.length) {
+      return;
+    }
+
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
     for (const member of pendings) {
       try {

@@ -5,7 +5,7 @@ export function transformModel(
   flavour: string,
   props?: Parameters<Store['addBlock']>[1]
 ) {
-  const doc = model.doc;
+  const doc = model.store;
   const parent = doc.getParent(model);
   if (!parent) {
     return null;

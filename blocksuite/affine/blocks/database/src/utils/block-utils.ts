@@ -19,11 +19,11 @@ export function addProperty(
     id?: string;
   }
 ): string {
-  const id = column.id ?? model.doc.workspace.idGenerator();
+  const id = column.id ?? model.store.workspace.idGenerator();
   if (model.props.columns.some(v => v.id === id)) {
     return id;
   }
-  model.doc.transact(() => {
+  model.store.transact(() => {
     const col: ColumnDataType = {
       ...column,
       id,
@@ -42,7 +42,7 @@ export function copyCellsByProperty(
   fromId: ColumnDataType['id'],
   toId: ColumnDataType['id']
 ) {
-  model.doc.transact(() => {
+  model.store.transact(() => {
     Object.keys(model.props.cells).forEach(rowId => {
       const cell = model.props.cells[rowId]?.[fromId];
       if (cell && model.props.cells[rowId]) {
@@ -62,13 +62,13 @@ export function deleteColumn(
   const index = model.props.columns.findIndex(v => v.id === columnId);
   if (index < 0) return;
 
-  model.doc.transact(() => {
+  model.store.transact(() => {
     model.props.columns.splice(index, 1);
   });
 }
 
 export function deleteRows(model: DatabaseBlockModel, rowIds: string[]) {
-  model.doc.transact(() => {
+  model.store.transact(() => {
     for (const rowId of rowIds) {
       delete model.props.cells[rowId];
     }
@@ -76,15 +76,15 @@ export function deleteRows(model: DatabaseBlockModel, rowIds: string[]) {
 }
 
 export function deleteView(model: DatabaseBlockModel, id: string) {
-  model.doc.captureSync();
-  model.doc.transact(() => {
+  model.store.captureSync();
+  model.store.transact(() => {
     model.props.views = model.props.views.filter(v => v.id !== id);
   });
 }
 
 export function duplicateView(model: DatabaseBlockModel, id: string): string {
-  const newId = model.doc.workspace.idGenerator();
-  model.doc.transact(() => {
+  const newId = model.store.workspace.idGenerator();
+  model.store.transact(() => {
     const index = model.props.views.findIndex(v => v.id === id);
     const view = model.props.views[index];
     if (view) {
@@ -131,7 +131,7 @@ export function moveViewTo(
   id: string,
   position: InsertToPosition
 ) {
-  model.doc.transact(() => {
+  model.store.transact(() => {
     model.props.views = arrayMove(
       model.props.views,
       v => v.id === id,
@@ -145,7 +145,7 @@ export function updateCell(
   rowId: string,
   cell: CellDataType
 ) {
-  model.doc.transact(() => {
+  model.store.transact(() => {
     const columnId = cell.columnId;
     if (
       rowId === '__proto__' ||
@@ -180,7 +180,7 @@ export function updateCells(
   columnId: string,
   cells: Record<string, unknown>
 ) {
-  model.doc.transact(() => {
+  model.store.transact(() => {
     Object.entries(cells).forEach(([rowId, value]) => {
       if (
         rowId === '__proto__' ||
@@ -212,7 +212,7 @@ export function updateProperty(
   if (index == null) {
     return;
   }
-  model.doc.transact(() => {
+  model.store.transact(() => {
     const column = model.props.columns[index];
     if (!column) {
       return;
@@ -228,7 +228,7 @@ export const updateView = <ViewData extends ViewBasicDataType>(
   id: string,
   update: (data: ViewData) => Partial<ViewData>
 ) => {
-  model.doc.transact(() => {
+  model.store.transact(() => {
     model.props.views = model.props.views.map(v => {
       if (v.id !== id) {
         return v;

@@ -1,4 +1,5 @@
-import { resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import pkg from '../package.json' with { type: 'json' };
@@ -9,6 +10,10 @@ declare global {
     var env: Readonly<Env>;
     // oxlint-disable-next-line no-var
     var readEnv: <T>(key: string, defaultValue: T, availableValues?: T[]) => T;
+    // oxlint-disable-next-line no-var
+    var CUSTOM_CONFIG_PATH: string;
+    // oxlint-disable-next-line no-var
+    var CLS_REQUEST_HOST: 'CLS_REQUEST_HOST';
   }
 }
 
@@ -50,6 +55,8 @@ export type AppEnv = {
   version: string;
 };
 
+globalThis.CLS_REQUEST_HOST = 'CLS_REQUEST_HOST';
+globalThis.CUSTOM_CONFIG_PATH = join(homedir(), '.affine/config');
 globalThis.readEnv = function readEnv<T>(
   env: string,
   defaultValue: T,
@@ -72,7 +79,7 @@ globalThis.readEnv = function readEnv<T>(
 };
 
 export class Env implements AppEnv {
-  NODE_ENV = readEnv('NODE_ENV', NodeEnv.Production, Object.values(NodeEnv));
+  NODE_ENV = (process.env.NODE_ENV ?? NodeEnv.Production) as NodeEnv;
   NAMESPACE = readEnv(
     'AFFINE_ENV',
     Namespace.Production,
@@ -129,6 +136,14 @@ export class Env implements AppEnv {
 
   get gcp() {
     return this.platform === Platform.GCP;
+  }
+
+  constructor() {
+    if (!Object.values(NodeEnv).includes(this.NODE_ENV)) {
+      throw new Error(
+        `Invalid NODE_ENV environment. \`${this.NODE_ENV}\` is not a valid NODE_ENV value.`
+      );
+    }
   }
 }
 

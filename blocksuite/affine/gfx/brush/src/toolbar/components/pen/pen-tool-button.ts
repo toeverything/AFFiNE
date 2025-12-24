@@ -73,6 +73,20 @@ export class EdgelessPenToolButton extends EdgelessToolbarToolMixin(
     return this.colors$.value[pen];
   });
 
+  private readonly lineWidths$ = computed(() => {
+    const brush = this.settings.lastProps$.value.brush.lineWidth;
+    const highlighter = this.settings.lastProps$.value.highlighter.lineWidth;
+    return {
+      brush,
+      highlighter,
+    };
+  });
+
+  private readonly lineWidth$ = computed(() => {
+    const pen = this.pen$.value;
+    return this.lineWidths$.value[pen];
+  });
+
   private readonly penIconMap$ = computed(() => {
     const theme = this.themeProvider.app$.value;
     return penIconMap[theme];
@@ -85,13 +99,12 @@ export class EdgelessPenToolButton extends EdgelessToolbarToolMixin(
 
   private readonly penInfo$ = computed(() => {
     const type = this.pen$.value;
-    const icon = this.penIcon$.value;
-    const color = this.color$.value;
     return {
       ...penInfoMap[type],
-      color,
-      icon,
-      type,
+      type: this.pen$.value,
+      icon: this.penIcon$.value,
+      color: this.color$.value,
+      lineWidth: this.lineWidth$.value,
     };
   });
 

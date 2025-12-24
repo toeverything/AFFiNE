@@ -235,21 +235,18 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
           const locked = this.gfx.viewport.locked;
           const selection = this.gfx.selection;
           if (locked || selection.editing) return;
-          if (
-            this.gfx.tool.dragging$.peek() &&
-            this.gfx.tool.currentToolName$.peek() === 'shape'
-          ) {
-            return;
-          }
 
-          const activeIndex = shapes.findIndex(
-            s => s.name === this.draggingShape
-          );
-          const nextIndex = (activeIndex + 1) % shapes.length;
-          const next = shapes[nextIndex];
-          this.draggingShape = next.name;
+          const currentTool = this.gfx.tool.currentToolName$.peek();
 
           if (this.readyToDrop) {
+            if (currentTool === ShapeTool.toolName) {
+              const activeIndex = shapes.findIndex(
+                s => s.name === this.draggingShape
+              );
+              const nextIndex = (activeIndex + 1) % shapes.length;
+              const next = shapes[nextIndex];
+              this.draggingShape = next.name;
+            }
             this.draggableController.cancelWithoutAnimation();
             const el = this.shapeContainer.querySelector(
               `.shape.${this.draggingShape}`
@@ -258,14 +255,20 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
               console.error('Edgeless toolbar Shape element not found');
               return;
             }
-            const { x, y } = this.gfx.tool.lastMousePos$.peek();
+            const { x, y } = this.gfx.tool.lastMouseViewPos$.peek();
             const { viewport } = this.edgeless.std.get(ViewportElementProvider);
             const { left, top } = viewport;
             const clientPos = { x: x + left, y: y + top };
             this.draggableController.dragAndMoveTo(el, clientPos);
           } else {
+            if (this.gfx.tool.dragging$.peek()) return;
+            let shapeName =
+              this.gfx.tool.get(ShapeTool).activatedOption.shapeName;
+            if (currentTool === ShapeTool.toolName) {
+              shapeName = this.gfx.tool.get(ShapeTool).cycleShapeName('next');
+            }
             this.setEdgelessTool(ShapeTool, {
-              shapeName: this.draggingShape,
+              shapeName,
             });
           }
         },

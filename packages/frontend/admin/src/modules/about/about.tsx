@@ -36,9 +36,9 @@ const links = [
     label: 'Self-host Document',
   },
   {
-    href: 'https://affine.pro/pricing',
+    href: 'https://affine.pro/pricing/?type=selfhost#table',
     icon: <UploadCloudIcon size={20} />,
-    label: 'Upgrade to Pro',
+    label: 'Upgrade to Team',
   },
 ];
 

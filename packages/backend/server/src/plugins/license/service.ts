@@ -1,17 +1,27 @@
+import { createDecipheriv, createVerify } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InstalledLicense, PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 
 import {
+  CryptoHelper,
   EventBus,
   InternalServerError,
+  InvalidLicenseToActivate,
+  LicenseExpired,
   LicenseNotFound,
   OnEvent,
   UserFriendlyError,
   WorkspaceLicenseAlreadyExists,
 } from '../../base';
 import { Models } from '../../models';
-import { SubscriptionPlan, SubscriptionRecurring } from '../payment/types';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionVariant,
+} from '../payment/types';
 
 interface License {
   plan: SubscriptionPlan;
@@ -20,6 +30,27 @@ interface License {
   endAt: number;
 }
 
+const BaseLicenseSchema = z.object({
+  entity: z.string().nonempty(),
+  issuer: z.string().nonempty(),
+  issuedAt: z.string().datetime(),
+  expiresAt: z.string().datetime(),
+});
+
+const TeamLicenseSchema = z
+  .object({
+    subject: z.literal(SubscriptionPlan.SelfHostedTeam),
+    data: z.object({
+      id: z.string().nonempty(),
+      workspaceId: z.string().nonempty(),
+      plan: z.literal(SubscriptionPlan.SelfHostedTeam),
+      recurring: z.nativeEnum(SubscriptionRecurring),
+      quantity: z.number().positive(),
+      endAt: z.string().datetime(),
+    }),
+  })
+  .extend(BaseLicenseSchema.shape);
+
 @Injectable()
 export class LicenseService {
   private readonly logger = new Logger(LicenseService.name);
@@ -27,7 +58,8 @@ export class LicenseService {
   constructor(
     private readonly db: PrismaClient,
     private readonly event: EventBus,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly crypto: CryptoHelper
   ) {}
 
   @OnEvent('workspace.subscription.activated')
@@ -79,11 +111,57 @@ export class LicenseService {
         expiredAt: true,
         quantity: true,
         recurring: true,
+        variant: true,
       },
       where: {
         workspaceId,
       },
     });
+  }
+
+  async installLicense(workspaceId: string, license: Buffer) {
+    const payload = this.decryptWorkspaceTeamLicense(workspaceId, license);
+    const data = payload.data;
+    const now = new Date();
+
+    if (new Date(payload.expiresAt) < now || new Date(data.endAt) < now) {
+      throw new LicenseExpired();
+    }
+
+    const installed = await this.db.installedLicense.upsert({
+      where: {
+        workspaceId,
+      },
+      update: {
+        key: data.id,
+        expiredAt: new Date(data.endAt),
+        validatedAt: new Date(),
+        recurring: data.recurring,
+        quantity: data.quantity,
+        variant: SubscriptionVariant.Onetime,
+        license,
+      },
+      create: {
+        key: data.id,
+        workspaceId,
+        expiredAt: new Date(data.endAt),
+        validateKey: '',
+        validatedAt: new Date(),
+        recurring: data.recurring,
+        quantity: data.quantity,
+        variant: SubscriptionVariant.Onetime,
+        license,
+      },
+    });
+
+    await this.event.emitAsync('workspace.subscription.activated', {
+      workspaceId,
+      plan: data.plan,
+      recurring: data.recurring,
+      quantity: data.quantity,
+    });
+
+    return installed;
   }
 
   async activateTeamLicense(workspaceId: string, licenseKey: string) {
@@ -132,7 +210,7 @@ export class LicenseService {
     return license;
   }
 
-  async deactivateTeamLicense(workspaceId: string) {
+  async removeTeamLicense(workspaceId: string) {
     const license = await this.db.installedLicense.findUnique({
       where: {
         workspaceId,
@@ -143,22 +221,29 @@ export class LicenseService {
       throw new LicenseNotFound();
     }
 
-    await this.fetchAffinePro(`/api/team/licenses/${license.key}/deactivate`, {
-      method: 'POST',
-    });
-
     await this.db.installedLicense.deleteMany({
       where: {
-        workspaceId,
+        workspaceId: license.workspaceId,
       },
     });
 
+    if (license.variant !== SubscriptionVariant.Onetime) {
+      await this.deactivateTeamLicense(license);
+    }
+
     this.event.emit('workspace.subscription.canceled', {
-      workspaceId,
+      workspaceId: license.workspaceId,
       plan: SubscriptionPlan.SelfHostedTeam,
-      recurring: SubscriptionRecurring.Monthly,
+      recurring: license.recurring as SubscriptionRecurring,
     });
+
     return true;
+  }
+
+  async deactivateTeamLicense(license: InstalledLicense) {
+    await this.fetchAffinePro(`/api/team/licenses/${license.key}/deactivate`, {
+      method: 'POST',
+    });
   }
 
   async updateTeamRecurring(key: string, recurring: SubscriptionRecurring) {
@@ -203,6 +288,15 @@ export class LicenseService {
       return;
     }
 
+    if (license.variant === SubscriptionVariant.Onetime) {
+      this.event.emit('workspace.members.allocateSeats', {
+        workspaceId,
+        quantity: license.quantity,
+      });
+
+      return;
+    }
+
     const count = await this.models.workspaceUser.chargedCount(workspaceId);
     await this.fetchAffinePro(`/api/team/licenses/${license.key}/seats`, {
       method: 'POST',
@@ -222,7 +316,7 @@ export class LicenseService {
     let tried = 0;
     while (tried++ < 10) {
       try {
-        const res = await this.revalidateLicense(license);
+        const res = await this.revalidateRecurringLicense(license);
 
         if (res?.quantity === memberRequired) {
           return;
@@ -249,11 +343,15 @@ export class LicenseService {
     });
 
     for (const license of licenses) {
-      await this.revalidateLicense(license);
+      if (license.variant === SubscriptionVariant.Onetime) {
+        this.revalidateOnetimeLicense(license);
+      } else {
+        await this.revalidateRecurringLicense(license);
+      }
     }
   }
 
-  private async revalidateLicense(license: InstalledLicense) {
+  private async revalidateRecurringLicense(license: InstalledLicense) {
     try {
       const res = await this.fetchAffinePro<License>(
         `/api/team/licenses/${license.key}/health`,
@@ -340,6 +438,145 @@ export class LicenseService {
           ? e.message
           : 'Failed to contact with https://app.affine.pro'
       );
+    }
+  }
+
+  private revalidateOnetimeLicense(license: InstalledLicense) {
+    const buf = license.license;
+    let valid = !!buf;
+
+    if (buf) {
+      try {
+        const { data } = this.decryptWorkspaceTeamLicense(
+          license.workspaceId,
+          Buffer.from(buf)
+        );
+
+        if (new Date(data.endAt) < new Date()) {
+          valid = false;
+        } else {
+          this.event.emit('workspace.subscription.activated', {
+            workspaceId: license.workspaceId,
+            plan: data.plan,
+            recurring: data.recurring,
+            quantity: data.quantity,
+          });
+        }
+      } catch {
+        valid = false;
+      }
+    }
+
+    if (!valid) {
+      this.event.emit('workspace.subscription.canceled', {
+        workspaceId: license.workspaceId,
+        plan: SubscriptionPlan.SelfHostedTeam,
+        recurring: SubscriptionRecurring.Monthly,
+      });
+    }
+  }
+
+  private decryptWorkspaceTeamLicense(workspaceId: string, buf: Buffer) {
+    if (!this.crypto.AFFiNEProPublicKey) {
+      throw new InternalServerError(
+        'License public key is not loaded. Please contact with Affine support.'
+      );
+    }
+
+    // we use workspace id as aes key hash plain text content
+    // verify signature to make sure the payload or signature is not forged
+    const { payload: payloadStr, signature, iv } = this.decryptLicense(buf);
+
+    const verifier = createVerify('rsa-sha256');
+    verifier.update(iv);
+    verifier.update(payloadStr);
+    const valid = verifier.verify(
+      this.crypto.AFFiNEProPublicKey,
+      signature,
+      'hex'
+    );
+    if (!valid) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Invalid license signature.',
+      });
+    }
+
+    const payload = JSON.parse(payloadStr);
+
+    const parseResult = TeamLicenseSchema.safeParse(payload);
+
+    if (!parseResult.success) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Invalid license payload.',
+      });
+    }
+
+    if (new Date(parseResult.data.expiresAt) < new Date()) {
+      throw new InvalidLicenseToActivate({
+        reason:
+          'License file has expired. Please contact with Affine support to fetch a latest one.',
+      });
+    }
+
+    if (parseResult.data.data.workspaceId !== workspaceId) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Workspace mismatched with license.',
+      });
+    }
+
+    return parseResult.data;
+  }
+
+  private decryptLicense(buf: Buffer) {
+    if (!this.crypto.AFFiNEProLicenseAESKey) {
+      throw new InternalServerError(
+        'License AES key is not loaded. Please contact with Affine support.'
+      );
+    }
+
+    if (buf.length < 2) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Invalid license file.',
+      });
+    }
+
+    try {
+      const ivLength = buf.readUint8(0);
+      const authTagLength = buf.readUInt8(1);
+
+      const iv = buf.subarray(2, 2 + ivLength);
+      const tag = buf.subarray(2 + ivLength, 2 + ivLength + authTagLength);
+      const payload = buf.subarray(2 + ivLength + authTagLength);
+
+      const decipher = createDecipheriv(
+        'aes-256-gcm',
+        this.crypto.AFFiNEProLicenseAESKey,
+        iv,
+        {
+          authTagLength,
+        }
+      );
+      decipher.setAuthTag(tag);
+
+      const decrypted = Buffer.concat([
+        decipher.update(payload),
+        decipher.final(),
+      ]);
+
+      const data = JSON.parse(decrypted.toString('utf-8')) as {
+        payload: string;
+        signature: string;
+      };
+
+      return {
+        ...data,
+        iv,
+      };
+    } catch {
+      // we use workspace id as aes key hash plain text content
+      throw new InvalidLicenseToActivate({
+        reason: 'Failed to verify the license.',
+      });
     }
   }
 }

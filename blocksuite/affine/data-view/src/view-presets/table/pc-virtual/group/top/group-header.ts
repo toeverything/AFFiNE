@@ -10,15 +10,15 @@ import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { TableViewAreaSelection } from '../../../selection';
-import type { VirtualTableView } from '../../table-view';
+import type { VirtualTableViewUILogic } from '../../table-view-ui-logic';
 import type { TableGridGroup } from '../../types';
-import * as styles from './group-header.css';
+import * as styles from './group-header-css';
 import { GroupTitle } from './group-title';
 export class TableGroupHeader extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   @property({ attribute: false })
-  accessor tableView!: VirtualTableView;
+  accessor tableViewLogic!: VirtualTableViewUILogic;
 
   @property({ attribute: false })
   accessor gridGroup!: TableGridGroup;
@@ -35,9 +35,11 @@ export class TableGroupHeader extends SignalWatcher(
   }
 
   group$ = computed(() => {
-    return this.tableView.groupTrait$.value?.groupsDataList$.value?.find(
-      g => g.key === this.gridGroup.groupId
-    );
+    const groups =
+      this.tableViewLogic.groupTrait$.value?.groupsDataList$.value ?? [];
+    return groups
+      .filter((group): group is NonNullable<typeof group> => group != null)
+      .find(g => g.key === this.gridGroup.groupId);
   });
 
   groupKey$ = computed(() => {
@@ -45,11 +47,11 @@ export class TableGroupHeader extends SignalWatcher(
   });
 
   get tableViewManager() {
-    return this.tableView.props.view;
+    return this.tableViewLogic.view;
   }
 
   get selectionController() {
-    return this.tableView.selectionController;
+    return this.tableViewLogic.selectionController;
   }
 
   private readonly clickAddRowInStart = () => {
@@ -58,6 +60,7 @@ export class TableGroupHeader extends SignalWatcher(
       return;
     }
     this.tableViewManager.rowAdd('start', group.key);
+    this.requestUpdate();
     const selectionController = this.selectionController;
     selectionController.selection = undefined;
     requestAnimationFrame(() => {
@@ -86,15 +89,16 @@ export class TableGroupHeader extends SignalWatcher(
         name: 'Ungroup',
         hide: () => group.value == null,
         select: () => {
-          group.rows.forEach(id => {
-            group.manager.removeFromGroup(id, group.key);
+          group.rows.forEach(row => {
+            group.manager.removeFromGroup(row.rowId, group.key);
           });
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
-          this.tableViewManager.rowDelete(group.rows);
+          this.tableViewManager.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
@@ -123,7 +127,7 @@ export class TableGroupHeader extends SignalWatcher(
     return html`
       ${this.renderGroupHeader()}
       <virtual-table-header
-        .tableViewManager="${this.tableViewManager}"
+        .tableViewLogic="${this.tableViewLogic}"
       ></virtual-table-header>
     `;
   }

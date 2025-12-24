@@ -1,5 +1,5 @@
+import { ImageBlockSchema } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { sha } from '@blocksuite/global/utils';
 import {
   type AssetsManager,
   BaseAdapter,
@@ -88,32 +88,40 @@ export class ImageAdapter extends BaseAdapter<Image> {
     );
   }
 
-  override async toSliceSnapshot(
-    payload: ImageToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  override async toSliceSnapshot({
+    assets,
+    file: files,
+    pageId,
+    workspaceId,
+  }: ImageToSliceSnapshotPayload): Promise<SliceSnapshot | null> {
+    if (files.length === 0) return null;
+
     const content: SliceSnapshot['content'] = [];
-    for (const item of payload.file) {
-      const blobId = await sha(await item.arrayBuffer());
-      payload.assets?.getAssets().set(blobId, item);
-      await payload.assets?.writeToBlob(blobId);
+    const flavour = ImageBlockSchema.model.flavour;
+
+    for (const blob of files) {
+      const id = nanoid();
+      const { size } = blob;
+
+      assets?.uploadingAssetsMap.set(id, {
+        blob,
+        mapInto: sourceId => ({ sourceId }),
+      });
+
       content.push({
         type: 'block',
-        flavour: 'affine:image',
-        id: nanoid(),
-        props: {
-          sourceId: blobId,
-        },
+        flavour,
+        id,
+        props: { size },
         children: [],
       });
     }
-    if (content.length === 0) {
-      return null;
-    }
+
     return {
       type: 'slice',
       content,
-      workspaceId: payload.workspaceId,
-      pageId: payload.pageId,
+      pageId,
+      workspaceId,
     };
   }
 }

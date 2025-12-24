@@ -17,16 +17,20 @@ import {
 } from '@blocksuite/affine/sync';
 import { Subject } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';
-import * as Y from 'yjs';
+import type { Doc as YDoc } from 'yjs';
 
+import type { FeatureFlagService } from '../../feature-flag';
 import { DocImpl } from './doc';
 import { WorkspaceMetaImpl } from './meta';
 
 type WorkspaceOptions = {
   id?: string;
+  rootDoc: YDoc;
   blobSource?: BlobSource;
-  onLoadDoc?: (doc: Y.Doc) => void;
+  onLoadDoc?: (doc: YDoc) => void;
   onLoadAwareness?: (awareness: Awareness) => void;
+  onCreateDoc?: (docId?: string) => string;
+  featureFlagService?: FeatureFlagService;
 };
 
 export class WorkspaceImpl implements Workspace {
@@ -34,7 +38,7 @@ export class WorkspaceImpl implements Workspace {
 
   readonly blockCollections = new Map<string, Doc>();
 
-  readonly doc: Y.Doc;
+  readonly doc: YDoc;
 
   readonly id: string;
 
@@ -45,8 +49,6 @@ export class WorkspaceImpl implements Workspace {
   slots = {
     /* eslint-disable rxjs/finnish */
     docListUpdated: new Subject<void>(),
-    docRemoved: new Subject<string>(),
-    docCreated: new Subject<string>(),
     /* eslint-enable rxjs/finnish */
   };
 
@@ -54,20 +56,27 @@ export class WorkspaceImpl implements Workspace {
     return this.blockCollections;
   }
 
-  readonly onLoadDoc?: (doc: Y.Doc) => void;
+  readonly onLoadDoc?: (doc: YDoc) => void;
   readonly onLoadAwareness?: (awareness: Awareness) => void;
+  readonly onCreateDoc?: (docId?: string) => string;
+  readonly featureFlagService?: FeatureFlagService;
 
   constructor({
     id,
+    rootDoc,
     blobSource,
     onLoadDoc,
     onLoadAwareness,
-  }: WorkspaceOptions = {}) {
+    onCreateDoc,
+    featureFlagService,
+  }: WorkspaceOptions) {
     this.id = id || '';
-    this.doc = new Y.Doc({ guid: id });
+    this.featureFlagService = featureFlagService;
+    this.doc = rootDoc;
     this.onLoadDoc = onLoadDoc;
     this.onLoadDoc?.(this.doc);
     this.onLoadAwareness = onLoadAwareness;
+    this.onCreateDoc = onCreateDoc;
 
     blobSource = blobSource ?? new MemoryBlobSource();
     const logger = new NoopLogger();
@@ -97,7 +106,6 @@ export class WorkspaceImpl implements Workspace {
       if (!doc) return;
       this.blockCollections.delete(id);
       doc.remove();
-      this.slots.docRemoved.next(id);
     });
   }
 
@@ -111,6 +119,17 @@ export class WorkspaceImpl implements Workspace {
    * will be created in the doc simultaneously.
    */
   createDoc(docId?: string): Doc {
+    if (this.onCreateDoc) {
+      const id = this.onCreateDoc(docId);
+      const doc = this.getDoc(id);
+      if (!doc) {
+        throw new BlockSuiteError(
+          ErrorCode.DocCollectionError,
+          'create doc failed'
+        );
+      }
+      return doc;
+    }
     const id = docId ?? this.idGenerator();
     if (this._hasDoc(id)) {
       throw new BlockSuiteError(
@@ -125,7 +144,6 @@ export class WorkspaceImpl implements Workspace {
       createDate: Date.now(),
       tags: [],
     });
-    this.slots.docCreated.next(id);
     return this.getDoc(id) as Doc;
   }
 

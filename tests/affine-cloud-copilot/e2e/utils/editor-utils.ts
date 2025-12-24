@@ -6,7 +6,10 @@ import {
   pressEscape,
   selectAllByKeyboard,
 } from '@affine-test/kit/utils/keyboard';
-import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  getBlockSuiteEditorTitle,
+} from '@affine-test/kit/utils/page-logic';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type {
   MindmapElementModel,
@@ -21,14 +24,20 @@ export class EditorUtils {
     await page.keyboard.press('Enter');
   }
 
-  public static async getEditorContent(page: Page) {
+  public static async getEditorContent(page: Page, trim = true) {
     let content = '';
     let retry = 3;
     while (!content && retry > 0) {
       const lines = await page.$$('page-editor .inline-editor');
       const contents = await Promise.all(lines.map(el => el.innerText()));
       content = contents
-        .map(c => c.replace(/[\u200B-\u200D\uFEFF]/g, '').trim())
+        .map(c => {
+          const invisibleFiltered = c.replace(/[\u200B-\u200D\uFEFF]/g, '');
+          if (trim) {
+            return invisibleFiltered.trim();
+          }
+          return invisibleFiltered;
+        })
         .filter(c => !!c)
         .join('\n');
       if (!content) {
@@ -89,6 +98,9 @@ export class EditorUtils {
       const responsesMenu = answer.getByTestId('answer-responses');
       await responsesMenu.isVisible();
       await responsesMenu.scrollIntoViewIfNeeded({ timeout: 60000 });
+      await responsesMenu
+        .getByTestId('answer-insert-below-loading')
+        .waitFor({ state: 'hidden' });
 
       if (await responsesMenu.getByTestId('answer-insert-below').isVisible()) {
         responses.add('insert-below');
@@ -282,6 +294,19 @@ export class EditorUtils {
     await page.waitForTimeout(100);
   }
 
+  public static async createDoc(page: Page, title: string, docContent: string) {
+    await clickNewPageButton(page);
+    await page.keyboard.insertText(title);
+    await this.focusToEditor(page);
+    const texts = docContent.split('\n');
+    for (const [index, line] of texts.entries()) {
+      await page.keyboard.insertText(line);
+      if (index !== texts.length - 1) {
+        await page.keyboard.press('Enter');
+      }
+    }
+  }
+
   public static async createCollectionAndDoc(
     page: Page,
     collectionName: string,
@@ -312,6 +337,8 @@ export class EditorUtils {
         await page.keyboard.press('Enter');
       }
     }
+    // sleep 1 sec to wait the doc sync
+    await page.waitForTimeout(1000);
   }
 
   public static async createTagAndDoc(
@@ -340,6 +367,8 @@ export class EditorUtils {
         await page.keyboard.press('Enter');
       }
     }
+    // sleep 1 sec to wait the doc sync
+    await page.waitForTimeout(1000);
   }
 
   public static async selectElementInEdgeless(page: Page, elements: string[]) {
@@ -360,14 +389,18 @@ export class EditorUtils {
     );
   }
 
+  public static async removeAll(page: Page) {
+    await selectAllByKeyboard(page);
+    await page.keyboard.press('Delete');
+  }
+
   public static async askAIWithEdgeless(
     page: Page,
     createBlock: () => Promise<void>,
     afterSelected?: () => Promise<void>
   ) {
     await this.switchToEdgelessMode(page);
-    await selectAllByKeyboard(page);
-    await page.keyboard.press('Delete');
+    await this.removeAll(page);
     await createBlock();
     await pressEscape(page, 5);
     await selectAllByKeyboard(page);
@@ -521,9 +554,11 @@ export class EditorUtils {
       explainImage: this.createAction(page, () =>
         page.getByTestId('action-explain-image').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
-      ),
+      generateImage: this.createAction(page, async () => {
+        await page.getByTestId('action-generate-image').click();
+        await page.keyboard.type('generate an image');
+        await page.getByTestId('ai-panel-input-send').click();
+      }),
       generateCaption: this.createAction(page, () =>
         page.getByTestId('action-generate-caption').click()
       ),
@@ -540,19 +575,7 @@ export class EditorUtils {
     };
   }
 
-  public static async askAIWithText(page: Page, text: string) {
-    await this.focusToEditor(page);
-    const texts = text.split('\n');
-    for (const [index, line] of texts.entries()) {
-      await page.keyboard.insertText(line);
-      if (index !== texts.length - 1) {
-        await page.keyboard.press('Enter');
-      }
-    }
-    await page.keyboard.press('ControlOrMeta+A');
-    await page.keyboard.press('ControlOrMeta+A');
-    await page.keyboard.press('ControlOrMeta+A');
-
+  public static async showAIMenu(page: Page) {
     const askAI = await page.locator('page-editor editor-toolbar ask-ai-icon');
     await askAI.waitFor({
       state: 'attached',
@@ -653,6 +676,22 @@ export class EditorUtils {
         page.getByTestId('action-write-twitter-post').click()
       ),
     } as const;
+  }
+
+  public static async askAIWithText(page: Page, text: string) {
+    await this.focusToEditor(page);
+    const texts = text.split('\n');
+    for (const [index, line] of texts.entries()) {
+      await page.keyboard.insertText(line);
+      if (index !== texts.length - 1) {
+        await page.keyboard.press('Enter');
+      }
+    }
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('ControlOrMeta+A');
+
+    return await this.showAIMenu(page);
   }
 
   public static async whatAreYourThoughts(page: Page, text: string) {

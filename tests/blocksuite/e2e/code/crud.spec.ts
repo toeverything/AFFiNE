@@ -219,6 +219,8 @@ test('duplicate code block', async ({ page }, testInfo) => {
   await codeBlockController.codeBlock.hover();
   await (await codeBlockController.openMore()).wrapButton.click();
 
+  await page.mouse.click(300, 300);
+
   // duplicate
   await codeBlockController.codeBlock.hover();
   await (await codeBlockController.openMore()).duplicateButton.click();
@@ -269,6 +271,8 @@ test('toggle code block wrap can work', async ({ page }, testInfo) => {
 
   await codeBlockController.codeBlock.hover();
   await (await codeBlockController.openMore()).wrapButton.click();
+
+  await page.mouse.click(300, 300);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_2.json`
@@ -321,6 +325,36 @@ test('undo code block wrap can work', async ({ page }, testInfo) => {
   );
 });
 
+test('toggle code block line number can work', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyCodeBlockState(page);
+  await focusRichText(page);
+
+  const lineNumber = page.locator('affine-code .line-number');
+
+  await expect(lineNumber).toBeVisible();
+
+  const codeBlockController = getCodeBlock(page);
+
+  await codeBlockController.codeBlock.hover();
+  await (await codeBlockController.openMore()).cancelLineNumberButton.click();
+
+  await page.mouse.click(300, 300);
+
+  await expect(lineNumber).toBeHidden();
+
+  await undoByKeyboard(page);
+  await expect(lineNumber).toBeVisible();
+
+  await redoByKeyboard(page);
+  await expect(lineNumber).toBeHidden();
+
+  await codeBlockController.codeBlock.hover();
+  await (await codeBlockController.openMore()).lineNumberButton.click();
+
+  await expect(lineNumber).toBeVisible();
+});
+
 test('code block toolbar widget can appear and disappear during mousemove', async ({
   page,
 }) => {
@@ -361,7 +395,9 @@ test('should tab works in code block', async ({ page }) => {
   await assertRichTexts(page, ['const a = 10;\n  \nconst b = "NothingToSay"']);
 });
 
-test('should open more menu and close on selecting', async ({ page }) => {
+test('should open more menu and do not close after selecting', async ({
+  page,
+}) => {
   await enterPlaygroundRoom(page);
   await initEmptyCodeBlockState(page);
   await focusRichText(page);
@@ -373,7 +409,7 @@ test('should open more menu and close on selecting', async ({ page }) => {
 
   await expect(moreMenu.menu).toBeVisible();
   await moreMenu.wrapButton.click();
-  await expect(moreMenu.menu).toBeHidden();
+  await expect(moreMenu.menu).toBeVisible();
 });
 
 test('should code block lang input supports alias', async ({ page }) => {

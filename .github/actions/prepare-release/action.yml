@@ -1,0 +1,41 @@
+name: Prepare Release
+description: 'Prepare Release'
+outputs:
+  APP_VERSION:
+    description: 'App Version'
+    value: ${{ steps.get-version.outputs.APP_VERSION }}
+  GIT_SHORT_HASH:
+    description: 'Git Short Hash'
+    value: ${{ steps.get-version.outputs.GIT_SHORT_HASH }}
+  BUILD_TYPE:
+    description: 'Build Type'
+    value: ${{ steps.get-version.outputs.BUILD_TYPE }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Get Version
+      id: get-version
+      shell: bash
+      run: |
+        GIT_SHORT_HASH=$(git rev-parse --short HEAD)
+        if [ "${{ github.ref_type }}" == "tag" ]; then
+          APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+        else
+          APP_VERSION=$(date '+%Y.%-m.%-d-canary.%-H%M')
+        fi
+        if [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          BUILD_TYPE=stable
+        elif [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+          BUILD_TYPE=beta
+        elif [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-canary\.[0-9a-f]+$ ]]; then
+          BUILD_TYPE=canary
+        else
+          echo "Error: unsupported version string: $APP_VERSION" >&2
+          exit 1
+        fi
+        echo $APP_VERSION
+        echo $GIT_SHORT_HASH
+        echo $BUILD_TYPE
+        echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_OUTPUT"
+        echo "GIT_SHORT_HASH=$GIT_SHORT_HASH" >> "$GITHUB_OUTPUT"
+        echo "BUILD_TYPE=$BUILD_TYPE" >> "$GITHUB_OUTPUT"

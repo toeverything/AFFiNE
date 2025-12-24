@@ -60,7 +60,7 @@ export class BlockQueryDataSource extends DataSourceBase {
   }
 
   get workspace() {
-    return this.host.doc.workspace;
+    return this.host.store.workspace;
   }
 
   constructor(
@@ -83,14 +83,18 @@ export class BlockQueryDataSource extends DataSourceBase {
     this.workspace.docs.forEach(doc => {
       this.listenToDoc(doc.getStore());
     });
-    this.workspace.slots.docCreated.subscribe(id => {
-      const doc = this.workspace.getDoc(id);
-      if (doc) {
-        this.listenToDoc(doc.getStore());
-      }
-    });
-    this.workspace.slots.docRemoved.subscribe(id => {
-      this.docDisposeMap.get(id)?.();
+    this.workspace.slots.docListUpdated.subscribe(() => {
+      this.workspace.docs.forEach(doc => {
+        if (!this.docDisposeMap.has(doc.id)) {
+          this.listenToDoc(doc.getStore());
+        }
+      });
+      this.docDisposeMap.forEach((_, id) => {
+        if (!this.workspace.docs.has(id)) {
+          this.docDisposeMap.get(id)?.();
+          this.docDisposeMap.delete(id);
+        }
+      });
     });
   }
 
@@ -167,9 +171,13 @@ export class BlockQueryDataSource extends DataSourceBase {
 
   propertyAdd(
     insertToPosition: InsertToPosition,
-    type: string | undefined
+    ops?: {
+      type?: string;
+      name?: string;
+    }
   ): string {
-    const doc = this.block.doc;
+    const { type } = ops ?? {};
+    const doc = this.block.store;
     doc.captureSync();
     const column = DatabaseBlockDataSource.propertiesMap.value[
       type ?? propertyPresets.multiSelectPropertyConfig.type
@@ -292,7 +300,7 @@ export class BlockQueryDataSource extends DataSourceBase {
           ].config.propertyData.default(),
         cells: currentCells.map(() => undefined),
       };
-      this.block.doc.captureSync();
+      this.block.store.captureSync();
       viewColumn.type = toType;
       viewColumn.data = result.property;
       currentCells.forEach((value, i) => {

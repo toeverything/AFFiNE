@@ -68,3 +68,46 @@ export class Matcher<Data, Type extends TypeInstance = TypeInstance> {
     return;
   }
 }
+
+export class Matcher_<Value, Type extends TypeInstance> {
+  constructor(
+    private readonly list: Value[],
+    private readonly getType: (value: Value) => Type,
+    private readonly matchFunc: (
+      type: Type,
+      target: TypeInstance
+    ) => boolean = (type, target) => typeSystem.unify(target, type)
+  ) {}
+  all(): Value[] {
+    return this.list;
+  }
+
+  allMatched(type: TypeInstance): Value[] {
+    const result: Value[] = [];
+    for (const t of this.list) {
+      const tType = this.getType(t);
+      if (this.matchFunc(tType, type)) {
+        result.push(t);
+      }
+    }
+    return result;
+  }
+
+  find(f: (data: Value) => boolean): Value | undefined {
+    return this.list.find(f);
+  }
+
+  isMatched(type: Type, target: TypeInstance) {
+    return this.matchFunc(type, target);
+  }
+
+  match(type: TypeInstance) {
+    for (const t of this.list) {
+      const tType = this.getType(t);
+      if (this.matchFunc(tType, type)) {
+        return t;
+      }
+    }
+    return;
+  }
+}

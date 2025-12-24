@@ -26,7 +26,7 @@ export class ToolOverlay extends Overlay {
       this.gfx.viewport.viewportUpdated.pipe(startWith(null)).subscribe(() => {
         // when viewport is updated, we should keep the overlay in the same position
         // to get last mouse position and convert it to model coordinates
-        const pos = this.gfx.tool.lastMousePos$.value;
+        const pos = this.gfx.tool.lastMouseViewPos$.value;
         const [x, y] = this.gfx.viewport.toModelCoord(pos.x, pos.y);
         this.x = x;
         this.y = y;

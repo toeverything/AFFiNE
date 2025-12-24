@@ -137,7 +137,7 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
             .value=${stroke}
             .theme=${this._theme$.value}
             .palettes=${DefaultTheme.StrokeColorShortPalettes}
-            .hasTransparent=${!this.edgeless.doc
+            .hasTransparent=${!this.edgeless.store
               .get(FeatureFlagService)
               .getFlag('enable_color_picker')}
             @select=${(e: ColorEvent) =>

@@ -5,6 +5,7 @@ import { JobQueue } from '../../base';
 
 export class MockJobQueue {
   add = Sinon.createStubInstance(JobQueue).add.resolves();
+  remove = Sinon.createStubInstance(JobQueue).remove.resolves();
 
   last<Job extends JobName>(name: Job): { name: Job; payload: Jobs[Job] } {
     const addJobName = this.add.lastCall?.args[0];

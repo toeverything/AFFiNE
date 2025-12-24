@@ -4,7 +4,7 @@ import { nothing } from 'lit';
 import { html } from 'lit/static-html.js';
 
 import {
-  type GroupData,
+  type Group,
   type GroupRenderProps,
   renderUniLit,
 } from '../../../../../core';
@@ -16,9 +16,9 @@ import {
   groupHeaderTitle,
   groupTitleRow,
   show,
-} from './group-title.css';
+} from './group-title-css';
 
-function GroupHeaderCount(group: GroupData) {
+function GroupHeaderCount(group: Group) {
   const cards = group.rows;
   if (!cards.length) {
     return;
@@ -27,7 +27,7 @@ function GroupHeaderCount(group: GroupData) {
 }
 
 export const GroupTitle = (
-  groupData: GroupData,
+  groupData: Group,
   ops: {
     groupHover: boolean;
     readonly: boolean;
@@ -35,20 +35,20 @@ export const GroupTitle = (
     clickOps: (evt: MouseEvent) => void;
   }
 ) => {
-  const data = groupData.manager.config$.value;
-  if (!data) return nothing;
+  const view = groupData.view;
+  const type = groupData.property.dataType$.value;
+  if (!view || !type) {
+    return nothing;
+  }
   const icon =
     groupData.value == null
       ? ''
       : html` <uni-lit
           class="${groupHeaderIcon}"
-          .uni="${groupData.manager.property$.value?.icon}"
+          .uni="${groupData.property.icon}"
         ></uni-lit>`;
   const props: GroupRenderProps = {
-    value: groupData.value,
-    data: groupData.property.data$.value,
-    updateData: groupData.manager.updateData,
-    updateValue: value => groupData.manager.updateValue(groupData.rows, value),
+    group: groupData,
     readonly: ops.readonly,
   };
 
@@ -61,7 +61,7 @@ export const GroupTitle = (
   const opsClass = clsx(ops.groupHover && show, groupHeaderOps);
   return html`
     <div class="${groupTitleRow}">
-      ${icon} ${renderUniLit(data.view, props)} ${columnName}
+      ${icon} ${renderUniLit(view, props)} ${columnName}
       ${GroupHeaderCount(groupData)}
     </div>
     ${!ops.readonly

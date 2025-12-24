@@ -171,6 +171,7 @@ export class DocRendererController {
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    ${env.selfhosted ? '' : '<meta name="apple-itunes-app" content="app-id=6736937980" />'}
 
     <title>${title}</title>
     <meta name="theme-color" content="#fafafa" />
@@ -178,7 +179,7 @@ export class DocRendererController {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="shortcut icon" href="/favicon.ico?v=2" />
     <meta name="emotion-insertion-point" content="" />
     ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
     <meta

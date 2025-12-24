@@ -39,6 +39,7 @@ type WorkspaceEvents =
   | 'export'
   | 'openWorkspaceList';
 type DocEvents =
+  | 'openDoc'
   | 'createDoc'
   | 'quickStart'
   | 'renameDoc'
@@ -53,7 +54,11 @@ type DocEvents =
   | 'bookmark'
   | 'editProperty'
   | 'editPropertyMeta'
-  | 'addProperty';
+  | 'addProperty'
+  | 'editDisplayMenu'
+  | 'navigateAllDocsRouter'
+  | 'navigatePinedCollectionRouter'
+  | 'htmlBlockPreviewFailed';
 type EditorEvents =
   | 'bold'
   | 'italic'
@@ -77,7 +82,9 @@ type CollectionEvents =
   | 'createCollection'
   | 'deleteCollection'
   | 'renameCollection'
-  | 'addDocToCollection';
+  | 'addDocToCollection'
+  | 'editCollection'
+  | 'addPinnedCollection';
 type FolderEvents =
   | 'createFolder'
   | 'renameFolder'
@@ -86,13 +93,12 @@ type FolderEvents =
 type TagEvents = 'createTag' | 'deleteTag' | 'renameTag' | 'tagDoc';
 type FavoriteEvents = 'toggleFavorite';
 type OrganizeItemEvents = // doc, link, folder, collection, tag
-
-    | 'createOrganizeItem'
-    | 'renameOrganizeItem'
-    | 'moveOrganizeItem'
-    | 'deleteOrganizeItem'
-    | 'orderOrganizeItem'
-    | 'removeOrganizeItem';
+  | 'createOrganizeItem'
+  | 'renameOrganizeItem'
+  | 'moveOrganizeItem'
+  | 'deleteOrganizeItem'
+  | 'orderOrganizeItem'
+  | 'removeOrganizeItem';
 type OrganizeEvents =
   | OrganizeItemEvents
   | CollectionEvents
@@ -118,7 +124,8 @@ type AuthEvents =
   | 'signIn'
   | 'signInFail'
   | 'signedIn'
-  | 'signOut';
+  | 'signOut'
+  | 'deleteAccount';
 type AccountEvents = 'uploadAvatar' | 'removeAvatar' | 'updateUserName';
 type PaymentEvents =
   | 'viewPlans'
@@ -163,7 +170,8 @@ type IntegrationEvents =
   | 'selectIntegrationImport'
   | 'confirmIntegrationImport'
   | 'abortIntegrationImport'
-  | 'completeIntegrationImport';
+  | 'completeIntegrationImport'
+  | 'createCalendarDocEvent';
 // END SECTION
 
 // SECTION: journal
@@ -180,6 +188,32 @@ type MeetingEvents =
 
 // SECTION: mention
 type MentionEvents = 'mentionMember' | 'noAccessPrompted';
+// END SECTION
+
+// SECTION: workspace embedding
+type WorkspaceEmbeddingEvents =
+  | 'toggleWorkspaceEmbedding'
+  | 'addAdditionalDocs'
+  | 'addIgnoredDocs';
+// END SECTION
+
+// SECTION: comment events
+// Add events for comment actions
+type CommentEvents =
+  | 'createComment'
+  | 'editComment'
+  | 'deleteComment'
+  | 'resolveComment';
+// END SECTION
+
+// SECTION: apply model
+type ApplyModelEvents =
+  | 'acceptAll'
+  | 'rejectAll'
+  | 'accept'
+  | 'reject'
+  | 'apply'
+  | 'copy';
 // END SECTION
 
 type UserEvents =
@@ -199,12 +233,15 @@ type UserEvents =
   | PaymentEvents
   | DNDEvents
   | AIEvents
+  | CommentEvents
   | AttachmentEvents
   | TemplateEvents
   | NotificationEvents
   | IntegrationEvents
   | MeetingEvents
-  | MentionEvents;
+  | MentionEvents
+  | WorkspaceEmbeddingEvents
+  | ApplyModelEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -226,7 +263,14 @@ interface PageEvents extends PageDivision {
   $: {
     $: {
       $: ['createWorkspace', 'checkout'];
-      auth: ['requestSignIn', 'signIn', 'signedIn', 'signInFail', 'signOut'];
+      auth: [
+        'requestSignIn',
+        'signIn',
+        'signedIn',
+        'signInFail',
+        'signOut',
+        'deleteAccount',
+      ];
     };
     sharePanel: {
       $: [
@@ -283,6 +327,11 @@ interface PageEvents extends PageDivision {
         'completeIntegrationImport',
       ];
       meetings: ['toggleMeetingFeatureFlag'];
+      indexerEmbedding: [
+        'toggleWorkspaceEmbedding',
+        'addAdditionalDocs',
+        'addIgnoredDocs',
+      ];
     };
     cmdk: {
       recent: ['recentDocs'];
@@ -318,12 +367,13 @@ interface PageEvents extends PageDivision {
         'toggleFavorite',
         'drop',
       ];
-      docs: ['createDoc', 'deleteDoc', 'linkDoc', 'drop'];
+      docs: ['createDoc', 'deleteDoc', 'linkDoc', 'drop', 'openDoc'];
       collections: [
         'createDoc',
         'addDocToCollection',
         'removeOrganizeItem',
         'drop',
+        'editCollection',
       ];
       folders: ['createDoc', 'drop'];
       tags: ['createDoc', 'tagDoc', 'drop'];
@@ -391,6 +441,12 @@ interface PageEvents extends PageDivision {
     chatPanel: {
       chatPanelInput: ['addEmbeddingDoc'];
     };
+    intelligence: {
+      chatPanelInput: ['addEmbeddingDoc'];
+    };
+    commentPanel: {
+      $: ['createComment', 'editComment', 'deleteComment', 'resolveComment'];
+    };
     attachment: {
       $: [
         'openAttachmentInFullscreen',
@@ -434,6 +490,7 @@ interface PageEvents extends PageDivision {
       aiActions: ['requestSignIn'];
       starterBar: ['quickStart', 'openTemplateListMenu'];
       audioBlock: ['transcribeRecording', 'openTranscribeNotes'];
+      codeBlock: ['htmlBlockPreviewFailed'];
     };
     inlineDocInfo: {
       $: ['toggle'];
@@ -442,6 +499,7 @@ interface PageEvents extends PageDivision {
     };
     sidepanel: {
       property: ['addProperty', 'editPropertyMeta'];
+      journal: ['createCalendarDocEvent'];
     };
     biDirectionalLinksPanel: {
       $: ['toggle'];
@@ -466,21 +524,30 @@ interface PageEvents extends PageDivision {
   };
   allDocs: {
     header: {
+      navigation: ['navigateAllDocsRouter', 'navigatePinedCollectionRouter'];
       actions: ['createDoc', 'createWorkspace'];
+      displayMenu: ['editDisplayMenu'];
+      viewMode: ['editDisplayMenu'];
+      collection: ['editCollection', 'addPinnedCollection'];
     };
     list: {
+      doc: ['openDoc'];
       docMenu: [
         'createDoc',
         'deleteDoc',
         'openInSplitView',
         'toggleFavorite',
         'openInNewTab',
+        'openDocInfo',
       ];
     };
   };
   collection: {
     docList: {
       docMenu: ['removeOrganizeItem'];
+    };
+    collection: {
+      $: ['editCollection'];
     };
   };
   tag: {};
@@ -503,6 +570,20 @@ interface PageEvents extends PageDivision {
         'dismissRecording',
         'finishRecording',
       ];
+    };
+  };
+  clipper: {
+    $: {
+      $: ['createDoc'];
+    };
+  };
+  applyModel: {
+    widget: {
+      page: ['acceptAll', 'rejectAll'];
+      block: ['accept', 'reject'];
+    };
+    chat: {
+      $: ['apply', 'accept', 'reject', 'copy'];
     };
   };
 }
@@ -563,13 +644,24 @@ type ImportArgs = {
 };
 type IntegrationArgs<T extends Record<string, any>> = {
   type: string;
-  control: 'Readwise Card' | 'Readwise settings' | 'Readwise import list';
+  control:
+    | 'Readwise Card'
+    | 'Readwise settings'
+    | 'Readwise import list'
+    | 'Calendar Setting';
 } & T;
 
 type RecordingEventArgs = {
   type: 'Meeting record';
   method?: string;
   option?: 'Auto transcribing' | 'handle transcribing' | 'on' | 'off';
+};
+
+type ApplyModelArgs = {
+  /*  ​​User's complete instruction */
+  instruction?: string;
+  /* Split individual semantic change requests */
+  operation?: string;
 };
 
 export type EventArgs = {
@@ -630,7 +722,7 @@ export type EventArgs = {
   addEmbeddingDoc: {
     type?: 'page' | 'edgeless';
     control: 'addButton' | 'atMenu';
-    method: 'doc' | 'file' | 'tags' | 'collections' | 'suggestion';
+    method: 'doc' | 'cur-doc' | 'file' | 'tags' | 'collections' | 'suggestion';
   };
   openAttachmentInFullscreen: AttachmentEventArgs;
   openAttachmentInNewTab: AttachmentEventArgs;
@@ -717,6 +809,9 @@ export type EventArgs = {
   mentionMember: {
     type: 'member' | 'invite' | 'more';
   };
+  htmlBlockPreviewFailed: {
+    type: string;
+  };
   noAccessPrompted: {};
   loadDoc: {
     workspaceId: string;
@@ -724,6 +819,48 @@ export type EventArgs = {
     time: number;
     success: boolean;
   };
+  toggleWorkspaceEmbedding: {
+    type: 'Embedding';
+    control: 'Workspace embedding';
+    option: 'on' | 'off';
+  };
+  addAdditionalDocs: {
+    type: 'Embedding';
+    control: 'Select doc';
+    docType: string;
+  };
+  addIgnoredDocs: {
+    type: 'Embedding';
+    control: 'Additional docs';
+    result: 'success' | 'failure';
+  };
+  editDisplayMenu: {
+    control:
+      | 'groupBy'
+      | 'orderBy'
+      | 'displayProperties'
+      | 'listViewOptions'
+      | 'quickActions';
+    type: string;
+  };
+  navigateAllDocsRouter: {
+    control: string;
+  };
+  navigatePinedCollectionRouter: {
+    control: 'all' | 'user-custom-collection';
+  };
+  resolveComment: { type: 'on' | 'off' };
+  createComment: {
+    type: 'root' | 'node';
+    withAttachment: boolean;
+    withMention: boolean;
+    category: string;
+  };
+  editComment: { type: 'root' | 'node' };
+  deleteComment: { type: 'root' | 'node' };
+  accept: ApplyModelArgs;
+  reject: ApplyModelArgs;
+  apply: ApplyModelArgs;
 };
 
 // for type checking

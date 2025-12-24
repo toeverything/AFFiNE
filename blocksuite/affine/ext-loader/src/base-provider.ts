@@ -17,7 +17,7 @@ export type Context<Scope extends string> = {
   /** The scope this context is associated with */
   scope: Scope;
   /** Function to register one or more extensions */
-  register(extensions: ExtensionType[] | ExtensionType): void;
+  register(extensions: ExtensionType[] | ExtensionType): Context<Scope>;
 };
 
 /**

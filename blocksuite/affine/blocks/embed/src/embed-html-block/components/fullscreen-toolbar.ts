@@ -107,10 +107,10 @@ export class EmbedHtmlFullscreenToolbar extends LitElement {
     if (this._copied) return;
 
     this.embedHtml.std.clipboard
-      .writeToClipboard(items => {
-        items['text/plain'] = this.embedHtml.model.props.html ?? '';
-        return items;
-      })
+      .writeToClipboard(items => ({
+        ...items,
+        'text/plain': this.embedHtml.model.props.html ?? '',
+      }))
       .then(() => {
         this._copied = true;
         setTimeout(() => (this._copied = false), 1500);

@@ -29,7 +29,8 @@ import {
 
 import { getContentFromSlice } from '../../utils';
 import type { CopilotTool } from '../tool/copilot-tool';
-import { getEdgelessCopilotWidget } from './edgeless';
+import { isAttachment } from './attachment';
+import { getEdgelessCopilotWidget } from './get-edgeless-copilot-widget';
 
 export async function selectedToCanvas(host: EditorHost) {
   const gfx = host.std.get(GfxControllerIdentifier);
@@ -133,7 +134,7 @@ export async function selectAboveBlocks(editorHost: EditorHost, num = 10) {
   let lastRootModel: BlockModel | null = null;
   while (noteModel && noteModel.flavour !== 'affine:note') {
     lastRootModel = noteModel;
-    noteModel = editorHost.doc.getParent(noteModel);
+    noteModel = editorHost.store.getParent(noteModel);
   }
   if (!noteModel || !lastRootModel) return '';
 
@@ -177,8 +178,8 @@ export async function selectAboveBlocks(editorHost: EditorHost, num = 10) {
 }
 
 export function getSurfaceElementFromEditor(editor: EditorHost) {
-  const { doc } = editor;
-  const surfaceModel = getSurfaceBlock(doc);
+  const { store } = editor;
+  const surfaceModel = getSurfaceBlock(store);
   if (!surfaceModel) return null;
 
   const surfaceId = surfaceModel.id;
@@ -224,12 +225,32 @@ export const getSelectedImagesAsBlobs = async (host: EditorHost) => {
     data.selectedBlocks?.map(async b => {
       const sourceId = (b.model as ImageBlockModel).props.sourceId;
       if (!sourceId) return null;
-      const blob = await host.doc.blobSync.get(sourceId);
+      const blob = await host.store.blobSync.get(sourceId);
       if (!blob) return null;
       return new File([blob], sourceId);
     }) ?? []
   );
   return blobs.filter((blob): blob is File => !!blob);
+};
+
+export const getSelectedAttachments = async (host: EditorHost) => {
+  const [_, data] = host.command.exec(getSelectedBlocksCommand, {
+    types: ['block'],
+  });
+
+  const blocks = data.selectedBlocks ?? [];
+  const attachments: { sourceId: string; name: string }[] = [];
+
+  for (const block of blocks) {
+    if (isAttachment(block.model)) {
+      const { sourceId, name } = block.model.props;
+      if (sourceId && name) {
+        attachments.push({ sourceId, name });
+      }
+    }
+  }
+
+  return attachments;
 };
 
 export const getSelectedNoteAnchor = (host: EditorHost, id: string) => {
@@ -256,7 +277,7 @@ export const imageCustomInput = async (host: EditorHost) => {
   if (!(imageBlock instanceof ImageBlockModel)) return;
   if (!imageBlock.props.sourceId) return;
 
-  const blob = await host.doc.blobSync.get(imageBlock.props.sourceId);
+  const blob = await host.store.blobSync.get(imageBlock.props.sourceId);
   if (!blob) return;
 
   return {

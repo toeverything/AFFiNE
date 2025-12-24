@@ -8,6 +8,7 @@ import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import {
+  getRequestFromHost,
   getRequestIdFromHost,
   getRequestIdFromRequest,
   ScannerModule,
@@ -27,13 +28,16 @@ import { RedisModule } from './base/redis';
 import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
+import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
+import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
 import { DocRendererModule } from './core/doc-renderer';
 import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
 import { MailModule } from './core/mail';
+import { MonitorModule } from './core/monitor';
 import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
@@ -49,6 +53,7 @@ import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { CustomerIoModule } from './plugins/customerio';
 import { GCloudModule } from './plugins/gcloud';
+import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
@@ -65,8 +70,9 @@ export const FunctionalityModules = [
         // make every request has a unique id to tracing
         return getRequestIdFromRequest(req, 'http');
       },
-      setup(cls, _req, res: Response) {
+      setup(cls, req: Request, res: Response) {
         res.setHeader('X-Request-Id', cls.getId());
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     // for websocket connection
@@ -77,6 +83,10 @@ export const FunctionalityModules = [
       idGenerator(context: ExecutionContext) {
         // make every request has a unique id to tracing
         return getRequestIdFromHost(context);
+      },
+      setup(cls, context: ExecutionContext) {
+        const req = getRequestFromHost(context);
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     plugins: [
@@ -104,6 +114,8 @@ export const FunctionalityModules = [
   WebSocketModule,
   JobModule.forRoot(),
   ModelsModule,
+  ScheduleModule.forRoot(),
+  MonitorModule,
 ];
 
 export class AppModuleBuilder {
@@ -143,11 +155,8 @@ export function buildAppModule(env: Env) {
     // basic
     .use(...FunctionalityModules)
 
-    // enable schedule module on graphql server and doc service
-    .useIf(
-      () => env.flavors.graphql || env.flavors.doc,
-      ScheduleModule.forRoot()
-    )
+    // enable indexer module on graphql server and doc service
+    .useIf(() => env.flavors.graphql || env.flavors.doc, IndexerModule)
 
     // auth
     .use(UserModule, AuthModule, PermissionModule)
@@ -178,7 +187,9 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
-      CustomerIoModule
+      CustomerIoModule,
+      CommentModule,
+      AccessTokenModule
     )
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)

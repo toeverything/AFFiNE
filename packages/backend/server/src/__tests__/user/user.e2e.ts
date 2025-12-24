@@ -6,6 +6,8 @@ import ava from 'ava';
 import {
   createTestingApp,
   getPublicUserById,
+  smallestGif,
+  smallestPng,
   TestingApp,
   updateAvatar,
 } from '../utils';
@@ -27,7 +29,9 @@ test('should be able to upload user avatar', async t => {
   const { app } = t.context;
 
   await app.signup();
-  const avatar = Buffer.from('test');
+  const avatar = await fetch(smallestPng)
+    .then(res => res.arrayBuffer())
+    .then(b => Buffer.from(b));
   const res = await updateAvatar(app, avatar);
 
   t.is(res.status, 200);
@@ -36,19 +40,23 @@ test('should be able to upload user avatar', async t => {
 
   const avatarRes = await app.GET(new URL(avatarUrl).pathname);
 
-  t.deepEqual(avatarRes.body, Buffer.from('test'));
+  t.deepEqual(avatarRes.body, avatar);
 });
 
 test('should be able to update user avatar, and invalidate old avatar url', async t => {
   const { app } = t.context;
 
   await app.signup();
-  const avatar = Buffer.from('test');
+  const avatar = await fetch(smallestPng)
+    .then(res => res.arrayBuffer())
+    .then(b => Buffer.from(b));
   let res = await updateAvatar(app, avatar);
 
   const oldAvatarUrl = res.body.data.uploadAvatar.avatarUrl;
 
-  const newAvatar = Buffer.from('new');
+  const newAvatar = await fetch(smallestGif)
+    .then(res => res.arrayBuffer())
+    .then(b => Buffer.from(b));
   res = await updateAvatar(app, newAvatar);
   const newAvatarUrl = res.body.data.uploadAvatar.avatarUrl;
 
@@ -58,14 +66,16 @@ test('should be able to update user avatar, and invalidate old avatar url', asyn
   t.is(avatarRes.status, 404);
 
   const newAvatarRes = await app.GET(new URL(newAvatarUrl).pathname);
-  t.deepEqual(newAvatarRes.body, Buffer.from('new'));
+  t.deepEqual(newAvatarRes.body, newAvatar);
 });
 
 test('should be able to get public user by id', async t => {
   const { app } = t.context;
 
   const u1 = await app.signup();
-  const avatar = Buffer.from('test');
+  const avatar = await fetch(smallestPng)
+    .then(res => res.arrayBuffer())
+    .then(b => Buffer.from(b));
   await updateAvatar(app, avatar);
   const u2 = await app.signup();
 

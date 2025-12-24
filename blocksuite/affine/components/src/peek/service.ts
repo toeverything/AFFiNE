@@ -10,7 +10,7 @@ export const PeekViewProvider = createIdentifier<PeekViewService>(
 export function PeekViewExtension(service: PeekViewService): ExtensionType {
   return {
     setup: di => {
-      di.addImpl(PeekViewProvider, () => service);
+      di.override(PeekViewProvider, () => service);
     },
   };
 }

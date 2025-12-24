@@ -17,14 +17,14 @@ import { property } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { html } from 'lit/static-html.js';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
 import { getSingleDocIdFromText } from '../../utils/title-doc.js';
 import {
   headerAreaIconStyle,
   titleCellStyle,
   titleRichTextStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 
 export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   activity = true;
@@ -32,7 +32,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   docId$ = signal<string>();
 
   get host() {
-    return this.view.contextGet(HostContextKey);
+    return this.view.serviceGet(EditorHostKey);
   }
 
   get inlineEditor() {
@@ -50,7 +50,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   }
 
   get std() {
-    return this.view.contextGet(HostContextKey)?.std;
+    return this.view.serviceGet(EditorHostKey)?.std;
   }
 
   private readonly _onCopy = (e: ClipboardEvent) => {
@@ -209,9 +209,18 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       }
     };
 
-    this.addEventListener('keydown', selectAll);
     this.disposables.addFromEvent(this, 'keydown', selectAll);
   }
+
+  private readonly _handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        return;
+      }
+      event.stopPropagation();
+    }
+  };
 
   override firstUpdated(props: Map<string, unknown>) {
     super.firstUpdated(props);
@@ -233,6 +242,12 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
             'paste',
             this._onPaste
           );
+          const inlineEditor = this.inlineEditor;
+          if (inlineEditor) {
+            this.disposables.add(
+              inlineEditor.slots.keydown.subscribe(this._handleKeyDown)
+            );
+          }
         }
       })
       .catch(console.error);
@@ -271,7 +286,8 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     const iconColumn = this.view.mainProperties$.value.iconColumn;
     if (!iconColumn) return;
 
-    const icon = this.view.cellValueGet(this.cell.rowId, iconColumn) as string;
+    const icon = this.view.cellGetOrCreate(this.cell.rowId, iconColumn).value$
+      .value;
     if (!icon) return;
     return icon;
   });

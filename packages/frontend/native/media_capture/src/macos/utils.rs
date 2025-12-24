@@ -1,4 +1,4 @@
-use std::{ffi::c_void, mem::size_of};
+use std::{cell::RefCell, collections::HashMap, ffi::c_void, mem::size_of};
 
 use core_foundation::string::CFString;
 use coreaudio::sys::{
@@ -8,6 +8,91 @@ use coreaudio::sys::{
 use rubato::{FastFixedIn, PolynomialDegree, Resampler};
 
 use crate::error::CoreAudioError;
+
+// ------------------------------------------------------------
+// A simple wrapper that buffers incoming planar frames so that we always feed
+// the Rubato resampler its preferred fixed block-length. This avoids the
+// artefacts caused by recreating the resampler every callback.
+// ------------------------------------------------------------
+
+const RESAMPLER_INPUT_CHUNK: usize = 1024; // samples per channel
+
+struct BufferedResampler {
+  resampler: FastFixedIn<f32>,
+  channels: usize,
+  fifo: Vec<Vec<f32>>,            // per-channel queue
+  initial_output_discarded: bool, // Flag to track if the first output has been discarded
+}
+
+impl BufferedResampler {
+  fn new(from_sr: f64, to_sr: f64, channels: usize) -> Self {
+    let ratio = to_sr / from_sr;
+    let resampler = FastFixedIn::<f32>::new(
+      ratio,
+      1.0, // max_resample_ratio_relative (must be >= 1.0, use 1.0 for fixed ratio)
+      PolynomialDegree::Linear, // Use Linear interpolation quality
+      RESAMPLER_INPUT_CHUNK,
+      channels,
+    )
+    .expect("Failed to create FastFixedIn resampler (5-arg attempt)");
+
+    BufferedResampler {
+      resampler,
+      channels,
+      fifo: vec![Vec::<f32>::new(); channels],
+      initial_output_discarded: false,
+    }
+  }
+
+  // feed planar samples; returns interleaved output (may be empty if not
+  // enough samples accumulated yet).
+  fn feed(&mut self, planar_in: &[Vec<f32>]) -> Vec<f32> {
+    // Append incoming to fifo
+    for (ch, data) in planar_in.iter().enumerate() {
+      self.fifo[ch].extend_from_slice(data);
+    }
+
+    let mut interleaved_out: Vec<f32> = Vec::new();
+
+    while self.fifo[0].len() >= RESAMPLER_INPUT_CHUNK {
+      // Drain exactly one chunk per channel
+      let mut chunk: Vec<Vec<f32>> = Vec::with_capacity(self.channels);
+      for ch in 0..self.channels {
+        let tail = self.fifo[ch]
+          .drain(..RESAMPLER_INPUT_CHUNK)
+          .collect::<Vec<_>>();
+        chunk.push(tail);
+      }
+
+      if let Ok(out_blocks) = self.resampler.process(&chunk, None) {
+        // out_blocks is Vec<Vec<f32>> planar
+        if !out_blocks.is_empty() && out_blocks.len() == self.channels {
+          // Check if we should discard the initial output
+          if !self.initial_output_discarded {
+            self.initial_output_discarded = true;
+          } else {
+            // interleave
+            let out_len = out_blocks[0].len();
+            for i in 0..out_len {
+              #[allow(clippy::needless_range_loop)]
+              // apply clippy lint suggestion would regress performance
+              for ch in 0..self.channels {
+                interleaved_out.push(out_blocks[ch][i]);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    interleaved_out
+  }
+}
+
+// thread-local cache so that each audio‐tap thread keeps its own resamplers
+thread_local! {
+  static RESAMPLER_CACHE: RefCell<HashMap<(u32,u32,usize), BufferedResampler>> = RefCell::new(HashMap::new());
+}
 
 pub fn cfstring_from_bytes_with_nul(bytes: &[u8]) -> CFString {
   CFString::new(
@@ -56,6 +141,7 @@ pub fn process_audio_frame(
   target_sample_rate: f64,
 ) -> Option<Vec<f32>> {
   // Only create slice if we have valid data
+
   if m_data.is_null() || m_data_byte_size == 0 {
     return None;
   }
@@ -68,47 +154,84 @@ pub fn process_audio_frame(
   // Check the channel count and data format
   let channel_count = m_number_channels as usize;
 
-  let processed_samples = if channel_count > 1 {
-    // For stereo, samples are interleaved: [L, R, L, R, ...]
-    // We need to average each pair to get mono
-    samples
-      .chunks(channel_count)
-      .map(|chunk| chunk.iter().sum::<f32>() / channel_count as f32)
-      .collect()
+  // If the audio has two or more channels, keep (at most) the first two channels
+  // and return them in interleaved stereo format. Otherwise keep mono as-is.
+
+  let interleaved_samples: Vec<f32> = if channel_count >= 2 {
+    // Split interleaved input into the first two channels (L, R)
+    let mut left: Vec<f32> = Vec::with_capacity(total_samples / channel_count);
+    let mut right: Vec<f32> = Vec::with_capacity(total_samples / channel_count);
+
+    for chunk in samples.chunks(channel_count) {
+      // SAFETY: chunk has at least 2 items because channel_count >= 2
+      left.push(chunk[0]);
+      right.push(chunk[1]);
+    }
+
+    if current_sample_rate != target_sample_rate {
+      // Use (or create) a persistent BufferedResampler
+
+      let out_vec = RESAMPLER_CACHE.with(|cache| {
+        let mut map = cache.borrow_mut();
+        let key = (
+          current_sample_rate as u32,
+          target_sample_rate as u32,
+          2usize,
+        );
+        let resampler = map
+          .entry(key)
+          .or_insert_with(|| BufferedResampler::new(current_sample_rate, target_sample_rate, 2));
+        resampler.feed(&[left, right])
+      });
+
+      out_vec
+    } else {
+      // No resampling needed, just interleave existing left/right data
+      let mut interleaved: Vec<f32> = Vec::with_capacity(left.len() * 2);
+      for i in 0..left.len() {
+        interleaved.push(left[i]);
+        interleaved.push(right[i]);
+      }
+
+      interleaved
+    }
   } else {
-    // For mono, just copy the samples
-    samples.to_vec()
+    // Mono path – behave as before (optionally resample)
+    let mut mono_samples = samples.to_vec();
+
+    if current_sample_rate != target_sample_rate {
+      let out_vec = RESAMPLER_CACHE.with(|cache| {
+        let mut map = cache.borrow_mut();
+        let key = (
+          current_sample_rate as u32,
+          target_sample_rate as u32,
+          1usize,
+        );
+        let resampler = map
+          .entry(key)
+          .or_insert_with(|| BufferedResampler::new(current_sample_rate, target_sample_rate, 1));
+        resampler.feed(&[mono_samples])
+      });
+      // resampler returns interleaved (1 channel) but we still need planar mono
+      // (vector of samples) before upmix; since feed returns interleaved single
+      // channel, it is planar already.
+      mono_samples = out_vec;
+    }
+
+    // Upmix mono to stereo by duplicating each sample so that mixing with
+    // interleaved stereo streams keeps channel counts aligned.
+    let mut stereo_samples: Vec<f32> = Vec::with_capacity(mono_samples.len() * 2);
+    for s in &mono_samples {
+      stereo_samples.push(*s);
+      stereo_samples.push(*s);
+    }
+
+    stereo_samples
   };
 
-  if current_sample_rate != target_sample_rate {
-    // TODO: may use SincFixedOut to improve the sample quality
-    // however, it's not working as expected if we only process samples in chunks
-    // e.g., even with ratio 1.0, resampling 512 samples will result in 382 samples,
-    // which will produce very bad quality. The reason is that the resampler is
-    // meant to be used for dealing with larger input size. The reduced number
-    // of samples is a "delay" of the resampler for better quality.
-    let mut resampler = match FastFixedIn::<f32>::new(
-      target_sample_rate / current_sample_rate,
-      2.0,
-      PolynomialDegree::Cubic,
-      processed_samples.len(),
-      1,
-    ) {
-      Ok(r) => r,
-      Err(e) => {
-        eprintln!("Error creating resampler: {:?}", e);
-        return None;
-      }
-    };
-    let mut waves_out = match resampler.process(&[processed_samples], None) {
-      Ok(w) => w,
-      Err(e) => {
-        eprintln!("Error processing audio with resampler: {:?}", e);
-        return None;
-      }
-    };
-    waves_out.pop()
+  if interleaved_samples.is_empty() {
+    None
   } else {
-    Some(processed_samples)
+    Some(interleaved_samples)
   }
 }

@@ -26,9 +26,7 @@ export enum DefaultModeDragType {
 export class DefaultTool extends BaseTool {
   static override toolName: string = 'default';
 
-  private _accumulateDelta: IVec = [0, 0];
-
-  private _autoPanTimer: number | null = null;
+  private _edgeScrollingTimer: number | null = null;
 
   private readonly _clearDisposable = () => {
     if (this._disposables) {
@@ -38,19 +36,17 @@ export class DefaultTool extends BaseTool {
   };
 
   private readonly _clearSelectingState = () => {
-    this._stopAutoPanning();
+    this._stopEdgeScrolling();
     this._clearDisposable();
   };
 
   private _disposables: DisposableGroup | null = null;
 
-  private _panViewport(delta: IVec) {
-    this._accumulateDelta[0] += delta[0];
-    this._accumulateDelta[1] += delta[1];
+  private _scrollViewport(delta: IVec) {
     this.gfx.viewport.applyDeltaCenter(delta[0], delta[1]);
   }
 
-  private _selectionRectTransition: null | {
+  private _spaceTranslationRect: null | {
     w: number;
     h: number;
     startX: number;
@@ -59,61 +55,43 @@ export class DefaultTool extends BaseTool {
     endY: number;
   } = null;
 
-  private readonly _startAutoPanning = (delta: IVec) => {
-    this._panViewport(delta);
-    this._updateSelectingState(delta);
-    this._stopAutoPanning();
+  private readonly _enableEdgeScrolling = (delta: IVec) => {
+    this._stopEdgeScrolling();
+    this._scrollViewport(delta);
 
-    this._autoPanTimer = window.setInterval(() => {
-      this._panViewport(delta);
-      this._updateSelectingState(delta);
+    this._edgeScrollingTimer = window.setInterval(() => {
+      this._scrollViewport(delta);
     }, 30);
   };
 
-  private readonly _stopAutoPanning = () => {
-    if (this._autoPanTimer) {
-      clearTimeout(this._autoPanTimer);
-      this._autoPanTimer = null;
+  private readonly _stopEdgeScrolling = () => {
+    if (this._edgeScrollingTimer) {
+      clearInterval(this._edgeScrollingTimer);
+      this._edgeScrollingTimer = null;
     }
   };
 
   private _toBeMoved: GfxModel[] = [];
 
-  private readonly _updateSelectingState = (delta: IVec = [0, 0]) => {
+  private readonly _updateSelection = () => {
     const { gfx } = this;
 
-    if (gfx.keyboard.spaceKey$.peek() && this._selectionRectTransition) {
-      /* Move the selection if space is pressed */
-      const curDraggingViewArea = this.controller.draggingViewArea$.peek();
-      const { w, h, startX, startY, endX, endY } =
-        this._selectionRectTransition;
-      const { endX: lastX, endY: lastY } = curDraggingViewArea;
+    if (gfx.keyboard.spaceKey$.peek() && this._spaceTranslationRect) {
+      const { w, h, startX, startY, endX, endY } = this._spaceTranslationRect;
+      const { endX: lastX, endY: lastY } = this.controller.draggingArea$.peek();
 
-      const dx = lastX + delta[0] - endX + this._accumulateDelta[0];
-      const dy = lastY + delta[1] - endY + this._accumulateDelta[1];
+      const dx = lastX - endX;
+      const dy = lastY - endY;
 
-      this.controller.draggingViewArea$.value = {
-        ...curDraggingViewArea,
+      this.controller.draggingArea$.value = {
         x: Math.min(startX + dx, lastX),
         y: Math.min(startY + dy, lastY),
         w,
         h,
         startX: startX + dx,
         startY: startY + dy,
-      };
-    } else {
-      const curDraggingArea = this.controller.draggingViewArea$.peek();
-      const newStartX = curDraggingArea.startX - delta[0];
-      const newStartY = curDraggingArea.startY - delta[1];
-
-      this.controller.draggingViewArea$.value = {
-        ...curDraggingArea,
-        startX: newStartX,
-        startY: newStartY,
-        x: Math.min(newStartX, curDraggingArea.endX),
-        y: Math.min(newStartY, curDraggingArea.endY),
-        w: Math.abs(curDraggingArea.endX - newStartX),
-        h: Math.abs(curDraggingArea.endY - newStartY),
+        endX: endX + dx,
+        endY: endY + dy,
       };
     }
 
@@ -174,34 +152,8 @@ export class DefaultTool extends BaseTool {
   }
 
   private _determineDragType(evt: PointerEventState): DefaultModeDragType {
-    const { x, y } = this.controller.lastMouseModelPos$.peek();
+    const { x, y } = this.controller.lastMousePos$.peek();
     if (this.selection.isInSelectedRect(x, y)) {
-      if (this.selection.selectedElements.length === 1) {
-        const currentHoveredElem = this._getElementInGroup(x, y);
-        let curSelected = this.selection.selectedElements[0];
-
-        // If one of the following condition is true, keep the selection:
-        // 1. if group is currently selected
-        // 2. if the selected element is descendant of the hovered element
-        // 3. not hovering any element or hovering the same element
-        //
-        // Otherwise, we update the selection to the current hovered element
-        const shouldKeepSelection =
-          isGfxGroupCompatibleModel(curSelected) ||
-          (isGfxGroupCompatibleModel(currentHoveredElem) &&
-            currentHoveredElem.hasDescendant(curSelected)) ||
-          !currentHoveredElem ||
-          currentHoveredElem === curSelected;
-
-        if (!shouldKeepSelection) {
-          curSelected = currentHoveredElem;
-          this.selection.set({
-            elements: [curSelected.id],
-            editing: false,
-          });
-        }
-      }
-
       return this.selection.editing
         ? DefaultModeDragType.NativeEditing
         : DefaultModeDragType.ContentMoving;
@@ -214,17 +166,6 @@ export class DefaultTool extends BaseTool {
         return DefaultModeDragType.Selecting;
       }
     }
-  }
-
-  private _getElementInGroup(modelX: number, modelY: number) {
-    const tryGetLockedAncestor = (e: GfxModel | null) => {
-      if (e?.isLockedByAncestor()) {
-        return e.groups.findLast(group => group.isLocked());
-      }
-      return e;
-    };
-
-    return tryGetLockedAncestor(this.gfx.getElementInGroup(modelX, modelY));
   }
 
   private initializeDragState(
@@ -243,10 +184,9 @@ export class DefaultTool extends BaseTool {
         this.gfx.viewport.viewportUpdated.subscribe(() => {
           if (
             this.dragType === DefaultModeDragType.Selecting &&
-            this.controller.dragging$.peek() &&
-            !this._autoPanTimer
+            this.controller.dragging$.peek()
           ) {
-            this._updateSelectingState();
+            this._updateSelection();
           }
         })
       );
@@ -280,9 +220,8 @@ export class DefaultTool extends BaseTool {
   }
 
   override deactivate() {
-    this._stopAutoPanning();
+    this._stopEdgeScrolling();
     this._clearDisposable();
-    this._accumulateDelta = [0, 0];
   }
 
   override doubleClick(e: PointerEventState) {
@@ -323,13 +262,12 @@ export class DefaultTool extends BaseTool {
     switch (this.dragType) {
       case DefaultModeDragType.Selecting: {
         // Record the last drag pointer position for auto panning and view port updating
-
-        this._updateSelectingState();
+        this._updateSelection();
         const moveDelta = calPanDelta(viewport, e);
         if (moveDelta) {
-          this._startAutoPanning(moveDelta);
+          this._enableEdgeScrolling(moveDelta);
         } else {
-          this._stopAutoPanning();
+          this._stopEdgeScrolling();
         }
         break;
       }
@@ -385,18 +323,11 @@ export class DefaultTool extends BaseTool {
         const pressed = this.gfx.keyboard.spaceKey$.value;
 
         if (pressed) {
-          const currentDraggingArea = this.controller.draggingViewArea$.peek();
+          const currentDraggingArea = this.controller.draggingArea$.peek();
 
-          this._selectionRectTransition = {
-            w: currentDraggingArea.w,
-            h: currentDraggingArea.h,
-            startX: currentDraggingArea.startX,
-            startY: currentDraggingArea.startY,
-            endX: currentDraggingArea.endX,
-            endY: currentDraggingArea.endY,
-          };
+          this._spaceTranslationRect = currentDraggingArea;
         } else {
-          this._selectionRectTransition = null;
+          this._spaceTranslationRect = null;
         }
       })
     );

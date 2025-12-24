@@ -6,6 +6,7 @@ import {
 import { EdgelessClipboardFrameConfig } from './edgeless-clipboard-config';
 import { frameQuickTool } from './edgeless-toolbar';
 import { effects } from './effects';
+import { FrameBlockInteraction } from './frame-block';
 import { FrameHighlightManager } from './frame-highlight-manager';
 import { FrameBlockSpec } from './frame-spec';
 import { FrameTool } from './frame-tool';
@@ -32,6 +33,7 @@ export class FrameViewExtension extends ViewExtensionProvider {
       context.register(frameToolbarExtension);
       context.register(edgelessNavigatorBgWidget);
       context.register(EdgelessClipboardFrameConfig);
+      context.register(FrameBlockInteraction);
     }
   }
 }

@@ -18,7 +18,7 @@ import {
   table,
   tableContainer,
   tableWrapper,
-} from './table-block.css';
+} from './table-block-css';
 import { TableDataManager } from './table-data-manager';
 
 export const TableBlockComponentName = 'affine-table';
@@ -144,6 +144,16 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
           style=${styleMap({
             paddingLeft: `${virtualPadding}px`,
             paddingRight: `${virtualPadding}px`,
+            marginLeft:
+              !this.model.props.textAlign$.value ||
+              this.model.props.textAlign$?.value === 'left'
+                ? undefined
+                : 'auto',
+            marginRight:
+              !this.model.props.textAlign$.value ||
+              this.model.props.textAlign$?.value === 'right'
+                ? undefined
+                : 'auto',
             width: 'max-content',
           })}
         >

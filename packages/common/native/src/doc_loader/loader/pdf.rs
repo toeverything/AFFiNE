@@ -45,19 +45,29 @@ impl Loader for PdfExtractLoader {
 
 #[cfg(test)]
 mod tests {
-  use std::{fs::read, io::Cursor, path::PathBuf};
+  use std::{
+    fs::read,
+    io::Cursor,
+    path::{Path, PathBuf},
+  };
+
+  use path_ext::PathExt;
 
   use super::*;
 
-  #[test]
-  fn test_parse_pdf() {
-    let fixtures = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures");
-    let buffer = read(fixtures.join("sample.pdf")).unwrap();
+  fn parse_pdf_content(path: &Path) -> Vec<Document> {
+    let buffer = read(path).unwrap();
 
     let reader = Cursor::new(buffer);
     let loader = PdfExtractLoader::new(reader).expect("Failed to create PdfExtractLoader");
 
-    let docs = loader.load().unwrap();
+    loader.load().unwrap()
+  }
+
+  #[test]
+  fn test_parse_pdf() {
+    let fixtures = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures");
+    let docs = parse_pdf_content(&fixtures.join("sample.pdf"));
 
     assert_eq!(docs.len(), 1);
     assert_eq!(
@@ -65,5 +75,30 @@ mod tests {
       "\n\nSample PDF\nThis is a simple PDF ﬁle. Fun fun fun.\n\nLorem ipsum dolor  sit amet,  \
        consectetuer  a"
     );
+  }
+
+  #[test]
+  #[ignore = "for debugging only"]
+  fn test_parse_pdf_custom() {
+    let mut args = std::env::args().collect::<Vec<_>>();
+
+    let fixtures = 'path: {
+      while let Some(path) = args.pop() {
+        let path = PathBuf::from(path);
+        if path.is_dir() {
+          break 'path path;
+        }
+      }
+      panic!("No directory provided");
+    };
+
+    for path in fixtures.walk_iter(|p| p.is_file() && p.ext_str() == "pdf") {
+      println!("Parsing: {}", path.display());
+      let docs = parse_pdf_content(&path);
+
+      let chunks = docs.len();
+      let words = docs.iter().map(|d| d.page_content.len()).sum::<usize>();
+      println!("{}: {} chunks, {} words", path.display(), chunks, words,);
+    }
   }
 }

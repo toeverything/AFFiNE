@@ -3,7 +3,7 @@ import {
   ConnectorElementModel,
   MindmapElementModel,
 } from '@blocksuite/affine-model';
-import { almostEqual, Bound, Point } from '@blocksuite/global/gfx';
+import { almostEqual, Bound, type IVec, Point } from '@blocksuite/global/gfx';
 import type { GfxModel } from '@blocksuite/std/gfx';
 
 interface Distance {
@@ -584,6 +584,60 @@ export class SnapOverlay extends Overlay {
           new Point(right, alignXPosition[idx]),
         ] as [Point, Point]
     );
+  }
+
+  alignResize(position: IVec, direction: ('vertical' | 'horizontal')[]) {
+    const rst = { dx: 0, dy: 0 };
+
+    const { viewport } = this.gfx;
+    const threshold = ALIGN_THRESHOLD / viewport.zoom;
+    const searchBound = new Bound(
+      position[0] - threshold / 2,
+      position[1] - threshold / 2,
+      threshold,
+      threshold
+    );
+    const alignBound = new Bound(position[0], position[1], 0, 0);
+
+    this._intraGraphicAlignLines = {
+      horizontal: [],
+      vertical: [],
+    };
+    this._distributedAlignLines = [];
+    this._updateAlignCandidates(searchBound);
+
+    for (const other of this._referenceBounds.all) {
+      const closestDistances = this._calculateClosestDistances(
+        alignBound,
+        other
+      );
+
+      if (
+        direction.includes('horizontal') &&
+        closestDistances.horiz &&
+        (!this._intraGraphicAlignLines.horizontal.length ||
+          Math.abs(closestDistances.horiz.distance) < Math.abs(rst.dx))
+      ) {
+        this._updateXAlignPoint(rst, alignBound, other, closestDistances);
+      }
+
+      if (
+        direction.includes('vertical') &&
+        closestDistances.vert &&
+        (!this._intraGraphicAlignLines.vertical.length ||
+          Math.abs(closestDistances.vert.distance) < Math.abs(rst.dy))
+      ) {
+        this._updateYAlignPoint(rst, alignBound, other, closestDistances);
+      }
+    }
+
+    this._intraGraphicAlignLines.horizontal =
+      this._intraGraphicAlignLines.horizontal.slice(0, 1);
+    this._intraGraphicAlignLines.vertical =
+      this._intraGraphicAlignLines.vertical.slice(0, 1);
+    this._renderer?.refresh();
+
+    return rst;
   }
 
   align(bound: Bound): { dx: number; dy: number } {

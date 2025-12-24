@@ -1,10 +1,11 @@
 /* oxlint-disable no-var-requires */
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
 // Should not load @affine/native for unsupported platforms
-import type { ShareableContent } from '@affine/native';
+import type { ShareableContent as ShareableContentType } from '@affine/native';
 import { app, systemPreferences } from 'electron';
 import fs from 'fs-extra';
 import { debounce } from 'lodash-es';
@@ -19,7 +20,7 @@ import {
 } from 'rxjs';
 import { filter, map, shareReplay } from 'rxjs/operators';
 
-import { isMacOS, shallowEqual } from '../../shared/utils';
+import { isMacOS, isWindows, shallowEqual } from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import {
@@ -37,8 +38,6 @@ import type {
   RecordingStatus,
   TappableAppInfo,
 } from './types';
-
-const MAX_DURATION_FOR_TRANSCRIPTION = 1.5 * 60 * 60 * 1000; // 1.5 hours
 
 export const MeetingsSettingsState = {
   $: globalStateStorage.watch<MeetingSettingsSchema>(MeetingSettingsKey).pipe(
@@ -66,7 +65,7 @@ export const SAVED_RECORDINGS_DIR = path.join(
   'recordings'
 );
 
-let shareableContent: ShareableContent | null = null;
+let shareableContent: ShareableContentType | null = null;
 
 function cleanup() {
   shareableContent = null;
@@ -97,8 +96,10 @@ const recordings = new Map<number, Recording>();
 export const recordingStatus$ = recordingStateMachine.status$;
 
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
-  const groupProcess =
-    shareableContent?.applicationWithProcessId(processGroupId);
+  // MUST require dynamically to avoid loading @affine/native for unsupported platforms
+  const SC: typeof ShareableContentType =
+    require('@affine/native').ShareableContent;
+  const groupProcess = SC?.applicationWithProcessId(processGroupId);
   if (!groupProcess) {
     return;
   }
@@ -241,15 +242,30 @@ function setupNewRunningAppGroup() {
   );
 }
 
+function getSanitizedAppId(bundleIdentifier?: string) {
+  if (!bundleIdentifier) {
+    return 'unknown';
+  }
+
+  return isWindows()
+    ? createHash('sha256')
+        .update(bundleIdentifier)
+        .digest('hex')
+        .substring(0, 8)
+    : bundleIdentifier;
+}
+
 export function createRecording(status: RecordingStatus) {
   let recording = recordings.get(status.id);
   if (recording) {
     return recording;
   }
 
+  const appId = getSanitizedAppId(status.appGroup?.bundleIdentifier);
+
   const bufferedFilePath = path.join(
     SAVED_RECORDINGS_DIR,
-    `${status.appGroup?.bundleIdentifier ?? 'unknown'}-${status.id}-${status.startTime}.raw`
+    `${appId}-${status.id}-${status.startTime}.raw`
   );
 
   fs.ensureDirSync(SAVED_RECORDINGS_DIR);
@@ -275,11 +291,12 @@ export function createRecording(status: RecordingStatus) {
   }
 
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const ShareableContent = require('@affine/native').ShareableContent;
+  const SC: typeof ShareableContentType =
+    require('@affine/native').ShareableContent;
 
   const stream = status.app
-    ? status.app.rawInstance.tapAudio(tapAudioSamples)
-    : ShareableContent.tapGlobalAudio(null, tapAudioSamples);
+    ? SC.tapAudio(status.app.processId, tapAudioSamples)
+    : SC.tapGlobalAudio(null, tapAudioSamples);
 
   recording = {
     id: status.id,
@@ -381,15 +398,24 @@ function getAllApps(): TappableAppInfo[] {
   if (!shareableContent) {
     return [];
   }
-  const apps = shareableContent.applications().map(app => {
+
+  // MUST require dynamically to avoid loading @affine/native for unsupported platforms
+  const { ShareableContent } = require('@affine/native') as {
+    ShareableContent: typeof ShareableContentType;
+  };
+
+  const apps = ShareableContent.applications().map(app => {
     try {
+      // Check if this process is actively using microphone/audio
+      const isRunning = ShareableContent.isUsingMicrophone(app.processId);
+
       return {
-        rawInstance: app,
+        info: app,
         processId: app.processId,
         processGroupId: app.processGroupId,
         bundleIdentifier: app.bundleIdentifier,
         name: app.name,
-        isRunning: app.isRunning,
+        isRunning,
       };
     } catch (error) {
       logger.error('failed to get app info', error);
@@ -443,15 +469,15 @@ function setupMediaListeners() {
 
       apps.forEach(app => {
         try {
-          const tappableApp = app.rawInstance;
+          const applicationInfo = app.info;
           _appStateSubscribers.push(
-            ShareableContent.onAppStateChanged(tappableApp, () => {
+            ShareableContent.onAppStateChanged(applicationInfo, () => {
               updateApplicationsPing$.next(Date.now());
             })
           );
         } catch (error) {
           logger.error(
-            `Failed to convert app ${app.name} to TappableApplication`,
+            `Failed to set up app state listener for ${app.name}`,
             error
           );
         }
@@ -469,6 +495,21 @@ function setupMediaListeners() {
       };
     })
   );
+}
+
+function askForScreenRecordingPermission() {
+  if (!isMacOS()) {
+    return false;
+  }
+  try {
+    const ShareableContent = require('@affine/native').ShareableContent;
+    // this will trigger the permission prompt
+    new ShareableContent();
+    return true;
+  } catch (error) {
+    logger.error('failed to ask for screen recording permission', error);
+  }
+  return false;
 }
 
 // will be called when the app is ready or when the user has enabled the recording feature in settings
@@ -520,27 +561,19 @@ export function newRecording(
 export function startRecording(
   appGroup?: AppGroupInfo | number
 ): RecordingStatus | null {
-  const state = recordingStateMachine.dispatch({
-    type: 'START_RECORDING',
-    appGroup: normalizeAppGroupInfo(appGroup),
-  });
+  const state = recordingStateMachine.dispatch(
+    {
+      type: 'START_RECORDING',
+      appGroup: normalizeAppGroupInfo(appGroup),
+    },
+    false
+  );
 
   if (state?.status === 'recording') {
     createRecording(state);
   }
 
-  // set a timeout to stop the recording after MAX_DURATION_FOR_TRANSCRIPTION
-  setTimeout(() => {
-    const state = recordingStateMachine.status$.value;
-    if (
-      state?.status === 'recording' &&
-      state.id === recordingStatus$.value?.id
-    ) {
-      stopRecording(state.id).catch(err => {
-        logger.error('failed to stop recording', err);
-      });
-    }
-  }, MAX_DURATION_FOR_TRANSCRIPTION);
+  recordingStateMachine.status$.next(state);
 
   return state;
 }
@@ -654,6 +687,8 @@ export async function getRawAudioBuffers(
 }
 
 export async function readyRecording(id: number, buffer: Buffer) {
+  logger.info('readyRecording', id);
+
   const recordingStatus = recordingStatus$.value;
   const recording = recordings.get(id);
   if (!recordingStatus || recordingStatus.id !== id || !recording) {
@@ -661,15 +696,18 @@ export async function readyRecording(id: number, buffer: Buffer) {
     return;
   }
 
-  const filepath = path.join(
-    SAVED_RECORDINGS_DIR,
-    `${recordingStatus.appGroup?.bundleIdentifier ?? 'unknown'}-${recordingStatus.id}-${recordingStatus.startTime}.opus`
-  );
+  const rawFilePath = String(recording.file.path);
+
+  const filepath = rawFilePath.replace('.raw', '.opus');
+
+  if (!filepath) {
+    logger.error(`readyRecording: Recording ${id} has no filepath`);
+    return;
+  }
 
   await fs.writeFile(filepath, buffer);
 
   // can safely remove the raw file now
-  const rawFilePath = recording.file.path;
   logger.info('remove raw file', rawFilePath);
   if (rawFilePath) {
     try {
@@ -761,14 +799,24 @@ export const getMacOSVersion = () => {
 
 // check if the system is MacOS and the version is >= 14.2
 export const checkRecordingAvailable = () => {
-  if (!isMacOS()) {
-    return false;
+  if (isMacOS()) {
+    const version = getMacOSVersion();
+    return (version.major === 14 && version.minor >= 2) || version.major > 14;
   }
-  const version = getMacOSVersion();
-  return (version.major === 14 && version.minor >= 2) || version.major > 14;
+  if (isWindows()) {
+    return true;
+  }
+  return false;
 };
 
 export const checkMeetingPermissions = () => {
+  if (isWindows()) {
+    return {
+      screen: true,
+      microphone: true,
+    };
+  }
+
   if (!isMacOS()) {
     return undefined;
   }
@@ -781,9 +829,14 @@ export const checkMeetingPermissions = () => {
   ) as Record<(typeof mediaTypes)[number], boolean>;
 };
 
-export const askForMeetingPermission = async (type: 'microphone') => {
+export const askForMeetingPermission = async (
+  type: 'microphone' | 'screen'
+) => {
   if (!isMacOS()) {
     return false;
+  }
+  if (type === 'screen') {
+    return askForScreenRecordingPermission();
   }
   return systemPreferences.askForMediaAccess(type);
 };

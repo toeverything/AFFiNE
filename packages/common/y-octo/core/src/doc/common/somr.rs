@@ -94,7 +94,7 @@ impl<T> SomrInner<T> {
     self.data.as_ref().map(|x| unsafe { &*x.get() })
   }
 
-  fn data_mut(&self) -> Option<InnerRefMut<T>> {
+  fn data_mut(&self) -> Option<InnerRefMut<'_, T>> {
     self.data.as_ref().map(|x| InnerRefMut {
       inner: unsafe { NonNull::new_unchecked(x.get()) },
       _marker: PhantomData,
@@ -145,7 +145,7 @@ impl<T> Somr<T> {
   }
 
   #[allow(unused)]
-  pub unsafe fn get_mut_from_ref(&self) -> Option<InnerRefMut<T>> {
+  pub unsafe fn get_mut_from_ref(&self) -> Option<InnerRefMut<'_, T>> {
     if !self.is_owned() || self.dangling() {
       return None;
     }
@@ -205,7 +205,7 @@ impl<T> Somr<T> {
 
   #[inline]
   pub fn ptr_eq(&self, other: &Self) -> bool {
-    self.ptr().as_ptr() as usize == other.ptr().as_ptr() as usize
+    std::ptr::eq(self.ptr().as_ptr(), other.ptr().as_ptr())
   }
 
   #[inline]
@@ -272,10 +272,7 @@ impl<T> From<T> for Somr<T> {
 
 impl<T> From<Option<Somr<T>>> for Somr<T> {
   fn from(value: Option<Somr<T>>) -> Self {
-    match value {
-      Some(somr) => somr,
-      None => Somr::none(),
-    }
+    value.unwrap_or_default()
   }
 }
 

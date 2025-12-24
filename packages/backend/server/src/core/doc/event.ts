@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 
 import { OnEvent } from '../../base';
 import { Models } from '../../models';
+import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 import { DocReader } from './reader';
 
 @Injectable()
 export class DocEventsListener {
   constructor(
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly workspace: PgWorkspaceDocStorageAdapter
   ) {}
 
   @OnEvent('doc.snapshot.updated')
@@ -33,6 +35,14 @@ export class DocEventsListener {
         return;
       }
       await this.models.workspace.update(workspaceId, content);
+    }
+  }
+
+  @OnEvent('user.deleted')
+  async clearUserWorkspaces(payload: Events['user.deleted']) {
+    for (const workspace of payload.ownedWorkspaces) {
+      await this.models.workspace.delete(workspace);
+      await this.workspace.deleteSpace(workspace);
     }
   }
 }

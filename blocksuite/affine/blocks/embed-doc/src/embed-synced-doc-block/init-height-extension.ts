@@ -1,13 +1,9 @@
-import {
-  EmbedSyncedDocBlockSchema,
-  SYNCED_DEFAULT_MAX_HEIGHT,
-  SYNCED_MIN_HEIGHT,
-} from '@blocksuite/affine-model';
+import { EmbedSyncedDocBlockSchema } from '@blocksuite/affine-model';
 import { DisposableGroup } from '@blocksuite/global/disposable';
-import { clamp } from '@blocksuite/global/gfx';
 import { LifeCycleWatcher } from '@blocksuite/std';
 
 import { EmbedEdgelessSyncedDocBlockComponent } from './embed-edgeless-synced-doc-block';
+import { calcSyncedDocFullHeight } from './utils';
 
 export class HeightInitializationExtension extends LifeCycleWatcher {
   static override key = 'embed-synced-doc-block-height-initialization';
@@ -41,26 +37,17 @@ export class HeightInitializationExtension extends LifeCycleWatcher {
           }
           const block = payload.view;
 
-          block.contentElement
-            .then(contentEl => {
-              if (!contentEl) return;
-
+          block.updateComplete
+            .then(() => {
+              if (!block.contentElement) return;
               const resizeObserver = new ResizeObserver(() => {
-                const headerHeight =
-                  block.headerWrapper?.getBoundingClientRect().height ?? 0;
-                const contentHeight = contentEl.getBoundingClientRect().height;
-
                 const { x, y, w } = block.model.elementBound;
-                const h = clamp(
-                  (headerHeight + contentHeight) / block.gfx.viewport.zoom,
-                  SYNCED_MIN_HEIGHT,
-                  SYNCED_DEFAULT_MAX_HEIGHT
-                );
+                const h = calcSyncedDocFullHeight(block);
                 block.model.xywh$.value = `[${x},${y},${w},${h}]`;
 
-                resizeObserver.unobserve(contentEl);
+                resizeObserver.disconnect();
               });
-              resizeObserver.observe(contentEl);
+              resizeObserver.observe(block.contentElement);
             })
             .catch(console.error);
         }

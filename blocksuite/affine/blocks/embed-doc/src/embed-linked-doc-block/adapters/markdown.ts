@@ -11,7 +11,6 @@ import {
   isFootnoteDefinitionNode,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { nanoid } from '@blocksuite/store';
 
 const isLinkedDocFootnoteDefinitionNode = (node: MarkdownAST) => {
@@ -36,15 +35,7 @@ export const embedLinkedDocBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatc
     fromMatch: o => o.node.flavour === EmbedLinkedDocBlockSchema.model.flavour,
     toBlockSnapshot: {
       enter: (o, context) => {
-        const { provider } = context;
-        let enableCitation = false;
-        try {
-          const featureFlagService = provider?.get(FeatureFlagService);
-          enableCitation = !!featureFlagService?.getFlag('enable_citation');
-        } catch {
-          enableCitation = false;
-        }
-        if (!isFootnoteDefinitionNode(o.node) || !enableCitation) {
+        if (!isFootnoteDefinitionNode(o.node)) {
           return;
         }
 

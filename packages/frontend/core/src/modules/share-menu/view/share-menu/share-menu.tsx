@@ -222,7 +222,7 @@ const DefaultShareButton = forwardRef(function DefaultShareButton(
           : t['com.affine.share-menu.option.link.no-access.description']()
       }
     >
-      <Button ref={ref} className={styles.button}>
+      <Button ref={ref} className={styles.button} variant="primary">
         <div className={styles.buttonContainer}>
           {shared ? <PublishIcon fontSize={16} /> : <LockIcon fontSize={16} />}
           {t['com.affine.share-menu.shareButton']()}

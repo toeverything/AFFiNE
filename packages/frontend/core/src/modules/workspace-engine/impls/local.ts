@@ -10,6 +10,7 @@ import {
   IndexedDBBlobSyncStorage,
   IndexedDBDocStorage,
   IndexedDBDocSyncStorage,
+  IndexedDBIndexerStorage,
 } from '@affine/nbstore/idb';
 import {
   IndexedDBV1BlobStorage,
@@ -20,6 +21,7 @@ import {
   SqliteBlobSyncStorage,
   SqliteDocStorage,
   SqliteDocSyncStorage,
+  SqliteIndexerStorage,
 } from '@affine/nbstore/sqlite';
 import {
   SqliteV1BlobStorage,
@@ -31,7 +33,7 @@ import { LiveData, Service } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
-import { type Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { DesktopApiService } from '../../desktop-api';
 import type {
@@ -107,6 +109,9 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteBlobSyncStorage
       : IndexedDBBlobSyncStorage;
+  IndexerStorageType = BUILD_CONFIG.isElectron
+    ? SqliteIndexerStorage
+    : IndexedDBIndexerStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     setLocalWorkspaceIds(ids => ids.filter(x => x !== id));
@@ -150,6 +155,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const docCollection = new WorkspaceImpl({
       id: id,
+      rootDoc: new YDoc({ guid: id }),
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
@@ -350,7 +356,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         indexer: {
-          name: 'IndexedDBIndexerStorage',
+          name: this.IndexerStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',

@@ -1,31 +1,43 @@
+import { readAllDocsFromRootDoc } from '@affine/reader';
+import { omit } from 'lodash-es';
 import {
   filter,
   first,
+  lastValueFrom,
   Observable,
   ReplaySubject,
   share,
   Subject,
+  switchMap,
   throttleTime,
 } from 'rxjs';
-import {
-  applyUpdate,
-  type Array as YArray,
-  Doc as YDoc,
-  type Map as YMap,
-} from 'yjs';
+import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import {
+  type AggregateOptions,
+  type AggregateResult,
   type DocStorage,
   IndexerDocument,
+  type IndexerSchema,
   type IndexerStorage,
+  type Query,
+  type SearchOptions,
+  type SearchResult,
 } from '../../storage';
+import { DummyIndexerStorage } from '../../storage/dummy/indexer';
 import type { IndexerSyncStorage } from '../../storage/indexer-sync';
 import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
+import { fromPromise } from '../../utils/from-promise';
 import { takeUntilAbort } from '../../utils/take-until-abort';
 import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
+import type { PeerStorageOptions } from '../types';
 import { crawlingDocData } from './crawler';
 
+export type IndexerPreferOptions = 'local' | 'remote';
+
 export interface IndexerSyncState {
+  paused: boolean;
+  batterySaveMode: boolean;
   /**
    * Number of documents currently in the indexing queue
    */
@@ -62,79 +74,110 @@ export interface IndexerSync {
   addPriority(docId: string, priority: number): () => void;
   waitForCompleted(signal?: AbortSignal): Promise<void>;
   waitForDocCompleted(docId: string, signal?: AbortSignal): Promise<void>;
+
+  search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<SearchResult<T, O>>;
+
+  aggregate<T extends keyof IndexerSchema, const O extends AggregateOptions<T>>(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<AggregateResult<T, O>>;
+
+  search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<SearchResult<T, O>>;
+
+  aggregate$<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<AggregateResult<T, O>>;
 }
 
 export class IndexerSyncImpl implements IndexerSync {
   /**
    * increase this number to re-index all docs
    */
-  readonly INDEXER_VERSION = 1;
+  readonly INDEXER_VERSION = 2;
   private abort: AbortController | null = null;
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
 
+  private readonly indexer: IndexerStorage;
+  private readonly remote?: IndexerStorage;
+
+  private lastRefreshed = Date.now();
+
   state$ = this.status.state$.pipe(
     // throttle the state to 1 second to avoid spamming the UI
-    throttleTime(1000)
+    throttleTime(1000, undefined, {
+      leading: true,
+      trailing: true,
+    })
   );
   docState$(docId: string) {
     return this.status.docState$(docId).pipe(
       // throttle the state to 1 second to avoid spamming the UI
-      throttleTime(1000)
+      throttleTime(1000, undefined, { leading: true, trailing: true })
     );
   }
 
-  waitForCompleted(signal?: AbortSignal) {
-    return new Promise<void>((resolve, reject) => {
-      this.status.state$
-        .pipe(
-          filter(state => state.completed),
-          takeUntilAbort(signal),
-          first()
-        )
-        .subscribe({
-          next: () => {
-            resolve();
-          },
-          error: err => {
-            reject(err);
-          },
-        });
-    });
-  }
-
-  waitForDocCompleted(docId: string, signal?: AbortSignal) {
-    return new Promise<void>((resolve, reject) => {
-      this.status
-        .docState$(docId)
-        .pipe(
-          filter(state => state.completed),
-          takeUntilAbort(signal),
-          first()
-        )
-        .subscribe({
-          next: () => {
-            resolve();
-          },
-          error: err => {
-            reject(err);
-          },
-        });
-    });
-  }
-
-  readonly interval = () =>
-    new Promise<void>(resolve =>
-      requestIdleCallback(() => resolve(), {
-        timeout: 200,
-      })
+  async waitForCompleted(signal?: AbortSignal) {
+    await lastValueFrom(
+      this.status.state$.pipe(
+        filter(state => state.completed),
+        takeUntilAbort(signal),
+        first()
+      )
     );
+  }
+
+  async waitForDocCompleted(docId: string, signal?: AbortSignal) {
+    await lastValueFrom(
+      this.status.docState$(docId).pipe(
+        filter(state => state.completed),
+        takeUntilAbort(signal),
+        first()
+      )
+    );
+  }
 
   constructor(
     readonly doc: DocStorage,
-    readonly indexer: IndexerStorage,
+    readonly peers: PeerStorageOptions<IndexerStorage>,
     readonly indexerSync: IndexerSyncStorage
-  ) {}
+  ) {
+    // sync feature only works on local indexer
+    this.indexer = this.peers.local;
+    this.remote = Object.values(this.peers.remotes).find(remote => !!remote);
+  }
+
+  enableBatterySaveMode() {
+    this.status.enableBatterySaveMode();
+  }
+
+  disableBatterySaveMode() {
+    this.status.disableBatterySaveMode();
+  }
+
+  pauseSync() {
+    this.status.pauseSync();
+  }
+
+  resumeSync() {
+    this.status.resumeSync();
+  }
 
   start() {
     if (this.abort) {
@@ -163,6 +206,8 @@ export class IndexerSyncImpl implements IndexerSync {
 
   private async mainLoop(signal?: AbortSignal) {
     if (this.indexer.isReadonly) {
+      this.status.isReadonly = true;
+      this.status.statusUpdatedSubject$.next(true);
       return;
     }
 
@@ -291,6 +336,7 @@ export class IndexerSyncImpl implements IndexerSync {
         const docId = await this.status.acceptJob(signal);
 
         if (docId === this.rootDocId) {
+          console.log('[indexer] start indexing root doc', docId);
           // #region crawl root doc
           for (const [docId, { title }] of this.status.docsInRootDoc) {
             const existingDoc = this.status.docsInIndexer.get(docId);
@@ -334,8 +380,7 @@ export class IndexerSyncImpl implements IndexerSync {
               this.status.statusUpdatedSubject$.next(docId);
             }
           }
-          await this.indexer.refresh('block');
-          await this.indexer.refresh('doc');
+          await this.refreshIfNeed();
           // #endregion
         } else {
           // #region crawl doc
@@ -363,32 +408,40 @@ export class IndexerSyncImpl implements IndexerSync {
             continue;
           }
 
-          const docBin = await this.doc.getDoc(docId);
-          if (!docBin) {
-            // doc is deleted, just skip
-            continue;
-          }
-          const docYDoc = new YDoc({ guid: docId });
-          applyUpdate(docYDoc, docBin.bin);
+          console.log('[indexer] start indexing doc', docId);
 
           let blocks: IndexerDocument<'block'>[] = [];
           let preview: string | undefined;
 
-          try {
-            const result = await crawlingDocData({
-              ydoc: docYDoc,
-              rootYDoc: this.status.rootDoc,
-              spaceId: this.status.rootDocId,
-              docId,
-            });
-            if (!result) {
-              // doc is empty without root block, just skip
+          const nativeResult = await this.tryNativeCrawlDocData(docId);
+          if (nativeResult) {
+            blocks = nativeResult.block;
+            preview = nativeResult.summary;
+          } else {
+            const docBin = await this.doc.getDoc(docId);
+            if (!docBin) {
+              // doc is deleted, just skip
               continue;
             }
-            blocks = result.blocks;
-            preview = result.preview;
-          } catch (error) {
-            console.error('error crawling doc', error);
+            const docYDoc = new YDoc({ guid: docId });
+            applyUpdate(docYDoc, docBin.bin);
+
+            try {
+              const result = await crawlingDocData({
+                ydoc: docYDoc,
+                rootYDoc: this.status.rootDoc,
+                spaceId: this.status.rootDocId,
+                docId,
+              });
+              if (!result) {
+                // doc is empty without root block, just skip
+                continue;
+              }
+              blocks = result.blocks;
+              preview = result.preview;
+            } catch (error) {
+              console.error('error crawling doc', error);
+            }
           }
 
           await this.indexer.deleteByQuery('block', {
@@ -401,8 +454,6 @@ export class IndexerSyncImpl implements IndexerSync {
             await this.indexer.insert('block', block);
           }
 
-          await this.indexer.refresh('block');
-
           if (preview) {
             await this.indexer.update(
               'doc',
@@ -410,8 +461,9 @@ export class IndexerSyncImpl implements IndexerSync {
                 summary: preview,
               })
             );
-            await this.indexer.refresh('doc');
           }
+
+          await this.refreshIfNeed();
 
           await this.indexerSync.setDocIndexedClock({
             docId,
@@ -421,10 +473,29 @@ export class IndexerSyncImpl implements IndexerSync {
           // #endregion
         }
 
+        console.log('[indexer] complete job', docId);
+        await this.refreshIfNeed();
+
         this.status.completeJob();
       }
     } finally {
+      await this.refreshIfNeed();
       unsubscribe();
+    }
+  }
+
+  // ensure the indexer is refreshed according to recommendRefreshInterval
+  // recommendRefreshInterval <= 0 means force refresh on each operation
+  // recommendRefreshInterval > 0 means refresh if the last refresh is older than recommendRefreshInterval
+  private async refreshIfNeed(): Promise<void> {
+    const recommendRefreshInterval = this.indexer.recommendRefreshInterval ?? 0;
+    const needRefresh =
+      recommendRefreshInterval > 0 &&
+      this.lastRefreshed + recommendRefreshInterval < Date.now();
+    const forceRefresh = recommendRefreshInterval <= 0;
+    if (needRefresh || forceRefresh) {
+      await this.indexer.refreshIfNeed();
+      this.lastRefreshed = Date.now();
     }
   }
 
@@ -432,29 +503,39 @@ export class IndexerSyncImpl implements IndexerSync {
    * Get all docs from the root doc, without deleted docs
    */
   private getAllDocsFromRootDoc() {
-    const docs = this.status.rootDoc.getMap('meta').get('pages') as
-      | YArray<YMap<any>>
-      | undefined;
-    const availableDocs = new Map<string, { title: string | undefined }>();
+    return readAllDocsFromRootDoc(this.status.rootDoc, {
+      includeTrash: false,
+    });
+  }
 
-    if (docs) {
-      for (const page of docs) {
-        const docId = page.get('id');
-
-        if (typeof docId !== 'string') {
-          continue;
-        }
-
-        const inTrash = page.get('trash') ?? false;
-        const title = page.get('title');
-
-        if (!inTrash) {
-          availableDocs.set(docId, { title });
-        }
+  private async tryNativeCrawlDocData(docId: string) {
+    try {
+      const result = await this.doc.crawlDocData?.(docId);
+      if (result) {
+        return {
+          title: result.title,
+          block: result.blocks.map(block =>
+            IndexerDocument.from<'block'>(`${docId}:${block.blockId}`, {
+              docId,
+              blockId: block.blockId,
+              content: block.content,
+              flavour: block.flavour,
+              blob: block.blob,
+              refDocId: block.refDocId,
+              ref: block.refInfo,
+              parentFlavour: block.parentFlavour,
+              parentBlockId: block.parentBlockId,
+              additional: block.additional,
+            })
+          ),
+          summary: result.summary,
+        };
       }
+      return null;
+    } catch (error) {
+      console.warn('[indexer] native crawlDocData failed', docId, error);
+      return null;
     }
-
-    return availableDocs;
   }
 
   private async getAllDocsFromIndexer() {
@@ -483,9 +564,120 @@ export class IndexerSyncImpl implements IndexerSync {
       })
     );
   }
+
+  async search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<SearchResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      await this.remote.connection.waitForConnected();
+      return await this.remote.search(table, query, omit(options, 'prefer'));
+    } else {
+      await this.indexer.connection.waitForConnected();
+      return await this.indexer.search(table, query, omit(options, 'prefer'));
+    }
+  }
+
+  async aggregate<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<AggregateResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      await this.remote.connection.waitForConnected();
+      return await this.remote.aggregate(
+        table,
+        query,
+        field,
+        omit(options, 'prefer')
+      );
+    } else {
+      await this.indexer.connection.waitForConnected();
+      return await this.indexer.aggregate(
+        table,
+        query,
+        field,
+        omit(options, 'prefer')
+      );
+    }
+  }
+
+  search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<SearchResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      const remote = this.remote;
+      return fromPromise(signal =>
+        remote.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() => remote.search$(table, query, omit(options, 'prefer')))
+      );
+    } else {
+      return fromPromise(signal =>
+        this.indexer.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() =>
+          this.indexer.search$(table, query, omit(options, 'prefer'))
+        )
+      );
+    }
+  }
+
+  aggregate$<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<AggregateResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      const remote = this.remote;
+      return fromPromise(signal =>
+        remote.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() =>
+          remote.aggregate$(table, query, field, omit(options, 'prefer'))
+        )
+      );
+    } else {
+      return fromPromise(signal =>
+        this.indexer.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() =>
+          this.indexer.aggregate$(table, query, field, omit(options, 'prefer'))
+        )
+      );
+    }
+  }
 }
 
 class IndexerSyncStatus {
+  isReadonly = false;
   prioritySettings = new Map<string, number>();
   jobs = new AsyncPriorityQueue();
   rootDoc = new YDoc({ guid: this.rootDocId });
@@ -495,15 +687,33 @@ class IndexerSyncStatus {
   currentJob: string | null = null;
   errorMessage: string | null = null;
   statusUpdatedSubject$ = new Subject<string | true>();
+  paused: {
+    promise: Promise<void>;
+    resolve: () => void;
+  } | null = null;
+  batterySaveMode: boolean = false;
 
   state$ = new Observable<IndexerSyncState>(subscribe => {
     const next = () => {
-      subscribe.next({
-        indexing: this.jobs.length() + (this.currentJob ? 1 : 0),
-        total: this.docsInRootDoc.size + 1,
-        errorMessage: this.errorMessage,
-        completed: this.rootDocReady && this.jobs.length() === 0,
-      });
+      if (this.isReadonly) {
+        subscribe.next({
+          indexing: 0,
+          total: 0,
+          errorMessage: this.errorMessage,
+          completed: true,
+          batterySaveMode: this.batterySaveMode,
+          paused: this.paused !== null,
+        });
+      } else {
+        subscribe.next({
+          indexing: this.jobs.length() + (this.currentJob ? 1 : 0),
+          total: this.docsInRootDoc.size + 1,
+          errorMessage: this.errorMessage,
+          completed: this.rootDocReady && this.jobs.length() === 0,
+          batterySaveMode: this.batterySaveMode,
+          paused: this.paused !== null,
+        });
+      }
     };
     next();
     const dispose = this.statusUpdatedSubject$.subscribe(() => {
@@ -521,10 +731,17 @@ class IndexerSyncStatus {
   docState$(docId: string) {
     return new Observable<IndexerDocSyncState>(subscribe => {
       const next = () => {
-        subscribe.next({
-          indexing: this.jobs.has(docId),
-          completed: this.docsInIndexer.has(docId) && !this.jobs.has(docId),
-        });
+        if (this.isReadonly) {
+          subscribe.next({
+            indexing: false,
+            completed: true,
+          });
+        } else {
+          subscribe.next({
+            indexing: this.jobs.has(docId),
+            completed: this.docsInIndexer.has(docId) && !this.jobs.has(docId),
+          });
+        }
       };
       next();
       const dispose = this.statusUpdatedSubject$.subscribe(updatedDocId => {
@@ -553,7 +770,14 @@ class IndexerSyncStatus {
   }
 
   async acceptJob(abort?: AbortSignal) {
-    const job = await this.jobs.asyncPop(abort);
+    if (this.paused) {
+      await this.paused.promise;
+    }
+    const job = await this.jobs.asyncPop(
+      // if battery save mode is enabled, only accept jobs with priority > 1; otherwise accept all jobs
+      this.batterySaveMode ? 1 : undefined,
+      abort
+    );
     this.currentJob = job;
     this.statusUpdatedSubject$.next(job);
     return job;
@@ -577,14 +801,50 @@ class IndexerSyncStatus {
     };
   }
 
+  enableBatterySaveMode() {
+    if (this.batterySaveMode) {
+      return;
+    }
+    this.batterySaveMode = true;
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  disableBatterySaveMode() {
+    if (!this.batterySaveMode) {
+      return;
+    }
+    this.batterySaveMode = false;
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  pauseSync() {
+    if (this.paused) {
+      return;
+    }
+    this.paused = Promise.withResolvers();
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  resumeSync() {
+    if (!this.paused) {
+      return;
+    }
+    this.paused.resolve();
+    this.paused = null;
+    this.statusUpdatedSubject$.next(true);
+  }
+
   reset() {
     // reset all state, except prioritySettings
+    this.isReadonly = false;
     this.jobs.clear();
     this.docsInRootDoc.clear();
     this.docsInIndexer.clear();
     this.rootDoc = new YDoc();
     this.rootDocReady = false;
     this.currentJob = null;
+    this.batterySaveMode = false;
+    this.paused = null;
     this.statusUpdatedSubject$.next(true);
   }
 }

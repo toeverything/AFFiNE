@@ -1,6 +1,7 @@
 import { Button, Input, Modal, notify } from '@affine/component';
 import { IntegrationService } from '@affine/core/modules/integration';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { PlusIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
@@ -55,12 +56,28 @@ const AddSubscription = () => {
   }, []);
 
   const handleAddSub = useCallback(() => {
+    const _url = url.trim();
+    const exists = calendar.getSubscription(_url);
+    if (exists) {
+      notify.error({
+        title: t['com.affine.integration.calendar.new-duplicate-error-title'](),
+        message:
+          t['com.affine.integration.calendar.new-duplicate-error-content'](),
+      });
+      return;
+    }
+
     setVerifying(true);
     calendar
-      .createSubscription(url)
+      .createSubscription(_url)
       .then(() => {
         setOpen(false);
         setUrl('');
+        track.$.settingsPanel.integrationList.connectIntegration({
+          type: 'calendar',
+          control: 'Calendar Setting',
+          result: 'success',
+        });
       })
       .catch(() => {
         notify.error({

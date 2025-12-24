@@ -11,7 +11,10 @@ import { filterTraitKey } from '../../../../core/filter/trait.js';
 import type { FilterGroup } from '../../../../core/filter/types.js';
 import { emptyFilterGroup } from '../../../../core/filter/utils.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
-import { ShowQuickSettingBarContextKey } from '../../../quick-setting-bar/context.js';
+import {
+  createDefaultShowQuickSettingBar,
+  ShowQuickSettingBarKey,
+} from '../../../quick-setting-bar/context.js';
 
 const styles = css`
   .affine-database-filter-button {
@@ -72,6 +75,7 @@ export class DataViewHeaderToolsFilter extends WidgetBase {
             conditions: [filter],
           };
           this.toggleShowFilter(true);
+          this.dataViewLogic.eventTrace('CreateDatabaseFilter', {});
         },
       }
     );
@@ -100,7 +104,10 @@ export class DataViewHeaderToolsFilter extends WidgetBase {
   }
 
   toggleShowFilter(show?: boolean) {
-    const map = this.view.contextGet(ShowQuickSettingBarContextKey);
+    const map = this.view.serviceGetOrCreate(
+      ShowQuickSettingBarKey,
+      createDefaultShowQuickSettingBar
+    );
     map.value = {
       ...map.value,
       [this.view.id]: show ?? !map.value[this.view.id],

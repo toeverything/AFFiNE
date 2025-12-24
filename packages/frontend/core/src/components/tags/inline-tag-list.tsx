@@ -4,8 +4,10 @@ import * as styles from './inline-tag-list.css';
 import { TagItem } from './tag';
 import type { TagLike } from './types';
 
-interface InlineTagListProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
+interface InlineTagListProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'onChange'
+> {
   onRemoved?: (id: string) => void;
   tags: TagLike[];
   tagMode: 'inline-tag' | 'db-label';

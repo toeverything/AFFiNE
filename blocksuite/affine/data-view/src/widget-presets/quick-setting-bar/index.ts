@@ -6,18 +6,26 @@ import {
   type DataViewWidgetProps,
   defineUniComponent,
 } from '../../core/index.js';
-import { ShowQuickSettingBarContextKey } from './context.js';
+import {
+  createDefaultShowQuickSettingBar,
+  ShowQuickSettingBarKey,
+} from './context.js';
 import { renderFilterBar } from './filter/index.js';
 import { renderSortBar } from './sort/index.js';
 
 export const widgetQuickSettingBar = defineUniComponent(
   (props: DataViewWidgetProps) => {
-    const view = props.dataViewInstance.view;
+    const view = props.dataViewLogic.view;
     const barList = [renderSortBar(props), renderFilterBar(props)].filter(
       Boolean
     );
     if (!IS_MOBILE) {
-      if (!view.contextGet(ShowQuickSettingBarContextKey).value[view.id]) {
+      if (
+        !view.serviceGetOrCreate(
+          ShowQuickSettingBarKey,
+          createDefaultShowQuickSettingBar
+        ).value[view.id]
+      ) {
         return html``;
       }
       if (!barList.length) {

@@ -1,5 +1,8 @@
 import type { Color } from '@blocksuite/affine-model';
-import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import {
+  FeatureFlagService,
+  ThemeProvider,
+} from '@blocksuite/affine-shared/services';
 import { Bound } from '@blocksuite/global/gfx';
 import type { EditorHost, SurfaceSelection } from '@blocksuite/std';
 import { BlockComponent } from '@blocksuite/std';
@@ -11,6 +14,7 @@ import type { Subject } from 'rxjs';
 
 import { ConnectorElementModel } from './element-model/index.js';
 import { CanvasRenderer } from './renderer/canvas-renderer.js';
+import { DomRenderer } from './renderer/dom-renderer.js';
 import { OverlayIdentifier } from './renderer/overlay.js';
 import type { SurfaceBlockModel } from './surface-model.js';
 
@@ -34,6 +38,7 @@ export class SurfaceBlockComponent extends BlockComponent<SurfaceBlockModel> {
     .affine-edgeless-surface-block-container {
       width: 100%;
       height: 100%;
+      position: relative;
     }
 
     .affine-edgeless-surface-block-container canvas {
@@ -99,7 +104,7 @@ export class SurfaceBlockComponent extends BlockComponent<SurfaceBlockModel> {
 
   private _lastTime = 0;
 
-  private _renderer!: CanvasRenderer;
+  private _renderer!: CanvasRenderer | DomRenderer;
 
   fitToViewport = (bound: Bound) => {
     const { viewport } = this._gfx;
@@ -141,13 +146,14 @@ export class SurfaceBlockComponent extends BlockComponent<SurfaceBlockModel> {
   private _initRenderer() {
     const gfx = this._gfx;
     const themeService = this.std.get(ThemeProvider);
+    const featureFlagService = this.std.get(FeatureFlagService);
+    const useDOMRenderer = featureFlagService.getFlag('enable_dom_renderer');
 
-    this._renderer = new CanvasRenderer({
+    const rendererOptions = {
       std: this.std,
       viewport: gfx.viewport,
       layerManager: gfx.layer,
       gridManager: gfx.grid,
-      enableStackingCanvas: true,
       provider: {
         generateColorProperty: (color: Color, fallback?: Color) =>
           themeService.generateColorProperty(
@@ -170,28 +176,40 @@ export class SurfaceBlockComponent extends BlockComponent<SurfaceBlockModel> {
           ),
         selectedElements: () => gfx.selection.selectedIds,
       },
-      onStackingCanvasCreated(canvas) {
-        canvas.className = 'indexable-canvas';
-      },
       surfaceModel: this.model,
-    });
+    };
 
-    this._disposables.add(() => {
-      this._renderer.dispose();
-    });
-    this._disposables.add(
-      this._renderer.stackingCanvasUpdated.subscribe(payload => {
-        if (payload.added.length) {
-          this._surfaceContainer.append(...payload.added);
-        }
+    if (useDOMRenderer) {
+      this._renderer = new DomRenderer(rendererOptions);
+      this._disposables.add(() => this._renderer.dispose());
+    } else {
+      this._renderer = new CanvasRenderer({
+        ...rendererOptions,
+        enableStackingCanvas: true,
+        onStackingCanvasCreated(canvas) {
+          canvas.className = 'indexable-canvas';
+        },
+      });
 
-        if (payload.removed.length) {
-          payload.removed.forEach(canvas => {
-            canvas.remove();
-          });
-        }
-      })
-    );
+      this._disposables.add(() => {
+        this._renderer.dispose();
+      });
+
+      this._disposables.add(
+        this._renderer.stackingCanvasUpdated.subscribe(payload => {
+          if (payload.added.length) {
+            this._surfaceContainer.append(...payload.added);
+          }
+
+          if (payload.removed.length) {
+            payload.removed.forEach(canvas => {
+              canvas.remove();
+            });
+          }
+        })
+      );
+    }
+
     this._disposables.add(
       gfx.selection.slots.updated.subscribe(() => {
         this._renderer.refresh();
@@ -211,8 +229,11 @@ export class SurfaceBlockComponent extends BlockComponent<SurfaceBlockModel> {
 
   override firstUpdated() {
     this._renderer.attach(this._surfaceContainer);
-    this._renderer['_render']();
-    this._surfaceContainer.append(...this._renderer.stackingCanvas);
+
+    if ('stackingCanvas' in this._renderer) {
+      this._renderer['_render']();
+      this._surfaceContainer.append(...this._renderer.stackingCanvas);
+    }
   }
 
   override render() {

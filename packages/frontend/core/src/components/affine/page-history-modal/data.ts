@@ -113,6 +113,7 @@ const getOrCreateShellWorkspace = (
   if (!docCollection) {
     docCollection = new WorkspaceImpl({
       id: workspaceId,
+      rootDoc: new YDoc({ guid: workspaceId }),
       blobSource: {
         name: 'cloud',
         readonly: true,

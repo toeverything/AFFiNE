@@ -4,6 +4,15 @@ export declare class Tokenizer {
   count(content: string, allowedSpecial?: Array<string> | undefined | null): number
 }
 
+export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
+
+export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
+
+export interface Chunk {
+  index: number
+  content: string
+}
+
 export declare function fromModelName(modelName: string): Tokenizer | null
 
 export declare function getMime(input: Uint8Array): string
@@ -18,6 +27,40 @@ export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
-export declare function parseDoc(filePath: string, doc: Buffer): Promise<{ name: string, chunks: Array<{index: number, content: string}> }>
+export interface NativeBlockInfo {
+  blockId: string
+  flavour: string
+  content?: Array<string>
+  blob?: Array<string>
+  refDocId?: Array<string>
+  refInfo?: Array<string>
+  parentFlavour?: string
+  parentBlockId?: string
+  additional?: string
+}
+
+export interface NativeCrawlResult {
+  blocks: Array<NativeBlockInfo>
+  title: string
+  summary: string
+}
+
+export interface NativeMarkdownResult {
+  title: string
+  markdown: string
+}
+
+export interface ParsedDoc {
+  name: string
+  chunks: Array<Chunk>
+}
+
+export declare function parseDoc(filePath: string, doc: Buffer): Promise<ParsedDoc>
+
+export declare function parseDocFromBinary(docBin: Buffer, docId: string): NativeCrawlResult
+
+export declare function parseDocToMarkdown(docBin: Buffer, docId: string, aiEditable?: boolean | undefined | null, docUrlPrefix?: string | undefined | null): NativeMarkdownResult
+
+export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

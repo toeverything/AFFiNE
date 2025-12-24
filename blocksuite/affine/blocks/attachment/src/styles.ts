@@ -6,13 +6,17 @@ export const styles = css`
     border-radius: 8px;
     box-sizing: border-box;
     user-select: none;
+    overflow: hidden;
     border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
     background: ${unsafeCSSVarV2('layer/background/primary')};
-    overflow: hidden;
 
     &.focused {
       border-color: ${unsafeCSSVarV2('layer/insideBorder/primaryBorder')};
     }
+  }
+
+  .affine-attachment-container.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
   }
 
   .affine-attachment-card {
@@ -30,6 +34,13 @@ export const styles = css`
     min-width: 0;
   }
 
+  .truncate {
+    align-self: stretch;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
   .affine-attachment-content-title {
     display: flex;
     flex-direction: row;
@@ -40,18 +51,10 @@ export const styles = css`
 
   .affine-attachment-content-title-icon {
     display: flex;
-    width: 16px;
-    height: 16px;
     align-items: center;
     justify-content: center;
     color: var(--affine-text-primary-color);
-  }
-
-  .truncate {
-    align-self: stretch;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
+    font-size: 16px;
   }
 
   .affine-attachment-content-title-text {
@@ -92,6 +95,7 @@ export const styles = css`
     font-size: var(--affine-font-xs);
     font-style: normal;
     font-weight: 500;
+    text-transform: capitalize;
     line-height: 20px;
 
     svg {
@@ -107,7 +111,7 @@ export const styles = css`
 
   .affine-attachment-card.loading {
     .affine-attachment-content-title-text {
-      color: var(--affine-placeholder-color);
+      color: ${unsafeCSSVarV2('text/placeholder')};
     }
   }
 
@@ -141,6 +145,12 @@ export const styles = css`
     position: relative;
     width: 100%;
     height: 100%;
+  }
+
+  .affine-attachment-embed-status {
+    position: absolute;
+    left: 14px;
+    bottom: 64px;
   }
 
   .affine-attachment-embed-event-mask {

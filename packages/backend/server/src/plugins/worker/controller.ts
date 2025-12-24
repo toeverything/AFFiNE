@@ -56,7 +56,7 @@ export class WorkerController {
       this.logger.error('Invalid Origin', 'ERROR', { origin, referer });
       throw new BadRequest('Invalid header');
     }
-    const url = new URL(req.url, this.url.baseUrl);
+    const url = new URL(req.url, this.url.requestBaseUrl);
     const imageURL = url.searchParams.get('url');
     if (!imageURL) {
       throw new BadRequest('Missing "url" parameter');
@@ -286,7 +286,7 @@ export class WorkerController {
       // fix favicon
       {
         // head default path of favicon
-        const faviconUrl = new URL('/favicon.ico', response.url);
+        const faviconUrl = new URL('/favicon.ico?v=2', response.url);
         const faviconResponse = await fetch(faviconUrl, { method: 'HEAD' });
         if (faviconResponse.ok) {
           appendUrl(faviconUrl.toString(), res.favicons);

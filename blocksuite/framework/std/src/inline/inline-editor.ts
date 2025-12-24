@@ -165,8 +165,9 @@ export class InlineEditor<
     inlineRangeSync: new Subject<Range | null>(),
     /**
      * Corresponding to the `compositionUpdate` and `beforeInput` events, and triggered only when the `inlineRange` is not null.
+     * The parameter is the `event.data`.
      */
-    inputting: new Subject<void>(),
+    inputting: new Subject<string>(),
     /**
      * Triggered only when the `inlineRange` is not null.
      */
@@ -278,7 +279,10 @@ export class InlineEditor<
     this._isReadonly = isReadonly;
   }
 
-  transact(fn: () => void): void {
+  /**
+   * @param withoutTransact Execute a transaction without capturing the history.
+   */
+  transact(fn: () => void, withoutTransact = false): void {
     const doc = this.yText.doc;
     if (!doc) {
       throw new BlockSuiteError(
@@ -287,6 +291,6 @@ export class InlineEditor<
       );
     }
 
-    doc.transact(fn, doc.clientID);
+    doc.transact(fn, withoutTransact ? null : doc.clientID);
   }
 }

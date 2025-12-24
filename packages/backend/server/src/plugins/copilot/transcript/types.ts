@@ -55,11 +55,8 @@ declare global {
   interface Jobs {
     'copilot.transcript.submit': {
       jobId: string;
-      infos?: AudioBlobInfos;
-      /// @deprecated use `infos` instead
-      url?: string;
-      /// @deprecated use `infos` instead
-      mimeType?: string;
+      infos: AudioBlobInfos;
+      modelId?: string;
     };
     'copilot.transcript.summary.submit': {
       jobId: string;

@@ -343,22 +343,37 @@ export class WorkspaceMemberResolver {
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
 
+    const isTeam = await this.models.workspace.isTeamWorkspace(workspaceId);
     const role = await this.models.workspaceUser.get(workspaceId, userId);
 
     if (role) {
       if (role.status === WorkspaceMemberStatus.UnderReview) {
-        await this.models.workspaceUser.setStatus(
-          workspaceId,
-          userId,
-          WorkspaceMemberStatus.AllocatingSeat,
-          {
-            inviterId: me.id,
+        if (isTeam) {
+          await this.models.workspaceUser.setStatus(
+            workspaceId,
+            userId,
+            WorkspaceMemberStatus.AllocatingSeat,
+            {
+              inviterId: me.id,
+            }
+          );
+        } else {
+          const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
+          if (quota.memberCount >= quota.memberLimit) {
+            throw new NoMoreSeat({ spaceId: workspaceId });
+          } else {
+            await this.models.workspaceUser.setStatus(
+              workspaceId,
+              userId,
+              WorkspaceMemberStatus.Accepted
+            );
           }
-        );
+        }
 
         this.event.emit('workspace.members.updated', {
           workspaceId,
         });
+
         await this.workspaceService.sendReviewApprovedNotification(
           role.id,
           me.id

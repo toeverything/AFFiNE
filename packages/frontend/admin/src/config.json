@@ -31,6 +31,10 @@
       "type": "Object",
       "desc": "The config for doc job queue"
     },
+    "queues.indexer": {
+      "type": "Object",
+      "desc": "The config for indexer job queue"
+    },
     "queues.notification": {
       "type": "Object",
       "desc": "The config for notification job queue"
@@ -54,21 +58,14 @@
       "desc": "The config for the strict throttler."
     }
   },
-  "websocket": {
-    "transports": {
-      "type": "Array",
-      "desc": "The enabled transports for accepting websocket traffics.",
-      "link": "https://docs.nestjs.com/websockets/gateways#transports"
-    },
-    "maxHttpBufferSize": {
-      "type": "Number",
-      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
-    }
-  },
   "auth": {
     "allowSignup": {
       "type": "Boolean",
       "desc": "Whether allow new registrations."
+    },
+    "allowSignupForOauth": {
+      "type": "Boolean",
+      "desc": "Whether allow new registrations via configured oauth."
     },
     "requireEmailDomainVerification": {
       "type": "Boolean",
@@ -92,6 +89,11 @@
     }
   },
   "mailer": {
+    "SMTP.name": {
+      "type": "String",
+      "desc": "Name of the email server (e.g. your domain name)",
+      "env": "MAILER_SERVERNAME"
+    },
     "SMTP.host": {
       "type": "String",
       "desc": "Host of the email server (e.g. smtp.gmail.com)",
@@ -114,13 +116,45 @@
     },
     "SMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")",
       "env": "MAILER_SENDER"
     },
     "SMTP.ignoreTLS": {
       "type": "Boolean",
-      "desc": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+      "desc": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
       "env": "MAILER_IGNORE_TLS"
+    },
+    "fallbackDomains": {
+      "type": "Array",
+      "desc": "The emails from these domains are always sent using the fallback SMTP server."
+    },
+    "fallbackSMTP.name": {
+      "type": "String",
+      "desc": "Name of the fallback email server (e.g. your domain name)"
+    },
+    "fallbackSMTP.host": {
+      "type": "String",
+      "desc": "Host of the email server (e.g. smtp.gmail.com)"
+    },
+    "fallbackSMTP.port": {
+      "type": "Number",
+      "desc": "Port of the email server (they commonly are 25, 465 or 587)"
+    },
+    "fallbackSMTP.username": {
+      "type": "String",
+      "desc": "Username used to authenticate the email server"
+    },
+    "fallbackSMTP.password": {
+      "type": "String",
+      "desc": "Password used to authenticate the email server"
+    },
+    "fallbackSMTP.sender": {
+      "type": "String",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")"
+    },
+    "fallbackSMTP.ignoreTLS": {
+      "type": "Boolean",
+      "desc": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates."
     }
   },
   "doc": {
@@ -147,6 +181,17 @@
       "desc": "The config of storage for all uploaded blobs(images, videos, etc.)."
     }
   },
+  "websocket": {
+    "transports": {
+      "type": "Array",
+      "desc": "The enabled transports for accepting websocket traffics.",
+      "link": "https://docs.nestjs.com/websockets/gateways#transports"
+    },
+    "maxHttpBufferSize": {
+      "type": "Number",
+      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
+    }
+  },
   "server": {
     "name": {
       "type": "String",
@@ -167,6 +212,10 @@
       "desc": "Where the server get deployed(FQDN).",
       "env": "AFFINE_SERVER_HOST"
     },
+    "hosts": {
+      "type": "Array",
+      "desc": "Multiple hosts the server will accept requests from."
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",
@@ -182,6 +231,10 @@
     "earlyAccessControl": {
       "type": "Boolean",
       "desc": "Only allow users with early access features to access the app"
+    },
+    "allowGuestDemoWorkspace": {
+      "type": "Boolean",
+      "desc": "Whether allow guest users to create demo workspaces."
     }
   },
   "docService": {
@@ -214,7 +267,11 @@
   "copilot": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Whether to enable the copilot plugin."
+      "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
+    },
+    "scenarios": {
+      "type": "Object",
+      "desc": "Use custom models in scenarios and override default settings."
     },
     "providers.openai": {
       "type": "Object",
@@ -229,6 +286,10 @@
       "type": "Object",
       "desc": "The config for the gemini provider."
     },
+    "providers.geminiVertex": {
+      "type": "Object",
+      "desc": "The config for the gemini provider in Google Vertex AI."
+    },
     "providers.perplexity": {
       "type": "Object",
       "desc": "The config for the perplexity provider."
@@ -236,6 +297,14 @@
     "providers.anthropic": {
       "type": "Object",
       "desc": "The config for the anthropic provider."
+    },
+    "providers.anthropicVertex": {
+      "type": "Object",
+      "desc": "The config for the anthropic provider in Google Vertex AI."
+    },
+    "providers.morph": {
+      "type": "Object",
+      "desc": "The config for the morph provider."
     },
     "unsplash": {
       "type": "Object",
@@ -248,6 +317,44 @@
     "storage": {
       "type": "Object",
       "desc": "The config for the storage provider."
+    }
+  },
+  "indexer": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable indexer plugin",
+      "env": "AFFINE_INDEXER_ENABLED"
+    },
+    "provider.type": {
+      "type": "String",
+      "desc": "Indexer search service provider name",
+      "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
+    },
+    "provider.endpoint": {
+      "type": "String",
+      "desc": "Indexer search service endpoint",
+      "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
+    },
+    "provider.apiKey": {
+      "type": "String",
+      "desc": "Indexer search service api key. Optional for elasticsearch",
+      "link": "https://www.elastic.co/guide/server/current/api-key.html",
+      "env": "AFFINE_INDEXER_SEARCH_API_KEY"
+    },
+    "provider.username": {
+      "type": "String",
+      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch",
+      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
+      "env": "AFFINE_INDEXER_SEARCH_USERNAME"
+    },
+    "provider.password": {
+      "type": "String",
+      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch",
+      "env": "AFFINE_INDEXER_SEARCH_PASSWORD"
+    },
+    "autoIndex.batchSize": {
+      "type": "Number",
+      "desc": "Number of workspaces automatically indexed per batch"
     }
   },
   "customerIo": {
@@ -273,7 +380,13 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config"
+      "desc": "OIDC OAuth provider config",
+      "link": "https://openid.net/specs/openid-connect-core-1_0.html"
+    },
+    "providers.apple": {
+      "type": "Object",
+      "desc": "Apple OAuth provider config",
+      "link": "https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app"
     }
   },
   "payment": {
@@ -287,18 +400,23 @@
     },
     "apiKey": {
       "type": "String",
-      "desc": "Stripe API key to enable payment service.",
+      "desc": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.",
       "env": "STRIPE_API_KEY"
     },
     "webhookKey": {
       "type": "String",
-      "desc": "Stripe webhook key to enable payment service.",
+      "desc": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.",
       "env": "STRIPE_WEBHOOK_KEY"
     },
     "stripe": {
       "type": "Object",
-      "desc": "Stripe sdk options",
+      "desc": "Stripe sdk options and credentials",
       "link": "https://docs.stripe.com/api"
+    },
+    "revenuecat": {
+      "type": "Object",
+      "desc": "RevenueCat integration configs",
+      "link": "https://www.revenuecat.com/docs/"
     }
   },
   "worker": {

@@ -13,6 +13,8 @@ export class SurfaceSelection extends BaseSelection {
 
   static override type = 'surface';
 
+  static override recoverable = true;
+
   readonly editing: boolean;
 
   readonly elements: string[];

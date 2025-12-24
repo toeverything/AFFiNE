@@ -23,10 +23,10 @@ const bookmarkSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@2',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:bookmark'),
+        model.store.schema.flavourSchemaMap.has('affine:bookmark'),
       action: ({ std, model }) => {
         const { host } = std;
-        const parentModel = host.doc.getParent(model);
+        const parentModel = host.store.getParent(model);
         if (!parentModel) {
           return;
         }
@@ -45,7 +45,7 @@ const bookmarkSlashMenuConfig: SlashMenuConfig = {
         )
           .then(() => {
             if (model.text?.length === 0) {
-              model.doc.deleteBlock(model);
+              model.store.deleteBlock(model);
             }
           })
           .catch(console.error);

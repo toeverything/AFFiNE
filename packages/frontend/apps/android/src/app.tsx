@@ -1,4 +1,4 @@
-import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
@@ -40,7 +40,6 @@ import {
 import { App as CapacitorApp } from '@capacitor/app';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
-import { EdgeToEdge } from '@capawesome/capacitor-android-edge-to-edge-support';
 import { InAppBrowser } from '@capgo/inappbrowser';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
@@ -117,10 +116,16 @@ framework.impl(VirtualKeyboardProvider, {
 
     Promise.all([
       Keyboard.addListener('keyboardWillShow', info => {
-        callback({
-          visible: true,
-          height: info.keyboardHeight,
-        });
+        (async () => {
+          const navBarHeight = (await AffineTheme.getSystemNavBarHeight())
+            .height;
+          callback({
+            // When an physical keyboard is connected, the virtual keyboard height is 0,
+            // even though the `keyboardWillShow` event is still triggered.
+            visible: info.keyboardHeight !== 0,
+            height: info.keyboardHeight - navBarHeight,
+          });
+        })().catch(console.error);
       }),
       Keyboard.addListener('keyboardWillHide', () => {
         callback({
@@ -252,7 +257,8 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
 
     const container = new Container();
     getStoreManager()
-      .get('store')
+      .config.init()
+      .value.get('store')
       .forEach(ext => {
         ext.setup(container);
       });
@@ -327,9 +333,6 @@ const ThemeProvider = () => {
           : resolvedTheme === 'light'
             ? Style.Light
             : Style.Default,
-    }).catch(console.error);
-    EdgeToEdge.setBackgroundColor({
-      color: resolvedTheme === 'dark' ? '#000000' : '#F5F5F5',
     }).catch(console.error);
     AffineTheme.onThemeChanged({
       darkMode: resolvedTheme === 'dark',

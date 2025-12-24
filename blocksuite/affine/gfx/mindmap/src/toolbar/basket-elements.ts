@@ -17,8 +17,8 @@ import {
   FeatureFlagService,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
-import { Bound } from '@blocksuite/global/gfx';
+import { openSingleFileWith } from '@blocksuite/affine-shared/utils';
+import { Bound, type IVec } from '@blocksuite/global/gfx';
 import type { BlockComponent } from '@blocksuite/std';
 import type { TemplateResult } from 'lit';
 import * as Y from 'yjs';
@@ -115,7 +115,7 @@ export const textRender: DraggableTool['render'] = async (bound, edgeless) => {
   const w = 100;
   const h = 32;
 
-  const flag = edgeless.doc
+  const flag = edgeless.store
     .get(FeatureFlagService)
     .getFlag('enable_edgeless_text');
   let id: string;
@@ -135,7 +135,7 @@ export const textRender: DraggableTool['render'] = async (bound, edgeless) => {
       text: new Y.Text(),
     }) as string;
 
-    edgeless.doc.captureSync();
+    edgeless.store.captureSync();
     const textElement = crud.getElementById(id);
     if (!(textElement instanceof TextElementModel)) {
       console.error('Cannot mount text editor on a non-text element');
@@ -158,31 +158,29 @@ export const textRender: DraggableTool['render'] = async (bound, edgeless) => {
 export const mediaRender: DraggableTool['render'] = async (bound, edgeless) => {
   let file: File | null = null;
   try {
-    file = await openFileOrFiles();
+    file = await openSingleFileWith();
   } catch (e) {
     console.error(e);
     return null;
   }
   if (!file) return null;
 
+  const files = [file];
+  const std = edgeless.std;
+  const point: IVec = [bound.x, bound.y];
+
   // image
   if (file.type.startsWith('image/')) {
-    const [id] = await addImages(edgeless.std, [file], {
-      point: [bound.x, bound.y],
+    const [id] = await addImages(std, files, {
+      point,
       maxWidth: MAX_IMAGE_WIDTH,
       shouldTransformPoint: false,
     });
-    if (id) return id;
-    return null;
+    return id;
   }
 
   // attachment
-  const [id] = await addAttachments(
-    edgeless.std,
-    [file],
-    [bound.x, bound.y],
-    false
-  );
+  const [id] = await addAttachments(std, files, point, false);
   return id;
 };
 

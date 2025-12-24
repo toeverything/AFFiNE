@@ -1,5 +1,3 @@
-import '@blocksuite/affine-block-embed/effects';
-
 import { insertEmbedCard } from '@blocksuite/affine-block-embed';
 import type { EmbedCardStyle } from '@blocksuite/affine-model';
 import { EmbedOptionProvider } from '@blocksuite/affine-shared/services';

@@ -30,6 +30,7 @@ export type FrameBlockProps = {
   background: Color;
   childElementIds?: Record<string, boolean>;
   presentationIndex?: string;
+  comments?: Record<string, boolean>;
 } & GfxCompatibleProps;
 
 export const FrameZodSchema = z
@@ -50,6 +51,7 @@ export const FrameBlockSchema = defineBlockSchema({
     childElementIds: Object.create(null),
     presentationIndex: generateKeyBetweenV2(null, null),
     lockedBySelf: false,
+    comments: undefined,
   }),
   metadata: {
     version: 1,
@@ -78,7 +80,7 @@ export class FrameBlockModel
     for (const key of this.childIds) {
       const element =
         this.surface.getElementById(key) ||
-        (this.surface.doc.getModelById(key) as GfxBlockElementModel);
+        (this.surface.store.getModelById(key) as GfxBlockElementModel);
 
       element && elements.push(element);
     }
@@ -99,7 +101,7 @@ export class FrameBlockModel
   addChild(element: GfxModel) {
     if (!canSafeAddToContainer(this, element)) return;
 
-    this.doc.transact(() => {
+    this.store.transact(() => {
       this.props.childElementIds = {
         ...this.props.childElementIds,
         [element.id]: true,
@@ -118,7 +120,7 @@ export class FrameBlockModel
       newChildren[id] = true;
     }
 
-    this.doc.transact(() => {
+    this.store.transact(() => {
       this.props.childElementIds = {
         ...this.props.childElementIds,
         ...newChildren,
@@ -153,7 +155,7 @@ export class FrameBlockModel
   }
 
   removeChild(element: GfxModel): void {
-    this.doc.transact(() => {
+    this.store.transact(() => {
       this.props.childElementIds &&
         delete this.props.childElementIds[element.id];
     });

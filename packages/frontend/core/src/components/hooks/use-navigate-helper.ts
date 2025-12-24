@@ -62,6 +62,26 @@ export function useNavigateHelper() {
     },
     [navigate]
   );
+  const jumpToPageComment = useCallback(
+    (
+      workspaceId: string,
+      pageId: string,
+      commentId: string,
+      mode: DocMode,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      const search = toDocSearchParams({
+        mode,
+        refreshKey: nanoid(),
+        commentId,
+      });
+      const query = search?.size ? `?${search.toString()}` : '';
+      return navigate(`/workspace/${workspaceId}/${pageId}${query}`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
+    },
+    [navigate]
+  );
   const jumpToCollections = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
       return navigate(`/workspace/${workspaceId}/collection`, {
@@ -213,6 +233,7 @@ export function useNavigateHelper() {
     () => ({
       jumpToPage,
       jumpToPageBlock,
+      jumpToPageComment,
       jumpToIndex,
       jumpTo404,
       openPage,
@@ -229,6 +250,7 @@ export function useNavigateHelper() {
     [
       jumpToPage,
       jumpToPageBlock,
+      jumpToPageComment,
       jumpToIndex,
       jumpTo404,
       openPage,

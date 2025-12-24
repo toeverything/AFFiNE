@@ -1,4 +1,4 @@
-import { Loading, toast } from '@affine/component';
+import { Loading, toast, Tooltip } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocsService } from '@affine/core/modules/doc';
@@ -10,6 +10,7 @@ import { JournalService } from '@affine/core/modules/journal';
 import { GuardService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { FullDayIcon, PeriodIcon, PlusIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
@@ -23,8 +24,13 @@ import * as styles from './calendar-events.css';
 const pad = (val?: number) => (val ?? 0).toString().padStart(2, '0');
 
 function formatTime(start?: ICAL.Time, end?: ICAL.Time) {
-  const from = `${pad(start?.hour)}:${pad(start?.minute)}`;
-  const to = `${pad(end?.hour)}:${pad(end?.minute)}`;
+  if (!start || !end) return '';
+  // Use toJSDate which handles timezone conversion for us
+  const startDate = start.toJSDate();
+  const endDate = end.toJSDate();
+
+  const from = `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}`;
+  const to = `${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
   return from === to ? from : `${from} - ${to}`;
 }
 
@@ -70,6 +76,7 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
   const config = useLiveData(
     useMemo(() => subscription?.config$, [subscription?.config$])
   );
+  const name = useLiveData(subscription?.name$) || t['Untitled']();
   const color = config?.color || cssVarV2.button.primary;
 
   const handleClick = useAsyncCallback(async () => {
@@ -93,6 +100,7 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
         await docsService.changeDocTitle(newDoc.id, title);
         await docsService.addLinkedDoc(doc.id, newDoc.id);
       }
+      track.doc.sidepanel.journal.createCalendarDocEvent();
     } finally {
       setLoading(false);
     }
@@ -116,9 +124,25 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
       data-all-day={allDay}
       onClick={handleClick}
     >
-      <div className={styles.eventIcon}>
-        {allDay ? <FullDayIcon /> : <PeriodIcon />}
-      </div>
+      <Tooltip
+        align="start"
+        side="top"
+        options={{
+          className: styles.nameTooltip,
+          sideOffset: 12,
+          alignOffset: -4,
+        }}
+        content={
+          <div className={styles.nameTooltipContent}>
+            <div className={styles.nameTooltipIcon} style={{ color }} />
+            <div className={styles.nameTooltipName}>{name}</div>
+          </div>
+        }
+      >
+        <div className={styles.eventIcon}>
+          {allDay ? <FullDayIcon /> : <PeriodIcon />}
+        </div>
+      </Tooltip>
       <div className={styles.eventTitle}>{title}</div>
       {loading ? (
         <Loading />

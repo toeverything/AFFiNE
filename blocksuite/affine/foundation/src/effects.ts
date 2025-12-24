@@ -18,7 +18,9 @@ import { effects as componentLinkPreviewEffects } from '@blocksuite/affine-compo
 import { effects as componentLinkedDocTitleEffects } from '@blocksuite/affine-components/linked-doc-title';
 import { effects as componentOpenDocDropdownMenuEffects } from '@blocksuite/affine-components/open-doc-dropdown-menu';
 import { effects as componentPortalEffects } from '@blocksuite/affine-components/portal';
+import { effects as componentResourceEffects } from '@blocksuite/affine-components/resource';
 import { effects as componentSizeDropdownMenuEffects } from '@blocksuite/affine-components/size-dropdown-menu';
+import { effects as componentSliderEffects } from '@blocksuite/affine-components/slider';
 import { SmoothCorner } from '@blocksuite/affine-components/smooth-corner';
 import { effects as componentToggleButtonEffects } from '@blocksuite/affine-components/toggle-button';
 import { ToggleSwitch } from '@blocksuite/affine-components/toggle-switch';
@@ -52,10 +54,12 @@ export function effects() {
   componentViewDropdownMenuEffects();
   componentTooltipContentWithShortcutEffects();
   componentSizeDropdownMenuEffects();
+  componentSliderEffects();
   componentEdgelessLineWidthEffects();
   componentEdgelessLineStylesEffects();
   componentEdgelessShapeColorPickerEffects();
   componentOpenDocDropdownMenuEffects();
+  componentResourceEffects();
 
   customElements.define('icon-button', IconButton);
   customElements.define('smooth-corner', SmoothCorner);

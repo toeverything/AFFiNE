@@ -113,7 +113,7 @@ export class CanvasRenderer {
    * It is not recommended to set width and height to 100%.
    */
   private _canvasSizeUpdater(dpr = window.devicePixelRatio) {
-    const { width, height } = this.viewport;
+    const { width, height, viewScale } = this.viewport;
     const actualWidth = Math.ceil(width * dpr);
     const actualHeight = Math.ceil(height * dpr);
 
@@ -124,6 +124,8 @@ export class CanvasRenderer {
       update(canvas: HTMLCanvasElement) {
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
+        canvas.style.transform = `scale(${1 / viewScale})`;
+        canvas.style.transformOrigin = `top left`;
         canvas.width = actualWidth;
         canvas.height = actualHeight;
       },
@@ -152,7 +154,6 @@ export class CanvasRenderer {
         : 1;
 
       this.canvas.style.zIndex = maximumZIndex.toString();
-
       for (let i = 0; i < canvasLayers.length; ++i) {
         const layer = canvasLayers[i];
         const created = i < currentCanvases.length;

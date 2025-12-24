@@ -1,5 +1,5 @@
 import { getEmbedCardIcons } from '@blocksuite/affine-block-embed';
-import { WebIcon16 } from '@blocksuite/affine-components/icons';
+import { LoadingIcon, WebIcon16 } from '@blocksuite/affine-components/icons';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getHostName } from '@blocksuite/affine-shared/utils';
@@ -45,6 +45,7 @@ export class BookmarkCard extends SignalWatcher(
       [style]: true,
       selected: this.bookmark.selected$.value,
       edgeless: isGfxBlockComponent(this.bookmark),
+      'comment-highlighted': this.bookmark.isCommentHighlighted,
     });
 
     const domainName = url.match(
@@ -60,11 +61,11 @@ export class BookmarkCard extends SignalWatcher(
         : title;
 
     const theme = this.bookmark.std.get(ThemeProvider).theme;
-    const { LoadingIcon, EmbedCardBannerIcon } = getEmbedCardIcons(theme);
-    const imageProxyService = this.bookmark.doc.get(ImageProxyService);
+    const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
+    const imageProxyService = this.bookmark.store.get(ImageProxyService);
 
     const titleIcon = this.loading
-      ? LoadingIcon
+      ? LoadingIcon()
       : icon
         ? html`<img src=${imageProxyService.buildUrl(icon)} alt="icon" />`
         : WebIcon16;

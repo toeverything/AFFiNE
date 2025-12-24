@@ -143,7 +143,7 @@ test('can insert attachment from slash menu', async ({ page }, testInfo) => {
   await waitLoading();
 
   expect(await getName()).toBe(FILE_NAME);
-  expect(await getSize()).toBe('45.8 kB');
+  expect(await getSize()).toBe('44.73KB');
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}.json`
@@ -285,7 +285,7 @@ test(`support dragging attachment block directly`, async ({
   await waitLoading();
 
   expect(await getName()).toBe(FILE_NAME);
-  expect(await getSize()).toBe('45.8 kB');
+  expect(await getSize()).toBe('44.73KB');
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_1.json`

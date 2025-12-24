@@ -18,11 +18,11 @@ export const createToastContainer = (editorHost: EditorHost) => {
   `;
   const template = html`<div class="toast-container" style="${styles}"></div>`;
   const element = htmlToElement<HTMLDivElement>(template);
-  const { std, doc } = editorHost;
+  const { std, store } = editorHost;
 
   let container = document.body;
-  if (doc.root) {
-    const rootComponent = std.view.getBlock(doc.root.id) as BlockComponent & {
+  if (store.root) {
+    const rootComponent = std.view.getBlock(store.root.id) as BlockComponent & {
       viewportElement: HTMLElement;
     };
     if (rootComponent) {

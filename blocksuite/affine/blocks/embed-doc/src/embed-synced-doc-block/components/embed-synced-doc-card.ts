@@ -1,6 +1,8 @@
 import { RENDER_CARD_THROTTLE_MS } from '@blocksuite/affine-block-embed';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { WithDisposable } from '@blocksuite/global/lit';
+import { ResetIcon } from '@blocksuite/icons/lit';
 import {
   BlockSelection,
   isGfxBlockComponent,
@@ -148,9 +150,7 @@ export class EmbedSyncedDocCard extends WithDisposable(ShadowlessElement) {
 
     const theme = this.std.get(ThemeProvider).theme;
     const {
-      LoadingIcon,
       SyncedDocErrorIcon,
-      ReloadIcon,
       SyncedDocEmptyBanner,
       SyncedDocErrorBanner,
       SyncedDocDeletedBanner,
@@ -159,7 +159,7 @@ export class EmbedSyncedDocCard extends WithDisposable(ShadowlessElement) {
     const icon = error
       ? SyncedDocErrorIcon
       : isLoading
-        ? LoadingIcon
+        ? LoadingIcon()
         : this.block.icon$.value;
     const title = isLoading ? 'Loading...' : this.block.title$;
 
@@ -216,7 +216,7 @@ export class EmbedSyncedDocCard extends WithDisposable(ShadowlessElement) {
                     class="affine-embed-synced-doc-card-content-reload-button"
                     @click=${() => this.block.refreshData()}
                   >
-                    ${ReloadIcon} <span>Reload</span>
+                    ${ResetIcon()} <span>Reload</span>
                   </div>
                 </div>
               `

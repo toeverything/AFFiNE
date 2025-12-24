@@ -40,6 +40,7 @@ describe('basic', () => {
       xywh: '[100, 0, 100, 100]',
       index: service.generateIndex(),
     })!;
+    await wait(0); // wait next frame
     frameId = service.crud.addBlock(
       'affine:frame',
       {

@@ -76,7 +76,7 @@ export class AffineSlashMenuWidget extends WidgetComponent {
     const textSelection = this.host.selection.find(TextSelection);
     if (!textSelection) return;
 
-    const model = this.host.doc.getBlock(textSelection.blockId)?.model;
+    const model = this.host.store.getBlock(textSelection.blockId)?.model;
     if (!model) return;
 
     return getInlineEditorByModel(this.std, model);

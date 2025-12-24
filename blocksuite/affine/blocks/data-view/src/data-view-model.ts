@@ -24,21 +24,21 @@ export class DataViewBlockModel extends BlockModel<Props> {
   }
 
   applyViewsUpdate() {
-    this.doc.updateBlock(this, {
+    this.store.updateBlock(this, {
       views: this.props.views,
     });
   }
 
   deleteView(id: string) {
-    this.doc.captureSync();
-    this.doc.transact(() => {
+    this.store.captureSync();
+    this.store.transact(() => {
       this.props.views = this.props.views.filter(v => v.id !== id);
     });
   }
 
   duplicateView(id: string): string {
-    const newId = this.doc.workspace.idGenerator();
-    this.doc.transact(() => {
+    const newId = this.store.workspace.idGenerator();
+    this.store.transact(() => {
       const index = this.props.views.findIndex(v => v.id === id);
       const view = this.props.views[index];
       if (view) {
@@ -53,7 +53,7 @@ export class DataViewBlockModel extends BlockModel<Props> {
   }
 
   moveViewTo(id: string, position: InsertToPosition) {
-    this.doc.transact(() => {
+    this.store.transact(() => {
       this.props.views = arrayMove(
         this.props.views,
         v => v.id === id,
@@ -67,7 +67,7 @@ export class DataViewBlockModel extends BlockModel<Props> {
     id: string,
     update: (data: DataViewDataType) => Partial<DataViewDataType>
   ) {
-    this.doc.transact(() => {
+    this.store.transact(() => {
       this.props.views = this.props.views.map(v => {
         if (v.id !== id) {
           return v;

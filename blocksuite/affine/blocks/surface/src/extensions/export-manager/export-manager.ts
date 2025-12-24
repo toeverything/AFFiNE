@@ -28,7 +28,7 @@ import {
 } from '@blocksuite/std/gfx';
 import type { ExtensionType, Store } from '@blocksuite/store';
 
-import type { CanvasRenderer } from '../../renderer/canvas-renderer.js';
+import { CanvasRenderer } from '../../renderer/canvas-renderer.js';
 import type { SurfaceBlockComponent } from '../../surface-block.js';
 import { getBgGridGap } from '../../utils/get-bg-grip-gap.js';
 import { FileExporter } from './file-exporter.js';
@@ -358,6 +358,9 @@ export class ExportManager {
       const surfaceBlock = gfx.surfaceComponent as SurfaceBlockComponent | null;
       if (!surfaceBlock) return;
       const bound = gfx.elementsBound;
+      if (!(surfaceBlock.renderer instanceof CanvasRenderer)) {
+        return;
+      }
       return this.edgelessToCanvas(surfaceBlock.renderer, bound, gfx);
     }
   }
@@ -373,6 +376,13 @@ export class ExportManager {
       zoom: number;
     }
   ): Promise<HTMLCanvasElement | undefined> {
+    if (!(surfaceRenderer instanceof CanvasRenderer)) {
+      console.warn(
+        'ExportManager.edgelessToCanvas was called with an invalid renderer type. Expected CanvasRenderer.'
+      );
+      return undefined;
+    }
+
     const rootModel = this.doc.root;
     if (!rootModel) return;
 
@@ -438,7 +448,7 @@ export class ExportManager {
       if (matchModels(block, [ImageBlockModel])) {
         if (!block.props.sourceId) return;
 
-        const blob = await block.doc.blobSync.get(block.props.sourceId);
+        const blob = await block.store.blobSync.get(block.props.sourceId);
         if (!blob) return;
 
         const blobToImage = (blob: Blob) =>
@@ -542,7 +552,7 @@ type RootBlockComponent = BlockComponent & {
 function getRootByEditorHost(
   editorHost: EditorHost
 ): RootBlockComponent | null {
-  const model = editorHost.doc.root;
+  const model = editorHost.store.root;
   if (!model) return null;
   const root = editorHost.view.getBlock(model.id);
   return root as RootBlockComponent | null;

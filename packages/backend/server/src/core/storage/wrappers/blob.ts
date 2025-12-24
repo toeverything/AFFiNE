@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 import {
   autoMetadata,
@@ -13,6 +14,7 @@ import {
   StorageProviderFactory,
   URLHelper,
 } from '../../../base';
+import { Models } from '../../../models';
 
 declare global {
   interface Events {
@@ -27,6 +29,17 @@ declare global {
   }
 }
 
+type BlobCompleteResult =
+  | { ok: true; metadata: GetObjectMetadata }
+  | {
+      ok: false;
+      reason:
+        | 'not_found'
+        | 'size_mismatch'
+        | 'mime_mismatch'
+        | 'checksum_mismatch';
+    };
+
 @Injectable()
 export class WorkspaceBlobStorage {
   private readonly logger = new Logger(WorkspaceBlobStorage.name);
@@ -40,7 +53,7 @@ export class WorkspaceBlobStorage {
     private readonly AFFiNEConfig: Config,
     private readonly event: EventBus,
     private readonly storageFactory: StorageProviderFactory,
-    private readonly db: PrismaClient,
+    private readonly models: Models,
     private readonly url: URLHelper
   ) {}
 
@@ -71,15 +84,152 @@ export class WorkspaceBlobStorage {
     return this.provider.get(`${workspaceId}/${key}`, signedUrl);
   }
 
-  async list(workspaceId: string, syncBlobMeta = true) {
-    const blobsInDb = await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
+  async presignPut(
+    workspaceId: string,
+    key: string,
+    metadata?: PutObjectMetadata
+  ) {
+    return this.provider.presignPut?.(`${workspaceId}/${key}`, metadata);
+  }
+
+  async createMultipartUpload(
+    workspaceId: string,
+    key: string,
+    metadata?: PutObjectMetadata
+  ) {
+    return this.provider.createMultipartUpload?.(
+      `${workspaceId}/${key}`,
+      metadata
+    );
+  }
+
+  async presignUploadPart(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ) {
+    return this.provider.presignUploadPart?.(
+      `${workspaceId}/${key}`,
+      uploadId,
+      partNumber
+    );
+  }
+
+  async listMultipartUploadParts(
+    workspaceId: string,
+    key: string,
+    uploadId: string
+  ) {
+    return this.provider.listMultipartUploadParts?.(
+      `${workspaceId}/${key}`,
+      uploadId
+    );
+  }
+
+  async completeMultipartUpload(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[]
+  ) {
+    if (!this.provider.completeMultipartUpload) {
+      return false;
+    }
+
+    await this.provider.completeMultipartUpload(
+      `${workspaceId}/${key}`,
+      uploadId,
+      parts
+    );
+    return true;
+  }
+
+  async abortMultipartUpload(
+    workspaceId: string,
+    key: string,
+    uploadId: string
+  ) {
+    if (!this.provider.abortMultipartUpload) {
+      return false;
+    }
+
+    await this.provider.abortMultipartUpload(`${workspaceId}/${key}`, uploadId);
+    return true;
+  }
+
+  async head(workspaceId: string, key: string) {
+    return this.provider.head(`${workspaceId}/${key}`);
+  }
+
+  async complete(
+    workspaceId: string,
+    key: string,
+    expected: { size: number; mime: string }
+  ): Promise<BlobCompleteResult> {
+    const metadata = await this.head(workspaceId, key);
+    if (!metadata) {
+      return { ok: false, reason: 'not_found' };
+    }
+
+    if (metadata.contentLength !== expected.size) {
+      return { ok: false, reason: 'size_mismatch' };
+    }
+
+    if (expected.mime && metadata.contentType !== expected.mime) {
+      return { ok: false, reason: 'mime_mismatch' };
+    }
+
+    const object = await this.provider.get(`${workspaceId}/${key}`);
+    if (!object.body) {
+      return { ok: false, reason: 'not_found' };
+    }
+
+    const checksum = createHash('sha256');
+    try {
+      for await (const chunk of object.body) {
+        checksum.update(chunk as Buffer);
+      }
+    } catch (e) {
+      this.logger.error('failed to read blob for checksum verification', e);
+      return { ok: false, reason: 'checksum_mismatch' };
+    }
+
+    const base64 = checksum.digest('base64');
+    const base64urlWithPadding = base64.replace(/\+/g, '-').replace(/\//g, '_');
+
+    if (base64urlWithPadding !== key) {
+      try {
+        await this.provider.delete(`${workspaceId}/${key}`);
+      } catch (e) {
+        // never throw
+        this.logger.error('failed to delete invalid blob', e);
+      }
+      return { ok: false, reason: 'checksum_mismatch' };
+    }
+
+    await this.models.blob.upsert({
+      workspaceId,
+      key,
+      mime: metadata.contentType,
+      size: metadata.contentLength,
+      status: 'completed',
+      uploadId: null,
     });
 
+    return { ok: true, metadata };
+  }
+
+  async list(workspaceId: string, syncBlobMeta = true) {
+    const blobsInDb = await this.models.blob.list(workspaceId);
+
     if (blobsInDb.length > 0) {
+      return blobsInDb;
+    }
+
+    // all blobs are uploading but not completed yet
+    const hasDbBlobs = await this.models.blob.hasAny(workspaceId);
+    if (hasDbBlobs) {
       return blobsInDb;
     }
 
@@ -103,36 +253,12 @@ export class WorkspaceBlobStorage {
   async delete(workspaceId: string, key: string, permanently = false) {
     if (permanently) {
       await this.provider.delete(`${workspaceId}/${key}`);
-      await this.db.blob.deleteMany({
-        where: {
-          workspaceId,
-          key,
-        },
-      });
-    } else {
-      await this.db.blob.update({
-        where: {
-          workspaceId_key: {
-            workspaceId,
-            key,
-          },
-        },
-        data: {
-          deletedAt: new Date(),
-        },
-      });
     }
+    await this.models.blob.delete(workspaceId, key, permanently);
   }
 
   async release(workspaceId: string) {
-    const deletedBlobs = await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: {
-          not: null,
-        },
-      },
-    });
+    const deletedBlobs = await this.models.blob.listDeleted(workspaceId);
 
     deletedBlobs.forEach(blob => {
       this.event.emit('workspace.blob.delete', {
@@ -140,20 +266,14 @@ export class WorkspaceBlobStorage {
         key: blob.key,
       });
     });
+
+    this.logger.log(
+      `released ${deletedBlobs.length} blobs for workspace ${workspaceId}`
+    );
   }
 
   async totalSize(workspaceId: string) {
-    const sum = await this.db.blob.aggregate({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-      _sum: {
-        size: true,
-      },
-    });
-
-    return sum._sum.size ?? 0;
+    return await this.models.blob.totalSize(workspaceId);
   }
 
   getAvatarUrl(workspaceId: string, avatarKey: string | null) {
@@ -177,23 +297,13 @@ export class WorkspaceBlobStorage {
     key: string,
     meta: GetObjectMetadata
   ) {
-    await this.db.blob.upsert({
-      where: {
-        workspaceId_key: {
-          workspaceId,
-          key,
-        },
-      },
-      update: {
-        mime: meta.contentType,
-        size: meta.contentLength,
-      },
-      create: {
-        workspaceId,
-        key,
-        mime: meta.contentType,
-        size: meta.contentLength,
-      },
+    await this.models.blob.upsert({
+      workspaceId,
+      key,
+      mime: meta.contentType,
+      size: meta.contentLength,
+      status: 'completed',
+      uploadId: null,
     });
   }
 
@@ -205,12 +315,7 @@ export class WorkspaceBlobStorage {
       if (meta) {
         await this.upsert(workspaceId, key, meta);
       } else {
-        await this.db.blob.deleteMany({
-          where: {
-            workspaceId,
-            key,
-          },
-        });
+        await this.models.blob.delete(workspaceId, key, true);
       }
     } catch (e) {
       // never throw

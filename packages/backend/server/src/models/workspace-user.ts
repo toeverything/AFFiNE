@@ -289,15 +289,6 @@ export class WorkspaceUserModel extends BaseModel {
     });
   }
 
-  async insufficientSeatMemberCount(workspaceId: string) {
-    return this.db.workspaceUserRole.count({
-      where: {
-        workspaceId,
-        status: WorkspaceMemberStatus.NeedMoreSeat,
-      },
-    });
-  }
-
   async getUserActiveRoles(
     userId: string,
     filter: { role?: WorkspaceRole } = {}
@@ -427,6 +418,6 @@ export class WorkspaceUserModel extends BaseModel {
       data: { status: WorkspaceMemberStatus.NeedMoreSeat },
     });
 
-    return groups.Email;
+    return groups.Email ?? [];
   }
 }

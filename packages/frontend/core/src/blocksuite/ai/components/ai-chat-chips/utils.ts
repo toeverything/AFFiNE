@@ -1,13 +1,15 @@
-import { LightLoadingIcon } from '@blocksuite/affine/components/icons';
+import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { WarningIcon } from '@blocksuite/icons/lit';
 import { type TemplateResult } from 'lit';
 
 import type {
+  AttachmentChip,
   ChatChip,
   ChipState,
   CollectionChip,
   DocChip,
   FileChip,
+  SelectedContextChip,
   TagChip,
 } from './type';
 
@@ -41,7 +43,7 @@ export function getChipIcon(
     return WarningIcon();
   }
   if (isLoading) {
-    return LightLoadingIcon;
+    return LoadingIcon();
   }
   return icon;
 }
@@ -62,6 +64,16 @@ export function isCollectionChip(chip: ChatChip): chip is CollectionChip {
   return 'collectionId' in chip;
 }
 
+export function isSelectedContextChip(
+  chip: ChatChip
+): chip is SelectedContextChip {
+  return 'snapshot' in chip && 'combinedElementsMarkdown' in chip;
+}
+
+export function isAttachmentChip(chip: ChatChip): chip is AttachmentChip {
+  return 'sourceId' in chip && 'name' in chip;
+}
+
 export function getChipKey(chip: ChatChip) {
   if (isDocChip(chip)) {
     return chip.docId;
@@ -75,7 +87,58 @@ export function getChipKey(chip: ChatChip) {
   if (isCollectionChip(chip)) {
     return chip.collectionId;
   }
+  if (isSelectedContextChip(chip)) {
+    return chip.uuid;
+  }
   return null;
+}
+
+export function omitChip(chips: ChatChip[], chip: ChatChip) {
+  return chips.filter(item => {
+    if (isDocChip(chip)) {
+      return !isDocChip(item) || item.docId !== chip.docId;
+    }
+    if (isFileChip(chip)) {
+      return !isFileChip(item) || item.file !== chip.file;
+    }
+    if (isTagChip(chip)) {
+      return !isTagChip(item) || item.tagId !== chip.tagId;
+    }
+    if (isCollectionChip(chip)) {
+      return !isCollectionChip(item) || item.collectionId !== chip.collectionId;
+    }
+    if (isSelectedContextChip(chip)) {
+      return !isSelectedContextChip(item) || item.uuid !== chip.uuid;
+    }
+    if (isAttachmentChip(chip)) {
+      return !isAttachmentChip(item) || item.sourceId !== chip.sourceId;
+    }
+    return true;
+  });
+}
+
+export function findChipIndex(chips: ChatChip[], chip: ChatChip) {
+  return chips.findIndex(item => {
+    if (isDocChip(chip)) {
+      return isDocChip(item) && item.docId === chip.docId;
+    }
+    if (isFileChip(chip)) {
+      return isFileChip(item) && item.file === chip.file;
+    }
+    if (isTagChip(chip)) {
+      return isTagChip(item) && item.tagId === chip.tagId;
+    }
+    if (isCollectionChip(chip)) {
+      return isCollectionChip(item) && item.collectionId === chip.collectionId;
+    }
+    if (isSelectedContextChip(chip)) {
+      return isSelectedContextChip(item) && item.uuid === chip.uuid;
+    }
+    if (isAttachmentChip(chip)) {
+      return isAttachmentChip(item) && item.sourceId === chip.sourceId;
+    }
+    return -1;
+  });
 }
 
 export function estimateTokenCount(text: string): number {

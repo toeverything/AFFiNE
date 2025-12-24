@@ -15,6 +15,7 @@ export interface ProgressProps {
   readonly?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  testId?: string;
 }
 
 export const Progress = ({
@@ -24,9 +25,14 @@ export const Progress = ({
   readonly,
   className,
   style,
+  testId,
 }: ProgressProps) => {
   return (
-    <div className={clsx(styles.root, className)} style={style}>
+    <div
+      className={clsx(styles.root, className)}
+      style={style}
+      data-testid={testId}
+    >
       <RadixProgress.Root className={styles.progress} value={value}>
         <RadixProgress.Indicator
           className={styles.indicator}

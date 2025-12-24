@@ -278,7 +278,13 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   }
 
   hasLabel() {
-    return Boolean(!this.lableEditing && this.labelDisplay && this.labelXYWH);
+    return Boolean(
+      !this.labelEditing &&
+      this.labelDisplay &&
+      this.labelXYWH &&
+      this.text &&
+      this.text.length
+    );
   }
 
   override includesPoint(
@@ -339,27 +345,14 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     }
   }
 
-  resize(bounds: Bound, originalPath: PointLocation[], matrix: DOMMatrix) {
+  resize(originalPath: PointLocation[], matrix: DOMMatrix) {
     this.updatingPath = false;
 
     const path = this.resizePath(originalPath, matrix);
-
-    // the property assignment order matters
-    this.xywh = bounds.serialize();
-    this.path = path.map(p => p.clone().setVec(Vec.sub(p, bounds.tl)));
-
     const props: {
-      labelXYWH?: XYWH;
       source?: Connection;
       target?: Connection;
     } = {};
-
-    // Updates Connector's Label position.
-    if (this.hasLabel()) {
-      const [cx, cy] = this.getPointByOffsetDistance(this.labelOffset.distance);
-      const [, , w, h] = this.labelXYWH!;
-      props.labelXYWH = [cx - w / 2, cy - h / 2, w, h];
-    }
 
     if (!this.source.id) {
       props.source = {
@@ -463,7 +456,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    * Local control display and hide, mainly used in editing scenarios.
    */
   @local()
-  accessor lableEditing: boolean = false;
+  accessor labelEditing: boolean = false;
 
   @field()
   accessor mode: ConnectorMode = DEFAULT_CONNECTOR_MODE;

@@ -33,6 +33,7 @@
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-foundation": "workspace:*",
+    "@blocksuite/affine-fragment-adapter-panel": "workspace:*",
     "@blocksuite/affine-fragment-doc-title": "workspace:*",
     "@blocksuite/affine-fragment-frame-panel": "workspace:*",
     "@blocksuite/affine-fragment-outline": "workspace:*",
@@ -47,6 +48,7 @@
     "@blocksuite/affine-gfx-template": "workspace:*",
     "@blocksuite/affine-gfx-text": "workspace:*",
     "@blocksuite/affine-gfx-turbo-renderer": "workspace:*",
+    "@blocksuite/affine-inline-comment": "workspace:*",
     "@blocksuite/affine-inline-footnote": "workspace:*",
     "@blocksuite/affine-inline-latex": "workspace:*",
     "@blocksuite/affine-inline-link": "workspace:*",
@@ -58,11 +60,14 @@
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-drag-handle": "workspace:*",
     "@blocksuite/affine-widget-edgeless-auto-connect": "workspace:*",
+    "@blocksuite/affine-widget-edgeless-dragging-area": "workspace:*",
+    "@blocksuite/affine-widget-edgeless-selected-rect": "workspace:*",
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*",
     "@blocksuite/affine-widget-edgeless-zoom-toolbar": "workspace:*",
     "@blocksuite/affine-widget-frame-title": "workspace:*",
     "@blocksuite/affine-widget-keyboard-toolbar": "workspace:*",
     "@blocksuite/affine-widget-linked-doc": "workspace:*",
+    "@blocksuite/affine-widget-note-slicer": "workspace:*",
     "@blocksuite/affine-widget-page-dragging-area": "workspace:*",
     "@blocksuite/affine-widget-remote-selection": "workspace:*",
     "@blocksuite/affine-widget-scroll-anchoring": "workspace:*",
@@ -74,7 +79,7 @@
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@blocksuite/sync": "workspace:*",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.2"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -169,6 +174,7 @@
     "./inlines/footnote": "./src/inlines/footnote/index.ts",
     "./inlines/footnote/view": "./src/inlines/footnote/view.ts",
     "./inlines/footnote/store": "./src/inlines/footnote/store.ts",
+    "./inlines/comment": "./src/inlines/comment/index.ts",
     "./inlines/latex": "./src/inlines/latex/index.ts",
     "./inlines/latex/store": "./src/inlines/latex/store.ts",
     "./inlines/latex/view": "./src/inlines/latex/view.ts",
@@ -178,6 +184,8 @@
     "./widgets/drag-handle/view": "./src/widgets/drag-handle/view.ts",
     "./widgets/edgeless-auto-connect": "./src/widgets/edgeless-auto-connect/index.ts",
     "./widgets/edgeless-auto-connect/view": "./src/widgets/edgeless-auto-connect/view.ts",
+    "./widgets/edgeless-dragging-area": "./src/widgets/edgeless-dragging-area/index.ts",
+    "./widgets/edgeless-dragging-area/view": "./src/widgets/edgeless-dragging-area/view.ts",
     "./widgets/edgeless-toolbar": "./src/widgets/edgeless-toolbar/index.ts",
     "./widgets/edgeless-toolbar/view": "./src/widgets/edgeless-toolbar/view.ts",
     "./widgets/frame-title": "./src/widgets/frame-title/index.ts",
@@ -204,6 +212,8 @@
     "./fragments/frame-panel/view": "./src/fragments/frame-panel/view.ts",
     "./fragments/outline": "./src/fragments/outline/index.ts",
     "./fragments/outline/view": "./src/fragments/outline/view.ts",
+    "./fragments/adapter-panel": "./src/fragments/adapter-panel/index.ts",
+    "./fragments/adapter-panel/view": "./src/fragments/adapter-panel/view.ts",
     "./gfx/text": "./src/gfx/text/index.ts",
     "./gfx/text/store": "./src/gfx/text/store.ts",
     "./gfx/text/view": "./src/gfx/text/view.ts",
@@ -256,6 +266,7 @@
     "./components/toggle-button": "./src/components/toggle-button.ts",
     "./components/toggle-switch": "./src/components/toggle-switch.ts",
     "./components/toolbar": "./src/components/toolbar.ts",
+    "./components/tooltip": "./src/components/tooltip.ts",
     "./components/view-dropdown-menu": "./src/components/view-dropdown-menu.ts",
     "./components/tooltip-content-with-shortcut": "./src/components/tooltip-content-with-shortcut.ts",
     "./components/resource": "./src/components/resource.ts",
@@ -274,7 +285,10 @@
     "./model": "./src/model/index.ts",
     "./sync": "./src/sync/index.ts",
     "./extensions/store": "./src/extensions/store.ts",
-    "./extensions/view": "./src/extensions/view.ts"
+    "./extensions/view": "./src/extensions/view.ts",
+    "./foundation/clipboard": "./src/foundation/clipboard.ts",
+    "./foundation/store": "./src/foundation/store.ts",
+    "./foundation/view": "./src/foundation/view.ts"
   },
   "files": [
     "src",
@@ -282,9 +296,10 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0",
+  "version": "0.25.7",
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
-    "vitest": "3.1.3"
+    "msw": "^2.12.4",
+    "vitest": "^3.2.4"
   }
 }

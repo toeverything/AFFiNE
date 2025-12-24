@@ -91,7 +91,7 @@ export class EdgelessWatcher {
 
   updateAnchorElement = () => {
     if (!this.widget.isConnected) return;
-    if (this.widget.doc.readonly || this.widget.mode === 'page') {
+    if (this.widget.store.readonly || this.widget.mode === 'page') {
       this.widget.hide();
       return;
     }
@@ -100,7 +100,11 @@ export class EdgelessWatcher {
     const editing = selection.editing;
     const selectedElements = selection.selectedElements;
 
-    if (editing || selectedElements.length !== 1 || this.widget.doc.readonly) {
+    if (
+      editing ||
+      selectedElements.length !== 1 ||
+      this.widget.store.readonly
+    ) {
       this.widget.hide();
       return;
     }

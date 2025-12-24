@@ -32,7 +32,12 @@ export class CalendarSubscription extends Entity<{ url: string }> {
     this.store.watchSubscriptionCache(this.props.url),
     ''
   );
-  name$ = this.content$.selector(content => {
+  name$ = LiveData.computed(get => {
+    const config = get(this.config$);
+    if (config?.name !== undefined) {
+      return config.name;
+    }
+    const content = get(this.content$);
     if (!content) return '';
     try {
       const jCal = ICAL.parse(content ?? '');
@@ -42,6 +47,7 @@ export class CalendarSubscription extends Entity<{ url: string }> {
       return '';
     }
   });
+
   eventsByDateMap$ = LiveData.computed(get => {
     const content = get(this.content$);
     const config = get(this.config$);

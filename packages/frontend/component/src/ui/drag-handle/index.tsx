@@ -8,8 +8,10 @@ export const DragHandle = forwardRef<
   {
     className?: string;
     dragging?: boolean;
+    width?: number;
+    height?: number;
   }
->(({ className, dragging, ...props }, ref) => {
+>(({ className, dragging, width = 10, height = 22, ...props }, ref) => {
   return (
     <div
       {...props}
@@ -18,8 +20,8 @@ export const DragHandle = forwardRef<
       className={clsx(styles.root, className)}
     >
       <svg
-        width="10"
-        height="22"
+        width={width}
+        height={height}
         viewBox="0 0 10 22"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"

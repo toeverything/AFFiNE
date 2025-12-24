@@ -5,6 +5,7 @@ import type { Command } from '@blocksuite/std';
 export type LinkableFlavour =
   | 'affine:bookmark'
   | 'affine:embed-linked-doc'
+  | 'affine:embed-synced-doc'
   | 'affine:embed-iframe'
   | 'affine:embed-figma'
   | 'affine:embed-github'

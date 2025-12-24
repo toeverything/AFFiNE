@@ -13,12 +13,15 @@ import { ConnectedAccount } from '@prisma/client';
 import type { Request, Response } from 'express';
 
 import {
+  Config,
   InvalidAuthState,
   InvalidOauthCallbackState,
   MissingOauthQueryParameter,
   OauthAccountAlreadyConnected,
   OauthStateExpired,
+  SignUpForbidden,
   UnknownOauthProvider,
+  URLHelper,
   UseNamedGuard,
 } from '../../base';
 import { AuthService, Public } from '../../core/auth';
@@ -36,7 +39,9 @@ export class OAuthController {
     private readonly auth: AuthService,
     private readonly oauth: OAuthService,
     private readonly models: Models,
-    private readonly providerFactory: OAuthProviderFactory
+    private readonly providerFactory: OAuthProviderFactory,
+    private readonly url: URLHelper,
+    private readonly config: Config
   ) {}
 
   @Public()
@@ -60,22 +65,47 @@ export class OAuthController {
       throw new UnknownOauthProvider({ name: unknownProviderName });
     }
 
+    const pkce = provider.requiresPkce ? this.oauth.createPkcePair() : null;
+
     const state = await this.oauth.saveOAuthState({
       provider: providerName,
       redirectUri,
       client,
       clientNonce,
+      ...(pkce
+        ? {
+            pkce: {
+              codeVerifier: pkce.codeVerifier,
+              codeChallengeMethod: pkce.codeChallengeMethod,
+            },
+          }
+        : {}),
     });
 
+    const statePayload: Record<string, unknown> = {
+      state,
+      client,
+      provider: unknownProviderName,
+    };
+
+    if (pkce) {
+      statePayload.pkce = {
+        codeChallenge: pkce.codeChallenge,
+        codeChallengeMethod: pkce.codeChallengeMethod,
+      };
+    }
+
+    const stateStr = JSON.stringify(statePayload);
+
     return {
-      url: provider.getAuthUrl(
-        JSON.stringify({ state, client, provider: unknownProviderName })
-      ),
+      url: provider.getAuthUrl(stateStr, clientNonce),
     };
   }
 
+  // the prerequest `/oauth/prelight` request already checked client version,
+  // let's simply ignore it for callback which will block apple oauth post_form mode
+  // @UseNamedGuard('version')
   @Public()
-  @UseNamedGuard('version')
   @Post('/callback')
   @HttpCode(HttpStatus.OK)
   async callback(
@@ -85,12 +115,24 @@ export class OAuthController {
     @Body('state') stateStr?: string,
     @Body('client_nonce') clientNonce?: string
   ) {
+    // TODO(@forehalo): refactor and remove deprecated code in 0.23
     if (!code) {
       throw new MissingOauthQueryParameter({ name: 'code' });
     }
 
     if (!stateStr) {
       throw new MissingOauthQueryParameter({ name: 'state' });
+    }
+
+    // NOTE(@forehalo): Apple sign in will directly post /callback, with `state` set at #L73
+    let rawState = null;
+    if (typeof stateStr === 'string' && stateStr.length > 36) {
+      try {
+        rawState = JSON.parse(stateStr);
+        stateStr = rawState.state;
+      } catch {
+        /* noop */
+      }
     }
 
     if (typeof stateStr !== 'string' || !this.oauth.isValidState(stateStr)) {
@@ -102,9 +144,42 @@ export class OAuthController {
     if (!state) {
       throw new OauthStateExpired();
     }
+    if (!state.token) {
+      state.token = stateStr;
+    }
+
+    if (
+      state.provider === OAuthProviderName.Apple &&
+      rawState &&
+      state.client &&
+      state.client !== 'web'
+    ) {
+      const clientUrl = new URL(`${state.client}://authentication`);
+      clientUrl.searchParams.set('method', 'oauth');
+      clientUrl.searchParams.set(
+        'payload',
+        JSON.stringify({
+          state: stateStr,
+          code,
+          provider: rawState.provider,
+        })
+      );
+      clientUrl.searchParams.set('server', this.url.requestOrigin);
+
+      return res.redirect(
+        this.url.link('/open-app/url?', {
+          url: clientUrl.toString(),
+        })
+      );
+    }
 
     // TODO(@fengmk2): clientNonce should be required after the client version >= 0.21.0
-    if (state.clientNonce && state.clientNonce !== clientNonce) {
+    if (
+      state.clientNonce &&
+      state.clientNonce !== clientNonce &&
+      // apple sign in with nonce stored in id token
+      state.provider !== OAuthProviderName.Apple
+    ) {
       throw new InvalidAuthState();
     }
 
@@ -120,7 +195,7 @@ export class OAuthController {
 
     let tokens: Tokens;
     try {
-      tokens = await provider.getToken(code);
+      tokens = await provider.getToken(code, state);
     } catch (err) {
       let rayBodyString = '';
       if (req.rawBody) {
@@ -132,21 +207,30 @@ export class OAuthController {
       );
       throw err;
     }
-    const externAccount = await provider.getUser(tokens.accessToken);
-    const user = await this.loginFromOauth(
+
+    const externAccount = await provider.getUser(tokens, state);
+    const user = await this.getOrCreateUserFromOauth(
       state.provider,
       externAccount,
       tokens
     );
 
     await this.auth.setCookies(req, res, user.id);
+
+    if (
+      state.provider === OAuthProviderName.Apple &&
+      (!state.client || state.client === 'web')
+    ) {
+      return res.redirect(this.url.link(state.redirectUri ?? '/'));
+    }
+
     res.send({
       id: user.id,
       redirectUri: state.redirectUri,
     });
   }
 
-  private async loginFromOauth(
+  private async getOrCreateUserFromOauth(
     provider: OAuthProviderName,
     externalAccount: OAuthAccount,
     tokens: Tokens
@@ -159,10 +243,24 @@ export class OAuthController {
     if (connectedAccount) {
       // already connected
       await this.updateConnectedAccount(connectedAccount, tokens);
+
+      if (
+        !connectedAccount.user.emailVerifiedAt &&
+        // external email may change, check if it matches exists email
+        externalAccount.email.toLowerCase() ===
+          connectedAccount.user.email.toLowerCase()
+      ) {
+        await this.auth.setEmailVerified(connectedAccount.userId);
+      }
       return connectedAccount.user;
     }
 
+    if (!this.config.auth.allowSignupForOauth) {
+      throw new SignUpForbidden();
+    }
+
     const user = await this.models.user.fulfill(externalAccount.email, {
+      name: externalAccount.name,
       avatarUrl: externalAccount.avatarUrl,
     });
 
@@ -170,7 +268,9 @@ export class OAuthController {
       userId: user.id,
       provider,
       providerAccountId: externalAccount.id,
-      ...tokens,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: tokens.expiresAt,
     });
 
     return user;
@@ -180,10 +280,11 @@ export class OAuthController {
     connectedAccount: ConnectedAccount,
     tokens: Tokens
   ) {
-    return await this.models.user.updateConnectedAccount(
-      connectedAccount.id,
-      tokens
-    );
+    return await this.models.user.updateConnectedAccount(connectedAccount.id, {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: tokens.expiresAt,
+    });
   }
 
   /**
@@ -210,7 +311,9 @@ export class OAuthController {
         userId: user.id,
         provider,
         providerAccountId: externalAccount.id,
-        ...tokens,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: tokens.expiresAt,
       });
     }
   }

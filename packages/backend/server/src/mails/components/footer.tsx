@@ -24,24 +24,19 @@ export const Footer = () => {
     >
       <Section align="center" width="auto" style={{ margin: '1px auto' }}>
         <Row>
-          {[
-            'Github',
-            'Twitter',
-            'Discord',
-            'Youtube',
-            'Telegram',
-            'Reddit',
-          ].map(platform => (
-            <td key={platform} style={{ padding: '0 10px' }}>
-              <Link href={`https://affine.pro/${platform.toLowerCase()}`}>
-                <Img
-                  src={`https://cdn.affine.pro/mail/2023-8-9/${platform}.png`}
-                  alt={`affine ${platform.toLowerCase()} link`}
-                  height="16px"
-                />
-              </Link>
-            </td>
-          ))}
+          {['Github', 'Twitter', 'Discord', 'Youtube', 'Reddit'].map(
+            platform => (
+              <td key={platform} style={{ padding: '0 10px' }}>
+                <Link href={`https://affine.pro/${platform.toLowerCase()}`}>
+                  <Img
+                    src={`https://cdn.affine.pro/mail/2023-8-9/${platform}.png`}
+                    alt={`affine ${platform.toLowerCase()} link`}
+                    height="16px"
+                  />
+                </Link>
+              </td>
+            )
+          )}
         </Row>
       </Section>
       <Section align="center" width="auto">

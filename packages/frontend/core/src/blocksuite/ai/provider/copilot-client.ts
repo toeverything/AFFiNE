@@ -1,9 +1,12 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type { UserFriendlyError } from '@affine/error';
 import {
+  addContextBlobMutation,
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
+  applyDocUpdatesQuery,
   cleanupCopilotSessionMutation,
   createCopilotContextMutation,
   createCopilotMessageMutation,
@@ -11,13 +14,18 @@ import {
   forkCopilotSessionMutation,
   getCopilotHistoriesQuery,
   getCopilotHistoryIdsQuery,
+  getCopilotRecentSessionsQuery,
+  getCopilotSessionQuery,
   getCopilotSessionsQuery,
+  getWorkspaceEmbeddingStatusQuery,
   type GraphQLQuery,
   listContextObjectQuery,
   listContextQuery,
   matchContextQuery,
+  type PaginationInput,
   type QueryOptions,
   type QueryResponse,
+  removeContextBlobMutation,
   removeContextCategoryMutation,
   removeContextDocMutation,
   removeContextFileMutation,
@@ -31,6 +39,13 @@ import {
   PaymentRequiredError,
   UnauthorizedError,
 } from './error';
+
+export enum Endpoint {
+  Stream = 'stream',
+  StreamObject = 'stream-object',
+  Workflow = 'workflow',
+  Images = 'images',
+}
 
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
@@ -136,23 +151,59 @@ export class CopilotClient {
     }
   }
 
+  async getSession(workspaceId: string, sessionId: string) {
+    try {
+      const res = await this.gql({
+        query: getCopilotSessionQuery,
+        variables: { sessionId, workspaceId },
+      });
+      return res.currentUser?.copilot?.chats?.edges?.[0]?.node;
+    } catch (err) {
+      throw resolveError(err);
+    }
+  }
+
   async getSessions(
     workspaceId: string,
+    pagination: PaginationInput,
     docId?: string,
     options?: RequestOptions<
       typeof getCopilotSessionsQuery
-    >['variables']['options']
+    >['variables']['options'],
+    signal?: AbortSignal
   ) {
     try {
       const res = await this.gql({
         query: getCopilotSessionsQuery,
         variables: {
           workspaceId,
+          pagination,
           docId,
           options,
         },
+        signal,
       });
-      return res.currentUser?.copilot?.sessions;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
+    } catch (err) {
+      throw resolveError(err);
+    }
+  }
+
+  async getRecentSessions(
+    workspaceId: string,
+    limit?: number,
+    offset?: number
+  ) {
+    try {
+      const res = await this.gql({
+        query: getCopilotRecentSessionsQuery,
+        variables: {
+          workspaceId,
+          limit,
+          offset,
+        },
+      });
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }
@@ -160,6 +211,7 @@ export class CopilotClient {
 
   async getHistories(
     workspaceId: string,
+    pagination: PaginationInput,
     docId?: string,
     options?: RequestOptions<
       typeof getCopilotHistoriesQuery
@@ -170,12 +222,13 @@ export class CopilotClient {
         query: getCopilotHistoriesQuery,
         variables: {
           workspaceId,
+          pagination,
           docId,
           options,
         },
       });
 
-      return res.currentUser?.copilot?.histories;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }
@@ -183,9 +236,10 @@ export class CopilotClient {
 
   async getHistoryIds(
     workspaceId: string,
+    pagination: PaginationInput,
     docId?: string,
     options?: RequestOptions<
-      typeof getCopilotHistoriesQuery
+      typeof getCopilotHistoryIdsQuery
     >['variables']['options']
   ) {
     try {
@@ -193,12 +247,13 @@ export class CopilotClient {
         query: getCopilotHistoryIdsQuery,
         variables: {
           workspaceId,
+          pagination,
           docId,
           options,
         },
       });
 
-      return res.currentUser?.copilot?.histories;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }
@@ -206,7 +261,7 @@ export class CopilotClient {
 
   async cleanupSessions(input: {
     workspaceId: string;
-    docId: string;
+    docId: string | undefined;
     sessionIds: string[];
   }) {
     try {
@@ -241,7 +296,7 @@ export class CopilotClient {
         sessionId,
       },
     });
-    return res.currentUser?.copilot?.contexts?.[0]?.id;
+    return res.currentUser?.copilot?.contexts?.[0]?.id || undefined;
   }
 
   async addContextDoc(options: OptionsField<typeof addContextDocMutation>) {
@@ -333,13 +388,23 @@ export class CopilotClient {
     return res.currentUser?.copilot?.contexts?.[0];
   }
 
-  async matchContext(contextId: string, content: string, limit?: number) {
+  async matchContext(
+    content: string,
+    contextId?: string,
+    workspaceId?: string,
+    limit?: number,
+    scopedThreshold?: number,
+    threshold?: number
+  ) {
     const res = await this.gql({
       query: matchContextQuery,
       variables: {
-        contextId,
         content,
+        contextId,
+        workspaceId,
         limit,
+        scopedThreshold,
+        threshold,
       },
     });
     const { matchFiles: files, matchWorkspaceDocs: docs } =
@@ -352,12 +417,16 @@ export class CopilotClient {
     messageId,
     reasoning,
     webSearch,
+    modelId,
+    toolsConfig,
     signal,
   }: {
     sessionId: string;
     messageId?: string;
     reasoning?: boolean;
     webSearch?: boolean;
+    modelId?: string;
+    toolsConfig?: AIToolsConfig;
     signal?: AbortSignal;
   }) {
     let url = `/api/copilot/chat/${sessionId}`;
@@ -365,6 +434,8 @@ export class CopilotClient {
       messageId,
       reasoning,
       webSearch,
+      modelId,
+      toolsConfig,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -380,19 +451,25 @@ export class CopilotClient {
       messageId,
       reasoning,
       webSearch,
+      modelId,
+      toolsConfig,
     }: {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
       webSearch?: boolean;
+      modelId?: string;
+      toolsConfig?: AIToolsConfig;
     },
-    endpoint = 'stream'
+    endpoint = Endpoint.Stream
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
       webSearch,
+      modelId,
+      toolsConfig,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -405,7 +482,7 @@ export class CopilotClient {
     sessionId: string,
     messageId?: string,
     seed?: string,
-    endpoint = 'images'
+    endpoint = Endpoint.Images
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
@@ -418,7 +495,9 @@ export class CopilotClient {
     return this.eventSource(url);
   }
 
-  paramsToQueryString(params: Record<string, string | boolean | undefined>) {
+  paramsToQueryString(
+    params: Record<string, string | boolean | undefined | Record<string, any>>
+  ) {
     const queryString = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (typeof value === 'boolean') {
@@ -427,8 +506,52 @@ export class CopilotClient {
         }
       } else if (typeof value === 'string') {
         queryString.append(key, value);
+      } else if (typeof value === 'object' && value !== null) {
+        queryString.append(key, JSON.stringify(value));
       }
     });
     return queryString.toString();
+  }
+
+  getEmbeddingStatus(workspaceId: string) {
+    return this.gql({
+      query: getWorkspaceEmbeddingStatusQuery,
+      variables: { workspaceId },
+    }).then(res => res.queryWorkspaceEmbeddingStatus);
+  }
+
+  applyDocUpdates(
+    workspaceId: string,
+    docId: string,
+    op: string,
+    updates: string
+  ) {
+    return this.gql({
+      query: applyDocUpdatesQuery,
+      variables: {
+        workspaceId,
+        docId,
+        op,
+        updates,
+      },
+    }).then(res => res.applyDocUpdates);
+  }
+
+  addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {
+    return this.gql({
+      query: addContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.addContextBlob);
+  }
+
+  removeContextBlob(options: OptionsField<typeof removeContextBlobMutation>) {
+    return this.gql({
+      query: removeContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.removeContextBlob);
   }
 }

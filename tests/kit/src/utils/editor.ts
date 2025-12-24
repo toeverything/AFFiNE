@@ -69,6 +69,14 @@ export function locateDocTitle(page: Page, editorIndex = 0) {
   return locateEditorContainer(page, editorIndex).locator('doc-title');
 }
 
+export function isDocTitleFocused(page: Page, editorIndex = 0) {
+  return locateDocTitle(page, editorIndex)
+    .locator('.inline-editor')
+    .evaluate(inlineEditor => {
+      return document.activeElement === inlineEditor;
+    });
+}
+
 export async function focusDocTitle(page: Page, editorIndex = 0) {
   await locateDocTitle(page, editorIndex).locator('.inline-editor').focus();
 }
@@ -161,6 +169,17 @@ export async function setViewportZoom(page: Page, zoom = 1, editorIndex = 0) {
     }
     root.gfx.viewport.setZoom(zoom);
   }, zoom);
+}
+
+export async function fitViewportToContent(page: Page, editorIndex = 0) {
+  const container = locateEditorContainer(page, editorIndex);
+  return container.evaluate(container => {
+    const root = container.querySelector('affine-edgeless-root');
+    if (!root) {
+      throw new Error('Edgeless root not found');
+    }
+    root.gfx.fitToScreen();
+  });
 }
 
 /**
@@ -443,6 +462,10 @@ export async function resizeElementByHandle(
   page: Page,
   delta: IVec,
   corner:
+    | 'right'
+    | 'left'
+    | 'top'
+    | 'bottom'
     | 'top-left'
     | 'top-right'
     | 'bottom-right'
@@ -459,6 +482,25 @@ export async function resizeElementByHandle(
   );
   const to: IVec = [from[0] + delta[0], from[1] + delta[1]];
   await dragView(page, from, to, editorIndex);
+}
+
+export async function scaleElementByHandle(
+  page: Page,
+  delta: IVec,
+  corner:
+    | 'right'
+    | 'left'
+    | 'top'
+    | 'bottom'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-right'
+    | 'bottom-left' = 'top-left',
+  editorIndex = 0
+) {
+  await page.keyboard.down('Shift');
+  await resizeElementByHandle(page, delta, corner, editorIndex);
+  await page.keyboard.up('Shift');
 }
 
 /**

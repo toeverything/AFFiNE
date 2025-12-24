@@ -41,6 +41,15 @@ if (
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
+window.addEventListener('focus', () => {
+  storeManagerClient.resume();
+});
+window.addEventListener('click', () => {
+  storeManagerClient.resume();
+});
+window.addEventListener('blur', () => {
+  storeManagerClient.pause();
+});
 
 const future = {
   v7_startTransition: true,

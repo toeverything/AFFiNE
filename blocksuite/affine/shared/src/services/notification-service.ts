@@ -40,7 +40,6 @@ export interface NotificationService {
     }[];
     onClose?: () => void;
   }): void;
-
   /**
    * Notify with undo action, it is a helper function to notify with undo action.
    * And the notification card will be closed when undo action is triggered by shortcut key or other ways.
@@ -55,13 +54,16 @@ export const NotificationProvider = createIdentifier<NotificationService>(
 );
 
 export function NotificationExtension(
-  notificationService: Omit<NotificationService, 'notifyWithUndoAction'>
+  notificationService: NotificationService
 ): ExtensionType {
   return {
     setup: di => {
       di.addImpl(NotificationProvider, provider => {
         return {
-          ...notificationService,
+          notify: notificationService.notify,
+          toast: notificationService.toast,
+          confirm: notificationService.confirm,
+          prompt: notificationService.prompt,
           notifyWithUndoAction: options => {
             notifyWithUndoActionImpl(
               provider,
@@ -89,14 +91,14 @@ function notifyWithUndoActionImpl(
   options.abort?.addEventListener('abort', abort);
 
   const clearOnClose = () => {
-    store.history.off('stack-item-added', addHandler);
-    store.history.off('stack-item-popped', popHandler);
+    store.history.undoManager.off('stack-item-added', addHandler);
+    store.history.undoManager.off('stack-item-popped', popHandler);
     disposable.unsubscribe();
     options.abort?.removeEventListener('abort', abort);
   };
 
-  const addHandler = store.history.on('stack-item-added', abort);
-  const popHandler = store.history.on('stack-item-popped', abort);
+  const addHandler = store.history.undoManager.on('stack-item-added', abort);
+  const popHandler = store.history.undoManager.on('stack-item-popped', abort);
   const disposable = provider
     .get(EditorLifeCycleExtension)
     .slots.unmounted.subscribe(() => abort());

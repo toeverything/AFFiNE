@@ -1,32 +1,21 @@
-import { Store, yjsObserveByPath, yjsObserveDeep } from '@toeverything/infra';
-import { differenceBy, isNil, omitBy } from 'lodash-es';
+import {
+  LiveData,
+  Store,
+  yjsGetPath,
+  yjsObserveDeep,
+} from '@toeverything/infra';
+import { isNil, omitBy } from 'lodash-es';
 import { combineLatest, map, switchMap } from 'rxjs';
 import { AbstractType as YAbstractType } from 'yjs';
 
 import type { WorkspaceDBService } from '../../db';
-import type {
-  DocCustomPropertyInfo,
-  DocProperties,
-} from '../../db/schema/schema';
+import type { DocProperties } from '../../db/schema/schema';
 import type { WorkspaceService } from '../../workspace';
-import { BUILT_IN_CUSTOM_PROPERTY_TYPE } from '../constants';
 
 interface LegacyDocProperties {
   custom?: Record<string, { value: unknown } | undefined>;
   system?: Record<string, { value: unknown } | undefined>;
 }
-
-type LegacyDocPropertyInfo = {
-  id?: string;
-  name?: string;
-  type?: string;
-  icon?: string;
-};
-
-type LegacyDocPropertyInfoList = Record<
-  string,
-  LegacyDocPropertyInfo | undefined
->;
 
 export class DocPropertiesStore extends Store {
   constructor(
@@ -43,120 +32,12 @@ export class DocPropertiesStore extends Store {
     });
   }
 
-  getDocPropertyInfoList() {
-    const db = this.dbService.db.docCustomPropertyInfo.find();
-    const legacy = this.upgradeLegacyDocPropertyInfoList(
-      this.getLegacyDocPropertyInfoList()
-    );
-    const builtIn = BUILT_IN_CUSTOM_PROPERTY_TYPE;
-    const withLegacy = [...db, ...differenceBy(legacy, db, i => i.id)];
-    const all = [
-      ...withLegacy,
-      ...differenceBy(builtIn, withLegacy, i => i.id),
-    ];
-    return all.filter(i => !i.isDeleted);
-  }
-
-  createDocPropertyInfo(
-    config: Omit<DocCustomPropertyInfo, 'id'> & { id?: string }
-  ) {
-    return this.dbService.db.docCustomPropertyInfo.create(config);
-  }
-
-  removeDocPropertyInfo(id: string) {
-    this.updateDocPropertyInfo(id, {
-      additionalData: {}, // also remove additional data to reduce size
-      isDeleted: true,
-    });
-  }
-
-  updateDocPropertyInfo(id: string, config: Partial<DocCustomPropertyInfo>) {
-    const needMigration = !this.dbService.db.docCustomPropertyInfo.get(id);
-    const isBuiltIn =
-      needMigration && BUILT_IN_CUSTOM_PROPERTY_TYPE.some(i => i.id === id);
-    if (isBuiltIn) {
-      this.createPropertyFromBuiltIn(id, config);
-    } else if (needMigration) {
-      // if this property is not in db, we need to migration it from legacy to db, only type and name is needed
-      this.migrateLegacyDocPropertyInfo(id, config);
-    } else {
-      this.dbService.db.docCustomPropertyInfo.update(id, config);
-    }
-  }
-
-  migrateLegacyDocPropertyInfo(
-    id: string,
-    override: Partial<DocCustomPropertyInfo>
-  ) {
-    const legacy = this.getLegacyDocPropertyInfo(id);
-    this.dbService.db.docCustomPropertyInfo.create({
-      id,
-      type:
-        legacy?.type ??
-        'unknown' /* should never reach here, just for safety, we need handle unknown property type */,
-      name: legacy?.name,
-      ...override,
-    });
-  }
-
-  createPropertyFromBuiltIn(
-    id: string,
-    override: Partial<DocCustomPropertyInfo>
-  ) {
-    const builtIn = BUILT_IN_CUSTOM_PROPERTY_TYPE.find(i => i.id === id);
-    if (!builtIn) {
-      return;
-    }
-    this.createDocPropertyInfo({ ...builtIn, ...override });
-  }
-
-  watchDocPropertyInfoList() {
-    return combineLatest([
-      this.watchLegacyDocPropertyInfoList().pipe(
-        map(this.upgradeLegacyDocPropertyInfoList)
-      ),
-      this.dbService.db.docCustomPropertyInfo.find$(),
-    ]).pipe(
-      map(([legacy, db]) => {
-        const builtIn = BUILT_IN_CUSTOM_PROPERTY_TYPE;
-        const withLegacy = [...db, ...differenceBy(legacy, db, i => i.id)];
-        const all = [
-          ...withLegacy,
-          ...differenceBy(builtIn, withLegacy, i => i.id),
-        ];
-        return all.filter(i => !i.isDeleted);
-      })
-    );
-  }
-
   getDocProperties(id: string) {
     return {
       ...this.upgradeLegacyDocProperties(this.getLegacyDocProperties(id)),
       ...omitBy(this.dbService.db.docProperties.get(id), isNil),
       // db always override legacy, but nil value should not override
     };
-  }
-
-  watchAllDocProperties() {
-    const allDocProperties$ = this.dbService.db.docProperties.find$();
-    const allLegacyDocProperties$ = this.watchAllLegacyDocProperties();
-
-    return combineLatest([allDocProperties$, allLegacyDocProperties$]).pipe(
-      map(([db, legacy]) => {
-        const map = new Map(db.map(i => [i.id, i]));
-        const allIds = new Set([...map.keys(), ...Object.keys(legacy ?? {})]);
-
-        const result = {} as Record<string, Record<string, any>>;
-
-        for (const id of allIds) {
-          result[id] = {
-            ...this.upgradeLegacyDocProperties(legacy?.[id]),
-            ...omitBy(map.get(id), isNil),
-          };
-        }
-        return result;
-      })
-    );
   }
 
   watchDocProperties(id: string) {
@@ -173,6 +54,20 @@ export class DocPropertiesStore extends Store {
             ...omitBy(db, isNil), // db always override legacy, but nil value should not override
           }) as DocProperties
       )
+    );
+  }
+
+  /**
+   * find doc ids by property key and value
+   *
+   * this apis will not include legacy properties
+   */
+  watchPropertyAllValues(propertyKey: string) {
+    return LiveData.from<Map<string, string | undefined>>(
+      this.dbService.db.docProperties
+        .select$(propertyKey)
+        .pipe(map(o => new Map(o.map(i => [i.id, i[propertyKey]])))),
+      new Map()
     );
   }
 
@@ -194,29 +89,6 @@ export class DocPropertiesStore extends Store {
     return newProperties;
   }
 
-  private upgradeLegacyDocPropertyInfoList(
-    infoList?: LegacyDocPropertyInfoList
-  ) {
-    if (!infoList) {
-      return [];
-    }
-
-    const newInfoList: DocCustomPropertyInfo[] = [];
-
-    for (const [id, info] of Object.entries(infoList ?? {})) {
-      if (info?.type) {
-        newInfoList.push({
-          id,
-          name: info.name,
-          type: info.type,
-          icon: info.icon,
-        });
-      }
-    }
-
-    return newInfoList;
-  }
-
   private getLegacyDocProperties(id: string) {
     return this.workspaceService.workspace.rootYDoc
       .getMap<any>('affine:workspace-properties')
@@ -225,25 +97,8 @@ export class DocPropertiesStore extends Store {
       ?.toJSON() as LegacyDocProperties | undefined;
   }
 
-  private watchAllLegacyDocProperties() {
-    return yjsObserveByPath(
-      this.workspaceService.workspace.rootYDoc.getMap<any>(
-        'affine:workspace-properties'
-      ),
-      `pageProperties`
-    ).pipe(
-      switchMap(yjsObserveDeep),
-      map(
-        p =>
-          (p instanceof YAbstractType ? p.toJSON() : p) as
-            | { [docId: string]: LegacyDocProperties }
-            | undefined
-      )
-    );
-  }
-
   private watchLegacyDocProperties(id: string) {
-    return yjsObserveByPath(
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap<any>(
         'affine:workspace-properties'
       ),
@@ -257,41 +112,5 @@ export class DocPropertiesStore extends Store {
             | undefined
       )
     );
-  }
-
-  private getLegacyDocPropertyInfoList() {
-    return this.workspaceService.workspace.rootYDoc
-      .getMap<any>('affine:workspace-properties')
-      .get('schema')
-      ?.get('pageProperties')
-      ?.get('custom')
-      ?.toJSON() as LegacyDocPropertyInfoList | undefined;
-  }
-
-  private watchLegacyDocPropertyInfoList() {
-    return yjsObserveByPath(
-      this.workspaceService.workspace.rootYDoc.getMap<any>(
-        'affine:workspace-properties'
-      ),
-      'schema.pageProperties.custom'
-    ).pipe(
-      switchMap(yjsObserveDeep),
-      map(
-        p =>
-          (p instanceof YAbstractType ? p.toJSON() : p) as
-            | LegacyDocPropertyInfoList
-            | undefined
-      )
-    );
-  }
-
-  private getLegacyDocPropertyInfo(id: string) {
-    return this.workspaceService.workspace.rootYDoc
-      .getMap<any>('affine:workspace-properties')
-      .get('schema')
-      ?.get('pageProperties')
-      ?.get('custom')
-      ?.get(id)
-      ?.toJSON() as LegacyDocPropertyInfo | undefined;
   }
 }

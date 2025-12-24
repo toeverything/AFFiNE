@@ -1,5 +1,6 @@
 import { createIdentifier } from '@blocksuite/global/di';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
+import { StdIdentifier } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 
 import type { Viewport } from '../types';
@@ -16,9 +17,10 @@ export const ViewportElementProvider = createIdentifier<ViewportElementService>(
 export const ViewportElementExtension = (selector: string): ExtensionType => {
   return {
     setup: di => {
-      di.override(ViewportElementProvider, () => {
+      di.override(ViewportElementProvider, provider => {
         const getViewportElement = (): HTMLElement => {
-          const viewportElement = document.querySelector<HTMLElement>(selector);
+          const std = provider.get(StdIdentifier);
+          const viewportElement = std.host.closest<HTMLElement>(selector);
           if (!viewportElement) {
             throw new BlockSuiteError(
               BlockSuiteError.ErrorCode.ValueNotExists,

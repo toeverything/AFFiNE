@@ -2,6 +2,18 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AccessToken {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  id: String!
+  name: String!
+}
+
+input AddContextBlobInput {
+  blobId: String!
+  contextId: String!
+}
+
 input AddContextCategoryInput {
   categoryId: String!
   contextId: String!
@@ -15,8 +27,48 @@ input AddContextDocInput {
 }
 
 input AddContextFileInput {
-  blobId: String!
+  blobId: String
   contextId: String!
+}
+
+type AggregateBucketHitsObjectType {
+  nodes: [SearchNodeObjectType!]!
+}
+
+type AggregateBucketObjectType {
+  count: Int!
+
+  """The hits object"""
+  hits: AggregateBucketHitsObjectType!
+  key: String!
+}
+
+input AggregateHitsOptions {
+  fields: [String!]!
+  highlights: [SearchHighlight!]
+  pagination: AggregateHitsPagination
+}
+
+input AggregateHitsPagination {
+  limit: Int
+  skip: Int
+}
+
+input AggregateInput {
+  field: String!
+  options: AggregateOptions!
+  query: SearchQuery!
+  table: SearchTable!
+}
+
+input AggregateOptions {
+  hits: AggregateHitsOptions!
+  pagination: SearchPagination
+}
+
+type AggregateResultObjectType {
+  buckets: [AggregateBucketObjectType!]!
+  pagination: SearchResultPagination!
 }
 
 enum AiJobStatus {
@@ -31,9 +83,52 @@ type AlreadyInSpaceDataType {
   spaceId: String!
 }
 
+type AppConfigValidateResult {
+  error: String
+  key: String!
+  module: String!
+  valid: Boolean!
+  value: JSON!
+}
+
 type BlobNotFoundDataType {
   blobId: String!
   spaceId: String!
+}
+
+type BlobUploadInit {
+  alreadyUploaded: Boolean
+  blobKey: String!
+  expiresAt: DateTime
+  headers: JSONObject
+  method: BlobUploadMethod!
+  partSize: Int
+  uploadId: String
+  uploadUrl: String
+  uploadedParts: [BlobUploadedPart!]
+}
+
+"""Blob upload method"""
+enum BlobUploadMethod {
+  GRAPHQL
+  MULTIPART
+  PRESIGNED
+}
+
+type BlobUploadPart {
+  expiresAt: DateTime
+  headers: JSONObject
+  uploadUrl: String!
+}
+
+input BlobUploadPartInput {
+  etag: String!
+  partNumber: Int!
+}
+
+type BlobUploadedPart {
+  etag: String!
+  partNumber: Int!
 }
 
 enum ChatHistoryOrder {
@@ -48,6 +143,81 @@ type ChatMessage {
   id: ID
   params: JSON
   role: String!
+  streamObjects: [StreamObject!]
+}
+
+"""Comment change action"""
+enum CommentChangeAction {
+  delete
+  update
+}
+
+type CommentChangeObjectType {
+  """The action of the comment change"""
+  action: CommentChangeAction!
+  commentId: ID
+  id: ID!
+
+  """
+  The item of the comment or reply, different types have different fields, see UnionCommentObjectType
+  """
+  item: JSONObject!
+}
+
+type CommentChangeObjectTypeEdge {
+  cursor: String!
+  node: CommentChangeObjectType!
+}
+
+input CommentCreateInput {
+  content: JSONObject!
+  docId: ID!
+  docMode: DocMode!
+  docTitle: String!
+
+  """
+  The mention user ids, if not provided, the comment will not be mentioned
+  """
+  mentions: [String!]
+  workspaceId: ID!
+}
+
+type CommentObjectType {
+  """The content of the comment"""
+  content: JSONObject!
+
+  """The created at time of the comment"""
+  createdAt: DateTime!
+  id: ID!
+
+  """The replies of the comment"""
+  replies: [ReplyObjectType!]!
+
+  """Whether the comment is resolved"""
+  resolved: Boolean!
+
+  """The updated at time of the comment"""
+  updatedAt: DateTime!
+
+  """The user who created the comment"""
+  user: PublicUserType!
+}
+
+type CommentObjectTypeEdge {
+  cursor: String!
+  node: CommentObjectType!
+}
+
+input CommentResolveInput {
+  id: ID!
+
+  """Whether the comment is resolved"""
+  resolved: Boolean!
+}
+
+input CommentUpdateInput {
+  content: JSONObject!
+  id: ID!
 }
 
 enum ContextCategories {
@@ -69,10 +239,13 @@ type ContextMatchedDocChunk {
 }
 
 type ContextMatchedFileChunk {
+  blobId: String!
   chunk: SafeInt!
   content: String!
   distance: Float
   fileId: String!
+  mimeType: String!
+  name: String!
 }
 
 type ContextWorkspaceEmbeddingStatus {
@@ -82,23 +255,30 @@ type ContextWorkspaceEmbeddingStatus {
 
 type Copilot {
   audioTranscription(blobId: String, jobId: String): TranscriptionResultType
+  chats(docId: String, options: QueryChatHistoriesInput, pagination: PaginationInput!): PaginatedCopilotHistoriesType!
 
   """Get the context list of a session"""
   contexts(contextId: String, sessionId: String): [CopilotContext!]!
-  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
+  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]! @deprecated(reason: "use `chats` instead")
+
+  """List available models for a prompt, with human-readable names"""
+  models(promptName: String!): CopilotModelsType!
 
   """Get the quota of the user in the workspace"""
   quota: CopilotQuota!
 
-  """Get the session id list in the workspace"""
-  sessionIds(docId: String, options: QueryChatSessionsInput): [String!]! @deprecated(reason: "Use `sessions` instead")
+  """Get the session by id"""
+  session(sessionId: String!): CopilotSessionType!
 
   """Get the session list in the workspace"""
-  sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]!
+  sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]! @deprecated(reason: "use `chats` instead")
   workspaceId: ID
 }
 
 type CopilotContext {
+  """list blobs in context"""
+  blobs: [CopilotContextBlob!]!
+
   """list collections in context"""
   collections: [CopilotContextCategory!]!
 
@@ -107,29 +287,34 @@ type CopilotContext {
 
   """list files in context"""
   files: [CopilotContextFile!]!
-  id: ID!
+  id: ID
 
   """match file in context"""
-  matchFiles(content: String!, limit: SafeInt, threshold: Float): [ContextMatchedFileChunk!]!
+  matchFiles(content: String!, limit: SafeInt, scopedThreshold: Float, threshold: Float): [ContextMatchedFileChunk!]!
 
   """match workspace docs"""
-  matchWorkspaceDocs(content: String!, limit: SafeInt, threshold: Float): [ContextMatchedDocChunk!]!
+  matchWorkspaceDocs(content: String!, limit: SafeInt, scopedThreshold: Float, threshold: Float): [ContextMatchedDocChunk!]!
 
   """list tags in context"""
   tags: [CopilotContextCategory!]!
   workspaceId: String!
 }
 
+type CopilotContextBlob {
+  createdAt: SafeInt!
+  id: ID!
+  status: ContextEmbedStatus
+}
+
 type CopilotContextCategory {
   createdAt: SafeInt!
-  docs: [CopilotDocType!]!
+  docs: [CopilotContextDoc!]!
   id: ID!
   type: ContextCategories!
 }
 
 type CopilotContextDoc {
   createdAt: SafeInt!
-  error: String
   id: ID!
   status: ContextEmbedStatus
 }
@@ -140,6 +325,7 @@ type CopilotContextFile {
   createdAt: SafeInt!
   error: String
   id: ID!
+  mimeType: String!
   name: String!
   status: ContextEmbedStatus!
 }
@@ -153,20 +339,25 @@ type CopilotDocNotFoundDataType {
   docId: String!
 }
 
-type CopilotDocType {
-  createdAt: SafeInt!
-  id: ID!
-  status: ContextEmbedStatus
-}
-
 type CopilotFailedToAddWorkspaceFileEmbeddingDataType {
   message: String!
+}
+
+type CopilotFailedToGenerateEmbeddingDataType {
+  message: String!
+  provider: String!
 }
 
 type CopilotFailedToMatchContextDataType {
   content: String!
   contextId: String!
   message: String!
+}
+
+type CopilotFailedToMatchGlobalContextDataType {
+  content: String!
+  message: String!
+  workspaceId: String!
 }
 
 type CopilotFailedToModifyContextDataType {
@@ -178,11 +369,25 @@ type CopilotHistories {
   """An mark identifying which view to use to display the session"""
   action: String
   createdAt: DateTime!
+  docId: String
   messages: [ChatMessage!]!
+  model: String!
+  optionalModels: [String!]!
+  parentSessionId: String
+  pinned: Boolean!
+  promptName: String!
   sessionId: String!
+  title: String
 
   """The number of tokens used in the session"""
   tokens: Int!
+  updatedAt: DateTime!
+  workspaceId: String!
+}
+
+type CopilotHistoriesTypeEdge {
+  cursor: String!
+  node: CopilotHistories!
 }
 
 type CopilotInvalidContextDataType {
@@ -193,25 +398,19 @@ type CopilotMessageNotFoundDataType {
   messageId: String!
 }
 
-enum CopilotModels {
-  DallE3
-  Gpt4Omni
-  Gpt4Omni0806
-  Gpt4OmniMini
-  Gpt4OmniMini0718
-  Gpt41
-  Gpt41Mini
-  Gpt410414
-  TextEmbedding3Large
-  TextEmbedding3Small
-  TextEmbeddingAda002
-  TextModerationLatest
-  TextModerationStable
+type CopilotModelType {
+  id: String!
+  name: String!
+}
+
+type CopilotModelsType {
+  defaultModel: String!
+  optionalModels: [CopilotModelType!]!
+  proModels: [CopilotModelType!]!
 }
 
 input CopilotPromptConfigInput {
   frequencyPenalty: Float
-  jsonMode: Boolean
   presencePenalty: Float
   temperature: Float
   topP: Float
@@ -219,7 +418,6 @@ input CopilotPromptConfigInput {
 
 type CopilotPromptConfigType {
   frequencyPenalty: Float
-  jsonMode: Boolean
   presencePenalty: Float
   temperature: Float
   topP: Float
@@ -255,6 +453,11 @@ type CopilotPromptType {
   name: String!
 }
 
+type CopilotProviderNotSupportedDataType {
+  kind: String!
+  provider: String!
+}
+
 type CopilotProviderSideErrorDataType {
   kind: String!
   message: String!
@@ -267,9 +470,14 @@ type CopilotQuota {
 }
 
 type CopilotSessionType {
+  docId: String
   id: ID!
+  model: String!
+  optionalModels: [String!]!
   parentSessionId: ID
+  pinned: Boolean!
   promptName: String!
+  title: String
 }
 
 type CopilotWorkspaceConfig {
@@ -280,6 +488,7 @@ type CopilotWorkspaceConfig {
 }
 
 type CopilotWorkspaceFile {
+  blobId: String!
   createdAt: DateTime!
   fileId: String!
   fileName: String!
@@ -311,6 +520,7 @@ type CopilotWorkspaceIgnoredDocTypeEdge {
 
 input CreateChatMessageInput {
   attachments: [String!]
+  blob: Upload
   blobs: [Upload!]
   content: String
   params: JSON
@@ -318,10 +528,14 @@ input CreateChatMessageInput {
 }
 
 input CreateChatSessionInput {
-  docId: String!
+  docId: String
+  pinned: Boolean
 
   """The prompt name to use for the session"""
   promptName: String!
+
+  """true by default, compliant for old version"""
+  reuseLatestChat: Boolean
   workspaceId: String!
 }
 
@@ -339,7 +553,7 @@ input CreateCopilotPromptInput {
   action: String
   config: CopilotPromptConfigInput
   messages: [CopilotPromptMessageInput!]!
-  model: CopilotModels!
+  model: String!
   name: String!
 }
 
@@ -363,7 +577,7 @@ type DeleteAccount {
 }
 
 input DeleteSessionInput {
-  docId: String!
+  docId: String
   sessionIds: [String!]!
   workspaceId: String!
 }
@@ -399,6 +613,10 @@ type DocNotFoundDataType {
 }
 
 type DocPermissions {
+  Doc_Comments_Create: Boolean!
+  Doc_Comments_Delete: Boolean!
+  Doc_Comments_Read: Boolean!
+  Doc_Comments_Resolve: Boolean!
   Doc_Copy: Boolean!
   Doc_Delete: Boolean!
   Doc_Duplicate: Boolean!
@@ -416,6 +634,7 @@ type DocPermissions {
 
 """User permission in doc"""
 enum DocRole {
+  Commenter
   Editor
   External
   Manager
@@ -445,6 +664,8 @@ type DocType {
   mode: PublicDocMode!
   permissions: DocPermissions!
   public: Boolean!
+  summary: String
+  title: String
   updatedAt: DateTime
   workspaceId: String!
 }
@@ -464,7 +685,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceFileEmbeddingDataType | CopilotFailedToMatchContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceFileEmbeddingDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotFailedToMatchContextDataType | CopilotFailedToMatchGlobalContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -473,14 +694,19 @@ enum ErrorNames {
   ALREADY_IN_SPACE
   AUTHENTICATION_REQUIRED
   BAD_REQUEST
+  BLOB_INVALID
   BLOB_NOT_FOUND
   BLOB_QUOTA_EXCEEDED
+  CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE
   CANNOT_DELETE_ALL_ADMIN_ACCOUNT
   CANNOT_DELETE_OWN_ACCOUNT
   CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION
   CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS
   CAN_NOT_REVOKE_YOURSELF
   CAPTCHA_VERIFICATION_FAILED
+  COMMENT_ATTACHMENT_NOT_FOUND
+  COMMENT_ATTACHMENT_QUOTA_EXCEEDED
+  COMMENT_NOT_FOUND
   COPILOT_ACTION_TAKEN
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED
   COPILOT_DOCS_NOT_FOUND
@@ -489,16 +715,20 @@ enum ErrorNames {
   COPILOT_EMBEDDING_UNAVAILABLE
   COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING
   COPILOT_FAILED_TO_CREATE_MESSAGE
+  COPILOT_FAILED_TO_GENERATE_EMBEDDING
   COPILOT_FAILED_TO_GENERATE_TEXT
   COPILOT_FAILED_TO_MATCH_CONTEXT
+  COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT
   COPILOT_FAILED_TO_MODIFY_CONTEXT
   COPILOT_INVALID_CONTEXT
   COPILOT_MESSAGE_NOT_FOUND
   COPILOT_PROMPT_INVALID
   COPILOT_PROMPT_NOT_FOUND
+  COPILOT_PROVIDER_NOT_SUPPORTED
   COPILOT_PROVIDER_SIDE_ERROR
   COPILOT_QUOTA_EXCEEDED
   COPILOT_SESSION_DELETED
+  COPILOT_SESSION_INVALID_INPUT
   COPILOT_SESSION_NOT_FOUND
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED
   COPILOT_TRANSCRIPTION_JOB_EXISTS
@@ -527,24 +757,30 @@ enum ErrorNames {
   HTTP_REQUEST_ERROR
   INTERNAL_SERVER_ERROR
   INVALID_APP_CONFIG
+  INVALID_APP_CONFIG_INPUT
   INVALID_AUTH_STATE
   INVALID_CHECKOUT_PARAMETERS
   INVALID_EMAIL
   INVALID_EMAIL_TOKEN
   INVALID_HISTORY_TIMESTAMP
+  INVALID_INDEXER_INPUT
   INVALID_INVITATION
   INVALID_LICENSE_SESSION_ID
   INVALID_LICENSE_TO_ACTIVATE
   INVALID_LICENSE_UPDATE_PARAMS
   INVALID_OAUTH_CALLBACK_CODE
   INVALID_OAUTH_CALLBACK_STATE
+  INVALID_OAUTH_RESPONSE
   INVALID_PASSWORD_LENGTH
   INVALID_RUNTIME_CONFIG_TYPE
+  INVALID_SEARCH_PROVIDER_REQUEST
   INVALID_SUBSCRIPTION_PARAMETERS
+  LICENSE_EXPIRED
   LICENSE_NOT_FOUND
   LICENSE_REVEALED
   LINK_EXPIRED
   MAILER_SERVICE_IS_NOT_CONFIGURED
+  MANAGED_BY_APP_STORE_OR_PLAY
   MEMBER_NOT_FOUND_IN_SPACE
   MEMBER_QUOTA_EXCEEDED
   MENTION_USER_DOC_ACCESS_DENIED
@@ -562,9 +798,11 @@ enum ErrorNames {
   OWNER_CAN_NOT_LEAVE_WORKSPACE
   PASSWORD_REQUIRED
   QUERY_TOO_LONG
+  REPLY_NOT_FOUND
   RUNTIME_CONFIG_NOT_FOUND
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
+  SEARCH_PROVIDER_NOT_FOUND
   SIGN_UP_FORBIDDEN
   SPACE_ACCESS_DENIED
   SPACE_NOT_FOUND
@@ -589,7 +827,6 @@ enum ErrorNames {
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION
   WORKSPACE_LICENSE_ALREADY_EXISTS
-  WORKSPACE_MEMBERS_EXCEED_LIMIT_TO_DOWNGRADE
   WORKSPACE_PERMISSION_NOT_FOUND
   WRONG_SIGN_IN_CREDENTIALS
   WRONG_SIGN_IN_METHOD
@@ -628,9 +865,14 @@ input ForkChatSessionInput {
   """
   Identify a message in the array and keep it with all previous messages into a forked session.
   """
-  latestMessageId: String!
+  latestMessageId: String
   sessionId: String!
   workspaceId: String!
+}
+
+input GenerateAccessTokenInput {
+  expiresAt: DateTime
+  name: String!
 }
 
 input GrantDocUserRolesInput {
@@ -663,12 +905,30 @@ input ImportUsersInput {
   users: [CreateUserInput!]!
 }
 
+type InvalidAppConfigDataType {
+  hint: String!
+  key: String!
+  module: String!
+}
+
+type InvalidAppConfigInputDataType {
+  message: String!
+}
+
 type InvalidEmailDataType {
   email: String!
 }
 
 type InvalidHistoryTimestampDataType {
   timestamp: String!
+}
+
+type InvalidIndexerInputDataType {
+  reason: String!
+}
+
+type InvalidLicenseToActivateDataType {
+  reason: String!
 }
 
 type InvalidLicenseUpdateParamsDataType {
@@ -680,6 +940,10 @@ type InvalidOauthCallbackCodeDataType {
   status: Int!
 }
 
+type InvalidOauthResponseDataType {
+  reason: String!
+}
+
 type InvalidPasswordLengthDataType {
   max: Int!
   min: Int!
@@ -689,6 +953,11 @@ type InvalidRuntimeConfigTypeDataType {
   get: String!
   key: String!
   want: String!
+}
+
+type InvalidSearchProviderRequestDataType {
+  reason: String!
+  type: String!
 }
 
 type InvitationAcceptedNotificationBodyType {
@@ -880,6 +1149,7 @@ type License {
   quantity: Int!
   recurring: SubscriptionRecurring!
   validatedAt: DateTime!
+  variant: SubscriptionVariant
 }
 
 type LimitedUserType {
@@ -960,8 +1230,12 @@ type MissingOauthQueryParameterDataType {
 }
 
 type Mutation {
+  abortBlobUpload(key: String!, uploadId: String!, workspaceId: String!): Boolean!
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean @deprecated(reason: "never used"), workspaceId: String @deprecated(reason: "never used")): Boolean!
   activateLicense(license: String!, workspaceId: String!): License!
+
+  """add a blob to context"""
+  addContextBlob(options: AddContextBlobInput!): CopilotContextBlob!
 
   """add a category to context"""
   addContextCategory(options: AddContextCategoryInput!): CopilotContextCategory!
@@ -986,12 +1260,15 @@ type Mutation {
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
+  completeBlobUpload(key: String!, parts: [BlobUploadPartInput!], uploadId: String, workspaceId: String!): String!
+  createBlobUpload(key: String!, mime: String!, size: Int!, workspaceId: String!): BlobUploadInit!
 
   """Create change password url"""
   createChangePasswordUrl(callbackUrl: String!, userId: String!): String!
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
+  createComment(input: CommentCreateInput!): CommentObjectType!
 
   """Create a context session"""
   createCopilotContext(sessionId: String!, workspaceId: String!): String!
@@ -1008,6 +1285,7 @@ type Mutation {
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
   createInviteLink(expireTime: WorkspaceInviteLinkExpireTime!, workspaceId: String!): InviteLink!
+  createReply(input: ReplyCreateInput!): ReplyObjectType!
   createSelfhostWorkspaceCustomerPortal(workspaceId: String!): String!
 
   """Create a new user"""
@@ -1019,6 +1297,12 @@ type Mutation {
   deleteAccount: DeleteAccount!
   deleteBlob(hash: String @deprecated(reason: "use parameter [key]"), key: String, permanently: Boolean! = false, workspaceId: String!): Boolean!
 
+  """Delete a comment"""
+  deleteComment(id: String!): Boolean!
+
+  """Delete a reply"""
+  deleteReply(id: String!): Boolean!
+
   """Delete a user account"""
   deleteUser(id: String!): DeleteAccount!
   deleteWorkspace(id: String!): Boolean!
@@ -1029,11 +1313,14 @@ type Mutation {
   """Create a chat session"""
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
+  generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
+  getBlobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!, workspaceId: String!): BlobUploadPart!
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 
   """import users"""
   importUsers(input: ImportUsersInput!): [UserImportResultType!]!
+  installLicense(license: Upload!, workspaceId: String!): License!
   inviteBatch(emails: [String!]!, sendInviteMail: Boolean @deprecated(reason: "never used"), workspaceId: String!): [InviteResult!]! @deprecated(reason: "use [inviteMembers] instead")
   inviteMembers(emails: [String!]!, workspaceId: String!): [InviteResult!]!
   leaveWorkspace(sendLeaveMail: Boolean @deprecated(reason: "no used anymore"), workspaceId: String!, workspaceName: String @deprecated(reason: "no longer used")): Boolean!
@@ -1046,13 +1333,22 @@ type Mutation {
   """queue workspace doc embedding"""
   queueWorkspaceEmbedding(docId: [String!]!, workspaceId: String!): Boolean!
 
+  """mark all notifications as read"""
+  readAllNotifications: Boolean!
+
   """mark notification as read"""
   readNotification(id: String!): Boolean!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
+
+  """Refresh current user subscriptions and return latest."""
+  refreshUserSubscriptions: [SubscriptionType!]!
   releaseDeletedBlobs(workspaceId: String!): Boolean!
 
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!
+
+  """remove a blob from context"""
+  removeContextBlob(options: RemoveContextBlobInput!): Boolean!
 
   """remove a category from context"""
   removeContextCategory(options: RemoveContextCategoryInput!): Boolean!
@@ -1066,6 +1362,12 @@ type Mutation {
   """Remove workspace embedding files"""
   removeWorkspaceEmbeddingFiles(fileId: String!, workspaceId: String!): Boolean!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
+
+  """Request to apply the subscription in advance"""
+  requestApplySubscription(transactionId: String!): [SubscriptionType!]!
+
+  """Resolve a comment or not"""
+  resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   retryAudioTranscription(jobId: String!, workspaceId: String!): TranscriptionResultType
   revoke(userId: String!, workspaceId: String!): Boolean! @deprecated(reason: "use [revokeMember] instead")
@@ -1074,6 +1376,7 @@ type Mutation {
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
   revokePublicPage(docId: String!, workspaceId: String!): DocType! @deprecated(reason: "use revokePublicDoc instead")
+  revokeUserAccessToken(id: String!): Boolean!
   sendChangeEmail(callbackUrl: String!, email: String): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
@@ -1083,8 +1386,17 @@ type Mutation {
   setBlob(blob: Upload!, workspaceId: String!): String!
   submitAudioTranscription(blob: Upload, blobId: String!, blobs: [Upload!], workspaceId: String!): TranscriptionResultType
 
+  """Trigger cleanup of trashed doc embeddings"""
+  triggerCleanupTrashedDocEmbeddings: Boolean!
+
+  """Trigger generate missing titles cron job"""
+  triggerGenerateTitleCron: Boolean!
+
   """update app configuration"""
   updateAppConfig(updates: [UpdateAppConfigInput!]!): JSONObject!
+
+  """Update a comment content"""
+  updateComment(input: CommentUpdateInput!): Boolean!
 
   """Update a copilot prompt"""
   updateCopilotPrompt(messages: [CopilotPromptMessageInput!]!, name: String!): CopilotPromptType!
@@ -1094,6 +1406,9 @@ type Mutation {
   updateDocDefaultRole(input: UpdateDocDefaultRoleInput!): Boolean!
   updateDocUserRole(input: UpdateDocUserRoleInput!): Boolean!
   updateProfile(input: UpdateUserInput!): UserType!
+
+  """Update a reply content"""
+  updateReply(input: ReplyUpdateInput!): Boolean!
 
   """Update user settings"""
   updateSettings(input: UpdateUserSettingsInput!): Boolean!
@@ -1113,7 +1428,17 @@ type Mutation {
 
   """Upload user avatar"""
   uploadAvatar(avatar: Upload!): UserType!
+
+  """Upload a comment attachment and return the access url"""
+  uploadCommentAttachment(attachment: Upload!, docId: String!, workspaceId: String!): String!
+
+  """validate app configuration"""
+  validateAppConfig(updates: [UpdateAppConfigInput!]!): [AppConfigValidateResult!]!
   verifyEmail(token: String!): Boolean!
+}
+
+type NoCopilotProviderAvailableDataType {
+  modelId: String!
 }
 
 type NoMoreSeatDataType {
@@ -1166,6 +1491,8 @@ type NotificationObjectTypeEdge {
 
 """Notification type"""
 enum NotificationType {
+  Comment
+  CommentMention
   Invitation
   InvitationAccepted
   InvitationBlocked
@@ -1186,6 +1513,7 @@ type NotificationWorkspaceType {
 }
 
 enum OAuthProviderType {
+  Apple
   GitHub
   Google
   OIDC
@@ -1196,6 +1524,24 @@ type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
   startCursor: String
+}
+
+type PaginatedCommentChangeObjectType {
+  edges: [CommentChangeObjectTypeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PaginatedCommentObjectType {
+  edges: [CommentObjectTypeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PaginatedCopilotHistoriesType {
+  edges: [CopilotHistoriesTypeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type PaginatedCopilotWorkspaceFileType {
@@ -1265,8 +1611,13 @@ type PublicUserType {
 }
 
 type Query {
+  accessTokens: [AccessToken!]!
+
   """get the whole app configuration"""
   appConfig: JSONObject!
+
+  """Apply updates to a doc using LLM and return the merged markdown."""
+  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String!
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.quotaUsage` instead")
 
   """Get current user"""
@@ -1291,6 +1642,7 @@ type Query {
 
   """query workspace embedding status"""
   queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
+  revealedAccessTokens: [RevealedAccessToken!]!
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -1325,14 +1677,20 @@ input QueryChatHistoriesInput {
   fork: Boolean
   limit: Int
   messageOrder: ChatHistoryOrder
+  pinned: Boolean
   sessionId: String
   sessionOrder: ChatHistoryOrder
   skip: Int
+  withMessages: Boolean
   withPrompt: Boolean
 }
 
 input QueryChatSessionsInput {
   action: Boolean
+  fork: Boolean
+  limit: Int
+  pinned: Boolean
+  skip: Int
 }
 
 type QueryTooLongDataType {
@@ -1350,6 +1708,11 @@ type RemoveAvatar {
   success: Boolean!
 }
 
+input RemoveContextBlobInput {
+  blobId: String!
+  contextId: String!
+}
+
 input RemoveContextCategoryInput {
   categoryId: String!
   contextId: String!
@@ -1364,6 +1727,48 @@ input RemoveContextDocInput {
 input RemoveContextFileInput {
   contextId: String!
   fileId: String!
+}
+
+input ReplyCreateInput {
+  commentId: ID!
+  content: JSONObject!
+  docMode: DocMode!
+  docTitle: String!
+
+  """
+  The mention user ids, if not provided, the comment reply will not be mentioned
+  """
+  mentions: [String!]
+}
+
+type ReplyObjectType {
+  commentId: ID!
+
+  """The content of the reply"""
+  content: JSONObject!
+
+  """The created at time of the reply"""
+  createdAt: DateTime!
+  id: ID!
+
+  """The updated at time of the reply"""
+  updatedAt: DateTime!
+
+  """The user who created the reply"""
+  user: PublicUserType!
+}
+
+input ReplyUpdateInput {
+  content: JSONObject!
+  id: ID!
+}
+
+type RevealedAccessToken {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  id: String!
+  name: String!
+  token: String!
 }
 
 input RevokeDocUserRoleInput {
@@ -1385,7 +1790,103 @@ type SameSubscriptionRecurringDataType {
   recurring: String!
 }
 
+type SearchDocObjectType {
+  blockId: String!
+  createdAt: DateTime!
+  createdByUser: PublicUserType
+  docId: String!
+  highlight: String!
+  title: String!
+  updatedAt: DateTime!
+  updatedByUser: PublicUserType
+}
+
+input SearchDocsInput {
+  keyword: String!
+
+  """Limit the number of docs to return, default is 20"""
+  limit: Int
+}
+
+input SearchHighlight {
+  before: String!
+  end: String!
+  field: String!
+}
+
+input SearchInput {
+  options: SearchOptions!
+  query: SearchQuery!
+  table: SearchTable!
+}
+
+type SearchNodeObjectType {
+  """The search result fields, see UnionSearchItemObjectType"""
+  fields: JSONObject!
+
+  """The search result fields, see UnionSearchItemObjectType"""
+  highlights: JSONObject
+}
+
+input SearchOptions {
+  fields: [String!]!
+  highlights: [SearchHighlight!]
+  pagination: SearchPagination
+}
+
+input SearchPagination {
+  cursor: String
+  limit: Int
+  skip: Int
+}
+
+input SearchQuery {
+  boost: Float
+  field: String
+  match: String
+  occur: SearchQueryOccur
+  queries: [SearchQuery!]
+  query: SearchQuery
+  type: SearchQueryType!
+}
+
+"""Search query occur"""
+enum SearchQueryOccur {
+  must
+  must_not
+  should
+}
+
+"""Search query type"""
+enum SearchQueryType {
+  all
+  boolean
+  boost
+  exists
+  match
+}
+
+type SearchResultObjectType {
+  nodes: [SearchNodeObjectType!]!
+  pagination: SearchResultPagination!
+}
+
+type SearchResultPagination {
+  count: Int!
+  hasMore: Boolean!
+  nextCursor: String
+}
+
+"""Search table"""
+enum SearchTable {
+  block
+  doc
+}
+
 type ServerConfigType {
+  """Whether allow guest users to create demo workspaces."""
+  allowGuestDemoWorkspace: Boolean! @deprecated(reason: "This field is deprecated, please use `features` instead. Will be removed in 0.25.0")
+
   """fetch latest available upgradable release of server"""
   availableUpgrade: ReleaseVersionType
 
@@ -1422,7 +1923,11 @@ enum ServerDeploymentType {
 
 enum ServerFeature {
   Captcha
+  Comment
   Copilot
+  CopilotEmbedding
+  Indexer
+  LocalWorkspace
   OAuth
   Payment
 }
@@ -1441,6 +1946,15 @@ type SpaceOwnerNotFoundDataType {
 
 type SpaceShouldHaveOnlyOneOwnerDataType {
   spaceId: String!
+}
+
+type StreamObject {
+  args: JSON
+  result: JSON
+  textDelta: String
+  toolCallId: String
+  toolName: String
+  type: String!
 }
 
 type SubscriptionAlreadyExistsDataType {
@@ -1496,6 +2010,11 @@ type SubscriptionType {
   canceledAt: DateTime
   createdAt: DateTime!
   end: DateTime
+
+  """
+  If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store
+  """
+  iapStore: String
   id: String @deprecated(reason: "removed")
   nextBillAt: DateTime
 
@@ -1504,6 +2023,11 @@ type SubscriptionType {
   There won't actually be a subscription with plan 'Free'
   """
   plan: SubscriptionPlan!
+
+  """
+  Payment provider of this subscription. Read-only. One of: stripe | revenuecat
+  """
+  provider: String
   recurring: SubscriptionRecurring!
   start: DateTime!
   status: SubscriptionStatus!
@@ -1556,8 +2080,14 @@ input UpdateAppConfigInput {
 }
 
 input UpdateChatSessionInput {
+  """The workspace id of the session"""
+  docId: String
+
+  """Whether to pin the session"""
+  pinned: Boolean
+
   """The prompt name to use for the session"""
-  promptName: String!
+  promptName: String
   sessionId: String!
 }
 
@@ -1580,6 +2110,9 @@ input UpdateUserInput {
 }
 
 input UpdateUserSettingsInput {
+  """Receive comment email"""
+  receiveCommentEmail: Boolean
+
   """Receive invitation email"""
   receiveInvitationEmail: Boolean
 
@@ -1640,6 +2173,9 @@ type UserQuotaUsageType {
 }
 
 type UserSettingsType {
+  """Receive comment email"""
+  receiveCommentEmail: Boolean!
+
   """Receive invitation email"""
   receiveInvitationEmail: Boolean!
 
@@ -1730,10 +2266,6 @@ enum WorkspaceMemberStatus {
   UnderReview
 }
 
-type WorkspaceMembersExceedLimitToDowngradeDataType {
-  limit: Int!
-}
-
 type WorkspacePermissionNotFoundDataType {
   spaceId: String!
 }
@@ -1791,11 +2323,20 @@ type WorkspaceRolePermissions {
 }
 
 type WorkspaceType {
+  """Search a specific table with aggregate"""
+  aggregate(input: AggregateInput!): AggregateResultObjectType!
+
   """List blobs of workspace"""
   blobs: [ListedBlob!]!
 
   """Blobs size of workspace"""
   blobsSize: Int!
+
+  """Get comment changes of a doc"""
+  commentChanges(docId: String!, pagination: PaginationInput!): PaginatedCommentChangeObjectType!
+
+  """Get comments of a doc"""
+  comments(docId: String!, pagination: PaginationInput): PaginatedCommentObjectType!
 
   """Workspace created date"""
   createdAt: DateTime!
@@ -1857,8 +2398,17 @@ type WorkspaceType {
   """quota of workspace"""
   quota: WorkspaceQuotaType!
 
+  """Get recently updated docs of a workspace"""
+  recentlyUpdatedDocs(pagination: PaginationInput!): PaginatedDocType!
+
   """Role of current signed in user in workspace"""
   role: Permission!
+
+  """Search a specific table"""
+  search(input: SearchInput!): SearchResultObjectType!
+
+  """Search docs by keyword"""
+  searchDocs(input: SearchDocsInput!): [SearchDocObjectType!]!
 
   """The team subscription of the workspace, if exists."""
   subscription: SubscriptionType

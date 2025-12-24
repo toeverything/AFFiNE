@@ -5,6 +5,7 @@ import {
   mentionUserMutation,
   notificationCountQuery,
   type PaginationInput,
+  readAllNotificationsMutation,
   readNotificationMutation,
   type UnionNotificationBodyType,
 } from '@affine/graphql';
@@ -82,6 +83,12 @@ export class NotificationStore extends Store {
       variables: {
         id,
       },
+    });
+  }
+
+  readAllNotifications() {
+    return this.gqlService.gql({
+      query: readAllNotificationsMutation,
     });
   }
 

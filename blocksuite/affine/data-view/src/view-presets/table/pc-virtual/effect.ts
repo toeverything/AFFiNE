@@ -1,3 +1,4 @@
+import { KanbanViewUI } from '../../kanban/pc/kanban-view-ui-logic';
 import { DragToFillElement } from './controller/drag-to-fill';
 import { SelectionElement } from './controller/selection';
 import { TableGroupFooter } from './group/bottom/group-footer';
@@ -12,11 +13,12 @@ import { TableVerticalIndicator } from './group/top/header/vertical-indicator';
 import { DatabaseCellContainer } from './row/cell';
 import { TableRowHeader } from './row/row-header';
 import { TableRowLast } from './row/row-last';
-import { VirtualTableView } from './table-view';
+import { TableViewUI } from './table-view-ui-logic';
 import { VirtualElementWrapper } from './virtual/virtual-cell';
 
 export function pcVirtualEffects() {
-  customElements.define('affine-virtual-table', VirtualTableView);
+  customElements.define('dv-table-view-ui-virtual', TableViewUI);
+  customElements.define('dv-kanban-view-ui', KanbanViewUI);
   customElements.define(
     'affine-database-virtual-cell-container',
     DatabaseCellContainer

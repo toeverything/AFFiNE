@@ -22,6 +22,11 @@ export interface ConfirmModalProps extends ModalProps {
   cancelButtonOptions?: Omit<ButtonProps, 'children'>;
   reverseFooter?: boolean;
   /**
+   * Whether to use row layout for mobile footer
+   * @default false
+   */
+  rowFooter?: boolean;
+  /**
    * Auto focus on confirm button when modal opened
    * @default true
    */
@@ -45,6 +50,7 @@ export const ConfirmModal = ({
   descriptionClassName,
   childrenContentClassName,
   contentOptions,
+  rowFooter = false,
   ...props
 }: ConfirmModalProps) => {
   const onConfirmClick = useCallback(() => {
@@ -84,13 +90,17 @@ export const ConfirmModal = ({
       <div
         className={clsx(styles.footer, {
           modalFooterWithChildren: !!children,
-          reverse: reverseFooter,
+          reverse: reverseFooter && !rowFooter,
+          row: rowFooter,
+          rowReverse: reverseFooter && rowFooter,
         })}
       >
         {onCancel !== false ? (
           <DialogTrigger asChild>
             <Button
-              className={styles.action}
+              className={clsx(styles.action, {
+                row: rowFooter,
+              })}
               onClick={handleCancel}
               data-testid="confirm-modal-cancel"
               {...cancelButtonOptions}
@@ -108,7 +118,9 @@ export const ConfirmModal = ({
           <CustomConfirmButton data-testid="confirm-modal-confirm" />
         ) : (
           <Button
-            className={styles.action}
+            className={clsx(styles.action, {
+              row: rowFooter,
+            })}
             onClick={onConfirmClick}
             data-testid="confirm-modal-confirm"
             autoFocus={autoFocusConfirm}

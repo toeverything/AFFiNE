@@ -10,16 +10,15 @@ import type {
   CellRenderProps,
   DataViewCellLifeCycle,
 } from '../../../../core/property';
-import type { SingleView } from '../../../../core/view-manager/single-view';
 import {
   TableViewAreaSelection,
   TableViewRowSelection,
   type TableViewSelectionWithType,
 } from '../../selection';
-import type { VirtualTableView } from '../table-view';
+import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 import type { TableGridCell } from '../types';
 import { popRowMenu } from './menu';
-import { rowSelectedBg } from './row-header.css';
+import { rowSelectedBg } from './row-header-css';
 export class DatabaseCellContainer extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
@@ -45,7 +44,7 @@ export class DatabaseCellContainer extends SignalWatcher(
   private readonly _cell = signal<DataViewCellLifeCycle>();
 
   cell$ = computed(() => {
-    return this.view.cellGet(this.rowId, this.columnId);
+    return this.view.cellGetOrCreate(this.rowId, this.columnId);
   });
 
   selectCurrentCell = (editing: boolean) => {
@@ -82,7 +81,7 @@ export class DatabaseCellContainer extends SignalWatcher(
   }
 
   private get selectionView() {
-    return this.tableView?.selectionController;
+    return this.tableViewLogic.selectionController;
   }
 
   get rowSelected$() {
@@ -104,11 +103,7 @@ export class DatabaseCellContainer extends SignalWatcher(
         rows: [row],
       });
     }
-    popRowMenu(
-      this.tableView.props.dataViewEle,
-      popupTargetFromElement(this),
-      selection
-    );
+    popRowMenu(this.tableViewLogic, popupTargetFromElement(this), selection);
   };
 
   override connectedCallback() {
@@ -216,10 +211,11 @@ export class DatabaseCellContainer extends SignalWatcher(
   accessor gridCell!: TableGridCell;
 
   @property({ attribute: false })
-  accessor view!: SingleView;
+  accessor tableViewLogic!: VirtualTableViewUILogic;
 
-  @property({ attribute: false })
-  accessor tableView!: VirtualTableView;
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

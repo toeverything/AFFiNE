@@ -3,6 +3,7 @@ import {
   RENDER_CARD_THROTTLE_MS,
 } from '@blocksuite/affine-block-embed';
 import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { isPeekable, Peekable } from '@blocksuite/affine-components/peek';
 import { RefNodeSlotsProvider } from '@blocksuite/affine-inline-reference';
 import type {
@@ -16,6 +17,7 @@ import {
   REFERENCE_NODE,
 } from '@blocksuite/affine-shared/consts';
 import {
+  CitationProvider,
   DocDisplayMetaProvider,
   DocModeProvider,
   OpenDocExtensionIdentifier,
@@ -31,6 +33,7 @@ import {
   referenceToNode,
 } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
+import { ResetIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 import { Text } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
@@ -41,6 +44,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 import throttle from 'lodash-es/throttle';
+import { filter } from 'rxjs/operators';
 import * as Y from 'yjs';
 
 import { renderLinkedDocInCard } from '../common/render-linked-doc';
@@ -49,7 +53,7 @@ import { styles } from './styles.js';
 import { getEmbedLinkedDocIcons } from './utils.js';
 
 @Peekable({
-  enableOn: ({ doc }: EmbedLinkedDocBlockComponent) => !doc.readonly,
+  enableOn: ({ store }: EmbedLinkedDocBlockComponent) => !store.readonly,
 })
 export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinkedDocModel> {
   static override styles = styles;
@@ -124,7 +128,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   };
 
   private readonly _setDocUpdatedAt = () => {
-    const meta = this.doc.workspace.meta.getDocMeta(this.model.props.pageId);
+    const meta = this.store.workspace.meta.getDocMeta(this.model.props.pageId);
     if (meta) {
       const date = meta.updatedDate || meta.createDate;
       this._docUpdatedAt = new Date(date);
@@ -137,10 +141,10 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     if (this._referenceToNode) return;
 
     const { caption } = this.model.props;
-    const { parent, doc } = this.model;
+    const { parent, store } = this.model;
     const index = parent?.children.indexOf(this.model);
 
-    const blockId = doc.addBlock(
+    const blockId = store.addBlock(
       'affine:embed-synced-doc',
       {
         caption,
@@ -150,7 +154,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       index
     );
 
-    doc.deleteBlock(this.model);
+    store.deleteBlock(this.model);
 
     this.std.selection.setGroup('note', [
       this.std.selection.create(BlockSelection, { blockId }),
@@ -158,8 +162,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   };
 
   convertToInline = () => {
-    const { doc } = this.model;
-    const parent = doc.getParent(this.model);
+    const { store } = this.model;
+    const parent = store.getParent(this.model);
     if (!parent) {
       return;
     }
@@ -175,7 +179,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     });
     const text = new Text(yText);
 
-    doc.addBlock(
+    store.addBlock(
       'affine:paragraph',
       {
         text,
@@ -184,7 +188,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       index
     );
 
-    doc.deleteBlock(this.model);
+    store.deleteBlock(this.model);
   };
 
   referenceInfo$ = computed(() => {
@@ -249,17 +253,18 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   }
 
   get readonly() {
-    return this.doc.readonly;
+    return this.store.readonly;
+  }
+
+  get citationService() {
+    return this.std.get(CitationProvider);
   }
 
   get isCitation() {
-    return (
-      !!this.model.props.footnoteIdentifier &&
-      this.model.props.style === 'citation'
-    );
+    return this.citationService.isCitationModel(this.model);
   }
 
-  private _handleDoubleClick(event: MouseEvent) {
+  private readonly _handleDoubleClick = (event: MouseEvent) => {
     event.stopPropagation();
     const openDocService = this.std.get(OpenDocExtensionIdentifier);
     const shouldOpenInPeek =
@@ -270,7 +275,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         : 'open-in-active-view',
       event,
     });
-  }
+  };
 
   private _isDocEmpty() {
     const linkedDoc = this.linkedDoc;
@@ -311,13 +316,15 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         .citationIdentifier=${footnoteIdentifier}
         .active=${this.selected$.value}
         .onClickCallback=${this._handleClick}
+        .onDoubleClickCallback=${this._handleDoubleClick}
       ></affine-citation-card>
     </div> `;
   };
 
   private readonly _renderEmbedView = () => {
     const linkedDoc = this.linkedDoc;
-    const isDeleted = !linkedDoc;
+    const trash = linkedDoc?.meta?.trash;
+    const isDeleted = trash || !linkedDoc;
     const isLoading = this._loading;
     const isError = this.isError;
     const isEmpty = this._isDocEmpty() && this.isBannerEmpty;
@@ -332,12 +339,11 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       'note-empty': this.isNoteContentEmpty,
       'in-canvas': inCanvas,
       [this._cardStyle]: true,
+      'comment-highlighted': this.isCommentHighlighted,
     });
 
     const theme = this.std.get(ThemeProvider).theme;
     const {
-      LoadingIcon,
-      ReloadIcon,
       LinkedDocDeletedBanner,
       LinkedDocEmptyBanner,
       SyncedDocErrorBanner,
@@ -346,7 +352,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     const icon = isError
       ? SyncedDocErrorIcon
       : isLoading
-        ? LoadingIcon
+        ? LoadingIcon()
         : this.icon$.value;
     const title = isLoading ? 'Loading...' : this.title$;
     const description = this.model.props.description$;
@@ -383,10 +389,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       () => html`
         <div
           class="affine-embed-linked-doc-block ${cardClassMap}"
-          style=${styleMap({
-            transform: `scale(${this._scale})`,
-            transformOrigin: '0 0',
-          })}
           @click=${this._handleClick}
           @dblclick=${this._handleDoubleClick}
         >
@@ -432,7 +434,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
                       class="affine-embed-linked-doc-card-content-reload-button"
                       @click=${this.refreshData}
                     >
-                      ${ReloadIcon} <span>Reload</span>
+                      ${ResetIcon()} <span>Reload</span>
                     </div>
                   </div>
                 `
@@ -457,6 +459,31 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     );
   };
 
+  private readonly _trackCitationDeleteEvent = () => {
+    // Check citation delete event
+    this._disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+            const { model } = payload;
+            if (!this.citationService.isCitationModel(model)) return false;
+            return true;
+          })
+        )
+        .subscribe(() => {
+          this.citationService.trackEvent('Delete');
+        })
+    );
+  };
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -470,14 +497,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
 
     const linkedDoc = this.linkedDoc;
     if (linkedDoc) {
-      this.disposables.add(
-        linkedDoc.workspace.slots.docListUpdated.subscribe(() => {
-          this._load().catch(e => {
-            console.error(e);
-            this.isError = true;
-          });
-        })
-      );
       // Should throttle the blockUpdated event to avoid too many re-renders
       // Because the blockUpdated event is triggered too frequently at some cases
       this.disposables.add(
@@ -503,11 +522,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       );
 
       this._setDocUpdatedAt();
-      this.disposables.add(
-        this.doc.workspace.slots.docListUpdated.subscribe(() => {
-          this._setDocUpdatedAt();
-        })
-      );
 
       if (this._referenceToNode) {
         this._linkedDocMode = this.model.props.params?.mode ?? 'page';
@@ -535,6 +549,15 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         }
       })
     );
+
+    this.disposables.add(
+      this.store.workspace.slots.docListUpdated.subscribe(() => {
+        this._setDocUpdatedAt();
+        this.refreshData();
+      })
+    );
+
+    this._trackCitationDeleteEvent();
   }
 
   getInitialState(): {
@@ -563,8 +586,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     if (linkedDoc && style === 'horizontalThin') {
       bound.w = EMBED_CARD_WIDTH.horizontal;
       bound.h = EMBED_CARD_HEIGHT.horizontal;
-      this.doc.withoutTransact(() => {
-        this.doc.updateBlock(this.model, {
+      this.store.withoutTransact(() => {
+        this.store.updateBlock(this.model, {
           xywh: bound.serialize(),
           style: 'horizontal',
         });
@@ -572,8 +595,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     } else if (!linkedDoc && style === 'horizontal') {
       bound.w = EMBED_CARD_WIDTH.horizontalThin;
       bound.h = EMBED_CARD_HEIGHT.horizontalThin;
-      this.doc.withoutTransact(() => {
-        this.doc.updateBlock(this.model, {
+      this.store.withoutTransact(() => {
+        this.store.updateBlock(this.model, {
           xywh: bound.serialize(),
           style: 'horizontalThin',
         });

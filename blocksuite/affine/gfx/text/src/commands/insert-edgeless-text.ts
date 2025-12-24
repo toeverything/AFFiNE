@@ -24,7 +24,7 @@ export const insertEdgelessTextCommand: Command<
 > = (ctx, next) => {
   const { std, x, y } = ctx;
   const host = std.host;
-  const doc = host.doc;
+  const doc = host.store;
   const surface = getSurfaceBlock(doc);
   if (!surface) {
     next();

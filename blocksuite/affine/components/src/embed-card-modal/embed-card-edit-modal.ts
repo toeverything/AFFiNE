@@ -163,7 +163,10 @@ export class EmbedCardEditModal extends SignalWatcher(
 
     const std = blockComponent.std;
 
-    this.model.doc.updateBlock(this.model, { title: null, description: null });
+    this.model.store.updateBlock(this.model, {
+      title: null,
+      description: null,
+    });
 
     this.onReset?.(std, blockComponent);
 
@@ -192,8 +195,7 @@ export class EmbedCardEditModal extends SignalWatcher(
 
     const description = this.description$.value.trim();
 
-    const props: AliasInfo = { title };
-    if (description) props.description = description;
+    const props: AliasInfo = { title, description };
 
     this.onSave?.(std, blockComponent, props);
 

@@ -26,6 +26,29 @@ export class DocsSearchService extends Service {
     errorMessage: null,
   } as IndexerSyncState);
 
+  searchTitle$(query: string) {
+    return this.indexer
+      .search$(
+        'doc',
+        {
+          type: 'match',
+          field: 'title',
+          match: query,
+        },
+        {
+          pagination: {
+            skip: 0,
+            limit: Infinity,
+          },
+        }
+      )
+      .pipe(
+        map(({ nodes }) => {
+          return nodes.map(node => node.id);
+        })
+      );
+  }
+
   search$(query: string): Observable<
     {
       docId: string;
@@ -89,6 +112,7 @@ export class DocsSearchService extends Service {
               },
             ],
           },
+          prefer: 'remote',
         }
       )
       .pipe(
@@ -204,117 +228,6 @@ export class DocsSearchService extends Service {
       );
   }
 
-  watchRefsTo(docId: string) {
-    return this.indexer
-      .aggregate$(
-        'block',
-        {
-          type: 'boolean',
-          occur: 'must',
-          queries: [
-            {
-              type: 'match',
-              field: 'refDocId',
-              match: docId,
-            },
-            // Ignore if it is a link to the current document.
-            {
-              type: 'boolean',
-              occur: 'must_not',
-              queries: [
-                {
-                  type: 'match',
-                  field: 'docId',
-                  match: docId,
-                },
-              ],
-            },
-          ],
-        },
-        'docId',
-        {
-          hits: {
-            fields: [
-              'docId',
-              'blockId',
-              'parentBlockId',
-              'parentFlavour',
-              'additional',
-              'markdownPreview',
-            ],
-            pagination: {
-              limit: 5, // the max number of backlinks to show for each doc
-            },
-          },
-          pagination: {
-            limit: 100,
-          },
-        }
-      )
-      .pipe(
-        switchMap(({ buckets }) => {
-          return fromPromise(async () => {
-            return buckets.flatMap(bucket => {
-              const title =
-                this.docsService.list.doc$(bucket.key).value?.title$.value ??
-                '';
-
-              return bucket.hits.nodes.map(node => {
-                const blockId = node.fields.blockId ?? '';
-                const markdownPreview = node.fields.markdownPreview ?? '';
-                const additional =
-                  typeof node.fields.additional === 'string'
-                    ? node.fields.additional
-                    : node.fields.additional[0];
-
-                const additionalData: {
-                  displayMode?: string;
-                  noteBlockId?: string;
-                } = JSON.parse(additional || '{}');
-
-                const displayMode = additionalData.displayMode ?? '';
-                const noteBlockId = additionalData.noteBlockId ?? '';
-                const parentBlockId =
-                  typeof node.fields.parentBlockId === 'string'
-                    ? node.fields.parentBlockId
-                    : node.fields.parentBlockId[0];
-                const parentFlavour =
-                  typeof node.fields.parentFlavour === 'string'
-                    ? node.fields.parentFlavour
-                    : node.fields.parentFlavour[0];
-
-                return {
-                  docId: bucket.key,
-                  blockId: typeof blockId === 'string' ? blockId : blockId[0],
-                  title: title,
-                  markdownPreview:
-                    typeof markdownPreview === 'string'
-                      ? markdownPreview
-                      : markdownPreview[0],
-                  displayMode:
-                    typeof displayMode === 'string'
-                      ? displayMode
-                      : displayMode[0],
-                  noteBlockId:
-                    typeof noteBlockId === 'string'
-                      ? noteBlockId
-                      : noteBlockId[0],
-                  parentBlockId:
-                    typeof parentBlockId === 'string'
-                      ? parentBlockId
-                      : parentBlockId[0],
-                  parentFlavour:
-                    typeof parentFlavour === 'string'
-                      ? parentFlavour
-                      : parentFlavour[0],
-                };
-              });
-            });
-          });
-        })
-      );
-  }
-
   watchDatabasesTo(docId: string) {
     const DatabaseAdditionalSchema = z.object({
       databaseName: z.string().optional(),
@@ -336,18 +249,6 @@ export class DocsSearchService extends Service {
               field: 'parentFlavour',
               match: 'affine:database',
             },
-            // Ignore if it is a link to the current document.
-            {
-              type: 'boolean',
-              occur: 'must_not',
-              queries: [
-                {
-                  type: 'match',
-                  field: 'docId',
-                  match: docId,
-                },
-              ],
-            },
           ],
         },
         {
@@ -359,29 +260,36 @@ export class DocsSearchService extends Service {
       )
       .pipe(
         map(({ nodes }) => {
-          return nodes.map(node => {
-            const additional =
-              typeof node.fields.additional === 'string'
-                ? node.fields.additional
-                : node.fields.additional[0];
+          return nodes
+            .map(node => {
+              if (node.fields.docId === docId) {
+                // Ignore if it is a link to the current document.
+                return null;
+              }
 
-            return {
-              docId:
-                typeof node.fields.docId === 'string'
-                  ? node.fields.docId
-                  : node.fields.docId[0],
-              rowId:
-                typeof node.fields.blockId === 'string'
-                  ? node.fields.blockId
-                  : node.fields.blockId[0],
-              databaseBlockId:
-                typeof node.fields.parentBlockId === 'string'
-                  ? node.fields.parentBlockId
-                  : node.fields.parentBlockId[0],
-              databaseName: DatabaseAdditionalSchema.safeParse(additional).data
-                ?.databaseName as string | undefined,
-            };
-          });
+              const additional =
+                typeof node.fields.additional === 'string'
+                  ? node.fields.additional
+                  : node.fields.additional[0];
+
+              return {
+                docId:
+                  typeof node.fields.docId === 'string'
+                    ? node.fields.docId
+                    : node.fields.docId[0],
+                rowId:
+                  typeof node.fields.blockId === 'string'
+                    ? node.fields.blockId
+                    : node.fields.blockId[0],
+                databaseBlockId:
+                  typeof node.fields.parentBlockId === 'string'
+                    ? node.fields.parentBlockId
+                    : node.fields.parentBlockId[0],
+                databaseName: DatabaseAdditionalSchema.safeParse(additional)
+                  .data?.databaseName as string | undefined,
+              };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
         })
       );
   }

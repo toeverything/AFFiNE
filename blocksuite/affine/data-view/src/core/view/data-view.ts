@@ -2,6 +2,7 @@ import type { UniComponent } from '@blocksuite/affine-shared/types';
 
 import type { SingleView } from '../view-manager/single-view.js';
 import type { ViewManager } from '../view-manager/view-manager.js';
+import type { DataViewUILogicBaseConstructor } from './data-view-base.js';
 import type { DataViewInstance, DataViewProps } from './types.js';
 
 export type BasicViewDataType<
@@ -48,9 +49,10 @@ type DataViewComponent = UniComponent<
 >;
 
 export interface DataViewRendererConfig {
-  view: DataViewComponent;
   mobileView?: DataViewComponent;
   icon: UniComponent;
+  pcLogic: (view: SingleView) => DataViewUILogicBaseConstructor;
+  mobileLogic?: (view: SingleView) => DataViewUILogicBaseConstructor;
 }
 
 export type ViewMeta<

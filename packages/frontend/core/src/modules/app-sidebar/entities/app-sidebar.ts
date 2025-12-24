@@ -21,14 +21,14 @@ export class AppSidebar extends Entity {
     this.appSidebarState
       .watch<boolean>(APP_SIDEBAR_STATE.OPEN)
       .pipe(map(value => value ?? true)),
-    true
+    this.appSidebarState.get<boolean>(APP_SIDEBAR_STATE.OPEN) ?? true
   );
 
   width$ = LiveData.from(
     this.appSidebarState
       .watch<number>(APP_SIDEBAR_STATE.WIDTH)
       .pipe(map(value => value ?? 248)),
-    248
+    this.appSidebarState.get<number>(APP_SIDEBAR_STATE.WIDTH) ?? 248
   );
 
   /**

@@ -1,0 +1,17 @@
+#import "./fragments/copilot.gql"
+
+query getCopilotSession(
+  $workspaceId: String!
+  $sessionId: String!
+) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      chats(
+        pagination: { first: 1 }
+        options: { sessionId: $sessionId }
+      ) {
+        ...PaginatedCopilotChats
+      }
+    }
+  }
+}

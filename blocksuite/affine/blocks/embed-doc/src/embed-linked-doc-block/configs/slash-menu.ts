@@ -23,9 +23,9 @@ const linkedDocSlashMenuConfig: SlashMenuConfig = {
       },
       group: '3_Page@0',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:embed-linked-doc'),
+        model.store.schema.flavourSchemaMap.has('affine:embed-linked-doc'),
       action: ({ std, model }) => {
-        const newDoc = createDefaultDoc(std.host.doc.workspace);
+        const newDoc = createDefaultDoc(std.host.store.workspace);
         insertContent(std, model, REFERENCE_NODE, {
           reference: {
             type: 'LinkedPage',
@@ -45,7 +45,7 @@ const linkedDocSlashMenuConfig: SlashMenuConfig = {
       searchAlias: ['dual link'],
       group: '3_Page@1',
       when: ({ std, model }) => {
-        const root = model.doc.root;
+        const root = model.store.root;
         if (!root) return false;
         const linkedDocWidget = std.view.getWidget(
           'affine-linked-doc-widget',
@@ -53,10 +53,12 @@ const linkedDocSlashMenuConfig: SlashMenuConfig = {
         );
         if (!linkedDocWidget) return false;
 
-        return model.doc.schema.flavourSchemaMap.has('affine:embed-linked-doc');
+        return model.store.schema.flavourSchemaMap.has(
+          'affine:embed-linked-doc'
+        );
       },
       action: ({ model, std }) => {
-        const root = model.doc.root;
+        const root = model.store.root;
         if (!root) return;
         const linkedDocWidget = std.view.getWidget(
           'affine-linked-doc-widget',

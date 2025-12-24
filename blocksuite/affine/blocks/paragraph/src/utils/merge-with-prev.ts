@@ -8,6 +8,7 @@ import {
   EdgelessTextBlockModel,
   ImageBlockModel,
   ListBlockModel,
+  NoteBlockModel,
   ParagraphBlockModel,
   type RootBlockModel,
 } from '@blocksuite/affine-model';
@@ -23,6 +24,7 @@ import {
   getPrevContentBlock,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
+import { IS_ANDROID, IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSelection, type EditorHost } from '@blocksuite/std';
 import type { BlockModel, Text } from '@blocksuite/store';
 
@@ -41,13 +43,9 @@ import type { BlockModel, Text } from '@blocksuite/store';
  *   - line3
  */
 export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
-  const doc = model.doc;
+  const doc = model.store;
   const parent = doc.getParent(model);
   if (!parent) return false;
-
-  if (matchModels(parent, [EdgelessTextBlockModel])) {
-    return true;
-  }
 
   const prevBlock = getPrevContentBlock(editorHost, model);
   if (!prevBlock) {
@@ -81,6 +79,28 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       index: lengthBeforeJoin,
       length: 0,
     }).catch(console.error);
+
+    // due to some IME like Microsoft Swift IME on Android will reset range after join text,
+    // for example:
+    //
+    // $ZERO_WIDTH_FOR_EMPTY_LINE     <--- p1
+    // |aaa                           <--- p2
+    //
+    // after pressing backspace, during beforeinput event, the native range is (p1, 1) -> (p2, 0)
+    // and after browser and IME handle the event, the native range is (p1, 1) -> (p1, 1)
+    //
+    // a|aa                            <--- p1
+    //
+    // so we need to set range again after join text.
+    if (IS_ANDROID) {
+      setTimeout(() => {
+        asyncSetInlineRange(editorHost.std, prevBlock, {
+          index: lengthBeforeJoin,
+          length: 0,
+        }).catch(console.error);
+      });
+    }
+
     return true;
   }
 
@@ -94,10 +114,17 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       ...EMBED_BLOCK_MODEL_LIST,
     ])
   ) {
-    const selection = editorHost.selection.create(BlockSelection, {
-      blockId: prevBlock.id,
-    });
-    editorHost.selection.setGroup('note', [selection]);
+    // due to create a block selection will clear text selection, which lead
+    // the virtual keyboard to be auto closed on mobile. This behavior breaks
+    // the user experience.
+    if (!IS_MOBILE) {
+      const selection = editorHost.selection.create(BlockSelection, {
+        blockId: prevBlock.id,
+      });
+      editorHost.selection.setGroup('note', [selection]);
+    } else {
+      doc.deleteBlock(prevBlock);
+    }
 
     if (model.text?.length === 0) {
       doc.deleteBlock(model, {
@@ -118,45 +145,70 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
 }
 
 function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
-  const doc = model.doc;
+  const doc = model.store;
   const text = model.text;
   const parent = doc.getParent(model);
   if (!parent) return false;
-  const titleEditor = getDocTitleInlineEditor(editorHost);
-  // Probably no title, e.g. in edgeless mode
-  if (!titleEditor) {
+
+  const focusFirstBlockStart = () => {
+    const firstBlock = parent.firstChild();
+    if (firstBlock) {
+      focusTextModel(editorHost.std, firstBlock.id, 0);
+    }
+  };
+
+  if (matchModels(parent, [NoteBlockModel])) {
+    const hasTitleEditor = getDocTitleInlineEditor(editorHost);
+    const rootModel = model.store.root as RootBlockModel;
+    const title = rootModel.props.title;
+
+    const shouldHandleTitle = parent.isPageBlock() && hasTitleEditor;
+
+    doc.captureSync();
+
+    if (shouldHandleTitle) {
+      let textLength = 0;
+      if (text) {
+        textLength = text.length;
+        title.join(text);
+      }
+      if (model.children.length > 0 || doc.getNext(model)) {
+        doc.deleteBlock(model, {
+          bringChildrenTo: parent,
+        });
+      }
+      // no other blocks, preserve a empty line
+      else {
+        text?.clear();
+      }
+      focusTitle(editorHost, title.length - textLength);
+      return true;
+    }
+
+    // Preserve at least one block to be able to focus on container click
     if (
-      matchModels(parent, [EdgelessTextBlockModel]) ||
-      model.children.length > 0
+      text?.length === 0 &&
+      (model.children.length > 0 || doc.getNext(model))
     ) {
       doc.deleteBlock(model, {
         bringChildrenTo: parent,
       });
+      focusFirstBlockStart();
       return true;
     }
-    return false;
   }
 
-  const rootModel = model.doc.root as RootBlockModel;
-  const title = rootModel.props.title;
-
-  doc.captureSync();
-  let textLength = 0;
-  if (text) {
-    textLength = text.length;
-    title.join(text);
-  }
-
-  // Preserve at least one block to be able to focus on container click
-  if (doc.getNext(model) || model.children.length > 0) {
-    const parent = doc.getParent(model);
-    if (!parent) return false;
+  if (
+    matchModels(parent, [EdgelessTextBlockModel]) &&
+    text?.length === 0 &&
+    (model.children.length > 0 || doc.getNext(model))
+  ) {
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
-  } else {
-    text?.clear();
+    focusFirstBlockStart();
+    return true;
   }
-  focusTitle(editorHost, title.length - textLength);
-  return true;
+
+  return false;
 }

@@ -82,9 +82,11 @@ export class ServerConfigResolver {
               ? 'AFFiNE Beta Cloud'
               : 'AFFiNE Cloud'),
       version: env.version,
-      baseUrl: this.url.home,
+      baseUrl: this.url.requestBaseUrl,
       type: env.DEPLOYMENT_TYPE,
       features: this.server.features,
+      // TODO(@fengmk2): remove this field after the feature 0.25.0 is released
+      allowGuestDemoWorkspace: this.config.flags.allowGuestDemoWorkspace,
     };
   }
 
@@ -182,6 +184,24 @@ class UpdateAppConfigInput {
   value!: any;
 }
 
+@ObjectType()
+class AppConfigValidateResult {
+  @Field()
+  module!: string;
+
+  @Field()
+  key!: string;
+
+  @Field(() => GraphQLJSON)
+  value!: any;
+
+  @Field()
+  valid!: boolean;
+
+  @Field(() => String, { nullable: true })
+  error?: string;
+}
+
 @Admin()
 @Resolver(() => GraphQLJSONObject)
 export class AppConfigResolver {
@@ -203,5 +223,29 @@ export class AppConfigResolver {
     updates: UpdateAppConfigInput[]
   ): Promise<DeepPartial<AppConfig>> {
     return await this.service.updateConfig(me.id, updates);
+  }
+
+  @Mutation(() => [AppConfigValidateResult], {
+    description: 'validate app configuration',
+  })
+  async validateAppConfig(
+    @Args('updates', { type: () => [UpdateAppConfigInput] })
+    updates: UpdateAppConfigInput[]
+  ): Promise<AppConfigValidateResult[]> {
+    const errors = this.service.validateConfig(updates);
+
+    return updates.map(update => {
+      const error = errors?.find(
+        error =>
+          error.data.module === update.module && error.data.key === update.key
+      );
+      return {
+        module: update.module,
+        key: update.key,
+        value: update.value,
+        valid: !error,
+        error: error?.data.hint,
+      };
+    });
   }
 }

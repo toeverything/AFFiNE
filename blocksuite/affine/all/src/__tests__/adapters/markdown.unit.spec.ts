@@ -4,6 +4,9 @@ import {
   TableModelFlavour,
 } from '@blocksuite/affine-model';
 import {
+  CalloutAdmonitionType,
+  CalloutExportStyle,
+  calloutMarkdownExportMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
 } from '@blocksuite/affine-shared/adapters';
@@ -2449,119 +2452,288 @@ World!
     expect(target.file).toBe(markdown);
   });
 
-  test('callout', async () => {
-    const blockSnapshot: BlockSnapshot = {
-      type: 'block',
-      id: 'block:vu6SK6WJpW',
-      flavour: 'affine:page',
-      props: {
-        title: {
-          '$blocksuite:internal:text$': true,
-          delta: [],
-        },
-      },
-      children: [
-        {
-          type: 'block',
-          id: 'block:Tk4gSPocAt',
-          flavour: 'affine:surface',
-          props: {
-            elements: {},
+  describe('callout', () => {
+    test('without export middleware', async () => {
+      const blockSnapshot: BlockSnapshot = {
+        type: 'block',
+        id: 'block:vu6SK6WJpW',
+        flavour: 'affine:page',
+        props: {
+          title: {
+            '$blocksuite:internal:text$': true,
+            delta: [],
           },
-          children: [],
         },
-        {
-          type: 'block',
-          id: 'block:WfnS5ZDCJT',
-          flavour: 'affine:note',
-          props: {
-            xywh: '[0,0,800,95]',
-            background: DefaultTheme.noteBackgrounColor,
-            index: 'a0',
-            hidden: false,
-            displayMode: NoteDisplayMode.DocAndEdgeless,
+        children: [
+          {
+            type: 'block',
+            id: 'block:Tk4gSPocAt',
+            flavour: 'affine:surface',
+            props: {
+              elements: {},
+            },
+            children: [],
           },
-          children: [
-            {
-              type: 'block',
-              id: 'block:8hOLxad5Fv',
-              flavour: 'affine:callout',
-              props: {
-                emoji: '💡',
-              },
-              children: [
-                {
-                  type: 'block',
-                  id: 'block:8hOLxad5Fv',
-                  flavour: 'affine:paragraph',
-                  props: {
-                    type: 'text',
-                    text: {
-                      '$blocksuite:internal:text$': true,
-                      delta: [{ insert: 'First callout' }],
+          {
+            type: 'block',
+            id: 'block:WfnS5ZDCJT',
+            flavour: 'affine:note',
+            props: {
+              xywh: '[0,0,800,95]',
+              background: DefaultTheme.noteBackgrounColor,
+              index: 'a0',
+              hidden: false,
+              displayMode: NoteDisplayMode.DocAndEdgeless,
+            },
+            children: [
+              {
+                type: 'block',
+                id: 'block:8hOLxad5Fv',
+                flavour: 'affine:callout',
+                props: {
+                  emoji: '💡',
+                },
+                children: [
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [{ insert: 'First callout' }],
+                      },
                     },
+                    children: [],
                   },
-                  children: [],
-                },
-              ],
-            },
-            {
-              type: 'block',
-              id: 'block:8hOLxadvdv',
-              flavour: 'affine:callout',
-              props: {
-                emoji: '',
+                ],
               },
-              children: [
-                {
-                  type: 'block',
-                  id: 'block:8hOLxad5Fv',
-                  flavour: 'affine:paragraph',
-                  props: {
-                    type: 'text',
-                    text: {
-                      '$blocksuite:internal:text$': true,
-                      delta: [{ insert: 'Second callout without emoji' }],
+              {
+                type: 'block',
+                id: 'block:8hOLxadvdv',
+                flavour: 'affine:callout',
+                props: {
+                  emoji: '',
+                },
+                children: [
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [
+                          { insert: 'Warning second callout without emoji' },
+                        ],
+                      },
                     },
+                    children: [],
                   },
-                  children: [],
-                },
-              ],
-            },
-            {
-              type: 'block',
-              id: 'block:8hOLxbfdb',
-              flavour: 'affine:paragraph',
-              props: {
-                type: 'quote',
-                text: {
-                  '$blocksuite:internal:text$': true,
-                  delta: [{ insert: 'This is a regular blockquote' }],
-                },
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [{ insert: 'Text in second callout' }],
+                      },
+                    },
+                    children: [],
+                  },
+                ],
               },
-              children: [],
-            },
-          ],
-        },
-      ],
-    };
+            ],
+          },
+        ],
+      };
 
-    const markdown = `> \\[!💡]
+      const markdown = `> \\[!💡]
 >
 > First callout
 
 > \\[!]
 >
-> Second callout without emoji
-
-> This is a regular blockquote
+> Warning second callout without emoji
+>
+> Text in second callout
 `;
 
-    const mdAdapter = new MarkdownAdapter(createJob(), provider);
-    const target = await mdAdapter.fromBlockSnapshot({
-      snapshot: blockSnapshot,
+      const mdAdapter = new MarkdownAdapter(createJob(), provider);
+      const target = await mdAdapter.fromBlockSnapshot({
+        snapshot: blockSnapshot,
+      });
+      expect(target.file).toBe(markdown);
     });
-    expect(target.file).toBe(markdown);
+
+    test('with export middleware', async () => {
+      const blockSnapshot: BlockSnapshot = {
+        type: 'block',
+        id: 'block:vu6SK6WJpW',
+        flavour: 'affine:page',
+        props: {
+          title: {
+            '$blocksuite:internal:text$': true,
+            delta: [],
+          },
+        },
+        children: [
+          {
+            type: 'block',
+            id: 'block:Tk4gSPocAt',
+            flavour: 'affine:surface',
+            props: {
+              elements: {},
+            },
+            children: [],
+          },
+          {
+            type: 'block',
+            id: 'block:WfnS5ZDCJT',
+            flavour: 'affine:note',
+            props: {
+              xywh: '[0,0,800,95]',
+              background: DefaultTheme.noteBackgrounColor,
+              index: 'a0',
+              hidden: false,
+              displayMode: NoteDisplayMode.DocAndEdgeless,
+            },
+            children: [
+              {
+                type: 'block',
+                id: 'block:8hOLxad5Fv',
+                flavour: 'affine:callout',
+                props: {
+                  emoji: '💡',
+                },
+                children: [
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [
+                          { insert: 'Callout that does not have a title' },
+                        ],
+                      },
+                    },
+                    children: [],
+                  },
+                ],
+              },
+              {
+                type: 'block',
+                id: 'block:8hOLxadvdv',
+                flavour: 'affine:callout',
+                props: {
+                  emoji: '',
+                },
+                children: [
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [
+                          {
+                            insert:
+                              'Warning callout with custom title and multiple paragraphs',
+                          },
+                        ],
+                      },
+                    },
+                    children: [],
+                  },
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [{ insert: 'Text in second callout' }],
+                      },
+                    },
+                    children: [],
+                  },
+                ],
+              },
+              {
+                type: 'block',
+                id: 'block:8hOLxad5Fv',
+                flavour: 'affine:callout',
+                props: {
+                  emoji: '💡',
+                },
+                children: [
+                  {
+                    type: 'block',
+                    id: 'block:8hOLxad5Fv',
+                    flavour: 'affine:paragraph',
+                    props: {
+                      type: 'text',
+                      text: {
+                        '$blocksuite:internal:text$': true,
+                        delta: [
+                          { insert: 'details' },
+                          { insert: ' ' },
+                          { insert: '\nText in details callout with new line' },
+                        ],
+                      },
+                    },
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const markdown = `::: info
+
+Callout that does not have a title
+
+:::
+
+::: warning callout with custom title and multiple paragraphs
+
+Text in second callout
+
+:::
+
+::: details
+
+Text in details callout with new line
+
+:::
+`;
+
+      const mdAdapter = new MarkdownAdapter(
+        createJob([
+          calloutMarkdownExportMiddleware({
+            style: CalloutExportStyle.Admonitions,
+            admonitionType: CalloutAdmonitionType.Info,
+          }),
+        ]),
+        provider
+      );
+      const target = await mdAdapter.fromBlockSnapshot({
+        snapshot: blockSnapshot,
+      });
+      expect(target.file).toBe(markdown);
+    });
   });
 });
 
@@ -4221,6 +4393,61 @@ hhh
           },
           children: [],
         },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[2]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'h6',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'Sources',
+                },
+              ],
+            },
+            collapsed: true,
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[3]',
+          flavour: 'affine:bookmark',
+          props: {
+            style: 'citation',
+            url,
+            title,
+            description,
+            icon: favicon,
+            footnoteIdentifier: '1',
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[4]',
+          flavour: 'affine:embed-linked-doc',
+          props: {
+            style: 'citation',
+            pageId: 'deadbeef',
+            footnoteIdentifier: '2',
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[5]',
+          flavour: 'affine:attachment',
+          props: {
+            name: 'test.txt',
+            sourceId: 'abcdefg',
+            footnoteIdentifier: '3',
+            style: 'citation',
+          },
+          children: [],
+        },
       ],
     };
 
@@ -4238,6 +4465,101 @@ hhh
 
     test('with unencoded url and favicon', async () => {
       const markdown = `aaa[^1][^2][^3]\n\n[^1]: {"type":"url","url":"${url}","favicon":"${favicon}","title":"${title}","description":"${description}"}\n\n[^2]: {"type":"doc","docId":"deadbeef"}\n\n[^3]: {"type":"attachment","blobId":"abcdefg","fileName":"test.txt","fileType":"text/plain"}\n`;
+
+      const mdAdapter = new MarkdownAdapter(createJob(), provider);
+      const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
+        file: markdown,
+      });
+      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    });
+
+    test('should handle footnote reference with url prefix', async () => {
+      const blockSnapshot = {
+        type: 'block',
+        id: 'matchesReplaceMap[0]',
+        flavour: 'affine:note',
+        props: {
+          xywh: '[0,0,800,95]',
+          background: DefaultTheme.noteBackgrounColor,
+          index: 'a0',
+          hidden: false,
+          displayMode: NoteDisplayMode.DocAndEdgeless,
+        },
+        children: [
+          {
+            type: 'block',
+            id: 'matchesReplaceMap[1]',
+            flavour: 'affine:paragraph',
+            props: {
+              type: 'text',
+              text: {
+                '$blocksuite:internal:text$': true,
+                delta: [
+                  {
+                    insert: 'https://example.com',
+                    attributes: {
+                      link: 'https://example.com',
+                    },
+                  },
+                  {
+                    insert: ' ',
+                  },
+                  {
+                    insert: ' ',
+                    attributes: {
+                      footnote: {
+                        label: '1',
+                        reference: {
+                          type: 'url',
+                          url,
+                          favicon,
+                          title,
+                          description,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+            children: [],
+          },
+          {
+            type: 'block',
+            id: 'matchesReplaceMap[2]',
+            flavour: 'affine:paragraph',
+            props: {
+              type: 'h6',
+              text: {
+                '$blocksuite:internal:text$': true,
+                delta: [
+                  {
+                    insert: 'Sources',
+                  },
+                ],
+              },
+              collapsed: true,
+            },
+            children: [],
+          },
+          {
+            type: 'block',
+            id: 'matchesReplaceMap[3]',
+            flavour: 'affine:bookmark',
+            props: {
+              style: 'citation',
+              url,
+              title,
+              description,
+              icon: favicon,
+              footnoteIdentifier: '1',
+            },
+            children: [],
+          },
+        ],
+      };
+
+      const markdown = `https://example.com[^1]\n\n[^1]: {"type":"url","url":"${url}","favicon":"${favicon}","title":"${title}","description":"${description}"}\n`;
 
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({

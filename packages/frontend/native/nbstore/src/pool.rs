@@ -62,7 +62,7 @@ impl SqliteDocStoragePool {
     RefMut { _guard: lock }
   }
 
-  pub async fn get(&self, universal_id: String) -> Result<Ref<SqliteDocStorage>> {
+  pub async fn get(&self, universal_id: String) -> Result<Ref<'_, SqliteDocStorage>> {
     let lock = RwLockReadGuard::try_map(self.inner.read().await, |lock| {
       if let Some(storage) = lock.get(&universal_id) {
         Some(storage)

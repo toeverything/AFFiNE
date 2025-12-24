@@ -7,6 +7,8 @@ import {
   dragBetweenViewCoords,
   edgelessCommonSetup,
   getFrameTitle,
+  getSelectedBound,
+  toModelCoord,
   zoomOutByKeyboard,
   zoomResetByKeyboard,
 } from '../../utils/actions/edgeless.js';
@@ -17,6 +19,7 @@ import {
   type,
 } from '../../utils/actions/keyboard.js';
 import { waitNextFrame } from '../../utils/actions/misc.js';
+import { assertRectExist } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
 
 const createFrame = async (
@@ -54,7 +57,10 @@ test.describe('frame title rendering', () => {
     await expect(frameTitle).toHaveText('Frame 1');
   });
 
-  test('frame title should be rendered on the top', async ({ page }) => {
+  // TODO(@L-Sun): For support frame title draggable, we temporarily change frame title from root widget to frame widget,
+  // which make the z-index is not longer on the top. Because we need move the selection logic of frame title to the EdgelessInteraction
+  // where we can use the externalBound to check if the frame title is click.
+  test.fixme('frame title should be rendered on the top', async ({ page }) => {
     const frame = await createFrame(page, [50, 50], [150, 150]);
 
     const frameTitle = getFrameTitle(page, frame);
@@ -155,4 +161,20 @@ test.describe('frame title editing', () => {
     await pressEnter(page);
     await expect(frameTitleEditor).toHaveCount(0);
   });
+});
+
+test('frame title should be draggable', async ({ page }) => {
+  const frame = await createFrame(page, [50, 50], [150, 150]);
+  const frameTitle = getFrameTitle(page, frame);
+  const frameTitleRect = await frameTitle.boundingBox();
+  assertRectExist(frameTitleRect);
+
+  const center = await toModelCoord(page, [
+    frameTitleRect.x + frameTitleRect.width / 2,
+    frameTitleRect.y + frameTitleRect.height / 2,
+  ]);
+
+  await dragBetweenViewCoords(page, center, [center[0] + 10, center[1] + 10]);
+  const frameRect = await getSelectedBound(page);
+  expect(frameRect).toEqual([60, 60, 100, 100]);
 });

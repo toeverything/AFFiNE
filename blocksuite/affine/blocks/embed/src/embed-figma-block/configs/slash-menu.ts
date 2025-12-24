@@ -18,11 +18,11 @@ export const embedFigmaSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@8',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:embed-figma'),
+        model.store.schema.flavourSchemaMap.has('affine:embed-figma'),
       action: ({ std, model }) => {
         (async () => {
           const { host } = std;
-          const parentModel = host.doc.getParent(model);
+          const parentModel = host.store.getParent(model);
           if (!parentModel) {
             return;
           }

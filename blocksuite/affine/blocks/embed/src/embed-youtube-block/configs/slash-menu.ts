@@ -18,11 +18,11 @@ export const embedYoutubeSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@6',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:embed-youtube'),
+        model.store.schema.flavourSchemaMap.has('affine:embed-youtube'),
       action: ({ std, model }) => {
         (async () => {
           const { host } = std;
-          const parentModel = host.doc.getParent(model);
+          const parentModel = host.store.getParent(model);
           if (!parentModel) {
             return;
           }

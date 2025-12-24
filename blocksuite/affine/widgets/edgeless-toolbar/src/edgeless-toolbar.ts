@@ -660,7 +660,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
 
   override render() {
     const type = this.edgelessTool;
-    if (this.doc.readonly && type !== 'frameNavigator') {
+    if (this.store.readonly && type !== 'frameNavigator') {
       return nothing;
     }
 

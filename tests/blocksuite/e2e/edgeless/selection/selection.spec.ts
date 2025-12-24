@@ -11,12 +11,15 @@ import {
   addBasicRectShapeElement,
   click,
   clickInCenter,
+  clickView,
   dragBetweenCoords,
   enterPlaygroundRoom,
   getBoundingRect,
   initEmptyEdgelessState,
   initThreeParagraphs,
   pressEnter,
+  pressEscape,
+  undoByKeyboard,
   waitNextFrame,
 } from '../../utils/actions/index.js';
 import {
@@ -25,6 +28,7 @@ import {
   assertEdgelessRemoteSelectedRect,
   assertEdgelessSelectedModelRect,
   assertEdgelessSelectedRect,
+  assertRectExist,
   assertSelectionInNote,
 } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
@@ -463,4 +467,79 @@ test('should select shapes while moving selection', async ({ page }) => {
   );
 
   await assertEdgelessSelectedRect(page, [100, 98, 212, 204]);
+});
+
+test('should the selected rect be below the edgeless element toolbar', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const toolbar = page.locator('.edgeless-toolbar-container');
+  const toolbarRect = await toolbar.boundingBox();
+  assertRectExist(toolbarRect);
+
+  await actions.addNote(page, 'hello', toolbarRect.x, toolbarRect.y - 20);
+  await pressEscape(page, 3);
+
+  await page.mouse.click(toolbarRect.x, toolbarRect.y - 20);
+
+  const selectedRect = page.locator('.affine-edgeless-selected-rect');
+  await expect(selectedRect).toBeVisible();
+
+  const brHandle = selectedRect.getByLabel('bottom-right');
+  const brHandleRect = await brHandle.boundingBox();
+  assertRectExist(brHandleRect);
+
+  // make sure the position of br handle is inside the toolbar
+  expect(
+    brHandleRect.x > toolbarRect.x &&
+      brHandleRect.x < toolbarRect.x + toolbarRect.width &&
+      brHandleRect.y > toolbarRect.y &&
+      brHandleRect.y < toolbarRect.y + toolbarRect.height
+  ).toBe(true);
+
+  const brHandleCenter = [
+    brHandleRect.x + brHandleRect.width / 2,
+    brHandleRect.y + brHandleRect.height / 2,
+  ];
+
+  // get element from the center of br handle
+  const topElement = await page.evaluate(brHandleCenter => {
+    const element = document.elementFromPoint(
+      brHandleCenter[0],
+      brHandleCenter[1]
+    );
+    if (!element) {
+      throw new Error('element not found');
+    }
+    return element.tagName;
+  }, brHandleCenter);
+
+  expect(topElement).toBe('EDGELESS-TOOLBAR-WIDGET');
+});
+
+test('should the block selectable after undo drag a block from canvas to note', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  await actions.createNote(page, [0, 200], 'hello\nworld');
+  await pressEscape(page, 3);
+  await clickView(page, [0, 200]);
+  const toolbar = actions.locatorComponentToolbar(page);
+  await toolbar.getByLabel('More menu').click();
+  await toolbar.getByTestId('turn-into-linked-doc').click();
+
+  await page.dragAndDrop(
+    '.affine-drag-handle-grabber.dots',
+    'affine-edgeless-note[data-block-id="2"]'
+  );
+  await waitNextFrame(page);
+  await undoByKeyboard(page);
+  await page.locator('affine-embed-edgeless-synced-doc-block').click();
+  expect(await actions.getSelectedBoundCount(page)).toBe(1);
 });

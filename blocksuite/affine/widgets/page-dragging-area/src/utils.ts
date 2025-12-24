@@ -118,7 +118,7 @@ export function getSelectingBlockPaths(
   // eslint-disable-next-line @typescript-eslint/prefer-for-of
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
-    const parent = blocks[i].element.doc.getParent(block.element.model);
+    const parent = blocks[i].element.store.getParent(block.element.model);
     const parentId = parent?.id;
     if (parentId) {
       const isParentInBlocks = blocks.some(

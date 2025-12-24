@@ -1,4 +1,4 @@
-import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Entity } from '@toeverything/infra';
 
@@ -61,7 +61,7 @@ export class IntegrationWriter extends Entity {
         schema: getAFFiNEWorkspaceSchema(),
         markdown,
         fileName: title,
-        extensions: getStoreManager().get('store'),
+        extensions: getStoreManager().config.init().value.get('store'),
       });
 
       if (!newDocId) throw new Error('Failed to create a new doc');
@@ -71,10 +71,6 @@ export class IntegrationWriter extends Entity {
 
       const doc = collection.getDoc(docId)?.getStore();
       if (!doc) throw new Error('Doc not found');
-
-      doc.workspace.meta.setDocMeta(docId, {
-        updatedDate: Date.now(),
-      });
 
       if (updateStrategy === 'override') {
         const pageBlock = doc.getBlocksByFlavour('affine:page')[0];
@@ -89,7 +85,7 @@ export class IntegrationWriter extends Entity {
           doc,
           blockId: noteBlockId,
           markdown,
-          extensions: getStoreManager().get('store'),
+          extensions: getStoreManager().config.init().value.get('store'),
         });
       } else if (updateStrategy === 'append') {
         const pageBlockId = doc.getBlocksByFlavour('affine:page')[0]?.id;
@@ -98,7 +94,7 @@ export class IntegrationWriter extends Entity {
           doc,
           blockId,
           markdown: `---\n${markdown}`,
-          extensions: getStoreManager().get('store'),
+          extensions: getStoreManager().config.init().value.get('store'),
         });
       } else {
         throw new Error('Invalid update strategy');

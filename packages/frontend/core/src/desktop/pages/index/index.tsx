@@ -1,9 +1,11 @@
+import { DefaultServerService } from '@affine/core/modules/cloud';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import {
   buildShowcaseWorkspace,
   createFirstAppData,
 } from '@affine/core/utils/first-app-data';
+import { ServerFeature } from '@affine/graphql';
 import {
   useLiveData,
   useService,
@@ -46,16 +48,25 @@ export const Component = ({
   const [navigating, setNavigating] = useState(true);
   const [creating, setCreating] = useState(false);
   const authService = useService(AuthService);
+  const defaultServerService = useService(DefaultServerService);
 
   const loggedIn = useLiveData(
     authService.session.status$.map(s => s === 'authenticated')
   );
+  const enableLocalWorkspace =
+    useLiveData(
+      defaultServerService.server.config$.selector(
+        c =>
+          c.features.includes(ServerFeature.LocalWorkspace) ||
+          BUILD_CONFIG.isNative
+      )
+    ) ?? true;
 
   const workspacesService = useService(WorkspacesService);
   const list = useLiveData(workspacesService.list.workspaces$);
   const listIsLoading = useLiveData(workspacesService.list.isRevalidating$);
 
-  const { openPage, jumpToPage } = useNavigateHelper();
+  const { openPage, jumpToPage, jumpToSignIn } = useNavigateHelper();
   const [searchParams] = useSearchParams();
 
   const createOnceRef = useRef(false);
@@ -81,6 +92,12 @@ export const Component = ({
     }
 
     if (listIsLoading) {
+      return;
+    }
+
+    if (!enableLocalWorkspace && !loggedIn) {
+      localStorage.removeItem('last_workspace_id');
+      jumpToSignIn();
       return;
     }
 
@@ -111,10 +128,12 @@ export const Component = ({
       openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
+    enableLocalWorkspace,
     createCloudWorkspace,
     list,
     openPage,
     searchParams,
+    jumpToSignIn,
     listIsLoading,
     loggedIn,
     navigating,
@@ -128,7 +147,10 @@ export const Component = ({
   }, [desktopApi]);
 
   useEffect(() => {
-    setCreating(true);
+    if (listIsLoading || list.length > 0 || !enableLocalWorkspace) {
+      return;
+    }
+
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
         if (createdWorkspace) {
@@ -148,7 +170,16 @@ export const Component = ({
       .finally(() => {
         setCreating(false);
       });
-  }, [jumpToPage, openPage, workspacesService]);
+  }, [
+    jumpToPage,
+    jumpToSignIn,
+    openPage,
+    workspacesService,
+    loggedIn,
+    listIsLoading,
+    list,
+    enableLocalWorkspace,
+  ]);
 
   if (navigating || creating) {
     return fallback ?? <AppContainer fallback />;

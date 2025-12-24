@@ -8,7 +8,7 @@ import type { TableAreaSelection } from './selection-schema';
 export class TableDataManager {
   constructor(private readonly model: TableBlockModel) {}
   readonly readonly$: ReadonlySignal<boolean> = computed(() => {
-    return this.model.doc.readonly;
+    return this.model.store.readonly;
   });
   readonly ui = {
     columnIndicatorIndex$: signal<number>(),
@@ -83,7 +83,7 @@ export class TableDataManager {
   addRow(after?: number) {
     const order = this.getOrder(this.rows$.value, after);
     const rowId = nanoid();
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       this.model.props.rows[rowId] = {
         rowId,
         order,
@@ -102,7 +102,7 @@ export class TableDataManager {
       return;
     }
     if (count > 0) {
-      this.model.doc.transact(() => {
+      this.model.store.transact(() => {
         for (let i = 0; i < count; i++) {
           this.addRow(this.rows$.value.length - 1);
         }
@@ -110,7 +110,7 @@ export class TableDataManager {
     } else {
       const rows = this.rows$.value;
       const rowCount = rows.length;
-      this.model.doc.transact(() => {
+      this.model.store.transact(() => {
         rows.slice(rowCount + count, rowCount).forEach(row => {
           this.deleteRow(row.rowId);
         });
@@ -123,7 +123,7 @@ export class TableDataManager {
       return;
     }
     if (count > 0) {
-      this.model.doc.transact(() => {
+      this.model.store.transact(() => {
         for (let i = 0; i < count; i++) {
           this.addColumn(this.columns$.value.length - 1);
         }
@@ -131,7 +131,7 @@ export class TableDataManager {
     } else {
       const columns = this.columns$.value;
       const columnCount = columns.length;
-      this.model.doc.transact(() => {
+      this.model.store.transact(() => {
         columns.slice(columnCount + count, columnCount).forEach(column => {
           this.deleteColumn(column.columnId);
         });
@@ -153,7 +153,7 @@ export class TableDataManager {
   addColumn(after?: number) {
     const order = this.getOrder(this.columns$.value, after);
     const columnId = nanoid();
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       this.model.props.columns[columnId] = {
         columnId,
         order,
@@ -168,7 +168,7 @@ export class TableDataManager {
   }
 
   deleteRow(rowId: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       Object.keys(this.model.props.rows).forEach(id => {
         if (id === rowId) {
           delete this.model.props.rows[id];
@@ -183,7 +183,7 @@ export class TableDataManager {
   }
 
   deleteColumn(columnId: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       Object.keys(this.model.props.columns).forEach(id => {
         if (id === columnId) {
           delete this.model.props.columns[id];
@@ -198,7 +198,7 @@ export class TableDataManager {
   }
 
   updateRowOrder(rowId: string, newOrder: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       if (this.model.props.rows[rowId]) {
         this.model.props.rows[rowId].order = newOrder;
       }
@@ -206,7 +206,7 @@ export class TableDataManager {
   }
 
   updateColumnOrder(columnId: string, newOrder: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       if (this.model.props.columns[columnId]) {
         this.model.props.columns[columnId].order = newOrder;
       }
@@ -214,7 +214,7 @@ export class TableDataManager {
   }
 
   setRowBackgroundColor(rowId: string, color?: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       if (this.model.props.rows[rowId]) {
         this.model.props.rows[rowId].backgroundColor = color;
       }
@@ -222,7 +222,7 @@ export class TableDataManager {
   }
 
   setColumnBackgroundColor(columnId: string, color?: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       if (this.model.props.columns[columnId]) {
         this.model.props.columns[columnId].backgroundColor = color;
       }
@@ -230,7 +230,7 @@ export class TableDataManager {
   }
 
   setColumnWidth(columnId: string, width: number) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       if (this.model.props.columns[columnId]) {
         this.model.props.columns[columnId].width = width;
       }
@@ -238,7 +238,7 @@ export class TableDataManager {
   }
 
   clearRow(rowId: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       Object.keys(this.model.props.cells).forEach(id => {
         if (id.startsWith(rowId)) {
           this.model.props.cells[id]?.text.replace(
@@ -252,7 +252,7 @@ export class TableDataManager {
   }
 
   clearColumn(columnId: string) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       Object.keys(this.model.props.cells).forEach(id => {
         if (id.endsWith(`:${columnId}`)) {
           this.model.props.cells[id]?.text.replace(
@@ -290,7 +290,7 @@ export class TableDataManager {
   }
 
   clearCells(cells: { rowId: string; columnId: string }[]) {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       cells.forEach(({ rowId, columnId }) => {
         const text = this.model.props.cells[`${rowId}:${columnId}`]?.text;
         if (text) {
@@ -313,7 +313,7 @@ export class TableDataManager {
     const column = columns[from];
     if (!column) return;
     const order = this.getOrder(columns, after);
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       const realColumn = this.model.props.columns[column.columnId];
       if (realColumn) {
         realColumn.order = order;
@@ -326,7 +326,7 @@ export class TableDataManager {
     const row = rows[from];
     if (!row) return;
     const order = this.getOrder(rows, after);
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       const realRow = this.model.props.rows[row.rowId];
       if (realRow) {
         realRow.order = order;
@@ -339,7 +339,7 @@ export class TableDataManager {
     if (!oldColumn) return;
     const order = this.getOrder(this.columns$.value, index);
     const newColumnId = nanoid();
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       this.model.props.columns[newColumnId] = {
         ...oldColumn,
         columnId: newColumnId,
@@ -362,7 +362,7 @@ export class TableDataManager {
     if (!oldRow) return;
     const order = this.getOrder(this.rows$.value, index);
     const newRowId = nanoid();
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       this.model.props.rows[newRowId] = {
         ...oldRow,
         rowId: newRowId,

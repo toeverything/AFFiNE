@@ -4,7 +4,6 @@ query getPrompts {
     model
     action
     config {
-      jsonMode
       frequencyPenalty
       presencePenalty
       temperature

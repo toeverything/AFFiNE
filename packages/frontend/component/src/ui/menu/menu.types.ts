@@ -8,19 +8,26 @@ import type {
 } from '@radix-ui/react-dropdown-menu';
 import type { CSSProperties, ReactNode } from 'react';
 
+export interface MenuRef {
+  changeOpen: (open: boolean) => void;
+}
+
 export interface MenuProps {
   children: ReactNode;
   items: ReactNode;
   title?: string;
   portalOptions?: Omit<DropdownMenuPortalProps, 'children'>;
-  rootOptions?: Omit<DropdownMenuProps, 'children'>;
+  rootOptions?: Omit<DropdownMenuProps, 'children'> & { onClose?: () => void };
   contentOptions?: Omit<DropdownMenuContentProps, 'children'>;
   contentWrapperStyle?: CSSProperties;
   noPortal?: boolean;
+  ref?: React.Ref<MenuRef>;
 }
 
-export interface MenuItemProps
-  extends Omit<MenuItemPropsPrimitive, 'asChild' | 'textValue' | 'prefix'> {
+export interface MenuItemProps extends Omit<
+  MenuItemPropsPrimitive,
+  'asChild' | 'textValue' | 'prefix'
+> {
   type?: 'default' | 'warning' | 'danger';
   prefix?: ReactNode;
   suffix?: ReactNode;

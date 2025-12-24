@@ -3,7 +3,9 @@ import { rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { utils } from '@electron-forge/core';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
 
 import {
   appIdMap,
@@ -28,7 +30,7 @@ const makers = [
     platform === 'darwin' && {
       name: '@electron-forge/maker-dmg',
       config: {
-        format: 'ULFO',
+        format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
@@ -109,44 +111,57 @@ const makers = [
       },
     },
   },
-  !process.env.SKIP_BUNDLE && {
-    name: '@electron-forge/maker-flatpak',
-    platforms: ['linux'],
-    /** @type {import('@electron-forge/maker-flatpak').MakerFlatpakConfig} */
-    config: {
-      options: {
-        mimeType: linuxMimeTypes,
-        productName,
-        bin: productName,
-        id: fromBuildIdentifier(appIdMap),
-        icon: iconPngPath, // not working yet
-        branch: buildType,
-        files: [
-          [
-            './resources/affine.metainfo.xml',
-            '/usr/share/metainfo/affine.metainfo.xml',
+  !process.env.SKIP_BUNDLE &&
+    false && {
+      name: '@electron-forge/maker-flatpak',
+      platforms: ['linux'],
+      /** @type {import('@electron-forge/maker-flatpak').MakerFlatpakConfig} */
+      config: {
+        options: {
+          mimeType: linuxMimeTypes,
+          productName,
+          bin: productName,
+          id: fromBuildIdentifier(appIdMap),
+          icon: iconPngPath, // not working yet
+          branch: buildType,
+          files: [
+            [
+              './resources/affine.metainfo.xml',
+              '/usr/share/metainfo/affine.metainfo.xml',
+            ],
           ],
-        ],
-        runtimeVersion: '20.08',
-        finishArgs: [
-          // Wayland/X11 Rendering
-          '--socket=wayland',
-          '--socket=x11',
-          '--share=ipc',
-          // Open GL
-          '--device=dri',
-          // Audio output
-          '--socket=pulseaudio',
-          // Read/write home directory access
-          '--filesystem=home',
-          // Allow communication with network
-          '--share=network',
-          // System notifications with libnotify
-          '--talk-name=org.freedesktop.Notifications',
-        ],
+          runtimeVersion: '25.08',
+          modules: [
+            {
+              name: 'zypak',
+              sources: [
+                {
+                  type: 'git',
+                  url: 'https://github.com/refi64/zypak',
+                  tag: 'v2025.09',
+                },
+              ],
+            },
+          ],
+          finishArgs: [
+            // Wayland/X11 Rendering
+            '--socket=wayland',
+            '--socket=x11',
+            '--share=ipc',
+            // Open GL
+            '--device=dri',
+            // Audio output
+            '--socket=pulseaudio',
+            // Read/write home directory access
+            '--filesystem=home',
+            // Allow communication with network
+            '--share=network',
+            // System notifications with libnotify
+            '--talk-name=org.freedesktop.Notifications',
+          ],
+        },
       },
     },
-  },
 ].filter(Boolean);
 
 /**
@@ -190,7 +205,18 @@ export default {
     },
   },
   makers,
-  plugins: [{ name: '@electron-forge/plugin-auto-unpack-natives', config: {} }],
+  plugins: [
+    { name: '@electron-forge/plugin-auto-unpack-natives', config: {} },
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    }),
+  ],
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build

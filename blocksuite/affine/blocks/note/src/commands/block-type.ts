@@ -68,7 +68,7 @@ export const updateBlockType: Command<
 
   const blockModels = selectedBlocks.map(ele => ele.model);
 
-  const hasSameDoc = selectedBlocks.every(block => block.doc === doc);
+  const hasSameDoc = selectedBlocks.every(block => block.store === doc);
   if (!hasSameDoc) {
     // doc check
     console.error(

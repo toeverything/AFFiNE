@@ -4,31 +4,41 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { PlusIcon } from '@blocksuite/icons/lit';
+import {
+  PlusIcon,
+  ToggleDownIcon,
+  ToggleRightIcon,
+} from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import { effect } from '@preact/signals-core';
+import { effect, signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { css, html, unsafeCSS } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
+import type { Row } from '../../../core/index.js';
 import { createDndContext } from '../../../core/utils/wc-dnd/dnd-context.js';
 import { defaultActivators } from '../../../core/utils/wc-dnd/sensors/index.js';
 import { linearMove } from '../../../core/utils/wc-dnd/utils/linear-move.js';
+import { getCollapsedState, setCollapsedState } from '../collapsed-state.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import { TableViewAreaSelection } from '../selection';
-import type { TableSingleView } from '../table-view-manager.js';
 import { DataViewColumnPreview } from './header/column-renderer.js';
 import { getVerticalIndicator } from './header/vertical-indicator.js';
-import type { DataViewTable } from './table-view.js';
+import type { TableViewUILogic } from './table-view-ui-logic.js';
 
 const styles = css`
   affine-data-view-table-group:hover .group-header-op {
     visibility: visible;
     opacity: 1;
+  }
+
+  affine-data-view-table-group {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--affine-border-color);
   }
 
   .data-view-table-group-add-row {
@@ -41,6 +51,10 @@ const styles = css`
     transition: opacity 0.2s ease-in-out;
     padding: 4px 8px;
     border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
+  }
+
+  .affine-data-view-table-group:hover svg {
+    fill: var(--affine-icon-color);
   }
 
   @media print {
@@ -61,6 +75,28 @@ const styles = css`
     line-height: 20px;
     color: var(--affine-text-secondary-color);
   }
+
+  .group-toggle-btn {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 150ms cubic-bezier(0.42, 0, 1, 1);
+  }
+
+  .group-toggle-btn:hover {
+    background: var(--affine-hover-color);
+  }
+
+  .group-toggle-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    user-select: none;
+  }
 `;
 
 export class TableGroup extends SignalWatcher(
@@ -68,9 +104,32 @@ export class TableGroup extends SignalWatcher(
 ) {
   static override styles = styles;
 
+  collapsed$ = signal(false);
+
+  private storageLoaded = false;
+
+  private _loadCollapsedState() {
+    if (this.storageLoaded) return;
+    this.storageLoaded = true;
+    const view = this.tableViewLogic?.view;
+    if (!view) return;
+    const value = getCollapsedState(view.id, this.group?.key ?? 'all');
+    this.collapsed$.value = value;
+  }
+
+  private readonly _toggleCollapse = (e?: MouseEvent) => {
+    e?.stopPropagation();
+    const next = !this.collapsed$.value;
+    this.collapsed$.value = next;
+    const view = this.tableViewLogic?.view;
+    if (view) {
+      setCollapsedState(view.id, this.group?.key ?? 'all', next);
+    }
+  };
+
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
-    const selectionController = this.viewEle.selectionController;
+    const selectionController = this.tableViewLogic.selectionController;
     selectionController.selection = undefined;
     requestAnimationFrame(() => {
       const index = this.view.properties$.value.findIndex(
@@ -84,12 +143,13 @@ export class TableGroup extends SignalWatcher(
         },
         isEditing: true,
       });
+      this.requestUpdate();
     });
   };
 
   private readonly clickAddRowInStart = () => {
     this.view.rowAdd('start', this.group?.key);
-    const selectionController = this.viewEle.selectionController;
+    const selectionController = this.tableViewLogic.selectionController;
     selectionController.selection = undefined;
     requestAnimationFrame(() => {
       const index = this.view.properties$.value.findIndex(
@@ -103,6 +163,7 @@ export class TableGroup extends SignalWatcher(
         },
         isEditing: true,
       });
+      this.requestUpdate();
     });
   };
 
@@ -117,15 +178,16 @@ export class TableGroup extends SignalWatcher(
         name: 'Ungroup',
         hide: () => group.value == null,
         select: () => {
-          group.rows.forEach(id => {
-            group.manager.removeFromGroup(id, group.key);
+          group.rows.forEach(row => {
+            group.manager.removeFromGroup(row.rowId, group.key);
           });
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
-          this.view.rowDelete(group.rows);
+          this.view.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
@@ -135,10 +197,32 @@ export class TableGroup extends SignalWatcher(
     if (!this.group) {
       return null;
     }
+
     return html`
       <div
-        style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 12px;max-width: 400px"
+        style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 8px;max-width: 400px"
       >
+        <div
+          class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
+          role="button"
+          aria-expanded=${this.collapsed$.value ? 'false' : 'true'}
+          aria-label=${this.collapsed$.value
+            ? 'Expand group'
+            : 'Collapse group'}
+          tabindex="0"
+          @click=${this._toggleCollapse}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this._toggleCollapse();
+            }
+          }}
+        >
+          ${this.collapsed$.value
+            ? ToggleRightIcon({ width: '16px', height: '16px' })
+            : ToggleDownIcon({ width: '16px', height: '16px' })}
+        </div>
+
         ${GroupTitle(this.group, {
           readonly: this.view.readonly$.value,
           clickAdd: this.clickAddRowInStart,
@@ -149,10 +233,7 @@ export class TableGroup extends SignalWatcher(
   };
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor view!: TableSingleView;
+  accessor group: Group | undefined = undefined;
 
   dndContext = createDndContext({
     activators: defaultActivators,
@@ -173,7 +254,7 @@ export class TableGroup extends SignalWatcher(
         const overIndex = this.view.properties$.value.findIndex(
           data => data.id === over.id
         );
-        this.view.propertyMove(active.id, {
+        this.view.propertyGetOrCreate(active.id).move({
           before: activeIndex > overIndex,
           id: over.id,
         });
@@ -181,11 +262,12 @@ export class TableGroup extends SignalWatcher(
     },
     collisionDetection: linearMove(true),
     createOverlay: active => {
-      const column = this.view.propertyGet(active.id);
+      const column = this.view.propertyGetOrCreate(active.id);
       const preview = new DataViewColumnPreview();
       preview.column = column;
       preview.group = this.group;
       preview.container = this;
+      preview.tableViewLogic = this.tableViewLogic;
       preview.style.position = 'absolute';
       preview.style.zIndex = '999';
       const scale = this.dndContext.scale$.value;
@@ -241,23 +323,22 @@ export class TableGroup extends SignalWatcher(
     return this.group?.rows ?? this.view.rows$.value;
   }
 
-  private renderRows(ids: string[]) {
+  private renderRows(rows: Row[]) {
     return html`
       <affine-database-column-header
-        .renderGroupHeader="${this.renderGroupHeader}"
-        .tableViewManager="${this.view}"
+        .renderGroupHeader=${this.renderGroupHeader}
+        .tableViewLogic=${this.tableViewLogic}
       ></affine-database-column-header>
       <div class="affine-database-block-rows">
         ${repeat(
-          ids,
-          id => id,
-          (id, idx) => {
+          rows,
+          row => row.rowId,
+          (row, idx) => {
             return html` <data-view-table-row
               data-row-index="${idx}"
-              data-row-id="${id}"
-              .dataViewEle="${this.dataViewEle}"
-              .view="${this.view}"
-              .rowId="${id}"
+              data-row-id="${row.rowId}"
+              .tableViewLogic="${this.tableViewLogic}"
+              .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></data-view-table-row>`;
           }
@@ -277,28 +358,46 @@ export class TableGroup extends SignalWatcher(
               ${PlusIcon()}<span style="font-size: 12px">New Record</span>
             </div>
           </div>`}
-      <affine-database-column-stats .view="${this.view}" .group="${this.group}">
+      <affine-database-column-stats
+        .tableViewLogic="${this.tableViewLogic}"
+        .group="${this.group}"
+      >
       </affine-database-column-stats>
     `;
   }
 
+  override willUpdate(changed: Map<PropertyKey, unknown>): void {
+    super.willUpdate(changed);
+    if (
+      !this.storageLoaded &&
+      (changed.has('group') || changed.has('tableViewLogic'))
+    ) {
+      this._loadCollapsedState();
+    }
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
+    this._loadCollapsedState();
     this.showIndicator();
   }
 
   override render() {
-    return this.renderRows(this.rows);
+    return html`
+      ${this.collapsed$.value ? this.renderGroupHeader() : nothing}
+      ${this.collapsed$.value ? nothing : this.renderRows(this.rows)}
+    `;
   }
-
-  @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
 
   @query('.affine-database-block-rows')
   accessor rowsContainer: HTMLElement | null = null;
 
   @property({ attribute: false })
-  accessor viewEle!: DataViewTable;
+  accessor tableViewLogic!: TableViewUILogic;
+
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

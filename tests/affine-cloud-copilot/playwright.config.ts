@@ -29,7 +29,6 @@ const config: PlaywrightTestConfig = {
   webServer: [
     {
       command: 'yarn run -T affine dev -p @affine/web',
-      port: 8080,
       stdout: 'ignore',
       stderr: 'ignore',
       timeout: 120 * 1000,
@@ -37,10 +36,10 @@ const config: PlaywrightTestConfig = {
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
       },
+      url: 'http://localhost:8080',
     },
     {
       command: 'yarn run -T affine dev -p @affine/server',
-      port: 3010,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       stdout: 'ignore',
@@ -60,6 +59,7 @@ const config: PlaywrightTestConfig = {
         MAILER_USER: 'noreply@toeverything.info',
         MAILER_PASSWORD: 'affine',
       },
+      url: 'http://localhost:3010/graphql',
     },
   ],
 };

@@ -10,6 +10,7 @@ import { NoteSlashMenuConfigExtension } from './configs/slash-menu';
 import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
 import { EdgelessClipboardNoteConfig } from './edgeless-clipboard-config';
 import { effects } from './effects';
+import { EdgelessNoteInteraction } from './note-edgeless-block';
 import { NoteKeymapExtension } from './note-keymap';
 
 const flavour = NoteBlockSchema.model.flavour;
@@ -38,6 +39,7 @@ export class NoteViewExtension extends ViewExtensionProvider {
       );
       context.register(createBuiltinToolbarConfigExtension(flavour));
       context.register(EdgelessClipboardNoteConfig);
+      context.register(EdgelessNoteInteraction);
     } else {
       context.register(BlockViewExtension(flavour, literal`affine-note`));
     }

@@ -7,6 +7,7 @@ import path from 'node:path';
 import { shell } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
+import { openExternalSafely } from '../security/open-external';
 import type { NamespaceHandlers } from '../type';
 import {
   askForMeetingPermission,
@@ -77,18 +78,19 @@ export const recordingHandlers = {
   checkMeetingPermissions: async () => {
     return checkMeetingPermissions();
   },
-  askForMeetingPermission: async (_, type: 'microphone') => {
+  askForMeetingPermission: async (_, type: 'screen' | 'microphone') => {
     return askForMeetingPermission(type);
   },
   showRecordingPermissionSetting: async (_, type: 'screen' | 'microphone') => {
-    const urlMap = {
-      screen: 'Privacy_ScreenCapture',
-      microphone: 'Privacy_Microphone',
-    };
     if (isMacOS()) {
-      return shell.openExternal(
-        `x-apple.systempreferences:com.apple.preference.security?${urlMap[type]}`
-      );
+      const urlMap = {
+        screen: 'Privacy_ScreenCapture',
+        microphone: 'Privacy_Microphone',
+      };
+      const url = `x-apple.systempreferences:com.apple.preference.security?${urlMap[type]}`;
+      return openExternalSafely(url, {
+        additionalProtocols: ['x-apple.systempreferences:'],
+      });
     }
     // this only available on MacOS
     return false;

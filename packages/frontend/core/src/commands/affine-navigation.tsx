@@ -2,25 +2,24 @@ import type { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Workspace } from '@blocksuite/affine/store';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
-import type { createStore } from 'jotai';
 
-import { openWorkspaceListModalAtom } from '../components/atoms';
 import type { useNavigateHelper } from '../components/hooks/use-navigate-helper';
 import type { WorkspaceDialogService } from '../modules/dialogs';
+import type { WorkbenchService } from '../modules/workbench';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineNavigationCommands({
   t,
-  store,
   docCollection,
   navigationHelper,
   workspaceDialogService,
+  workbenchService,
 }: {
   t: ReturnType<typeof useI18n>;
-  store: ReturnType<typeof createStore>;
   navigationHelper: ReturnType<typeof useNavigateHelper>;
   docCollection: Workspace;
   workspaceDialogService: WorkspaceDialogService;
+  workbenchService?: WorkbenchService;
 }) {
   const unsubs: Array<() => void> = [];
   unsubs.push(
@@ -82,7 +81,7 @@ export function registerAffineNavigationCommands({
           to: 'workspace',
         });
 
-        store.set(openWorkspaceListModalAtom, true);
+        workbenchService?.workbench.openWorkspaceSelector();
       },
     })
   );

@@ -5,10 +5,8 @@ import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
-import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
-import { createEmptyCollection } from '../../page-list';
 import { ActionButton } from './action-button';
 import collectionListDark from './assets/collection-list.dark.png';
 import collectionListLight from './assets/collection-list.light.png';
@@ -39,8 +37,7 @@ export const EmptyCollections = (props: UniversalEmptyProps) => {
         variant: 'primary',
       },
       onConfirm(name) {
-        const id = nanoid();
-        collectionService.addCollection(createEmptyCollection(id, { name }));
+        const id = collectionService.createCollection({ name });
         navigateHelper.jumpToCollection(currentWorkspace.id, id);
       },
     });

@@ -1,24 +1,11 @@
-import { CalloutBlockModel } from '@blocksuite/affine-model';
 import { focusBlockEnd } from '@blocksuite/affine-shared/commands';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
-import {
-  findAncestorModel,
-  isInsideBlockByFlavour,
-  matchModels,
-} from '@blocksuite/affine-shared/utils';
+import { isInsideBlockByFlavour } from '@blocksuite/affine-shared/utils';
 import { type SlashMenuConfig } from '@blocksuite/affine-widget-slash-menu';
 import { FontIcon } from '@blocksuite/icons/lit';
 
 import { calloutTooltip } from './tooltips';
 
 export const calloutSlashMenuConfig: SlashMenuConfig = {
-  disableWhen: ({ model }) => {
-    return (
-      findAncestorModel(model, ancestor =>
-        matchModels(ancestor, [CalloutBlockModel])
-      ) !== null
-    );
-  },
   items: [
     {
       name: 'Callout',
@@ -30,22 +17,28 @@ export const calloutSlashMenuConfig: SlashMenuConfig = {
       },
       searchAlias: ['callout'],
       group: '0_Basic@9',
-      when: ({ std, model }) => {
-        return (
-          std.get(FeatureFlagService).getFlag('enable_callout') &&
-          !isInsideBlockByFlavour(model.doc, model, 'affine:edgeless-text')
+      when: ({ model }) => {
+        return !isInsideBlockByFlavour(
+          model.store,
+          model,
+          'affine:edgeless-text'
         );
       },
       action: ({ model, std }) => {
-        const { doc } = model;
-        const parent = doc.getParent(model);
+        const { store } = model;
+        const parent = store.getParent(model);
         if (!parent) return;
 
         const index = parent.children.indexOf(model);
         if (index === -1) return;
-        const calloutId = doc.addBlock('affine:callout', {}, parent, index + 1);
+        const calloutId = store.addBlock(
+          'affine:callout',
+          {},
+          parent,
+          index + 1
+        );
         if (!calloutId) return;
-        const paragraphId = doc.addBlock('affine:paragraph', {}, calloutId);
+        const paragraphId = store.addBlock('affine:paragraph', {}, calloutId);
         if (!paragraphId) return;
         std.host.updateComplete
           .then(() => {

@@ -19,22 +19,22 @@ const styles = css`
 export class DataViewHeaderToolsAddRow extends WidgetBase {
   static override styles = styles;
 
-  private readonly _onAddNewRecord = () => {
-    if (this.readonly) return;
-    this.viewMethods.addRow?.('start');
+  private readonly onAddNewRecord = () => {
+    if (this.readonly$.value) return;
+    this.dataViewLogic.addRow?.('start');
   };
 
-  private get readonly() {
-    return this.view.readonly$.value;
+  private get readonly$() {
+    return this.view.readonly$;
   }
 
   override render() {
-    if (this.readonly) {
+    if (this.readonly$.value) {
       return;
     }
     return html` <data-view-component-button
       class="affine-database-toolbar-item new-record"
-      .onClick="${this._onAddNewRecord}"
+      .onClick="${this.onAddNewRecord}"
       .icon="${PlusIcon()}"
       .text="${IS_MOBILE
         ? html`<span style="font-weight: 500">New</span>`

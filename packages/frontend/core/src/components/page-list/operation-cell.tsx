@@ -16,7 +16,6 @@ import {
 } from '@affine/core/modules/favorite';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { DocMeta } from '@blocksuite/affine/store';
@@ -38,8 +37,10 @@ import { useLiveData, useService, useServices } from '@toeverything/infra';
 import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
-import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
-import type { CollectionService } from '../../modules/collection';
+import {
+  type CollectionMeta,
+  CollectionService,
+} from '../../modules/collection';
 import { useGuard } from '../guard';
 import { IsFavoriteIcon } from '../pure/icons';
 import { FavoriteTag } from './components/favorite-tag';
@@ -328,31 +329,28 @@ export const TrashOperationCell = ({
 };
 
 export interface CollectionOperationCellProps {
-  collection: Collection;
-  info: DeleteCollectionInfo;
-  service: CollectionService;
+  collectionMeta: CollectionMeta;
 }
 
 export const CollectionOperationCell = ({
-  collection,
-  service,
-  info,
+  collectionMeta,
 }: CollectionOperationCellProps) => {
   const t = useI18n();
   const {
     compatibleFavoriteItemsAdapter: favAdapter,
-    workspaceService,
     workspaceDialogService,
+    collectionService,
+    docsService,
   } = useServices({
     CompatibleFavoriteItemsAdapter,
-    WorkspaceService,
     WorkspaceDialogService,
+    CollectionService,
+    DocsService,
   });
-  const docCollection = workspaceService.workspace.docCollection;
-  const { createPage } = usePageHelper(docCollection);
+  const collectionId = collectionMeta.id;
   const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(
-    favAdapter.isFavorite$(collection.id, 'collection')
+    favAdapter.isFavorite$(collectionId, 'collection')
   );
 
   const { openPromptModal } = usePromptModal();
@@ -377,44 +375,43 @@ export const CollectionOperationCell = ({
           variant: 'primary',
         },
         onConfirm(name) {
-          service.updateCollection(collection.id, () => ({
-            ...collection,
+          collectionService.updateCollection(collectionId, {
             name,
-          }));
+          });
         },
       });
     },
-    [collection, handlePropagation, openPromptModal, service, t]
+    [collectionId, collectionService, handlePropagation, openPromptModal, t]
   );
 
   const handleEdit = useCallback(
     (event: MouseEvent) => {
       handlePropagation(event);
       workspaceDialogService.open('collection-editor', {
-        collectionId: collection.id,
+        collectionId: collectionId,
       });
     },
-    [handlePropagation, workspaceDialogService, collection.id]
+    [handlePropagation, workspaceDialogService, collectionId]
   );
 
   const handleDelete = useCallback(() => {
-    return service.deleteCollection(info, collection.id);
-  }, [service, info, collection]);
+    return collectionService.deleteCollection(collectionId);
+  }, [collectionId, collectionService]);
 
   const onToggleFavoriteCollection = useCallback(() => {
-    const status = favAdapter.isFavorite(collection.id, 'collection');
-    favAdapter.toggle(collection.id, 'collection');
+    const status = favAdapter.isFavorite(collectionId, 'collection');
+    favAdapter.toggle(collectionId, 'collection');
     toast(
       status
         ? t['com.affine.toastMessage.removedFavorites']()
         : t['com.affine.toastMessage.addedFavorites']()
     );
-  }, [favAdapter, collection.id, t]);
+  }, [favAdapter, collectionId, t]);
 
   const createAndAddDocument = useCallback(() => {
-    const newDoc = createPage();
-    service.addPageToCollection(collection.id, newDoc.id);
-  }, [collection.id, createPage, service]);
+    const newDoc = docsService.createDoc();
+    collectionService.addDocToCollection(collectionId, newDoc.id);
+  }, [docsService, collectionService, collectionId]);
 
   const onConfirmAddDocToCollection = useCallback(() => {
     openConfirmModal({

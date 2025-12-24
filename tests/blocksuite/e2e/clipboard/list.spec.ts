@@ -499,7 +499,7 @@ test(scoped`paste note block with background`, async ({ page }) => {
   await switchEditorMode(page);
   await selectNoteInEdgeless(page, ids.noteId);
 
-  await triggerComponentToolbarAction(page, 'changeNoteColor');
+  await triggerComponentToolbarAction(page, 'changeNoteStyle');
   await changeEdgelessNoteBackground(page, 'White');
   await assertEdgelessNoteBackground(
     page,

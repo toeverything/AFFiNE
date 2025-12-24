@@ -4,6 +4,7 @@ import type {
 } from '@affine/nbstore/worker/client';
 import { Entity } from '@toeverything/infra';
 
+import type { FeatureFlagService } from '../../feature-flag';
 import type { NbstoreService } from '../../storage';
 import { WorkspaceEngineBeforeStart } from '../events';
 import type { WorkspaceService } from '../services/workspace';
@@ -17,7 +18,8 @@ export class WorkspaceEngine extends Entity<{
 
   constructor(
     private readonly workspaceService: WorkspaceService,
-    private readonly nbstoreService: NbstoreService
+    private readonly nbstoreService: NbstoreService,
+    private readonly featureFlagService: FeatureFlagService
   ) {
     super();
   }
@@ -61,6 +63,14 @@ export class WorkspaceEngine extends Entity<{
         `workspace:${this.workspaceService.workspace.flavour}:${this.workspaceService.workspace.id}`,
       this.props.engineWorkerInitOptions
     );
+    if (
+      this.featureFlagService.flags.enable_battery_save_mode.value &&
+      this.workspaceService.workspace.flavour !== 'local'
+    ) {
+      store.enableBatterySaveMode().catch(err => {
+        console.error('error enabling battery save mode', err);
+      });
+    }
     this.client = store;
     this.disposables.push(dispose);
     this.eventBus.emit(WorkspaceEngineBeforeStart, this);
@@ -68,6 +78,7 @@ export class WorkspaceEngine extends Entity<{
     const rootDoc = this.workspaceService.workspace.docCollection.doc;
     // priority load root doc
     this.doc.addPriority(rootDoc.guid, 100);
+    this.indexer.addPriority(rootDoc.guid, 100);
     this.doc.start();
     this.disposables.push(() => this.doc.stop());
 

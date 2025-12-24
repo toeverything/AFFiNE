@@ -1,7 +1,6 @@
 package app.affine.pro.plugin
 
 import android.annotation.SuppressLint
-import app.affine.pro.CapacitorConfig
 import app.affine.pro.service.CookieStore
 import app.affine.pro.service.OkHttp
 import com.getcapacitor.JSObject
@@ -46,7 +45,6 @@ class AuthPlugin : Plugin() {
                 val endpoint = call.getStringEnsure("endpoint")
                 val request = Request.Builder()
                     .url("$endpoint/api/auth/sign-out")
-                    .header("x-affine-version", CapacitorConfig.getAffineVersion())
                     .get()
                     .build()
                 OkHttp.client.newCall(request).executeAsync().use { response ->
@@ -88,7 +86,6 @@ class AuthPlugin : Plugin() {
 
                         val requestBuilder = Request.Builder()
                             .url("$endpoint/api/auth/sign-in")
-                            .header("x-affine-version", CapacitorConfig.getAffineVersion())
                             .post(body)
                         if (verifyToken != null) {
                             requestBuilder.addHeader("x-captcha-token", verifyToken)
@@ -114,7 +111,6 @@ class AuthPlugin : Plugin() {
 
                         Request.Builder()
                             .url("$endpoint/api/oauth/callback")
-                            .header("x-affine-version", CapacitorConfig.getAffineVersion())
                             .post(body)
                             .build()
                     }
@@ -134,7 +130,6 @@ class AuthPlugin : Plugin() {
 
                         Request.Builder()
                             .url("$endpoint/api/auth/magic-link")
-                            .header("x-affine-version", CapacitorConfig.getAffineVersion())
                             .post(body)
                             .build()
                     }

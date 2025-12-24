@@ -3,6 +3,10 @@ import {
   type ImageBlockProps,
   MAX_IMAGE_WIDTH,
 } from '@blocksuite/affine-model';
+import {
+  EMBED_CARD_HEIGHT,
+  EMBED_CARD_WIDTH,
+} from '@blocksuite/affine-shared/consts';
 import { FileSizeLimitProvider } from '@blocksuite/affine-shared/services';
 import {
   readImageSize,
@@ -17,6 +21,7 @@ import type { ExtensionType } from '@blocksuite/store';
 import { Extension } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 import { html } from 'lit';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { getAttachmentBlob } from './utils';
 
@@ -34,9 +39,22 @@ export type AttachmentEmbedConfig = {
     std: BlockStdScope
   ) => Promise<void> | void;
   /**
-   * The template will be used to render the embed view.
+   * Renders the embed view.
    */
-  template?: (model: AttachmentBlockModel, blobUrl: string) => TemplateResult;
+  render?: (
+    model: AttachmentBlockModel,
+    blobUrl: string
+  ) => TemplateResult | null;
+
+  /**
+   * Should show status when turned on.
+   */
+  shouldShowStatus?: boolean;
+
+  /**
+   * Should block type conversion be required.
+   */
+  shouldBeConverted?: boolean;
 };
 
 // Single embed config.
@@ -97,39 +115,53 @@ export class AttachmentEmbedService extends Extension {
   // Converts to embed view.
   convertTo(model: AttachmentBlockModel, maxFileSize = this._maxFileSize) {
     const config = this.values.find(config => config.check(model, maxFileSize));
-    if (!config?.action) {
-      model.doc.updateBlock(model, { embed: true });
+
+    if (config?.action) {
+      config.action(model, this.std)?.catch(console.error);
       return;
     }
-    config.action(model, this.std)?.catch(console.error);
+
+    model.store.updateBlock(model, { embed: true });
   }
 
   embedded(model: AttachmentBlockModel, maxFileSize = this._maxFileSize) {
     return this.values.some(config => config.check(model, maxFileSize));
   }
 
-  render(
+  getRender(model: AttachmentBlockModel, maxFileSize = this._maxFileSize) {
+    return (
+      this.values.find(config => config.check(model, maxFileSize))?.render ??
+      null
+    );
+  }
+
+  shouldShowStatus(
     model: AttachmentBlockModel,
-    blobUrl?: string,
     maxFileSize = this._maxFileSize
   ) {
-    if (!model.props.embed || !blobUrl) return;
+    return (
+      this.values.find(config => config.check(model, maxFileSize))
+        ?.shouldShowStatus ?? false
+    );
+  }
 
-    const config = this.values.find(config => config.check(model, maxFileSize));
-    if (!config || !config.template) {
-      console.error('No embed view template found!', model, model.props.type);
-      return;
-    }
-
-    return config.template(model, blobUrl);
+  shouldBeConverted(
+    model: AttachmentBlockModel,
+    maxFileSize = this._maxFileSize
+  ) {
+    return (
+      this.values.find(config => config.check(model, maxFileSize))
+        ?.shouldBeConverted ?? false
+    );
   }
 }
 
 const embedConfig: AttachmentEmbedConfig[] = [
   {
     name: 'image',
+    shouldBeConverted: true,
     check: model =>
-      model.doc.schema.flavourSchemaMap.has('affine:image') &&
+      model.store.schema.flavourSchemaMap.has('affine:image') &&
       model.props.type.startsWith('image/'),
     async action(model, std) {
       const component = std.view.getBlock(model.id);
@@ -140,16 +172,30 @@ const embedConfig: AttachmentEmbedConfig[] = [
   },
   {
     name: 'pdf',
+    shouldShowStatus: true,
     check: (model, maxFileSize) =>
       model.props.type === 'application/pdf' && model.props.size <= maxFileSize,
-    template: (_, blobUrl) => {
+    action: model => {
+      const bound = Bound.deserialize(model.props.xywh);
+      bound.w = EMBED_CARD_WIDTH.pdf;
+      bound.h = EMBED_CARD_HEIGHT.pdf;
+      model.store.updateBlock(model, {
+        embed: true,
+        style: 'pdf',
+        xywh: bound.serialize(),
+      });
+    },
+    render: (_, blobUrl) => {
       // More options: https://tinytip.co/tips/html-pdf-params/
       // https://chromium.googlesource.com/chromium/src/+/refs/tags/121.0.6153.1/chrome/browser/resources/pdf/open_pdf_params_parser.ts
       const parameters = '#toolbar=0';
       return html`
         <iframe
-          style="width: 100%; color-scheme: auto;"
-          height="480"
+          style=${styleMap({
+            width: '100%',
+            minHeight: '480px',
+            colorScheme: 'auto',
+          })}
           src=${blobUrl + parameters}
           loading="lazy"
           scrolling="no"
@@ -157,6 +203,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
           allowTransparency
           allowfullscreen
           type="application/pdf"
+          credentialless
         ></iframe>
         <div class="affine-attachment-embed-event-mask"></div>
       `;
@@ -164,23 +211,44 @@ const embedConfig: AttachmentEmbedConfig[] = [
   },
   {
     name: 'video',
+    shouldShowStatus: true,
     check: (model, maxFileSize) =>
       model.props.type.startsWith('video/') && model.props.size <= maxFileSize,
-    template: (_, blobUrl) =>
+    action: model => {
+      const bound = Bound.deserialize(model.props.xywh);
+      bound.w = EMBED_CARD_WIDTH.video;
+      bound.h = EMBED_CARD_HEIGHT.video;
+      model.store.updateBlock(model, {
+        embed: true,
+        style: 'video',
+        xywh: bound.serialize(),
+      });
+    },
+    render: (_, blobUrl) =>
       html`<video
-        style="max-height: max-content;"
-        width="100%;"
-        height="480"
-        controls
+        style=${styleMap({
+          display: 'flex',
+          objectFit: 'cover',
+          backgroundSize: 'cover',
+          width: '100%',
+          height: '100%',
+        })}
         src=${blobUrl}
+        width="100%"
+        height="100%"
+        controls
       ></video>`,
   },
   {
     name: 'audio',
     check: (model, maxFileSize) =>
       model.props.type.startsWith('audio/') && model.props.size <= maxFileSize,
-    template: (_, blobUrl) =>
-      html`<audio controls src=${blobUrl} style="margin: 4px;"></audio>`,
+    render: (_, blobUrl) =>
+      html`<audio
+        style=${styleMap({ margin: '4px' })}
+        src=${blobUrl}
+        controls
+      ></audio>`,
   },
 ];
 
@@ -188,7 +256,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
  * Turn the attachment block into an image block.
  */
 async function turnIntoImageBlock(model: AttachmentBlockModel) {
-  if (!model.doc.schema.flavourSchemaMap.has('affine:image')) {
+  if (!model.store.schema.flavourSchemaMap.has('affine:image')) {
     console.error('The image flavour is not supported!');
     return;
   }

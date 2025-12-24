@@ -1,14 +1,8 @@
 // manually synced with packages/backend/server/src/data/migrations/utils/prompts.ts
 // TODO(@Peng): automate this
 export const promptKeys = [
-  'debug:action:dalle3',
-  'debug:action:gpt-image-1',
-  'debug:action:fal-sd15',
-  'debug:action:fal-upscaler',
-  'debug:action:fal-remove-bg',
-  'debug:action:fal-face-to-sticker',
+  // text actions
   'Chat With AFFiNE AI',
-  'Search With AFFiNE AI',
   'Summary',
   'Summary as title',
   'Generate a caption',
@@ -36,12 +30,18 @@ export const promptKeys = [
   'Make it longer',
   'Make it shorter',
   'Continue writing',
+  // image actions
+  'Generate image',
+  'Convert to Anime style',
+  'Convert to Clay style',
+  'Convert to Pixel style',
+  'Convert to Sketch style',
+  'Convert to sticker',
+  'Upscale image',
+  'Remove background',
+  // workflows
   'workflow:presentation',
   'workflow:brainstorm',
-  'workflow:image-sketch',
-  'workflow:image-clay',
-  'workflow:image-anime',
-  'workflow:image-pixel',
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];

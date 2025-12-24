@@ -18,11 +18,11 @@ export const embedLoomSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@9',
       when: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:embed-loom'),
+        model.store.schema.flavourSchemaMap.has('affine:embed-loom'),
       action: ({ std, model }) => {
         (async () => {
           const { host } = std;
-          const parentModel = host.doc.getParent(model);
+          const parentModel = host.store.getParent(model);
           if (!parentModel) {
             return;
           }

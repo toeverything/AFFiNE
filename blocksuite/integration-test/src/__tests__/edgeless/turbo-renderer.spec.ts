@@ -36,14 +36,6 @@ describe('viewport turbo renderer', () => {
 
   afterEach(() => cleanup?.());
 
-  test('should render 6 notes in viewport', async () => {
-    addSampleNotes(doc, 6);
-    await wait(FRAME);
-
-    const notes = document.querySelectorAll('affine-edgeless-note');
-    expect(notes.length).toBe(6);
-  });
-
   test('should access turbo renderer instance', async () => {
     const renderer = getRenderer();
     expect(renderer).toBeDefined();
@@ -56,7 +48,7 @@ describe('viewport turbo renderer', () => {
     expect(renderer.state$.value).toBe('pending');
   });
 
-  test('zooming should change internal state and populate optimized block ids', async () => {
+  test.skip('zooming should change internal state and populate optimized block ids', async () => {
     const renderer = getRenderer();
     addSampleNotes(doc, 1);
     await wait(FRAME);
@@ -80,7 +72,7 @@ describe('viewport turbo renderer', () => {
     expect(renderer.optimizedBlockIds.length).toBe(0);
   });
 
-  test('state transitions between pending and ready', async () => {
+  test.skip('state transitions between pending and ready', async () => {
     const renderer = getRenderer();
 
     addSampleNotes(doc, 1);

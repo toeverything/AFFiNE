@@ -362,7 +362,7 @@ const ImagePreviewModalImpl = ({
       index,
       url: blobUrl,
       caption: blockModel.props.caption,
-      onDelete: !blockModel.doc.readonly
+      onDelete: !blockModel.store.readonly
         ? () => {
             handleDelete();
           }

@@ -72,7 +72,7 @@ test('default to edgeless by editor header items', async ({ page }) => {
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
   const docItem = page.locator(
-    `[data-testid="page-list-item"]:has-text("this is a new page")`
+    `[data-testid="doc-list-item"]:has-text("this is a new page")`
   );
   expect(docItem).not.toBeUndefined();
   await docItem.click();

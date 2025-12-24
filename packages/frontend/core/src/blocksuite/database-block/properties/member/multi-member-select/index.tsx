@@ -16,6 +16,7 @@ import {
 
 import { useSignalValue } from '../../../../../modules/doc-info/utils';
 import { Spinner } from '../../../components/loading';
+import { useMemberInfo } from '../../../hooks/use-member-info';
 import * as styles from './style.css';
 
 type BaseOptions = {
@@ -47,10 +48,24 @@ class MemberManager {
   selectedMemberId = signal<string | null>(null);
 
   filteredMembers = computed(() => {
-    return this.ops.userListService.users$.value.filter(
-      member =>
-        !member.removed && !this.selectedMembers.value.includes(member.id)
-    );
+    const isSearching = this.userListService.searchText$.value !== '';
+    if (isSearching) {
+      return this.ops.userListService.users$.value.filter(
+        member =>
+          !member.removed && !this.selectedMembers.value.includes(member.id)
+      );
+    } else {
+      const currentUser = this.ops.userService.currentUserInfo$.value;
+      return [
+        ...(currentUser ? [currentUser] : []),
+        ...this.ops.userListService.users$.value.filter(
+          member => member.id !== currentUser?.id
+        ),
+      ].filter(
+        member =>
+          !member.removed && !this.selectedMembers.value.includes(member.id)
+      );
+    }
   });
 
   constructor(private readonly ops: MemberManagerOptions) {}
@@ -172,13 +187,6 @@ class MemberManager {
   };
 }
 
-export const useMemberInfo = (id: string, memberManager: MemberManager) => {
-  useEffect(() => {
-    memberManager.userService?.revalidateUserInfo(id);
-  }, [id, memberManager.userService]);
-  return useSignalValue(memberManager.userService?.userInfo$(id));
-};
-
 export const MemberListItem = (props: {
   member: ExistedUserInfo;
   memberManager: MemberManager;
@@ -205,7 +213,11 @@ export const MemberListItem = (props: {
       data-selected={isSelected ? 'true' : 'false'}
     >
       <div className={styles.avatar}>
-        <Avatar url={member.avatar} size={24} />
+        <Avatar
+          name={member.removed ? undefined : (member.name ?? undefined)}
+          url={member.avatar}
+          size={24}
+        />
       </div>
       <div className={styles.memberName}>{member.name}</div>
     </div>
@@ -221,13 +233,14 @@ export const MemberPreview = ({
   memberManager: MemberManager;
   onDelete?: () => void;
 }) => {
-  const userInfo = useMemberInfo(memberId, memberManager);
+  const userInfo = useMemberInfo(memberId, memberManager.userService);
   if (!userInfo) {
     return null;
   }
   return (
     <div className={styles.memberPreviewContainer}>
       <Avatar
+        name={userInfo.removed ? undefined : (userInfo.name ?? undefined)}
         className={styles.avatar}
         url={!userInfo.removed ? userInfo.avatar : undefined}
         size={16}

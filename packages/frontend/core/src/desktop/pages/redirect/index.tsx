@@ -14,6 +14,7 @@ const trustedDomain = [
 ];
 
 const logger = new DebugLogger('redirect_proxy');
+const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 
 /**
  * /redirect-proxy page
@@ -32,6 +33,11 @@ export const loader: LoaderFunction = async ({ request }) => {
   try {
     const target = new URL(redirectUri);
 
+    if (!ALLOWED_PROTOCOLS.has(target.protocol)) {
+      logger.warn('Blocked redirect with disallowed protocol', target.protocol);
+      return { allow: false };
+    }
+
     if (
       target.hostname === window.location.hostname ||
       trustedDomain.some(domain =>
@@ -46,7 +52,8 @@ export const loader: LoaderFunction = async ({ request }) => {
     return { allow: false };
   }
 
-  return { allow: true };
+  logger.warn('Blocked redirect to untrusted domain', redirectUri);
+  return { allow: false };
 };
 
 export const Component = () => {

@@ -5,8 +5,8 @@ import { TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import type { AppTabCustomFCProps } from './data';
 import { TabItem } from './tab-item';
+import type { AppTabCustomFCProps } from './type';
 
 export const AppTabJournal = ({ tab }: AppTabCustomFCProps) => {
   const workbench = useService(WorkbenchService).workbench;
@@ -19,9 +19,8 @@ export const AppTabJournal = ({ tab }: AppTabCustomFCProps) => {
   const JournalIcon = useLiveData(docDisplayMetaService.icon$(maybeDocId));
 
   const handleOpenToday = useCallback(() => {
-    const docId = journalService.ensureJournalByDate(new Date()).id;
-    workbench.openDoc({ docId, fromTab: 'true' }, { at: 'active' });
-  }, [journalService, workbench]);
+    workbench.open('/journals', { at: 'active' });
+  }, [workbench]);
 
   const Icon = journalDate ? JournalIcon : TodayIcon;
 

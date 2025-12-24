@@ -106,21 +106,27 @@ Get the signal for the readonly state of the store.
 
 #### Get Signature
 
-> **get** **root**(): `null` \| `BlockModel`\<`object`\>
+> **get** **root**(): `BlockModel`\<`object`\> \| `null`
 
 Get the root block of the store.
 
 ##### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 ***
 
 ### addBlock()
 
-> **addBlock**(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
+> **addBlock**\<`T`\>(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
 
 Creates and adds a new block to the store
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -132,7 +138,7 @@ The block's flavour (type)
 
 ##### blockProps
 
-`Partial`\<`BlockSysProps` & `Record`\<`string`, `unknown`\> & `Omit`\<`BlockProps`, `"flavour"`\>\> = `{}`
+`Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\> = `{}`
 
 Optional properties for the new block
 
@@ -140,7 +146,7 @@ Optional properties for the new block
 
 Optional parent block or parent block ID
 
-`null` | `string` | `BlockModel`\<`object`\>
+`string` | `BlockModel`\<`object`\> | `null`
 
 ##### parentIndex?
 
@@ -178,7 +184,7 @@ Array of blocks to add
 
 Optional parent block or parent block ID
 
-`null` | `string` | `BlockModel`\<`object`\>
+`string` | `BlockModel`\<`object`\> | `null`
 
 ##### parentIndex?
 
@@ -280,7 +286,7 @@ Array of all models
 
 ### getBlock()
 
-> **getBlock**(`id`): `undefined` \| `Block`
+> **getBlock**(`id`): `Block` \| `undefined`
 
 Gets a block by its ID
 
@@ -294,7 +300,7 @@ The block's ID
 
 #### Returns
 
-`undefined` \| `Block`
+`Block` \| `undefined`
 
 The block instance if found, undefined otherwise
 
@@ -302,7 +308,7 @@ The block instance if found, undefined otherwise
 
 ### getBlock$()
 
-> **getBlock$**(`id`): `undefined` \| `Block`
+> **getBlock$**(`id`): `Block` \| `undefined`
 
 Gets a block by its ID
 
@@ -316,7 +322,7 @@ The block's ID
 
 #### Returns
 
-`undefined` \| `Block`
+`Block` \| `undefined`
 
 The block instance in signal if found, undefined otherwise
 
@@ -346,7 +352,7 @@ Array of matching blocks
 
 ### getModelById()
 
-> **getModelById**\<`Model`\>(`id`): `null` \| `Model`
+> **getModelById**\<`Model`\>(`id`): `Model` \| `null`
 
 Get a model by its ID
 
@@ -366,7 +372,7 @@ The model's ID
 
 #### Returns
 
-`null` \| `Model`
+`Model` \| `null`
 
 The model instance if found, null otherwise
 
@@ -396,7 +402,7 @@ Array of matching models
 
 ### getNext()
 
-> **getNext**(`block`): `null` \| `BlockModel`\<`object`\>
+> **getNext**(`block`): `BlockModel`\<`object`\> \| `null`
 
 Get the next sibling block of a given block
 
@@ -410,7 +416,7 @@ Block model or block ID to find next sibling for
 
 #### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 The next sibling block model if found, null otherwise
 
@@ -440,7 +446,7 @@ Array of next sibling blocks if found, empty array otherwise
 
 ### getParent()
 
-> **getParent**(`target`): `null` \| `BlockModel`\<`object`\>
+> **getParent**(`target`): `BlockModel`\<`object`\> \| `null`
 
 Gets the parent block of a given block
 
@@ -454,7 +460,7 @@ Block model or block ID to find parent for
 
 #### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 The parent block model if found, null otherwise
 
@@ -462,7 +468,7 @@ The parent block model if found, null otherwise
 
 ### getPrev()
 
-> **getPrev**(`block`): `null` \| `BlockModel`\<`object`\>
+> **getPrev**(`block`): `BlockModel`\<`object`\> \| `null`
 
 Get the previous sibling block of a given block
 
@@ -476,7 +482,7 @@ Block model or block ID to find previous sibling for
 
 #### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 The previous sibling block model if found, null otherwise
 
@@ -550,7 +556,7 @@ The new parent block model
 
 Optional target sibling block model
 
-`null` | `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> | `null`
 
 ##### shouldInsertBeforeSibling
 
@@ -566,9 +572,15 @@ Optional flag to insert before sibling
 
 ### updateBlock()
 
-> **updateBlock**(`modelOrId`, `callBackOrProps`): `void`
+> **updateBlock**\<`T`\>(`modelOrId`, `callBackOrProps`): `void`
 
 Updates a block's properties or executes a callback in a transaction
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -576,13 +588,13 @@ Updates a block's properties or executes a callback in a transaction
 
 The block model or block ID to update
 
-`string` | `BlockModel`\<`object`\>
+`string` | `T`
 
 ##### callBackOrProps
 
 Either a callback function to execute or properties to update
 
-`Partial`\<`BlockProps`\> | () => `void`
+() => `void` | `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\>
 
 #### Returns
 
@@ -640,7 +652,7 @@ The extension instance
 
 #### Get Signature
 
-> **get** **getOptional**(): \<`T`\>(`identifier`, `options?`) => `null` \| `T`
+> **get** **getOptional**(): \<`T`\>(`identifier`, `options?`) => `T` \| `null`
 
 Optional get an extension instance from the store.
 The major difference between `get` and `getOptional` is that `getOptional` will not throw an error if the extension is not found.
@@ -655,7 +667,7 @@ const extension = store.getOptional(SomeExtension);
 
 The extension instance
 
-> \<`T`\>(`identifier`, `options?`): `null` \| `T`
+> \<`T`\>(`identifier`, `options?`): `T` \| `null`
 
 ###### Type Parameters
 
@@ -675,7 +687,7 @@ The extension instance
 
 ###### Returns
 
-`null` \| `T`
+`T` \| `null`
 
 ***
 
@@ -725,13 +737,13 @@ Check if the store can undo
 
 #### Get Signature
 
-> **get** **history**(): `UndoManager`
+> **get** **history**(): `HistoryExtension`
 
 Get the Y.UndoManager instance for current store.
 
 ##### Returns
 
-`UndoManager`
+`HistoryExtension`
 
 ***
 
@@ -1023,13 +1035,13 @@ Get the Doc instance for current store.
 
 #### Get Signature
 
-> **get** **schema**(): `Schema`
+> **get** **schema**(): [`Schema`](Schema.md)
 
-Get the Schema instance of the store.
+Get the [Schema](Schema.md) instance of the store.
 
 ##### Returns
 
-`Schema`
+[`Schema`](Schema.md)
 
 ***
 

@@ -104,7 +104,7 @@ export function bindKeymap(
   };
 }
 
-// In Android, the keypress event  dose not contain
+// In some IME of Android like, the keypress event  dose not contain
 // the information about what key is pressed. See
 // https://stackoverflow.com/a/68188679
 // https://stackoverflow.com/a/66724830

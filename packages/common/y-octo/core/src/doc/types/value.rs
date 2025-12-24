@@ -131,8 +131,8 @@ impl From<Doc> for Value {
 impl Display for Value {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Value::Any(any) => write!(f, "{}", any),
-      Value::Text(text) => write!(f, "{}", text),
+      Value::Any(any) => write!(f, "{any}"),
+      Value::Text(text) => write!(f, "{text}"),
       _ => write!(f, ""),
     }
   }

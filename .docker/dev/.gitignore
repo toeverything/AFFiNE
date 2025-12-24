@@ -1,3 +1,6 @@
 postgres
 .env
 compose.yml
+certs/*
+!certs/.gitkeep
+nginx/conf.d/*

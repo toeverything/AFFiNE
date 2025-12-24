@@ -23,6 +23,7 @@ import { effect } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { correctNumberedListsOrderToPrev } from './commands/utils.js';
@@ -39,22 +40,22 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     e.preventDefault();
 
     if (this.model.props.type === 'toggle') {
-      if (this.doc.readonly) {
+      if (this.store.readonly) {
         this._readonlyCollapsed = !this._readonlyCollapsed;
       } else {
-        this.doc.captureSync();
-        this.doc.updateBlock(this.model, {
+        this.store.captureSync();
+        this.store.updateBlock(this.model, {
           collapsed: !this.model.props.collapsed,
         });
       }
 
       return;
     } else if (this.model.props.type === 'todo') {
-      if (this.doc.readonly) return;
+      if (this.store.readonly) return;
 
-      this.doc.captureSync();
+      this.store.captureSync();
       const checkedPropObj = { checked: !this.model.props.checked };
-      this.doc.updateBlock(this.model, checkedPropObj);
+      this.store.updateBlock(this.model, checkedPropObj);
       if (this.model.props.checked) {
         const checkEl = this.querySelector('.affine-list-block__todo-prefix');
         if (checkEl) {
@@ -120,7 +121,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
         const order = this.model.props.order$.value;
         // old numbered list has no order
         if (type === 'numbered' && !Number.isInteger(order)) {
-          correctNumberedListsOrderToPrev(this.doc, this.model, false);
+          correctNumberedListsOrderToPrev(this.store, this.model, false);
         }
         // if list is not numbered, order should be null
         if (type !== 'numbered' && order !== null) {
@@ -138,11 +139,20 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
 
   override renderBlock(): TemplateResult<1> {
     const { model, _onClickIcon } = this;
-    const collapsed = this.doc.readonly
+    const widgets = html`${repeat(
+      Object.entries(this.widgets),
+      ([id]) => id,
+      ([_, widget]) => widget
+    )}`;
+    const collapsed = this.store.readonly
       ? this._readonlyCollapsed
       : model.props.collapsed;
 
     const listIcon = getListIcon(model, !collapsed, _onClickIcon);
+
+    const textAlignStyle = styleMap({
+      textAlign: this.model.props.textAlign$?.value,
+    });
 
     const children = html`<div
       class="affine-block-children-container"
@@ -155,7 +165,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     </div>`;
 
     return html`
-      <div class=${'affine-list-block-container'}>
+      <div class=${'affine-list-block-container'} style="${textAlignStyle}">
         <div
           class=${classMap({
             'affine-list-rich-text-wrapper': true,
@@ -169,11 +179,11 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
                 <blocksuite-toggle-button
                   .collapsed=${collapsed}
                   .updateCollapsed=${(value: boolean) => {
-                    if (this.doc.readonly) {
+                    if (this.store.readonly) {
                       this._readonlyCollapsed = value;
                     } else {
-                      this.doc.captureSync();
-                      this.doc.updateBlock(this.model, {
+                      this.store.captureSync();
+                      this.store.updateBlock(this.model, {
                         collapsed: value,
                       });
                     }
@@ -185,12 +195,12 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
           <rich-text
             .yText=${this.model.props.text.yText}
             .inlineEventSource=${this.topContenteditableElement ?? nothing}
-            .undoManager=${this.doc.history}
+            .undoManager=${this.store.history.undoManager}
             .attributeRenderer=${this.attributeRenderer}
             .attributesSchema=${this.attributesSchema}
             .markdownMatches=${this.inlineManager?.markdownMatches}
             .embedChecker=${this.embedChecker}
-            .readonly=${this.doc.readonly}
+            .readonly=${this.store.readonly}
             .inlineRangeProvider=${this._inlineRangeProvider}
             .enableClipboard=${false}
             .enableUndoRedo=${false}
@@ -199,7 +209,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
           ></rich-text>
         </div>
 
-        ${children}
+        ${children} ${widgets}
       </div>
     `;
   }

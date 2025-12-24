@@ -1,13 +1,10 @@
-import { getLoadingIconWith } from '@blocksuite/affine-components/icons';
-import type { ColorScheme, ImageBlockModel } from '@blocksuite/affine-model';
-import { humanFileSize } from '@blocksuite/affine-shared/utils';
+import type { ResolvedStateInfo } from '@blocksuite/affine-components/resource';
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { WithDisposable } from '@blocksuite/global/lit';
-import { BrokenImageIcon, ImageIcon } from '@blocksuite/icons/lit';
-import { modelContext, ShadowlessElement } from '@blocksuite/std';
-import { consume } from '@lit/context';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
+import { classMap } from 'lit/directives/class-map.js';
 
 export const SURFACE_IMAGE_CARD_WIDTH = 220;
 export const SURFACE_IMAGE_CARD_HEIGHT = 122;
@@ -16,120 +13,110 @@ export const NOTE_IMAGE_CARD_HEIGHT = 78;
 
 export class ImageBlockFallbackCard extends WithDisposable(ShadowlessElement) {
   static override styles = css`
-    .affine-image-fallback-card-container {
+    affine-image-fallback-card {
       width: 100%;
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
+      user-select: none;
     }
 
     .affine-image-fallback-card {
       display: flex;
+      flex: 1;
+      gap: 8px;
+      align-self: stretch;
       flex-direction: column;
       justify-content: space-between;
-      background-color: var(--affine-background-secondary-color, #f4f4f5);
       border-radius: 8px;
-      border: 1px solid var(--affine-background-tertiary-color, #eee);
+      border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
+      background: ${unsafeCSSVarV2('layer/background/secondary')};
       padding: 12px;
     }
 
-    .affine-image-fallback-card-content {
+    .truncate {
+      align-self: stretch;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .affine-image-fallback-card-title {
       display: flex;
-      align-items: center;
+      flex-direction: row;
       gap: 8px;
+      align-items: center;
+      align-self: stretch;
+    }
+
+    .affine-image-fallback-card-title-icon {
+      display: flex;
+      width: 16px;
+      height: 16px;
+      align-items: center;
+      justify-content: center;
+      color: var(--affine-text-primary-color);
+    }
+
+    .affine-image-fallback-card-title-text {
       color: var(--affine-placeholder-color);
-      text-align: justify;
       font-family: var(--affine-font-family);
       font-size: var(--affine-font-sm);
       font-style: normal;
       font-weight: 600;
-      line-height: var(--affine-line-height);
-      user-select: none;
+      line-height: 22px;
     }
 
-    .affine-image-card-size {
-      overflow: hidden;
-      padding-top: 12px;
+    .affine-image-fallback-card-description {
       color: var(--affine-text-secondary-color);
-      text-overflow: ellipsis;
-      font-size: 10px;
+      font-family: var(--affine-font-family);
+      font-size: var(--affine-font-xs);
       font-style: normal;
       font-weight: 400;
       line-height: 20px;
-      user-select: none;
+    }
+
+    .affine-image-fallback-card.loading {
+      .affine-image-fallback-card-title {
+        color: var(--affine-placeholder-color);
+      }
+    }
+
+    .affine-image-fallback-card.error {
+      .affine-image-fallback-card-title-icon {
+        color: ${unsafeCSSVarV2('status/error')};
+      }
     }
   `;
 
   override render() {
-    const { theme, mode, loading, error, model } = this;
+    const { icon, title, description, loading, error } = this.state;
 
-    const isEdgeless = mode === 'edgeless';
-    const width = isEdgeless
-      ? `${SURFACE_IMAGE_CARD_WIDTH}px`
-      : `${NOTE_IMAGE_CARD_WIDTH}px`;
-    const height = isEdgeless
-      ? `${SURFACE_IMAGE_CARD_HEIGHT}px`
-      : `${NOTE_IMAGE_CARD_HEIGHT}px`;
-
-    const rotate = isEdgeless ? model.rotate : 0;
-
-    const cardStyleMap = styleMap({
-      transform: `rotate(${rotate}deg)`,
-      transformOrigin: 'center',
-      width,
-      height,
-    });
-
-    const titleIcon = loading
-      ? getLoadingIconWith(theme)
-      : error
-        ? BrokenImageIcon()
-        : ImageIcon();
-
-    const titleText = loading
-      ? 'Loading image...'
-      : error
-        ? 'Image loading failed.'
-        : 'Image';
-
-    const size =
-      !!model.props.size && model.props.size > 0
-        ? humanFileSize(model.props.size, true, 0)
-        : null;
+    const classInfo = {
+      'affine-image-fallback-card': true,
+      'drag-target': true,
+      loading,
+      error,
+    };
 
     return html`
-      <div class="affine-image-fallback-card-container">
-        <div
-          class="affine-image-fallback-card drag-target"
-          style=${cardStyleMap}
-        >
-          <div class="affine-image-fallback-card-content">
-            ${titleIcon}
-            <span class="affine-image-fallback-card-title-text"
-              >${titleText}</span
-            >
+      <div class=${classMap(classInfo)}>
+        <div class="affine-image-fallback-card-title">
+          <div class="affine-image-fallback-card-title-icon">${icon}</div>
+          <div class="affine-image-fallback-card-title-text truncate">
+            ${title}
           </div>
-          <div class="affine-image-card-size">${size}</div>
+        </div>
+        <div class="affine-image-fallback-card-description truncate">
+          ${description}
         </div>
       </div>
     `;
   }
 
   @property({ attribute: false })
-  accessor error!: boolean;
-
-  @property({ attribute: false })
-  accessor loading!: boolean;
-
-  @property({ attribute: false })
-  accessor mode!: 'page' | 'edgeless';
-
-  @property({ attribute: false })
-  accessor theme!: ColorScheme;
-
-  @consume({ context: modelContext })
-  accessor model!: ImageBlockModel;
+  accessor state!: ResolvedStateInfo;
 }
 
 declare global {

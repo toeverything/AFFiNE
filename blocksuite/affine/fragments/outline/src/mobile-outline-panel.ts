@@ -168,10 +168,10 @@ export class MobileOutlineMenu extends SignalWatcher(
   override render() {
     const docModeService = this.editor.std.get(DocModeProvider);
     const mode = docModeService.getEditorMode();
-    if (this.editor.doc.root === null || mode === 'edgeless') return nothing;
+    if (this.editor.store.root === null || mode === 'edgeless') return nothing;
 
     const headingBlocks = getHeadingBlocksFromDoc(
-      this.editor.doc,
+      this.editor.store,
       [NoteDisplayMode.DocAndEdgeless, NoteDisplayMode.DocOnly],
       true
     );
@@ -179,7 +179,7 @@ export class MobileOutlineMenu extends SignalWatcher(
     if (headingBlocks.length === 0) return nothing;
 
     const items = [
-      ...(this.editor.doc.meta?.title !== '' ? [this.editor.doc.root] : []),
+      ...(this.editor.store.meta?.title !== '' ? [this.editor.store.root] : []),
       ...headingBlocks,
     ];
 

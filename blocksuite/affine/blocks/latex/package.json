@@ -19,25 +19,24 @@
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-slash-menu": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.12",
+    "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.14",
+    "@toeverything/theme": "^1.1.16",
     "@types/katex": "^0.16.7",
     "@types/mdast": "^4.0.4",
-    "katex": "^0.16.11",
+    "katex": "^0.16.27",
     "lit": "^3.2.0",
-    "minimatch": "^10.0.1",
+    "minimatch": "^10.1.1",
     "remark-math": "^6.0.0",
-    "rxjs": "^7.8.1",
-    "zod": "^3.23.8"
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./effects": "./src/effects.ts",
     "./store": "./src/store.ts",
     "./view": "./src/view.ts"
   },
@@ -47,5 +46,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.25.7"
 }

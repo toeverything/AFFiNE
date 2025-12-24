@@ -70,32 +70,36 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     if (!this.host) return;
 
     const gfx = this.host.std.get(GfxControllerIdentifier);
-    const nextVisibleModels = new Set([
-      ...this.getModelsInViewport(),
-      ...this._getSelectedModels(),
+    const currentViewportModels = this.getModelsInViewport();
+    const currentSelectedModels = this._getSelectedModels();
+    const shouldBeVisible = new Set([
+      ...currentViewportModels,
+      ...currentSelectedModels,
     ]);
 
-    batch(() => {
-      nextVisibleModels.forEach(model => {
-        const view = gfx.view.get(model);
-        if (isGfxBlockComponent(view)) {
-          view.transformState$.value = 'active';
-        }
+    const previousVisible = this._lastVisibleModels
+      ? new Set(this._lastVisibleModels)
+      : new Set<GfxBlockElementModel>();
 
-        if (this._lastVisibleModels?.has(model)) {
-          this._lastVisibleModels!.delete(model);
-        }
+    batch(() => {
+      // Step 1: Activate all the blocks that should be visible
+      shouldBeVisible.forEach(model => {
+        const view = gfx.view.get(model);
+        if (!isGfxBlockComponent(view)) return;
+        view.transformState$.value = 'active';
       });
 
-      this._lastVisibleModels?.forEach(model => {
+      // Step 2: Hide all the blocks that should not be visible
+      previousVisible.forEach(model => {
+        if (shouldBeVisible.has(model)) return;
+
         const view = gfx.view.get(model);
-        if (isGfxBlockComponent(view)) {
-          view.transformState$.value = 'idle';
-        }
+        if (!isGfxBlockComponent(view)) return;
+        view.transformState$.value = 'idle';
       });
     });
 
-    this._lastVisibleModels = nextVisibleModels;
+    this._lastVisibleModels = shouldBeVisible;
   };
 
   private _lastVisibleModels?: Set<GfxBlockElementModel>;

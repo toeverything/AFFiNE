@@ -65,7 +65,7 @@ export class WorkspaceEvents {
       return;
     }
 
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'MemberRemoved',
       to: user.email,
       props: {

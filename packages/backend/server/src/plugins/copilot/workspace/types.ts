@@ -56,6 +56,9 @@ export class CopilotWorkspaceFileType implements CopilotWorkspaceFile {
   fileId!: string;
 
   @Field(() => String)
+  blobId!: string;
+
+  @Field(() => String)
   fileName!: string;
 
   @Field(() => String)

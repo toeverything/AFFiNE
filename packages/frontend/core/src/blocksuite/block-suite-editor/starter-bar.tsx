@@ -95,7 +95,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
     const std = editorService.editor.editorContainer$.value?.std;
     if (!std) return;
 
-    const rootBlockId = std.host.doc.root?.id;
+    const rootBlockId = std.host.store.root?.id;
     if (!rootBlockId) return;
 
     const rootComponent = std.view.getBlock(rootBlockId);

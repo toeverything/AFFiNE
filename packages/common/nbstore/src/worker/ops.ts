@@ -1,6 +1,5 @@
 import type { AvailableStorageImplementations } from '../impls';
 import type {
-  AggregateOptions,
   AggregateResult,
   BlobRecord,
   DocClock,
@@ -10,7 +9,6 @@ import type {
   DocUpdate,
   ListedBlobRecord,
   Query,
-  SearchOptions,
   SearchResult,
   StorageType,
 } from '../storage';
@@ -69,39 +67,10 @@ interface GroupedWorkerOps {
     waitForConnected: [void, void];
   };
 
-  indexerStorage: {
-    search: [
-      { table: string; query: Query<any>; options?: SearchOptions<any> },
-      SearchResult<any, any>,
-    ];
-    aggregate: [
-      {
-        table: string;
-        query: Query<any>;
-        field: string;
-        options?: AggregateOptions<any>;
-      },
-      AggregateResult<any, any>,
-    ];
-    subscribeSearch: [
-      { table: string; query: Query<any>; options?: SearchOptions<any> },
-      SearchResult<any, any>,
-    ];
-    subscribeAggregate: [
-      {
-        table: string;
-        query: Query<any>;
-        field: string;
-        options?: AggregateOptions<any>;
-      },
-      AggregateResult<any, any>,
-    ];
-    waitForConnected: [void, void];
-  };
-
   docSync: {
     state: [void, DocSyncState];
     docState: [string, DocSyncDocState];
+    waitForSynced: [string | null, void];
     addPriority: [{ docId: string; priority: number }, boolean];
     resetSync: [void, void];
   };
@@ -136,6 +105,46 @@ interface GroupedWorkerOps {
     addPriority: [{ docId: string; priority: number }, boolean];
     waitForCompleted: [void, void];
     waitForDocCompleted: [string, void];
+    search: [
+      {
+        table: string;
+        query: Query<any>;
+        options?: any;
+      },
+      SearchResult<any, any>,
+    ];
+    aggregate: [
+      {
+        table: string;
+        query: Query<any>;
+        field: string;
+        options?: any;
+      },
+      AggregateResult<any, any>,
+    ];
+    subscribeSearch: [
+      {
+        table: string;
+        query: Query<any>;
+        options?: any;
+      },
+      SearchResult<any, any>,
+    ];
+    subscribeAggregate: [
+      {
+        table: string;
+        query: Query<any>;
+        field: string;
+        options?: any;
+      },
+      AggregateResult<any, any>,
+    ];
+  };
+  sync: {
+    enableBatterySaveMode: [void, void];
+    disableBatterySaveMode: [void, void];
+    pauseSync: [void, void];
+    resumeSync: [void, void];
   };
 }
 

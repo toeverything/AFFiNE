@@ -20,12 +20,12 @@ import {
   modelContext,
   serviceContext,
 } from './consts.js';
-import { docContext, stdContext } from './lit-host.js';
+import { stdContext, storeContext } from './lit-host.js';
 import { ShadowlessElement } from './shadowless-element.js';
 import type { WidgetComponent } from './widget-component.js';
 
 @requiredProperties({
-  doc: PropTypes.instanceOf(Store),
+  store: PropTypes.instanceOf(Store),
   std: PropTypes.object,
   widgets: PropTypes.recordOf(PropTypes.object),
 })
@@ -86,7 +86,7 @@ export class BlockComponent<
   }
 
   get isVersionMismatch() {
-    const schema = this.doc.schema.flavourSchemaMap.get(this.model.flavour);
+    const schema = this.store.schema.flavourSchemaMap.get(this.model.flavour);
     if (!schema) {
       console.warn(
         `Schema not found for block ${this.model.id}, flavour ${this.model.flavour}`
@@ -109,7 +109,7 @@ export class BlockComponent<
     if (this._model) {
       return this._model;
     }
-    const model = this.doc.getModelById<Model>(this.blockId);
+    const model = this.store.getModelById<Model>(this.blockId);
     if (!model) {
       throw new BlockSuiteError(
         ErrorCode.MissingViewModelError,
@@ -131,7 +131,7 @@ export class BlockComponent<
   }
 
   get rootComponent(): BlockComponent | null {
-    const rootId = this.doc.root?.id;
+    const rootId = this.store.root?.id;
     if (!rootId) {
       return null;
     }
@@ -173,7 +173,9 @@ export class BlockComponent<
       this.isVersionMismatch,
       () => {
         const actualVersion = this.model.version;
-        const schema = this.doc.schema.flavourSchemaMap.get(this.model.flavour);
+        const schema = this.store.schema.flavourSchemaMap.get(
+          this.model.flavour
+        );
         const expectedVersion = schema?.version ?? -1;
         return this.renderVersionMismatch(expectedVersion, actualVersion);
       },
@@ -290,8 +292,8 @@ export class BlockComponent<
   @state()
   private accessor _service: Service | null = null;
 
-  @consume({ context: docContext })
-  accessor doc!: Store;
+  @consume({ context: storeContext })
+  accessor store!: Store;
 
   @property({ attribute: false })
   accessor viewType: BlockViewType = 'display';

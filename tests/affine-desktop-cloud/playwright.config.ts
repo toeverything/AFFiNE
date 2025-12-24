@@ -24,7 +24,6 @@ const config: PlaywrightTestConfig = {
     // Intentionally not building the web, reminds you to run it by yourself.
     {
       command: 'yarn run -T affine dev -p @affine/electron-renderer',
-      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
@@ -32,10 +31,10 @@ const config: PlaywrightTestConfig = {
         COVERAGE: process.env.COVERAGE || 'false',
         DISTRIBUTION: 'desktop',
       },
+      url: 'http://localhost:8080',
     },
     {
       command: 'yarn run -T affine dev -p @affine/server',
-      port: 3010,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
@@ -51,6 +50,7 @@ const config: PlaywrightTestConfig = {
         DEBUG_COLORS: 'true',
         MAILER_SENDER: 'noreply@toeverything.info',
       },
+      url: 'http://localhost:3010/graphql',
     },
   ],
 };

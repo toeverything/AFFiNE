@@ -14,6 +14,7 @@ import {
   CallMetric,
   DocNotFound,
   DocUpdateBlocked,
+  EventBus,
   GatewayErrorWrapper,
   metrics,
   NotInSpace,
@@ -144,6 +145,7 @@ export class SpaceSyncGateway
 
   constructor(
     private readonly ac: AccessController,
+    private readonly event: EventBus,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
     private readonly docReader: DocReader,
@@ -192,15 +194,16 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @MessageBody()
     { spaceType, spaceId, clientVersion }: JoinSpaceMessage
-  ): Promise<EventResponse<{ clientId: string; success: true }>> {
-    // TODO(@forehalo): remove this after 0.19 goes out of life
-    // simple match 0.19.x
-    if (/^0.19.[\d]$/.test(clientVersion)) {
-      const room = Room(spaceId, 'sync-019');
-      if (!client.rooms.has(room)) {
-        await client.join(room);
-      }
+  ): Promise<EventResponse<{ clientId: string; success: boolean }>> {
+    if (
+      ![SpaceType.Userspace, SpaceType.Workspace].includes(spaceType) ||
+      /^0.1/.test(clientVersion)
+    ) {
+      return { data: { clientId: client.id, success: false } };
     } else {
+      if (spaceType === SpaceType.Workspace) {
+        this.event.emit('workspace.embedding', { workspaceId: spaceId });
+      }
       await this.selectAdapter(client, spaceType).join(user.id, spaceId);
     }
 

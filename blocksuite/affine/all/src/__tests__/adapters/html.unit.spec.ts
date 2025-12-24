@@ -2360,6 +2360,65 @@ describe('html to snapshot', () => {
     expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
 
+  test('should preserve space in p', async () => {
+    const html = template(
+      `<p>A <b>bold text</b> followed by a <i>italic text</i></p>`
+    );
+
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'A ',
+                },
+                {
+                  insert: 'bold text',
+                  attributes: {
+                    bold: true,
+                  },
+                },
+                {
+                  insert: ' followed by a ',
+                },
+                {
+                  insert: 'italic text',
+                  attributes: {
+                    italic: true,
+                  },
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
   test('span nested in p', async () => {
     const html = template(
       `<p><span>aaa</span><span>bbb</span><span>ccc</span></p>`
@@ -2623,6 +2682,337 @@ describe('html to snapshot', () => {
                     bold: true,
                   },
                   insert: 'aaa',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
+  test('block level element in b should not be treated as inline', async () => {
+    const html = template(`<b><p><span>aaa</span></p></b>`);
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'aaa',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
+  describe('strong element', () => {
+    test('should not be bold when font-weight is normal', async () => {
+      const html = template(`<span style="font-weight: normal;">aaa</span>`);
+      const blockSnapshot: BlockSnapshot = {
+        type: 'block',
+        id: 'matchesReplaceMap[0]',
+        flavour: 'affine:note',
+        props: {
+          xywh: '[0,0,800,95]',
+          background: DefaultTheme.noteBackgrounColor,
+          index: 'a0',
+          hidden: false,
+          displayMode: NoteDisplayMode.DocAndEdgeless,
+        },
+        children: [
+          {
+            type: 'block',
+            id: 'matchesReplaceMap[1]',
+            flavour: 'affine:paragraph',
+            props: {
+              type: 'text',
+              text: {
+                '$blocksuite:internal:text$': true,
+                delta: [
+                  {
+                    insert: 'aaa',
+                  },
+                ],
+              },
+            },
+            children: [],
+          },
+        ],
+      };
+
+      const htmlAdapter = new HtmlAdapter(createJob(), provider);
+      const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+        file: html,
+      });
+      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    });
+
+    test('should be bold when font-weight is bold or 500-900 ', async () => {
+      const html = template(
+        `<p><span style="font-weight: bold;">aaa</span><span style="font-weight: 100;">aaa</span><span style="font-weight: 500;">bbb</span><span style="font-weight: 200;">bbb</span><span style="font-weight: 600;">ccc</span><span style="font-weight: 300;">ccc</span><span style="font-weight: 700;">ddd</span></p>`
+      );
+      const blockSnapshot: BlockSnapshot = {
+        type: 'block',
+        id: 'matchesReplaceMap[0]',
+        flavour: 'affine:note',
+        props: {
+          xywh: '[0,0,800,95]',
+          background: DefaultTheme.noteBackgrounColor,
+          index: 'a0',
+          hidden: false,
+          displayMode: NoteDisplayMode.DocAndEdgeless,
+        },
+        children: [
+          {
+            type: 'block',
+            id: 'matchesReplaceMap[1]',
+            flavour: 'affine:paragraph',
+            props: {
+              type: 'text',
+              text: {
+                '$blocksuite:internal:text$': true,
+                delta: [
+                  {
+                    attributes: {
+                      bold: true,
+                    },
+                    insert: 'aaa',
+                  },
+                  {
+                    insert: 'aaa',
+                  },
+                  {
+                    attributes: {
+                      bold: true,
+                    },
+                    insert: 'bbb',
+                  },
+                  {
+                    insert: 'bbb',
+                  },
+                  {
+                    attributes: {
+                      bold: true,
+                    },
+                    insert: 'ccc',
+                  },
+                  {
+                    insert: 'ccc',
+                  },
+                  {
+                    attributes: {
+                      bold: true,
+                    },
+                    insert: 'ddd',
+                  },
+                ],
+              },
+            },
+            children: [],
+          },
+        ],
+      };
+
+      const htmlAdapter = new HtmlAdapter(createJob(), provider);
+      const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+        file: html,
+      });
+      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    });
+  });
+
+  test('should be italic when tag is i or em or span with style font-style: italic', async () => {
+    const html = template(
+      `<p><i>aaa</i><span>aaa</span><em>bbb</em><span>bbb</span><span style="font-style: italic;">ccc</span></p>`
+    );
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  attributes: {
+                    italic: true,
+                  },
+                  insert: 'aaa',
+                },
+                {
+                  insert: 'aaa',
+                },
+                {
+                  attributes: {
+                    italic: true,
+                  },
+                  insert: 'bbb',
+                },
+                {
+                  insert: 'bbb',
+                },
+                {
+                  attributes: {
+                    italic: true,
+                  },
+                  insert: 'ccc',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
+  test('should be underline when tag is u or span with style text-decoration: underline', async () => {
+    const html = template(
+      `<p><u>aaa</u><span>aaa</span><span style="text-decoration: underline;">bbb</span></p>`
+    );
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  attributes: {
+                    underline: true,
+                  },
+                  insert: 'aaa',
+                },
+                {
+                  insert: 'aaa',
+                },
+                {
+                  attributes: {
+                    underline: true,
+                  },
+                  insert: 'bbb',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
+  test('should be strike when tag is del or span with style text-decoration: line-through', async () => {
+    const html = template(
+      `<p><del>aaa</del><span>aaa</span><span style="text-decoration: line-through;">bbb</span></p>`
+    );
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  attributes: {
+                    strike: true,
+                  },
+                  insert: 'aaa',
+                },
+                {
+                  insert: 'aaa',
+                },
+                {
+                  attributes: {
+                    strike: true,
+                  },
+                  insert: 'bbb',
                 },
               ],
             },

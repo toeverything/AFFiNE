@@ -1,9 +1,8 @@
 import * as Y from 'yjs';
 
+import type { Doc, GetStoreOptions, Workspace } from '../extension/index.js';
 import type { YBlock } from '../model/block/types.js';
-import type { Doc, GetBlocksOptions, Workspace } from '../model/index.js';
-import type { Query } from '../model/store/query.js';
-import { Store } from '../model/store/store.js';
+import { StoreContainer } from '../model/index.js';
 import type { AwarenessStore } from '../yjs/index.js';
 import type { TestWorkspace } from './test-workspace.js';
 
@@ -17,7 +16,7 @@ type DocOptions = {
 export class TestDoc implements Doc {
   private readonly _collection: Workspace;
 
-  private readonly _storeMap = new Map<string, Store>();
+  private readonly _storeContainer: StoreContainer;
 
   private readonly _initSubDoc = () => {
     let subDoc = this.rootDoc.getMap('spaces').get(this.id);
@@ -110,19 +109,15 @@ export class TestDoc implements Doc {
 
     this._yBlocks = this._ySpaceDoc.getMap('blocks');
     this._collection = collection;
-  }
-
-  private _getReadonlyKey(readonly?: boolean): 'true' | 'false' {
-    return (readonly?.toString() as 'true' | 'false') ?? 'false';
+    this._storeContainer = new StoreContainer(this);
   }
 
   clear() {
     this._yBlocks.clear();
   }
 
-  clearQuery(query: Query, readonly?: boolean) {
-    const key = this._getQueryKey({ readonly, query });
-    this._storeMap.delete(key);
+  get removeStore() {
+    return this._storeContainer.removeStore;
   }
 
   private _destroy() {
@@ -136,55 +131,34 @@ export class TestDoc implements Doc {
     }
   }
 
-  private readonly _getQueryKey = (
-    idOrOptions: string | { readonly?: boolean; query?: Query }
-  ) => {
-    if (typeof idOrOptions === 'string') {
-      return idOrOptions;
-    }
-    const { readonly, query } = idOrOptions;
-    const readonlyKey = this._getReadonlyKey(readonly);
-    const key = JSON.stringify({
-      readonlyKey,
-      query,
-    });
-    return key;
-  };
-
   getStore({
     readonly,
     query,
     provider,
     extensions,
     id,
-  }: GetBlocksOptions = {}) {
-    let idOrOptions: string | { readonly?: boolean; query?: Query };
+  }: GetStoreOptions = {}) {
+    const storeExtensions = (
+      this.workspace as TestWorkspace
+    ).storeExtensions.concat(extensions ?? []);
+
+    let storeId: string | undefined;
+
     if (id) {
-      idOrOptions = id;
-    } else if (readonly === undefined && query === undefined) {
-      idOrOptions = this.spaceDoc.guid;
+      storeId = id;
+    } else if (readonly !== undefined || query) {
+      storeId = id;
     } else {
-      idOrOptions = { readonly, query };
-    }
-    const key = this._getQueryKey(idOrOptions);
-
-    if (this._storeMap.has(key)) {
-      return this._storeMap.get(key)!;
+      storeId = this.spaceDoc.guid;
     }
 
-    const doc = new Store({
-      doc: this,
+    return this._storeContainer.getStore({
+      id: storeId,
       readonly,
       query,
       provider,
-      extensions: (this.workspace as TestWorkspace).storeExtensions.concat(
-        extensions ?? []
-      ),
+      extensions: storeExtensions,
     });
-
-    this._storeMap.set(key, doc);
-
-    return doc;
   }
 
   load(initFn?: () => void): this {

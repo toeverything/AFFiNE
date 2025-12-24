@@ -2,16 +2,28 @@ import {
   Divider,
   IconButton,
   Menu,
+  MenuItem,
+  type MenuRef,
   RowInput,
   Scrollable,
 } from '@affine/component';
+import { TagService, useDeleteTagConfirmModal } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
-import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
+import { DoneIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { clamp } from 'lodash-es';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 
+import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { ConfigModal } from '../mobile';
 import { InlineTagList } from './inline-tag-list';
 import * as styles from './styles.css';
@@ -30,6 +42,7 @@ export interface TagsEditorProps {
   onDeleteTag: (id: string) => void; // a candidate to be deleted
   jumpToTag?: (id: string) => void;
   tagMode: 'inline-tag' | 'db-label';
+  style?: React.CSSProperties;
 }
 
 export interface TagsInlineEditorProps extends TagsEditorProps {
@@ -39,6 +52,9 @@ export interface TagsInlineEditorProps extends TagsEditorProps {
   title?: ReactNode; // only used for mobile
   modalMenu?: boolean;
   menuClassName?: string;
+  style?: React.CSSProperties;
+  ref?: React.Ref<MenuRef>;
+  onEditorClose?: () => void;
 }
 
 type TagOption = TagLike | { readonly create: true; readonly value: string };
@@ -56,10 +72,11 @@ export const TagsEditor = ({
   onDeselectTag,
   onCreateTag,
   tagColors,
-  onDeleteTag: onTagDelete,
+  onDeleteTag,
   onTagChange,
   jumpToTag,
   tagMode,
+  style,
 }: TagsEditorProps) => {
   const t = useI18n();
   const [inputValue, setInputValue] = useState('');
@@ -67,11 +84,11 @@ export const TagsEditor = ({
   const trimmedInputValue = inputValue.trim();
 
   const filteredTags = tags.filter(tag =>
-    tag.value.toLowerCase().includes(trimmedInputValue.toLowerCase())
+    tag.name.toLowerCase().includes(trimmedInputValue.toLowerCase())
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const exactMatch = filteredTags.find(tag => tag.value === trimmedInputValue);
+  const exactMatch = filteredTags.find(tag => tag.name === trimmedInputValue);
   const showCreateTag = !exactMatch && trimmedInputValue;
 
   // tag option candidates to show in the tag dropdown
@@ -143,6 +160,13 @@ export const TagsEditor = ({
       return newTag.id;
     },
     [onCreateTag, nextColor]
+  );
+
+  const handleDeleteTag = useCallback(
+    (tagId: string) => {
+      onDeleteTag(tagId);
+    },
+    [onDeleteTag]
   );
 
   const onSelectTagOption = useCallback(
@@ -230,6 +254,7 @@ export const TagsEditor = ({
 
   return (
     <div
+      style={style}
       data-testid="tags-editor-popup"
       className={
         BUILD_CONFIG.isMobileEdition
@@ -255,10 +280,17 @@ export const TagsEditor = ({
             placeholder="Type here ..."
           />
         </InlineTagList>
+
         {BUILD_CONFIG.isMobileEdition ? null : (
-          <Divider size="thinner" className={styles.tagDivider} />
+          <MenuItem
+            className={styles.tagsEditorDoneButton}
+            prefixIcon={<DoneIcon />}
+          />
         )}
       </div>
+      {BUILD_CONFIG.isMobileEdition ? null : (
+        <Divider size="thinner" className={styles.tagDivider} />
+      )}
       <div className={styles.tagsEditorTagsSelector}>
         <div className={styles.tagsEditorTagsSelectorHeader}>
           {t['com.affine.page-properties.tags.selector-header-title']()}
@@ -289,7 +321,7 @@ export const TagsEditor = ({
                       mode={tagMode}
                       tag={{
                         id: 'create-new-tag',
-                        value: inputValue,
+                        name: inputValue,
                         color: nextColor,
                       }}
                     />
@@ -301,13 +333,13 @@ export const TagsEditor = ({
                     key={tag.id}
                     {...commonProps}
                     data-tag-id={tag.id}
-                    data-tag-value={tag.value}
+                    data-tag-value={tag.name}
                   >
                     <TagItem maxWidth="100%" tag={tag} mode={tagMode} />
                     <div className={styles.spacer} />
                     <TagEditMenu
                       tag={tag}
-                      onTagDelete={onTagDelete}
+                      onTagDelete={handleDeleteTag}
                       onTagChange={(property, value) => {
                         onTagChange(tag.id, property, value);
                       }}
@@ -335,9 +367,25 @@ const MobileInlineEditor = ({
   placeholder,
   className,
   title,
+  style,
+  onEditorClose,
+  ref,
   ...props
 }: TagsInlineEditorProps) => {
   const [editing, setEditing] = useState(false);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      changeOpen: (open: boolean) => {
+        setEditing(open);
+        if (!open) {
+          onEditorClose?.();
+        }
+      },
+    }),
+    [onEditorClose]
+  );
 
   const empty = !props.selectedTags || props.selectedTags.length === 0;
   const selectedTags = useMemo(() => {
@@ -351,7 +399,10 @@ const MobileInlineEditor = ({
         title={title}
         open={editing}
         onOpenChange={setEditing}
-        onBack={() => setEditing(false)}
+        onBack={() => {
+          setEditing(false);
+          onEditorClose?.();
+        }}
       >
         <TagsEditor {...props} />
       </ConfigModal>
@@ -360,6 +411,7 @@ const MobileInlineEditor = ({
         data-empty={empty}
         data-readonly={readonly}
         onClick={() => setEditing(true)}
+        style={style}
       >
         {empty ? (
           placeholder
@@ -377,6 +429,9 @@ const DesktopTagsInlineEditor = ({
   className,
   modalMenu,
   menuClassName,
+  style,
+  ref,
+  onEditorClose,
   ...props
 }: TagsInlineEditorProps) => {
   const empty = !props.selectedTags || props.selectedTags.length === 0;
@@ -387,6 +442,7 @@ const DesktopTagsInlineEditor = ({
   }, [props.selectedTags, props.tags]);
   return (
     <Menu
+      ref={ref}
       contentOptions={{
         side: 'bottom',
         align: 'start',
@@ -399,6 +455,7 @@ const DesktopTagsInlineEditor = ({
       }}
       rootOptions={{
         modal: modalMenu,
+        onClose: onEditorClose,
       }}
       items={<TagsEditor {...props} />}
     >
@@ -406,6 +463,7 @@ const DesktopTagsInlineEditor = ({
         className={clsx(styles.tagsInlineEditor, className)}
         data-empty={empty}
         data-readonly={readonly}
+        style={style}
       >
         {empty ? (
           placeholder
@@ -425,3 +483,73 @@ const DesktopTagsInlineEditor = ({
 export const TagsInlineEditor = BUILD_CONFIG.isMobileEdition
   ? MobileInlineEditor
   : DesktopTagsInlineEditor;
+
+export const WorkspaceTagsInlineEditor = ({
+  selectedTags,
+  onDeselectTag,
+  ref,
+  onEditorClose,
+  ...otherProps
+}: Omit<
+  TagsInlineEditorProps,
+  'tags' | 'onCreateTag' | 'onDeleteTag' | 'tagColors' | 'onTagChange'
+>) => {
+  const tagService = useService(TagService);
+  const tags = useLiveData(tagService.tagList.tagMetas$);
+  const openDeleteTagConfirmModal = useDeleteTagConfirmModal();
+  const tagColors = tagService.tagColors;
+  const adaptedTagColors = useMemo(() => {
+    return tagColors.map(color => ({
+      id: color[0],
+      value: color[1],
+      name: color[0],
+    }));
+  }, [tagColors]);
+
+  const onDeleteTag = useAsyncCallback(
+    async (tagId: string) => {
+      if (await openDeleteTagConfirmModal([tagId])) {
+        tagService.tagList.deleteTag(tagId);
+        if (selectedTags.includes(tagId)) {
+          onDeselectTag(tagId);
+        }
+      }
+    },
+    [tagService.tagList, openDeleteTagConfirmModal, selectedTags, onDeselectTag]
+  );
+  const onCreateTag = useCallback(
+    (name: string, color: string) => {
+      const newTag = tagService.tagList.createTag(name, color);
+      return {
+        id: newTag.id,
+        name: newTag.value$.value,
+        color: newTag.color$.value,
+      };
+    },
+    [tagService.tagList]
+  );
+  const onTagChange = useCallback(
+    (id: string, property: keyof TagLike, value: string) => {
+      if (property === 'name') {
+        tagService.tagList.tagByTagId$(id).value?.rename(value);
+      } else if (property === 'color') {
+        tagService.tagList.tagByTagId$(id).value?.changeColor(value);
+      }
+    },
+    [tagService.tagList]
+  );
+  return (
+    <TagsInlineEditor
+      tags={tags}
+      selectedTags={selectedTags}
+      onDeselectTag={onDeselectTag}
+      tagColors={adaptedTagColors}
+      onCreateTag={onCreateTag}
+      onDeleteTag={onDeleteTag}
+      onTagChange={onTagChange}
+      ref={ref}
+      onEditorClose={onEditorClose}
+      {...otherProps}
+    />
+  );
+};

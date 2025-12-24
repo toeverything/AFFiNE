@@ -1,8 +1,12 @@
-import { toEdgelessEmbedBlock } from '@blocksuite/affine-block-embed';
+import {
+  createEmbedEdgelessBlockInteraction,
+  toEdgelessEmbedBlock,
+} from '@blocksuite/affine-block-embed';
 import {
   EdgelessCRUDIdentifier,
   reassociateConnectorsCommand,
 } from '@blocksuite/affine-block-surface';
+import { EmbedLinkedDocBlockSchema } from '@blocksuite/affine-model';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
@@ -21,7 +25,7 @@ export class EmbedEdgelessLinkedDocBlockComponent extends toEdgelessEmbedBlock(
 ) {
   override convertToEmbed = () => {
     const { caption, xywh } = this.model.props;
-    const { doc, id } = this.model;
+    const { store, id } = this.model;
 
     const style = 'syncedDoc';
     const bound = Bound.deserialize(xywh);
@@ -50,7 +54,7 @@ export class EmbedEdgelessLinkedDocBlockComponent extends toEdgelessEmbedBlock(
       elements: [newId],
     });
 
-    doc.deleteBlock(this.model);
+    store.deleteBlock(this.model);
   };
 
   protected override _handleClick = (evt: MouseEvent): void => {
@@ -61,3 +65,7 @@ export class EmbedEdgelessLinkedDocBlockComponent extends toEdgelessEmbedBlock(
     }
   };
 }
+
+export const EmbedLinkedDocInteraction = createEmbedEdgelessBlockInteraction(
+  EmbedLinkedDocBlockSchema.model.flavour
+);

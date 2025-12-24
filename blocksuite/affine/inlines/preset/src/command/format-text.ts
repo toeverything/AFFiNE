@@ -1,6 +1,9 @@
 import { clearMarksOnDiscontinuousInput } from '@blocksuite/affine-rich-text';
 import { getSelectedBlocksCommand } from '@blocksuite/affine-shared/commands';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type {
+  AffineTextAttributes,
+  AffineTextStyleAttributes,
+} from '@blocksuite/affine-shared/types';
 import type { Command, TextSelection } from '@blocksuite/std';
 import {
   INLINE_ROOT_ATTR,
@@ -13,7 +16,7 @@ import { FORMAT_TEXT_SUPPORT_FLAVOURS } from './consts.js';
 export const formatTextCommand: Command<{
   currentTextSelection?: TextSelection;
   textSelection?: TextSelection;
-  styles: AffineTextAttributes;
+  styles: AffineTextStyleAttributes;
   mode?: 'replace' | 'merge';
 }> = (ctx, next) => {
   const { styles, mode = 'merge' } = ctx;

@@ -3,6 +3,7 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
+  getPageByTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { getCurrentDocIdFromUrl } from '@affine-test/kit/utils/url';
@@ -30,8 +31,7 @@ test('click btn bew page and find it in all pages', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page');
   await page.getByTestId('all-pages').click();
-  const allPages = page.getByTestId('virtualized-page-list');
-  const cell = allPages.getByText('this is a new page');
+  const cell = getPageByTitle(page, 'this is a new page');
   await expect(cell).toBeVisible();
   const currentWorkspace = await workspace.current();
 

@@ -29,6 +29,8 @@ test('should close embed editing modal when editor switching to page mode by sho
   await page.keyboard.press('@');
   await page.getByTestId('cmdk-label').getByText('Getting Started').click();
   const toolbar = locateToolbar(page);
+  await toolbar.getByLabel('Switch view').click();
+  await toolbar.getByLabel('Card view').click();
   await toolbar.getByLabel('Edit').click();
 
   const editingModal = page.locator('embed-card-edit-modal');

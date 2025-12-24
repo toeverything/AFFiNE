@@ -36,12 +36,6 @@ export class BlobFrontend {
 
   async set(blob: BlobRecord) {
     await this.waitForConnected();
-    if (blob.data.byteLength > this.maxBlobSize) {
-      for (const cb of this.onReachedMaxBlobSizeCallbacks) {
-        cb(blob.data.byteLength);
-      }
-      throw new Error('Blob size exceeds the maximum limit');
-    }
     await using lock = await this.lock.lock('blob', blob.key);
     await this.storage.set(blob);
     await lock[Symbol.asyncDispose]();
@@ -76,20 +70,6 @@ export class BlobFrontend {
 
   fullDownload(peerId?: string, signal?: AbortSignal) {
     return this.sync.fullDownload(peerId, signal);
-  }
-
-  private maxBlobSize = 1024 * 1024 * 100; // 100MB
-  private readonly onReachedMaxBlobSizeCallbacks: Set<
-    (byteSize: number) => void
-  > = new Set();
-
-  setMaxBlobSize(max: number) {
-    this.maxBlobSize = max;
-  }
-
-  onReachedMaxBlobSize(cb: (byteSize: number) => void): () => void {
-    this.onReachedMaxBlobSizeCallbacks.add(cb);
-    return () => this.onReachedMaxBlobSizeCallbacks.delete(cb);
   }
 
   private waitForConnected(signal?: AbortSignal) {

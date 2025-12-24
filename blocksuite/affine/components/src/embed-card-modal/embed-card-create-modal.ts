@@ -46,7 +46,7 @@ export class EmbedCardCreateModal extends SignalWatcher(
         flavour = embedOptions.flavour;
       }
 
-      this.host.doc.addBlock(
+      this.host.store.addBlock(
         flavour as never,
         {
           url,

@@ -9,17 +9,18 @@ import {
   fontStyleOptions,
 } from '@affine/core/modules/editor-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import track from '@affine/track';
 import { appendParagraphCommand } from '@blocksuite/affine/blocks/paragraph';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
+import { IS_LINUX } from '@blocksuite/affine/global/env';
 import type { DocMode, RootBlockModel } from '@blocksuite/affine/model';
 import {
   customImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/shared/adapters';
 import { focusBlockEnd } from '@blocksuite/affine/shared/commands';
-import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import { getLastNoteBlock } from '@blocksuite/affine/shared/utils';
 import type { BlockStdScope, EditorHost } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
@@ -30,7 +31,7 @@ import clsx from 'clsx';
 import type { CSSProperties, HTMLAttributes } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { DefaultOpenProperty } from '../../components/doc-properties';
+import type { DefaultOpenProperty } from '../../components/properties';
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
 import * as styles from './styles.css';
 
@@ -175,22 +176,17 @@ const BlockSuiteEditorImpl = ({
   }, [affineEditorContainerProxy.host?.std, page, readonly, shared]);
 
   useEffect(() => {
-    const disposable = page.slots.blockUpdated.subscribe(() => {
-      disposable.unsubscribe();
-      page.workspace.meta.setDocMeta(page.id, {
-        updatedDate: Date.now(),
-      });
-    });
-    return () => {
-      disposable.unsubscribe();
-    };
-  }, [page]);
-
-  useEffect(() => {
     const editorContainer = rootRef.current;
     if (editorContainer) {
       const handleMiddleClick = (e: MouseEvent) => {
-        if (!enableMiddleClickPaste && e.button === 1) {
+        if (
+          e.target instanceof HTMLElement &&
+          (e.target.closest('affine-reference') ||
+            e.target.closest('affine-link'))
+        ) {
+          return;
+        }
+        if (!enableMiddleClickPaste && IS_LINUX && e.button === 1) {
           e.preventDefault();
         }
       };
@@ -224,13 +220,7 @@ const BlockSuiteEditorImpl = ({
       server.baseUrl
     ).toString();
 
-    const linkPreviewUrl = new URL(
-      BUILD_CONFIG.linkPreviewUrl,
-      server.baseUrl
-    ).toString();
-
     editor.std.clipboard.use(customImageProxyMiddleware(imageProxyUrl));
-    page.get(LinkPreviewerService).setEndpoint(linkPreviewUrl);
     page.get(ImageProxyService).setImageProxyURL(imageProxyUrl);
 
     editor.updateComplete
@@ -291,6 +281,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [longerLoading, setLongerLoading] = useState(false);
   const [loadStartTime] = useState(Date.now());
+  const workspaceService = useService(WorkspaceService);
 
   const editorSetting = useService(EditorSettingService).editorSetting;
   const settings = useLiveData(
@@ -319,37 +310,59 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       setIsLoading(false);
       return;
     }
+
+    const disposable = props.page.slots.rootAdded.subscribe(() => {
+      disposable.unsubscribe();
+      setIsLoading(false);
+      setLongerLoading(false);
+    });
+    return () => {
+      disposable.unsubscribe();
+    };
+  }, [loadStartTime, props.page]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
-      setLongerLoading(true);
+      if (isLoading) {
+        setLongerLoading(true);
+      }
     }, 20 * 1000);
     const reportErrorTimer = setTimeout(() => {
       if (isLoading) {
         track.doc.$.$.loadDoc({
           workspaceId: props.page.workspace.id,
           docId: props.page.id,
-          // time cost in ms
           time: Date.now() - loadStartTime,
           success: false,
         });
       }
     }, 60 * 1000);
-    const disposable = props.page.slots.rootAdded.subscribe(() => {
-      disposable.unsubscribe();
-      track.doc.$.$.loadDoc({
-        workspaceId: props.page.workspace.id,
-        docId: props.page.id,
-        time: Date.now() - loadStartTime,
-        success: true,
-      });
-      setIsLoading(false);
-      setLongerLoading(false);
-    });
     return () => {
-      disposable.unsubscribe();
       clearTimeout(timer);
       clearTimeout(reportErrorTimer);
     };
   }, [isLoading, loadStartTime, props.page]);
+
+  useEffect(() => {
+    workspaceService.workspace.engine.doc
+      .waitForDocLoaded(props.page.id)
+      .then(() => {
+        track.doc.$.$.loadDoc({
+          workspaceId: props.page.workspace.id,
+          docId: props.page.id,
+          time: Date.now() - loadStartTime,
+          success: true,
+        });
+      })
+      .catch(() => {
+        track.doc.$.$.loadDoc({
+          workspaceId: props.page.workspace.id,
+          docId: props.page.id,
+          time: Date.now() - loadStartTime,
+          success: false,
+        });
+      });
+  }, [loadStartTime, props.page, workspaceService]);
 
   return (
     <Slot style={{ '--affine-font-family': fontFamily } as CSSProperties}>

@@ -1,3 +1,4 @@
+import { ColorScheme } from '@blocksuite/affine-model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { DeleteIcon } from '@blocksuite/icons/lit';
@@ -7,7 +8,7 @@ import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
-import { SurfaceRefNotFoundBackground } from '../icons';
+import { DarkDeletedSmallBanner, LightDeletedSmallBanner } from '../icons';
 import { getReferenceModelTitle, TYPE_ICON_MAP } from '../utils';
 
 export class SurfaceRefPlaceHolder extends SignalWatcher(
@@ -70,6 +71,9 @@ export class SurfaceRefPlaceHolder extends SignalWatcher(
   @property({ attribute: false })
   accessor inEdgeless = false;
 
+  @property({ attribute: false })
+  accessor theme: ColorScheme = ColorScheme.Light;
+
   override render() {
     const { referenceModel, refFlavour, inEdgeless } = this;
 
@@ -83,6 +87,11 @@ export class SurfaceRefPlaceHolder extends SignalWatcher(
       (referenceModel && getReferenceModelTitle(referenceModel)) ??
       matchedType.name;
 
+    const notFoundBackground =
+      this.theme === ColorScheme.Light
+        ? LightDeletedSmallBanner
+        : DarkDeletedSmallBanner;
+
     return html`
       <div
         class=${classMap({
@@ -92,7 +101,7 @@ export class SurfaceRefPlaceHolder extends SignalWatcher(
       >
         ${modelNotFound
           ? html`<div class="surface-ref-not-found-background">
-              ${SurfaceRefNotFoundBackground}
+              ${notFoundBackground}
             </div>`
           : nothing}
         <div class="surface-ref-placeholder-heading">

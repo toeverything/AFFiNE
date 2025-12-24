@@ -37,7 +37,10 @@ import {
   getSelections,
 } from '../utils/selection-utils';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
-import type { AINetworkSearchConfig } from '../widgets/ai-panel/type';
+import type {
+  AIActionAnswer,
+  AINetworkSearchConfig,
+} from '../widgets/ai-panel/type';
 import type { EdgelessCopilotWidget } from '../widgets/edgeless-copilot';
 import { actionToAnswerRenderer } from './answer-renderer';
 import { EXCLUDING_COPY_ACTIONS } from './consts';
@@ -53,7 +56,7 @@ async function getContentFromEmbedSyncedDocModel(
   host: EditorHost,
   models: EmbedSyncedDocModel[]
 ) {
-  const slice = Slice.fromModels(host.doc, models);
+  const slice = Slice.fromModels(host.store, models);
   return (await getContentFromSlice(host, slice)).trim();
 }
 
@@ -64,7 +67,7 @@ async function getContentFromHubBlockModel(
   return (
     await Promise.all(
       models.map(model => {
-        const slice = Slice.fromModels(host.doc, model.children);
+        const slice = Slice.fromModels(host.store, model.children);
         return getContentFromSlice(host, slice);
       })
     )
@@ -130,6 +133,12 @@ export async function getContentFromSelected(
       }
     );
 
+  const hasPageBlock = notes.find(note => note.isPageBlock());
+  const title =
+    hasPageBlock && host.std.store.meta?.title
+      ? `# ${host.std.store.meta?.title}\n`
+      : '';
+
   const noteContent = await getContentFromHubBlockModel(host, notes);
   const edgelessTextContent = await getContentFromHubBlockModel(
     host,
@@ -140,7 +149,7 @@ export async function getContentFromSelected(
     embedSyncedDocs
   );
 
-  return `${noteContent.join('\n')}
+  return `${title}${noteContent.join('\n')}
 ${edgelessTextContent.join('\n')}
 ${syncedDocsContent}
 ${texts.map(text => text.text.toString()).join('\n')}
@@ -195,8 +204,8 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             where,
             models,
             host,
-            docId: host.doc.id,
-            workspaceId: host.doc.workspace.id,
+            docId: host.store.id,
+            workspaceId: host.store.workspace.id,
             webSearch: visible?.value && enabled?.value,
           } as Parameters<typeof action>[0];
 
@@ -237,8 +246,8 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
           models,
           control: 'format-bar',
           host,
-          docId: host.doc.id,
-          workspaceId: host.doc.workspace.id,
+          docId: host.store.id,
+          workspaceId: host.store.workspace.id,
         } as Parameters<typeof action>[0];
 
         // @ts-expect-error TODO(@Peng): maybe fix this
@@ -276,7 +285,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
     }: {
       input: string;
       signal?: AbortSignal;
-      update: (text: string) => void;
+      update: (answer: AIActionAnswer) => void;
       finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     }) => {
       if (!extract) {
@@ -457,7 +466,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
-        aiPanel.toggle(referenceElement, isEmpty ? undefined : '', false);
+        aiPanel.toggle(referenceElement, isEmpty ? 'input' : 'generate');
       })
       .catch(console.error);
   };

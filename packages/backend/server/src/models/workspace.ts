@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { type Workspace } from '@prisma/client';
+import { Prisma, type Workspace } from '@prisma/client';
 
 import { EventBus } from '../base';
 import { BaseModel } from './base';
 
 declare global {
   interface Events {
+    'workspace.updated': Workspace;
     'workspace.deleted': {
       id: string;
     };
@@ -22,6 +23,8 @@ export type UpdateWorkspaceInput = Pick<
   | 'enableDocEmbedding'
   | 'name'
   | 'avatarKey'
+  | 'indexed'
+  | 'lastCheckEmbeddings'
 >;
 
 @Injectable()
@@ -47,16 +50,25 @@ export class WorkspaceModel extends BaseModel {
   /**
    * Update the workspace with the given data.
    */
-  async update(workspaceId: string, data: UpdateWorkspaceInput) {
+  async update(
+    workspaceId: string,
+    data: UpdateWorkspaceInput,
+    notifyUpdate = true
+  ) {
     const workspace = await this.db.workspace.update({
       where: {
         id: workspaceId,
       },
       data,
     });
-    this.logger.log(
+    this.logger.debug(
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
+
+    if (notifyUpdate) {
+      this.event.emit('workspace.updated', workspace);
+    }
+
     return workspace;
   }
 
@@ -74,6 +86,21 @@ export class WorkspaceModel extends BaseModel {
         id: { in: ids },
       },
     });
+  }
+
+  async list<S extends Prisma.WorkspaceSelect>(
+    where: Prisma.WorkspaceWhereInput = {},
+    select?: S,
+    limit?: number
+  ) {
+    return (await this.db.workspace.findMany({
+      where,
+      select,
+      take: limit,
+      orderBy: {
+        sid: 'asc',
+      },
+    })) as Prisma.WorkspaceGetPayload<{ select: S }>[];
   }
 
   async delete(workspaceId: string) {

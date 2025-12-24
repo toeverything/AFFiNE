@@ -13,7 +13,7 @@ export const navWrapperStyle = style({
     '&[data-has-border=true]': {
       borderRight: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
     },
-    '&[data-is-floating="true"]': {
+    '&[data-is-floating="true"], &[data-is-electron="false"]': {
       backgroundColor: cssVarV2('layer/background/primary'),
     },
   },
@@ -67,7 +67,7 @@ export const navStyle = style({
 export const navHeaderStyle = style({
   flex: '0 0 auto',
   height: '52px',
-  padding: '0px 16px',
+  padding: '0px 8px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',

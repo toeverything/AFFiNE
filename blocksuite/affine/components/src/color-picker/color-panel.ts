@@ -2,7 +2,7 @@ import type { Color, ColorScheme, Palette } from '@blocksuite/affine-model';
 import { DefaultTheme, resolveColor } from '@blocksuite/affine-model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { ColorEvent } from '@blocksuite/affine-shared/utils';
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, type PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -115,12 +115,12 @@ export class EdgelessColorPanel extends LitElement {
     :host {
       display: grid;
       grid-gap: 4px;
-      grid-template-columns: repeat(9, 1fr);
+      grid-template-columns: repeat(var(--columns, 9), 1fr);
     }
 
     /* note */
     :host(.small) {
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(var(--columns, 6), 1fr);
       grid-gap: 8px;
     }
 
@@ -154,6 +154,16 @@ export class EdgelessColorPanel extends LitElement {
 
   get resolvedValue() {
     return this.value && resolveColor(this.value, this.theme);
+  }
+
+  override willUpdate(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has('columns')) {
+      if (this.columns) {
+        this.style.setProperty('--columns', this.columns.toString());
+      } else {
+        this.style.removeProperty('--columns');
+      }
+    }
   }
 
   override render() {
@@ -197,6 +207,9 @@ export class EdgelessColorPanel extends LitElement {
 
   @property({ attribute: false })
   accessor value: Color | null = null;
+
+  @property({ attribute: false })
+  accessor columns: number | undefined = undefined;
 }
 
 export class EdgelessTextColorIcon extends LitElement {

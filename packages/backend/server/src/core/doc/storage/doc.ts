@@ -1,4 +1,6 @@
 import { Logger } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import {
   applyUpdate,
   diffUpdate,
@@ -78,40 +80,56 @@ export abstract class DocStorageAdapter extends Connection {
     const updates = await this.getDocUpdates(spaceId, docId);
 
     if (updates.length) {
-      this.logger.log(
-        `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
-      );
-      const { timestamp, bin, editor } = await this.squash(
+      const docUpdate = await this.squash(
         snapshot ? [snapshot, ...updates] : updates
       );
-
-      const newSnapshot = {
-        spaceId: spaceId,
+      return await this.squashUpdatesToSnapshot(
+        spaceId,
         docId,
-        bin,
-        timestamp,
-        editor,
-      };
-
-      const success = await this.setDocSnapshot(newSnapshot);
-
-      // if there is old snapshot, create a new history record
-      if (success && snapshot) {
-        await this.createDocHistory(snapshot);
-      }
-
-      // always mark updates as merged unless throws
-      const count = await this.markUpdatesMerged(spaceId, docId, updates);
-      if (count > 0) {
-        this.logger.log(
-          `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}`
-        );
-      }
-
-      return newSnapshot;
+        updates,
+        snapshot,
+        docUpdate
+      );
     }
 
     return snapshot;
+  }
+
+  @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
+  private async squashUpdatesToSnapshot(
+    spaceId: string,
+    docId: string,
+    updates: DocUpdate[],
+    snapshot: DocRecord | null,
+    finalUpdate: DocUpdate
+  ) {
+    this.logger.log(
+      `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
+    );
+
+    const { bin, timestamp, editor } = finalUpdate;
+    const newSnapshot: DocRecord = {
+      spaceId,
+      docId,
+      bin,
+      timestamp,
+      editor,
+    };
+
+    const success = await this.setDocSnapshot(newSnapshot);
+
+    // if there is old snapshot, create a new history record
+    if (success && snapshot) {
+      await this.createDocHistory(snapshot);
+    }
+
+    // always mark updates as merged unless throws
+    const count = await this.markUpdatesMerged(spaceId, docId, updates);
+    this.logger.log(
+      `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
+    );
+
+    return newSnapshot;
   }
 
   async getDocDiff(

@@ -74,7 +74,7 @@ declare global {
   }
 }
 
-export type ElementOrFactory = React.ReactElement | (() => React.ReactElement);
+export type ElementOrFactory = React.ReactNode | (() => React.ReactNode);
 
 type LitPortal = {
   id: string;
@@ -139,18 +139,16 @@ export const useLitPortalFactory = () => {
 };
 
 // render a react element to a lit template
-export const useLitPortal = (
-  elementOrFactory: React.ReactElement | (() => React.ReactElement)
-) => {
+export const useLitPortal = (elementOrFactory: ElementOrFactory) => {
   const [anchor, setAnchor] = useState<HTMLElement>();
   const template = useMemo(
     () =>
       createLitPortalAnchor(event => {
+        let anchor: HTMLElement | undefined;
         if (event.name !== 'disconnectedCallback') {
-          setAnchor(event.target as HTMLElement);
-        } else {
-          setAnchor(undefined);
+          anchor = event.target as HTMLElement;
         }
+        setAnchor(anchor);
       }),
     []
   );

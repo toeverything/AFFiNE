@@ -89,7 +89,7 @@ export const pdfContainer = style({
   borderWidth: '1px',
   borderStyle: 'solid',
   borderColor: cssVarV2('layer/insideBorder/border'),
-  background: cssVar('--affine-background-primary-color'),
+  background: cssVar('backgroundPrimaryColor'),
   userSelect: 'none',
   contentVisibility: 'visible',
   display: 'flex',
@@ -132,8 +132,8 @@ export const pdfControlButton = style({
   height: '36px',
   borderWidth: '1px',
   borderStyle: 'solid',
-  borderColor: cssVar('--affine-border-color'),
-  background: cssVar('--affine-white'),
+  borderColor: cssVar('borderColor'),
+  background: cssVar('white'),
 });
 
 export const pdfFooter = style({
@@ -172,4 +172,54 @@ export const pdfPageCount = style({
   fontWeight: 400,
   lineHeight: '20px',
   color: cssVarV2('text/secondary'),
+});
+
+export const pdfLoadingWrapper = style({
+  margin: 'auto',
+});
+
+export const pdfStatus = style({
+  position: 'absolute',
+  left: '18px',
+  bottom: '18px',
+});
+
+export const pdfStatusButton = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '24px',
+  height: '24px',
+  borderRadius: '50%',
+  fontSize: '18px',
+  outline: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  color: cssVarV2('button/pureWhiteText'),
+  background: cssVarV2('status/error'),
+  boxShadow: cssVar('overlayShadow'),
+});
+
+export const pdfStatusMenu = style({
+  width: '244px',
+  gap: '8px',
+  color: cssVarV2('text/primary'),
+  lineHeight: '22px',
+});
+
+export const pdfStatusMenuFooter = style({
+  display: 'flex',
+  justifyContent: 'flex-end',
+});
+
+export const pdfReloadButton = style({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '2px 12px',
+  borderRadius: '8px',
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  outline: 'none',
+  color: cssVarV2('button/primary'),
 });

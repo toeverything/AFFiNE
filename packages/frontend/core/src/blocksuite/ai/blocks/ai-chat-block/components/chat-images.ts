@@ -1,4 +1,4 @@
-import { LightLoadingIcon } from '@blocksuite/affine/components/icons';
+import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
@@ -35,7 +35,7 @@ export class ChatImage extends LitElement {
         () =>
           html`<image-placeholder
             .text=${'Loading image'}
-            .icon=${LightLoadingIcon}
+            .icon=${LoadingIcon()}
           ></image-placeholder>`,
       ],
       [

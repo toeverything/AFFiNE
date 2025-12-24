@@ -60,8 +60,9 @@ export const spacer = style({
   flex: 1,
 });
 
-export const sizeInfo = style({
+export const description = style({
   display: 'flex',
+  gap: '8px',
   alignItems: 'center',
   fontSize: cssVar('fontXs'),
   color: cssVarV2('text/secondary'),

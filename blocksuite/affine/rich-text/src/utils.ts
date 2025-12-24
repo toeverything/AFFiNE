@@ -52,3 +52,17 @@ export function clearMarksOnDiscontinuousInput(
     }
   });
 }
+
+export function getPrefixText(inlineEditor: InlineEditor) {
+  const inlineRange = inlineEditor.getInlineRange();
+  if (!inlineRange || inlineRange.length > 0) return '';
+
+  const nearestLineBreakIndex = inlineEditor.yTextString
+    .slice(0, inlineRange.index)
+    .lastIndexOf('\n');
+  const prefixText = inlineEditor.yTextString.slice(
+    nearestLineBreakIndex + 1,
+    inlineRange.index
+  );
+  return prefixText;
+}

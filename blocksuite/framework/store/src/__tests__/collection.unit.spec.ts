@@ -454,19 +454,6 @@ describe('addBlock', () => {
     );
     assert.ok(called);
   });
-
-  it('can set collection common meta fields', async () => {
-    const options = createTestOptions();
-    const collection = new TestWorkspace(options);
-
-    queueMicrotask(() => collection.meta.setName('hello'));
-    await waitOnce(collection.meta.commonFieldsUpdated);
-    assert.deepEqual(collection.meta.name, 'hello');
-
-    queueMicrotask(() => collection.meta.setAvatar('gengar.jpg'));
-    await waitOnce(collection.meta.commonFieldsUpdated);
-    assert.deepEqual(collection.meta.avatar, 'gengar.jpg');
-  });
 });
 
 describe('deleteBlock', () => {

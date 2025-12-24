@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 
+import { I18n } from '@affine/i18n';
 import {
   app,
   BrowserWindow,
@@ -818,45 +819,57 @@ export class WebContentViewsManager {
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
         // serialize exposed meta that to be used in preload
         additionalArguments: additionalArguments,
+        backgroundThrottling: false,
       },
     });
 
-    if (spellCheckSettings.enabled) {
-      view.webContents.on('context-menu', (_event, params) => {
-        const shouldShow =
-          params.misspelledWord && params.dictionarySuggestions.length > 0;
+    view.webContents.on('context-menu', (_event, params) => {
+      const menu = Menu.buildFromTemplate([
+        {
+          id: 'cut',
+          label: I18n['com.affine.context-menu.cut'](),
+          role: 'cut',
+          enabled: params.editFlags.canCut,
+        },
+        {
+          id: 'copy',
+          label: I18n['com.affine.context-menu.copy'](),
+          role: 'copy',
+          enabled: params.editFlags.canCopy,
+        },
+        {
+          id: 'paste',
+          label: I18n['com.affine.context-menu.paste'](),
+          role: 'paste',
+          enabled: params.editFlags.canPaste,
+        },
+      ]);
 
-        if (!shouldShow) {
-          return;
-        }
-        const menu = new Menu();
+      // Add each spelling suggestion
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(
+          new MenuItem({
+            label: suggestion,
+            click: () => view.webContents.replaceMisspelling(suggestion),
+          })
+        );
+      }
 
-        // Add each spelling suggestion
-        for (const suggestion of params.dictionarySuggestions) {
-          menu.append(
-            new MenuItem({
-              label: suggestion,
-              click: () => view.webContents.replaceMisspelling(suggestion),
-            })
-          );
-        }
+      // Allow users to add the misspelled word to the dictionary
+      if (params.misspelledWord) {
+        menu.append(
+          new MenuItem({
+            label: 'Add to dictionary', // TODO: i18n
+            click: () =>
+              view.webContents.session.addWordToSpellCheckerDictionary(
+                params.misspelledWord
+              ),
+          })
+        );
+      }
 
-        // Allow users to add the misspelled word to the dictionary
-        if (params.misspelledWord) {
-          menu.append(
-            new MenuItem({
-              label: 'Add to dictionary', // TODO: i18n
-              click: () =>
-                view.webContents.session.addWordToSpellCheckerDictionary(
-                  params.misspelledWord
-                ),
-            })
-          );
-        }
-
-        menu.popup();
-      });
-    }
+      menu.popup();
+    });
 
     this.webViewsMap$.next(this.tabViewsMap.set(viewId, view));
     let unsub = () => {};
@@ -864,6 +877,7 @@ export class WebContentViewsManager {
     // shell process do not need to connect to helper process
     if (type !== 'shell') {
       view.webContents.on('did-finish-load', () => {
+        unsub();
         unsub = helperProcessManager.connectRenderer(view.webContents);
       });
     } else {
@@ -878,7 +892,6 @@ export class WebContentViewsManager {
     }
 
     view.webContents.on('destroyed', () => {
-      unsub();
       this.webViewsMap$.next(
         new Map(
           [...this.tabViewsMap.entries()].filter(([key]) => key !== viewId)
@@ -924,7 +937,7 @@ export async function handleWebContentsResize(webContents?: WebContents) {
   if (isMacOS()) {
     const window = await getMainWindow();
     const factor = webContents?.getZoomFactor() || 1;
-    window?.setWindowButtonPosition({ x: 16 * factor, y: 24 * factor - 6 });
+    window?.setWindowButtonPosition({ x: 14 * factor, y: 14 * factor - 2 });
   }
 }
 

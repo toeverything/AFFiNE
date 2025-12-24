@@ -48,7 +48,11 @@ const codePreprocessor: MarkdownAdapterPreprocessor = {
         }
 
         trimmedLine = trimmedLine.trimEnd();
-        if (!trimmedLine.startsWith('<') && !trimmedLine.endsWith('>')) {
+        if (
+          !trimmedLine.startsWith('<') &&
+          !trimmedLine.endsWith('>') &&
+          !trimmedLine.includes(' ')
+        ) {
           // check if it is a url link and wrap it with the angle brackets
           // sometimes the url includes emphasis `_` that will break URL parsing
           //

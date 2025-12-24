@@ -68,6 +68,7 @@ export const TrashButton = () => {
           }
         }
       },
+      allowExternal: true,
     }),
     [docsService.list, guardService, openConfirmModal, t]
   );

@@ -3,7 +3,7 @@ import {
   EdgelessCRUDIdentifier,
   reassociateConnectorsCommand,
 } from '@blocksuite/affine-block-surface';
-import type { AliasInfo } from '@blocksuite/affine-model';
+import { type AliasInfo } from '@blocksuite/affine-model';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
@@ -15,12 +15,11 @@ import {
 import { Bound } from '@blocksuite/global/gfx';
 import { type BlockComponent, BlockStdScope } from '@blocksuite/std';
 import { html, nothing } from 'lit';
-import { query, queryAsync } from 'lit/decorators.js';
+import { query } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { when } from 'lit/directives/when.js';
 
 import { EmbedSyncedDocConfigExtension } from './configs';
 import { EmbedSyncedDocBlockComponent } from './embed-synced-doc-block';
@@ -31,8 +30,8 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
   @query('.affine-embed-synced-doc-edgeless-header-wrapper')
   accessor headerWrapper: HTMLDivElement | null = null;
 
-  @queryAsync('affine-preview-root')
-  accessor contentElement!: Promise<BlockComponent | null>;
+  @query('affine-preview-root')
+  accessor contentElement: BlockComponent | null = null;
 
   protected override _renderSyncedView = () => {
     const { syncedDoc, editorMode } = this;
@@ -123,29 +122,25 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
           <div class="affine-embed-synced-doc-edgeless-header-wrapper">
             ${header}
           </div>
-          ${when(
-            !this.model.isFolded,
-            () =>
-              html`<div class="affine-embed-synced-doc-editor">
-                  ${this.isPageMode && this._isEmptySyncedDoc
-                    ? html`
-                        <div class="affine-embed-synced-doc-editor-empty">
-                          <span>
-                            This is a linked doc, you can add content here.
-                          </span>
-                        </div>
-                      `
-                    : guard([editorMode, syncedDoc], renderEditor)}
-                </div>
-                <div class="affine-embed-synced-doc-editor-overlay"></div>`
-          )}
+          <div class="affine-embed-synced-doc-editor">
+            ${this.isPageMode && this._isEmptySyncedDoc
+              ? html`
+                  <div class="affine-embed-synced-doc-editor-empty">
+                    <span>
+                      This is a linked doc, you can add content here.
+                    </span>
+                  </div>
+                `
+              : guard([editorMode, syncedDoc], renderEditor)}
+          </div>
+          <div class="affine-embed-synced-doc-editor-overlay"></div>
         </div>
       `
     );
   };
 
   override convertToCard = (aliasInfo?: AliasInfo) => {
-    const { id, doc, xywh } = this.model;
+    const { id, store, xywh } = this.model;
     const { caption } = this.model.props;
 
     const style = 'vertical';
@@ -176,7 +171,7 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
       editing: false,
       elements: [newId],
     });
-    doc.deleteBlock(this.model);
+    store.deleteBlock(this.model);
   };
 
   override renderGfxBlock() {

@@ -11,11 +11,10 @@ import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
 import { dragHandler } from '../../../core/utils/wc-dnd/dnd-context.js';
-import type { KanbanSingleView } from '../kanban-view-manager.js';
+import type { MobileKanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 const styles = css`
   mobile-kanban-group {
@@ -62,10 +61,12 @@ export class MobileKanbanGroup extends SignalWatcher(
 
   private readonly clickAddCard = () => {
     this.view.addCard('end', this.group.key);
+    this.requestUpdate();
   };
 
   private readonly clickAddCardInStart = () => {
     this.view.addCard('start', this.group.key);
+    this.requestUpdate();
   };
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
@@ -77,15 +78,17 @@ export class MobileKanbanGroup extends SignalWatcher(
             name: 'Ungroup',
             hide: () => this.group.value == null,
             select: () => {
-              this.group.rows.forEach(id => {
-                this.group.manager.removeFromGroup(id, this.group.key);
+              this.group.rows.forEach(row => {
+                this.group.manager.removeFromGroup(row.rowId, this.group.key);
               });
+              this.requestUpdate();
             },
           }),
           menu.action({
             name: 'Delete Cards',
             select: () => {
-              this.view.rowDelete(this.group.rows);
+              this.view.rowsDelete(this.group.rows.map(row => row.rowId));
+              this.requestUpdate();
             },
           }),
         ],
@@ -106,15 +109,14 @@ export class MobileKanbanGroup extends SignalWatcher(
       <div class="mobile-group-body">
         ${repeat(
           cards,
-          id => id,
-          id => {
+          row => row.rowId,
+          row => {
             return html`
               <mobile-kanban-card
-                data-card-id="${id}"
+                data-card-id="${row.rowId}"
                 .groupKey="${this.group.key}"
-                .dataViewEle="${this.dataViewEle}"
-                .view="${this.view}"
-                .cardId="${id}"
+                .cardId="${row.rowId}"
+                .kanbanViewLogic="${this.kanbanViewLogic}"
               ></mobile-kanban-card>
             `;
           }
@@ -134,13 +136,14 @@ export class MobileKanbanGroup extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
+  accessor group!: Group;
 
   @property({ attribute: false })
-  accessor group!: GroupData;
+  accessor kanbanViewLogic!: MobileKanbanViewUILogic;
 
-  @property({ attribute: false })
-  accessor view!: KanbanSingleView;
+  get view() {
+    return this.kanbanViewLogic.view;
+  }
 }
 
 declare global {

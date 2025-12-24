@@ -1,92 +1,80 @@
-import { randomUUID } from 'node:crypto';
-import { mock } from 'node:test';
-
-import ava, { TestFn } from 'ava';
+import test from 'ava';
 import { ZodError } from 'zod';
 
-import { createTestingModule, type TestingModule } from '../../__tests__/utils';
-import { Config } from '../../base/config';
-import { Models, User } from '..';
+import { createModule } from '../../__tests__/create-module';
+import { Mockers } from '../../__tests__/mocks';
+import { Models } from '..';
 
-interface Context {
-  config: Config;
-  module: TestingModule;
-  models: Models;
-}
+const module = await createModule();
+const models = module.get(Models);
 
-const test = ava as TestFn<Context>;
-
-test.before(async t => {
-  const module = await createTestingModule();
-
-  t.context.models = module.get(Models);
-  t.context.config = module.get(Config);
-  t.context.module = module;
-  await t.context.module.initTestingDB();
-});
-
-let user: User;
-
-test.beforeEach(async t => {
-  user = await t.context.models.user.create({
-    email: `test-${randomUUID()}@affine.pro`,
-  });
-});
-
-test.afterEach.always(() => {
-  mock.reset();
-  mock.timers.reset();
-});
-
-test.after(async t => {
-  await t.context.module.close();
+test.after.always(async () => {
+  await module.close();
 });
 
 test('should get a user settings with default value', async t => {
-  const settings = await t.context.models.userSettings.get(user.id);
-  t.deepEqual(settings, {
-    receiveInvitationEmail: true,
-    receiveMentionEmail: true,
-  });
+  const user = await module.create(Mockers.User);
+
+  const settings = await models.userSettings.get(user.id);
+
+  t.snapshot(settings);
 });
 
 test('should update a user settings', async t => {
-  const settings = await t.context.models.userSettings.set(user.id, {
+  const user = await module.create(Mockers.User);
+
+  const settings = await models.userSettings.set(user.id, {
     receiveInvitationEmail: false,
   });
-  t.deepEqual(settings, {
-    receiveInvitationEmail: false,
-    receiveMentionEmail: true,
-  });
-  const settings2 = await t.context.models.userSettings.get(user.id);
+
+  t.snapshot(settings);
+
+  const settings2 = await models.userSettings.get(user.id);
+
   t.deepEqual(settings2, settings);
 
   // update existing setting
-  const setting3 = await t.context.models.userSettings.set(user.id, {
+  const setting3 = await models.userSettings.set(user.id, {
     receiveInvitationEmail: true,
   });
-  t.deepEqual(setting3, {
-    receiveInvitationEmail: true,
-    receiveMentionEmail: true,
-  });
-  const setting4 = await t.context.models.userSettings.get(user.id);
+
+  t.snapshot(setting3);
+
+  const setting4 = await models.userSettings.get(user.id);
+
   t.deepEqual(setting4, setting3);
 
-  const setting5 = await t.context.models.userSettings.set(user.id, {
+  const setting5 = await models.userSettings.set(user.id, {
     receiveMentionEmail: false,
     receiveInvitationEmail: false,
   });
-  t.deepEqual(setting5, {
-    receiveInvitationEmail: false,
-    receiveMentionEmail: false,
-  });
-  const setting6 = await t.context.models.userSettings.get(user.id);
+
+  t.snapshot(setting5);
+
+  const setting6 = await models.userSettings.get(user.id);
+
   t.deepEqual(setting6, setting5);
 });
 
+test('should set receiveCommentEmail to false', async t => {
+  const user = await module.create(Mockers.User);
+
+  const settings = await models.userSettings.set(user.id, {
+    receiveCommentEmail: false,
+  });
+
+  t.snapshot(settings);
+
+  const settings2 = await models.userSettings.get(user.id);
+
+  t.deepEqual(settings2, settings);
+});
+
 test('should throw error when update settings with invalid payload', async t => {
+  const user = await module.create(Mockers.User);
+
   await t.throwsAsync(
-    t.context.models.userSettings.set(user.id, {
+    models.userSettings.set(user.id, {
       // @ts-expect-error invalid setting input types
       receiveInvitationEmail: 1,
     }),

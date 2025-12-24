@@ -37,7 +37,7 @@ export class ChatPanelUtils {
   }
 
   public static async closeChatPanel(page: Page) {
-    await page.getByTestId('right-sidebar-toggle').click({
+    await page.getByTestId('right-sidebar-close').click({
       delay: 200,
     });
     await expect(page.getByTestId('sidebar-tab-content-chat')).toBeHidden();
@@ -165,9 +165,11 @@ export class ChatPanelUtils {
     const actionList = await message.getByTestId('chat-action-list');
     return {
       message,
-      content: await message
-        .locator('chat-content-rich-text editor-host')
-        .innerText(),
+      content: (
+        await message
+          .locator('chat-content-rich-text editor-host')
+          .allInnerTexts()
+      ).join(' '),
       actions: {
         copy: async () => actions.getByTestId('action-copy-button').click(),
         retry: async () => actions.getByTestId('action-retry-button').click(),
@@ -197,9 +199,11 @@ export class ChatPanelUtils {
   }
 
   public static async chatWithDoc(page: Page, docName: string) {
-    const withButton = await page.getByTestId('chat-panel-with-button');
-    await withButton.click();
-    const withMenu = await page.getByTestId('ai-add-popover');
+    const withButton = page.getByTestId('chat-panel-with-button');
+    await withButton.hover();
+    await withButton.click({ delay: 200 });
+    const withMenu = page.getByTestId('ai-add-popover');
+    await withMenu.waitFor({ state: 'visible' });
     await withMenu.getByText(docName).click();
     await page.getByTestId('chat-panel-chips').getByText(docName);
   }
@@ -217,11 +221,22 @@ export class ChatPanelUtils {
       const fileChooserPromise = page.waitForEvent('filechooser');
       const withButton = page.getByTestId('chat-panel-with-button');
       await withButton.hover();
-      await withButton.click();
+      await withButton.click({ delay: 200 });
       const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-files').click();
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(attachment);
+
+      await expect(async () => {
+        const states = await page
+          .getByTestId('chat-panel-chip')
+          .evaluateAll(elements =>
+            elements.map(el => el.getAttribute('data-state'))
+          );
+
+        expect(states.every(state => state === 'finished')).toBe(true);
+      }).toPass({ timeout: 20000 });
     }
     await expect(async () => {
       const states = await page
@@ -236,31 +251,44 @@ export class ChatPanelUtils {
     await this.makeChat(page, text);
   }
 
-  public static async chatWithImages(
+  public static async uploadImages(
     page: Page,
-    images: { name: string; mimeType: string; buffer: Buffer }[],
-    text: string
+    images: { name: string; mimeType: string; buffer: Buffer }[]
   ) {
     await page.evaluate(() => {
       delete window.showOpenFilePicker;
     });
 
     const fileChooserPromise = page.waitForEvent('filechooser');
-    // Open file upload dialog
-    await page.getByTestId('chat-panel-input-image-upload').click();
+    const withButton = page.getByTestId('chat-panel-with-button');
+    await withButton.hover();
+    await withButton.click({ delay: 200 });
+    const withMenu = page.getByTestId('ai-add-popover');
+    await withMenu.waitFor({ state: 'visible' });
+    await withMenu.getByTestId('ai-chat-with-images').click();
 
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(images);
+  }
 
-    await page.waitForSelector('ai-chat-input img');
+  public static async chatWithImages(
+    page: Page,
+    images: { name: string; mimeType: string; buffer: Buffer }[],
+    text: string
+  ) {
+    await this.uploadImages(page, images);
+
+    await page.waitForSelector('ai-chat-input .image-container');
     await this.makeChat(page, text);
   }
 
   public static async chatWithTags(page: Page, tags: string[]) {
     for (const tag of tags) {
-      const withButton = await page.getByTestId('chat-panel-with-button');
-      await withButton.click();
-      const withMenu = await page.getByTestId('ai-add-popover');
+      const withButton = page.getByTestId('chat-panel-with-button');
+      await withButton.hover();
+      await withButton.click({ delay: 200 });
+      const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-tags').click();
       await withMenu.getByText(tag).click();
       await page.getByTestId('chat-panel-chips').getByText(tag);
@@ -273,9 +301,11 @@ export class ChatPanelUtils {
 
   public static async chatWithCollections(page: Page, collections: string[]) {
     for (const collection of collections) {
-      const withButton = await page.getByTestId('chat-panel-with-button');
-      await withButton.click();
-      const withMenu = await page.getByTestId('ai-add-popover');
+      const withButton = page.getByTestId('chat-panel-with-button');
+      await withButton.hover();
+      await withButton.click({ delay: 200 });
+      const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-collections').click();
       await withMenu.getByText(collection).click();
       await page.getByTestId('chat-panel-chips').getByText(collection);
@@ -287,15 +317,28 @@ export class ChatPanelUtils {
   }
 
   public static async waitForEmbeddingProgress(page: Page) {
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
+    try {
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'visible',
+      });
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'hidden',
+      });
+    } catch {
+      // do nothing
+    }
+  }
+
+  public static async openChatInputPreference(page: Page) {
+    const trigger = page.getByTestId('chat-input-preference-trigger');
+    await trigger.click();
+    await page.getByTestId('chat-input-preference').waitFor({
       state: 'visible',
-    });
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
-      state: 'hidden',
     });
   }
 
   public static async enableNetworkSearch(page: Page) {
+    await this.openChatInputPreference(page);
     const networkSearch = page.getByTestId('chat-network-search');
     if ((await networkSearch.getAttribute('data-active')) === 'false') {
       await networkSearch.click();
@@ -303,6 +346,7 @@ export class ChatPanelUtils {
   }
 
   public static async disableNetworkSearch(page: Page) {
+    await this.openChatInputPreference(page);
     const networkSearch = page.getByTestId('chat-network-search');
     if ((await networkSearch.getAttribute('data-active')) === 'true') {
       await networkSearch.click();
@@ -310,6 +354,7 @@ export class ChatPanelUtils {
   }
 
   public static async enableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'false') {
       await reasoning.click();
@@ -317,6 +362,7 @@ export class ChatPanelUtils {
   }
 
   public static async disableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'true') {
       await reasoning.click();
@@ -326,11 +372,5 @@ export class ChatPanelUtils {
   public static async isNetworkSearchEnabled(page: Page) {
     const networkSearch = await page.getByTestId('chat-network-search');
     return (await networkSearch.getAttribute('aria-disabled')) === 'false';
-  }
-
-  public static async isImageUploadEnabled(page: Page) {
-    const imageUpload = await page.getByTestId('chat-panel-input-image-upload');
-    const disabled = await imageUpload.getAttribute('data-disabled');
-    return disabled === 'false';
   }
 }

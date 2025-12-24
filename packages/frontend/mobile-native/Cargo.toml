@@ -11,9 +11,12 @@ crate-type = ["cdylib", "staticlib"]
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
+[features]
+use-as-lib = ["affine_nbstore/use-as-lib"]
+
 [dependencies]
-affine_common  = { workspace = true }
-affine_nbstore = { workspace = true, features = ["use-as-lib"] }
+affine_common  = { workspace = true, features = ["hashcash"] }
+affine_nbstore = { workspace = true }
 anyhow         = { workspace = true }
 base64-simd    = { workspace = true }
 chrono         = { workspace = true }
@@ -22,8 +25,14 @@ thiserror      = { workspace = true }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
-objc2            = { workspace = true }
-objc2-foundation = { workspace = true, features = ["NSArray", "NSFileManager", "NSPathUtilities", "NSString", "NSURL"] }
+objc2 = { workspace = true }
+objc2-foundation = { workspace = true, features = [
+  "NSArray",
+  "NSFileManager",
+  "NSPathUtilities",
+  "NSString",
+  "NSURL",
+] }
 
 [target.'cfg(not(any(target_os = "ios", target_os = "macos")))'.dependencies]
 homedir = { workspace = true }

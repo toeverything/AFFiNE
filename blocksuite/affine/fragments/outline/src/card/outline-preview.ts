@@ -52,7 +52,7 @@ export class OutlineBlockPreview extends SignalWatcher(
       if (delta.attributes?.reference) {
         // If linked doc, render linked doc icon and the doc title.
         const refAttribute = delta.attributes.reference;
-        const refMeta = block.doc.workspace.meta.docMetas.find(
+        const refMeta = block.store.workspace.meta.docMetas.find(
           doc => doc.id === refAttribute.pageId
         );
         const unavailable = !refMeta;

@@ -220,6 +220,24 @@ export class UIEventDispatcher extends LifeCycleWatcher {
 
       this._setActive(false);
     });
+    // When the document is hidden, the event dispatcher should be inactive
+    this.disposables.addFromEvent(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        this._setActive(false);
+      }
+    });
+    // When the selection is outside the host, the event dispatcher should be inactive
+    this.disposables.addFromEvent(document, 'selectionchange', () => {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const { anchorNode, focusNode } = sel;
+      if (
+        (anchorNode && !this.host.contains(anchorNode)) ||
+        (focusNode && !this.host.contains(focusNode))
+      ) {
+        this._setActive(false);
+      }
+    });
   }
 
   private _buildEventScopeBySelection(name: EventName) {
@@ -299,7 +317,7 @@ export class UIEventDispatcher extends LifeCycleWatcher {
     return (
       element instanceof HTMLInputElement ||
       element instanceof HTMLTextAreaElement ||
-      (element instanceof EditorHost && !element.doc.readonly) ||
+      (element instanceof EditorHost && !element.store.readonly) ||
       (element as HTMLElement).isContentEditable
     );
   }

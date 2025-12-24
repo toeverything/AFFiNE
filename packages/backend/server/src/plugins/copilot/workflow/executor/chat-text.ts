@@ -3,8 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { ChatPrompt, PromptService } from '../../prompt';
 import {
   CopilotChatOptions,
+  CopilotProvider,
   CopilotProviderFactory,
-  CopilotTextProvider,
 } from '../../providers';
 import { WorkflowNodeData, WorkflowNodeType } from '../types';
 import { NodeExecuteResult, NodeExecuteState, NodeExecutorType } from './types';
@@ -25,7 +25,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
     [
       WorkflowNodeData & { nodeType: WorkflowNodeType.Basic },
       ChatPrompt,
-      CopilotTextProvider,
+      CopilotProvider,
     ]
   > {
     if (data.nodeType !== WorkflowNodeType.Basic) {
@@ -48,7 +48,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
     const provider = await this.providerFactory.getProviderByModel(
       prompt.model
     );
-    if (provider && 'generateText' in provider) {
+    if (provider && 'text' in provider) {
       return [data, prompt, provider];
     }
 
@@ -74,9 +74,9 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
     if (paramKey) {
       // update params with custom key
       const result = {
-        [paramKey]: await provider.generateText(
+        [paramKey]: await provider.text(
+          { modelId: prompt.model },
           finalMessage,
-          prompt.model,
           config
         ),
       };
@@ -85,9 +85,9 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
         params: paramToucher?.(result) ?? result,
       };
     } else {
-      for await (const content of provider.generateTextStream(
+      for await (const content of provider.streamText(
+        { modelId: prompt.model },
         finalMessage,
-        prompt.model,
         config
       )) {
         yield { type: NodeExecuteState.Content, nodeId: id, content };

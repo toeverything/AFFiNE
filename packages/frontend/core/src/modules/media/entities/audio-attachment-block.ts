@@ -3,7 +3,7 @@ import {
   type TranscriptionBlockModel,
 } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
-import { encodeAudioBlobToOpusSlices } from '@affine/core/utils/webm-encoding';
+import { encodeAudioBlobToOpusSlices } from '@affine/core/utils/opus-encoding';
 import { DebugLogger } from '@affine/debug';
 import { AiJobStatus } from '@affine/graphql';
 import track from '@affine/track';
@@ -66,7 +66,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     computed(() => {
       // find the last transcription block
       for (const key of [...this.props.childMap.value.keys()].reverse()) {
-        const block = this.props.doc.getBlock$(key);
+        const block = this.props.store.getBlock$(key);
         if (block?.flavour === TranscriptionBlockFlavour) {
           return block.model as unknown as TranscriptionBlockModel;
         }
@@ -113,7 +113,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
 
     if (!transcriptionBlockProps) {
       // transcription block is not created yet, we need to create it
-      this.props.doc.addBlock(
+      this.props.store.addBlock(
         'affine:transcription',
         {
           transcription: {},
@@ -179,14 +179,14 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       title: string,
       collapsed: boolean = false
     ) => {
-      const calloutId = this.props.doc.addBlock(
+      const calloutId = this.props.store.addBlock(
         'affine:callout',
         {
           emoji,
         },
         this.transcriptionBlock$.value?.id
       );
-      this.props.doc.addBlock(
+      this.props.store.addBlock(
         'affine:paragraph',
         {
           type: 'h6',
@@ -223,7 +223,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
             insert: ': ' + sanitizeText(segment.transcription),
           },
         ];
-        this.props.doc.addBlock(
+        this.props.store.addBlock(
           'affine:paragraph',
           {
             text: new Text(deltaInserts),
@@ -238,7 +238,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       await insertFromMarkdown(
         undefined,
         summary,
-        this.props.doc,
+        this.props.store,
         calloutId,
         1
       );
@@ -252,7 +252,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       await insertFromMarkdown(
         undefined,
         actions ?? '',
-        this.props.doc,
+        this.props.store,
         calloutId,
         1
       );

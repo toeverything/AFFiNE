@@ -20,3 +20,7 @@
 
 - [Store](classes/Store.md)
 - [StoreSlots](interfaces/StoreSlots.md)
+
+## Other
+
+- [Schema](classes/Schema.md)

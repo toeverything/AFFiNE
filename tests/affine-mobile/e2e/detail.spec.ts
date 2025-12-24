@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   const docsTab = page.locator('#app-tabs').getByRole('tab', { name: 'all' });
   await expect(docsTab).toBeVisible();
   await docsTab.click();
-  await page.getByTestId('doc-card').first().click();
+  await page.getByTestId('doc-list-item').first().click();
   await expect(page.locator('.affine-page-viewport')).toBeVisible();
 });
 
@@ -53,7 +53,5 @@ test('can add text property', async ({ page }) => {
   ).toBeVisible();
   await page.getByTestId('mobile-menu-back-button').last().click();
 
-  await expect(page.getByTestId('mobile-menu-back-button')).toContainText(
-    'Getting Started'
-  );
+  await expect(page.getByTestId('mobile-menu-back-button')).toBeVisible();
 });

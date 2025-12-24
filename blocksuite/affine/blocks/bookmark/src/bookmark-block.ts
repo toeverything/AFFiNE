@@ -6,16 +6,21 @@ import type {
   BookmarkBlockModel,
   LinkPreviewData,
 } from '@blocksuite/affine-model';
+import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import {
+  BlockElementCommentManager,
+  CitationProvider,
   DocModeProvider,
-  LinkPreviewerService,
+  LinkPreviewServiceIdentifier,
 } from '@blocksuite/affine-shared/services';
+import { normalizeUrl } from '@blocksuite/affine-shared/utils';
 import { BlockSelection } from '@blocksuite/std';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
+import { filter } from 'rxjs/operators';
 
 import { refreshBookmarkUrlData } from './utils.js';
 
@@ -71,8 +76,8 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     this.loading = true;
     this.error = false;
 
-    this.std.store
-      .get(LinkPreviewerService)
+    this.std
+      .get(LinkPreviewServiceIdentifier)
       .query(this.model.props.url, this._fetchAbortController.signal)
       .then(data => {
         this._localLinkPreview$.value = {
@@ -98,12 +103,12 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     selectionManager.setGroup('note', [blockSelection]);
   };
 
+  get link() {
+    return normalizeUrl(this.model.props.url);
+  }
+
   open = () => {
-    let link = this.model.props.url;
-    if (!link.match(/^[a-zA-Z]+:\/\//)) {
-      link = 'https://' + link;
-    }
-    window.open(link, '_blank');
+    window.open(this.link, '_blank');
   };
 
   refreshData = () => {
@@ -112,17 +117,33 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     );
   };
 
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   get isCitation() {
+    return this.citationService.isCitationModel(this.model);
+  }
+
+  get imageProxyService() {
+    return this.std.get(ImageProxyService);
+  }
+
+  get isCommentHighlighted() {
     return (
-      !!this.model.props.footnoteIdentifier &&
-      this.model.props.style === 'citation'
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }
 
   handleClick = (event: MouseEvent) => {
     event.stopPropagation();
 
-    if (this.model.parent?.flavour !== 'affine:surface' && !this.doc.readonly) {
+    if (
+      this.model.parent?.flavour !== 'affine:surface' &&
+      !this.store.readonly
+    ) {
       this.selectBlock();
     }
   };
@@ -135,9 +156,10 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
   private readonly _renderCitationView = () => {
     const { url, footnoteIdentifier } = this.model.props;
     const { icon, title, description } = this.linkPreview$.value;
+    const iconSrc = icon ? this.imageProxyService.buildUrl(icon) : undefined;
     return html`
       <affine-citation-card
-        .icon=${icon}
+        .icon=${iconSrc}
         .citationTitle=${title || url}
         .citationContent=${description}
         .citationIdentifier=${footnoteIdentifier}
@@ -154,6 +176,31 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
       .loading=${this.loading}
       .error=${this.error}
     ></bookmark-card>`;
+  };
+
+  private readonly _trackCitationDeleteEvent = () => {
+    // Check citation delete event
+    this._disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+            const { model } = payload;
+            if (!this.citationService.isCitationModel(model)) return false;
+            return true;
+          })
+        )
+        .subscribe(() => {
+          this.citationService.trackEvent('Delete');
+        })
+    );
   };
 
   override connectedCallback() {
@@ -178,7 +225,7 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     ) {
       // When the doc is readonly, and the preview data not provided
       // We should fetch the preview data and update the local link preview data
-      if (this.doc.readonly) {
+      if (this.store.readonly) {
         this._updateLocalLinkPreview();
         return;
       }
@@ -193,6 +240,8 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
         }
       })
     );
+
+    this._trackCitationDeleteEvent();
   }
 
   override disconnectedCallback(): void {

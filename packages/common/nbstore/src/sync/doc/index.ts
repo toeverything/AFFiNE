@@ -1,9 +1,20 @@
 import type { Observable } from 'rxjs';
-import { combineLatest, map, of, ReplaySubject, share } from 'rxjs';
+import {
+  combineLatest,
+  filter,
+  first,
+  lastValueFrom,
+  map,
+  of,
+  ReplaySubject,
+  share,
+  throttleTime,
+} from 'rxjs';
 
 import type { DocStorage, DocSyncStorage } from '../../storage';
 import { DummyDocStorage } from '../../storage/dummy/doc';
 import { DummyDocSyncStorage } from '../../storage/dummy/doc-sync';
+import { takeUntilAbort } from '../../utils/take-until-abort';
 import { MANUALLY_STOP } from '../../utils/throw-if-aborted';
 import type { PeerStorageOptions } from '../types';
 import { DocSyncPeer } from './peer';
@@ -26,6 +37,7 @@ export interface DocSyncDocState {
 export interface DocSync {
   readonly state$: Observable<DocSyncState>;
   docState$(docId: string): Observable<DocSyncDocState>;
+  waitForSynced(docId?: string, abort?: AbortSignal): Promise<void>;
   addPriority(id: string, priority: number): () => void;
   resetSync(): Promise<void>;
 }
@@ -39,7 +51,9 @@ export class DocSyncImpl implements DocSync {
   );
   private abort: AbortController | null = null;
 
-  state$ = combineLatest(this.peers.map(peer => peer.peerState$)).pipe(
+  private readonly _state$ = combineLatest(
+    this.peers.map(peer => peer.peerState$)
+  ).pipe(
     map(allPeers =>
       allPeers.length === 0
         ? {
@@ -66,6 +80,14 @@ export class DocSyncImpl implements DocSync {
     })
   ) as Observable<DocSyncState>;
 
+  state$ = this._state$.pipe(
+    // throttle the state to 1 second to avoid spamming the UI
+    throttleTime(1000, undefined, {
+      leading: true,
+      trailing: true,
+    })
+  );
+
   constructor(
     readonly storages: PeerStorageOptions<DocStorage>,
     readonly sync: DocSyncStorage
@@ -84,7 +106,7 @@ export class DocSyncImpl implements DocSync {
     );
   }
 
-  docState$(docId: string): Observable<DocSyncDocState> {
+  private _docState$(docId: string): Observable<DocSyncDocState> {
     if (this.peers.length === 0) {
       return of({
         errorMessage: null,
@@ -103,6 +125,29 @@ export class DocSyncImpl implements DocSync {
           synced: allPeers.every(peer => peer.synced),
         };
       })
+    );
+  }
+
+  docState$(docId: string): Observable<DocSyncDocState> {
+    return this._docState$(docId).pipe(
+      // throttle the state to 1 second to avoid spamming the UI
+      throttleTime(1000, undefined, {
+        leading: true,
+        trailing: true,
+      })
+    );
+  }
+
+  async waitForSynced(docId?: string, abort?: AbortSignal): Promise<void> {
+    const source$: Observable<DocSyncDocState | DocSyncState> = docId
+      ? this._docState$(docId)
+      : this._state$;
+    await lastValueFrom(
+      source$.pipe(
+        filter(state => state.synced),
+        takeUntilAbort(abort),
+        first()
+      )
     );
   }
 

@@ -24,6 +24,7 @@ export interface WorkspaceProfileInfo {
   isOwner?: boolean;
   isAdmin?: boolean;
   isTeam?: boolean;
+  isEmpty?: boolean;
 }
 
 /**

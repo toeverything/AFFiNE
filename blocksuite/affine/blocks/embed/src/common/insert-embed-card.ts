@@ -46,10 +46,10 @@ export function insertEmbedCard(
   if (blockId) {
     const block = host.view.getBlock(blockId);
     if (!block) return;
-    const parent = host.doc.getParent(block.model);
+    const parent = host.store.getParent(block.model);
     if (!parent) return;
     const index = parent.children.indexOf(block.model);
-    const cardId = host.doc.addBlock(
+    const cardId = host.store.addBlock(
       flavour as never,
       props,
       parent,

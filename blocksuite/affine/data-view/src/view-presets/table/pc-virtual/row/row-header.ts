@@ -7,14 +7,17 @@ import { nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html } from 'lit/static-html.js';
 
-import type { TableSingleView } from '../../table-view-manager.js';
-import type { VirtualTableView } from '../table-view.js';
+import type { VirtualTableViewUILogic } from '../table-view-ui-logic.js';
 import type { TableGridCell } from '../types.js';
-import * as styles from './row-header.css.js';
+import * as styles from './row-header-css.js';
 
 export class TableRowHeader extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
+  get view() {
+    return this.tableViewLogic.view;
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.disposables.add(
@@ -42,7 +45,7 @@ export class TableRowHeader extends SignalWatcher(
   };
 
   get selectionController() {
-    return this.tableView.selectionController;
+    return this.tableViewLogic.selectionController;
   }
 
   get rowSelected$() {
@@ -115,10 +118,7 @@ export class TableRowHeader extends SignalWatcher(
   accessor gridCell!: TableGridCell;
 
   @property({ attribute: false })
-  accessor view!: TableSingleView;
-
-  @property({ attribute: false })
-  accessor tableView!: VirtualTableView;
+  accessor tableViewLogic!: VirtualTableViewUILogic;
 }
 
 declare global {

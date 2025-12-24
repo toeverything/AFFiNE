@@ -33,7 +33,7 @@ test('should create a page with a local first avatar and remove it', async ({
     .nth(0)
     .getByTestId('workspace-avatar')
     .click();
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
   await page.getByTestId('workspace-name').click();
   await page
     .getByTestId('workspace-card')

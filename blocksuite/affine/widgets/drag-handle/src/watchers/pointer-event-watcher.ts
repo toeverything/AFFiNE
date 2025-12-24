@@ -41,7 +41,7 @@ export class PointerEventWatcher {
   }
 
   private readonly _canEditing = (noteBlock: BlockComponent) => {
-    if (noteBlock.doc.id !== this.widget.doc.id) return false;
+    if (noteBlock.store.id !== this.widget.store.id) return false;
 
     if (this.widget.mode === 'page') return true;
 
@@ -178,7 +178,7 @@ export class PointerEventWatcher {
 
     this.widget.anchorBlockId.value = blockId;
 
-    if (insideDatabaseTable(closestBlock) || this.widget.doc.readonly) {
+    if (insideDatabaseTable(closestBlock) || this.widget.store.readonly) {
       this.widget.hide();
       return;
     }
@@ -226,7 +226,7 @@ export class PointerEventWatcher {
     ctx => {
       if (this._isPointerDown) return;
       if (
-        this.widget.doc.readonly ||
+        this.widget.store.readonly ||
         this.widget.dragging ||
         !this.widget.isConnected
       ) {

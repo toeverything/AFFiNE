@@ -7,10 +7,14 @@ import { autoScrollOnBoundary } from '../../../../core/utils/auto-scroll.js';
 import { startDrag } from '../../../../core/utils/drag.js';
 import { KanbanCard } from '../card.js';
 import { KanbanGroup } from '../group.js';
-import type { DataViewKanban } from '../kanban-view.js';
+import type { KanbanViewUILogic } from '../kanban-view-ui-logic.js';
 
 export class KanbanDragController implements ReactiveController {
   dragStart = (ele: KanbanCard, evt: PointerEvent) => {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     const eleRect = ele.getBoundingClientRect();
     const offsetLeft = evt.x - eleRect.left;
     const offsetTop = evt.y - eleRect.top;
@@ -36,8 +40,8 @@ export class KanbanDragController implements ReactiveController {
           return;
         }
         preview.display(evt.x - offsetLeft, evt.y - offsetTop);
-        if (!Rect.fromDOM(this.host).isPointIn(Point.from(evt))) {
-          const callback = this.host.props.onDrag;
+        if (!Rect.fromDOM(host).isPointIn(Point.from(evt))) {
+          const callback = this.logic.root.config.onDrag;
           if (callback) {
             this.dropPreview.remove();
             return {
@@ -47,7 +51,7 @@ export class KanbanDragController implements ReactiveController {
           }
           return;
         }
-        const result = this.shooIndicator(evt, ele);
+        const result = this.showIndicator(evt, ele);
         if (result) {
           return {
             type: 'self',
@@ -80,18 +84,25 @@ export class KanbanDragController implements ReactiveController {
         }
       },
     });
-    const cancelScroll = autoScrollOnBoundary(
-      this.scrollContainer,
-      computed(() => {
-        return {
-          left: drag.mousePosition.value.x,
-          right: drag.mousePosition.value.x,
-          top: drag.mousePosition.value.y,
-          bottom: drag.mousePosition.value.y,
-        };
-      })
-    );
+    const cancelScroll =
+      this.scrollContainer != null
+        ? autoScrollOnBoundary(
+            this.scrollContainer,
+            computed(() => {
+              return {
+                left: drag.mousePosition.value.x,
+                right: drag.mousePosition.value.x,
+                top: drag.mousePosition.value.y,
+                bottom: drag.mousePosition.value.y,
+              };
+            })
+          )
+        : () => {};
   };
+
+  get host() {
+    return this.logic.ui$.value;
+  }
 
   dropPreview = createDropPreview();
 
@@ -119,7 +130,7 @@ export class KanbanDragController implements ReactiveController {
     }
   };
 
-  shooIndicator = (
+  showIndicator = (
     evt: MouseEvent,
     self: KanbanCard | undefined
   ): { group: KanbanGroup; position: InsertToPosition } | undefined => {
@@ -133,38 +144,36 @@ export class KanbanDragController implements ReactiveController {
   };
 
   get scrollContainer() {
-    const scrollContainer = this.host.querySelector(
-      '.affine-data-view-kanban-groups'
-    ) as HTMLElement;
+    const scrollContainer = this.logic.scrollContainer$.value;
     return scrollContainer;
   }
 
-  constructor(private readonly host: DataViewKanban) {
-    this.host.addController(this);
-  }
+  constructor(private readonly logic: KanbanViewUILogic) {}
 
   hostConnected() {
-    if (this.host.props.view.readonly$.value) {
+    if (this.logic.view.readonly$.value) {
       return;
     }
-    this.host.disposables.add(
-      this.host.props.handleEvent('dragStart', context => {
-        const event = context.get('pointerState').raw;
-        const target = event.target;
-        if (target instanceof Element) {
-          const cell = target.closest('affine-data-view-kanban-cell');
-          if (cell?.isEditing$.value) {
-            return;
+    if (this.host) {
+      this.host.disposables.add(
+        this.logic.handleEvent('dragStart', context => {
+          const event = context.get('pointerState').raw;
+          const target = event.target;
+          if (target instanceof Element) {
+            const cell = target.closest('affine-data-view-kanban-cell');
+            if (cell?.isEditing$.value) {
+              return;
+            }
+            cell?.selectCurrentCell(false);
+            const card = target.closest('affine-data-view-kanban-card');
+            if (card) {
+              this.dragStart(card, event);
+            }
           }
-          cell?.selectCurrentCell(false);
-          const card = target.closest('affine-data-view-kanban-card');
-          if (card) {
-            this.dragStart(card, event);
-          }
-        }
-        return true;
-      })
-    );
+          return true;
+        })
+      );
+    }
   }
 }
 
@@ -174,8 +183,8 @@ const createDragPreview = (card: KanbanCard, x: number, y: number) => {
   const div = document.createElement('div');
   const kanbanCard = new KanbanCard();
   kanbanCard.cardId = card.cardId;
-  kanbanCard.view = card.view;
-  kanbanCard.isFocus = true;
+  kanbanCard.kanbanViewLogic = card.kanbanViewLogic;
+  kanbanCard.isFocus$.value = true;
   kanbanCard.style.backgroundColor = 'var(--affine-background-primary-color)';
   div.append(kanbanCard);
   div.className = 'with-data-view-css-variable';

@@ -7,7 +7,7 @@ import { css, html } from 'lit';
 
 import { BaseGroup } from './base.js';
 
-export class NumberGroupView extends BaseGroup<NonNullable<unknown>, number> {
+export class NumberGroupView extends BaseGroup<number, NonNullable<unknown>> {
   static override styles = css`
     .data-view-group-title-number-view {
       border-radius: 8px;
@@ -45,7 +45,8 @@ export class NumberGroupView extends BaseGroup<NonNullable<unknown>, number> {
 
   protected override render(): unknown {
     if (this.value == null) {
-      return html` <div>Ungroups</div>`;
+      const displayName = `No ${this.group.property.name$.value}`;
+      return html` <div>${displayName}</div>`;
     }
     if (this.value >= 10) {
       return html` <div

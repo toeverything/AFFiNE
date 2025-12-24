@@ -57,7 +57,7 @@ test('tooltip should be hidden after clicking on button', async ({ page }) => {
   await expect(page.locator('note-display-mode-panel')).toBeVisible();
 
   const colorBtn = toolbar.getByRole('button', {
-    name: 'Background',
+    name: 'Note Style',
   });
 
   await colorBtn.hover();

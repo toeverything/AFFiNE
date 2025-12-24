@@ -8,7 +8,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { startDrag } from '../../../../../../core/utils/drag';
 import { getResultInRange } from '../../../../../../core/utils/utils';
-import type { TableColumn } from '../../../../table-view-manager';
+import type { TableProperty } from '../../../../table-view-manager';
 
 export class TableVerticalIndicator extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -101,7 +101,7 @@ export const startDragWidthAdjustmentBar = (
   evt: PointerEvent,
   ele: HTMLElement,
   width: number,
-  column: TableColumn
+  column: TableProperty
 ) => {
   const scale = width / column.width$.value;
   const left = ele.getBoundingClientRect().left;

@@ -78,7 +78,7 @@ export function createLinkedDocMenuGroup(
   editorHost: EditorHost,
   inlineEditor: AffineInlineEditor
 ) {
-  const doc = editorHost.doc;
+  const doc = editorHost.store;
   const { docMetas } = doc.workspace.meta;
   const filteredDocList = docMetas
     .filter(({ id }) => id !== doc.id)
@@ -122,7 +122,7 @@ export function createNewDocMenuGroup(
   editorHost: EditorHost,
   inlineEditor: AffineInlineEditor
 ): LinkedMenuGroup {
-  const doc = editorHost.doc;
+  const doc = editorHost.store;
   const docName = query || DEFAULT_DOC_NAME;
   const displayDocName =
     docName.slice(0, DISPLAY_NAME_LENGTH) +

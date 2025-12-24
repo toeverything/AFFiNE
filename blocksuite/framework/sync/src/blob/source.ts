@@ -5,6 +5,8 @@ export interface BlobState {
   downloading: boolean;
   errorMessage?: string | null;
   overSize: boolean;
+  needUpload: boolean;
+  needDownload: boolean;
 }
 
 export interface BlobSource {
@@ -14,6 +16,8 @@ export interface BlobSource {
   set: (key: string, value: Blob) => Promise<string>;
   delete: (key: string) => Promise<void>;
   list: () => Promise<string[]>;
-  // This state is only available when uploading to the cloud or downloading from the cloud.
+  // This state is only available when uploading to the server or downloading from the server.
   blobState$?: (key: string) => Observable<BlobState> | null;
+  // Re-upload to the server.
+  upload?: (key: string) => Promise<boolean>;
 }

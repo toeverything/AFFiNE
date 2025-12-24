@@ -32,14 +32,6 @@ The payload can have three types:
 
 ***
 
-### historyUpdated
-
-> **historyUpdated**: `Subject`\<`void`\>
-
-This fires when the history is updated.
-
-***
-
 ### ready
 
 > **ready**: `Subject`\<`void`\>

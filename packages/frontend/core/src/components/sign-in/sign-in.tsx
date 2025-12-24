@@ -10,7 +10,6 @@ import { OAuth } from '@affine/core/components/affine/auth/oauth';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import {
@@ -28,6 +27,7 @@ import {
   useState,
 } from 'react';
 
+import { useSelfhostLoginVersionGuard } from '../hooks/affine/use-selfhost-login-version-guard';
 import type { SignInState } from '.';
 import { Back } from './back';
 import * as style from './style.css';
@@ -55,16 +55,13 @@ export const SignInStep = ({
   const serverName = useLiveData(
     serverService.server.config$.selector(c => c.serverName)
   );
+  const versionError = useSelfhostLoginVersionGuard(serverService.server);
   const isSelfhosted = useLiveData(
     serverService.server.config$.selector(
       c => c.type === ServerDeploymentType.Selfhosted
     )
   );
   const authService = useService(AuthService);
-  const featureFlagService = useService(FeatureFlagService);
-  const enableMultipleCloudServers = useLiveData(
-    featureFlagService.flags.enable_multiple_cloud_servers.$
-  );
   const [isMutating, setIsMutating] = useState(false);
 
   const [email, setEmail] = useState('');
@@ -130,6 +127,20 @@ export const SignInStep = ({
     }));
   }, [changeState]);
 
+  if (versionError && isSelfhosted) {
+    return (
+      <AuthContainer>
+        <AuthHeader
+          title={t['com.affine.auth.sign.in']()}
+          subTitle={serverName}
+        />
+        <AuthContent>
+          <div>{versionError}</div>
+        </AuthContent>
+      </AuthContainer>
+    );
+  }
+
   return (
     <AuthContainer>
       <AuthHeader
@@ -181,7 +192,7 @@ export const SignInStep = ({
               <div className={style.skipDividerLine} />
             </div>
             <div className={style.skipSection}>
-              {BUILD_CONFIG.isElectron && enableMultipleCloudServers ? (
+              {BUILD_CONFIG.isNative ? (
                 <Button
                   variant="plain"
                   className={style.addSelfhostedButton}

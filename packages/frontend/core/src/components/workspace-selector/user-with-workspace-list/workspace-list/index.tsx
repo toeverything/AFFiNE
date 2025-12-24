@@ -1,6 +1,7 @@
 import { IconButton, Menu, MenuItem } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
+import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import type { AuthAccountInfo, Server } from '@affine/core/modules/cloud';
@@ -50,7 +51,6 @@ const WorkspaceServerInfo = ({
   accountStatus,
   onDeleteServer,
   onSignOut,
-  onSignIn,
 }: {
   server: string;
   name: string;
@@ -58,7 +58,6 @@ const WorkspaceServerInfo = ({
   accountStatus?: 'authenticated' | 'unauthenticated';
   onDeleteServer?: () => void;
   onSignOut?: () => void;
-  onSignIn?: () => void;
 }) => {
   const t = useI18n();
   const isCloud = server !== 'local';
@@ -92,17 +91,8 @@ const WorkspaceServerInfo = ({
             {t['Sign out']()}
           </MenuItem>
         ),
-        accountStatus === 'unauthenticated' && (
-          <MenuItem
-            prefixIcon={<AccountIcon />}
-            key="sign-in"
-            onClick={onSignIn}
-          >
-            {t['Sign in']()}
-          </MenuItem>
-        ),
       ].filter(Boolean),
-    [accountStatus, onDeleteServer, onSignIn, onSignOut, server, t]
+    [accountStatus, onDeleteServer, onSignOut, server, t]
   );
 
   return (
@@ -141,6 +131,7 @@ const CloudWorkSpaceList = ({
   onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
   onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
 }) => {
+  const t = useI18n();
   const globalContextService = useService(GlobalContextService);
   const globalDialogService = useService(GlobalDialogService);
   const serverName = useLiveData(server.config$.selector(c => c.serverName));
@@ -171,9 +162,7 @@ const CloudWorkSpaceList = ({
     workspaces,
   ]);
 
-  const handleSignOut = useAsyncCallback(async () => {
-    await authService.signOut();
-  }, [authService]);
+  const handleSignOut = useSignOut();
 
   const handleSignIn = useAsyncCallback(async () => {
     globalDialogService.open('sign-in', {
@@ -190,8 +179,17 @@ const CloudWorkSpaceList = ({
         accountStatus={accountStatus}
         onDeleteServer={handleDeleteServer}
         onSignOut={handleSignOut}
-        onSignIn={handleSignIn}
       />
+      {accountStatus === 'unauthenticated' ? (
+        <MenuItem key="sign-in" onClick={handleSignIn}>
+          <div className={styles.signInMenuItemContent}>
+            <div className={styles.signInIconWrapper}>
+              <AccountIcon />
+            </div>
+            <div className={styles.signInText}>{t['Sign in']()}</div>
+          </div>
+        </MenuItem>
+      ) : null}
       <WorkspaceList
         items={workspaces}
         onClick={onClickWorkspace}

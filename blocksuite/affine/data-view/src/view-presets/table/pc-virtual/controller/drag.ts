@@ -3,8 +3,7 @@
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import type { ReactiveController } from 'lit';
 
-// import { startDrag } from '../../../../core/utils/drag.js';
-import type { VirtualTableView } from '../table-view';
+import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 
 export class TableDragController implements ReactiveController {
   // dragStart = (row: TableRow, evt: PointerEvent) => {
@@ -91,9 +90,9 @@ export class TableDragController implements ReactiveController {
     | undefined => {
     const y = evt.y;
     const tableRect = this.host
-      .querySelector('affine-data-view-table-group')
+      ?.querySelector('affine-data-view-table-group')
       ?.getBoundingClientRect();
-    const rows = this.host.querySelectorAll('data-view-table-row');
+    const rows = this.host?.querySelectorAll('data-view-table-row');
     if (!rows || !tableRect || y < tableRect.top) {
       return;
     }
@@ -127,12 +126,14 @@ export class TableDragController implements ReactiveController {
     return position;
   };
 
-  constructor(private readonly host: VirtualTableView) {
-    this.host.addController(this);
+  constructor(private readonly logic: VirtualTableViewUILogic) {}
+
+  get host() {
+    return this.logic.ui$.value;
   }
 
   hostConnected() {
-    if (this.host.props.view.readonly$.value) {
+    if (this.logic.view.readonly$.value) {
       return;
     }
     // this.host.disposables.add(

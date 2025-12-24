@@ -4,6 +4,7 @@ import type { NavigatorMode } from './frame-manager';
 
 export type PresentToolOption = {
   mode?: NavigatorMode;
+  restoredAfterPan?: boolean;
 };
 
 export class PresentTool extends BaseTool<PresentToolOption> {

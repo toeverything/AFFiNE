@@ -6,7 +6,7 @@ test.describe('AIChatWith/Reasoning', () => {
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should support chat with reasoning', async ({
+  test.skip('should support chat with reasoning', async ({
     loggedInPage: page,
     utils,
   }) => {

@@ -75,7 +75,11 @@ runs:
       shell: bash
       if: ${{ runner.os != 'Windows' && inputs.no-build != 'true' }}
       run: |
-        yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }} --use-napi-cross
+        if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+          yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }}
+        else
+          yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }} --use-napi-cross
+        fi
       env:
         DEBUG: 'napi:*'
 

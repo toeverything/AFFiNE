@@ -62,7 +62,7 @@ export class CaptionedBlockComponent<
             .selected=${this.selected$.value}
           ></affine-block-selection>`
         : null}
-      ${this.useZeroWidth && !this.doc.readonly
+      ${this.useZeroWidth && !this.store.readonly
         ? html`<block-zero-width .block=${this}></block-zero-width>`
         : nothing}
     </div>`;

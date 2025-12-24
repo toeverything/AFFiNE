@@ -11,6 +11,7 @@ import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { keyed } from 'lit/directives/keyed.js';
 import type { ClassInfo } from 'lit-html/directives/class-map.js';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
 
 import { MenuFocusable } from './focusable.js';
 import type { Menu } from './menu.js';
@@ -21,6 +22,8 @@ export type MenuButtonData = {
   class: ClassInfo;
   select: (ele: HTMLElement) => void | false;
   onHover?: (hover: boolean) => void;
+  testId?: string;
+  closeOnSelect?: boolean;
 };
 
 export class MenuButton extends MenuFocusable {
@@ -83,7 +86,9 @@ export class MenuButton extends MenuFocusable {
   onClick() {
     if (this.data.select(this) !== false) {
       this.menu.options.onComplete?.();
-      this.menu.close();
+      if (this.data.closeOnSelect !== false) {
+        this.menu.close();
+      }
     }
   }
 
@@ -97,7 +102,12 @@ export class MenuButton extends MenuFocusable {
       focused: this.isFocused$.value,
       ...this.data.class,
     });
-    return html` <div class="${classString}">${this.data.content()}</div>`;
+    return html` <div
+      class="${classString}"
+      data-testid=${ifDefined(this.data.testId)}
+    >
+      ${this.data.content()}
+    </div>`;
   }
 
   @property({ attribute: false })
@@ -143,7 +153,9 @@ export class MobileMenuButton extends MenuFocusable {
   onClick() {
     if (this.data.select(this) !== false) {
       this.menu.options.onComplete?.();
-      this.menu.close();
+      if (this.data.closeOnSelect !== false) {
+        this.menu.close();
+      }
     }
   }
 
@@ -157,7 +169,12 @@ export class MobileMenuButton extends MenuFocusable {
       focused: this.isFocused$.value,
       ...this.data.class,
     });
-    return html` <div class="${classString}">${this.data.content()}</div>`;
+    return html` <div
+      class="${classString}"
+      data-testid=${ifDefined(this.data.testId)}
+    >
+      ${this.data.content()}
+    </div>`;
   }
 
   @property({ attribute: false })
@@ -181,13 +198,16 @@ export const menuButtonItems = {
     (config: {
       name: string;
       label?: () => TemplateResult;
+      info?: TemplateResult;
       prefix?: TemplateResult;
       postfix?: TemplateResult;
       isSelected?: boolean;
       select: (ele: HTMLElement) => void | false;
       onHover?: (hover: boolean) => void;
       class?: MenuClass;
+      closeOnSelect?: boolean;
       hide?: () => boolean;
+      testId?: string;
     }) =>
     menu => {
       if (config.hide?.() || !menu.search(config.name)) {
@@ -198,17 +218,19 @@ export const menuButtonItems = {
           return html`
             ${config.prefix}
             <div class="affine-menu-action-text">
-              ${config.label?.() ?? config.name}
+              ${config.label?.() ?? config.name} ${config.info}
             </div>
             ${config.postfix ?? (config.isSelected ? DoneIcon() : undefined)}
           `;
         },
         onHover: config.onHover,
         select: config.select,
+        closeOnSelect: config.closeOnSelect,
         class: {
           'selected-item': config.isSelected ?? false,
           ...config.class,
         },
+        testId: config.testId,
       };
       return renderButton(data, menu);
     },
@@ -220,6 +242,7 @@ export const menuButtonItems = {
       label?: () => TemplateResult;
       select: (checked: boolean) => boolean;
       class?: ClassInfo;
+      testId?: string;
     }) =>
     menu => {
       if (!menu.search(config.name)) {
@@ -240,6 +263,7 @@ export const menuButtonItems = {
           return false;
         },
         class: config.class ?? {},
+        testId: config.testId,
       };
       return html`${keyed(config.name, renderButton(data, menu))}`;
     },
@@ -247,10 +271,12 @@ export const menuButtonItems = {
     (config: {
       name: string;
       on: boolean;
+      prefix?: TemplateResult;
       postfix?: TemplateResult;
       label?: () => TemplateResult;
       onChange: (on: boolean) => void;
       class?: ClassInfo;
+      testId?: string;
     }) =>
     menu => {
       if (!menu.search(config.name)) {
@@ -262,6 +288,7 @@ export const menuButtonItems = {
 
       const data: MenuButtonData = {
         content: () => html`
+          ${config.prefix}
           <div class="affine-menu-action-text">
             ${config.label?.() ?? config.name}
           </div>
@@ -276,6 +303,7 @@ export const menuButtonItems = {
           return false;
         },
         class: config.class ?? {},
+        testId: config.testId,
       };
       return html`${keyed(config.name, renderButton(data, menu))}`;
     },

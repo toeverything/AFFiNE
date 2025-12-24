@@ -85,6 +85,17 @@ export const wsName = style([
     textAlign: 'left',
   },
 ]);
+export const signInIcon = style({
+  width: 32,
+  height: 32,
+  borderRadius: 6,
+  border: `1px solid ${cssVarV2.tab.divider.divider}`,
+  color: cssVarV2.icon.primary,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 20,
+});
 
 export const serverInfo = style({
   padding: '6px 20px',

@@ -25,11 +25,11 @@
     ]
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.78",
+    "@napi-rs/cli": "3.5.0",
     "@napi-rs/whisper": "^0.0.4",
     "@types/node": "^22.0.0",
-    "ava": "^6.2.0",
-    "rxjs": "^7.8.1",
+    "ava": "^6.4.1",
+    "rxjs": "^7.8.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
@@ -38,11 +38,11 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "napi build -p affine_native --platform --release --no-dts-cache",
-    "build:debug": "napi build -p affine_native --platform --no-dts-cache",
+    "build": "napi build -p affine_native --platform --release",
+    "build:debug": "napi build -p affine_native --platform",
     "universal": "napi universal",
     "test": "ava",
     "version": "napi version"
   },
-  "version": "0.21.0"
+  "version": "0.25.7"
 }

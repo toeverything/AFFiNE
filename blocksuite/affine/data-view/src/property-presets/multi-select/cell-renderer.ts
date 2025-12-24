@@ -9,7 +9,7 @@ import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { stopPropagation } from '../../core/utils/event.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
 import type { SelectPropertyData } from '../select/define.js';
-import { multiSelectStyle } from './cell-renderer.css.js';
+import { multiSelectStyle } from './cell-renderer-css.js';
 import { multiSelectPropertyModelConfig } from './define.js';
 
 export class MultiSelectCell extends BaseCellRenderer<

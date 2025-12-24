@@ -1,10 +1,14 @@
-import { app, clipboard, nativeImage, nativeTheme, shell } from 'electron';
+import { app, clipboard, nativeImage, nativeTheme } from 'electron';
 import { getLinkPreview } from 'link-preview-js';
+import { map, shareReplay } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
+import { openExternalSafely } from '../security/open-external';
 import type { WorkbenchViewMeta } from '../shared-state-schema';
+import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
+import { globalStateStorage } from '../shared-storage/storage';
 import type { NamespaceHandlers } from '../type';
 import {
   activateView,
@@ -33,6 +37,19 @@ import { getOrCreateCustomThemeWindow } from '../windows-manager/custom-theme-wi
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
 
+const TraySettingsState = {
+  $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
+    map(v => MenubarStateSchema.parse(v ?? {})),
+    shareReplay(1)
+  ),
+
+  get value() {
+    return MenubarStateSchema.parse(
+      globalStateStorage.get(MenubarStateKey) ?? {}
+    );
+  },
+};
+
 export const uiHandlers = {
   isMaximized: async () => {
     const window = await getMainWindow();
@@ -47,7 +64,14 @@ export const uiHandlers = {
   },
   handleMinimizeApp: async () => {
     const window = await getMainWindow();
-    window?.minimize();
+    if (
+      TraySettingsState.value.enabled &&
+      TraySettingsState.value.minimizeToTray
+    ) {
+      window?.hide();
+    } else {
+      window?.minimize();
+    }
   },
   handleMaximizeApp: async () => {
     const window = await getMainWindow();
@@ -68,7 +92,15 @@ export const uiHandlers = {
     await handleWebContentsResize(e.sender);
   },
   handleCloseApp: async () => {
-    app.quit();
+    if (
+      TraySettingsState.value.enabled &&
+      TraySettingsState.value.closeToTray
+    ) {
+      const window = await getMainWindow();
+      window?.hide();
+    } else {
+      app.quit();
+    }
   },
   handleHideApp: async () => {
     const window = await getMainWindow();
@@ -151,7 +183,7 @@ export const uiHandlers = {
     }
   },
   openExternal(_, url: string) {
-    return shell.openExternal(url);
+    return openExternalSafely(url);
   },
 
   // tab handlers

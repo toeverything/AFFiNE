@@ -1,4 +1,5 @@
 import { getRangeByPositions } from '@blocksuite/affine-shared/utils';
+import { DisposableGroup } from '@blocksuite/global/disposable';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
@@ -18,7 +19,7 @@ import {
   type TableViewSelectionWithType,
 } from '../../selection';
 import type { DatabaseCellContainer } from '../row/cell';
-import type { VirtualTableView } from '../table-view.js';
+import type { VirtualTableViewUILogic } from '../table-view-ui-logic.js';
 import type { TableGridCell } from '../types.js';
 import {
   DragToFillElement,
@@ -26,6 +27,7 @@ import {
 } from './drag-to-fill.js';
 
 export class TableSelectionController implements ReactiveController {
+  disposables = new DisposableGroup();
   private _tableViewSelection?: TableViewSelectionWithType;
 
   private readonly getFocusCellContainer = () => {
@@ -85,12 +87,12 @@ export class TableSelectionController implements ReactiveController {
       );
       const cell = container?.cell;
       const isEditing = cell ? cell.beforeEnterEditMode() : true;
-      this.host.props.setSelection({
+      this.logic.setSelection({
         ...selection,
         isEditing,
       });
     } else {
-      this.host.props.setSelection(selection);
+      this.logic.setSelection(selection);
     }
   }
 
@@ -99,27 +101,26 @@ export class TableSelectionController implements ReactiveController {
   }
 
   get view() {
-    return this.host.props.view;
+    return this.logic.view;
   }
 
-  get viewData() {
-    return this.view;
-  }
-
-  constructor(public host: VirtualTableView) {
-    host.addController(this);
+  constructor(public logic: VirtualTableViewUILogic) {
     this.__selectionElement = new SelectionElement();
     this.__selectionElement.controller = this;
   }
 
+  get host() {
+    return this.logic.ui$.value;
+  }
+
   private clearSelection() {
-    this.host.props.setSelection();
+    this.logic.setSelection();
   }
 
   private handleDragEvent() {
-    this.host.disposables.add(
-      this.host.props.handleEvent('dragStart', context => {
-        if (this.host.props.view.readonly$.value) {
+    this.disposables.add(
+      this.logic.handleEvent('dragStart', context => {
+        if (this.logic.view.readonly$.value) {
           return;
         }
         const event = context.get('pointerState').raw;
@@ -150,8 +151,8 @@ export class TableSelectionController implements ReactiveController {
   }
 
   private handleSelectionChange() {
-    this.host.disposables.add(
-      this.host.props.selection$.subscribe(tableSelection => {
+    this.disposables.add(
+      this.logic.selection$.subscribe(tableSelection => {
         if (!this.isValidSelection(tableSelection)) {
           this.selection = undefined;
           return;
@@ -236,13 +237,13 @@ export class TableSelectionController implements ReactiveController {
         ? this.view.groupTrait.groupDataMap$.value?.[groupKey]?.rows
         : this.view.rows$.value;
     requestAnimationFrame(() => {
-      const index = this.host.props.view.properties$.value.findIndex(
+      const index = this.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );
       this.selection = TableViewAreaSelection.create({
         groupKey: groupKey,
         focus: {
-          rowIndex: rows?.findIndex(v => v === id) ?? 0,
+          rowIndex: rows?.findIndex(v => v.rowId === id) ?? 0,
           columnIndex: index,
         },
         isEditing: true,
@@ -373,8 +374,9 @@ export class TableSelectionController implements ReactiveController {
   }
 
   deleteRow(rowId: string) {
-    this.view.rowDelete([rowId]);
+    this.view.rowsDelete([rowId]);
     this.focusToCell('up');
+    this.logic.ui$.value?.requestUpdate();
   }
 
   focusFirstCell() {
@@ -625,7 +627,7 @@ export class TableSelectionController implements ReactiveController {
   }
 
   get virtualScroll() {
-    return this.host.virtualScroll$.value;
+    return this.logic.virtualScroll$.value;
   }
 
   getGroup(groupKey: string | undefined) {
@@ -913,7 +915,7 @@ export class TableSelectionController implements ReactiveController {
         if (fillValues && this.selection) {
           this.__dragToFillElement.dragging = false;
           fillSelectionWithFocusCellData(
-            this.host,
+            this.logic,
             TableViewAreaSelection.create({
               groupKey: groupKey,
               rowsSelection: selection.row,
@@ -1024,7 +1026,7 @@ export class SelectionElement extends SignalWatcher(
     if (left == null || top == null || width == null || height == null) {
       return;
     }
-    const paddingLeft = this.controller.host.props.virtualPadding$.value;
+    const paddingLeft = this.controller.logic.root.config.virtualPadding$.value;
     return {
       left: left + paddingLeft,
       top,
@@ -1054,7 +1056,7 @@ export class SelectionElement extends SignalWatcher(
     if (!rect) {
       return;
     }
-    const paddingLeft = this.controller.host.props.virtualPadding$.value;
+    const paddingLeft = this.controller.logic.root.config.virtualPadding$.value;
     return {
       left: rect.left + paddingLeft,
       top: rect.top,
@@ -1063,15 +1065,8 @@ export class SelectionElement extends SignalWatcher(
     };
   });
 
-  rowsPosition$ = computed(() => {
-    const selection = this.selection$.value;
-    if (selection?.selectionType !== 'area') {
-      return;
-    }
-  });
-
   get selection$() {
-    return this.controller.host.props.selection$;
+    return this.controller.logic.selection$;
   }
 
   override render() {

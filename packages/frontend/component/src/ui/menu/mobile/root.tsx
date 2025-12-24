@@ -2,7 +2,13 @@ import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
 import clsx from 'clsx';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 
 import { observeResize } from '../../../utils';
 import { Button } from '../../button';
@@ -34,6 +40,7 @@ export const MobileMenu = ({
   } = {},
   contentWrapperStyle,
   rootOptions,
+  ref,
 }: MenuProps) => {
   const [subMenus, setSubMenus] = useState<SubMenuContent[]>([]);
   const [open, setOpen] = useState(false);
@@ -82,8 +89,21 @@ export const MobileMenu = ({
       }
       setOpen(open);
       rootOptions?.onOpenChange?.(open);
+      if (!open) {
+        rootOptions?.onClose?.();
+      }
     },
     [onInteractOutside, onPointerDownOutside, removeAllSubMenus, rootOptions]
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      changeOpen: (open: boolean) => {
+        onOpenChange(open);
+      },
+    }),
+    [onOpenChange]
   );
 
   const onItemClick = useCallback(

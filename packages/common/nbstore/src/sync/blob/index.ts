@@ -19,6 +19,8 @@ export interface BlobSyncState {
 }
 
 export interface BlobSyncBlobState {
+  needUpload: boolean;
+  needDownload: boolean;
   uploading: boolean;
   downloading: boolean;
   errorMessage?: string | null;
@@ -105,6 +107,8 @@ export class BlobSyncImpl implements BlobSync {
             downloading: peers.some(p => p.downloading),
             errorMessage: peers.find(p => p.errorMessage)?.errorMessage,
             overSize: peers.some(p => p.overSize),
+            needUpload: peers.some(p => p.needUpload),
+            needDownload: peers.some(p => p.needDownload),
           }) satisfies BlobSyncBlobState
       ),
       share({

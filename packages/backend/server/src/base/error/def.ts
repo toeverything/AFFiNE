@@ -350,6 +350,11 @@ export const USER_FRIENDLY_ERRORS = {
     message:
       'The third-party account has already been connected to another user.',
   },
+  invalid_oauth_response: {
+    type: 'bad_request',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid OAuth response: ${reason}.`,
+  },
   invalid_email: {
     type: 'invalid_input',
     args: { email: 'string' },
@@ -501,6 +506,10 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
   },
+  blob_invalid: {
+    type: 'invalid_input',
+    message: 'Blob is invalid.',
+  },
   expect_to_publish_doc: {
     type: 'invalid_input',
     message: 'Expected to publish a doc, not a Space.',
@@ -632,11 +641,20 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Workspace id is required to update team subscription.',
   },
+  managed_by_app_store_or_play: {
+    type: 'action_forbidden',
+    message:
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
+  },
 
   // Copilot errors
   copilot_session_not_found: {
     type: 'resource_not_found',
     message: `Copilot session not found.`,
+  },
+  copilot_session_invalid_input: {
+    type: 'invalid_input',
+    message: `Copilot session input is invalid.`,
   },
   copilot_session_deleted: {
     type: 'action_forbidden',
@@ -644,11 +662,18 @@ export const USER_FRIENDLY_ERRORS = {
   },
   no_copilot_provider_available: {
     type: 'internal_server_error',
-    message: `No copilot provider available.`,
+    args: { modelId: 'string' },
+    message: ({ modelId }) => `No copilot provider available: ${modelId}`,
   },
   copilot_failed_to_generate_text: {
     type: 'internal_server_error',
     message: `Failed to generate text.`,
+  },
+  copilot_failed_to_generate_embedding: {
+    type: 'internal_server_error',
+    args: { provider: 'string', message: 'string' },
+    message: ({ provider, message }) =>
+      `Failed to generate embedding with ${provider}: ${message}`,
   },
   copilot_failed_to_create_message: {
     type: 'internal_server_error',
@@ -685,6 +710,12 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: `Copilot prompt is invalid.`,
   },
+  copilot_provider_not_supported: {
+    type: 'invalid_input',
+    args: { provider: 'string', kind: 'string' },
+    message: ({ provider, kind }) =>
+      `Copilot provider ${provider} does not support output type ${kind}`,
+  },
   copilot_provider_side_error: {
     type: 'internal_server_error',
     args: { provider: 'string', kind: 'string', message: 'string' },
@@ -713,6 +744,12 @@ export const USER_FRIENDLY_ERRORS = {
     args: { contextId: 'string', content: 'string', message: 'string' },
     message: ({ contextId, content, message }) =>
       `Failed to match context ${contextId} with "${escape(content)}": ${message}`,
+  },
+  copilot_failed_to_match_global_context: {
+    type: 'internal_server_error',
+    args: { workspaceId: 'string', content: 'string', message: 'string' },
+    message: ({ workspaceId, content, message }) =>
+      `Failed to match context in workspace ${workspaceId} with "${escape(content)}": ${message}`,
   },
   copilot_embedding_disabled: {
     type: 'action_forbidden',
@@ -780,9 +817,16 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message: 'Cannot delete all admin accounts.',
   },
+
+  // Account errors
   cannot_delete_own_account: {
     type: 'action_forbidden',
     message: 'Cannot delete own account.',
+  },
+  cannot_delete_account_with_owned_team_workspace: {
+    type: 'action_forbidden',
+    message:
+      'Cannot delete account. You are the owner of one or more team workspaces. Please transfer ownership or delete them first.',
   },
 
   // captcha errors
@@ -811,18 +855,17 @@ export const USER_FRIENDLY_ERRORS = {
   },
   invalid_license_to_activate: {
     type: 'bad_request',
-    message: 'Invalid license to activate.',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid license to activate. ${reason}`,
   },
   invalid_license_update_params: {
     type: 'invalid_input',
     args: { reason: 'string' },
     message: ({ reason }) => `Invalid license update params. ${reason}`,
   },
-  workspace_members_exceed_limit_to_downgrade: {
+  license_expired: {
     type: 'bad_request',
-    args: { limit: 'number' },
-    message: ({ limit }) =>
-      `You cannot downgrade the workspace from team workspace because there are more than ${limit} members that are currently active.`,
+    message: 'License has expired.',
   },
 
   // version errors
@@ -854,6 +897,48 @@ export const USER_FRIENDLY_ERRORS = {
   // app config
   invalid_app_config: {
     type: 'invalid_input',
-    message: 'Invalid app config.',
+    args: { module: 'string', key: 'string', hint: 'string' },
+    message: ({ module, key, hint }) =>
+      `Invalid app config for module \`${module}\` with key \`${key}\`. ${hint}.`,
+  },
+  invalid_app_config_input: {
+    type: 'invalid_input',
+    args: { message: 'string' },
+    message: ({ message }) => `Invalid app config input: ${message}`,
+  },
+
+  // indexer errors
+  search_provider_not_found: {
+    type: 'resource_not_found',
+    message: 'Search provider not found.',
+  },
+  invalid_search_provider_request: {
+    type: 'invalid_input',
+    args: { reason: 'string', type: 'string' },
+    message: ({ reason }) =>
+      `Invalid request argument to search provider: ${reason}`,
+  },
+  invalid_indexer_input: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid indexer input: ${reason}`,
+  },
+
+  // comment and reply errors
+  comment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment not found.',
+  },
+  reply_not_found: {
+    type: 'resource_not_found',
+    message: 'Reply not found.',
+  },
+  comment_attachment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment attachment not found.',
+  },
+  comment_attachment_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded the comment attachment size quota.',
   },
 } satisfies Record<string, UserFriendlyErrorOptions>;

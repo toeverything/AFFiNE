@@ -12,9 +12,9 @@ export const connectorWatcher: SurfaceMiddleware = (
   surface: SurfaceBlockModel
 ) => {
   const hasElementById = (id: string) =>
-    surface.hasElementById(id) || surface.doc.hasBlock(id);
+    surface.hasElementById(id) || surface.store.hasBlock(id);
   const elementGetter = (id: string) =>
-    surface.getElementById(id) ?? (surface.doc.getModelById(id) as GfxModel);
+    surface.getElementById(id) ?? (surface.store.getModelById(id) as GfxModel);
   const updateConnectorPath = (connector: ConnectorElementModel) => {
     if (
       ((connector.source?.id && hasElementById(connector.source.id)) ||
@@ -62,15 +62,12 @@ export const connectorWatcher: SurfaceMiddleware = (
       if (
         'type' in element &&
         element.type === 'connector' &&
-        (props['mode'] !== undefined ||
-          props['target'] ||
-          props['source'] ||
-          (props['xywh'] && !(element as ConnectorElementModel).updatingPath))
+        (props['mode'] !== undefined || props['target'] || props['source'])
       ) {
         addToUpdateList(element as ConnectorElementModel);
       }
     }),
-    surface.doc.slots.blockUpdated.subscribe(payload => {
+    surface.store.slots.blockUpdated.subscribe(payload => {
       if (
         payload.type === 'add' ||
         (payload.type === 'update' && payload.props.key === 'xywh')

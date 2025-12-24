@@ -49,7 +49,7 @@ export const AppContainer = ({
         'blur-background': blurBackground,
       })}
       data-noise-background={noisyBackground}
-      data-blur-background={blurBackground}
+      data-translucent={blurBackground}
     >
       <LayoutComponent fallback={fallback}>{children}</LayoutComponent>
     </div>

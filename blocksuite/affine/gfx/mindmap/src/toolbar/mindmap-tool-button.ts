@@ -315,7 +315,7 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
           }
           this.setEdgelessTool(EmptyTool);
           const icon = this.mindmapElement;
-          const { x, y } = gfx.tool.lastMousePos$.peek();
+          const { x, y } = gfx.tool.lastMouseViewPos$.peek();
           const { viewport } = this.edgeless.std.get(ViewportElementProvider);
           const { left, top } = viewport;
           const clientPos = { x: x + left, y: y + top };

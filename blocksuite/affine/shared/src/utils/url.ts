@@ -1,75 +1,73 @@
-export const ALLOWED_SCHEMES = [
+// https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+const ALLOWED_SCHEMES = new Set([
   'http',
   'https',
   'ftp',
   'sftp',
   'mailto',
   'tel',
-  // may need support other schemes
-];
-// I guess you don't want to use the regex base the RFC 5322 Official Standard
-// For more detail see https://stackoverflow.com/questions/201323/how-can-i-validate-an-email-address-using-a-regular-expression/1917982#1917982
-const MAIL_REGEX =
-  /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+]);
 
-// For more detail see https://stackoverflow.com/questions/8667070/javascript-regular-expression-to-validate-url
-const URL_REGEX = new RegExp(
-  '^' +
-    // protocol identifier (optional)
-    // short syntax // still required
-    '(?:(?:(?:https?|ftp):)?\\/\\/)' +
-    // user:pass BasicAuth (optional)
-    '(?:\\S+(?::\\S*)?@)?' +
-    '(?:' +
-    // IP address exclusion
-    // private & local networks
-    '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
-    '(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})' +
-    '(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})' +
-    // IP address dotted notation octets
-    // excludes loopback network 0.0.0.0
-    // excludes reserved space >= 224.0.0.0
-    // excludes network & broadcast addresses
-    // (first & last IP address of each class)
-    '(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])' +
-    '(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}' +
-    '(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))' +
-    '|' +
-    // host & domain names, may end with dot
-    // can be replaced by a shortest alternative
-    // (?![-_])(?:[-\\w\\u00a1-\\uffff]{0,63}[^-_]\\.)+
-    '(?:' +
-    '(?:' +
-    '[a-z0-9\\u00a1-\\uffff]' +
-    '[a-z0-9\\u00a1-\\uffff_-]{0,62}' +
-    ')?' +
-    '[a-z0-9\\u00a1-\\uffff]\\.' +
-    ')+' +
-    // TLD identifier name, may end with dot
-    // Addition: We limit the TLD to 2-6 characters, because it can cover most of the cases.
-    '(?:[a-z\\u00a1-\\uffff]{2,6}\\.?)' +
-    ')' +
-    // port number (optional)
-    '(?::\\d{2,5})?' +
-    // resource path (optional)
-    '(?:[/?#]\\S*)?' +
-    '$',
-  'i'
-);
+// https://publicsuffix.org/
+const TLD_REGEXP = /(?:\.[a-zA-Z]+)?(\.[a-zA-Z]{2,})$/;
 
-export function normalizeUrl(url: string) {
-  const includeScheme = ALLOWED_SCHEMES.find(scheme =>
-    url.startsWith(scheme + ':')
-  );
-  if (includeScheme) {
-    // Any link include schema is a valid url
-    return url;
+const IPV4_ADDR_REGEXP =
+  /^(25[0-5]|2[0-4]\d|[01]?\d\d?)(\.(25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/;
+
+const toURL = (str: string) => {
+  try {
+    if (!URL.canParse(str)) return null;
+
+    return new URL(str);
+  } catch {
+    return null;
   }
-  const isEmail = MAIL_REGEX.test(url);
-  if (isEmail) {
-    return 'mailto:' + url;
+};
+
+function resolveURL(str: string, baseUrl: string, padded = false) {
+  const url = toURL(str);
+  if (!url) return null;
+
+  const protocol = url.protocol.substring(0, url.protocol.length - 1);
+  const hostname = url.hostname;
+  const origin = url.origin;
+
+  let allowed = ALLOWED_SCHEMES.has(protocol);
+  if (allowed && hostname.includes('.')) {
+    allowed =
+      origin === baseUrl ||
+      TLD_REGEXP.test(hostname) ||
+      (padded ? false : IPV4_ADDR_REGEXP.test(hostname));
   }
-  return 'http://' + url;
+
+  return { url, allowed };
+}
+
+export function normalizeUrl(str: string) {
+  str = str.trim();
+
+  let url = toURL(str);
+
+  if (!url) {
+    const hasScheme = str.match(/^https?:\/\//);
+
+    if (!hasScheme) {
+      const dotIdx = str.indexOf('.');
+      if (dotIdx > 0 && dotIdx < str.length - 1) {
+        url = toURL(`https://${str}`);
+      }
+    }
+  }
+
+  // Formatted
+  if (url) {
+    if (!str.endsWith('/') && url.href.endsWith('/')) {
+      return url.href.substring(0, url.href.length - 1);
+    }
+    return url.href;
+  }
+
+  return str;
 }
 
 /**
@@ -77,21 +75,24 @@ export function normalizeUrl(url: string) {
  *
  * For more detail see https://www.ietf.org/rfc/rfc1738.txt
  */
-export function isValidUrl(str: string) {
-  if (!str) {
-    return false;
-  }
-  const url = normalizeUrl(str);
-  if (url === str) {
-    // Skip check if user input scheme manually
-    try {
-      new URL(url);
-    } catch {
-      return false;
+export function isValidUrl(str: string, baseUrl = location.origin) {
+  str = str.trim();
+
+  let result = resolveURL(str, baseUrl);
+
+  if (result && !result.allowed) return false;
+
+  if (!result) {
+    const hasScheme = str.match(/^https?:\/\//);
+    if (!hasScheme) {
+      const dotIdx = str.indexOf('.');
+      if (dotIdx > 0 && dotIdx < str.length - 1) {
+        result = resolveURL(`https://${str}`, baseUrl, true);
+      }
     }
-    return true;
   }
-  return URL_REGEX.test(url);
+
+  return result?.allowed ?? false;
 }
 
 // https://en.wikipedia.org/wiki/Top-level_domain
@@ -119,10 +120,7 @@ const COMMON_TLDS = new Set([
 ]);
 
 function isCommonTLD(url: URL) {
-  const tld = url.hostname.split('.').pop();
-  if (!tld) {
-    return false;
-  }
+  const tld = url.hostname.split('.').pop() ?? '';
   return COMMON_TLDS.has(tld);
 }
 

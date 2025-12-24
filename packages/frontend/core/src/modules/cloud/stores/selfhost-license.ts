@@ -2,6 +2,7 @@ import {
   activateLicenseMutation,
   deactivateLicenseMutation,
   getLicenseQuery,
+  installLicenseMutation,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
@@ -62,5 +63,27 @@ export class SelfhostLicenseStore extends Store {
     });
 
     return data.deactivateLicense;
+  }
+
+  async installLicense(
+    workspaceId: string,
+    license: File,
+    signal?: AbortSignal
+  ) {
+    if (!this.workspaceServerService.server) {
+      throw new Error('No Server');
+    }
+    const data = await this.workspaceServerService.server.gql({
+      query: installLicenseMutation,
+      variables: {
+        workspaceId: workspaceId,
+        license: license,
+      },
+      context: {
+        signal,
+      },
+    });
+
+    return data.installLicense;
   }
 }

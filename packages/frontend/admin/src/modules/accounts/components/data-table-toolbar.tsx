@@ -4,8 +4,8 @@ import { useQuery } from '@affine/admin/use-query';
 import { getUserByEmailQuery } from '@affine/graphql';
 import { ExportIcon, ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 import type { Table } from '@tanstack/react-table';
+import type { Dispatch, SetStateAction } from 'react';
 import {
-  type SetStateAction,
   startTransition,
   useCallback,
   useEffect,
@@ -17,13 +17,16 @@ import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
 import { DiscardChanges } from './discard-changes';
 import { ExportUsersDialog } from './export-users-dialog';
-import { ImportUsersDialog } from './import-users-dialog';
+import { ImportUsersDialog } from './import-users';
 import { CreateUserForm } from './user-form';
 
 interface DataTableToolbarProps<TData> {
   data: TData[];
-  setDataTable: (data: TData[]) => void;
+  usersCount: number;
   selectedUsers: UserType[];
+  setDataTable: (data: TData[]) => void;
+  setRowCount: (rowCount: number) => void;
+  setMemoUsers: Dispatch<SetStateAction<UserType[]>>;
   table?: Table<TData>;
 }
 
@@ -60,8 +63,11 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export function DataTableToolbar<TData>({
   data,
+  usersCount,
   selectedUsers,
   setDataTable,
+  setRowCount,
+  setMemoUsers,
   table,
 }: DataTableToolbarProps<TData>) {
   const [value, setValue] = useState('');
@@ -90,13 +96,25 @@ export function DataTableToolbar<TData>({
     startTransition(() => {
       if (!debouncedValue) {
         setDataTable(data);
+        setRowCount(usersCount);
       } else if (result) {
+        setMemoUsers(prev => [...new Set([...prev, result])]);
         setDataTable([result as TData]);
+        setRowCount(1);
       } else {
         setDataTable([]);
+        setRowCount(0);
       }
     });
-  }, [data, debouncedValue, result, setDataTable]);
+  }, [
+    data,
+    debouncedValue,
+    result,
+    setDataTable,
+    setMemoUsers,
+    setRowCount,
+    usersCount,
+  ]);
 
   const onValueChange = useCallback(
     (e: { currentTarget: { value: SetStateAction<string> } }) => {

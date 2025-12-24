@@ -12,21 +12,22 @@ import {
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { groupTraitKey } from '../../../core/group-by/trait.js';
-import type { KanbanSingleView } from '../kanban-view-manager.js';
+import type { MobileKanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 export const popCardMenu = (
   ele: PopupTarget,
-  view: KanbanSingleView,
   groupKey: string,
   cardId: string,
-  dataViewEle: DataViewRenderer
+  kanbanViewLogic: MobileKanbanViewUILogic
 ) => {
-  const groupTrait = view.traitGet(groupTraitKey);
+  const groupTrait = kanbanViewLogic.view.traitGet(groupTraitKey);
   if (!groupTrait) {
     return;
   }
+  const groups = (groupTrait.groupsDataList$.value ?? []).filter(
+    (v): v is NonNullable<typeof v> => v != null
+  );
   popFilterableSimpleMenu(ele, [
     menu.group({
       items: [
@@ -34,8 +35,8 @@ export const popCardMenu = (
           name: 'Expand Card',
           prefix: ExpandFullIcon(),
           select: () => {
-            dataViewEle.openDetailPanel({
-              view: view,
+            kanbanViewLogic.root.openDetailPanel({
+              view: kanbanViewLogic.view,
               rowId: cardId,
             });
           },
@@ -49,13 +50,11 @@ export const popCardMenu = (
           prefix: ArrowRightBigIcon(),
           options: {
             items:
-              groupTrait.groupsDataList$.value
-                ?.filter(v => {
-                  return v.key !== groupKey;
-                })
-                .map(group => {
-                  return menu.action({
-                    name: group.value != null ? group.name : 'Ungroup',
+              groups
+                .filter(v => v.key !== groupKey)
+                .map(group =>
+                  menu.action({
+                    name: group.value != null ? group.name$.value : 'Ungroup',
                     select: () => {
                       groupTrait.moveCardTo(
                         cardId,
@@ -64,8 +63,8 @@ export const popCardMenu = (
                         'start'
                       );
                     },
-                  });
-                }) ?? [],
+                  })
+                ) ?? [],
           },
         }),
       ],
@@ -81,7 +80,11 @@ export const popCardMenu = (
             ${MoveLeftIcon()}
           </div>`,
           select: () => {
-            view.addCard({ before: true, id: cardId }, groupKey);
+            kanbanViewLogic.view.addCard(
+              { before: true, id: cardId },
+              groupKey
+            );
+            kanbanViewLogic.ui$.value?.requestUpdate();
           },
         }),
         menu.action({
@@ -92,7 +95,11 @@ export const popCardMenu = (
             ${MoveRightIcon()}
           </div>`,
           select: () => {
-            view.addCard({ before: false, id: cardId }, groupKey);
+            kanbanViewLogic.view.addCard(
+              { before: false, id: cardId },
+              groupKey
+            );
+            kanbanViewLogic.ui$.value?.requestUpdate();
           },
         }),
       ],
@@ -106,7 +113,8 @@ export const popCardMenu = (
           },
           prefix: DeleteIcon(),
           select: () => {
-            view.rowDelete([cardId]);
+            kanbanViewLogic.view.rowsDelete([cardId]);
+            kanbanViewLogic.ui$.value?.requestUpdate();
           },
         }),
       ],

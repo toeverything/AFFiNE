@@ -34,9 +34,7 @@ type ConfigGroup<T extends AppConfigModule> = {
     appConfig: AppConfig;
   }>[];
 };
-const IGNORED_MODULES: (keyof AppConfig)[] = [
-  'copilot', // not ready
-];
+const IGNORED_MODULES: (keyof AppConfig)[] = [];
 
 if (environment.isSelfHosted) {
   IGNORED_MODULES.push('payment');
@@ -50,13 +48,14 @@ export const KNOWN_CONFIG_GROUPS = [
   {
     name: 'Server',
     module: 'server',
-    fields: ['externalUrl', 'name'],
+    fields: ['externalUrl', 'name', 'hosts'],
   } as ConfigGroup<'server'>,
   {
     name: 'Auth',
     module: 'auth',
     fields: [
       'allowSignup',
+      'allowSignupForOauth',
       // nested json object
       {
         key: 'passwordRequirements',
@@ -76,6 +75,7 @@ export const KNOWN_CONFIG_GROUPS = [
     name: 'Notification',
     module: 'mailer',
     fields: [
+      'SMTP.name',
       'SMTP.host',
       'SMTP.port',
       'SMTP.username',
@@ -139,6 +139,40 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'oauth',
     fields: ['providers.google', 'providers.github', 'providers.oidc'],
   } as ConfigGroup<'oauth'>,
+  {
+    name: 'AI',
+    module: 'copilot',
+    fields: [
+      'enabled',
+      'scenarios',
+      'providers.openai',
+      'providers.gemini',
+      'providers.perplexity',
+      'providers.anthropic',
+      'providers.fal',
+      'unsplash',
+      'exa',
+      {
+        key: 'storage',
+        desc: 'The storage provider for copilot blobs',
+        sub: 'provider',
+        type: 'Enum',
+        options: ['fs', 'aws-s3', 'cloudflare-r2'],
+      },
+      {
+        key: 'storage',
+        sub: 'bucket',
+        type: 'String',
+        desc: 'The bucket name for copilot blobs storage',
+      },
+      {
+        key: 'storage',
+        sub: 'config',
+        type: 'JSON',
+        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
+      },
+    ],
+  } as ConfigGroup<'copilot'>,
 ];
 
 export const UNKNOWN_CONFIG_GROUPS = ALL_CONFIGURABLE_MODULES.filter(

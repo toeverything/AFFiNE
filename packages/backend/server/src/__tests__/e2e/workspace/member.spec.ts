@@ -1,5 +1,6 @@
 import {
   acceptInviteByInviteIdMutation,
+  approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
   getInviteInfoQuery,
   getMembersByWorkspaceIdQuery,
@@ -15,15 +16,10 @@ import { Models } from '../../../models';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
-async function createTeamWorkspace(quantity = 10) {
+async function createWorkspace() {
   const owner = await app.create(Mockers.User);
-
   const workspace = await app.create(Mockers.Workspace, {
     owner: { id: owner.id },
-  });
-  await app.create(Mockers.TeamWorkspace, {
-    id: workspace.id,
-    quantity,
   });
 
   return {
@@ -33,13 +29,10 @@ async function createTeamWorkspace(quantity = 10) {
 }
 
 e2e('should invite a user', async t => {
-  const u2 = await app.signup();
-  const owner = await app.signup();
+  const { owner, workspace } = await createWorkspace();
+  const u2 = await app.create(Mockers.User);
 
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
-
+  await app.login(owner);
   const result = await app.gql({
     query: inviteByEmailsMutation,
     variables: {
@@ -47,6 +40,7 @@ e2e('should invite a user', async t => {
       workspaceId: workspace.id,
     },
   });
+
   t.truthy(result, 'failed to invite user');
   // add invitation notification job
   const invitationNotification = await app.queue.waitFor(
@@ -68,7 +62,7 @@ e2e('should invite a user', async t => {
   t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
 
   // u2 accept invite
-  await app.switchUser(u2);
+  await app.login(u2);
   await app.gql({
     query: acceptInviteByInviteIdMutation,
     variables: {
@@ -88,18 +82,14 @@ e2e('should invite a user', async t => {
 });
 
 e2e('should leave a workspace', async t => {
-  const u2 = await app.signup();
-  const owner = await app.signup();
-
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
+  const { owner, workspace } = await createWorkspace();
+  const u2 = await app.create(Mockers.User);
   await app.create(Mockers.WorkspaceUser, {
     workspaceId: workspace.id,
     userId: u2.id,
   });
 
-  await app.switchUser(u2.id);
+  await app.login(u2);
   const { leaveWorkspace } = await app.gql({
     query: leaveWorkspaceMutation,
     variables: {
@@ -137,19 +127,42 @@ e2e('should revoke a user', async t => {
   t.true(revokeMember, 'failed to revoke user');
 });
 
-e2e('should revoke a user on under review', async t => {
-  const user = await app.signup();
-  const owner = await app.signup();
-
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
+e2e('should approve a user on under review', async t => {
+  const { owner, workspace } = await createWorkspace();
+  const user = await app.create(Mockers.User);
   await app.create(Mockers.WorkspaceUser, {
     workspaceId: workspace.id,
     userId: user.id,
     status: WorkspaceMemberStatus.UnderReview,
   });
 
+  await app.login(owner);
+  const { approveMember } = await app.gql({
+    query: approveWorkspaceTeamMemberMutation,
+    variables: {
+      workspaceId: workspace.id,
+      userId: user.id,
+    },
+  });
+
+  t.true(approveMember, 'failed to approve member');
+
+  t.is(
+    (await app.get(Models).workspaceUser.get(workspace.id, user.id))?.status,
+    WorkspaceMemberStatus.Accepted
+  );
+});
+
+e2e('should revoke a user on under review', async t => {
+  const { owner, workspace } = await createWorkspace();
+  const user = await app.create(Mockers.User);
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: user.id,
+    status: WorkspaceMemberStatus.UnderReview,
+  });
+
+  await app.login(owner);
   const { revokeMember } = await app.gql({
     query: revokeMemberPermissionMutation,
     variables: {
@@ -174,13 +187,10 @@ e2e('should revoke a user on under review', async t => {
 });
 
 e2e('should create user if not exist', async t => {
-  const owner = await app.signup();
-
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
+  const { owner, workspace } = await createWorkspace();
 
   const email = faker.internet.email();
+  await app.login(owner);
   await app.gql({
     query: inviteByEmailsMutation,
     variables: {
@@ -194,13 +204,10 @@ e2e('should create user if not exist', async t => {
 });
 
 e2e('should support pagination for member', async t => {
-  const u1 = await app.signup();
-  const u2 = await app.signup();
-  const owner = await app.signup();
+  const { owner, workspace } = await createWorkspace();
+  const u1 = await app.create(Mockers.User);
+  const u2 = await app.create(Mockers.User);
 
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
   await app.create(Mockers.WorkspaceUser, {
     workspaceId: workspace.id,
     userId: u1.id,
@@ -210,6 +217,7 @@ e2e('should support pagination for member', async t => {
     userId: u2.id,
   });
 
+  await app.login(owner);
   let result = await app.gql({
     query: getMembersByWorkspaceIdQuery,
     variables: {
@@ -245,14 +253,11 @@ e2e('should support pagination for member', async t => {
 });
 
 e2e('should limit member count correctly', async t => {
-  const owner = await app.signup();
+  const { owner, workspace } = await createWorkspace();
 
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
   await Promise.all(
     Array.from({ length: 10 }).map(async () => {
-      const user = await app.signup();
+      const user = await app.create(Mockers.User);
       await app.create(Mockers.WorkspaceUser, {
         workspaceId: workspace.id,
         userId: user.id,
@@ -260,7 +265,7 @@ e2e('should limit member count correctly', async t => {
     })
   );
 
-  await app.switchUser(owner);
+  await app.login(owner);
   const result = await app.gql({
     query: getMembersByWorkspaceIdQuery,
     variables: {
@@ -274,11 +279,7 @@ e2e('should limit member count correctly', async t => {
 });
 
 e2e('should get invite link info with status', async t => {
-  const owner = await app.signup();
-
-  const workspace = await app.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-  });
+  const { owner, workspace } = await createWorkspace();
 
   await app.login(owner);
   const { createInviteLink } = await app.gql({
@@ -335,12 +336,8 @@ e2e('should get invite link info with status', async t => {
 e2e(
   'should accept invitation by link directly if status is pending',
   async t => {
-    const owner = await app.create(Mockers.User);
+    const { owner, workspace } = await createWorkspace();
     const member = await app.create(Mockers.User);
-
-    const workspace = await app.create(Mockers.Workspace, {
-      owner: { id: owner.id },
-    });
 
     await app.login(owner);
     // create a pending invitation
@@ -387,7 +384,7 @@ e2e(
 e2e(
   'should invite by link and send review request notification below quota limit',
   async t => {
-    const { owner, workspace } = await createTeamWorkspace();
+    const { owner, workspace } = await createWorkspace();
 
     await app.login(owner);
     const { createInviteLink } = await app.gql({
@@ -422,7 +419,11 @@ e2e(
 e2e(
   'should invite by link and send review request notification over quota limit',
   async t => {
-    const { owner, workspace } = await createTeamWorkspace(1);
+    const { owner, workspace } = await createWorkspace();
+    await app.create(Mockers.TeamWorkspace, {
+      id: workspace.id,
+      quantity: 3,
+    });
 
     await app.login(owner);
     const { createInviteLink } = await app.gql({
@@ -457,10 +458,7 @@ e2e(
 e2e(
   'should search members by name and email support case insensitive',
   async t => {
-    const owner = await app.create(Mockers.User);
-    const workspace = await app.create(Mockers.Workspace, {
-      owner: { id: owner.id },
-    });
+    const { owner, workspace } = await createWorkspace();
     const user1 = await app.create(Mockers.User, {
       name: faker.internet.displayName({ firstName: 'Lucy' }),
     });

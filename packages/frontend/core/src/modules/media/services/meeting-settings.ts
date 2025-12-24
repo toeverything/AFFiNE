@@ -130,7 +130,7 @@ export class MeetingSettingsService extends Service {
     );
   }
 
-  async askForMeetingPermission(type: 'microphone') {
+  async askForMeetingPermission(type: 'microphone' | 'screen') {
     return this.desktopApiService?.handler.recording.askForMeetingPermission(
       type
     );

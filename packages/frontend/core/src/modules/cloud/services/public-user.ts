@@ -20,6 +20,7 @@ type ExistedUserInfo = {
   id: string;
   name?: string | null;
   avatar?: string | null;
+  avatarUrl?: string | null;
   removed?: false;
 };
 
@@ -90,6 +91,7 @@ export class PublicUserService extends Service {
               id,
               name: user.name,
               avatar: user.avatarUrl,
+              avatarUrl: user.avatarUrl,
             };
           }).pipe(
             smartRetry(),

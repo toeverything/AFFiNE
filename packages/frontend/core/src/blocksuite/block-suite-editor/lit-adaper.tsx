@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import 'katex/dist/katex.min.css';
+
 import { useConfirmModal, useLitPortalFactory } from '@affine/component';
 import {
   type EdgelessEditor,
@@ -6,8 +9,9 @@ import {
   LitEdgelessEditor,
   type PageEditor,
 } from '@affine/core/blocksuite/editors';
-import type { AffineEditorViewOptions } from '@affine/core/blocksuite/manager/editor-view';
+import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+import { ServerService } from '@affine/core/modules/cloud';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import type {
   DatabaseRow,
@@ -18,6 +22,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { JournalService } from '@affine/core/modules/journal';
 import { useInsidePeekView } from '@affine/core/modules/peek-view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
 import type { DocMode } from '@blocksuite/affine/model';
@@ -40,10 +45,10 @@ import {
 
 import {
   type DefaultOpenProperty,
-  DocPropertiesTable,
-} from '../../components/doc-properties';
-import { enableEditorExtension } from '../extensions/entry/enable-editor';
+  WorkspacePropertiesTable,
+} from '../../components/properties';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
+import { DocIconPicker } from './doc-icon-picker';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import { StarterBar } from './starter-bar';
 import * as styles from './styles.css';
@@ -55,7 +60,7 @@ interface BlocksuiteEditorProps {
   defaultOpenProperty?: DefaultOpenProperty;
 }
 
-const usePatchSpecs = (mode: DocMode) => {
+const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const { workspaceService, featureFlagService } = useServices({
     WorkspaceService,
@@ -68,44 +73,74 @@ const usePatchSpecs = (mode: DocMode) => {
 
   const enableAI = useEnableAI();
 
-  const insidePeekView = useInsidePeekView();
+  const isInPeekView = useInsidePeekView();
 
   const enableTurboRenderer = useLiveData(
     featureFlagService.flags.enable_turbo_renderer.$
   );
 
   const enablePDFEmbedPreview = useLiveData(
-    featureFlagService.flags.enable_pdf_embed_preview.$.map(
-      flag => !workspaceService.workspace.openOptions.isSharedMode && flag
-    )
+    featureFlagService.flags.enable_pdf_embed_preview.$
   );
 
-  const editorOptions: AffineEditorViewOptions = useMemo(() => {
-    return {
-      isCloud,
-      isInPeekView: insidePeekView,
+  const serverService = useService(ServerService);
+  const serverConfig = useLiveData(serverService.server.config$);
 
-      enableTurboRenderer,
-      enablePDFEmbedPreview,
-
-      framework,
-
-      reactToLit: reactToLit as AffineEditorViewOptions['reactToLit'],
-      confirmModal,
-    };
-  }, [
-    confirmModal,
-    enablePDFEmbedPreview,
-    enableTurboRenderer,
-    framework,
-    insidePeekView,
-    isCloud,
-    reactToLit,
-  ]);
+  // comment may not be supported by the server
+  const enableComment =
+    isCloud && serverConfig.features.includes(ServerFeature.Comment) && !shared;
 
   const patchedSpecs = useMemo(() => {
-    return enableEditorExtension(framework, mode, enableAI, editorOptions);
-  }, [framework, mode, enableAI, editorOptions]);
+    const manager = getViewManager()
+      .config.init()
+      .foundation(framework)
+      .ai(enableAI, framework)
+      .theme(framework)
+      .editorConfig(framework)
+      .editorView({
+        framework,
+        reactToLit,
+        confirmModal,
+      })
+      .cloud(framework, isCloud)
+      .turboRenderer(enableTurboRenderer)
+      .pdf(enablePDFEmbedPreview, reactToLit)
+      .edgelessBlockHeader({
+        framework,
+        isInPeekView,
+        reactToLit,
+      })
+      .database(framework)
+      .linkedDoc(framework)
+      .paragraph(enableAI)
+      .mobile(framework)
+      .electron(framework)
+      .linkPreview(framework)
+      .codeBlockPreview(framework)
+      .iconPicker(framework)
+      .comment(enableComment, framework).value;
+
+    if (BUILD_CONFIG.isMobileEdition) {
+      if (mode === 'page') {
+        return manager.get('mobile-page');
+      } else {
+        return manager.get('mobile-edgeless');
+      }
+    } else {
+      return manager.get(mode);
+    }
+  }, [
+    confirmModal,
+    enableAI,
+    enablePDFEmbedPreview,
+    enableTurboRenderer,
+    enableComment,
+    framework,
+    isInPeekView,
+    isCloud,
+    mode,
+    reactToLit,
+  ]);
 
   return [
     patchedSpecs,
@@ -174,7 +209,7 @@ export const BlocksuiteDocEditor = forwardRef<
     [externalTitleRef]
   );
 
-  const [specs, portals] = usePatchSpecs('page');
+  const [specs, portals] = usePatchSpecs('page', shared);
 
   const displayBiDirectionalLink = useLiveData(
     editorSettingService.editorSetting.settings$.selector(
@@ -221,6 +256,9 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <>
       <div className={styles.affineDocViewport}>
+        {!BUILD_CONFIG.isMobileEdition ? (
+          <DocIconPicker docId={page.id} readonly={readonly || shared} />
+        ) : null}
         {!isJournal ? (
           <LitDocTitle doc={page} ref={onTitleRef} />
         ) : (
@@ -228,7 +266,7 @@ export const BlocksuiteDocEditor = forwardRef<
         )}
         {!shared && displayDocInfo ? (
           <div className={styles.docPropertiesTableContainer}>
-            <DocPropertiesTable
+            <WorkspacePropertiesTable
               className={styles.docPropertiesTable}
               onDatabasePropertyChange={onDatabasePropertyChange}
               onPropertyChange={onPropertyChange}

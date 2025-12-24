@@ -1,10 +1,9 @@
 import type { IconButton } from '@blocksuite/affine-components/icon-button';
-import { getLoadingIconWith } from '@blocksuite/affine-components/icons';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import {
   cleanSpecifiedTail,
   getTextContentFromInlineRange,
 } from '@blocksuite/affine-rich-text';
-import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar } from '@blocksuite/affine-shared/theme';
 import {
   createKeydownObserver,
@@ -114,11 +113,9 @@ export class LinkedDocPopover extends SignalWatcher(
   }
 
   private get _flattenActionList() {
-    return this._actionGroup
-      .map(group =>
-        group.items.map(item => ({ ...item, groupName: group.name }))
-      )
-      .flat();
+    return this._actionGroup.flatMap(group =>
+      group.items.map(item => ({ ...item, groupName: group.name }))
+    );
   }
 
   private get _query() {
@@ -126,10 +123,6 @@ export class LinkedDocPopover extends SignalWatcher(
       this.context.inlineEditor,
       this.context.startRange
     );
-  }
-
-  private get _loadingIcon() {
-    return getLoadingIconWith(this.context.std.get(ThemeProvider).theme$.value);
   }
 
   private _getActionItems(group: LinkedMenuGroup) {
@@ -188,6 +181,10 @@ export class LinkedDocPopover extends SignalWatcher(
       target: eventSource,
       signal: keydownObserverAbortController.signal,
       interceptor: (event, next) => {
+        if (event.key === 'GroupNext' || event.key === 'GroupPrevious') {
+          event.stopPropagation();
+          return;
+        }
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
           event.stopPropagation();
@@ -291,7 +288,7 @@ export class LinkedDocPopover extends SignalWatcher(
             <div class="group-title">
               <div class="group-title-text">${group.name}</div>
               ${group.isLoading
-                ? html`<span class="loading-icon">${this._loadingIcon}</span>`
+                ? html`<span class="loading-icon">${LoadingIcon()}</span>`
                 : nothing}
             </div>
             <div class="group" style=${group.styles ?? ''}>
@@ -348,7 +345,18 @@ export class LinkedDocPopover extends SignalWatcher(
   override willUpdate() {
     if (!this.hasUpdated) {
       const updatePosition = throttle(() => {
-        this._position = getPopperPosition(this, this.context.startNativeRange);
+        this._position = getPopperPosition(
+          {
+            getBoundingClientRect: () => {
+              return {
+                ...this.getBoundingClientRect(),
+                // Workaround: the width of the popover is zero when it is not rendered
+                width: 280,
+              };
+            },
+          },
+          this.context.startNativeRange
+        );
       }, 10);
 
       this.disposables.addFromEvent(window, 'resize', updatePosition);
@@ -386,7 +394,7 @@ export class LinkedDocPopover extends SignalWatcher(
     }
 
     const ele = shadowRoot.querySelector(
-      `icon-button[data-id="${this._activatedItemKey}"]`
+      `icon-button[data-id=${CSS.escape(this._activatedItemKey)}]`
     );
 
     // If the element doesn't exist, don't log a warning

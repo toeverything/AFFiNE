@@ -8,6 +8,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
+import { cellDivider } from '../styles.js';
 import type { TableSingleView } from '../table-view-manager.js';
 
 export class MobileTableHeader extends SignalWatcher(
@@ -60,7 +61,7 @@ export class MobileTableHeader extends SignalWatcher(
                 .column="${column}"
                 .tableViewManager="${this.tableViewManager}"
               ></mobile-table-column-header>
-              <div class="cell-divider" style="height: auto;"></div>
+              <div class="${cellDivider}" style="height: auto;"></div>
             `;
           }
         )}
