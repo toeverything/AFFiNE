@@ -156,7 +156,7 @@ impl SqliteDocStorage {
     if let Some(data) = snapshot_data {
       let blob = bincode::serde::encode_to_vec(&data, bincode::config::standard())
         .map_err(|e| Error::Serialization(e.to_string()))?;
-      let compressed = zstd::stream::encode_all(std::io::Cursor::new(&blob), 0)
+      let compressed = zstd::stream::encode_all(std::io::Cursor::new(&blob), 4)
         .map_err(|e| Error::Serialization(e.to_string()))?;
 
       let mut tx = self.pool.begin().await?;

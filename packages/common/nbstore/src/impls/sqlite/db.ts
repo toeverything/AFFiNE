@@ -99,7 +99,7 @@ export interface NativeDBApis {
     id: string,
     indexName: string,
     query: string
-  ) => Promise<{ id: string; score: number }[]>;
+  ) => Promise<{ id: string; score: number; terms: Array<string> }[]>;
   ftsGetDocument: (
     id: string,
     indexName: string,
