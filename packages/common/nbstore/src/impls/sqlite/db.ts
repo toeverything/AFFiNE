@@ -112,6 +112,7 @@ export interface NativeDBApis {
     query: string
   ) => Promise<{ start: number; end: number }[]>;
   ftsFlushIndex: (id: string) => Promise<void>;
+  ftsIndexVersion: () => Promise<number>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs
@@ -119,7 +120,7 @@ type NativeDBApisWrapper = NativeDBApis extends infer APIs
       [K in keyof APIs]: APIs[K] extends (...args: any[]) => any
         ? Parameters<APIs[K]> extends [string, ...infer Rest]
           ? (...args: Rest) => ReturnType<APIs[K]>
-          : never
+          : (...args: Parameters<APIs[K]>) => ReturnType<APIs[K]>
         : never;
     }
   : never;

@@ -143,4 +143,8 @@ export class CloudIndexerStorage extends IndexerStorageBase {
   override async refreshIfNeed(): Promise<void> {
     return Promise.resolve();
   }
+
+  override async indexVersion(): Promise<number> {
+    return Promise.resolve(1);
+  }
 }

@@ -406,4 +406,7 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       id,
     });
   },
+  ftsIndexVersion: function (): Promise<number> {
+    return NbStore.ftsIndexVersion();
+  },
 };
