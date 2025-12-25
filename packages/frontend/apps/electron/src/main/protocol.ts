@@ -12,16 +12,15 @@ protocol.registerSchemesAsPrivileged([
   {
     scheme: 'assets',
     privileges: {
-      secure: false,
+      secure: true,
+      allowServiceWorkers: true,
       corsEnabled: true,
       supportFetchAPI: true,
       standard: true,
       bypassCSP: true,
+      stream: true,
     },
   },
-]);
-
-protocol.registerSchemesAsPrivileged([
   {
     scheme: 'file',
     privileges: {
@@ -36,6 +35,17 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 const webStaticDir = join(resourcesPath, 'web-static');
+const localWhiteListDirs = [
+  path.resolve(app.getPath('sessionData')).toLowerCase(),
+  path.resolve(app.getPath('temp')).toLowerCase(),
+];
+
+function isPathInWhiteList(filepath: string) {
+  const lowerFilePath = filepath.toLowerCase();
+  return localWhiteListDirs.some(whitelistDir =>
+    lowerFilePath.startsWith(whitelistDir)
+  );
+}
 
 async function handleFileRequest(request: Request) {
   const urlObject = new URL(request.url);
@@ -45,11 +55,14 @@ async function handleFileRequest(request: Request) {
   }
 
   const isAbsolutePath = urlObject.host !== '.';
+  const isFontRequest =
+    urlObject.pathname &&
+    /\.(woff2?|ttf|otf)$/i.test(urlObject.pathname.split('?')[0] ?? '');
 
   // Redirect to webpack dev server if defined
-  if (process.env.DEV_SERVER_URL && !isAbsolutePath) {
+  if (process.env.DEV_SERVER_URL && !isAbsolutePath && !isFontRequest) {
     const devServerUrl = new URL(
-      urlObject.pathname,
+      `${urlObject.pathname}${urlObject.search}`,
       process.env.DEV_SERVER_URL
     );
     return net.fetch(devServerUrl.toString(), request);
@@ -83,14 +96,7 @@ async function handleFileRequest(request: Request) {
       filepath = path.resolve(filepath.replace(/^\//, ''));
     }
     // security check if the filepath is within app.getPath('sessionData')
-    const sessionDataPath = path
-      .resolve(app.getPath('sessionData'))
-      .toLowerCase();
-    const tempPath = path.resolve(app.getPath('temp')).toLowerCase();
-    if (
-      !filepath.toLowerCase().startsWith(sessionDataPath) &&
-      !filepath.toLowerCase().startsWith(tempPath)
-    ) {
+    if (urlObject.host !== 'local-file' || !isPathInWhiteList(filepath)) {
       throw new Error('Invalid filepath');
     }
   }
@@ -102,7 +108,20 @@ async function handleFileRequest(request: Request) {
 const corsWhitelist = [
   /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
   /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*youtube-nocookie\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*gstatic\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*googleapis\.com$/,
+  /^localhost(?::\d+)?$/,
+  /^127\.0\.0\.1(?::\d+)?$/,
+  /^insider\.affine\.pro$/,
+  /^app\.affine\.pro$/,
 ];
+const needRefererDomains = [
+  /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*youtube-nocookie\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
+];
+const defaultReferer = 'https://client.affine.local/';
 
 export function registerProtocol() {
   protocol.handle('file', request => {
@@ -159,6 +178,31 @@ export function registerProtocol() {
             delete responseHeaders['access-control-allow-headers'];
             delete responseHeaders['Access-Control-Allow-Origin'];
             delete responseHeaders['Access-Control-Allow-Headers'];
+          } else if (
+            !needRefererDomains.some(domainRegex => domainRegex.test(hostname))
+          ) {
+            if (
+              !responseHeaders['access-control-allow-origin'] &&
+              !responseHeaders['Access-Control-Allow-Origin']
+            ) {
+              responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+            }
+            if (
+              !responseHeaders['access-control-allow-headers'] &&
+              !responseHeaders['Access-Control-Allow-Headers']
+            ) {
+              responseHeaders['Access-Control-Allow-Headers'] = [
+                'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+              ];
+            }
+            if (
+              !responseHeaders['access-control-allow-methods'] &&
+              !responseHeaders['Access-Control-Allow-Methods']
+            ) {
+              responseHeaders['Access-Control-Allow-Methods'] = [
+                'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+              ];
+            }
           }
 
           // to allow url embedding, remove "x-frame-options",
@@ -217,7 +261,7 @@ export function registerProtocol() {
     const url = new URL(details.url);
 
     (async () => {
-      // session cookies are set to file:// on production
+      // session cookies are set to assets:// on production
       // if sending request to the cloud, attach the session cookie (to affine cloud server)
       if (
         url.protocol === 'http:' ||
@@ -234,6 +278,14 @@ export function registerProtocol() {
           .join('; ');
         delete details.requestHeaders['cookie'];
         details.requestHeaders['Cookie'] = cookieString;
+      }
+
+      const hostname = url.hostname;
+      const needReferer = needRefererDomains.some(regex =>
+        regex.test(hostname)
+      );
+      if (needReferer && !details.requestHeaders['Referer']) {
+        details.requestHeaders['Referer'] = defaultReferer;
       }
     })()
       .catch(err => {
