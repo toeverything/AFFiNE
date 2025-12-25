@@ -84,6 +84,7 @@ export declare class DocStoragePool {
   getBlobUploadedAt(universalId: string, peer: string, blobId: string): Promise<Date | null>
   ftsAddDocument(id: string, indexName: string, docId: string, text: string, index: boolean): Promise<void>
   ftsFlushIndex(id: string): Promise<void>
+  ftsIndexVersion(): Promise<number>
   ftsDeleteDocument(id: string, indexName: string, docId: string): Promise<void>
   ftsGetDocument(id: string, indexName: string, docId: string): Promise<string | null>
   ftsSearch(id: string, indexName: string, query: string): Promise<Array<NativeSearchHit>>

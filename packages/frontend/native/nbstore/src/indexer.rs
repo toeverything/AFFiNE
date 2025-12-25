@@ -197,6 +197,10 @@ impl SqliteDocStorage {
     Ok(())
   }
 
+  pub fn index_version() -> u32 {
+    memory_indexer::InMemoryIndex::snapshot_version()
+  }
+
   pub async fn fts_add(
     &self,
     index_name: &str,

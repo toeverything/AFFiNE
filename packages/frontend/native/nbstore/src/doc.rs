@@ -293,7 +293,7 @@ mod tests {
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        bin: vec![0, 0],
+        bin: vec![0, 0].into(),
         timestamp: Utc::now().naive_utc(),
       })
       .await
@@ -373,7 +373,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: vec![0, 0].into(),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -391,7 +391,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: vec![0, 0].into(),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -404,7 +404,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 1],
+      bin: vec![0, 1].into(),
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),

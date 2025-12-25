@@ -184,4 +184,5 @@ export interface NbStorePlugin {
     query: string;
   }) => Promise<Array<{ start: number; end: number }>>;
   ftsFlushIndex: (options: { id: string }) => Promise<void>;
+  ftsIndexVersion: () => Promise<number>;
 }
