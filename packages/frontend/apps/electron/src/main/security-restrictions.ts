@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, protocol } from 'electron';
 
 import { anotherHost, mainHost } from './constants';
 import { openExternalSafely } from './security/open-external';
@@ -96,3 +96,45 @@ app.on('web-contents-created', (_, contents) => {
     return { action: 'deny' };
   });
 });
+
+type CustomScheme = {
+  scheme: string;
+  privileges?: Record<string, boolean>;
+};
+
+const original = protocol.registerSchemesAsPrivileged.bind(protocol);
+
+// use Map to merge (OR the privileges of the same-named schemes)
+const bucket = new Map<string, CustomScheme>();
+let flushed = false;
+
+function mergeSchemes(list: CustomScheme[]) {
+  for (const item of list ?? []) {
+    const prev = bucket.get(item.scheme);
+    if (!prev) {
+      bucket.set(item.scheme, {
+        scheme: item.scheme,
+        privileges: { ...(item.privileges ?? {}) },
+      });
+    } else {
+      const merged: Record<string, boolean> = { ...(prev.privileges ?? {}) };
+      for (const [k, v] of Object.entries(item.privileges ?? {})) {
+        merged[k] = Boolean(merged[k] || v);
+      }
+      prev.privileges = merged;
+    }
+  }
+}
+
+// make a once-only API into a collecting one
+(protocol as any).registerSchemesAsPrivileged = (schemes: CustomScheme[]) => {
+  if (flushed) return;
+  mergeSchemes(schemes);
+};
+
+export const flushProtocol = () => {
+  if (flushed) return;
+  flushed = true;
+  const merged = Array.from(bucket.values());
+  original(merged);
+};

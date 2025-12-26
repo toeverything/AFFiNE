@@ -15,6 +15,7 @@ import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { setupRecordingFeature } from './recording/feature';
+import { flushProtocol } from './security-restrictions';
 import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
@@ -22,7 +23,6 @@ import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
 
-app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
 if (isDev) {
   // In electron the dev server will be resolved to 0.0.0.0, but it
   // might be blocked by electron.
@@ -49,8 +49,14 @@ app.commandLine.appendSwitch('disable-blink-features', 'Autofill');
 // `DocumentPolicyIncludeJSCallStacksInCrashReports` - https://www.electronjs.org/docs/latest/api/web-frame-main#framecollectjavascriptcallstack-experimental
 // `EarlyEstablishGpuChannel` - Refs https://issues.chromium.org/issues/40208065
 // `EstablishGpuChannelAsync` - Refs https://issues.chromium.org/issues/40208065
-const featuresToEnable = `DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync`;
-app.commandLine.appendSwitch('enable-features', featuresToEnable);
+const enabledFeatures = [
+  'CSSTextAutoSpace',
+  'DocumentPolicyIncludeJSCallStacksInCrashReports',
+  'EarlyEstablishGpuChannel',
+  'EstablishGpuChannelAsync',
+  'WebCodecs',
+].join(',');
+app.commandLine.appendSwitch('enable-features', enabledFeatures);
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 // use the same data for internal & beta for testing
@@ -100,6 +106,7 @@ app.on('activate', () => {
 });
 
 setupDeepLink(app);
+flushProtocol();
 
 /**
  * Create app window when background process will be ready
