@@ -148,8 +148,8 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
                       type="text/html"
                       src=${`https://www.youtube.com/embed/${videoId}`}
                       frameborder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowfullscreen
+                      allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                      sandbox="allow-scripts allow-same-origin allow-presentation"
                       loading="lazy"
                       credentialless
                     ></iframe>

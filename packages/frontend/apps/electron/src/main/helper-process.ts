@@ -76,6 +76,16 @@ class HelperProcessManager {
     beforeAppQuit(() => {
       this.#process.kill();
     });
+
+    this.#process.on('exit', code => {
+      logger.error('[helper] process exited', { code });
+      HelperProcessManager._instance = null;
+    });
+
+    this.#process.on('error', err => {
+      logger.error('[helper] process error', err);
+      HelperProcessManager._instance = null;
+    });
   }
 
   // bridge renderer <-> helper process

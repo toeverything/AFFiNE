@@ -5,6 +5,7 @@ import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
 import { isWindows, resourcesPath } from '../shared/utils';
+import { isDev } from './config';
 import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
@@ -13,11 +14,9 @@ protocol.registerSchemesAsPrivileged([
     scheme: 'assets',
     privileges: {
       secure: true,
-      allowServiceWorkers: true,
       corsEnabled: true,
       supportFetchAPI: true,
       standard: true,
-      bypassCSP: true,
       stream: true,
     },
   },
@@ -28,7 +27,6 @@ protocol.registerSchemesAsPrivileged([
       corsEnabled: true,
       supportFetchAPI: true,
       standard: true,
-      bypassCSP: true,
       stream: true,
     },
   },
@@ -59,8 +57,13 @@ async function handleFileRequest(request: Request) {
     urlObject.pathname &&
     /\.(woff2?|ttf|otf)$/i.test(urlObject.pathname.split('?')[0] ?? '');
 
-  // Redirect to webpack dev server if defined
-  if (process.env.DEV_SERVER_URL && !isAbsolutePath && !isFontRequest) {
+  // Redirect to webpack dev server if available
+  if (
+    isDev &&
+    process.env.DEV_SERVER_URL &&
+    !isAbsolutePath &&
+    !isFontRequest
+  ) {
     const devServerUrl = new URL(
       `${urlObject.pathname}${urlObject.search}`,
       process.env.DEV_SERVER_URL
@@ -103,25 +106,50 @@ async function handleFileRequest(request: Request) {
   return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }
 
-// whitelist for cors
-// url patterns that are allowed to have cors headers
-const corsWhitelist = [
-  /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
-  /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
-  /^(?:[a-zA-Z0-9-]+\.)*youtube-nocookie\.com$/,
-  /^(?:[a-zA-Z0-9-]+\.)*gstatic\.com$/,
-  /^(?:[a-zA-Z0-9-]+\.)*googleapis\.com$/,
-  /^localhost(?::\d+)?$/,
-  /^127\.0\.0\.1(?::\d+)?$/,
-  /^insider\.affine\.pro$/,
-  /^app\.affine\.pro$/,
-];
 const needRefererDomains = [
   /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
   /^(?:[a-zA-Z0-9-]+\.)*youtube-nocookie\.com$/,
   /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
 ];
 const defaultReferer = 'https://client.affine.local/';
+
+function setHeader(
+  headers: Record<string, string[]>,
+  name: string,
+  value: string
+) {
+  Object.keys(headers).forEach(key => {
+    if (key.toLowerCase() === name.toLowerCase()) {
+      delete headers[key];
+    }
+  });
+  headers[name] = [value];
+}
+
+function ensureFrameAncestors(
+  headers: Record<string, string[]>,
+  directive: string
+) {
+  const cspHeaderKey = Object.keys(headers).find(
+    key => key.toLowerCase() === 'content-security-policy'
+  );
+  if (!cspHeaderKey) {
+    headers['Content-Security-Policy'] = [`frame-ancestors ${directive}`];
+    return;
+  }
+
+  const values = headers[cspHeaderKey];
+  headers[cspHeaderKey] = values.map(val => {
+    if (typeof val !== 'string') return val as any;
+    const directives = val
+      .split(';')
+      .map(v => v.trim())
+      .filter(Boolean)
+      .filter(d => !d.toLowerCase().startsWith('frame-ancestors'));
+    directives.push(`frame-ancestors ${directive}`);
+    return directives.join('; ');
+  });
+}
 
 export function registerProtocol() {
   protocol.handle('file', request => {
@@ -172,79 +200,19 @@ export function registerProtocol() {
             }
           }
 
-          const hostname = new URL(url).hostname;
-          if (!corsWhitelist.some(domainRegex => domainRegex.test(hostname))) {
+          const { protocol } = new URL(url);
+
+          // Only adjust CORS for assets/file responses; leave remote http(s) headers intact
+          if (protocol === 'assets:' || protocol === 'file:') {
             delete responseHeaders['access-control-allow-origin'];
             delete responseHeaders['access-control-allow-headers'];
             delete responseHeaders['Access-Control-Allow-Origin'];
             delete responseHeaders['Access-Control-Allow-Headers'];
-          } else if (
-            !needRefererDomains.some(domainRegex => domainRegex.test(hostname))
-          ) {
-            if (
-              !responseHeaders['access-control-allow-origin'] &&
-              !responseHeaders['Access-Control-Allow-Origin']
-            ) {
-              responseHeaders['Access-Control-Allow-Origin'] = ['*'];
-            }
-            if (
-              !responseHeaders['access-control-allow-headers'] &&
-              !responseHeaders['Access-Control-Allow-Headers']
-            ) {
-              responseHeaders['Access-Control-Allow-Headers'] = [
-                'Origin, X-Requested-With, Content-Type, Accept, Authorization',
-              ];
-            }
-            if (
-              !responseHeaders['access-control-allow-methods'] &&
-              !responseHeaders['Access-Control-Allow-Methods']
-            ) {
-              responseHeaders['Access-Control-Allow-Methods'] = [
-                'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-              ];
-            }
           }
 
-          // to allow url embedding, remove "x-frame-options",
-          // if response header contains "content-security-policy", remove "frame-ancestors/frame-src"
-          delete responseHeaders['x-frame-options'];
-          delete responseHeaders['X-Frame-Options'];
-
-          // Handle Content Security Policy headers
-          const cspHeaders = [
-            'content-security-policy',
-            'Content-Security-Policy',
-          ];
-          for (const cspHeader of cspHeaders) {
-            const cspValues = responseHeaders[cspHeader];
-            if (cspValues) {
-              // Remove frame-ancestors and frame-src directives from CSP
-              const modifiedCspValues = cspValues
-                .map(cspValue => {
-                  if (typeof cspValue === 'string') {
-                    return cspValue
-                      .split(';')
-                      .filter(directive => {
-                        const trimmed = directive.trim().toLowerCase();
-                        return (
-                          !trimmed.startsWith('frame-ancestors') &&
-                          !trimmed.startsWith('frame-src')
-                        );
-                      })
-                      .join(';');
-                  }
-                  return cspValue;
-                })
-                .filter(
-                  value => value && typeof value === 'string' && value.trim()
-                );
-
-              if (modifiedCspValues.length > 0) {
-                responseHeaders[cspHeader] = modifiedCspValues;
-              } else {
-                delete responseHeaders[cspHeader];
-              }
-            }
+          if (protocol === 'assets:' || protocol === 'file:') {
+            setHeader(responseHeaders, 'X-Frame-Options', 'SAMEORIGIN');
+            ensureFrameAncestors(responseHeaders, "'self'");
           }
         }
       })()
