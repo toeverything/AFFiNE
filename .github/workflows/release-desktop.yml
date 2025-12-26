@@ -135,6 +135,16 @@ jobs:
           # some flatpak deps need git protocol.file.allow
           git config --global protocol.file.allow always
 
+      - name: Free disk space for flatpak build
+        if: ${{ matrix.spec.platform == 'linux' }}
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android
+          sudo apt-get clean
+          sudo docker system prune -af || true
+          rm -rf ~/.cache/yarn ~/.npm
+          df -h /
+          df -h /tmp
+
       - name: Remove nbstore node_modules
         shell: bash
         # node_modules of nbstore is not needed for building, and it will make the build process out of memory
