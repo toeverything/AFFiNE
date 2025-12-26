@@ -27,14 +27,23 @@ if (isDev) {
   // In electron the dev server will be resolved to 0.0.0.0, but it
   // might be blocked by electron.
   // See https://github.com/webpack/webpack-dev-server/pull/384
-  app.commandLine.appendSwitch('host-rules', 'MAP 0.0.0.0 127.0.0.1');
+  app.commandLine.appendSwitch('host-resolver-rules', 'MAP 0.0.0.0 127.0.0.1');
 }
 // https://github.com/electron/electron/issues/43556
 // // `CalculateNativeWinOcclusion` - Disable native window occlusion tracker (https://groups.google.com/a/chromium.org/g/embedder-dev/c/ZF3uHHyWLKw/m/VDN2hDXMAAAJ)
-app.commandLine.appendSwitch(
-  'disable-features',
-  'PlzDedicatedWorker,CalculateNativeWinOcclusion'
-);
+const disabledFeatures = [
+  'PlzDedicatedWorker',
+  'CalculateNativeWinOcclusion',
+  // Disable Chrome autofill and password save prompts
+  'AutofillServerCommunication',
+  'AutofillProfileCleanup',
+  'AutofillAddressProfileSavePrompt',
+  'AutofillPaymentCards',
+  'AutofillEnableAccountWalletStorage',
+  'SavePasswordBubble',
+].join(',');
+app.commandLine.appendSwitch('disable-features', disabledFeatures);
+app.commandLine.appendSwitch('disable-blink-features', 'Autofill');
 
 // Following features are enabled from the runtime:
 // `DocumentPolicyIncludeJSCallStacksInCrashReports` - https://www.electronjs.org/docs/latest/api/web-frame-main#framecollectjavascriptcallstack-experimental
