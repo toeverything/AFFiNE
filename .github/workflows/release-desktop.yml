@@ -148,6 +148,7 @@ jobs:
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
           NODE_OPTIONS: --max-old-space-size=14384
+          DEBUG: '@malept/flatpak-bundler,electron-installer-flatpak,affine:*,napi:*'
 
       - name: signing DMG
         if: ${{ matrix.spec.platform == 'darwin' }}
