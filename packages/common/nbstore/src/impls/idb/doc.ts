@@ -37,7 +37,9 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
 
     while (true) {
       try {
-        const trx = this.db.transaction(['updates', 'clocks'], 'readwrite');
+        const trx = this.db.transaction(['updates', 'clocks'], 'readwrite', {
+          durability: 'relaxed',
+        });
 
         await trx.objectStore('updates').add({
           ...update,
@@ -103,15 +105,15 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
   override async deleteDoc(docId: string) {
     const trx = this.db.transaction(
       ['snapshots', 'updates', 'clocks'],
-      'readwrite'
+      'readwrite',
+      { durability: 'relaxed' }
     );
 
-    const idx = trx.objectStore('updates').index('docId');
-    const iter = idx.iterate(IDBKeyRange.only(docId));
+    const updates = trx.objectStore('updates');
+    const idx = updates.index('docId');
+    const keys = await idx.getAllKeys(IDBKeyRange.only(docId));
 
-    for await (const { value } of iter) {
-      await trx.objectStore('updates').delete([value.docId, value.createdAt]);
-    }
+    await Promise.all(keys.map(key => updates.delete(key)));
 
     await trx.objectStore('snapshots').delete(docId);
     await trx.objectStore('clocks').delete(docId);
@@ -119,6 +121,18 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
 
   override async getDocTimestamps(after: Date = new Date(0)) {
     const trx = this.db.transaction('clocks', 'readonly');
+
+    const getAllRecords = trx.store.getAllRecords?.bind(trx.store);
+
+    if (typeof getAllRecords === 'function') {
+      const records = await getAllRecords();
+      return records.reduce((ret, cur) => {
+        if (cur.value.timestamp > after) {
+          ret[cur.value.docId] = cur.value.timestamp;
+        }
+        return ret;
+      }, {} as DocClocks);
+    }
 
     const clocks = await trx.store.getAll();
 
@@ -157,7 +171,19 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
 
   protected override async getDocUpdates(docId: string): Promise<DocRecord[]> {
     const trx = this.db.transaction('updates', 'readonly');
-    const updates = await trx.store.index('docId').getAll(docId);
+    const idx = trx.store.index('docId');
+    const getAllRecords = idx.getAllRecords?.bind(idx);
+
+    if (typeof getAllRecords === 'function') {
+      const records = await getAllRecords(IDBKeyRange.only(docId));
+      return records.map(record => ({
+        docId,
+        bin: record.value.bin,
+        timestamp: record.value.createdAt,
+      }));
+    }
+
+    const updates = await idx.getAll(docId);
 
     return updates.map(update => ({
       docId,
@@ -170,7 +196,9 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
     docId: string,
     updates: DocRecord[]
   ): Promise<number> {
-    const trx = this.db.transaction('updates', 'readwrite');
+    const trx = this.db.transaction('updates', 'readwrite', {
+      durability: 'relaxed',
+    });
 
     await Promise.all(
       updates.map(update => trx.store.delete([docId, update.timestamp]))
