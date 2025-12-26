@@ -8705,26 +8705,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@malept/electron-installer-flatpak@npm:0.11.4":
+"@malept/electron-installer-flatpak@npm:^0.11.4":
   version: 0.11.4
   resolution: "@malept/electron-installer-flatpak@npm:0.11.4"
-  dependencies:
-    "@malept/flatpak-bundler": "npm:^0.4.0"
-    debug: "npm:^4.1.1"
-    electron-installer-common: "npm:^0.10.0"
-    lodash: "npm:^4.17.15"
-    semver: "npm:^7.1.1"
-    yargs: "npm:^16.0.0"
-  bin:
-    electron-installer-flatpak: bin/electron-installer-flatpak.js
-  checksum: 10/96d1531f0152c2feb905d019d637af21000ba518465d5336496ce969a695225f1353a972438a091149f3b951b46f7b33ea696bbfcb0511e2d31ae682e08aac9a
-  conditions: (os=darwin | os=linux)
-  languageName: node
-  linkType: hard
-
-"@malept/electron-installer-flatpak@patch:@malept/electron-installer-flatpak@npm%3A0.11.4#~/.yarn/patches/@malept-electron-installer-flatpak-npm-0.11.4-a35ca0e12e.patch":
-  version: 0.11.4
-  resolution: "@malept/electron-installer-flatpak@patch:@malept/electron-installer-flatpak@npm%3A0.11.4#~/.yarn/patches/@malept-electron-installer-flatpak-npm-0.11.4-a35ca0e12e.patch::version=0.11.4&hash=78c9c7"
   dependencies:
     "@malept/flatpak-bundler": "npm:^0.4.0"
     debug: "npm:^4.1.1"
