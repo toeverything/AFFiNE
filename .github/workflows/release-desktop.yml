@@ -128,22 +128,20 @@ jobs:
       - name: Install additional dependencies on Linux
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
+          df -h
           sudo add-apt-repository universe
           sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak update
           # some flatpak deps need git protocol.file.allow
           git config --global protocol.file.allow always
-
-      - name: Free disk space for flatpak build
-        if: ${{ matrix.spec.platform == 'linux' }}
-        run: |
+          # clean up apt cache to save disk space
+          sudo -E apt-get -y purge azure-cli* zulu* hhvm* llvm* firefox* google* dotnet* aspnetcore* powershell* adoptopenjdk* mysql* php* mongodb* moby* snap* || true
+          sudo -E apt-get -qq autoremove --purge
           sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android
           sudo apt-get clean
-          sudo docker system prune -af || true
           rm -rf ~/.cache/yarn ~/.npm
-          df -h /
-          df -h /tmp
+          df -h
 
       - name: Remove nbstore node_modules
         shell: bash
@@ -159,7 +157,6 @@ jobs:
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
           NODE_OPTIONS: --max-old-space-size=14384
-          DEBUG: '@malept/flatpak-bundler,electron-installer-flatpak,affine:*,napi:*'
 
       - name: signing DMG
         if: ${{ matrix.spec.platform == 'darwin' }}

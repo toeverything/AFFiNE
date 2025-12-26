@@ -12,8 +12,8 @@ import {
   arch,
   buildType,
   icnsPath,
-  iconPngPath,
   iconUrl,
+  iconX64PngPath,
   iconX512PngPath,
   icoPath,
   platform,
@@ -120,8 +120,11 @@ const makers = [
         mimeType: linuxMimeTypes,
         productName,
         bin: productName,
-        id: appIdMap[buildType],
-        icon: iconPngPath, // not working yet
+        id: fromBuildIdentifier(appIdMap),
+        icon: {
+          '64x64': iconX64PngPath,
+          '512x512': iconX512PngPath,
+        },
         branch: buildType,
         runtime: 'org.freedesktop.Platform',
         runtimeVersion: '25.08',
