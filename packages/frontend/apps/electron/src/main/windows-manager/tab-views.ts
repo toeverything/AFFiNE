@@ -935,6 +935,9 @@ export class WebContentViewsManager {
     const mainFocused = this.mainWindow?.isFocused() ?? false;
     const activeId = this.activeWorkbenchId;
     this.webViewsMap$.value.forEach((view, id) => {
+      if (id === 'shell') {
+        return;
+      }
       const shouldThrottle = !mainFocused || id !== activeId;
       try {
         view.webContents.setBackgroundThrottling(shouldThrottle);
