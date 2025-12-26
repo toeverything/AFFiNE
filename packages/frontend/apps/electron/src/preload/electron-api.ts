@@ -141,12 +141,13 @@ function getMainAPIs() {
             return () => {
               const listeners = listenersMap.get(channel) ?? [];
               const index = listeners.indexOf(callback);
-              if (index !== -1) {
-                listeners.splice(index, 1);
+              if (index === -1) {
+                return;
               }
+              listeners.splice(index, 1);
+              unsubscribe(channel);
               if (listeners.length === 0) {
                 listenersMap.delete(channel);
-                unsubscribe(channel);
               } else {
                 listenersMap.set(channel, listeners);
               }

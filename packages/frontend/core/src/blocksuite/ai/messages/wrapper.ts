@@ -75,7 +75,6 @@ export const createIframeRenderer: (
       class="ai-answer-iframe"
       sandbox="allow-scripts"
       scrolling="no"
-      allowfullscreen
       .srcdoc=${preprocessHtml(answer)}
     >
     </iframe>`;

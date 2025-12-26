@@ -150,7 +150,6 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
                       frameborder="0"
                       allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                       sandbox="allow-scripts allow-same-origin allow-presentation"
-                      allowfullscreen
                       loading="lazy"
                       credentialless
                     ></iframe>
