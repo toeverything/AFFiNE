@@ -63,7 +63,7 @@ const makers = [
         ),
       },
     },
-  {
+  false && {
     name: '@electron-forge/maker-zip',
     config: {
       name: 'affine',
@@ -124,13 +124,17 @@ const makers = [
           id: fromBuildIdentifier(appIdMap),
           icon: iconPngPath, // not working yet
           branch: buildType,
+          runtime: 'org.freedesktop.Platform',
+          runtimeVersion: '25.08',
+          sdk: 'org.freedesktop.Sdk',
+          base: 'org.electronjs.Electron2.BaseApp',
+          baseVersion: '25.08',
           files: [
             [
               './resources/affine.metainfo.xml',
               '/usr/share/metainfo/affine.metainfo.xml',
             ],
           ],
-          runtimeVersion: '25.08',
           modules: [
             {
               name: 'zypak',
@@ -198,6 +202,7 @@ export default {
       },
     ],
     executableName: productName,
+    ignore: [/\.map$/],
     asar: true,
     extendInfo: {
       NSAudioCaptureUsageDescription:
