@@ -128,17 +128,26 @@ jobs:
       - name: Install additional dependencies on Linux
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
+          df -h
           sudo add-apt-repository universe
           sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak update
           # some flatpak deps need git protocol.file.allow
           git config --global protocol.file.allow always
+          # clean up apt cache to save disk space
+          sudo -E apt-get -y purge azure-cli* zulu* hhvm* llvm* firefox* google* dotnet* aspnetcore* powershell* adoptopenjdk* mysql* php* mongodb* moby* snap* || true
+          sudo -E apt-get -qq autoremove --purge
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android
+          sudo apt-get clean
+          rm -rf ~/.cache/yarn ~/.npm
+          df -h
 
       - name: Remove nbstore node_modules
         shell: bash
         # node_modules of nbstore is not needed for building, and it will make the build process out of memory
         run: |
+          cargo clean
           rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite
           rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
 
