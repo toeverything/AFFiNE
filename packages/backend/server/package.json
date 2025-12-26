@@ -58,7 +58,7 @@
     "@opentelemetry/core": "^2.2.0",
     "@opentelemetry/exporter-prometheus": "^0.208.0",
     "@opentelemetry/exporter-zipkin": "^2.2.0",
-    "@opentelemetry/host-metrics": "^0.37.0",
+    "@opentelemetry/host-metrics": "^0.38.0",
     "@opentelemetry/instrumentation": "^0.208.0",
     "@opentelemetry/instrumentation-graphql": "^0.56.0",
     "@opentelemetry/instrumentation-http": "^0.208.0",

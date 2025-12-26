@@ -948,7 +948,7 @@ __metadata:
     "@opentelemetry/core": "npm:^2.2.0"
     "@opentelemetry/exporter-prometheus": "npm:^0.208.0"
     "@opentelemetry/exporter-zipkin": "npm:^2.2.0"
-    "@opentelemetry/host-metrics": "npm:^0.37.0"
+    "@opentelemetry/host-metrics": "npm:^0.38.0"
     "@opentelemetry/instrumentation": "npm:^0.208.0"
     "@opentelemetry/instrumentation-graphql": "npm:^0.56.0"
     "@opentelemetry/instrumentation-http": "npm:^0.208.0"
@@ -11440,14 +11440,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/host-metrics@npm:^0.37.0":
-  version: 0.37.0
-  resolution: "@opentelemetry/host-metrics@npm:0.37.0"
+"@opentelemetry/host-metrics@npm:^0.38.0":
+  version: 0.38.0
+  resolution: "@opentelemetry/host-metrics@npm:0.38.0"
   dependencies:
     systeminformation: "npm:5.23.8"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 10/c2929a28f046ff99633ae4dafb758967be5623fa9c456f01a82d7f58823bf328a388f928e36a0591d963adff532fe9461abbebc532a7604ec48f3a194cb7f129
+  checksum: 10/22f088b4c1541e86b4447d6386b771bed9c332bf0449b5c6fdc1ebbc1ccd5dc5f37223ad10e4591040cd99123596a92f05aa77587cdd2702c53c6a1b77169b79
   languageName: node
   linkType: hard
 

@@ -5,6 +5,7 @@ import { BrowserWindow, MessageChannelMain, type WebContents } from 'electron';
 import { backgroundWorkerViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
+import { buildWebPreferences } from '../web-preferences';
 
 async function getAdditionalArguments() {
   const { getExposedMeta } = await import('../exposed');
@@ -41,10 +42,10 @@ export class WorkerManager {
       const worker = new BrowserWindow({
         width: 1200,
         height: 600,
-        webPreferences: {
+        webPreferences: buildWebPreferences({
           preload: join(__dirname, './preload.js'),
           additionalArguments: additionalArguments,
-        },
+        }),
         show: false,
       });
 
@@ -56,9 +57,23 @@ export class WorkerManager {
       };
 
       let disconnectHelperProcess: (() => void) | null = null;
+      const handleWorkerFailure = (reason: string) => {
+        logger.error('[worker] renderer process gone', { key, reason });
+        disconnectHelperProcess?.();
+        this.workers.delete(key);
+        try {
+          worker.destroy();
+        } catch {}
+      };
       worker.on('closed', () => {
         this.workers.delete(key);
         disconnectHelperProcess?.();
+      });
+      worker.webContents.on('render-process-gone', (_event, details) => {
+        handleWorkerFailure(details.reason ?? 'unknown');
+      });
+      worker.webContents.on('unresponsive', () => {
+        handleWorkerFailure('unresponsive');
       });
       worker.loadURL(backgroundWorkerViewUrl).catch(e => {
         logger.error('failed to load url', e);
