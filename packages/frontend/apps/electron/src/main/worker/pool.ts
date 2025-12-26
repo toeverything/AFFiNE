@@ -57,18 +57,27 @@ export class WorkerManager {
       };
 
       let disconnectHelperProcess: (() => void) | null = null;
+      let cleanedUp = false;
+      const cleanup = () => {
+        if (cleanedUp) {
+          return;
+        }
+        cleanedUp = true;
+        this.workers.delete(key);
+        disconnectHelperProcess?.();
+        disconnectHelperProcess = null;
+      };
       const handleWorkerFailure = (reason: string) => {
         logger.error('[worker] renderer process gone', { key, reason });
-        disconnectHelperProcess?.();
-        this.workers.delete(key);
+        record.loaded.reject(new Error(`worker ${key} failed: ${reason}`));
+        cleanup();
         try {
           worker.destroy();
-        } catch {}
+        } catch (err) {
+          logger.warn('failed to destroy worker window', err);
+        }
       };
-      worker.on('closed', () => {
-        this.workers.delete(key);
-        disconnectHelperProcess?.();
-      });
+      worker.on('closed', cleanup);
       worker.webContents.on('render-process-gone', (_event, details) => {
         handleWorkerFailure(details.reason ?? 'unknown');
       });
