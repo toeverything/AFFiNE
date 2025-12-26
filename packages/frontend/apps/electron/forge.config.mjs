@@ -111,57 +111,60 @@ const makers = [
       },
     },
   },
-  !process.env.SKIP_BUNDLE &&
-    false && {
-      name: '@electron-forge/maker-flatpak',
-      platforms: ['linux'],
-      /** @type {import('@electron-forge/maker-flatpak').MakerFlatpakConfig} */
-      config: {
-        options: {
-          mimeType: linuxMimeTypes,
-          productName,
-          bin: productName,
-          id: fromBuildIdentifier(appIdMap),
-          icon: iconPngPath, // not working yet
-          branch: buildType,
-          files: [
-            [
-              './resources/affine.metainfo.xml',
-              '/usr/share/metainfo/affine.metainfo.xml',
+  !process.env.SKIP_BUNDLE && {
+    name: '@electron-forge/maker-flatpak',
+    platforms: ['linux'],
+    /** @type {import('@electron-forge/maker-flatpak').MakerFlatpakConfig} */
+    config: {
+      options: {
+        mimeType: linuxMimeTypes,
+        productName,
+        bin: productName,
+        id: appIdMap[buildType],
+        icon: iconPngPath, // not working yet
+        branch: buildType,
+        runtime: 'org.freedesktop.Platform',
+        runtimeVersion: '25.08',
+        sdk: 'org.freedesktop.Sdk',
+        base: 'org.electronjs.Electron2.BaseApp',
+        baseVersion: '25.08',
+        files: [
+          [
+            './resources/affine.metainfo.xml',
+            '/usr/share/metainfo/affine.metainfo.xml',
+          ],
+        ],
+        modules: [
+          {
+            name: 'zypak',
+            sources: [
+              {
+                type: 'git',
+                url: 'https://github.com/refi64/zypak',
+                tag: 'v2025.09',
+              },
             ],
-          ],
-          runtimeVersion: '25.08',
-          modules: [
-            {
-              name: 'zypak',
-              sources: [
-                {
-                  type: 'git',
-                  url: 'https://github.com/refi64/zypak',
-                  tag: 'v2025.09',
-                },
-              ],
-            },
-          ],
-          finishArgs: [
-            // Wayland/X11 Rendering
-            '--socket=wayland',
-            '--socket=x11',
-            '--share=ipc',
-            // Open GL
-            '--device=dri',
-            // Audio output
-            '--socket=pulseaudio',
-            // Read/write home directory access
-            '--filesystem=home',
-            // Allow communication with network
-            '--share=network',
-            // System notifications with libnotify
-            '--talk-name=org.freedesktop.Notifications',
-          ],
-        },
+          },
+        ],
+        finishArgs: [
+          // Wayland/X11 Rendering
+          '--socket=wayland',
+          '--socket=x11',
+          '--share=ipc',
+          // Open GL
+          '--device=dri',
+          // Audio output
+          '--socket=pulseaudio',
+          // Read/write home directory access
+          '--filesystem=home',
+          // Allow communication with network
+          '--share=network',
+          // System notifications with libnotify
+          '--talk-name=org.freedesktop.Notifications',
+        ],
       },
     },
+  },
 ].filter(Boolean);
 
 /**
@@ -198,6 +201,7 @@ export default {
       },
     ],
     executableName: productName,
+    ignore: [/\.map$/],
     asar: true,
     extendInfo: {
       NSAudioCaptureUsageDescription:

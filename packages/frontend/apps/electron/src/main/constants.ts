@@ -1,8 +1,8 @@
 export const mainHost = '.';
 export const anotherHost = 'another-host';
 
-export const mainWindowOrigin = `file://${mainHost}`;
-export const anotherOrigin = `file://${anotherHost}`;
+export const mainWindowOrigin = `assets://${mainHost}`;
+export const anotherOrigin = `assets://${anotherHost}`;
 
 export const onboardingViewUrl = `${mainWindowOrigin}/onboarding`;
 export const shellViewUrl = `${mainWindowOrigin}/shell.html`;
