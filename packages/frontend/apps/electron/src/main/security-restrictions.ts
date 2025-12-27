@@ -3,6 +3,31 @@ import { app, protocol } from 'electron';
 import { anotherHost, mainHost } from './constants';
 import { openExternalSafely } from './security/open-external';
 
+// register all schemes as privileged
+// electron only allows this to be done once
+// so we collect all calls and flush them at once
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'assets',
+    privileges: {
+      secure: true,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      standard: true,
+      stream: true,
+    },
+  },
+  {
+    scheme: 'sentry-ipc',
+    privileges: {
+      bypassCSP: true,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      secure: true,
+    },
+  },
+]);
+
 const extractRedirectTarget = (rawUrl: string) => {
   try {
     const parsed = new URL(rawUrl);
@@ -96,45 +121,3 @@ app.on('web-contents-created', (_, contents) => {
     return { action: 'deny' };
   });
 });
-
-type CustomScheme = {
-  scheme: string;
-  privileges?: Record<string, boolean>;
-};
-
-const original = protocol.registerSchemesAsPrivileged.bind(protocol);
-
-// use Map to merge (OR the privileges of the same-named schemes)
-const bucket = new Map<string, CustomScheme>();
-let flushed = false;
-
-function mergeSchemes(list: CustomScheme[]) {
-  for (const item of list ?? []) {
-    const prev = bucket.get(item.scheme);
-    if (!prev) {
-      bucket.set(item.scheme, {
-        scheme: item.scheme,
-        privileges: { ...(item.privileges ?? {}) },
-      });
-    } else {
-      const merged: Record<string, boolean> = { ...(prev.privileges ?? {}) };
-      for (const [k, v] of Object.entries(item.privileges ?? {})) {
-        merged[k] = Boolean(merged[k] || v);
-      }
-      prev.privileges = merged;
-    }
-  }
-}
-
-// make a once-only API into a collecting one
-(protocol as any).registerSchemesAsPrivileged = (schemes: CustomScheme[]) => {
-  if (flushed) return;
-  mergeSchemes(schemes);
-};
-
-export const flushProtocol = () => {
-  if (flushed) return;
-  flushed = true;
-  const merged = Array.from(bucket.values());
-  original(merged);
-};

@@ -9,19 +9,6 @@ import { isDev } from './config';
 import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'assets',
-    privileges: {
-      secure: true,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      stream: true,
-    },
-  },
-]);
-
 const webStaticDir = join(resourcesPath, 'web-static');
 const localWhiteListDirs = [
   path.resolve(app.getPath('sessionData')).toLowerCase(),

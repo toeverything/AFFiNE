@@ -15,7 +15,6 @@ import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { setupRecordingFeature } from './recording/feature';
-import { flushProtocol } from './security-restrictions';
 import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
@@ -106,7 +105,6 @@ app.on('activate', () => {
 });
 
 setupDeepLink(app);
-flushProtocol();
 
 /**
  * Create app window when background process will be ready
