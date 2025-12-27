@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import * as Sentry from '@sentry/electron/main';
 import { IPCMode } from '@sentry/electron/main';
-import { app } from 'electron';
+import { app, protocol } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, isDev, overrideSession } from './config';
@@ -137,3 +137,16 @@ if (process.env.SENTRY_RELEASE) {
     appVersion: app.getVersion(),
   });
 }
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'assets',
+    privileges: {
+      secure: true,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      standard: true,
+      stream: true,
+    },
+  },
+]);

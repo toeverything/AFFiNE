@@ -1,32 +1,7 @@
-import { app, protocol } from 'electron';
+import { app } from 'electron';
 
 import { anotherHost, mainHost } from './constants';
 import { openExternalSafely } from './security/open-external';
-
-// register all schemes as privileged
-// electron only allows this to be done once
-// so we collect all calls and flush them at once
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'assets',
-    privileges: {
-      secure: true,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      stream: true,
-    },
-  },
-  {
-    scheme: 'sentry-ipc',
-    privileges: {
-      bypassCSP: true,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      secure: true,
-    },
-  },
-]);
 
 const extractRedirectTarget = (rawUrl: string) => {
   try {
