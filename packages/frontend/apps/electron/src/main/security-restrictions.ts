@@ -1,5 +1,6 @@
 import { app } from 'electron';
 
+import { anotherHost, mainHost } from './constants';
 import { openExternalSafely } from './security/open-external';
 
 const extractRedirectTarget = (rawUrl: string) => {
@@ -33,7 +34,16 @@ const extractRedirectTarget = (rawUrl: string) => {
 
 app.on('web-contents-created', (_, contents) => {
   const isInternalUrl = (url: string) => {
-    return url.startsWith('file://.');
+    try {
+      const parsed = new URL(url);
+      if (
+        parsed.protocol === 'assets:' &&
+        (parsed.hostname === mainHost || parsed.hostname === anotherHost)
+      ) {
+        return true;
+      }
+    } catch {}
+    return false;
   };
   /**
    * Block navigation to origins not on the allowlist.

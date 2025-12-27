@@ -836,16 +836,23 @@ model InstalledLicense {
   @@map("installed_licenses")
 }
 
+enum BlobStatus {
+  pending
+  completed
+}
+
 // Blob table only exists for fast non-data queries.
 // like, total size of blobs in a workspace, or blob list for sync service.
 // it should only be a map of metadata of blobs stored anywhere else
 model Blob {
-  workspaceId String    @map("workspace_id") @db.VarChar
-  key         String    @db.VarChar
-  size        Int       @db.Integer
-  mime        String    @db.VarChar
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  workspaceId String     @map("workspace_id") @db.VarChar
+  key         String     @db.VarChar
+  size        Int        @db.Integer
+  mime        String     @db.VarChar
+  status      BlobStatus @default(completed)
+  uploadId    String?    @map("upload_id") @db.VarChar
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
   workspace                Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   AiWorkspaceBlobEmbedding AiWorkspaceBlobEmbedding[]

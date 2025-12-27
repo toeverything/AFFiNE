@@ -110,7 +110,7 @@ fn get_language_parser(language: &Language) -> Parser {
   };
   parser
     .set_language(&lang.into())
-    .unwrap_or_else(|_| panic!("Error loading grammar for language: {:?}", language));
+    .unwrap_or_else(|_| panic!("Error loading grammar for language: {language:?}"));
   parser
 }
 
