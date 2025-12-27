@@ -95,9 +95,17 @@ export class TypstPreview extends SignalWatcher(
     }
 
     .typst-preview-svg {
+      width: 100%;
       transform-origin: center;
       transition: transform 0.15s ease-out;
       display: inline-block;
+    }
+
+    .typst-preview-svg > div {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      transform-origin: center;
     }
 
     .typst-controls {
@@ -186,7 +194,6 @@ export class TypstPreview extends SignalWatcher(
             class="typst-error-text"
             tabindex="0"
             aria-label="Typst error message"
-            )}
           >
 ${this.errorMessage}</pre
           >
