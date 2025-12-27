@@ -2,6 +2,8 @@ import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 
+import { isLink } from '../modules/navigation/utils';
+
 interface AudioEncodingConfig {
   sampleRate: number;
   numberOfChannels: number;
@@ -55,14 +57,9 @@ function getRecordingFileUrl(filepath: string): URL {
         : LOCAL_FILE_ASSET_URL;
 
   // If filepath already contains a protocol, use it directly
-  const fileUrl =
-    (() => {
-      try {
-        return new URL(filepath);
-      } catch {
-        return null;
-      }
-    })() ?? new URL(filepath, base);
+  const fileUrl = isLink(filepath)
+    ? new URL(filepath)
+    : new URL(filepath, base);
 
   if (fileUrl.protocol === 'assets:') {
     // Force requests to go through the local-file host so the protocol handler
@@ -77,7 +74,7 @@ async function readRecordingFileBuffer(filepath: string): Promise<ArrayBuffer> {
   if (apis?.recording?.readRecordingFile) {
     try {
       const buffer = await apis.recording.readRecordingFile(filepath);
-      return toArrayBuffer(buffer as any);
+      return toArrayBuffer(buffer);
     } catch (error) {
       logger.error('Failed to read recording file via IPC', error);
     }
