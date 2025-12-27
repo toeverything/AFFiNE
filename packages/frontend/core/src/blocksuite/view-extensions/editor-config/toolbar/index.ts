@@ -439,7 +439,7 @@ function createExternalLinkableToolbarConfig(
           },
           {
             id: 'edit',
-            tooltip: 'Edit',
+            tooltip: 'Edit Description',
             icon: EditIcon(),
             run(ctx) {
               const block = ctx.getCurrentBlockByType(klass);
@@ -775,7 +775,7 @@ const embedLinkedDocToolbarConfig = {
         },
         {
           id: 'edit',
-          tooltip: 'Edit',
+          tooltip: 'Edit Description',
           icon: EditIcon(),
           run(ctx) {
             const block = ctx.getCurrentBlockByType(
@@ -900,7 +900,7 @@ const inlineReferenceToolbarConfig = {
         },
         {
           id: 'edit',
-          tooltip: 'Edit',
+          tooltip: 'Edit Description',
           icon: EditIcon(),
           run(ctx) {
             const target = ctx.message$.peek()?.element;
