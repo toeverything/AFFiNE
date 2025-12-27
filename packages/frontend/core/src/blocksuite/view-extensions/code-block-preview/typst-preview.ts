@@ -6,9 +6,7 @@ import { ShadowlessElement } from '@blocksuite/std';
 import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
-import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { unsafeStatic } from 'lit/static-html.js';
 
 import { ensureTypstReady, getTypst } from './typst';
 
