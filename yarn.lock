@@ -416,6 +416,9 @@ __metadata:
     "@juggle/resize-observer": "npm:^3.4.0"
     "@lit/context": "npm:^1.1.4"
     "@marsidev/react-turnstile": "npm:^1.1.0"
+    "@myriaddreamin/typst-ts-renderer": "npm:^0.7.0-rc2"
+    "@myriaddreamin/typst-ts-web-compiler": "npm:^0.7.0-rc2"
+    "@myriaddreamin/typst.ts": "npm:^0.7.0-rc2"
     "@preact/signals-core": "npm:^1.8.0"
     "@radix-ui/react-collapsible": "npm:^1.1.2"
     "@radix-ui/react-context-menu": "npm:^2.1.15"
@@ -8866,6 +8869,37 @@ __metadata:
     outvariant: "npm:^1.4.3"
     strict-event-emitter: "npm:^0.5.1"
   checksum: 10/789da7765704049593fe3d34a1a02a2168692cbc5f063bcebc457859650a1fb8ef7baf56d0b9bebd909505c482bff4a745c48137b053516a7db3c843961c3255
+  languageName: node
+  linkType: hard
+
+"@myriaddreamin/typst-ts-renderer@npm:^0.7.0-rc2":
+  version: 0.7.0-rc2
+  resolution: "@myriaddreamin/typst-ts-renderer@npm:0.7.0-rc2"
+  checksum: 10/ee5e86ef78effd0ade507e9e8467d23a6e5026e1347e07d2277ecf4b664bfa1329f26006cb34f58e0a347fdf283c32d0548125bdbd675e13e3f26a1822efd977
+  languageName: node
+  linkType: hard
+
+"@myriaddreamin/typst-ts-web-compiler@npm:^0.7.0-rc2":
+  version: 0.7.0-rc2
+  resolution: "@myriaddreamin/typst-ts-web-compiler@npm:0.7.0-rc2"
+  checksum: 10/a149d6d3644eafcc68ec7b9ac512981b9f530751c2d09f467acc11bd35525e0413daa423b1d3ae1d57da48bf31705e3122a0bee87d5b214693dae9c83a963de7
+  languageName: node
+  linkType: hard
+
+"@myriaddreamin/typst.ts@npm:^0.7.0-rc2":
+  version: 0.7.0-rc2
+  resolution: "@myriaddreamin/typst.ts@npm:0.7.0-rc2"
+  dependencies:
+    idb: "npm:^7.1.1"
+  peerDependencies:
+    "@myriaddreamin/typst-ts-renderer": ^0.7.0-rc2
+    "@myriaddreamin/typst-ts-web-compiler": ^0.7.0-rc2
+  peerDependenciesMeta:
+    "@myriaddreamin/typst-ts-renderer":
+      optional: true
+    "@myriaddreamin/typst-ts-web-compiler":
+      optional: true
+  checksum: 10/b843c4f1f9e33d34d574f8f22108f4b67ac628d8ed5a71fb881f1a98e4f577090a537ce1862e610338de83e5b6a129dff00365a408ee522bb18df302802e5917
   languageName: node
   linkType: hard
 
