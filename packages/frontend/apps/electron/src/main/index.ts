@@ -49,13 +49,13 @@ app.commandLine.appendSwitch('disable-blink-features', 'Autofill');
 // `EarlyEstablishGpuChannel` - Refs https://issues.chromium.org/issues/40208065
 // `EstablishGpuChannelAsync` - Refs https://issues.chromium.org/issues/40208065
 const enabledFeatures = [
-  'CSSTextAutoSpace',
   'DocumentPolicyIncludeJSCallStacksInCrashReports',
   'EarlyEstablishGpuChannel',
   'EstablishGpuChannelAsync',
-  'WebCodecs',
 ].join(',');
 app.commandLine.appendSwitch('enable-features', enabledFeatures);
+const enabledBlinkFeatures = ['CSSTextAutoSpace', 'WebCodecs'].join(',');
+app.commandLine.appendSwitch('enable-blink-features', enabledBlinkFeatures);
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 // use the same data for internal & beta for testing
