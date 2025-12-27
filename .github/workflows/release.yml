@@ -11,8 +11,18 @@ on:
         required: true
         type: boolean
         default: false
-      desktop:
-        description: 'Release Desktop?'
+      desktop_macos:
+        description: 'Desktop - macOS'
+        required: true
+        type: boolean
+        default: false
+      desktop_windows:
+        description: 'Desktop - Windows'
+        required: true
+        type: boolean
+        default: false
+      desktop_linux:
+        description: 'Desktop - Linux'
         required: true
         type: boolean
         default: false
@@ -166,7 +176,13 @@ jobs:
 
   desktop:
     name: Release Desktop
-    if: ${{ inputs.desktop || github.event_name != 'workflow_dispatch' && needs.canary-gate.outputs.SHOULD_RELEASE == 'true' }}
+    if: >-
+      ${{
+        (github.event_name != 'workflow_dispatch' && needs.canary-gate.outputs.SHOULD_RELEASE == 'true') ||
+        inputs.desktop_macos ||
+        inputs.desktop_windows ||
+        inputs.desktop_linux
+      }}
     needs:
       - prepare
       - canary-gate
@@ -176,6 +192,9 @@ jobs:
       build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
       app-version: ${{ needs.prepare.outputs.APP_VERSION }}
       git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
+      desktop_macos: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_macos }}
+      desktop_windows: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_windows }}
+      desktop_linux: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_linux }}
 
   mobile:
     name: Release Mobile

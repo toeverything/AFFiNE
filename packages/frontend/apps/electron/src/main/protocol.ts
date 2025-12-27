@@ -5,24 +5,12 @@ import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
 import { isWindows, resourcesPath } from '../shared/utils';
-import { isDev } from './config';
+import { buildType, isDev } from './config';
 import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'assets',
-    privileges: {
-      secure: true,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      stream: true,
-    },
-  },
-]);
-
 const webStaticDir = join(resourcesPath, 'web-static');
+const devServerBase = process.env.DEV_SERVER_URL;
 const localWhiteListDirs = [
   path.resolve(app.getPath('sessionData')).toLowerCase(),
   path.resolve(app.getPath('temp')).toLowerCase(),
@@ -35,6 +23,41 @@ function isPathInWhiteList(filepath: string) {
   );
 }
 
+const apiBaseByBuildType: Record<typeof buildType, string> = {
+  stable: 'https://app.affine.pro',
+  beta: 'https://insider.affine.pro',
+  internal: 'https://insider.affine.pro',
+  canary: 'https://affine.fail',
+};
+
+function resolveApiBaseUrl() {
+  if (isDev && devServerBase) {
+    return devServerBase;
+  }
+
+  return apiBaseByBuildType[buildType] ?? apiBaseByBuildType.stable;
+}
+
+function buildTargetUrl(base: string, urlObject: URL) {
+  return new URL(`${urlObject.pathname}${urlObject.search}`, base).toString();
+}
+
+function proxyRequest(
+  request: Request,
+  urlObject: URL,
+  base: string,
+  options: { bypassCustomProtocolHandlers?: boolean } = {}
+) {
+  const { bypassCustomProtocolHandlers = true } = options;
+  const targetUrl = buildTargetUrl(base, urlObject);
+  const proxiedRequest = bypassCustomProtocolHandlers
+    ? Object.assign(request.clone(), {
+        bypassCustomProtocolHandlers: true,
+      })
+    : request;
+  return net.fetch(targetUrl, proxiedRequest);
+}
+
 async function handleFileRequest(request: Request) {
   const urlObject = new URL(request.url);
 
@@ -43,22 +66,24 @@ async function handleFileRequest(request: Request) {
   }
 
   const isAbsolutePath = urlObject.host !== '.';
+  const isApiRequest =
+    !isAbsolutePath &&
+    (urlObject.pathname.startsWith('/api/') ||
+      urlObject.pathname === '/graphql');
+
+  if (isApiRequest) {
+    return proxyRequest(request, urlObject, resolveApiBaseUrl());
+  }
+
   const isFontRequest =
     urlObject.pathname &&
     /\.(woff2?|ttf|otf)$/i.test(urlObject.pathname.split('?')[0] ?? '');
 
   // Redirect to webpack dev server if available
-  if (
-    isDev &&
-    process.env.DEV_SERVER_URL &&
-    !isAbsolutePath &&
-    !isFontRequest
-  ) {
-    const devServerUrl = new URL(
-      `${urlObject.pathname}${urlObject.search}`,
-      process.env.DEV_SERVER_URL
-    );
-    return net.fetch(devServerUrl.toString(), request);
+  if (isDev && devServerBase && !isAbsolutePath && !isFontRequest) {
+    return proxyRequest(request, urlObject, devServerBase, {
+      bypassCustomProtocolHandlers: false,
+    });
   }
   const clonedRequest = Object.assign(request.clone(), {
     bypassCustomProtocolHandlers: true,
