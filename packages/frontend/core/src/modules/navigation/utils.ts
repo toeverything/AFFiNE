@@ -6,7 +6,6 @@ import queryString from 'query-string';
 
 function maybeAffineOrigin(origin: string, baseUrl: string) {
   return (
-    origin.startsWith('file://') ||
     origin.startsWith('assets://') ||
     origin.endsWith('affine.pro') || // stable/beta
     origin.endsWith('apple.getaffineapp.com') || // stable/beta

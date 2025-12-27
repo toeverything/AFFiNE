@@ -28,7 +28,9 @@ async function readRecordingFile(filepath: string) {
 
   const fileUrl = new URL(
     filepath,
-    location.origin.replace(/\.$/, 'local-file')
+    typeof location !== 'undefined' && location.protocol === 'assets:'
+      ? 'assets://local-file'
+      : location.origin
   );
   const response = await fetch(fileUrl);
   if (!response.ok) {

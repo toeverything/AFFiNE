@@ -20,16 +20,6 @@ protocol.registerSchemesAsPrivileged([
       stream: true,
     },
   },
-  {
-    scheme: 'file',
-    privileges: {
-      secure: false,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      stream: true,
-    },
-  },
 ]);
 
 const webStaticDir = join(resourcesPath, 'web-static');
@@ -152,10 +142,6 @@ function ensureFrameAncestors(
 }
 
 export function registerProtocol() {
-  protocol.handle('file', request => {
-    return handleFileRequest(request);
-  });
-
   protocol.handle('assets', request => {
     return handleFileRequest(request);
   });
@@ -202,15 +188,12 @@ export function registerProtocol() {
 
           const { protocol } = new URL(url);
 
-          // Only adjust CORS for assets/file responses; leave remote http(s) headers intact
-          if (protocol === 'assets:' || protocol === 'file:') {
+          // Only adjust CORS for assets responses; leave remote http(s) headers intact
+          if (protocol === 'assets:') {
             delete responseHeaders['access-control-allow-origin'];
             delete responseHeaders['access-control-allow-headers'];
             delete responseHeaders['Access-Control-Allow-Origin'];
             delete responseHeaders['Access-Control-Allow-Headers'];
-          }
-
-          if (protocol === 'assets:' || protocol === 'file:') {
             setHeader(responseHeaders, 'X-Frame-Options', 'SAMEORIGIN');
             ensureFrameAncestors(responseHeaders, "'self'");
           }

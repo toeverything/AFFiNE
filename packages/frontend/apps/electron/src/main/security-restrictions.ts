@@ -42,10 +42,6 @@ app.on('web-contents-created', (_, contents) => {
       ) {
         return true;
       }
-      if (parsed.protocol === 'file:' && parsed.hostname === mainHost) {
-        // legacy allowance for older file:// loads
-        return true;
-      }
     } catch {}
     return false;
   };
