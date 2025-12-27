@@ -12,6 +12,21 @@ on:
       git-short-hash:
         required: true
         type: string
+      desktop_macos:
+        description: 'Desktop - macOS'
+        required: false
+        default: true
+        type: boolean
+      desktop_windows:
+        description: 'Desktop - Windows'
+        required: false
+        default: true
+        type: boolean
+      desktop_linux:
+        description: 'Desktop - Linux'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   actions: write
@@ -29,6 +44,7 @@ env:
 
 jobs:
   before-make:
+    if: ${{ inputs.desktop_macos || inputs.desktop_windows || inputs.desktop_linux }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
@@ -59,6 +75,11 @@ jobs:
           path: packages/frontend/apps/electron/resources/web-static
 
   make-distribution:
+    if: >-
+      ${{
+        (inputs.desktop_macos && matrix.spec.platform == 'darwin') ||
+        (inputs.desktop_linux && matrix.spec.platform == 'linux')
+      }}
     strategy:
       fail-fast: false
       matrix:
@@ -201,6 +222,7 @@ jobs:
           path: builds
 
   package-distribution-windows:
+    if: ${{ inputs.desktop_windows }}
     environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
@@ -287,6 +309,7 @@ jobs:
             !**/*.map
 
   sign-packaged-artifacts-windows_x64:
+    if: ${{ inputs.desktop_windows }}
     needs: package-distribution-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
@@ -294,6 +317,7 @@ jobs:
       artifact-name: packaged-win32-x64
 
   sign-packaged-artifacts-windows_arm64:
+    if: ${{ inputs.desktop_windows }}
     needs: package-distribution-windows
     uses: ./.github/workflows/windows-signer.yml
     with:
@@ -301,6 +325,7 @@ jobs:
       artifact-name: packaged-win32-arm64
 
   make-windows-installer:
+    if: ${{ inputs.desktop_windows }}
     needs:
       - sign-packaged-artifacts-windows_x64
       - sign-packaged-artifacts-windows_arm64
@@ -362,6 +387,7 @@ jobs:
           path: archive.zip
 
   sign-installer-artifacts-windows-x64:
+    if: ${{ inputs.desktop_windows }}
     needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
@@ -369,6 +395,7 @@ jobs:
       artifact-name: installer-win32-x64
 
   sign-installer-artifacts-windows-arm64:
+    if: ${{ inputs.desktop_windows }}
     needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
@@ -376,6 +403,7 @@ jobs:
       artifact-name: installer-win32-arm64
 
   finalize-installer-windows:
+    if: ${{ inputs.desktop_windows }}
     needs:
       [
         sign-installer-artifacts-windows-x64,
@@ -423,6 +451,7 @@ jobs:
           path: builds
 
   release:
+    if: ${{ inputs.desktop_macos && inputs.desktop_linux && inputs.desktop_windows }}
     needs: [before-make, make-distribution, finalize-installer-windows]
     runs-on: ubuntu-latest
 
