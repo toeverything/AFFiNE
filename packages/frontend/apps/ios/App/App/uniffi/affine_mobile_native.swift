@@ -432,6 +432,22 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
+    typealias FfiType = Double
+    typealias SwiftType = Double
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
+        return try lift(readDouble(&buf))
+    }
+
+    public static func write(_ value: Double, into buf: inout [UInt8]) {
+        writeDouble(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
@@ -506,11 +522,27 @@ public protocol DocStoragePoolProtocol: AnyObject, Sendable {
      */
     func connect(universalId: String, path: String) async throws 
     
+    func crawlDocData(universalId: String, docId: String) async throws  -> CrawlResult
+    
     func deleteBlob(universalId: String, key: String, permanently: Bool) async throws 
     
     func deleteDoc(universalId: String, docId: String) async throws 
     
     func disconnect(universalId: String) async throws 
+    
+    func ftsAddDocument(universalId: String, indexName: String, docId: String, text: String, index: Bool) async throws 
+    
+    func ftsDeleteDocument(universalId: String, indexName: String, docId: String) async throws 
+    
+    func ftsFlushIndex(universalId: String) async throws 
+    
+    func ftsGetDocument(universalId: String, indexName: String, docId: String) async throws  -> String?
+    
+    func ftsGetMatches(universalId: String, indexName: String, docId: String, query: String) async throws  -> [MatchRange]
+    
+    func ftsIndexVersion() async throws  -> UInt32
+    
+    func ftsSearch(universalId: String, indexName: String, query: String) async throws  -> [SearchHit]
     
     func getBlob(universalId: String, key: String) async throws  -> Blob?
     
@@ -648,6 +680,23 @@ open func connect(universalId: String, path: String)async throws   {
         )
 }
     
+open func crawlDocData(universalId: String, docId: String)async throws  -> CrawlResult  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_crawl_doc_data(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterTypeCrawlResult_lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
 open func deleteBlob(universalId: String, key: String, permanently: Bool)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -695,6 +744,125 @@ open func disconnect(universalId: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsAddDocument(universalId: String, indexName: String, docId: String, text: String, index: Bool)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_add_document(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(indexName),FfiConverterString.lower(docId),FfiConverterString.lower(text),FfiConverterBool.lower(index)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsDeleteDocument(universalId: String, indexName: String, docId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_delete_document(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(indexName),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsFlushIndex(universalId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_flush_index(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsGetDocument(universalId: String, indexName: String, docId: String)async throws  -> String?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_get_document(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(indexName),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionString.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsGetMatches(universalId: String, indexName: String, docId: String, query: String)async throws  -> [MatchRange]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_get_matches(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(indexName),FfiConverterString.lower(docId),FfiConverterString.lower(query)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeMatchRange.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsIndexVersion()async throws  -> UInt32  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_index_version(
+                    self.uniffiClonePointer()
+                    
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_u32,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_u32,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_u32,
+            liftFunc: FfiConverterUInt32.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func ftsSearch(universalId: String, indexName: String, query: String)async throws  -> [SearchHit]  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_fts_search(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(indexName),FfiConverterString.lower(query)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterSequenceTypeSearchHit.lift,
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
@@ -1240,6 +1408,210 @@ public func FfiConverterTypeBlob_lower(_ value: Blob) -> RustBuffer {
 }
 
 
+public struct BlockInfo {
+    public var blockId: String
+    public var flavour: String
+    public var content: [String]?
+    public var blob: [String]?
+    public var refDocId: [String]?
+    public var refInfo: [String]?
+    public var parentFlavour: String?
+    public var parentBlockId: String?
+    public var additional: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(blockId: String, flavour: String, content: [String]?, blob: [String]?, refDocId: [String]?, refInfo: [String]?, parentFlavour: String?, parentBlockId: String?, additional: String?) {
+        self.blockId = blockId
+        self.flavour = flavour
+        self.content = content
+        self.blob = blob
+        self.refDocId = refDocId
+        self.refInfo = refInfo
+        self.parentFlavour = parentFlavour
+        self.parentBlockId = parentBlockId
+        self.additional = additional
+    }
+}
+
+#if compiler(>=6)
+extension BlockInfo: Sendable {}
+#endif
+
+
+extension BlockInfo: Equatable, Hashable {
+    public static func ==(lhs: BlockInfo, rhs: BlockInfo) -> Bool {
+        if lhs.blockId != rhs.blockId {
+            return false
+        }
+        if lhs.flavour != rhs.flavour {
+            return false
+        }
+        if lhs.content != rhs.content {
+            return false
+        }
+        if lhs.blob != rhs.blob {
+            return false
+        }
+        if lhs.refDocId != rhs.refDocId {
+            return false
+        }
+        if lhs.refInfo != rhs.refInfo {
+            return false
+        }
+        if lhs.parentFlavour != rhs.parentFlavour {
+            return false
+        }
+        if lhs.parentBlockId != rhs.parentBlockId {
+            return false
+        }
+        if lhs.additional != rhs.additional {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(blockId)
+        hasher.combine(flavour)
+        hasher.combine(content)
+        hasher.combine(blob)
+        hasher.combine(refDocId)
+        hasher.combine(refInfo)
+        hasher.combine(parentFlavour)
+        hasher.combine(parentBlockId)
+        hasher.combine(additional)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBlockInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlockInfo {
+        return
+            try BlockInfo(
+                blockId: FfiConverterString.read(from: &buf), 
+                flavour: FfiConverterString.read(from: &buf), 
+                content: FfiConverterOptionSequenceString.read(from: &buf), 
+                blob: FfiConverterOptionSequenceString.read(from: &buf), 
+                refDocId: FfiConverterOptionSequenceString.read(from: &buf), 
+                refInfo: FfiConverterOptionSequenceString.read(from: &buf), 
+                parentFlavour: FfiConverterOptionString.read(from: &buf), 
+                parentBlockId: FfiConverterOptionString.read(from: &buf), 
+                additional: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: BlockInfo, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.blockId, into: &buf)
+        FfiConverterString.write(value.flavour, into: &buf)
+        FfiConverterOptionSequenceString.write(value.content, into: &buf)
+        FfiConverterOptionSequenceString.write(value.blob, into: &buf)
+        FfiConverterOptionSequenceString.write(value.refDocId, into: &buf)
+        FfiConverterOptionSequenceString.write(value.refInfo, into: &buf)
+        FfiConverterOptionString.write(value.parentFlavour, into: &buf)
+        FfiConverterOptionString.write(value.parentBlockId, into: &buf)
+        FfiConverterOptionString.write(value.additional, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBlockInfo_lift(_ buf: RustBuffer) throws -> BlockInfo {
+    return try FfiConverterTypeBlockInfo.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBlockInfo_lower(_ value: BlockInfo) -> RustBuffer {
+    return FfiConverterTypeBlockInfo.lower(value)
+}
+
+
+public struct CrawlResult {
+    public var blocks: [BlockInfo]
+    public var title: String
+    public var summary: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(blocks: [BlockInfo], title: String, summary: String) {
+        self.blocks = blocks
+        self.title = title
+        self.summary = summary
+    }
+}
+
+#if compiler(>=6)
+extension CrawlResult: Sendable {}
+#endif
+
+
+extension CrawlResult: Equatable, Hashable {
+    public static func ==(lhs: CrawlResult, rhs: CrawlResult) -> Bool {
+        if lhs.blocks != rhs.blocks {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.summary != rhs.summary {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(blocks)
+        hasher.combine(title)
+        hasher.combine(summary)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCrawlResult: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CrawlResult {
+        return
+            try CrawlResult(
+                blocks: FfiConverterSequenceTypeBlockInfo.read(from: &buf), 
+                title: FfiConverterString.read(from: &buf), 
+                summary: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CrawlResult, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypeBlockInfo.write(value.blocks, into: &buf)
+        FfiConverterString.write(value.title, into: &buf)
+        FfiConverterString.write(value.summary, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCrawlResult_lift(_ buf: RustBuffer) throws -> CrawlResult {
+    return try FfiConverterTypeCrawlResult.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCrawlResult_lower(_ value: CrawlResult) -> RustBuffer {
+    return FfiConverterTypeCrawlResult.lower(value)
+}
+
+
 public struct DocClock {
     public var docId: String
     public var timestamp: Int64
@@ -1552,6 +1924,154 @@ public func FfiConverterTypeListedBlob_lower(_ value: ListedBlob) -> RustBuffer 
 }
 
 
+public struct MatchRange {
+    public var start: UInt32
+    public var end: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(start: UInt32, end: UInt32) {
+        self.start = start
+        self.end = end
+    }
+}
+
+#if compiler(>=6)
+extension MatchRange: Sendable {}
+#endif
+
+
+extension MatchRange: Equatable, Hashable {
+    public static func ==(lhs: MatchRange, rhs: MatchRange) -> Bool {
+        if lhs.start != rhs.start {
+            return false
+        }
+        if lhs.end != rhs.end {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(start)
+        hasher.combine(end)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeMatchRange: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MatchRange {
+        return
+            try MatchRange(
+                start: FfiConverterUInt32.read(from: &buf), 
+                end: FfiConverterUInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: MatchRange, into buf: inout [UInt8]) {
+        FfiConverterUInt32.write(value.start, into: &buf)
+        FfiConverterUInt32.write(value.end, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMatchRange_lift(_ buf: RustBuffer) throws -> MatchRange {
+    return try FfiConverterTypeMatchRange.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMatchRange_lower(_ value: MatchRange) -> RustBuffer {
+    return FfiConverterTypeMatchRange.lower(value)
+}
+
+
+public struct SearchHit {
+    public var id: String
+    public var score: Double
+    public var terms: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, score: Double, terms: [String]) {
+        self.id = id
+        self.score = score
+        self.terms = terms
+    }
+}
+
+#if compiler(>=6)
+extension SearchHit: Sendable {}
+#endif
+
+
+extension SearchHit: Equatable, Hashable {
+    public static func ==(lhs: SearchHit, rhs: SearchHit) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.score != rhs.score {
+            return false
+        }
+        if lhs.terms != rhs.terms {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(score)
+        hasher.combine(terms)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSearchHit: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchHit {
+        return
+            try SearchHit(
+                id: FfiConverterString.read(from: &buf), 
+                score: FfiConverterDouble.read(from: &buf), 
+                terms: FfiConverterSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SearchHit, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterDouble.write(value.score, into: &buf)
+        FfiConverterSequenceString.write(value.terms, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSearchHit_lift(_ buf: RustBuffer) throws -> SearchHit {
+    return try FfiConverterTypeSearchHit.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSearchHit_lower(_ value: SearchHit) -> RustBuffer {
+    return FfiConverterTypeSearchHit.lower(value)
+}
+
+
 public struct SetBlob {
     public var key: String
     public var data: String
@@ -1748,6 +2268,30 @@ fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+    typealias SwiftType = String?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeBlob: FfiConverterRustBuffer {
     typealias SwiftType = Blob?
 
@@ -1820,6 +2364,30 @@ fileprivate struct FfiConverterOptionTypeDocRecord: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceInt64: FfiConverterRustBuffer {
     typealias SwiftType = [Int64]
 
@@ -1837,6 +2405,56 @@ fileprivate struct FfiConverterSequenceInt64: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterInt64.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]
+
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterString.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [String]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeBlockInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [BlockInfo]
+
+    public static func write(_ value: [BlockInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeBlockInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [BlockInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [BlockInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeBlockInfo.read(from: &buf))
         }
         return seq
     }
@@ -1912,6 +2530,56 @@ fileprivate struct FfiConverterSequenceTypeListedBlob: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeListedBlob.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeMatchRange: FfiConverterRustBuffer {
+    typealias SwiftType = [MatchRange]
+
+    public static func write(_ value: [MatchRange], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeMatchRange.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [MatchRange] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [MatchRange]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeMatchRange.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeSearchHit: FfiConverterRustBuffer {
+    typealias SwiftType = [SearchHit]
+
+    public static func write(_ value: [SearchHit], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeSearchHit.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SearchHit] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [SearchHit]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeSearchHit.read(from: &buf))
         }
         return seq
     }
@@ -2004,6 +2672,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_connect() != 19047) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_crawl_doc_data() != 36347) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_blob() != 53695) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2011,6 +2682,27 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_add_document() != 37651) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_delete_document() != 47292) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_flush_index() != 9921) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_get_document() != 45953) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_get_matches() != 35972) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_index_version() != 44498) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_search() != 28341) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob() != 56927) {

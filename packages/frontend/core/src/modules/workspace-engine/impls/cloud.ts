@@ -132,9 +132,10 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteBlobSyncStorage
       : IndexedDBBlobSyncStorage;
-  IndexerStorageType = BUILD_CONFIG.isElectron
-    ? SqliteIndexerStorage
-    : IndexedDBIndexerStorage;
+  IndexerStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteIndexerStorage
+      : IndexedDBIndexerStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     await this.graphqlService.gql({
