@@ -484,6 +484,18 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
   const onInput = (e: InputEvent) => {
     tagManager.text$.value = (e.target as HTMLInputElement).value;
   };
+  const onKeydown = (e: KeyboardEvent) => {
+    e.stopPropagation();
+    const inputValue = (e.target as HTMLInputElement).value.trim();
+    if (e.key === 'Backspace' && inputValue === '') {
+      const values = tagManager.value$.value;
+      const lastId = values[values.length - 1];
+      if (lastId) {
+        e.preventDefault();
+        tagManager.deleteTag(lastId);
+      }
+    }
+  };
   return popMenu(target, {
     options: {
       onClose: () => {
@@ -511,11 +523,21 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                 });
                 return html` <div class="${tagContainerStyle}" style=${style}>
                   <div class="${tagTextStyle}">${option.value}</div>
+                  <div
+                    class="${tagDeleteIconStyle}"
+                    @click="${(e: MouseEvent) => {
+                      e.stopPropagation();
+                      tagManager.deleteTag(id);
+                    }}"
+                  >
+                    ${CloseIcon()}
+                  </div>
                 </div>`;
               })}
               <input
                 .value="${tagManager.text$.value}"
                 @input="${onInput}"
+                @keydown="${onKeydown}"
                 placeholder="Type here..."
                 type="text"
                 style="outline: none;border: none;flex:1;min-width: 10px"
