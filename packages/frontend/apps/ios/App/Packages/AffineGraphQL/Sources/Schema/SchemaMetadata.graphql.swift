@@ -24,6 +24,9 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "AggregateBucketObjectType": return AffineGraphQL.Objects.AggregateBucketObjectType
     case "AggregateResultObjectType": return AffineGraphQL.Objects.AggregateResultObjectType
     case "AppConfigValidateResult": return AffineGraphQL.Objects.AppConfigValidateResult
+    case "BlobUploadInit": return AffineGraphQL.Objects.BlobUploadInit
+    case "BlobUploadPart": return AffineGraphQL.Objects.BlobUploadPart
+    case "BlobUploadedPart": return AffineGraphQL.Objects.BlobUploadedPart
     case "ChatMessage": return AffineGraphQL.Objects.ChatMessage
     case "CommentChangeObjectType": return AffineGraphQL.Objects.CommentChangeObjectType
     case "CommentChangeObjectTypeEdge": return AffineGraphQL.Objects.CommentChangeObjectTypeEdge

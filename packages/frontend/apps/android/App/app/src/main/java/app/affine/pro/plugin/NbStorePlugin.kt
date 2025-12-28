@@ -618,4 +618,121 @@ class NbStorePlugin : Plugin() {
       }
     }
   }
+
+  @PluginMethod
+  fun ftsAddDocument(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val indexName = call.getStringEnsure("indexName")
+        val docId = call.getStringEnsure("docId")
+        val text = call.getStringEnsure("text")
+        val index = call.getBoolean("index")
+          ?: throw IllegalArgumentException("index is required")
+        docStoragePool.ftsAddDocument(id, indexName, docId, text, index)
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to add document to fts: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun ftsDeleteDocument(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val indexName = call.getStringEnsure("indexName")
+        val docId = call.getStringEnsure("docId")
+        docStoragePool.ftsDeleteDocument(id, indexName, docId)
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to delete document from fts: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun ftsSearch(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val indexName = call.getStringEnsure("indexName")
+        val query = call.getStringEnsure("query")
+        val results = docStoragePool.ftsSearch(id, indexName, query)
+        val mapped = results.map {
+          JSObject()
+            .put("id", it.id)
+            .put("score", it.score)
+            .put("terms", JSArray(it.terms))
+        }
+        call.resolve(
+          JSObject().put("results", JSArray(mapped))
+        )
+      } catch (e: Exception) {
+        call.reject("Failed to search fts: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun ftsGetDocument(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val indexName = call.getStringEnsure("indexName")
+        val docId = call.getStringEnsure("docId")
+        val text = docStoragePool.ftsGetDocument(id, indexName, docId)
+        call.resolve(JSObject().put("text", text))
+      } catch (e: Exception) {
+        call.reject("Failed to get fts document: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun ftsGetMatches(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val indexName = call.getStringEnsure("indexName")
+        val docId = call.getStringEnsure("docId")
+        val query = call.getStringEnsure("query")
+        val matches = docStoragePool.ftsGetMatches(id, indexName, docId, query)
+        val mapped = matches.map {
+          JSObject()
+            .put("start", it.start.toInt())
+            .put("end", it.end.toInt())
+        }
+        call.resolve(JSObject().put("matches", JSArray(mapped)))
+      } catch (e: Exception) {
+        call.reject("Failed to get fts matches: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun ftsFlushIndex(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        docStoragePool.ftsFlushIndex(id)
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to flush fts index: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun ftsIndexVersion(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val version = docStoragePool.ftsIndexVersion()
+        call.resolve(JSObject().put("indexVersion", version))
+      } catch (e: Exception) {
+        call.reject("Failed to get fts index version: ${e.message}", null, e)
+      }
+    }
+  }
 }
