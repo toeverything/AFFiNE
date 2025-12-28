@@ -24,8 +24,10 @@ export interface MenuProps {
   ref?: React.Ref<MenuRef>;
 }
 
-export interface MenuItemProps
-  extends Omit<MenuItemPropsPrimitive, 'asChild' | 'textValue' | 'prefix'> {
+export interface MenuItemProps extends Omit<
+  MenuItemPropsPrimitive,
+  'asChild' | 'textValue' | 'prefix'
+> {
   type?: 'default' | 'warning' | 'danger';
   prefix?: ReactNode;
   suffix?: ReactNode;

@@ -1,14 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JobQueue, OneDay, OnJob } from '../../base';
+import { JOB_SIGNAL, JobQueue, OneDay, OnJob } from '../../base';
 import { Models } from '../../models';
+
+const CLEANUP_EMBEDDING_JOB_BATCH_SIZE = 100;
 
 declare global {
   interface Jobs {
     'copilot.session.cleanupEmptySessions': {};
     'copilot.session.generateMissingTitles': {};
-    'copilot.workspace.cleanupTrashedDocEmbeddings': {};
+    'copilot.workspace.cleanupTrashedDocEmbeddings': {
+      nextSid?: number;
+    };
   }
 }
 
@@ -85,10 +89,20 @@ export class CopilotCronJobs {
   }
 
   @OnJob('copilot.workspace.cleanupTrashedDocEmbeddings')
-  async cleanupTrashedDocEmbeddings() {
-    const workspaces = await this.models.workspace.list(undefined, {
-      id: true,
-    });
+  async cleanupTrashedDocEmbeddings(
+    params: Jobs['copilot.workspace.cleanupTrashedDocEmbeddings']
+  ) {
+    const nextSid = params.nextSid ?? 0;
+    // only consider workspaces that cleared their embeddings more than 24 hours ago
+    const oneDayAgo = new Date(Date.now() - OneDay);
+    const workspaces = await this.models.workspace.list(
+      { sid: { gt: nextSid }, lastCheckEmbeddings: { lt: oneDayAgo } },
+      { id: true, sid: true },
+      CLEANUP_EMBEDDING_JOB_BATCH_SIZE
+    );
+    if (!workspaces.length) {
+      return JOB_SIGNAL.Done;
+    }
     for (const { id: workspaceId } of workspaces) {
       await this.jobs.add(
         'copilot.embedding.cleanupTrashedDocEmbeddings',
@@ -96,5 +110,7 @@ export class CopilotCronJobs {
         { jobId: `cleanup-trashed-doc-embeddings-${workspaceId}` }
       );
     }
+    params.nextSid = workspaces[workspaces.length - 1].sid;
+    return JOB_SIGNAL.Repeat;
   }
 }

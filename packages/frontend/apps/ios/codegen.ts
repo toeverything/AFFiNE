@@ -9,8 +9,12 @@ const PackageRoot = iosPackage.path;
 
 console.log('[*] PackageRoot', PackageRoot);
 
+const version = process.argv[2] || '1.23.0'; // Default to 1.23.0 if no version provided
+
 console.log('[*] graphql...');
-execSync(`${PackageRoot}/apollo-codegen-chore.sh`, { stdio: 'inherit' });
+execSync(`${PackageRoot}/apollo-codegen-chore.sh "${version}"`, {
+  stdio: 'inherit',
+});
 
 console.log('[*] rust...');
 execSync(

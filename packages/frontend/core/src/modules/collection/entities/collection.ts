@@ -66,7 +66,7 @@ export class Collection extends Entity<{ id: string }> {
               },
             ],
           })
-          .pipe(map(result => result.groups.map(group => group.items).flat()));
+          .pipe(map(result => result.groups.flatMap(group => group.items)));
       })
     );
   }

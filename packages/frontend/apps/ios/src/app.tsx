@@ -14,6 +14,7 @@ import {
   ServerScope,
   ServerService,
   ServersService,
+  SubscriptionService,
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
@@ -21,6 +22,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
+import { NativePaywallProvider } from '@affine/core/modules/paywall';
 import {
   configureLocalStorageStateStorageImpls,
   NbstoreProvider,
@@ -37,6 +39,10 @@ import {
 } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
+import {
+  refreshSubscriptionMutation,
+  requestApplySubscriptionMutation,
+} from '@affine/graphql';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { Container } from '@blocksuite/affine/global/di';
@@ -63,6 +69,7 @@ import { ModalConfigProvider } from './modal-config';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { PayWall } from './plugins/paywall';
 import { writeEndpointToken } from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
 
@@ -121,9 +128,9 @@ framework.impl(VirtualKeyboardProvider, {
     };
 
     Promise.all([
-      Keyboard.addListener('keyboardDidShow', info => {
+      Keyboard.addListener('keyboardWillShow', info => {
         callback({
-          visible: true,
+          visible: info.keyboardHeight !== 0,
           height: info.keyboardHeight,
         });
       }),
@@ -198,6 +205,11 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
     },
   };
 });
+framework.impl(NativePaywallProvider, {
+  showPaywall: async (type: 'Pro' | 'AI') => {
+    await PayWall.showPayWall({ type });
+  },
+});
 
 const frameworkProvider = framework.provider();
 
@@ -227,6 +239,16 @@ const frameworkProvider = framework.provider();
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.docId.get();
 };
+(window as any).getCurrentUserIdentifier = () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  return currentServer.account$.value?.id;
+};
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
@@ -239,6 +261,7 @@ const frameworkProvider = framework.provider();
   if (!workspaceRef) {
     return;
   }
+
   const { workspace, dispose: disposeWorkspace } = workspaceRef;
 
   const docsService = workspace.scope.get(DocsService);
@@ -320,6 +343,54 @@ const frameworkProvider = framework.provider();
   } finally {
     workspaceRef?.dispose();
   }
+};
+(window as any).getSubscriptionState = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  await subscriptionService.subscription.waitForRevalidation();
+  return {
+    pro: subscriptionService.subscription.pro$.value,
+    ai: subscriptionService.subscription.ai$.value,
+  };
+};
+(window as any).updateSubscriptionState = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  await currentServer
+    .gql({
+      query: refreshSubscriptionMutation,
+    })
+    .catch(console.error);
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  subscriptionService.subscription.revalidate();
+};
+(window as any).requestApplySubscription = async (transactionId: string) => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  await currentServer
+    .gql({
+      query: requestApplySubscriptionMutation,
+      variables: { transactionId },
+    })
+    .catch(console.error);
+  const subscriptionService = currentServer.scope.get(SubscriptionService);
+  subscriptionService.subscription.revalidate();
 };
 
 // setup application lifecycle events, and emit application start event

@@ -13,6 +13,7 @@ import {
   BlockElementCommentManager,
   CommentProviderIdentifier,
   DocModeProvider,
+  FeatureFlagService,
   NotificationProvider,
   type TelemetryEventMap,
   TelemetryProvider,
@@ -34,6 +35,7 @@ import {
   uniMap,
 } from '@blocksuite/data-view';
 import { widgetPresets } from '@blocksuite/data-view/widget-presets';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { Rect } from '@blocksuite/global/gfx';
 import {
   CommentIcon,
@@ -48,6 +50,7 @@ import { autoUpdate } from '@floating-ui/dom';
 import { computed, signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { popSideDetail } from './components/layout.js';
 import { DatabaseConfigExtension } from './config.js';
@@ -349,6 +352,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
     this.classList.add(databaseBlockStyles);
     this.listenFullWidthChange();
+    this.handleMobileEditing();
   }
 
   listenFullWidthChange() {
@@ -364,6 +368,41 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       })
     );
   }
+
+  handleMobileEditing() {
+    if (!IS_MOBILE) return;
+
+    let notifyClosed = true;
+    const handler = () => {
+      if (
+        !this.std
+          .get(FeatureFlagService)
+          .getFlag('enable_mobile_database_editing')
+      ) {
+        const notification = this.std.getOptional(NotificationProvider);
+        if (notification && notifyClosed) {
+          notifyClosed = false;
+          notification.notify({
+            title: html`<div
+              style=${styleMap({
+                whiteSpace: 'wrap',
+              })}
+            >
+              Mobile database editing is not supported yet. You can open it in
+              experimental features, or edit it in desktop mode.
+            </div>`,
+            accent: 'warning',
+            onClose: () => {
+              notifyClosed = true;
+            },
+          });
+        }
+      }
+    };
+
+    this.disposables.addFromEvent(this, 'click', handler);
+  }
+
   private readonly dataViewRootLogic = lazy(
     () =>
       new DataViewRootUILogic({

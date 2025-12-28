@@ -696,5 +696,18 @@ export class DocModel extends BaseModel {
     return [count, rows] as const;
   }
 
+  async findEmptySummaryDocIds(workspaceId: string) {
+    const rows = await this.db.workspaceDoc.findMany({
+      where: {
+        workspaceId,
+        summary: null,
+      },
+      select: {
+        docId: true,
+      },
+    });
+    return rows.map(row => row.docId);
+  }
+
   // #endregion
 }

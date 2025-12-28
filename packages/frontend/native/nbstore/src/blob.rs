@@ -74,7 +74,7 @@ impl SqliteDocStorage {
 mod tests {
   use sqlx::Row;
 
-  use super::*;
+  use super::{super::Data, *};
 
   async fn get_storage() -> SqliteDocStorage {
     let storage = SqliteDocStorage::new(":memory:".to_string());
@@ -91,7 +91,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: Into::<Data>::into(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
@@ -131,7 +131,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: Into::<Data>::into(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
@@ -179,7 +179,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: Into::<Data>::into(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await

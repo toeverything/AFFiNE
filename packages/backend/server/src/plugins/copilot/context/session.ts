@@ -1,13 +1,13 @@
 import { nanoid } from 'nanoid';
 
 import {
+  ContextBlob,
   ContextCategories,
   ContextCategory,
   ContextConfig,
   ContextDoc,
   ContextEmbedStatus,
   ContextFile,
-  ContextList,
   FileChunkSimilarity,
   Models,
 } from '../../../models';
@@ -47,11 +47,15 @@ export class ContextSession implements AsyncDisposable {
     return categories.filter(c => c.type === ContextCategories.Collection);
   }
 
+  get blobs(): ContextBlob[] {
+    return this.config.blobs.map(d => ({ ...d }));
+  }
+
   get docs(): ContextDoc[] {
     return this.config.docs.map(d => ({ ...d }));
   }
 
-  get files() {
+  get files(): Required<ContextFile>[] {
     return this.config.files.map(f => this.fulfillFile(f));
   }
 
@@ -63,13 +67,6 @@ export class ContextSession implements AsyncDisposable {
           .map(d => d.id)
       )
     );
-  }
-
-  get sortedList(): ContextList {
-    const { docs, files } = this.config;
-    return [...docs, ...files].toSorted(
-      (a, b) => a.createdAt - b.createdAt
-    ) as ContextList;
   }
 
   async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
@@ -115,6 +112,63 @@ export class ContextSession implements AsyncDisposable {
     );
     if (index >= 0) {
       this.config.categories.splice(index, 1);
+      await this.save();
+    }
+    return true;
+  }
+
+  async addBlobRecord(blobId: string): Promise<ContextBlob | null> {
+    const existsBlob = this.config.blobs.find(b => b.id === blobId);
+    if (existsBlob) {
+      return existsBlob;
+    }
+    const blob = await this.models.blob.get(this.config.workspaceId, blobId);
+    if (!blob) return null;
+
+    const record: ContextBlob = {
+      id: blobId,
+      createdAt: Date.now(),
+      status: ContextEmbedStatus.processing,
+    };
+    this.config.blobs.push(record);
+    await this.save();
+    return record;
+  }
+
+  async getBlobMetadata() {
+    const blobIds = this.blobs.map(b => b.id);
+    const blobs = await this.models.blob.list(this.config.workspaceId, {
+      where: { key: { in: blobIds } },
+      select: { key: true, mime: true },
+    });
+    const blobChunkSizes = await this.models.copilotWorkspace.getBlobChunkSizes(
+      this.config.workspaceId,
+      blobIds
+    );
+    return blobs
+      .filter(b => !!blobChunkSizes.get(b.key))
+      .map(b => ({
+        id: b.key,
+        mimeType: b.mime,
+        chunkSize: blobChunkSizes.get(b.key),
+      }));
+  }
+
+  async getBlobContent(
+    blobId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    return this.models.copilotWorkspace.getBlobContent(
+      this.config.workspaceId,
+      blobId,
+      chunk
+    );
+  }
+
+  async removeBlobRecord(blobId: string): Promise<boolean> {
+    const index = this.config.blobs.findIndex(b => b.id === blobId);
+    if (index >= 0) {
+      this.config.blobs.splice(index, 1);
       await this.save();
     }
     return true;
@@ -177,6 +231,19 @@ export class ContextSession implements AsyncDisposable {
 
   getFile(fileId: string): ContextFile | undefined {
     return this.config.files.find(f => f.id === fileId);
+  }
+
+  async getFileContent(
+    fileId: string,
+    chunk?: number
+  ): Promise<string | undefined> {
+    const file = this.getFile(fileId);
+    if (!file) return undefined;
+    return this.models.copilotContext.getFileContent(
+      this.contextId,
+      fileId,
+      chunk
+    );
   }
 
   async removeFile(fileId: string): Promise<boolean> {

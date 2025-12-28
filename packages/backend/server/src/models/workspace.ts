@@ -24,6 +24,7 @@ export type UpdateWorkspaceInput = Pick<
   | 'name'
   | 'avatarKey'
   | 'indexed'
+  | 'lastCheckEmbeddings'
 >;
 
 @Injectable()
@@ -49,7 +50,11 @@ export class WorkspaceModel extends BaseModel {
   /**
    * Update the workspace with the given data.
    */
-  async update(workspaceId: string, data: UpdateWorkspaceInput) {
+  async update(
+    workspaceId: string,
+    data: UpdateWorkspaceInput,
+    notifyUpdate = true
+  ) {
     const workspace = await this.db.workspace.update({
       where: {
         id: workspaceId,
@@ -60,7 +65,9 @@ export class WorkspaceModel extends BaseModel {
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
 
-    this.event.emit('workspace.updated', workspace);
+    if (notifyUpdate) {
+      this.event.emit('workspace.updated', workspace);
+    }
 
     return workspace;
   }
@@ -81,25 +88,15 @@ export class WorkspaceModel extends BaseModel {
     });
   }
 
-  async listAfterSid(sid: number, limit: number) {
-    return await this.db.workspace.findMany({
-      where: {
-        sid: { gt: sid },
-      },
-      take: limit,
-      orderBy: {
-        sid: 'asc',
-      },
-    });
-  }
-
   async list<S extends Prisma.WorkspaceSelect>(
     where: Prisma.WorkspaceWhereInput = {},
-    select?: S
+    select?: S,
+    limit?: number
   ) {
     return (await this.db.workspace.findMany({
       where,
       select,
+      take: limit,
       orderBy: {
         sid: 'asc',
       },

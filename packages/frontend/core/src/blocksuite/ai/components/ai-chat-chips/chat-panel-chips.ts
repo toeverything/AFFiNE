@@ -15,9 +15,11 @@ import type { ChatChip, DocChip, DocDisplayConfig, FileChip } from './type';
 import {
   estimateTokenCount,
   getChipKey,
+  isAttachmentChip,
   isCollectionChip,
   isDocChip,
   isFileChip,
+  isSelectedContextChip,
   isTagChip,
 } from './utils';
 
@@ -159,6 +161,12 @@ export class ChatPanelChips extends SignalWatcher(
               .removeChip=${this.removeChip}
             ></chat-panel-file-chip>`;
           }
+          if (isAttachmentChip(chip)) {
+            return html`<chat-panel-attachment-chip
+              .chip=${chip}
+              .removeChip=${this.removeChip}
+            ></chat-panel-attachment-chip>`;
+          }
           if (isTagChip(chip)) {
             const tag = this._tags.value.find(tag => tag.id === chip.tagId);
             if (!tag) {
@@ -182,6 +190,12 @@ export class ChatPanelChips extends SignalWatcher(
               .collection=${collection}
               .removeChip=${this.removeChip}
             ></chat-panel-collection-chip>`;
+          }
+          if (isSelectedContextChip(chip)) {
+            return html`<chat-panel-selected-chip
+              .chip=${chip}
+              .removeChip=${this.removeChip}
+            ></chat-panel-selected-chip>`;
           }
           return null;
         }
@@ -271,12 +285,24 @@ export class ChatPanelChips extends SignalWatcher(
       if (isFileChip(chip) || isTagChip(chip) || isCollectionChip(chip)) {
         return acc;
       }
-      if (chip.docId === newChip.docId) {
+      if (isDocChip(chip) && chip.docId === newChip.docId) {
         return acc + newTokenCount;
       }
-      if (chip.markdown?.value && chip.state === 'finished') {
+
+      if (
+        isDocChip(chip) &&
+        chip.markdown?.value &&
+        chip.state === 'finished'
+      ) {
         const tokenCount =
           chip.tokenCount ?? estimateTokenCount(chip.markdown.value);
+        return acc + tokenCount;
+      }
+      if (isSelectedContextChip(chip)) {
+        const tokenCount =
+          estimateTokenCount(chip.combinedElementsMarkdown ?? '') +
+          estimateTokenCount(chip.snapshot ?? '') +
+          estimateTokenCount(chip.html ?? '');
         return acc + tokenCount;
       }
       return acc;

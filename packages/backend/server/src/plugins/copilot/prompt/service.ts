@@ -1,6 +1,8 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
+import { Prisma, PrismaClient } from '@prisma/client';
 
+import { Config, OnEvent } from '../../../base';
 import {
   PromptConfig,
   PromptConfigSchema,
@@ -8,17 +10,64 @@ import {
   PromptMessageSchema,
 } from '../providers';
 import { ChatPrompt } from './chat-prompt';
-import { refreshPrompts } from './prompts';
+import {
+  CopilotPromptScenario,
+  prompts,
+  refreshPrompts,
+  Scenario,
+} from './prompts';
 
 @Injectable()
 export class PromptService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(PromptService.name);
   private readonly cache = new Map<string, ChatPrompt>();
 
-  constructor(private readonly db: PrismaClient) {}
+  constructor(
+    private readonly config: Config,
+    private readonly db: PrismaClient
+  ) {}
 
   async onApplicationBootstrap() {
     this.cache.clear();
     await refreshPrompts(this.db);
+  }
+
+  @OnEvent('config.init')
+  async onConfigInit() {
+    await this.setup(this.config.copilot?.scenarios);
+  }
+
+  @OnEvent('config.changed')
+  async onConfigChanged(event: Events['config.changed']) {
+    if ('copilot' in event.updates) {
+      await this.setup(event.updates.copilot?.scenarios);
+    }
+  }
+
+  protected async setup(scenarios?: CopilotPromptScenario) {
+    if (!!scenarios && scenarios.override_enabled && scenarios.scenarios) {
+      this.logger.log('Updating prompts based on scenarios...');
+      for (const [scenario, model] of Object.entries(scenarios.scenarios)) {
+        const promptNames = Scenario[scenario as keyof typeof Scenario] || [];
+        if (!promptNames.length) continue;
+        for (const name of promptNames) {
+          const prompt = prompts.find(p => p.name === name);
+          if (prompt && model) {
+            await this.update(
+              prompt.name,
+              { model, modified: true },
+              { model: { not: model } }
+            );
+          }
+        }
+      }
+    } else {
+      this.logger.log('No scenarios enabled, using default prompts.');
+      const prompts = Object.values(Scenario).flat();
+      for (const prompt of prompts) {
+        await this.update(prompt, { modified: false });
+      }
+    }
   }
 
   /**
@@ -121,33 +170,46 @@ export class PromptService implements OnApplicationBootstrap {
       .then(ret => ret.id);
   }
 
+  @Transactional()
   async update(
     name: string,
-    messages: PromptMessage[],
-    modifyByApi: boolean = false,
-    config?: PromptConfig
+    data: {
+      messages?: PromptMessage[];
+      model?: string;
+      modified?: boolean;
+      config?: PromptConfig;
+    },
+    where?: Prisma.AiPromptWhereInput
   ) {
-    const { id } = await this.db.aiPrompt.update({
-      where: { name },
-      data: {
-        config: config || undefined,
-        updatedAt: new Date(),
-        modified: modifyByApi,
-        messages: {
-          // cleanup old messages
-          deleteMany: {},
-          create: messages.map((m, idx) => ({
-            idx,
-            ...m,
-            attachments: m.attachments || undefined,
-            params: m.params || undefined,
-          })),
+    const { config, messages, model, modified } = data;
+    const existing = await this.db.aiPrompt
+      .count({ where: { ...where, name } })
+      .then(count => count > 0);
+    if (existing) {
+      await this.db.aiPrompt.update({
+        where: { name },
+        data: {
+          config: config || undefined,
+          updatedAt: new Date(),
+          modified,
+          model,
+          messages: messages
+            ? {
+                // cleanup old messages
+                deleteMany: {},
+                create: messages.map((m, idx) => ({
+                  idx,
+                  ...m,
+                  attachments: m.attachments || undefined,
+                  params: m.params || undefined,
+                })),
+              }
+            : undefined,
         },
-      },
-    });
+      });
 
-    this.cache.delete(name);
-    return id;
+      this.cache.delete(name);
+    }
   }
 
   async delete(name: string) {

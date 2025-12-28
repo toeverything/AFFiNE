@@ -44,7 +44,8 @@ export const useAISpecs = () => {
       .mobile(framework)
       .electron(framework)
       .linkPreview(framework)
-      .codeBlockHtmlPreview(framework).value;
+      .iconPicker(framework)
+      .codeBlockPreview(framework).value;
 
     return manager.get('page');
   }, [

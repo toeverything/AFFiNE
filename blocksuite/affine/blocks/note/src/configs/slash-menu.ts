@@ -4,9 +4,15 @@ import {
   textFormatConfigs,
 } from '@blocksuite/affine-inline-preset';
 import {
+  type TextAlignConfig,
+  textAlignConfigs,
   type TextConversionConfig,
   textConversionConfigs,
 } from '@blocksuite/affine-rich-text';
+import {
+  getSelectedModelsCommand,
+  getTextSelectionCommand,
+} from '@blocksuite/affine-shared/commands';
 import { isInsideBlockByFlavour } from '@blocksuite/affine-shared/utils';
 import {
   type SlashMenuActionItem,
@@ -17,7 +23,7 @@ import {
 import { HeadingsIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 
-import { updateBlockType } from '../commands';
+import { updateBlockAlign, updateBlockType } from '../commands';
 import { tooltips } from './tooltips';
 
 let basicIndex = 0;
@@ -60,6 +66,10 @@ const noteSlashMenuConfig: SlashMenuConfig = {
         createConversionItem(config, `1_List@${index++}`)
       ),
 
+    ...textAlignConfigs.map((config, index) =>
+      createAlignItem(config, `2_Align@${index++}`)
+    ),
+
     ...textFormatConfigs
       .filter(i => !['Code', 'Link'].includes(i.name))
       .map((config, index) =>
@@ -72,12 +82,13 @@ function createConversionItem(
   config: TextConversionConfig,
   group?: SlashMenuItem['group']
 ): SlashMenuActionItem {
-  const { name, description, icon, flavour, type } = config;
+  const { name, description, icon, flavour, type, searchAlias = [] } = config;
   return {
     name,
     group,
     description,
     icon,
+    searchAlias,
     tooltip: tooltips[name],
     when: ({ model }) => model.store.schema.flavourSchemaMap.has(flavour),
     action: ({ std }) => {
@@ -85,6 +96,26 @@ function createConversionItem(
         flavour,
         props: { type },
       });
+    },
+  };
+}
+
+function createAlignItem(
+  config: TextAlignConfig,
+  group?: SlashMenuItem['group']
+): SlashMenuActionItem {
+  const { textAlign, name, icon } = config;
+  return {
+    name,
+    group,
+    icon,
+    action: ({ std }) => {
+      std.command
+        .chain()
+        .pipe(getTextSelectionCommand)
+        .pipe(getSelectedModelsCommand, { types: ['text'] })
+        .pipe(updateBlockAlign, { textAlign })
+        .run();
     },
   };
 }

@@ -15,7 +15,7 @@
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.12",
+    "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
@@ -28,9 +28,9 @@
     "lit": "^3.2.0",
     "lit-html": "^3.2.1",
     "lodash-es": "^4.17.21",
-    "rxjs": "^7.8.1",
-    "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "rxjs": "^7.8.2",
+    "yjs": "^13.6.27",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -43,5 +43,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.22.4"
+  "version": "0.25.7"
 }

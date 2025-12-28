@@ -36,6 +36,8 @@ import { crawlingDocData } from './crawler';
 export type IndexerPreferOptions = 'local' | 'remote';
 
 export interface IndexerSyncState {
+  paused: boolean;
+  batterySaveMode: boolean;
   /**
    * Number of documents currently in the indexing queue
    */
@@ -104,16 +106,14 @@ export interface IndexerSync {
 }
 
 export class IndexerSyncImpl implements IndexerSync {
-  /**
-   * increase this number to re-index all docs
-   */
-  readonly INDEXER_VERSION = 1;
   private abort: AbortController | null = null;
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
 
   private readonly indexer: IndexerStorage;
   private readonly remote?: IndexerStorage;
+
+  private lastRefreshed = Date.now();
 
   state$ = this.status.state$.pipe(
     // throttle the state to 1 second to avoid spamming the UI
@@ -165,6 +165,14 @@ export class IndexerSyncImpl implements IndexerSync {
 
   disableBatterySaveMode() {
     this.status.disableBatterySaveMode();
+  }
+
+  pauseSync() {
+    this.status.pauseSync();
+  }
+
+  resumeSync() {
+    this.status.resumeSync();
   }
 
   start() {
@@ -254,7 +262,8 @@ export class IndexerSyncImpl implements IndexerSync {
     this.status.errorMessage = null;
     this.status.statusUpdatedSubject$.next(true);
 
-    console.log('indexer sync start');
+    const indexVersion = await this.indexer.indexVersion();
+    console.log('indexer sync start, version: ', indexVersion);
 
     const unsubscribe = this.doc.subscribeDocUpdate(update => {
       if (!this.status.rootDocReady) {
@@ -324,6 +333,7 @@ export class IndexerSyncImpl implements IndexerSync {
         const docId = await this.status.acceptJob(signal);
 
         if (docId === this.rootDocId) {
+          console.log('[indexer] start indexing root doc', docId);
           // #region crawl root doc
           for (const [docId, { title }] of this.status.docsInRootDoc) {
             const existingDoc = this.status.docsInIndexer.get(docId);
@@ -367,8 +377,7 @@ export class IndexerSyncImpl implements IndexerSync {
               this.status.statusUpdatedSubject$.next(docId);
             }
           }
-          await this.indexer.refresh('block');
-          await this.indexer.refresh('doc');
+          await this.refreshIfNeed();
           // #endregion
         } else {
           // #region crawl doc
@@ -390,38 +399,46 @@ export class IndexerSyncImpl implements IndexerSync {
             docIndexedClock &&
             docIndexedClock.timestamp.getTime() ===
               docClock.timestamp.getTime() &&
-            docIndexedClock.indexerVersion === this.INDEXER_VERSION
+            docIndexedClock.indexerVersion === indexVersion
           ) {
             // doc is already indexed, just skip
             continue;
           }
 
-          const docBin = await this.doc.getDoc(docId);
-          if (!docBin) {
-            // doc is deleted, just skip
-            continue;
-          }
-          const docYDoc = new YDoc({ guid: docId });
-          applyUpdate(docYDoc, docBin.bin);
+          console.log('[indexer] start indexing doc', docId);
 
           let blocks: IndexerDocument<'block'>[] = [];
           let preview: string | undefined;
 
-          try {
-            const result = await crawlingDocData({
-              ydoc: docYDoc,
-              rootYDoc: this.status.rootDoc,
-              spaceId: this.status.rootDocId,
-              docId,
-            });
-            if (!result) {
-              // doc is empty without root block, just skip
+          const nativeResult = await this.tryNativeCrawlDocData(docId);
+          if (nativeResult) {
+            blocks = nativeResult.block;
+            preview = nativeResult.summary;
+          } else {
+            const docBin = await this.doc.getDoc(docId);
+            if (!docBin) {
+              // doc is deleted, just skip
               continue;
             }
-            blocks = result.blocks;
-            preview = result.preview;
-          } catch (error) {
-            console.error('error crawling doc', error);
+            const docYDoc = new YDoc({ guid: docId });
+            applyUpdate(docYDoc, docBin.bin);
+
+            try {
+              const result = await crawlingDocData({
+                ydoc: docYDoc,
+                rootYDoc: this.status.rootDoc,
+                spaceId: this.status.rootDocId,
+                docId,
+              });
+              if (!result) {
+                // doc is empty without root block, just skip
+                continue;
+              }
+              blocks = result.blocks;
+              preview = result.preview;
+            } catch (error) {
+              console.error('error crawling doc', error);
+            }
           }
 
           await this.indexer.deleteByQuery('block', {
@@ -434,8 +451,6 @@ export class IndexerSyncImpl implements IndexerSync {
             await this.indexer.insert('block', block);
           }
 
-          await this.indexer.refresh('block');
-
           if (preview) {
             await this.indexer.update(
               'doc',
@@ -443,21 +458,41 @@ export class IndexerSyncImpl implements IndexerSync {
                 summary: preview,
               })
             );
-            await this.indexer.refresh('doc');
           }
+
+          await this.refreshIfNeed();
 
           await this.indexerSync.setDocIndexedClock({
             docId,
             timestamp: docClock.timestamp,
-            indexerVersion: this.INDEXER_VERSION,
+            indexerVersion: indexVersion,
           });
           // #endregion
         }
 
+        console.log('[indexer] complete job', docId);
+        await this.refreshIfNeed();
+
         this.status.completeJob();
       }
     } finally {
+      await this.refreshIfNeed();
       unsubscribe();
+    }
+  }
+
+  // ensure the indexer is refreshed according to recommendRefreshInterval
+  // recommendRefreshInterval <= 0 means force refresh on each operation
+  // recommendRefreshInterval > 0 means refresh if the last refresh is older than recommendRefreshInterval
+  private async refreshIfNeed(): Promise<void> {
+    const recommendRefreshInterval = this.indexer.recommendRefreshInterval ?? 0;
+    const needRefresh =
+      recommendRefreshInterval > 0 &&
+      this.lastRefreshed + recommendRefreshInterval < Date.now();
+    const forceRefresh = recommendRefreshInterval <= 0;
+    if (needRefresh || forceRefresh) {
+      await this.indexer.refreshIfNeed();
+      this.lastRefreshed = Date.now();
     }
   }
 
@@ -468,6 +503,36 @@ export class IndexerSyncImpl implements IndexerSync {
     return readAllDocsFromRootDoc(this.status.rootDoc, {
       includeTrash: false,
     });
+  }
+
+  private async tryNativeCrawlDocData(docId: string) {
+    try {
+      const result = await this.doc.crawlDocData?.(docId);
+      if (result) {
+        return {
+          title: result.title,
+          block: result.blocks.map(block =>
+            IndexerDocument.from<'block'>(`${docId}:${block.blockId}`, {
+              docId,
+              blockId: block.blockId,
+              content: block.content,
+              flavour: block.flavour,
+              blob: block.blob,
+              refDocId: block.refDocId,
+              ref: block.refInfo,
+              parentFlavour: block.parentFlavour,
+              parentBlockId: block.parentBlockId,
+              additional: block.additional,
+            })
+          ),
+          summary: result.summary,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.warn('[indexer] native crawlDocData failed', docId, error);
+      return null;
+    }
   }
 
   private async getAllDocsFromIndexer() {
@@ -619,10 +684,11 @@ class IndexerSyncStatus {
   currentJob: string | null = null;
   errorMessage: string | null = null;
   statusUpdatedSubject$ = new Subject<string | true>();
-  batterySaveMode: {
+  paused: {
     promise: Promise<void>;
     resolve: () => void;
   } | null = null;
+  batterySaveMode: boolean = false;
 
   state$ = new Observable<IndexerSyncState>(subscribe => {
     const next = () => {
@@ -632,6 +698,8 @@ class IndexerSyncStatus {
           total: 0,
           errorMessage: this.errorMessage,
           completed: true,
+          batterySaveMode: this.batterySaveMode,
+          paused: this.paused !== null,
         });
       } else {
         subscribe.next({
@@ -639,6 +707,8 @@ class IndexerSyncStatus {
           total: this.docsInRootDoc.size + 1,
           errorMessage: this.errorMessage,
           completed: this.rootDocReady && this.jobs.length() === 0,
+          batterySaveMode: this.batterySaveMode,
+          paused: this.paused !== null,
         });
       }
     };
@@ -697,10 +767,14 @@ class IndexerSyncStatus {
   }
 
   async acceptJob(abort?: AbortSignal) {
-    if (this.batterySaveMode) {
-      await this.batterySaveMode.promise;
+    if (this.paused) {
+      await this.paused.promise;
     }
-    const job = await this.jobs.asyncPop(abort);
+    const job = await this.jobs.asyncPop(
+      // if battery save mode is enabled, only accept jobs with priority > 1; otherwise accept all jobs
+      this.batterySaveMode ? 1 : undefined,
+      abort
+    );
     this.currentJob = job;
     this.statusUpdatedSubject$.next(job);
     return job;
@@ -728,12 +802,33 @@ class IndexerSyncStatus {
     if (this.batterySaveMode) {
       return;
     }
-    this.batterySaveMode = Promise.withResolvers();
+    this.batterySaveMode = true;
+    this.statusUpdatedSubject$.next(true);
   }
 
   disableBatterySaveMode() {
-    this.batterySaveMode?.resolve();
-    this.batterySaveMode = null;
+    if (!this.batterySaveMode) {
+      return;
+    }
+    this.batterySaveMode = false;
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  pauseSync() {
+    if (this.paused) {
+      return;
+    }
+    this.paused = Promise.withResolvers();
+    this.statusUpdatedSubject$.next(true);
+  }
+
+  resumeSync() {
+    if (!this.paused) {
+      return;
+    }
+    this.paused.resolve();
+    this.paused = null;
+    this.statusUpdatedSubject$.next(true);
   }
 
   reset() {
@@ -745,6 +840,8 @@ class IndexerSyncStatus {
     this.rootDoc = new YDoc();
     this.rootDocReady = false;
     this.currentJob = null;
+    this.batterySaveMode = false;
+    this.paused = null;
     this.statusUpdatedSubject$.next(true);
   }
 }

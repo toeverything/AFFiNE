@@ -1,9 +1,19 @@
-import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { ArrowUpBigIcon, CloseIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -305,6 +315,9 @@ export class AIChatInput extends SignalWatcher(
   @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
+  @property({ attribute: false })
+  accessor isContextProcessing!: boolean | undefined;
+
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
 
@@ -316,9 +329,6 @@ export class AIChatInput extends SignalWatcher(
 
   @state()
   accessor focused = false;
-
-  @state()
-  accessor modelId: string | undefined = undefined;
 
   @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
@@ -338,7 +348,7 @@ export class AIChatInput extends SignalWatcher(
   accessor addImages!: (images: File[]) => void;
 
   @property({ attribute: false })
-  accessor addChip!: (chip: ChatChip) => Promise<void>;
+  accessor addChip!: (chip: ChatChip, silent?: boolean) => Promise<void>;
 
   @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
@@ -353,7 +363,28 @@ export class AIChatInput extends SignalWatcher(
   accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
-  accessor aiDraftService!: AIDraftService;
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @property({ attribute: false })
   accessor isRootSession: boolean = true;
@@ -399,20 +430,37 @@ export class AIChatInput extends SignalWatcher(
               this.send(input).catch(console.error);
             }, 0);
           }
+          AIProvider.slots.requestSendWithChat.next(null);
         }
       )
+    );
+
+    this._disposables.add(
+      AIProvider.slots.requestOpenWithChat.subscribe(params => {
+        if (!params) return;
+
+        const { input, host } = params;
+        if (this.host !== host) return;
+
+        if (input) {
+          this.textarea.value = input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        }
+      })
     );
   }
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
     super.firstUpdated(changedProperties);
-    this.aiDraftService
-      .getDraft()
-      .then(draft => {
-        this.textarea.value = draft.input;
-        this.isInputEmpty = !this.textarea.value.trim();
-      })
-      .catch(console.error);
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.textarea.value = draft.input;
+          this.isInputEmpty = !this.textarea.value.trim();
+        })
+        .catch(console.error);
+    }
   }
 
   protected override render() {
@@ -486,13 +534,17 @@ export class AIChatInput extends SignalWatcher(
         <div class="chat-input-footer-spacer"></div>
         <chat-input-preference
           .session=${this.session}
-          .onModelChange=${this._handleModelChange}
-          .modelId=${this.modelId}
           .extendedThinking=${this._isReasoningActive}
           .onExtendedThinkingChange=${this._toggleReasoning}
           .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
           .isNetworkActive=${this._isNetworkActive}
           .onNetworkActiveChange=${this._toggleNetworkSearch}
+          .serverService=${this.serverService}
+          .toolsConfigService=${this.aiToolsConfigService}
+          .notificationService=${this.notificationService}
+          .subscriptionService=${this.subscriptionService}
+          .aiModelService=${this.aiModelService}
+          .onAISubscribe=${this.onAISubscribe}
         ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
           ? html`<button
@@ -505,13 +557,25 @@ export class AIChatInput extends SignalWatcher(
           : html`<button
               @click="${this._onTextareaSend}"
               class="chat-panel-send"
-              aria-disabled=${this.isInputEmpty}
+              aria-disabled=${this.isSendDisabled}
               data-testid="chat-panel-send"
             >
               ${ArrowUpBigIcon()}
             </button>`}
       </div>
     </div>`;
+  }
+
+  private get isSendDisabled() {
+    if (this.isInputEmpty) {
+      return true;
+    }
+
+    if (this.isContextProcessing) {
+      return true;
+    }
+
+    return false;
   }
 
   private readonly _handlePointerDown = (e: MouseEvent) => {
@@ -536,9 +600,11 @@ export class AIChatInput extends SignalWatcher(
       textarea.style.overflowY = 'scroll';
     }
 
-    await this.aiDraftService.setDraft({
-      input: value,
-    });
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: value,
+      });
+    }
   };
 
   private readonly _handleKeyDown = async (evt: KeyboardEvent) => {
@@ -593,19 +659,25 @@ export class AIChatInput extends SignalWatcher(
     this.isInputEmpty = true;
     this.textarea.style.height = 'unset';
 
+    if (this.aiDraftService) {
+      await this.aiDraftService.setDraft({
+        input: '',
+      });
+    }
     await this.send(value);
-    await this.aiDraftService.setDraft({
-      input: '',
-    });
-  };
-
-  private readonly _handleModelChange = (modelId: string) => {
-    this.modelId = modelId;
   };
 
   send = async (text: string) => {
     try {
-      const { status, markdown, images } = this.chatContextValue;
+      const {
+        status,
+        markdown,
+        images,
+        snapshot,
+        combinedElementsMarkdown,
+        html,
+      } = this.chatContextValue;
+
       if (status === 'loading' || status === 'transmitting') return;
       if (!text) return;
       if (!AIProvider.actions.chat) return;
@@ -620,23 +692,38 @@ export class AIChatInput extends SignalWatcher(
         abortController,
       });
 
-      const attachments = await Promise.all(
+      const imageAttachments = await Promise.all(
         images?.map(image => readBlobAsURL(image))
       );
       const userInput = (markdown ? `${markdown}\n` : '') + text;
 
       // optimistic update messages
-      await this._preUpdateMessages(userInput, attachments);
+      await this._preUpdateMessages(userInput, imageAttachments);
 
       const sessionId = (await this.createSession())?.sessionId;
       let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
       }
+
+      const enableSendDetailedObject =
+        this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
+          .value;
+
+      const modelId = this.aiModelService.modelId.value;
       const stream = await AIProvider.actions.chat({
         sessionId,
         input: userInput,
-        contexts,
+        contexts: {
+          ...contexts,
+          selectedSnapshot:
+            snapshot && enableSendDetailedObject ? snapshot : undefined,
+          selectedMarkdown:
+            combinedElementsMarkdown && enableSendDetailedObject
+              ? combinedElementsMarkdown
+              : undefined,
+          html: html || undefined,
+        },
         docId: this.docId,
         attachments: images,
         workspaceId: this.workspaceId,
@@ -647,7 +734,8 @@ export class AIChatInput extends SignalWatcher(
         control: this.trackOptions?.control,
         webSearch: this._isNetworkActive,
         reasoning: this._isReasoningActive,
-        modelId: this.modelId,
+        toolsConfig: this.aiToolsConfigService.config.value,
+        modelId,
       });
 
       for await (const text of stream) {

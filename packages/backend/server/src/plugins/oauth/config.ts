@@ -4,7 +4,7 @@ import { defineModuleConfig, JSONSchema } from '../../base';
 
 export interface OAuthProviderConfig {
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string;
   args?: Record<string, string>;
 }
 
@@ -13,6 +13,7 @@ export type OIDCArgs = {
   claim_id?: string;
   claim_email?: string;
   claim_name?: string;
+  claim_email_verified?: string;
 };
 
 export interface OAuthOIDCProviderConfig extends OAuthProviderConfig {
@@ -88,6 +89,7 @@ defineModuleConfig('oauth', {
         claim_id: z.string().optional(),
         claim_email: z.string().optional(),
         claim_name: z.string().optional(),
+        claim_email_verified: z.string().optional(),
       }),
     }),
   },

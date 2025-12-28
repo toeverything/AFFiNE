@@ -20,7 +20,7 @@ class DarkActionButton: UIView {
 
   let titleLabel = UILabel()
   let iconView = UIImageView()
-  var action: (() -> Void)? = nil
+  var action: (() -> Void)?
 
   override init(frame: CGRect) {
     super.init(frame: frame)

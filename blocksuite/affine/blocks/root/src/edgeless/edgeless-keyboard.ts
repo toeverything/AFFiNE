@@ -634,9 +634,9 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
 
     const movedElements = new Set([
       ...selectedElements,
-      ...selectedElements
-        .map(el => (isGfxGroupCompatibleModel(el) ? el.descendantElements : []))
-        .flat(),
+      ...selectedElements.flatMap(el =>
+        isGfxGroupCompatibleModel(el) ? el.descendantElements : []
+      ),
     ]);
 
     movedElements.forEach(element => {

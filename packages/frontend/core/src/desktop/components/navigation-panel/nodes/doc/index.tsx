@@ -14,7 +14,9 @@ import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { GuardService } from '@affine/core/modules/permissions';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -46,6 +48,7 @@ export const NavigationPanelDocNode = ({
   canDrop,
   operations: additionalOperations,
   dropEffect,
+  parentPath,
 }: {
   docId: string;
   isLinked?: boolean;
@@ -54,12 +57,14 @@ export const NavigationPanelDocNode = ({
   const t = useI18n();
   const {
     docsSearchService,
+    workspaceService,
     docsService,
     globalContextService,
     docDisplayMetaService,
     featureFlagService,
     guardService,
   } = useServices({
+    WorkspaceService,
     DocsSearchService,
     DocsService,
     GlobalContextService,
@@ -67,11 +72,22 @@ export const NavigationPanelDocNode = ({
     FeatureFlagService,
     GuardService,
   });
+  const navigationPanelService = useService(NavigationPanelService);
   const { appSettings } = useAppSettingHelper();
 
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;
-  const [collapsed, setCollapsed] = useState(true);
+  const path = useMemo(
+    () => [...(parentPath ?? []), `doc-${docId}`],
+    [parentPath, docId]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
   const isCollapsed = appSettings.showLinkedDocInSidebar ? collapsed : true;
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
@@ -107,9 +123,17 @@ export const NavigationPanelDocNode = ({
 
   const [referencesLoading, setReferencesLoading] = useState(true);
   useLayoutEffect(() => {
+    if (collapsed) {
+      return;
+    }
     const abortController = new AbortController();
+    const undoSync = workspaceService.workspace.engine.doc.addPriority(
+      docId,
+      10
+    );
+    const undoIndexer = docsSearchService.indexer.addPriority(docId, 10);
     docsSearchService.indexer
-      .waitForDocCompletedWithPriority(docId, 100, abortController.signal)
+      .waitForDocCompleted(docId, abortController.signal)
       .then(() => {
         setReferencesLoading(false);
       })
@@ -119,9 +143,11 @@ export const NavigationPanelDocNode = ({
         }
       });
     return () => {
+      undoSync();
+      undoIndexer();
       abortController.abort(MANUALLY_STOP);
     };
-  }, [docId, docsSearchService]);
+  }, [docId, docsSearchService, workspaceService, collapsed]);
 
   const dndData = useMemo(() => {
     return {
@@ -227,7 +253,7 @@ export const NavigationPanelDocNode = ({
         openInfoModal: () => workspaceDialogService.open('doc-info', { docId }),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      [docId, workspaceDialogService]
+      [docId, setCollapsed, workspaceDialogService]
     )
   );
 
@@ -288,6 +314,10 @@ export const NavigationPanelDocNode = ({
       operations={finalOperations}
       dropEffect={handleDropEffectOnDoc}
       data-testid={`navigation-panel-doc-${docId}`}
+      explorerIconConfig={{
+        where: 'doc',
+        id: docId,
+      }}
     >
       {appSettings.showLinkedDocInSidebar ? (
         <Guard docId={docId} permission="Doc_Read">
@@ -302,6 +332,7 @@ export const NavigationPanelDocNode = ({
                       at: 'navigation-panel:doc:linked-docs',
                       docId,
                     }}
+                    parentPath={path}
                     isLinked
                   />
                 ))

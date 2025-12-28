@@ -62,7 +62,7 @@ public class IntelligentContext {
         "Login required: \(reason)"
       case let .sessionCreationFailed(reason):
         "Session creation failed: \(reason)"
-      case let .featureClosed:
+      case .featureClosed:
         "Intelligent feature closed"
       }
     }
@@ -85,7 +85,7 @@ public class IntelligentContext {
       }
       webViewGroup.wait()
       webViewMetadata = webViewMetadataResult
-      
+
       if webViewMetadataResult[.currentAiButtonFeatureFlag] as? Bool == false {
         completion(.failure(IntelligentError.featureClosed))
         return

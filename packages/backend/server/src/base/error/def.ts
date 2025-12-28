@@ -506,6 +506,10 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
   },
+  blob_invalid: {
+    type: 'invalid_input',
+    message: 'Blob is invalid.',
+  },
   expect_to_publish_doc: {
     type: 'invalid_input',
     message: 'Expected to publish a doc, not a Space.',
@@ -636,6 +640,11 @@ export const USER_FRIENDLY_ERRORS = {
   workspace_id_required_to_update_team_subscription: {
     type: 'invalid_input',
     message: 'Workspace id is required to update team subscription.',
+  },
+  managed_by_app_store_or_play: {
+    type: 'action_forbidden',
+    message:
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
   },
 
   // Copilot errors

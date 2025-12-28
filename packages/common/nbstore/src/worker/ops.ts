@@ -143,6 +143,8 @@ interface GroupedWorkerOps {
   sync: {
     enableBatterySaveMode: [void, void];
     disableBatterySaveMode: [void, void];
+    pauseSync: [void, void];
+    resumeSync: [void, void];
   };
 }
 

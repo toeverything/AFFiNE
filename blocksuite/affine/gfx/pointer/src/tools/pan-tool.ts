@@ -1,4 +1,7 @@
-import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
+import {
+  DefaultTool,
+  EdgelessLegacySlotIdentifier,
+} from '@blocksuite/affine-block-surface';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
 import { BaseTool, MouseButton, type ToolOptions } from '@blocksuite/std/gfx';
@@ -57,19 +60,30 @@ export class PanTool extends BaseTool<PanToolOption> {
         return;
       }
 
+      const currentTool = this.controller.currentToolOption$.peek();
+      const { toolType, options: originalToolOptions } = currentTool;
+
+      if (toolType?.toolName === PanTool.toolName) {
+        return;
+      }
+
       evt.raw.preventDefault();
 
-      const currentTool = this.controller.currentToolOption$.peek();
+      const selectionToRestore = this.gfx.selection.surfaceSelections.slice();
+
       const restoreToPrevious = () => {
-        const { toolType, options: originalToolOptions } = currentTool;
-        const selectionToRestore = this.gfx.selection.surfaceSelections;
+        this.gfx.selection.set(selectionToRestore);
+
         if (!toolType) return;
+        // restore to DefaultTool if previous tool is CopilotTool
+        if (toolType.toolName === 'copilot') {
+          this.controller.setTool(DefaultTool);
+          return;
+        }
 
         let finalOptions: ToolOptions<BaseTool<any>> | undefined =
           originalToolOptions;
-        const PRESENT_TOOL_NAME = 'frameNavigator';
-
-        if (toolType.toolName === PRESENT_TOOL_NAME) {
+        if (toolType.toolName === 'frameNavigator') {
           // When restoring PresentTool (frameNavigator) after a temporary pan (e.g., via middle mouse button),
           // set 'restoredAfterPan' to true. This allows PresentTool to avoid an unwanted viewport reset
           // and maintain the panned position.
@@ -82,11 +96,10 @@ export class PanTool extends BaseTool<PanToolOption> {
           } as RestorablePresentToolOptions;
         }
         this.controller.setTool(toolType, finalOptions);
-        this.gfx.selection.set(selectionToRestore);
       };
 
       // If in presentation mode, disable black background after middle mouse drag
-      if (currentTool.toolType?.toolName === 'frameNavigator') {
+      if (toolType?.toolName === 'frameNavigator') {
         const slots = this.std.get(EdgelessLegacySlotIdentifier);
         slots.navigatorSettingUpdated.next({
           blackBackground: false,
@@ -100,8 +113,8 @@ export class PanTool extends BaseTool<PanToolOption> {
       const dispose = on(document, 'pointerup', evt => {
         if (evt.button === MouseButton.MIDDLE) {
           restoreToPrevious();
-          dispose();
         }
+        dispose();
       });
 
       return false;

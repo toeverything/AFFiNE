@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import { z } from 'zod';
@@ -5,6 +7,7 @@ import { z } from 'zod';
 import { ServerFeature, ServerService } from '../core';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
+import { Models } from '../models';
 import { CopilotModule } from '../plugins/copilot';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
@@ -30,6 +33,8 @@ import { TestAssets } from './utils/copilot';
 type Tester = {
   auth: AuthService;
   module: TestingModule;
+  models: Models;
+  service: ServerService;
   prompt: PromptService;
   factory: CopilotProviderFactory;
   workflow: CopilotWorkflowService;
@@ -66,12 +71,15 @@ test.serial.before(async t => {
   isCopilotConfigured = service.features.includes(ServerFeature.Copilot);
 
   const auth = module.get(AuthService);
+  const models = module.get(Models);
   const prompt = module.get(PromptService);
   const factory = module.get(CopilotProviderFactory);
   const workflow = module.get(CopilotWorkflowService);
 
   t.context.module = module;
   t.context.auth = auth;
+  t.context.service = service;
+  t.context.models = models;
   t.context.prompt = prompt;
   t.context.factory = factory;
   t.context.workflow = workflow;
@@ -84,7 +92,7 @@ test.serial.before(async t => {
 });
 
 test.serial.before(async t => {
-  const { prompt, executors } = t.context;
+  const { prompt, executors, models, service } = t.context;
 
   executors.image.register();
   executors.text.register();
@@ -98,6 +106,28 @@ test.serial.before(async t => {
   for (const p of prompts) {
     await prompt.set(p.name, p.model, p.messages, p.config);
   }
+
+  const user = await models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await service.updateConfig(user.id, [
+    {
+      module: 'copilot',
+      key: 'scenarios',
+      value: {
+        enabled: true,
+        scenarios: {
+          image: 'flux-1/schnell',
+          rerank: 'gpt-5-mini',
+          complex_text_generation: 'gpt-5-mini',
+          coding: 'gpt-5-mini',
+          quick_decision_making: 'gpt-5-mini',
+          quick_text_generation: 'gpt-5-mini',
+          polish_and_summarize: 'gemini-2.5-flash',
+        },
+      },
+    },
+  ]);
 });
 
 test.after(async t => {
@@ -384,12 +414,12 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
         role: 'user' as const,
         content: 'what is ssot',
         params: {
-          files: [
+          docs: [
             {
-              blobId: 'SSOT',
-              fileName: 'Single source of truth - Wikipedia',
+              docId: 'SSOT',
+              docTitle: 'Single source of truth - Wikipedia',
               fileType: 'text/markdown',
-              fileContent: TestAssets.SSOT,
+              docContent: TestAssets.SSOT,
             },
           ],
         },
@@ -530,9 +560,8 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
       'Create headings',
       'Make it longer',
       'Make it shorter',
-      'Continue writing',
+      'Section Edit',
       'Chat With AFFiNE AI',
-      'Search With AFFiNE AI',
     ],
     messages: [{ role: 'user' as const, content: TestAssets.SSOT }],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
@@ -548,8 +577,17 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     type: 'text' as const,
   },
   {
+    promptName: ['Continue writing'],
+    messages: [{ role: 'user' as const, content: TestAssets.AFFiNE }],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      t.assert(result.length > 0, 'should not be empty');
+    },
+    type: 'text' as const,
+  },
+  {
     promptName: ['Brainstorm ideas about this', 'Brainstorm mindmap'],
-    messages: [{ role: 'user' as const, content: TestAssets.SSOT }],
+    messages: [{ role: 'user' as const, content: TestAssets.AFFiNE }],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
       t.assert(checkMDList(result), 'should be a markdown list');
@@ -646,20 +684,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     type: 'image' as const,
   },
   {
-    promptName: ['debug:action:dalle3'],
-    messages: [
-      {
-        role: 'user' as const,
-        content: 'Panda',
-      },
-    ],
-    verifier: (t: ExecutionContext<Tester>, link: string) => {
-      t.truthy(checkUrl(link), 'should be a valid url');
-    },
-    type: 'image' as const,
-  },
-  {
-    promptName: ['debug:action:gpt-image-1'],
+    promptName: ['Generate image'],
     messages: [
       {
         role: 'user' as const,
@@ -707,7 +732,7 @@ for (const {
                 [
                   ...prompt.finish(
                     messages.reduce(
-                      // @ts-expect-error
+                      // @ts-expect-error params not typed
                       (acc, m) => Object.assign(acc, m.params),
                       {}
                     )
@@ -777,7 +802,7 @@ for (const {
                 [
                   ...prompt.finish(
                     finalMessage.reduce(
-                      // @ts-expect-error
+                      // @ts-expect-error params not typed
                       (acc, m) => Object.assign(acc, m.params),
                       params
                     )

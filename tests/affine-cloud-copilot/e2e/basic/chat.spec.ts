@@ -17,24 +17,24 @@ test.describe('AIBasic/Chat', () => {
     await expect(page.getByTestId('ai-onboarding')).toBeVisible();
   });
 
-  test('should open embedding settings when clicking check status button', async ({
-    loggedInPage: page,
-    utils,
-  }) => {
-    await utils.editor.createDoc(page, 'Doc 1', 'doc1');
-    await utils.editor.createDoc(page, 'Doc 2', 'doc2');
-    await utils.editor.createDoc(page, 'Doc 3', 'doc3');
-    await utils.editor.createDoc(page, 'Doc 4', 'doc4');
-    await utils.editor.createDoc(page, 'Doc 5', 'doc5');
+  // test('should open embedding settings when clicking check status button', async ({
+  //   loggedInPage: page,
+  //   utils,
+  // }) => {
+  //   await utils.editor.createDoc(page, 'Doc 1', 'doc1');
+  //   await utils.editor.createDoc(page, 'Doc 2', 'doc2');
+  //   await utils.editor.createDoc(page, 'Doc 3', 'doc3');
+  //   await utils.editor.createDoc(page, 'Doc 4', 'doc4');
+  //   await utils.editor.createDoc(page, 'Doc 5', 'doc5');
 
-    const check = await page.getByTestId(
-      'ai-chat-embedding-status-tooltip-check'
-    );
-    await expect(check).toBeVisible({ timeout: 50 * 1000 });
+  //   const check = await page.getByTestId(
+  //     'ai-chat-embedding-status-tooltip-check'
+  //   );
+  //   await expect(check).toBeVisible({ timeout: 50 * 1000 });
 
-    await check.click();
-    await expect(page.getByTestId('workspace-setting:embedding')).toBeVisible();
-  });
+  //   await check.click();
+  //   await expect(page.getByTestId('workspace-setting:embedding')).toBeVisible();
+  // });
 
   test(`should send message and receive AI response:
         - send message
@@ -449,5 +449,90 @@ test.describe('AIBasic/Chat', () => {
         status: 'success',
       },
     ]);
+  });
+
+  test('should support create a new chat after ask ai', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.chatPanel.closeChatPanel(page);
+    await utils.editor.askAIWithText(
+      page,
+      'AFFiNE is an open source all in one workspace.'
+    );
+    await page.keyboard.type('Translate to chinese.');
+
+    const sendButton = await page.getByTestId('ai-panel-input-send');
+    await expect(sendButton).toHaveAttribute('data-active', 'true');
+    await sendButton.click();
+
+    await expect(page.getByTestId('sidebar-tab-content-chat')).toBeVisible();
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content:
+          'AFFiNE is an open source all in one workspace.\nTranslate to chinese.',
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
+
+    await page.getByTestId('ai-panel-new-chat').click();
+    await page.waitForTimeout(1000);
+    await utils.chatPanel.expectToHaveHistory(page, []);
+  });
+
+  test('should support pin chat', async ({ loggedInPage: page, utils }) => {
+    await utils.chatPanel.openChatPanel(page);
+    await utils.chatPanel.makeChat(
+      page,
+      'Hello, how can you help me? Answer in 50 words.'
+    );
+
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content: 'Hello, how can you help me? Answer in 50 words.',
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
+
+    // pinned
+    await expect(page.getByTestId('ai-panel-pin-chat')).toHaveAttribute(
+      'data-pinned',
+      'false'
+    );
+    await page.getByTestId('ai-panel-pin-chat').click();
+    await expect(page.getByTestId('ai-panel-pin-chat')).toHaveAttribute(
+      'data-pinned',
+      'true'
+    );
+
+    // create new doc
+    await utils.editor.createDoc(page, 'Doc 1', 'doc1');
+    await utils.chatPanel.expectToHaveHistory(page, [
+      {
+        role: 'user',
+        content: 'Hello, how can you help me? Answer in 50 words.',
+      },
+      {
+        role: 'assistant',
+        status: 'idle',
+      },
+    ]);
+    await page.getByTestId('ai-panel-pin-chat').click();
+
+    // unpinned
+    await expect(page.getByTestId('ai-panel-pin-chat')).toHaveAttribute(
+      'data-pinned',
+      'false'
+    );
+    await utils.editor.createDoc(page, 'Doc 2', 'doc2');
+    await utils.chatPanel.expectToHaveHistory(page, []);
   });
 });

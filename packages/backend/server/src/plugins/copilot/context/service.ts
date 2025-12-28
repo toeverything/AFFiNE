@@ -147,6 +147,28 @@ export class CopilotContextService implements OnApplicationBootstrap {
     return null;
   }
 
+  async matchWorkspaceBlobs(
+    workspaceId: string,
+    content: string,
+    topK: number = 5,
+    signal?: AbortSignal,
+    threshold: number = 0.5
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const blobChunks = await this.models.copilotWorkspace.matchBlobEmbedding(
+      workspaceId,
+      embedding,
+      topK * 2,
+      threshold
+    );
+    if (!blobChunks.length) return [];
+
+    return await this.embeddingClient.reRank(content, blobChunks, topK, signal);
+  }
+
   async matchWorkspaceFiles(
     workspaceId: string,
     content: string,
@@ -210,9 +232,15 @@ export class CopilotContextService implements OnApplicationBootstrap {
     const embedding = await this.embeddingClient.getEmbedding(content, signal);
     if (!embedding) return [];
 
-    const [fileChunks, workspaceChunks, scopedWorkspaceChunks] =
+    const [fileChunks, blobChunks, workspaceChunks, scopedWorkspaceChunks] =
       await Promise.all([
         this.models.copilotWorkspace.matchFileEmbedding(
+          workspaceId,
+          embedding,
+          topK * 2,
+          threshold
+        ),
+        this.models.copilotWorkspace.matchBlobEmbedding(
           workspaceId,
           embedding,
           topK * 2,
@@ -237,6 +265,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
 
     if (
       !fileChunks.length &&
+      !blobChunks.length &&
       !workspaceChunks.length &&
       !scopedWorkspaceChunks?.length
     ) {
@@ -245,7 +274,12 @@ export class CopilotContextService implements OnApplicationBootstrap {
 
     return await this.embeddingClient.reRank(
       content,
-      [...fileChunks, ...workspaceChunks, ...(scopedWorkspaceChunks || [])],
+      [
+        ...fileChunks,
+        ...blobChunks,
+        ...workspaceChunks,
+        ...(scopedWorkspaceChunks || []),
+      ],
       topK,
       signal
     );

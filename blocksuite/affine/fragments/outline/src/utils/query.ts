@@ -68,5 +68,5 @@ export function getHeadingBlocksFromDoc(
   ignoreEmpty = false
 ) {
   const notes = getNotesFromStore(store, modes);
-  return notes.map(note => getHeadingBlocksFromNote(note, ignoreEmpty)).flat();
+  return notes.flatMap(note => getHeadingBlocksFromNote(note, ignoreEmpty));
 }

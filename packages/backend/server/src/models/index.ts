@@ -7,6 +7,7 @@ import {
 import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
+import { AccessTokenModel } from './access-token';
 import { BlobModel } from './blob';
 import { CommentModel } from './comment';
 import { CommentAttachmentModel } from './comment-attachment';
@@ -54,6 +55,7 @@ const MODELS = {
   comment: CommentModel,
   commentAttachment: CommentAttachmentModel,
   blob: BlobModel,
+  accessToken: AccessTokenModel,
 };
 
 type ModelsType = {

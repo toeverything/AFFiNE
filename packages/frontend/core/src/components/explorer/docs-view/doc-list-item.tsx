@@ -371,40 +371,47 @@ export const CardViewDoc = ({ docId }: DocListItemProps) => {
   const selectMode = useLiveData(contextValue.selectMode$);
   const docsService = useService(DocsService);
   const doc = useLiveData(docsService.list.doc$(docId));
+  const showMoreOperation = useLiveData(contextValue.showMoreOperation$);
 
   if (!doc) {
     return null;
   }
 
   return (
-    <li className={styles.cardViewRoot}>
-      <DragHandle id={docId} className={styles.cardDragHandle} />
-      <header className={styles.cardViewHeader}>
-        <DocIcon id={docId} className={styles.cardViewIcon} />
-        <DocTitle
-          id={docId}
-          className={styles.cardViewTitle}
-          data-testid="doc-list-item-title"
-        />
-        {quickActions.map(action => {
-          return (
-            <Tooltip key={action.key} content={t.t(action.name)}>
-              <action.Component size="16" doc={doc} />
-            </Tooltip>
-          );
-        })}
-        {selectMode ? (
-          <Select id={docId} className={styles.cardViewCheckbox} />
-        ) : (
-          <MoreMenuButton
-            docId={docId}
-            contentOptions={cardMoreMenuContentOptions}
-            iconProps={{ size: '16' }}
+    <ContextMenu
+      asChild
+      disabled={!showMoreOperation}
+      items={<MoreMenuContent docId={docId} />}
+    >
+      <li className={styles.cardViewRoot}>
+        <DragHandle id={docId} className={styles.cardDragHandle} />
+        <header className={styles.cardViewHeader}>
+          <DocIcon id={docId} className={styles.cardViewIcon} />
+          <DocTitle
+            id={docId}
+            className={styles.cardViewTitle}
+            data-testid="doc-list-item-title"
           />
-        )}
-      </header>
-      <DocPreview id={docId} className={styles.cardPreviewContainer} />
-      <CardViewProperties docId={docId} />
-    </li>
+          {quickActions.map(action => {
+            return (
+              <Tooltip key={action.key} content={t.t(action.name)}>
+                <action.Component size="16" doc={doc} />
+              </Tooltip>
+            );
+          })}
+          {selectMode ? (
+            <Select id={docId} className={styles.cardViewCheckbox} />
+          ) : (
+            <MoreMenuButton
+              docId={docId}
+              contentOptions={cardMoreMenuContentOptions}
+              iconProps={{ size: '16' }}
+            />
+          )}
+        </header>
+        <DocPreview id={docId} className={styles.cardPreviewContainer} />
+        <CardViewProperties docId={docId} />
+      </li>
+    </ContextMenu>
   );
 };

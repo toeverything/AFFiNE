@@ -1,9 +1,11 @@
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type {
   AddContextFileInput,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
   ContextWorkspaceEmbeddingStatus,
   CopilotChatHistoryFragment,
+  CopilotContextBlob,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
@@ -23,6 +25,7 @@ import type { PromptKey } from '../provider/prompt';
 
 export const translateLangs = [
   'English',
+  'Brazilian Portuguese',
   'Spanish',
   'German',
   'French',
@@ -142,9 +145,13 @@ declare global {
       webSearch?: boolean;
       reasoning?: boolean;
       modelId?: string;
+      toolsConfig?: AIToolsConfig | undefined;
       contexts?: {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];
+        selectedSnapshot?: string;
+        selectedMarkdown?: string;
+        html?: string;
       };
       postfix?: (text: string) => string;
     }
@@ -275,6 +282,7 @@ declare global {
       files: CopilotContextFile[];
       tags: CopilotContextCategory[];
       collections: CopilotContextCategory[];
+      blobs: CopilotContextBlob[];
     };
 
     interface AIContextService {
@@ -354,6 +362,14 @@ declare global {
         op: string,
         updates: string
       ) => Promise<string>;
+      addContextBlob: (options: {
+        blobId: string;
+        contextId: string;
+      }) => Promise<CopilotContextBlob>;
+      removeContextBlob: (options: {
+        blobId: string;
+        contextId: string;
+      }) => Promise<boolean>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
@@ -426,7 +442,7 @@ declare global {
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,
-        docId: string,
+        docId: string | undefined,
         sessionIds: string[]
       ) => Promise<void>;
       ids: (

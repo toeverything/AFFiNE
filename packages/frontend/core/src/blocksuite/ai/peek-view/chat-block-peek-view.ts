@@ -1,3 +1,12 @@
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type {
@@ -393,6 +402,7 @@ export class AIChatBlockPeekView extends LitElement {
         control: 'chat-send',
         reasoning: this._isReasoningActive,
         webSearch: this._isNetworkActive,
+        toolsConfig: this.aiToolsConfigService.config.value,
       });
 
       for await (const text of stream) {
@@ -608,6 +618,8 @@ export class AIChatBlockPeekView extends LitElement {
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .onChatSuccess=${this._onChatSuccess}
         .trackOptions=${{
           where: 'ai-chat-block',
@@ -615,6 +627,10 @@ export class AIChatBlockPeekView extends LitElement {
         }}
         .portalContainer=${this.parentElement}
         .reasoningConfig=${this.reasoningConfig}
+        .serverService=${this.serverService}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div> `;
   }
@@ -635,6 +651,9 @@ export class AIChatBlockPeekView extends LitElement {
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
@@ -645,6 +664,21 @@ export class AIChatBlockPeekView extends LitElement {
 
   @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
+
+  @property({ attribute: false })
+  accessor aiDraftService!: AIDraftService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor _historyMessages: ChatMessage[] = [];
@@ -681,8 +715,14 @@ export const AIChatBlockPeekViewTemplate = (
   searchMenuConfig: SearchMenuConfig,
   networkSearchConfig: AINetworkSearchConfig,
   reasoningConfig: AIReasoningConfig,
+  serverService: ServerService,
   affineFeatureFlagService: FeatureFlagService,
-  affineWorkspaceDialogService: WorkspaceDialogService
+  affineWorkspaceDialogService: WorkspaceDialogService,
+  aiDraftService: AIDraftService,
+  aiToolsConfigService: AIToolsConfigService,
+  subscriptionService: SubscriptionService,
+  aiModelService: AIModelService,
+  onAISubscribe: (() => Promise<void>) | undefined
 ) => {
   return html`<ai-chat-block-peek-view
     .blockModel=${blockModel}
@@ -691,7 +731,13 @@ export const AIChatBlockPeekViewTemplate = (
     .docDisplayConfig=${docDisplayConfig}
     .searchMenuConfig=${searchMenuConfig}
     .reasoningConfig=${reasoningConfig}
+    .serverService=${serverService}
     .affineFeatureFlagService=${affineFeatureFlagService}
     .affineWorkspaceDialogService=${affineWorkspaceDialogService}
+    .aiDraftService=${aiDraftService}
+    .aiToolsConfigService=${aiToolsConfigService}
+    .subscriptionService=${subscriptionService}
+    .aiModelService=${aiModelService}
+    .onAISubscribe=${onAISubscribe}
   ></ai-chat-block-peek-view>`;
 };

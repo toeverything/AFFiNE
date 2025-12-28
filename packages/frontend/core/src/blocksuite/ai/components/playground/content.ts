@@ -1,3 +1,5 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { ServerService } from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
@@ -84,6 +86,9 @@ export class PlaygroundContent extends SignalWatcher(
   accessor extensions!: ExtensionType[];
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
@@ -91,6 +96,9 @@ export class PlaygroundContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @state()
   accessor sessions: CopilotChatHistoryFragment[] = [];
@@ -289,9 +297,11 @@ export class PlaygroundContent extends SignalWatcher(
       }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     button.addEventListener('click', handleSendClick);
 
     this._disposables.add(() => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       button.removeEventListener('click', handleSendClick);
     });
   }
@@ -344,9 +354,11 @@ export class PlaygroundContent extends SignalWatcher(
                 .searchMenuConfig=${this.searchMenuConfig}
                 .docDisplayConfig=${this.docDisplayConfig}
                 .extensions=${this.extensions}
+                .serverService=${this.serverService}
                 .affineFeatureFlagService=${this.affineFeatureFlagService}
                 .affineThemeService=${this.affineThemeService}
                 .notificationService=${this.notificationService}
+                .aiToolsConfigService=${this.aiToolsConfigService}
                 .addChat=${this.addChat}
               ></playground-chat>
             </div>

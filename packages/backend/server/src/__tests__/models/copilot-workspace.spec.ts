@@ -146,6 +146,52 @@ test('should insert and search embedding', async t => {
   }
 
   {
+    await t.context.db.blob.create({
+      data: {
+        workspaceId: workspace.id,
+        key: 'blob-test',
+        mime: 'text/plain',
+        size: 1,
+      },
+    });
+
+    const blobId = 'blob-test';
+    await t.context.copilotWorkspace.insertBlobEmbeddings(
+      workspace.id,
+      blobId,
+      [
+        {
+          index: 0,
+          content: 'blob content',
+          embedding: Array.from({ length: 1024 }, () => 1),
+        },
+      ]
+    );
+
+    {
+      const ret = await t.context.copilotWorkspace.matchBlobEmbedding(
+        workspace.id,
+        Array.from({ length: 1024 }, () => 0.9),
+        1,
+        1
+      );
+      t.snapshot(cleanObject(ret), 'should match workspace blob embedding');
+    }
+
+    await t.context.copilotWorkspace.removeBlob(workspace.id, blobId);
+
+    {
+      const ret = await t.context.copilotWorkspace.matchBlobEmbedding(
+        workspace.id,
+        Array.from({ length: 1024 }, () => 0.9),
+        1,
+        1
+      );
+      t.deepEqual(ret, [], 'should not match after removal');
+    }
+  }
+
+  {
     const docId = randomUUID();
     await t.context.doc.upsert({
       spaceId: workspace.id,
@@ -247,7 +293,10 @@ test('should check need to be embedded', async t => {
       workspace.id,
       docId
     );
-    t.true(needsEmbedding, 'document with no embedding should need embedding');
+    t.snapshot(
+      needsEmbedding,
+      'document with no embedding should need embedding'
+    );
   }
 
   {
@@ -267,7 +316,7 @@ test('should check need to be embedded', async t => {
       workspace.id,
       docId
     );
-    t.false(
+    t.snapshot(
       needsEmbedding,
       'document with recent embedding should not need embedding'
     );
@@ -282,15 +331,83 @@ test('should check need to be embedded', async t => {
       editorId: user.id,
     });
 
+    // simulate an old embedding
+    const oldEmbeddingTime = new Date(Date.now() - 25 * 60 * 1000);
+    await t.context.db.aiWorkspaceEmbedding.updateMany({
+      where: { workspaceId: workspace.id, docId },
+      data: { updatedAt: oldEmbeddingTime },
+    });
+
     let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
       workspace.id,
       docId
     );
-    t.true(
+    t.snapshot(
       needsEmbedding,
-      'document updated after embedding should need embedding'
+      'document updated after embedding and older-than-10m should need embedding'
     );
   }
+
+  {
+    // only time passed (>10m since last embedding) but no doc updates => should NOT re-embed
+    const baseNow = Date.now();
+    const docId2 = randomUUID();
+    const t0 = baseNow - 30 * 60 * 1000; // snapshot updated 30 minutes ago
+    const t1 = baseNow - 25 * 60 * 1000; // embedding updated 25 minutes ago
+
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId: docId2,
+      blob: Uint8Array.from([1, 2, 3]),
+      timestamp: t0,
+      editorId: user.id,
+    });
+
+    await t.context.copilotContext.insertWorkspaceEmbedding(
+      workspace.id,
+      docId2,
+      [
+        {
+          index: 0,
+          content: 'content2',
+          embedding: Array.from({ length: 1024 }, () => 1),
+        },
+      ]
+    );
+
+    await t.context.db.aiWorkspaceEmbedding.updateMany({
+      where: { workspaceId: workspace.id, docId: docId2 },
+      data: { updatedAt: new Date(t1) },
+    });
+
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId2
+    );
+    t.snapshot(
+      needsEmbedding,
+      'should not need embedding when only 10-minute window passed without updates'
+    );
+
+    const t2 = baseNow - 5 * 60 * 1000; // doc updated 5 minutes ago
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId: docId2,
+      blob: Uint8Array.from([7, 8, 9]),
+      timestamp: t2,
+      editorId: user.id,
+    });
+
+    needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId2
+    );
+    t.snapshot(
+      needsEmbedding,
+      'should need embedding when doc updated and last embedding older than 10 minutes'
+    );
+  }
+  // --- new cases end ---
 });
 
 test('should check embedding table', async t => {

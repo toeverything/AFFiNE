@@ -1,7 +1,16 @@
-import type { AIDraftService } from '@affine/core/modules/ai-button';
+import type {
+  AIDraftService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
 import type {
   ContextEmbedStatus,
@@ -45,6 +54,11 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   status: 'idle',
   error: null,
   markdown: '',
+  snapshot: null,
+  attachments: [],
+  combinedElementsMarkdown: null,
+  docs: [],
+  html: null,
 };
 
 export class AIChatContent extends SignalWatcher(
@@ -141,6 +155,9 @@ export class AIChatContent extends SignalWatcher(
   accessor extensions!: ExtensionType[];
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
@@ -153,7 +170,13 @@ export class AIChatContent extends SignalWatcher(
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor aiDraftService!: AIDraftService;
+  accessor aiDraftService: AIDraftService | undefined;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
   accessor onEmbeddingProgressChange:
@@ -168,6 +191,15 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
@@ -273,6 +305,9 @@ export class AIChatContent extends SignalWatcher(
   };
 
   private readonly updateDraft = async (context: Partial<ChatContextValue>) => {
+    if (!this.aiDraftService) {
+      return;
+    }
     const draft: Partial<AIDraftState> = pick(context, [
       'quote',
       'images',
@@ -298,9 +333,8 @@ export class AIChatContent extends SignalWatcher(
     if (chatMessages) {
       chatMessages.updateComplete
         .then(() => {
-          const scrollContainer = chatMessages.getScrollContainer();
-          scrollContainer?.addEventListener('scrollend', () => {
-            this.lastScrollTop = scrollContainer.scrollTop;
+          chatMessages.addEventListener('scrollend', () => {
+            this.lastScrollTop = chatMessages.scrollTop;
           });
           this._scrollListenersInitialized = true;
         })
@@ -344,15 +378,20 @@ export class AIChatContent extends SignalWatcher(
 
     this.initChatContent().catch(console.error);
 
-    this.aiDraftService
-      .getDraft()
-      .then(draft => {
-        this.chatContextValue = {
-          ...this.chatContextValue,
-          ...draft,
-        };
-      })
-      .catch(console.error);
+    if (this.aiDraftService) {
+      this.aiDraftService
+        .getDraft()
+        .then(draft => {
+          this.chatContextValue = {
+            ...this.chatContextValue,
+            ...draft,
+          };
+        })
+        .catch(console.error);
+    }
+
+    // revalidate subscription to get the latest status
+    this.subscriptionService.subscription.revalidate();
 
     this._disposables.add(
       AIProvider.slots.actions.subscribe(({ event }) => {
@@ -373,13 +412,18 @@ export class AIChatContent extends SignalWatcher(
             return;
           }
           if (this.host === params.host) {
-            extractSelectedContent(params.host)
-              .then(context => {
-                if (!context) return;
-                this.updateContext(context);
-              })
-              .catch(console.error);
+            if (params.fromAnswer && params.context) {
+              this.updateContext(params.context);
+            } else {
+              extractSelectedContent(params.host)
+                .then(context => {
+                  if (!context) return;
+                  this.updateContext(context);
+                })
+                .catch(console.error);
+            }
           }
+          AIProvider.slots.requestOpenWithChat.next(null);
         }
       )
     );
@@ -405,12 +449,14 @@ export class AIChatContent extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .width=${this.width}
         .independentMode=${this.independentMode}
         .messages=${this.messages}
         .docDisplayService=${this.docDisplayConfig}
+        .peekViewService=${this.peekViewService}
         .onOpenDoc=${this.onOpenDoc}
       ></ai-chat-messages>
       <ai-chat-composer
@@ -418,6 +464,7 @@ export class AIChatContent extends SignalWatcher(
           [this.onboardingOffsetY > 0 ? 'paddingTop' : 'paddingBottom']:
             `${this.messages.length === 0 ? Math.abs(this.onboardingOffsetY) * 2 : 0}px`,
         })}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .independentMode=${this.independentMode}
         .host=${this.host}
         .workspaceId=${this.workspaceId}
@@ -431,9 +478,14 @@ export class AIChatContent extends SignalWatcher(
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .serverService=${this.serverService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${this.notificationService}
         .aiDraftService=${this.aiDraftService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
+        .subscriptionService=${this.subscriptionService}
+        .aiModelService=${this.aiModelService}
+        .onAISubscribe=${this.onAISubscribe}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

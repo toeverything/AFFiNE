@@ -1,6 +1,7 @@
 import type { Signal } from '@preact/signals-core';
 
 import type { AIError } from '../../provider';
+import type { ChatContextValue } from '../ai-chat-content';
 import type { ChatStatus, HistoryMessage } from '../ai-chat-messages';
 
 export interface AINetworkSearchConfig {
@@ -27,4 +28,7 @@ export type AIChatInputContext = {
   markdown?: string;
   images: File[];
   abortController: AbortController | null;
-};
+} & Pick<
+  ChatContextValue,
+  'snapshot' | 'combinedElementsMarkdown' | 'attachments' | 'docs' | 'html'
+>;

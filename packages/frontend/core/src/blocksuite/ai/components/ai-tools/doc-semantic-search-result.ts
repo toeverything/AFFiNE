@@ -1,8 +1,9 @@
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { AiEmbeddingIcon, PageIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { Signal } from '@preact/signals-core';
-import { css, html, nothing } from 'lit';
+import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { DocDisplayConfig } from '../ai-chat-chips';
@@ -54,12 +55,6 @@ function parseResultContent(content: string) {
 }
 
 export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
-  static override styles = css`
-    .doc-semantic-search-result-title {
-      cursor: pointer;
-    }
-  `;
-
   @property({ attribute: false })
   accessor data!: DocSemanticSearchToolCall | DocSemanticSearchToolResult;
 
@@ -71,6 +66,9 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
 
   renderToolCall() {
     return html`<tool-call-card
@@ -91,12 +89,17 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
       .results=${this.data.result
         .map(result => ({
           ...parseResultContent(result.content),
-          title: html`<span
-            class="doc-semantic-search-result-title"
-            @click=${() => this.onOpenDoc(result.docId)}
-          >
-            ${this.docDisplayService.getTitle(result.docId)}
-          </span>`,
+          title: this.docDisplayService.getTitle(result.docId),
+          onClick: () => {
+            this.peekViewService.peekView
+              .open({
+                type: 'doc',
+                docRef: {
+                  docId: result.docId,
+                },
+              })
+              .catch(console.error);
+          },
         }))
         .filter(Boolean)}
     ></tool-result-card>`;

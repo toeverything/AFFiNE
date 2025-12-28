@@ -12,6 +12,7 @@ import EventSource
 import Foundation
 import MarkdownParser
 import MarkdownView
+import UniformTypeIdentifiers
 
 private let loadingIndicator = " ●"
 
@@ -160,6 +161,7 @@ private extension ChatManager {
     viewModelId: UUID
   ) {
     assert(!Thread.isMainThread)
+    print("[+] starting copilot response for session: \(sessionId)")
 
     let messageParameters: [String: AnyHashable] = [
       // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
@@ -167,25 +169,34 @@ private extension ChatManager {
       "files": [String](), // attachment in context, keep nil for now
       "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
     ]
-    let attachmentFieldName = "options.blobs"
-    var uploadableAttachments: [GraphQLFile] = [
+    let attachmentCount = [
+      editorData.fileAttachments.count,
+      editorData.imageAttachments.count,
+    ].reduce(0, +)
+    let attachmentFieldName = attachmentCount > 1 && attachmentCount != 0 ? "options.blobs" : "options.blob"
+    let uploadableAttachments: [GraphQLFile] = [
       editorData.fileAttachments.map { file -> GraphQLFile in
-        .init(fieldName: attachmentFieldName, originalName: file.name, data: file.data ?? .init())
+        .init(
+          fieldName: attachmentFieldName,
+          originalName: file.name,
+          mimeType: mimeType(text: file.name),
+          data: file.data ?? .init()
+        )
       },
       editorData.imageAttachments.map { image -> GraphQLFile in
-        .init(fieldName: attachmentFieldName, originalName: "image.jpg", data: image.imageData)
+        .init(
+          fieldName: attachmentFieldName,
+          originalName: "image.jpg",
+          mimeType: mimeType(pathExtension: "jpg"),
+          data: image.imageData
+        )
       },
     ].flatMap(\.self)
     assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    // in Apollo, filed name is handled as attached object to field when there is only one attachment
-    // to use array on our server, we need to append a dummy attachment
-    // which is ignored if data is empty and name is empty
-    if uploadableAttachments.count == 1 {
-      uploadableAttachments.append(.init(fieldName: attachmentFieldName, originalName: "", data: .init()))
-    }
     guard let input = try? CreateChatMessageInput(
       attachments: [],
-      blobs: .some([]), // must have the placeholder
+      blob: attachmentCount == 1 ? "" : .none,
+      blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
       content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
       params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
       sessionId: sessionId
@@ -196,11 +207,13 @@ private extension ChatManager {
     }
     let mutation = CreateCopilotMessageMutation(options: input)
     QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
+      print("[*] createCopilotMessage result: \(result)")
       DispatchQueue.main.async {
         switch result {
         case let .success(graphQLResult):
           guard let messageIdentifier = graphQLResult.data?.createCopilotMessage else {
             self.report(sessionId, ChatError.invalidResponse)
+            self.delete(sessionId: sessionId, vmId: viewModelId)
             return
           }
           self.startStreamingResponse(
@@ -214,10 +227,25 @@ private extension ChatManager {
       }
     }
   }
+
+  private func pathExtension(for text: String) -> String {
+    (text as NSString).pathExtension
+  }
+
+  private func mimeType(pathExtension: String) -> String {
+    let type = UTType(filenameExtension: pathExtension) ?? .data
+    return type.preferredMIMEType ?? "application/octet-stream"
+  }
+
+  private func mimeType(text: String) -> String {
+    let pathExt = pathExtension(for: text)
+    return mimeType(pathExtension: pathExt)
+  }
 }
 
 private extension ChatManager {
   func startStreamingResponse(sessionId: String, messageId: String, applyingTo vmId: UUID) {
+    print("[+] starting streaming response for session: \(sessionId), message: \(messageId)")
     let base = IntelligentContext.shared.webViewMetadata[.currentServerBaseUrl] as? String
     guard let base, let url = URL(string: base) else {
       report(sessionId, ChatError.invalidServerConfiguration)
@@ -247,10 +275,10 @@ private extension ChatManager {
 
     let closable = ClosableTask(detachedTask: .detached(operation: {
       let eventSource = EventSource()
-      let dataTask = await eventSource.dataTask(for: request)
+      let dataTask = eventSource.dataTask(for: request)
       var document = ""
       self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
-      for await event in await dataTask.events() {
+      for await event in dataTask.events() {
         switch event {
         case .open:
           print("[*] connection opened")
@@ -281,7 +309,7 @@ private extension ChatManager {
     vmId: UUID
   ) {
     let result = MarkdownParser().parse(document)
-    let content = MarkdownTextView.PreprocessContent(parserResult: result, theme: .default)
+    let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: .default)
 
     with(sessionId: sessionId, vmId: vmId) { (viewModel: inout AssistantMessageCellViewModel) in
       viewModel.content = document

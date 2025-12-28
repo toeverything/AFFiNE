@@ -1,3 +1,5 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { ServerService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
@@ -94,6 +96,9 @@ export class AIChatPanelTitle extends SignalWatcher(
   accessor extensions!: ExtensionType[];
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
@@ -104,6 +109,9 @@ export class AIChatPanelTitle extends SignalWatcher(
 
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
@@ -126,6 +134,9 @@ export class AIChatPanelTitle extends SignalWatcher(
   @property({ attribute: false })
   accessor openDoc!: (docId: string, sessionId: string) => void;
 
+  @property({ attribute: false })
+  accessor deleteSession!: (session: BlockSuitePresets.AIRecentSession) => void;
+
   private readonly openPlayground = () => {
     const playgroundContent = html`
       <playground-content
@@ -138,10 +149,12 @@ export class AIChatPanelTitle extends SignalWatcher(
         .searchMenuConfig=${this.searchMenuConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .extensions=${this.extensions}
+        .serverService=${this.serverService}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
       ></playground-content>
     `;
 
@@ -177,6 +190,7 @@ export class AIChatPanelTitle extends SignalWatcher(
           .onTogglePin=${this.togglePin}
           .onOpenSession=${this.openSession}
           .onOpenDoc=${this.openDoc}
+          .onSessionDelete=${this.deleteSession}
           .docDisplayConfig=${this.docDisplayConfig}
           .notificationService=${this.notificationService}
         ></ai-chat-toolbar>

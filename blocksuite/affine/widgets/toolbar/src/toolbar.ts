@@ -279,10 +279,10 @@ export class AffineToolbarWidget extends WidgetComponent {
         const range = std.range.value ?? null;
         const activated = Boolean(
           context.activated &&
-            range &&
-            result &&
-            !result.isCollapsed() &&
-            result.from.length + (result.to?.length ?? 0)
+          range &&
+          result &&
+          !result.isCollapsed() &&
+          result.from.length + (result.to?.length ?? 0)
         );
 
         batch(() => {
@@ -418,9 +418,9 @@ export class AffineToolbarWidget extends WidgetComponent {
           return;
         }
 
-        const elementIds = selections
-          .map(s => (s.editing || s.inoperable ? [] : s.elements))
-          .flat();
+        const elementIds = selections.flatMap(s =>
+          s.editing || s.inoperable ? [] : s.elements
+        );
         const count = elementIds.length;
         const activated = context.activated && Boolean(count);
 

@@ -34,12 +34,14 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "ContextWorkspaceEmbeddingStatus": return AffineGraphQL.Objects.ContextWorkspaceEmbeddingStatus
     case "Copilot": return AffineGraphQL.Objects.Copilot
     case "CopilotContext": return AffineGraphQL.Objects.CopilotContext
+    case "CopilotContextBlob": return AffineGraphQL.Objects.CopilotContextBlob
     case "CopilotContextCategory": return AffineGraphQL.Objects.CopilotContextCategory
     case "CopilotContextDoc": return AffineGraphQL.Objects.CopilotContextDoc
     case "CopilotContextFile": return AffineGraphQL.Objects.CopilotContextFile
-    case "CopilotDocType": return AffineGraphQL.Objects.CopilotDocType
     case "CopilotHistories": return AffineGraphQL.Objects.CopilotHistories
     case "CopilotHistoriesTypeEdge": return AffineGraphQL.Objects.CopilotHistoriesTypeEdge
+    case "CopilotModelType": return AffineGraphQL.Objects.CopilotModelType
+    case "CopilotModelsType": return AffineGraphQL.Objects.CopilotModelsType
     case "CopilotPromptConfigType": return AffineGraphQL.Objects.CopilotPromptConfigType
     case "CopilotPromptMessageType": return AffineGraphQL.Objects.CopilotPromptMessageType
     case "CopilotPromptType": return AffineGraphQL.Objects.CopilotPromptType
@@ -85,6 +87,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "ReleaseVersionType": return AffineGraphQL.Objects.ReleaseVersionType
     case "RemoveAvatar": return AffineGraphQL.Objects.RemoveAvatar
     case "ReplyObjectType": return AffineGraphQL.Objects.ReplyObjectType
+    case "RevealedAccessToken": return AffineGraphQL.Objects.RevealedAccessToken
     case "SearchDocObjectType": return AffineGraphQL.Objects.SearchDocObjectType
     case "SearchNodeObjectType": return AffineGraphQL.Objects.SearchNodeObjectType
     case "SearchResultObjectType": return AffineGraphQL.Objects.SearchResultObjectType

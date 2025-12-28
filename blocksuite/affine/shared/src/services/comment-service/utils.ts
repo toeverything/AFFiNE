@@ -64,7 +64,7 @@ export const blockCommentToolbarButton: Omit<ToolbarAction, 'id'> = {
 
     // may be hover on a block or element, in this case
     // the selection is empty, so we need to get the current model
-    if (model && selections.length === 0) {
+    if (model) {
       if (model instanceof BlockModel) {
         commentProvider.addComment([
           new BlockSelection({

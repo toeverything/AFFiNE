@@ -16,10 +16,12 @@ import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
 import { PromptService } from '../prompt';
 import {
+  buildBlobContentGetter,
   buildContentGetter,
   buildDocContentGetter,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  createBlobReadTool,
   createCodeArtifactTool,
   createConversationSummaryTool,
   createDocComposeTool,
@@ -29,6 +31,7 @@ import {
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
+  createSectionEditTool,
 } from '../tools';
 import { CopilotProviderFactory } from './factory';
 import {
@@ -52,6 +55,8 @@ import {
 @Injectable()
 export abstract class CopilotProvider<C = any> {
   protected readonly logger = new Logger(this.constructor.name);
+  protected readonly MAX_STEPS = 20;
+  protected onlineModelList: string[] = [];
   abstract readonly type: CopilotProviderType;
   abstract readonly models: CopilotProviderModel[];
   abstract configured(): boolean;
@@ -79,10 +84,17 @@ export abstract class CopilotProvider<C = any> {
   protected setup() {
     if (this.configured()) {
       this.factory.register(this);
+      if (env.selfhosted) {
+        this.refreshOnlineModels().catch(e =>
+          this.logger.error('Failed to refresh online models', e)
+        );
+      }
     } else {
       this.factory.unregister(this);
     }
   }
+
+  async refreshOnlineModels() {}
 
   private findValidModel(
     cond: ModelFullConditions
@@ -94,9 +106,16 @@ export abstract class CopilotProvider<C = any> {
         inputTypes.every(type => cap.input.includes(type)));
 
     if (modelId) {
-      return this.models.find(
+      const hasOnlineModel = this.onlineModelList.includes(modelId);
+
+      const model = this.models.find(
         m => m.id === modelId && m.capabilities.some(matcher)
       );
+
+      if (model) return model;
+      // allow online model without capabilities check
+      if (hasOnlineModel) return { id: modelId, capabilities: [] };
+      return undefined;
     }
     if (!outputType) return undefined;
 
@@ -140,6 +159,9 @@ export abstract class CopilotProvider<C = any> {
     if (options?.tools?.length) {
       this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
       const ac = this.moduleRef.get(AccessController, { strict: false });
+      const context = this.moduleRef.get(CopilotContextService, {
+        strict: false,
+      });
       const docReader = this.moduleRef.get(DocReader, { strict: false });
       const models = this.moduleRef.get(Models, { strict: false });
       const prompt = this.moduleRef.get(PromptService, {
@@ -156,6 +178,16 @@ export abstract class CopilotProvider<C = any> {
           continue;
         }
         switch (tool) {
+          case 'blobRead': {
+            const docContext = options.session
+              ? await context.getBySessionId(options.session)
+              : null;
+            const getBlobContent = buildBlobContentGetter(ac, docContext);
+            tools.blob_read = createBlobReadTool(
+              getBlobContent.bind(null, options)
+            );
+            break;
+          }
           case 'codeArtifact': {
             tools.code_artifact = createCodeArtifactTool(prompt, this.factory);
             break;
@@ -178,9 +210,6 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'docSemanticSearch': {
-            const context = this.moduleRef.get(CopilotContextService, {
-              strict: false,
-            });
             const docContext = options.session
               ? await context.getBySessionId(options.session)
               : null;
@@ -222,6 +251,10 @@ export abstract class CopilotProvider<C = any> {
           }
           case 'docCompose': {
             tools.doc_compose = createDocComposeTool(prompt, this.factory);
+            break;
+          }
+          case 'sectionEdit': {
+            tools.section_edit = createSectionEditTool(prompt, this.factory);
             break;
           }
         }

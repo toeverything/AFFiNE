@@ -23,6 +23,7 @@ export type MenuButtonData = {
   select: (ele: HTMLElement) => void | false;
   onHover?: (hover: boolean) => void;
   testId?: string;
+  closeOnSelect?: boolean;
 };
 
 export class MenuButton extends MenuFocusable {
@@ -85,7 +86,9 @@ export class MenuButton extends MenuFocusable {
   onClick() {
     if (this.data.select(this) !== false) {
       this.menu.options.onComplete?.();
-      this.menu.close();
+      if (this.data.closeOnSelect !== false) {
+        this.menu.close();
+      }
     }
   }
 
@@ -150,7 +153,9 @@ export class MobileMenuButton extends MenuFocusable {
   onClick() {
     if (this.data.select(this) !== false) {
       this.menu.options.onComplete?.();
-      this.menu.close();
+      if (this.data.closeOnSelect !== false) {
+        this.menu.close();
+      }
     }
   }
 
@@ -193,12 +198,14 @@ export const menuButtonItems = {
     (config: {
       name: string;
       label?: () => TemplateResult;
+      info?: TemplateResult;
       prefix?: TemplateResult;
       postfix?: TemplateResult;
       isSelected?: boolean;
       select: (ele: HTMLElement) => void | false;
       onHover?: (hover: boolean) => void;
       class?: MenuClass;
+      closeOnSelect?: boolean;
       hide?: () => boolean;
       testId?: string;
     }) =>
@@ -211,13 +218,14 @@ export const menuButtonItems = {
           return html`
             ${config.prefix}
             <div class="affine-menu-action-text">
-              ${config.label?.() ?? config.name}
+              ${config.label?.() ?? config.name} ${config.info}
             </div>
             ${config.postfix ?? (config.isSelected ? DoneIcon() : undefined)}
           `;
         },
         onHover: config.onHover,
         select: config.select,
+        closeOnSelect: config.closeOnSelect,
         class: {
           'selected-item': config.isSelected ?? false,
           ...config.class,

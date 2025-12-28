@@ -1166,7 +1166,6 @@ export const PackageList = [
     location: 'packages/backend/server',
     name: '@affine/server',
     workspaceDependencies: [
-      'packages/common/reader',
       'packages/backend/native',
       'tools/cli',
       'tools/utils',
@@ -1287,6 +1286,7 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/common/env',
+      'packages/common/graphql',
       'packages/frontend/i18n',
       'packages/common/nbstore',
       'blocksuite/affine/all',
@@ -1351,6 +1351,7 @@ export const PackageList = [
       'packages/frontend/templates',
       'packages/frontend/track',
       'blocksuite/affine/all',
+      'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',

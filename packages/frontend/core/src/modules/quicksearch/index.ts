@@ -6,6 +6,7 @@ import { WorkspaceDialogService } from '../dialogs';
 import { DocsService } from '../doc';
 import { DocDisplayMetaService } from '../doc-display-meta';
 import { DocsSearchService } from '../docs-search';
+import { FeatureFlagService } from '../feature-flag';
 import { GlobalContextService } from '../global-context';
 import { JournalService } from '../journal';
 import { TagService } from '../tag';
@@ -61,6 +62,7 @@ export function configureQuickSearchModule(framework: Framework) {
       DocsSearchService,
       DocsService,
       DocDisplayMetaService,
+      FeatureFlagService,
     ])
     .entity(LinksQuickSearchSession, [
       WorkspaceService,

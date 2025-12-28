@@ -1,6 +1,7 @@
 import { AutoReconnectConnection } from '../../connection';
 import type {
   BlobRecord,
+  CrawlResult,
   DocClock,
   DocRecord,
   ListedBlobRecord,
@@ -81,6 +82,37 @@ export interface NativeDBApis {
     peer: string,
     blobId: string
   ) => Promise<Date | null>;
+  crawlDocData: (id: string, docId: string) => Promise<CrawlResult>;
+  ftsAddDocument: (
+    id: string,
+    indexName: string,
+    docId: string,
+    text: string,
+    index: boolean
+  ) => Promise<void>;
+  ftsDeleteDocument: (
+    id: string,
+    indexName: string,
+    docId: string
+  ) => Promise<void>;
+  ftsSearch: (
+    id: string,
+    indexName: string,
+    query: string
+  ) => Promise<{ id: string; score: number; terms: Array<string> }[]>;
+  ftsGetDocument: (
+    id: string,
+    indexName: string,
+    docId: string
+  ) => Promise<string | null>;
+  ftsGetMatches: (
+    id: string,
+    indexName: string,
+    docId: string,
+    query: string
+  ) => Promise<{ start: number; end: number }[]>;
+  ftsFlushIndex: (id: string) => Promise<void>;
+  ftsIndexVersion: () => Promise<number>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs
@@ -88,7 +120,7 @@ type NativeDBApisWrapper = NativeDBApis extends infer APIs
       [K in keyof APIs]: APIs[K] extends (...args: any[]) => any
         ? Parameters<APIs[K]> extends [string, ...infer Rest]
           ? (...args: Rest) => ReturnType<APIs[K]>
-          : never
+          : (...args: Parameters<APIs[K]>) => ReturnType<APIs[K]>
         : never;
     }
   : never;

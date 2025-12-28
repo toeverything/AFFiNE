@@ -56,6 +56,9 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   // Caches total bounds, includes all blocks and elements.
   private _cachedBounds: Bound | null = null;
 
+  private _hasRenderedSyncedView = false;
+  private _hasInitedFitEffect = false;
+
   private readonly _initEdgelessFitEffect = () => {
     const fitToContent = () => {
       if (this.isPageMode) return;
@@ -357,10 +360,14 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   };
 
   refreshData = () => {
-    this._load().catch(e => {
-      console.error(e);
-      this._error = true;
-    });
+    this._load()
+      .then(() => {
+        this._isEmptySyncedDoc = isEmptyDoc(this.syncedDoc, this.editorMode);
+      })
+      .catch(e => {
+        console.error(e);
+        this._error = true;
+      });
   };
 
   title$ = computed(() => {
@@ -445,7 +452,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     this._cycle = false;
 
     const syncedDoc = this.syncedDoc;
-    if (!syncedDoc) {
+    const trash = syncedDoc?.meta?.trash;
+    if (trash || !syncedDoc) {
       this._deleted = true;
       this._loading = false;
       return;
@@ -521,6 +529,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     this.disposables.add(
       this.store.workspace.slots.docListUpdated.subscribe(() => {
         this._setDocUpdatedAt();
+        this.refreshData();
       })
     );
 
@@ -552,8 +561,6 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
         this._selectBlock();
       }
     });
-
-    this._initEdgelessFitEffect();
   }
 
   override renderBlock() {
@@ -581,12 +588,21 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
       );
     }
 
+    !this._hasRenderedSyncedView && (this._hasRenderedSyncedView = true);
+
     return this._renderSyncedView();
   }
 
   override updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
     this.syncedDocCard?.requestUpdate();
+
+    if (!this._hasInitedFitEffect && this._hasRenderedSyncedView) {
+      /* Register the resizeObserver AFTER syncdView viewport's own resizeObserver
+       * so that viewport.onResize() use up-to-date boundingClientRect values */
+      this._hasInitedFitEffect = true;
+      this._initEdgelessFitEffect();
+    }
   }
 
   @state()

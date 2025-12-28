@@ -712,7 +712,7 @@ export class DocSyncPeer {
       while (true) {
         throwIfAborted(signal);
 
-        const docId = await this.status.jobDocQueue.asyncPop(signal);
+        const docId = await this.status.jobDocQueue.asyncPop(undefined, signal);
 
         while (true) {
           // batch process jobs for the same doc

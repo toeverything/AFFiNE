@@ -5,37 +5,58 @@ import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
 import { isWindows, resourcesPath } from '../shared/utils';
+import { buildType, isDev } from './config';
 import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'assets',
-    privileges: {
-      secure: false,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      bypassCSP: true,
-    },
-  },
-]);
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'file',
-    privileges: {
-      secure: false,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      bypassCSP: true,
-      stream: true,
-    },
-  },
-]);
-
 const webStaticDir = join(resourcesPath, 'web-static');
+const devServerBase = process.env.DEV_SERVER_URL;
+const localWhiteListDirs = [
+  path.resolve(app.getPath('sessionData')).toLowerCase(),
+  path.resolve(app.getPath('temp')).toLowerCase(),
+];
+
+function isPathInWhiteList(filepath: string) {
+  const lowerFilePath = filepath.toLowerCase();
+  return localWhiteListDirs.some(whitelistDir =>
+    lowerFilePath.startsWith(whitelistDir)
+  );
+}
+
+const apiBaseByBuildType: Record<typeof buildType, string> = {
+  stable: 'https://app.affine.pro',
+  beta: 'https://insider.affine.pro',
+  internal: 'https://insider.affine.pro',
+  canary: 'https://affine.fail',
+};
+
+function resolveApiBaseUrl() {
+  if (isDev && devServerBase) {
+    return devServerBase;
+  }
+
+  return apiBaseByBuildType[buildType] ?? apiBaseByBuildType.stable;
+}
+
+function buildTargetUrl(base: string, urlObject: URL) {
+  return new URL(`${urlObject.pathname}${urlObject.search}`, base).toString();
+}
+
+function proxyRequest(
+  request: Request,
+  urlObject: URL,
+  base: string,
+  options: { bypassCustomProtocolHandlers?: boolean } = {}
+) {
+  const { bypassCustomProtocolHandlers = true } = options;
+  const targetUrl = buildTargetUrl(base, urlObject);
+  const proxiedRequest = bypassCustomProtocolHandlers
+    ? Object.assign(request.clone(), {
+        bypassCustomProtocolHandlers: true,
+      })
+    : request;
+  return net.fetch(targetUrl, proxiedRequest);
+}
 
 async function handleFileRequest(request: Request) {
   const urlObject = new URL(request.url);
@@ -45,14 +66,24 @@ async function handleFileRequest(request: Request) {
   }
 
   const isAbsolutePath = urlObject.host !== '.';
+  const isApiRequest =
+    !isAbsolutePath &&
+    (urlObject.pathname.startsWith('/api/') ||
+      urlObject.pathname === '/graphql');
 
-  // Redirect to webpack dev server if defined
-  if (process.env.DEV_SERVER_URL && !isAbsolutePath) {
-    const devServerUrl = new URL(
-      urlObject.pathname,
-      process.env.DEV_SERVER_URL
-    );
-    return net.fetch(devServerUrl.toString(), request);
+  if (isApiRequest) {
+    return proxyRequest(request, urlObject, resolveApiBaseUrl());
+  }
+
+  const isFontRequest =
+    urlObject.pathname &&
+    /\.(woff2?|ttf|otf)$/i.test(urlObject.pathname.split('?')[0] ?? '');
+
+  // Redirect to webpack dev server if available
+  if (isDev && devServerBase && !isAbsolutePath && !isFontRequest) {
+    return proxyRequest(request, urlObject, devServerBase, {
+      bypassCustomProtocolHandlers: false,
+    });
   }
   const clonedRequest = Object.assign(request.clone(), {
     bypassCustomProtocolHandlers: true,
@@ -83,32 +114,59 @@ async function handleFileRequest(request: Request) {
       filepath = path.resolve(filepath.replace(/^\//, ''));
     }
     // security check if the filepath is within app.getPath('sessionData')
-    const sessionDataPath = path
-      .resolve(app.getPath('sessionData'))
-      .toLowerCase();
-    const tempPath = path.resolve(app.getPath('temp')).toLowerCase();
-    if (
-      !filepath.toLowerCase().startsWith(sessionDataPath) &&
-      !filepath.toLowerCase().startsWith(tempPath)
-    ) {
+    if (urlObject.host !== 'local-file' || !isPathInWhiteList(filepath)) {
       throw new Error('Invalid filepath');
     }
   }
   return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }
 
-// whitelist for cors
-// url patterns that are allowed to have cors headers
-const corsWhitelist = [
-  /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
+const needRefererDomains = [
   /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*youtube-nocookie\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
 ];
+const defaultReferer = 'https://client.affine.local/';
+
+function setHeader(
+  headers: Record<string, string[]>,
+  name: string,
+  value: string
+) {
+  Object.keys(headers).forEach(key => {
+    if (key.toLowerCase() === name.toLowerCase()) {
+      delete headers[key];
+    }
+  });
+  headers[name] = [value];
+}
+
+function ensureFrameAncestors(
+  headers: Record<string, string[]>,
+  directive: string
+) {
+  const cspHeaderKey = Object.keys(headers).find(
+    key => key.toLowerCase() === 'content-security-policy'
+  );
+  if (!cspHeaderKey) {
+    headers['Content-Security-Policy'] = [`frame-ancestors ${directive}`];
+    return;
+  }
+
+  const values = headers[cspHeaderKey];
+  headers[cspHeaderKey] = values.map(val => {
+    if (typeof val !== 'string') return val as any;
+    const directives = val
+      .split(';')
+      .map(v => v.trim())
+      .filter(Boolean)
+      .filter(d => !d.toLowerCase().startsWith('frame-ancestors'));
+    directives.push(`frame-ancestors ${directive}`);
+    return directives.join('; ');
+  });
+}
 
 export function registerProtocol() {
-  protocol.handle('file', request => {
-    return handleFileRequest(request);
-  });
-
   protocol.handle('assets', request => {
     return handleFileRequest(request);
   });
@@ -153,54 +211,16 @@ export function registerProtocol() {
             }
           }
 
-          const hostname = new URL(url).hostname;
-          if (!corsWhitelist.some(domainRegex => domainRegex.test(hostname))) {
+          const { protocol } = new URL(url);
+
+          // Only adjust CORS for assets responses; leave remote http(s) headers intact
+          if (protocol === 'assets:') {
             delete responseHeaders['access-control-allow-origin'];
             delete responseHeaders['access-control-allow-headers'];
             delete responseHeaders['Access-Control-Allow-Origin'];
             delete responseHeaders['Access-Control-Allow-Headers'];
-          }
-
-          // to allow url embedding, remove "x-frame-options",
-          // if response header contains "content-security-policy", remove "frame-ancestors/frame-src"
-          delete responseHeaders['x-frame-options'];
-          delete responseHeaders['X-Frame-Options'];
-
-          // Handle Content Security Policy headers
-          const cspHeaders = [
-            'content-security-policy',
-            'Content-Security-Policy',
-          ];
-          for (const cspHeader of cspHeaders) {
-            const cspValues = responseHeaders[cspHeader];
-            if (cspValues) {
-              // Remove frame-ancestors and frame-src directives from CSP
-              const modifiedCspValues = cspValues
-                .map(cspValue => {
-                  if (typeof cspValue === 'string') {
-                    return cspValue
-                      .split(';')
-                      .filter(directive => {
-                        const trimmed = directive.trim().toLowerCase();
-                        return (
-                          !trimmed.startsWith('frame-ancestors') &&
-                          !trimmed.startsWith('frame-src')
-                        );
-                      })
-                      .join(';');
-                  }
-                  return cspValue;
-                })
-                .filter(
-                  value => value && typeof value === 'string' && value.trim()
-                );
-
-              if (modifiedCspValues.length > 0) {
-                responseHeaders[cspHeader] = modifiedCspValues;
-              } else {
-                delete responseHeaders[cspHeader];
-              }
-            }
+            setHeader(responseHeaders, 'X-Frame-Options', 'SAMEORIGIN');
+            ensureFrameAncestors(responseHeaders, "'self'");
           }
         }
       })()
@@ -217,7 +237,7 @@ export function registerProtocol() {
     const url = new URL(details.url);
 
     (async () => {
-      // session cookies are set to file:// on production
+      // session cookies are set to assets:// on production
       // if sending request to the cloud, attach the session cookie (to affine cloud server)
       if (
         url.protocol === 'http:' ||
@@ -234,6 +254,14 @@ export function registerProtocol() {
           .join('; ');
         delete details.requestHeaders['cookie'];
         details.requestHeaders['Cookie'] = cookieString;
+      }
+
+      const hostname = url.hostname;
+      const needReferer = needRefererDomains.some(regex =>
+        regex.test(hostname)
+      );
+      if (needReferer && !details.requestHeaders['Referer']) {
+        details.requestHeaders['Referer'] = defaultReferer;
       }
     })()
       .catch(err => {

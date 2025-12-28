@@ -12,7 +12,6 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../common/reader" },
     { "path": "../native" },
     { "path": "../../../tools/cli" },
     { "path": "../../../tools/utils" },

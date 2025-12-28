@@ -2,6 +2,18 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AccessToken {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  id: String!
+  name: String!
+}
+
+input AddContextBlobInput {
+  blobId: String!
+  contextId: String!
+}
+
 input AddContextCategoryInput {
   categoryId: String!
   contextId: String!
@@ -82,6 +94,41 @@ type AppConfigValidateResult {
 type BlobNotFoundDataType {
   blobId: String!
   spaceId: String!
+}
+
+type BlobUploadInit {
+  alreadyUploaded: Boolean
+  blobKey: String!
+  expiresAt: DateTime
+  headers: JSONObject
+  method: BlobUploadMethod!
+  partSize: Int
+  uploadId: String
+  uploadUrl: String
+  uploadedParts: [BlobUploadedPart!]
+}
+
+"""Blob upload method"""
+enum BlobUploadMethod {
+  GRAPHQL
+  MULTIPART
+  PRESIGNED
+}
+
+type BlobUploadPart {
+  expiresAt: DateTime
+  headers: JSONObject
+  uploadUrl: String!
+}
+
+input BlobUploadPartInput {
+  etag: String!
+  partNumber: Int!
+}
+
+type BlobUploadedPart {
+  etag: String!
+  partNumber: Int!
 }
 
 enum ChatHistoryOrder {
@@ -214,6 +261,9 @@ type Copilot {
   contexts(contextId: String, sessionId: String): [CopilotContext!]!
   histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]! @deprecated(reason: "use `chats` instead")
 
+  """List available models for a prompt, with human-readable names"""
+  models(promptName: String!): CopilotModelsType!
+
   """Get the quota of the user in the workspace"""
   quota: CopilotQuota!
 
@@ -226,6 +276,9 @@ type Copilot {
 }
 
 type CopilotContext {
+  """list blobs in context"""
+  blobs: [CopilotContextBlob!]!
+
   """list collections in context"""
   collections: [CopilotContextCategory!]!
 
@@ -247,16 +300,21 @@ type CopilotContext {
   workspaceId: String!
 }
 
+type CopilotContextBlob {
+  createdAt: SafeInt!
+  id: ID!
+  status: ContextEmbedStatus
+}
+
 type CopilotContextCategory {
   createdAt: SafeInt!
-  docs: [CopilotDocType!]!
+  docs: [CopilotContextDoc!]!
   id: ID!
   type: ContextCategories!
 }
 
 type CopilotContextDoc {
   createdAt: SafeInt!
-  error: String
   id: ID!
   status: ContextEmbedStatus
 }
@@ -279,12 +337,6 @@ type CopilotContextFileNotSupportedDataType {
 
 type CopilotDocNotFoundDataType {
   docId: String!
-}
-
-type CopilotDocType {
-  createdAt: SafeInt!
-  id: ID!
-  status: ContextEmbedStatus
 }
 
 type CopilotFailedToAddWorkspaceFileEmbeddingDataType {
@@ -344,6 +396,17 @@ type CopilotInvalidContextDataType {
 
 type CopilotMessageNotFoundDataType {
   messageId: String!
+}
+
+type CopilotModelType {
+  id: String!
+  name: String!
+}
+
+type CopilotModelsType {
+  defaultModel: String!
+  optionalModels: [CopilotModelType!]!
+  proModels: [CopilotModelType!]!
 }
 
 input CopilotPromptConfigInput {
@@ -514,7 +577,7 @@ type DeleteAccount {
 }
 
 input DeleteSessionInput {
-  docId: String!
+  docId: String
   sessionIds: [String!]!
   workspaceId: String!
 }
@@ -631,6 +694,7 @@ enum ErrorNames {
   ALREADY_IN_SPACE
   AUTHENTICATION_REQUIRED
   BAD_REQUEST
+  BLOB_INVALID
   BLOB_NOT_FOUND
   BLOB_QUOTA_EXCEEDED
   CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE
@@ -716,6 +780,7 @@ enum ErrorNames {
   LICENSE_REVEALED
   LINK_EXPIRED
   MAILER_SERVICE_IS_NOT_CONFIGURED
+  MANAGED_BY_APP_STORE_OR_PLAY
   MEMBER_NOT_FOUND_IN_SPACE
   MEMBER_QUOTA_EXCEEDED
   MENTION_USER_DOC_ACCESS_DENIED
@@ -803,6 +868,11 @@ input ForkChatSessionInput {
   latestMessageId: String
   sessionId: String!
   workspaceId: String!
+}
+
+input GenerateAccessTokenInput {
+  expiresAt: DateTime
+  name: String!
 }
 
 input GrantDocUserRolesInput {
@@ -1160,8 +1230,12 @@ type MissingOauthQueryParameterDataType {
 }
 
 type Mutation {
+  abortBlobUpload(key: String!, uploadId: String!, workspaceId: String!): Boolean!
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean @deprecated(reason: "never used"), workspaceId: String @deprecated(reason: "never used")): Boolean!
   activateLicense(license: String!, workspaceId: String!): License!
+
+  """add a blob to context"""
+  addContextBlob(options: AddContextBlobInput!): CopilotContextBlob!
 
   """add a category to context"""
   addContextCategory(options: AddContextCategoryInput!): CopilotContextCategory!
@@ -1186,6 +1260,8 @@ type Mutation {
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
+  completeBlobUpload(key: String!, parts: [BlobUploadPartInput!], uploadId: String, workspaceId: String!): String!
+  createBlobUpload(key: String!, mime: String!, size: Int!, workspaceId: String!): BlobUploadInit!
 
   """Create change password url"""
   createChangePasswordUrl(callbackUrl: String!, userId: String!): String!
@@ -1237,6 +1313,8 @@ type Mutation {
   """Create a chat session"""
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
+  generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
+  getBlobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!, workspaceId: String!): BlobUploadPart!
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 
@@ -1261,10 +1339,16 @@ type Mutation {
   """mark notification as read"""
   readNotification(id: String!): Boolean!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
+
+  """Refresh current user subscriptions and return latest."""
+  refreshUserSubscriptions: [SubscriptionType!]!
   releaseDeletedBlobs(workspaceId: String!): Boolean!
 
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!
+
+  """remove a blob from context"""
+  removeContextBlob(options: RemoveContextBlobInput!): Boolean!
 
   """remove a category from context"""
   removeContextCategory(options: RemoveContextCategoryInput!): Boolean!
@@ -1279,6 +1363,9 @@ type Mutation {
   removeWorkspaceEmbeddingFiles(fileId: String!, workspaceId: String!): Boolean!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
 
+  """Request to apply the subscription in advance"""
+  requestApplySubscription(transactionId: String!): [SubscriptionType!]!
+
   """Resolve a comment or not"""
   resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
@@ -1289,6 +1376,7 @@ type Mutation {
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
   revokePublicPage(docId: String!, workspaceId: String!): DocType! @deprecated(reason: "use revokePublicDoc instead")
+  revokeUserAccessToken(id: String!): Boolean!
   sendChangeEmail(callbackUrl: String!, email: String): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
@@ -1523,6 +1611,8 @@ type PublicUserType {
 }
 
 type Query {
+  accessTokens: [AccessToken!]!
+
   """get the whole app configuration"""
   appConfig: JSONObject!
 
@@ -1552,6 +1642,7 @@ type Query {
 
   """query workspace embedding status"""
   queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
+  revealedAccessTokens: [RevealedAccessToken!]!
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -1617,6 +1708,11 @@ type RemoveAvatar {
   success: Boolean!
 }
 
+input RemoveContextBlobInput {
+  blobId: String!
+  contextId: String!
+}
+
 input RemoveContextCategoryInput {
   categoryId: String!
   contextId: String!
@@ -1665,6 +1761,14 @@ type ReplyObjectType {
 input ReplyUpdateInput {
   content: JSONObject!
   id: ID!
+}
+
+type RevealedAccessToken {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  id: String!
+  name: String!
+  token: String!
 }
 
 input RevokeDocUserRoleInput {
@@ -1906,6 +2010,11 @@ type SubscriptionType {
   canceledAt: DateTime
   createdAt: DateTime!
   end: DateTime
+
+  """
+  If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store
+  """
+  iapStore: String
   id: String @deprecated(reason: "removed")
   nextBillAt: DateTime
 
@@ -1914,6 +2023,11 @@ type SubscriptionType {
   There won't actually be a subscription with plan 'Free'
   """
   plan: SubscriptionPlan!
+
+  """
+  Payment provider of this subscription. Read-only. One of: stripe | revenuecat
+  """
+  provider: String
   recurring: SubscriptionRecurring!
   start: DateTime!
   status: SubscriptionStatus!

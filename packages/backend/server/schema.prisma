@@ -49,6 +49,7 @@ model User {
   comments                     Comment[]
   replies                      Reply[]
   commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
+  AccessToken                  AccessToken[]
 
   @@index([email])
   @@map("users")
@@ -110,17 +111,18 @@ model VerificationToken {
 
 model Workspace {
   // NOTE: manually set this column type to identity in migration file
-  sid                Int      @unique @default(autoincrement())
-  id                 String   @id @default(uuid()) @db.VarChar
-  public             Boolean
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  sid                 Int      @unique @default(autoincrement())
+  id                  String   @id @default(uuid()) @db.VarChar
+  public              Boolean
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
-  enableAi           Boolean  @default(true) @map("enable_ai")
-  enableUrlPreview   Boolean  @default(false) @map("enable_url_preview")
-  enableDocEmbedding Boolean  @default(true) @map("enable_doc_embedding")
-  name               String?  @db.VarChar
-  avatarKey          String?  @map("avatar_key") @db.VarChar
-  indexed            Boolean  @default(false)
+  enableAi            Boolean  @default(true) @map("enable_ai")
+  enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
+  enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
+  name                String?  @db.VarChar
+  avatarKey           String?  @map("avatar_key") @db.VarChar
+  indexed             Boolean  @default(false)
+  lastCheckEmbeddings DateTime @default("1970-01-01T00:00:00-00:00") @map("last_check_embeddings") @db.Timestamptz(3)
 
   features           WorkspaceFeature[]
   docs               WorkspaceDoc[]
@@ -132,6 +134,7 @@ model Workspace {
   comments           Comment[]
   commentAttachments CommentAttachment[]
 
+  @@index([lastCheckEmbeddings])
   @@map("workspaces")
 }
 
@@ -568,6 +571,23 @@ model AiWorkspaceFileEmbedding {
   @@map("ai_workspace_file_embeddings")
 }
 
+model AiWorkspaceBlobEmbedding {
+  workspaceId String                      @map("workspace_id") @db.VarChar
+  blobId      String                      @map("blob_id") @db.VarChar
+  // a file can be divided into multiple chunks and embedded separately.
+  chunk       Int                         @db.Integer
+  content     String                      @db.VarChar
+  embedding   Unsupported("vector(1024)")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  blob Blob @relation(fields: [workspaceId, blobId], references: [workspaceId, key], onDelete: Cascade)
+
+  @@id([workspaceId, blobId, chunk])
+  @@index([embedding], map: "ai_workspace_blob_embeddings_idx")
+  @@map("ai_workspace_blob_embeddings")
+}
+
 enum AiJobStatus {
   pending
   running
@@ -729,6 +749,16 @@ model Subscription {
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   // stripe schedule id
   stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
+  // subscription provider: stripe or revenuecat
+  provider             Provider  @default(stripe)
+  // iap store for revenuecat subscriptions
+  iapStore             IapStore? @map("iap_store")
+  // revenuecat entitlement name like "Pro" / "AI"
+  rcEntitlement        String?   @map("rc_entitlement") @db.VarChar
+  // revenuecat product id like "app.affine.pro.Annual"
+  rcProductId          String?   @map("rc_product_id") @db.VarChar
+  // external reference, appstore originalTransactionId or play purchaseToken
+  rcExternalRef        String?   @map("rc_external_ref") @db.VarChar
   // subscription.status, active/past_due/canceled/unpaid...
   status               String    @db.VarChar(20)
   // subscription.current_period_start
@@ -748,6 +778,16 @@ model Subscription {
 
   @@unique([targetId, plan])
   @@map("subscriptions")
+}
+
+enum Provider {
+  stripe
+  revenuecat
+}
+
+enum IapStore {
+  app_store
+  play_store
 }
 
 model Invoice {
@@ -796,18 +836,26 @@ model InstalledLicense {
   @@map("installed_licenses")
 }
 
+enum BlobStatus {
+  pending
+  completed
+}
+
 // Blob table only exists for fast non-data queries.
 // like, total size of blobs in a workspace, or blob list for sync service.
 // it should only be a map of metadata of blobs stored anywhere else
 model Blob {
-  workspaceId String    @map("workspace_id") @db.VarChar
-  key         String    @db.VarChar
-  size        Int       @db.Integer
-  mime        String    @db.VarChar
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  workspaceId String     @map("workspace_id") @db.VarChar
+  key         String     @db.VarChar
+  size        Int        @db.Integer
+  mime        String     @db.VarChar
+  status      BlobStatus @default(completed)
+  uploadId    String?    @map("upload_id") @db.VarChar
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt   DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace                Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  AiWorkspaceBlobEmbedding AiWorkspaceBlobEmbedding[]
 
   @@id([workspaceId, key])
   @@map("blobs")
@@ -930,4 +978,18 @@ model CommentAttachment {
 
   @@id([workspaceId, docId, key])
   @@map("comment_attachments")
+}
+
+model AccessToken {
+  id        String    @id @default(uuid()) @db.VarChar
+  name      String    @db.VarChar
+  token     String    @unique @db.VarChar
+  userId    String    @map("user_id") @db.VarChar
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("access_tokens")
 }

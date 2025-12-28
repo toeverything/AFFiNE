@@ -1,3 +1,5 @@
+import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
+import type { ServerService } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
@@ -44,6 +46,11 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   status: 'idle',
   error: null,
   markdown: '',
+  snapshot: null,
+  attachments: [],
+  combinedElementsMarkdown: null,
+  docs: [],
+  html: null,
 };
 
 export class PlaygroundChat extends SignalWatcher(
@@ -84,7 +91,7 @@ export class PlaygroundChat extends SignalWatcher(
 
       ai-chat-messages {
         flex: 1;
-        overflow-y: hidden;
+        overflow-y: auto;
       }
 
       .chat-panel-hints {
@@ -162,6 +169,9 @@ export class PlaygroundChat extends SignalWatcher(
   accessor extensions!: ExtensionType[];
 
   @property({ attribute: false })
+  accessor serverService!: ServerService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
@@ -172,6 +182,12 @@ export class PlaygroundChat extends SignalWatcher(
 
   @property({ attribute: false })
   accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe: (() => Promise<void>) | undefined;
 
   @property({ attribute: false })
   accessor addChat!: () => Promise<void>;
@@ -200,6 +216,10 @@ export class PlaygroundChat extends SignalWatcher(
           item.messages?.length === 2)
       );
     });
+  }
+
+  get showActions() {
+    return false;
   }
 
   private readonly _initPanel = async () => {
@@ -231,7 +251,7 @@ export class PlaygroundChat extends SignalWatcher(
             this.doc.id
           )
         : Promise.resolve([]),
-      this.doc.id
+      this.doc.id && this.showActions
         ? AIProvider.histories.actions(this.doc.workspace.id, this.doc.id)
         : Promise.resolve([]),
     ]);
@@ -338,6 +358,7 @@ export class PlaygroundChat extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .messages=${this.messages}
@@ -356,8 +377,12 @@ export class PlaygroundChat extends SignalWatcher(
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .serverService=${this.serverService}
         .notificationService=${this.notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div>`;
   }

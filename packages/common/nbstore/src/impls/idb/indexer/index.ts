@@ -18,6 +18,7 @@ import { backoffRetry, exhaustMapWithTrailing } from './utils';
 
 export class IndexedDBIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'IndexedDBIndexerStorage';
+  override recommendRefreshInterval: number = 0; // force refresh on each indexer operation
   readonly connection = share(new IDBConnection(this.options));
   override isReadonly = false;
   private readonly data = new DataStruct();
@@ -176,6 +177,21 @@ export class IndexedDBIndexerStorage extends IndexerStorageBase {
     this.emitTableUpdated(table);
   }
 
+  override async refreshIfNeed(): Promise<void> {
+    const needRefreshTable = Object.entries(this.pendingUpdates)
+      .filter(
+        ([, updates]) =>
+          updates.deleteByQueries.length > 0 ||
+          updates.deletes.length > 0 ||
+          updates.inserts.length > 0 ||
+          updates.updates.length > 0
+      )
+      .map(([table]) => table as keyof IndexerSchema);
+    for (const table of needRefreshTable) {
+      await this.refresh(table);
+    }
+  }
+
   private watchTableUpdated(table: keyof IndexerSchema) {
     return new Observable(subscriber => {
       const listener = (ev: MessageEvent) => {
@@ -201,5 +217,11 @@ export class IndexedDBIndexerStorage extends IndexerStorageBase {
   emitTableUpdated(table: keyof IndexerSchema) {
     this.tableUpdate$.next(table);
     this.channel.postMessage({ type: 'indexer-updated', table });
+  }
+
+  // Get the current indexer version
+  // increase this number to re-index all docs
+  async indexVersion(): Promise<number> {
+    return Promise.resolve(1);
   }
 }

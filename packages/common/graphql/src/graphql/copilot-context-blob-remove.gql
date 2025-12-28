@@ -1,0 +1,3 @@
+mutation removeContextBlob($options: RemoveContextBlobInput!) {
+  removeContextBlob(options: $options)
+}

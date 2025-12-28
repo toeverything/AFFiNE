@@ -44,12 +44,7 @@ test('can read all blocks from doc snapshot', async t => {
   const doc = await models.doc.get(workspace.id, docSnapshot.id);
   t.truthy(doc);
 
-  const result = await readAllBlocksFromDocSnapshot(
-    workspace.id,
-    'doc-0',
-    docSnapshot.blob,
-    rootDoc!.blob
-  );
+  const result = await readAllBlocksFromDocSnapshot('doc-0', docSnapshot.blob);
 
   t.snapshot({
     ...result,
@@ -64,11 +59,7 @@ test('can read blob filename from doc snapshot', async t => {
     snapshotFile: 'test-doc-with-blob.snapshot.bin',
   });
 
-  const result = await readAllBlocksFromDocSnapshot(
-    workspace.id,
-    'doc-0',
-    docSnapshot.blob
-  );
+  const result = await readAllBlocksFromDocSnapshot('doc-0', docSnapshot.blob);
 
   // NOTE: avoid snapshot result directly, because it will cause hanging
   t.snapshot(JSON.parse(JSON.stringify(result)));
@@ -78,11 +69,7 @@ test('can read all blocks from doc snapshot without workspace snapshot', async t
   const doc = await models.doc.get(workspace.id, docSnapshot.id);
   t.truthy(doc);
 
-  const result = await readAllBlocksFromDocSnapshot(
-    workspace.id,
-    'doc-0',
-    docSnapshot.blob
-  );
+  const result = await readAllBlocksFromDocSnapshot('doc-0', docSnapshot.blob);
 
   t.snapshot({
     ...result,

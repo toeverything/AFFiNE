@@ -37,6 +37,19 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface AccessToken {
+  __typename?: 'AccessToken';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
+export interface AddContextBlobInput {
+  blobId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
+}
+
 export interface AddContextCategoryInput {
   categoryId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
@@ -122,6 +135,44 @@ export interface BlobNotFoundDataType {
   __typename?: 'BlobNotFoundDataType';
   blobId: Scalars['String']['output'];
   spaceId: Scalars['String']['output'];
+}
+
+export interface BlobUploadInit {
+  __typename?: 'BlobUploadInit';
+  alreadyUploaded: Maybe<Scalars['Boolean']['output']>;
+  blobKey: Scalars['String']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  headers: Maybe<Scalars['JSONObject']['output']>;
+  method: BlobUploadMethod;
+  partSize: Maybe<Scalars['Int']['output']>;
+  uploadId: Maybe<Scalars['String']['output']>;
+  uploadUrl: Maybe<Scalars['String']['output']>;
+  uploadedParts: Maybe<Array<BlobUploadedPart>>;
+}
+
+/** Blob upload method */
+export enum BlobUploadMethod {
+  GRAPHQL = 'GRAPHQL',
+  MULTIPART = 'MULTIPART',
+  PRESIGNED = 'PRESIGNED',
+}
+
+export interface BlobUploadPart {
+  __typename?: 'BlobUploadPart';
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  headers: Maybe<Scalars['JSONObject']['output']>;
+  uploadUrl: Scalars['String']['output'];
+}
+
+export interface BlobUploadPartInput {
+  etag: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+}
+
+export interface BlobUploadedPart {
+  __typename?: 'BlobUploadedPart';
+  etag: Scalars['String']['output'];
+  partNumber: Scalars['Int']['output'];
 }
 
 export enum ChatHistoryOrder {
@@ -250,6 +301,8 @@ export interface Copilot {
   contexts: Array<CopilotContext>;
   /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
+  /** List available models for a prompt, with human-readable names */
+  models: CopilotModelsType;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
   /** Get the session by id */
@@ -283,6 +336,10 @@ export interface CopilotHistoriesArgs {
   options?: InputMaybe<QueryChatHistoriesInput>;
 }
 
+export interface CopilotModelsArgs {
+  promptName: Scalars['String']['input'];
+}
+
 export interface CopilotSessionArgs {
   sessionId: Scalars['String']['input'];
 }
@@ -294,6 +351,8 @@ export interface CopilotSessionsArgs {
 
 export interface CopilotContext {
   __typename?: 'CopilotContext';
+  /** list blobs in context */
+  blobs: Array<CopilotContextBlob>;
   /** list collections in context */
   collections: Array<CopilotContextCategory>;
   /** list files in context */
@@ -324,10 +383,17 @@ export interface CopilotContextMatchWorkspaceDocsArgs {
   threshold?: InputMaybe<Scalars['Float']['input']>;
 }
 
+export interface CopilotContextBlob {
+  __typename?: 'CopilotContextBlob';
+  createdAt: Scalars['SafeInt']['output'];
+  id: Scalars['ID']['output'];
+  status: Maybe<ContextEmbedStatus>;
+}
+
 export interface CopilotContextCategory {
   __typename?: 'CopilotContextCategory';
   createdAt: Scalars['SafeInt']['output'];
-  docs: Array<CopilotDocType>;
+  docs: Array<CopilotContextDoc>;
   id: Scalars['ID']['output'];
   type: ContextCategories;
 }
@@ -335,7 +401,6 @@ export interface CopilotContextCategory {
 export interface CopilotContextDoc {
   __typename?: 'CopilotContextDoc';
   createdAt: Scalars['SafeInt']['output'];
-  error: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   status: Maybe<ContextEmbedStatus>;
 }
@@ -361,13 +426,6 @@ export interface CopilotContextFileNotSupportedDataType {
 export interface CopilotDocNotFoundDataType {
   __typename?: 'CopilotDocNotFoundDataType';
   docId: Scalars['String']['output'];
-}
-
-export interface CopilotDocType {
-  __typename?: 'CopilotDocType';
-  createdAt: Scalars['SafeInt']['output'];
-  id: Scalars['ID']['output'];
-  status: Maybe<ContextEmbedStatus>;
 }
 
 export interface CopilotFailedToAddWorkspaceFileEmbeddingDataType {
@@ -435,6 +493,19 @@ export interface CopilotInvalidContextDataType {
 export interface CopilotMessageNotFoundDataType {
   __typename?: 'CopilotMessageNotFoundDataType';
   messageId: Scalars['String']['output'];
+}
+
+export interface CopilotModelType {
+  __typename?: 'CopilotModelType';
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+}
+
+export interface CopilotModelsType {
+  __typename?: 'CopilotModelsType';
+  defaultModel: Scalars['String']['output'];
+  optionalModels: Array<CopilotModelType>;
+  proModels: Array<CopilotModelType>;
 }
 
 export interface CopilotPromptConfigInput {
@@ -621,7 +692,7 @@ export interface DeleteAccount {
 }
 
 export interface DeleteSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
   sessionIds: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }
@@ -805,6 +876,7 @@ export enum ErrorNames {
   ALREADY_IN_SPACE = 'ALREADY_IN_SPACE',
   AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
   BAD_REQUEST = 'BAD_REQUEST',
+  BLOB_INVALID = 'BLOB_INVALID',
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
   BLOB_QUOTA_EXCEEDED = 'BLOB_QUOTA_EXCEEDED',
   CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE = 'CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE',
@@ -890,6 +962,7 @@ export enum ErrorNames {
   LICENSE_REVEALED = 'LICENSE_REVEALED',
   LINK_EXPIRED = 'LINK_EXPIRED',
   MAILER_SERVICE_IS_NOT_CONFIGURED = 'MAILER_SERVICE_IS_NOT_CONFIGURED',
+  MANAGED_BY_APP_STORE_OR_PLAY = 'MANAGED_BY_APP_STORE_OR_PLAY',
   MEMBER_NOT_FOUND_IN_SPACE = 'MEMBER_NOT_FOUND_IN_SPACE',
   MEMBER_QUOTA_EXCEEDED = 'MEMBER_QUOTA_EXCEEDED',
   MENTION_USER_DOC_ACCESS_DENIED = 'MENTION_USER_DOC_ACCESS_DENIED',
@@ -977,6 +1050,11 @@ export interface ForkChatSessionInput {
   latestMessageId?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface GenerateAccessTokenInput {
+  expiresAt?: InputMaybe<Scalars['DateTime']['input']>;
+  name: Scalars['String']['input'];
 }
 
 export interface GrantDocUserRolesInput {
@@ -1331,8 +1409,11 @@ export interface MissingOauthQueryParameterDataType {
 
 export interface Mutation {
   __typename?: 'Mutation';
+  abortBlobUpload: Scalars['Boolean']['output'];
   acceptInviteById: Scalars['Boolean']['output'];
   activateLicense: License;
+  /** add a blob to context */
+  addContextBlob: CopilotContextBlob;
   /** add a category to context */
   addContextCategory: CopilotContextCategory;
   /** add a doc to context */
@@ -1351,6 +1432,8 @@ export interface Mutation {
   claimAudioTranscription: Maybe<TranscriptionResultType>;
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
+  completeBlobUpload: Scalars['String']['output'];
+  createBlobUpload: BlobUploadInit;
   /** Create change password url */
   createChangePasswordUrl: Scalars['String']['output'];
   /** Create a subscription checkout link of stripe */
@@ -1388,6 +1471,8 @@ export interface Mutation {
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
+  generateUserAccessToken: RevealedAccessToken;
+  getBlobUploadPartUrl: BlobUploadPart;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1409,9 +1494,13 @@ export interface Mutation {
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
+  /** Refresh current user subscriptions and return latest. */
+  refreshUserSubscriptions: Array<SubscriptionType>;
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
+  /** remove a blob from context */
+  removeContextBlob: Scalars['Boolean']['output'];
   /** remove a category from context */
   removeContextCategory: Scalars['Boolean']['output'];
   /** remove a doc from context */
@@ -1421,6 +1510,8 @@ export interface Mutation {
   /** Remove workspace embedding files */
   removeWorkspaceEmbeddingFiles: Scalars['Boolean']['output'];
   removeWorkspaceFeature: Scalars['Boolean']['output'];
+  /** Request to apply the subscription in advance */
+  requestApplySubscription: Array<SubscriptionType>;
   /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
@@ -1433,6 +1524,7 @@ export interface Mutation {
   revokePublicDoc: DocType;
   /** @deprecated use revokePublicDoc instead */
   revokePublicPage: DocType;
+  revokeUserAccessToken: Scalars['Boolean']['output'];
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -1478,6 +1570,12 @@ export interface Mutation {
   verifyEmail: Scalars['Boolean']['output'];
 }
 
+export interface MutationAbortBlobUploadArgs {
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationAcceptInviteByIdArgs {
   inviteId: Scalars['String']['input'];
   sendAcceptMail?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1487,6 +1585,10 @@ export interface MutationAcceptInviteByIdArgs {
 export interface MutationActivateLicenseArgs {
   license: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationAddContextBlobArgs {
+  options: AddContextBlobInput;
 }
 
 export interface MutationAddContextCategoryArgs {
@@ -1544,6 +1646,20 @@ export interface MutationClaimAudioTranscriptionArgs {
 
 export interface MutationCleanupCopilotSessionArgs {
   options: DeleteSessionInput;
+}
+
+export interface MutationCompleteBlobUploadArgs {
+  key: Scalars['String']['input'];
+  parts?: InputMaybe<Array<BlobUploadPartInput>>;
+  uploadId?: InputMaybe<Scalars['String']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationCreateBlobUploadArgs {
+  key: Scalars['String']['input'];
+  mime: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationCreateChangePasswordUrlArgs {
@@ -1636,6 +1752,17 @@ export interface MutationGenerateLicenseKeyArgs {
   sessionId: Scalars['String']['input'];
 }
 
+export interface MutationGenerateUserAccessTokenArgs {
+  input: GenerateAccessTokenInput;
+}
+
+export interface MutationGetBlobUploadPartUrlArgs {
+  key: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+  uploadId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -1707,6 +1834,10 @@ export interface MutationReleaseDeletedBlobsArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationRemoveContextBlobArgs {
+  options: RemoveContextBlobInput;
+}
+
 export interface MutationRemoveContextCategoryArgs {
   options: RemoveContextCategoryInput;
 }
@@ -1727,6 +1858,10 @@ export interface MutationRemoveWorkspaceEmbeddingFilesArgs {
 export interface MutationRemoveWorkspaceFeatureArgs {
   feature: FeatureType;
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRequestApplySubscriptionArgs {
+  transactionId: Scalars['String']['input'];
 }
 
 export interface MutationResolveCommentArgs {
@@ -1770,6 +1905,10 @@ export interface MutationRevokePublicDocArgs {
 export interface MutationRevokePublicPageArgs {
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeUserAccessTokenArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface MutationSendChangeEmailArgs {
@@ -2076,6 +2215,7 @@ export interface PublicUserType {
 
 export interface Query {
   __typename?: 'Query';
+  accessTokens: Array<AccessToken>;
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
   /** Apply updates to a doc using LLM and return the merged markdown. */
@@ -2104,6 +2244,7 @@ export interface Query {
   publicUserById: Maybe<PublicUserType>;
   /** query workspace embedding status */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
+  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2221,6 +2362,11 @@ export interface RemoveAvatar {
   success: Scalars['Boolean']['output'];
 }
 
+export interface RemoveContextBlobInput {
+  blobId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
+}
+
 export interface RemoveContextCategoryInput {
   categoryId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
@@ -2263,6 +2409,15 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface RevealedAccessToken {
+  __typename?: 'RevealedAccessToken';
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  token: Scalars['String']['output'];
 }
 
 export interface RevokeDocUserRoleInput {
@@ -2508,6 +2663,8 @@ export interface SubscriptionType {
   canceledAt: Maybe<Scalars['DateTime']['output']>;
   createdAt: Scalars['DateTime']['output'];
   end: Maybe<Scalars['DateTime']['output']>;
+  /** If provider is revenuecat, indicates underlying store. Read-only. One of: app_store | play_store */
+  iapStore: Maybe<Scalars['String']['output']>;
   /** @deprecated removed */
   id: Maybe<Scalars['String']['output']>;
   nextBillAt: Maybe<Scalars['DateTime']['output']>;
@@ -2516,6 +2673,8 @@ export interface SubscriptionType {
    * There won't actually be a subscription with plan 'Free'
    */
   plan: SubscriptionPlan;
+  /** Payment provider of this subscription. Read-only. One of: stripe | revenuecat */
+  provider: Maybe<Scalars['String']['output']>;
   recurring: SubscriptionRecurring;
   start: Scalars['DateTime']['output'];
   status: SubscriptionStatus;
@@ -2987,6 +3146,47 @@ export interface TokenType {
   token: Scalars['String']['output'];
 }
 
+export type GenerateUserAccessTokenMutationVariables = Exact<{
+  input: GenerateAccessTokenInput;
+}>;
+
+export type GenerateUserAccessTokenMutation = {
+  __typename?: 'Mutation';
+  generateUserAccessToken: {
+    __typename?: 'RevealedAccessToken';
+    id: string;
+    name: string;
+    token: string;
+    createdAt: string;
+    expiresAt: string | null;
+  };
+};
+
+export type ListUserAccessTokensQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ListUserAccessTokensQuery = {
+  __typename?: 'Query';
+  revealedAccessTokens: Array<{
+    __typename?: 'RevealedAccessToken';
+    id: string;
+    name: string;
+    createdAt: string;
+    expiresAt: string | null;
+    token: string;
+  }>;
+};
+
+export type RevokeUserAccessTokenMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type RevokeUserAccessTokenMutation = {
+  __typename?: 'Mutation';
+  revokeUserAccessToken: boolean;
+};
+
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AdminServerConfigQuery = {
@@ -3281,6 +3481,73 @@ export type SetBlobMutationVariables = Exact<{
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
 
+export type AbortBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+}>;
+
+export type AbortBlobUploadMutation = {
+  __typename?: 'Mutation';
+  abortBlobUpload: boolean;
+};
+
+export type CompleteBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId?: InputMaybe<Scalars['String']['input']>;
+  parts?: InputMaybe<Array<BlobUploadPartInput> | BlobUploadPartInput>;
+}>;
+
+export type CompleteBlobUploadMutation = {
+  __typename?: 'Mutation';
+  completeBlobUpload: string;
+};
+
+export type CreateBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  mime: Scalars['String']['input'];
+}>;
+
+export type CreateBlobUploadMutation = {
+  __typename?: 'Mutation';
+  createBlobUpload: {
+    __typename?: 'BlobUploadInit';
+    method: BlobUploadMethod;
+    blobKey: string;
+    alreadyUploaded: boolean | null;
+    uploadUrl: string | null;
+    headers: any | null;
+    expiresAt: string | null;
+    uploadId: string | null;
+    partSize: number | null;
+    uploadedParts: Array<{
+      __typename?: 'BlobUploadedPart';
+      partNumber: number;
+      etag: string;
+    }> | null;
+  };
+};
+
+export type GetBlobUploadPartUrlMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+}>;
+
+export type GetBlobUploadPartUrlMutation = {
+  __typename?: 'Mutation';
+  getBlobUploadPartUrl: {
+    __typename?: 'BlobUploadPart';
+    uploadUrl: string;
+    headers: any | null;
+    expiresAt: string | null;
+  };
+};
+
 export type CancelSubscriptionMutationVariables = Exact<{
   plan?: InputMaybe<SubscriptionPlan>;
   workspaceId?: InputMaybe<Scalars['String']['input']>;
@@ -3535,6 +3802,29 @@ export type ApplyDocUpdatesQuery = {
   applyDocUpdates: string;
 };
 
+export type AddContextBlobMutationVariables = Exact<{
+  options: AddContextBlobInput;
+}>;
+
+export type AddContextBlobMutation = {
+  __typename?: 'Mutation';
+  addContextBlob: {
+    __typename?: 'CopilotContextBlob';
+    id: string;
+    createdAt: number;
+    status: ContextEmbedStatus | null;
+  };
+};
+
+export type RemoveContextBlobMutationVariables = Exact<{
+  options: RemoveContextBlobInput;
+}>;
+
+export type RemoveContextBlobMutation = {
+  __typename?: 'Mutation';
+  removeContextBlob: boolean;
+};
+
 export type AddContextCategoryMutationVariables = Exact<{
   options: AddContextCategoryInput;
 }>;
@@ -3547,7 +3837,7 @@ export type AddContextCategoryMutation = {
     createdAt: number;
     type: ContextCategories;
     docs: Array<{
-      __typename?: 'CopilotDocType';
+      __typename?: 'CopilotContextDoc';
       id: string;
       createdAt: number;
       status: ContextEmbedStatus | null;
@@ -3585,7 +3875,6 @@ export type AddContextDocMutation = {
     id: string;
     createdAt: number;
     status: ContextEmbedStatus | null;
-    error: string | null;
   };
 };
 
@@ -3641,11 +3930,16 @@ export type ListContextObjectQuery = {
       __typename?: 'Copilot';
       contexts: Array<{
         __typename?: 'CopilotContext';
+        blobs: Array<{
+          __typename?: 'CopilotContextBlob';
+          id: string;
+          status: ContextEmbedStatus | null;
+          createdAt: number;
+        }>;
         docs: Array<{
           __typename?: 'CopilotContextDoc';
           id: string;
           status: ContextEmbedStatus | null;
-          error: string | null;
           createdAt: number;
         }>;
         files: Array<{
@@ -3665,7 +3959,7 @@ export type ListContextObjectQuery = {
           id: string;
           createdAt: number;
           docs: Array<{
-            __typename?: 'CopilotDocType';
+            __typename?: 'CopilotContextDoc';
             id: string;
             status: ContextEmbedStatus | null;
             createdAt: number;
@@ -3677,7 +3971,7 @@ export type ListContextObjectQuery = {
           id: string;
           createdAt: number;
           docs: Array<{
-            __typename?: 'CopilotDocType';
+            __typename?: 'CopilotContextDoc';
             id: string;
             status: ContextEmbedStatus | null;
             createdAt: number;
@@ -4218,6 +4512,34 @@ export type CreateCopilotMessageMutationVariables = Exact<{
 export type CreateCopilotMessageMutation = {
   __typename?: 'Mutation';
   createCopilotMessage: string;
+};
+
+export type GetPromptModelsQueryVariables = Exact<{
+  promptName: Scalars['String']['input'];
+}>;
+
+export type GetPromptModelsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      models: {
+        __typename?: 'CopilotModelsType';
+        defaultModel: string;
+        optionalModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+        proModels: Array<{
+          __typename?: 'CopilotModelType';
+          id: string;
+          name: string;
+        }>;
+      };
+    };
+  } | null;
 };
 
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
@@ -4951,6 +5273,19 @@ export type GetDocDefaultRoleQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     doc: { __typename?: 'DocType'; defaultRole: DocRole };
+  };
+};
+
+export type GetDocSummaryQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}>;
+
+export type GetDocSummaryQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: { __typename?: 'DocType'; summary: string | null };
   };
 };
 
@@ -5806,6 +6141,46 @@ export type SetWorkspacePublicByIdMutation = {
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
+export type RefreshSubscriptionMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RefreshSubscriptionMutation = {
+  __typename?: 'Mutation';
+  refreshUserSubscriptions: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
+export type RequestApplySubscriptionMutationVariables = Exact<{
+  transactionId: Scalars['String']['input'];
+}>;
+
+export type RequestApplySubscriptionMutation = {
+  __typename?: 'Mutation';
+  requestApplySubscription: Array<{
+    __typename?: 'SubscriptionType';
+    id: string | null;
+    status: SubscriptionStatus;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    start: string;
+    end: string | null;
+    nextBillAt: string | null;
+    canceledAt: string | null;
+    variant: SubscriptionVariant | null;
+  }>;
+};
+
 export type SubscriptionQueryVariables = Exact<{ [key: string]: never }>;
 
 export type SubscriptionQuery = {
@@ -6135,6 +6510,11 @@ export type GrantWorkspaceTeamMemberMutation = {
 
 export type Queries =
   | {
+      name: 'listUserAccessTokensQuery';
+      variables: ListUserAccessTokensQueryVariables;
+      response: ListUserAccessTokensQuery;
+    }
+  | {
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
@@ -6240,6 +6620,11 @@ export type Queries =
       response: GetAudioTranscriptionQuery;
     }
   | {
+      name: 'getPromptModelsQuery';
+      variables: GetPromptModelsQueryVariables;
+      response: GetPromptModelsQuery;
+    }
+  | {
       name: 'copilotQuotaQuery';
       variables: CopilotQuotaQueryVariables;
       response: CopilotQuotaQuery;
@@ -6303,6 +6688,11 @@ export type Queries =
       name: 'getDocDefaultRoleQuery';
       variables: GetDocDefaultRoleQueryVariables;
       response: GetDocDefaultRoleQuery;
+    }
+  | {
+      name: 'getDocSummaryQuery';
+      variables: GetDocSummaryQueryVariables;
+      response: GetDocSummaryQuery;
     }
   | {
       name: 'getInviteInfoQuery';
@@ -6487,6 +6877,16 @@ export type Queries =
 
 export type Mutations =
   | {
+      name: 'generateUserAccessTokenMutation';
+      variables: GenerateUserAccessTokenMutationVariables;
+      response: GenerateUserAccessTokenMutation;
+    }
+  | {
+      name: 'revokeUserAccessTokenMutation';
+      variables: RevokeUserAccessTokenMutationVariables;
+      response: RevokeUserAccessTokenMutation;
+    }
+  | {
       name: 'createChangePasswordUrlMutation';
       variables: CreateChangePasswordUrlMutationVariables;
       response: CreateChangePasswordUrlMutation;
@@ -6562,6 +6962,26 @@ export type Mutations =
       response: SetBlobMutation;
     }
   | {
+      name: 'abortBlobUploadMutation';
+      variables: AbortBlobUploadMutationVariables;
+      response: AbortBlobUploadMutation;
+    }
+  | {
+      name: 'completeBlobUploadMutation';
+      variables: CompleteBlobUploadMutationVariables;
+      response: CompleteBlobUploadMutation;
+    }
+  | {
+      name: 'createBlobUploadMutation';
+      variables: CreateBlobUploadMutationVariables;
+      response: CreateBlobUploadMutation;
+    }
+  | {
+      name: 'getBlobUploadPartUrlMutation';
+      variables: GetBlobUploadPartUrlMutationVariables;
+      response: GetBlobUploadPartUrlMutation;
+    }
+  | {
       name: 'cancelSubscriptionMutation';
       variables: CancelSubscriptionMutationVariables;
       response: CancelSubscriptionMutation;
@@ -6615,6 +7035,16 @@ export type Mutations =
       name: 'uploadCommentAttachmentMutation';
       variables: UploadCommentAttachmentMutationVariables;
       response: UploadCommentAttachmentMutation;
+    }
+  | {
+      name: 'addContextBlobMutation';
+      variables: AddContextBlobMutationVariables;
+      response: AddContextBlobMutation;
+    }
+  | {
+      name: 'removeContextBlobMutation';
+      variables: RemoveContextBlobMutationVariables;
+      response: RemoveContextBlobMutation;
     }
   | {
       name: 'addContextCategoryMutation';
@@ -6855,6 +7285,16 @@ export type Mutations =
       name: 'setWorkspacePublicByIdMutation';
       variables: SetWorkspacePublicByIdMutationVariables;
       response: SetWorkspacePublicByIdMutation;
+    }
+  | {
+      name: 'refreshSubscriptionMutation';
+      variables: RefreshSubscriptionMutationVariables;
+      response: RefreshSubscriptionMutation;
+    }
+  | {
+      name: 'requestApplySubscriptionMutation';
+      variables: RequestApplySubscriptionMutationVariables;
+      response: RequestApplySubscriptionMutation;
     }
   | {
       name: 'updateDocDefaultRoleMutation';

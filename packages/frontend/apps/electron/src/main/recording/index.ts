@@ -7,6 +7,7 @@ import path from 'node:path';
 import { shell } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
+import { openExternalSafely } from '../security/open-external';
 import type { NamespaceHandlers } from '../type';
 import {
   askForMeetingPermission,
@@ -18,6 +19,7 @@ import {
   handleBlockCreationFailed,
   handleBlockCreationSuccess,
   pauseRecording,
+  readRecordingFile,
   readyRecording,
   recordingStatus$,
   removeRecording,
@@ -51,6 +53,9 @@ export const recordingHandlers = {
   },
   getRawAudioBuffers: async (_, id: number, cursor?: number) => {
     return getRawAudioBuffers(id, cursor);
+  },
+  readRecordingFile: async (_, filepath: string) => {
+    return readRecordingFile(filepath);
   },
   // save the encoded recording buffer to the file system
   readyRecording: async (_, id: number, buffer: Uint8Array) => {
@@ -87,7 +92,9 @@ export const recordingHandlers = {
         microphone: 'Privacy_Microphone',
       };
       const url = `x-apple.systempreferences:com.apple.preference.security?${urlMap[type]}`;
-      return shell.openExternal(url);
+      return openExternalSafely(url, {
+        additionalProtocols: ['x-apple.systempreferences:'],
+      });
     }
     // this only available on MacOS
     return false;

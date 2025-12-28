@@ -1,6 +1,8 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
-import type { UserFriendlyError } from '@affine/error';
+import type { AIToolsConfig } from '@affine/core/modules/ai-button';
+import { UserFriendlyError } from '@affine/error';
 import {
+  addContextBlobMutation,
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
@@ -23,6 +25,7 @@ import {
   type PaginationInput,
   type QueryOptions,
   type QueryResponse,
+  removeContextBlobMutation,
   removeContextCategoryMutation,
   removeContextDocMutation,
   removeContextFileMutation,
@@ -47,6 +50,20 @@ export enum Endpoint {
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
 
+function toUserFriendlyError(err: any): UserFriendlyError {
+  return err instanceof UserFriendlyError
+    ? err
+    : UserFriendlyError.fromAny(err);
+}
+
+function isAbortError(error: UserFriendlyError) {
+  return (
+    error.name === 'REQUEST_ABORTED' ||
+    error.code === 'REQUEST_ABORTED' ||
+    error.message?.toLowerCase().includes('aborted') === true
+  );
+}
+
 function codeToError(error: UserFriendlyError) {
   switch (error.status) {
     case 401:
@@ -63,7 +80,7 @@ function codeToError(error: UserFriendlyError) {
 }
 
 export function resolveError(err: any) {
-  return codeToError(err);
+  return codeToError(toUserFriendlyError(err));
 }
 
 export function handleError(src: any) {
@@ -182,7 +199,11 @@ export class CopilotClient {
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
@@ -202,7 +223,11 @@ export class CopilotClient {
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
@@ -227,7 +252,11 @@ export class CopilotClient {
 
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
@@ -252,13 +281,17 @@ export class CopilotClient {
 
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
   async cleanupSessions(input: {
     workspaceId: string;
-    docId: string;
+    docId: string | undefined;
     sessionIds: string[];
   }) {
     try {
@@ -415,6 +448,7 @@ export class CopilotClient {
     reasoning,
     webSearch,
     modelId,
+    toolsConfig,
     signal,
   }: {
     sessionId: string;
@@ -422,6 +456,7 @@ export class CopilotClient {
     reasoning?: boolean;
     webSearch?: boolean;
     modelId?: string;
+    toolsConfig?: AIToolsConfig;
     signal?: AbortSignal;
   }) {
     let url = `/api/copilot/chat/${sessionId}`;
@@ -430,6 +465,7 @@ export class CopilotClient {
       reasoning,
       webSearch,
       modelId,
+      toolsConfig,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -446,12 +482,14 @@ export class CopilotClient {
       reasoning,
       webSearch,
       modelId,
+      toolsConfig,
     }: {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
       webSearch?: boolean;
       modelId?: string;
+      toolsConfig?: AIToolsConfig;
     },
     endpoint = Endpoint.Stream
   ) {
@@ -461,6 +499,7 @@ export class CopilotClient {
       reasoning,
       webSearch,
       modelId,
+      toolsConfig,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -486,7 +525,9 @@ export class CopilotClient {
     return this.eventSource(url);
   }
 
-  paramsToQueryString(params: Record<string, string | boolean | undefined>) {
+  paramsToQueryString(
+    params: Record<string, string | boolean | undefined | Record<string, any>>
+  ) {
     const queryString = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (typeof value === 'boolean') {
@@ -495,6 +536,8 @@ export class CopilotClient {
         }
       } else if (typeof value === 'string') {
         queryString.append(key, value);
+      } else if (typeof value === 'object' && value !== null) {
+        queryString.append(key, JSON.stringify(value));
       }
     });
     return queryString.toString();
@@ -522,5 +565,23 @@ export class CopilotClient {
         updates,
       },
     }).then(res => res.applyDocUpdates);
+  }
+
+  addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {
+    return this.gql({
+      query: addContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.addContextBlob);
+  }
+
+  removeContextBlob(options: OptionsField<typeof removeContextBlobMutation>) {
+    return this.gql({
+      query: removeContextBlobMutation,
+      variables: {
+        options,
+      },
+    }).then(res => res.removeContextBlob);
   }
 }

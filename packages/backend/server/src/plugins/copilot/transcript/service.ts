@@ -12,6 +12,7 @@ import {
   NoCopilotProviderAvailable,
   OnEvent,
   OnJob,
+  sniffMime,
 } from '../../../base';
 import { Models } from '../../../models';
 import { PromptService } from '../prompt';
@@ -85,7 +86,10 @@ export class CopilotTranscriptionService {
         `${blobId}-${idx}`,
         buffer
       );
-      infos.push({ url, mimeType: blob.mimetype });
+      infos.push({
+        url,
+        mimeType: sniffMime(buffer, blob.mimetype) || blob.mimetype,
+      });
     }
 
     const model = await this.getModel(userId);
@@ -167,11 +171,11 @@ export class CopilotTranscriptionService {
     if (payload.success) {
       let { url, mimeType, infos } = payload.data;
       infos = infos || [];
-      if (url && mimeType) {
+      if (url && mimeType && !infos.find(i => i.url === url)) {
         infos.push({ url, mimeType });
       }
 
-      ret.infos = this.mergeInfos(infos, url, mimeType);
+      ret.infos = infos;
       if (job.status === AiJobStatus.claimed) {
         ret.transcription = payload.data;
       }
@@ -235,22 +239,6 @@ export class CopilotTranscriptionService {
     }
   }
 
-  // TODO(@darkskygit): remove after old server down
-  private mergeInfos(
-    infos?: AudioBlobInfos | null,
-    url?: string | null,
-    mimeType?: string | null
-  ) {
-    if (url && mimeType) {
-      if (infos) {
-        infos.push({ url, mimeType });
-      } else {
-        infos = [{ url, mimeType }];
-      }
-    }
-    return infos || [];
-  }
-
   private convertTime(time: number, offset = 0) {
     time = time + offset;
     const minutes = Math.floor(time / 60);
@@ -294,14 +282,10 @@ export class CopilotTranscriptionService {
     jobId,
     infos,
     modelId,
-    // @deprecated
-    url,
-    mimeType,
   }: Jobs['copilot.transcript.submit']) {
     try {
-      const blobInfos = this.mergeInfos(infos, url, mimeType);
       const transcriptions = await Promise.all(
-        Array.from(blobInfos.entries()).map(([idx, { url, mimeType }]) =>
+        Array.from(infos.entries()).map(([idx, { url, mimeType }]) =>
           this.callTranscript(url, mimeType, idx * 10 * 60, modelId)
         )
       );

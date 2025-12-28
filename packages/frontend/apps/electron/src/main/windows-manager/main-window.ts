@@ -2,7 +2,7 @@ import { join } from 'node:path';
 
 import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, map, shareReplay } from 'rxjs';
 
 import { isLinux, isMacOS, isWindows, resourcesPath } from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
@@ -10,10 +10,26 @@ import { buildType } from '../config';
 import { mainWindowOrigin } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
+import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
+import { globalStateStorage } from '../shared-storage/storage';
 import { uiSubjects } from '../ui/subject';
+import { buildWebPreferences } from '../web-preferences';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
+
+const TraySettingsState = {
+  $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
+    map(v => MenubarStateSchema.parse(v ?? {})),
+    shareReplay(1)
+  ),
+
+  get value() {
+    return MenubarStateSchema.parse(
+      globalStateStorage.get(MenubarStateKey) ?? {}
+    );
+  },
+};
 
 function closeAllWindows() {
   BrowserWindow.getAllWindows().forEach(w => {
@@ -41,6 +57,7 @@ export class MainWindowManager {
         show: false,
         width: 100,
         height: 100,
+        webPreferences: buildWebPreferences(),
       });
       this.hiddenMacWindow.on('close', () => {
         this.cleanupWindows();
@@ -80,11 +97,9 @@ export class MainWindowManager {
       // backgroundMaterial: 'mica',
       height: mainWindowState.height,
       show: false, // Use 'ready-to-show' event to show window
-      webPreferences: {
+      webPreferences: buildWebPreferences({
         webgl: true,
-        contextIsolation: true,
-        sandbox: false,
-      },
+      }),
     });
     const helper = await ensureHelperProcess();
     helper.connectMain(browserWindow);
@@ -125,9 +140,16 @@ export class MainWindowManager {
       // TODO(@pengx17): gracefully close the app, for example, ask user to save unsaved changes
       e.preventDefault();
       if (!isMacOS()) {
-        closeAllWindows();
-        this.mainWindowReady = undefined;
-        this.mainWindow$.next(undefined);
+        if (
+          TraySettingsState.value.enabled &&
+          TraySettingsState.value.closeToTray
+        ) {
+          mainWindow.hide();
+        } else {
+          closeAllWindows();
+          this.mainWindowReady = undefined;
+          this.mainWindow$.next(undefined);
+        }
       } else {
         // hide window on macOS
         // application quit will be handled by closing the hidden window
@@ -209,7 +231,10 @@ export class MainWindowManager {
     if (IS_DEV) {
       // do not gain focus in dev mode
       mainWindow.showInactive();
-    } else {
+    } else if (
+      !TraySettingsState.value.enabled ||
+      !TraySettingsState.value.startMinimized
+    ) {
       mainWindow.show();
     }
 
@@ -258,10 +283,10 @@ export async function openUrlInHiddenWindow(urlObj: URL) {
   const win = new BrowserWindow({
     width: 1200,
     height: 600,
-    webPreferences: {
+    webPreferences: buildWebPreferences({
       preload: join(__dirname, './preload.js'),
       additionalArguments: await getWindowAdditionalArguments(),
-    },
+    }),
     show: BUILD_CONFIG.debug,
   });
 

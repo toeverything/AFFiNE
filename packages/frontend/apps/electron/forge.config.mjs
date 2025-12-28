@@ -3,15 +3,17 @@ import { rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { utils } from '@electron-forge/core';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
 
 import {
   appIdMap,
   arch,
   buildType,
   icnsPath,
-  iconPngPath,
   iconUrl,
+  iconX64PngPath,
   iconX512PngPath,
   icoPath,
   platform,
@@ -28,7 +30,7 @@ const makers = [
     platform === 'darwin' && {
       name: '@electron-forge/maker-dmg',
       config: {
-        format: 'ULFO',
+        format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
@@ -119,15 +121,22 @@ const makers = [
         productName,
         bin: productName,
         id: fromBuildIdentifier(appIdMap),
-        icon: iconPngPath, // not working yet
+        icon: {
+          '64x64': iconX64PngPath,
+          '512x512': iconX512PngPath,
+        },
         branch: buildType,
+        runtime: 'org.freedesktop.Platform',
+        runtimeVersion: '25.08',
+        sdk: 'org.freedesktop.Sdk',
+        base: 'org.electronjs.Electron2.BaseApp',
+        baseVersion: '25.08',
         files: [
           [
             './resources/affine.metainfo.xml',
             '/usr/share/metainfo/affine.metainfo.xml',
           ],
         ],
-        runtimeVersion: '24.08',
         modules: [
           {
             name: 'zypak',
@@ -135,7 +144,7 @@ const makers = [
               {
                 type: 'git',
                 url: 'https://github.com/refi64/zypak',
-                tag: 'v2024.01.17',
+                tag: 'v2025.09',
               },
             ],
           },
@@ -195,6 +204,7 @@ export default {
       },
     ],
     executableName: productName,
+    ignore: [/\.map$/],
     asar: true,
     extendInfo: {
       NSAudioCaptureUsageDescription:
@@ -202,7 +212,18 @@ export default {
     },
   },
   makers,
-  plugins: [{ name: '@electron-forge/plugin-auto-unpack-natives', config: {} }],
+  plugins: [
+    { name: '@electron-forge/plugin-auto-unpack-natives', config: {} },
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    }),
+  ],
   hooks: {
     readPackageJson: async (_, packageJson) => {
       // we want different package name for canary build

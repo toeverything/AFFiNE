@@ -9,7 +9,6 @@ import ListViewKit
 import Litext
 import MarkdownView
 import SnapKit
-import Then
 import UIKit
 
 class ChatBaseCell: ListRowView {

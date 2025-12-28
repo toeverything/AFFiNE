@@ -37,6 +37,11 @@ const ContextEmbedStatusSchema = z.enum([
   ContextEmbedStatus.failed,
 ]);
 
+const ContextBlobSchema = z.object({
+  id: z.string(),
+  createdAt: z.number(),
+});
+
 const ContextDocSchema = z.object({
   id: z.string(),
   createdAt: z.number(),
@@ -64,6 +69,9 @@ export const ContextCategorySchema = z.object({
 
 export const ContextConfigSchema = z.object({
   workspaceId: z.string(),
+  blobs: ContextBlobSchema.merge(
+    z.object({ status: ContextEmbedStatusSchema.optional() })
+  ).array(),
   files: ContextFileSchema.array(),
   docs: ContextDocSchema.merge(
     z.object({ status: ContextEmbedStatusSchema.optional() })
@@ -77,10 +85,9 @@ export const MinimalContextConfigSchema = ContextConfigSchema.pick({
 
 export type ContextCategory = z.infer<typeof ContextCategorySchema>;
 export type ContextConfig = z.infer<typeof ContextConfigSchema>;
+export type ContextBlob = z.infer<typeof ContextConfigSchema>['blobs'][number];
 export type ContextDoc = z.infer<typeof ContextConfigSchema>['docs'][number];
 export type ContextFile = z.infer<typeof ContextConfigSchema>['files'][number];
-export type ContextListItem = ContextDoc | ContextFile;
-export type ContextList = ContextListItem[];
 
 // embeddings
 
@@ -104,6 +111,10 @@ export type FileChunkSimilarity = ChunkSimilarity & {
   blobId: string;
   name: string;
   mimeType: string;
+};
+
+export type BlobChunkSimilarity = ChunkSimilarity & {
+  blobId: string;
 };
 
 export type DocChunkSimilarity = ChunkSimilarity & {
@@ -137,3 +148,36 @@ export type IgnoredDoc = {
   createdByAvatar: string | undefined;
   updatedBy: string | undefined;
 };
+
+export const EMBEDDING_DIMENSIONS = 1024;
+
+const FILTER_PREFIX = [
+  'Title: ',
+  'Created at: ',
+  'Updated at: ',
+  'Created by: ',
+  'Updated by: ',
+];
+
+export function clearEmbeddingContent(content: string): string {
+  const lines = content.split('\n');
+  let maxLines = 5;
+  while (maxLines > 0 && lines.length > 0) {
+    if (FILTER_PREFIX.some(prefix => lines[0].startsWith(prefix))) {
+      lines.shift();
+      maxLines--;
+    } else {
+      // only process consecutive metadata rows
+      break;
+    }
+  }
+  return lines.join('\n');
+}
+
+export function clearEmbeddingChunk(chunk: ChunkSimilarity): ChunkSimilarity {
+  if (chunk.content) {
+    const content = clearEmbeddingContent(chunk.content);
+    return { ...chunk, content };
+  }
+  return chunk;
+}

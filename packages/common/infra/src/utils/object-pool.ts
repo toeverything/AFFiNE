@@ -64,7 +64,8 @@ export class ObjectPool<Key, T> {
 
   private gc() {
     for (const [key, { obj, rc }] of new Map(
-      this.objects /* clone the map, because the origin will be modified during iteration */
+      this
+        .objects /* clone the map, because the origin will be modified during iteration */
     )) {
       if (
         rc === 0 &&

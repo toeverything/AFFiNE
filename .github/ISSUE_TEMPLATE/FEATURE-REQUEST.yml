@@ -35,3 +35,11 @@ body:
         See the AFFiNE [Contributing Guide](https://github.com/toeverything/affine/blob/canary/CONTRIBUTING.md) to get started.
       options:
         - label: Yes I'd like to help by submitting a PR!
+  - type: checkboxes
+    attributes:
+      label: I confirm that the content I submitted was not written by AI.
+      description: >
+        (Required) Please confirm that the content you submit was not written by AI or merely edited/translated by AI;
+        otherwise, the administrators will directly close your issue.
+      options:
+        - label: I confirm that the content I submitted was not written by AI.

@@ -1,4 +1,5 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { PeekViewService } from '@affine/core/modules/peek-view';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { ColorScheme } from '@blocksuite/affine/model';
 import {
@@ -53,10 +54,16 @@ export class ChatContentStreamObjects extends WithDisposable(
   accessor theme!: Signal<ColorScheme>;
 
   @property({ attribute: false })
+  accessor independentMode: boolean | undefined;
+
+  @property({ attribute: false })
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
   accessor docDisplayService!: DocDisplayConfig;
+
+  @property({ attribute: false })
+  accessor peekViewService!: PeekViewService;
 
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
@@ -112,6 +119,7 @@ export class ChatContentStreamObjects extends WithDisposable(
         return html`<doc-semantic-search-result
           .data=${streamObject}
           .width=${this.width}
+          .peekViewService=${this.peekViewService}
         ></doc-semantic-search-result>`;
       case 'doc_keyword_search':
         return html`<doc-keyword-search-result
@@ -123,6 +131,18 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
         ></doc-read-result>`;
+      case 'section_edit':
+        return html`
+          <section-edit-tool
+            .data=${streamObject}
+            .extensions=${this.extensions}
+            .affineFeatureFlagService=${this.affineFeatureFlagService}
+            .notificationService=${this.notificationService}
+            .theme=${this.theme}
+            .host=${this.host}
+            .independentMode=${this.independentMode}
+          ></section-edit-tool>
+        `;
       default: {
         const name = streamObject.toolName + ' tool calling';
         return html`
@@ -186,19 +206,35 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
           .docDisplayService=${this.docDisplayService}
+          .peekViewService=${this.peekViewService}
           .onOpenDoc=${this.onOpenDoc}
         ></doc-semantic-search-result>`;
       case 'doc_keyword_search':
         return html`<doc-keyword-search-result
           .data=${streamObject}
           .width=${this.width}
+          .peekViewService=${this.peekViewService}
           .onOpenDoc=${this.onOpenDoc}
         ></doc-keyword-search-result>`;
       case 'doc_read':
         return html`<doc-read-result
           .data=${streamObject}
           .width=${this.width}
+          .peekViewService=${this.peekViewService}
+          .onOpenDoc=${this.onOpenDoc}
         ></doc-read-result>`;
+      case 'section_edit':
+        return html`
+          <section-edit-tool
+            .data=${streamObject}
+            .extensions=${this.extensions}
+            .affineFeatureFlagService=${this.affineFeatureFlagService}
+            .notificationService=${this.notificationService}
+            .theme=${this.theme}
+            .host=${this.host}
+            .independentMode=${this.independentMode}
+          ></section-edit-tool>
+        `;
       default: {
         const name = streamObject.toolName + ' tool result';
         return html`
