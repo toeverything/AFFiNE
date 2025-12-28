@@ -96,6 +96,41 @@ type BlobNotFoundDataType {
   spaceId: String!
 }
 
+type BlobUploadInit {
+  alreadyUploaded: Boolean
+  blobKey: String!
+  expiresAt: DateTime
+  headers: JSONObject
+  method: BlobUploadMethod!
+  partSize: Int
+  uploadId: String
+  uploadUrl: String
+  uploadedParts: [BlobUploadedPart!]
+}
+
+"""Blob upload method"""
+enum BlobUploadMethod {
+  GRAPHQL
+  MULTIPART
+  PRESIGNED
+}
+
+type BlobUploadPart {
+  expiresAt: DateTime
+  headers: JSONObject
+  uploadUrl: String!
+}
+
+input BlobUploadPartInput {
+  etag: String!
+  partNumber: Int!
+}
+
+type BlobUploadedPart {
+  etag: String!
+  partNumber: Int!
+}
+
 enum ChatHistoryOrder {
   asc
   desc
@@ -659,6 +694,7 @@ enum ErrorNames {
   ALREADY_IN_SPACE
   AUTHENTICATION_REQUIRED
   BAD_REQUEST
+  BLOB_INVALID
   BLOB_NOT_FOUND
   BLOB_QUOTA_EXCEEDED
   CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE
@@ -1194,6 +1230,7 @@ type MissingOauthQueryParameterDataType {
 }
 
 type Mutation {
+  abortBlobUpload(key: String!, uploadId: String!, workspaceId: String!): Boolean!
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean @deprecated(reason: "never used"), workspaceId: String @deprecated(reason: "never used")): Boolean!
   activateLicense(license: String!, workspaceId: String!): License!
 
@@ -1223,6 +1260,8 @@ type Mutation {
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
+  completeBlobUpload(key: String!, parts: [BlobUploadPartInput!], uploadId: String, workspaceId: String!): String!
+  createBlobUpload(key: String!, mime: String!, size: Int!, workspaceId: String!): BlobUploadInit!
 
   """Create change password url"""
   createChangePasswordUrl(callbackUrl: String!, userId: String!): String!
@@ -1275,6 +1314,7 @@ type Mutation {
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
   generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
+  getBlobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!, workspaceId: String!): BlobUploadPart!
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 

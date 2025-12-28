@@ -23,7 +23,7 @@ export const dateValueContainerStyle = css({
   color: 'var(--text-secondary)',
   fontSize: '17px',
   lineHeight: '22px',
-  height: '46px',
+  height: '30px',
 });
 
 export const datePickerContainerStyle = css({

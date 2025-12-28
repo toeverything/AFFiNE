@@ -67,8 +67,9 @@ const genericConfig = {
     heightInNote: GENERIC_DEFAULT_HEIGHT_IN_NOTE,
     allowFullscreen: true,
     style: 'border: none; border-radius: 8px;',
-    allow: 'clipboard-read; clipboard-write; picture-in-picture;',
+    allow: '',
     referrerpolicy: 'no-referrer-when-downgrade',
+    sandbox: 'allow-scripts',
   },
 };
 

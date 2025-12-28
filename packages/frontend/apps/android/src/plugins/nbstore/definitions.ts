@@ -171,7 +171,7 @@ export interface NbStorePlugin {
     id: string;
     indexName: string;
     query: string;
-  }) => Promise<{ id: string; score: number }[]>;
+  }) => Promise<{ id: string; score: number; terms: Array<string> }[]>;
   ftsGetDocument: (options: {
     id: string;
     indexName: string;
@@ -184,4 +184,5 @@ export interface NbStorePlugin {
     query: string;
   }) => Promise<Array<{ start: number; end: number }>>;
   ftsFlushIndex: (options: { id: string }) => Promise<void>;
+  ftsIndexVersion: () => Promise<number>;
 }

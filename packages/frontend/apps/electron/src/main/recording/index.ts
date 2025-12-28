@@ -19,6 +19,7 @@ import {
   handleBlockCreationFailed,
   handleBlockCreationSuccess,
   pauseRecording,
+  readRecordingFile,
   readyRecording,
   recordingStatus$,
   removeRecording,
@@ -52,6 +53,9 @@ export const recordingHandlers = {
   },
   getRawAudioBuffers: async (_, id: number, cursor?: number) => {
     return getRawAudioBuffers(id, cursor);
+  },
+  readRecordingFile: async (_, filepath: string) => {
+    return readRecordingFile(filepath);
   },
   // save the encoded recording buffer to the file system
   readyRecording: async (_, id: number, buffer: Uint8Array) => {

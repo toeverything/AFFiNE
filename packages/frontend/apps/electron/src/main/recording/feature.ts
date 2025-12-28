@@ -686,6 +686,22 @@ export async function getRawAudioBuffers(
   };
 }
 
+function assertRecordingFilepath(filepath: string) {
+  const normalizedPath = path.normalize(filepath);
+  const normalizedBase = path.normalize(SAVED_RECORDINGS_DIR + path.sep);
+
+  if (!normalizedPath.toLowerCase().startsWith(normalizedBase.toLowerCase())) {
+    throw new Error('Invalid recording filepath');
+  }
+
+  return normalizedPath;
+}
+
+export async function readRecordingFile(filepath: string) {
+  const normalizedPath = assertRecordingFilepath(filepath);
+  return fsp.readFile(normalizedPath);
+}
+
 export async function readyRecording(id: number, buffer: Buffer) {
   logger.info('readyRecording', id);
 

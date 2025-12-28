@@ -437,6 +437,12 @@ export class BlobNotFound extends UserFriendlyError {
   }
 }
 
+export class BlobInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'blob_invalid', message);
+  }
+}
+
 export class ExpectToPublishDoc extends UserFriendlyError {
   constructor(message?: string) {
     super('invalid_input', 'expect_to_publish_doc', message);
@@ -1166,6 +1172,7 @@ export enum ErrorNames {
   INVALID_HISTORY_TIMESTAMP,
   DOC_HISTORY_NOT_FOUND,
   BLOB_NOT_FOUND,
+  BLOB_INVALID,
   EXPECT_TO_PUBLISH_DOC,
   EXPECT_TO_REVOKE_PUBLIC_DOC,
   EXPECT_TO_GRANT_DOC_USER_ROLES,

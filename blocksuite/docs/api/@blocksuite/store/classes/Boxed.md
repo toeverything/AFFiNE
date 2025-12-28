@@ -37,13 +37,13 @@ The type of the value stored in the Boxed.
 
 ### getValue()
 
-> **getValue**(): `undefined` \| `Value`
+> **getValue**(): `Value` \| `undefined`
 
 Get the current value of the Boxed.
 
 #### Returns
 
-`undefined` \| `Value`
+`Value` \| `undefined`
 
 ***
 

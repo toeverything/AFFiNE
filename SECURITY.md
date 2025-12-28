@@ -14,7 +14,6 @@ We recommend users to always use the latest major version. Security updates will
 We welcome you to provide us with bug reports via and email at [security@toeverything.info](mailto:security@toeverything.info) or submit directly on [GitHub](https://github.com/toeverything/AFFiNE/security), **we encourage you to submit the relevant information directly via GitHub**. We expect your report to contain at least the following for us to evaluate and reproduce:
 
 1. Using platform and version, for example:
-
    - macos arm64 0.12.0-canary-202402220729-0868ac6
    - app.affine.pro 0.12.0-canary-202402220729-0868ac6
 

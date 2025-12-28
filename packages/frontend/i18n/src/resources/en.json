@@ -2163,6 +2163,7 @@
   "error.INVALID_HISTORY_TIMESTAMP": "Invalid doc history timestamp provided.",
   "error.DOC_HISTORY_NOT_FOUND": "History of {{docId}} at {{timestamp}} under Space {{spaceId}}.",
   "error.BLOB_NOT_FOUND": "Blob {{blobId}} not found in Space {{spaceId}}.",
+  "error.BLOB_INVALID": "Blob is invalid.",
   "error.EXPECT_TO_PUBLISH_DOC": "Expected to publish a doc, not a Space.",
   "error.EXPECT_TO_REVOKE_PUBLIC_DOC": "Expected to revoke a public doc, not a Space.",
   "error.EXPECT_TO_GRANT_DOC_USER_ROLES": "Expect grant roles on doc {{docId}} under Space {{spaceId}}, not a Space.",

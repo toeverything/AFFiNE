@@ -54,4 +54,5 @@ export const nbstoreHandlers: NativeDBApis = {
   ftsGetDocument: POOL.ftsGetDocument.bind(POOL),
   ftsGetMatches: POOL.ftsGetMatches.bind(POOL),
   ftsFlushIndex: POOL.ftsFlushIndex.bind(POOL),
+  ftsIndexVersion: POOL.ftsIndexVersion.bind(POOL),
 };

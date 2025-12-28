@@ -15,10 +15,9 @@ affine_schema = { path = "../schema" }
 anyhow = { workspace = true }
 bincode = { version = "2.0.1", features = ["serde"] }
 chrono = { workspace = true }
-jieba-rs = "0.8.1"
+memory-indexer = { workspace = true }
 napi = { workspace = true }
 napi-derive = { workspace = true }
-once_cell = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
@@ -29,7 +28,6 @@ sqlx = { workspace = true, default-features = false, features = [
   "tls-rustls",
 ] }
 thiserror = { workspace = true }
-tiniestsegmenter = "0.3"
 tokio = { workspace = true, features = ["full"] }
 y-octo = { workspace = true }
 zstd = "0.13"

@@ -1,6 +1,6 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
-import type { UserFriendlyError } from '@affine/error';
+import { UserFriendlyError } from '@affine/error';
 import {
   addContextBlobMutation,
   addContextCategoryMutation,
@@ -50,6 +50,20 @@ export enum Endpoint {
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
 
+function toUserFriendlyError(err: any): UserFriendlyError {
+  return err instanceof UserFriendlyError
+    ? err
+    : UserFriendlyError.fromAny(err);
+}
+
+function isAbortError(error: UserFriendlyError) {
+  return (
+    error.name === 'REQUEST_ABORTED' ||
+    error.code === 'REQUEST_ABORTED' ||
+    error.message?.toLowerCase().includes('aborted') === true
+  );
+}
+
 function codeToError(error: UserFriendlyError) {
   switch (error.status) {
     case 401:
@@ -66,7 +80,7 @@ function codeToError(error: UserFriendlyError) {
 }
 
 export function resolveError(err: any) {
-  return codeToError(err);
+  return codeToError(toUserFriendlyError(err));
 }
 
 export function handleError(src: any) {
@@ -185,7 +199,11 @@ export class CopilotClient {
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
@@ -205,7 +223,11 @@ export class CopilotClient {
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
@@ -230,7 +252,11 @@ export class CopilotClient {
 
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 
@@ -255,7 +281,11 @@ export class CopilotClient {
 
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      throw resolveError(err);
+      const parsed = toUserFriendlyError(err);
+      if (isAbortError(parsed)) {
+        return [];
+      }
+      throw resolveError(parsed);
     }
   }
 

@@ -88,3 +88,82 @@ export async function setBlob(
   }
   return res.body.data.setBlob;
 }
+
+export async function createBlobUpload(
+  app: TestingApp,
+  workspaceId: string,
+  key: string,
+  size: number,
+  mime: string
+) {
+  const res = await app.gql(
+    `
+      mutation createBlobUpload($workspaceId: String!, $key: String!, $size: Int!, $mime: String!) {
+        createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
+          method
+          blobKey
+          uploadUrl
+          uploadId
+          partSize
+        }
+      }
+    `,
+    {
+      workspaceId,
+      key,
+      size,
+      mime,
+    }
+  );
+  return res.createBlobUpload;
+}
+
+export async function completeBlobUpload(
+  app: TestingApp,
+  workspaceId: string,
+  key: string,
+  options?: {
+    uploadId?: string;
+    parts?: { partNumber: number; etag: string }[];
+  }
+) {
+  const res = await app.gql(
+    `
+      mutation completeBlobUpload($workspaceId: String!, $key: String!, $uploadId: String, $parts: [BlobUploadPartInput!]) {
+        completeBlobUpload(workspaceId: $workspaceId, key: $key, uploadId: $uploadId, parts: $parts)
+      }
+    `,
+    {
+      workspaceId,
+      key,
+      uploadId: options?.uploadId,
+      parts: options?.parts,
+    }
+  );
+  return res.completeBlobUpload;
+}
+
+export async function getBlobUploadPartUrl(
+  app: TestingApp,
+  workspaceId: string,
+  key: string,
+  uploadId: string,
+  partNumber: number
+) {
+  const res = await app.gql(
+    `
+      mutation getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+        getBlobUploadPartUrl(workspaceId: $workspaceId, key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+          uploadUrl
+        }
+      }
+    `,
+    {
+      workspaceId,
+      key,
+      uploadId,
+      partNumber,
+    }
+  );
+  return res.getBlobUploadPartUrl;
+}

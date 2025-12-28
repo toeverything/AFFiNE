@@ -35,7 +35,7 @@ fn load_path(path: &str) -> Result<Vec<Vec<u8>>, Error> {
     paths.sort();
 
     for path in paths {
-      println!("read {:?}", path);
+      println!("read {path:?}");
       updates.push(read(path)?);
     }
     Ok(updates)
@@ -66,7 +66,7 @@ fn jwst_merge(path: &str) {
   let history = doc.history().parse_store(Default::default());
   println!("history: {:?}", ts.elapsed());
   for history in history.iter().take(100) {
-    println!("history: {:?}", history);
+    println!("history: {history:?}");
   }
 
   doc.gc().unwrap();

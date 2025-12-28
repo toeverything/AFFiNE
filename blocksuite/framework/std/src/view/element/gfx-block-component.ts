@@ -71,10 +71,10 @@ function handleGfxConnection(instance: GfxBlockComponent) {
 }
 
 export abstract class GfxBlockComponent<
-    Model extends GfxBlockElementModel = GfxBlockElementModel,
-    Service extends BlockService = BlockService,
-    WidgetName extends string = string,
-  >
+  Model extends GfxBlockElementModel = GfxBlockElementModel,
+  Service extends BlockService = BlockService,
+  WidgetName extends string = string,
+>
   extends BlockComponent<Model, Service, WidgetName>
   implements GfxViewTransformInterface
 {

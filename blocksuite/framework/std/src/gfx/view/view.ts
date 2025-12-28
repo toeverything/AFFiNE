@@ -38,11 +38,11 @@ export const GfxElementModelViewExtIdentifier = createIdentifier<
 >('GfxElementModelView');
 
 export class GfxElementModelView<
-    T extends GfxLocalElementModel | GfxPrimitiveElementModel =
-      | GfxPrimitiveElementModel
-      | GfxLocalElementModel,
-    RendererContext = object,
-  >
+  T extends GfxLocalElementModel | GfxPrimitiveElementModel =
+    | GfxPrimitiveElementModel
+    | GfxLocalElementModel,
+  RendererContext = object,
+>
   implements GfxElementGeometry, Extension, GfxViewTransformInterface
 {
   static type: string;

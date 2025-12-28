@@ -14,11 +14,36 @@ import { getCurrentWorkspace, isAiEnabled } from './utils';
 
 const logger = new DebugLogger('electron-renderer:recording');
 
+async function readRecordingFile(filepath: string) {
+  if (apis?.recording?.readRecordingFile) {
+    try {
+      return await apis.recording.readRecordingFile(filepath);
+    } catch (error) {
+      logger.error(
+        'Failed to read recording file via IPC, fallback to fetch',
+        error
+      );
+    }
+  }
+
+  const fileUrl = new URL(
+    filepath,
+    typeof location !== 'undefined' && location.protocol === 'assets:'
+      ? 'assets://local-file'
+      : location.origin
+  );
+  const response = await fetch(fileUrl);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch recording file: ${response.status} ${response.statusText}`
+    );
+  }
+  return response.arrayBuffer();
+}
+
 async function saveRecordingBlob(blobEngine: BlobEngine, filepath: string) {
   logger.debug('Saving recording', filepath);
-  const opusBuffer = await fetch(new URL(filepath, location.origin)).then(res =>
-    res.arrayBuffer()
-  );
+  const opusBuffer = await readRecordingFile(filepath);
   const blob = new Blob([opusBuffer], {
     type: 'audio/mp4',
   });

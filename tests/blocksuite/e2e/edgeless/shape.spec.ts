@@ -690,22 +690,21 @@ test.describe('shape hit test', () => {
 
   // FIXME(@flrande): This is broken by recent changes
   // In Playwright, we can't add text in shape hollow area
-  test.fixme(
-    'using text tool to add text in shape hollow area',
-    async ({ page }) => {
-      await addTransparentRect(page, rect.start, rect.end);
-      await page.mouse.click(rect.start.x - 20, rect.start.y - 20);
-      await assertEdgelessNonSelectedRect(page);
+  test.fixme('using text tool to add text in shape hollow area', async ({
+    page,
+  }) => {
+    await addTransparentRect(page, rect.start, rect.end);
+    await page.mouse.click(rect.start.x - 20, rect.start.y - 20);
+    await assertEdgelessNonSelectedRect(page);
 
-      await assertEdgelessTool(page, 'default');
-      await setEdgelessTool(page, 'text');
-      await page.mouse.click(rect.start.x + 50, rect.start.y + 50);
-      await waitNextFrame(page);
+    await assertEdgelessTool(page, 'default');
+    await setEdgelessTool(page, 'text');
+    await page.mouse.click(rect.start.x + 50, rect.start.y + 50);
+    await waitNextFrame(page);
 
-      await type(page, 'hello');
-      await assertEdgelessCanvasText(page, 'hello');
-    }
-  );
+    await type(page, 'hello');
+    await assertEdgelessCanvasText(page, 'hello');
+  });
 
   test('should enter edit mode when double-clicking a text area in a shape with a transparent background', async ({
     page,

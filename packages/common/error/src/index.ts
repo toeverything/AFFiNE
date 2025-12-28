@@ -4,7 +4,8 @@ import { GraphQLError as BaseGraphQLError } from 'graphql';
 export type ErrorName =
   | keyof typeof ErrorNames
   | 'NETWORK_ERROR'
-  | 'CONTENT_TOO_LARGE';
+  | 'CONTENT_TOO_LARGE'
+  | 'REQUEST_ABORTED';
 
 export interface UserFriendlyErrorResponse {
   status: number;
