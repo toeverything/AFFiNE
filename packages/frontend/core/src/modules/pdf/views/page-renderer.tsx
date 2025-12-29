@@ -48,88 +48,68 @@ function usePDFPage({
   const [cachedBitmap, setCachedBitmap] = useState<ImageBitmap | null>(null);
   const img = useLiveData(useMemo(() => (page ? page.bitmap$ : null), [page]));
   const error = useLiveData(page?.error$ ?? null);
-  const [shouldLoadPage, setShouldLoadPage] = useState(false);
 
-  // 1. Check cache
+  // Consolidated effect to handle loading strategy (Cache vs Render)
   useEffect(() => {
-    if (!visibility) {
-      setShouldLoadPage(false);
-      return;
-    }
-    if (cachedBitmap) {
-      setShouldLoadPage(false);
+    if (!visibility || !width || !height) {
+      setPage(null);
       return;
     }
 
-    setShouldLoadPage(false);
+    let active = true;
+    let releasePage: (() => void) | undefined;
 
-    if (!width || !height) return;
+    const load = async () => {
+      try {
+        // 1. Try cache
+        const compressed = await getReusableBitmap({
+          blobId: pdf.id,
+          pageNum,
+          width,
+          height,
+          scale,
+        });
 
-    let cancelled = false;
+        if (!active) return;
 
-    (async () => {
-      const compressed = await getReusableBitmap({
-        blobId: pdf.id,
-        pageNum,
-        width,
-        height,
-        scale,
-      });
-
-      if (!cancelled) {
         if (compressed) {
           setCachedBitmap(compressed);
+          setPage(null);
         } else {
-          setShouldLoadPage(true);
+          // 2. Load Page
+          setCachedBitmap(null); // Clear stale cache
+
+          const key = `${width}:${height}:${scale}`;
+          const { page: newPage, release } = pdf.page(pageNum, key);
+          releasePage = release;
+
+          setPage(newPage);
+          newPage.render({ width, height, scale });
         }
+      } catch (e) {
+        console.error('Failed to load PDF page', e);
       }
-    })().catch(() => {
-      if (!cancelled) setShouldLoadPage(true);
-    });
-
-    return () => {
-      cancelled = true;
     };
-  }, [visibility, cachedBitmap, pdf.id, pageNum, width, height, scale]);
 
-  // 2. Load Page
-  useEffect(() => {
-    if (!shouldLoadPage) return;
-
-    const key = `${width}:${height}:${scale}`;
-    const { page, release } = pdf.page(pageNum, key);
-    setPage(page);
+    load().catch(console.error);
 
     return () => {
-      release();
+      active = false;
+      releasePage?.();
       setPage(null);
     };
-  }, [shouldLoadPage, pdf, pageNum, width, height, scale]);
+  }, [visibility, pdf, pageNum, width, height, scale]);
 
-  // 3. Render Page
+  // Cache new bitmap when generated
   useEffect(() => {
-    if (!page || !shouldLoadPage) return;
-
-    page.render({ width, height, scale });
-
-    return () => {
-      page.render.unsubscribe();
-    };
-  }, [page, shouldLoadPage, width, height, scale]);
-
-  // 4. Cache new bitmap
-  useEffect(() => {
-    if (!img || !shouldLoadPage) return;
+    if (!img || !page) return;
 
     cacheBitmap({ blobId: pdf.id, pageNum, width, height, scale }, img).catch(
       e => console.error('Failed to cache bitmap', e)
     );
-  }, [img, shouldLoadPage, pdf.id, pageNum, width, height, scale]);
+  }, [img, page, pdf.id, pageNum, width, height, scale]);
 
-  return {
-    displayImg: cachedBitmap ?? img,
-    error,
-  };
+  return { displayImg: cachedBitmap ?? img, error };
 }
 
 export const PDFPageRenderer = ({

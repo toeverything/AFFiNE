@@ -228,7 +228,7 @@ export const PDFViewerInner = ({ pdf, meta }: PDFViewerInnerProps) => {
         if (stopped) return;
         stopped = true;
         prefetching.current.delete(key);
-        page.render.unsubscribe?.();
+        page.render.unsubscribe();
         release();
         subscription?.unsubscribe();
       };
