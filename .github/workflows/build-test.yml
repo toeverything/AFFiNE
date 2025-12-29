@@ -65,7 +65,7 @@ jobs:
         uses: github/codeql-action/analyze@v3
   lint:
     name: Lint
-    runs-on: blaze/ubuntu-22.04
+    runs-on: blaze/macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Run oxlint
@@ -90,7 +90,7 @@ jobs:
 
   typecheck:
     name: Typecheck
-    runs-on: blaze/ubuntu-22.04
+    runs-on: blaze/macos-15
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     steps:
@@ -243,7 +243,7 @@ jobs:
 
   e2e-test:
     name: E2E Test
-    runs-on: blaze/ubuntu-22.04
+    runs-on: blaze/macos-15
     env:
       DISTRIBUTION: web
       IN_CI_TEST: true
