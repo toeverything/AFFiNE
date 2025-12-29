@@ -66,11 +66,16 @@ export class StripeWebhook {
     await this.service.deleteStripeSubscription(event.data.object);
   }
 
+  private extractInvoiceId(charge: Stripe.Charge) {
+    return typeof charge.invoice === 'string'
+      ? charge.invoice
+      : charge.invoice?.id;
+  }
+
   @OnEvent('stripe.charge.refunded')
   async onChargeRefunded(event: Stripe.ChargeRefundedEvent) {
     const charge = event.data.object;
-    const invoiceId =
-      typeof charge.invoice === 'string' ? charge.invoice : charge.invoice?.id;
+    const invoiceId = this.extractInvoiceId(charge);
 
     if (invoiceId) {
       await this.service.handleRefundedInvoice(invoiceId, 'refund');
@@ -87,9 +92,7 @@ export class StripeWebhook {
       expand: ['invoice'],
     });
 
-    const invoiceId =
-      typeof charge.invoice === 'string' ? charge.invoice : charge.invoice?.id;
-
+    const invoiceId = this.extractInvoiceId(charge);
     if (invoiceId) {
       await this.service.handleRefundedInvoice(invoiceId, 'dispute_open');
     }
@@ -97,19 +100,16 @@ export class StripeWebhook {
 
   @OnEvent('stripe.charge.dispute.closed')
   async onChargeDisputeClosed(event: Stripe.ChargeDisputeClosedEvent) {
-    const chargeId = event.data.object.charge;
+    const ref = event.data.object.charge;
+    if (!ref) return;
+    const chargeId = typeof ref === 'string' ? ref : ref.id;
     const status = event.data.object.status;
 
-    if (!chargeId) {
-      return;
-    }
-
-    const charge = await this.stripe.charges.retrieve(chargeId as string, {
+    const charge = await this.stripe.charges.retrieve(chargeId, {
       expand: ['invoice'],
     });
 
-    const invoiceId =
-      typeof charge.invoice === 'string' ? charge.invoice : charge.invoice?.id;
+    const invoiceId = this.extractInvoiceId(charge);
 
     if (invoiceId) {
       const reason =
