@@ -2135,7 +2135,6 @@
   "error.INVALID_PASSWORD_LENGTH": "Le mot de passe doit être entre {{min}} et {{max}} caractères",
   "error.PASSWORD_REQUIRED": "Le mot de passe est requis.",
   "error.WRONG_SIGN_IN_METHOD": "Vous essayez de vous connecter par une méthode différente de celle que vous avez utilisée pour vous inscrire.",
-  "error.EARLY_ACCESS_REQUIRED": "Vous n'avez pas l'autorisation d'accès anticipé. Visitez https://community.affine.pro/c/insider-general/ pour plus d'informations.",
   "error.SIGN_UP_FORBIDDEN": "Vous n'êtes pas autorisé à vous inscrire.",
   "error.EMAIL_TOKEN_NOT_FOUND": "Le jeton d'email fourni est introuvable.",
   "error.INVALID_EMAIL_TOKEN": "Un jeton d'email invalide a été fourni.",

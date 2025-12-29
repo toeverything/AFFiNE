@@ -28,22 +28,9 @@ export class MockTeamWorkspace extends Mocker<
       },
     });
 
-    const feature = await this.db.feature.findFirst({
-      where: {
-        name: Feature.TeamPlan,
-      },
-    });
-
-    if (!feature) {
-      throw new Error(
-        `Feature ${Feature.TeamPlan} does not exist in DB. You might forgot to run data-migration first.`
-      );
-    }
-
     await this.db.workspaceFeature.create({
       data: {
         workspaceId: id,
-        featureId: feature.id,
         reason: 'test',
         activated: true,
         name: Feature.TeamPlan,

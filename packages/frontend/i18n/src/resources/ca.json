@@ -2054,7 +2054,6 @@
   "error.DOC_IS_NOT_PUBLIC": "El document no és públic.",
   "error.DOC_NOT_FOUND": "Document {{docId}} sota l'Espai {{spaceId}} no trobat.",
   "error.DOC_UPDATE_BLOCKED": "Document {{docId}} sota Espai {{spaceId}} està bloquejat per a actualitzacions.",
-  "error.EARLY_ACCESS_REQUIRED": "No tens permís d'accés anticipat. Visita https://community.affine.pro/c/insider-general/ per a més informació.",
   "error.EMAIL_ALREADY_USED": "Aquest correu electrònic ja ha estat registrat.",
   "error.EMAIL_SERVICE_NOT_CONFIGURED": "El servei de correu no està configurat.",
   "error.EMAIL_TOKEN_NOT_FOUND": "El token de correu electrònic proporcionat no es troba.",

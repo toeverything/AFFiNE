@@ -31,6 +31,55 @@ input AddContextFileInput {
   contextId: String!
 }
 
+input AdminUpdateWorkspaceInput {
+  avatarKey: String
+  enableAi: Boolean
+  enableDocEmbedding: Boolean
+  enableUrlPreview: Boolean
+  features: [FeatureType!]
+  id: String!
+  name: String
+  public: Boolean
+}
+
+type AdminWorkspace {
+  avatarKey: String
+  blobCount: Int!
+  blobSize: SafeInt!
+  createdAt: DateTime!
+  enableAi: Boolean!
+  enableDocEmbedding: Boolean!
+  enableUrlPreview: Boolean!
+  features: [FeatureType!]!
+  id: String!
+  memberCount: Int!
+
+  """Members of workspace"""
+  members(query: String, skip: Int, take: Int): [AdminWorkspaceMember!]!
+  name: String
+  owner: WorkspaceUserType
+  public: Boolean!
+  publicPageCount: Int!
+  snapshotCount: Int!
+  snapshotSize: SafeInt!
+}
+
+type AdminWorkspaceMember {
+  avatarUrl: String
+  email: String!
+  id: String!
+  name: String!
+  role: Permission!
+  status: WorkspaceMemberStatus!
+}
+
+enum AdminWorkspaceSort {
+  BlobCount
+  BlobSize
+  CreatedAt
+  SnapshotSize
+}
+
 type AggregateBucketHitsObjectType {
   nodes: [SearchNodeObjectType!]!
 }
@@ -740,7 +789,6 @@ enum ErrorNames {
   DOC_IS_NOT_PUBLIC
   DOC_NOT_FOUND
   DOC_UPDATE_BLOCKED
-  EARLY_ACCESS_REQUIRED
   EMAIL_ALREADY_USED
   EMAIL_SERVICE_NOT_CONFIGURED
   EMAIL_TOKEN_NOT_FOUND
@@ -1161,8 +1209,18 @@ type LimitedUserType {
 }
 
 input ListUserInput {
+  features: [FeatureType!]
   first: Int = 20
+  keyword: String
   skip: Int = 0
+}
+
+input ListWorkspaceInput {
+  features: [FeatureType!]
+  first: Int! = 20
+  keyword: String
+  orderBy: AdminWorkspaceSort
+  skip: Int! = 0
 }
 
 type ListedBlob {
@@ -1249,6 +1307,9 @@ type Mutation {
   """Update workspace embedding files"""
   addWorkspaceEmbeddingFiles(blob: Upload!, workspaceId: String!): CopilotWorkspaceFile!
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
+
+  """Update workspace flags and features for admin"""
+  adminUpdateWorkspace(input: AdminUpdateWorkspaceInput!): AdminWorkspace
   approveMember(userId: String!, workspaceId: String!): Boolean!
 
   """Ban an user"""
@@ -1613,6 +1674,15 @@ type PublicUserType {
 type Query {
   accessTokens: [AccessToken!]!
 
+  """Get workspace detail for admin"""
+  adminWorkspace(id: String!): AdminWorkspace
+
+  """List workspaces for admin"""
+  adminWorkspaces(filter: ListWorkspaceInput!): [AdminWorkspace!]!
+
+  """Workspaces count for admin"""
+  adminWorkspacesCount(filter: ListWorkspaceInput!): Int!
+
   """get the whole app configuration"""
   appConfig: JSONObject!
 
@@ -1660,7 +1730,7 @@ type Query {
   users(filter: ListUserInput!): [UserType!]!
 
   """Get users count"""
-  usersCount: Int!
+  usersCount(filter: ListUserInput): Int!
 
   """Get workspace by id"""
   workspace(id: String!): WorkspaceType!
@@ -1884,14 +1954,14 @@ enum SearchTable {
 }
 
 type ServerConfigType {
-  """Whether allow guest users to create demo workspaces."""
-  allowGuestDemoWorkspace: Boolean! @deprecated(reason: "This field is deprecated, please use `features` instead. Will be removed in 0.25.0")
-
   """fetch latest available upgradable release of server"""
   availableUpgrade: ReleaseVersionType
 
   """Features for user that can be configured"""
   availableUserFeatures: [FeatureType!]!
+
+  """Workspace features available for admin configuration"""
+  availableWorkspaceFeatures: [FeatureType!]!
 
   """server base url"""
   baseUrl: String!

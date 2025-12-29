@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "Пароль повинен бути від {{min}} до {{max}} символів",
   "error.PASSWORD_REQUIRED": "Пароль є обов'язковим.",
   "error.WRONG_SIGN_IN_METHOD": "Ви намагаєтеся увійти іншим способом, ніж реєструвалися.",
-  "error.EARLY_ACCESS_REQUIRED": "Ви не маєте дозволу на ранній доступ. Відвідайте https://community.affine.pro/c/insider-general/ для отримання додаткової інформації.",
   "error.SIGN_UP_FORBIDDEN": "Вам не дозволено реєструватися.",
   "error.EMAIL_TOKEN_NOT_FOUND": "Токен електронної пошти не знайдено.",
   "error.INVALID_EMAIL_TOKEN": "Надано недійсний токен електронної пошти.",

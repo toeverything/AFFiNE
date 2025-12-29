@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { defineModuleConfig } from '../../base';
 
 export interface ServerFlags {
-  earlyAccessControl: boolean;
   allowGuestDemoWorkspace: boolean;
 }
 
@@ -72,10 +71,6 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
 });
 
 defineModuleConfig('flags', {
-  earlyAccessControl: {
-    desc: 'Only allow users with early access features to access the app',
-    default: false,
-  },
   allowGuestDemoWorkspace: {
     desc: 'Whether allow guest users to create demo workspaces.',
     default: true,

@@ -1,0 +1,46 @@
+import { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import { useState } from 'react';
+
+import { Header } from '../header';
+import { useColumns } from './components/columns';
+import { DataTable } from './components/data-table';
+import { useWorkspaceList } from './use-workspace-list';
+
+export function WorkspacePage() {
+  const [keyword, setKeyword] = useState('');
+  const [featureFilters, setFeatureFilters] = useState<FeatureType[]>([]);
+  const [sort, setSort] = useState<AdminWorkspaceSort | undefined>(
+    AdminWorkspaceSort.CreatedAt
+  );
+
+  const { workspaces, pagination, setPagination, workspacesCount } =
+    useWorkspaceList({
+      keyword,
+      features: featureFilters,
+      orderBy: sort,
+    });
+
+  const columns = useColumns();
+
+  return (
+    <div className="h-screen flex-1 flex-col flex">
+      <Header title="Workspaces" />
+
+      <DataTable
+        data={workspaces}
+        columns={columns}
+        pagination={pagination}
+        workspacesCount={workspacesCount}
+        onPaginationChange={setPagination}
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        selectedFeatures={featureFilters}
+        onFeaturesChange={setFeatureFilters}
+        sort={sort}
+        onSortChange={setSort}
+      />
+    </div>
+  );
+}
+
+export { WorkspacePage as Component };

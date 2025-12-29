@@ -1,0 +1,17 @@
+import type {
+  AdminUpdateWorkspaceMutation,
+  AdminWorkspaceQuery,
+  AdminWorkspacesQuery,
+  FeatureType,
+} from '@affine/graphql';
+
+export type WorkspaceListItem = AdminWorkspacesQuery['adminWorkspaces'][0];
+export type WorkspaceDetail = NonNullable<
+  AdminWorkspaceQuery['adminWorkspace']
+>;
+export type WorkspaceMember = WorkspaceDetail['members'][0];
+
+export type WorkspaceUpdateInput =
+  AdminUpdateWorkspaceMutation['adminUpdateWorkspace'];
+
+export type WorkspaceFeatureFilter = FeatureType[];

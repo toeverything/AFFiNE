@@ -2137,7 +2137,6 @@
   "error.INVALID_PASSWORD_LENGTH": "Password must be between {{min}} and {{max}} characters",
   "error.PASSWORD_REQUIRED": "Password is required.",
   "error.WRONG_SIGN_IN_METHOD": "You are trying to sign in by a different method than you signed up with.",
-  "error.EARLY_ACCESS_REQUIRED": "You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.",
   "error.SIGN_UP_FORBIDDEN": "You are not allowed to sign up.",
   "error.EMAIL_TOKEN_NOT_FOUND": "The email token provided is not found.",
   "error.INVALID_EMAIL_TOKEN": "An invalid email token provided.",

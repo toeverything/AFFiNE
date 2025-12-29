@@ -8544,10 +8544,6 @@ export function useAFFiNEI18N(): {
       */
     ["error.WRONG_SIGN_IN_METHOD"](): string;
     /**
-      * `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`
-      */
-    ["error.EARLY_ACCESS_REQUIRED"](): string;
-    /**
       * `You are not allowed to sign up.`
       */
     ["error.SIGN_UP_FORBIDDEN"](): string;

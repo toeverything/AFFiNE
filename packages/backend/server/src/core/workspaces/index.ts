@@ -19,6 +19,7 @@ import {
   WorkspaceMemberResolver,
   WorkspaceResolver,
 } from './resolvers';
+import { AdminWorkspaceResolver } from './resolvers/admin';
 import { WorkspaceService } from './service';
 
 @Module({
@@ -43,6 +44,7 @@ import { WorkspaceService } from './service';
     WorkspaceBlobResolver,
     WorkspaceService,
     WorkspaceEvents,
+    AdminWorkspaceResolver,
   ],
   exports: [WorkspaceService],
 })

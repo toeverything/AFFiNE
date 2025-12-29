@@ -67,6 +67,62 @@ export interface AddContextFileInput {
   contextId: Scalars['String']['input'];
 }
 
+export interface AdminUpdateWorkspaceInput {
+  avatarKey?: InputMaybe<Scalars['String']['input']>;
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
+  features?: InputMaybe<Array<FeatureType>>;
+  id: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  public?: InputMaybe<Scalars['Boolean']['input']>;
+}
+
+export interface AdminWorkspace {
+  __typename?: 'AdminWorkspace';
+  avatarKey: Maybe<Scalars['String']['output']>;
+  blobCount: Scalars['Int']['output'];
+  blobSize: Scalars['SafeInt']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  enableAi: Scalars['Boolean']['output'];
+  enableDocEmbedding: Scalars['Boolean']['output'];
+  enableUrlPreview: Scalars['Boolean']['output'];
+  features: Array<FeatureType>;
+  id: Scalars['String']['output'];
+  memberCount: Scalars['Int']['output'];
+  /** Members of workspace */
+  members: Array<AdminWorkspaceMember>;
+  name: Maybe<Scalars['String']['output']>;
+  owner: Maybe<WorkspaceUserType>;
+  public: Scalars['Boolean']['output'];
+  publicPageCount: Scalars['Int']['output'];
+  snapshotCount: Scalars['Int']['output'];
+  snapshotSize: Scalars['SafeInt']['output'];
+}
+
+export interface AdminWorkspaceMembersArgs {
+  query?: InputMaybe<Scalars['String']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  take?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface AdminWorkspaceMember {
+  __typename?: 'AdminWorkspaceMember';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  email: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  role: Permission;
+  status: WorkspaceMemberStatus;
+}
+
+export enum AdminWorkspaceSort {
+  BlobCount = 'BlobCount',
+  BlobSize = 'BlobSize',
+  CreatedAt = 'CreatedAt',
+  SnapshotSize = 'SnapshotSize',
+}
+
 export interface AggregateBucketHitsObjectType {
   __typename?: 'AggregateBucketHitsObjectType';
   nodes: Array<SearchNodeObjectType>;
@@ -922,7 +978,6 @@ export enum ErrorNames {
   DOC_IS_NOT_PUBLIC = 'DOC_IS_NOT_PUBLIC',
   DOC_NOT_FOUND = 'DOC_NOT_FOUND',
   DOC_UPDATE_BLOCKED = 'DOC_UPDATE_BLOCKED',
-  EARLY_ACCESS_REQUIRED = 'EARLY_ACCESS_REQUIRED',
   EMAIL_ALREADY_USED = 'EMAIL_ALREADY_USED',
   EMAIL_SERVICE_NOT_CONFIGURED = 'EMAIL_SERVICE_NOT_CONFIGURED',
   EMAIL_TOKEN_NOT_FOUND = 'EMAIL_TOKEN_NOT_FOUND',
@@ -1338,8 +1393,18 @@ export interface LimitedUserType {
 }
 
 export interface ListUserInput {
+  features?: InputMaybe<Array<FeatureType>>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  keyword?: InputMaybe<Scalars['String']['input']>;
   skip?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface ListWorkspaceInput {
+  features?: InputMaybe<Array<FeatureType>>;
+  first?: Scalars['Int']['input'];
+  keyword?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<AdminWorkspaceSort>;
+  skip?: Scalars['Int']['input'];
 }
 
 export interface ListedBlob {
@@ -1423,6 +1488,8 @@ export interface Mutation {
   /** Update workspace embedding files */
   addWorkspaceEmbeddingFiles: CopilotWorkspaceFile;
   addWorkspaceFeature: Scalars['Boolean']['output'];
+  /** Update workspace flags and features for admin */
+  adminUpdateWorkspace: Maybe<AdminWorkspace>;
   approveMember: Scalars['Boolean']['output'];
   /** Ban an user */
   banUser: UserType;
@@ -1612,6 +1679,10 @@ export interface MutationAddWorkspaceEmbeddingFilesArgs {
 export interface MutationAddWorkspaceFeatureArgs {
   feature: FeatureType;
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationAdminUpdateWorkspaceArgs {
+  input: AdminUpdateWorkspaceInput;
 }
 
 export interface MutationApproveMemberArgs {
@@ -2216,6 +2287,12 @@ export interface PublicUserType {
 export interface Query {
   __typename?: 'Query';
   accessTokens: Array<AccessToken>;
+  /** Get workspace detail for admin */
+  adminWorkspace: Maybe<AdminWorkspace>;
+  /** List workspaces for admin */
+  adminWorkspaces: Array<AdminWorkspace>;
+  /** Workspaces count for admin */
+  adminWorkspacesCount: Scalars['Int']['output'];
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
   /** Apply updates to a doc using LLM and return the merged markdown. */
@@ -2268,6 +2345,18 @@ export interface Query {
   workspaces: Array<WorkspaceType>;
 }
 
+export interface QueryAdminWorkspaceArgs {
+  id: Scalars['String']['input'];
+}
+
+export interface QueryAdminWorkspacesArgs {
+  filter: ListWorkspaceInput;
+}
+
+export interface QueryAdminWorkspacesCountArgs {
+  filter: ListWorkspaceInput;
+}
+
 export interface QueryApplyDocUpdatesArgs {
   docId: Scalars['String']['input'];
   op: Scalars['String']['input'];
@@ -2313,6 +2402,10 @@ export interface QueryUserByIdArgs {
 
 export interface QueryUsersArgs {
   filter: ListUserInput;
+}
+
+export interface QueryUsersCountArgs {
+  filter?: InputMaybe<ListUserInput>;
 }
 
 export interface QueryWorkspaceArgs {
@@ -2533,15 +2626,12 @@ export enum SearchTable {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
-  /**
-   * Whether allow guest users to create demo workspaces.
-   * @deprecated This field is deprecated, please use `features` instead. Will be removed in 0.25.0
-   */
-  allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** fetch latest available upgradable release of server */
   availableUpgrade: Maybe<ReleaseVersionType>;
   /** Features for user that can be configured */
   availableUserFeatures: Array<FeatureType>;
+  /** Workspace features available for admin configuration */
+  availableWorkspaceFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
   /** credentials requirement */
@@ -3200,6 +3290,7 @@ export type AdminServerConfigQuery = {
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
+    availableWorkspaceFeatures: Array<FeatureType>;
     credentialsRequirement: {
       __typename?: 'CredentialsRequirementType';
       password: {
@@ -3216,6 +3307,126 @@ export type AdminServerConfigQuery = {
       url: string;
     } | null;
   };
+};
+
+export type AdminUpdateWorkspaceMutationVariables = Exact<{
+  input: AdminUpdateWorkspaceInput;
+}>;
+
+export type AdminUpdateWorkspaceMutation = {
+  __typename?: 'Mutation';
+  adminUpdateWorkspace: {
+    __typename?: 'AdminWorkspace';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    name: string | null;
+    avatarKey: string | null;
+    enableAi: boolean;
+    enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
+    features: Array<FeatureType>;
+    memberCount: number;
+    publicPageCount: number;
+    snapshotCount: number;
+    snapshotSize: number;
+    blobCount: number;
+    blobSize: number;
+    owner: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+  } | null;
+};
+
+export type AdminWorkspaceQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+  memberSkip?: InputMaybe<Scalars['Int']['input']>;
+  memberTake?: InputMaybe<Scalars['Int']['input']>;
+  memberQuery?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type AdminWorkspaceQuery = {
+  __typename?: 'Query';
+  adminWorkspace: {
+    __typename?: 'AdminWorkspace';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    name: string | null;
+    avatarKey: string | null;
+    enableAi: boolean;
+    enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
+    features: Array<FeatureType>;
+    memberCount: number;
+    publicPageCount: number;
+    snapshotCount: number;
+    snapshotSize: number;
+    blobCount: number;
+    blobSize: number;
+    owner: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+    members: Array<{
+      __typename?: 'AdminWorkspaceMember';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+      role: Permission;
+      status: WorkspaceMemberStatus;
+    }>;
+  } | null;
+};
+
+export type AdminWorkspacesQueryVariables = Exact<{
+  filter: ListWorkspaceInput;
+}>;
+
+export type AdminWorkspacesQuery = {
+  __typename?: 'Query';
+  adminWorkspaces: Array<{
+    __typename?: 'AdminWorkspace';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    name: string | null;
+    avatarKey: string | null;
+    enableAi: boolean;
+    enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
+    features: Array<FeatureType>;
+    memberCount: number;
+    publicPageCount: number;
+    snapshotCount: number;
+    snapshotSize: number;
+    blobCount: number;
+    blobSize: number;
+    owner: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+  }>;
+};
+
+export type AdminWorkspacesCountQueryVariables = Exact<{
+  filter: ListWorkspaceInput;
+}>;
+
+export type AdminWorkspacesCountQuery = {
+  __typename?: 'Query';
+  adminWorkspacesCount: number;
 };
 
 export type CreateChangePasswordUrlMutationVariables = Exact<{
@@ -6520,6 +6731,21 @@ export type Queries =
       response: AdminServerConfigQuery;
     }
   | {
+      name: 'adminWorkspaceQuery';
+      variables: AdminWorkspaceQueryVariables;
+      response: AdminWorkspaceQuery;
+    }
+  | {
+      name: 'adminWorkspacesQuery';
+      variables: AdminWorkspacesQueryVariables;
+      response: AdminWorkspacesQuery;
+    }
+  | {
+      name: 'adminWorkspacesCountQuery';
+      variables: AdminWorkspacesCountQueryVariables;
+      response: AdminWorkspacesCountQuery;
+    }
+  | {
       name: 'appConfigQuery';
       variables: AppConfigQueryVariables;
       response: AppConfigQuery;
@@ -6885,6 +7111,11 @@ export type Mutations =
       name: 'revokeUserAccessTokenMutation';
       variables: RevokeUserAccessTokenMutationVariables;
       response: RevokeUserAccessTokenMutation;
+    }
+  | {
+      name: 'adminUpdateWorkspaceMutation';
+      variables: AdminUpdateWorkspaceMutationVariables;
+      response: AdminUpdateWorkspaceMutation;
     }
   | {
       name: 'createChangePasswordUrlMutation';

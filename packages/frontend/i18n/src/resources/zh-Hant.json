@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "密碼長度必須在{{min}}到{{max}}個字符之間",
   "error.PASSWORD_REQUIRED": "密碼為必填項。",
   "error.WRONG_SIGN_IN_METHOD": "您正在嘗試使用與註冊時不同的方法登錄。",
-  "error.EARLY_ACCESS_REQUIRED": "您沒有提前訪問權限。訪問 https://community.affine.pro/c/insider-general/ 獲取更多信息。",
   "error.SIGN_UP_FORBIDDEN": "您不被允許註冊。",
   "error.EMAIL_TOKEN_NOT_FOUND": "提供的電子郵件令牌未找到。",
   "error.INVALID_EMAIL_TOKEN": "提供了無效的電子郵件令牌。",

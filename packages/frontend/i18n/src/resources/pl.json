@@ -2136,7 +2136,6 @@
   "error.INVALID_PASSWORD_LENGTH": "Hasło musi mieć od {{min}} do {{max}} znaków",
   "error.PASSWORD_REQUIRED": "Hasło jest wymagane.",
   "error.WRONG_SIGN_IN_METHOD": "Próbujesz się zalogować inną metodą, niż użyta przy rejestracji.",
-  "error.EARLY_ACCESS_REQUIRED": "Nie masz uprawnień do wcześniejszego dostępu. Odwiedź https://community.affine.pro/c/insider-general/ po więcej informacji.",
   "error.SIGN_UP_FORBIDDEN": "Nie masz zezwolenia na rejestrację.",
   "error.EMAIL_TOKEN_NOT_FOUND": "Nie znaleziono podanego tokena e-mail.",
   "error.INVALID_EMAIL_TOKEN": "Podano nieprawidłowy token e-mail.",
