@@ -1,6 +1,7 @@
 import { IconButton, Menu, observeResize } from '@affine/component';
 import type { PDF, PDFMeta, PDFRendererState } from '@affine/core/modules/pdf';
 import { PDFService, PDFStatus } from '@affine/core/modules/pdf';
+import { cacheBitmap } from '@affine/core/modules/pdf/cache/bitmap-cache';
 import {
   Item,
   List,
@@ -36,6 +37,7 @@ import {
   Virtuoso,
   type VirtuosoHandle,
 } from 'react-virtuoso';
+import type { Subscription } from 'rxjs';
 
 import type { AttachmentViewerProps } from '../types';
 import * as styles from './styles.css';
@@ -67,6 +69,7 @@ export const PDFViewerInner = ({ pdf, meta }: PDFViewerInnerProps) => {
   const pagesScrollerRef = useRef<HTMLElement | null>(null);
   const pagesScrollerHandleRef = useRef<VirtuosoHandle>(null);
   const thumbnailsScrollerHandleRef = useRef<VirtuosoHandle>(null);
+  const prefetching = useRef<Map<string, () => void>>(new Map());
 
   const updateScrollerRef = useCallback(
     (scroller: HTMLElement | Window | null) => {
@@ -173,6 +176,12 @@ export const PDFViewerInner = ({ pdf, meta }: PDFViewerInnerProps) => {
     };
   }, [meta, viewportInfo, onPageSelect]);
 
+  const overscan = useMemo(() => {
+    const h = meta.maxSize.height || 0;
+    // Keep roughly one page above and below rendered to reduce flicker on re-entry.
+    return Math.max(Math.ceil(h * 1.2), 800);
+  }, [meta.maxSize.height]);
+
   // 1. works fine if they are the same size
   // 2. uses the `observeIntersection` when targeting different sizes
   const scrollSeekConfig = useMemo<ScrollSeekConfiguration>(() => {
@@ -189,6 +198,77 @@ export const PDFViewerInner = ({ pdf, meta }: PDFViewerInnerProps) => {
       setViewportInfo({ width, height })
     );
   }, []);
+
+  const prefetchPage = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= meta.pageCount) return;
+      if (!viewportInfo.width || !viewportInfo.height) return;
+
+      const actualSize = meta.pageSizes[index];
+      const renderSize = fitToPage(
+        {
+          width: viewportInfo.width - 40,
+          height: viewportInfo.height - 40,
+        },
+        actualSize,
+        meta.maxSize
+      );
+      const scale = window.devicePixelRatio;
+      const key = `${index}:${renderSize.width}:${renderSize.height}:${scale}`;
+      if (prefetching.current.has(key)) return;
+
+      const { page, release } = pdf.page(
+        index,
+        `${renderSize.width}:${renderSize.height}:${scale}`
+      );
+      let stopped = false;
+      let subscription: Subscription | undefined;
+
+      const stop = () => {
+        if (stopped) return;
+        stopped = true;
+        prefetching.current.delete(key);
+        page.render.unsubscribe();
+        release();
+        subscription?.unsubscribe();
+      };
+
+      subscription = page.bitmap$.subscribe(bitmap => {
+        if (!bitmap) return;
+        cacheBitmap(
+          {
+            blobId: pdf.id,
+            pageNum: index,
+            width: renderSize.width,
+            height: renderSize.height,
+            scale,
+          },
+          bitmap
+        )
+          .catch(e => console.error('Failed to cache bitmap', e))
+          .finally(stop);
+      });
+
+      prefetching.current.set(key, stop);
+      page.render({
+        width: renderSize.width,
+        height: renderSize.height,
+        scale,
+      });
+    },
+    [meta, pdf, viewportInfo]
+  );
+
+  useEffect(() => {
+    prefetchPage(cursor - 1);
+    prefetchPage(cursor + 1);
+
+    const map = prefetching.current;
+    return () => {
+      map.forEach(stop => stop());
+      map.clear();
+    };
+  }, [cursor, prefetchPage]);
 
   return (
     <div
@@ -212,6 +292,7 @@ export const PDFViewerInner = ({ pdf, meta }: PDFViewerInnerProps) => {
           Footer: ListPadding,
           ScrollSeekPlaceholder,
         }}
+        increaseViewportBy={{ top: overscan, bottom: overscan }}
         context={{
           viewportInfo: {
             width: viewportInfo.width - 40,
