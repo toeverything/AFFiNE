@@ -43,6 +43,16 @@ export abstract class DocReader {
     protected readonly blobStorage: WorkspaceBlobStorage
   ) {}
 
+  // keep methods to allow test mocking
+  parseDocContent(bin: Uint8Array, maxSummaryLength = 150) {
+    return parsePageDoc(bin, { maxSummaryLength });
+  }
+
+  // keep methods to allow test mocking
+  parseWorkspaceContent(bin: Uint8Array) {
+    return parseWorkspaceDoc(bin);
+  }
+
   abstract getDoc(
     workspaceId: string,
     docId: string
@@ -207,9 +217,7 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    return parsePageDoc(docRecord.bin, {
-      maxSummaryLength: fullContent ? -1 : 150,
-    });
+    return this.parseDocContent(docRecord.bin, fullContent ? -1 : 150);
   }
 
   protected override async getWorkspaceContentWithoutCache(
@@ -219,7 +227,7 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    const content = parseWorkspaceDoc(docRecord.bin);
+    const content = this.parseWorkspaceContent(docRecord.bin);
     if (!content) {
       return null;
     }
