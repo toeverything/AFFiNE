@@ -135,8 +135,6 @@ export async function cacheBitmap(params: CacheParams, bitmap: ImageBitmap) {
   }
 }
 
-let sharedCanvas: HTMLCanvasElement | null = null;
-
 async function bitmapToWebp(bitmap: ImageBitmap): Promise<Blob | null> {
   const width = bitmap.width;
   const height = bitmap.height;
@@ -154,10 +152,7 @@ async function bitmapToWebp(bitmap: ImageBitmap): Promise<Blob | null> {
 
   if (typeof document === 'undefined') return null;
 
-  if (!sharedCanvas) {
-    sharedCanvas = document.createElement('canvas');
-  }
-  const canvas = sharedCanvas;
+  const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
