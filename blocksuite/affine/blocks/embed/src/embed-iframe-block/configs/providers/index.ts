@@ -1,3 +1,4 @@
+import { BilibiliEmbedConfig } from './bilibili';
 import { ExcalidrawEmbedConfig } from './excalidraw';
 import { GenericEmbedConfig } from './generic';
 import { GoogleDocsEmbedConfig } from './google-docs';
@@ -11,5 +12,6 @@ export const EmbedIframeConfigExtensions = [
   MiroEmbedConfig,
   ExcalidrawEmbedConfig,
   GoogleDocsEmbedConfig,
+  BilibiliEmbedConfig,
   GenericEmbedConfig,
 ];

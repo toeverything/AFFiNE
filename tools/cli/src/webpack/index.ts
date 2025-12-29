@@ -63,6 +63,17 @@ export function createHTMLTargetConfig(
 
   const buildConfig = getBuildConfigFromEnv(pkg);
 
+  console.log(
+    `Building [${pkg.name}] for [${buildConfig.appBuildType}] channel in [${buildConfig.debug ? 'development' : 'production'}] mode.`
+  );
+  console.log(
+    `Entry points: ${Object.entries(entry)
+      .map(([name, path]) => `${name}: ${path}`)
+      .join(', ')}`
+  );
+  console.log(`Output path: ${pkg.distPath.value}`);
+  console.log(`Config: ${JSON.stringify(buildConfig, null, 2)}`);
+
   const config: webpack.Configuration = {
     //#region basic webpack config
     name: entry['index'],

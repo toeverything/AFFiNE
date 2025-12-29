@@ -23,7 +23,7 @@ import {
   type ReadonlySignal,
   signal,
 } from '@preact/signals-core';
-import { html } from 'lit';
+import { html, nothing } from 'lit';
 import { query } from 'lit/decorators.js';
 import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -44,6 +44,10 @@ import type { EmbedIframeStatusCardOptions } from './types.js';
 import { safeGetIframeSrc } from './utils.js';
 
 export type EmbedIframeStatus = 'idle' | 'loading' | 'success' | 'error';
+
+const TRUSTED_SANDBOX =
+  'allow-same-origin allow-scripts allow-forms allow-presentation';
+const UNTRUSTED_SANDBOX = 'allow-scripts';
 
 export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIframeBlockModel> {
   selectedStyle$: ReadonlySignal<ClassInfo> | null = computed<ClassInfo>(
@@ -89,6 +93,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   });
 
   protected iframeOptions: IframeOptions | undefined = undefined;
+  private currentConfigName: string | undefined;
 
   get embedIframeService() {
     return this.std.get(EmbedIframeService);
@@ -279,6 +284,10 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     const config = this.embedIframeService?.getConfig(url);
     if (config) {
       this.iframeOptions = config.options;
+      this.currentConfigName = config.name;
+    } else {
+      this.iframeOptions = undefined;
+      this.currentConfigName = undefined;
     }
   };
 
@@ -328,26 +337,46 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       referrerpolicy,
       scrolling,
       allowFullscreen,
+      sandbox,
     } = this.iframeOptions ?? {};
     const width = `${widthPercent}%`;
     // if the block is in the surface, use 100% as the height
     // otherwise, use the heightInNote
     const height = this.inSurface ? '100%' : heightInNote;
-    return html`
-      <iframe
+    const sandboxValue =
+      sandbox ??
+      (this.currentConfigName === 'generic'
+        ? UNTRUSTED_SANDBOX
+        : TRUSTED_SANDBOX);
+    const sourceHost = this._getSourceHost();
+    return html`<iframe
         width=${width ?? DEFAULT_IFRAME_WIDTH}
         height=${height ?? DEFAULT_IFRAME_HEIGHT}
         ?allowfullscreen=${allowFullscreen}
         loading="lazy"
         frameborder="0"
         credentialless
+        sandbox=${sandboxValue}
         src=${ifDefined(iframeUrl)}
         allow=${ifDefined(allow)}
         referrerpolicy=${ifDefined(referrerpolicy)}
         scrolling=${ifDefined(scrolling)}
         style=${ifDefined(style)}
       ></iframe>
-    `;
+      ${sourceHost
+        ? html`<div class="affine-embed-iframe-source">${sourceHost}</div>`
+        : nothing}`;
+  };
+
+  private readonly _getSourceHost = () => {
+    const url = this.model.props.url ?? this.model.props.iframeUrl;
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname;
+    } catch {
+      return null;
+    }
   };
 
   private readonly _renderContent = () => {

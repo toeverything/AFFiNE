@@ -352,7 +352,8 @@ export class CloudBlobStorage extends BlobStorageBase {
         : undefined;
 
     try {
-      return await globalThis.fetch(input, {
+      const resolvedUrl = new URL(input, this.options.serverBaseUrl).toString();
+      return await globalThis.fetch(resolvedUrl, {
         ...init,
         signal: abortController.signal,
       });

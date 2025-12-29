@@ -473,6 +473,11 @@ impl DocStoragePool {
   }
 
   #[napi]
+  pub async fn fts_index_version(&self) -> Result<u32> {
+    Ok(SqliteDocStorage::index_version())
+  }
+
+  #[napi]
   pub async fn fts_delete_document(
     &self,
     id: String,

@@ -121,7 +121,7 @@ export const Form = () => {
       console.error(err);
       throw err;
     }
-  }, [emailValue, passwordValue, refreshServerConfig]);
+  }, [nameValue, emailValue, passwordValue, refreshServerConfig]);
 
   const onNext = useAsyncCallback(async () => {
     if (isCreateAdminStep) {

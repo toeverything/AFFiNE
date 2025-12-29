@@ -250,6 +250,7 @@ mod tests {
   use chrono::{DateTime, Utc};
 
   use super::*;
+  use crate::Data;
 
   async fn get_storage() -> SqliteDocStorage {
     let storage = SqliteDocStorage::new(":memory:".to_string());
@@ -293,7 +294,7 @@ mod tests {
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        bin: vec![0, 0],
+        bin: Into::<Data>::into(vec![0, 0]),
         timestamp: Utc::now().naive_utc(),
       })
       .await
@@ -373,7 +374,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: Into::<Data>::into(vec![0, 0]),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -391,7 +392,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: Into::<Data>::into(vec![0, 0]),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -404,7 +405,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 1],
+      bin: Into::<Data>::into(vec![0, 1]),
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),

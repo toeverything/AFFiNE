@@ -43,6 +43,44 @@ test.describe('Code Block Preview', () => {
     ).toBeVisible();
   });
 
+  test('enable mermaid preview', async ({ page }) => {
+    const code = page.locator('affine-code');
+    const mermaidSvg = page.locator('mermaid-preview .mermaid-preview-svg svg');
+
+    await openHomePage(page);
+    await createNewPage(page);
+    await waitForEditorLoad(page);
+    await gotoContentFromTitle(page);
+    await type(page, '```mermaid graph TD;A-->B');
+    await code.hover({
+      position: {
+        x: 155,
+        y: 65,
+      },
+    });
+    await page.getByText('Preview').click();
+    await expect(mermaidSvg).toBeVisible();
+  });
+
+  test('enable typst preview', async ({ page }) => {
+    const code = page.locator('affine-code');
+    const typstPreview = page.locator('typst-preview');
+
+    await openHomePage(page);
+    await createNewPage(page);
+    await waitForEditorLoad(page);
+    await gotoContentFromTitle(page);
+    await type(page, '```typst = Title');
+    await code.hover({
+      position: {
+        x: 155,
+        y: 65,
+      },
+    });
+    await page.getByText('Preview').click();
+    await expect(typstPreview).toBeVisible();
+  });
+
   test('change lang without preview', async ({ page }) => {
     const code = page.locator('affine-code');
     const preview = page.locator('affine-code .affine-code-block-preview');

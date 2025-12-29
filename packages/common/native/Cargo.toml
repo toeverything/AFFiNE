@@ -17,10 +17,11 @@ doc-loader = [
   "strum_macros",
   "text-splitter",
   "thiserror",
+  "tiktoken-rs",
   "tree-sitter",
   "url",
 ]
-hashcash = ["sha3", "rand"]
+hashcash = ["chrono", "sha3", "rand"]
 tree-sitter = [
   "cc",
   "dep:tree-sitter",
@@ -39,24 +40,24 @@ tree-sitter = [
 ydoc-loader = ["assert-json-diff", "serde", "serde_json", "thiserror", "y-octo"]
 
 [dependencies]
-chrono = { workspace = true }
-rand   = { workspace = true, optional = true }
-sha3   = { workspace = true, optional = true }
-
 assert-json-diff = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
 docx-parser = { workspace = true, optional = true }
 infer = { workspace = true, optional = true }
 path-ext = { workspace = true, optional = true }
 pdf-extract = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
 readability = { workspace = true, optional = true, default-features = false }
 serde = { workspace = true, optional = true, features = ["derive"] }
 serde_json = { workspace = true, optional = true }
+sha3 = { workspace = true, optional = true }
 strum_macros = { workspace = true, optional = true }
 text-splitter = { workspace = true, features = [
   "markdown",
   "tiktoken-rs",
 ], optional = true }
 thiserror = { workspace = true, optional = true }
+tiktoken-rs = { workspace = true, optional = true }
 tree-sitter = { workspace = true, optional = true }
 tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-c-sharp = { workspace = true, optional = true }
@@ -72,11 +73,10 @@ tree-sitter-typescript = { workspace = true, optional = true }
 url = { workspace = true, optional = true }
 y-octo = { workspace = true, optional = true }
 
-tiktoken-rs = { workspace = true }
-
 [dev-dependencies]
-criterion2 = { workspace = true }
-rayon      = { workspace = true }
+criterion = { workspace = true }
+rayon     = { workspace = true }
+tempfile  = "3"
 
 [build-dependencies]
 cc = { version = "1", optional = true }

@@ -1351,7 +1351,7 @@ jobs:
         run: |
           sudo add-apt-repository universe
           sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
-          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak update
           # some flatpak deps need git protocol.file.allow
           git config --global protocol.file.allow always

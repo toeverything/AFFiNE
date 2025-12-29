@@ -354,7 +354,7 @@ impl AggregateDevice {
     input_device_id: CFString,
     output_device_id: CFString,
   ) -> Result<CFDictionary<CFType, CFType>> {
-    let aggregate_device_name = CFString::new(&format!("Tap-{}", tap_id));
+    let aggregate_device_name = CFString::new(&format!("Tap-{tap_id}"));
     let aggregate_device_uid: uuid::Uuid = CFUUID::new().into();
     let aggregate_device_uid_string = aggregate_device_uid.to_string();
 
@@ -469,18 +469,12 @@ impl AudioTapStream {
       // Ignore errors as device might be disconnected
       let status = unsafe { AudioDeviceStop(self.input_device_id, proc_id) };
       if status != 0 {
-        println!(
-          "DEBUG: WARNING: Input device stop failed with status: {}",
-          status
-        );
+        println!("DEBUG: WARNING: Input device stop failed with status: {status}");
       }
 
       let status = unsafe { AudioDeviceDestroyIOProcID(self.input_device_id, proc_id) };
       if status != 0 {
-        println!(
-          "DEBUG: WARNING: Input device destroy IO proc failed with status: {}",
-          status
-        );
+        println!("DEBUG: WARNING: Input device destroy IO proc failed with status: {status}");
       }
     }
 
@@ -489,18 +483,12 @@ impl AudioTapStream {
       // Ignore errors as device might be disconnected
       let status = unsafe { AudioDeviceStop(self.output_device_id, proc_id) };
       if status != 0 {
-        println!(
-          "DEBUG: WARNING: Output device stop failed with status: {}",
-          status
-        );
+        println!("DEBUG: WARNING: Output device stop failed with status: {status}");
       }
 
       let status = unsafe { AudioDeviceDestroyIOProcID(self.output_device_id, proc_id) };
       if status != 0 {
-        println!(
-          "DEBUG: WARNING: Output device destroy IO proc failed with status: {}",
-          status
-        );
+        println!("DEBUG: WARNING: Output device destroy IO proc failed with status: {status}");
       }
     }
 
@@ -508,27 +496,18 @@ impl AudioTapStream {
     if device_exists {
       let status = unsafe { AudioDeviceDestroyIOProcID(self.device_id, self.in_proc_id) };
       if status != 0 {
-        println!(
-          "DEBUG: WARNING: Destroy IO proc failed with status: {}",
-          status
-        );
+        println!("DEBUG: WARNING: Destroy IO proc failed with status: {status}");
       }
     }
     let status = unsafe { AudioHardwareDestroyAggregateDevice(self.device_id) };
     if status != 0 {
-      println!(
-        "DEBUG: WARNING: AudioHardwareDestroyAggregateDevice failed with status: {}",
-        status
-      );
+      println!("DEBUG: WARNING: AudioHardwareDestroyAggregateDevice failed with status: {status}");
     }
 
     // Destroy the process tap - don't fail if this fails
     let status = unsafe { AudioHardwareDestroyProcessTap(self.device_id) };
     if status != 0 {
-      println!(
-        "DEBUG: WARNING: AudioHardwareDestroyProcessTap failed with status: {}",
-        status
-      );
+      println!("DEBUG: WARNING: AudioHardwareDestroyProcessTap failed with status: {status}");
     }
 
     // destroy the queue
@@ -743,10 +722,7 @@ impl AggregateDeviceManager {
               let stop_result = old_stream.stop();
               match stop_result {
                 Ok(_) => {}
-                Err(e) => println!(
-                  "DEBUG: Error stopping old stream (proceeding anyway): {}",
-                  e
-                ),
+                Err(e) => println!("DEBUG: Error stopping old stream (proceeding anyway): {e}"),
               };
               drop(old_stream); // Ensure it's dropped now
             }
@@ -757,12 +733,12 @@ impl AggregateDeviceManager {
                 *stream_guard = Some(new_stream);
               }
               Err(e) => {
-                println!("DEBUG: Failed to start new stream: {}", e);
+                println!("DEBUG: Failed to start new stream: {e}");
               }
             }
           }
           Err(e) => {
-            println!("DEBUG: Failed to create new device: {}", e);
+            println!("DEBUG: Failed to create new device: {e}");
           }
         }
       },
@@ -786,10 +762,7 @@ impl AggregateDeviceManager {
       );
 
       if status != 0 {
-        println!(
-          "DEBUG: Failed to register input device listener, status: {}",
-          status
-        );
+        println!("DEBUG: Failed to register input device listener, status: {status}");
         return Err(CoreAudioError::AddPropertyListenerBlockFailed(status).into());
       }
 
@@ -805,10 +778,7 @@ impl AggregateDeviceManager {
       );
 
       if status != 0 {
-        println!(
-          "DEBUG: Failed to register output device listener, status: {}",
-          status
-        );
+        println!("DEBUG: Failed to register output device listener, status: {status}");
         // Clean up the first listener if the second one fails
         AudioObjectRemovePropertyListenerBlock(
           kAudioObjectSystemObject,
@@ -907,10 +877,7 @@ impl AggregateDeviceManager {
     if let Some(mut stream) = stream_to_stop {
       match stream.stop() {
         Ok(_) => {}
-        Err(e) => println!(
-          "DEBUG: Error stopping stream in stop_capture (ignored): {}",
-          e
-        ),
+        Err(e) => println!("DEBUG: Error stopping stream in stop_capture (ignored): {e}"),
       }
       // Explicitly drop here after stopping
       drop(stream);
@@ -960,7 +927,7 @@ impl AggregateDeviceManager {
       match stream.get_actual_sample_rate() {
         Ok(rate) => Ok(Some(rate)),
         Err(e) => {
-          println!("DEBUG: Error getting actual sample rate from stream: {}", e);
+          println!("DEBUG: Error getting actual sample rate from stream: {e}");
           // Propagate the error
           Err(e)
         }
@@ -976,7 +943,7 @@ impl Drop for AggregateDeviceManager {
     // Call stop_capture which handles listener cleanup and stream stopping
     match self.stop_capture() {
       Ok(_) => {}
-      Err(e) => println!("DEBUG: Error during stop_capture in Drop (ignored): {}", e),
+      Err(e) => println!("DEBUG: Error during stop_capture in Drop (ignored): {e}"),
     }
   }
 }
