@@ -510,7 +510,7 @@ export function createNodeTargetConfig(
   pkg: Package,
   entry: string
 ): Omit<webpack.Configuration, 'name'> & { name: string } {
-  const buildConfig = getBuildConfigFromEnv(pkg);
+  const dev = process.env.NODE_ENV === 'development';
   return {
     name: entry,
     context: ProjectRoot.value,
@@ -542,7 +542,7 @@ export function createNodeTargetConfig(
     },
     externalsPresets: { node: true },
     node: { __dirname: false, __filename: false },
-    mode: buildConfig.debug ? 'development' : 'production',
+    mode: dev ? 'development' : 'production',
     devtool: 'source-map',
     resolve: {
       symlinks: true,
@@ -620,7 +620,7 @@ export function createNodeTargetConfig(
     stats: { errorDetails: true },
     optimization: {
       nodeEnv: false,
-      minimize: !buildConfig.debug,
+      minimize: !dev,
       minimizer: [
         new TerserPlugin({
           minify: TerserPlugin.swcMinify,
