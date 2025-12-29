@@ -434,7 +434,11 @@ export class S3StorageProvider implements StorageProvider {
 
       this.logger.verbose(`Deleted object \`${key}\``);
     } catch (e) {
-      this.logger.error(`Failed to delete object \`${key}\``);
+      this.logger.error(`Failed to delete object \`${key}\``, {
+        bucket: this.bucket,
+        key,
+        cause: e,
+      });
       throw e;
     }
   }
