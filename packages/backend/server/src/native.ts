@@ -42,6 +42,8 @@ export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const parseYDocFromBinary = serverNativeModule.parseDocFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
+export const parsePageDocFromBinary = serverNativeModule.parsePageDoc;
+export const parseWorkspaceDocFromBinary = serverNativeModule.parseWorkspaceDoc;
 export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;

@@ -71,6 +71,19 @@ pub struct CrawlResult {
   pub summary: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PageDocContent {
+  pub title: String,
+  pub summary: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkspaceDocContent {
+  pub name: String,
+  #[serde(rename = "avatarKey")]
+  pub avatar_key: String,
+}
+
 #[derive(Error, Debug, Serialize, Deserialize)]
 pub enum ParseError {
   #[error("doc_not_found")]
@@ -95,6 +108,114 @@ impl From<JwstCodecError> for ParseError {
 pub struct MarkdownResult {
   pub title: String,
   pub markdown: String,
+}
+
+pub fn parse_workspace_doc(doc_bin: Vec<u8>) -> Result<Option<WorkspaceDocContent>, ParseError> {
+  if doc_bin.is_empty() || doc_bin == [0, 0] {
+    return Err(ParseError::InvalidBinary);
+  }
+
+  let mut doc = DocOptions::new().build();
+  doc
+    .apply_update_from_binary_v1(&doc_bin)
+    .map_err(|_| ParseError::InvalidBinary)?;
+
+  let meta = match doc.get_map("meta") {
+    Ok(meta) => meta,
+    Err(_) => return Ok(None),
+  };
+
+  let name = get_string(&meta, "name").unwrap_or_default();
+  let avatar_key = get_string(&meta, "avatar").unwrap_or_default();
+
+  Ok(Some(WorkspaceDocContent { name, avatar_key }))
+}
+
+pub fn parse_page_doc(
+  doc_bin: Vec<u8>,
+  max_summary_length: Option<isize>,
+) -> Result<Option<PageDocContent>, ParseError> {
+  if doc_bin.is_empty() || doc_bin == [0, 0] {
+    return Err(ParseError::InvalidBinary);
+  }
+
+  let mut doc = DocOptions::new().build();
+  doc
+    .apply_update_from_binary_v1(&doc_bin)
+    .map_err(|_| ParseError::InvalidBinary)?;
+
+  let blocks_map = match doc.get_map("blocks") {
+    Ok(map) => map,
+    Err(_) => return Ok(None),
+  };
+
+  if blocks_map.is_empty() {
+    return Ok(None);
+  }
+
+  let Some(context) = DocContext::from_blocks_map(&blocks_map, PAGE_FLAVOUR) else {
+    return Ok(None);
+  };
+
+  let mut stack = vec![context.root_block_id.clone()];
+  let mut content = PageDocContent {
+    title: context
+      .block_pool
+      .get(&context.root_block_id)
+      .and_then(|block| get_string(block, "prop:title"))
+      .unwrap_or_default(),
+    summary: String::new(),
+  };
+
+  let mut summary_remaining = max_summary_length.unwrap_or(150);
+
+  while let Some(block_id) = stack.pop() {
+    let Some(block) = context.block_pool.get(&block_id) else {
+      break;
+    };
+
+    let Some(flavour) = get_flavour(block) else {
+      continue;
+    };
+
+    match flavour.as_str() {
+      "affine:page" | "affine:note" => {
+        push_children(&mut stack, block);
+      }
+      "affine:attachment" | "affine:transcription" | "affine:callout" => {
+        if summary_remaining == -1 {
+          push_children(&mut stack, block);
+        }
+      }
+      "affine:database" => {
+        if summary_remaining == -1 {
+          append_database_summary(&mut content.summary, block, &context);
+        }
+      }
+      "affine:table" => {
+        if summary_remaining == -1 {
+          let contents = gather_table_contents(block);
+          if !contents.is_empty() {
+            content.summary.push_str(&contents.join("|"));
+          }
+        }
+      }
+      "affine:paragraph" | "affine:list" | "affine:code" => {
+        push_children(&mut stack, block);
+        if let Some((text, len)) = text_content_for_summary(block, "prop:text") {
+          if summary_remaining == -1 {
+            content.summary.push_str(&text);
+          } else if summary_remaining > 0 {
+            content.summary.push_str(&text);
+            summary_remaining -= len as isize;
+          }
+        }
+      }
+      _ => {}
+    }
+  }
+
+  Ok(Some(content))
 }
 
 pub fn parse_doc_to_markdown(
@@ -161,60 +282,32 @@ pub fn parse_doc_to_markdown(
       let title = get_string(block, "prop:title").unwrap_or_default();
       markdown.push_str(&format!("\n### {title}\n"));
 
-      let columns = parse_database_columns(block);
-      let cells_map = block.get("prop:cells").and_then(|v| v.to_map());
-
-      if let (Some(columns), Some(cells_map)) = (columns, cells_map) {
+      if let Some(table) = build_database_table(block, &context, &md_options) {
         let escape_table = |s: &str| s.replace('|', "\\|").replace('\n', "<br>");
-        let mut table = String::new();
+        let mut table_md = String::new();
 
-        table.push('|');
-        for column in &columns {
-          table.push_str(&escape_table(column.name.as_deref().unwrap_or_default()));
-          table.push('|');
+        table_md.push('|');
+        for column in &table.columns {
+          table_md.push_str(&escape_table(column.name.as_deref().unwrap_or_default()));
+          table_md.push('|');
         }
-        table.push('\n');
+        table_md.push('\n');
 
-        table.push('|');
-        for _ in &columns {
-          table.push_str("---|");
+        table_md.push('|');
+        for _ in &table.columns {
+          table_md.push_str("---|");
         }
-        table.push('\n');
+        table_md.push('\n');
 
-        let child_ids = collect_child_ids(block);
-        for child_id in child_ids {
-          table.push('|');
-          let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
-
-          for column in &columns {
-            let mut cell_text = String::new();
-            if column.col_type == "title" {
-              if let Some(child_block) = context.block_pool.get(&child_id) {
-                if let Some(text_md) =
-                  text_to_inline_markdown(child_block, "prop:text", &md_options)
-                {
-                  cell_text = text_md;
-                } else if let Some((text, _)) = text_content(child_block, "prop:text") {
-                  cell_text = text;
-                }
-              }
-            } else if let Some(row_cells) = &row_cells {
-              if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
-                if let Some(value) = cell_val.get("value") {
-                  if let Some(text_md) = delta_value_to_inline_markdown(&value, &md_options) {
-                    cell_text = text_md;
-                  } else {
-                    cell_text = format_cell_value(&value, column);
-                  }
-                }
-              }
-            }
-            table.push_str(&escape_table(&cell_text));
-            table.push('|');
+        for row in table.rows.into_iter() {
+          table_md.push('|');
+          for cell_text in row.into_iter() {
+            table_md.push_str(&escape_table(&cell_text));
+            table_md.push('|');
           }
-          table.push('\n');
+          table_md.push('\n');
         }
-        append_table_block(&mut markdown, &table);
+        append_table_block(&mut markdown, &table_md);
       }
       continue;
     }
@@ -700,6 +793,117 @@ fn gather_table_contents(block: &Map) -> Vec<String> {
     }
   }
   contents
+}
+
+struct DatabaseTable {
+  columns: Vec<DatabaseColumn>,
+  rows: Vec<Vec<String>>,
+}
+
+fn build_database_table(
+  block: &Map,
+  context: &DocContext,
+  md_options: &DeltaToMdOptions,
+) -> Option<DatabaseTable> {
+  let columns = parse_database_columns(block)?;
+  let cells_map = block.get("prop:cells").and_then(|v| v.to_map())?;
+  let child_ids = collect_child_ids(block);
+
+  let mut rows = Vec::new();
+  for child_id in child_ids {
+    let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
+    let mut row = Vec::new();
+
+    for column in columns.iter() {
+      let mut cell_text = String::new();
+      if column.col_type == "title" {
+        if let Some(child_block) = context.block_pool.get(&child_id) {
+          if let Some(text_md) = text_to_inline_markdown(child_block, "prop:text", md_options) {
+            cell_text = text_md;
+          } else if let Some((text, _)) = text_content(child_block, "prop:text") {
+            cell_text = text;
+          } else if let Some((text, _)) = text_content_for_summary(child_block, "prop:text") {
+            cell_text = text;
+          }
+        }
+      } else if let Some(row_cells) = &row_cells {
+        if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
+          if let Some(value) = cell_val.get("value") {
+            if let Some(text_md) = delta_value_to_inline_markdown(&value, md_options) {
+              cell_text = text_md;
+            } else {
+              cell_text = format_cell_value(&value, column);
+            }
+          }
+        }
+      }
+
+      row.push(cell_text);
+    }
+    rows.push(row);
+  }
+
+  Some(DatabaseTable { columns, rows })
+}
+
+fn append_database_summary(summary: &mut String, block: &Map, context: &DocContext) {
+  let md_options = DeltaToMdOptions::new(None);
+  let Some(table) = build_database_table(block, context, &md_options) else {
+    return;
+  };
+
+  if let Some(title) = get_string(block, "prop:title") {
+    if !title.is_empty() {
+      summary.push_str(&title);
+      summary.push('|');
+    }
+  }
+
+  for column in table.columns.iter() {
+    if let Some(name) = column.name.as_ref() {
+      if !name.is_empty() {
+        summary.push_str(name);
+        summary.push('|');
+      }
+    }
+    for option in column.options.iter() {
+      if let Some(value) = option.value.as_ref() {
+        if !value.is_empty() {
+          summary.push_str(value);
+          summary.push('|');
+        }
+      }
+    }
+  }
+
+  for row in table.rows.iter() {
+    for cell_text in row.iter() {
+      if !cell_text.is_empty() {
+        summary.push_str(cell_text);
+        summary.push('|');
+      }
+    }
+  }
+}
+
+fn push_children(queue: &mut Vec<String>, block: &Map) {
+  let mut child_ids = collect_child_ids(block);
+  for child_id in child_ids.drain(..).rev() {
+    queue.push(child_id);
+  }
+}
+
+fn text_content_for_summary(block: &Map, key: &str) -> Option<(String, usize)> {
+  if let Some((text, len)) = text_content(block, key) {
+    return Some((text, len));
+  }
+
+  block.get(key).and_then(|value| {
+    value_to_string(&value).map(|text| {
+      let len = text.chars().count();
+      (text, len)
+    })
+  })
 }
 
 struct DatabaseOption {

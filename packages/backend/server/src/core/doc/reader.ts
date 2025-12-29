@@ -1,11 +1,6 @@
 import { FactoryProvider, Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import {
-  applyUpdate,
-  diffUpdate,
-  Doc as YDoc,
-  encodeStateVectorFromUpdate,
-} from 'yjs';
+import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
   Cache,
@@ -48,16 +43,14 @@ export abstract class DocReader {
     protected readonly blobStorage: WorkspaceBlobStorage
   ) {}
 
+  // keep methods to allow test mocking
   parseDocContent(bin: Uint8Array, maxSummaryLength = 150) {
-    const doc = new YDoc();
-    applyUpdate(doc, bin);
-    return parsePageDoc(doc, { maxSummaryLength });
+    return parsePageDoc(bin, { maxSummaryLength });
   }
 
+  // keep methods to allow test mocking
   parseWorkspaceContent(bin: Uint8Array) {
-    const doc = new YDoc();
-    applyUpdate(doc, bin);
-    return parseWorkspaceDoc(doc);
+    return parseWorkspaceDoc(bin);
   }
 
   abstract getDoc(
