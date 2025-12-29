@@ -14,7 +14,7 @@ import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
 import { Config, URLHelper } from '../../base';
 import { Namespace } from '../../env';
-import { Feature } from '../../models';
+import { Feature, type WorkspaceFeatureName } from '../../models';
 import { CurrentUser, Public } from '../auth';
 import { Admin } from '../common';
 import { AvailableUserFeatureConfig } from '../features';
@@ -75,7 +75,7 @@ export class ServerConfigResolver {
       name:
         this.config.server.name ??
         (env.selfhosted
-          ? 'AFFiNE Selfhosted Cloud'
+          ? 'AFFiNE SelfHosted Cloud'
           : env.namespaces.canary
             ? 'AFFiNE Canary Cloud'
             : env.namespaces.beta
@@ -85,8 +85,6 @@ export class ServerConfigResolver {
       baseUrl: this.url.requestBaseUrl,
       type: env.DEPLOYMENT_TYPE,
       features: this.server.features,
-      // TODO(@fengmk2): remove this field after the feature 0.25.0 is released
-      allowGuestDemoWorkspace: this.config.flags.allowGuestDemoWorkspace,
     };
   }
 
@@ -169,6 +167,13 @@ export class ServerFeatureConfigResolver extends AvailableUserFeatureConfig {
   })
   override availableUserFeatures() {
     return super.availableUserFeatures();
+  }
+
+  @ResolveField(() => [Feature], {
+    description: 'Workspace features available for admin configuration',
+  })
+  availableWorkspaceFeatures(): WorkspaceFeatureName[] {
+    return ['unlimited_workspace', 'team_plan_v1'];
   }
 }
 

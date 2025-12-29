@@ -27,23 +27,10 @@ export class MockUser extends Mocker<MockUserInput, MockedUser> {
     });
 
     if (feature) {
-      const featureRecord = await this.db.feature.findFirst({
-        where: {
-          name: feature,
-        },
-      });
-
-      if (!featureRecord) {
-        throw new Error(
-          `Feature ${feature} does not exist in DB. You might forgot to run data-migration first.`
-        );
-      }
-
       const config = FeatureConfigs[feature];
       await this.db.userFeature.create({
         data: {
           userId: user.id,
-          featureId: featureRecord.id,
           name: feature,
           type: config.type,
           reason: 'test',

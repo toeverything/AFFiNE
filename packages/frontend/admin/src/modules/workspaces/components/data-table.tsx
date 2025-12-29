@@ -1,0 +1,61 @@
+import type { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import type { ColumnDef, PaginationState } from '@tanstack/react-table';
+import type { Dispatch, SetStateAction } from 'react';
+
+import { SharedDataTable } from '../../../components/shared/data-table';
+import { DataTableToolbar } from './data-table-toolbar';
+
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  pagination: PaginationState;
+  workspacesCount: number;
+  keyword: string;
+  onKeywordChange: (value: string) => void;
+  selectedFeatures: FeatureType[];
+  onFeaturesChange: (features: FeatureType[]) => void;
+  sort: AdminWorkspaceSort | undefined;
+  onSortChange: (sort: AdminWorkspaceSort | undefined) => void;
+  onPaginationChange: Dispatch<
+    SetStateAction<{
+      pageIndex: number;
+      pageSize: number;
+    }>
+  >;
+}
+
+export function DataTable<TData extends { id: string }, TValue>({
+  columns,
+  data,
+  pagination,
+  workspacesCount,
+  keyword,
+  onKeywordChange,
+  selectedFeatures,
+  onFeaturesChange,
+  sort,
+  onSortChange,
+  onPaginationChange,
+}: DataTableProps<TData, TValue>) {
+  return (
+    <SharedDataTable
+      columns={columns}
+      data={data}
+      totalCount={workspacesCount}
+      pagination={pagination}
+      onPaginationChange={onPaginationChange}
+      resetFiltersDeps={[keyword, selectedFeatures, sort]}
+      renderToolbar={table => (
+        <DataTableToolbar
+          table={table}
+          keyword={keyword}
+          onKeywordChange={onKeywordChange}
+          selectedFeatures={selectedFeatures}
+          onFeaturesChange={onFeaturesChange}
+          sort={sort}
+          onSortChange={onSortChange}
+        />
+      )}
+    />
+  );
+}

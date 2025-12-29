@@ -15,10 +15,10 @@ import {
 import type { Request, Response } from 'express';
 
 import {
+  ActionForbidden,
   Cache,
   Config,
   CryptoHelper,
-  EarlyAccessRequired,
   EmailTokenNotFound,
   InvalidAuthState,
   InvalidEmail,
@@ -120,7 +120,7 @@ export class AuthController {
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
     if (!canSignIn) {
-      throw new EarlyAccessRequired();
+      throw new ActionForbidden();
     }
 
     if (credential.password) {

@@ -213,12 +213,6 @@ export class WrongSignInMethod extends UserFriendlyError {
   }
 }
 
-export class EarlyAccessRequired extends UserFriendlyError {
-  constructor(message?: string) {
-    super('action_forbidden', 'early_access_required', message);
-  }
-}
-
 export class SignUpForbidden extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'sign_up_forbidden', message);
@@ -1146,7 +1140,6 @@ export enum ErrorNames {
   INVALID_PASSWORD_LENGTH,
   PASSWORD_REQUIRED,
   WRONG_SIGN_IN_METHOD,
-  EARLY_ACCESS_REQUIRED,
   SIGN_UP_FORBIDDEN,
   EMAIL_TOKEN_NOT_FOUND,
   INVALID_EMAIL_TOKEN,

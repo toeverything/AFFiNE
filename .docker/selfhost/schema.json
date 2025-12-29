@@ -611,11 +611,6 @@
       "type": "object",
       "description": "Configuration for flags module",
       "properties": {
-        "earlyAccessControl": {
-          "type": "boolean",
-          "description": "Only allow users with early access features to access the app\n@default false",
-          "default": false
-        },
         "allowGuestDemoWorkspace": {
           "type": "boolean",
           "description": "Whether allow guest users to create demo workspaces.\n@default true",

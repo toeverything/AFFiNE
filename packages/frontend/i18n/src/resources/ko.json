@@ -2123,7 +2123,6 @@
   "error.INVALID_PASSWORD_LENGTH": "비밀번호는 {{min}}자에서 {{max}}자 사이여야 합니다",
   "error.PASSWORD_REQUIRED": "비밀번호가 필요합니다.",
   "error.WRONG_SIGN_IN_METHOD": "가입한 방법과 다른 방법으로 로그인하려고 합니다.",
-  "error.EARLY_ACCESS_REQUIRED": "얼리 액세스 권한이 없습니다. 자세한 내용은 https://community.affine.pro/c/insider-general/을 방문하세요.",
   "error.SIGN_UP_FORBIDDEN": "회원가입이 허용되지 않습니다.",
   "error.EMAIL_TOKEN_NOT_FOUND": "제공된 이메일 토큰을 찾을 수 없습니다.",
   "error.INVALID_EMAIL_TOKEN": "잘못된 이메일 토큰이 제공되었습니다.",

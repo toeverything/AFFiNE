@@ -225,32 +225,9 @@ model WorkspaceDocUserRole {
   @@map("workspace_page_user_permissions")
 }
 
-model Feature {
-  id                Int      @id @default(autoincrement())
-  name              String   @map("feature") @db.VarChar
-  configs           Json     @default("{}") @db.Json
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  /// TODO(@forehalo): remove in the coming version
-  /// @deprecated
-  /// we don't need to record all the historical version of features
-  deprecatedVersion Int      @default(0) @map("version") @db.Integer
-  /// @deprecated
-  /// we don't need to record type of features any more, there are always static,
-  /// but set it in `WorkspaceFeature` and `UserFeature` for fast query with just a little redundant.
-  deprecatedType    Int      @default(0) @map("type") @db.Integer
-
-  userFeatures      UserFeature[]
-  workspaceFeatures WorkspaceFeature[]
-
-  @@unique([name, deprecatedVersion])
-  @@map("features")
-}
-
 model UserFeature {
   id        Int       @id @default(autoincrement())
   userId    String    @map("user_id") @db.VarChar
-  featureId Int       @map("feature_id") @db.Integer
   // it should be typed as `optional` in the codebase, but we would keep all values exists during data migration.
   // so it's safe to assert it a non-null value.
   name      String    @default("") @map("name") @db.VarChar
@@ -261,19 +238,16 @@ model UserFeature {
   expiredAt DateTime? @map("expired_at") @db.Timestamptz(3)
   activated Boolean   @default(false)
 
-  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([name])
-  @@index([featureId])
   @@map("user_features")
 }
 
 model WorkspaceFeature {
   id          Int       @id @default(autoincrement())
   workspaceId String    @map("workspace_id") @db.VarChar
-  featureId   Int       @map("feature_id") @db.Integer
   // it should be typed as `optional` in the codebase, but we would keep all values exists during data migration.
   // so it's safe to assert it a non-null value.
   name        String    @default("") @map("name") @db.VarChar
@@ -286,12 +260,10 @@ model WorkspaceFeature {
   activated   Boolean   @default(false)
   expiredAt   DateTime? @map("expired_at") @db.Timestamptz(3)
 
-  feature   Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@index([name])
-  @@index([featureId])
   @@map("workspace_features")
 }
 

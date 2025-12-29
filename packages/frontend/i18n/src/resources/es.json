@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "La contraseña debe tener entre {{min}} y {{max}} caracteres",
   "error.PASSWORD_REQUIRED": "Se requiere contraseña.",
   "error.WRONG_SIGN_IN_METHOD": "Está intentando iniciar sesión con un método diferente al que utilizó para registrarse.",
-  "error.EARLY_ACCESS_REQUIRED": "No tiene permiso de acceso anticipado. Visite https://community.affine.pro/c/insider-general/ para más información.",
   "error.SIGN_UP_FORBIDDEN": "No tiene permitido registrarse.",
   "error.EMAIL_TOKEN_NOT_FOUND": "El token de correo electrónico proporcionado no se encuentra.",
   "error.INVALID_EMAIL_TOKEN": "Se ha proporcionado un token de correo electrónico inválido.",

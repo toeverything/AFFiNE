@@ -9,5 +9,5 @@ query listUsers($filter: ListUserInput!) {
     emailVerified
     avatarUrl
   }
-  usersCount
+  usersCount(filter: $filter)
 }

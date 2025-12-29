@@ -1,7 +1,9 @@
 import {
   createContext,
+  type Dispatch,
   type ReactNode,
   type RefObject,
+  type SetStateAction,
   useContext,
 } from 'react';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
@@ -15,9 +17,14 @@ export type SinglePanelContextType = {
   closePanel: () => void;
 };
 
+export type RightPanelContextType = SinglePanelContextType & {
+  hasDirtyChanges: boolean;
+  setHasDirtyChanges: Dispatch<SetStateAction<boolean>>;
+};
+
 export interface PanelContextType {
   leftPanel: SinglePanelContextType;
-  rightPanel: SinglePanelContextType;
+  rightPanel: RightPanelContextType;
 }
 
 export type ResizablePanelProps = {

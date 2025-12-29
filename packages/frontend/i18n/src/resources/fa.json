@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "رمز عبور باید بین {{min}} و {{max}} کاراکتر باشد",
   "error.PASSWORD_REQUIRED": "وارد کردن رمز عبور ضروری است.",
   "error.WRONG_SIGN_IN_METHOD": "شما در حال تلاش برای ورود با روشی متفاوت از روشی هستید که با آن ثبت‌نام کرده‌اید.",
-  "error.EARLY_ACCESS_REQUIRED": "شما اجازه دسترسی زودهنگام ندارید. برای اطلاعات بیشتر به https://community.affine.pro/c/insider-general/ مراجعه کنید.",
   "error.SIGN_UP_FORBIDDEN": "اجازه ثبت نام ندارید.",
   "error.EMAIL_TOKEN_NOT_FOUND": "توکن ایمیل ارائه شده یافت نشد.",
   "error.INVALID_EMAIL_TOKEN": "یک توکن ایمیل نامعتبر ارائه شده است.",
