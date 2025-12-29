@@ -1,4 +1,6 @@
-use affine_common::doc_parser::{self, BlockInfo, CrawlResult, MarkdownResult};
+use affine_common::doc_parser::{
+  self, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent,
+};
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
@@ -13,6 +15,36 @@ impl From<MarkdownResult> for NativeMarkdownResult {
     Self {
       title: result.title,
       markdown: result.markdown,
+    }
+  }
+}
+
+#[napi(object)]
+pub struct NativePageDocContent {
+  pub title: String,
+  pub summary: String,
+}
+
+impl From<PageDocContent> for NativePageDocContent {
+  fn from(result: PageDocContent) -> Self {
+    Self {
+      title: result.title,
+      summary: result.summary,
+    }
+  }
+}
+
+#[napi(object)]
+pub struct NativeWorkspaceDocContent {
+  pub name: String,
+  pub avatar_key: String,
+}
+
+impl From<WorkspaceDocContent> for NativeWorkspaceDocContent {
+  fn from(result: WorkspaceDocContent) -> Self {
+    Self {
+      name: result.name,
+      avatar_key: result.avatar_key,
     }
   }
 }
@@ -68,6 +100,23 @@ pub fn parse_doc_from_binary(doc_bin: Buffer, doc_id: String) -> Result<NativeCr
   let result = doc_parser::parse_doc_from_binary(doc_bin.into(), doc_id)
     .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result.into())
+}
+
+#[napi]
+pub fn parse_page_doc(
+  doc_bin: Buffer,
+  max_summary_length: Option<i32>,
+) -> Result<Option<NativePageDocContent>> {
+  let result = doc_parser::parse_page_doc(doc_bin.into(), max_summary_length.map(|v| v as isize))
+    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  Ok(result.map(Into::into))
+}
+
+#[napi]
+pub fn parse_workspace_doc(doc_bin: Buffer) -> Result<Option<NativeWorkspaceDocContent>> {
+  let result = doc_parser::parse_workspace_doc(doc_bin.into())
+    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  Ok(result.map(Into::into))
 }
 
 #[napi]

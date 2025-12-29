@@ -50,6 +50,16 @@ export interface NativeMarkdownResult {
   markdown: string
 }
 
+export interface NativePageDocContent {
+  title: string
+  summary: string
+}
+
+export interface NativeWorkspaceDocContent {
+  name: string
+  avatarKey: string
+}
+
 export interface ParsedDoc {
   name: string
   chunks: Array<Chunk>
@@ -60,6 +70,10 @@ export declare function parseDoc(filePath: string, doc: Buffer): Promise<ParsedD
 export declare function parseDocFromBinary(docBin: Buffer, docId: string): NativeCrawlResult
 
 export declare function parseDocToMarkdown(docBin: Buffer, docId: string, aiEditable?: boolean | undefined | null, docUrlPrefix?: string | undefined | null): NativeMarkdownResult
+
+export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number | undefined | null): NativePageDocContent | null
+
+export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 

@@ -1,11 +1,6 @@
 import { FactoryProvider, Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import {
-  applyUpdate,
-  diffUpdate,
-  Doc as YDoc,
-  encodeStateVectorFromUpdate,
-} from 'yjs';
+import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
   Cache,
@@ -47,18 +42,6 @@ export abstract class DocReader {
     protected readonly models: Models,
     protected readonly blobStorage: WorkspaceBlobStorage
   ) {}
-
-  parseDocContent(bin: Uint8Array, maxSummaryLength = 150) {
-    const doc = new YDoc();
-    applyUpdate(doc, bin);
-    return parsePageDoc(doc, { maxSummaryLength });
-  }
-
-  parseWorkspaceContent(bin: Uint8Array) {
-    const doc = new YDoc();
-    applyUpdate(doc, bin);
-    return parseWorkspaceDoc(doc);
-  }
 
   abstract getDoc(
     workspaceId: string,
@@ -224,7 +207,9 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    return this.parseDocContent(docRecord.bin, fullContent ? -1 : 150);
+    return parsePageDoc(docRecord.bin, {
+      maxSummaryLength: fullContent ? -1 : 150,
+    });
   }
 
   protected override async getWorkspaceContentWithoutCache(
@@ -234,7 +219,7 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    const content = this.parseWorkspaceContent(docRecord.bin);
+    const content = parseWorkspaceDoc(docRecord.bin);
     if (!content) {
       return null;
     }
