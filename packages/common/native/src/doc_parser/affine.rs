@@ -282,60 +282,32 @@ pub fn parse_doc_to_markdown(
       let title = get_string(block, "prop:title").unwrap_or_default();
       markdown.push_str(&format!("\n### {title}\n"));
 
-      let columns = parse_database_columns(block);
-      let cells_map = block.get("prop:cells").and_then(|v| v.to_map());
-
-      if let (Some(columns), Some(cells_map)) = (columns, cells_map) {
+      if let Some(table) = build_database_table(block, &context, &md_options) {
         let escape_table = |s: &str| s.replace('|', "\\|").replace('\n', "<br>");
-        let mut table = String::new();
+        let mut table_md = String::new();
 
-        table.push('|');
-        for column in &columns {
-          table.push_str(&escape_table(column.name.as_deref().unwrap_or_default()));
-          table.push('|');
+        table_md.push('|');
+        for column in &table.columns {
+          table_md.push_str(&escape_table(column.name.as_deref().unwrap_or_default()));
+          table_md.push('|');
         }
-        table.push('\n');
+        table_md.push('\n');
 
-        table.push('|');
-        for _ in &columns {
-          table.push_str("---|");
+        table_md.push('|');
+        for _ in &table.columns {
+          table_md.push_str("---|");
         }
-        table.push('\n');
+        table_md.push('\n');
 
-        let child_ids = collect_child_ids(block);
-        for child_id in child_ids {
-          table.push('|');
-          let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
-
-          for column in &columns {
-            let mut cell_text = String::new();
-            if column.col_type == "title" {
-              if let Some(child_block) = context.block_pool.get(&child_id) {
-                if let Some(text_md) =
-                  text_to_inline_markdown(child_block, "prop:text", &md_options)
-                {
-                  cell_text = text_md;
-                } else if let Some((text, _)) = text_content(child_block, "prop:text") {
-                  cell_text = text;
-                }
-              }
-            } else if let Some(row_cells) = &row_cells {
-              if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
-                if let Some(value) = cell_val.get("value") {
-                  if let Some(text_md) = delta_value_to_inline_markdown(&value, &md_options) {
-                    cell_text = text_md;
-                  } else {
-                    cell_text = format_cell_value(&value, column);
-                  }
-                }
-              }
-            }
-            table.push_str(&escape_table(&cell_text));
-            table.push('|');
+        for row in table.rows.into_iter() {
+          table_md.push('|');
+          for cell_text in row.into_iter() {
+            table_md.push_str(&escape_table(&cell_text));
+            table_md.push('|');
           }
-          table.push('\n');
+          table_md.push('\n');
         }
-        append_table_block(&mut markdown, &table);
+        append_table_block(&mut markdown, &table_md);
       }
       continue;
     }
@@ -823,7 +795,63 @@ fn gather_table_contents(block: &Map) -> Vec<String> {
   contents
 }
 
+struct DatabaseTable {
+  columns: Vec<DatabaseColumn>,
+  rows: Vec<Vec<String>>,
+}
+
+fn build_database_table(
+  block: &Map,
+  context: &DocContext,
+  md_options: &DeltaToMdOptions,
+) -> Option<DatabaseTable> {
+  let columns = parse_database_columns(block)?;
+  let cells_map = block.get("prop:cells").and_then(|v| v.to_map())?;
+  let child_ids = collect_child_ids(block);
+
+  let mut rows = Vec::new();
+  for child_id in child_ids {
+    let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
+    let mut row = Vec::new();
+
+    for column in columns.iter() {
+      let mut cell_text = String::new();
+      if column.col_type == "title" {
+        if let Some(child_block) = context.block_pool.get(&child_id) {
+          if let Some(text_md) = text_to_inline_markdown(child_block, "prop:text", md_options) {
+            cell_text = text_md;
+          } else if let Some((text, _)) = text_content(child_block, "prop:text") {
+            cell_text = text;
+          } else if let Some((text, _)) = text_content_for_summary(child_block, "prop:text") {
+            cell_text = text;
+          }
+        }
+      } else if let Some(row_cells) = &row_cells {
+        if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
+          if let Some(value) = cell_val.get("value") {
+            if let Some(text_md) = delta_value_to_inline_markdown(&value, md_options) {
+              cell_text = text_md;
+            } else {
+              cell_text = format_cell_value(&value, column);
+            }
+          }
+        }
+      }
+
+      row.push(cell_text);
+    }
+    rows.push(row);
+  }
+
+  Some(DatabaseTable { columns, rows })
+}
+
 fn append_database_summary(summary: &mut String, block: &Map, context: &DocContext) {
+  let md_options = DeltaToMdOptions::new(None);
+  let Some(table) = build_database_table(block, context, &md_options) else {
+    return;
+  };
+
   if let Some(title) = get_string(block, "prop:title") {
     if !title.is_empty() {
       summary.push_str(&title);
@@ -831,59 +859,28 @@ fn append_database_summary(summary: &mut String, block: &Map, context: &DocConte
     }
   }
 
-  let columns = parse_database_columns(block);
-  if let Some(columns) = &columns {
-    for column in columns.iter() {
-      if let Some(name) = column.name.as_ref() {
-        if !name.is_empty() {
-          summary.push_str(name);
-          summary.push('|');
-        }
+  for column in table.columns.iter() {
+    if let Some(name) = column.name.as_ref() {
+      if !name.is_empty() {
+        summary.push_str(name);
+        summary.push('|');
       }
-      for option in column.options.iter() {
-        if let Some(value) = option.value.as_ref() {
-          if !value.is_empty() {
-            summary.push_str(value);
-            summary.push('|');
-          }
+    }
+    for option in column.options.iter() {
+      if let Some(value) = option.value.as_ref() {
+        if !value.is_empty() {
+          summary.push_str(value);
+          summary.push('|');
         }
       }
     }
   }
 
-  let cells_map = block.get("prop:cells").and_then(|v| v.to_map());
-  if let (Some(columns), Some(cells_map)) = (columns, cells_map) {
-    let md_options = DeltaToMdOptions::new(None);
-    let child_ids = collect_child_ids(block);
-    for child_id in child_ids {
-      let row_cells = cells_map.get(&child_id).and_then(|v| v.to_map());
-
-      for column in columns.iter() {
-        let mut cell_text = String::new();
-        if column.col_type == "title" {
-          if let Some(child_block) = context.block_pool.get(&child_id) {
-            if let Some((text, _)) = text_content(child_block, "prop:text") {
-              cell_text = text;
-            } else if let Some((text, _)) = text_content_for_summary(child_block, "prop:text") {
-              cell_text = text;
-            }
-          }
-        } else if let Some(row_cells) = &row_cells {
-          if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
-            if let Some(value) = cell_val.get("value") {
-              if let Some(text_md) = delta_value_to_inline_markdown(&value, &md_options) {
-                cell_text = text_md;
-              } else {
-                cell_text = format_cell_value(&value, column);
-              }
-            }
-          }
-        }
-
-        if !cell_text.is_empty() {
-          summary.push_str(&cell_text);
-          summary.push('|');
-        }
+  for row in table.rows.iter() {
+    for cell_text in row.iter() {
+      if !cell_text.is_empty() {
+        summary.push_str(cell_text);
+        summary.push('|');
       }
     }
   }
