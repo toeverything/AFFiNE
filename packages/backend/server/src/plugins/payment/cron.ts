@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient, Provider } from '@prisma/client';
 
-import { EventBus, JobQueue, OnJob } from '../../base';
+import { EventBus, JobQueue, OneHour, OnJob } from '../../base';
 import { RevenueCatWebhookHandler } from './revenuecat';
+import { SubscriptionService } from './service';
+import { StripeFactory } from './stripe';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -16,6 +18,7 @@ declare global {
     'nightly.cleanExpiredOnetimeSubscriptions': {};
     'nightly.notifyAboutToExpireWorkspaceSubscriptions': {};
     'nightly.reconcileRevenueCatSubscriptions': {};
+    'nightly.reconcileStripeRefunds': {};
     'nightly.revenuecat.syncUser': { userId: string };
   }
 }
@@ -26,7 +29,9 @@ export class SubscriptionCronJobs {
     private readonly db: PrismaClient,
     private readonly event: EventBus,
     private readonly queue: JobQueue,
-    private readonly rcHandler: RevenueCatWebhookHandler
+    private readonly rcHandler: RevenueCatWebhookHandler,
+    private readonly stripeFactory: StripeFactory,
+    private readonly subscription: SubscriptionService
   ) {}
 
   private getDateRange(after: number, base: number | Date = Date.now()) {
@@ -54,6 +59,12 @@ export class SubscriptionCronJobs {
       'nightly.reconcileRevenueCatSubscriptions',
       {},
       { jobId: 'nightly-payment-reconcile-revenuecat-subscriptions' }
+    );
+
+    await this.queue.add(
+      'nightly.reconcileStripeRefunds',
+      {},
+      { jobId: 'nightly-payment-reconcile-stripe-refunds' }
     );
 
     // FIXME(@forehalo): the strategy is totally wrong, for monthly plan. redesign required
@@ -189,5 +200,63 @@ export class SubscriptionCronJobs {
   @OnJob('nightly.revenuecat.syncUser')
   async reconcileRevenueCatSubscriptionOfUser(payload: { userId: string }) {
     await this.rcHandler.syncAppUser(payload.userId);
+  }
+
+  @OnJob('nightly.reconcileStripeRefunds')
+  async reconcileStripeRefunds() {
+    const stripe = this.stripeFactory.stripe;
+    const since = Math.floor((Date.now() - 36 * OneHour) / 1000);
+    const seen = new Set<string>();
+
+    const refunds = await stripe.refunds.list({
+      created: { gte: since },
+      limit: 100,
+      expand: ['data.charge'],
+    });
+
+    for (const refund of refunds.data) {
+      const charge = refund.charge;
+      const invoiceId =
+        typeof charge !== 'string'
+          ? typeof charge?.invoice === 'string'
+            ? charge.invoice
+            : charge?.invoice?.id
+          : undefined;
+      if (invoiceId && !seen.has(invoiceId)) {
+        seen.add(invoiceId);
+        await this.subscription.handleRefundedInvoice(invoiceId, 'refund');
+      }
+    }
+
+    const disputes = await stripe.disputes.list({
+      created: { gte: since },
+      limit: 100,
+      expand: ['data.charge'],
+    });
+
+    for (const dispute of disputes.data) {
+      const charge = dispute.charge;
+      const invoiceId =
+        typeof charge !== 'string'
+          ? typeof charge?.invoice === 'string'
+            ? charge.invoice
+            : charge?.invoice?.id
+          : undefined;
+
+      if (!invoiceId || seen.has(invoiceId)) {
+        continue;
+      }
+
+      seen.add(invoiceId);
+
+      const reason =
+        dispute.status === 'won'
+          ? 'dispute_won'
+          : dispute.status === 'lost'
+            ? 'dispute_lost'
+            : ('dispute_open' as const);
+
+      await this.subscription.handleRefundedInvoice(invoiceId, reason);
+    }
   }
 }
