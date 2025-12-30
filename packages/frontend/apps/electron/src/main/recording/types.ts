@@ -1,6 +1,4 @@
-import type { WriteStream } from 'node:fs';
-
-import type { ApplicationInfo, AudioCaptureSession } from '@affine/native';
+import type { ApplicationInfo } from '@affine/native';
 
 export interface TappableAppInfo {
   info: ApplicationInfo;
@@ -18,18 +16,6 @@ export interface AppGroupInfo {
   bundleIdentifier: string;
   icon: Buffer | undefined;
   isRunning: boolean;
-}
-
-export interface Recording {
-  id: number;
-  // the app may not be available if the user choose to record system audio
-  app?: TappableAppInfo;
-  appGroup?: AppGroupInfo;
-  // the buffered file that is being recorded streamed to
-  file: WriteStream;
-  session: AudioCaptureSession;
-  startTime: number;
-  filepath?: string; // the filepath of the recording (only available when status is ready)
 }
 
 export interface RecordingStatus {
@@ -54,4 +40,7 @@ export interface RecordingStatus {
   appGroup?: AppGroupInfo;
   startTime: number; // 0 means not started yet
   filepath?: string; // encoded file path
+  nativeId?: string;
+  sampleRate?: number;
+  numberOfChannels?: number;
 }

@@ -14,13 +14,11 @@ import {
   checkMeetingPermissions,
   checkRecordingAvailable,
   disableRecordingFeature,
-  getRawAudioBuffers,
   getRecording,
   handleBlockCreationFailed,
   handleBlockCreationSuccess,
   pauseRecording,
   readRecordingFile,
-  readyRecording,
   recordingStatus$,
   removeRecording,
   SAVED_RECORDINGS_DIR,
@@ -51,15 +49,8 @@ export const recordingHandlers = {
   stopRecording: async (_, id: number) => {
     return stopRecording(id);
   },
-  getRawAudioBuffers: async (_, id: number, cursor?: number) => {
-    return getRawAudioBuffers(id, cursor);
-  },
   readRecordingFile: async (_, filepath: string) => {
     return readRecordingFile(filepath);
-  },
-  // save the encoded recording buffer to the file system
-  readyRecording: async (_, id: number, buffer: Uint8Array) => {
-    return readyRecording(id, Buffer.from(buffer));
   },
   handleBlockCreationSuccess: async (_, id: number) => {
     return handleBlockCreationSuccess(id);

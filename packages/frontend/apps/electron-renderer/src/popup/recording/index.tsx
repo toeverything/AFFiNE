@@ -1,11 +1,6 @@
 import { Button } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { appIconMap } from '@affine/core/utils';
-import {
-  createStreamEncoder,
-  encodeRawBufferToOpus,
-  type OpusStreamEncoder,
-} from '@affine/core/utils/opus-encoding';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
@@ -105,61 +100,8 @@ export function Recording() {
     await apis?.recording?.stopRecording(status.id);
   }, [status]);
 
-  const handleProcessStoppedRecording = useAsyncCallback(
-    async (currentStreamEncoder?: OpusStreamEncoder) => {
-      let id: number | undefined;
-      try {
-        const result = await apis?.recording?.getCurrentRecording();
-
-        if (!result) {
-          return;
-        }
-
-        id = result.id;
-
-        const { filepath, sampleRate, numberOfChannels } = result;
-        if (!filepath || !sampleRate || !numberOfChannels) {
-          return;
-        }
-        const [buffer] = await Promise.all([
-          currentStreamEncoder
-            ? currentStreamEncoder.finish()
-            : encodeRawBufferToOpus({
-                filepath,
-                sampleRate,
-                numberOfChannels,
-              }),
-          new Promise<void>(resolve => {
-            setTimeout(() => {
-              resolve();
-            }, 500); // wait at least 500ms for better user experience
-          }),
-        ]);
-        await apis?.recording.readyRecording(result.id, buffer);
-      } catch (error) {
-        console.error('Failed to stop recording', error);
-        await apis?.popup?.dismissCurrentRecording();
-        if (id) {
-          await apis?.recording.removeRecording(id);
-        }
-      }
-    },
-    []
-  );
-
   useEffect(() => {
     let removed = false;
-    let currentStreamEncoder: OpusStreamEncoder | undefined;
-
-    apis?.recording
-      .getCurrentRecording()
-      .then(status => {
-        if (status) {
-          return handleRecordingStatusChanged(status);
-        }
-        return;
-      })
-      .catch(console.error);
 
     const handleRecordingStatusChanged = async (status: Status) => {
       if (removed) {
@@ -171,26 +113,17 @@ export function Recording() {
           appName: status.appName || 'System Audio',
         });
       }
-
-      if (
-        status?.status === 'recording' &&
-        status.sampleRate &&
-        status.numberOfChannels &&
-        (!currentStreamEncoder || currentStreamEncoder.id !== status.id)
-      ) {
-        currentStreamEncoder?.close();
-        currentStreamEncoder = createStreamEncoder(status.id, {
-          sampleRate: status.sampleRate,
-          numberOfChannels: status.numberOfChannels,
-        });
-        currentStreamEncoder.poll().catch(console.error);
-      }
-
-      if (status?.status === 'stopped') {
-        handleProcessStoppedRecording(currentStreamEncoder);
-        currentStreamEncoder = undefined;
-      }
     };
+
+    apis?.recording
+      .getCurrentRecording()
+      .then(status => {
+        if (status) {
+          return handleRecordingStatusChanged(status);
+        }
+        return;
+      })
+      .catch(console.error);
 
     // allow processing stopped event in tray menu as well:
     const unsubscribe = events?.recording.onRecordingStatusChanged(status => {
@@ -202,9 +135,8 @@ export function Recording() {
     return () => {
       removed = true;
       unsubscribe?.();
-      currentStreamEncoder?.close();
     };
-  }, [handleProcessStoppedRecording]);
+  }, []);
 
   const handleStartRecording = useAsyncCallback(async () => {
     if (!status) {

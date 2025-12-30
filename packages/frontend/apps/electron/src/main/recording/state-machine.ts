@@ -13,6 +13,15 @@ export type RecordingEvent =
       type: 'START_RECORDING';
       appGroup?: AppGroupInfo;
     }
+  | {
+      type: 'ATTACH_NATIVE_RECORDING';
+      id: number;
+      nativeId: string;
+      startTime: number;
+      filepath: string;
+      sampleRate: number;
+      numberOfChannels: number;
+    }
   | { type: 'PAUSE_RECORDING'; id: number }
   | { type: 'RESUME_RECORDING'; id: number }
   | {
@@ -23,6 +32,8 @@ export type RecordingEvent =
       type: 'SAVE_RECORDING';
       id: number;
       filepath: string;
+      sampleRate?: number;
+      numberOfChannels?: number;
     }
   | {
       type: 'CREATE_BLOCK_FAILED';
@@ -74,6 +85,9 @@ export class RecordingStateMachine {
       case 'START_RECORDING':
         newStatus = this.handleStartRecording(event.appGroup);
         break;
+      case 'ATTACH_NATIVE_RECORDING':
+        newStatus = this.handleAttachNativeRecording(event);
+        break;
       case 'PAUSE_RECORDING':
         newStatus = this.handlePauseRecording();
         break;
@@ -84,7 +98,12 @@ export class RecordingStateMachine {
         newStatus = this.handleStopRecording(event.id);
         break;
       case 'SAVE_RECORDING':
-        newStatus = this.handleSaveRecording(event.id, event.filepath);
+        newStatus = this.handleSaveRecording(
+          event.id,
+          event.filepath,
+          event.sampleRate,
+          event.numberOfChannels
+        );
         break;
       case 'CREATE_BLOCK_SUCCESS':
         newStatus = this.handleCreateBlockSuccess(event.id);
@@ -157,6 +176,35 @@ export class RecordingStateMachine {
         status: 'recording',
       };
     }
+  }
+
+  /**
+   * Attach native recording metadata to the current recording
+   */
+  private handleAttachNativeRecording(
+    event: Extract<RecordingEvent, { type: 'ATTACH_NATIVE_RECORDING' }>
+  ): RecordingStatus | null {
+    const currentStatus = this.recordingStatus$.value;
+    if (!currentStatus || currentStatus.id !== event.id) {
+      logger.error(`Recording ${event.id} not found for native attachment`);
+      return currentStatus;
+    }
+
+    if (currentStatus.status !== 'recording') {
+      logger.error(
+        `Cannot attach native metadata when recording is in ${currentStatus.status} state`
+      );
+      return currentStatus;
+    }
+
+    return {
+      ...currentStatus,
+      nativeId: event.nativeId,
+      startTime: event.startTime,
+      filepath: event.filepath,
+      sampleRate: event.sampleRate,
+      numberOfChannels: event.numberOfChannels,
+    };
   }
 
   /**
@@ -233,7 +281,9 @@ export class RecordingStateMachine {
    */
   private handleSaveRecording(
     id: number,
-    filepath: string
+    filepath: string,
+    sampleRate?: number,
+    numberOfChannels?: number
   ): RecordingStatus | null {
     const currentStatus = this.recordingStatus$.value;
 
@@ -246,6 +296,8 @@ export class RecordingStateMachine {
       ...currentStatus,
       status: 'ready',
       filepath,
+      sampleRate,
+      numberOfChannels,
     };
   }
 
