@@ -499,13 +499,10 @@ export class UserSubscriptionManager extends SubscriptionManager {
       },
     });
 
-    // TODO(@forehalo): time helper
     const subscriptionTime =
-      (lookupKey.recurring === SubscriptionRecurring.Monthly ? 30 : 365) *
-      24 *
-      60 *
-      60 *
-      1000;
+      lookupKey.recurring === SubscriptionRecurring.Monthly
+        ? OneMonth
+        : OneYear;
 
     let subscription: Subscription;
 

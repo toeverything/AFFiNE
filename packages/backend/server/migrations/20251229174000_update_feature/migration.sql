@@ -1,28 +1,57 @@
 /*
-  Warnings:
-
-  - You are about to drop the column `feature_id` on the `user_features` table. All the data in the column will be lost.
-  - You are about to drop the column `feature_id` on the `workspace_features` table. All the data in the column will be lost.
-  - You are about to drop the `features` table. If the table is not empty, all the data it contains will be lost.
-
+  Preserve backward compatibility between beta and stable deployments that share a database.
+  Newer code no longer writes feature_id, so we keep the legacy columns/table and backfill
+  them via triggers instead of dropping them.
 */
--- DropForeignKey
-ALTER TABLE "user_features" DROP CONSTRAINT "user_features_feature_id_fkey";
 
--- DropForeignKey
-ALTER TABLE "workspace_features" DROP CONSTRAINT "workspace_features_feature_id_fkey";
+-- Ensure a feature row exists and return its id
+CREATE OR REPLACE FUNCTION ensure_feature_exists(feature_name TEXT) RETURNS INTEGER AS $$
+DECLARE
+  feature_record INTEGER;
+BEGIN
+  SELECT id INTO feature_record FROM "features" WHERE "feature" = feature_name ORDER BY "version" DESC LIMIT 1;
 
--- DropIndex
-DROP INDEX "user_features_feature_id_idx";
+  IF feature_record IS NULL THEN
+    INSERT INTO "features" ("feature", "configs")
+    VALUES (feature_name, '{}')
+    ON CONFLICT ("feature", "version") DO NOTHING
+    RETURNING id INTO feature_record;
 
--- DropIndex
-DROP INDEX "workspace_features_feature_id_idx";
+    IF feature_record IS NULL THEN
+      SELECT id INTO feature_record FROM "features" WHERE "feature" = feature_name ORDER BY "version" DESC LIMIT 1;
+    END IF;
+  END IF;
 
--- AlterTable
-ALTER TABLE "user_features" DROP COLUMN "feature_id";
+  RETURN feature_record;
+END;
+$$ LANGUAGE plpgsql;
 
--- AlterTable
-ALTER TABLE "workspace_features" DROP COLUMN "feature_id";
+-- Fill user_features.feature_id when omitted by newer code
+CREATE OR REPLACE FUNCTION set_user_feature_id_from_name() RETURNS trigger AS $$
+BEGIN
+  IF NEW.feature_id IS NULL THEN
+    NEW.feature_id := ensure_feature_exists(NEW.name);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
--- DropTable
-DROP TABLE "features";
+DROP TRIGGER IF EXISTS user_features_set_feature_id ON "user_features";
+CREATE TRIGGER user_features_set_feature_id
+BEFORE INSERT OR UPDATE ON "user_features"
+FOR EACH ROW EXECUTE FUNCTION set_user_feature_id_from_name();
+
+-- Fill workspace_features.feature_id when omitted by newer code
+CREATE OR REPLACE FUNCTION set_workspace_feature_id_from_name() RETURNS trigger AS $$
+BEGIN
+  IF NEW.feature_id IS NULL THEN
+    NEW.feature_id := ensure_feature_exists(NEW.name);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS workspace_features_set_feature_id ON "workspace_features";
+CREATE TRIGGER workspace_features_set_feature_id
+BEFORE INSERT OR UPDATE ON "workspace_features"
+FOR EACH ROW EXECUTE FUNCTION set_workspace_feature_id_from_name();
