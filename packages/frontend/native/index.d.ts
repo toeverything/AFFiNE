@@ -65,6 +65,9 @@ export declare class DocStoragePool {
   deleteDoc(universalId: string, docId: string): Promise<void>
   getDocClocks(universalId: string, after?: Date | undefined | null): Promise<Array<DocClock>>
   getDocClock(universalId: string, docId: string): Promise<DocClock | null>
+  getDocIndexedClock(universalId: string, docId: string): Promise<DocIndexedClock | null>
+  setDocIndexedClock(universalId: string, docId: string, indexedClock: Date, indexerVersion: number): Promise<void>
+  clearDocIndexedClock(universalId: string, docId: string): Promise<void>
   getBlob(universalId: string, key: string): Promise<Blob | null>
   setBlob(universalId: string, blob: SetBlob): Promise<void>
   deleteBlob(universalId: string, key: string, permanently: boolean): Promise<void>
@@ -102,6 +105,12 @@ export interface Blob {
 export interface DocClock {
   docId: string
   timestamp: Date
+}
+
+export interface DocIndexedClock {
+  docId: string
+  timestamp: Date
+  indexerVersion: number
 }
 
 export interface DocRecord {

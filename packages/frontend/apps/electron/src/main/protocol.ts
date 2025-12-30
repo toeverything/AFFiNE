@@ -127,6 +127,12 @@ const needRefererDomains = [
   /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
 ];
 const defaultReferer = 'https://client.affine.local/';
+const affineDomains = [
+  /^(?:[a-z0-9-]+\.)*usercontent\.affine\.pro$/i,
+  /^(?:[a-z0-9-]+\.)*affine\.pro$/i,
+  /^(?:[a-z0-9-]+\.)*affine\.fail$/i,
+  /^(?:[a-z0-9-]+\.)*affine\.run$/i,
+];
 
 function setHeader(
   headers: Record<string, string[]>,
@@ -164,6 +170,17 @@ function ensureFrameAncestors(
     directives.push(`frame-ancestors ${directive}`);
     return directives.join('; ');
   });
+}
+
+function allowCors(headers: Record<string, string[]>) {
+  // Signed blob URLs redirect to *.usercontent.affine.pro without CORS headers.
+  setHeader(headers, 'Access-Control-Allow-Origin', '*');
+  setHeader(headers, 'Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  setHeader(
+    headers,
+    'Access-Control-Allow-Headers',
+    '*, Authorization, Content-Type, Range'
+  );
 }
 
 export function registerProtocol() {
@@ -211,9 +228,9 @@ export function registerProtocol() {
             }
           }
 
-          const { protocol } = new URL(url);
+          const { protocol, hostname } = new URL(url);
 
-          // Only adjust CORS for assets responses; leave remote http(s) headers intact
+          // Adjust CORS for assets responses and allow blob redirects on affine domains
           if (protocol === 'assets:') {
             delete responseHeaders['access-control-allow-origin'];
             delete responseHeaders['access-control-allow-headers'];
@@ -221,6 +238,11 @@ export function registerProtocol() {
             delete responseHeaders['Access-Control-Allow-Headers'];
             setHeader(responseHeaders, 'X-Frame-Options', 'SAMEORIGIN');
             ensureFrameAncestors(responseHeaders, "'self'");
+          } else if (
+            (protocol === 'http:' || protocol === 'https:') &&
+            affineDomains.some(regex => regex.test(hostname))
+          ) {
+            allowCors(responseHeaders);
           }
         }
       })()
