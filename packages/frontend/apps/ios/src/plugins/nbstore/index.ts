@@ -6,6 +6,7 @@ import {
   type BlobRecord,
   type CrawlResult,
   type DocClock,
+  type DocIndexedClock,
   type DocRecord,
   type ListedBlobRecord,
   parseUniversalId,
@@ -414,5 +415,30 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   },
   ftsIndexVersion: function (): Promise<number> {
     return NbStore.ftsIndexVersion().then(res => res.indexVersion);
+  },
+  getDocIndexedClock: function (
+    id: string,
+    docId: string
+  ): Promise<DocIndexedClock | null> {
+    return NbStore.getDocIndexedClock({ id, docId });
+  },
+  setDocIndexedClock: function (
+    id: string,
+    docId: string,
+    indexedClock: Date,
+    indexerVersion: number
+  ): Promise<void> {
+    return NbStore.setDocIndexedClock({
+      id,
+      docId,
+      indexedClock: indexedClock.getTime(),
+      indexerVersion,
+    });
+  },
+  clearDocIndexedClock: function (id: string, docId: string): Promise<void> {
+    return NbStore.clearDocIndexedClock({
+      id,
+      docId,
+    });
   },
 };

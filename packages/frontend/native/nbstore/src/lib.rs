@@ -4,6 +4,7 @@ pub mod doc;
 pub mod doc_sync;
 pub mod error;
 pub mod indexer;
+pub mod indexer_sync;
 pub mod pool;
 pub mod storage;
 
@@ -53,6 +54,14 @@ pub struct DocRecord {
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
+}
+
+#[derive(Debug)]
+#[napi(object)]
+pub struct DocIndexedClock {
+  pub doc_id: String,
+  pub timestamp: NaiveDateTime,
+  pub indexer_version: i64,
 }
 
 #[napi(object)]
@@ -233,6 +242,47 @@ impl DocStoragePool {
     doc_id: String,
   ) -> Result<Option<DocClock>> {
     Ok(self.get(universal_id).await?.get_doc_clock(doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn get_doc_indexed_clock(
+    &self,
+    universal_id: String,
+    doc_id: String,
+  ) -> Result<Option<DocIndexedClock>> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_doc_indexed_clock(doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn set_doc_indexed_clock(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    indexed_clock: NaiveDateTime,
+    indexer_version: i64,
+  ) -> Result<()> {
+    self
+      .get(universal_id)
+      .await?
+      .set_doc_indexed_clock(doc_id, indexed_clock, indexer_version)
+      .await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn clear_doc_indexed_clock(&self, universal_id: String, doc_id: String) -> Result<()> {
+    self
+      .get(universal_id)
+      .await?
+      .clear_doc_indexed_clock(doc_id)
+      .await?;
+    Ok(())
   }
 
   #[napi(async_runtime)]

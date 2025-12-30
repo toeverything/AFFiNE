@@ -3,6 +3,7 @@ import type {
   BlobRecord,
   CrawlResult,
   DocClock,
+  DocIndexedClock,
   DocRecord,
   ListedBlobRecord,
 } from '../../storage';
@@ -29,6 +30,17 @@ export interface NativeDBApis {
   deleteDoc: (id: string, docId: string) => Promise<void>;
   getDocClocks: (id: string, after?: Date | null) => Promise<DocClock[]>;
   getDocClock: (id: string, docId: string) => Promise<DocClock | null>;
+  getDocIndexedClock: (
+    id: string,
+    docId: string
+  ) => Promise<DocIndexedClock | null>;
+  setDocIndexedClock: (
+    id: string,
+    docId: string,
+    indexedClock: Date,
+    indexerVersion: number
+  ) => Promise<void>;
+  clearDocIndexedClock: (id: string, docId: string) => Promise<void>;
   getBlob: (id: string, key: string) => Promise<BlobRecord | null>;
   setBlob: (id: string, blob: BlobRecord) => Promise<void>;
   deleteBlob: (id: string, key: string, permanently: boolean) => Promise<void>;

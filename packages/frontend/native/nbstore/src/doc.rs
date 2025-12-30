@@ -41,6 +41,11 @@ impl SqliteDocStorage {
             .bind(&meta.space_id)
             .execute(&self.pool)
             .await?;
+          sqlx::query("UPDATE indexer_sync SET doc_id = $1 WHERE doc_id = $2;")
+            .bind(&space_id)
+            .bind(&meta.space_id)
+            .execute(&self.pool)
+            .await?;
 
           sqlx::query("UPDATE peer_clocks SET doc_id = $1 WHERE doc_id = $2;")
             .bind(&space_id)
@@ -203,6 +208,11 @@ impl SqliteDocStorage {
       .await?;
 
     sqlx::query("DELETE FROM clocks WHERE doc_id = ?;")
+      .bind(&doc_id)
+      .execute(&mut *tx)
+      .await?;
+
+    sqlx::query("DELETE FROM indexer_sync WHERE doc_id = ?;")
       .bind(&doc_id)
       .execute(&mut *tx)
       .await?;
