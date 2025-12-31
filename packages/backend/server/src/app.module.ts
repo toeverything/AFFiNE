@@ -40,6 +40,7 @@ import { MailModule } from './core/mail';
 import { MonitorModule } from './core/monitor';
 import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
+import { QueueDashboardModule } from './core/queue-dashboard';
 import { QuotaModule } from './core/quota';
 import { SelfhostModule } from './core/selfhost';
 import { StorageModule } from './core/storage';
@@ -189,7 +190,8 @@ export function buildAppModule(env: Env) {
       OAuthModule,
       CustomerIoModule,
       CommentModule,
-      AccessTokenModule
+      AccessTokenModule,
+      QueueDashboardModule
     )
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)

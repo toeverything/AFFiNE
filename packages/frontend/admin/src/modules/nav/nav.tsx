@@ -2,7 +2,7 @@ import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
 import { AccountIcon, SelfhostIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { LayoutDashboardIcon } from 'lucide-react';
+import { LayoutDashboardIcon, ListChecksIcon } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { ServerVersion } from './server-version';
@@ -95,6 +95,12 @@ export function Nav({ isCollapsed = false }: NavProps) {
           to="/admin/workspaces"
           icon={<LayoutDashboardIcon size={18} />}
           label="Workspaces"
+          isCollapsed={isCollapsed}
+        />
+        <NavItem
+          to="/admin/queue"
+          icon={<ListChecksIcon size={18} />}
+          label="Queue"
           isCollapsed={isCollapsed}
         />
         {/* <NavItem

@@ -129,10 +129,12 @@ export class WorkspaceStatsJob {
   private async withAdvisoryLock<T>(
     callback: (tx: Prisma.TransactionClient) => Promise<T>
   ): Promise<T | null> {
+    const lockIdSql = Prisma.sql`(${LOCK_NAMESPACE}::bigint << 32) + ${LOCK_KEY}::bigint`;
+
     return await this.prisma.$transaction(
       async tx => {
         const [lock] = await tx.$queryRaw<{ locked: boolean }[]>`
-          SELECT pg_try_advisory_lock(${LOCK_NAMESPACE}, ${LOCK_KEY}) AS locked
+          SELECT pg_try_advisory_lock(${lockIdSql}) AS locked
         `;
 
         if (!lock?.locked) {
@@ -142,7 +144,7 @@ export class WorkspaceStatsJob {
         try {
           return await callback(tx);
         } finally {
-          await tx.$executeRaw`SELECT pg_advisory_unlock(${LOCK_NAMESPACE}, ${LOCK_KEY})`;
+          await tx.$executeRaw`SELECT pg_advisory_unlock(${lockIdSql})`;
         }
       },
       {
