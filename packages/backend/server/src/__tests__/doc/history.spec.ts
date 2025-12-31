@@ -42,6 +42,7 @@ const snapshot: Snapshot = {
   blob: Uint8Array.from([1, 0]),
   state: Uint8Array.from([0]),
   seq: 0,
+  size: BigInt(2),
   updatedAt: new Date(),
   createdAt: new Date(),
   createdBy: null,
