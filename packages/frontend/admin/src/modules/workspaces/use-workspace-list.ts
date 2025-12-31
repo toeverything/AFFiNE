@@ -51,30 +51,43 @@ export const useWorkspaceList = (filter?: {
     ]
   );
 
-  const { data: listData } = useQuery(
+  const { data: listData, isValidating: isListValidating } = useQuery(
     {
       query: adminWorkspacesQuery,
       variables,
     },
     {
       keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      revalidateOnReconnect: true,
     }
   );
 
-  const { data: countData } = useQuery(
+  const { data: countData, isValidating: isCountValidating } = useQuery(
     {
       query: adminWorkspacesCountQuery,
       variables,
     },
     {
       keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      revalidateOnReconnect: true,
     }
   );
+
+  const loading =
+    isListValidating ||
+    isCountValidating ||
+    listData === undefined ||
+    countData === undefined;
 
   return {
     workspaces: listData?.adminWorkspaces ?? [],
     workspacesCount: countData?.adminWorkspacesCount ?? 0,
     pagination,
     setPagination,
+    loading,
   };
 };

@@ -21,6 +21,7 @@ import {
 } from './resolvers';
 import { AdminWorkspaceResolver } from './resolvers/admin';
 import { WorkspaceService } from './service';
+import { WorkspaceStatsJob } from './stats.job';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { WorkspaceService } from './service';
     WorkspaceService,
     WorkspaceEvents,
     AdminWorkspaceResolver,
+    WorkspaceStatsJob,
   ],
   exports: [WorkspaceService],
 })

@@ -14,6 +14,7 @@ type FeatureFilterPopoverProps = {
   onChange: (features: FeatureType[]) => void;
   align?: 'start' | 'center' | 'end';
   buttonLabel?: string;
+  disabled?: boolean;
 };
 
 export const FeatureFilterPopover = ({
@@ -22,29 +23,37 @@ export const FeatureFilterPopover = ({
   onChange,
   align = 'start',
   buttonLabel = 'Features',
+  disabled = false,
 }: FeatureFilterPopoverProps) => {
   const handleFeatureToggle = useCallback(
     (feature: FeatureType, checked: boolean) => {
+      if (disabled) {
+        return;
+      }
       if (checked) {
         onChange([...new Set([...selectedFeatures, feature])]);
       } else {
         onChange(selectedFeatures.filter(enabled => enabled !== feature));
       }
     },
-    [onChange, selectedFeatures]
+    [disabled, onChange, selectedFeatures]
   );
 
   const handleClearFeatures = useCallback(() => {
+    if (disabled) {
+      return;
+    }
     onChange([]);
-  }, [onChange]);
+  }, [disabled, onChange]);
 
   return (
-    <Popover>
+    <Popover open={disabled ? false : undefined}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           size="sm"
           className="h-8 px-2 lg:px-3 space-x-1"
+          disabled={disabled}
         >
           <span>{buttonLabel}</span>
           {selectedFeatures.length > 0 ? (
@@ -70,6 +79,7 @@ export const FeatureFilterPopover = ({
                 onCheckedChange={checked =>
                   handleFeatureToggle(feature, !!checked)
                 }
+                disabled={disabled}
               />
               <span className="text-sm truncate">{feature}</span>
             </label>
@@ -80,7 +90,7 @@ export const FeatureFilterPopover = ({
             variant="ghost"
             size="sm"
             onClick={handleClearFeatures}
-            disabled={selectedFeatures.length === 0}
+            disabled={disabled || selectedFeatures.length === 0}
           >
             Clear
           </Button>

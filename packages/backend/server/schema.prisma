@@ -124,15 +124,17 @@ model Workspace {
   indexed             Boolean  @default(false)
   lastCheckEmbeddings DateTime @default("1970-01-01T00:00:00-00:00") @map("last_check_embeddings") @db.Timestamptz(3)
 
-  features           WorkspaceFeature[]
-  docs               WorkspaceDoc[]
-  permissions        WorkspaceUserRole[]
-  docPermissions     WorkspaceDocUserRole[]
-  blobs              Blob[]
-  ignoredDocs        AiWorkspaceIgnoredDocs[]
-  embedFiles         AiWorkspaceFiles[]
-  comments           Comment[]
-  commentAttachments CommentAttachment[]
+  features                   WorkspaceFeature[]
+  docs                       WorkspaceDoc[]
+  permissions                WorkspaceUserRole[]
+  docPermissions             WorkspaceDocUserRole[]
+  blobs                      Blob[]
+  ignoredDocs                AiWorkspaceIgnoredDocs[]
+  embedFiles                 AiWorkspaceFiles[]
+  comments                   Comment[]
+  commentAttachments         CommentAttachment[]
+  workspaceAdminStats        WorkspaceAdminStats[]
+  workspaceAdminStatsDirties WorkspaceAdminStatsDirty[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
@@ -241,7 +243,7 @@ model UserFeature {
   expiredAt DateTime? @map("expired_at") @db.Timestamptz(3)
   activated Boolean   @default(false)
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([name])
@@ -267,7 +269,41 @@ model WorkspaceFeature {
 
   @@index([workspaceId])
   @@index([name])
+  // Partial index on (workspace_id, name) where activated = true is created via SQL migration
+  @@index([workspaceId, name, activated])
   @@map("workspace_features")
+}
+
+model WorkspaceAdminStats {
+  workspaceId     String   @id @map("workspace_id") @db.VarChar
+  snapshotCount   BigInt   @default(0) @map("snapshot_count") @db.BigInt
+  snapshotSize    BigInt   @default(0) @map("snapshot_size") @db.BigInt
+  blobCount       BigInt   @default(0) @map("blob_count") @db.BigInt
+  blobSize        BigInt   @default(0) @map("blob_size") @db.BigInt
+  memberCount     BigInt   @default(0) @map("member_count") @db.BigInt
+  publicPageCount BigInt   @default(0) @map("public_page_count") @db.BigInt
+  features        String[] @default([]) @db.Text
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotSize(sort: Desc)])
+  @@index([blobCount(sort: Desc)])
+  @@index([blobSize(sort: Desc)])
+  @@index([snapshotCount(sort: Desc)])
+  @@index([memberCount(sort: Desc)])
+  @@index([publicPageCount(sort: Desc)])
+  @@map("workspace_admin_stats")
+}
+
+model WorkspaceAdminStatsDirty {
+  workspaceId String   @id @map("workspace_id") @db.VarChar
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+  @@map("workspace_admin_stats_dirty")
 }
 
 // the latest snapshot of each doc that we've seen

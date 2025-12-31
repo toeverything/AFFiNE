@@ -16,6 +16,7 @@ interface DataTableProps<TData, TValue> {
   onFeaturesChange: (features: FeatureType[]) => void;
   sort: AdminWorkspaceSort | undefined;
   onSortChange: (sort: AdminWorkspaceSort | undefined) => void;
+  loading?: boolean;
   onPaginationChange: Dispatch<
     SetStateAction<{
       pageIndex: number;
@@ -36,6 +37,7 @@ export function DataTable<TData extends { id: string }, TValue>({
   sort,
   onSortChange,
   onPaginationChange,
+  loading = false,
 }: DataTableProps<TData, TValue>) {
   return (
     <SharedDataTable
@@ -54,8 +56,11 @@ export function DataTable<TData extends { id: string }, TValue>({
           onFeaturesChange={onFeaturesChange}
           sort={sort}
           onSortChange={onSortChange}
+          disabled={loading}
         />
       )}
+      loading={loading}
+      disablePagination={loading}
     />
   );
 }

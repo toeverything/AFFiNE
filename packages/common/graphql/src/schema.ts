@@ -120,6 +120,9 @@ export enum AdminWorkspaceSort {
   BlobCount = 'BlobCount',
   BlobSize = 'BlobSize',
   CreatedAt = 'CreatedAt',
+  MemberCount = 'MemberCount',
+  PublicPageCount = 'PublicPageCount',
+  SnapshotCount = 'SnapshotCount',
   SnapshotSize = 'SnapshotSize',
 }
 

@@ -77,6 +77,9 @@ enum AdminWorkspaceSort {
   BlobCount
   BlobSize
   CreatedAt
+  MemberCount
+  PublicPageCount
+  SnapshotCount
   SnapshotSize
 }
 

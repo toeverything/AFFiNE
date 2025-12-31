@@ -27,12 +27,16 @@ interface DataTableToolbarProps<TData> {
   onFeaturesChange: (features: FeatureType[]) => void;
   sort: AdminWorkspaceSort | undefined;
   onSortChange: (sort: AdminWorkspaceSort | undefined) => void;
+  disabled?: boolean;
 }
 
 const sortOptions: { value: AdminWorkspaceSort; label: string }[] = [
   { value: AdminWorkspaceSort.SnapshotSize, label: 'Snapshot size' },
   { value: AdminWorkspaceSort.BlobCount, label: 'Blob count' },
   { value: AdminWorkspaceSort.BlobSize, label: 'Blob size' },
+  { value: AdminWorkspaceSort.SnapshotCount, label: 'Snapshot count' },
+  { value: AdminWorkspaceSort.MemberCount, label: 'Member count' },
+  { value: AdminWorkspaceSort.PublicPageCount, label: 'Public pages' },
   { value: AdminWorkspaceSort.CreatedAt, label: 'Created time' },
 ];
 
@@ -43,6 +47,7 @@ export function DataTableToolbar<TData>({
   onFeaturesChange,
   sort,
   onSortChange,
+  disabled = false,
 }: DataTableToolbarProps<TData>) {
   const [value, setValue] = useState(keyword);
   const debouncedValue = useDebouncedValue(value, 400);
@@ -82,12 +87,18 @@ export function DataTableToolbar<TData>({
         availableFeatures={availableFeatures}
         onChange={onFeaturesChange}
         align="start"
+        disabled={disabled}
       />
 
       <div className="flex items-center gap-y-2 flex-wrap justify-end gap-2">
-        <Popover>
+        <Popover open={disabled ? false : undefined}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 px-2 lg:px-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 lg:px-3"
+              disabled={disabled}
+            >
               Sort: {selectedSortLabel}
             </Button>
           </PopoverTrigger>
@@ -99,6 +110,7 @@ export function DataTableToolbar<TData>({
                   variant="ghost"
                   className="justify-start"
                   size="sm"
+                  disabled={disabled}
                   onClick={() => handleSortChange(option.value)}
                 >
                   {option.label}
@@ -113,6 +125,7 @@ export function DataTableToolbar<TData>({
             value={value}
             onChange={onValueChange}
             className="h-8 w-[150px] lg:w-[250px]"
+            disabled={disabled}
           />
         </div>
       </div>

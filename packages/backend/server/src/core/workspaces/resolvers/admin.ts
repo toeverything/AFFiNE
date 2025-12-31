@@ -31,6 +31,9 @@ enum AdminWorkspaceSort {
   SnapshotSize = 'SnapshotSize',
   BlobCount = 'BlobCount',
   BlobSize = 'BlobSize',
+  SnapshotCount = 'SnapshotCount',
+  MemberCount = 'MemberCount',
+  PublicPageCount = 'PublicPageCount',
 }
 
 registerEnumType(AdminWorkspaceSort, {
@@ -298,6 +301,12 @@ export class AdminWorkspaceResolver {
         return 'blobCount';
       case AdminWorkspaceSort.BlobSize:
         return 'blobSize';
+      case AdminWorkspaceSort.SnapshotCount:
+        return 'snapshotCount';
+      case AdminWorkspaceSort.MemberCount:
+        return 'memberCount';
+      case AdminWorkspaceSort.PublicPageCount:
+        return 'publicPageCount';
       case AdminWorkspaceSort.CreatedAt:
       default:
         return 'createdAt';

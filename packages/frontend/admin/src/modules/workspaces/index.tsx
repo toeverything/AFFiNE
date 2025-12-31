@@ -13,7 +13,7 @@ export function WorkspacePage() {
     AdminWorkspaceSort.CreatedAt
   );
 
-  const { workspaces, pagination, setPagination, workspacesCount } =
+  const { workspaces, pagination, setPagination, workspacesCount, loading } =
     useWorkspaceList({
       keyword,
       features: featureFilters,
@@ -38,6 +38,7 @@ export function WorkspacePage() {
         onFeaturesChange={setFeatureFilters}
         sort={sort}
         onSortChange={setSort}
+        loading={loading}
       />
     </div>
   );
