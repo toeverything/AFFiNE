@@ -165,6 +165,7 @@ export class AdminWorkspaceResolver {
       keyword: filter.keyword,
       features: filter.features,
       order: this.mapSort(filter.orderBy),
+      includeTotal: false,
     });
     return rows;
   }
@@ -174,11 +175,9 @@ export class AdminWorkspaceResolver {
     @Args('filter', { type: () => ListWorkspaceInput })
     filter: ListWorkspaceInput
   ) {
-    const { total } = await this.models.workspace.adminListWorkspaces({
-      ...filter,
-      first: 1,
-      skip: 0,
-      order: this.mapSort(filter.orderBy),
+    const total = await this.models.workspace.adminCountWorkspaces({
+      keyword: filter.keyword,
+      features: filter.features,
     });
     return total;
   }
@@ -193,6 +192,7 @@ export class AdminWorkspaceResolver {
       skip: 0,
       keyword: id,
       order: 'createdAt',
+      includeTotal: false,
     });
     const row = rows.find(r => r.id === id);
     if (!row) {
@@ -281,6 +281,7 @@ export class AdminWorkspaceResolver {
       skip: 0,
       keyword: id,
       order: 'createdAt',
+      includeTotal: false,
     });
     const row = rows.find(r => r.id === id);
     if (!row) {

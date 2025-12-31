@@ -135,6 +135,7 @@ model Workspace {
   commentAttachments CommentAttachment[]
 
   @@index([lastCheckEmbeddings])
+  @@index([createdAt])
   @@map("workspaces")
 }
 
@@ -159,6 +160,7 @@ model WorkspaceDoc {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId])
+  @@index([workspaceId, public])
   @@map("workspace_pages")
 }
 
@@ -206,6 +208,7 @@ model WorkspaceUserRole {
 
   @@unique([workspaceId, userId])
   // optimize for querying user's workspace permissions
+  @@index([workspaceId, type, status])
   @@index(userId)
   @@map("workspace_user_permissions")
 }
@@ -832,6 +835,7 @@ model Blob {
   AiWorkspaceBlobEmbedding AiWorkspaceBlobEmbedding[]
 
   @@id([workspaceId, key])
+  @@index([workspaceId, status, deletedAt])
   @@map("blobs")
 }
 
