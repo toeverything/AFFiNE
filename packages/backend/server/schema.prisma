@@ -273,6 +273,8 @@ model Snapshot {
   workspaceId String   @map("workspace_id") @db.VarChar
   id          String   @default(uuid()) @map("guid") @db.VarChar
   blob        Bytes    @db.ByteA
+  // persisted size of blob to avoid summing over bytea
+  size        BigInt?  @map("size") @db.BigInt
   state       Bytes?   @db.ByteA
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // the `updated_at` field will not record the time of record changed,

@@ -149,6 +149,7 @@ export class DocModel extends BaseModel {
   async upsert(doc: Doc) {
     const { spaceId, docId, blob, timestamp, editorId } = doc;
     const updatedAt = new Date(timestamp);
+    const size = blob.byteLength ?? blob.length;
     // CONCERNS:
     //   i. Because we save the real user's last seen action time as `updatedAt`,
     //      it's possible to simply compare the `updatedAt` to determine if the snapshot is older than the one we are going to save.
@@ -158,10 +159,10 @@ export class DocModel extends BaseModel {
     //      where: { workspaceId_id: {}, updatedAt: { lt: updatedAt } }
     //                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     const result: { updatedAt: Date }[] = await this.db.$queryRaw`
-      INSERT INTO "snapshots" ("workspace_id", "guid", "blob", "created_at", "updated_at", "created_by", "updated_by")
-      VALUES (${spaceId}, ${docId}, ${blob}, DEFAULT, ${updatedAt}, ${editorId}, ${editorId})
+      INSERT INTO "snapshots" ("workspace_id", "guid", "blob", "size", "created_at", "updated_at", "created_by", "updated_by")
+      VALUES (${spaceId}, ${docId}, ${blob}, ${size}, DEFAULT, ${updatedAt}, ${editorId}, ${editorId})
       ON CONFLICT ("workspace_id", "guid")
-      DO UPDATE SET "blob" = ${blob}, "updated_at" = ${updatedAt}, "updated_by" = ${editorId}
+      DO UPDATE SET "blob" = ${blob}, "size" = ${size}, "updated_at" = ${updatedAt}, "updated_by" = ${editorId}
       WHERE "snapshots"."workspace_id" = ${spaceId} AND "snapshots"."guid" = ${docId} AND "snapshots"."updated_at" <= ${updatedAt}
       RETURNING "snapshots"."workspace_id" as "workspaceId", "snapshots"."guid" as "id", "snapshots"."updated_at" as "updatedAt"
     `;

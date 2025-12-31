@@ -211,7 +211,7 @@ export class WorkspaceModel extends BaseModel {
       ),
       snapshot_stats AS (
         SELECT workspace_id,
-               SUM(octet_length(blob)) AS snapshot_size,
+               SUM(COALESCE(size, octet_length(blob))) AS snapshot_size,
                COUNT(*) AS snapshot_count
         FROM snapshots
         GROUP BY workspace_id
