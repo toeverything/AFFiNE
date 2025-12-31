@@ -247,7 +247,7 @@ export class WorkspaceModel extends BaseModel {
               }
               AND ${
                 features.length
-                  ? Prisma.sql`COALESCE(fs.features, ARRAY[]::text[]) @> ${features}`
+                  ? Prisma.sql`CAST(COALESCE(fs.features, ARRAY[]::text[]) AS text[]) @> ${Prisma.sql`${features}::text[]`}`
                   : Prisma.sql`TRUE`
               }
               ORDER BY w.created_at DESC
@@ -333,7 +333,7 @@ export class WorkspaceModel extends BaseModel {
               }
               AND ${
                 features.length
-                  ? Prisma.sql`COALESCE(fs.features, ARRAY[]::text[]) @> ${features}`
+                  ? Prisma.sql`CAST(COALESCE(fs.features, ARRAY[]::text[]) AS text[]) @> ${Prisma.sql`${features}::text[]`}`
                   : Prisma.sql`TRUE`
               }
             ),
@@ -450,7 +450,7 @@ export class WorkspaceModel extends BaseModel {
       }
       AND ${
         features.length
-          ? Prisma.sql`COALESCE(fs.features, ARRAY[]::text[]) @> ${features}`
+          ? Prisma.sql`CAST(COALESCE(fs.features, ARRAY[]::text[]) AS text[]) @> ${Prisma.sql`${features}::text[]`}`
           : Prisma.sql`TRUE`
       }
     `;
