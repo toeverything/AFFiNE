@@ -42,6 +42,11 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- Skip if workspace does not exist to avoid FK errors on orphaned records
+  IF NOT EXISTS (SELECT 1 FROM "workspaces" WHERE "id" = wid) THEN
+    RETURN NULL;
+  END IF;
+
   INSERT INTO "workspace_admin_stats_dirty" ("workspace_id", "updated_at")
   VALUES (wid, NOW())
   ON CONFLICT ("workspace_id")
