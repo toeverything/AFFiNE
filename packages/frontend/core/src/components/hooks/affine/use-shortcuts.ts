@@ -82,11 +82,11 @@ export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
       [t('quickSearch')]: ['Ctrl', 'K'],
       [t('newPage')]: ['Ctrl', 'N'],
       // not implement yet
-      // [t('appendDailyNote')]: 'Ctrl + Alt + A',
+      // [t('appendDailyNote')]: ['Ctrl', 'Alt', 'A'],
       [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
       [t('goBack')]: ['Ctrl', '['],
       [t('goForward')]: ['Ctrl', ']'],
-      [t('copy-private-link')]: ['Ctrl', '⇧', 'C'],
+      [t('copy-private-link')]: ['Ctrl', 'Shift', 'C'],
     }),
     [t]
   );
@@ -99,10 +99,10 @@ export const useMacGeneralKeyboardShortcuts = (): ShortcutMap => {
       [t('quickSearch')]: ['⌘', 'K'],
       [t('newPage')]: ['⌘', 'N'],
       // not implement yet
-      // [t('appendDailyNote')]: '⌘ + ⌥ + A',
+      // [t('appendDailyNote')]: ['⌘', '⌥', 'A'],
       [t('expandOrCollapseSidebar')]: ['⌘', '/'],
-      [t('goBack')]: ['⌘ ', '['],
-      [t('goForward')]: ['⌘ ', ']'],
+      [t('goBack')]: ['⌘', '['],
+      [t('goForward')]: ['⌘', ']'],
       [t('copy-private-link')]: ['⌘', '⇧', 'C'],
     }),
     [t]
@@ -118,9 +118,9 @@ export const useMacEdgelessKeyboardShortcuts = (): ShortcutMap => {
       [t('redo')]: ['⌘', '⇧', 'Z'],
       [t('zoomIn')]: ['⌘', '+'],
       [t('zoomOut')]: ['⌘', '-'],
-      [t('zoomTo100')]: ['Alt', '0'],
-      [t('zoomToFit')]: ['Alt', '1'],
-      [t('zoomToSelection')]: ['Alt', '2'],
+      [t('zoomTo100')]: ['⌥', '0'],
+      [t('zoomToFit')]: ['⌥', '1'],
+      [t('zoomToSelection')]: ['⌥', '2'],
       [t('select')]: ['V'],
       [t('text')]: ['T'],
       [t('shape')]: ['S'],
@@ -129,9 +129,9 @@ export const useMacEdgelessKeyboardShortcuts = (): ShortcutMap => {
       [t('pen')]: ['P'],
       [t('hand')]: ['H'],
       [t('note')]: ['N'],
-      // not implement yet
-      // [t('group')]: '⌘ + G',
-      // [t('unGroup')]: '⌘ + ⇧ + G',
+      [t('switch')]: ['⌥', 'S'],
+      [t('group')]: ['⌘', 'G'],
+      [t('unGroup')]: ['⌘', '⇧', 'G'],
     }),
     [t]
   );
@@ -142,7 +142,7 @@ export const useWinEdgelessKeyboardShortcuts = (): ShortcutMap => {
     () => ({
       [t('selectAll')]: ['Ctrl', 'A'],
       [t('undo')]: ['Ctrl', 'Z'],
-      [t('redo')]: ['Ctrl', 'Y/Ctrl', 'Shift', 'Z'],
+      [t('redo')]: ['Ctrl', 'Y'],
       [t('zoomIn')]: ['Ctrl', '+'],
       [t('zoomOut')]: ['Ctrl', '-'],
       [t('zoomTo100')]: ['Alt', '0'],
@@ -156,10 +156,9 @@ export const useWinEdgelessKeyboardShortcuts = (): ShortcutMap => {
       [t('pen')]: ['P'],
       [t('hand')]: ['H'],
       [t('note')]: ['N'],
-      [t('switch')]: ['Alt ', ''],
-      // not implement yet
-      // [t('group')]: 'Ctrl + G',
-      // [t('unGroup')]: 'Ctrl + Shift + G',
+      [t('switch')]: ['Alt', 'S'],
+      [t('group')]: ['Ctrl', 'G'],
+      [t('unGroup')]: ['Ctrl', 'Shift', 'G'],
     }),
     [t]
   );
@@ -194,8 +193,8 @@ export const useMacPageKeyboardShortcuts = (): ShortcutMap => {
       [t('groupDatabase')]: ['⌘', 'G'],
       [t('switch')]: ['⌥', 'S'],
       // not implement yet
-      // [t('moveUp')]: '⌘ + ⌥ + ↑',
-      // [t('moveDown')]: '⌘ + ⌥ + ↓',
+      // [t('moveUp')]: ['⌘', '⌥', '↑'],
+      // [t('moveDown')]: ['⌘', '⌥', '↓'],
     }),
     [t, tH]
   );
@@ -211,7 +210,7 @@ export const useMacMarkdownShortcuts = (): ShortcutMap => {
       [t('underline')]: ['~Text~'],
       [t('strikethrough')]: ['~~Text~~'],
       [t('divider')]: ['***'],
-      [t('inlineCode')]: ['`Text` '],
+      [t('inlineCode')]: ['`Text`'],
       [t('codeBlock')]: ['``` Space'],
       [tH('1')]: ['# Text'],
       [tH('2')]: ['## Text'],
@@ -235,7 +234,7 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [t('italic')]: ['Ctrl', 'I'],
       [t('underline')]: ['Ctrl', 'U'],
       [t('strikethrough')]: ['Ctrl', 'Shift', 'S'],
-      [t('inlineCode')]: [' Ctrl', 'E'],
+      [t('inlineCode')]: ['Ctrl', 'E'],
       [t('codeBlock')]: ['Ctrl', 'Alt', 'C'],
       [t('link')]: ['Ctrl', 'K'],
       [t('quickSearch')]: ['Ctrl', 'K'],
@@ -247,15 +246,15 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [tH('5')]: ['Ctrl', 'Shift', '5'],
       [tH('6')]: ['Ctrl', 'Shift', '6'],
       [t('increaseIndent')]: ['Tab'],
-      [t('reduceIndent')]: ['Shift+Tab'],
+      [t('reduceIndent')]: ['Shift', 'Tab'],
       [t('alignLeft')]: ['Ctrl', 'Shift', 'L'],
       [t('alignCenter')]: ['Ctrl', 'Shift', 'E'],
       [t('alignRight')]: ['Ctrl', 'Shift', 'R'],
-      [t('groupDatabase')]: ['Ctrl + G'],
-      ['Switch']: ['Alt + S'],
+      [t('groupDatabase')]: ['Ctrl', 'G'],
+      [t('switch')]: ['Alt', 'S'],
       // not implement yet
-      // [t('moveUp')]: 'Ctrl + Alt + ↑',
-      // [t('moveDown')]: 'Ctrl + Alt + ↓',
+      // [t('moveUp')]: ['Ctrl', 'Alt', '↑'],
+      // [t('moveDown')]: ['Ctrl', 'Alt', '↓'],
     }),
     [t, tH]
   );
@@ -265,12 +264,12 @@ export const useWinMarkdownShortcuts = (): ShortcutMap => {
   const tH = useHeadingKeyboardShortcutsI18N();
   return useMemo(
     () => ({
-      [t('bold')]: ['**Text** '],
-      [t('italic')]: ['*Text* '],
-      [t('underline')]: ['~Text~ '],
-      [t('strikethrough')]: ['~~Text~~ '],
+      [t('bold')]: ['**Text**'],
+      [t('italic')]: ['*Text*'],
+      [t('underline')]: ['~Text~'],
+      [t('strikethrough')]: ['~~Text~~'],
       [t('divider')]: ['***'],
-      [t('inlineCode')]: ['`Text` '],
+      [t('inlineCode')]: ['`Text`'],
       [t('codeBlock')]: ['``` Text'],
       [tH('1')]: ['# Text'],
       [tH('2')]: ['## Text'],
