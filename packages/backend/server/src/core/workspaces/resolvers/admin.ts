@@ -112,6 +112,9 @@ export class AdminWorkspace {
   enableAi!: boolean;
 
   @Field()
+  enableSharing!: boolean;
+
+  @Field()
   enableUrlPreview!: boolean;
 
   @Field()
@@ -150,6 +153,7 @@ class AdminUpdateWorkspaceInput extends PartialType(
   PickType(AdminWorkspace, [
     'public',
     'enableAi',
+    'enableSharing',
     'enableUrlPreview',
     'enableDocEmbedding',
     'name',

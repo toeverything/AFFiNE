@@ -11,6 +11,7 @@ query adminWorkspace(
     name
     avatarKey
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     features

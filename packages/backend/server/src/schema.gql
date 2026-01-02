@@ -35,6 +35,7 @@ input AdminUpdateWorkspaceInput {
   avatarKey: String
   enableAi: Boolean
   enableDocEmbedding: Boolean
+  enableSharing: Boolean
   enableUrlPreview: Boolean
   features: [FeatureType!]
   id: String!
@@ -49,6 +50,7 @@ type AdminWorkspace {
   createdAt: DateTime!
   enableAi: Boolean!
   enableDocEmbedding: Boolean!
+  enableSharing: Boolean!
   enableUrlPreview: Boolean!
   features: [FeatureType!]!
   id: String!
@@ -2207,6 +2209,9 @@ input UpdateWorkspaceInput {
   """Enable doc embedding"""
   enableDocEmbedding: Boolean
 
+  """Enable workspace sharing"""
+  enableSharing: Boolean
+
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean
   id: ID!
@@ -2431,6 +2436,9 @@ type WorkspaceType {
 
   """Enable doc embedding"""
   enableDocEmbedding: Boolean!
+
+  """Enable workspace sharing"""
+  enableSharing: Boolean!
 
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean!

@@ -14,6 +14,7 @@ type RawWorkspaceSummary = {
   name: string | null;
   avatarKey: string | null;
   enableAi: boolean;
+  enableSharing: boolean;
   enableUrlPreview: boolean;
   enableDocEmbedding: boolean;
   memberCount: bigint | number | null;
@@ -36,6 +37,7 @@ export type AdminWorkspaceSummary = {
   name: string | null;
   avatarKey: string | null;
   enableAi: boolean;
+  enableSharing: boolean;
   enableUrlPreview: boolean;
   enableDocEmbedding: boolean;
   memberCount: number;
@@ -67,6 +69,7 @@ export type UpdateWorkspaceInput = Pick<
   Partial<Workspace>,
   | 'public'
   | 'enableAi'
+  | 'enableSharing'
   | 'enableUrlPreview'
   | 'enableDocEmbedding'
   | 'name'
@@ -169,6 +172,11 @@ export class WorkspaceModel extends BaseModel {
     return workspace?.enableUrlPreview ?? false;
   }
 
+  async allowSharing(workspaceId: string) {
+    const workspace = await this.get(workspaceId);
+    return workspace?.enableSharing ?? false;
+  }
+
   async allowEmbedding(workspaceId: string) {
     const workspace = await this.get(workspaceId);
     return workspace?.enableDocEmbedding ?? false;
@@ -251,6 +259,7 @@ export class WorkspaceModel extends BaseModel {
                w.name,
                w.avatar_key AS "avatarKey",
                w.enable_ai AS "enableAi",
+               w.enable_sharing AS "enableSharing",
                w.enable_url_preview AS "enableUrlPreview",
                w.enable_doc_embedding AS "enableDocEmbedding",
                o.owner_id AS "ownerId",
@@ -307,6 +316,7 @@ export class WorkspaceModel extends BaseModel {
       name: row.name,
       avatarKey: row.avatarKey,
       enableAi: row.enableAi,
+      enableSharing: row.enableSharing,
       enableUrlPreview: row.enableUrlPreview,
       enableDocEmbedding: row.enableDocEmbedding,
       memberCount: Number(row.memberCount ?? 0),
