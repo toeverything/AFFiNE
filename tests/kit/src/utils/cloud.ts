@@ -92,7 +92,6 @@ export async function addUserToWorkspace(
       data: {
         workspaceId: workspace.id,
         userId,
-        accepted: true,
         status: 'Accepted',
         type: permission,
       },
