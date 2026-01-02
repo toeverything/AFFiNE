@@ -174,7 +174,7 @@ export class WorkspaceModel extends BaseModel {
 
   async allowSharing(workspaceId: string) {
     const workspace = await this.get(workspaceId);
-    return workspace?.enableSharing ?? false;
+    return workspace?.enableSharing ?? true;
   }
 
   async allowEmbedding(workspaceId: string) {

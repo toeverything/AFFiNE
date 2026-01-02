@@ -203,7 +203,8 @@ export class WorkspaceAccessController extends AccessController<'ws'> {
     }
 
     if (ws.public) {
-      return WorkspaceRole.External;
+      const sharingAllowed = await this.models.workspace.allowSharing(ws.id);
+      return sharingAllowed ? WorkspaceRole.External : null;
     }
 
     return null;
