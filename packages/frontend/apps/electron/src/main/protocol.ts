@@ -172,9 +172,13 @@ function ensureFrameAncestors(
   });
 }
 
-function allowCors(headers: Record<string, string[]>) {
+function allowCors(
+  headers: Record<string, string[]>,
+  origin: string = 'assets://.'
+) {
   // Signed blob URLs redirect to *.usercontent.affine.pro without CORS headers.
-  setHeader(headers, 'Access-Control-Allow-Origin', '*');
+  setHeader(headers, 'Access-Control-Allow-Origin', origin);
+  setHeader(headers, 'Access-Control-Allow-Credentials', 'true');
   setHeader(headers, 'Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   setHeader(
     headers,
