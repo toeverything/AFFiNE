@@ -3,9 +3,13 @@ import {
   type ServiceIdentifier,
 } from '@blocksuite/global/di';
 import type { DeltaInsert, ExtensionType } from '@blocksuite/store';
+import type { Root } from 'hast';
 import type { PhrasingContent } from 'mdast';
+import rehypeParse from 'rehype-parse';
+import { unified } from 'unified';
 
 import type { AffineTextAttributes } from '../../types/index.js';
+import { HtmlDeltaConverter } from '../html/delta-converter.js';
 import {
   type ASTToDeltaMatcher,
   DeltaASTConverter,
@@ -63,9 +67,25 @@ export class MarkdownDeltaConverter extends DeltaASTConverter<
   constructor(
     readonly configs: Map<string, string>,
     readonly inlineDeltaMatchers: InlineDeltaToMarkdownAdapterMatcher[],
-    readonly markdownASTToDeltaMatchers: MarkdownASTToDeltaMatcher[]
+    readonly markdownASTToDeltaMatchers: MarkdownASTToDeltaMatcher[],
+    readonly htmlDeltaConverter?: HtmlDeltaConverter
   ) {
     super();
+  }
+
+  private _convertHtmlToDelta(
+    html: string
+  ): DeltaInsert<AffineTextAttributes>[] {
+    if (!this.htmlDeltaConverter) {
+      return [{ insert: html }];
+    }
+    try {
+      const processor = unified().use(rehypeParse, { fragment: true });
+      const ast = processor.runSync(processor.parse(html)) as Root;
+      return this.htmlDeltaConverter.astToDelta(ast, { trim: false });
+    } catch {
+      return [{ insert: html }];
+    }
   }
 
   applyTextFormatting(
@@ -100,6 +120,7 @@ export class MarkdownDeltaConverter extends DeltaASTConverter<
       configs: this.configs,
       options: Object.create(null),
       toDelta: (ast: MarkdownAST) => this.astToDelta(ast),
+      htmlToDelta: (html: string) => this._convertHtmlToDelta(html),
     };
     for (const matcher of this.markdownASTToDeltaMatchers) {
       if (matcher.match(ast)) {
