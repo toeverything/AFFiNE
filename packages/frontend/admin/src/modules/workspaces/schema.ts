@@ -16,3 +16,11 @@ export type WorkspaceUpdateInput =
   AdminUpdateWorkspaceMutation['adminUpdateWorkspace'];
 
 export type WorkspaceFeatureFilter = FeatureType[];
+
+export type WorkspaceFlagFilter = {
+  public?: boolean;
+  enableAi?: boolean;
+  enableSharing?: boolean;
+  enableUrlPreview?: boolean;
+  enableDocEmbedding?: boolean;
+};

@@ -18,6 +18,7 @@ import {
 } from '../../../components/ui/popover';
 import { useDebouncedValue } from '../../../hooks/use-debounced-value';
 import { useServerConfig } from '../../common';
+import type { WorkspaceFlagFilter } from '../schema';
 
 interface DataTableToolbarProps<TData> {
   table?: Table<TData>;
@@ -25,19 +26,21 @@ interface DataTableToolbarProps<TData> {
   onKeywordChange: (keyword: string) => void;
   selectedFeatures: FeatureType[];
   onFeaturesChange: (features: FeatureType[]) => void;
+  flags: WorkspaceFlagFilter;
+  onFlagsChange: (flags: WorkspaceFlagFilter) => void;
   sort: AdminWorkspaceSort | undefined;
   onSortChange: (sort: AdminWorkspaceSort | undefined) => void;
   disabled?: boolean;
 }
 
 const sortOptions: { value: AdminWorkspaceSort; label: string }[] = [
-  { value: AdminWorkspaceSort.SnapshotSize, label: 'Snapshot size' },
+  { value: AdminWorkspaceSort.CreatedAt, label: 'Created time' },
   { value: AdminWorkspaceSort.BlobCount, label: 'Blob count' },
   { value: AdminWorkspaceSort.BlobSize, label: 'Blob size' },
   { value: AdminWorkspaceSort.SnapshotCount, label: 'Snapshot count' },
+  { value: AdminWorkspaceSort.SnapshotSize, label: 'Snapshot size' },
   { value: AdminWorkspaceSort.MemberCount, label: 'Member count' },
   { value: AdminWorkspaceSort.PublicPageCount, label: 'Public pages' },
-  { value: AdminWorkspaceSort.CreatedAt, label: 'Created time' },
 ];
 
 export function DataTableToolbar<TData>({
@@ -45,6 +48,8 @@ export function DataTableToolbar<TData>({
   onKeywordChange,
   selectedFeatures,
   onFeaturesChange,
+  flags,
+  onFlagsChange,
   sort,
   onSortChange,
   disabled = false,
@@ -78,6 +83,35 @@ export function DataTableToolbar<TData>({
       sortOptions.find(option => option.value === sort)?.label ??
       'Created time',
     [sort]
+  );
+
+  const flagOptions: { key: keyof WorkspaceFlagFilter; label: string }[] = [
+    { key: 'public', label: 'Public' },
+    { key: 'enableSharing', label: 'Enable sharing' },
+    { key: 'enableAi', label: 'Enable AI' },
+    { key: 'enableUrlPreview', label: 'Enable URL preview' },
+    { key: 'enableDocEmbedding', label: 'Enable doc embedding' },
+  ];
+
+  const flagLabel = (value: boolean | undefined) => {
+    if (value === true) return 'On';
+    if (value === false) return 'Off';
+    return 'Any';
+  };
+
+  const handleFlagToggle = useCallback(
+    (key: keyof WorkspaceFlagFilter) => {
+      const current = flags[key];
+      const next =
+        current === undefined ? true : current === true ? false : undefined;
+      onFlagsChange({ ...flags, [key]: next });
+    },
+    [flags, onFlagsChange]
+  );
+
+  const hasFlagFilter = useMemo(
+    () => Object.values(flags).some(v => v !== undefined),
+    [flags]
   );
 
   return (
@@ -114,6 +148,37 @@ export function DataTableToolbar<TData>({
                   onClick={() => handleSortChange(option.value)}
                 >
                   {option.label}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        <Popover open={disabled ? false : undefined}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={hasFlagFilter ? 'secondary' : 'outline'}
+              size="sm"
+              className="h-8 px-2 lg:px-3"
+              disabled={disabled}
+            >
+              Flags
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[260px] p-2">
+            <div className="flex flex-col gap-1">
+              {flagOptions.map(option => (
+                <Button
+                  key={option.key}
+                  variant="ghost"
+                  className="justify-between"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => handleFlagToggle(option.key)}
+                >
+                  <span>{option.label}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {flagLabel(flags[option.key])}
+                  </span>
                 </Button>
               ))}
             </div>

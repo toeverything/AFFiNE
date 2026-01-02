@@ -6,6 +6,7 @@ mutation adminUpdateWorkspace($input: AdminUpdateWorkspaceInput!) {
     name
     avatarKey
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     features

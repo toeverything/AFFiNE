@@ -10,6 +10,7 @@ import {
   inviteUser,
   publishDoc,
   revokePublicDoc,
+  setWorkspaceSharing,
   TestingApp,
   updateWorkspace,
 } from './utils';
@@ -180,4 +181,17 @@ test('should be able to get public workspace doc', async t => {
     .type('application/octet-stream');
 
   t.deepEqual(res.body, Buffer.from([0, 0]), 'failed to get public doc');
+
+  const disabled = await setWorkspaceSharing(app, workspace.id, false);
+  t.false(disabled, 'failed to disable workspace sharing');
+
+  // owner should still be able to access
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+    .expect(200);
+
+  await app.logout();
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+    .expect(403);
 });

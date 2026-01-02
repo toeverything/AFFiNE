@@ -86,6 +86,7 @@ function WorkspacePanelContent({
       flags: {
         public: workspace.public,
         enableAi: workspace.enableAi,
+        enableSharing: workspace.enableSharing,
         enableUrlPreview: workspace.enableUrlPreview,
         enableDocEmbedding: workspace.enableDocEmbedding,
         name: workspace.name ?? '',
@@ -110,6 +111,7 @@ function WorkspacePanelContent({
     return (
       flags.public !== baseline.flags.public ||
       flags.enableAi !== baseline.flags.enableAi ||
+      flags.enableSharing !== baseline.flags.enableSharing ||
       flags.enableUrlPreview !== baseline.flags.enableUrlPreview ||
       flags.enableDocEmbedding !== baseline.flags.enableDocEmbedding ||
       flags.name !== baseline.flags.name ||
@@ -134,6 +136,7 @@ function WorkspacePanelContent({
             id: workspace.id,
             public: flags.public,
             enableAi: flags.enableAi,
+            enableSharing: flags.enableSharing,
             enableUrlPreview: flags.enableUrlPreview,
             enableDocEmbedding: flags.enableDocEmbedding,
             name: flags.name || null,
@@ -228,6 +231,15 @@ function WorkspacePanelContent({
             checked={flags.enableUrlPreview}
             onCheckedChange={value =>
               setFlags(prev => ({ ...prev, enableUrlPreview: value }))
+            }
+          />
+          <Separator />
+          <FlagItem
+            label="Allow Workspace Sharing"
+            description="Allow pages in this workspace to be shared publicly"
+            checked={flags.enableSharing}
+            onCheckedChange={value =>
+              setFlags(prev => ({ ...prev, enableSharing: value }))
             }
           />
           <Separator />

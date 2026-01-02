@@ -85,6 +85,26 @@ export async function updateWorkspace(
   return res.updateWorkspace.public;
 }
 
+export async function setWorkspaceSharing(
+  app: TestingApp,
+  workspaceId: string,
+  enableSharing: boolean
+) {
+  const res = await app.gql(
+    `
+      mutation {
+        updateWorkspace(
+          input: { id: "${workspaceId}", enableSharing: ${enableSharing} }
+        ) {
+          enableSharing
+        }
+      }
+    `
+  );
+
+  return res.updateWorkspace.enableSharing as boolean;
+}
+
 export async function deleteWorkspace(
   app: TestingApp,
   workspaceId: string

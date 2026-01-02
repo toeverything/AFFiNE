@@ -71,6 +71,7 @@ export interface AdminUpdateWorkspaceInput {
   avatarKey?: InputMaybe<Scalars['String']['input']>;
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   features?: InputMaybe<Array<FeatureType>>;
   id: Scalars['String']['input'];
@@ -86,6 +87,7 @@ export interface AdminWorkspace {
   createdAt: Scalars['DateTime']['output'];
   enableAi: Scalars['Boolean']['output'];
   enableDocEmbedding: Scalars['Boolean']['output'];
+  enableSharing: Scalars['Boolean']['output'];
   enableUrlPreview: Scalars['Boolean']['output'];
   features: Array<FeatureType>;
   id: Scalars['String']['output'];
@@ -1411,10 +1413,15 @@ export interface ListUserInput {
 }
 
 export interface ListWorkspaceInput {
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
+  enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   features?: InputMaybe<Array<FeatureType>>;
   first?: Scalars['Int']['input'];
   keyword?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<AdminWorkspaceSort>;
+  public?: InputMaybe<Scalars['Boolean']['input']>;
   skip?: Scalars['Int']['input'];
 }
 
@@ -2881,6 +2888,8 @@ export interface UpdateWorkspaceInput {
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable doc embedding */
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Enable workspace sharing */
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable url previous when sharing */
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -3115,6 +3124,8 @@ export interface WorkspaceType {
   enableAi: Scalars['Boolean']['output'];
   /** Enable doc embedding */
   enableDocEmbedding: Scalars['Boolean']['output'];
+  /** Enable workspace sharing */
+  enableSharing: Scalars['Boolean']['output'];
   /** Enable url previous when sharing */
   enableUrlPreview: Scalars['Boolean']['output'];
   histories: Array<DocHistoryType>;
@@ -3332,6 +3343,7 @@ export type AdminUpdateWorkspaceMutation = {
     name: string | null;
     avatarKey: string | null;
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     features: Array<FeatureType>;
@@ -3368,6 +3380,7 @@ export type AdminWorkspaceQuery = {
     name: string | null;
     avatarKey: string | null;
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     features: Array<FeatureType>;
@@ -3416,6 +3429,7 @@ export type AdminWorkspacesQuery = {
     name: string | null;
     avatarKey: string | null;
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     features: Array<FeatureType>;
@@ -6534,6 +6548,7 @@ export type GetWorkspaceConfigQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     inviteLink: {
@@ -6560,6 +6575,16 @@ export type SetEnableDocEmbeddingMutationVariables = Exact<{
 }>;
 
 export type SetEnableDocEmbeddingMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type SetEnableSharingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableSharing: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableSharingMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
@@ -7586,6 +7611,11 @@ export type Mutations =
       name: 'setEnableDocEmbeddingMutation';
       variables: SetEnableDocEmbeddingMutationVariables;
       response: SetEnableDocEmbeddingMutation;
+    }
+  | {
+      name: 'setEnableSharingMutation';
+      variables: SetEnableSharingMutationVariables;
+      response: SetEnableSharingMutation;
     }
   | {
       name: 'setEnableUrlPreviewMutation';

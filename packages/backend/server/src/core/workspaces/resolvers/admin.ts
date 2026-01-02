@@ -56,6 +56,21 @@ class ListWorkspaceInput {
 
   @Field(() => AdminWorkspaceSort, { nullable: true })
   orderBy?: AdminWorkspaceSort;
+
+  @Field({ nullable: true })
+  public?: boolean;
+
+  @Field({ nullable: true })
+  enableAi?: boolean;
+
+  @Field({ nullable: true })
+  enableSharing?: boolean;
+
+  @Field({ nullable: true })
+  enableUrlPreview?: boolean;
+
+  @Field({ nullable: true })
+  enableDocEmbedding?: boolean;
 }
 
 @ObjectType()
@@ -112,6 +127,9 @@ export class AdminWorkspace {
   enableAi!: boolean;
 
   @Field()
+  enableSharing!: boolean;
+
+  @Field()
   enableUrlPreview!: boolean;
 
   @Field()
@@ -150,6 +168,7 @@ class AdminUpdateWorkspaceInput extends PartialType(
   PickType(AdminWorkspace, [
     'public',
     'enableAi',
+    'enableSharing',
     'enableUrlPreview',
     'enableDocEmbedding',
     'name',
@@ -183,6 +202,13 @@ export class AdminWorkspaceResolver {
       keyword: filter.keyword,
       features: filter.features,
       order: this.mapSort(filter.orderBy),
+      flags: {
+        public: filter.public ?? undefined,
+        enableAi: filter.enableAi ?? undefined,
+        enableSharing: filter.enableSharing ?? undefined,
+        enableUrlPreview: filter.enableUrlPreview ?? undefined,
+        enableDocEmbedding: filter.enableDocEmbedding ?? undefined,
+      },
       includeTotal: false,
     });
     return rows;
@@ -196,6 +222,13 @@ export class AdminWorkspaceResolver {
     const total = await this.models.workspace.adminCountWorkspaces({
       keyword: filter.keyword,
       features: filter.features,
+      flags: {
+        public: filter.public ?? undefined,
+        enableAi: filter.enableAi ?? undefined,
+        enableSharing: filter.enableSharing ?? undefined,
+        enableUrlPreview: filter.enableUrlPreview ?? undefined,
+        enableDocEmbedding: filter.enableDocEmbedding ?? undefined,
+      },
     });
     return total;
   }

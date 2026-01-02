@@ -59,6 +59,7 @@ test('should update workspace', async t => {
   const data = {
     public: true,
     enableAi: true,
+    enableSharing: false,
     enableUrlPreview: true,
     enableDocEmbedding: false,
   };

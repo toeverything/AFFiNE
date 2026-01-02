@@ -117,6 +117,7 @@ model Workspace {
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
   enableAi            Boolean  @default(true) @map("enable_ai")
+  enableSharing       Boolean  @default(true) @map("enable_sharing")
   enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
   enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
   name                String?  @db.VarChar
@@ -147,17 +148,17 @@ model Workspace {
 //   Only the ones that have ever changed will have records here,
 //   and for others we will make sure it's has a default value return in our business logic.
 model WorkspaceDoc {
-  workspaceId String  @map("workspace_id") @db.VarChar
-  docId       String  @map("page_id") @db.VarChar
-  public      Boolean @default(false)
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("page_id") @db.VarChar
+  public      Boolean   @default(false)
   // Workspace user's default role in this page, default is `Manager`
-  defaultRole Int     @default(30) @db.SmallInt
+  defaultRole Int       @default(30) @db.SmallInt
   // Page/Edgeless
-  mode        Int     @default(0) @db.SmallInt
+  mode        Int       @default(0) @db.SmallInt
   // Whether the doc is blocked
-  blocked     Boolean @default(false)
-  title       String? @db.VarChar
-  summary     String? @db.VarChar
+  blocked     Boolean   @default(false)
+  title       String?   @db.VarChar
+  summary     String?   @db.VarChar
   publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
