@@ -4118,6 +4118,7 @@ __metadata:
     "@toeverything/theme": "npm:^1.1.16"
     "@types/lodash-es": "npm:^4.17.12"
     fflate: "npm:^0.8.2"
+    js-yaml: "npm:^4.1.1"
     lit: "npm:^3.2.0"
     lodash-es: "npm:^4.17.21"
     mammoth: "npm:^1.11.0"
@@ -28727,7 +28728,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:^4.0.0, js-yaml@npm:^4.1.0":
+"js-yaml@npm:^4.0.0, js-yaml@npm:^4.1.0, js-yaml@npm:^4.1.1":
   version: 4.1.1
   resolution: "js-yaml@npm:4.1.1"
   dependencies:
