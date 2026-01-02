@@ -80,6 +80,18 @@ class AdminWorkspaceMember {
 }
 
 @ObjectType()
+class AdminWorkspaceSharedLink {
+  @Field()
+  docId!: string;
+
+  @Field(() => String, { nullable: true })
+  title?: string | null;
+
+  @Field(() => Date, { nullable: true })
+  publishedAt?: Date | null;
+}
+
+@ObjectType()
 export class AdminWorkspace {
   @Field()
   id!: string;
@@ -128,6 +140,9 @@ export class AdminWorkspace {
 
   @Field(() => SafeIntResolver)
   blobSize!: number;
+
+  @Field(() => [AdminWorkspaceSharedLink])
+  sharedLinks!: AdminWorkspaceSharedLink[];
 }
 
 @InputType()
@@ -247,6 +262,18 @@ export class AdminWorkspaceResolver {
       avatarUrl: user.avatarUrl,
       role: type,
       status,
+    }));
+  }
+
+  @ResolveField(() => [AdminWorkspaceSharedLink], {
+    description: 'Shared links of workspace',
+  })
+  async sharedLinks(@Parent() workspace: AdminWorkspace) {
+    const publicDocs = await this.models.doc.findPublics(workspace.id, 'desc');
+    return publicDocs.map(doc => ({
+      docId: doc.docId,
+      title: doc.title,
+      publishedAt: doc.publishedAt ?? null,
     }));
   }
 

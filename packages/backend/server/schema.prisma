@@ -158,6 +158,7 @@ model WorkspaceDoc {
   blocked     Boolean @default(false)
   title       String? @db.VarChar
   summary     String? @db.VarChar
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 

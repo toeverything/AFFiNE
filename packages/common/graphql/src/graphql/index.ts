@@ -190,6 +190,11 @@ export const adminWorkspaceQuery = {
     snapshotSize
     blobCount
     blobSize
+    sharedLinks {
+      docId
+      title
+      publishedAt
+    }
     members(skip: $memberSkip, take: $memberTake, query: $memberQuery) {
       id
       name

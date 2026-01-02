@@ -154,7 +154,7 @@ export const useColumns = () => {
       {
         id: 'actions',
         meta: {
-          className: 'w-[80px] justify-end',
+          className: 'w-[190px] justify-end',
         },
         header: () => (
           <div className="text-xs font-medium text-right">Actions</div>
