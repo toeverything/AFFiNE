@@ -35,6 +35,7 @@ input AdminUpdateWorkspaceInput {
   avatarKey: String
   enableAi: Boolean
   enableDocEmbedding: Boolean
+  enableSharing: Boolean
   enableUrlPreview: Boolean
   features: [FeatureType!]
   id: String!
@@ -49,6 +50,7 @@ type AdminWorkspace {
   createdAt: DateTime!
   enableAi: Boolean!
   enableDocEmbedding: Boolean!
+  enableSharing: Boolean!
   enableUrlPreview: Boolean!
   features: [FeatureType!]!
   id: String!
@@ -60,6 +62,7 @@ type AdminWorkspace {
   owner: WorkspaceUserType
   public: Boolean!
   publicPageCount: Int!
+  sharedLinks: [AdminWorkspaceSharedLink!]!
   snapshotCount: Int!
   snapshotSize: SafeInt!
 }
@@ -71,6 +74,12 @@ type AdminWorkspaceMember {
   name: String!
   role: Permission!
   status: WorkspaceMemberStatus!
+}
+
+type AdminWorkspaceSharedLink {
+  docId: String!
+  publishedAt: DateTime
+  title: String
 }
 
 enum AdminWorkspaceSort {
@@ -1219,10 +1228,15 @@ input ListUserInput {
 }
 
 input ListWorkspaceInput {
+  enableAi: Boolean
+  enableDocEmbedding: Boolean
+  enableSharing: Boolean
+  enableUrlPreview: Boolean
   features: [FeatureType!]
   first: Int! = 20
   keyword: String
   orderBy: AdminWorkspaceSort
+  public: Boolean
   skip: Int! = 0
 }
 
@@ -2200,6 +2214,9 @@ input UpdateWorkspaceInput {
   """Enable doc embedding"""
   enableDocEmbedding: Boolean
 
+  """Enable workspace sharing"""
+  enableSharing: Boolean
+
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean
   id: ID!
@@ -2425,6 +2442,9 @@ type WorkspaceType {
   """Enable doc embedding"""
   enableDocEmbedding: Boolean!
 
+  """Enable workspace sharing"""
+  enableSharing: Boolean!
+
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean!
   histories(before: DateTime, guid: String!, take: Int): [DocHistoryType!]!
@@ -2466,7 +2486,6 @@ type WorkspaceType {
 
   """Get public page of a workspace by page id."""
   publicPage(pageId: String!): DocType @deprecated(reason: "use [WorkspaceType.doc] instead")
-  publicPages: [DocType!]! @deprecated(reason: "use [WorkspaceType.publicDocs] instead")
 
   """quota of workspace"""
   quota: WorkspaceQuotaType!

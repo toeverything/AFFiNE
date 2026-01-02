@@ -61,7 +61,6 @@ export class DocModel extends BaseModel {
       blob: record.blob,
       createdAt: new Date(record.timestamp),
       createdBy: record.editorId || null,
-      seq: null,
     };
   }
 
@@ -484,12 +483,10 @@ export class DocModel extends BaseModel {
   /**
    * Find the workspace public doc metas.
    */
-  async findPublics(workspaceId: string) {
+  async findPublics(workspaceId: string, order: 'asc' | 'desc' = 'asc') {
     return await this.db.workspaceDoc.findMany({
-      where: {
-        workspaceId,
-        public: true,
-      },
+      where: { workspaceId, public: true },
+      orderBy: { publishedAt: order },
     });
   }
 
@@ -524,6 +521,7 @@ export class DocModel extends BaseModel {
     return await this.upsertMeta(workspaceId, docId, {
       public: true,
       mode,
+      publishedAt: new Date(),
     });
   }
 
@@ -536,6 +534,7 @@ export class DocModel extends BaseModel {
 
     return await this.upsertMeta(workspaceId, docId, {
       public: false,
+      publishedAt: null,
     });
   }
 

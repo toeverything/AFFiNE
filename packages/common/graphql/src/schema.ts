@@ -71,6 +71,7 @@ export interface AdminUpdateWorkspaceInput {
   avatarKey?: InputMaybe<Scalars['String']['input']>;
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   features?: InputMaybe<Array<FeatureType>>;
   id: Scalars['String']['input'];
@@ -86,6 +87,7 @@ export interface AdminWorkspace {
   createdAt: Scalars['DateTime']['output'];
   enableAi: Scalars['Boolean']['output'];
   enableDocEmbedding: Scalars['Boolean']['output'];
+  enableSharing: Scalars['Boolean']['output'];
   enableUrlPreview: Scalars['Boolean']['output'];
   features: Array<FeatureType>;
   id: Scalars['String']['output'];
@@ -96,6 +98,7 @@ export interface AdminWorkspace {
   owner: Maybe<WorkspaceUserType>;
   public: Scalars['Boolean']['output'];
   publicPageCount: Scalars['Int']['output'];
+  sharedLinks: Array<AdminWorkspaceSharedLink>;
   snapshotCount: Scalars['Int']['output'];
   snapshotSize: Scalars['SafeInt']['output'];
 }
@@ -114,6 +117,13 @@ export interface AdminWorkspaceMember {
   name: Scalars['String']['output'];
   role: Permission;
   status: WorkspaceMemberStatus;
+}
+
+export interface AdminWorkspaceSharedLink {
+  __typename?: 'AdminWorkspaceSharedLink';
+  docId: Scalars['String']['output'];
+  publishedAt: Maybe<Scalars['DateTime']['output']>;
+  title: Maybe<Scalars['String']['output']>;
 }
 
 export enum AdminWorkspaceSort {
@@ -1403,10 +1413,15 @@ export interface ListUserInput {
 }
 
 export interface ListWorkspaceInput {
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
+  enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   features?: InputMaybe<Array<FeatureType>>;
   first?: Scalars['Int']['input'];
   keyword?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<AdminWorkspaceSort>;
+  public?: InputMaybe<Scalars['Boolean']['input']>;
   skip?: Scalars['Int']['input'];
 }
 
@@ -2873,6 +2888,8 @@ export interface UpdateWorkspaceInput {
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable doc embedding */
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Enable workspace sharing */
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable url previous when sharing */
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -3107,6 +3124,8 @@ export interface WorkspaceType {
   enableAi: Scalars['Boolean']['output'];
   /** Enable doc embedding */
   enableDocEmbedding: Scalars['Boolean']['output'];
+  /** Enable workspace sharing */
+  enableSharing: Scalars['Boolean']['output'];
   /** Enable url previous when sharing */
   enableUrlPreview: Scalars['Boolean']['output'];
   histories: Array<DocHistoryType>;
@@ -3142,8 +3161,6 @@ export interface WorkspaceType {
    * @deprecated use [WorkspaceType.doc] instead
    */
   publicPage: Maybe<DocType>;
-  /** @deprecated use [WorkspaceType.publicDocs] instead */
-  publicPages: Array<DocType>;
   /** quota of workspace */
   quota: WorkspaceQuotaType;
   /** Get recently updated docs of a workspace */
@@ -3326,6 +3343,7 @@ export type AdminUpdateWorkspaceMutation = {
     name: string | null;
     avatarKey: string | null;
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     features: Array<FeatureType>;
@@ -3362,6 +3380,7 @@ export type AdminWorkspaceQuery = {
     name: string | null;
     avatarKey: string | null;
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     features: Array<FeatureType>;
@@ -3378,6 +3397,12 @@ export type AdminWorkspaceQuery = {
       email: string;
       avatarUrl: string | null;
     } | null;
+    sharedLinks: Array<{
+      __typename?: 'AdminWorkspaceSharedLink';
+      docId: string;
+      title: string | null;
+      publishedAt: string | null;
+    }>;
     members: Array<{
       __typename?: 'AdminWorkspaceMember';
       id: string;
@@ -3404,6 +3429,7 @@ export type AdminWorkspacesQuery = {
     name: string | null;
     avatarKey: string | null;
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     features: Array<FeatureType>;
@@ -6522,6 +6548,7 @@ export type GetWorkspaceConfigQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     inviteLink: {
@@ -6548,6 +6575,16 @@ export type SetEnableDocEmbeddingMutationVariables = Exact<{
 }>;
 
 export type SetEnableDocEmbeddingMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type SetEnableSharingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableSharing: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableSharingMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
@@ -7574,6 +7611,11 @@ export type Mutations =
       name: 'setEnableDocEmbeddingMutation';
       variables: SetEnableDocEmbeddingMutationVariables;
       response: SetEnableDocEmbeddingMutation;
+    }
+  | {
+      name: 'setEnableSharingMutation';
+      variables: SetEnableSharingMutationVariables;
+      response: SetEnableSharingMutation;
     }
   | {
       name: 'setEnableUrlPreviewMutation';

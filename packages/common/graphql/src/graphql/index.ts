@@ -145,6 +145,7 @@ export const adminUpdateWorkspaceMutation = {
     name
     avatarKey
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     features
@@ -175,6 +176,7 @@ export const adminWorkspaceQuery = {
     name
     avatarKey
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     features
@@ -190,6 +192,11 @@ export const adminWorkspaceQuery = {
     snapshotSize
     blobCount
     blobSize
+    sharedLinks {
+      docId
+      title
+      publishedAt
+    }
     members(skip: $memberSkip, take: $memberTake, query: $memberQuery) {
       id
       name
@@ -213,6 +220,7 @@ export const adminWorkspacesQuery = {
     name
     avatarKey
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     features
@@ -2540,6 +2548,7 @@ export const getWorkspaceConfigQuery = {
   query: `query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     inviteLink {
@@ -2565,6 +2574,16 @@ export const setEnableDocEmbeddingMutation = {
   op: 'setEnableDocEmbedding',
   query: `mutation setEnableDocEmbedding($id: ID!, $enableDocEmbedding: Boolean!) {
   updateWorkspace(input: {id: $id, enableDocEmbedding: $enableDocEmbedding}) {
+    id
+  }
+}`,
+};
+
+export const setEnableSharingMutation = {
+  id: 'setEnableSharingMutation' as const,
+  op: 'setEnableSharing',
+  query: `mutation setEnableSharing($id: ID!, $enableSharing: Boolean!) {
+  updateWorkspace(input: {id: $id, enableSharing: $enableSharing}) {
     id
   }
 }`,

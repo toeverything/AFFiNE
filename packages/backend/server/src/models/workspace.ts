@@ -14,6 +14,7 @@ type RawWorkspaceSummary = {
   name: string | null;
   avatarKey: string | null;
   enableAi: boolean;
+  enableSharing: boolean;
   enableUrlPreview: boolean;
   enableDocEmbedding: boolean;
   memberCount: bigint | number | null;
@@ -36,6 +37,7 @@ export type AdminWorkspaceSummary = {
   name: string | null;
   avatarKey: string | null;
   enableAi: boolean;
+  enableSharing: boolean;
   enableUrlPreview: boolean;
   enableDocEmbedding: boolean;
   memberCount: number;
@@ -67,6 +69,7 @@ export type UpdateWorkspaceInput = Pick<
   Partial<Workspace>,
   | 'public'
   | 'enableAi'
+  | 'enableSharing'
   | 'enableUrlPreview'
   | 'enableDocEmbedding'
   | 'name'
@@ -169,6 +172,11 @@ export class WorkspaceModel extends BaseModel {
     return workspace?.enableUrlPreview ?? false;
   }
 
+  async allowSharing(workspaceId: string) {
+    const workspace = await this.get(workspaceId);
+    return workspace?.enableSharing ?? true;
+  }
+
   async allowEmbedding(workspaceId: string) {
     const workspace = await this.get(workspaceId);
     return workspace?.enableDocEmbedding ?? false;
@@ -185,6 +193,13 @@ export class WorkspaceModel extends BaseModel {
     first: number;
     keyword?: string | null;
     features?: WorkspaceFeatureName[] | null;
+    flags?: {
+      public?: boolean;
+      enableAi?: boolean;
+      enableSharing?: boolean;
+      enableUrlPreview?: boolean;
+      enableDocEmbedding?: boolean;
+    };
     order?:
       | 'createdAt'
       | 'snapshotSize'
@@ -197,9 +212,10 @@ export class WorkspaceModel extends BaseModel {
   }): Promise<{ rows: AdminWorkspaceSummary[]; total: number }> {
     const keyword = options.keyword?.trim();
     const features = options.features ?? [];
+    const flags = options.flags ?? {};
     const includeTotal = options.includeTotal ?? true;
     const total = includeTotal
-      ? await this.adminCountWorkspaces({ keyword, features })
+      ? await this.adminCountWorkspaces({ keyword, features, flags })
       : 0;
     if (includeTotal && total === 0) {
       return { rows: [], total: 0 };
@@ -251,6 +267,7 @@ export class WorkspaceModel extends BaseModel {
                w.name,
                w.avatar_key AS "avatarKey",
                w.enable_ai AS "enableAi",
+               w.enable_sharing AS "enableSharing",
                w.enable_url_preview AS "enableUrlPreview",
                w.enable_doc_embedding AS "enableDocEmbedding",
                o.owner_id AS "ownerId",
@@ -283,6 +300,14 @@ export class WorkspaceModel extends BaseModel {
               `
             : Prisma.sql`TRUE`
         }
+        ${
+          this.buildAdminFlagWhere(flags).length
+            ? Prisma.sql`AND ${Prisma.join(
+                this.buildAdminFlagWhere(flags),
+                ' AND '
+              )}`
+            : Prisma.empty
+        }
         ${groupAndHaving}
       )
       SELECT f.*,
@@ -307,6 +332,7 @@ export class WorkspaceModel extends BaseModel {
       name: row.name,
       avatarKey: row.avatarKey,
       enableAi: row.enableAi,
+      enableSharing: row.enableSharing,
       enableUrlPreview: row.enableUrlPreview,
       enableDocEmbedding: row.enableDocEmbedding,
       memberCount: Number(row.memberCount ?? 0),
@@ -332,9 +358,17 @@ export class WorkspaceModel extends BaseModel {
   async adminCountWorkspaces(options: {
     keyword?: string | null;
     features?: WorkspaceFeatureName[] | null;
+    flags?: {
+      public?: boolean;
+      enableAi?: boolean;
+      enableSharing?: boolean;
+      enableUrlPreview?: boolean;
+      enableDocEmbedding?: boolean;
+    };
   }) {
     const keyword = options.keyword?.trim();
     const features = options.features ?? [];
+    const flags = options.flags ?? {};
 
     const featuresHaving =
       features.length > 0
@@ -393,12 +427,50 @@ export class WorkspaceModel extends BaseModel {
               `
             : Prisma.sql`TRUE`
         }
+        ${
+          this.buildAdminFlagWhere(flags).length
+            ? Prisma.sql`AND ${Prisma.join(
+                this.buildAdminFlagWhere(flags),
+                ' AND '
+              )}`
+            : Prisma.empty
+        }
         ${groupAndHaving}
       )
       SELECT COUNT(*) AS total FROM filtered
     `;
 
     return row?.total ? Number(row.total) : 0;
+  }
+
+  private buildAdminFlagWhere(flags: {
+    public?: boolean;
+    enableAi?: boolean;
+    enableSharing?: boolean;
+    enableUrlPreview?: boolean;
+    enableDocEmbedding?: boolean;
+  }) {
+    const conditions: Prisma.Sql[] = [];
+    if (flags.public !== undefined) {
+      conditions.push(Prisma.sql`w.public = ${flags.public}`);
+    }
+    if (flags.enableAi !== undefined) {
+      conditions.push(Prisma.sql`w.enable_ai = ${flags.enableAi}`);
+    }
+    if (flags.enableSharing !== undefined) {
+      conditions.push(Prisma.sql`w.enable_sharing = ${flags.enableSharing}`);
+    }
+    if (flags.enableUrlPreview !== undefined) {
+      conditions.push(
+        Prisma.sql`w.enable_url_preview = ${flags.enableUrlPreview}`
+      );
+    }
+    if (flags.enableDocEmbedding !== undefined) {
+      conditions.push(
+        Prisma.sql`w.enable_doc_embedding = ${flags.enableDocEmbedding}`
+      );
+    }
+    return conditions;
   }
 
   private buildAdminOrder(

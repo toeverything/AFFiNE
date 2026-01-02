@@ -38,7 +38,6 @@ test('should create a new session', async t => {
   const session = await t.context.session.createSession();
   t.truthy(session.id);
   t.truthy(session.createdAt);
-  t.is(session.deprecated_expiresAt, null);
 });
 
 test('should get a exists session', async t => {

@@ -1,11 +1,12 @@
 import { Button } from '@affine/admin/components/ui/button';
-import { EditIcon } from '@blocksuite/icons/rc';
+import { EditIcon, LinkIcon } from '@blocksuite/icons/rc';
 import { useCallback, useState } from 'react';
 
 import { DiscardChanges } from '../../../components/shared/discard-changes';
 import { useRightPanel } from '../../panel/context';
 import type { WorkspaceListItem } from '../schema';
 import { WorkspacePanel } from './workspace-panel';
+import { WorkspaceSharedLinksPanel } from './workspace-shared-links-panel';
 
 export function DataTableRowActions({
   workspace,
@@ -13,6 +14,9 @@ export function DataTableRowActions({
   workspace: WorkspaceListItem;
 }) {
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<
+    'edit' | 'sharedLinks' | null
+  >(null);
   const {
     setPanelContent,
     openPanel,
@@ -22,7 +26,7 @@ export function DataTableRowActions({
     setHasDirtyChanges,
   } = useRightPanel();
 
-  const handleConfirm = useCallback(() => {
+  const openWorkspacePanel = useCallback(() => {
     setHasDirtyChanges(false);
     setPanelContent(
       <WorkspacePanel workspaceId={workspace.id} onClose={closePanel} />
@@ -39,35 +43,89 @@ export function DataTableRowActions({
     workspace.id,
   ]);
 
+  const openSharedLinksPanel = useCallback(() => {
+    setHasDirtyChanges(false);
+    setPanelContent(
+      <WorkspaceSharedLinksPanel
+        workspaceId={workspace.id}
+        onClose={closePanel}
+      />
+    );
+    if (!isOpen) {
+      openPanel();
+    }
+  }, [
+    closePanel,
+    isOpen,
+    openPanel,
+    setHasDirtyChanges,
+    setPanelContent,
+    workspace.id,
+  ]);
+
   const handleEdit = useCallback(() => {
     if (hasDirtyChanges) {
+      setPendingAction('edit');
       setDiscardDialogOpen(true);
       return;
     }
-    handleConfirm();
-  }, [handleConfirm, hasDirtyChanges]);
+    openWorkspacePanel();
+  }, [hasDirtyChanges, openWorkspacePanel]);
+
+  const handleSharedLinks = useCallback(() => {
+    if (hasDirtyChanges) {
+      setPendingAction('sharedLinks');
+      setDiscardDialogOpen(true);
+      return;
+    }
+    openSharedLinksPanel();
+  }, [hasDirtyChanges, openSharedLinksPanel]);
 
   const handleDiscardConfirm = useCallback(() => {
     setDiscardDialogOpen(false);
     setHasDirtyChanges(false);
-    handleConfirm();
-  }, [handleConfirm, setHasDirtyChanges]);
+    if (pendingAction === 'sharedLinks') {
+      openSharedLinksPanel();
+    } else {
+      openWorkspacePanel();
+    }
+    setPendingAction(null);
+  }, [
+    openSharedLinksPanel,
+    openWorkspacePanel,
+    pendingAction,
+    setHasDirtyChanges,
+  ]);
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="px-2 h-8 flex items-center gap-2"
-        onClick={handleEdit}
-      >
-        <EditIcon fontSize={18} />
-        <span>Edit</span>
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="px-2 h-8 flex items-center gap-2"
+          onClick={handleEdit}
+        >
+          <EditIcon fontSize={18} />
+          <span>Edit</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="px-2 h-8 flex items-center gap-2"
+          onClick={handleSharedLinks}
+        >
+          <LinkIcon fontSize={18} />
+          <span>Shared links</span>
+        </Button>
+      </div>
       <DiscardChanges
         open={discardDialogOpen}
         onOpenChange={setDiscardDialogOpen}
-        onClose={() => setDiscardDialogOpen(false)}
+        onClose={() => {
+          setDiscardDialogOpen(false);
+          setPendingAction(null);
+        }}
         onConfirm={handleDiscardConfirm}
         description="Changes to this workspace will not be saved."
       />
