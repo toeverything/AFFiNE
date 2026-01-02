@@ -60,6 +60,7 @@ type AdminWorkspace {
   owner: WorkspaceUserType
   public: Boolean!
   publicPageCount: Int!
+  sharedLinks: [AdminWorkspaceSharedLink!]!
   snapshotCount: Int!
   snapshotSize: SafeInt!
 }
@@ -71,6 +72,12 @@ type AdminWorkspaceMember {
   name: String!
   role: Permission!
   status: WorkspaceMemberStatus!
+}
+
+type AdminWorkspaceSharedLink {
+  docId: String!
+  publishedAt: DateTime
+  title: String
 }
 
 enum AdminWorkspaceSort {
@@ -2466,7 +2473,6 @@ type WorkspaceType {
 
   """Get public page of a workspace by page id."""
   publicPage(pageId: String!): DocType @deprecated(reason: "use [WorkspaceType.doc] instead")
-  publicPages: [DocType!]! @deprecated(reason: "use [WorkspaceType.publicDocs] instead")
 
   """quota of workspace"""
   quota: WorkspaceQuotaType!

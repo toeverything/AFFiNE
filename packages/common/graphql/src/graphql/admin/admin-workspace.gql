@@ -26,6 +26,11 @@ query adminWorkspace(
     snapshotSize
     blobCount
     blobSize
+    sharedLinks {
+      docId
+      title
+      publishedAt
+    }
     members(skip: $memberSkip, take: $memberTake, query: $memberQuery) {
       id
       name

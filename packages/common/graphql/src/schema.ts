@@ -96,6 +96,7 @@ export interface AdminWorkspace {
   owner: Maybe<WorkspaceUserType>;
   public: Scalars['Boolean']['output'];
   publicPageCount: Scalars['Int']['output'];
+  sharedLinks: Array<AdminWorkspaceSharedLink>;
   snapshotCount: Scalars['Int']['output'];
   snapshotSize: Scalars['SafeInt']['output'];
 }
@@ -114,6 +115,13 @@ export interface AdminWorkspaceMember {
   name: Scalars['String']['output'];
   role: Permission;
   status: WorkspaceMemberStatus;
+}
+
+export interface AdminWorkspaceSharedLink {
+  __typename?: 'AdminWorkspaceSharedLink';
+  docId: Scalars['String']['output'];
+  publishedAt: Maybe<Scalars['DateTime']['output']>;
+  title: Maybe<Scalars['String']['output']>;
 }
 
 export enum AdminWorkspaceSort {
@@ -3142,8 +3150,6 @@ export interface WorkspaceType {
    * @deprecated use [WorkspaceType.doc] instead
    */
   publicPage: Maybe<DocType>;
-  /** @deprecated use [WorkspaceType.publicDocs] instead */
-  publicPages: Array<DocType>;
   /** quota of workspace */
   quota: WorkspaceQuotaType;
   /** Get recently updated docs of a workspace */
@@ -3378,6 +3384,12 @@ export type AdminWorkspaceQuery = {
       email: string;
       avatarUrl: string | null;
     } | null;
+    sharedLinks: Array<{
+      __typename?: 'AdminWorkspaceSharedLink';
+      docId: string;
+      title: string | null;
+      publishedAt: string | null;
+    }>;
     members: Array<{
       __typename?: 'AdminWorkspaceMember';
       id: string;
