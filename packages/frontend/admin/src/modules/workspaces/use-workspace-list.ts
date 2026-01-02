@@ -7,10 +7,13 @@ import {
 } from '@affine/graphql';
 import { useEffect, useMemo, useState } from 'react';
 
+import type { WorkspaceFlagFilter } from './schema';
+
 export const useWorkspaceList = (filter?: {
   keyword?: string;
   features?: FeatureType[];
   orderBy?: AdminWorkspaceSort;
+  flags?: WorkspaceFlagFilter;
 }) => {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -21,8 +24,10 @@ export const useWorkspaceList = (filter?: {
     () =>
       `${filter?.keyword ?? ''}-${[...(filter?.features ?? [])]
         .sort()
-        .join(',')}-${filter?.orderBy ?? ''}`,
-    [filter?.features, filter?.keyword, filter?.orderBy]
+        .join(',')}-${filter?.orderBy ?? ''}-${JSON.stringify(
+        filter?.flags ?? {}
+      )}`,
+    [filter?.features, filter?.flags, filter?.keyword, filter?.orderBy]
   );
 
   useEffect(() => {
@@ -40,10 +45,20 @@ export const useWorkspaceList = (filter?: {
             ? filter.features
             : undefined,
         orderBy: filter?.orderBy,
+        public: filter?.flags?.public,
+        enableAi: filter?.flags?.enableAi,
+        enableSharing: filter?.flags?.enableSharing,
+        enableUrlPreview: filter?.flags?.enableUrlPreview,
+        enableDocEmbedding: filter?.flags?.enableDocEmbedding,
       },
     }),
     [
       filter?.features,
+      filter?.flags?.enableAi,
+      filter?.flags?.enableDocEmbedding,
+      filter?.flags?.enableSharing,
+      filter?.flags?.enableUrlPreview,
+      filter?.flags?.public,
       filter?.keyword,
       filter?.orderBy,
       pagination.pageIndex,

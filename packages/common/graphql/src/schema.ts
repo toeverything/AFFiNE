@@ -1413,10 +1413,15 @@ export interface ListUserInput {
 }
 
 export interface ListWorkspaceInput {
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
+  enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   features?: InputMaybe<Array<FeatureType>>;
   first?: Scalars['Int']['input'];
   keyword?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<AdminWorkspaceSort>;
+  public?: InputMaybe<Scalars['Boolean']['input']>;
   skip?: Scalars['Int']['input'];
 }
 

@@ -1228,10 +1228,15 @@ input ListUserInput {
 }
 
 input ListWorkspaceInput {
+  enableAi: Boolean
+  enableDocEmbedding: Boolean
+  enableSharing: Boolean
+  enableUrlPreview: Boolean
   features: [FeatureType!]
   first: Int! = 20
   keyword: String
   orderBy: AdminWorkspaceSort
+  public: Boolean
   skip: Int! = 0
 }
 

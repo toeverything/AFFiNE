@@ -3,6 +3,7 @@ import type { ColumnDef, PaginationState } from '@tanstack/react-table';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { SharedDataTable } from '../../../components/shared/data-table';
+import type { WorkspaceFlagFilter } from '../schema';
 import { DataTableToolbar } from './data-table-toolbar';
 
 interface DataTableProps<TData, TValue> {
@@ -14,6 +15,8 @@ interface DataTableProps<TData, TValue> {
   onKeywordChange: (value: string) => void;
   selectedFeatures: FeatureType[];
   onFeaturesChange: (features: FeatureType[]) => void;
+  flags: WorkspaceFlagFilter;
+  onFlagsChange: Dispatch<SetStateAction<WorkspaceFlagFilter>>;
   sort: AdminWorkspaceSort | undefined;
   onSortChange: (sort: AdminWorkspaceSort | undefined) => void;
   loading?: boolean;
@@ -34,6 +37,8 @@ export function DataTable<TData extends { id: string }, TValue>({
   onKeywordChange,
   selectedFeatures,
   onFeaturesChange,
+  flags,
+  onFlagsChange,
   sort,
   onSortChange,
   onPaginationChange,
@@ -46,7 +51,7 @@ export function DataTable<TData extends { id: string }, TValue>({
       totalCount={workspacesCount}
       pagination={pagination}
       onPaginationChange={onPaginationChange}
-      resetFiltersDeps={[keyword, selectedFeatures, sort]}
+      resetFiltersDeps={[keyword, selectedFeatures, sort, flags]}
       renderToolbar={table => (
         <DataTableToolbar
           table={table}
@@ -54,6 +59,8 @@ export function DataTable<TData extends { id: string }, TValue>({
           onKeywordChange={onKeywordChange}
           selectedFeatures={selectedFeatures}
           onFeaturesChange={onFeaturesChange}
+          flags={flags}
+          onFlagsChange={onFlagsChange}
           sort={sort}
           onSortChange={onSortChange}
           disabled={loading}
