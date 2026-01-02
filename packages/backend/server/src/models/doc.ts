@@ -61,7 +61,6 @@ export class DocModel extends BaseModel {
       blob: record.blob,
       createdAt: new Date(record.timestamp),
       createdBy: record.editorId || null,
-      seq: null,
     };
   }
 

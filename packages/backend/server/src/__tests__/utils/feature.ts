@@ -16,7 +16,6 @@ export class WorkspaceResolverMock {
           create: {
             type: WorkspaceRole.Owner,
             userId: user.id,
-            accepted: true,
             status: WorkspaceMemberStatus.Accepted,
           },
         },

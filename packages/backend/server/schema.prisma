@@ -25,31 +25,29 @@ model User {
   registered      Boolean   @default(true)
   disabled        Boolean   @default(false)
 
-  features                     UserFeature[]
-  userStripeCustomer           UserStripeCustomer?
-  workspaces                   WorkspaceUserRole[]
+  features             UserFeature[]
+  userStripeCustomer   UserStripeCustomer?
+  workspaces           WorkspaceUserRole[]
   // Invite others to join the workspace
-  WorkspaceInvitations         WorkspaceUserRole[]            @relation("inviter")
-  docPermissions               WorkspaceDocUserRole[]
-  connectedAccounts            ConnectedAccount[]
-  sessions                     UserSession[]
-  aiSessions                   AiSession[]
-  /// @deprecated
-  deprecatedAppRuntimeSettings DeprecatedAppRuntimeSettings[]
-  appConfigs                   AppConfig[]
-  userSnapshots                UserSnapshot[]
-  createdSnapshot              Snapshot[]                     @relation("createdSnapshot")
-  updatedSnapshot              Snapshot[]                     @relation("updatedSnapshot")
-  createdUpdate                Update[]                       @relation("createdUpdate")
-  createdHistory               SnapshotHistory[]              @relation("createdHistory")
-  createdAiJobs                AiJobs[]                       @relation("createdAiJobs")
+  WorkspaceInvitations WorkspaceUserRole[]    @relation("inviter")
+  docPermissions       WorkspaceDocUserRole[]
+  connectedAccounts    ConnectedAccount[]
+  sessions             UserSession[]
+  aiSessions           AiSession[]
+  appConfigs           AppConfig[]
+  userSnapshots        UserSnapshot[]
+  createdSnapshot      Snapshot[]             @relation("createdSnapshot")
+  updatedSnapshot      Snapshot[]             @relation("updatedSnapshot")
+  createdUpdate        Update[]               @relation("createdUpdate")
+  createdHistory       SnapshotHistory[]      @relation("createdHistory")
+  createdAiJobs        AiJobs[]               @relation("createdAiJobs")
   // receive notifications
-  notifications                Notification[]                 @relation("user_notifications")
-  settings                     UserSettings?
-  comments                     Comment[]
-  replies                      Reply[]
-  commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
-  AccessToken                  AccessToken[]
+  notifications        Notification[]         @relation("user_notifications")
+  settings             UserSettings?
+  comments             Comment[]
+  replies              Reply[]
+  commentAttachments   CommentAttachment[]    @relation("createdCommentAttachments")
+  AccessToken          AccessToken[]
 
   @@index([email])
   @@map("users")
@@ -78,9 +76,6 @@ model Session {
   id           String        @id @default(uuid()) @db.VarChar
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   userSessions UserSession[]
-
-  // @deprecated use [UserSession.expiresAt]
-  deprecated_expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
 
   @@map("multiple_users_sessions")
 }
@@ -207,9 +202,6 @@ model WorkspaceUserRole {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   inviter   User?     @relation(name: "inviter", fields: [inviterId], references: [id], onDelete: SetNull)
 
-  /// @deprecated Whether the permission invitation is accepted by the user, use status instead
-  accepted Boolean @default(false)
-
   @@unique([workspaceId, userId])
   // optimize for querying user's workspace permissions
   @@index([workspaceId, type, status])
@@ -329,9 +321,6 @@ model Snapshot {
   createdByUser User? @relation(name: "createdSnapshot", fields: [createdBy], references: [id], onDelete: SetNull)
   updatedByUser User? @relation(name: "updatedSnapshot", fields: [updatedBy], references: [id], onDelete: SetNull)
 
-  // @deprecated use updatedAt only
-  seq Int? @default(0) @db.Integer
-
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -368,9 +357,6 @@ model Update {
 
   // will delete creator record if creator's account is deleted
   createdByUser User? @relation(name: "createdUpdate", fields: [createdBy], references: [id], onDelete: SetNull)
-
-  // @deprecated use createdAt only
-  seq Int? @db.Integer
 
   @@id([workspaceId, id, createdAt])
   @@map("updates")
@@ -645,32 +631,6 @@ model DataMigration {
   @@map("_data_migrations")
 }
 
-enum RuntimeConfigType {
-  String
-  Number
-  Boolean
-  Object
-  Array
-}
-
-/// @deprecated use AppConfig instead
-model DeprecatedAppRuntimeSettings {
-  id            String            @id @db.VarChar
-  type          RuntimeConfigType
-  module        String            @db.VarChar
-  key           String            @db.VarChar
-  value         Json              @db.Json
-  description   String            @db.Text
-  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(3)
-  lastUpdatedBy String?           @map("last_updated_by") @db.VarChar
-
-  lastUpdatedByUser User? @relation(fields: [lastUpdatedBy], references: [id])
-
-  @@unique([module, key])
-  @@map("app_runtime_settings")
-}
-
 model AppConfig {
   id            String   @id @db.VarChar
   value         Json     @db.JsonB
@@ -681,64 +641,6 @@ model AppConfig {
   lastUpdatedByUser User? @relation(fields: [lastUpdatedBy], references: [id], onDelete: SetNull)
 
   @@map("app_configs")
-}
-
-model DeprecatedUserSubscription {
-  id                   Int       @id @default(autoincrement()) @db.Integer
-  userId               String    @map("user_id") @db.VarChar
-  plan                 String    @db.VarChar(20)
-  // yearly/monthly/lifetime
-  recurring            String    @db.VarChar(20)
-  // onetime subscription or anything else
-  variant              String?   @db.VarChar(20)
-  // subscription.id, null for lifetime payment or one time payment subscription
-  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
-  // subscription.status, active/past_due/canceled/unpaid...
-  status               String    @db.VarChar(20)
-  // subscription.current_period_start
-  start                DateTime  @map("start") @db.Timestamptz(3)
-  // subscription.current_period_end, null for lifetime payment
-  end                  DateTime? @map("end") @db.Timestamptz(3)
-  // subscription.billing_cycle_anchor
-  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(3)
-  // subscription.canceled_at
-  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz(3)
-  // subscription.trial_start
-  trialStart           DateTime? @map("trial_start") @db.Timestamptz(3)
-  // subscription.trial_end
-  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(3)
-  stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  @@unique([userId, plan])
-  @@map("user_subscriptions")
-}
-
-model DeprecatedUserInvoice {
-  id               Int      @id @default(autoincrement()) @db.Integer
-  userId           String   @map("user_id") @db.VarChar
-  stripeInvoiceId  String   @unique @map("stripe_invoice_id")
-  currency         String   @db.VarChar(3)
-  // CNY 12.50 stored as 1250
-  amount           Int      @db.Integer
-  status           String   @db.VarChar(20)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-  // billing reason
-  reason           String?  @db.VarChar
-  lastPaymentError String?  @map("last_payment_error") @db.Text
-  // stripe hosted invoice link
-  link             String?  @db.Text
-
-  // @deprecated
-  plan      String? @db.VarChar(20)
-  // @deprecated
-  recurring String? @db.VarChar(20)
-
-  @@index([userId])
-  @@map("user_invoices")
 }
 
 model UserStripeCustomer {
