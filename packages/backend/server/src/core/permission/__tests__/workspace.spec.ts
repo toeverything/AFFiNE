@@ -80,8 +80,34 @@ test('should fallback to [External] if workspace is public', async t => {
   t.is(role, WorkspaceRole.External);
 });
 
+test('should return null if workspace is public but sharing disabled', async t => {
+  await models.workspace.update(ws.id, {
+    public: true,
+    enableSharing: false,
+  });
+
+  const role = await ac.getRole({
+    workspaceId: ws.id,
+    userId: 'random-user-id',
+  });
+
+  t.is(role, null);
+});
+
 test('should return null even workspace has public doc', async t => {
   await models.doc.publish(ws.id, 'doc1');
+
+  const role = await ac.getRole({
+    workspaceId: ws.id,
+    userId: 'random-user-id',
+  });
+
+  t.is(role, null);
+});
+
+test('should return null even workspace has public doc when sharing disabled', async t => {
+  await models.doc.publish(ws.id, 'doc1');
+  await models.workspace.update(ws.id, { enableSharing: false });
 
   const role = await ac.getRole({
     workspaceId: ws.id,
@@ -103,6 +129,24 @@ test('should return mapped external permission for workspace has public docs', a
     permissions,
     mapWorkspaceRoleToPermissions(WorkspaceRole.External)
   );
+});
+
+test('should reject external doc roles when sharing disabled', async t => {
+  await models.workspace.update(ws.id, {
+    public: true,
+    enableSharing: false,
+  });
+
+  const [docRole] = await ac.docRoles(
+    {
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    },
+    ['doc1']
+  );
+
+  t.is(docRole.role, null);
+  t.false(docRole.permissions['Doc.Read']);
 });
 
 test('should return mapped permissions', async t => {
