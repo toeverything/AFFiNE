@@ -101,14 +101,14 @@ function parseTags(value: unknown): string[] | undefined {
       .map(v => (typeof v === 'string' ? v : String(v)))
       .map(v => v.trim())
       .filter(Boolean);
-    return tags.length ? tags : undefined;
+    return tags.length ? [...new Set(tags)] : undefined;
   }
   if (typeof value === 'string') {
     const tags = value
       .split(/[,;]+/)
       .map(v => v.trim())
       .filter(Boolean);
-    return tags.length ? tags : undefined;
+    return tags.length ? [...new Set(tags)] : undefined;
   }
   return undefined;
 }
