@@ -302,6 +302,11 @@ export const htmlColorStyleElementToDeltaMatcher = HtmlASTToDeltaExtension({
     if (!isElement(ast)) {
       return [];
     }
+    const baseOptions = { ...context.options, trim: false };
+    // In preformatted contexts (e.g. code blocks) we don't keep inline colors.
+    if (baseOptions.pre) {
+      return ast.children.flatMap(child => context.toDelta(child, baseOptions));
+    }
     const colorValue = extractColorFromStyle(
       typeof ast.properties?.style === 'string' ? ast.properties.style : ''
     );
@@ -309,7 +314,7 @@ export const htmlColorStyleElementToDeltaMatcher = HtmlASTToDeltaExtension({
       ? resolveNearestSupportedColor(colorValue)
       : null;
     const deltas = ast.children.flatMap(child =>
-      context.toDelta(child, { trim: false }).map(delta => {
+      context.toDelta(child, baseOptions).map(delta => {
         if (mappedColor) {
           delta.attributes = { ...delta.attributes, color: mappedColor };
         }
