@@ -80,12 +80,12 @@ function parseTimestamp(value: unknown): number | undefined {
     return value.getTime();
   }
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return value > 1e12 ? value : Math.round(value * 1000);
+    return value > 1e10 ? value : Math.round(value * 1000);
   }
   if (typeof value === 'string') {
     const num = Number(value);
     if (!Number.isNaN(num)) {
-      return num > 1e12 ? num : Math.round(num * 1000);
+      return num > 1e10 ? num : Math.round(num * 1000);
     }
     const parsed = Date.parse(value);
     if (!Number.isNaN(parsed)) {
@@ -118,7 +118,6 @@ function buildMetaFromFrontmatter(
 ): ParsedFrontmatterMeta {
   const meta: ParsedFrontmatterMeta = {};
   for (const [rawKey, value] of Object.entries(data)) {
-    console.log('Frontmatter key:', rawKey, value);
     const key = rawKey.trim().toLowerCase();
     if (FRONTMATTER_KEYS.title.includes(key) && typeof value === 'string') {
       const title = value.trim();
@@ -189,7 +188,6 @@ function applyMetaPatch(
   if (meta.tags) metaPatch.tags = meta.tags;
   if (meta.favorite !== undefined) metaPatch.favorite = meta.favorite;
 
-  console.log('Applying meta patch:', meta, metaPatch);
   if (Object.keys(metaPatch).length) {
     collection.meta.setDocMeta(docId, metaPatch);
   }

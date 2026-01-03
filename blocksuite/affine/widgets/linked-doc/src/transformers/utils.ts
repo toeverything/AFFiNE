@@ -1,6 +1,6 @@
 import { extMimeMap, getAssetName } from '@blocksuite/store';
 import * as fflate from 'fflate';
-import yaml from 'js-yaml';
+import { FAILSAFE_SCHEMA, load as loadYaml } from 'js-yaml';
 
 export class Zip {
   private compressed = new Uint8Array();
@@ -215,7 +215,7 @@ const bodyMatcher = /---.*?---/s;
 export const parseMatter = (contents: string) => {
   const matterMatch = contents.match(metaMatcher);
   if (!matterMatch || !matterMatch[0]) return null;
-  const metadata = yaml.load(matterMatch[0]);
+  const metadata = loadYaml(matterMatch[0], { schema: FAILSAFE_SCHEMA });
   if (!metadata || typeof metadata !== 'object') return null;
   const body = contents.replace(bodyMatcher, '');
   return { matter: matterMatch[0], body, metadata };
