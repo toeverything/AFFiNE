@@ -1,3 +1,4 @@
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import {
   DefaultTheme,
   NoteDisplayMode,
@@ -16,12 +17,15 @@ import type {
   SliceSnapshot,
   TransformerMiddleware,
 } from '@blocksuite/store';
-import { AssetsManager, MemoryBlobCRUD } from '@blocksuite/store';
+import { AssetsManager, MemoryBlobCRUD, Schema } from '@blocksuite/store';
+import { TestWorkspace } from '@blocksuite/store/test';
 import { describe, expect, test } from 'vitest';
 
+import { AffineSchemas } from '../../schemas.js';
 import { createJob } from '../utils/create-job.js';
 import { getProvider } from '../utils/get-provider.js';
 import { nanoidReplacement } from '../utils/nanoid-replacement.js';
+import { testStoreExtensions } from '../utils/store.js';
 
 const provider = getProvider();
 
@@ -88,6 +92,39 @@ describe('snapshot to markdown', () => {
       snapshot: blockSnapshot,
     });
     expect(target.file).toBe(markdown);
+  });
+
+  test('imports frontmatter metadata into doc meta', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const markdown = `---
+title: Web developer
+created: 2018-04-12T09:51:00
+updated: 2018-04-12T10:00:00
+tags: [a, b]
+favorite: true
+---
+Hello world
+`;
+
+    const docId = await MarkdownTransformer.importMarkdownToDoc({
+      collection,
+      schema,
+      markdown,
+      fileName: 'fallback-title',
+      extensions: testStoreExtensions,
+    });
+
+    expect(docId).toBeTruthy();
+    const meta = collection.meta.getDocMeta(docId!);
+    expect(meta?.title).toBe('Web developer');
+    expect(meta?.createDate).toBe(Date.parse('2018-04-12T09:51:00'));
+    expect(meta?.updatedDate).toBe(Date.parse('2018-04-12T10:00:00'));
+    expect(meta?.favorite).toBe(true);
+    expect(meta?.tags).toEqual(['a', 'b']);
   });
 
   test('paragraph', async () => {
@@ -2994,6 +3031,50 @@ describe('markdown to snapshot', () => {
       });
       expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
     });
+  });
+
+  test('html inline color span imports to nearest supported text color', async () => {
+    const markdown = `<span style="color: #00afde;">Hello</span>`;
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'Hello',
+                  attributes: {
+                    color: 'var(--affine-v2-text-highlight-fg-blue)',
+                  },
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
+      file: markdown,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
 
   test('paragraph', async () => {

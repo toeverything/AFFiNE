@@ -4118,6 +4118,7 @@ __metadata:
     "@toeverything/theme": "npm:^1.1.16"
     "@types/lodash-es": "npm:^4.17.12"
     fflate: "npm:^0.8.2"
+    js-yaml: "npm:^4.1.1"
     lit: "npm:^3.2.0"
     lodash-es: "npm:^4.17.21"
     mammoth: "npm:^1.11.0"
@@ -28727,7 +28728,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:^4.0.0, js-yaml@npm:^4.1.0":
+"js-yaml@npm:^4.0.0, js-yaml@npm:^4.1.0, js-yaml@npm:^4.1.1":
   version: 4.1.1
   resolution: "js-yaml@npm:4.1.1"
   dependencies:
@@ -33851,11 +33852,11 @@ __metadata:
   linkType: hard
 
 "qs@npm:^6.11.0, qs@npm:^6.11.2, qs@npm:^6.14.0, qs@npm:^6.7.0":
-  version: 6.14.0
-  resolution: "qs@npm:6.14.0"
+  version: 6.14.1
+  resolution: "qs@npm:6.14.1"
   dependencies:
     side-channel: "npm:^1.1.0"
-  checksum: 10/a60e49bbd51c935a8a4759e7505677b122e23bf392d6535b8fc31c1e447acba2c901235ecb192764013cd2781723dc1f61978b5fdd93cc31d7043d31cdc01974
+  checksum: 10/34b5ab00a910df432d55180ef39c1d1375e550f098b5ec153b41787f1a6a6d7e5f9495593c3b112b77dbc6709d0ae18e55b82847a4c2bbbb0de1e8ccbb1794c5
   languageName: node
   linkType: hard
 
@@ -37442,9 +37443,9 @@ __metadata:
   linkType: hard
 
 "tmp@npm:^0.2.0":
-  version: 0.2.3
-  resolution: "tmp@npm:0.2.3"
-  checksum: 10/7b13696787f159c9754793a83aa79a24f1522d47b87462ddb57c18ee93ff26c74cbb2b8d9138f571d2e0e765c728fb2739863a672b280528512c6d83d511c6fa
+  version: 0.2.5
+  resolution: "tmp@npm:0.2.5"
+  checksum: 10/dd4b78b32385eab4899d3ae296007b34482b035b6d73e1201c4a9aede40860e90997a1452c65a2d21aee73d53e93cd167d741c3db4015d90e63b6d568a93d7ec
   languageName: node
   linkType: hard
 

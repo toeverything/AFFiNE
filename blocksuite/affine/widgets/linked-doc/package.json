@@ -26,6 +26,7 @@
     "@toeverything/theme": "^1.1.16",
     "@types/lodash-es": "^4.17.12",
     "fflate": "^0.8.2",
+    "js-yaml": "^4.1.1",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",
     "mammoth": "^1.11.0",
