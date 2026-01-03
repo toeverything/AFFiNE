@@ -11,6 +11,10 @@ import { unified } from 'unified';
 import type { AffineTextAttributes } from '../../types/index.js';
 import { HtmlDeltaConverter } from '../html/delta-converter.js';
 import {
+  rehypeInlineToBlock,
+  rehypeWrapInlineElements,
+} from '../html/rehype-plugins/index.js';
+import {
   type ASTToDeltaMatcher,
   DeltaASTConverter,
   type InlineDeltaMatcher,
@@ -47,6 +51,11 @@ const VOID_HTML_TAGS = new Set([
   'source',
   'track',
   'wbr',
+]);
+
+const ALLOWED_INLINE_HTML_TAGS = new Set([
+  ...INLINE_HTML_TAGS,
+  ...VOID_HTML_TAGS,
 ]);
 
 const isHtmlNode = (
@@ -157,7 +166,10 @@ export class MarkdownDeltaConverter extends DeltaASTConverter<
       return [{ insert: html }];
     }
     try {
-      const processor = unified().use(rehypeParse, { fragment: true });
+      const processor = unified()
+        .use(rehypeParse, { fragment: true })
+        .use(rehypeInlineToBlock)
+        .use(rehypeWrapInlineElements);
       const ast = processor.runSync(processor.parse(html)) as Root;
       return this.htmlDeltaConverter.astToDelta(ast, { trim: false });
     } catch {
@@ -226,16 +238,25 @@ export class MarkdownDeltaConverter extends DeltaASTConverter<
         }
 
         if (info.kind === 'open') {
+          if (!ALLOWED_INLINE_HTML_TAGS.has(info.name)) {
+            return null;
+          }
           stack.push(info.name);
           html += node.value;
           continue;
         }
 
         if (info.kind === 'self') {
+          if (!ALLOWED_INLINE_HTML_TAGS.has(info.name)) {
+            return null;
+          }
           html += node.value;
           continue;
         }
 
+        if (!ALLOWED_INLINE_HTML_TAGS.has(info.name)) {
+          return null;
+        }
         const last = stack[stack.length - 1];
         if (last !== info.name) {
           return null;
