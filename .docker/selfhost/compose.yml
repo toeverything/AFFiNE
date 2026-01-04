@@ -1,4 +1,3 @@
-name: affine
 services:
   affine:
     image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-stable}
