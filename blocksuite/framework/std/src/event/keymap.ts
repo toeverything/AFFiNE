@@ -86,14 +86,13 @@ export function bindKeymap(
       }
     }
 
-    // none standard keyboard, fallback to keyCode
-    const special =
-      event.shiftKey ||
-      event.altKey ||
-      event.metaKey ||
-      name.charCodeAt(0) > 127;
+    // For non-standard keyboards, fallback to keyCode only when modifier keys are pressed.
+    // Do NOT fallback when the key produces a non-ASCII character (e.g., Cyrillic 'х' on Russian keyboard),
+    // because the user intends to type that character, not trigger a shortcut bound to the physical key.
+    // See: https://github.com/toeverything/AFFiNE/issues/14059
+    const hasModifier = event.shiftKey || event.altKey || event.metaKey;
     const baseName = base[event.keyCode];
-    if (special && baseName && baseName !== name) {
+    if (hasModifier && baseName && baseName !== name) {
       const fromCode = map[modifiers(baseName, event)];
       if (fromCode && fromCode(ctx)) {
         return true;
