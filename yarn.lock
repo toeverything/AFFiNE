@@ -956,7 +956,7 @@ __metadata:
     "@opentelemetry/instrumentation": "npm:^0.208.0"
     "@opentelemetry/instrumentation-graphql": "npm:^0.56.0"
     "@opentelemetry/instrumentation-http": "npm:^0.208.0"
-    "@opentelemetry/instrumentation-ioredis": "npm:^0.56.0"
+    "@opentelemetry/instrumentation-ioredis": "npm:^0.57.0"
     "@opentelemetry/instrumentation-nestjs-core": "npm:^0.55.0"
     "@opentelemetry/instrumentation-socket.io": "npm:^0.55.0"
     "@opentelemetry/resources": "npm:^2.2.0"
@@ -11709,7 +11709,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-ioredis@npm:0.56.0, @opentelemetry/instrumentation-ioredis@npm:^0.56.0":
+"@opentelemetry/instrumentation-ioredis@npm:0.56.0":
   version: 0.56.0
   resolution: "@opentelemetry/instrumentation-ioredis@npm:0.56.0"
   dependencies:
@@ -11718,6 +11718,19 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
   checksum: 10/8fd316eb94323fca62b71b51df4ef1dc0cf7879315f3006633d07cd9ea87bb9ff1315e216e6e61013f6ab84142593935d2920812794736ce4f0ca97da522ff09
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/instrumentation-ioredis@npm:^0.57.0":
+  version: 0.57.0
+  resolution: "@opentelemetry/instrumentation-ioredis@npm:0.57.0"
+  dependencies:
+    "@opentelemetry/instrumentation": "npm:^0.208.0"
+    "@opentelemetry/redis-common": "npm:^0.38.2"
+    "@opentelemetry/semantic-conventions": "npm:^1.33.0"
+  peerDependencies:
+    "@opentelemetry/api": ^1.3.0
+  checksum: 10/01ae642771e62b7e460fdad4756ff1af503617b18af34bc16468b53d9afa674cdaa3a19c76b51ec1a7f05a7e838c8943a40ab13b09ee1f32c0cd02b5e0fb8f0d
   languageName: node
   linkType: hard
 
@@ -11859,13 +11872,13 @@ __metadata:
   linkType: hard
 
 "@opentelemetry/instrumentation-socket.io@npm:^0.55.0":
-  version: 0.55.0
-  resolution: "@opentelemetry/instrumentation-socket.io@npm:0.55.0"
+  version: 0.55.1
+  resolution: "@opentelemetry/instrumentation-socket.io@npm:0.55.1"
   dependencies:
     "@opentelemetry/instrumentation": "npm:^0.208.0"
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 10/7d2b5283d055283f49a9c90ae0f8a473bac2fbbe0088d252932099e3962859dda31230c79563a46cab030bf25f5384761b3de987f4cf6979b40d66ca0e0bdf26
+  checksum: 10/6df6e677ee49a65622a659217d117a81a8dae89e7b5cb283e34da112697179f892842f17ceb00a86c62b9d07ec5d8b49bd334062f582084d779c8243fc904fa0
   languageName: node
   linkType: hard
 
