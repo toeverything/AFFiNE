@@ -216,6 +216,11 @@
       "type": "Array",
       "desc": "Multiple hosts the server will accept requests from."
     },
+    "listenAddr": {
+      "type": "String",
+      "desc": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).",
+      "env": "LISTEN_ADDR"
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",

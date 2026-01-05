@@ -595,6 +595,11 @@
           "description": "Multiple hosts the server will accept requests from.\n@default []",
           "default": []
         },
+        "listenAddr": {
+          "type": "string",
+          "description": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).\n@default \"0.0.0.0\"\n@environment `LISTEN_ADDR`",
+          "default": "0.0.0.0"
+        },
         "port": {
           "type": "number",
           "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",
