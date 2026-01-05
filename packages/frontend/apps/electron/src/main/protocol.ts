@@ -179,7 +179,7 @@ function allowCors(
   // Signed blob URLs redirect to *.usercontent.affine.pro without CORS headers.
   setHeader(headers, 'Access-Control-Allow-Origin', origin);
   setHeader(headers, 'Access-Control-Allow-Credentials', 'true');
-  setHeader(headers, 'Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  setHeader(headers, 'Access-Control-Allow-Methods', 'GET, HEAD, PUT, OPTIONS');
   setHeader(
     headers,
     'Access-Control-Allow-Headers',
