@@ -9,7 +9,7 @@
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/integration-test": "workspace:*",
     "@playwright/test": "=1.52.0",
-    "@toeverything/theme": "^1.1.16",
+    "@toeverything/theme": "^1.1.23",
     "json-stable-stringify": "^1.2.1",
     "rxjs": "^7.8.2"
   },
