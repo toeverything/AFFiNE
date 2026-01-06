@@ -13,6 +13,7 @@ declare global {
       https: boolean;
       host: string;
       hosts: ConfigItem<string[]>;
+      listenAddr: string;
       port: number;
       path: string;
       name?: string;
@@ -57,6 +58,11 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
     desc: 'Multiple hosts the server will accept requests from.',
     default: [],
     shape: z.array(z.string()),
+  },
+  listenAddr: {
+    desc: 'The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).',
+    default: '0.0.0.0',
+    env: 'LISTEN_ADDR',
   },
   port: {
     desc: 'Which port the server will listen on.',
