@@ -17786,14 +17786,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@toeverything/theme@npm:^1.1.15":
-  version: 1.1.16
-  resolution: "@toeverything/theme@npm:1.1.16"
-  checksum: 10/6fc139f5b31d1d4051ae9897ec79f4fa50cdc81b865d188e441b812e211e7e1699b78e0e6f0a15ac268a5ebdad8c319c0db5a10f2cfa1dea8673eebb06b1bc67
-  languageName: node
-  linkType: hard
-
-"@toeverything/theme@npm:^1.1.23":
+"@toeverything/theme@npm:^1.1.15, @toeverything/theme@npm:^1.1.23":
   version: 1.1.23
   resolution: "@toeverything/theme@npm:1.1.23"
   checksum: 10/b89eaf1865b811bc4e81a5005a7cc57038846fd10277fc65a5d170dd17482acc396118e77811f1cdf3378271b6183bd6d6fe7349640c907bb6d348801f77be61
