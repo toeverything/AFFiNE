@@ -13,7 +13,7 @@
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "@toeverything/theme": "^1.1.16",
+    "@toeverything/theme": "^1.1.23",
     "@types/lodash-es": "^4.17.12",
     "fractional-indexing": "^3.2.0",
     "lodash-es": "^4.17.21",
