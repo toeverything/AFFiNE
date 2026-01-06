@@ -59,12 +59,30 @@ export async function run() {
   const adapter = new SocketIoAdapter(app);
   app.useWebSocketAdapter(adapter);
 
-  const url = app.get(URLHelper);
-  const listeningHost = '0.0.0.0';
+  if (env.dev) {
+    const { SwaggerModule, DocumentBuilder } = await import('@nestjs/swagger');
+    // Swagger API Docs
+    const docConfig = new DocumentBuilder()
+      .setTitle('AFFiNE API')
+      .setDescription(`AFFiNE Server ${env.version} API documentation`)
+      .setVersion(`${env.version}`)
+      .build();
+    const documentFactory = () => SwaggerModule.createDocument(app, docConfig);
+    SwaggerModule.setup('/api/docs', app, documentFactory, {
+      useGlobalPrefix: true,
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
 
-  await app.listen(config.server.port, listeningHost);
+  const url = app.get(URLHelper);
+
+  await app.listen(config.server.port, config.server.listenAddr);
+
+  const formattedAddr = config.server.listenAddr.includes(':')
+    ? `[${config.server.listenAddr}]`
+    : config.server.listenAddr;
 
   logger.log(`AFFiNE Server is running in [${env.DEPLOYMENT_TYPE}] mode`);
-  logger.log(`Listening on http://${listeningHost}:${config.server.port}`);
+  logger.log(`Listening on http://${formattedAddr}:${config.server.port}`);
   logger.log(`And the public server should be recognized as ${url.baseUrl}`);
 }

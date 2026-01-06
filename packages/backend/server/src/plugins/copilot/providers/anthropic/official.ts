@@ -21,6 +21,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
 
   override readonly models = [
     {
+      name: 'Claude Opus 4',
       id: 'claude-opus-4-20250514',
       capabilities: [
         {
@@ -30,30 +31,22 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
       ],
     },
     {
+      name: 'Claude Sonnet 4',
+      id: 'claude-sonnet-4-5-20250929',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
+        },
+      ],
+    },
+    {
+      name: 'Claude Sonnet 4',
       id: 'claude-sonnet-4-20250514',
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
-      id: 'claude-3-7-sonnet-20250219',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
-      id: 'claude-3-5-sonnet-20241022',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-          defaultForOutputType: true,
         },
       ],
     },

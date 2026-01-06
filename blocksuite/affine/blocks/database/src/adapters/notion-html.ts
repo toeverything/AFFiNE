@@ -15,6 +15,7 @@ const ColumnClassMap: Record<string, string> = {
   typesCheckbox: 'checkbox',
   typesText: 'rich-text',
   typesTitle: 'title',
+  typesDate: 'date',
 };
 
 const NotionDatabaseToken = '.collection-content';
@@ -165,7 +166,36 @@ export const databaseBlockNotionHtmlAdapterMatcher: BlockNotionHtmlAdapterMatche
                 if (!column) {
                   return;
                 }
-                if (HastUtils.querySelector(child, '.selected-value')) {
+
+                // Check for <time> element to find date field from Notion.
+                if (HastUtils.querySelector(child, 'time')) {
+                  const timeElement = HastUtils.querySelector(child, 'time');
+                  let rawColumnData =
+                    HastUtils.getTextContent(timeElement).trim();
+
+                  if (rawColumnData.startsWith('@')) {
+                    rawColumnData = rawColumnData.slice(1);
+                  }
+
+                  const columnDate = new Date(rawColumnData);
+                  const timestamp = columnDate.getTime();
+
+                  if (!Number.isNaN(timestamp)) {
+                    column.data = {};
+                    if (column.type !== 'date') {
+                      column.type = 'date';
+                    }
+                    row[column.id] = {
+                      columnId: column.id,
+                      value: timestamp,
+                    };
+                  } else {
+                    row[column.id] = {
+                      columnId: column.id,
+                      value: HastUtils.getTextContent(child),
+                    };
+                  }
+                } else if (HastUtils.querySelector(child, '.selected-value')) {
                   if (!('options' in column.data)) {
                     column.data.options = [];
                   }

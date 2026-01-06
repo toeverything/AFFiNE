@@ -92,4 +92,5 @@ export * from './doc-sync';
 export * from './errors';
 export * from './history';
 export * from './indexer';
+export * from './indexer-sync';
 export * from './storage';

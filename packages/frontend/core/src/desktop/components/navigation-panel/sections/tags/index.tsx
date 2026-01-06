@@ -1,4 +1,5 @@
 import { IconButton } from '@affine/component';
+import { RenameModal } from '@affine/component/rename-modal';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
@@ -10,7 +11,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { NavigationPanelTagNode } from '../../nodes/tag';
 import { NavigationPanelTreeRoot } from '../../tree';
-import { NavigationPanelTreeNodeRenameModal as CreateTagModal } from '../../tree/node';
 import { RootEmpty } from './empty';
 import * as styles from './styles.css';
 
@@ -62,11 +62,11 @@ export const NavigationPanelTags = () => {
             <AddTagIcon />
           </IconButton>
           {creating && (
-            <CreateTagModal
-              setRenaming={setCreating}
-              handleRename={handleCreateNewTag}
-              rawName={t['com.affine.rootAppSidebar.tags.new-tag']()}
-              className={styles.createModalAnchor}
+            <RenameModal
+              open
+              onOpenChange={setCreating}
+              onRename={handleCreateNewTag}
+              currentName={t['com.affine.rootAppSidebar.tags.new-tag']()}
             />
           )}
         </div>

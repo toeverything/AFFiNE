@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "パスワードは{{min}}から{{max}}文字の間である必要があります",
   "error.PASSWORD_REQUIRED": "パスワードが必要です。",
   "error.WRONG_SIGN_IN_METHOD": "サインアップ時と異なる方法でサインインしようとしています。",
-  "error.EARLY_ACCESS_REQUIRED": "早期アクセスの権限がありません。詳細はhttps://community.affine.pro/c/insider-general/をご覧ください。",
   "error.SIGN_UP_FORBIDDEN": "サインアップは許可されていません。",
   "error.EMAIL_TOKEN_NOT_FOUND": "提供されたメールトークンは見つかりません。",
   "error.INVALID_EMAIL_TOKEN": "無効なメールトークンが提供されました。",

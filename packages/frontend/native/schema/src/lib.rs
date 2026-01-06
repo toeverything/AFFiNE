@@ -74,6 +74,30 @@ CREATE INDEX peer_blob_sync_peer ON peer_blob_sync (peer);
  "#,
     None,
   ),
+  // add idx snapshots
+  (
+    "add_idx_snapshots",
+    r#"
+CREATE TABLE idx_snapshots (
+  index_name TEXT PRIMARY KEY NOT NULL,
+  data BLOB NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+"#,
+    None,
+  ),
+  // add indexer sync table
+  (
+    "add_indexer_sync",
+    r#"
+CREATE TABLE "indexer_sync" (
+  doc_id VARCHAR PRIMARY KEY NOT NULL,
+  indexed_clock TIMESTAMP NOT NULL DEFAULT 0,
+  indexer_version INTEGER NOT NULL DEFAULT 0
+);
+ "#,
+    None,
+  ),
 ];
 
 pub fn get_migrator() -> Migrator {

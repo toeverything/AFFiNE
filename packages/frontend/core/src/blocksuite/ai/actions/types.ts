@@ -25,6 +25,7 @@ import type { PromptKey } from '../provider/prompt';
 
 export const translateLangs = [
   'English',
+  'Brazilian Portuguese',
   'Spanish',
   'German',
   'French',
@@ -441,7 +442,7 @@ declare global {
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,
-        docId: string,
+        docId: string | undefined,
         sessionIds: string[]
       ) => Promise<void>;
       ids: (

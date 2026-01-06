@@ -8,8 +8,9 @@ import { cn } from '@affine/admin/utils';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { PropsWithChildren, ReactNode, RefObject } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
+import { useLocation } from 'react-router-dom';
 
 import { Button } from '../components/ui/button';
 import {
@@ -31,12 +32,16 @@ import {
 } from './panel/context';
 
 export function Layout({ children }: PropsWithChildren) {
-  const [rightPanelContent, setRightPanelContent] = useState<ReactNode>(null);
+  const [rightPanelContent, setRightPanelContentState] =
+    useState<ReactNode>(null);
   const [leftPanelContent, setLeftPanelContent] = useState<ReactNode>(null);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
+  const [rightPanelHasDirtyChanges, setRightPanelHasDirtyChanges] =
+    useState(false);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
+  const location = useLocation();
 
   const [activeTab, setActiveTab] = useState('');
   const [activeSubTab, setActiveSubTab] = useState('server');
@@ -88,6 +93,14 @@ export function Layout({ children }: PropsWithChildren) {
     setRightOpen(false);
   }, [rightPanelRef]);
 
+  const handleSetRightPanelContent = useCallback(
+    (content: ReactNode) => {
+      setRightPanelHasDirtyChanges(false);
+      setRightPanelContentState(content);
+    },
+    [setRightPanelContentState, setRightPanelHasDirtyChanges]
+  );
+
   const openRightPanel = useCallback(() => {
     handleRightExpand();
     rightPanelRef.current?.expand();
@@ -98,7 +111,8 @@ export function Layout({ children }: PropsWithChildren) {
     handleRightCollapse();
     rightPanelRef.current?.collapse();
     setRightOpen(false);
-  }, [handleRightCollapse]);
+    setRightPanelHasDirtyChanges(false);
+  }, [handleRightCollapse, setRightPanelHasDirtyChanges]);
 
   const toggleRightPanel = useCallback(
     () =>
@@ -107,6 +121,12 @@ export function Layout({ children }: PropsWithChildren) {
         : closeRightPanel(),
     [closeRightPanel, openRightPanel]
   );
+
+  // auto close right panel when route changes
+  useEffect(() => {
+    handleSetRightPanelContent(null);
+    closeRightPanel();
+  }, [location.pathname, closeRightPanel, handleSetRightPanelContent]);
 
   return (
     <PanelContext.Provider
@@ -122,10 +142,12 @@ export function Layout({ children }: PropsWithChildren) {
         rightPanel: {
           isOpen: rightOpen,
           panelContent: rightPanelContent,
-          setPanelContent: setRightPanelContent,
+          setPanelContent: handleSetRightPanelContent,
           togglePanel: toggleRightPanel,
           openPanel: openRightPanel,
           closePanel: closeRightPanel,
+          hasDirtyChanges: rightPanelHasDirtyChanges,
+          setHasDirtyChanges: setRightPanelHasDirtyChanges,
         },
       }}
     >
@@ -140,7 +162,7 @@ export function Layout({ children }: PropsWithChildren) {
         }}
       >
         <TooltipProvider delayDuration={0}>
-          <div className="flex">
+          <div className="flex h-screen w-full overflow-hidden">
             <ResizablePanelGroup direction="horizontal">
               <LeftPanel
                 panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
@@ -278,7 +300,7 @@ export const RightPanel = ({
           </SheetDescription>
         </SheetHeader>
         <SheetContent side="right" className="p-0" withoutCloseButton>
-          {panelContent}
+          <div className="h-full overflow-y-auto">{panelContent}</div>
         </SheetContent>
       </Sheet>
     );
@@ -297,7 +319,7 @@ export const RightPanel = ({
       onCollapse={onCollapse}
       className="border-l max-w-96"
     >
-      {panelContent}
+      <div className="h-full overflow-y-auto">{panelContent}</div>
     </ResizablePanel>
   );
 };

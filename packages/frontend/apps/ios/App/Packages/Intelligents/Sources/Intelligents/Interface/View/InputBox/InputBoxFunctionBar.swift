@@ -1,5 +1,4 @@
 import SnapKit
-import Then
 import UIKit
 
 private let unselectedColor: UIColor = .affineIconPrimary

@@ -38,6 +38,7 @@ export class ChatContentImages extends WithDisposable(ShadowlessElement) {
       object-fit: cover;
       border-radius: 8px;
       flex-shrink: 0;
+      image-rendering: pixelated;
     }
 
     .chat-content-images-column {
@@ -63,6 +64,7 @@ export class ChatContentImages extends WithDisposable(ShadowlessElement) {
       max-height: 100%;
       width: auto;
       height: auto;
+      image-rendering: pixelated;
     }
   `;
 

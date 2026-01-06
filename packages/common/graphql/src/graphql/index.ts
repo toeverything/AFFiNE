@@ -88,11 +88,12 @@ export const listUserAccessTokensQuery = {
   id: 'listUserAccessTokensQuery' as const,
   op: 'listUserAccessTokens',
   query: `query listUserAccessTokens {
-  accessTokens {
+  revealedAccessTokens {
     id
     name
     createdAt
     expiresAt
+    token
   }
 }`,
 };
@@ -126,10 +127,125 @@ export const adminServerConfigQuery = {
       url
     }
     availableUserFeatures
+    availableWorkspaceFeatures
   }
 }
 ${passwordLimitsFragment}
 ${credentialsRequirementsFragment}`,
+};
+
+export const adminUpdateWorkspaceMutation = {
+  id: 'adminUpdateWorkspaceMutation' as const,
+  op: 'adminUpdateWorkspace',
+  query: `mutation adminUpdateWorkspace($input: AdminUpdateWorkspaceInput!) {
+  adminUpdateWorkspace(input: $input) {
+    id
+    public
+    createdAt
+    name
+    avatarKey
+    enableAi
+    enableSharing
+    enableUrlPreview
+    enableDocEmbedding
+    features
+    owner {
+      id
+      name
+      email
+      avatarUrl
+    }
+    memberCount
+    publicPageCount
+    snapshotCount
+    snapshotSize
+    blobCount
+    blobSize
+  }
+}`,
+};
+
+export const adminWorkspaceQuery = {
+  id: 'adminWorkspaceQuery' as const,
+  op: 'adminWorkspace',
+  query: `query adminWorkspace($id: String!, $memberSkip: Int, $memberTake: Int, $memberQuery: String) {
+  adminWorkspace(id: $id) {
+    id
+    public
+    createdAt
+    name
+    avatarKey
+    enableAi
+    enableSharing
+    enableUrlPreview
+    enableDocEmbedding
+    features
+    owner {
+      id
+      name
+      email
+      avatarUrl
+    }
+    memberCount
+    publicPageCount
+    snapshotCount
+    snapshotSize
+    blobCount
+    blobSize
+    sharedLinks {
+      docId
+      title
+      publishedAt
+    }
+    members(skip: $memberSkip, take: $memberTake, query: $memberQuery) {
+      id
+      name
+      email
+      avatarUrl
+      role
+      status
+    }
+  }
+}`,
+};
+
+export const adminWorkspacesQuery = {
+  id: 'adminWorkspacesQuery' as const,
+  op: 'adminWorkspaces',
+  query: `query adminWorkspaces($filter: ListWorkspaceInput!) {
+  adminWorkspaces(filter: $filter) {
+    id
+    public
+    createdAt
+    name
+    avatarKey
+    enableAi
+    enableSharing
+    enableUrlPreview
+    enableDocEmbedding
+    features
+    owner {
+      id
+      name
+      email
+      avatarUrl
+    }
+    memberCount
+    publicPageCount
+    snapshotCount
+    snapshotSize
+    blobCount
+    blobSize
+  }
+}`,
+};
+
+export const adminWorkspacesCountQuery = {
+  id: 'adminWorkspacesCountQuery' as const,
+  op: 'adminWorkspacesCount',
+  query: `query adminWorkspacesCount($filter: ListWorkspaceInput!) {
+  adminWorkspacesCount(filter: $filter)
+}`,
 };
 
 export const createChangePasswordUrlMutation = {
@@ -286,7 +402,7 @@ export const listUsersQuery = {
     emailVerified
     avatarUrl
   }
-  usersCount
+  usersCount(filter: $filter)
 }`,
 };
 
@@ -380,6 +496,65 @@ export const setBlobMutation = {
   setBlob(workspaceId: $workspaceId, blob: $blob)
 }`,
   file: true,
+};
+
+export const abortBlobUploadMutation = {
+  id: 'abortBlobUploadMutation' as const,
+  op: 'abortBlobUpload',
+  query: `mutation abortBlobUpload($workspaceId: String!, $key: String!, $uploadId: String!) {
+  abortBlobUpload(workspaceId: $workspaceId, key: $key, uploadId: $uploadId)
+}`,
+};
+
+export const completeBlobUploadMutation = {
+  id: 'completeBlobUploadMutation' as const,
+  op: 'completeBlobUpload',
+  query: `mutation completeBlobUpload($workspaceId: String!, $key: String!, $uploadId: String, $parts: [BlobUploadPartInput!]) {
+  completeBlobUpload(
+    workspaceId: $workspaceId
+    key: $key
+    uploadId: $uploadId
+    parts: $parts
+  )
+}`,
+};
+
+export const createBlobUploadMutation = {
+  id: 'createBlobUploadMutation' as const,
+  op: 'createBlobUpload',
+  query: `mutation createBlobUpload($workspaceId: String!, $key: String!, $size: Int!, $mime: String!) {
+  createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
+    method
+    blobKey
+    alreadyUploaded
+    uploadUrl
+    headers
+    expiresAt
+    uploadId
+    partSize
+    uploadedParts {
+      partNumber
+      etag
+    }
+  }
+}`,
+};
+
+export const getBlobUploadPartUrlMutation = {
+  id: 'getBlobUploadPartUrlMutation' as const,
+  op: 'getBlobUploadPartUrl',
+  query: `mutation getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+  getBlobUploadPartUrl(
+    workspaceId: $workspaceId
+    key: $key
+    uploadId: $uploadId
+    partNumber: $partNumber
+  ) {
+    uploadUrl
+    headers
+    expiresAt
+  }
+}`,
 };
 
 export const cancelSubscriptionMutation = {
@@ -1057,6 +1232,28 @@ export const createCopilotMessageMutation = {
   createCopilotMessage(options: $options)
 }`,
   file: true,
+};
+
+export const getPromptModelsQuery = {
+  id: 'getPromptModelsQuery' as const,
+  op: 'getPromptModels',
+  query: `query getPromptModels($promptName: String!) {
+  currentUser {
+    copilot {
+      models(promptName: $promptName) {
+        defaultModel
+        optionalModels {
+          id
+          name
+        }
+        proModels {
+          id
+          name
+        }
+      }
+    }
+  }
+}`,
 };
 
 export const copilotQuotaQuery = {
@@ -2195,6 +2392,44 @@ export const setWorkspacePublicByIdMutation = {
 }`,
 };
 
+export const refreshSubscriptionMutation = {
+  id: 'refreshSubscriptionMutation' as const,
+  op: 'refreshSubscription',
+  query: `mutation refreshSubscription {
+  refreshUserSubscriptions {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}`,
+  deprecations: ["'id' is deprecated: removed"],
+};
+
+export const requestApplySubscriptionMutation = {
+  id: 'requestApplySubscriptionMutation' as const,
+  op: 'requestApplySubscription',
+  query: `mutation requestApplySubscription($transactionId: String!) {
+  requestApplySubscription(transactionId: $transactionId) {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}`,
+  deprecations: ["'id' is deprecated: removed"],
+};
+
 export const subscriptionQuery = {
   id: 'subscriptionQuery' as const,
   op: 'subscription',
@@ -2313,6 +2548,7 @@ export const getWorkspaceConfigQuery = {
   query: `query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
     enableAi
+    enableSharing
     enableUrlPreview
     enableDocEmbedding
     inviteLink {
@@ -2338,6 +2574,16 @@ export const setEnableDocEmbeddingMutation = {
   op: 'setEnableDocEmbedding',
   query: `mutation setEnableDocEmbedding($id: ID!, $enableDocEmbedding: Boolean!) {
   updateWorkspace(input: {id: $id, enableDocEmbedding: $enableDocEmbedding}) {
+    id
+  }
+}`,
+};
+
+export const setEnableSharingMutation = {
+  id: 'setEnableSharingMutation' as const,
+  op: 'setEnableSharing',
+  query: `mutation setEnableSharing($id: ID!, $enableSharing: Boolean!) {
+  updateWorkspace(input: {id: $id, enableSharing: $enableSharing}) {
     id
   }
 }`,

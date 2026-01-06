@@ -28,7 +28,7 @@ export const openDocActions: Array<OpenDocAction> = [
     type: 'open-in-new-view',
     label: I18n['com.affine.peek-view-controls.open-doc-in-split-view'](),
     icon: SplitViewIcon(),
-    shortcut: '⌘ ⌥ + click',
+    shortcut: '⌘ + ⌥ + click',
     enabled: BUILD_CONFIG.isElectron,
   },
   {

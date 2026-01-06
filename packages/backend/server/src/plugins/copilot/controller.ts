@@ -32,6 +32,7 @@ import {
 } from 'rxjs';
 
 import {
+  applyAttachHeaders,
   BlobNotFound,
   CallMetric,
   Config,
@@ -44,6 +45,7 @@ import {
   NoCopilotProviderAvailable,
   UnsplashIsNotConfigured,
 } from '../../base';
+import { ServerFeature, ServerService } from '../../core';
 import { CurrentUser, Public } from '../../core/auth';
 import { CopilotContextService } from './context';
 import {
@@ -75,6 +77,7 @@ export class CopilotController implements BeforeApplicationShutdown {
 
   constructor(
     private readonly config: Config,
+    private readonly server: ServerService,
     private readonly chatSession: ChatSessionService,
     private readonly context: CopilotContextService,
     private readonly provider: CopilotProviderFactory,
@@ -112,10 +115,10 @@ export class CopilotController implements BeforeApplicationShutdown {
       throw new CopilotSessionNotFound();
     }
 
-    const model =
-      modelId && session.optionalModels.includes(modelId)
-        ? modelId
-        : session.model;
+    const model = await session.resolveModel(
+      this.server.features.includes(ServerFeature.Payment),
+      modelId
+    );
 
     const hasAttachment = messageId
       ? !!(await session.getMessageById(messageId)).attachments?.length
@@ -793,6 +796,10 @@ export class CopilotController implements BeforeApplicationShutdown {
     } else {
       this.logger.warn(`Blob ${workspaceId}/${key} has no metadata`);
     }
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: key,
+    });
 
     res.setHeader('cache-control', 'public, max-age=2592000, immutable');
     body.pipe(res);

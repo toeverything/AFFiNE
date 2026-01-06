@@ -1,9 +1,6 @@
 import { INestApplicationContext, LogLevel } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 import whywhywhy from 'why-is-node-running';
-
-import { RefreshFeatures0001 } from '../../data/migrations/0001-refresh-features';
 
 export const TEST_LOG_LEVEL: LogLevel =
   (process.env.TEST_LOG_LEVEL as LogLevel) ?? 'fatal';
@@ -27,7 +24,6 @@ async function flushDB(client: PrismaClient) {
 export async function initTestingDB(context: INestApplicationContext) {
   const db = context.get(PrismaClient, { strict: false });
   await flushDB(db);
-  await RefreshFeatures0001.up(db, context.get(ModuleRef));
 }
 
 export async function sleep(ms: number) {

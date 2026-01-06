@@ -79,11 +79,11 @@ export const markdownListToDeltaMatcher = MarkdownASTToDeltaExtension({
 export const markdownHtmlToDeltaMatcher = MarkdownASTToDeltaExtension({
   name: 'html',
   match: ast => ast.type === 'html',
-  toDelta: ast => {
+  toDelta: (ast, context) => {
     if (!('value' in ast)) {
       return [];
     }
-    return [{ insert: ast.value }];
+    return context?.htmlToDelta?.(ast.value) ?? [{ insert: ast.value }];
   },
 });
 

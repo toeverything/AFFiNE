@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "يجب أن تتراوح كلمة المرور بين {{min}} و {{max}} حرف",
   "error.PASSWORD_REQUIRED": "كلمة المرور مطلوبة.",
   "error.WRONG_SIGN_IN_METHOD": "أنت تحاول تسجيل الدخول بطريقة مختلفة عن تلك التي قمت بالتسجيل باستخدامها.",
-  "error.EARLY_ACCESS_REQUIRED": "ليس لديك إذن الوصول المبكر. قم بزيارة https://community.affine.pro/c/insider-general/ للحصول على مزيد من المعلومات.",
   "error.SIGN_UP_FORBIDDEN": "لا يُسمح لك بالتسجيل.",
   "error.EMAIL_TOKEN_NOT_FOUND": "لم يتم العثور على رمز البريد الإلكتروني المقدم.",
   "error.INVALID_EMAIL_TOKEN": "تم توفير رمز بريد إلكتروني غير صالح.",

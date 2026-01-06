@@ -5,7 +5,7 @@ pub struct SyncMessageScanner<'a> {
 }
 
 impl SyncMessageScanner<'_> {
-  pub fn new(buffer: &[u8]) -> SyncMessageScanner {
+  pub fn new(buffer: &[u8]) -> SyncMessageScanner<'_> {
     SyncMessageScanner { buffer }
   }
 }

@@ -1,0 +1,26 @@
+mutation adminUpdateWorkspace($input: AdminUpdateWorkspaceInput!) {
+  adminUpdateWorkspace(input: $input) {
+    id
+    public
+    createdAt
+    name
+    avatarKey
+    enableAi
+    enableSharing
+    enableUrlPreview
+    enableDocEmbedding
+    features
+    owner {
+      id
+      name
+      email
+      avatarUrl
+    }
+    memberCount
+    publicPageCount
+    snapshotCount
+    snapshotSize
+    blobCount
+    blobSize
+  }
+}

@@ -20,8 +20,7 @@ import {
 import { SwipeMenu } from '../../swipe-menu';
 import * as styles from './node.css';
 
-interface NavigationPanelTreeNodeProps
-  extends BaseNavigationPanelTreeNodeProps {}
+interface NavigationPanelTreeNodeProps extends BaseNavigationPanelTreeNodeProps {}
 
 export const NavigationPanelTreeNode = ({
   children,

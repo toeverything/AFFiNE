@@ -4,15 +4,31 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const SESSION_KEY = 'affine:debug';
 
 if (typeof window !== 'undefined') {
+  const getSessionValue = (key: string) => {
+    try {
+      return sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  };
+
+  const setSessionValue = (key: string, value: string) => {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {
+      // ignore if storage is not accessible (e.g., sandboxed renderer)
+    }
+  };
+
   // enable debug logs if the URL search string contains `debug`
   // e.g. http://localhost:3000/?debug
   if (window.location.search.includes('debug')) {
     // enable debug logs for the current session
     // since the query string may be removed by the browser after navigations,
     // we need to store the debug flag in sessionStorage
-    sessionStorage.setItem(SESSION_KEY, 'true');
+    setSessionValue(SESSION_KEY, 'true');
   }
-  if (sessionStorage.getItem(SESSION_KEY) === 'true') {
+  if (getSessionValue(SESSION_KEY) === 'true') {
     // enable all debug logs by default
     debug.enable('*');
     console.warn('Debug logs enabled');

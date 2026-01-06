@@ -44,6 +44,7 @@ export const useAISpecs = () => {
       .mobile(framework)
       .electron(framework)
       .linkPreview(framework)
+      .iconPicker(framework)
       .codeBlockPreview(framework).value;
 
     return manager.get('page');

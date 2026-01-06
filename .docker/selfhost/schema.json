@@ -148,6 +148,11 @@
           "description": "Whether allow new registrations.\n@default true",
           "default": true
         },
+        "allowSignupForOauth": {
+          "type": "boolean",
+          "description": "Whether allow new registrations via configured oauth.\n@default true",
+          "default": true
+        },
         "requireEmailDomainVerification": {
           "type": "boolean",
           "description": "Whether require email domain record verification before accessing restricted resources.\n@default false",
@@ -190,6 +195,11 @@
       "type": "object",
       "description": "Configuration for mailer module",
       "properties": {
+        "SMTP.name": {
+          "type": "string",
+          "description": "Name of the email server (e.g. your domain name)\n@default \"AFFiNE Server\"\n@environment `MAILER_SERVERNAME`",
+          "default": "AFFiNE Server"
+        },
         "SMTP.host": {
           "type": "string",
           "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"\n@environment `MAILER_HOST`",
@@ -212,18 +222,23 @@
         },
         "SMTP.sender": {
           "type": "string",
-          "description": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")\n@default \"\"\n@environment `MAILER_SENDER`",
-          "default": ""
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")\n@default \"AFFiNE Self Hosted <noreply@example.com>\"\n@environment `MAILER_SENDER`",
+          "default": "AFFiNE Self Hosted <noreply@example.com>"
         },
         "SMTP.ignoreTLS": {
           "type": "boolean",
-          "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
+          "description": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
           "default": false
         },
         "fallbackDomains": {
           "type": "array",
           "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
           "default": []
+        },
+        "fallbackSMTP.name": {
+          "type": "string",
+          "description": "Name of the fallback email server (e.g. your domain name)\n@default \"AFFiNE Server\"",
+          "default": "AFFiNE Server"
         },
         "fallbackSMTP.host": {
           "type": "string",
@@ -247,12 +262,12 @@
         },
         "fallbackSMTP.sender": {
           "type": "string",
-          "description": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")\n@default \"\"",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")\n@default \"\"",
           "default": ""
         },
         "fallbackSMTP.ignoreTLS": {
           "type": "boolean",
-          "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false",
+          "description": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.\n@default false",
           "default": false
         }
       }
@@ -382,7 +397,7 @@
                         },
                         "urlPrefix": {
                           "type": "string",
-                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
                         },
                         "signKey": {
                           "type": "string",
@@ -503,7 +518,7 @@
                         },
                         "urlPrefix": {
                           "type": "string",
-                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
                         },
                         "signKey": {
                           "type": "string",
@@ -580,6 +595,11 @@
           "description": "Multiple hosts the server will accept requests from.\n@default []",
           "default": []
         },
+        "listenAddr": {
+          "type": "string",
+          "description": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).\n@default \"0.0.0.0\"\n@environment `LISTEN_ADDR`",
+          "default": "0.0.0.0"
+        },
         "port": {
           "type": "number",
           "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",
@@ -596,11 +616,6 @@
       "type": "object",
       "description": "Configuration for flags module",
       "properties": {
-        "earlyAccessControl": {
-          "type": "boolean",
-          "description": "Only allow users with early access features to access the app\n@default false",
-          "default": false
-        },
         "allowGuestDemoWorkspace": {
           "type": "boolean",
           "description": "Whether allow guest users to create demo workspaces.\n@default true",
@@ -669,16 +684,16 @@
         },
         "scenarios": {
           "type": "object",
-          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"claude-sonnet-4@20250514\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"rerank\":\"gpt-4.1\",\"coding\":\"claude-sonnet-4@20250514\",\"complex_text_generation\":\"gpt-4o-2024-08-06\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
+          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"gemini-2.5-flash\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"rerank\":\"gpt-4.1\",\"coding\":\"claude-sonnet-4-5@20250929\",\"complex_text_generation\":\"gpt-4o-2024-08-06\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
           "default": {
             "override_enabled": false,
             "scenarios": {
               "audio_transcribing": "gemini-2.5-flash",
-              "chat": "claude-sonnet-4@20250514",
+              "chat": "gemini-2.5-flash",
               "embedding": "gemini-embedding-001",
               "image": "gpt-image-1",
               "rerank": "gpt-4.1",
-              "coding": "claude-sonnet-4@20250514",
+              "coding": "claude-sonnet-4-5@20250929",
               "complex_text_generation": "gpt-4o-2024-08-06",
               "quick_decision_making": "gpt-5-mini",
               "quick_text_generation": "gemini-2.5-flash",
@@ -913,7 +928,7 @@
                         },
                         "urlPrefix": {
                           "type": "string",
-                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
                         },
                         "signKey": {
                           "type": "string",
@@ -1093,18 +1108,33 @@
         },
         "apiKey": {
           "type": "string",
-          "description": "Stripe API key to enable payment service.\n@default \"\"\n@environment `STRIPE_API_KEY`",
+          "description": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.\n@default \"\"\n@environment `STRIPE_API_KEY`",
           "default": ""
         },
         "webhookKey": {
           "type": "string",
-          "description": "Stripe webhook key to enable payment service.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
+          "description": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
           "default": ""
         },
         "stripe": {
           "type": "object",
-          "description": "Stripe sdk options\n@default {}\n@link https://docs.stripe.com/api",
-          "default": {}
+          "description": "Stripe sdk options and credentials\n@default {\"apiKey\":\"\",\"webhookKey\":\"\"}\n@link https://docs.stripe.com/api",
+          "default": {
+            "apiKey": "",
+            "webhookKey": ""
+          }
+        },
+        "revenuecat": {
+          "type": "object",
+          "description": "RevenueCat integration configs\n@default {\"enabled\":false,\"apiKey\":\"\",\"projectId\":\"\",\"webhookAuth\":\"\",\"environment\":\"production\",\"productMap\":{}}\n@link https://www.revenuecat.com/docs/",
+          "default": {
+            "enabled": false,
+            "apiKey": "",
+            "projectId": "",
+            "webhookAuth": "",
+            "environment": "production",
+            "productMap": {}
+          }
         }
       }
     },

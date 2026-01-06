@@ -19,8 +19,7 @@ export interface RenameContentProps extends RenameBaseProps {
   inputBelowRenderer?: (props: { input: string }) => ReactNode;
 }
 
-export interface RenameSubMenuProps
-  extends PropsWithChildren<RenameContentProps> {
+export interface RenameSubMenuProps extends PropsWithChildren<RenameContentProps> {
   /** Submenu's title */
   title?: string;
   /** MenuItem.icon */
@@ -31,8 +30,7 @@ export interface RenameSubMenuProps
   disabled?: boolean;
 }
 
-export interface RenameDialogProps
-  extends PropsWithChildren<RenameContentProps> {
+export interface RenameDialogProps extends PropsWithChildren<RenameContentProps> {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   title?: string;

@@ -1,4 +1,4 @@
-import en from './en.json' assert { type: 'json' };
+import en from './en.json' with { type: 'json' };
 
 export type Language =
   | 'en'
@@ -8,6 +8,7 @@ export type Language =
   | 'es'
   | 'es-AR'
   | 'es-CL'
+  | 'pl'
   | 'de'
   | 'ru'
   | 'ja'
@@ -21,7 +22,8 @@ export type Language =
   | 'uk'
   | 'ko'
   | 'pt-BR'
-  | 'fa';
+  | 'fa'
+  | 'nb-NO';
 
 export type LanguageResource = typeof en;
 export const SUPPORTED_LANGUAGES: Record<
@@ -88,6 +90,12 @@ export const SUPPORTED_LANGUAGES: Record<
     originalName: 'español (Chile)',
     flagEmoji: '🇨🇱',
     resource: () => import('./es-CL.json'),
+  },
+  pl: {
+    name: 'Polish',
+    originalName: 'Polski',
+    flagEmoji: '🇵🇱',
+    resource: () => import('./pl.json'),
   },
   de: {
     name: 'German',
@@ -160,5 +168,11 @@ export const SUPPORTED_LANGUAGES: Record<
     originalName: 'українська',
     flagEmoji: '🇺🇦',
     resource: () => import('./uk.json'),
+  },
+  'nb-NO': {
+    name: 'Norwegian',
+    originalName: 'Norsk (Bokmål)',
+    flagEmoji: '🇳🇴',
+    resource: () => import('./nb-NO.json'),
   },
 };

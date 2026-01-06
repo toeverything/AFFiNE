@@ -20,11 +20,13 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
 
   public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
     switch typename {
-    case "AccessToken": return AffineGraphQL.Objects.AccessToken
     case "AggregateBucketHitsObjectType": return AffineGraphQL.Objects.AggregateBucketHitsObjectType
     case "AggregateBucketObjectType": return AffineGraphQL.Objects.AggregateBucketObjectType
     case "AggregateResultObjectType": return AffineGraphQL.Objects.AggregateResultObjectType
     case "AppConfigValidateResult": return AffineGraphQL.Objects.AppConfigValidateResult
+    case "BlobUploadInit": return AffineGraphQL.Objects.BlobUploadInit
+    case "BlobUploadPart": return AffineGraphQL.Objects.BlobUploadPart
+    case "BlobUploadedPart": return AffineGraphQL.Objects.BlobUploadedPart
     case "ChatMessage": return AffineGraphQL.Objects.ChatMessage
     case "CommentChangeObjectType": return AffineGraphQL.Objects.CommentChangeObjectType
     case "CommentChangeObjectTypeEdge": return AffineGraphQL.Objects.CommentChangeObjectTypeEdge
@@ -41,6 +43,8 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "CopilotContextFile": return AffineGraphQL.Objects.CopilotContextFile
     case "CopilotHistories": return AffineGraphQL.Objects.CopilotHistories
     case "CopilotHistoriesTypeEdge": return AffineGraphQL.Objects.CopilotHistoriesTypeEdge
+    case "CopilotModelType": return AffineGraphQL.Objects.CopilotModelType
+    case "CopilotModelsType": return AffineGraphQL.Objects.CopilotModelsType
     case "CopilotPromptConfigType": return AffineGraphQL.Objects.CopilotPromptConfigType
     case "CopilotPromptMessageType": return AffineGraphQL.Objects.CopilotPromptMessageType
     case "CopilotPromptType": return AffineGraphQL.Objects.CopilotPromptType

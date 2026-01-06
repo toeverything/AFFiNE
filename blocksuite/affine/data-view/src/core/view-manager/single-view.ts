@@ -20,6 +20,7 @@ export type MainProperties = {
 };
 
 export interface SingleView {
+  data$: any;
   readonly id: string;
   readonly type: string;
   readonly manager: ViewManager;
@@ -78,8 +79,7 @@ export interface SingleView {
 
 export abstract class SingleViewBase<
   ViewData extends DataViewDataType = DataViewDataType,
-> implements SingleView
-{
+> implements SingleView {
   private readonly searchString = signal('');
 
   private readonly traitMap = new Map<symbol, unknown>();

@@ -19,5 +19,6 @@ query adminServerConfig {
       url
     }
     availableUserFeatures
+    availableWorkspaceFeatures
   }
 }

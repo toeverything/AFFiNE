@@ -4,7 +4,6 @@ import { assign, pick } from 'lodash-es';
 
 import { Config, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
-import { FeatureService } from '../features';
 import { Mailer } from '../mail/mailer';
 import { createDevUsers } from './dev';
 import type { CurrentUser } from './session';
@@ -44,8 +43,7 @@ export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer,
-    private readonly feature: FeatureService
+    private readonly mailer: Mailer
   ) {}
 
   async onApplicationBootstrap() {
@@ -54,8 +52,9 @@ export class AuthService implements OnApplicationBootstrap {
     }
   }
 
-  async canSignIn(email: string) {
-    return await this.feature.canEarlyAccess(email);
+  async canSignIn(_email: string) {
+    // may add more sign-in check later
+    return true;
   }
 
   /**

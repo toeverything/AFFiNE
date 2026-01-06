@@ -85,7 +85,7 @@ fn convert_to_markdown() -> impl Iterator<Item = String> {
         let (changes_dur_secs, changes_err_secs) = process_duration(&changes_duration)?;
 
         let diff = -(1.0 - changes_dur_secs / base_dur_secs) * 100.0;
-        difference = format!("{:+.2}%", diff);
+        difference = format!("{diff:+.2}%");
 
         if is_significant(
           changes_dur_secs,
@@ -93,7 +93,7 @@ fn convert_to_markdown() -> impl Iterator<Item = String> {
           base_dur_secs,
           base_err_secs,
         ) {
-          difference = format!("**{}**", difference);
+          difference = format!("**{difference}**");
         }
       }
 
@@ -128,7 +128,7 @@ fn main() {
   ];
 
   for line in headers.into_iter().chain(convert_to_markdown()) {
-    println!("{}", line);
+    println!("{line}");
   }
   println!("</details>");
 }

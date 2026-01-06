@@ -77,6 +77,9 @@ export class MermaidPreview extends SignalWatcher(
     }
 
     .mermaid-preview-svg > div {
+      display: flex;
+      justify-content: center;
+      width: 100%;
       transform-origin: center;
     }
 

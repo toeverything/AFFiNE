@@ -62,7 +62,7 @@ pub fn read_sync_message(input: &[u8]) -> IResult<&[u8], SyncMessage> {
           let (awareness_tail, awareness) = read_awareness(update)?;
           let tail_len = awareness_tail.len();
           if tail_len > 0 {
-            debug!("awareness update has trailing bytes: {}", tail_len);
+            debug!("awareness update has trailing bytes: {tail_len}");
             debug_assert!(tail_len > 0, "awareness update has trailing bytes");
           }
           awareness

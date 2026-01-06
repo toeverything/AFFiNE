@@ -12,8 +12,8 @@ import {
   arch,
   buildType,
   icnsPath,
-  iconPngPath,
   iconUrl,
+  iconX64PngPath,
   iconX512PngPath,
   icoPath,
   platform,
@@ -30,7 +30,7 @@ const makers = [
     platform === 'darwin' && {
       name: '@electron-forge/maker-dmg',
       config: {
-        format: 'ULFO',
+        format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
         'icon-size': 128,
@@ -121,15 +121,22 @@ const makers = [
         productName,
         bin: productName,
         id: fromBuildIdentifier(appIdMap),
-        icon: iconPngPath, // not working yet
+        icon: {
+          '64x64': iconX64PngPath,
+          '512x512': iconX512PngPath,
+        },
         branch: buildType,
+        runtime: 'org.freedesktop.Platform',
+        runtimeVersion: '25.08',
+        sdk: 'org.freedesktop.Sdk',
+        base: 'org.electronjs.Electron2.BaseApp',
+        baseVersion: '25.08',
         files: [
           [
             './resources/affine.metainfo.xml',
             '/usr/share/metainfo/affine.metainfo.xml',
           ],
         ],
-        runtimeVersion: '24.08',
         modules: [
           {
             name: 'zypak',
@@ -137,7 +144,7 @@ const makers = [
               {
                 type: 'git',
                 url: 'https://github.com/refi64/zypak',
-                tag: 'v2024.01.17',
+                tag: 'v2025.09',
               },
             ],
           },
@@ -197,6 +204,7 @@ export default {
       },
     ],
     executableName: productName,
+    ignore: [/\.map$/],
     asar: true,
     extendInfo: {
       NSAudioCaptureUsageDescription:

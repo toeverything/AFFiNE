@@ -1,3 +1,4 @@
+export { type TextAlignConfig, textAlignConfigs } from './align';
 export { type TextConversionConfig, textConversionConfigs } from './conversion';
 export {
   asyncGetRichText,

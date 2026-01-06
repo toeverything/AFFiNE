@@ -213,12 +213,6 @@ export class WrongSignInMethod extends UserFriendlyError {
   }
 }
 
-export class EarlyAccessRequired extends UserFriendlyError {
-  constructor(message?: string) {
-    super('action_forbidden', 'early_access_required', message);
-  }
-}
-
 export class SignUpForbidden extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'sign_up_forbidden', message);
@@ -437,6 +431,12 @@ export class BlobNotFound extends UserFriendlyError {
   }
 }
 
+export class BlobInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'blob_invalid', message);
+  }
+}
+
 export class ExpectToPublishDoc extends UserFriendlyError {
   constructor(message?: string) {
     super('invalid_input', 'expect_to_publish_doc', message);
@@ -648,6 +648,12 @@ export class WorkspaceIdRequiredForTeamSubscription extends UserFriendlyError {
 export class WorkspaceIdRequiredToUpdateTeamSubscription extends UserFriendlyError {
   constructor(message?: string) {
     super('invalid_input', 'workspace_id_required_to_update_team_subscription', message);
+  }
+}
+
+export class ManagedByAppStoreOrPlay extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'managed_by_app_store_or_play', message);
   }
 }
 
@@ -1134,7 +1140,6 @@ export enum ErrorNames {
   INVALID_PASSWORD_LENGTH,
   PASSWORD_REQUIRED,
   WRONG_SIGN_IN_METHOD,
-  EARLY_ACCESS_REQUIRED,
   SIGN_UP_FORBIDDEN,
   EMAIL_TOKEN_NOT_FOUND,
   INVALID_EMAIL_TOKEN,
@@ -1160,6 +1165,7 @@ export enum ErrorNames {
   INVALID_HISTORY_TIMESTAMP,
   DOC_HISTORY_NOT_FOUND,
   BLOB_NOT_FOUND,
+  BLOB_INVALID,
   EXPECT_TO_PUBLISH_DOC,
   EXPECT_TO_REVOKE_PUBLIC_DOC,
   EXPECT_TO_GRANT_DOC_USER_ROLES,
@@ -1189,6 +1195,7 @@ export enum ErrorNames {
   CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION,
+  MANAGED_BY_APP_STORE_OR_PLAY,
   COPILOT_SESSION_NOT_FOUND,
   COPILOT_SESSION_INVALID_INPUT,
   COPILOT_SESSION_DELETED,

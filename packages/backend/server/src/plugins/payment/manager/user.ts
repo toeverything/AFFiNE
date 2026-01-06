@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, UserStripeCustomer } from '@prisma/client';
+import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
 import { omit, pick } from 'lodash-es';
 import Stripe from 'stripe';
 import { z } from 'zod';
@@ -9,8 +9,11 @@ import {
   EventBus,
   InternalServerError,
   InvalidCheckoutParameters,
+  ManagedByAppStoreOrPlay,
   Mutex,
+  OneMonth,
   OnEvent,
+  OneYear,
   SubscriptionAlreadyExists,
   SubscriptionPlanNotFound,
   TooManyRequest,
@@ -101,6 +104,14 @@ export class UserSubscriptionManager extends SubscriptionManager {
       lookupKey.plan !== SubscriptionPlan.AI
     ) {
       throw new InvalidCheckoutParameters();
+    }
+
+    const active = await this.getActiveSubscription({
+      plan: lookupKey.plan,
+      userId: user.id,
+    });
+    if (active?.provider === 'revenuecat') {
+      throw new ManagedByAppStoreOrPlay();
     }
 
     const subscription = await this.getSubscription({
@@ -256,7 +267,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       ]),
       create: {
         targetId: userId,
-        ...subscriptionData,
+        ...omit(subscriptionData, ['provider', 'iapStore']),
       },
     });
   }
@@ -488,13 +499,10 @@ export class UserSubscriptionManager extends SubscriptionManager {
       },
     });
 
-    // TODO(@forehalo): time helper
     const subscriptionTime =
-      (lookupKey.recurring === SubscriptionRecurring.Monthly ? 30 : 365) *
-      24 *
-      60 *
-      60 *
-      1000;
+      lookupKey.recurring === SubscriptionRecurring.Monthly
+        ? OneMonth
+        : OneYear;
 
     let subscription: Subscription;
 
@@ -546,6 +554,102 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
 
     return subscription;
+  }
+
+  async revokeOnetimeOrLifetime(knownInvoice: KnownStripeInvoice) {
+    this.assertUserIdExists(knownInvoice.userId);
+    const { userId, lookupKey } = knownInvoice;
+
+    const subscription = await this.db.subscription.findFirst({
+      where: {
+        targetId: userId,
+        plan: lookupKey.plan,
+        provider: Provider.stripe,
+      },
+    });
+
+    if (!subscription) {
+      return;
+    }
+
+    await this.db.subscription.update({
+      where: {
+        id: subscription.id,
+      },
+      data: {
+        status: SubscriptionStatus.Canceled,
+        nextBillAt: null,
+        canceledAt: new Date(),
+      },
+    });
+
+    this.event.emit('user.subscription.canceled', {
+      userId,
+      plan: lookupKey.plan,
+      recurring: lookupKey.recurring,
+    });
+  }
+
+  async restoreOnetimeOrLifetime(knownInvoice: KnownStripeInvoice) {
+    this.assertUserIdExists(knownInvoice.userId);
+    const { userId, lookupKey, stripeInvoice } = knownInvoice;
+
+    const subscription = await this.db.subscription.findFirst({
+      where: {
+        targetId: userId,
+        plan: lookupKey.plan,
+        provider: Provider.stripe,
+      },
+    });
+
+    const start =
+      stripeInvoice.lines.data[0]?.period?.start ??
+      (typeof stripeInvoice.created === 'number'
+        ? stripeInvoice.created
+        : Date.now() / 1000);
+
+    let end: Date | null = null;
+
+    if (lookupKey.recurring === SubscriptionRecurring.Lifetime) {
+      end = null;
+    } else if (lookupKey.variant === SubscriptionVariant.Onetime) {
+      const isMonthly = lookupKey.recurring === SubscriptionRecurring.Monthly;
+      const duration = isMonthly ? OneMonth : OneYear;
+      end = subscription?.end ?? new Date(start * 1000 + duration);
+    } else {
+      end = subscription?.end ?? null;
+    }
+
+    if (subscription) {
+      await this.db.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          status: SubscriptionStatus.Active,
+          canceledAt: null,
+          nextBillAt: null,
+          start: subscription.start ?? new Date(start * 1000),
+          end,
+        },
+      });
+    } else {
+      await this.db.subscription.create({
+        data: {
+          targetId: userId,
+          stripeSubscriptionId: null,
+          ...lookupKey,
+          start: new Date(start * 1000),
+          end,
+          status: SubscriptionStatus.Active,
+          nextBillAt: null,
+        },
+      });
+    }
+
+    this.event.emit('user.subscription.activated', {
+      userId,
+      plan: lookupKey.plan,
+      recurring: lookupKey.recurring,
+    });
   }
 
   private async autoPrice(lookupKey: LookupKey, strategy: PriceStrategyStatus) {

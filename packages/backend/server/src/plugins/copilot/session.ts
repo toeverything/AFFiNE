@@ -25,6 +25,8 @@ import {
   type UpdateChatSession,
   UpdateChatSessionOptions,
 } from '../../models';
+import { SubscriptionService } from '../payment/service';
+import { SubscriptionPlan, SubscriptionStatus } from '../payment/types';
 import { ChatMessageCache } from './message';
 import { ChatPrompt, PromptService } from './prompt';
 import {
@@ -58,6 +60,7 @@ declare global {
 export class ChatSession implements AsyncDisposable {
   private stashMessageCount = 0;
   constructor(
+    private readonly moduleRef: ModuleRef,
     private readonly messageCache: ChatMessageCache,
     private readonly state: ChatSessionState,
     private readonly dispose?: (state: ChatSessionState) => Promise<void>,
@@ -70,6 +73,10 @@ export class ChatSession implements AsyncDisposable {
 
   get optionalModels() {
     return this.state.prompt.optionalModels;
+  }
+
+  get proModels() {
+    return this.state.prompt.config?.proModels || [];
   }
 
   get config() {
@@ -91,6 +98,43 @@ export class ChatSession implements AsyncDisposable {
 
   get latestUserMessage() {
     return this.state.messages.findLast(m => m.role === 'user');
+  }
+
+  async resolveModel(
+    hasPayment: boolean,
+    requestedModelId?: string
+  ): Promise<string> {
+    const defaultModel = this.model;
+    const normalize = (m?: string) =>
+      !!m && this.optionalModels.includes(m) ? m : defaultModel;
+    const isPro = (m?: string) => !!m && this.proModels.includes(m);
+
+    // try resolve payment subscription service lazily
+    let paymentEnabled = hasPayment;
+    let isUserAIPro = false;
+    try {
+      if (paymentEnabled) {
+        const sub = this.moduleRef.get(SubscriptionService, {
+          strict: false,
+        });
+        const subscription = await sub
+          .select(SubscriptionPlan.AI)
+          .getSubscription({
+            userId: this.config.userId,
+            plan: SubscriptionPlan.AI,
+          } as any);
+        isUserAIPro = subscription?.status === SubscriptionStatus.Active;
+      }
+    } catch {
+      // payment not available -> skip checks
+      paymentEnabled = false;
+    }
+
+    if (paymentEnabled && !isUserAIPro && isPro(requestedModelId)) {
+      return defaultModel;
+    }
+
+    return normalize(requestedModelId);
   }
 
   push(message: ChatMessage) {
@@ -274,6 +318,20 @@ export class ChatSessionService {
       return [];
     }
     return messages.data;
+  }
+
+  private stripNullBytes(value?: string | null): string {
+    if (!value) return '';
+    return value.replace(/\u0000/g, '');
+  }
+
+  private isNullByteError(error: unknown): boolean {
+    return (
+      error instanceof Error &&
+      (error.message.includes('\\u0000') ||
+        error.message.includes('unsupported Unicode escape sequence') ||
+        error.message.includes('22P05'))
+    );
   }
 
   private async getHistory(session: Session): Promise<SessionHistory> {
@@ -539,12 +597,17 @@ export class ChatSessionService {
   async get(sessionId: string): Promise<ChatSession | null> {
     const state = await this.getSessionInfo(sessionId);
     if (state) {
-      return new ChatSession(this.messageCache, state, async state => {
-        await this.models.copilotSession.updateMessages(state);
-        if (!state.prompt.action) {
-          await this.jobs.add('copilot.session.generateTitle', { sessionId });
+      return new ChatSession(
+        this.moduleRef,
+        this.messageCache,
+        state,
+        async state => {
+          await this.models.copilotSession.updateMessages(state);
+          if (!state.prompt.action) {
+            await this.jobs.add('copilot.session.generateTitle', { sessionId });
+          }
         }
-      });
+      );
     }
     return null;
   }
@@ -587,11 +650,10 @@ export class ChatSessionService {
       })
       .then(s => s.map(s => [s.userId, s.id]));
     for (const [userId, sessionId] of sessionIds) {
-      await this.models.copilotSession.update({
-        userId,
-        sessionId,
-        docId: null,
-      });
+      await this.models.copilotSession.update(
+        { userId, sessionId, docId: null },
+        true
+      );
     }
   }
 
@@ -607,7 +669,13 @@ export class ChatSessionService {
         );
         return;
       }
-      const { userId, title, messages } = session;
+      const { userId, title } = session;
+      const messages =
+        session.messages?.map(m => ({
+          ...m,
+          content: this.stripNullBytes(m.content),
+        })) ?? [];
+
       if (
         title ||
         !messages.length ||
@@ -617,18 +685,41 @@ export class ChatSessionService {
         return;
       }
 
-      {
-        const title = await this.chatWithPrompt('Summary as title', {
-          content: session.messages
-            .map(m => `[${m.role}]: ${m.content}`)
-            .join('\n'),
-        });
-        await this.models.copilotSession.update({ userId, sessionId, title });
+      const promptContent = messages
+        .map(m => `[${m.role}]: ${m.content}`)
+        .join('\n');
+      const generatedTitle = this.stripNullBytes(
+        await this.chatWithPrompt('Summary as title', {
+          content: promptContent,
+        })
+      ).trim();
+
+      if (!generatedTitle) {
+        this.logger.warn(
+          `Generated empty title for session ${sessionId}, skip updating`
+        );
+        return;
       }
+      await this.models.copilotSession.update({
+        userId,
+        sessionId,
+        title: generatedTitle,
+      });
     } catch (error) {
-      console.error(
+      const context = {
+        sessionId,
+        cause: error instanceof Error ? error.cause : error,
+      };
+      if (this.isNullByteError(error)) {
+        this.logger.warn(
+          `Skip title generation for session ${sessionId} due to invalid null bytes in stored data`,
+          context
+        );
+        return;
+      }
+      this.logger.error(
         `Failed to generate title for session ${sessionId}:`,
-        error
+        context
       );
       throw error;
     }

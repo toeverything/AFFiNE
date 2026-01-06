@@ -2,6 +2,7 @@
 **/node_modules
 .yarn
 .github/helm
+.git
 .vscode
 .yarnrc.yml
 .docker

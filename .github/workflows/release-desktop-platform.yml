@@ -1,0 +1,226 @@
+name: Release Desktop Platform
+
+on:
+  workflow_call:
+    inputs:
+      build_type:
+        required: true
+        type: string
+      app_version:
+        required: true
+        type: string
+      git_short_hash:
+        required: true
+        type: string
+      runner:
+        required: true
+        type: string
+      platform:
+        required: true
+        type: string
+      arch:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+      apple_codesign:
+        required: false
+        default: false
+        type: boolean
+      install_linux_deps:
+        required: false
+        default: false
+        type: boolean
+      enable_scripts:
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      files_to_be_signed:
+        description: Files to be signed (Windows only)
+        value: ${{ jobs.build.outputs.files_to_be_signed }}
+
+permissions:
+  actions: write
+  contents: write
+  security-events: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    outputs:
+      files_to_be_signed: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED }}
+    env:
+      BUILD_TYPE: ${{ inputs.build_type }}
+      RELEASE_VERSION: ${{ inputs.app_version }}
+      DEBUG: 'affine:*,napi:*'
+      APP_NAME: affine
+      MACOSX_DEPLOYMENT_TARGET: '12.0'
+      SKIP_GENERATE_ASSETS: 1
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: 'affine'
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      SENTRY_RELEASE: ${{ inputs.app_version }}
+      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app_version }}
+
+      - name: Setup Node.js
+        timeout-minutes: 10
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine/nbstore @toeverything/infra
+          hard-link-nm: false
+          nmHoistingLimits: workspaces
+          enableScripts: ${{ inputs.enable_scripts }}
+
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ inputs.target }}
+          package: '@affine/native'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-web
+          path: packages/frontend/apps/electron/resources/web-static
+
+      - name: Build Desktop Layers
+        run: yarn affine @affine/electron build
+
+      - name: Signing By Apple Developer ID
+        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign }}
+        uses: apple-actions/import-codesign-certs@v5
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: Install additional dependencies on Linux
+        if: ${{ inputs.platform == 'linux' && inputs.install_linux_deps }}
+        run: |
+          df -h
+          sudo add-apt-repository universe
+          sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak update
+          # some flatpak deps need git protocol.file.allow
+          git config --global protocol.file.allow always
+          # clean up apt cache to save disk space
+          sudo -E apt-get -y purge azure-cli* zulu* hhvm* llvm* firefox* google* dotnet* aspnetcore* powershell* adoptopenjdk* mysql* php* mongodb* moby* snap* || true
+          sudo -E apt-get -qq autoremove --purge
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android
+          sudo apt-get clean
+          rm -rf ~/.cache/yarn ~/.npm
+          df -h
+
+      - name: Remove nbstore node_modules (darwin/linux)
+        if: ${{ inputs.platform != 'win32' }}
+        shell: bash
+        # node_modules of nbstore is not needed for building, and it will make the build process out of memory
+        run: |
+          cargo clean
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
+
+      - name: Remove nbstore node_modules (windows)
+        if: ${{ inputs.platform == 'win32' }}
+        shell: bash
+        run: |
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite/affine/node_modules
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
+
+      - name: make
+        if: ${{ inputs.platform != 'win32' }}
+        run: yarn affine @affine/electron make --platform=${{ inputs.platform }} --arch=${{ inputs.arch }}
+        env:
+          SKIP_WEB_BUILD: 1
+          HOIST_NODE_MODULES: 1
+          NODE_OPTIONS: --max-old-space-size=14384
+
+      - name: package
+        if: ${{ inputs.platform == 'win32' }}
+        run: |
+          yarn affine @affine/electron package --platform=${{ inputs.platform }} --arch=${{ inputs.arch }}
+        env:
+          SKIP_WEB_BUILD: 1
+          HOIST_NODE_MODULES: 1
+          NODE_OPTIONS: --max-old-space-size=14384
+
+      - name: signing DMG
+        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign }}
+        run: |
+          codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
+
+      - name: Save artifacts (mac)
+        if: ${{ inputs.platform == 'darwin' }}
+        run: |
+          mkdir -p builds
+          mv packages/frontend/apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.dmg
+          mv packages/frontend/apps/electron/out/*/make/zip/darwin/${{ inputs.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.zip
+
+      - name: Save artifacts (linux)
+        if: ${{ inputs.platform == 'linux' }}
+        run: |
+          mkdir -p builds
+          mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ inputs.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.zip
+          mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.appimage
+          mv packages/frontend/apps/electron/out/*/make/deb/${{ inputs.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.deb
+          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.flatpak
+
+      - uses: actions/attest-build-provenance@v2
+        if: ${{ inputs.platform == 'darwin' }}
+        with:
+          subject-path: |
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.zip
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.dmg
+
+      - uses: actions/attest-build-provenance@v2
+        if: ${{ inputs.platform == 'linux' }}
+        with:
+          subject-path: |
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.zip
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.appimage
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.deb
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.flatpak
+
+      - name: Upload Artifact
+        if: ${{ inputs.platform == 'darwin' || inputs.platform == 'linux' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: affine-${{ inputs.platform }}-${{ inputs.arch }}-builds
+          path: builds
+
+      - name: get all files to be signed
+        id: get_files_to_be_signed
+        if: ${{ inputs.platform == 'win32' }}
+        shell: pwsh
+        run: |
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\apps\electron\out\', '') + '"' }) -join ' ')
+          "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
+          echo $FILES_TO_BE_SIGNED
+
+      - name: Zip artifacts for faster upload
+        if: ${{ inputs.platform == 'win32' }}
+        shell: pwsh
+        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/apps/electron/out/* -DestinationPath archive.zip
+
+      - name: Save packaged artifacts for signing
+        if: ${{ inputs.platform == 'win32' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-${{ inputs.platform }}-${{ inputs.arch }}
+          path: |
+            archive.zip
+            !**/*.map

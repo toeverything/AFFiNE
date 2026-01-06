@@ -48,6 +48,7 @@ import {
   WorkspacePropertiesTable,
 } from '../../components/properties';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
+import { DocIconPicker } from './doc-icon-picker';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import { StarterBar } from './starter-bar';
 import * as styles from './styles.css';
@@ -116,6 +117,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       .electron(framework)
       .linkPreview(framework)
       .codeBlockPreview(framework)
+      .iconPicker(framework)
       .comment(enableComment, framework).value;
 
     if (BUILD_CONFIG.isMobileEdition) {
@@ -254,6 +256,9 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <>
       <div className={styles.affineDocViewport}>
+        {!BUILD_CONFIG.isMobileEdition ? (
+          <DocIconPicker docId={page.id} readonly={readonly || shared} />
+        ) : null}
         {!isJournal ? (
           <LitDocTitle doc={page} ref={onTitleRef} />
         ) : (

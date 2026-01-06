@@ -30,6 +30,7 @@ import {
   createTestingApp,
   createWorkspace,
   inviteUser,
+  smallestPng,
   TestingApp,
   TestUser,
 } from './utils';
@@ -453,8 +454,6 @@ test('should create message correctly', async t => {
         randomUUID(),
         textPromptName
       );
-      const smallestPng =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
       const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
       const messageId = await createCopilotMessage(
         app,
@@ -475,8 +474,6 @@ test('should create message correctly', async t => {
         randomUUID(),
         textPromptName
       );
-      const smallestPng =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
       const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
       const messageId = await createCopilotMessage(
         app,

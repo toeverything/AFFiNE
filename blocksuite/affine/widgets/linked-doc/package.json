@@ -18,7 +18,7 @@
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.12",
+    "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@lit/context": "^1.1.2",
@@ -26,10 +26,12 @@
     "@toeverything/theme": "^1.1.16",
     "@types/lodash-es": "^4.17.12",
     "fflate": "^0.8.2",
+    "js-yaml": "^4.1.1",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",
-    "rxjs": "^7.8.1",
-    "zod": "^3.23.8"
+    "mammoth": "^1.11.0",
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -41,5 +43,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.22.4"
+  "version": "0.25.7"
 }

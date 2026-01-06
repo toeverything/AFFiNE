@@ -11,6 +11,7 @@ import { BehaviorSubject } from 'rxjs';
 import { popupViewUrl } from '../constants';
 import { logger } from '../logger';
 import type { MainEventRegister, NamespaceHandlers } from '../type';
+import { buildWebPreferences } from '../web-preferences';
 import { getCurrentDisplay } from './utils';
 
 type PopupWindowType = 'notification' | 'recording';
@@ -85,17 +86,15 @@ abstract class PopupWindow {
       visualEffectState: 'active',
       vibrancy: 'under-window',
       ...this.windowOptions,
-      webPreferences: {
-        ...this.windowOptions.webPreferences,
+      webPreferences: buildWebPreferences({
         webgl: true,
-        contextIsolation: true,
-        sandbox: false,
         transparent: true,
         spellcheck: false,
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
+        ...this.windowOptions.webPreferences,
         // serialize exposed meta that to be used in preload
         additionalArguments: await getAdditionalArguments(this.name),
-      },
+      }),
     });
 
     // it seems that the dock will disappear when popup windows are shown

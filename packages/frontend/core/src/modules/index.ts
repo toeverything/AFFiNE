@@ -4,6 +4,7 @@ import { type Framework } from '@toeverything/infra';
 import {
   configureAIButtonModule,
   configureAIDraftModule,
+  configureAIModelModule,
   configureAINetworkSearchModule,
   configureAIPlaygroundModule,
   configureAIReasoningModule,
@@ -27,10 +28,12 @@ import { configureDocSummaryModule } from './doc-summary';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
 import { configureEditorSettingModule } from './editor-setting';
+import { configureExplorerIconModule } from './explorer-icon';
 import { configureFavoriteModule } from './favorite';
 import { configureFeatureFlagModule } from './feature-flag';
 import { configureGlobalContextModule } from './global-context';
 import { configureI18nModule } from './i18n';
+import { configureIconPickerModule } from './icon-picker';
 import { configureImportClipperModule } from './import-clipper';
 import { configureImportTemplateModule } from './import-template';
 import { configureIntegrationModule } from './integration';
@@ -42,6 +45,7 @@ import { configureNavigationPanelModule } from './navigation-panel';
 import { configureNotificationModule } from './notification';
 import { configureOpenInApp } from './open-in-app';
 import { configureOrganizeModule } from './organize';
+import { configurePaywallModule } from './paywall';
 import { configurePDFModule } from './pdf';
 import { configurePeekViewModule } from './peek-view';
 import { configurePermissionsModule } from './permissions';
@@ -85,6 +89,7 @@ export function configureCommonModules(framework: Framework) {
   configureTelemetryModule(framework);
   configurePDFModule(framework);
   configurePeekViewModule(framework);
+  configureExplorerIconModule(framework);
   configureDocDisplayMetaModule(framework);
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
@@ -115,6 +120,7 @@ export function configureCommonModules(framework: Framework) {
   configureAIButtonModule(framework);
   configureAIDraftModule(framework);
   configureAIToolsConfigModule(framework);
+  configureAIModelModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
   configureMediaModule(framework);
@@ -126,4 +132,6 @@ export function configureCommonModules(framework: Framework) {
   configureIndexerEmbeddingModule(framework);
   configureCommentModule(framework);
   configureDocSummaryModule(framework);
+  configurePaywallModule(framework);
+  configureIconPickerModule(framework);
 }

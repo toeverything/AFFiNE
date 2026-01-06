@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
@@ -26,6 +28,17 @@ declare global {
     };
   }
 }
+
+type BlobCompleteResult =
+  | { ok: true; metadata: GetObjectMetadata }
+  | {
+      ok: false;
+      reason:
+        | 'not_found'
+        | 'size_mismatch'
+        | 'mime_mismatch'
+        | 'checksum_mismatch';
+    };
 
 @Injectable()
 export class WorkspaceBlobStorage {
@@ -71,10 +84,152 @@ export class WorkspaceBlobStorage {
     return this.provider.get(`${workspaceId}/${key}`, signedUrl);
   }
 
+  async presignPut(
+    workspaceId: string,
+    key: string,
+    metadata?: PutObjectMetadata
+  ) {
+    return this.provider.presignPut?.(`${workspaceId}/${key}`, metadata);
+  }
+
+  async createMultipartUpload(
+    workspaceId: string,
+    key: string,
+    metadata?: PutObjectMetadata
+  ) {
+    return this.provider.createMultipartUpload?.(
+      `${workspaceId}/${key}`,
+      metadata
+    );
+  }
+
+  async presignUploadPart(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ) {
+    return this.provider.presignUploadPart?.(
+      `${workspaceId}/${key}`,
+      uploadId,
+      partNumber
+    );
+  }
+
+  async listMultipartUploadParts(
+    workspaceId: string,
+    key: string,
+    uploadId: string
+  ) {
+    return this.provider.listMultipartUploadParts?.(
+      `${workspaceId}/${key}`,
+      uploadId
+    );
+  }
+
+  async completeMultipartUpload(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[]
+  ) {
+    if (!this.provider.completeMultipartUpload) {
+      return false;
+    }
+
+    await this.provider.completeMultipartUpload(
+      `${workspaceId}/${key}`,
+      uploadId,
+      parts
+    );
+    return true;
+  }
+
+  async abortMultipartUpload(
+    workspaceId: string,
+    key: string,
+    uploadId: string
+  ) {
+    if (!this.provider.abortMultipartUpload) {
+      return false;
+    }
+
+    await this.provider.abortMultipartUpload(`${workspaceId}/${key}`, uploadId);
+    return true;
+  }
+
+  async head(workspaceId: string, key: string) {
+    return this.provider.head(`${workspaceId}/${key}`);
+  }
+
+  async complete(
+    workspaceId: string,
+    key: string,
+    expected: { size: number; mime: string }
+  ): Promise<BlobCompleteResult> {
+    const metadata = await this.head(workspaceId, key);
+    if (!metadata) {
+      return { ok: false, reason: 'not_found' };
+    }
+
+    if (metadata.contentLength !== expected.size) {
+      return { ok: false, reason: 'size_mismatch' };
+    }
+
+    if (expected.mime && metadata.contentType !== expected.mime) {
+      return { ok: false, reason: 'mime_mismatch' };
+    }
+
+    const object = await this.provider.get(`${workspaceId}/${key}`);
+    if (!object.body) {
+      return { ok: false, reason: 'not_found' };
+    }
+
+    const checksum = createHash('sha256');
+    try {
+      for await (const chunk of object.body) {
+        checksum.update(chunk as Buffer);
+      }
+    } catch (e) {
+      this.logger.error('failed to read blob for checksum verification', e);
+      return { ok: false, reason: 'checksum_mismatch' };
+    }
+
+    const base64 = checksum.digest('base64');
+    const base64urlWithPadding = base64.replace(/\+/g, '-').replace(/\//g, '_');
+
+    if (base64urlWithPadding !== key) {
+      try {
+        await this.provider.delete(`${workspaceId}/${key}`);
+      } catch (e) {
+        // never throw
+        this.logger.error('failed to delete invalid blob', e);
+      }
+      return { ok: false, reason: 'checksum_mismatch' };
+    }
+
+    await this.models.blob.upsert({
+      workspaceId,
+      key,
+      mime: metadata.contentType,
+      size: metadata.contentLength,
+      status: 'completed',
+      uploadId: null,
+    });
+
+    return { ok: true, metadata };
+  }
+
   async list(workspaceId: string, syncBlobMeta = true) {
     const blobsInDb = await this.models.blob.list(workspaceId);
 
     if (blobsInDb.length > 0) {
+      return blobsInDb;
+    }
+
+    // all blobs are uploading but not completed yet
+    const hasDbBlobs = await this.models.blob.hasAny(workspaceId);
+    if (hasDbBlobs) {
       return blobsInDb;
     }
 
@@ -147,6 +302,8 @@ export class WorkspaceBlobStorage {
       key,
       mime: meta.contentType,
       size: meta.contentLength,
+      status: 'completed',
+      uploadId: null,
     });
   }
 

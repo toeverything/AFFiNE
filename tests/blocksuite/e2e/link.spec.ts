@@ -281,6 +281,7 @@ test('link bar should not be appear when the range is collapsed', async ({
   await expect(linkPopoverLocator).toBeVisible();
 
   await focusRichText(page); // click to cancel the link popover
+  await waitNextFrame(page);
   await focusRichTextEnd(page);
   await pressShiftEnter(page);
   await waitNextFrame(page);

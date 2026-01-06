@@ -231,14 +231,6 @@ export class WorkspaceDocResolver {
   }
 
   @ResolveField(() => [DocType], {
-    complexity: 2,
-    deprecationReason: 'use [WorkspaceType.publicDocs] instead',
-  })
-  async publicPages(@Parent() workspace: WorkspaceType) {
-    return this.publicDocs(workspace);
-  }
-
-  @ResolveField(() => [DocType], {
     description: 'Get public docs of a workspace',
     complexity: 2,
   })

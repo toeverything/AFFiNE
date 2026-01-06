@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { Injectable } from '@nestjs/common';
 import { pick } from 'lodash-es';
-import z from 'zod';
+import z from 'zod/v3';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
@@ -32,9 +32,9 @@ export class WorkspaceMcpProvider {
       {
         title: 'Read Document',
         description: 'Read a document with given ID',
-        inputSchema: {
+        inputSchema: z.object({
           docId: z.string(),
-        },
+        }),
       },
       async ({ docId }) => {
         const notFoundError: CallToolResult = {
@@ -74,7 +74,7 @@ export class WorkspaceMcpProvider {
               text: content.markdown,
             },
           ],
-        };
+        } as const;
       }
     );
 
@@ -84,9 +84,9 @@ export class WorkspaceMcpProvider {
         title: 'Semantic Search',
         description:
           'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
-        inputSchema: {
+        inputSchema: z.object({
           query: z.string(),
-        },
+        }),
       },
       async ({ query }, req) => {
         query = query.trim();
@@ -122,7 +122,7 @@ export class WorkspaceMcpProvider {
             type: 'text',
             text: clearEmbeddingChunk(doc).content,
           })),
-        };
+        } as const;
       }
     );
 
@@ -132,9 +132,9 @@ export class WorkspaceMcpProvider {
         title: 'Keyword Search',
         description:
           'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-base lookup is sufficient.',
-        inputSchema: {
+        inputSchema: z.object({
           query: z.string(),
-        },
+        }),
       },
       async ({ query }) => {
         query = query.trim();
@@ -161,7 +161,7 @@ export class WorkspaceMcpProvider {
             type: 'text',
             text: JSON.stringify(pick(doc, 'docId', 'title', 'createdAt')),
           })),
-        };
+        } as const;
       }
     );
 

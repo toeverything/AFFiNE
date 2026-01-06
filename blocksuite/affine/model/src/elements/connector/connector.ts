@@ -280,10 +280,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   hasLabel() {
     return Boolean(
       !this.labelEditing &&
-        this.labelDisplay &&
-        this.labelXYWH &&
-        this.text &&
-        this.text.length
+      this.labelDisplay &&
+      this.labelXYWH &&
+      this.text &&
+      this.text.length
     );
   }
 

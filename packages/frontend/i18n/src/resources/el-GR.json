@@ -2103,7 +2103,6 @@
   "error.INVALID_PASSWORD_LENGTH": "Ο κωδικός πρόσβασης πρέπει να είναι μεταξύ {{min}} και {{max}} χαρακτήρων",
   "error.PASSWORD_REQUIRED": "Ο κωδικός πρόσβασης είναι απαραίτητος.",
   "error.WRONG_SIGN_IN_METHOD": "Προσπαθείτε να συνδεθείτε με διαφορετική μέθοδο από αυτήν που έχετε εγγραφεί.",
-  "error.EARLY_ACCESS_REQUIRED": "Δεν έχετε άδεια πρώιμης πρόσβασης. Επισκεφθείτε το https://community.affine.pro/c/insider-general/ για περισσότερες πληροφορίες.",
   "error.SIGN_UP_FORBIDDEN": "Δεν επιτρέπεται να εγγραφείτε.",
   "error.EMAIL_TOKEN_NOT_FOUND": "Δεν βρέθηκε το token ηλεκτρονικού ταχυδρομείου που παρασχέθηκε.",
   "error.INVALID_EMAIL_TOKEN": "Παρασχέθηκε μη έγκυρο token ηλεκτρονικού ταχυδρομείου.",

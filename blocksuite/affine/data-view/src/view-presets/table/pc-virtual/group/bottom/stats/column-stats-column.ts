@@ -57,12 +57,12 @@ const styles = css`
     margin-inline: 5px;
   }
 
-  .label {
+  .stats-cell .label {
     text-transform: uppercase;
     color: var(--affine-text-secondary-color);
   }
 
-  .value {
+  .stats-cell .value {
     color: var(--affine-text-primary-color);
   }
 `;

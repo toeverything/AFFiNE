@@ -9,6 +9,7 @@ import {
   type RadioItem,
   RowInput,
   Scrollable,
+  Slider,
   Switch,
   useConfirmModal,
 } from '@affine/component';
@@ -308,6 +309,54 @@ const CustomFontFamilySettings = () => {
   );
 };
 
+const FontSizeSettings = () => {
+  const t = useI18n();
+  const { editorSettingService } = useServices({ EditorSettingService });
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const onFontSizeChange = useCallback(
+    (fontSize: number[]) => {
+      const size = fontSize[0];
+      editorSettingService.editorSetting.set('fontSize', size);
+      // Update CSS variable immediately
+      document.documentElement.style.setProperty(
+        '--affine-font-base',
+        `${size}px`
+      );
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  // Apply current font size to CSS variable on mount
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--affine-font-base',
+      `${settings.fontSize}px`
+    );
+  }, [settings.fontSize]);
+
+  return (
+    <SettingRow
+      name={t['com.affine.settings.editorSettings.general.font-size.title']()}
+      desc={t[
+        'com.affine.settings.editorSettings.general.font-size.description'
+      ]()}
+    >
+      <div className={styles.fontSizeContainer}>
+        <Slider
+          value={[settings.fontSize]}
+          onValueChange={onFontSizeChange}
+          min={12}
+          max={24}
+          step={1}
+          className={styles.fontSizeSlider}
+        />
+        <span className={styles.fontSizeValue}>{settings.fontSize}px</span>
+      </div>
+    </SettingRow>
+  );
+};
+
 const menuContentOptions: MenuProps['contentOptions'] = {
   align: 'end',
   sideOffset: 16,
@@ -522,6 +571,7 @@ export const General = () => {
       <AISettings />
       <FontFamilySettings />
       <CustomFontFamilySettings />
+      <FontSizeSettings />
       <NewDocDefaultModeSettings />
       {BUILD_CONFIG.isElectron && <SpellCheckSettings />}
       {environment.isLinux && <MiddleClickPasteSettings />}

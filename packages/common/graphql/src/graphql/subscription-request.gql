@@ -1,0 +1,13 @@
+mutation requestApplySubscription($transactionId: String!) {
+  requestApplySubscription(transactionId: $transactionId) {
+    id
+    status
+    plan
+    recurring
+    start
+    end
+    nextBillAt
+    canceledAt
+    variant
+  }
+}

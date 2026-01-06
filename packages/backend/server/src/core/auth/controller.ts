@@ -15,10 +15,10 @@ import {
 import type { Request, Response } from 'express';
 
 import {
+  ActionForbidden,
   Cache,
   Config,
   CryptoHelper,
-  EarlyAccessRequired,
   EmailTokenNotFound,
   InvalidAuthState,
   InvalidEmail,
@@ -120,7 +120,7 @@ export class AuthController {
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
     if (!canSignIn) {
-      throw new EarlyAccessRequired();
+      throw new ActionForbidden();
     }
 
     if (credential.password) {
@@ -270,14 +270,12 @@ export class AuthController {
     validators.assertValidEmail(email);
 
     const cacheKey = OTP_CACHE_KEY(otp);
-    const cachedToken = await this.cache.get<
-      { token: string; clientNonce: string } | string
-    >(cacheKey);
+    const cachedToken = await this.cache.get<{
+      token: string;
+      clientNonce: string;
+    }>(cacheKey);
     let token: string | undefined;
-    // TODO(@fengmk2): this is a temporary compatible with cache token is string value, should be removed in 0.22
-    if (typeof cachedToken === 'string') {
-      token = cachedToken;
-    } else if (cachedToken) {
+    if (cachedToken && typeof cachedToken === 'object') {
       token = cachedToken.token;
       if (cachedToken.clientNonce && cachedToken.clientNonce !== clientNonce) {
         throw new InvalidAuthState();

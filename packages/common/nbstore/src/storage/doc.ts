@@ -7,6 +7,24 @@ import type { Locker } from './lock';
 import { SingletonLocker } from './lock';
 import { type Storage } from './storage';
 
+export interface BlockInfo {
+  blockId: string;
+  flavour: string;
+  content?: string[];
+  blob?: string[];
+  refDocId?: string[];
+  refInfo?: string[];
+  parentFlavour?: string;
+  parentBlockId?: string;
+  additional?: string;
+}
+
+export interface CrawlResult {
+  blocks: BlockInfo[];
+  title: string;
+  summary: string;
+}
+
 export interface DocClock {
   docId: string;
   timestamp: Date;
@@ -94,6 +112,8 @@ export interface DocStorage extends Storage {
   subscribeDocUpdate(
     callback: (update: DocRecord, origin?: string) => void
   ): () => void;
+
+  crawlDocData?(docId: string): Promise<CrawlResult | null>;
 }
 
 export abstract class DocStorageBase<Opts = {}> implements DocStorage {
@@ -172,6 +192,10 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
     return () => {
       this.event.off('update', callback);
     };
+  }
+
+  async crawlDocData(_docId: string): Promise<CrawlResult | null> {
+    return null;
   }
 
   // REGION: api for internal usage

@@ -40,11 +40,4 @@ export class ServerConfigType {
 
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
-
-  @Field(() => Boolean, {
-    description: 'Whether allow guest users to create demo workspaces.',
-    deprecationReason:
-      'This field is deprecated, please use `features` instead. Will be removed in 0.25.0',
-  })
-  allowGuestDemoWorkspace!: boolean;
 }

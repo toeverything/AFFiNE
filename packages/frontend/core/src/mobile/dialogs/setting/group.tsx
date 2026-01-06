@@ -9,8 +9,10 @@ import {
 
 import * as styles from './group.css';
 
-export interface SettingGroupProps
-  extends Omit<HTMLProps<HTMLDivElement>, 'title'> {
+export interface SettingGroupProps extends Omit<
+  HTMLProps<HTMLDivElement>,
+  'title'
+> {
   title?: ReactNode;
   contentClassName?: string;
   contentStyle?: CSSProperties;

@@ -16,11 +16,11 @@ import {
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+import { DiscardChanges } from '../../../components/shared/discard-changes';
 import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
 import { DeleteAccountDialog } from './delete-account';
 import { DisableAccountDialog } from './disable-account';
-import { DiscardChanges } from './discard-changes';
 import { EnableAccountDialog } from './enable-account';
 import { ResetPasswordDialog } from './reset-password';
 import {
@@ -41,7 +41,14 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [enableDialogOpen, setEnableDialogOpen] = useState(false);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  const { openPanel, isOpen, closePanel, setPanelContent } = useRightPanel();
+  const {
+    openPanel,
+    isOpen,
+    closePanel,
+    setPanelContent,
+    hasDirtyChanges,
+    setHasDirtyChanges,
+  } = useRightPanel();
 
   const deleteUser = useDeleteUser();
   const disableUser = useDisableUser();
@@ -118,44 +125,42 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
     setEnableDialogOpen(false);
   }, []);
 
-  const handleDiscardChangesCancel = useCallback(() => {
-    setDiscardDialogOpen(false);
-  }, []);
-
   const handleConfirm = useCallback(() => {
+    setHasDirtyChanges(false);
     setPanelContent(
       <UpdateUserForm
         user={user}
         onComplete={closePanel}
         onResetPassword={openResetPasswordDialog}
         onDeleteAccount={openDeleteDialog}
+        onDirtyChange={setHasDirtyChanges}
       />
     );
-    if (discardDialogOpen) {
-      handleDiscardChangesCancel();
-    }
-    if (!isOpen) {
-      openPanel();
-    }
+    openPanel();
   }, [
     closePanel,
-    discardDialogOpen,
-    handleDiscardChangesCancel,
-    isOpen,
     openDeleteDialog,
     openPanel,
     openResetPasswordDialog,
     setPanelContent,
     user,
+    setHasDirtyChanges,
   ]);
 
   const handleEdit = useCallback(() => {
-    if (isOpen) {
+    if (hasDirtyChanges) {
       setDiscardDialogOpen(true);
-    } else {
-      handleConfirm();
+      return;
     }
-  }, [handleConfirm, isOpen]);
+    setHasDirtyChanges(false);
+    handleConfirm();
+  }, [handleConfirm, hasDirtyChanges, setHasDirtyChanges]);
+
+  const handleDiscardConfirm = useCallback(() => {
+    setDiscardDialogOpen(false);
+    setHasDirtyChanges(false);
+    handleConfirm();
+  }, [handleConfirm, setHasDirtyChanges]);
 
   return (
     <div className="flex justify-end items-center">
@@ -242,8 +247,8 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
       <DiscardChanges
         open={discardDialogOpen}
         onOpenChange={setDiscardDialogOpen}
-        onClose={handleDiscardChangesCancel}
-        onConfirm={handleConfirm}
+        onClose={() => setDiscardDialogOpen(false)}
+        onConfirm={handleDiscardConfirm}
       />
     </div>
   );

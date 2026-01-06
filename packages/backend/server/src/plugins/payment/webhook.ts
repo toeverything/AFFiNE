@@ -36,6 +36,11 @@ export class StripeWebhook {
       | Stripe.InvoicePaidEvent
   ) {
     const invoice = await this.stripe.invoices.retrieve(event.data.object.id);
+
+    if (invoice.status === 'void' || invoice.status === 'uncollectible') {
+      await this.service.handleRefundedInvoice(invoice.id, 'refund');
+    }
+
     await this.service.saveStripeInvoice(invoice);
   }
 
@@ -59,5 +64,57 @@ export class StripeWebhook {
   @OnEvent('stripe.customer.subscription.deleted')
   async onSubscriptionDeleted(event: Stripe.CustomerSubscriptionDeletedEvent) {
     await this.service.deleteStripeSubscription(event.data.object);
+  }
+
+  private extractInvoiceId(charge: Stripe.Charge) {
+    return typeof charge.invoice === 'string'
+      ? charge.invoice
+      : charge.invoice?.id;
+  }
+
+  @OnEvent('stripe.charge.refunded')
+  async onChargeRefunded(event: Stripe.ChargeRefundedEvent) {
+    const charge = event.data.object;
+    const invoiceId = this.extractInvoiceId(charge);
+
+    if (invoiceId) {
+      await this.service.handleRefundedInvoice(invoiceId, 'refund');
+    }
+  }
+
+  @OnEvent('stripe.charge.dispute.created')
+  async onChargeDisputed(event: Stripe.ChargeDisputeCreatedEvent) {
+    const ref = event.data.object.charge;
+    if (!ref) return;
+    const chargeId = typeof ref === 'string' ? ref : ref.id;
+
+    const charge = await this.stripe.charges.retrieve(chargeId, {
+      expand: ['invoice'],
+    });
+
+    const invoiceId = this.extractInvoiceId(charge);
+    if (invoiceId) {
+      await this.service.handleRefundedInvoice(invoiceId, 'dispute_open');
+    }
+  }
+
+  @OnEvent('stripe.charge.dispute.closed')
+  async onChargeDisputeClosed(event: Stripe.ChargeDisputeClosedEvent) {
+    const ref = event.data.object.charge;
+    if (!ref) return;
+    const chargeId = typeof ref === 'string' ? ref : ref.id;
+    const status = event.data.object.status;
+
+    const charge = await this.stripe.charges.retrieve(chargeId, {
+      expand: ['invoice'],
+    });
+
+    const invoiceId = this.extractInvoiceId(charge);
+
+    if (invoiceId) {
+      const reason =
+        status === 'won' ? 'dispute_won' : ('dispute_lost' as const);
+      await this.service.handleRefundedInvoice(invoiceId, reason);
+    }
   }
 }

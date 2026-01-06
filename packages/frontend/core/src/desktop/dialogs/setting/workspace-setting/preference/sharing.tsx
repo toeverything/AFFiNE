@@ -21,10 +21,18 @@ export const SharingPanel = () => {
 export const Sharing = () => {
   const t = useI18n();
   const shareSetting = useService(WorkspaceShareSettingService).sharePreview;
+  const enableSharing = useLiveData(shareSetting.enableSharing$);
   const enableUrlPreview = useLiveData(shareSetting.enableUrlPreview$);
   const loading = useLiveData(shareSetting.isLoading$);
   const permissionService = useService(WorkspacePermissionService);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
+
+  const handleToggleSharing = useAsyncCallback(
+    async (checked: boolean) => {
+      await shareSetting.setEnableSharing(checked);
+    },
+    [shareSetting]
+  );
 
   const handleCheck = useAsyncCallback(
     async (checked: boolean) => {
@@ -48,6 +56,20 @@ export const Sharing = () => {
         <Switch
           checked={enableUrlPreview || false}
           onChange={handleCheck}
+          disabled={loading}
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.workspace.sharing.workspace-sharing.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.workspace.sharing.workspace-sharing.description'
+        ]()}
+      >
+        <Switch
+          checked={enableSharing ?? true}
+          onChange={handleToggleSharing}
           disabled={loading}
         />
       </SettingRow>
