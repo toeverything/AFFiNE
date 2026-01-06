@@ -252,7 +252,7 @@ test('should process expiration/refund by deleting subscription and emitting can
       plan: 'pro',
       status: 'active',
       provider: 'revenuecat',
-      recurring: 'annual',
+      recurring: 'yearly',
       start: new Date('2025-01-01T00:00:00.000Z'),
     },
   });
@@ -287,8 +287,8 @@ test('should process expiration/refund by deleting subscription and emitting can
     {
       finalDBCount,
       subscriberCount: subscriber.getCalls()?.length || 0,
-      activatedCount,
-      canceledCount,
+      activatedEventCount: activatedCount,
+      canceledEventCount: canceledCount,
       lastCanceled: omit(
         events['user.subscription.canceled']?.slice(-1)?.[0],
         'userId'
@@ -317,7 +317,7 @@ test('should enqueue per-user reconciliation jobs for existing RC active/trialin
         targetId: 'u2',
         plan: 'ai',
         status: 'trialing',
-        recurring: 'annual',
+        recurring: 'yearly',
         ...common,
       },
       {
@@ -818,7 +818,7 @@ test('should treat refund as early expiration and revoke immediately', async t =
   });
   const { canceledCount } = collectEvents();
   t.snapshot(
-    { finalDBCount: count, canceledCount },
+    { finalDBCount: count, canceledEventCount: canceledCount },
     'should delete record and emit canceled on refund'
   );
 });
@@ -858,47 +858,41 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     t.context;
 
   mockAlias(user.id);
-  mockSubSeq([
-    [
-      {
-        identifier: 'Pro',
-        isTrial: false,
-        isActive: true,
-        latestPurchaseDate: new Date('2025-08-01T00:00:00.000Z'),
-        expirationDate: new Date('2025-09-01T00:00:00.000Z'),
-        productId: 'unknown.sku',
-        store: 'app_store',
-        willRenew: true,
-        duration: 'P1M',
-      },
-    ],
-    [
-      {
-        identifier: 'AI',
-        isTrial: false,
-        isActive: true,
-        latestPurchaseDate: new Date('2025-10-01T00:00:00.000Z'),
-        expirationDate: new Date('2026-10-01T00:00:00.000Z'),
-        productId: 'unknown.sku',
-        store: 'play_store',
-        willRenew: true,
-        duration: 'P1Y',
-      },
-    ],
-    [
-      {
-        identifier: 'Pro',
-        isTrial: false,
-        isActive: true,
-        latestPurchaseDate: new Date('2025-11-01T00:00:00.000Z'),
-        expirationDate: new Date('2026-02-01T00:00:00.000Z'),
-        productId: 'unknown.sku',
-        store: 'app_store',
-        willRenew: true,
-        duration: 'P3M', // not supported -> ignore
-      },
-    ],
-  ]);
+  const Pro = {
+    identifier: 'Pro',
+    isTrial: false,
+    isActive: true,
+    latestPurchaseDate: new Date('2025-08-01T00:00:00.000Z'),
+    expirationDate: new Date('2025-09-01T00:00:00.000Z'),
+    productId: 'app.affine.pro.Monthly',
+    store: 'app_store',
+    willRenew: true,
+    duration: 'P1M',
+  } as const;
+  const AI = {
+    identifier: 'AI',
+    isTrial: false,
+    isActive: true,
+    latestPurchaseDate: new Date('2025-10-01T00:00:00.000Z'),
+    expirationDate: new Date('2026-10-01T00:00:00.000Z'),
+    productId: 'app.affine.pro.ai.Annual',
+    store: 'play_store',
+    willRenew: true,
+    duration: 'P1Y',
+  } as const;
+  const Unsupported = {
+    identifier: 'Pro',
+    isTrial: false,
+    isActive: true,
+    latestPurchaseDate: new Date('2025-11-01T00:00:00.000Z'),
+    expirationDate: new Date('2026-02-01T00:00:00.000Z'),
+    productId: 'app.affine.pro.Quarterly',
+    store: 'app_store',
+    willRenew: true,
+    duration: 'P3M', // not supported -> ignore
+  } as const;
+
+  mockSubSeq([[Pro], [Pro, AI], [Pro, Unsupported]]);
 
   // pro monthly via fallback
   await triggerWebhook(user.id, {
@@ -937,10 +931,15 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     {
       proViaFallback: r1,
       aiViaFallback: r2,
+      // unsupported duration ignored, count remains 1
       totalCount: count,
       eventsCounts: {
+        // active pro plan, add 1 active event
         afterFirst: { a: s1.activatedCount, c: s1.canceledCount },
+        // active pro and ai plans, add 2 active events
         afterSecond: { a: s2.activatedCount, c: s2.canceledCount },
+        // add 2 active events, add 1 canceled events
+        // cancel pro plans and ignore unsupported plan
         afterThird: { a: s3.activatedCount, c: s3.canceledCount },
       },
     },

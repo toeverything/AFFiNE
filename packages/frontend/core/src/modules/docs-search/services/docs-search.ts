@@ -1,5 +1,5 @@
 import { toDocSearchParams } from '@affine/core/modules/navigation';
-import type { IndexerSyncState } from '@affine/nbstore';
+import type { IndexerPreferOptions, IndexerSyncState } from '@affine/nbstore';
 import type { ReferenceParams } from '@blocksuite/affine/model';
 import { fromPromise, LiveData, Service } from '@toeverything/infra';
 import { isEmpty, omit } from 'lodash-es';
@@ -26,6 +26,24 @@ export class DocsSearchService extends Service {
     errorMessage: null,
   } as IndexerSyncState);
 
+  private normalizeHighlight(value?: string | null) {
+    if (!value) {
+      return value ?? '';
+    }
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.join(' ');
+      }
+      if (typeof parsed === 'string') {
+        return parsed;
+      }
+    } catch {
+      // ignore parse errors, return raw value
+    }
+    return value;
+  }
+
   searchTitle$(query: string) {
     return this.indexer
       .search$(
@@ -49,7 +67,10 @@ export class DocsSearchService extends Service {
       );
   }
 
-  search$(query: string): Observable<
+  search$(
+    query: string,
+    prefer: IndexerPreferOptions = 'remote'
+  ): Observable<
     {
       docId: string;
       title: string;
@@ -112,7 +133,7 @@ export class DocsSearchService extends Service {
               },
             ],
           },
-          prefer: 'remote',
+          prefer,
         }
       )
       .pipe(
@@ -123,10 +144,14 @@ export class DocsSearchService extends Service {
             const firstMatchFlavour = bucket.hits.nodes[0]?.fields.flavour;
             if (firstMatchFlavour === 'affine:page') {
               // is title match
-              const blockContent = bucket.hits.nodes[1]?.highlights.content[0]; // try to get block content
+              const blockContent = this.normalizeHighlight(
+                bucket.hits.nodes[1]?.highlights.content[0]
+              ); // try to get block content
               result.push({
                 docId: bucket.key,
-                title: bucket.hits.nodes[0].highlights.content[0],
+                title: this.normalizeHighlight(
+                  bucket.hits.nodes[0].highlights.content[0]
+                ),
                 score: bucket.score,
                 blockContent,
               });
@@ -144,7 +169,9 @@ export class DocsSearchService extends Service {
                     ? matchedBlockId
                     : matchedBlockId[0],
                 score: bucket.score,
-                blockContent: bucket.hits.nodes[0]?.highlights.content[0],
+                blockContent: this.normalizeHighlight(
+                  bucket.hits.nodes[0]?.highlights.content[0]
+                ),
               });
             }
           }

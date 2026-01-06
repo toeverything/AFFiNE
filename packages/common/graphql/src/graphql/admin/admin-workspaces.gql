@@ -1,0 +1,30 @@
+query adminWorkspaces($filter: ListWorkspaceInput!) {
+  adminWorkspaces(filter: $filter) {
+    id
+    public
+    createdAt
+    name
+    avatarKey
+    enableAi
+    enableSharing
+    enableUrlPreview
+    enableDocEmbedding
+    features
+    owner {
+      id
+      name
+      email
+      avatarUrl
+    }
+    memberCount
+    publicPageCount
+    snapshotCount
+    snapshotSize
+    blobCount
+    blobSize
+  }
+}
+
+query adminWorkspacesCount($filter: ListWorkspaceInput!) {
+  adminWorkspacesCount(filter: $filter)
+}

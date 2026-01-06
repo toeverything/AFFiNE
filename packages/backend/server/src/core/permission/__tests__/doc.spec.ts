@@ -21,7 +21,7 @@ let ws: Workspace;
 test.before(async () => {
   module = await createTestingModule({ imports: [PermissionModule] });
   models = module.get<Models>(Models);
-  ac = new DocAccessController();
+  ac = module.get(DocAccessController);
 });
 
 test.beforeEach(async () => {

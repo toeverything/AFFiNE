@@ -19,9 +19,12 @@ export class HttpConnection extends DummyConnection {
     });
 
     const timeout = init?.timeout ?? 15000;
-    const timeoutId = setTimeout(() => {
-      abortController.abort(new Error('request timeout'));
-    }, timeout);
+    const timeoutId =
+      timeout > 0
+        ? setTimeout(() => {
+            abortController.abort(new Error('request timeout'));
+          }, timeout)
+        : undefined;
 
     const res = await globalThis
       .fetch(new URL(input, this.serverBaseUrl), {
@@ -43,7 +46,9 @@ export class HttpConnection extends DummyConnection {
           stacktrace: err.stack,
         });
       });
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     if (!res.ok && res.status !== 404) {
       if (res.status === 413) {
         throw new UserFriendlyError({

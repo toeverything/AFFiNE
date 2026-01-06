@@ -227,15 +227,7 @@ export class IndexerService {
       this.logger.debug(`doc ${workspaceId}/${docId} is empty, skip indexing`);
       return;
     }
-    const MAX_WORKSPACE_SNAPSHOT_SIZE = 1024 * 1024 * 10; // 10MB
-    const result = await readAllBlocksFromDocSnapshot(
-      workspaceId,
-      docId,
-      docSnapshot.blob,
-      workspaceSnapshot.blob.length < MAX_WORKSPACE_SNAPSHOT_SIZE
-        ? workspaceSnapshot.blob
-        : undefined
-    );
+    const result = await readAllBlocksFromDocSnapshot(docId, docSnapshot.blob);
     if (!result) {
       this.logger.warn(
         `parse doc ${workspaceId}/${docId} failed, workspaceSnapshot size: ${workspaceSnapshot.blob.length}, docSnapshot size: ${docSnapshot.blob.length}`
@@ -277,7 +269,7 @@ export class IndexerService {
         additional: block.additional
           ? JSON.stringify(block.additional)
           : undefined,
-        markdownPreview: block.markdownPreview,
+        markdownPreview: undefined,
         createdByUserId: docSnapshot.createdBy ?? '',
         updatedByUserId: docSnapshot.updatedBy ?? '',
         createdAt: docSnapshot.createdAt,

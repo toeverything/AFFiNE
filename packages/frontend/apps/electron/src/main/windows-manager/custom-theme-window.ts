@@ -5,6 +5,7 @@ import { BrowserWindow, type Display, screen } from 'electron';
 import { isMacOS } from '../../shared/utils';
 import { customThemeViewUrl } from '../constants';
 import { logger } from '../logger';
+import { buildWebPreferences } from '../web-preferences';
 
 let customThemeWindow: Promise<BrowserWindow> | undefined;
 
@@ -26,11 +27,11 @@ async function createCustomThemeWindow(additionalArguments: string[]) {
     resizable: true,
     maximizable: false,
     fullscreenable: false,
-    webPreferences: {
+    webPreferences: buildWebPreferences({
       webgl: true,
       preload: join(__dirname, './preload.js'),
       additionalArguments: additionalArguments,
-    },
+    }),
   });
 
   await browserWindow.loadURL(customThemeViewUrl);

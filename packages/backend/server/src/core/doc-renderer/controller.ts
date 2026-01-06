@@ -100,6 +100,11 @@ export class DocRendererController {
     workspaceId: string,
     docId: string
   ): Promise<RenderOptions | null> {
+    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
+    if (!allowSharing) {
+      return null;
+    }
+
     let allowUrlPreview = await this.models.doc.isPublic(workspaceId, docId);
 
     if (!allowUrlPreview) {
@@ -118,6 +123,11 @@ export class DocRendererController {
   private async getWorkspaceContent(
     workspaceId: string
   ): Promise<RenderOptions | null> {
+    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
+    if (!allowSharing) {
+      return null;
+    }
+
     const allowUrlPreview =
       await this.models.workspace.allowUrlPreview(workspaceId);
 

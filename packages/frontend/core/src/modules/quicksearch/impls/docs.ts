@@ -107,8 +107,43 @@ export class DocsQuickSearchSession
       if (!query) {
         out = of([] as QuickSearchItem<'docs', DocsPayload>[]);
       } else {
-        out = this.docsSearchService.search$(query).pipe(
-          map(docs =>
+        const preferRemote =
+          !this.searchLocally && this.isSupportServerIndexer();
+        const preferMode =
+          this.searchLocally || !this.isSupportServerIndexer()
+            ? 'local'
+            : 'remote';
+        const search$ = preferRemote
+          ? this.docsSearchService.search$(query, 'remote').pipe(
+              switchMap(docs => {
+                if (docs.length > 0) {
+                  return of({ docs, useLocalLabel: false });
+                }
+                return this.docsSearchService.search$(query, 'local').pipe(
+                  map(localDocs => ({
+                    docs: localDocs,
+                    useLocalLabel: true,
+                  }))
+                );
+              }),
+              catchError(() =>
+                this.docsSearchService.search$(query, 'local').pipe(
+                  map(localDocs => ({
+                    docs: localDocs,
+                    useLocalLabel: true,
+                  }))
+                )
+              )
+            )
+          : this.docsSearchService.search$(query, preferMode).pipe(
+              map(docs => ({
+                docs,
+                useLocalLabel: preferMode === 'local',
+              }))
+            );
+
+        out = search$.pipe(
+          map(({ docs, useLocalLabel }) =>
             docs
               .map(doc => {
                 const docRecord = this.docsService.list.doc$(doc.docId).value;
@@ -126,7 +161,7 @@ export class DocsQuickSearchSession
                   group: {
                     id: 'docs',
                     label: {
-                      i18nKey: this.searchLocally
+                      i18nKey: useLocalLabel
                         ? 'com.affine.quicksearch.group.searchfor-locally'
                         : 'com.affine.quicksearch.group.searchfor',
                       options: { query: truncate(query) },

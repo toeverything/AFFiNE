@@ -180,9 +180,9 @@ export class DataStruct {
       .index('nid')
       .getAllKeys(nid);
 
-    for (const indexId of indexIds) {
-      await trx.objectStore('invertedIndex').delete(indexId);
-    }
+    await Promise.all(
+      indexIds.map(indexId => trx.objectStore('invertedIndex').delete(indexId))
+    );
   }
 
   private async delete(

@@ -99,6 +99,7 @@ export const Form = () => {
       const createResponse = await affineFetch('/api/setup/create-admin-user', {
         method: 'POST',
         body: JSON.stringify({
+          name: nameValue,
           email: emailValue,
           password: passwordValue,
         }),
@@ -120,7 +121,7 @@ export const Form = () => {
       console.error(err);
       throw err;
     }
-  }, [emailValue, passwordValue, refreshServerConfig]);
+  }, [nameValue, emailValue, passwordValue, refreshServerConfig]);
 
   const onNext = useAsyncCallback(async () => {
     if (isCreateAdminStep) {

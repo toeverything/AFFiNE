@@ -2,6 +2,7 @@ import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
 import { AccountIcon, SelfhostIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
+import { LayoutDashboardIcon, ListChecksIcon } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { ServerVersion } from './server-version';
@@ -80,7 +81,7 @@ export function Nav({ isCollapsed = false }: NavProps) {
     >
       <nav
         className={cn(
-          'flex flex-1 flex-col gap-1 px-2 flex-grow overflow-hidden',
+          'flex flex-1 flex-col gap-1 px-2 flex-grow overflow-y-auto overflow-x-hidden',
           isCollapsed && 'items-center px-0 gap-1 overflow-visible'
         )}
       >
@@ -88,6 +89,18 @@ export function Nav({ isCollapsed = false }: NavProps) {
           to="/admin/accounts"
           icon={<AccountIcon fontSize={20} />}
           label="Accounts"
+          isCollapsed={isCollapsed}
+        />
+        <NavItem
+          to="/admin/workspaces"
+          icon={<LayoutDashboardIcon size={18} />}
+          label="Workspaces"
+          isCollapsed={isCollapsed}
+        />
+        <NavItem
+          to="/admin/queue"
+          icon={<ListChecksIcon size={18} />}
+          label="Queue"
           isCollapsed={isCollapsed}
         />
         {/* <NavItem

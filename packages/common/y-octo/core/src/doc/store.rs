@@ -90,7 +90,7 @@ impl DocStore {
       if let Some(last_struct) = structs.back() {
         last_struct.clock() + last_struct.len()
       } else {
-        warn!("client {} has no struct info", client);
+        warn!("client {client} has no struct info");
         0
       }
     } else {
@@ -108,7 +108,7 @@ impl DocStore {
       if let Some(last_struct) = structs.back() {
         state.insert(*client, last_struct.clock() + last_struct.len());
       } else {
-        warn!("client {} has no struct info", client);
+        warn!("client {client} has no struct info");
       }
     }
     state
@@ -126,7 +126,7 @@ impl DocStore {
             return Err(JwstCodecError::StructClockInvalid { expect, actually });
           }
         } else {
-          warn!("client {} has no struct info", client_id);
+          warn!("client {client_id} has no struct info");
         }
         structs.push_back(item);
       }
@@ -593,7 +593,7 @@ impl DocStore {
             self.delete_node(&Node::Item(item_owner_ref.clone()), Some(parent));
           } else {
             // adjust parent length
-            if this.parent_sub.is_none() {
+            if this.parent_sub.is_none() && this.countable() {
               parent.len += this.len();
             }
           }

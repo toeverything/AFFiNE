@@ -3,8 +3,8 @@ import { Separator } from '@affine/admin/components/ui/separator';
 import type { CopilotPromptMessageRole } from '@affine/graphql';
 import { useCallback, useState } from 'react';
 
+import { DiscardChanges } from '../../components/shared/discard-changes';
 import { useRightPanel } from '../panel/context';
-import { DiscardChanges } from './discard-changes';
 import { EditPrompt } from './edit-prompt';
 import { usePrompt } from './use-prompt';
 

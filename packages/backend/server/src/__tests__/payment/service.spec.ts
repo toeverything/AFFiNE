@@ -172,6 +172,7 @@ const test = ava as TestFn<{
     checkout: {
       sessions: Sinon.SinonStubbedInstance<Stripe.Checkout.SessionsResource>;
     };
+    invoices: Sinon.SinonStubbedInstance<Stripe.InvoicesResource>;
     promotionCodes: Sinon.SinonStubbedInstance<Stripe.PromotionCodesResource>;
   };
 }>;
@@ -223,6 +224,7 @@ test.before(async t => {
     prices: Sinon.stub(stripe.prices),
     subscriptions: Sinon.stub(stripe.subscriptions),
     subscriptionSchedules: Sinon.stub(stripe.subscriptionSchedules),
+    invoices: Sinon.stub(stripe.invoices),
     checkout: {
       sessions: Sinon.stub(stripe.checkout.sessions),
     },
@@ -1762,6 +1764,88 @@ test('should be able to update team subscription', async t => {
       plan: SubscriptionPlan.Team,
       recurring: SubscriptionRecurring.Monthly,
       quantity: 2,
+    })
+  );
+});
+
+test('should suspend on dispute and restore when dispute won', async t => {
+  const { service, db, stripe, event } = t.context;
+
+  const invoice: Stripe.Invoice = {
+    id: 'in_dispute_1',
+    object: 'invoice',
+    status: 'paid',
+    customer_email: 'u1@affine.pro',
+    subscription: 'sub_1',
+    lines: {
+      object: 'list',
+      data: [
+        {
+          id: 'il_1',
+          object: 'line_item',
+          amount: 799,
+          currency: 'usd',
+          description: '',
+          discount_amounts: [],
+          discountable: false,
+          livemode: false,
+          metadata: {},
+          period: {
+            start: unixNow() - 60 * 60 * 24,
+            end: unixNow() + 60 * 60 * 24 * 30,
+          },
+          price: {
+            ...PRICES[PRO_MONTHLY],
+          } as any,
+          quantity: 1,
+        } as any,
+      ],
+      has_more: false,
+      total_count: 1,
+      url: '',
+    },
+  } as any;
+
+  stripe.invoices.retrieve.resolves(invoice as any);
+  stripe.subscriptions.retrieve.resolves(sub as any);
+  stripe.subscriptions.cancel.resolves(sub as any);
+
+  await service.saveStripeSubscription(sub as any);
+
+  event.emit.resetHistory();
+  stripe.subscriptions.cancel.resetHistory();
+
+  await service.handleRefundedInvoice(invoice.id, 'dispute_open');
+
+  const removed = await db.subscription.findFirst({
+    where: { stripeSubscriptionId: 'sub_1' },
+  });
+
+  t.is(removed, null);
+  t.true(
+    event.emit.calledWith('user.subscription.canceled', {
+      userId: t.context.u1.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
+    })
+  );
+  t.false(stripe.subscriptions.cancel.called);
+
+  event.emit.resetHistory();
+
+  await service.handleRefundedInvoice(invoice.id, 'dispute_won');
+
+  const restored = await db.subscription.findFirst({
+    where: { stripeSubscriptionId: 'sub_1' },
+  });
+
+  t.truthy(restored);
+  t.is(restored?.status, SubscriptionStatus.Active);
+  t.true(
+    event.emit.calledWith('user.subscription.activated', {
+      userId: t.context.u1.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
     })
   );
 });

@@ -254,6 +254,11 @@ impl Node {
         let mut ritem = unsafe { rref.get_mut_unchecked() };
         let llen = litem.len();
 
+        let parent_kind = match &litem.parent {
+          Some(Parent::Type(ty)) => ty.ty().map(|ty| ty.kind()),
+          _ => None,
+        };
+
         if litem.id.client != ritem.id.client
                     // not same delete status
                     || litem.deleted() != ritem.deleted()
@@ -277,6 +282,13 @@ impl Node {
             l.extend(r.drain(0..));
           }
           (Content::String(l), Content::String(r)) => {
+            let allow_merge_string =
+              matches!(parent_kind, Some(YTypeKind::Text | YTypeKind::XMLText));
+
+            if !allow_merge_string {
+              return false;
+            }
+
             *l += r;
           }
           (Content::Any(l), Content::Any(r)) => {

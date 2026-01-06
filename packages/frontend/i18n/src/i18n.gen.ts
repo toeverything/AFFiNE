@@ -6347,6 +6347,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.sharing.url-preview.title"](): string;
     /**
+      * `Control whether pages in this workspace can be shared publicly. Turn off to block new shares and external access for existing shares.`
+      */
+    ["com.affine.settings.workspace.sharing.workspace-sharing.description"](): string;
+    /**
+      * `Allow workspace page sharing`
+      */
+    ["com.affine.settings.workspace.sharing.workspace-sharing.title"](): string;
+    /**
       * `AFFiNE AI`
       */
     ["com.affine.settings.workspace.affine-ai.title"](): string;
@@ -6605,6 +6613,10 @@ export function useAFFiNEI18N(): {
       * `Anyone can access this link`
       */
     ["com.affine.share-menu.option.link.readonly.description"](): string;
+    /**
+      * `Sharing for this workspace is turned off. Please contact an admin to enable it.`
+      */
+    ["com.affine.share-menu.workspace-sharing.disabled.tooltip"](): string;
     /**
       * `Can manage`
       */
@@ -8544,10 +8556,6 @@ export function useAFFiNEI18N(): {
       */
     ["error.WRONG_SIGN_IN_METHOD"](): string;
     /**
-      * `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`
-      */
-    ["error.EARLY_ACCESS_REQUIRED"](): string;
-    /**
       * `You are not allowed to sign up.`
       */
     ["error.SIGN_UP_FORBIDDEN"](): string;
@@ -8680,6 +8688,10 @@ export function useAFFiNEI18N(): {
         blobId: string;
         spaceId: string;
     }>): string;
+    /**
+      * `Blob is invalid.`
+      */
+    ["error.BLOB_INVALID"](): string;
     /**
       * `Expected to publish a doc, not a Space.`
       */

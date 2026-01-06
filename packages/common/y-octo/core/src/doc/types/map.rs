@@ -67,7 +67,7 @@ pub(crate) trait MapType: AsInner<Inner = YTypeRef> {
     self._keys().count() as u64
   }
 
-  fn _iter(&self) -> EntriesInnerIterator {
+  fn _iter(&self) -> EntriesInnerIterator<'_> {
     let ty = self.as_inner().ty();
 
     if let Some(ty) = ty {
@@ -85,15 +85,15 @@ pub(crate) trait MapType: AsInner<Inner = YTypeRef> {
     }
   }
 
-  fn _keys(&self) -> KeysIterator {
+  fn _keys(&self) -> KeysIterator<'_> {
     KeysIterator(self._iter())
   }
 
-  fn _values(&self) -> ValuesIterator {
+  fn _values(&self) -> ValuesIterator<'_> {
     ValuesIterator(self._iter())
   }
 
-  fn _entries(&self) -> EntriesIterator {
+  fn _entries(&self) -> EntriesIterator<'_> {
     EntriesIterator(self._iter())
   }
 }
@@ -185,22 +185,22 @@ impl Map {
   }
 
   #[inline(always)]
-  pub fn iter(&self) -> EntriesIterator {
+  pub fn iter(&self) -> EntriesIterator<'_> {
     self._entries()
   }
 
   #[inline(always)]
-  pub fn entries(&self) -> EntriesIterator {
+  pub fn entries(&self) -> EntriesIterator<'_> {
     self._entries()
   }
 
   #[inline(always)]
-  pub fn keys(&self) -> KeysIterator {
+  pub fn keys(&self) -> KeysIterator<'_> {
     self._keys()
   }
 
   #[inline(always)]
-  pub fn values(&self) -> ValuesIterator {
+  pub fn values(&self) -> ValuesIterator<'_> {
     self._values()
   }
 }

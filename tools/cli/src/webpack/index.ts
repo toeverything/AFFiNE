@@ -63,6 +63,17 @@ export function createHTMLTargetConfig(
 
   const buildConfig = getBuildConfigFromEnv(pkg);
 
+  console.log(
+    `Building [${pkg.name}] for [${buildConfig.appBuildType}] channel in [${buildConfig.debug ? 'development' : 'production'}] mode.`
+  );
+  console.log(
+    `Entry points: ${Object.entries(entry)
+      .map(([name, path]) => `${name}: ${path}`)
+      .join(', ')}`
+  );
+  console.log(`Output path: ${pkg.distPath.value}`);
+  console.log(`Config: ${JSON.stringify(buildConfig, null, 2)}`);
+
   const config: webpack.Configuration = {
     //#region basic webpack config
     name: entry['index'],
@@ -499,6 +510,7 @@ export function createNodeTargetConfig(
   pkg: Package,
   entry: string
 ): Omit<webpack.Configuration, 'name'> & { name: string } {
+  const dev = process.env.NODE_ENV === 'development';
   return {
     name: entry,
     context: ProjectRoot.value,
@@ -530,7 +542,7 @@ export function createNodeTargetConfig(
     },
     externalsPresets: { node: true },
     node: { __dirname: false, __filename: false },
-    mode: 'none',
+    mode: dev ? 'development' : 'production',
     devtool: 'source-map',
     resolve: {
       symlinks: true,
@@ -606,7 +618,22 @@ export function createNodeTargetConfig(
       }),
     ]),
     stats: { errorDetails: true },
-    optimization: { nodeEnv: false },
+    optimization: {
+      nodeEnv: false,
+      minimize: !dev,
+      minimizer: [
+        new TerserPlugin({
+          minify: TerserPlugin.swcMinify,
+          parallel: true,
+          extractComments: true,
+          terserOptions: {
+            ecma: 2020,
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
+          },
+        }),
+      ],
+    },
     performance: { hints: false },
     ignoreWarnings: [/^(?!CriticalDependenciesWarning$)/],
   };

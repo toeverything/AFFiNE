@@ -9,6 +9,18 @@ export const createGroupByMatcher = (list: GroupByConfig[]) => {
   return new Matcher_(list, v => v.matchType);
 };
 
+export const findGroupByConfigByName = (
+  dataSource: DataSource,
+  name: string
+): GroupByConfig | undefined => {
+  const svc = getGroupByService(dataSource);
+  const all: GroupByConfig[] = [
+    ...svc.allExternalGroupByConfig(),
+    ...groupByMatchers,
+  ];
+  return all.find(c => c.name === name);
+};
+
 export class GroupByService {
   constructor(private readonly dataSource: DataSource) {}
 

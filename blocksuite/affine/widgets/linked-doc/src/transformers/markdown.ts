@@ -15,10 +15,183 @@ import type {
   Store,
   Workspace,
 } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
-import { createAssetsArchive, download, Unzip } from './utils.js';
+import { createAssetsArchive, download, parseMatter, Unzip } from './utils.js';
+
+type ParsedFrontmatterMeta = Partial<
+  Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'tags' | 'favorite'>
+>;
+
+const FRONTMATTER_KEYS = {
+  title: ['title', 'name'],
+  created: [
+    'created',
+    'createdat',
+    'created_at',
+    'createddate',
+    'created_date',
+    'creationdate',
+    'date',
+    'time',
+  ],
+  updated: [
+    'updated',
+    'updatedat',
+    'updated_at',
+    'updateddate',
+    'updated_date',
+    'modified',
+    'modifiedat',
+    'modified_at',
+    'lastmodified',
+    'last_modified',
+    'lastedited',
+    'last_edited',
+    'lasteditedtime',
+    'last_edited_time',
+  ],
+  tags: ['tags', 'tag', 'categories', 'category', 'labels', 'keywords'],
+  favorite: ['favorite', 'favourite', 'star', 'starred', 'pinned'],
+  trash: ['trash', 'trashed', 'deleted', 'archived'],
+};
+
+const truthyStrings = new Set(['true', 'yes', 'y', '1', 'on']);
+const falsyStrings = new Set(['false', 'no', 'n', '0', 'off']);
+
+function parseBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (truthyStrings.has(normalized)) return true;
+    if (falsyStrings.has(normalized)) return false;
+  }
+  return undefined;
+}
+
+function parseTimestamp(value: unknown): number | undefined {
+  if (value && value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 1e10 ? value : Math.round(value * 1000);
+  }
+  if (typeof value === 'string') {
+    const num = Number(value);
+    if (!Number.isNaN(num)) {
+      return num > 1e10 ? num : Math.round(num * 1000);
+    }
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
+function parseTags(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const tags = value
+      .map(v => (typeof v === 'string' ? v : String(v)))
+      .map(v => v.trim())
+      .filter(Boolean);
+    return tags.length ? [...new Set(tags)] : undefined;
+  }
+  if (typeof value === 'string') {
+    const tags = value
+      .split(/[,;]+/)
+      .map(v => v.trim())
+      .filter(Boolean);
+    return tags.length ? [...new Set(tags)] : undefined;
+  }
+  return undefined;
+}
+
+function buildMetaFromFrontmatter(
+  data: Record<string, unknown>
+): ParsedFrontmatterMeta {
+  const meta: ParsedFrontmatterMeta = {};
+  for (const [rawKey, value] of Object.entries(data)) {
+    const key = rawKey.trim().toLowerCase();
+    if (FRONTMATTER_KEYS.title.includes(key) && typeof value === 'string') {
+      const title = value.trim();
+      if (title) meta.title = title;
+      continue;
+    }
+    if (FRONTMATTER_KEYS.created.includes(key)) {
+      const timestamp = parseTimestamp(value);
+      if (timestamp !== undefined) {
+        meta.createDate = timestamp;
+      }
+      continue;
+    }
+    if (FRONTMATTER_KEYS.updated.includes(key)) {
+      const timestamp = parseTimestamp(value);
+      if (timestamp !== undefined) {
+        meta.updatedDate = timestamp;
+      }
+      continue;
+    }
+    if (FRONTMATTER_KEYS.tags.includes(key)) {
+      const tags = parseTags(value);
+      if (tags) meta.tags = tags;
+      continue;
+    }
+    if (FRONTMATTER_KEYS.favorite.includes(key)) {
+      const favorite = parseBoolean(value);
+      if (favorite !== undefined) {
+        meta.favorite = favorite;
+      }
+      continue;
+    }
+  }
+  return meta;
+}
+
+function parseFrontmatter(markdown: string): {
+  content: string;
+  meta: ParsedFrontmatterMeta;
+} {
+  try {
+    const parsed = parseMatter(markdown);
+    if (!parsed) {
+      return { content: markdown, meta: {} };
+    }
+    const content = parsed.body ?? markdown;
+
+    if (Array.isArray(parsed.metadata)) {
+      return { content: String(content), meta: {} };
+    }
+
+    const meta = buildMetaFromFrontmatter({ ...parsed.metadata });
+    return { content: String(content), meta };
+  } catch {
+    return { content: markdown, meta: {} };
+  }
+}
+
+function applyMetaPatch(
+  collection: Workspace,
+  docId: string,
+  meta: ParsedFrontmatterMeta
+) {
+  const metaPatch: Partial<DocMeta> = {};
+  if (meta.title) metaPatch.title = meta.title;
+  if (meta.createDate !== undefined) metaPatch.createDate = meta.createDate;
+  if (meta.updatedDate !== undefined) metaPatch.updatedDate = meta.updatedDate;
+  if (meta.tags) metaPatch.tags = meta.tags;
+  if (meta.favorite !== undefined) metaPatch.favorite = meta.favorite;
+
+  if (Object.keys(metaPatch).length) {
+    collection.meta.setDocMeta(docId, metaPatch);
+  }
+}
 
 function getProvider(extensions: ExtensionType[]) {
   const container = new Container();
@@ -153,6 +326,8 @@ async function importMarkdownToDoc({
   fileName,
   extensions,
 }: ImportMarkdownToDocOptions) {
+  const { content, meta } = parseFrontmatter(markdown);
+  const preferredTitle = meta.title ?? fileName;
   const provider = getProvider(extensions);
   const job = new Transformer({
     schema,
@@ -164,18 +339,19 @@ async function importMarkdownToDoc({
     },
     middlewares: [
       defaultImageProxyMiddleware,
-      fileNameMiddleware(fileName),
+      fileNameMiddleware(preferredTitle),
       docLinkBaseURLMiddleware(collection.id),
     ],
   });
   const mdAdapter = new MarkdownAdapter(job, provider);
   const page = await mdAdapter.toDoc({
-    file: markdown,
+    file: content,
     assets: job.assetsManager,
   });
   if (!page) {
     return;
   }
+  applyMetaPatch(collection, page.id, meta);
   return page.id;
 }
 
@@ -232,6 +408,9 @@ async function importMarkdownZip({
     markdownBlobs.map(async markdownFile => {
       const { filename, contentBlob, fullPath } = markdownFile;
       const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+      const markdown = await contentBlob.text();
+      const { content, meta } = parseFrontmatter(markdown);
+      const preferredTitle = meta.title ?? fileNameWithoutExt;
       const job = new Transformer({
         schema,
         blobCRUD: collection.blobSync,
@@ -242,7 +421,7 @@ async function importMarkdownZip({
         },
         middlewares: [
           defaultImageProxyMiddleware,
-          fileNameMiddleware(fileNameWithoutExt),
+          fileNameMiddleware(preferredTitle),
           docLinkBaseURLMiddleware(collection.id),
           filePathMiddleware(fullPath),
         ],
@@ -262,12 +441,12 @@ async function importMarkdownZip({
       }
 
       const mdAdapter = new MarkdownAdapter(job, provider);
-      const markdown = await contentBlob.text();
       const doc = await mdAdapter.toDoc({
-        file: markdown,
+        file: content,
         assets: job.assetsManager,
       });
       if (doc) {
+        applyMetaPatch(collection, doc.id, meta);
         docIds.push(doc.id);
       }
     })

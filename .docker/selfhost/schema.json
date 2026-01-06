@@ -397,7 +397,7 @@
                         },
                         "urlPrefix": {
                           "type": "string",
-                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
                         },
                         "signKey": {
                           "type": "string",
@@ -518,7 +518,7 @@
                         },
                         "urlPrefix": {
                           "type": "string",
-                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
                         },
                         "signKey": {
                           "type": "string",
@@ -595,6 +595,11 @@
           "description": "Multiple hosts the server will accept requests from.\n@default []",
           "default": []
         },
+        "listenAddr": {
+          "type": "string",
+          "description": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).\n@default \"0.0.0.0\"\n@environment `LISTEN_ADDR`",
+          "default": "0.0.0.0"
+        },
         "port": {
           "type": "number",
           "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",
@@ -611,11 +616,6 @@
       "type": "object",
       "description": "Configuration for flags module",
       "properties": {
-        "earlyAccessControl": {
-          "type": "boolean",
-          "description": "Only allow users with early access features to access the app\n@default false",
-          "default": false
-        },
         "allowGuestDemoWorkspace": {
           "type": "boolean",
           "description": "Whether allow guest users to create demo workspaces.\n@default true",
@@ -928,7 +928,7 @@
                         },
                         "urlPrefix": {
                           "type": "string",
-                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
                         },
                         "signKey": {
                           "type": "string",

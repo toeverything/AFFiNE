@@ -92,7 +92,6 @@ export async function addUserToWorkspace(
       data: {
         workspaceId: workspace.id,
         userId,
-        accepted: true,
         status: 'Accepted',
         type: permission,
       },
@@ -113,13 +112,6 @@ export async function createRandomUser(): Promise<{
     password: '123456',
   };
   const result = await runPrisma(async client => {
-    const featureId = await client.feature
-      .findFirst({
-        where: { name: 'free_plan_v1' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
-
     await client.user.create({
       data: {
         ...user,
@@ -129,7 +121,6 @@ export async function createRandomUser(): Promise<{
           create: {
             reason: 'created by test case',
             activated: true,
-            featureId,
             name: 'free_plan_v1',
             type: 1,
           },
@@ -189,19 +180,6 @@ export async function createRandomAIUser(): Promise<{
     password: '123456',
   };
   const result = await runPrisma(async client => {
-    const freeFeatureId = await client.feature
-      .findFirst({
-        where: { name: 'free_plan_v1' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
-    const aiFeatureId = await client.feature
-      .findFirst({
-        where: { name: 'unlimited_copilot' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
-
     await client.user.create({
       data: {
         ...user,
@@ -212,14 +190,12 @@ export async function createRandomAIUser(): Promise<{
             {
               reason: 'created by test case',
               activated: true,
-              featureId: freeFeatureId,
               name: 'free_plan_v1',
               type: 1,
             },
             {
               reason: 'created by test case',
               activated: true,
-              featureId: aiFeatureId,
               name: 'unlimited_copilot',
               type: 0,
             },

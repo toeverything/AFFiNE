@@ -17,12 +17,12 @@ let package = Package(
     .package(path: "../AffineGraphQL"),
     .package(path: "../AffineResources"),
     .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.23.0"),
-    .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.1"),
+    .package(url: "https://github.com/apple/swift-collections.git", from: "1.3.0"),
     .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
     .package(url: "https://github.com/SwifterSwift/SwifterSwift.git", from: "6.2.0"),
     .package(url: "https://github.com/Recouse/EventSource.git", from: "0.1.5"),
-    .package(url: "https://github.com/Lakr233/ListViewKit.git", from: "1.1.6"),
-    .package(url: "https://github.com/Lakr233/MarkdownView.git", from: "3.4.2"),
+    .package(url: "https://github.com/Lakr233/ListViewKit.git", from: "1.1.8"),
+    .package(url: "https://github.com/Lakr233/MarkdownView.git", from: "3.4.7"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [

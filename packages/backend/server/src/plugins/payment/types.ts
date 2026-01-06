@@ -88,6 +88,9 @@ declare global {
     'stripe.customer.subscription.created': Stripe.CustomerSubscriptionCreatedEvent;
     'stripe.customer.subscription.updated': Stripe.CustomerSubscriptionUpdatedEvent;
     'stripe.customer.subscription.deleted': Stripe.CustomerSubscriptionDeletedEvent;
+    'stripe.charge.refunded': Stripe.ChargeRefundedEvent;
+    'stripe.charge.dispute.created': Stripe.ChargeDisputeCreatedEvent;
+    'stripe.charge.dispute.closed': Stripe.ChargeDisputeClosedEvent;
 
     // RevenueCat integration
     'revenuecat.webhook': {

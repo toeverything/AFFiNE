@@ -577,7 +577,7 @@ test.describe('slash search', () => {
 
     // search should active the first item
     await type(page, 'co');
-    await expect(slashItems).toHaveCount(4);
+    await expect(slashItems).toHaveCount(5);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Code Block']);
     await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);
@@ -589,7 +589,7 @@ test.describe('slash search', () => {
 
     // assert backspace works
     await pressBackspace(page);
-    await expect(slashItems).toHaveCount(4);
+    await expect(slashItems).toHaveCount(5);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Code Block']);
     await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);
@@ -608,7 +608,7 @@ test.describe('slash search', () => {
     await expect(slashMenu).toBeVisible();
 
     await type(page, 'c');
-    await expect(slashItems).toHaveCount(10);
+    await expect(slashItems).toHaveCount(11);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Italic']);
     await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);

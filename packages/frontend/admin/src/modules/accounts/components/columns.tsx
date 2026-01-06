@@ -66,6 +66,9 @@ export const useColumns = ({
     return [
       {
         id: 'select',
+        meta: {
+          className: 'w-[40px] flex-shrink-0',
+        },
         header: ({ table }) => (
           <Checkbox
             checked={
@@ -127,6 +130,9 @@ export const useColumns = ({
       },
       {
         accessorKey: 'info',
+        meta: {
+          className: 'w-[250px] flex-shrink-0',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader
             className="text-xs"
@@ -190,7 +196,7 @@ export const useColumns = ({
           <DataTableColumnHeader
             className="text-xs max-md:hidden"
             column={column}
-            title="UUID"
+            title="User Detail"
           />
         ),
         cell: ({ row: { original: user } }) => (
@@ -233,12 +239,40 @@ export const useColumns = ({
                   textFalse="Email Not Verified"
                 />
               </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                {user.features.length ? (
+                  user.features.map(feature => (
+                    <span
+                      key={feature}
+                      className="rounded px-2 py-0.5 text-xs h-5 border inline-flex items-center"
+                      style={{
+                        borderRadius: '4px',
+                        backgroundColor: cssVarV2('chip/label/white'),
+                        borderColor: cssVarV2('layer/insideBorder/border'),
+                      }}
+                    >
+                      {feature}
+                    </span>
+                  ))
+                ) : (
+                  <span
+                    style={{
+                      color: cssVarV2('text/secondary'),
+                    }}
+                  >
+                    No features
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ),
       },
       {
         id: 'actions',
+        meta: {
+          className: 'w-[80px]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader
             className="text-xs"

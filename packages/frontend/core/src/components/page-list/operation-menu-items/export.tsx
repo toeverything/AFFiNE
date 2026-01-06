@@ -1,4 +1,5 @@
 import { MenuItem, MenuSeparator, MenuSub } from '@affine/component';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
@@ -9,6 +10,7 @@ import {
   PageIcon,
   PrinterIcon,
 } from '@blocksuite/icons/rc';
+import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
 
@@ -24,7 +26,7 @@ interface ExportMenuItemProps<T> {
 
 interface ExportProps {
   exportHandler: (
-    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot'
+    type: 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot' | 'pdf-export'
   ) => void;
   pageMode?: 'page' | 'edgeless';
   className?: string;
@@ -72,6 +74,11 @@ export const ExportMenuItems = ({
   pageMode = 'page',
 }: ExportProps) => {
   const t = useI18n();
+  const featureFlags = useService(FeatureFlagService).flags;
+  const enable_pdfmake_export = useLiveData(
+    featureFlags.enable_pdfmake_export.$
+  );
+
   return (
     <>
       <ExportMenuItem
@@ -97,6 +104,15 @@ export const ExportMenuItems = ({
         icon={<ExportToMarkdownIcon />}
         label={t['Export to Markdown']()}
       />
+      {pageMode !== 'edgeless' && enable_pdfmake_export && (
+        <ExportMenuItem
+          onSelect={() => exportHandler('pdf-export')}
+          className={className}
+          type="pdf-export"
+          icon={<PrinterIcon />}
+          label={t['Export to PDF']()}
+        />
+      )}
       <ExportMenuItem
         onSelect={() => exportHandler('snapshot')}
         className={className}

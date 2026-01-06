@@ -375,10 +375,6 @@ export const USER_FRIENDLY_ERRORS = {
     message:
       'You are trying to sign in by a different method than you signed up with.',
   },
-  early_access_required: {
-    type: 'action_forbidden',
-    message: `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`,
-  },
   sign_up_forbidden: {
     type: 'action_forbidden',
     message: `You are not allowed to sign up.`,
@@ -505,6 +501,10 @@ export const USER_FRIENDLY_ERRORS = {
     args: { spaceId: 'string', blobId: 'string' },
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
+  },
+  blob_invalid: {
+    type: 'invalid_input',
+    message: 'Blob is invalid.',
   },
   expect_to_publish_doc: {
     type: 'invalid_input',

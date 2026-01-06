@@ -295,7 +295,7 @@ test('should paginate users', async t => {
     )
   );
 
-  const users = await t.context.user.pagination(0, 10);
+  const users = await t.context.user.list({ skip: 0, take: 10 });
   t.is(users.length, 10);
   t.deepEqual(
     users.map(user => user.email),

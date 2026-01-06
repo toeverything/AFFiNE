@@ -67,6 +67,75 @@ export interface AddContextFileInput {
   contextId: Scalars['String']['input'];
 }
 
+export interface AdminUpdateWorkspaceInput {
+  avatarKey?: InputMaybe<Scalars['String']['input']>;
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
+  enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
+  features?: InputMaybe<Array<FeatureType>>;
+  id: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  public?: InputMaybe<Scalars['Boolean']['input']>;
+}
+
+export interface AdminWorkspace {
+  __typename?: 'AdminWorkspace';
+  avatarKey: Maybe<Scalars['String']['output']>;
+  blobCount: Scalars['Int']['output'];
+  blobSize: Scalars['SafeInt']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  enableAi: Scalars['Boolean']['output'];
+  enableDocEmbedding: Scalars['Boolean']['output'];
+  enableSharing: Scalars['Boolean']['output'];
+  enableUrlPreview: Scalars['Boolean']['output'];
+  features: Array<FeatureType>;
+  id: Scalars['String']['output'];
+  memberCount: Scalars['Int']['output'];
+  /** Members of workspace */
+  members: Array<AdminWorkspaceMember>;
+  name: Maybe<Scalars['String']['output']>;
+  owner: Maybe<WorkspaceUserType>;
+  public: Scalars['Boolean']['output'];
+  publicPageCount: Scalars['Int']['output'];
+  sharedLinks: Array<AdminWorkspaceSharedLink>;
+  snapshotCount: Scalars['Int']['output'];
+  snapshotSize: Scalars['SafeInt']['output'];
+}
+
+export interface AdminWorkspaceMembersArgs {
+  query?: InputMaybe<Scalars['String']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  take?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface AdminWorkspaceMember {
+  __typename?: 'AdminWorkspaceMember';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  email: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  role: Permission;
+  status: WorkspaceMemberStatus;
+}
+
+export interface AdminWorkspaceSharedLink {
+  __typename?: 'AdminWorkspaceSharedLink';
+  docId: Scalars['String']['output'];
+  publishedAt: Maybe<Scalars['DateTime']['output']>;
+  title: Maybe<Scalars['String']['output']>;
+}
+
+export enum AdminWorkspaceSort {
+  BlobCount = 'BlobCount',
+  BlobSize = 'BlobSize',
+  CreatedAt = 'CreatedAt',
+  MemberCount = 'MemberCount',
+  PublicPageCount = 'PublicPageCount',
+  SnapshotCount = 'SnapshotCount',
+  SnapshotSize = 'SnapshotSize',
+}
+
 export interface AggregateBucketHitsObjectType {
   __typename?: 'AggregateBucketHitsObjectType';
   nodes: Array<SearchNodeObjectType>;
@@ -135,6 +204,44 @@ export interface BlobNotFoundDataType {
   __typename?: 'BlobNotFoundDataType';
   blobId: Scalars['String']['output'];
   spaceId: Scalars['String']['output'];
+}
+
+export interface BlobUploadInit {
+  __typename?: 'BlobUploadInit';
+  alreadyUploaded: Maybe<Scalars['Boolean']['output']>;
+  blobKey: Scalars['String']['output'];
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  headers: Maybe<Scalars['JSONObject']['output']>;
+  method: BlobUploadMethod;
+  partSize: Maybe<Scalars['Int']['output']>;
+  uploadId: Maybe<Scalars['String']['output']>;
+  uploadUrl: Maybe<Scalars['String']['output']>;
+  uploadedParts: Maybe<Array<BlobUploadedPart>>;
+}
+
+/** Blob upload method */
+export enum BlobUploadMethod {
+  GRAPHQL = 'GRAPHQL',
+  MULTIPART = 'MULTIPART',
+  PRESIGNED = 'PRESIGNED',
+}
+
+export interface BlobUploadPart {
+  __typename?: 'BlobUploadPart';
+  expiresAt: Maybe<Scalars['DateTime']['output']>;
+  headers: Maybe<Scalars['JSONObject']['output']>;
+  uploadUrl: Scalars['String']['output'];
+}
+
+export interface BlobUploadPartInput {
+  etag: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+}
+
+export interface BlobUploadedPart {
+  __typename?: 'BlobUploadedPart';
+  etag: Scalars['String']['output'];
+  partNumber: Scalars['Int']['output'];
 }
 
 export enum ChatHistoryOrder {
@@ -838,6 +945,7 @@ export enum ErrorNames {
   ALREADY_IN_SPACE = 'ALREADY_IN_SPACE',
   AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
   BAD_REQUEST = 'BAD_REQUEST',
+  BLOB_INVALID = 'BLOB_INVALID',
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
   BLOB_QUOTA_EXCEEDED = 'BLOB_QUOTA_EXCEEDED',
   CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE = 'CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE',
@@ -883,7 +991,6 @@ export enum ErrorNames {
   DOC_IS_NOT_PUBLIC = 'DOC_IS_NOT_PUBLIC',
   DOC_NOT_FOUND = 'DOC_NOT_FOUND',
   DOC_UPDATE_BLOCKED = 'DOC_UPDATE_BLOCKED',
-  EARLY_ACCESS_REQUIRED = 'EARLY_ACCESS_REQUIRED',
   EMAIL_ALREADY_USED = 'EMAIL_ALREADY_USED',
   EMAIL_SERVICE_NOT_CONFIGURED = 'EMAIL_SERVICE_NOT_CONFIGURED',
   EMAIL_TOKEN_NOT_FOUND = 'EMAIL_TOKEN_NOT_FOUND',
@@ -1299,8 +1406,23 @@ export interface LimitedUserType {
 }
 
 export interface ListUserInput {
+  features?: InputMaybe<Array<FeatureType>>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  keyword?: InputMaybe<Scalars['String']['input']>;
   skip?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface ListWorkspaceInput {
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
+  enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
+  features?: InputMaybe<Array<FeatureType>>;
+  first?: Scalars['Int']['input'];
+  keyword?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<AdminWorkspaceSort>;
+  public?: InputMaybe<Scalars['Boolean']['input']>;
+  skip?: Scalars['Int']['input'];
 }
 
 export interface ListedBlob {
@@ -1370,6 +1492,7 @@ export interface MissingOauthQueryParameterDataType {
 
 export interface Mutation {
   __typename?: 'Mutation';
+  abortBlobUpload: Scalars['Boolean']['output'];
   acceptInviteById: Scalars['Boolean']['output'];
   activateLicense: License;
   /** add a blob to context */
@@ -1383,6 +1506,8 @@ export interface Mutation {
   /** Update workspace embedding files */
   addWorkspaceEmbeddingFiles: CopilotWorkspaceFile;
   addWorkspaceFeature: Scalars['Boolean']['output'];
+  /** Update workspace flags and features for admin */
+  adminUpdateWorkspace: Maybe<AdminWorkspace>;
   approveMember: Scalars['Boolean']['output'];
   /** Ban an user */
   banUser: UserType;
@@ -1392,6 +1517,8 @@ export interface Mutation {
   claimAudioTranscription: Maybe<TranscriptionResultType>;
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
+  completeBlobUpload: Scalars['String']['output'];
+  createBlobUpload: BlobUploadInit;
   /** Create change password url */
   createChangePasswordUrl: Scalars['String']['output'];
   /** Create a subscription checkout link of stripe */
@@ -1430,6 +1557,7 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   generateUserAccessToken: RevealedAccessToken;
+  getBlobUploadPartUrl: BlobUploadPart;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1527,6 +1655,12 @@ export interface Mutation {
   verifyEmail: Scalars['Boolean']['output'];
 }
 
+export interface MutationAbortBlobUploadArgs {
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationAcceptInviteByIdArgs {
   inviteId: Scalars['String']['input'];
   sendAcceptMail?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1565,6 +1699,10 @@ export interface MutationAddWorkspaceFeatureArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationAdminUpdateWorkspaceArgs {
+  input: AdminUpdateWorkspaceInput;
+}
+
 export interface MutationApproveMemberArgs {
   userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -1597,6 +1735,20 @@ export interface MutationClaimAudioTranscriptionArgs {
 
 export interface MutationCleanupCopilotSessionArgs {
   options: DeleteSessionInput;
+}
+
+export interface MutationCompleteBlobUploadArgs {
+  key: Scalars['String']['input'];
+  parts?: InputMaybe<Array<BlobUploadPartInput>>;
+  uploadId?: InputMaybe<Scalars['String']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationCreateBlobUploadArgs {
+  key: Scalars['String']['input'];
+  mime: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationCreateChangePasswordUrlArgs {
@@ -1691,6 +1843,13 @@ export interface MutationGenerateLicenseKeyArgs {
 
 export interface MutationGenerateUserAccessTokenArgs {
   input: GenerateAccessTokenInput;
+}
+
+export interface MutationGetBlobUploadPartUrlArgs {
+  key: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+  uploadId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationGrantDocUserRolesArgs {
@@ -2146,6 +2305,12 @@ export interface PublicUserType {
 export interface Query {
   __typename?: 'Query';
   accessTokens: Array<AccessToken>;
+  /** Get workspace detail for admin */
+  adminWorkspace: Maybe<AdminWorkspace>;
+  /** List workspaces for admin */
+  adminWorkspaces: Array<AdminWorkspace>;
+  /** Workspaces count for admin */
+  adminWorkspacesCount: Scalars['Int']['output'];
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
   /** Apply updates to a doc using LLM and return the merged markdown. */
@@ -2198,6 +2363,18 @@ export interface Query {
   workspaces: Array<WorkspaceType>;
 }
 
+export interface QueryAdminWorkspaceArgs {
+  id: Scalars['String']['input'];
+}
+
+export interface QueryAdminWorkspacesArgs {
+  filter: ListWorkspaceInput;
+}
+
+export interface QueryAdminWorkspacesCountArgs {
+  filter: ListWorkspaceInput;
+}
+
 export interface QueryApplyDocUpdatesArgs {
   docId: Scalars['String']['input'];
   op: Scalars['String']['input'];
@@ -2243,6 +2420,10 @@ export interface QueryUserByIdArgs {
 
 export interface QueryUsersArgs {
   filter: ListUserInput;
+}
+
+export interface QueryUsersCountArgs {
+  filter?: InputMaybe<ListUserInput>;
 }
 
 export interface QueryWorkspaceArgs {
@@ -2463,15 +2644,12 @@ export enum SearchTable {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
-  /**
-   * Whether allow guest users to create demo workspaces.
-   * @deprecated This field is deprecated, please use `features` instead. Will be removed in 0.25.0
-   */
-  allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** fetch latest available upgradable release of server */
   availableUpgrade: Maybe<ReleaseVersionType>;
   /** Features for user that can be configured */
   availableUserFeatures: Array<FeatureType>;
+  /** Workspace features available for admin configuration */
+  availableWorkspaceFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
   /** credentials requirement */
@@ -2710,6 +2888,8 @@ export interface UpdateWorkspaceInput {
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable doc embedding */
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Enable workspace sharing */
+  enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable url previous when sharing */
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -2944,6 +3124,8 @@ export interface WorkspaceType {
   enableAi: Scalars['Boolean']['output'];
   /** Enable doc embedding */
   enableDocEmbedding: Scalars['Boolean']['output'];
+  /** Enable workspace sharing */
+  enableSharing: Scalars['Boolean']['output'];
   /** Enable url previous when sharing */
   enableUrlPreview: Scalars['Boolean']['output'];
   histories: Array<DocHistoryType>;
@@ -2979,8 +3161,6 @@ export interface WorkspaceType {
    * @deprecated use [WorkspaceType.doc] instead
    */
   publicPage: Maybe<DocType>;
-  /** @deprecated use [WorkspaceType.publicDocs] instead */
-  publicPages: Array<DocType>;
   /** quota of workspace */
   quota: WorkspaceQuotaType;
   /** Get recently updated docs of a workspace */
@@ -3130,6 +3310,7 @@ export type AdminServerConfigQuery = {
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
+    availableWorkspaceFeatures: Array<FeatureType>;
     credentialsRequirement: {
       __typename?: 'CredentialsRequirementType';
       password: {
@@ -3146,6 +3327,135 @@ export type AdminServerConfigQuery = {
       url: string;
     } | null;
   };
+};
+
+export type AdminUpdateWorkspaceMutationVariables = Exact<{
+  input: AdminUpdateWorkspaceInput;
+}>;
+
+export type AdminUpdateWorkspaceMutation = {
+  __typename?: 'Mutation';
+  adminUpdateWorkspace: {
+    __typename?: 'AdminWorkspace';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    name: string | null;
+    avatarKey: string | null;
+    enableAi: boolean;
+    enableSharing: boolean;
+    enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
+    features: Array<FeatureType>;
+    memberCount: number;
+    publicPageCount: number;
+    snapshotCount: number;
+    snapshotSize: number;
+    blobCount: number;
+    blobSize: number;
+    owner: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+  } | null;
+};
+
+export type AdminWorkspaceQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+  memberSkip?: InputMaybe<Scalars['Int']['input']>;
+  memberTake?: InputMaybe<Scalars['Int']['input']>;
+  memberQuery?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type AdminWorkspaceQuery = {
+  __typename?: 'Query';
+  adminWorkspace: {
+    __typename?: 'AdminWorkspace';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    name: string | null;
+    avatarKey: string | null;
+    enableAi: boolean;
+    enableSharing: boolean;
+    enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
+    features: Array<FeatureType>;
+    memberCount: number;
+    publicPageCount: number;
+    snapshotCount: number;
+    snapshotSize: number;
+    blobCount: number;
+    blobSize: number;
+    owner: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+    sharedLinks: Array<{
+      __typename?: 'AdminWorkspaceSharedLink';
+      docId: string;
+      title: string | null;
+      publishedAt: string | null;
+    }>;
+    members: Array<{
+      __typename?: 'AdminWorkspaceMember';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+      role: Permission;
+      status: WorkspaceMemberStatus;
+    }>;
+  } | null;
+};
+
+export type AdminWorkspacesQueryVariables = Exact<{
+  filter: ListWorkspaceInput;
+}>;
+
+export type AdminWorkspacesQuery = {
+  __typename?: 'Query';
+  adminWorkspaces: Array<{
+    __typename?: 'AdminWorkspace';
+    id: string;
+    public: boolean;
+    createdAt: string;
+    name: string | null;
+    avatarKey: string | null;
+    enableAi: boolean;
+    enableSharing: boolean;
+    enableUrlPreview: boolean;
+    enableDocEmbedding: boolean;
+    features: Array<FeatureType>;
+    memberCount: number;
+    publicPageCount: number;
+    snapshotCount: number;
+    snapshotSize: number;
+    blobCount: number;
+    blobSize: number;
+    owner: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+  }>;
+};
+
+export type AdminWorkspacesCountQueryVariables = Exact<{
+  filter: ListWorkspaceInput;
+}>;
+
+export type AdminWorkspacesCountQuery = {
+  __typename?: 'Query';
+  adminWorkspacesCount: number;
 };
 
 export type CreateChangePasswordUrlMutationVariables = Exact<{
@@ -3410,6 +3720,73 @@ export type SetBlobMutationVariables = Exact<{
 }>;
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
+
+export type AbortBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+}>;
+
+export type AbortBlobUploadMutation = {
+  __typename?: 'Mutation';
+  abortBlobUpload: boolean;
+};
+
+export type CompleteBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId?: InputMaybe<Scalars['String']['input']>;
+  parts?: InputMaybe<Array<BlobUploadPartInput> | BlobUploadPartInput>;
+}>;
+
+export type CompleteBlobUploadMutation = {
+  __typename?: 'Mutation';
+  completeBlobUpload: string;
+};
+
+export type CreateBlobUploadMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  size: Scalars['Int']['input'];
+  mime: Scalars['String']['input'];
+}>;
+
+export type CreateBlobUploadMutation = {
+  __typename?: 'Mutation';
+  createBlobUpload: {
+    __typename?: 'BlobUploadInit';
+    method: BlobUploadMethod;
+    blobKey: string;
+    alreadyUploaded: boolean | null;
+    uploadUrl: string | null;
+    headers: any | null;
+    expiresAt: string | null;
+    uploadId: string | null;
+    partSize: number | null;
+    uploadedParts: Array<{
+      __typename?: 'BlobUploadedPart';
+      partNumber: number;
+      etag: string;
+    }> | null;
+  };
+};
+
+export type GetBlobUploadPartUrlMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  uploadId: Scalars['String']['input'];
+  partNumber: Scalars['Int']['input'];
+}>;
+
+export type GetBlobUploadPartUrlMutation = {
+  __typename?: 'Mutation';
+  getBlobUploadPartUrl: {
+    __typename?: 'BlobUploadPart';
+    uploadUrl: string;
+    headers: any | null;
+    expiresAt: string | null;
+  };
+};
 
 export type CancelSubscriptionMutationVariables = Exact<{
   plan?: InputMaybe<SubscriptionPlan>;
@@ -6171,6 +6548,7 @@ export type GetWorkspaceConfigQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     enableAi: boolean;
+    enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
     inviteLink: {
@@ -6197,6 +6575,16 @@ export type SetEnableDocEmbeddingMutationVariables = Exact<{
 }>;
 
 export type SetEnableDocEmbeddingMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type SetEnableSharingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableSharing: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableSharingMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
@@ -6381,6 +6769,21 @@ export type Queries =
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
+    }
+  | {
+      name: 'adminWorkspaceQuery';
+      variables: AdminWorkspaceQueryVariables;
+      response: AdminWorkspaceQuery;
+    }
+  | {
+      name: 'adminWorkspacesQuery';
+      variables: AdminWorkspacesQueryVariables;
+      response: AdminWorkspacesQuery;
+    }
+  | {
+      name: 'adminWorkspacesCountQuery';
+      variables: AdminWorkspacesCountQueryVariables;
+      response: AdminWorkspacesCountQuery;
     }
   | {
       name: 'appConfigQuery';
@@ -6750,6 +7153,11 @@ export type Mutations =
       response: RevokeUserAccessTokenMutation;
     }
   | {
+      name: 'adminUpdateWorkspaceMutation';
+      variables: AdminUpdateWorkspaceMutationVariables;
+      response: AdminUpdateWorkspaceMutation;
+    }
+  | {
       name: 'createChangePasswordUrlMutation';
       variables: CreateChangePasswordUrlMutationVariables;
       response: CreateChangePasswordUrlMutation;
@@ -6823,6 +7231,26 @@ export type Mutations =
       name: 'setBlobMutation';
       variables: SetBlobMutationVariables;
       response: SetBlobMutation;
+    }
+  | {
+      name: 'abortBlobUploadMutation';
+      variables: AbortBlobUploadMutationVariables;
+      response: AbortBlobUploadMutation;
+    }
+  | {
+      name: 'completeBlobUploadMutation';
+      variables: CompleteBlobUploadMutationVariables;
+      response: CompleteBlobUploadMutation;
+    }
+  | {
+      name: 'createBlobUploadMutation';
+      variables: CreateBlobUploadMutationVariables;
+      response: CreateBlobUploadMutation;
+    }
+  | {
+      name: 'getBlobUploadPartUrlMutation';
+      variables: GetBlobUploadPartUrlMutationVariables;
+      response: GetBlobUploadPartUrlMutation;
     }
   | {
       name: 'cancelSubscriptionMutation';
@@ -7183,6 +7611,11 @@ export type Mutations =
       name: 'setEnableDocEmbeddingMutation';
       variables: SetEnableDocEmbeddingMutationVariables;
       response: SetEnableDocEmbeddingMutation;
+    }
+  | {
+      name: 'setEnableSharingMutation';
+      variables: SetEnableSharingMutationVariables;
+      response: SetEnableSharingMutation;
     }
   | {
       name: 'setEnableUrlPreviewMutation';

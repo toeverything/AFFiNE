@@ -28,8 +28,7 @@ interface CollapsibleSectionProps extends HTMLAttributes<HTMLDivElement> {
   contentClassName?: string;
 }
 
-interface CollapsibleSectionTriggerProps
-  extends HTMLAttributes<HTMLDivElement> {
+interface CollapsibleSectionTriggerProps extends HTMLAttributes<HTMLDivElement> {
   label: string;
   collapsed?: boolean;
   actions?: ReactNode;

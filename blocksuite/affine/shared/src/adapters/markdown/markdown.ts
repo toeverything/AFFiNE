@@ -26,6 +26,11 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
+import {
+  HtmlASTToDeltaMatcherIdentifier,
+  HtmlDeltaConverter,
+  InlineDeltaToHtmlAdapterMatcherIdentifier,
+} from '../html/delta-converter.js';
 import { type AdapterContext, AdapterFactoryIdentifier } from '../types';
 import {
   type BlockMarkdownAdapterMatcher,
@@ -184,11 +189,24 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
     const markdownInlineToDeltaMatchers = Array.from(
       provider.getAll(MarkdownASTToDeltaMatcherIdentifier).values()
     );
+    const inlineDeltaToHtmlAdapterMatchers = Array.from(
+      provider.getAll(InlineDeltaToHtmlAdapterMatcherIdentifier).values()
+    );
+    const htmlInlineToDeltaMatchers = Array.from(
+      provider.getAll(HtmlASTToDeltaMatcherIdentifier).values()
+    );
+    const htmlDeltaConverter = new HtmlDeltaConverter(
+      job.adapterConfigs,
+      inlineDeltaToHtmlAdapterMatchers,
+      htmlInlineToDeltaMatchers,
+      provider
+    );
     this.blockMatchers = blockMatchers;
     this.deltaConverter = new MarkdownDeltaConverter(
       job.adapterConfigs,
       inlineDeltaToMarkdownAdapterMatchers,
-      markdownInlineToDeltaMatchers
+      markdownInlineToDeltaMatchers,
+      htmlDeltaConverter
     );
     this.preprocessorManager = new MarkdownPreprocessorManager(provider);
   }

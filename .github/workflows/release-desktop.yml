@@ -12,6 +12,21 @@ on:
       git-short-hash:
         required: true
         type: string
+      desktop_macos:
+        description: 'Desktop - macOS'
+        required: false
+        default: true
+        type: boolean
+      desktop_windows:
+        description: 'Desktop - Windows'
+        required: false
+        default: true
+        type: boolean
+      desktop_linux:
+        description: 'Desktop - Linux'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   actions: write
@@ -29,6 +44,7 @@ env:
 
 jobs:
   before-make:
+    if: ${{ inputs.desktop_macos || inputs.desktop_windows || inputs.desktop_linux }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
@@ -58,7 +74,8 @@ jobs:
           name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
 
-  make-distribution:
+  make-distribution-macos:
+    if: ${{ inputs.desktop_macos }}
     strategy:
       fail-fast: false
       matrix:
@@ -71,223 +88,90 @@ jobs:
             platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
-          - runner: ubuntu-latest
-            platform: linux
-            arch: x64
-            target: x86_64-unknown-linux-gnu
-    runs-on: ${{ matrix.spec.runner }}
     needs: before-make
-    environment: ${{ inputs.build-type }}
-    env:
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      SKIP_GENERATE_ASSETS: 1
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: 'affine'
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      SENTRY_RELEASE: ${{ inputs.app-version }}
-      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        uses: ./.github/actions/setup-version
-        with:
-          app-version: ${{ inputs.app-version }}
-      - name: Setup Node.js
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine/nbstore @toeverything/infra
-          hard-link-nm: false
-          nmHoistingLimits: workspaces
-          enableScripts: false
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          package: '@affine/native'
-      - uses: actions/download-artifact@v4
-        with:
-          name: desktop-web
-          path: packages/frontend/apps/electron/resources/web-static
+    uses: ./.github/workflows/release-desktop-platform.yml
+    secrets: inherit
+    with:
+      build_type: ${{ inputs.build-type }}
+      app_version: ${{ inputs.app-version }}
+      git_short_hash: ${{ inputs.git-short-hash }}
+      runner: ${{ matrix.spec.runner }}
+      platform: ${{ matrix.spec.platform }}
+      arch: ${{ matrix.spec.arch }}
+      target: ${{ matrix.spec.target }}
+      apple_codesign: true
 
-      - name: Build Desktop Layers
-        run: yarn affine @affine/electron build
-
-      - name: Signing By Apple Developer ID
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        uses: apple-actions/import-codesign-certs@v5
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-
-      - name: Install additional dependencies on Linux
-        if: ${{ matrix.spec.platform == 'linux' }}
-        run: |
-          sudo add-apt-repository universe
-          sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
-          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          flatpak update
-          # some flatpak deps need git protocol.file.allow
-          git config --global protocol.file.allow always
-
-      - name: Remove nbstore node_modules
-        shell: bash
-        # node_modules of nbstore is not needed for building, and it will make the build process out of memory
-        run: |
-          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite
-          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
-
-      - name: make
-        run: yarn affine @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-        env:
-          SKIP_WEB_BUILD: 1
-          HOIST_NODE_MODULES: 1
-          NODE_OPTIONS: --max-old-space-size=14384
-
-      - name: signing DMG
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        run: |
-          codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
-
-      - name: Save artifacts (mac)
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        run: |
-          mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-          mv packages/frontend/apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-      - name: Save artifacts (linux)
-        if: ${{ matrix.spec.platform == 'linux' }}
-        run: |
-          mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.zip
-          mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.appimage
-          mv packages/frontend/apps/electron/out/*/make/deb/${{ matrix.spec.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.deb
-          # mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
-
-      - uses: actions/attest-build-provenance@v2
-        if: ${{ matrix.spec.platform == 'darwin' }}
-        with:
-          subject-path: |
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-
-      - uses: actions/attest-build-provenance@v2
-        if: ${{ matrix.spec.platform == 'linux' }}
-        with:
-          subject-path: |
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
-          path: builds
-
-  package-distribution-windows:
-    environment: ${{ inputs.build-type }}
+  make-distribution-linux:
+    if: ${{ inputs.desktop_linux }}
     strategy:
       fail-fast: false
       matrix:
         spec:
-          - runner: windows-latest
-            platform: win32
+          - runner: ubuntu-latest
+            platform: linux
             arch: x64
-            target: x86_64-pc-windows-msvc
-          - runner: windows-latest
-            platform: win32
-            arch: arm64
-            target: aarch64-pc-windows-msvc
-    runs-on: ${{ matrix.spec.runner }}
+            target: x86_64-unknown-linux-gnu
     needs: before-make
-    outputs:
-      FILES_TO_BE_SIGNED_x64: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED_x64 }}
-      FILES_TO_BE_SIGNED_arm64: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED_arm64 }}
-    env:
-      SKIP_GENERATE_ASSETS: 1
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: 'affine'
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      SENTRY_RELEASE: ${{ inputs.app-version }}
-      MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        uses: ./.github/actions/setup-version
-        with:
-          app-version: ${{ inputs.app-version }}
-      - name: Setup Node.js
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine/nbstore @toeverything/infra
-          hard-link-nm: false
-          nmHoistingLimits: workspaces
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          package: '@affine/native'
-      - uses: actions/download-artifact@v4
-        with:
-          name: desktop-web
-          path: packages/frontend/apps/electron/resources/web-static
+    uses: ./.github/workflows/release-desktop-platform.yml
+    secrets: inherit
+    with:
+      build_type: ${{ inputs.build-type }}
+      app_version: ${{ inputs.app-version }}
+      git_short_hash: ${{ inputs.git-short-hash }}
+      runner: ${{ matrix.spec.runner }}
+      platform: ${{ matrix.spec.platform }}
+      arch: ${{ matrix.spec.arch }}
+      target: ${{ matrix.spec.target }}
+      install_linux_deps: true
 
-      - name: Build Desktop Layers
-        run: yarn affine @affine/electron build
+  package-distribution-windows-x64:
+    if: ${{ inputs.desktop_windows }}
+    needs: before-make
+    uses: ./.github/workflows/release-desktop-platform.yml
+    secrets: inherit
+    with:
+      build_type: ${{ inputs.build-type }}
+      app_version: ${{ inputs.app-version }}
+      git_short_hash: ${{ inputs.git-short-hash }}
+      runner: windows-latest
+      platform: win32
+      arch: x64
+      target: x86_64-pc-windows-msvc
+      enable_scripts: true
 
-      - name: Remove nbstore node_modules
-        shell: bash
-        # node_modules of nbstore is not needed for building, and it will make the build process out of memory
-        run: |
-          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite/affine/node_modules
-          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
-
-      - name: package
-        run: |
-          yarn affine @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-        env:
-          SKIP_WEB_BUILD: 1
-          HOIST_NODE_MODULES: 1
-          NODE_OPTIONS: --max-old-space-size=14384
-
-      - name: get all files to be signed
-        id: get_files_to_be_signed
-        run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\apps\electron\out\', '') + '"' }) -join ' ')
-          "FILES_TO_BE_SIGNED_${{ matrix.spec.arch }}=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
-          echo $FILES_TO_BE_SIGNED
-
-      - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/apps/electron/out/* -DestinationPath archive.zip
-
-      - name: Save packaged artifacts for signing
-        uses: actions/upload-artifact@v4
-        with:
-          name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: |
-            archive.zip
-            !**/*.map
+  package-distribution-windows-arm64:
+    if: ${{ inputs.desktop_windows }}
+    needs: before-make
+    uses: ./.github/workflows/release-desktop-platform.yml
+    secrets: inherit
+    with:
+      build_type: ${{ inputs.build-type }}
+      app_version: ${{ inputs.app-version }}
+      git_short_hash: ${{ inputs.git-short-hash }}
+      runner: windows-latest
+      platform: win32
+      arch: arm64
+      target: aarch64-pc-windows-msvc
+      enable_scripts: true
 
   sign-packaged-artifacts-windows_x64:
-    needs: package-distribution-windows
+    if: ${{ inputs.desktop_windows }}
+    needs: package-distribution-windows-x64
     uses: ./.github/workflows/windows-signer.yml
     with:
-      files: ${{ needs.package-distribution-windows.outputs.FILES_TO_BE_SIGNED_x64 }}
+      files: ${{ needs.package-distribution-windows-x64.outputs.files_to_be_signed }}
       artifact-name: packaged-win32-x64
 
   sign-packaged-artifacts-windows_arm64:
-    needs: package-distribution-windows
+    if: ${{ inputs.desktop_windows }}
+    needs: package-distribution-windows-arm64
     uses: ./.github/workflows/windows-signer.yml
     with:
-      files: ${{ needs.package-distribution-windows.outputs.FILES_TO_BE_SIGNED_arm64 }}
+      files: ${{ needs.package-distribution-windows-arm64.outputs.files_to_be_signed }}
       artifact-name: packaged-win32-arm64
 
   make-windows-installer:
+    if: ${{ inputs.desktop_windows }}
     needs:
       - sign-packaged-artifacts-windows_x64
       - sign-packaged-artifacts-windows_arm64
@@ -349,6 +233,7 @@ jobs:
           path: archive.zip
 
   sign-installer-artifacts-windows-x64:
+    if: ${{ inputs.desktop_windows }}
     needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
@@ -356,6 +241,7 @@ jobs:
       artifact-name: installer-win32-x64
 
   sign-installer-artifacts-windows-arm64:
+    if: ${{ inputs.desktop_windows }}
     needs: make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
@@ -363,6 +249,7 @@ jobs:
       artifact-name: installer-win32-arm64
 
   finalize-installer-windows:
+    if: ${{ inputs.desktop_windows }}
     needs:
       [
         sign-installer-artifacts-windows-x64,
@@ -410,17 +297,18 @@ jobs:
           path: builds
 
   release:
-    needs: [before-make, make-distribution, finalize-installer-windows]
+    if: ${{ inputs.desktop_macos && inputs.desktop_linux && inputs.desktop_windows }}
+    needs:
+      [
+        before-make,
+        make-distribution-macos,
+        make-distribution-linux,
+        finalize-installer-windows,
+      ]
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: desktop-web
-          path: web-static
-      - name: Zip web-static
-        run: zip -r web-static.zip web-static
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v4
         with:

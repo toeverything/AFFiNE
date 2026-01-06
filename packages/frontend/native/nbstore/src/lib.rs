@@ -3,6 +3,8 @@ pub mod blob_sync;
 pub mod doc;
 pub mod doc_sync;
 pub mod error;
+pub mod indexer;
+pub mod indexer_sync;
 pub mod pool;
 pub mod storage;
 
@@ -54,6 +56,14 @@ pub struct DocClock {
   pub timestamp: NaiveDateTime,
 }
 
+#[derive(Debug)]
+#[napi(object)]
+pub struct DocIndexedClock {
+  pub doc_id: String,
+  pub timestamp: NaiveDateTime,
+  pub indexer_version: i64,
+}
+
 #[napi(object)]
 pub struct SetBlob {
   pub key: String,
@@ -94,7 +104,7 @@ impl DocStoragePool {
     })
   }
 
-  async fn get(&self, universal_id: String) -> Result<Ref<SqliteDocStorage>> {
+  async fn get(&self, universal_id: String) -> Result<Ref<'_, SqliteDocStorage>> {
     Ok(self.pool.get(universal_id).await?)
   }
 
@@ -115,6 +125,20 @@ impl DocStoragePool {
   pub async fn checkpoint(&self, universal_id: String) -> Result<()> {
     self.pool.get(universal_id).await?.checkpoint().await?;
     Ok(())
+  }
+
+  #[napi]
+  pub async fn crawl_doc_data(
+    &self,
+    universal_id: String,
+    doc_id: String,
+  ) -> Result<indexer::NativeCrawlResult> {
+    let result = self
+      .get(universal_id)
+      .await?
+      .crawl_doc_data(&doc_id)
+      .await?;
+    Ok(result)
   }
 
   #[napi]
@@ -218,6 +242,47 @@ impl DocStoragePool {
     doc_id: String,
   ) -> Result<Option<DocClock>> {
     Ok(self.get(universal_id).await?.get_doc_clock(doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn get_doc_indexed_clock(
+    &self,
+    universal_id: String,
+    doc_id: String,
+  ) -> Result<Option<DocIndexedClock>> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_doc_indexed_clock(doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn set_doc_indexed_clock(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    indexed_clock: NaiveDateTime,
+    indexer_version: i64,
+  ) -> Result<()> {
+    self
+      .get(universal_id)
+      .await?
+      .set_doc_indexed_clock(doc_id, indexed_clock, indexer_version)
+      .await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn clear_doc_indexed_clock(&self, universal_id: String, doc_id: String) -> Result<()> {
+    self
+      .get(universal_id)
+      .await?
+      .clear_doc_indexed_clock(doc_id)
+      .await?;
+    Ok(())
   }
 
   #[napi(async_runtime)]
@@ -434,6 +499,82 @@ impl DocStoragePool {
       .await?;
 
     Ok(result)
+  }
+
+  #[napi]
+  pub async fn fts_add_document(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+    text: String,
+    index: bool,
+  ) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.fts_add(&index_name, &doc_id, &text, index).await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn fts_flush_index(&self, id: String) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.flush_index().await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn fts_index_version(&self) -> Result<u32> {
+    Ok(SqliteDocStorage::index_version())
+  }
+
+  #[napi]
+  pub async fn fts_delete_document(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+  ) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.fts_delete(&index_name, &doc_id).await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn fts_get_document(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+  ) -> Result<Option<String>> {
+    let storage = self.pool.get(id).await?;
+    Ok(storage.fts_get(&index_name, &doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn fts_search(
+    &self,
+    id: String,
+    index_name: String,
+    query: String,
+  ) -> Result<Vec<indexer::NativeSearchHit>> {
+    let storage = self.pool.get(id).await?;
+    Ok(storage.fts_search(&index_name, &query).await?)
+  }
+
+  #[napi]
+  pub async fn fts_get_matches(
+    &self,
+    id: String,
+    index_name: String,
+    doc_id: String,
+    query: String,
+  ) -> Result<Vec<indexer::NativeMatch>> {
+    let storage = self.pool.get(id).await?;
+    Ok(
+      storage
+        .fts_get_matches(&index_name, &doc_id, &query)
+        .await?,
+    )
   }
 }
 
