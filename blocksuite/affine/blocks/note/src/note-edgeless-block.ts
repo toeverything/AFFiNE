@@ -454,37 +454,58 @@ export const EdgelessNoteInteraction =
                     return;
                   }
 
-                  if (model.children.length === 0) {
-                    const blockId = std.store.addBlock(
-                      'affine:paragraph',
-                      { type: 'text' },
-                      model.id
+                  let isClickOnTitle = false;
+                  const titleRect = view
+                    .querySelector('edgeless-page-block-title')
+                    ?.getBoundingClientRect();
+
+                  if (titleRect) {
+                    const titleBound = new Bound(
+                      titleRect.x,
+                      titleRect.y,
+                      titleRect.width,
+                      titleRect.height
                     );
-
-                    if (blockId) {
-                      focusTextModel(std, blockId);
+                    if (titleBound.isPointInBound([e.clientX, e.clientY])) {
+                      isClickOnTitle = true;
                     }
-                  } else {
-                    const rect = view
-                      .querySelector('.affine-block-children-container')
-                      ?.getBoundingClientRect();
+                  }
 
-                    if (rect) {
-                      const offsetY = 8 * gfx.viewport.zoom;
-                      const offsetX = 2 * gfx.viewport.zoom;
-                      const x = clamp(
-                        e.clientX,
-                        rect.left + offsetX,
-                        rect.right - offsetX
+                  if (isClickOnTitle) {
+                    handleNativeRangeAtPoint(e.clientX, e.clientY);
+                  } else {
+                    if (model.children.length === 0) {
+                      const blockId = std.store.addBlock(
+                        'affine:paragraph',
+                        { type: 'text' },
+                        model.id
                       );
-                      const y = clamp(
-                        e.clientY,
-                        rect.top + offsetY,
-                        rect.bottom - offsetY
-                      );
-                      handleNativeRangeAtPoint(x, y);
+
+                      if (blockId) {
+                        focusTextModel(std, blockId);
+                      }
                     } else {
-                      handleNativeRangeAtPoint(e.clientX, e.clientY);
+                      const rect = view
+                        .querySelector('.affine-block-children-container')
+                        ?.getBoundingClientRect();
+
+                      if (rect) {
+                        const offsetY = 8 * gfx.viewport.zoom;
+                        const offsetX = 2 * gfx.viewport.zoom;
+                        const x = clamp(
+                          e.clientX,
+                          rect.left + offsetX,
+                          rect.right - offsetX
+                        );
+                        const y = clamp(
+                          e.clientY,
+                          rect.top + offsetY,
+                          rect.bottom - offsetY
+                        );
+                        handleNativeRangeAtPoint(x, y);
+                      } else {
+                        handleNativeRangeAtPoint(e.clientX, e.clientY);
+                      }
                     }
                   }
                 })
