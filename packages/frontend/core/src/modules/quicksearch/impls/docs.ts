@@ -105,7 +105,7 @@ export class DocsQuickSearchSession
     switchMap((query: string) => {
       let out;
       if (!query) {
-        out = of([] as QuickSearchItem<'docs', DocsPayload>[]);
+        out = of({ items: [], useLocalLabel: false });
       } else {
         const preferRemote =
           !this.searchLocally && this.isSupportServerIndexer();
@@ -143,8 +143,8 @@ export class DocsQuickSearchSession
             );
 
         out = search$.pipe(
-          map(({ docs, useLocalLabel }) =>
-            docs
+          map(({ docs, useLocalLabel }) => {
+            const items = docs
               .map(doc => {
                 const docRecord = this.docsService.list.doc$(doc.docId).value;
                 return [doc, docRecord] as const;
@@ -177,16 +177,18 @@ export class DocsQuickSearchSession
                   timestamp: updatedDate,
                   payload: doc,
                 } as QuickSearchItem<'docs', DocsPayload>;
-              })
-          )
+              });
+            return { items, useLocalLabel };
+          })
         );
       }
       return out.pipe(
-        tap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
+        tap(({ items, useLocalLabel }) => {
           this.items$.next(
             this.isSupportServerIndexer() &&
               !this.searchLocally &&
-              !this.isEnableBatterySaveMode()
+              !this.isEnableBatterySaveMode() &&
+              !useLocalLabel
               ? [...items, this.searchLocallyItem]
               : items
           );
