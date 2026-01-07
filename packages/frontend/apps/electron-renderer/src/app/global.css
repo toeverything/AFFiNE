@@ -23,3 +23,13 @@ html[data-active='true']:has([data-translucent='true']) {
   opacity: 1;
   transition: opacity 0.2s;
 }
+
+/* Disable animations when on battery power */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

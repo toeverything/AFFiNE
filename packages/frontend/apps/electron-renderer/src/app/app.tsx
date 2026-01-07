@@ -11,6 +11,7 @@ import { RouterProvider } from 'react-router-dom';
 
 import { setupEffects } from './effects';
 import { DesktopLanguageSync } from './language-sync';
+import { DesktopPowerStateSync } from './power-state-sync';
 import { DesktopThemeSync } from './theme-sync';
 
 const { frameworkProvider } = setupEffects();
@@ -48,6 +49,7 @@ export function App() {
             <AffineContext store={getCurrentStore()}>
               <DesktopThemeSync />
               <DesktopLanguageSync />
+              <DesktopPowerStateSync />
               <RouterProvider
                 fallbackElement={<AppContainer fallback />}
                 router={router}

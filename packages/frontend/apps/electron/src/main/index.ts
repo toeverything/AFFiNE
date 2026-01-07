@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import * as Sentry from '@sentry/electron/main';
 import { IPCMode } from '@sentry/electron/main';
-import { app, protocol } from 'electron';
+import { app, ipcMain, powerMonitor, protocol } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, isDev, overrideSession } from './config';
@@ -19,6 +19,8 @@ import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
+
+let isOnBatteryPower = false;
 
 app.enableSandbox();
 
@@ -93,6 +95,26 @@ if (!isSingleInstance) {
  */
 app.on('window-all-closed', () => {
   app.quit();
+});
+
+/**
+ * Monitor system power source changes
+ * Refs: https://www.electronjs.org/docs/latest/api/power-monitor
+ */
+powerMonitor.on('on-battery', () => {
+  isOnBatteryPower = true;
+  logger.info('Running on battery');
+});
+
+powerMonitor.on('on-ac', () => {
+  isOnBatteryPower = false;
+  logger.info('Running on AC power');
+});
+
+isOnBatteryPower = powerMonitor.isOnBatteryPower();
+
+ipcMain.handle('get-power-state', () => {
+  return isOnBatteryPower;
 });
 
 /**
