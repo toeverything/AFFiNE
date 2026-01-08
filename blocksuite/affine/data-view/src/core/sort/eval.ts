@@ -48,8 +48,8 @@ const compareList = <T>(
   return 0;
 };
 const compareString = (a: unknown, b: unknown): CompareType => {
-  const strA = String(a || ''); // Ensure it's a string, treat null/undefined as empty string
-  const strB = String(b || ''); // Ensure it's a string, treat null/undefined as empty string
+  const strA = String(a ?? '');
+  const strB = String(b ?? '');
 
   if (strA === '' && strB !== '') {
     return Compare.GT; // Empty strings come last
