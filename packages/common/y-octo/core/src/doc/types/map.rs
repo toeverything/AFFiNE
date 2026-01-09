@@ -20,7 +20,8 @@ pub(crate) trait MapType: AsInner<Inner = YTypeRef> {
         Some(Parent::Type(self.as_inner().clone())),
         Some(SmolStr::new(key)),
       );
-      store.integrate(Node::Item(item), 0, Some(&mut ty))?;
+      // During normal operation (not deserialization), parent is always available
+      let _ = store.integrate(Node::Item(item), 0, Some(&mut ty))?;
     }
 
     Ok(())
@@ -321,6 +322,165 @@ mod tests {
           ("2", Value::Any(Any::String("value2".to_string())))
         ]
       )
+    });
+  }
+
+  #[test]
+  fn test_nested_map_roundtrip() {
+    loom_model!({
+      let binary = {
+        let doc = Doc::new();
+        let mut outer_map = doc.get_or_create_map("blocks").unwrap();
+
+        // Create a nested map
+        let inner_map = doc.create_map().unwrap();
+        outer_map.insert("block1".to_string(), inner_map).unwrap();
+
+        // Also insert into inner map
+        let mut inner = outer_map.get("block1").unwrap().to_map().unwrap();
+        inner.insert("key".to_string(), "value").unwrap();
+
+        doc.encode_update_v1().unwrap()
+      };
+
+      {
+        let doc = Doc::try_from_binary_v1(binary).unwrap();
+        let outer_map = doc.get_or_create_map("blocks").unwrap();
+
+        // This should find "block1"
+        assert!(
+          outer_map.contains_key("block1"),
+          "outer_map should contain block1"
+        );
+
+        let inner = outer_map.get("block1");
+        assert!(inner.is_some(), "block1 should have a value");
+
+        let inner_map = inner.unwrap().to_map();
+        assert!(inner_map.is_some(), "block1 value should be a Map");
+
+        let inner_map = inner_map.unwrap();
+        assert_eq!(
+          inner_map.get("key"),
+          Some(Value::Any(Any::String("value".to_string())))
+        );
+      }
+    });
+  }
+
+  #[test]
+  fn test_nested_map_simple() {
+    // Test for nested map serialization/deserialization with forward parent references
+    loom_model!({
+      let binary = {
+        let doc = Doc::new();
+        let mut outer_map = doc.get_or_create_map("outer").unwrap();
+
+        // Create a nested map with just one entry
+        let mut inner_map = doc.create_map().unwrap();
+        inner_map
+          .insert("inner_key".to_string(), "inner_value")
+          .unwrap();
+
+        // Insert nested map into outer map
+        outer_map.insert("nested".to_string(), inner_map).unwrap();
+
+        doc.encode_update_v1().unwrap()
+      };
+
+      {
+        let doc = Doc::try_from_binary_v1(binary).unwrap();
+        let outer_map = doc.get_or_create_map("outer").unwrap();
+
+        assert!(
+          outer_map.contains_key("nested"),
+          "outer_map should contain 'nested'"
+        );
+
+        let nested_value = outer_map.get("nested");
+        assert!(nested_value.is_some(), "nested should have a value");
+
+        let inner_map = nested_value.unwrap().to_map();
+        assert!(inner_map.is_some(), "nested value should be a Map");
+
+        let inner_map = inner_map.unwrap();
+        let inner_key = inner_map.get("inner_key");
+        assert!(inner_key.is_some(), "inner_key should exist");
+        assert_eq!(
+          inner_key.unwrap(),
+          Value::Any(Any::String("inner_value".to_string()))
+        );
+      }
+    });
+  }
+
+  #[test]
+  fn test_nested_map_with_text_and_array() {
+    // This test mimics what markdown_to_ydoc does - nested maps with Text and Array types
+    loom_model!({
+      let binary = {
+        let doc = Doc::new();
+        let mut blocks_map = doc.get_or_create_map("blocks").unwrap();
+
+        // Create a block map (like build_block_map does)
+        let mut block = doc.create_map().unwrap();
+        block
+          .insert("sys:id".to_string(), Any::String("block1".to_string()))
+          .unwrap();
+        block
+          .insert(
+            "sys:flavour".to_string(),
+            Any::String("affine:paragraph".to_string()),
+          )
+          .unwrap();
+
+        // Add children array
+        let mut children = doc.create_array().unwrap();
+        children
+          .insert(0, Any::String("child1".to_string()))
+          .unwrap();
+        block.insert("sys:children".to_string(), children).unwrap();
+
+        // Add text
+        let mut text = doc.create_text().unwrap();
+        text.insert(0, "Hello world").unwrap();
+        block.insert("prop:text".to_string(), text).unwrap();
+
+        // Insert block into blocks_map
+        blocks_map.insert("block1".to_string(), block).unwrap();
+
+        doc.encode_update_v1().unwrap()
+      };
+
+      {
+        let doc = Doc::try_from_binary_v1(binary).unwrap();
+        let blocks_map = doc.get_or_create_map("blocks").unwrap();
+
+        assert!(
+          blocks_map.contains_key("block1"),
+          "blocks_map should contain block1"
+        );
+
+        let block_value = blocks_map.get("block1");
+        assert!(block_value.is_some(), "block1 should have a value");
+
+        let block = block_value.unwrap().to_map();
+        assert!(block.is_some(), "block1 value should be a Map");
+
+        let block = block.unwrap();
+
+        // Check sys:id
+        let id = block.get("sys:id");
+        assert!(id.is_some(), "block should have sys:id");
+        assert_eq!(id.unwrap(), Value::Any(Any::String("block1".to_string())));
+
+        // Check prop:text
+        let text = block.get("prop:text");
+        assert!(text.is_some(), "block should have prop:text");
+        let text = text.unwrap().to_text();
+        assert!(text.is_some(), "prop:text should be Text");
+        assert_eq!(text.unwrap().to_string(), "Hello world");
+      }
     });
   }
 }

@@ -331,7 +331,8 @@ fn insert_item(
     None,
   );
   let item_ref = item.clone();
-  store.integrate(Node::Item(item), 0, Some(ty))?;
+  // During normal operation (not deserialization), parent is always available
+  let _ = store.integrate(Node::Item(item), 0, Some(ty))?;
   pos.right = item_ref;
   pos.forward();
 

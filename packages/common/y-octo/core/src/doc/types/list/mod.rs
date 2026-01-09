@@ -161,7 +161,8 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
       None,
     );
 
-    store.integrate(Node::Item(item), 0, Some(ty))?;
+    // During normal operation (not deserialization), parent is always available
+    let _ = store.integrate(Node::Item(item), 0, Some(ty))?;
 
     Ok(())
   }

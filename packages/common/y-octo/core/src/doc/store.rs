@@ -140,15 +140,32 @@ impl DocStore {
 
   /// binary search struct info on a sorted array
   pub fn get_node_index(items: &VecDeque<Node>, clock: Clock) -> Option<usize> {
+    if items.is_empty() {
+      return None;
+    }
+
     let mut left = 0;
     let mut right = items.len() - 1;
-    let middle = &items[right];
-    let middle_clock = middle.clock();
-    if middle_clock == clock {
+    let last = &items[right];
+    let last_clock = last.clock();
+
+    // Fast path: check if clock matches the last item's start
+    if last_clock == clock {
       return Some(right);
     }
-    let mut middle_index = (clock / (middle_clock + middle.len() - 1)) as usize * right;
-    while left <= right {
+
+    // Estimate starting position for binary search
+    // Guard against division by zero when the last item is at clock 0 with length 1
+    let max_clock = last_clock + last.len();
+    let mut middle_index = if max_clock > 1 {
+      ((clock as usize) * right) / ((max_clock - 1) as usize)
+    } else {
+      0
+    };
+    // Clamp to valid range
+    middle_index = middle_index.min(right);
+
+    loop {
       let middle = &items[middle_index];
       let middle_clock = middle.clock();
       if middle_clock <= clock {
@@ -156,12 +173,18 @@ impl DocStore {
           return Some(middle_index);
         }
         left = middle_index + 1;
+        if left > right {
+          return None;
+        }
       } else {
+        // Avoid underflow when middle_index is 0
+        if middle_index == 0 {
+          return None;
+        }
         right = middle_index - 1;
       }
-      middle_index = (left + right) / 2;
+      middle_index = left + (right - left) / 2;
     }
-    None
   }
 
   pub fn create_item(
@@ -343,7 +366,29 @@ impl DocStore {
   ///       `doc.get_or_create_text("content")`)
   ///     - [Parent::Id] for type as item (e.g `doc.create_text()`)
   ///     - [None] means borrow left.parent or right.parent
+  #[allow(dead_code)]
   pub fn repair(&mut self, item: &mut Item, store_ref: StoreRef) -> JwstCodecResult {
+    self.repair_inner(item, store_ref, None)
+  }
+
+  /// Like repair, but uses a batch_type_map to resolve Parent::Id references.
+  /// This is used when processing updates where Parent::Id references may point
+  /// to Content::Type items in the same batch that haven't been integrated yet.
+  pub fn repair_with_batch_types(
+    &mut self,
+    item: &mut Item,
+    store_ref: StoreRef,
+    batch_type_map: &HashMap<Id, YTypeRef>,
+  ) -> JwstCodecResult {
+    self.repair_inner(item, store_ref, Some(batch_type_map))
+  }
+
+  fn repair_inner(
+    &mut self,
+    item: &mut Item,
+    store_ref: StoreRef,
+    batch_type_map: Option<&HashMap<Id, YTypeRef>>,
+  ) -> JwstCodecResult {
     if let Some(left_id) = item.origin_left_id {
       if let Node::Item(left_ref) = self.split_at_and_get_left(left_id)? {
         item.origin_left_id = left_ref.get().map(|left| left.last_id());
@@ -378,19 +423,45 @@ impl DocStore {
       // Item { id: (1, 0), content: Content::Type(_) }
       //        ^^ Parent::Id((1, 0))
       Some(Parent::Id(parent_id)) => {
-        match self.get_node(*parent_id) {
-          Some(Node::Item(parent_item)) => {
-            if let Content::Type(ty) = &parent_item.get().unwrap().content {
-              item.parent.replace(Parent::Type(ty.clone()));
-            } else {
-              // invalid parent, take it.
-              item.parent.take();
-              // return Err(JwstCodecError::InvalidParent);
+        // First, try the batch_type_map for forward references in the same update
+        if let Some(batch_map) = batch_type_map {
+          if let Some(ty) = batch_map.get(parent_id) {
+            item.parent.replace(Parent::Type(ty.clone()));
+            // Successfully resolved, skip the store lookup
+          } else {
+            // Not in batch map, try the store
+            match self.get_node(*parent_id) {
+              Some(Node::Item(parent_item)) => {
+                if let Content::Type(ty) = &parent_item.get().unwrap().content {
+                  item.parent.replace(Parent::Type(ty.clone()));
+                } else {
+                  item.parent.take();
+                }
+              }
+              Some(_) => {
+                item.parent.take();
+              }
+              None => {
+                item.parent.take();
+              }
             }
           }
-          _ => {
-            // GC & Skip are not valid parent, take it.
-            item.parent.take();
+        } else {
+          // No batch map, just use store lookup
+          match self.get_node(*parent_id) {
+            Some(Node::Item(parent_item)) => {
+              if let Content::Type(ty) = &parent_item.get().unwrap().content {
+                item.parent.replace(Parent::Type(ty.clone()));
+              } else {
+                item.parent.take();
+              }
+            }
+            Some(_) => {
+              item.parent.take();
+            }
+            None => {
+              item.parent.take();
+            }
           }
         }
       }
@@ -430,6 +501,7 @@ impl DocStore {
     Ok(())
   }
 
+  /// Integrates a node into the store.
   pub fn integrate(
     &mut self,
     mut node: Node,
@@ -468,6 +540,7 @@ impl DocStore {
             parent_lock = Some(ty);
             parent_lock.as_deref_mut().unwrap()
           } else {
+            // ty.ty_mut() returned None, skip this item
             return Ok(());
           };
 
@@ -616,7 +689,8 @@ impl DocStore {
         // skip ignored
       }
     }
-    self.add_node(node)
+    self.add_node(node)?;
+    Ok(())
   }
 
   pub fn delete_item(&mut self, item: &Item, parent: Option<&mut YType>) {

@@ -238,12 +238,30 @@ impl Doc {
   pub fn apply_update(&mut self, mut update: Update) -> JwstCodecResult {
     let mut store = self.store.write().unwrap();
     let mut retry = false;
+
     loop {
+      // Build a map of id -> YTypeRef for Content::Type items in this update batch.
+      // This is done by peeking at the raw structs before iteration.
+      // We need this to resolve Parent::Id references that point to items
+      // in the same batch with higher clocks (forward references).
+      let mut batch_type_map: HashMap<Id, YTypeRef> = HashMap::new();
+      for structs in update.structs.values() {
+        for node in structs {
+          if let Node::Item(item) = node {
+            if let Some(item) = item.get() {
+              if let Content::Type(ty) = &item.content {
+                batch_type_map.insert(item.id, ty.clone());
+              }
+            }
+          }
+        }
+      }
+
       for (mut s, offset) in update.iter(store.get_state_vector()) {
         if let Node::Item(item) = &mut s {
-          debug_assert!(item.is_owned());
           let mut item = unsafe { item.get_mut_unchecked() };
-          store.repair(&mut item, self.store.clone())?;
+          // Use the batch_type_map to resolve Parent::Id for forward references
+          store.repair_with_batch_types(&mut item, self.store.clone(), &batch_type_map)?;
         }
         store.integrate(s, offset, None)?;
       }
