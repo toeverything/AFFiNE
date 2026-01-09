@@ -37,7 +37,7 @@ tree-sitter = [
   "dep:tree-sitter-scala",
   "dep:tree-sitter-typescript",
 ]
-ydoc-loader = ["assert-json-diff", "serde", "serde_json", "thiserror", "y-octo"]
+ydoc-loader = ["assert-json-diff", "nanoid", "pulldown-cmark", "serde", "serde_json", "thiserror", "y-octo"]
 
 [dependencies]
 assert-json-diff = { workspace = true, optional = true }
@@ -72,6 +72,8 @@ tree-sitter-scala = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 url = { workspace = true, optional = true }
 y-octo = { workspace = true, optional = true }
+pulldown-cmark = { workspace = true, optional = true }
+nanoid = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

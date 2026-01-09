@@ -130,6 +130,7 @@ resolver = "3"
   y-octo = { path = "./packages/common/y-octo/core" }
   y-sync = { version = "0.4" }
   yrs = "0.23.0"
+  pulldown-cmark = "0.13"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3

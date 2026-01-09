@@ -145,3 +145,18 @@ pub fn read_all_doc_ids_from_root_doc(
     .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result)
 }
+
+/// Converts markdown content to AFFiNE-compatible y-octo document binary.
+///
+/// # Arguments
+/// * `markdown` - The markdown content to convert
+/// * `doc_id` - The document ID to use for the y-octo doc
+///
+/// # Returns
+/// A Buffer containing the y-octo document update binary
+#[napi]
+pub fn markdown_to_doc_binary(markdown: String, doc_id: String) -> Result<Buffer> {
+  let result = doc_parser::markdown_to_ydoc(&markdown, &doc_id)
+    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  Ok(Buffer::from(result))
+}

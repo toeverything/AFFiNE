@@ -1,6 +1,7 @@
 mod affine;
 mod blocksuite;
 mod delta_markdown;
+mod markdown_to_ydoc;
 mod value;
 
 pub use affine::{
@@ -8,3 +9,4 @@ pub use affine::{
   parse_workspace_doc, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, ParseError,
   WorkspaceDocContent,
 };
+pub use markdown_to_ydoc::markdown_to_ydoc;
