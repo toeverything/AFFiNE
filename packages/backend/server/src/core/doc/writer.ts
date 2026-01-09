@@ -74,40 +74,4 @@ export class DocWriter {
 
     return { success: true };
   }
-
-  /**
-   * Appends content to an existing document.
-   * Reads the existing content, appends the new content, and saves.
-   *
-   * @param workspaceId - The workspace ID
-   * @param docId - The document ID
-   * @param appendMarkdown - The markdown content to append
-   * @param editorId - Optional editor ID for tracking
-   * @returns Success status
-   */
-  async appendToDoc(
-    workspaceId: string,
-    docId: string,
-    appendMarkdown: string,
-    editorId?: string
-  ): Promise<UpdateDocResult> {
-    this.logger.log(
-      `Appending content to doc ${docId} in workspace ${workspaceId}`
-    );
-
-    // For append, we need to read the existing content first
-    // Then merge it with the new content
-    // For now, we'll just push the append as an update
-    // The client will need to handle merging
-    // This is a simplified implementation - full append would require
-    // reading the doc, parsing it, adding blocks, and re-encoding
-
-    // Convert append markdown to y-octo binary
-    const binary = markdownToDocBinary(appendMarkdown, docId);
-
-    // Push the update to storage
-    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
-
-    return { success: true };
-  }
 }

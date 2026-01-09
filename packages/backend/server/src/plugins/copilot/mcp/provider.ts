@@ -189,7 +189,9 @@ export class WorkspaceMcpProvider {
             .assert('Doc.Create');
 
           // Combine title and content into markdown
-          const markdown = `# ${title}\n\n${content}`;
+          // Sanitize title by removing newlines and trimming
+          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          const markdown = `# ${sanitizedTitle}\n\n${content}`;
 
           // Create the document
           const result = await this.writer.createDoc(

@@ -185,6 +185,7 @@ fn parse_markdown_to_blocks(
   let mut in_code_block = false;
   let mut code_language = String::new();
   let mut skip_first_h1 = true; // Skip first H1 as it becomes the title
+  let mut pending_link_url: Option<String> = None; // For proper link handling
 
   for event in parser {
     match event {
@@ -287,12 +288,7 @@ fn parse_markdown_to_blocks(
         };
       }
       Event::End(TagEnd::CodeBlock) => {
-        flush_code_block(
-          &mut current_text,
-          &code_language,
-          blocks,
-          content_block_ids,
-        );
+        flush_code_block(&mut current_text, &code_language, blocks, content_block_ids);
         in_code_block = false;
         code_language.clear();
       }
@@ -344,11 +340,14 @@ fn parse_markdown_to_blocks(
       }
       Event::Start(Tag::Link { dest_url, .. }) => {
         current_text.push('[');
-        // Store the URL for later
-        current_text.push_str(&format!("]({})", dest_url));
+        // Store the URL for later - will be added on Event::End
+        pending_link_url = Some(dest_url.to_string());
       }
       Event::End(TagEnd::Link) => {
-        // Link end - URL was already added
+        // Now add the closing bracket and URL
+        if let Some(url) = pending_link_url.take() {
+          current_text.push_str(&format!("]({})", url));
+        }
       }
       _ => {}
     }
