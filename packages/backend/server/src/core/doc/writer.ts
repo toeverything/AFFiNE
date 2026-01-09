@@ -48,14 +48,12 @@ export class DocWriter {
 
   /**
    * Updates an existing document with new markdown content.
-   * Uses structural and text-level diffing to apply minimal changes,
-   * preserving collaborative editing history.
+   * Uses structural diffing to apply minimal changes.
    *
    * @param workspaceId - The workspace ID
    * @param docId - The document ID to update
    * @param markdown - The new markdown content
    * @param editorId - Optional editor ID for tracking
-   * @returns Success status
    */
   async updateDoc(
     workspaceId: string,
@@ -64,26 +62,29 @@ export class DocWriter {
     editorId?: string
   ): Promise<UpdateDocResult> {
     this.logger.log(
-      `Updating doc ${docId} in workspace ${workspaceId} with new markdown`
+      `Updating doc ${docId} in workspace ${workspaceId} from markdown`
     );
 
-    // Fetch the existing document binary
+    // Get existing document binary
     const existingDoc = await this.storage.getDoc(workspaceId, docId);
-    if (!existingDoc || !existingDoc.bin) {
-      throw new Error(
-        `Document ${docId} not found in workspace ${workspaceId}`
-      );
+    if (!existingDoc?.data) {
+      throw new Error(`Document ${docId} not found`);
     }
 
-    // Compute and apply the diff, getting only the delta
-    const delta = updateDocWithMarkdown(
-      Buffer.from(existingDoc.bin),
+    // Compute delta update using y-octo diffing
+    const deltaBinary = updateDocWithMarkdown(
+      existingDoc.data,
       markdown,
       docId
     );
 
     // Push only the delta to storage
-    await this.storage.pushDocUpdates(workspaceId, docId, [delta], editorId);
+    await this.storage.pushDocUpdates(
+      workspaceId,
+      docId,
+      [deltaBinary],
+      editorId
+    );
 
     return { success: true };
   }

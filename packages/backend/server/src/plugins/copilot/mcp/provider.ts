@@ -231,61 +231,27 @@ export class WorkspaceMcpProvider {
       {
         title: 'Update Document',
         description:
-          'Update an existing document with new markdown content. Uses structural and text-level diffing to apply minimal changes while preserving collaborative editing history.',
+          'Update an existing document with new markdown content. Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration.',
         inputSchema: z.object({
           docId: z.string().describe('The ID of the document to update'),
-          title: z.string().describe('The new title for the document'),
           content: z
             .string()
-            .describe('The new markdown content for the document body'),
+            .describe(
+              'The complete new markdown content for the document (including title as H1)'
+            ),
         }),
       },
-      async ({ docId, title, content }) => {
+      async ({ docId, content }) => {
         try {
-          // Check if document exists and user has write access
-          const accessible = await this.ac
+          // Check if user can write to this doc
+          await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
-            .can('Doc.Write');
+            .assert('Doc.Write');
 
-          if (!accessible) {
-            return {
-              isError: true,
-              content: [
-                {
-                  type: 'text',
-                  text: `Document ${docId} not found or you don't have write access.`,
-                },
-              ],
-            };
-          }
-
-          // Verify document exists by trying to read it
-          const existingContent = await this.reader.getDocMarkdown(
-            workspaceId,
-            docId,
-            false
-          );
-
-          if (!existingContent) {
-            return {
-              isError: true,
-              content: [
-                {
-                  type: 'text',
-                  text: `Document ${docId} not found.`,
-                },
-              ],
-            };
-          }
-
-          // Combine title and content into markdown
-          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-          const markdown = `# ${sanitizedTitle}\n\n${content}`;
-
-          // Update the document using diff-based approach
-          await this.writer.updateDoc(workspaceId, docId, markdown, userId);
+          // Update the document
+          await this.writer.updateDoc(workspaceId, docId, content, userId);
 
           return {
             content: [
@@ -294,7 +260,7 @@ export class WorkspaceMcpProvider {
                 text: JSON.stringify({
                   success: true,
                   docId,
-                  message: `Document "${title}" updated successfully`,
+                  message: `Document updated successfully`,
                 }),
               },
             ],
