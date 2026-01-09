@@ -47,6 +47,7 @@ export const parseWorkspaceDocFromBinary = serverNativeModule.parseWorkspaceDoc;
 export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const markdownToDocBinary = serverNativeModule.markdownToDocBinary;
+export const updateDocWithMarkdown = serverNativeModule.updateDocWithMarkdown;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;

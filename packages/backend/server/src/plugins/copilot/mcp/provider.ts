@@ -243,12 +243,12 @@ export class WorkspaceMcpProvider {
       },
       async ({ docId, content }) => {
         try {
-          // Check if user can write to this doc
+          // Check if user can update this doc
           await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
-            .assert('Doc.Write');
+            .assert('Doc.Update');
 
           // Update the document
           await this.writer.updateDoc(workspaceId, docId, content, userId);

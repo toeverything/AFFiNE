@@ -67,13 +67,13 @@ export class DocWriter {
 
     // Get existing document binary
     const existingDoc = await this.storage.getDoc(workspaceId, docId);
-    if (!existingDoc?.data) {
+    if (!existingDoc?.bin) {
       throw new Error(`Document ${docId} not found`);
     }
 
     // Compute delta update using y-octo diffing
     const deltaBinary = updateDocWithMarkdown(
-      existingDoc.data,
+      Buffer.from(existingDoc.bin),
       markdown,
       docId
     );
