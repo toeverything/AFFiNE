@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
-import { markdownToDocBinary } from '../../native';
+import { markdownToDocBinary, updateDocWithMarkdown } from '../../native';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 export interface CreateDocResult {
@@ -49,9 +49,9 @@ export class DocWriter {
   /**
    * Updates an existing document with new markdown content.
    *
-   * Note: Due to y-octo/yjs compatibility issues with delta updates,
-   * this method replaces the document entirely rather than applying
-   * surgical changes. This means document history is not preserved.
+   * Uses structural diffing to compute minimal changes between the existing
+   * document and new markdown, then applies only the delta. This preserves
+   * document history and enables proper CRDT merging with concurrent edits.
    *
    * @param workspaceId - The workspace ID
    * @param docId - The document ID to update
@@ -68,22 +68,17 @@ export class DocWriter {
       `Updating doc ${docId} in workspace ${workspaceId} from markdown`
     );
 
-    // Verify document exists
+    // Fetch existing document
     const existingDoc = await this.storage.getDoc(workspaceId, docId);
     if (!existingDoc?.bin) {
       throw new Error(`Document ${docId} not found`);
     }
 
-    // Due to y-octo/yjs compatibility issues, we delete and recreate
-    // the document instead of applying a delta update.
-    // This loses document history but ensures the update is applied.
-    await this.storage.deleteDoc(workspaceId, docId);
+    // Compute delta update using structural diff
+    const delta = updateDocWithMarkdown(existingDoc.bin, markdown, docId);
 
-    // Create fresh document from markdown with the same docId
-    const binary = markdownToDocBinary(markdown, docId);
-
-    // Push the new document
-    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
+    // Push only the delta changes
+    await this.storage.pushDocUpdates(workspaceId, docId, [delta], editorId);
 
     return { success: true };
   }

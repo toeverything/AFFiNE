@@ -1,7 +1,9 @@
 mod affine;
 mod blocksuite;
 mod delta_markdown;
+#[cfg(feature = "ydoc-loader")]
 mod markdown_to_ydoc;
+#[cfg(feature = "ydoc-loader")]
 mod update_ydoc;
 mod value;
 
@@ -10,5 +12,7 @@ pub use affine::{
   parse_workspace_doc, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, ParseError,
   WorkspaceDocContent,
 };
+#[cfg(feature = "ydoc-loader")]
 pub use markdown_to_ydoc::markdown_to_ydoc;
+#[cfg(feature = "ydoc-loader")]
 pub use update_ydoc::update_ydoc;

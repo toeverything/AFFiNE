@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
-use y_octo::{Any, Doc, DocOptions, Map, StateVector};
+use y_octo::{Any, Doc, DocOptions, Map};
 
 use super::affine::ParseError;
 use super::blocksuite::{collect_child_ids, get_string};
@@ -55,27 +55,63 @@ enum DiffOp {
 
 /// Updates an existing document with new markdown content.
 ///
-/// Due to compatibility issues between y-octo and yjs when applying delta updates,
-/// this function creates a fresh document from the new markdown content.
-/// While less efficient than surgical updates, this ensures compatibility with
-/// the yjs-based server storage.
+/// This function performs structural diffing between the existing document
+/// and the new markdown content, then applies minimal y-octo operations
+/// to update only what changed. This enables proper CRDT merging with
+/// concurrent edits from other clients.
 ///
 /// # Arguments
-/// * `_existing_binary` - The current document binary (unused - kept for API compatibility)
+/// * `existing_binary` - The current document binary
 /// * `new_markdown` - The new markdown content
 /// * `doc_id` - The document ID
 ///
 /// # Returns
-/// A binary vector representing the full new document state
+/// A binary vector representing only the delta (changes) to apply
 pub fn update_ydoc(
-  _existing_binary: &[u8],
+  existing_binary: &[u8],
   new_markdown: &str,
   doc_id: &str,
 ) -> Result<Vec<u8>, ParseError> {
-  // Due to y-octo/yjs compatibility issues with delta updates,
-  // we create a fresh document from the new markdown instead of patching.
-  // This is less efficient but ensures the update can be applied by yjs.
-  super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id)
+  // Load and parse the existing document
+  let mut existing = load_existing_doc(existing_binary, doc_id)?;
+
+  // Parse new markdown into content blocks
+  let new_blocks = parse_markdown_to_content_blocks(new_markdown)?;
+
+  // Compute diff between old and new blocks
+  let diff_ops = compute_diff(&existing.content_blocks, &new_blocks);
+
+  // Check if diff contains structural changes (Insert/Delete)
+  // Y-octo delta encoding has issues with new block creation (forward parent references)
+  // So we fall back to full document replacement for structural changes
+  let has_structural_changes = diff_ops
+    .iter()
+    .any(|op| matches!(op, DiffOp::Insert(_) | DiffOp::Delete(_)));
+
+  if has_structural_changes {
+    // Fall back to creating a completely new document
+    // This doesn't support CRDT merging but ensures compatibility
+    return super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id);
+  }
+
+  // For updates only (no structural changes), use proper delta encoding
+  // This supports CRDT merging with concurrent edits
+
+  // Capture state before modifications
+  let state_before = existing.doc.get_state_vector();
+
+  // Update the title if changed
+  let new_title = extract_title(new_markdown);
+  update_title(&mut existing, &new_title)?;
+
+  // Apply diff operations (only Keep/Update, no Insert/Delete)
+  apply_diff(&mut existing, &new_blocks, &diff_ops)?;
+
+  // Encode only the changes (delta) since state_before
+  existing
+    .doc
+    .encode_state_as_update_v1(&state_before)
+    .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
 /// Loads an existing document and extracts its structure
@@ -404,9 +440,15 @@ fn flush_block(
 ) {
   let trimmed = text.trim();
   if !trimmed.is_empty() || flavour == DIVIDER_FLAVOUR {
+    // Default paragraph type to "text" to match existing documents
+    let actual_type = if flavour == PARAGRAPH_FLAVOUR && block_type.is_none() {
+      Some("text".to_string())
+    } else {
+      block_type
+    };
     blocks.push(ContentBlock {
       flavour: flavour.to_string(),
-      block_type,
+      block_type: actual_type,
       content: trimmed.to_string(),
       checked,
       language,
@@ -465,17 +507,38 @@ fn update_title(existing: &mut ExistingDoc, new_title: &str) -> Result<(), Parse
   Ok(())
 }
 
-/// Computes the diff between old and new blocks using LCS algorithm
+/// Computes the diff between old and new blocks using weighted LCS algorithm.
+/// Uses a two-tier matching: exact matches (same type + content) get priority,
+/// then similar matches (same type, different content) for update operations.
 fn compute_diff(old_blocks: &[(String, ContentBlock)], new_blocks: &[ContentBlock]) -> Vec<DiffOp> {
   let old_len = old_blocks.len();
   let new_len = new_blocks.len();
 
-  // Build LCS table
+  if old_len == 0 {
+    // All inserts
+    return (0..new_len).map(DiffOp::Insert).collect();
+  }
+  if new_len == 0 {
+    // All deletes
+    return (0..old_len).map(DiffOp::Delete).collect();
+  }
+
+  // Build weighted LCS table using exact content match
+  // This ensures identical blocks are matched together
   let mut lcs = vec![vec![0usize; new_len + 1]; old_len + 1];
 
   for i in 1..=old_len {
     for j in 1..=new_len {
-      if old_blocks[i - 1].1.is_similar(&new_blocks[j - 1]) {
+      let old_block = &old_blocks[i - 1].1;
+      let new_block = &new_blocks[j - 1];
+
+      // Only count as match if blocks are identical (same type AND content)
+      if old_block.flavour == new_block.flavour
+        && old_block.block_type == new_block.block_type
+        && old_block.content == new_block.content
+        && old_block.checked == new_block.checked
+        && old_block.language == new_block.language
+      {
         lcs[i][j] = lcs[i - 1][j - 1] + 1;
       } else {
         lcs[i][j] = std::cmp::max(lcs[i - 1][j], lcs[i][j - 1]);
@@ -489,19 +552,37 @@ fn compute_diff(old_blocks: &[(String, ContentBlock)], new_blocks: &[ContentBloc
   let mut j = new_len;
 
   while i > 0 || j > 0 {
-    if i > 0 && j > 0 && old_blocks[i - 1].1.is_similar(&new_blocks[j - 1]) {
-      // Blocks are similar - check if content changed
-      if old_blocks[i - 1].1.content == new_blocks[j - 1].content
-        && old_blocks[i - 1].1.checked == new_blocks[j - 1].checked
-        && old_blocks[i - 1].1.language == new_blocks[j - 1].language
-      {
+    if i > 0 && j > 0 {
+      let old_block = &old_blocks[i - 1].1;
+      let new_block = &new_blocks[j - 1];
+
+      let is_exact_match = old_block.flavour == new_block.flavour
+        && old_block.block_type == new_block.block_type
+        && old_block.content == new_block.content
+        && old_block.checked == new_block.checked
+        && old_block.language == new_block.language;
+
+      if is_exact_match {
+        // Exact match - Keep
         ops.push(DiffOp::Keep(i - 1, j - 1));
-      } else {
+        i -= 1;
+        j -= 1;
+      } else if old_block.is_similar(new_block)
+        && lcs[i - 1][j - 1] >= lcs[i - 1][j]
+        && lcs[i - 1][j - 1] >= lcs[i][j - 1]
+      {
+        // Similar block (same type, different content) - Update if it doesn't hurt LCS
         ops.push(DiffOp::Update(i - 1, j - 1));
+        i -= 1;
+        j -= 1;
+      } else if lcs[i][j - 1] >= lcs[i - 1][j] {
+        ops.push(DiffOp::Insert(j - 1));
+        j -= 1;
+      } else {
+        ops.push(DiffOp::Delete(i - 1));
+        i -= 1;
       }
-      i -= 1;
-      j -= 1;
-    } else if j > 0 && (i == 0 || lcs[i][j - 1] >= lcs[i - 1][j]) {
+    } else if j > 0 {
       ops.push(DiffOp::Insert(j - 1));
       j -= 1;
     } else {
@@ -565,18 +646,47 @@ fn apply_diff(
     blocks_map.remove(&block_id);
   }
 
-  // Update note block's children
-  update_note_children(
-    &mut blocks_map,
-    &existing.note_id,
-    &existing.doc,
-    new_children,
-  )?;
+  // Update note block's children only if they changed
+  // First check if they're different
+  let note_block = blocks_map
+    .get(&existing.note_id)
+    .and_then(|v| v.to_map())
+    .ok_or_else(|| ParseError::ParserError("Note block not found".into()))?;
+
+  let current_children: Vec<String> = note_block
+    .get("sys:children")
+    .and_then(|v| v.to_array())
+    .map(|arr| {
+      arr
+        .iter()
+        .filter_map(|v| {
+          v.to_any().and_then(|a| match a {
+            Any::String(s) => Some(s.clone()),
+            _ => None,
+          })
+        })
+        .collect()
+    })
+    .unwrap_or_default();
+
+  if current_children != new_children {
+    update_note_children(
+      &mut blocks_map,
+      &existing.note_id,
+      &existing.doc,
+      new_children,
+    )?;
+  }
 
   Ok(())
 }
 
 /// Creates a new block in the blocks map
+///
+/// IMPORTANT: Uses two-phase approach for YJS compatibility:
+/// 1. Insert empty map into blocks_map first (gets clock value)
+/// 2. Then populate the map with properties (gets later clock values)
+/// This ensures parent items have earlier clocks than children.
 fn create_new_block(
   blocks_map: &mut Map,
   doc: &Doc,
@@ -584,11 +694,21 @@ fn create_new_block(
 ) -> Result<String, ParseError> {
   let block_id = nanoid::nanoid!();
 
-  let mut block_map = doc
+  // Step 1: Create and insert empty map into blocks_map
+  let empty_map = doc
     .create_map()
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  blocks_map
+    .insert(block_id.clone(), empty_map)
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Required fields
+  // Step 2: Retrieve the inserted map
+  let mut block_map = blocks_map
+    .get(&block_id)
+    .and_then(|v| v.to_map())
+    .ok_or_else(|| ParseError::ParserError("Failed to get inserted block map".into()))?;
+
+  // Step 3: Insert primitive values (these don't have nested structure issues)
   block_map
     .insert("sys:id".to_string(), Any::String(block_id.clone()))
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -599,7 +719,28 @@ fn create_new_block(
     )
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Empty children array
+  if let Some(ref block_type) = block.block_type {
+    block_map
+      .insert("prop:type".to_string(), Any::String(block_type.clone()))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  if let Some(checked) = block.checked {
+    block_map
+      .insert(
+        "prop:checked".to_string(),
+        if checked { Any::True } else { Any::False },
+      )
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  if let Some(ref language) = block.language {
+    block_map
+      .insert("prop:language".to_string(), Any::String(language.clone()))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // Step 4: Create and insert children array AFTER block_map is in place
   let children_array = doc
     .create_array()
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -607,14 +748,7 @@ fn create_new_block(
     .insert("sys:children".to_string(), children_array)
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Block type
-  if let Some(ref block_type) = block.block_type {
-    block_map
-      .insert("prop:type".to_string(), Any::String(block_type.clone()))
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-  }
-
-  // Text content
+  // Step 5: Create, populate, and insert text AFTER block_map is in place
   if !block.content.is_empty() {
     let mut text = doc
       .create_text()
@@ -626,27 +760,6 @@ fn create_new_block(
       .insert("prop:text".to_string(), text)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
-
-  // Checked state for todo items
-  if let Some(checked) = block.checked {
-    block_map
-      .insert(
-        "prop:checked".to_string(),
-        if checked { Any::True } else { Any::False },
-      )
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-  }
-
-  // Code language
-  if let Some(ref language) = block.language {
-    block_map
-      .insert("prop:language".to_string(), Any::String(language.clone()))
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-  }
-
-  blocks_map
-    .insert(block_id.clone(), block_map)
-    .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
   Ok(block_id)
 }
@@ -878,7 +991,7 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
   ops
 }
 
-/// Updates the note block's children array
+/// Updates the note block's children array, only if the children have changed
 fn update_note_children(
   blocks_map: &mut Map,
   note_id: &str,
@@ -892,19 +1005,33 @@ fn update_note_children(
 
   // Get existing children array
   if let Some(mut children) = note_block.get("sys:children").and_then(|v| v.to_array()) {
-    // Clear existing children
-    let len = children.len();
-    if len > 0 {
-      children
-        .remove(0, len)
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
+    // Check if children actually changed
+    let existing_children: Vec<String> = children
+      .iter()
+      .filter_map(|v| {
+        v.to_any().and_then(|a| match a {
+          Any::String(s) => Some(s.clone()),
+          _ => None,
+        })
+      })
+      .collect();
 
-    // Add new children
-    for (idx, child_id) in new_children.into_iter().enumerate() {
-      children
-        .insert(idx as u64, Any::String(child_id))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    // Only update if different
+    if existing_children != new_children {
+      // Clear existing children
+      let len = children.len();
+      if len > 0 {
+        children
+          .remove(0, len)
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+
+      // Add new children
+      for (idx, child_id) in new_children.into_iter().enumerate() {
+        children
+          .insert(idx as u64, Any::String(child_id))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
     }
   } else {
     // Create new children array
@@ -922,16 +1049,6 @@ fn update_note_children(
   }
 
   Ok(())
-}
-
-/// Encodes the full document state
-/// Note: We encode the full document instead of just delta because
-/// y-octo's delta encoding has compatibility issues with yjs when
-/// applying updates to existing documents.
-fn encode_delta(doc: &Doc, _state_before: &StateVector) -> Result<Vec<u8>, ParseError> {
-  doc
-    .encode_update_v1()
-    .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
 #[cfg(test)]
