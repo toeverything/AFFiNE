@@ -1023,4 +1023,88 @@ mod tests {
     assert_eq!(extract_title("## Secondary\n\nContent"), "Untitled");
     assert_eq!(extract_title("# **Bold** Title"), "Bold Title");
   }
+
+  #[test]
+  fn test_update_ydoc_roundtrip() {
+    use crate::doc_parser::markdown_to_ydoc;
+
+    // Create initial document
+    let initial_md = "# Test Document\n\nFirst paragraph.\n\nSecond paragraph.";
+    let doc_id = "update-test";
+
+    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
+
+    // Update with new content
+    let updated_md =
+      "# Test Document\n\nFirst paragraph.\n\nModified second paragraph.\n\nNew third paragraph.";
+
+    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
+
+    // Delta should not be empty (changes were made)
+    assert!(!delta.is_empty(), "Delta should contain changes");
+
+    // Apply delta to original and verify structure
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("Should apply initial");
+    doc
+      .apply_update_from_binary_v1(&delta)
+      .expect("Should apply delta");
+
+    // Verify the document has the expected structure
+    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
+    assert!(!blocks_map.is_empty(), "Blocks should not be empty");
+  }
+
+  #[test]
+  fn test_update_ydoc_title_change() {
+    use crate::doc_parser::markdown_to_ydoc;
+
+    let initial_md = "# Original Title\n\nContent here.";
+    let doc_id = "title-test";
+
+    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
+
+    let updated_md = "# New Title\n\nContent here.";
+    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
+
+    // Apply and verify
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("Should apply initial");
+    doc
+      .apply_update_from_binary_v1(&delta)
+      .expect("Should apply delta");
+
+    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
+    assert!(!blocks_map.is_empty());
+  }
+
+  #[test]
+  fn test_update_ydoc_no_changes() {
+    use crate::doc_parser::markdown_to_ydoc;
+
+    let markdown = "# Same Title\n\nSame content.";
+    let doc_id = "no-change-test";
+
+    let initial_bin = markdown_to_ydoc(markdown, doc_id).expect("Should create initial doc");
+
+    // Update with identical content
+    let delta = update_ydoc(&initial_bin, markdown, doc_id).expect("Should compute delta");
+
+    // Applying the delta should not fail
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("Should apply initial");
+    doc
+      .apply_update_from_binary_v1(&delta)
+      .expect("Should apply delta even with no changes");
+
+    // Document should still be valid
+    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
+    assert!(!blocks_map.is_empty());
+  }
 }
