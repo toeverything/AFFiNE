@@ -20,6 +20,18 @@ export declare function getMime(input: Uint8Array): string
 export declare function htmlSanitize(input: string): string
 
 /**
+ * Converts markdown content to AFFiNE-compatible y-octo document binary.
+ *
+ * # Arguments
+ * * `markdown` - The markdown content to convert
+ * * `doc_id` - The document ID to use for the y-octo doc
+ *
+ * # Returns
+ * A Buffer containing the y-octo document update binary
+ */
+export declare function markdownToDocBinary(markdown: string, docId: string): Buffer
+
+/**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
  * result binary.
  */

@@ -186,7 +186,7 @@ export class WorkspaceMcpProvider {
           await this.ac
             .user(userId)
             .workspace(workspaceId)
-            .assert('Doc.Create');
+            .assert('Workspace.CreateDoc');
 
           // Combine title and content into markdown
           // Sanitize title by removing newlines and trimming
