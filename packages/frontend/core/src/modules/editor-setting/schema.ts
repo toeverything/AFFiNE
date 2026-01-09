@@ -35,6 +35,7 @@ const AffineEditorSettingSchema = z.object({
       'open-in-center-peek',
     ])
     .default('open-in-active-view'),
+  enableRightButtonPanning: z.boolean().default(false),
   // linux only:
   enableMiddleClickPaste: z.boolean().default(false),
 });
