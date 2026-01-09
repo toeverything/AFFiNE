@@ -138,6 +138,7 @@ pub fn markdown_to_ydoc(markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseEr
 }
 
 /// Extracts the title from the first H1 heading in the markdown
+/// Handles formatted headings like `# Hello **World**` by collecting all text
 fn extract_title(markdown: &str) -> String {
   let parser = Parser::new(markdown);
   let mut in_heading = false;
@@ -149,11 +150,13 @@ fn extract_title(markdown: &str) -> String {
         in_heading = true;
       }
       Event::Text(text) if in_heading => {
-        title = text.to_string();
-        break;
+        title.push_str(&text);
       }
-      Event::End(TagEnd::Heading(_)) => {
-        in_heading = false;
+      Event::Code(code) if in_heading => {
+        title.push_str(&code);
+      }
+      Event::End(TagEnd::Heading(_)) if in_heading => {
+        break; // Exit after first H1 is complete
       }
       _ => {}
     }
@@ -162,7 +165,7 @@ fn extract_title(markdown: &str) -> String {
   if title.is_empty() {
     "Untitled".to_string()
   } else {
-    title
+    title.trim().to_string()
   }
 }
 
