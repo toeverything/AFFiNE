@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
-import { markdownToDocBinary, updateDocWithMarkdown } from '../../native';
+import { markdownToDocBinary } from '../../native';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 export interface CreateDocResult {
@@ -48,7 +48,10 @@ export class DocWriter {
 
   /**
    * Updates an existing document with new markdown content.
-   * Uses structural diffing to apply minimal changes.
+   *
+   * Note: Due to y-octo/yjs compatibility issues with delta updates,
+   * this method replaces the document entirely rather than applying
+   * surgical changes. This means document history is not preserved.
    *
    * @param workspaceId - The workspace ID
    * @param docId - The document ID to update
@@ -65,26 +68,22 @@ export class DocWriter {
       `Updating doc ${docId} in workspace ${workspaceId} from markdown`
     );
 
-    // Get existing document binary
+    // Verify document exists
     const existingDoc = await this.storage.getDoc(workspaceId, docId);
     if (!existingDoc?.bin) {
       throw new Error(`Document ${docId} not found`);
     }
 
-    // Compute delta update using y-octo diffing
-    const deltaBinary = updateDocWithMarkdown(
-      Buffer.from(existingDoc.bin),
-      markdown,
-      docId
-    );
+    // Due to y-octo/yjs compatibility issues, we delete and recreate
+    // the document instead of applying a delta update.
+    // This loses document history but ensures the update is applied.
+    await this.storage.deleteDoc(workspaceId, docId);
 
-    // Push only the delta to storage
-    await this.storage.pushDocUpdates(
-      workspaceId,
-      docId,
-      [deltaBinary],
-      editorId
-    );
+    // Create fresh document from markdown with the same docId
+    const binary = markdownToDocBinary(markdown, docId);
+
+    // Push the new document
+    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
 
     return { success: true };
   }

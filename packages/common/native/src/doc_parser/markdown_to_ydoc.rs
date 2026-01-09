@@ -3,7 +3,7 @@
 //! Converts markdown content into AFFiNE-compatible y-octo document binary format.
 
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
-use y_octo::{Any, DocOptions};
+use y_octo::{Any, DocOptions, Map, Value};
 
 use super::affine::ParseError;
 
@@ -419,6 +419,10 @@ fn flush_code_block(
 }
 
 /// Builds the y-octo document from parsed blocks
+///
+/// IMPORTANT: To ensure YJS compatibility, we must insert empty maps into the parent
+/// BEFORE populating them with properties. This ensures the map items get clock values
+/// before their contents, avoiding forward parent references that YJS cannot handle.
 fn build_ydoc(
   doc_id: &str,
   title: &str,
@@ -437,9 +441,38 @@ fn build_ydoc(
   let page_id = nanoid::nanoid!();
   let note_id = nanoid::nanoid!();
 
-  // Build page block
-  let page_block = build_block_map(
-    &doc,
+  // PHASE 1: Insert all empty block maps into blocks_map first
+  // This gives each block map a clock value before its contents
+  let page_empty_map = doc
+    .create_map()
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  blocks_map
+    .insert(page_id.clone(), page_empty_map)
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+  let note_empty_map = doc
+    .create_map()
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  blocks_map
+    .insert(note_id.clone(), note_empty_map)
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+  // Insert empty maps for all content blocks
+  for block in &content_blocks {
+    let empty_map = doc
+      .create_map()
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    blocks_map
+      .insert(block.id.clone(), empty_map)
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // PHASE 2: Now populate all the block maps with their properties
+  // The maps already have clock values, so their contents will have higher clocks
+
+  // Populate page block
+  populate_block_map(
+    &mut blocks_map,
     &page_id,
     PAGE_FLAVOUR,
     Some(title),
@@ -447,14 +480,12 @@ fn build_ydoc(
     None,
     None,
     vec![note_id.clone()],
-  )?;
-  blocks_map
-    .insert(page_id.clone(), page_block)
-    .map_err(|e| ParseError::ParserError(e.to_string()))?;
-
-  // Build note block (container for content)
-  let note_block = build_block_map(
     &doc,
+  )?;
+
+  // Populate note block
+  populate_block_map(
+    &mut blocks_map,
     &note_id,
     NOTE_FLAVOUR,
     None,
@@ -462,15 +493,13 @@ fn build_ydoc(
     None,
     None,
     content_block_ids.clone(),
+    &doc,
   )?;
-  blocks_map
-    .insert(note_id, note_block)
-    .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Build content blocks
+  // Populate content blocks
   for block in content_blocks {
-    let block_map = build_block_map(
-      &doc,
+    populate_block_map(
+      &mut blocks_map,
       &block.id,
       &block.flavour,
       None,
@@ -478,21 +507,16 @@ fn build_ydoc(
       block.paragraph_type,
       block.list_type,
       block.children,
+      &doc,
     )?;
 
     // Add code language if present
     if let Some(lang) = &block.code_language {
-      let mut map = block_map;
-      map
-        .insert("prop:language".to_string(), Any::String(lang.clone()))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-      blocks_map
-        .insert(block.id, map)
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    } else {
-      blocks_map
-        .insert(block.id, block_map)
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      if let Some(Value::Map(mut block_map)) = blocks_map.get(&block.id) {
+        block_map
+          .insert("prop:language".to_string(), Any::String(lang.clone()))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
     }
   }
 
@@ -502,7 +526,126 @@ fn build_ydoc(
     .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
-/// Builds a block map with the given properties
+/// Populates an existing block map (already inserted into blocks_map) with properties.
+/// This ensures the block map has a clock value before its contents, avoiding forward references.
+fn populate_block_map(
+  blocks_map: &mut Map,
+  block_id: &str,
+  flavour: &str,
+  title: Option<&str>,
+  text_content: Option<&str>,
+  paragraph_type: Option<ParagraphType>,
+  list_type: Option<ListType>,
+  children: Vec<String>,
+  doc: &y_octo::Doc,
+) -> Result<(), ParseError> {
+  // Get the existing block map from blocks_map
+  let mut block = match blocks_map.get(block_id) {
+    Some(Value::Map(map)) => map,
+    Some(_) => {
+      return Err(ParseError::ParserError(format!(
+        "Block {} is not a Map",
+        block_id
+      )))
+    }
+    None => {
+      return Err(ParseError::ParserError(format!(
+        "Block {} not found in blocks_map",
+        block_id
+      )))
+    }
+  };
+
+  // Required fields
+  block
+    .insert("sys:id".to_string(), Any::String(block_id.to_string()))
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  block
+    .insert("sys:flavour".to_string(), Any::String(flavour.to_string()))
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+  // Children array - insert empty array first, then populate
+  let empty_array = doc
+    .create_array()
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  block
+    .insert("sys:children".to_string(), empty_array)
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+  // Now get the array back and populate it
+  if !children.is_empty() {
+    if let Some(Value::Array(mut children_array)) = block.get("sys:children") {
+      for (idx, child_id) in children.into_iter().enumerate() {
+        children_array
+          .insert(idx as u64, Any::String(child_id))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
+  }
+
+  // Title (for page blocks)
+  if let Some(title) = title {
+    block
+      .insert("prop:title".to_string(), Any::String(title.to_string()))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // Text content - insert empty text first, then populate
+  if let Some(content) = text_content {
+    if !content.is_empty() {
+      let empty_text = doc
+        .create_text()
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      block
+        .insert("prop:text".to_string(), empty_text)
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+      // Get the text back and insert content
+      if let Some(Value::Text(mut text)) = block.get("prop:text") {
+        text
+          .insert(0, content)
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
+  }
+
+  // Paragraph type
+  if let Some(ptype) = paragraph_type {
+    block
+      .insert(
+        "prop:type".to_string(),
+        Any::String(ptype.as_str().to_string()),
+      )
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // List type and checked state
+  if let Some(ltype) = list_type {
+    block
+      .insert(
+        "prop:type".to_string(),
+        Any::String(ltype.as_str().to_string()),
+      )
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    if matches!(ltype, ListType::Todo(_)) {
+      block
+        .insert(
+          "prop:checked".to_string(),
+          if ltype.is_checked() {
+            Any::True
+          } else {
+            Any::False
+          },
+        )
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    }
+  }
+
+  Ok(())
+}
+
+/// Builds a block map with the given properties (legacy, used for testing)
+#[allow(dead_code)]
 fn build_block_map(
   doc: &y_octo::Doc,
   block_id: &str,

@@ -54,43 +54,28 @@ enum DiffOp {
 }
 
 /// Updates an existing document with new markdown content.
-/// Returns only the delta (changes) as a binary update.
+///
+/// Due to compatibility issues between y-octo and yjs when applying delta updates,
+/// this function creates a fresh document from the new markdown content.
+/// While less efficient than surgical updates, this ensures compatibility with
+/// the yjs-based server storage.
 ///
 /// # Arguments
-/// * `existing_binary` - The current document binary
+/// * `_existing_binary` - The current document binary (unused - kept for API compatibility)
 /// * `new_markdown` - The new markdown content
 /// * `doc_id` - The document ID
 ///
 /// # Returns
-/// A binary vector representing only the changes (delta)
+/// A binary vector representing the full new document state
 pub fn update_ydoc(
-  existing_binary: &[u8],
+  _existing_binary: &[u8],
   new_markdown: &str,
   doc_id: &str,
 ) -> Result<Vec<u8>, ParseError> {
-  // Load existing document
-  let mut existing = load_existing_doc(existing_binary, doc_id)?;
-
-  // Get state before modifications
-  let state_before = existing.doc.get_state_vector();
-
-  // Parse new markdown into content blocks
-  let new_blocks = parse_markdown_to_content_blocks(new_markdown)?;
-
-  // Extract title from new markdown
-  let new_title = extract_title(new_markdown);
-
-  // Update title if changed
-  update_title(&mut existing, &new_title)?;
-
-  // Compute diff between old and new blocks
-  let diff_ops = compute_diff(&existing.content_blocks, &new_blocks);
-
-  // Apply diff operations to the document
-  apply_diff(&mut existing, &new_blocks, &diff_ops)?;
-
-  // Encode only the delta (changes since state_before)
-  encode_delta(&existing.doc, &state_before)
+  // Due to y-octo/yjs compatibility issues with delta updates,
+  // we create a fresh document from the new markdown instead of patching.
+  // This is less efficient but ensures the update can be applied by yjs.
+  super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id)
 }
 
 /// Loads an existing document and extracts its structure
@@ -939,10 +924,13 @@ fn update_note_children(
   Ok(())
 }
 
-/// Encodes only the delta (changes) since the given state
-fn encode_delta(doc: &Doc, state_before: &StateVector) -> Result<Vec<u8>, ParseError> {
+/// Encodes the full document state
+/// Note: We encode the full document instead of just delta because
+/// y-octo's delta encoding has compatibility issues with yjs when
+/// applying updates to existing documents.
+fn encode_delta(doc: &Doc, _state_before: &StateVector) -> Result<Vec<u8>, ParseError> {
   doc
-    .encode_state_as_update_v1(state_before)
+    .encode_update_v1()
     .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
