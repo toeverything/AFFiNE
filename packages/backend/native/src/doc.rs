@@ -160,3 +160,24 @@ pub fn markdown_to_doc_binary(markdown: String, doc_id: String) -> Result<Buffer
     .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(Buffer::from(result))
 }
+
+/// Updates an existing document with new markdown content.
+/// Uses structural and text-level diffing to apply minimal changes.
+///
+/// # Arguments
+/// * `existing_binary` - The current document binary
+/// * `new_markdown` - The new markdown content to apply
+/// * `doc_id` - The document ID
+///
+/// # Returns
+/// A Buffer containing only the delta (changes) as a y-octo update binary
+#[napi]
+pub fn update_doc_with_markdown(
+  existing_binary: Buffer,
+  new_markdown: String,
+  doc_id: String,
+) -> Result<Buffer> {
+  let result = doc_parser::update_ydoc(&existing_binary, &new_markdown, &doc_id)
+    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  Ok(Buffer::from(result))
+}

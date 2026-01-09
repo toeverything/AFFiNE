@@ -89,4 +89,18 @@ export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocCon
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 
+/**
+ * Updates an existing document with new markdown content.
+ * Uses structural and text-level diffing to apply minimal changes.
+ *
+ * # Arguments
+ * * `existing_binary` - The current document binary
+ * * `new_markdown` - The new markdown content to apply
+ * * `doc_id` - The document ID
+ *
+ * # Returns
+ * A Buffer containing only the delta (changes) as a y-octo update binary
+ */
+export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
+
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

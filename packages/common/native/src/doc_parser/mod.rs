@@ -2,6 +2,7 @@ mod affine;
 mod blocksuite;
 mod delta_markdown;
 mod markdown_to_ydoc;
+mod update_ydoc;
 mod value;
 
 pub use affine::{
@@ -10,3 +11,4 @@ pub use affine::{
   WorkspaceDocContent,
 };
 pub use markdown_to_ydoc::markdown_to_ydoc;
+pub use update_ydoc::update_ydoc;

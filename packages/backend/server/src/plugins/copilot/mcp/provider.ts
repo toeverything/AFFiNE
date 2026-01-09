@@ -226,9 +226,92 @@ export class WorkspaceMcpProvider {
       }
     );
 
-    // Note: update_document and append_to_document tools are not implemented
-    // because y-octo updates must be applied to existing doc state, not replaced.
-    // See: https://github.com/toeverything/AFFiNE/pull/14238#discussion_r2475648560
+    server.registerTool(
+      'update_document',
+      {
+        title: 'Update Document',
+        description:
+          'Update an existing document with new markdown content. Uses structural and text-level diffing to apply minimal changes while preserving collaborative editing history.',
+        inputSchema: z.object({
+          docId: z.string().describe('The ID of the document to update'),
+          title: z.string().describe('The new title for the document'),
+          content: z
+            .string()
+            .describe('The new markdown content for the document body'),
+        }),
+      },
+      async ({ docId, title, content }) => {
+        try {
+          // Check if document exists and user has write access
+          const accessible = await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .can('Doc.Write');
+
+          if (!accessible) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Document ${docId} not found or you don't have write access.`,
+                },
+              ],
+            };
+          }
+
+          // Verify document exists by trying to read it
+          const existingContent = await this.reader.getDocMarkdown(
+            workspaceId,
+            docId,
+            false
+          );
+
+          if (!existingContent) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Document ${docId} not found.`,
+                },
+              ],
+            };
+          }
+
+          // Combine title and content into markdown
+          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          const markdown = `# ${sanitizedTitle}\n\n${content}`;
+
+          // Update the document using diff-based approach
+          await this.writer.updateDoc(workspaceId, docId, markdown, userId);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  docId,
+                  message: `Document "${title}" updated successfully`,
+                }),
+              },
+            ],
+          } as const;
+        } catch (error) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+          };
+        }
+      }
+    );
 
     return server;
   }
