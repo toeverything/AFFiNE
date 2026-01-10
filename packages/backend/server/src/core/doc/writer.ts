@@ -75,7 +75,9 @@ export class DocWriter {
     }
 
     // Compute delta update using structural diff
-    const delta = updateDocWithMarkdown(existingDoc.bin, markdown, docId);
+    // Convert Uint8Array to Buffer for native function
+    const existingBinary = Buffer.from(existingDoc.bin);
+    const delta = updateDocWithMarkdown(existingBinary, markdown, docId);
 
     // Push only the delta changes
     await this.storage.pushDocUpdates(workspaceId, docId, [delta], editorId);

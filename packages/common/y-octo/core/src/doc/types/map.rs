@@ -370,7 +370,8 @@ mod tests {
 
   #[test]
   fn test_nested_map_simple() {
-    // Test for nested map serialization/deserialization with forward parent references
+    // Test for nested map serialization/deserialization with forward parent
+    // references
     loom_model!({
       let binary = {
         let doc = Doc::new();
@@ -416,7 +417,8 @@ mod tests {
 
   #[test]
   fn test_nested_map_with_text_and_array() {
-    // This test mimics what markdown_to_ydoc does - nested maps with Text and Array types
+    // This test mimics what markdown_to_ydoc does - nested maps with Text and Array
+    // types
     loom_model!({
       let binary = {
         let doc = Doc::new();
