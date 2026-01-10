@@ -1,0 +1,15 @@
+query calendarAccounts {
+  calendarAccounts {
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
+  }
+}

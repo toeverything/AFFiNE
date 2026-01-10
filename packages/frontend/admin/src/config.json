@@ -255,6 +255,13 @@
       "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
     }
   },
+  "calendar": {
+    "google": {
+      "type": "Object",
+      "desc": "Google Calendar integration config",
+      "link": "https://developers.google.com/calendar/api/guides/push"
+    }
+  },
   "captcha": {
     "enabled": {
       "type": "Boolean",

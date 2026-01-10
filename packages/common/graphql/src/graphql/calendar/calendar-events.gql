@@ -1,0 +1,16 @@
+query calendarEvents($workspaceCalendarId: String!, $from: DateTime!, $to: DateTime!) {
+  calendarEvents(workspaceCalendarId: $workspaceCalendarId, from: $from, to: $to) {
+    id
+    subscriptionId
+    externalEventId
+    recurrenceId
+    status
+    title
+    description
+    location
+    startAtUtc
+    endAtUtc
+    originalTimezone
+    allDay
+  }
+}
