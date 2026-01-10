@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
 import { markdownToDocBinary, updateDocWithMarkdown } from '../../native';
@@ -71,12 +71,18 @@ export class DocWriter {
     // Fetch existing document
     const existingDoc = await this.storage.getDoc(workspaceId, docId);
     if (!existingDoc?.bin) {
-      throw new Error(`Document ${docId} not found`);
+      throw new NotFoundException(`Document ${docId} not found`);
     }
 
     // Compute delta update using structural diff
-    // Convert Uint8Array to Buffer for native function
-    const existingBinary = Buffer.from(existingDoc.bin);
+    // Use zero-copy buffer view when possible for native function
+    const existingBinary = Buffer.isBuffer(existingDoc.bin)
+      ? existingDoc.bin
+      : Buffer.from(
+          existingDoc.bin.buffer,
+          existingDoc.bin.byteOffset,
+          existingDoc.bin.byteLength
+        );
     const delta = updateDocWithMarkdown(existingBinary, markdown, docId);
 
     // Push only the delta changes

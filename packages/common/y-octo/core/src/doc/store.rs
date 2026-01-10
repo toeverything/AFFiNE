@@ -183,6 +183,10 @@ impl DocStore {
           return None;
         }
         right = middle_index - 1;
+        // Check if search space is exhausted after narrowing right
+        if right < left {
+          return None;
+        }
       }
       middle_index = left + (right - left) / 2;
     }
@@ -434,30 +438,14 @@ impl DocStore {
       //        ^^ Parent::Id((1, 0))
       Some(Parent::Id(parent_id)) => {
         // First, try the batch_type_map for forward references in the same update
-        if let Some(batch_map) = batch_type_map {
-          if let Some(ty) = batch_map.get(parent_id) {
-            item.parent.replace(Parent::Type(ty.clone()));
-            // Successfully resolved, skip the store lookup
-          } else {
-            // Not in batch map, try the store
-            match self.get_node(*parent_id) {
-              Some(Node::Item(parent_item)) => {
-                if let Content::Type(ty) = &parent_item.get().unwrap().content {
-                  item.parent.replace(Parent::Type(ty.clone()));
-                } else {
-                  item.parent.take();
-                }
-              }
-              Some(_) => {
-                item.parent.take();
-              }
-              None => {
-                item.parent.take();
-              }
-            }
-          }
+        let resolved = batch_type_map
+          .and_then(|batch_map| batch_map.get(parent_id))
+          .cloned();
+
+        if let Some(ty) = resolved {
+          item.parent.replace(Parent::Type(ty));
         } else {
-          // No batch map, just use store lookup
+          // Not in batch map (or no batch map), try the store
           match self.get_node(*parent_id) {
             Some(Node::Item(parent_item)) => {
               if let Content::Type(ty) = &parent_item.get().unwrap().content {
@@ -466,10 +454,7 @@ impl DocStore {
                 item.parent.take();
               }
             }
-            Some(_) => {
-              item.parent.take();
-            }
-            None => {
+            _ => {
               item.parent.take();
             }
           }
