@@ -138,12 +138,17 @@ pub fn markdown_to_ydoc(markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseEr
   build_ydoc(doc_id, &title, blocks, content_block_ids)
 }
 
-/// Parses markdown content into BlockBuilder structures
+/// Parses markdown content into BlockBuilder structures.
+///
+/// TODO: Consider extracting shared markdown parsing logic with `parse_markdown_to_content_blocks`
+/// in update_ydoc.rs to reduce duplication and ensure consistent behavior.
 fn parse_markdown_to_blocks(
   markdown: &str,
   blocks: &mut Vec<BlockBuilder>,
   content_block_ids: &mut Vec<String>,
 ) -> Result<(), ParseError> {
+  // Note: ENABLE_TABLES is included for future support, but table events currently
+  // fall through to the catch-all match arm. Table content appears as plain text.
   let options = Options::ENABLE_STRIKETHROUGH
     | Options::ENABLE_TABLES
     | Options::ENABLE_TASKLISTS
@@ -748,6 +753,69 @@ mod tests {
     assert_eq!(extract_title("# My Title\n\nContent"), "My Title");
     assert_eq!(extract_title("No heading"), "Untitled");
     assert_eq!(extract_title("## Secondary\n\nContent"), "Untitled");
+  }
+
+  #[test]
+  fn test_empty_markdown() {
+    let result = markdown_to_ydoc("", "test-doc-id");
+    assert!(result.is_ok());
+    let bin = result.unwrap();
+    assert!(!bin.is_empty()); // Should still create valid doc structure
+  }
+
+  #[test]
+  fn test_whitespace_only_markdown() {
+    let result = markdown_to_ydoc("   \n\n\t\n   ", "test-doc-id");
+    assert!(result.is_ok());
+    let bin = result.unwrap();
+    assert!(!bin.is_empty());
+  }
+
+  #[test]
+  fn test_markdown_without_h1() {
+    // Should use "Untitled" as default title
+    let markdown = "## Secondary Heading\n\nSome content without H1.";
+    let result = markdown_to_ydoc(markdown, "test-doc-id");
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_nested_lists() {
+    let markdown =
+      "# Nested Lists\n\n- Item 1\n  - Nested 1.1\n  - Nested 1.2\n- Item 2\n  - Nested 2.1";
+    let result = markdown_to_ydoc(markdown, "test-doc-id");
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_mixed_content() {
+    let markdown = r#"# Mixed Content
+
+Some intro text.
+
+- List item 1
+- List item 2
+
+```python
+def hello():
+    print("world")
+```
+
+## Another Section
+
+More text here.
+
+1. Numbered item
+2. Another numbered
+
+> A blockquote
+
+---
+
+Final paragraph.
+"#;
+    let result = markdown_to_ydoc(markdown, "test-doc-id");
+    assert!(result.is_ok());
   }
 
   // TODO: Fix roundtrip test - there's an issue with y-octo parsing back nested types

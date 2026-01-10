@@ -216,8 +216,15 @@ fn extract_content_block(block: &Map) -> ContentBlock {
   }
 }
 
-/// Parses markdown into content blocks for diffing
+/// Parses markdown into content blocks for diffing.
+///
+/// TODO: Consider extracting shared markdown parsing logic with `parse_markdown_to_blocks`
+/// in markdown_to_ydoc.rs. While the output types differ (ContentBlock vs BlockBuilder),
+/// the core parsing flow is nearly identical. A shared intermediate representation
+/// could reduce maintenance burden and ensure consistent parsing behavior.
 fn parse_markdown_to_content_blocks(markdown: &str) -> Result<Vec<ContentBlock>, ParseError> {
+  // Note: ENABLE_TABLES is included for future support, but table events currently
+  // fall through to the catch-all match arm. Table content appears as plain text.
   let options = Options::ENABLE_STRIKETHROUGH
     | Options::ENABLE_TABLES
     | Options::ENABLE_TASKLISTS
@@ -859,8 +866,16 @@ fn apply_text_diff(
         start_utf16,
         len_utf16,
       } => {
-        // Guard against negative positions from offset calculations
-        let adjusted_start = (start_utf16 as i64 + offset).max(0) as u64;
+        let raw_pos = start_utf16 as i64 + offset;
+        // Debug assertion: negative position indicates a bug in diff computation
+        debug_assert!(
+          raw_pos >= 0,
+          "Unexpected negative position in Delete: start_utf16={}, offset={}, raw_pos={}",
+          start_utf16,
+          offset,
+          raw_pos
+        );
+        let adjusted_start = raw_pos.max(0) as u64;
         text
           .remove(adjusted_start, len_utf16 as u64)
           .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -870,8 +885,16 @@ fn apply_text_diff(
         pos_utf16,
         text: insert_text,
       } => {
-        // Guard against negative positions from offset calculations
-        let adjusted_pos = (pos_utf16 as i64 + offset).max(0) as u64;
+        let raw_pos = pos_utf16 as i64 + offset;
+        // Debug assertion: negative position indicates a bug in diff computation
+        debug_assert!(
+          raw_pos >= 0,
+          "Unexpected negative position in Insert: pos_utf16={}, offset={}, raw_pos={}",
+          pos_utf16,
+          offset,
+          raw_pos
+        );
+        let adjusted_pos = raw_pos.max(0) as u64;
         let utf16_len: usize = insert_text.chars().map(|c| c.len_utf16()).sum();
         text
           .insert(adjusted_pos, &insert_text)
