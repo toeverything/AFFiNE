@@ -86,11 +86,7 @@ impl Doc {
 
   #[napi]
   pub fn create_map(&self) -> Result<YMap> {
-    self
-      .doc
-      .create_map()
-      .map(YMap::inner_new)
-      .map_err(anyhow::Error::from)
+    self.doc.create_map().map(YMap::inner_new).map_err(anyhow::Error::from)
   }
 
   #[napi]
@@ -122,10 +118,7 @@ impl Doc {
   #[napi(ts_args_type = "callback: (result: Uint8Array) => void")]
   pub fn on_update(&mut self, callback: ThreadsafeFunction<Uint8Array>) -> Result<()> {
     let callback = move |update: &[u8], _h: &[History]| {
-      callback.call(
-        Ok(update.to_vec().into()),
-        ThreadsafeFunctionCallMode::Blocking,
-      );
+      callback.call(Ok(update.to_vec().into()), ThreadsafeFunctionCallMode::Blocking);
     };
     self.doc.subscribe(Box::new(callback));
     Ok(())

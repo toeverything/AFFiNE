@@ -220,10 +220,7 @@ impl Doc {
     Self::try_from_binary_v1_with_options(binary, DocOptions::default())
   }
 
-  pub fn try_from_binary_v1_with_options<T: AsRef<[u8]>>(
-    binary: T,
-    options: DocOptions,
-  ) -> JwstCodecResult<Self> {
+  pub fn try_from_binary_v1_with_options<T: AsRef<[u8]>>(binary: T, options: DocOptions) -> JwstCodecResult<Self> {
     let mut doc = Doc::with_options(options);
     doc.apply_update_from_binary_v1(binary)?;
     Ok(doc)
@@ -316,9 +313,7 @@ impl Doc {
   }
 
   pub fn create_text(&self) -> JwstCodecResult<Text> {
-    YTypeBuilder::new(self.store.clone())
-      .with_kind(YTypeKind::Text)
-      .build()
+    YTypeBuilder::new(self.store.clone()).with_kind(YTypeKind::Text).build()
   }
 
   pub fn get_or_create_array<S: AsRef<str>>(&self, str: S) -> JwstCodecResult<Array> {
@@ -342,9 +337,7 @@ impl Doc {
   }
 
   pub fn create_map(&self) -> JwstCodecResult<Map> {
-    YTypeBuilder::new(self.store.clone())
-      .with_kind(YTypeKind::Map)
-      .build()
+    YTypeBuilder::new(self.store.clone()).with_kind(YTypeKind::Map).build()
   }
 
   pub fn get_map(&self, str: &str) -> JwstCodecResult<Map> {
@@ -400,7 +393,7 @@ impl Doc {
 
 #[cfg(test)]
 mod tests {
-  use yrs::{types::ToJson, updates::decoder::Decode, Array, Map, Options, Transact};
+  use yrs::{Array, Map, Options, Transact, types::ToJson, updates::decoder::Decode};
 
   use super::*;
 
@@ -443,23 +436,14 @@ mod tests {
       let mut doc = Doc::try_from_binary_v1(binary).unwrap();
       let mut doc_new = Doc::try_from_binary_v1(binary_new).unwrap();
 
-      let diff_update = doc_new
-        .encode_state_as_update_v1(&doc.get_state_vector())
-        .unwrap();
+      let diff_update = doc_new.encode_state_as_update_v1(&doc.get_state_vector()).unwrap();
 
-      let diff_update_reverse = doc
-        .encode_state_as_update_v1(&doc_new.get_state_vector())
-        .unwrap();
+      let diff_update_reverse = doc.encode_state_as_update_v1(&doc_new.get_state_vector()).unwrap();
 
       doc.apply_update_from_binary_v1(diff_update).unwrap();
-      doc_new
-        .apply_update_from_binary_v1(diff_update_reverse)
-        .unwrap();
+      doc_new.apply_update_from_binary_v1(diff_update_reverse).unwrap();
 
-      assert_eq!(
-        doc.encode_update_v1().unwrap(),
-        doc_new.encode_update_v1().unwrap()
-      );
+      assert_eq!(doc.encode_update_v1().unwrap(), doc_new.encode_update_v1().unwrap());
     });
   }
 
@@ -512,9 +496,7 @@ mod tests {
     let ydoc = yrs::Doc::with_options(yrs_options);
     let array = ydoc.get_or_insert_array("abc");
     let mut trx = ydoc.transact_mut();
-    trx
-      .apply_update(yrs::Update::decode_v1(&binary).unwrap())
-      .unwrap();
+    trx.apply_update(yrs::Update::decode_v1(&binary).unwrap()).unwrap();
 
     let config = assert_json_diff::Config::new(assert_json_diff::CompareMode::Strict)
       .numeric_mode(assert_json_diff::NumericMode::AssumeFloat);
@@ -551,11 +533,7 @@ mod tests {
         count_clone2.fetch_add(1, Ordering::SeqCst);
       });
 
-      doc_clone
-        .get_or_create_array("abc")
-        .unwrap()
-        .insert(0, 42)
-        .unwrap();
+      doc_clone.get_or_create_array("abc").unwrap().insert(0, 42).unwrap();
 
       // wait observer, cycle once every 100mm
       std::thread::sleep(std::time::Duration::from_millis(200));
@@ -594,8 +572,8 @@ mod tests {
 
       doc
         .apply_update_from_binary_v1(vec![
-          1, 1, 1, 1, 40, 0, 1, 0, 11, 115, 117, 98, 95, 109, 97, 112, 95, 107, 101, 121, 1, 119,
-          13, 115, 117, 98, 95, 109, 97, 112, 95, 118, 97, 108, 117, 101, 0,
+          1, 1, 1, 1, 40, 0, 1, 0, 11, 115, 117, 98, 95, 109, 97, 112, 95, 107, 101, 121, 1, 119, 13, 115, 117, 98, 95,
+          109, 97, 112, 95, 118, 97, 108, 117, 101, 0,
         ])
         .unwrap();
 
@@ -612,8 +590,8 @@ mod tests {
         .sum::<usize>();
       doc
         .apply_update_from_binary_v1(vec![
-          1, 1, 1, 1, 40, 0, 1, 0, 11, 115, 117, 98, 95, 109, 97, 112, 95, 107, 101, 121, 1, 119,
-          13, 115, 117, 98, 95, 109, 97, 112, 95, 118, 97, 108, 117, 101, 0,
+          1, 1, 1, 1, 40, 0, 1, 0, 11, 115, 117, 98, 95, 109, 97, 112, 95, 107, 101, 121, 1, 119, 13, 115, 117, 98, 95,
+          109, 97, 112, 95, 118, 97, 108, 117, 101, 0,
         ])
         .unwrap();
 

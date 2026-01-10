@@ -232,12 +232,7 @@ impl Item {
     !has_id && self.parent.is_some() || has_id && self.parent.is_none() && self.parent_sub.is_none()
   }
 
-  pub fn read<R: CrdtReader>(
-    decoder: &mut R,
-    id: Id,
-    info: u8,
-    first_5_bit: u8,
-  ) -> JwstCodecResult<Self> {
+  pub fn read<R: CrdtReader>(decoder: &mut R, id: Id, info: u8, first_5_bit: u8) -> JwstCodecResult<Self> {
     let flags: ItemFlag = info.into();
     let has_left_id = flags.check(item_flags::ITEM_HAS_LEFT_ID);
     let has_right_id = flags.check(item_flags::ITEM_HAS_RIGHT_ID);

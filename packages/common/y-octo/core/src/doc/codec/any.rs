@@ -40,10 +40,10 @@ impl<R: CrdtReader> CrdtRead<R> for Any {
       0 => Ok(Any::Undefined),
       1 => Ok(Any::Null),
       // in yjs implementation, flag 2 only save 32bit integer
-      2 => Ok(Any::Integer(reader.read_var_i32()?)), // Integer
+      2 => Ok(Any::Integer(reader.read_var_i32()?)),       // Integer
       3 => Ok(Any::Float32(reader.read_f32_be()?.into())), // Float32
       4 => Ok(Any::Float64(reader.read_f64_be()?.into())), // Float64
-      5 => Ok(Any::BigInt64(reader.read_i64_be()?)), // BigInt64
+      5 => Ok(Any::BigInt64(reader.read_i64_be()?)),       // BigInt64
       6 => Ok(Any::False),
       7 => Ok(Any::True),
       8 => Ok(Any::String(reader.read_var_string()?)), // String
@@ -57,9 +57,7 @@ impl<R: CrdtReader> CrdtRead<R> for Any {
       } // Object
       10 => {
         let len = reader.read_var_u64()?;
-        let any = (0..len)
-          .map(|_| Self::read(reader))
-          .collect::<Result<Vec<_>, _>>()?;
+        let any = (0..len).map(|_| Self::read(reader)).collect::<Result<Vec<_>, _>>()?;
 
         Ok(Any::Array(any))
       } // Array
@@ -250,11 +248,7 @@ impl From<f64> for Any {
 
 impl From<bool> for Any {
   fn from(value: bool) -> Self {
-    if value {
-      Self::True
-    } else {
-      Self::False
-    }
+    if value { Self::True } else { Self::False }
   }
 }
 
@@ -344,11 +338,7 @@ impl From<&[u8]> for Any {
 // TODO: impl for Any::Undefined
 impl<T: Into<Any>> From<Option<T>> for Any {
   fn from(value: Option<T>) -> Self {
-    if let Some(val) = value {
-      val.into()
-    } else {
-      Any::Null
-    }
+    if let Some(val) = value { val.into() } else { Any::Null }
   }
 }
 
@@ -374,12 +364,8 @@ impl From<serde_json::Value> for Any {
         }
       }
       serde_json::Value::String(s) => Self::String(s),
-      serde_json::Value::Array(vec) => {
-        Self::Array(vec.into_iter().map(|v| v.into()).collect::<Vec<_>>())
-      }
-      serde_json::Value::Object(obj) => {
-        Self::Object(obj.into_iter().map(|(k, v)| (k, v.into())).collect())
-      }
+      serde_json::Value::Array(vec) => Self::Array(vec.into_iter().map(|v| v.into()).collect::<Vec<_>>()),
+      serde_json::Value::Object(obj) => Self::Object(obj.into_iter().map(|(k, v)| (k, v.into())).collect()),
     }
   }
 }
@@ -587,10 +573,7 @@ mod tests {
             Any::Object(
               vec![
                 ("type".to_string(), Any::String("Email".to_string())),
-                (
-                  "address".to_string(),
-                  Any::String("alice@example.com".to_string()),
-                ),
+                ("address".to_string(), Any::String("alice@example.com".to_string())),
               ]
               .into_iter()
               .collect(),
@@ -698,19 +681,11 @@ mod tests {
     );
 
     assert_eq!(
-      vec![("key".to_string(), 10u64.into())]
-        .into_iter()
-        .collect::<Any>(),
-      Any::Object(HashMap::from_iter(vec![(
-        "key".to_string(),
-        Any::Integer(10)
-      )]))
+      vec![("key".to_string(), 10u64.into())].into_iter().collect::<Any>(),
+      Any::Object(HashMap::from_iter(vec![("key".to_string(), Any::Integer(10))]))
     );
 
     let any: Any = 10u64.into();
-    assert_eq!(
-      [any].iter().collect::<Any>(),
-      Any::Array(vec![Any::Integer(10)])
-    );
+    assert_eq!([any].iter().collect::<Any>(), Any::Array(vec![Any::Integer(10)]));
   }
 }

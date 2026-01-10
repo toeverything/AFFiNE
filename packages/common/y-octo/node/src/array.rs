@@ -1,6 +1,6 @@
 use napi::{
-  bindgen_prelude::{Array as JsArray, Env, JsObjectValue, JsValue, Null, ToNapiValue, Unknown},
   ValueType,
+  bindgen_prelude::{Array as JsArray, Env, JsObjectValue, JsValue, Null, ToNapiValue, Unknown},
 };
 use y_octo::{Any, Array, Value};
 
@@ -50,8 +50,8 @@ impl YArray {
   }
 
   #[napi(
-    ts_args_type = "index: number, value: YArray | YMap | YText | boolean | number | string | \
-                    Record<string, any> | null | undefined"
+    ts_args_type = "index: number, value: YArray | YMap | YText | boolean | number | string | Record<string, any> | \
+                    null | undefined"
   )]
   pub fn insert(&mut self, index: i64, value: MixedRefYType) -> Result<()> {
     match value {
@@ -69,22 +69,15 @@ impl YArray {
         .map_err(anyhow::Error::from),
       MixedRefYType::D(unknown) => match unknown.get_type() {
         Ok(value_type) => match value_type {
-          ValueType::Undefined | ValueType::Null => self
-            .array
-            .insert(index as u64, Any::Null)
-            .map_err(anyhow::Error::from),
+          ValueType::Undefined | ValueType::Null => {
+            self.array.insert(index as u64, Any::Null).map_err(anyhow::Error::from)
+          }
           ValueType::Boolean => match unsafe { unknown.cast::<bool>() } {
-            Ok(boolean) => self
-              .array
-              .insert(index as u64, boolean)
-              .map_err(anyhow::Error::from),
+            Ok(boolean) => self.array.insert(index as u64, boolean).map_err(anyhow::Error::from),
             Err(e) => Err(anyhow::Error::new(e).context("Failed to coerce value to boolean")),
           },
           ValueType::Number => match unknown.coerce_to_number().and_then(|v| v.get_double()) {
-            Ok(number) => self
-              .array
-              .insert(index as u64, number)
-              .map_err(anyhow::Error::from),
+            Ok(number) => self.array.insert(index as u64, number).map_err(anyhow::Error::from),
             Err(e) => Err(anyhow::Error::new(e).context("Failed to coerce value to number")),
           },
           ValueType::String => {
@@ -93,10 +86,7 @@ impl YArray {
               .and_then(|v| v.into_utf8())
               .and_then(|s| s.as_str().map(|s| s.to_string()))
             {
-              Ok(string) => self
-                .array
-                .insert(index as u64, string)
-                .map_err(anyhow::Error::from),
+              Ok(string) => self.array.insert(index as u64, string).map_err(anyhow::Error::from),
               Err(e) => Err(anyhow::Error::new(e).context("Failed to coerce value to string")),
             }
           }
@@ -106,10 +96,7 @@ impl YArray {
           {
             Ok((object, length)) => {
               for i in 0..length {
-                if let Ok(any) = object
-                  .get_element::<Unknown>(i)
-                  .and_then(get_any_from_js_unknown)
-                {
+                if let Ok(any) = object.get_element::<Unknown>(i).and_then(get_any_from_js_unknown) {
                   self
                     .array
                     .insert(index as u64 + i as u64, Value::Any(any))
@@ -133,10 +120,7 @@ impl YArray {
 
   #[napi]
   pub fn remove(&mut self, index: i64, len: i64) -> Result<()> {
-    self
-      .array
-      .remove(index as u64, len as u64)
-      .map_err(anyhow::Error::from)
+    self.array.remove(index as u64, len as u64).map_err(anyhow::Error::from)
   }
 
   #[napi]

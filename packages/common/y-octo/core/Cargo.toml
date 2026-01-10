@@ -6,7 +6,7 @@ authors = [
   "Brooklyn <lynweklm@gmail.com>",
 ]
 description = "High-performance and thread-safe CRDT implementation compatible with Yjs"
-edition = "2021"
+edition = "2024"
 homepage = "https://github.com/toeverything/y-octo"
 include = ["LICENSE", "README.md", "benches/**/*", "bin/**/*", "src/**/*"]
 keywords = ["collaboration", "crdt", "crdts", "yata", "yjs"]

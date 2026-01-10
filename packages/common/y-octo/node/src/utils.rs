@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::{
-  Array, Either4, Env, Error, External, JsObjectValue, JsValue, Null, Object, Result, Status,
-  ToNapiValue, Unknown, ValueType,
+  Array, Either4, Env, Error, External, JsObjectValue, JsValue, Null, Object, Result, Status, ToNapiValue, Unknown,
+  ValueType,
 };
 use y_octo::{AHashMap, Any, HashMapExt, Value};
 
@@ -38,15 +38,11 @@ pub fn get_js_unknown_from_value(env: &Env, value: Value) -> Result<Unknown<'_>>
     Value::Any(any) => get_js_unknown_from_any(env, any),
     Value::Array(array) => {
       let external = External::new(YArray::inner_new(array));
-      Ok(unsafe {
-        Unknown::from_raw_unchecked(env.raw(), ToNapiValue::to_napi_value(env.raw(), external)?)
-      })
+      Ok(unsafe { Unknown::from_raw_unchecked(env.raw(), ToNapiValue::to_napi_value(env.raw(), external)?) })
     }
     Value::Map(map) => {
       let external = External::new(YMap::inner_new(map));
-      Ok(unsafe {
-        Unknown::from_raw_unchecked(env.raw(), ToNapiValue::to_napi_value(env.raw(), external)?)
-      })
+      Ok(unsafe { Unknown::from_raw_unchecked(env.raw(), ToNapiValue::to_napi_value(env.raw(), external)?) })
     }
     Value::Text(text) => {
       let external = External::new(YText::inner_new(text));
@@ -71,15 +67,11 @@ pub fn get_any_from_js_object(object: Object) -> Result<Any> {
     if let Ok(length) = keys.get_array_length() {
       for i in 0..length {
         if let Ok(key) = keys.get_element::<Unknown>(i).and_then(|o| {
-          o.coerce_to_string().and_then(|obj| {
-            obj
-              .into_utf8()
-              .and_then(|s| s.as_str().map(|s| s.to_string()))
-          })
-        }) {
-          if let Ok(value) = object.get_named_property_unchecked::<Unknown>(&key) {
-            map.insert(key, get_any_from_js_unknown(value)?);
-          }
+          o.coerce_to_string()
+            .and_then(|obj| obj.into_utf8().and_then(|s| s.as_str().map(|s| s.to_string())))
+        }) && let Ok(value) = object.get_named_property_unchecked::<Unknown>(&key)
+        {
+          map.insert(key, get_any_from_js_unknown(value)?);
         }
       }
     }
@@ -108,15 +100,9 @@ pub fn get_any_from_js_unknown(js_unknown: Unknown) -> Result<Any> {
       if let Ok(object) = js_unknown.coerce_to_object() {
         get_any_from_js_object(object)
       } else {
-        Err(Error::new(
-          Status::InvalidArg,
-          "Failed to coerce value to object",
-        ))
+        Err(Error::new(Status::InvalidArg, "Failed to coerce value to object"))
       }
     }
-    _ => Err(Error::new(
-      Status::InvalidArg,
-      "Failed to coerce value to any",
-    )),
+    _ => Err(Error::new(Status::InvalidArg, "Failed to coerce value to any")),
   }
 }

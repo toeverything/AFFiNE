@@ -80,18 +80,13 @@ impl BlockWalker {
     let mut child_ids = collect_child_ids(block);
     for child_id in child_ids.drain(..).rev() {
       if self.visited.insert(child_id.clone()) {
-        self
-          .queue
-          .push((Some(parent_block_id.to_string()), child_id));
+        self.queue.push((Some(parent_block_id.to_string()), child_id));
       }
     }
   }
 }
 
-pub(super) fn find_block_id_by_flavour(
-  block_pool: &HashMap<String, Map>,
-  flavour: &str,
-) -> Option<String> {
+pub(super) fn find_block_id_by_flavour(block_pool: &HashMap<String, Map>, flavour: &str) -> Option<String> {
   block_pool.iter().find_map(|(id, block)| {
     get_flavour(block)
       .filter(|block_flavour| block_flavour == flavour)

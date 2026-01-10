@@ -84,21 +84,17 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
       return Some(pos);
     }
 
-    if let Some(markers) = &inner.markers {
-      if let Some(marker) = markers.find_marker(inner, index) {
-        if marker.index > remaining {
-          remaining = 0
-        } else {
-          remaining -= marker.index;
-        }
-        pos.index = marker.index;
-        pos.left = marker
-          .ptr
-          .get()
-          .map(|ptr| ptr.left.clone())
-          .unwrap_or_default();
-        pos.right = marker.ptr;
+    if let Some(markers) = &inner.markers
+      && let Some(marker) = markers.find_marker(inner, index)
+    {
+      if marker.index > remaining {
+        remaining = 0
+      } else {
+        remaining -= marker.index;
       }
+      pos.index = marker.index;
+      pos.left = marker.ptr.get().map(|ptr| ptr.left.clone()).unwrap_or_default();
+      pos.right = marker.ptr;
     };
 
     while remaining > 0 {
@@ -141,16 +137,11 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
     Ok(())
   }
 
-  fn insert_after(
-    ty: &mut YType,
-    store: &mut DocStore,
-    pos: ItemPosition,
-    content: Content,
-  ) -> JwstCodecResult {
-    if let Some(markers) = &ty.markers {
-      if content.countable() {
-        markers.update_marker_changes(pos.index, content.clock_len() as i64);
-      }
+  fn insert_after(ty: &mut YType, store: &mut DocStore, pos: ItemPosition, content: Content) -> JwstCodecResult {
+    if let Some(markers) = &ty.markers
+      && content.countable()
+    {
+      markers.update_marker_changes(pos.index, content.clock_len() as i64);
     }
 
     let item = store.create_item(
@@ -204,12 +195,7 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
     Ok(())
   }
 
-  fn remove_after(
-    ty: &mut YType,
-    store: &mut DocStore,
-    mut pos: ItemPosition,
-    len: u64,
-  ) -> JwstCodecResult {
+  fn remove_after(ty: &mut YType, store: &mut DocStore, mut pos: ItemPosition, len: u64) -> JwstCodecResult {
     pos.normalize(store)?;
 
     let mut remaining = len;

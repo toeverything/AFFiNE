@@ -84,9 +84,7 @@ fn remove_label(s: &str) -> String {
 
 pub fn clean_content(content: &str) -> String {
   let content = content.replace("\x00", "");
-  remove_label(&collapse_whitespace(&content))
-    .trim()
-    .to_string()
+  remove_label(&collapse_whitespace(&content)).trim().to_string()
 }
 
 #[cfg(test)]

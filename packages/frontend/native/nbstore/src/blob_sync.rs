@@ -25,11 +25,7 @@ impl SqliteDocStorage {
     Ok(())
   }
 
-  pub async fn get_blob_uploaded_at(
-    &self,
-    peer: String,
-    blob_id: String,
-  ) -> Result<Option<NaiveDateTime>> {
+  pub async fn get_blob_uploaded_at(&self, peer: String, blob_id: String) -> Result<Option<NaiveDateTime>> {
     let result = sqlx::query_scalar!(
       "SELECT uploaded_at FROM peer_blob_sync WHERE peer = ? AND blob_id = ?",
       peer,

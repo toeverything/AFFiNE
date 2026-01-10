@@ -1,6 +1,6 @@
 [package]
 authors    = ["DarkSky <darksky2048@gmail.com>"]
-edition    = "2021"
+edition    = "2024"
 license    = "MIT"
 name       = "y-octo-node"
 repository = "https://github.com/toeverything/y-octo"

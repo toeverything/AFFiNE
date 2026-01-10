@@ -69,11 +69,7 @@ impl MarkerList {
   }
 
   // mark pos and push to the end of the linked list
-  fn mark_position(
-    list: &mut VecDeque<SearchMarker>,
-    ptr: Somr<Item>,
-    index: u64,
-  ) -> Option<SearchMarker> {
+  fn mark_position(list: &mut VecDeque<SearchMarker>, ptr: Somr<Item>, index: u64) -> Option<SearchMarker> {
     if list.len() >= MAX_SEARCH_MARKER {
       let mut oldest_marker = list.pop_front().unwrap();
       oldest_marker.overwrite_marker(ptr, index);
@@ -126,9 +122,7 @@ impl MarkerList {
 
     let mut list = self.borrow_mut();
 
-    let marker = list
-      .iter_mut()
-      .min_by_key(|m| (index as i64 - m.index as i64).abs());
+    let marker = list.iter_mut().min_by_key(|m| (index as i64 - m.index as i64).abs());
 
     let mut marker_index = marker.as_ref().map(|m| m.index).unwrap_or(0);
 
@@ -201,8 +195,7 @@ impl MarkerList {
 
     match marker {
       Some(marker)
-        if (marker.index as f64 - marker_index as f64).abs()
-          < parent.len as f64 / MAX_SEARCH_MARKER as f64 =>
+        if (marker.index as f64 - marker_index as f64).abs() < parent.len as f64 / MAX_SEARCH_MARKER as f64 =>
       {
         // adjust existing marker
         marker.overwrite_marker(item_ptr, marker_index);

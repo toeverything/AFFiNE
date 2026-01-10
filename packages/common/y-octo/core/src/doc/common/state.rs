@@ -1,8 +1,8 @@
 use std::ops::{Deref, DerefMut};
 
 use super::{
-  Client, ClientMap, Clock, CrdtRead, CrdtReader, CrdtWrite, CrdtWriter, HashMapExt, Id,
-  JwstCodecResult, HASHMAP_SAFE_CAPACITY,
+  Client, ClientMap, Clock, CrdtRead, CrdtReader, CrdtWrite, CrdtWriter, HASHMAP_SAFE_CAPACITY, HashMapExt, Id,
+  JwstCodecResult,
 };
 
 #[derive(Default, Debug, PartialEq, Clone)]

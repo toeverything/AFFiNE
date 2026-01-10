@@ -41,28 +41,17 @@ impl YMap {
   }
 
   #[napi(
-    ts_args_type = "key: string, value: YArray | YMap | YText | boolean | number | string | \
-                    Record<string, any> | null | undefined"
+    ts_args_type = "key: string, value: YArray | YMap | YText | boolean | number | string | Record<string, any> | \
+                    null | undefined"
   )]
   pub fn set(&mut self, key: String, value: MixedRefYType) -> Result<()> {
     match value {
-      MixedRefYType::A(array) => self
-        .map
-        .insert(key, array.array.clone())
-        .map_err(anyhow::Error::from),
-      MixedRefYType::B(map) => self
-        .map
-        .insert(key, map.map.clone())
-        .map_err(anyhow::Error::from),
-      MixedRefYType::C(text) => self
-        .map
-        .insert(key, text.text.clone())
-        .map_err(anyhow::Error::from),
+      MixedRefYType::A(array) => self.map.insert(key, array.array.clone()).map_err(anyhow::Error::from),
+      MixedRefYType::B(map) => self.map.insert(key, map.map.clone()).map_err(anyhow::Error::from),
+      MixedRefYType::C(text) => self.map.insert(key, text.text.clone()).map_err(anyhow::Error::from),
       MixedRefYType::D(unknown) => match unknown.get_type() {
         Ok(value_type) => match value_type {
-          ValueType::Undefined | ValueType::Null => {
-            self.map.insert(key, Any::Null).map_err(anyhow::Error::from)
-          }
+          ValueType::Undefined | ValueType::Null => self.map.insert(key, Any::Null).map_err(anyhow::Error::from),
           ValueType::Boolean => match unsafe { unknown.cast::<bool>() } {
             Ok(boolean) => self.map.insert(key, boolean).map_err(anyhow::Error::from),
             Err(e) => Err(anyhow::Error::from(e).context("Failed to coerce value to boolean")),
@@ -82,10 +71,7 @@ impl YMap {
             }
           }
           ValueType::Object => match unknown.coerce_to_object().and_then(get_any_from_js_object) {
-            Ok(any) => self
-              .map
-              .insert(key, Value::Any(any))
-              .map_err(anyhow::Error::from),
+            Ok(any) => self.map.insert(key, Value::Any(any)).map_err(anyhow::Error::from),
             Err(e) => Err(anyhow::Error::from(e).context("Failed to coerce value to object")),
           },
           ValueType::BigInt => Err(anyhow::Error::msg("BigInt values are not supported")),

@@ -1,9 +1,10 @@
 use std::{collections::BTreeMap, fmt::Display};
 
-use super::{list::ListType, AsInner};
+use super::{AsInner, list::ListType};
 use crate::{
+  Any, Content, JwstCodecError, JwstCodecResult,
   doc::{DocStore, ItemRef, Node, Parent, Somr, YType, YTypeRef},
-  impl_type, Any, Content, JwstCodecError, JwstCodecResult,
+  impl_type,
 };
 
 impl_type!(Text);
@@ -85,21 +86,12 @@ impl Text {
           Content::Json(values) => {
             let converted = values
               .iter()
-              .map(|value| {
-                value
-                  .as_ref()
-                  .map(|s| Any::String(s.clone()))
-                  .unwrap_or(Any::Undefined)
-              })
+              .map(|value| value.as_ref().map(|s| Any::String(s.clone())).unwrap_or(Any::Undefined))
               .collect::<Vec<_>>();
             push_insert(&mut ops, TextInsert::Embed(converted), &attrs);
           }
           Content::Binary(value) => {
-            push_insert(
-              &mut ops,
-              TextInsert::Embed(vec![Any::Binary(value.clone())]),
-              &attrs,
-            );
+            push_insert(&mut ops, TextInsert::Embed(vec![Any::Binary(value.clone())]), &attrs);
           }
           _ => {}
         }
@@ -121,13 +113,7 @@ impl Text {
           let attrs = format.clone().unwrap_or_default();
           match insert {
             TextInsert::Text(text) => {
-              insert_text_content(
-                &mut store,
-                &mut ty,
-                &mut pos,
-                Content::String(text.clone()),
-                attrs,
-              )?;
+              insert_text_content(&mut store, &mut ty, &mut pos, Content::String(text.clone()), attrs)?;
             }
             TextInsert::Embed(values) => {
               for value in values {
@@ -225,38 +211,29 @@ fn is_nullish(value: &Any) -> bool {
 }
 
 fn push_insert(ops: &mut Vec<TextDeltaOp>, insert: TextInsert, attrs: &TextAttributes) {
-  let format = if attrs.is_empty() {
-    None
-  } else {
-    Some(attrs.clone())
-  };
+  let format = if attrs.is_empty() { None } else { Some(attrs.clone()) };
 
   if let Some(TextDeltaOp::Insert {
     insert: TextInsert::Text(prev),
     format: prev_format,
   }) = ops.last_mut()
+    && let TextInsert::Text(text) = insert
   {
-    if let TextInsert::Text(text) = insert {
-      if prev_format.as_ref() == format.as_ref() {
-        prev.push_str(&text);
-        return;
-      }
-      ops.push(TextDeltaOp::Insert {
-        insert: TextInsert::Text(text),
-        format,
-      });
+    if prev_format.as_ref() == format.as_ref() {
+      prev.push_str(&text);
       return;
     }
+    ops.push(TextDeltaOp::Insert {
+      insert: TextInsert::Text(text),
+      format,
+    });
+    return;
   }
 
   ops.push(TextDeltaOp::Insert { insert, format });
 }
 
-fn advance_text_position(
-  store: &mut DocStore,
-  pos: &mut TextPosition,
-  mut remaining: u64,
-) -> JwstCodecResult {
+fn advance_text_position(store: &mut DocStore, pos: &mut TextPosition, mut remaining: u64) -> JwstCodecResult {
   while remaining > 0 {
     let Some(item) = pos.right.get() else {
       return Err(JwstCodecError::IndexOutOfBound(pos.index + remaining));
@@ -311,16 +288,11 @@ fn minimize_attribute_changes(pos: &mut TextPosition, attrs: &TextAttributes) {
   }
 }
 
-fn insert_item(
-  store: &mut DocStore,
-  ty: &mut YType,
-  pos: &mut TextPosition,
-  content: Content,
-) -> JwstCodecResult {
-  if let Some(markers) = &ty.markers {
-    if content.countable() {
-      markers.update_marker_changes(pos.index, content.clock_len() as i64);
-    }
+fn insert_item(store: &mut DocStore, ty: &mut YType, pos: &mut TextPosition, content: Content) -> JwstCodecResult {
+  if let Some(markers) = &ty.markers
+    && content.countable()
+  {
+    markers.update_marker_changes(pos.index, content.clock_len() as i64);
   }
 
   let item = store.create_item(
@@ -383,14 +355,13 @@ fn insert_negated_attributes(
       continue;
     }
 
-    if let Content::Format { key, value } = &item.content {
-      if let Some(negated_value) = negated.get(key.as_str()) {
-        if negated_value == value {
-          negated.remove(key.as_str());
-          pos.forward();
-          continue;
-        }
-      }
+    if let Content::Format { key, value } = &item.content
+      && let Some(negated_value) = negated.get(key.as_str())
+      && negated_value == value
+    {
+      negated.remove(key.as_str());
+      pos.forward();
+      continue;
     }
 
     break;
@@ -488,12 +459,7 @@ fn format_text(
   Ok(())
 }
 
-fn delete_text(
-  store: &mut DocStore,
-  ty: &mut YType,
-  pos: &mut TextPosition,
-  mut remaining: u64,
-) -> JwstCodecResult {
+fn delete_text(store: &mut DocStore, ty: &mut YType, pos: &mut TextPosition, mut remaining: u64) -> JwstCodecResult {
   if remaining == 0 {
     return Ok(());
   }
@@ -535,7 +501,7 @@ mod tests {
   use super::{TextAttributes, TextDeltaOp, TextInsert};
   #[cfg(not(loom))]
   use crate::sync::{Arc, AtomicUsize, Ordering};
-  use crate::{loom_model, sync::thread, Any, Doc};
+  use crate::{Any, Doc, loom_model, sync::thread};
 
   #[test]
   fn test_manipulate_text() {
@@ -676,9 +642,7 @@ mod tests {
   fn loom_parallel_ins_del_text() {
     let seed = rand::rng().random();
     let mut rand = ChaCha20Rng::seed_from_u64(seed);
-    let ranges = (0..20)
-      .map(|_| rand.random_range(0..16))
-      .collect::<Vec<_>>();
+    let ranges = (0..20).map(|_| rand.random_range(0..16)).collect::<Vec<_>>();
 
     loom_model!({
       let doc = Doc::new();

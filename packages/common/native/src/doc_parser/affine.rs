@@ -5,16 +5,13 @@ use y_octo::{Any, DocOptions, JwstCodecError, Map, Value};
 
 use super::{
   blocksuite::{
-    collect_child_ids, get_block_id, get_flavour, get_list_depth, get_string, nearest_by_flavour,
-    DocContext,
+    DocContext, collect_child_ids, get_block_id, get_flavour, get_list_depth, get_string, nearest_by_flavour,
   },
   delta_markdown::{
-    delta_value_to_inline_markdown, extract_inline_references, text_to_inline_markdown,
-    text_to_markdown, DeltaToMdOptions,
+    DeltaToMdOptions, delta_value_to_inline_markdown, extract_inline_references, text_to_inline_markdown,
+    text_to_markdown,
   },
-  value::{
-    any_as_string, any_truthy, build_reference_payload, params_value_to_json, value_to_string,
-  },
+  value::{any_as_string, any_truthy, build_reference_payload, params_value_to_json, value_to_string},
 };
 
 const SUMMARY_LIMIT: usize = 1000;
@@ -402,17 +399,10 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       None => continue,
     };
 
-    let parent_block = parent_block_id
-      .as_ref()
-      .and_then(|id| context.block_pool.get(id));
+    let parent_block = parent_block_id.as_ref().and_then(|id| context.block_pool.get(id));
     let parent_flavour = parent_block.and_then(get_flavour);
 
-    let note_block = nearest_by_flavour(
-      &block_id,
-      NOTE_FLAVOUR,
-      &context.parent_lookup,
-      &context.block_pool,
-    );
+    let note_block = nearest_by_flavour(&block_id, NOTE_FLAVOUR, &context.parent_lookup, &context.block_pool);
     let note_block_id = note_block.as_ref().and_then(get_block_id);
     let display_mode = determine_display_mode(note_block.as_ref());
 
@@ -438,14 +428,9 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       continue;
     }
 
-    if matches!(
-      flavour.as_str(),
-      "affine:paragraph" | "affine:list" | "affine:code"
-    ) {
+    if matches!(flavour.as_str(), "affine:paragraph" | "affine:list" | "affine:code") {
       if let Some(text) = block.get("prop:text").and_then(|value| value.to_text()) {
-        let database_name = if flavour == "affine:paragraph"
-          && parent_flavour.as_deref() == Some("affine:database")
-        {
+        let database_name = if flavour == "affine:paragraph" && parent_flavour.as_deref() == Some("affine:database") {
           parent_block.and_then(|map| get_string(map, "prop:title"))
         } else {
           None
@@ -467,10 +452,7 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       continue;
     }
 
-    if matches!(
-      flavour.as_str(),
-      "affine:embed-linked-doc" | "affine:embed-synced-doc"
-    ) {
+    if matches!(flavour.as_str(), "affine:embed-linked-doc" | "affine:embed-synced-doc") {
       if let Some(page_id) = get_string(block, "prop:pageId") {
         let mut info = build_block(None);
         let payload = embed_ref_payload(block, &page_id);
@@ -515,11 +497,7 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
         &flavour,
         parent_flavour.as_ref(),
         parent_block_id.as_ref(),
-        compose_additional(
-          &display_mode,
-          note_block_id.as_ref(),
-          database_name.as_ref(),
-        ),
+        compose_additional(&display_mode, note_block_id.as_ref(), database_name.as_ref()),
       );
       info.content = Some(texts);
       blocks.push(info);
@@ -559,10 +537,7 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
   })
 }
 
-pub fn get_doc_ids_from_binary(
-  doc_bin: Vec<u8>,
-  include_trash: bool,
-) -> Result<Vec<String>, ParseError> {
+pub fn get_doc_ids_from_binary(doc_bin: Vec<u8>, include_trash: bool) -> Result<Vec<String>, ParseError> {
   if doc_bin.is_empty() || doc_bin == [0, 0] {
     return Err(ParseError::InvalidBinary);
   }
@@ -695,10 +670,7 @@ fn compose_additional(
   database_name: Option<&String>,
 ) -> Option<String> {
   let mut payload = JsonMap::new();
-  payload.insert(
-    "displayMode".into(),
-    JsonValue::String(display_mode.to_string()),
-  );
+  payload.insert("displayMode".into(), JsonValue::String(display_mode.to_string()));
   if let Some(note_id) = note_block_id {
     payload.insert("noteBlockId".into(), JsonValue::String(note_id.clone()));
   }
@@ -721,10 +693,7 @@ fn apply_doc_ref(info: &mut BlockInfo, page_id: String, payload: Option<String>)
 }
 
 fn embed_ref_payload(block: &Map, page_id: &str) -> Option<String> {
-  let params = block
-    .get("prop:params")
-    .as_ref()
-    .and_then(params_value_to_json);
+  let params = block.get("prop:params").as_ref().and_then(params_value_to_json);
   Some(build_reference_payload(page_id, params))
 }
 
@@ -800,11 +769,7 @@ struct DatabaseTable {
   rows: Vec<Vec<String>>,
 }
 
-fn build_database_table(
-  block: &Map,
-  context: &DocContext,
-  md_options: &DeltaToMdOptions,
-) -> Option<DatabaseTable> {
+fn build_database_table(block: &Map, context: &DocContext, md_options: &DeltaToMdOptions) -> Option<DatabaseTable> {
   let columns = parse_database_columns(block)?;
   let cells_map = block.get("prop:cells").and_then(|v| v.to_map())?;
   let child_ids = collect_child_ids(block);
@@ -920,9 +885,7 @@ struct DatabaseColumn {
 }
 
 fn parse_database_columns(block: &Map) -> Option<Vec<DatabaseColumn>> {
-  let columns = block
-    .get("prop:columns")
-    .and_then(|value| value.to_array())?;
+  let columns = block.get("prop:columns").and_then(|value| value.to_array())?;
   let mut parsed = Vec::new();
   for column_value in columns.iter() {
     if let Some(column) = column_value.to_map() {
@@ -967,9 +930,7 @@ fn format_option_tag(option: &DatabaseOption) -> String {
   let value = option.value.as_deref().unwrap_or_default();
   let color = option.color.as_deref().unwrap_or_default();
 
-  format!(
-    "<span data-affine-option data-value=\"{id}\" data-option-color=\"{color}\">{value}</span>"
-  )
+  format!("<span data-affine-option data-value=\"{id}\" data-option-color=\"{color}\">{value}</span>")
 }
 
 fn format_cell_value(value: &Value, column: &DatabaseColumn) -> String {
@@ -991,15 +952,8 @@ fn format_cell_value(value: &Value, column: &DatabaseColumn) -> String {
     }
     "multi-select" => {
       let ids: Vec<String> = match value {
-        Value::Any(Any::Array(ids)) => ids
-          .iter()
-          .filter_map(any_as_string)
-          .map(str::to_string)
-          .collect(),
-        Value::Array(array) => array
-          .iter()
-          .filter_map(|id_val| value_to_string(&id_val))
-          .collect(),
+        Value::Any(Any::Array(ids)) => ids.iter().filter_map(any_as_string).map(str::to_string).collect(),
+        Value::Array(array) => array.iter().filter_map(|id_val| value_to_string(&id_val)).collect(),
         _ => Vec::new(),
       };
 

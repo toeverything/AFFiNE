@@ -1,4 +1,4 @@
-use mp4parse::{read_mp4, TrackType};
+use mp4parse::{TrackType, read_mp4};
 use napi_derive::napi;
 
 #[napi]
@@ -6,9 +6,7 @@ pub fn get_mime(input: &[u8]) -> String {
   let mimetype = if let Some(kind) = infer::get(&input[..4096.min(input.len())]) {
     kind.mime_type().to_string()
   } else {
-    file_format::FileFormat::from_bytes(input)
-      .media_type()
-      .to_string()
+    file_format::FileFormat::from_bytes(input).media_type().to_string()
   };
   if mimetype == "video/mp4" {
     detect_mp4_flavor(input)

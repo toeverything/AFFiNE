@@ -31,18 +31,12 @@ impl YText {
 
   #[napi]
   pub fn insert(&mut self, index: i64, str: String) -> Result<()> {
-    self
-      .text
-      .insert(index as u64, str)
-      .map_err(anyhow::Error::from)
+    self.text.insert(index as u64, str).map_err(anyhow::Error::from)
   }
 
   #[napi]
   pub fn remove(&mut self, index: i64, len: i64) -> Result<()> {
-    self
-      .text
-      .remove(index as u64, len as u64)
-      .map_err(anyhow::Error::from)
+    self.text.remove(index as u64, len as u64).map_err(anyhow::Error::from)
   }
 
   #[napi(getter)]
