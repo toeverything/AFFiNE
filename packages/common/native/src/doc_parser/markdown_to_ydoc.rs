@@ -6,6 +6,7 @@ use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, T
 use y_octo::{Any, DocOptions, Map, Value};
 
 use super::affine::ParseError;
+use super::markdown_utils::extract_title;
 
 /// Block types used in AFFiNE documents
 const PAGE_FLAVOUR: &str = "affine:page";
@@ -135,38 +136,6 @@ pub fn markdown_to_ydoc(markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseEr
 
   // Create the y-octo document
   build_ydoc(doc_id, &title, blocks, content_block_ids)
-}
-
-/// Extracts the title from the first H1 heading in the markdown
-/// Handles formatted headings like `# Hello **World**` by collecting all text
-fn extract_title(markdown: &str) -> String {
-  let parser = Parser::new(markdown);
-  let mut in_heading = false;
-  let mut title = String::new();
-
-  for event in parser {
-    match event {
-      Event::Start(Tag::Heading { level, .. }) if level == HeadingLevel::H1 => {
-        in_heading = true;
-      }
-      Event::Text(text) if in_heading => {
-        title.push_str(&text);
-      }
-      Event::Code(code) if in_heading => {
-        title.push_str(&code);
-      }
-      Event::End(TagEnd::Heading(_)) if in_heading => {
-        break; // Exit after first H1 is complete
-      }
-      _ => {}
-    }
-  }
-
-  if title.is_empty() {
-    "Untitled".to_string()
-  } else {
-    title.trim().to_string()
-  }
 }
 
 /// Parses markdown content into BlockBuilder structures

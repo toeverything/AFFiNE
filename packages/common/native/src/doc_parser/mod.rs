@@ -4,6 +4,8 @@ mod delta_markdown;
 #[cfg(feature = "ydoc-loader")]
 mod markdown_to_ydoc;
 #[cfg(feature = "ydoc-loader")]
+mod markdown_utils;
+#[cfg(feature = "ydoc-loader")]
 mod update_ydoc;
 mod value;
 

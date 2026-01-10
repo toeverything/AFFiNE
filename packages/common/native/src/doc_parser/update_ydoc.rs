@@ -10,6 +10,7 @@ use y_octo::{Any, Doc, DocOptions, Map};
 
 use super::affine::ParseError;
 use super::blocksuite::{collect_child_ids, get_string};
+use super::markdown_utils::extract_title;
 
 const PAGE_FLAVOUR: &str = "affine:page";
 const NOTE_FLAVOUR: &str = "affine:note";
@@ -88,7 +89,7 @@ pub fn update_ydoc(
   let new_title = extract_title(new_markdown);
   update_title(&mut existing, &new_title)?;
 
-  // Apply diff operations (only Keep/Update, no Insert/Delete)
+  // Apply diff operations to update the document structure
   apply_diff(&mut existing, &new_blocks, &diff_ops)?;
 
   // Encode only the changes (delta) since state_before
@@ -100,6 +101,9 @@ pub fn update_ydoc(
 
 /// Loads an existing document and extracts its structure
 fn load_existing_doc(binary: &[u8], doc_id: &str) -> Result<ExistingDoc, ParseError> {
+  // Check for empty or minimal empty Y-Doc binary
+  // [0, 0] represents an empty Y-Doc update (0 structs, 0 deletes) - a convention
+  // used throughout the AFFiNE codebase for uninitialized/empty documents
   if binary.is_empty() || binary == [0, 0] {
     return Err(ParseError::InvalidBinary);
   }
@@ -439,37 +443,6 @@ fn flush_block(
     });
   }
   text.clear();
-}
-
-/// Extracts the title from the first H1 heading
-fn extract_title(markdown: &str) -> String {
-  let parser = Parser::new(markdown);
-  let mut in_heading = false;
-  let mut title = String::new();
-
-  for event in parser {
-    match event {
-      Event::Start(Tag::Heading { level, .. }) if level == HeadingLevel::H1 => {
-        in_heading = true;
-      }
-      Event::Text(text) if in_heading => {
-        title.push_str(&text);
-      }
-      Event::Code(code) if in_heading => {
-        title.push_str(&code);
-      }
-      Event::End(TagEnd::Heading(_)) if in_heading => {
-        break;
-      }
-      _ => {}
-    }
-  }
-
-  if title.is_empty() {
-    "Untitled".to_string()
-  } else {
-    title.trim().to_string()
-  }
 }
 
 /// Updates the document title if it has changed
