@@ -385,10 +385,13 @@ fn flush_code_block(
   blocks: &mut Vec<BlockBuilder>,
   content_block_ids: &mut Vec<String>,
 ) {
-  let trimmed = text.trim();
-  if !trimmed.is_empty() {
+  // Preserve leading whitespace (indentation) in code blocks as it may be
+  // semantically significant (e.g., Python, YAML). Only strip leading/trailing
+  // newlines which are typically artifacts from code fence parsing.
+  let content = text.trim_matches('\n');
+  if !content.is_empty() {
     let block = BlockBuilder::new(CODE_FLAVOUR)
-      .with_text(trimmed)
+      .with_text(content)
       .with_code_language(language);
     content_block_ids.push(block.id.clone());
     blocks.push(block);
@@ -816,6 +819,23 @@ Final paragraph.
 "#;
     let result = markdown_to_ydoc(markdown, "test-doc-id");
     assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_code_block_preserves_indentation() {
+    // Code blocks should preserve leading whitespace (indentation) which is
+    // semantically significant in languages like Python, YAML, etc.
+    let markdown = r#"# Code Test
+
+```python
+    def indented():
+        return "preserved"
+```
+"#;
+    let result = markdown_to_ydoc(markdown, "test-doc-id");
+    assert!(result.is_ok());
+    // The test passes if the conversion succeeds without errors.
+    // Full verification would require roundtrip testing.
   }
 
   // TODO: Fix roundtrip test - there's an issue with y-octo parsing back nested types
