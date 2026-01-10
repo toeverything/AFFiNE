@@ -665,6 +665,57 @@ fn apply_diff(
   Ok(())
 }
 
+// ============================================================================
+// Two-Phase Insertion Helpers
+// ============================================================================
+//
+// IMPORTANT: These helpers implement the two-phase insertion pattern required
+// for YJS compatibility. When creating nested CRDT types (Text, Array, Map),
+// we must:
+//   1. Insert the empty container into the parent FIRST (gets clock value)
+//   2. Then retrieve and populate it (content gets later clock values)
+//
+// This ensures parent items always have earlier clocks than children,
+// avoiding "forward parent references" that YJS cannot handle.
+
+/// Creates an empty Text, inserts it into the parent map, then returns it for population.
+fn insert_and_get_text(
+  doc: &Doc,
+  parent_map: &mut Map,
+  key: &str,
+) -> Result<y_octo::Text, ParseError> {
+  let text = doc
+    .create_text()
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  parent_map
+    .insert(key.to_string(), text)
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+  parent_map
+    .get(key)
+    .and_then(|v| v.to_text())
+    .ok_or_else(|| ParseError::ParserError("Failed to retrieve inserted text".into()))
+}
+
+/// Creates an empty Array, inserts it into the parent map, then returns it for population.
+fn insert_and_get_array(
+  doc: &Doc,
+  parent_map: &mut Map,
+  key: &str,
+) -> Result<y_octo::Array, ParseError> {
+  let array = doc
+    .create_array()
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  parent_map
+    .insert(key.to_string(), array)
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+  parent_map
+    .get(key)
+    .and_then(|v| v.to_array())
+    .ok_or_else(|| ParseError::ParserError("Failed to retrieve inserted array".into()))
+}
+
 /// Creates a new block in the blocks map
 ///
 /// IMPORTANT: Uses two-phase approach for YJS compatibility:
@@ -724,32 +775,15 @@ fn create_new_block(
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // Step 4: Create and insert children array AFTER block_map is in place
-  let children_array = doc
-    .create_array()
-    .map_err(|e| ParseError::ParserError(e.to_string()))?;
-  block_map
-    .insert("sys:children".to_string(), children_array)
-    .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  // Step 4: Create and insert children array using two-phase helper
+  insert_and_get_array(doc, &mut block_map, "sys:children")?;
 
-  // Step 5: Create and insert text FIRST, then populate it
-  // IMPORTANT: Must insert empty text before populating to avoid forward parent references.
-  // If we populate before inserting, the text content items get earlier clocks than the
-  // text container itself, causing YJS integration failures.
+  // Step 5: Create and insert text using two-phase helper, then populate
   if !block.content.is_empty() {
-    let text = doc
-      .create_text()
+    let mut text = insert_and_get_text(doc, &mut block_map, "prop:text")?;
+    text
+      .insert(0, &block.content)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    block_map
-      .insert("prop:text".to_string(), text)
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-
-    // Now retrieve the inserted text and populate it
-    if let Some(mut text) = block_map.get("prop:text").and_then(|v| v.to_text()) {
-      text
-        .insert(0, &block.content)
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
   }
 
   Ok(block_id)
@@ -773,20 +807,11 @@ fn update_block_content(
     apply_text_diff(&mut text, &old_content, &new_block.content)?;
   } else if !new_block.content.is_empty() {
     // Block didn't have text before, but now it does (e.g., divider becoming paragraph)
-    // Create a new text field using two-phase approach to avoid forward parent references
-    let text = doc
-      .create_text()
+    // Use two-phase helper to avoid forward parent references
+    let mut text = insert_and_get_text(doc, &mut block, "prop:text")?;
+    text
+      .insert(0, &new_block.content)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    block
-      .insert("prop:text".to_string(), text)
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-
-    // Now retrieve and populate the text
-    if let Some(mut text) = block.get("prop:text").and_then(|v| v.to_text()) {
-      text
-        .insert(0, &new_block.content)
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
   }
 
   // Update checked state if changed
@@ -1036,22 +1061,12 @@ fn update_note_children(
       }
     }
   } else {
-    // Create new children array - insert empty first, then populate
-    // IMPORTANT: Must insert empty array before populating to avoid forward parent references.
-    let children_array = doc
-      .create_array()
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    note_block
-      .insert("sys:children".to_string(), children_array)
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-
-    // Now retrieve and populate the array
-    if let Some(mut children) = note_block.get("sys:children").and_then(|v| v.to_array()) {
-      for (idx, child_id) in new_children.into_iter().enumerate() {
-        children
-          .insert(idx as u64, Any::String(child_id))
-          .map_err(|e| ParseError::ParserError(e.to_string()))?;
-      }
+    // Create new children array using two-phase helper
+    let mut children = insert_and_get_array(doc, &mut note_block, "sys:children")?;
+    for (idx, child_id) in new_children.into_iter().enumerate() {
+      children
+        .insert(idx as u64, Any::String(child_id))
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
     }
   }
 
