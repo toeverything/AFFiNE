@@ -65,7 +65,8 @@ mod tests {
 
     let documents = html_loader.load().unwrap();
 
-    let expected = "Example Domain\n\n        This domain is for use in illustrative examples in documents. You may\n        use \
+    let expected =
+      "Example Domain\n\n        This domain is for use in illustrative examples in documents. You may\n        use \
        this domain in literature without prior coordination or asking for\n        permission.\n      More \
        information...";
 
