@@ -156,9 +156,10 @@ impl DocStore {
 
     // Estimate starting position for binary search
     // Guard against division by zero when the last item is at clock 0 with length 1
+    // Use saturating_mul to prevent overflow for large clock/right values
     let max_clock = last_clock + last.len();
     let mut middle_index = if max_clock > 1 {
-      ((clock as usize) * right) / ((max_clock - 1) as usize)
+      (clock as usize).saturating_mul(right) / ((max_clock - 1) as usize)
     } else {
       0
     };
