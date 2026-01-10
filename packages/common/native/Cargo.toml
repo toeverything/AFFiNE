@@ -1,5 +1,5 @@
 [package]
-edition      = "2021"
+edition      = "2024"
 license-file = "LICENSE"
 name         = "affine_common"
 version      = "0.1.0"

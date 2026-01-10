@@ -10,6 +10,8 @@ use crate::{
   sync::{Arc, RwLock, RwLockWriteGuard, Weak},
 };
 
+pub type ChangedTypeRefs = HashMap<YTypeRef, Vec<SmolStr>>;
+
 unsafe impl Send for DocStore {}
 unsafe impl Sync for DocStore {}
 
@@ -26,6 +28,8 @@ pub(crate) struct DocStore {
   pub dangling_types: HashMap<usize, YTypeRef>,
   pub pending: Option<Update>,
   pub last_optimized_state: StateVector,
+  // changed item's parent, value is the parent's sub key if exists
+  pub changed: ChangedTypeRefs,
 }
 
 pub(crate) type StoreRef = Arc<RwLock<DocStore>>;
@@ -100,6 +104,10 @@ impl DocStore {
 
   pub fn get_state_vector(&self) -> StateVector {
     Self::items_as_state_vector(&self.items)
+  }
+
+  pub fn get_delete_sets(&self) -> DeleteSet {
+    self.delete_set.clone()
   }
 
   fn items_as_state_vector(items: &ClientMap<VecDeque<Node>>) -> StateVector {
@@ -578,6 +586,9 @@ impl DocStore {
           }
 
           parent_lock.take();
+
+          // mark changed item's parent
+          Self::mark_changed(&mut self.changed, ty.clone(), this.parent_sub.clone());
         } else {
           // if parent not exists, integrate GC node instead
           // don't delete it because it may referenced by other nodes
@@ -600,13 +611,18 @@ impl DocStore {
 
   pub fn delete_item(&mut self, item: &Item, parent: Option<&mut YType>) {
     let mut pending_delete_sets = HashMap::new();
-    Self::delete_item_inner(&mut pending_delete_sets, item, parent);
+    Self::delete_item_inner(&mut pending_delete_sets, &mut self.changed, item, parent);
     for (client, ranges) in pending_delete_sets {
       self.delete_set.batch_add_ranges(client, ranges);
     }
   }
 
-  fn delete_item_inner(delete_set: &mut HashMap<u64, Vec<Range<u64>>>, item: &Item, parent: Option<&mut YType>) {
+  fn delete_item_inner(
+    delete_set: &mut HashMap<u64, Vec<Range<u64>>>,
+    changed: &mut ChangedTypeRefs,
+    item: &Item,
+    parent: Option<&mut YType>,
+  ) {
     // 1. mark item as deleted, if item is gced, return
     if !item.delete() {
       return;
@@ -638,7 +654,7 @@ impl DocStore {
           let mut item_ref = ty.start.clone();
           while let Some(item) = item_ref.get() {
             if !item.deleted() {
-              Self::delete_item_inner(delete_set, item, Some(&mut ty));
+              Self::delete_item_inner(delete_set, changed, item, Some(&mut ty));
             }
 
             item_ref = item.right.clone();
@@ -649,7 +665,7 @@ impl DocStore {
             if let Some(item) = item.get()
               && !item.deleted()
             {
-              Self::delete_item_inner(delete_set, item, Some(&mut ty));
+              Self::delete_item_inner(delete_set, changed, item, Some(&mut ty));
             }
           }
         }
@@ -658,6 +674,11 @@ impl DocStore {
         // TODO: remove subdoc
       }
       _ => {}
+    }
+
+    // mark deleted item's parent
+    if let Some(Parent::Type(ty)) = &item.parent {
+      Self::mark_changed(changed, ty.clone(), item.parent_sub.clone());
     }
   }
 
@@ -704,18 +725,17 @@ impl DocStore {
               DocStore::split_node_at(items, idx, end - id.clock)?;
             }
 
-            Self::delete_item_inner(&mut pending_delete_sets, item, None);
+            Self::delete_item_inner(&mut pending_delete_sets, &mut self.changed, item, None);
           }
         } else {
           break;
         }
-
         idx += 1;
       }
       for (client, ranges) in pending_delete_sets {
         self.delete_set.batch_add_ranges(client, ranges);
       }
-    }
+    };
 
     Ok(())
   }
@@ -753,6 +773,20 @@ impl DocStore {
     }
 
     Ok(update)
+  }
+
+  fn mark_changed(changed: &mut ChangedTypeRefs, parent: YTypeRef, parent_sub: Option<SmolStr>) {
+    if parent.inner.is_some() {
+      let vec = changed.entry(parent).or_default();
+      if let Some(parent_sub) = parent_sub {
+        // only record the sub key if exists
+        vec.push(parent_sub);
+      }
+    }
+  }
+
+  pub fn get_changed(&mut self) -> ChangedTypeRefs {
+    mem::replace(&mut self.changed, HashMap::new())
   }
 
   fn diff_structs(map: &ClientMap<VecDeque<Node>>, sv: &StateVector) -> JwstCodecResult<ClientMap<VecDeque<Node>>> {
@@ -933,6 +967,39 @@ impl DocStore {
 
     // return the index of processed items
     idx - pos
+  }
+
+  pub fn deep_compare(&self, other: &Self) -> bool {
+    if self.items.len() != other.items.len() {
+      return false;
+    }
+
+    for (client, structs) in self.items.iter() {
+      if let Some(other_structs) = other.items.get(client) {
+        if structs.len() != other_structs.len() {
+          return false;
+        }
+
+        for (struct_info, other_struct_info) in structs.iter().zip(other_structs.iter()) {
+          if struct_info != other_struct_info {
+            return false;
+          }
+          if let (Node::Item(item), Node::Item(other_item)) = (struct_info, other_struct_info)
+            && !match (item.get(), other_item.get()) {
+              (Some(item), Some(other_item)) => item.deep_compare(other_item),
+              (None, None) => true,
+              _ => false,
+            }
+          {
+            return false;
+          }
+        }
+      } else {
+        return false;
+      }
+    }
+
+    true
   }
 }
 
@@ -1118,6 +1185,58 @@ mod tests {
       assert_eq!(s1, left, "doc internal mutation should not modify the pointer");
       let right = doc_store.split_at_and_get_right((1, 5)).unwrap();
       assert_eq!(right.len(), 3); // base => b_ase
+    });
+  }
+
+  #[test]
+  fn should_mark_changed_items() {
+    loom_model!({
+      let doc = DocOptions::new().with_client_id(1).build();
+
+      let mut arr = doc.get_or_create_array("arr").unwrap();
+      let mut text = doc.create_text().unwrap();
+      let mut map = doc.create_map().unwrap();
+
+      arr.insert(0, Value::from(text.clone())).unwrap();
+      arr.insert(1, Value::from(map.clone())).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        // for array, we will only record the type ref itself
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&arr.0), Some(&vec![]));
+      }
+
+      text.insert(0, "hello world").unwrap();
+      text.remove(5, 6).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&text.0), Some(&vec![]));
+      }
+
+      map.insert("key".into(), 123).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&map.0), Some(&vec!["key".into()]));
+      }
+
+      map.remove("key");
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&map.0), Some(&vec!["key".into()]));
+      }
+
+      arr.remove(0, 1).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 2);
+        // text's children mark parent(text) changed
+        assert_eq!(changed.get(&text.0), Some(&vec![]));
+        // text mark parent(arr) changed
+        assert_eq!(changed.get(&arr.0), Some(&vec![]));
+      }
     });
   }
 

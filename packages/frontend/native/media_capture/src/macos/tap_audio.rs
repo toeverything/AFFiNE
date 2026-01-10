@@ -38,7 +38,7 @@ use crate::{
   utils::{cfstring_from_bytes_with_nul, get_global_main_property},
 };
 
-extern "C" {
+unsafe extern "C" {
   fn AudioHardwareCreateProcessTap(inDescription: *mut AnyObject, outTapID: *mut AudioObjectID) -> OSStatus;
 
   fn AudioHardwareDestroyProcessTap(tapID: AudioObjectID) -> OSStatus;

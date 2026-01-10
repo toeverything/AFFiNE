@@ -467,19 +467,23 @@ fn delete_text(store: &mut DocStore, ty: &mut YType, pos: &mut TextPosition, mut
   let start = remaining;
 
   while remaining > 0 {
-    let Some(item) = pos.right.get() else {
+    let item_ref = pos.right.clone();
+    let Some((indexable, item_len, item_id)) = item_ref.get().map(|item| (item.indexable(), item.len(), item.id))
+    else {
       break;
     };
 
-    if item.indexable() {
-      let item_len = item.len();
+    if indexable {
       if remaining < item_len {
-        store.split_node(item.id, remaining)?;
+        store.split_node(item_id, remaining)?;
         remaining = 0;
       } else {
         remaining -= item_len;
       }
-      store.delete_item(item, Some(ty));
+
+      if let Some(item) = item_ref.get() {
+        store.delete_item(item, Some(ty));
+      }
     }
 
     pos.forward();

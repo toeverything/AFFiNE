@@ -10,6 +10,10 @@ use crate::{
 impl_type!(Map);
 
 pub(crate) trait MapType: AsInner<Inner = YTypeRef> {
+  fn _id(&self) -> Option<Id> {
+    self.as_inner().ty().and_then(|ty| ty.item.get().map(|item| item.id))
+  }
+
   fn _insert<V: Into<Value>>(&mut self, key: String, value: V) -> JwstCodecResult {
     if let Some((mut store, mut ty)) = self.as_inner().write() {
       let left = ty.map.get(&SmolStr::new(&key)).cloned();
@@ -154,6 +158,11 @@ impl<'a> Iterator for EntriesIterator<'a> {
 impl MapType for Map {}
 
 impl Map {
+  #[inline(always)]
+  pub fn id(&self) -> Option<Id> {
+    self._id()
+  }
+
   #[inline(always)]
   pub fn insert<V: Into<Value>>(&mut self, key: String, value: V) -> JwstCodecResult {
     self._insert(key, value)

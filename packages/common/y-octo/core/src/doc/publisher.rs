@@ -34,7 +34,10 @@ impl DocPublisher {
       observing: Arc::new(AtomicBool::new(false)),
     };
 
-    if cfg!(not(any(feature = "bench", fuzzing, loom, miri))) {
+    if cfg!(all(
+      feature = "subscribe",
+      not(any(feature = "bench", fuzzing, loom, miri))
+    )) {
       publisher.start();
     }
 

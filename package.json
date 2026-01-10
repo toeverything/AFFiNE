@@ -46,7 +46,7 @@
       "taplo format"
     ],
     "*.rs": [
-      "cargo fmt -- --edition 2024"
+      "cargo fmt --"
     ]
   },
   "devDependencies": {

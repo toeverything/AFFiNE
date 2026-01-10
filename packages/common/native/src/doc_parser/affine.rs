@@ -715,10 +715,10 @@ fn gather_surface_texts(block: &Map) -> Vec<String> {
 
   if let Some(value_map) = elements.get("value").and_then(|value| value.to_map()) {
     for value in value_map.values() {
-      if let Some(element) = value.to_map() {
-        if let Some(text) = element.get("text").and_then(|value| value.to_text()) {
-          texts.push(text.to_string());
-        }
+      if let Some(element) = value.to_map()
+        && let Some(text) = element.get("text").and_then(|value| value.to_text())
+      {
+        texts.push(text.to_string());
       }
     }
   }
@@ -753,12 +753,12 @@ fn gather_database_texts(block: &Map) -> (Vec<String>, Option<String>) {
 fn gather_table_contents(block: &Map) -> Vec<String> {
   let mut contents = Vec::new();
   for key in block.keys() {
-    if key.starts_with("prop:cells.") && key.ends_with(".text") {
-      if let Some(value) = block.get(key).and_then(|value| value_to_string(&value)) {
-        if !value.is_empty() {
-          contents.push(value);
-        }
-      }
+    if key.starts_with("prop:cells.")
+      && key.ends_with(".text")
+      && let Some(value) = block.get(key).and_then(|value| value_to_string(&value))
+      && !value.is_empty()
+    {
+      contents.push(value);
     }
   }
   contents
@@ -791,15 +791,14 @@ fn build_database_table(block: &Map, context: &DocContext, md_options: &DeltaToM
             cell_text = text;
           }
         }
-      } else if let Some(row_cells) = &row_cells {
-        if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
-          if let Some(value) = cell_val.get("value") {
-            if let Some(text_md) = delta_value_to_inline_markdown(&value, md_options) {
-              cell_text = text_md;
-            } else {
-              cell_text = format_cell_value(&value, column);
-            }
-          }
+      } else if let Some(row_cells) = &row_cells
+        && let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map())
+        && let Some(value) = cell_val.get("value")
+      {
+        if let Some(text_md) = delta_value_to_inline_markdown(&value, md_options) {
+          cell_text = text_md;
+        } else {
+          cell_text = format_cell_value(&value, column);
         }
       }
 
@@ -817,26 +816,26 @@ fn append_database_summary(summary: &mut String, block: &Map, context: &DocConte
     return;
   };
 
-  if let Some(title) = get_string(block, "prop:title") {
-    if !title.is_empty() {
-      summary.push_str(&title);
-      summary.push('|');
-    }
+  if let Some(title) = get_string(block, "prop:title")
+    && !title.is_empty()
+  {
+    summary.push_str(&title);
+    summary.push('|');
   }
 
   for column in table.columns.iter() {
-    if let Some(name) = column.name.as_ref() {
-      if !name.is_empty() {
-        summary.push_str(name);
-        summary.push('|');
-      }
+    if let Some(name) = column.name.as_ref()
+      && !name.is_empty()
+    {
+      summary.push_str(name);
+      summary.push('|');
     }
     for option in column.options.iter() {
-      if let Some(value) = option.value.as_ref() {
-        if !value.is_empty() {
-          summary.push_str(value);
-          summary.push('|');
-        }
+      if let Some(value) = option.value.as_ref()
+        && !value.is_empty()
+      {
+        summary.push_str(value);
+        summary.push('|');
       }
     }
   }

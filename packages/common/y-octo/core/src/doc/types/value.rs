@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use super::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
   Any(Any),
   Doc(Doc),

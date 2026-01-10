@@ -15,7 +15,7 @@ pub(crate) use std::{
 pub(crate) use loom::{
   sync::{
     Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
-    atomic::{AtomicBool, AtomicU8, AtomicU16, AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicU8, AtomicU16, AtomicU32, AtomicUsize, Ordering},
   },
   thread,
 };

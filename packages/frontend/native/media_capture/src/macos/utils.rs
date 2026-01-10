@@ -169,16 +169,14 @@ pub fn process_audio_frame(
     if current_sample_rate != target_sample_rate {
       // Use (or create) a persistent BufferedResampler
 
-      let out_vec = RESAMPLER_CACHE.with(|cache| {
+      RESAMPLER_CACHE.with(|cache| {
         let mut map = cache.borrow_mut();
         let key = (current_sample_rate as u32, target_sample_rate as u32, 2usize);
         let resampler = map
           .entry(key)
           .or_insert_with(|| BufferedResampler::new(current_sample_rate, target_sample_rate, 2));
         resampler.feed(&[left, right])
-      });
-
-      out_vec
+      })
     } else {
       // No resampling needed, just interleave existing left/right data
       let mut interleaved: Vec<f32> = Vec::with_capacity(left.len() * 2);

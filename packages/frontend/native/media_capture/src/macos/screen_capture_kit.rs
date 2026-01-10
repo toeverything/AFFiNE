@@ -149,12 +149,12 @@ impl ApplicationInfo {
     }
 
     // If not available, try to get from the audio process property
-    if self.object_id > 0 {
-      if let Ok(bundle_id) = get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID) {
-        // Safely convert CFStringRef to Rust String
-        let cf_string = unsafe { CFString::wrap_under_get_rule(bundle_id) };
-        return cf_string.to_string();
-      }
+    if self.object_id > 0
+      && let Ok(bundle_id) = get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID)
+    {
+      // Safely convert CFStringRef to Rust String
+      let cf_string = unsafe { CFString::wrap_under_get_rule(bundle_id) };
+      return cf_string.to_string();
     }
 
     String::new()
@@ -351,31 +351,31 @@ pub struct ApplicationStateChangedSubscriber {
 impl ApplicationStateChangedSubscriber {
   #[napi]
   pub fn unsubscribe(&self) {
-    if let Ok(mut lock) = APPLICATION_STATE_CHANGED_SUBSCRIBERS.write() {
-      if let Some(subscribers) = lock.get_mut(&self.object_id) {
-        subscribers.remove(&self.id);
-        if subscribers.is_empty() {
-          lock.remove(&self.object_id);
-          if let Some(listener_block) = APPLICATION_STATE_CHANGED_LISTENER_BLOCKS
-            .write()
-            .ok()
-            .as_mut()
-            .and_then(|map| map.remove(&self.object_id))
-          {
-            // Wrap in catch_unwind to prevent crashes during shutdown
-            let _ = std::panic::catch_unwind(|| unsafe {
-              AudioObjectRemovePropertyListenerBlock(
-                self.object_id,
-                &AudioObjectPropertyAddress {
-                  mSelector: kAudioProcessPropertyIsRunning,
-                  mScope: kAudioObjectPropertyScopeGlobal,
-                  mElement: kAudioObjectPropertyElementMain,
-                },
-                ptr::null_mut(),
-                listener_block.load(Ordering::Relaxed),
-              );
-            });
-          }
+    if let Ok(mut lock) = APPLICATION_STATE_CHANGED_SUBSCRIBERS.write()
+      && let Some(subscribers) = lock.get_mut(&self.object_id)
+    {
+      subscribers.remove(&self.id);
+      if subscribers.is_empty() {
+        lock.remove(&self.object_id);
+        if let Some(listener_block) = APPLICATION_STATE_CHANGED_LISTENER_BLOCKS
+          .write()
+          .ok()
+          .as_mut()
+          .and_then(|map| map.remove(&self.object_id))
+        {
+          // Wrap in catch_unwind to prevent crashes during shutdown
+          let _ = std::panic::catch_unwind(|| unsafe {
+            AudioObjectRemovePropertyListenerBlock(
+              self.object_id,
+              &AudioObjectPropertyAddress {
+                mSelector: kAudioProcessPropertyIsRunning,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain,
+              },
+              ptr::null_mut(),
+              listener_block.load(Ordering::Relaxed),
+            );
+          });
         }
       }
     }
@@ -463,16 +463,15 @@ impl ShareableContent {
             )
           };
           for address in addresses {
-            if address.mSelector == kAudioProcessPropertyIsRunning {
-              if let Some(subscribers) = APPLICATION_STATE_CHANGED_SUBSCRIBERS
+            if address.mSelector == kAudioProcessPropertyIsRunning
+              && let Some(subscribers) = APPLICATION_STATE_CHANGED_SUBSCRIBERS
                 .read()
                 .ok()
                 .as_ref()
                 .and_then(|map| map.get(&object_id))
-              {
-                for callback in subscribers.values() {
-                  callback.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
-                }
+            {
+              for callback in subscribers.values() {
+                callback.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
               }
             }
           }
@@ -634,16 +633,16 @@ impl ShareableContent {
     }
 
     // Find the audio object ID for this process
-    if let Ok(app_list) = RUNNING_APPLICATIONS.read() {
-      if let Ok(app_list) = app_list.as_ref() {
-        for object_id in app_list {
-          let pid = get_process_property(object_id, kAudioProcessPropertyPID).unwrap_or(-1);
-          if pid == process_id as i32 {
-            // Check if the process is actively using input (microphone)
-            match get_process_property(object_id, kAudioProcessPropertyIsRunningInput) {
-              Ok(is_running) => return Ok(is_running),
-              Err(_) => continue,
-            }
+    if let Ok(app_list) = RUNNING_APPLICATIONS.read()
+      && let Ok(app_list) = app_list.as_ref()
+    {
+      for object_id in app_list {
+        let pid = get_process_property(object_id, kAudioProcessPropertyPID).unwrap_or(-1);
+        if pid == process_id as i32 {
+          // Check if the process is actively using input (microphone)
+          match get_process_property(object_id, kAudioProcessPropertyIsRunningInput) {
+            Ok(is_running) => return Ok(is_running),
+            Err(_) => continue,
           }
         }
       }

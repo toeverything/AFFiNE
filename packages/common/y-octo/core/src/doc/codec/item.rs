@@ -345,6 +345,22 @@ impl Item {
 
     Ok(())
   }
+
+  pub fn deep_compare(&self, other: &Self) -> bool {
+    if self.id != other.id
+      || self.deleted() != other.deleted()
+      || self.len() != other.len()
+      || self.left.get().map(|l| l.last_id()) != other.left.get().map(|l| l.last_id())
+      || self.right.get().map(|r| r.id) != other.right.get().map(|r| r.id)
+      || self.origin_left_id != other.origin_left_id
+      || self.origin_right_id != other.origin_right_id
+      || self.parent_sub != other.parent_sub
+    {
+      return false;
+    }
+
+    true
+  }
 }
 
 #[allow(dead_code)]

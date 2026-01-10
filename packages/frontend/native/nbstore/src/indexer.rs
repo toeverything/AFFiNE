@@ -130,10 +130,10 @@ impl SqliteDocStorage {
       for row in snapshots {
         let index_name: String = row.get("index_name");
         let data: Vec<u8> = row.get("data");
-        if let Ok(decompressed) = zstd::stream::decode_all(std::io::Cursor::new(&data)) {
-          if let Ok((snapshot, _)) = bincode::serde::decode_from_slice::<SnapshotData, _>(&decompressed, config) {
-            index.load_snapshot(&index_name, snapshot);
-          }
+        if let Ok(decompressed) = zstd::stream::decode_all(std::io::Cursor::new(&data))
+          && let Ok((snapshot, _)) = bincode::serde::decode_from_slice::<SnapshotData, _>(&decompressed, config)
+        {
+          index.load_snapshot(&index_name, snapshot);
         }
       }
     }

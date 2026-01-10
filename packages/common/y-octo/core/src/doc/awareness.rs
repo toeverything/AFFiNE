@@ -20,6 +20,10 @@ impl Awareness {
     }
   }
 
+  pub fn local_id(&self) -> u64 {
+    self.local_id
+  }
+
   pub fn on_update(&mut self, f: impl Fn(&Awareness, AwarenessEvent) + Send + Sync + 'static) {
     self.callback = Some(Arc::new(f));
   }

@@ -5,7 +5,11 @@ mod text;
 mod value;
 mod xml;
 
-use std::{collections::hash_map::Entry, sync::Weak};
+use std::{
+  collections::hash_map::Entry,
+  hash::{Hash, Hasher},
+  sync::Weak,
+};
 
 pub use array::*;
 use list::*;
@@ -57,6 +61,14 @@ impl PartialEq for YTypeRef {
         (None, None) => true,
         _ => false,
       }
+  }
+}
+
+impl Eq for YTypeRef {}
+
+impl Hash for YTypeRef {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.inner.ptr().hash(state);
   }
 }
 

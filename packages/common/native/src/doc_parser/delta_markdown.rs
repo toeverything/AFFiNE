@@ -466,10 +466,10 @@ fn apply_inline_attributes(
     if !is_inline_attribute(attr) || !any_truthy(value) {
       continue;
     }
-    if let Some(active) = active_inline.get(attr) {
-      if active == value {
-        continue;
-      }
+    if let Some(active) = active_inline.get(attr)
+      && active == value
+    {
+      continue;
     }
 
     let next_matches = next
