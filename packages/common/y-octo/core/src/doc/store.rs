@@ -367,6 +367,14 @@ impl DocStore {
   ///       `doc.get_or_create_text("content")`)
   ///     - [Parent::Id] for type as item (e.g `doc.create_text()`)
   ///     - [None] means borrow left.parent or right.parent
+  ///
+  /// # Deprecated
+  /// Use [`repair_with_batch_types`] instead, which can resolve forward Parent::Id
+  /// references within the same update batch.
+  #[deprecated(
+    since = "0.1.0",
+    note = "Use repair_with_batch_types() with an empty HashMap for the same behavior, or provide a batch_type_map to resolve forward parent references"
+  )]
   #[allow(dead_code)]
   pub fn repair(&mut self, item: &mut Item, store_ref: StoreRef) -> JwstCodecResult {
     self.repair_inner(item, store_ref, None)
