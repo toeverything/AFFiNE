@@ -47,7 +47,7 @@ struct ExistingDoc {
 /// Represents a diff operation
 #[derive(Debug)]
 enum DiffOp {
-  Keep(usize, usize),   // (old_idx, new_idx) - block unchanged or similar
+  Keep(usize),          // old_idx - block unchanged
   Delete(usize),        // old_idx - block removed
   Insert(usize),        // new_idx - block added
   Update(usize, usize), // (old_idx, new_idx) - block content changed
@@ -81,23 +81,7 @@ pub fn update_ydoc(
   // Compute diff between old and new blocks
   let diff_ops = compute_diff(&existing.content_blocks, &new_blocks);
 
-  // Check if diff contains structural changes (Insert/Delete)
-  // Y-octo delta encoding has issues with new block creation (forward parent references)
-  // So we fall back to full document replacement for structural changes
-  let has_structural_changes = diff_ops
-    .iter()
-    .any(|op| matches!(op, DiffOp::Insert(_) | DiffOp::Delete(_)));
-
-  if has_structural_changes {
-    // Fall back to creating a completely new document
-    // This doesn't support CRDT merging but ensures compatibility
-    return super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id);
-  }
-
-  // For updates only (no structural changes), use proper delta encoding
-  // This supports CRDT merging with concurrent edits
-
-  // Capture state before modifications
+  // Capture state before modifications to encode only the delta
   let state_before = existing.doc.get_state_vector();
 
   // Update the title if changed
@@ -564,7 +548,7 @@ fn compute_diff(old_blocks: &[(String, ContentBlock)], new_blocks: &[ContentBloc
 
       if is_exact_match {
         // Exact match - Keep
-        ops.push(DiffOp::Keep(i - 1, j - 1));
+        ops.push(DiffOp::Keep(i - 1));
         i -= 1;
         j -= 1;
       } else if old_block.is_similar(new_block)
@@ -615,7 +599,7 @@ fn apply_diff(
 
   for op in diff_ops {
     match op {
-      DiffOp::Keep(old_idx, _) => {
+      DiffOp::Keep(old_idx) => {
         // Keep the existing block
         let block_id = &existing.content_block_ids[*old_idx];
         new_children.push(block_id.clone());
@@ -748,17 +732,24 @@ fn create_new_block(
     .insert("sys:children".to_string(), children_array)
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Step 5: Create, populate, and insert text AFTER block_map is in place
+  // Step 5: Create and insert text FIRST, then populate it
+  // IMPORTANT: Must insert empty text before populating to avoid forward parent references.
+  // If we populate before inserting, the text content items get earlier clocks than the
+  // text container itself, causing YJS integration failures.
   if !block.content.is_empty() {
-    let mut text = doc
+    let text = doc
       .create_text()
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    text
-      .insert(0, &block.content)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
     block_map
       .insert("prop:text".to_string(), text)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+    // Now retrieve the inserted text and populate it
+    if let Some(mut text) = block_map.get("prop:text").and_then(|v| v.to_text()) {
+      text
+        .insert(0, &block.content)
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    }
   }
 
   Ok(block_id)
@@ -1034,18 +1025,23 @@ fn update_note_children(
       }
     }
   } else {
-    // Create new children array
-    let mut children_array = doc
+    // Create new children array - insert empty first, then populate
+    // IMPORTANT: Must insert empty array before populating to avoid forward parent references.
+    let children_array = doc
       .create_array()
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    for (idx, child_id) in new_children.into_iter().enumerate() {
-      children_array
-        .insert(idx as u64, Any::String(child_id))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
     note_block
       .insert("sys:children".to_string(), children_array)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+    // Now retrieve and populate the array
+    if let Some(mut children) = note_block.get("sys:children").and_then(|v| v.to_array()) {
+      for (idx, child_id) in new_children.into_iter().enumerate() {
+        children
+          .insert(idx as u64, Any::String(child_id))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
   }
 
   Ok(())
@@ -1211,5 +1207,130 @@ mod tests {
     // Document should still be valid
     let blocks_map = doc.get_map("blocks").expect("Should have blocks");
     assert!(!blocks_map.is_empty());
+  }
+
+  #[test]
+  fn test_update_ydoc_add_block() {
+    use crate::doc_parser::markdown_to_ydoc;
+
+    // Create initial document with one paragraph
+    let initial_md = "# Add Block Test\n\nOriginal paragraph.";
+    let doc_id = "add-block-test";
+
+    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
+    let initial_size = initial_bin.len();
+
+    // Add a new paragraph
+    let updated_md = "# Add Block Test\n\nOriginal paragraph.\n\nNew paragraph added.";
+    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
+
+    // Delta should be smaller than a full document (indicates true delta encoding)
+    // Note: For small changes, delta might not always be smaller due to overhead
+    assert!(!delta.is_empty(), "Delta should contain changes");
+
+    // Apply delta and verify
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("Should apply initial");
+    doc
+      .apply_update_from_binary_v1(&delta)
+      .expect("Should apply delta with new block");
+
+    // Verify block count increased
+    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
+    let block_count = blocks_map.len();
+    // Should have: page + note + 2 content blocks = 4 blocks
+    assert!(
+      block_count >= 4,
+      "Should have at least 4 blocks, got {}",
+      block_count
+    );
+
+    println!(
+      "Add block test: initial={} bytes, delta={} bytes, blocks={}",
+      initial_size,
+      delta.len(),
+      block_count
+    );
+  }
+
+  #[test]
+  fn test_update_ydoc_delete_block() {
+    use crate::doc_parser::markdown_to_ydoc;
+
+    // Create initial document with two paragraphs
+    let initial_md = "# Delete Block Test\n\nFirst paragraph.\n\nSecond paragraph to delete.";
+    let doc_id = "delete-block-test";
+
+    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
+
+    // Remove the second paragraph
+    let updated_md = "# Delete Block Test\n\nFirst paragraph.";
+    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
+
+    assert!(!delta.is_empty(), "Delta should contain changes");
+
+    // Apply delta and verify
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("Should apply initial");
+    doc
+      .apply_update_from_binary_v1(&delta)
+      .expect("Should apply delta with block deletion");
+
+    // Verify document still valid
+    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
+    assert!(
+      !blocks_map.is_empty(),
+      "Blocks should not be empty after deletion"
+    );
+  }
+
+  #[test]
+  fn test_update_ydoc_concurrent_merge_simulation() {
+    use crate::doc_parser::markdown_to_ydoc;
+
+    // This test simulates concurrent editing by creating two different updates
+    // from the same base document and merging them.
+    let base_md = "# Concurrent Test\n\nBase paragraph.";
+    let doc_id = "concurrent-test";
+
+    let base_bin = markdown_to_ydoc(base_md, doc_id).expect("Should create base doc");
+
+    // Client A modifies the paragraph
+    let client_a_md = "# Concurrent Test\n\nModified by client A.";
+    let delta_a = update_ydoc(&base_bin, client_a_md, doc_id).expect("Delta A");
+
+    // Client B adds a new paragraph (from same base)
+    let client_b_md = "# Concurrent Test\n\nBase paragraph.\n\nAdded by client B.";
+    let delta_b = update_ydoc(&base_bin, client_b_md, doc_id).expect("Delta B");
+
+    // Apply both deltas to base document
+    let mut final_doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    final_doc
+      .apply_update_from_binary_v1(&base_bin)
+      .expect("Apply base");
+    final_doc
+      .apply_update_from_binary_v1(&delta_a)
+      .expect("Apply delta A");
+    final_doc
+      .apply_update_from_binary_v1(&delta_b)
+      .expect("Apply delta B");
+
+    // Document should be valid with merged changes
+    let blocks_map = final_doc.get_map("blocks").expect("Should have blocks");
+    assert!(!blocks_map.is_empty(), "Merged document should have blocks");
+
+    // Should have more blocks than just page + note + 1 paragraph
+    // The merge should result in at least 4 blocks (page, note, modified para, new para)
+    let block_count = blocks_map.len();
+    println!("Concurrent merge test: final block count = {}", block_count);
+    assert!(
+      block_count >= 4,
+      "Should have merged blocks, got {}",
+      block_count
+    );
   }
 }
