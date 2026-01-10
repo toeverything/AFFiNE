@@ -6082,17 +6082,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "y-octo-node"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "napi",
- "napi-build",
- "napi-derive",
- "y-octo",
-]
-
-[[package]]
 name = "y-octo-utils"
 version = "0.0.1"
 dependencies = [
