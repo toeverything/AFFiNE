@@ -798,49 +798,6 @@ jobs:
           name: fuzz-artifact
           path: packages/common/y-octo/utils/fuzz/artifacts/**/*
 
-  y-octo-binding-test:
-    name: y-octo binding test on ${{ matrix.settings.target }}
-    runs-on: ${{ matrix.settings.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          - { target: 'x86_64-unknown-linux-gnu', os: 'ubuntu-latest' }
-          - { target: 'aarch64-unknown-linux-gnu', os: 'ubuntu-24.04-arm' }
-          - { target: 'x86_64-apple-darwin', os: 'macos-15-intel' }
-          - { target: 'aarch64-apple-darwin', os: 'macos-latest' }
-          - { target: 'x86_64-pc-windows-msvc', os: 'windows-latest' }
-          - { target: 'aarch64-pc-windows-msvc', os: 'windows-11-arm' }
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine-tools/cli @affine/monorepo @y-octo/node
-          electron-install: false
-      - name: Install rustup (Windows 11 ARM)
-        if: matrix.settings.os == 'windows-11-arm'
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe" -OutFile rustup-init.exe
-          .\rustup-init.exe --default-toolchain none -y
-          "$env:USERPROFILE\.cargo\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
-          "CARGO_HOME=$env:USERPROFILE\.cargo" | Out-File -Append -Encoding ascii $env:GITHUB_ENV
-      - name: Install Rust (Windows 11 ARM)
-        if: matrix.settings.os == 'windows-11-arm'
-        shell: pwsh
-        run: |
-          rustup install stable
-          rustup target add ${{ matrix.settings.target }}
-          cargo --version
-      - name: Build Rust
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.settings.target }}
-          package: '@y-octo/node'
-      - name: Run tests
-        run: yarn affine @y-octo/node test
-
   rust-test:
     name: Run native tests
     runs-on: ubuntu-latest
@@ -1387,7 +1344,6 @@ jobs:
       - miri
       - loom
       - fuzzing
-      - y-octo-binding-test
       - server-test
       - server-e2e-test
       - rust-test

@@ -73,10 +73,10 @@ impl OrderRange {
           }
         }
         next_old = old_iter.next();
-        if let Some(next_old) = &next_old {
-          if next_old.start > new_range.end {
-            continue;
-          }
+        if let Some(next_old) = &next_old
+          && next_old.start > new_range.end
+        {
+          continue;
         }
       }
       next_new = new_iter.next();
@@ -184,10 +184,10 @@ impl OrderRange {
   }
 
   fn make_single(&mut self) {
-    if let OrderRange::Fragment(ranges) = self {
-      if ranges.len() == 1 {
-        *self = OrderRange::Range(ranges[0].clone());
-      }
+    if let OrderRange::Fragment(ranges) = self
+      && ranges.len() == 1
+    {
+      *self = OrderRange::Range(ranges[0].clone());
     }
   }
 
@@ -278,10 +278,7 @@ impl<'a> IntoIterator for &'a OrderRange {
   type IntoIter = OrderRangeIter<'a>;
 
   fn into_iter(self) -> Self::IntoIter {
-    OrderRangeIter {
-      range: self,
-      idx: 0,
-    }
+    OrderRangeIter { range: self, idx: 0 }
   }
 }
 
@@ -394,18 +391,9 @@ mod tests {
     assert!(OrderRange::check_range_covered(&[0..1], &[0..3]));
     assert!(OrderRange::check_range_covered(&[1..2], &[0..3]));
     assert!(OrderRange::check_range_covered(&[1..2, 2..3], &[0..3]));
-    assert!(!OrderRange::check_range_covered(
-      &[1..2, 2..3, 3..4],
-      &[0..3]
-    ));
-    assert!(OrderRange::check_range_covered(
-      &[0..1, 2..3],
-      &[0..2, 2..4]
-    ));
-    assert!(OrderRange::check_range_covered(
-      &[0..1, 2..3, 3..4],
-      &[0..2, 2..4]
-    ),);
+    assert!(!OrderRange::check_range_covered(&[1..2, 2..3, 3..4], &[0..3]));
+    assert!(OrderRange::check_range_covered(&[0..1, 2..3], &[0..2, 2..4]));
+    assert!(OrderRange::check_range_covered(&[0..1, 2..3, 3..4], &[0..2, 2..4]),);
   }
 
   #[test]
@@ -469,10 +457,7 @@ mod tests {
   fn iter() {
     let range: OrderRange = vec![(0..10), (20..30)].into();
 
-    assert_eq!(
-      range.into_iter().collect::<Vec<_>>(),
-      vec![(0..10), (20..30)]
-    );
+    assert_eq!(range.into_iter().collect::<Vec<_>>(), vec![(0..10), (20..30)]);
 
     let range: OrderRange = OrderRange::Range(0..10);
 

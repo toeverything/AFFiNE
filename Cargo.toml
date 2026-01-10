@@ -3,7 +3,6 @@ members = [
   "./packages/backend/native",
   "./packages/common/native",
   "./packages/common/y-octo/core",
-  "./packages/common/y-octo/node",
   "./packages/common/y-octo/utils",
   "./packages/frontend/mobile-native",
   "./packages/frontend/native",

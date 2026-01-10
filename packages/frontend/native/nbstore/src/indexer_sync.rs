@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use super::{error::Result, storage::SqliteDocStorage, DocIndexedClock};
+use super::{DocIndexedClock, error::Result, storage::SqliteDocStorage};
 
 impl SqliteDocStorage {
   pub async fn get_doc_indexed_clock(&self, doc_id: String) -> Result<Option<DocIndexedClock>> {
@@ -70,10 +70,7 @@ mod tests {
     let storage = get_storage().await;
     let ts = Utc::now().naive_utc();
 
-    storage
-      .set_doc_indexed_clock("doc1".to_string(), ts, 1)
-      .await
-      .unwrap();
+    storage.set_doc_indexed_clock("doc1".to_string(), ts, 1).await.unwrap();
 
     let clock = storage
       .get_doc_indexed_clock("doc1".to_string())
@@ -91,20 +88,11 @@ mod tests {
     let storage = get_storage().await;
     let ts = Utc::now().naive_utc();
 
-    storage
-      .set_doc_indexed_clock("doc1".to_string(), ts, 1)
-      .await
-      .unwrap();
+    storage.set_doc_indexed_clock("doc1".to_string(), ts, 1).await.unwrap();
 
-    storage
-      .clear_doc_indexed_clock("doc1".to_string())
-      .await
-      .unwrap();
+    storage.clear_doc_indexed_clock("doc1".to_string()).await.unwrap();
 
-    let clock = storage
-      .get_doc_indexed_clock("doc1".to_string())
-      .await
-      .unwrap();
+    let clock = storage.get_doc_indexed_clock("doc1".to_string()).await.unwrap();
 
     assert!(clock.is_none());
   }

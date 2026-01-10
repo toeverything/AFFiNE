@@ -1,5 +1,5 @@
 use std::{
-  collections::{hash_map::Entry, VecDeque},
+  collections::{VecDeque, hash_map::Entry},
   mem,
   ops::{Deref, Range},
 };
@@ -9,6 +9,8 @@ use crate::{
   doc::StateVector,
   sync::{Arc, RwLock, RwLockWriteGuard, Weak},
 };
+
+pub type ChangedTypeRefs = HashMap<YTypeRef, Vec<SmolStr>>;
 
 unsafe impl Send for DocStore {}
 unsafe impl Sync for DocStore {}
@@ -26,6 +28,8 @@ pub(crate) struct DocStore {
   pub dangling_types: HashMap<usize, YTypeRef>,
   pub pending: Option<Update>,
   pub last_optimized_state: StateVector,
+  // changed item's parent, value is the parent's sub key if exists
+  pub changed: ChangedTypeRefs,
 }
 
 pub(crate) type StoreRef = Arc<RwLock<DocStore>>;
@@ -102,6 +106,10 @@ impl DocStore {
     Self::items_as_state_vector(&self.items)
   }
 
+  pub fn get_delete_sets(&self) -> DeleteSet {
+    self.delete_set.clone()
+  }
+
   fn items_as_state_vector(items: &ClientMap<VecDeque<Node>>) -> StateVector {
     let mut state = StateVector::default();
     for (client, structs) in items.iter() {
@@ -175,10 +183,10 @@ impl DocStore {
     let id = (self.client(), self.get_state(self.client())).into();
     let item = Somr::new(Item::new(id, content, left, right, parent, parent_sub));
 
-    if let Content::Type(ty) = &item.get().unwrap().content {
-      if let Some(mut ty) = ty.ty_mut() {
-        ty.item = item.clone();
-      }
+    if let Content::Type(ty) = &item.get().unwrap().content
+      && let Some(mut ty) = ty.ty_mut()
+    {
+      ty.item = item.clone();
     }
 
     item
@@ -190,10 +198,10 @@ impl DocStore {
 
   pub fn get_node_with_idx<I: Into<Id>>(&self, id: I) -> Option<(Node, usize)> {
     let id = id.into();
-    if let Some(items) = self.items.get(&id.client) {
-      if let Some(index) = Self::get_node_index(items, id.clock) {
-        return items.get(index).map(|item| (item.clone(), index));
-      }
+    if let Some(items) = self.items.get(&id.client)
+      && let Some(index) = Self::get_node_index(items, id.clock)
+    {
+      return items.get(index).map(|item| (item.clone(), index));
     }
 
     None
@@ -204,20 +212,16 @@ impl DocStore {
 
     let id = id.into();
 
-    if let Some(items) = self.items.get_mut(&id.client) {
-      if let Some(idx) = Self::get_node_index(items, id.clock) {
-        return Self::split_node_at(items, idx, diff);
-      }
+    if let Some(items) = self.items.get_mut(&id.client)
+      && let Some(idx) = Self::get_node_index(items, id.clock)
+    {
+      return Self::split_node_at(items, idx, diff);
     }
 
     Err(JwstCodecError::StructSequenceNotExists(id.client))
   }
 
-  pub fn split_node_at(
-    items: &mut VecDeque<Node>,
-    idx: usize,
-    diff: u64,
-  ) -> JwstCodecResult<(Node, Node)> {
+  pub fn split_node_at(items: &mut VecDeque<Node>, idx: usize, diff: u64) -> JwstCodecResult<(Node, Node)> {
     debug_assert!(diff > 0);
 
     let node = items.get(idx).unwrap().clone();
@@ -263,16 +267,16 @@ impl DocStore {
 
   pub fn split_at_and_get_right<I: Into<Id>>(&mut self, id: I) -> JwstCodecResult<Node> {
     let id = id.into();
-    if let Some(items) = self.items.get_mut(&id.client) {
-      if let Some(index) = Self::get_node_index(items, id.clock) {
-        let item = items.get(index).unwrap().clone();
-        let offset = id.clock - item.clock();
-        if offset > 0 && item.is_item() {
-          let (_, right) = Self::split_node_at(items, index, offset)?;
-          return Ok(right);
-        } else {
-          return Ok(item);
-        }
+    if let Some(items) = self.items.get_mut(&id.client)
+      && let Some(index) = Self::get_node_index(items, id.clock)
+    {
+      let item = items.get(index).unwrap().clone();
+      let offset = id.clock - item.clock();
+      if offset > 0 && item.is_item() {
+        let (_, right) = Self::split_node_at(items, index, offset)?;
+        return Ok(right);
+      } else {
+        return Ok(item);
       }
     }
 
@@ -281,16 +285,16 @@ impl DocStore {
 
   pub fn split_at_and_get_left<I: Into<Id>>(&mut self, id: I) -> JwstCodecResult<Node> {
     let id = id.into();
-    if let Some(items) = self.items.get_mut(&id.client) {
-      if let Some(index) = Self::get_node_index(items, id.clock) {
-        let item = items.get(index).unwrap().clone();
-        let offset = id.clock - item.clock();
-        if offset != item.len() - 1 && !item.is_gc() {
-          let (left, _) = Self::split_node_at(items, index, offset + 1)?;
-          return Ok(left);
-        } else {
-          return Ok(item);
-        }
+    if let Some(items) = self.items.get_mut(&id.client)
+      && let Some(index) = Self::get_node_index(items, id.clock)
+    {
+      let item = items.get(index).unwrap().clone();
+      let offset = id.clock - item.clock();
+      if offset != item.len() - 1 && !item.is_gc() {
+        let (left, _) = Self::split_node_at(items, index, offset + 1)?;
+        return Ok(left);
+      } else {
+        return Ok(item);
       }
     }
 
@@ -430,12 +434,7 @@ impl DocStore {
     Ok(())
   }
 
-  pub fn integrate(
-    &mut self,
-    mut node: Node,
-    offset: u64,
-    parent: Option<&mut YType>,
-  ) -> JwstCodecResult {
+  pub fn integrate(&mut self, mut node: Node, offset: u64, parent: Option<&mut YType>) -> JwstCodecResult {
     match &mut node {
       Node::Item(item_owner_ref) => {
         assert!(
@@ -451,9 +450,7 @@ impl DocStore {
 
         if offset > 0 {
           this.id.clock += offset;
-          if let Node::Item(left_ref) =
-            self.split_at_and_get_left(Id::new(this.id.client, this.id.clock - 1))?
-          {
+          if let Node::Item(left_ref) = self.split_at_and_get_left(Id::new(this.id.client, this.id.clock - 1))? {
             this.origin_left_id = left_ref.get().map(|left| left.last_id());
             this.left = left_ref;
           }
@@ -550,11 +547,7 @@ impl DocStore {
           } else {
             // no left, parent.start = this
             right = if let Some(parent_sub) = &this.parent_sub {
-              parent
-                .map
-                .get(parent_sub)
-                .map(|n| Node::Item(n.clone()).head())
-                .into()
+              parent.map.get(parent_sub).map(|n| Node::Item(n.clone()).head()).into()
             } else {
               mem::replace(&mut parent.start, item_owner_ref.clone())
             };
@@ -571,9 +564,7 @@ impl DocStore {
           } else {
             // no right, parent.start = this, delete this.left
             if let Some(parent_sub) = &this.parent_sub {
-              parent
-                .map
-                .insert(parent_sub.clone(), item_owner_ref.clone());
+              parent.map.insert(parent_sub.clone(), item_owner_ref.clone());
 
               if let Some(left) = this.left.get() {
                 self.delete_item(left, Some(parent));
@@ -582,11 +573,7 @@ impl DocStore {
           }
           this.right = right.clone();
 
-          let parent_deleted = parent
-            .item
-            .get()
-            .map(|item| item.deleted())
-            .unwrap_or(false);
+          let parent_deleted = parent.item.get().map(|item| item.deleted()).unwrap_or(false);
 
           // should delete
           if parent_deleted || this.parent_sub.is_some() && this.right.is_some() {
@@ -599,6 +586,9 @@ impl DocStore {
           }
 
           parent_lock.take();
+
+          // mark changed item's parent
+          Self::mark_changed(&mut self.changed, ty.clone(), this.parent_sub.clone());
         } else {
           // if parent not exists, integrate GC node instead
           // don't delete it because it may referenced by other nodes
@@ -621,7 +611,7 @@ impl DocStore {
 
   pub fn delete_item(&mut self, item: &Item, parent: Option<&mut YType>) {
     let mut pending_delete_sets = HashMap::new();
-    Self::delete_item_inner(&mut pending_delete_sets, item, parent);
+    Self::delete_item_inner(&mut pending_delete_sets, &mut self.changed, item, parent);
     for (client, ranges) in pending_delete_sets {
       self.delete_set.batch_add_ranges(client, ranges);
     }
@@ -629,6 +619,7 @@ impl DocStore {
 
   fn delete_item_inner(
     delete_set: &mut HashMap<u64, Vec<Range<u64>>>,
+    changed: &mut ChangedTypeRefs,
     item: &Item,
     parent: Option<&mut YType>,
   ) {
@@ -663,7 +654,7 @@ impl DocStore {
           let mut item_ref = ty.start.clone();
           while let Some(item) = item_ref.get() {
             if !item.deleted() {
-              Self::delete_item_inner(delete_set, item, Some(&mut ty));
+              Self::delete_item_inner(delete_set, changed, item, Some(&mut ty));
             }
 
             item_ref = item.right.clone();
@@ -671,10 +662,10 @@ impl DocStore {
 
           let map_values = ty.map.values().cloned().collect::<Vec<_>>();
           for item in map_values {
-            if let Some(item) = item.get() {
-              if !item.deleted() {
-                Self::delete_item_inner(delete_set, item, Some(&mut ty));
-              }
+            if let Some(item) = item.get()
+              && !item.deleted()
+            {
+              Self::delete_item_inner(delete_set, changed, item, Some(&mut ty));
             }
           }
         }
@@ -683,6 +674,11 @@ impl DocStore {
         // TODO: remove subdoc
       }
       _ => {}
+    }
+
+    // mark deleted item's parent
+    if let Some(Parent::Type(ty)) = &item.parent {
+      Self::mark_changed(changed, ty.clone(), item.parent_sub.clone());
     }
   }
 
@@ -696,59 +692,55 @@ impl DocStore {
     let start = range.start;
     let end = range.end;
 
-    if let Some(items) = self.items.get_mut(&client) {
-      if let Some(mut idx) = DocStore::get_node_index(items, start) {
-        {
-          // id.clock <= range.start < id.end
-          // need to split the item and delete the right part
-          // -----item-----
-          //    ^start
-          let node = &items[idx];
-          let id = node.id();
+    if let Some(items) = self.items.get_mut(&client)
+      && let Some(mut idx) = DocStore::get_node_index(items, start)
+    {
+      {
+        // id.clock <= range.start < id.end
+        // need to split the item and delete the right part
+        // -----item-----
+        //    ^start
+        let node = &items[idx];
+        let id = node.id();
 
-          if !node.deleted() && id.clock < start {
-            DocStore::split_node_at(items, idx, start - id.clock)?;
-            idx += 1;
-          }
-        };
-
-        let mut pending_delete_sets = HashMap::new();
-        while idx < items.len() {
-          let node = items[idx].clone();
-          let id = node.id();
-
-          if id.clock < end {
-            if !node.deleted() {
-              if let Some(item) = node.as_item().get() {
-                // need to split the item
-                // -----item-----
-                //           ^end
-                if end < id.clock + node.len() {
-                  DocStore::split_node_at(items, idx, end - id.clock)?;
-                }
-
-                Self::delete_item_inner(&mut pending_delete_sets, item, None);
-              }
-            }
-          } else {
-            break;
-          }
-
+        if !node.deleted() && id.clock < start {
+          DocStore::split_node_at(items, idx, start - id.clock)?;
           idx += 1;
         }
-        for (client, ranges) in pending_delete_sets {
-          self.delete_set.batch_add_ranges(client, ranges);
+      };
+
+      let mut pending_delete_sets = HashMap::new();
+      while idx < items.len() {
+        let node = items[idx].clone();
+        let id = node.id();
+
+        if id.clock < end {
+          if !node.deleted()
+            && let Some(item) = node.as_item().get()
+          {
+            // need to split the item
+            // -----item-----
+            //           ^end
+            if end < id.clock + node.len() {
+              DocStore::split_node_at(items, idx, end - id.clock)?;
+            }
+
+            Self::delete_item_inner(&mut pending_delete_sets, &mut self.changed, item, None);
+          }
+        } else {
+          break;
         }
+        idx += 1;
       }
-    }
+      for (client, ranges) in pending_delete_sets {
+        self.delete_set.batch_add_ranges(client, ranges);
+      }
+    };
 
     Ok(())
   }
 
-  fn diff_state_vectors(
-    local_state_vector: &StateVector,
-    remote_state_vector: &StateVector,
-  ) -> Vec<(Client, Clock)> {
+  fn diff_state_vectors(local_state_vector: &StateVector, remote_state_vector: &StateVector) -> Vec<(Client, Clock)> {
     let mut diff = Vec::new();
 
     for (client, &remote_clock) in remote_state_vector.iter() {
@@ -776,19 +768,28 @@ impl DocStore {
       ..Update::default()
     };
 
-    if with_pending {
-      if let Some(pending) = &self.pending {
-        Update::merge_into(&mut update, [pending.clone()])
-      }
+    if with_pending && let Some(pending) = &self.pending {
+      Update::merge_into(&mut update, [pending.clone()])
     }
 
     Ok(update)
   }
 
-  fn diff_structs(
-    map: &ClientMap<VecDeque<Node>>,
-    sv: &StateVector,
-  ) -> JwstCodecResult<ClientMap<VecDeque<Node>>> {
+  fn mark_changed(changed: &mut ChangedTypeRefs, parent: YTypeRef, parent_sub: Option<SmolStr>) {
+    if parent.inner.is_some() {
+      let vec = changed.entry(parent).or_default();
+      if let Some(parent_sub) = parent_sub {
+        // only record the sub key if exists
+        vec.push(parent_sub);
+      }
+    }
+  }
+
+  pub fn get_changed(&mut self) -> ChangedTypeRefs {
+    mem::replace(&mut self.changed, HashMap::new())
+  }
+
+  fn diff_structs(map: &ClientMap<VecDeque<Node>>, sv: &StateVector) -> JwstCodecResult<ClientMap<VecDeque<Node>>> {
     let local_state_vector = Self::items_as_state_vector(map);
     let diff = Self::diff_state_vectors(&local_state_vector, sv);
     let mut update_structs = ClientMap::new();
@@ -915,11 +916,11 @@ impl DocStore {
   }
 
   fn gc_content(content: &Content) -> JwstCodecResult {
-    if let Content::Type(ty) = content {
-      if let Some(mut ty) = ty.ty_mut() {
-        ty.start = Somr::none();
-        ty.map.clear();
-      }
+    if let Content::Type(ty) = content
+      && let Some(mut ty) = ty.ty_mut()
+    {
+      ty.start = Somr::none();
+      ty.map.clear();
     }
 
     Ok(())
@@ -935,9 +936,7 @@ impl DocStore {
       }
 
       let nodes = self.items.get_mut(client).unwrap();
-      let first_change = Self::get_node_index(nodes, before_state)
-        .unwrap_or(1)
-        .max(1);
+      let first_change = Self::get_node_index(nodes, before_state).unwrap_or(1).max(1);
       let mut idx = nodes.len() - 1;
 
       while idx > 0 && idx >= first_change {
@@ -969,6 +968,39 @@ impl DocStore {
     // return the index of processed items
     idx - pos
   }
+
+  pub fn deep_compare(&self, other: &Self) -> bool {
+    if self.items.len() != other.items.len() {
+      return false;
+    }
+
+    for (client, structs) in self.items.iter() {
+      if let Some(other_structs) = other.items.get(client) {
+        if structs.len() != other_structs.len() {
+          return false;
+        }
+
+        for (struct_info, other_struct_info) in structs.iter().zip(other_structs.iter()) {
+          if struct_info != other_struct_info {
+            return false;
+          }
+          if let (Node::Item(item), Node::Item(other_item)) = (struct_info, other_struct_info)
+            && !match (item.get(), other_item.get()) {
+              (Some(item), Some(other_item)) => item.deep_compare(other_item),
+              (None, None) => true,
+              _ => false,
+            }
+          {
+            return false;
+          }
+        }
+      } else {
+        return false;
+      }
+    }
+
+    true
+  }
 }
 
 #[cfg(test)]
@@ -991,10 +1023,9 @@ mod tests {
       let struct_info1 = Node::new_gc(Id::new(1, 1), 5);
       let struct_info2 = Node::new_skip(Id::new(1, 6), 7);
 
-      doc_store.items.insert(
-        client_id,
-        VecDeque::from([struct_info1, struct_info2.clone()]),
-      );
+      doc_store
+        .items
+        .insert(client_id, VecDeque::from([struct_info1, struct_info2.clone()]));
 
       let state = doc_store.get_state(client_id);
 
@@ -1022,24 +1053,15 @@ mod tests {
       let struct_info2 = Node::new_gc((2, 0).into(), 6);
       let struct_info3 = Node::new_skip((2, 6).into(), 1);
 
+      doc_store.items.insert(client1, VecDeque::from([struct_info1.clone()]));
       doc_store
         .items
-        .insert(client1, VecDeque::from([struct_info1.clone()]));
-      doc_store.items.insert(
-        client2,
-        VecDeque::from([struct_info2, struct_info3.clone()]),
-      );
+        .insert(client2, VecDeque::from([struct_info2, struct_info3.clone()]));
 
       let state_map = doc_store.get_state_vector();
 
-      assert_eq!(
-        state_map.get(&client1),
-        struct_info1.clock() + struct_info1.len()
-      );
-      assert_eq!(
-        state_map.get(&client2),
-        struct_info3.clock() + struct_info3.len()
-      );
+      assert_eq!(state_map.get(&client1), struct_info1.clock() + struct_info1.len());
+      assert_eq!(state_map.get(&client2), struct_info3.clock() + struct_info3.len());
 
       assert!(doc_store.self_check().is_ok());
     });
@@ -1059,10 +1081,7 @@ mod tests {
       assert!(doc_store.add_node(struct_info2).is_ok());
       assert_eq!(
         doc_store.add_node(struct_info3_err),
-        Err(JwstCodecError::StructClockInvalid {
-          expect: 6,
-          actually: 5
-        })
+        Err(JwstCodecError::StructClockInvalid { expect: 6, actually: 5 })
       );
       assert!(doc_store.add_node(struct_info3.clone()).is_ok());
       assert_eq!(
@@ -1163,12 +1182,61 @@ mod tests {
 
       // s1 used to be (1, 4), but it actually ref of first item in store, so now it
       // should be (1, 2)
-      assert_eq!(
-        s1, left,
-        "doc internal mutation should not modify the pointer"
-      );
+      assert_eq!(s1, left, "doc internal mutation should not modify the pointer");
       let right = doc_store.split_at_and_get_right((1, 5)).unwrap();
       assert_eq!(right.len(), 3); // base => b_ase
+    });
+  }
+
+  #[test]
+  fn should_mark_changed_items() {
+    loom_model!({
+      let doc = DocOptions::new().with_client_id(1).build();
+
+      let mut arr = doc.get_or_create_array("arr").unwrap();
+      let mut text = doc.create_text().unwrap();
+      let mut map = doc.create_map().unwrap();
+
+      arr.insert(0, Value::from(text.clone())).unwrap();
+      arr.insert(1, Value::from(map.clone())).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        // for array, we will only record the type ref itself
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&arr.0), Some(&vec![]));
+      }
+
+      text.insert(0, "hello world").unwrap();
+      text.remove(5, 6).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&text.0), Some(&vec![]));
+      }
+
+      map.insert("key".into(), 123).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&map.0), Some(&vec!["key".into()]));
+      }
+
+      map.remove("key");
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed.get(&map.0), Some(&vec!["key".into()]));
+      }
+
+      arr.remove(0, 1).unwrap();
+      {
+        let changed = doc.store.write().unwrap().get_changed();
+        assert_eq!(changed.len(), 2);
+        // text's children mark parent(text) changed
+        assert_eq!(changed.get(&text.0), Some(&vec![]));
+        // text mark parent(arr) changed
+        assert_eq!(changed.get(&arr.0), Some(&vec![]));
+      }
     });
   }
 
@@ -1195,13 +1263,7 @@ mod tests {
       store.gc_delete_set().unwrap();
 
       assert_eq!(
-        &store
-          .get_node((1, 0))
-          .unwrap()
-          .as_item()
-          .get()
-          .unwrap()
-          .content,
+        &store.get_node((1, 0)).unwrap().as_item().get().unwrap().content,
         &Content::Deleted(4)
       );
     });
@@ -1226,13 +1288,7 @@ mod tests {
 
       assert_eq!(arr.len(), 0);
       assert_eq!(
-        &store
-          .get_node((1, 0))
-          .unwrap()
-          .as_item()
-          .get()
-          .unwrap()
-          .content,
+        &store.get_node((1, 0)).unwrap().as_item().get().unwrap().content,
         &Content::Deleted(1)
       );
 
@@ -1256,9 +1312,7 @@ mod tests {
         let mut pages = doc.get_or_create_map("pages").unwrap();
         let page1 = doc.create_text().unwrap();
         let mut page1_ref = page1.clone();
-        pages
-          .insert("page1".to_string(), Value::from(page1))
-          .unwrap();
+        pages.insert("page1".to_string(), Value::from(page1)).unwrap();
         page1_ref.insert(0, "hello").unwrap();
         doc.encode_update_v1().unwrap()
       };
@@ -1276,13 +1330,7 @@ mod tests {
       store.gc_delete_set().unwrap();
 
       assert_eq!(
-        &store
-          .get_node((1, 0))
-          .unwrap()
-          .as_item()
-          .get()
-          .unwrap()
-          .content,
+        &store.get_node((1, 0)).unwrap().as_item().get().unwrap().content,
         &Content::Deleted(1)
       );
 
