@@ -5,19 +5,14 @@
 
 use std::collections::HashMap;
 
-use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use y_octo::{Any, Doc, DocOptions, Map};
 
 use super::affine::ParseError;
 use super::blocksuite::{collect_child_ids, get_string};
-use super::markdown_utils::extract_title;
+use super::markdown_utils::{extract_title, parse_markdown_blocks, BlockFlavour, ParsedBlock};
 
 const PAGE_FLAVOUR: &str = "affine:page";
 const NOTE_FLAVOUR: &str = "affine:note";
-const PARAGRAPH_FLAVOUR: &str = "affine:paragraph";
-const LIST_FLAVOUR: &str = "affine:list";
-const CODE_FLAVOUR: &str = "affine:code";
-const DIVIDER_FLAVOUR: &str = "affine:divider";
 
 /// Represents a content block for diffing purposes
 #[derive(Debug, Clone, PartialEq)]
@@ -33,6 +28,26 @@ impl ContentBlock {
   /// Check if two blocks are similar enough to be considered "the same" for diffing
   fn is_similar(&self, other: &ContentBlock) -> bool {
     self.flavour == other.flavour && self.block_type == other.block_type
+  }
+}
+
+/// Converts a ParsedBlock from the shared parser into a ContentBlock
+impl From<ParsedBlock> for ContentBlock {
+  fn from(parsed: ParsedBlock) -> Self {
+    // Default paragraph type to "text" to match existing documents
+    let block_type = if parsed.flavour == BlockFlavour::Paragraph && parsed.block_type.is_none() {
+      Some("text".to_string())
+    } else {
+      parsed.block_type.map(|bt| bt.as_str().to_string())
+    };
+
+    ContentBlock {
+      flavour: parsed.flavour.as_str().to_string(),
+      block_type,
+      content: parsed.content,
+      checked: parsed.checked,
+      language: parsed.language,
+    }
   }
 }
 
@@ -218,249 +233,10 @@ fn extract_content_block(block: &Map) -> ContentBlock {
 
 /// Parses markdown into content blocks for diffing.
 ///
-/// TODO: Consider extracting shared markdown parsing logic with `parse_markdown_to_blocks`
-/// in markdown_to_ydoc.rs. While the output types differ (ContentBlock vs BlockBuilder),
-/// the core parsing flow is nearly identical. A shared intermediate representation
-/// could reduce maintenance burden and ensure consistent parsing behavior.
+/// Uses the shared `parse_markdown_blocks` function and converts to `ContentBlock`.
 fn parse_markdown_to_content_blocks(markdown: &str) -> Result<Vec<ContentBlock>, ParseError> {
-  // Note: ENABLE_TABLES is included for future support, but table events currently
-  // fall through to the catch-all match arm. Table content appears as plain text.
-  let options = Options::ENABLE_STRIKETHROUGH
-    | Options::ENABLE_TABLES
-    | Options::ENABLE_TASKLISTS
-    | Options::ENABLE_HEADING_ATTRIBUTES;
-  let parser = Parser::new_ext(markdown, options);
-
-  let mut blocks = Vec::new();
-  let mut current_text = String::new();
-  let mut current_type: Option<String> = None;
-  let mut current_flavour = PARAGRAPH_FLAVOUR;
-  let mut in_list = false;
-  let mut list_type_stack: Vec<String> = Vec::new();
-  let mut in_code_block = false;
-  let mut code_language = String::new();
-  let mut skip_first_h1 = true;
-  let mut current_checked: Option<bool> = None;
-  let mut pending_link_url: Option<String> = None;
-
-  for event in parser {
-    match event {
-      Event::Start(Tag::Heading { level, .. }) => {
-        flush_block(
-          &mut blocks,
-          &mut current_text,
-          current_flavour,
-          current_type.take(),
-          current_checked.take(),
-          None,
-        );
-
-        if level == HeadingLevel::H1 && skip_first_h1 {
-          current_type = Some("h1".to_string());
-        } else {
-          current_type = Some(
-            match level {
-              HeadingLevel::H1 => "h1",
-              HeadingLevel::H2 => "h2",
-              HeadingLevel::H3 => "h3",
-              HeadingLevel::H4 => "h4",
-              HeadingLevel::H5 => "h5",
-              HeadingLevel::H6 => "h6",
-            }
-            .to_string(),
-          );
-        }
-        current_flavour = PARAGRAPH_FLAVOUR;
-      }
-      Event::End(TagEnd::Heading(level)) => {
-        if level == HeadingLevel::H1 && skip_first_h1 {
-          skip_first_h1 = false;
-          current_text.clear();
-          current_type = None;
-        } else {
-          flush_block(
-            &mut blocks,
-            &mut current_text,
-            current_flavour,
-            current_type.take(),
-            current_checked.take(),
-            None,
-          );
-        }
-      }
-      Event::Start(Tag::Paragraph) => {}
-      Event::End(TagEnd::Paragraph) => {
-        if !in_list {
-          flush_block(
-            &mut blocks,
-            &mut current_text,
-            current_flavour,
-            current_type.take(),
-            current_checked.take(),
-            None,
-          );
-        }
-      }
-      Event::Start(Tag::BlockQuote(_)) => {
-        current_type = Some("quote".to_string());
-        current_flavour = PARAGRAPH_FLAVOUR;
-      }
-      Event::End(TagEnd::BlockQuote(_)) => {
-        flush_block(
-          &mut blocks,
-          &mut current_text,
-          current_flavour,
-          current_type.take(),
-          current_checked.take(),
-          None,
-        );
-      }
-      Event::Start(Tag::List(start_num)) => {
-        in_list = true;
-        let list_type = if start_num.is_some() {
-          "numbered"
-        } else {
-          "bulleted"
-        };
-        list_type_stack.push(list_type.to_string());
-      }
-      Event::End(TagEnd::List(_)) => {
-        list_type_stack.pop();
-        if list_type_stack.is_empty() {
-          in_list = false;
-        }
-      }
-      Event::Start(Tag::Item) => {
-        current_flavour = LIST_FLAVOUR;
-        if let Some(lt) = list_type_stack.last() {
-          current_type = Some(lt.clone());
-        }
-      }
-      Event::End(TagEnd::Item) => {
-        flush_block(
-          &mut blocks,
-          &mut current_text,
-          current_flavour,
-          current_type.take(),
-          current_checked.take(),
-          None,
-        );
-        current_flavour = PARAGRAPH_FLAVOUR;
-      }
-      Event::TaskListMarker(checked) => {
-        current_type = Some("todo".to_string());
-        current_checked = Some(checked);
-      }
-      Event::Start(Tag::CodeBlock(kind)) => {
-        in_code_block = true;
-        current_flavour = CODE_FLAVOUR;
-        code_language = match kind {
-          CodeBlockKind::Fenced(lang) => lang.to_string(),
-          CodeBlockKind::Indented => String::new(),
-        };
-      }
-      Event::End(TagEnd::CodeBlock) => {
-        flush_block(
-          &mut blocks,
-          &mut current_text,
-          current_flavour,
-          None,
-          None,
-          Some(code_language.clone()),
-        );
-        in_code_block = false;
-        code_language.clear();
-        current_flavour = PARAGRAPH_FLAVOUR;
-      }
-      Event::Text(text) => {
-        current_text.push_str(&text);
-      }
-      Event::Code(code) => {
-        current_text.push('`');
-        current_text.push_str(&code);
-        current_text.push('`');
-      }
-      Event::SoftBreak | Event::HardBreak => {
-        if in_code_block {
-          current_text.push('\n');
-        } else {
-          current_text.push(' ');
-        }
-      }
-      Event::Rule => {
-        flush_block(
-          &mut blocks,
-          &mut current_text,
-          current_flavour,
-          current_type.take(),
-          current_checked.take(),
-          None,
-        );
-        blocks.push(ContentBlock {
-          flavour: DIVIDER_FLAVOUR.to_string(),
-          block_type: None,
-          content: String::new(),
-          checked: None,
-          language: None,
-        });
-      }
-      Event::Start(Tag::Strong) => current_text.push_str("**"),
-      Event::End(TagEnd::Strong) => current_text.push_str("**"),
-      Event::Start(Tag::Emphasis) => current_text.push('_'),
-      Event::End(TagEnd::Emphasis) => current_text.push('_'),
-      Event::Start(Tag::Strikethrough) => current_text.push_str("~~"),
-      Event::End(TagEnd::Strikethrough) => current_text.push_str("~~"),
-      Event::Start(Tag::Link { dest_url, .. }) => {
-        current_text.push('[');
-        pending_link_url = Some(dest_url.to_string());
-      }
-      Event::End(TagEnd::Link) => {
-        if let Some(url) = pending_link_url.take() {
-          current_text.push_str(&format!("]({})", url));
-        }
-      }
-      _ => {}
-    }
-  }
-
-  // Flush any remaining content
-  flush_block(
-    &mut blocks,
-    &mut current_text,
-    current_flavour,
-    current_type,
-    current_checked,
-    None,
-  );
-
-  Ok(blocks)
-}
-
-fn flush_block(
-  blocks: &mut Vec<ContentBlock>,
-  text: &mut String,
-  flavour: &str,
-  block_type: Option<String>,
-  checked: Option<bool>,
-  language: Option<String>,
-) {
-  let trimmed = text.trim();
-  if !trimmed.is_empty() || flavour == DIVIDER_FLAVOUR {
-    // Default paragraph type to "text" to match existing documents
-    let actual_type = if flavour == PARAGRAPH_FLAVOUR && block_type.is_none() {
-      Some("text".to_string())
-    } else {
-      block_type
-    };
-    blocks.push(ContentBlock {
-      flavour: flavour.to_string(),
-      block_type: actual_type,
-      content: trimmed.to_string(),
-      checked,
-      language,
-    });
-  }
-  text.clear();
+  let parsed_blocks = parse_markdown_blocks(markdown, true);
+  Ok(parsed_blocks.into_iter().map(ContentBlock::from).collect())
 }
 
 /// Updates the document title if it has changed
@@ -1118,7 +894,7 @@ mod tests {
     let blocks = parse_markdown_to_content_blocks(markdown).unwrap();
 
     assert_eq!(blocks.len(), 2);
-    assert_eq!(blocks[0].flavour, PARAGRAPH_FLAVOUR);
+    assert_eq!(blocks[0].flavour, BlockFlavour::Paragraph.as_str());
     assert_eq!(blocks[0].content, "Paragraph one.");
     assert_eq!(blocks[1].content, "Paragraph two.");
   }
@@ -1184,22 +960,23 @@ mod tests {
 
   #[test]
   fn test_content_block_similarity() {
+    let paragraph_flavour = BlockFlavour::Paragraph.as_str();
     let b1 = ContentBlock {
-      flavour: PARAGRAPH_FLAVOUR.to_string(),
+      flavour: paragraph_flavour.to_string(),
       block_type: Some("h1".to_string()),
       content: "Hello".to_string(),
       checked: None,
       language: None,
     };
     let b2 = ContentBlock {
-      flavour: PARAGRAPH_FLAVOUR.to_string(),
+      flavour: paragraph_flavour.to_string(),
       block_type: Some("h1".to_string()),
       content: "World".to_string(),
       checked: None,
       language: None,
     };
     let b3 = ContentBlock {
-      flavour: PARAGRAPH_FLAVOUR.to_string(),
+      flavour: paragraph_flavour.to_string(),
       block_type: Some("h2".to_string()),
       content: "Hello".to_string(),
       checked: None,

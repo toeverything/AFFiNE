@@ -2,77 +2,22 @@
 //!
 //! Converts markdown content into AFFiNE-compatible y-octo document binary format.
 
-use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use y_octo::{Any, DocOptions, Map, Value};
 
 use super::affine::ParseError;
-use super::markdown_utils::extract_title;
+use super::markdown_utils::{extract_title, parse_markdown_blocks, BlockType, ParsedBlock};
 
 /// Block types used in AFFiNE documents
 const PAGE_FLAVOUR: &str = "affine:page";
 const NOTE_FLAVOUR: &str = "affine:note";
-const PARAGRAPH_FLAVOUR: &str = "affine:paragraph";
-const LIST_FLAVOUR: &str = "affine:list";
-const CODE_FLAVOUR: &str = "affine:code";
-const DIVIDER_FLAVOUR: &str = "affine:divider";
 
-/// Represents different paragraph types in AFFiNE
-#[derive(Clone, Copy)]
-enum ParagraphType {
-  Text,
-  H1,
-  H2,
-  H3,
-  H4,
-  H5,
-  H6,
-  Quote,
-}
-
-impl ParagraphType {
-  fn as_str(&self) -> &'static str {
-    match self {
-      ParagraphType::Text => "text",
-      ParagraphType::H1 => "h1",
-      ParagraphType::H2 => "h2",
-      ParagraphType::H3 => "h3",
-      ParagraphType::H4 => "h4",
-      ParagraphType::H5 => "h5",
-      ParagraphType::H6 => "h6",
-      ParagraphType::Quote => "quote",
-    }
-  }
-}
-
-/// Represents list types in AFFiNE
-#[derive(Clone, Copy)]
-enum ListType {
-  Bulleted,
-  Numbered,
-  Todo(bool), // checked state
-}
-
-impl ListType {
-  fn as_str(&self) -> &'static str {
-    match self {
-      ListType::Bulleted => "bulleted",
-      ListType::Numbered => "numbered",
-      ListType::Todo(_) => "todo",
-    }
-  }
-
-  fn is_checked(&self) -> bool {
-    matches!(self, ListType::Todo(true))
-  }
-}
-
-/// Intermediate representation of a block during parsing
+/// Intermediate representation of a block for building y-octo documents
 struct BlockBuilder {
   id: String,
   flavour: String,
   text_content: String,
-  paragraph_type: Option<ParagraphType>,
-  list_type: Option<ListType>,
+  block_type: Option<BlockType>,
+  checked: Option<bool>,
   code_language: Option<String>,
   children: Vec<String>,
 }
@@ -83,8 +28,8 @@ impl BlockBuilder {
       id: nanoid::nanoid!(),
       flavour: flavour.to_string(),
       text_content: String::new(),
-      paragraph_type: None,
-      list_type: None,
+      block_type: None,
+      checked: None,
       code_language: None,
       children: Vec::new(),
     }
@@ -95,18 +40,20 @@ impl BlockBuilder {
     self
   }
 
-  fn with_paragraph_type(mut self, ptype: ParagraphType) -> Self {
-    self.paragraph_type = Some(ptype);
+  fn with_block_type(mut self, btype: BlockType) -> Self {
+    self.block_type = Some(btype);
     self
   }
 
-  fn with_list_type(mut self, ltype: ListType) -> Self {
-    self.list_type = Some(ltype);
+  fn with_checked(mut self, checked: bool) -> Self {
+    self.checked = Some(checked);
     self
   }
 
   fn with_code_language(mut self, lang: &str) -> Self {
-    self.code_language = Some(lang.to_string());
+    if !lang.is_empty() {
+      self.code_language = Some(lang.to_string());
+    }
     self
   }
 
@@ -116,287 +63,54 @@ impl BlockBuilder {
   }
 }
 
+/// Converts a ParsedBlock from the shared parser into a BlockBuilder
+impl From<ParsedBlock> for BlockBuilder {
+  fn from(parsed: ParsedBlock) -> Self {
+    let mut builder = BlockBuilder::new(parsed.flavour.as_str()).with_text(&parsed.content);
+
+    if let Some(btype) = parsed.block_type {
+      builder = builder.with_block_type(btype);
+    }
+
+    if let Some(checked) = parsed.checked {
+      builder = builder.with_checked(checked);
+    }
+
+    if let Some(lang) = parsed.language {
+      builder = builder.with_code_language(&lang);
+    }
+
+    builder
+  }
+}
+
 /// Parses markdown and converts it to an AFFiNE-compatible y-octo document binary.
 ///
 /// # Arguments
 /// * `markdown` - The markdown content to convert
-/// * `doc_id` - The document ID to use for the y-octo doc
+/// * `doc_id` - The document ID to use
 ///
 /// # Returns
-/// A binary vector representing the y-octo document update
+/// A binary vector containing the y-octo encoded document
 pub fn markdown_to_ydoc(markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseError> {
+  // Extract the title from the first H1 heading
+  let title = extract_title(markdown);
+
+  // Parse markdown into blocks using the shared parser
+  let parsed_blocks = parse_markdown_blocks(markdown, true);
+
+  // Convert ParsedBlocks to BlockBuilders and collect IDs
   let mut blocks: Vec<BlockBuilder> = Vec::new();
   let mut content_block_ids: Vec<String> = Vec::new();
 
-  // Extract title from first heading or use default
-  let title = extract_title(markdown);
+  for parsed in parsed_blocks {
+    let builder: BlockBuilder = parsed.into();
+    content_block_ids.push(builder.id.clone());
+    blocks.push(builder);
+  }
 
-  // Parse markdown and build blocks
-  parse_markdown_to_blocks(markdown, &mut blocks, &mut content_block_ids)?;
-
-  // Create the y-octo document
+  // Build the y-octo document
   build_ydoc(doc_id, &title, blocks, content_block_ids)
-}
-
-/// Parses markdown content into BlockBuilder structures.
-///
-/// TODO: Consider extracting shared markdown parsing logic with `parse_markdown_to_content_blocks`
-/// in update_ydoc.rs to reduce duplication and ensure consistent behavior.
-fn parse_markdown_to_blocks(
-  markdown: &str,
-  blocks: &mut Vec<BlockBuilder>,
-  content_block_ids: &mut Vec<String>,
-) -> Result<(), ParseError> {
-  // Note: ENABLE_TABLES is included for future support, but table events currently
-  // fall through to the catch-all match arm. Table content appears as plain text.
-  let options = Options::ENABLE_STRIKETHROUGH
-    | Options::ENABLE_TABLES
-    | Options::ENABLE_TASKLISTS
-    | Options::ENABLE_HEADING_ATTRIBUTES;
-  let parser = Parser::new_ext(markdown, options);
-
-  let mut current_text = String::new();
-  let mut current_paragraph_type = ParagraphType::Text;
-  let mut in_list = false;
-  let mut list_type_stack: Vec<ListType> = Vec::new();
-  // Per-item type override for task list markers (resets at each Item start)
-  let mut current_item_type: Option<ListType> = None;
-  let mut in_code_block = false;
-  let mut code_language = String::new();
-  let mut skip_first_h1 = true; // Skip first H1 as it becomes the title
-  let mut pending_link_url: Option<String> = None; // For proper link handling
-
-  for event in parser {
-    match event {
-      Event::Start(Tag::Heading { level, .. }) => {
-        // Flush any pending text
-        flush_text_block(
-          &mut current_text,
-          current_paragraph_type,
-          blocks,
-          content_block_ids,
-        );
-
-        if level == HeadingLevel::H1 && skip_first_h1 {
-          // Skip the first H1 - it's used as the document title
-          current_paragraph_type = ParagraphType::H1;
-        } else {
-          current_paragraph_type = match level {
-            HeadingLevel::H1 => ParagraphType::H1,
-            HeadingLevel::H2 => ParagraphType::H2,
-            HeadingLevel::H3 => ParagraphType::H3,
-            HeadingLevel::H4 => ParagraphType::H4,
-            HeadingLevel::H5 => ParagraphType::H5,
-            HeadingLevel::H6 => ParagraphType::H6,
-          };
-        }
-      }
-      Event::End(TagEnd::Heading(level)) => {
-        if level == HeadingLevel::H1 && skip_first_h1 {
-          skip_first_h1 = false;
-          current_text.clear();
-        } else {
-          flush_text_block(
-            &mut current_text,
-            current_paragraph_type,
-            blocks,
-            content_block_ids,
-          );
-        }
-        current_paragraph_type = ParagraphType::Text;
-      }
-      Event::Start(Tag::Paragraph) => {
-        // Nothing to do - text will be collected
-      }
-      Event::End(TagEnd::Paragraph) => {
-        if !in_list {
-          flush_text_block(
-            &mut current_text,
-            current_paragraph_type,
-            blocks,
-            content_block_ids,
-          );
-        }
-      }
-      Event::Start(Tag::BlockQuote(_)) => {
-        current_paragraph_type = ParagraphType::Quote;
-      }
-      Event::End(TagEnd::BlockQuote(_)) => {
-        flush_text_block(
-          &mut current_text,
-          current_paragraph_type,
-          blocks,
-          content_block_ids,
-        );
-        current_paragraph_type = ParagraphType::Text;
-      }
-      Event::Start(Tag::List(start_num)) => {
-        in_list = true;
-        let list_type = if start_num.is_some() {
-          ListType::Numbered
-        } else {
-          ListType::Bulleted
-        };
-        list_type_stack.push(list_type);
-      }
-      Event::End(TagEnd::List(_)) => {
-        list_type_stack.pop();
-        if list_type_stack.is_empty() {
-          in_list = false;
-        }
-      }
-      Event::Start(Tag::Item) => {
-        // List item start - reset per-item type override
-        current_item_type = None;
-      }
-      Event::End(TagEnd::Item) => {
-        // Use per-item override if set (for task items), otherwise use stack type
-        let list_type = current_item_type
-          .take()
-          .or_else(|| list_type_stack.last().copied())
-          .unwrap_or(ListType::Bulleted);
-        flush_list_block(&mut current_text, list_type, blocks, content_block_ids);
-      }
-      Event::TaskListMarker(checked) => {
-        // Set per-item type override for this specific item only
-        current_item_type = Some(ListType::Todo(checked));
-      }
-      Event::Start(Tag::CodeBlock(kind)) => {
-        in_code_block = true;
-        code_language = match kind {
-          CodeBlockKind::Fenced(lang) => lang.to_string(),
-          CodeBlockKind::Indented => String::new(),
-        };
-      }
-      Event::End(TagEnd::CodeBlock) => {
-        flush_code_block(&mut current_text, &code_language, blocks, content_block_ids);
-        in_code_block = false;
-        code_language.clear();
-      }
-      Event::Text(text) => {
-        current_text.push_str(&text);
-      }
-      Event::Code(code) => {
-        // Inline code - wrap in backticks for now
-        current_text.push('`');
-        current_text.push_str(&code);
-        current_text.push('`');
-      }
-      Event::SoftBreak | Event::HardBreak => {
-        if in_code_block {
-          current_text.push('\n');
-        } else {
-          current_text.push(' ');
-        }
-      }
-      Event::Rule => {
-        // Horizontal rule -> divider block
-        flush_text_block(
-          &mut current_text,
-          current_paragraph_type,
-          blocks,
-          content_block_ids,
-        );
-        let block = BlockBuilder::new(DIVIDER_FLAVOUR);
-        content_block_ids.push(block.id.clone());
-        blocks.push(block);
-      }
-      Event::Start(Tag::Strong) => {
-        current_text.push_str("**");
-      }
-      Event::End(TagEnd::Strong) => {
-        current_text.push_str("**");
-      }
-      Event::Start(Tag::Emphasis) => {
-        current_text.push('_');
-      }
-      Event::End(TagEnd::Emphasis) => {
-        current_text.push('_');
-      }
-      Event::Start(Tag::Strikethrough) => {
-        current_text.push_str("~~");
-      }
-      Event::End(TagEnd::Strikethrough) => {
-        current_text.push_str("~~");
-      }
-      Event::Start(Tag::Link { dest_url, .. }) => {
-        current_text.push('[');
-        // Store the URL for later - will be added on Event::End
-        pending_link_url = Some(dest_url.to_string());
-      }
-      Event::End(TagEnd::Link) => {
-        // Now add the closing bracket and URL
-        if let Some(url) = pending_link_url.take() {
-          current_text.push_str(&format!("]({})", url));
-        }
-      }
-      _ => {}
-    }
-  }
-
-  // Flush any remaining text
-  flush_text_block(
-    &mut current_text,
-    current_paragraph_type,
-    blocks,
-    content_block_ids,
-  );
-
-  Ok(())
-}
-
-fn flush_text_block(
-  text: &mut String,
-  ptype: ParagraphType,
-  blocks: &mut Vec<BlockBuilder>,
-  content_block_ids: &mut Vec<String>,
-) {
-  let trimmed = text.trim();
-  if !trimmed.is_empty() {
-    let block = BlockBuilder::new(PARAGRAPH_FLAVOUR)
-      .with_text(trimmed)
-      .with_paragraph_type(ptype);
-    content_block_ids.push(block.id.clone());
-    blocks.push(block);
-  }
-  text.clear();
-}
-
-fn flush_list_block(
-  text: &mut String,
-  list_type: ListType,
-  blocks: &mut Vec<BlockBuilder>,
-  content_block_ids: &mut Vec<String>,
-) {
-  let trimmed = text.trim();
-  if !trimmed.is_empty() {
-    let block = BlockBuilder::new(LIST_FLAVOUR)
-      .with_text(trimmed)
-      .with_list_type(list_type);
-    content_block_ids.push(block.id.clone());
-    blocks.push(block);
-  }
-  text.clear();
-}
-
-fn flush_code_block(
-  text: &mut String,
-  language: &str,
-  blocks: &mut Vec<BlockBuilder>,
-  content_block_ids: &mut Vec<String>,
-) {
-  // Preserve leading whitespace (indentation) in code blocks as it may be
-  // semantically significant (e.g., Python, YAML). Only strip leading/trailing
-  // newlines which are typically artifacts from code fence parsing.
-  let content = text.trim_matches('\n');
-  if !content.is_empty() {
-    let block = BlockBuilder::new(CODE_FLAVOUR)
-      .with_text(content)
-      .with_code_language(language);
-    content_block_ids.push(block.id.clone());
-    blocks.push(block);
-  }
-  text.clear();
 }
 
 /// Builds the y-octo document from parsed blocks
@@ -422,37 +136,41 @@ fn build_ydoc(
   let page_id = nanoid::nanoid!();
   let note_id = nanoid::nanoid!();
 
-  // PHASE 1: Insert all empty block maps into blocks_map first
-  // This gives each block map a clock value before its contents
-  let page_empty_map = doc
+  // Phase 1: Insert all blocks as empty maps first to establish clock ordering
+  // This ensures parent clock values are lower than children's
+
+  // Insert page block map
+  let empty_page_map = doc
     .create_map()
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
   blocks_map
-    .insert(page_id.clone(), page_empty_map)
+    .insert(page_id.clone(), empty_page_map)
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  let note_empty_map = doc
+  // Insert note block map
+  let empty_note_map = doc
     .create_map()
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
   blocks_map
-    .insert(note_id.clone(), note_empty_map)
+    .insert(note_id.clone(), empty_note_map)
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Insert empty maps for all content blocks
+  // Insert content block maps
   for block in &content_blocks {
-    let empty_map = doc
+    let empty_content_map = doc
       .create_map()
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
     blocks_map
-      .insert(block.id.clone(), empty_map)
+      .insert(block.id.clone(), empty_content_map)
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // PHASE 2: Now populate all the block maps with their properties
-  // The maps already have clock values, so their contents will have higher clocks
+  // Phase 2: Now populate all blocks with their properties
+  // The clock values for these properties will be higher than the parent maps
 
   // Populate page block
-  populate_block_map(
+  populate_block(
+    &doc,
     &mut blocks_map,
     &page_id,
     PAGE_FLAVOUR,
@@ -460,12 +178,13 @@ fn build_ydoc(
     None,
     None,
     None,
+    None,
     vec![note_id.clone()],
-    &doc,
   )?;
 
   // Populate note block
-  populate_block_map(
+  populate_block(
+    &doc,
     &mut blocks_map,
     &note_id,
     NOTE_FLAVOUR,
@@ -473,68 +192,59 @@ fn build_ydoc(
     None,
     None,
     None,
+    None,
     content_block_ids.clone(),
-    &doc,
   )?;
 
   // Populate content blocks
   for block in content_blocks {
-    populate_block_map(
+    populate_block(
+      &doc,
       &mut blocks_map,
       &block.id,
       &block.flavour,
       None,
-      Some(&block.text_content),
-      block.paragraph_type,
-      block.list_type,
-      block.children,
-      &doc,
+      if block.text_content.is_empty() {
+        None
+      } else {
+        Some(&block.text_content)
+      },
+      block.block_type,
+      block.checked,
+      block.code_language.as_deref(),
+      Vec::new(),
     )?;
-
-    // Add code language if present
-    if let Some(lang) = &block.code_language {
-      if let Some(Value::Map(mut block_map)) = blocks_map.get(&block.id) {
-        block_map
-          .insert("prop:language".to_string(), Any::String(lang.clone()))
-          .map_err(|e| ParseError::ParserError(e.to_string()))?;
-      }
-    }
   }
 
-  // Encode the document as binary
+  // Encode the document
   doc
     .encode_update_v1()
     .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
-/// Populates an existing block map (already inserted into blocks_map) with properties.
-/// This ensures the block map has a clock value before its contents, avoiding forward references.
-fn populate_block_map(
+/// Populates a block in the blocks map with its properties.
+///
+/// Follows the two-phase insertion pattern: the block map must already exist
+/// (inserted as empty in phase 1), and this function populates it with properties.
+#[allow(clippy::too_many_arguments)]
+fn populate_block(
+  doc: &y_octo::Doc,
   blocks_map: &mut Map,
   block_id: &str,
   flavour: &str,
   title: Option<&str>,
   text_content: Option<&str>,
-  paragraph_type: Option<ParagraphType>,
-  list_type: Option<ListType>,
+  block_type: Option<BlockType>,
+  checked: Option<bool>,
+  code_language: Option<&str>,
   children: Vec<String>,
-  doc: &y_octo::Doc,
 ) -> Result<(), ParseError> {
-  // Get the existing block map from blocks_map
-  let mut block = match blocks_map.get(block_id) {
-    Some(Value::Map(map)) => map,
-    Some(_) => {
-      return Err(ParseError::ParserError(format!(
-        "Block {} is not a Map",
-        block_id
-      )))
-    }
-    None => {
-      return Err(ParseError::ParserError(format!(
-        "Block {} not found in blocks_map",
-        block_id
-      )))
-    }
+  // Get the existing block map
+  let Some(Value::Map(mut block)) = blocks_map.get(block_id) else {
+    return Err(ParseError::ParserError(format!(
+      "Block {} not found in blocks map",
+      block_id
+    )));
   };
 
   // Required fields
@@ -545,7 +255,7 @@ fn populate_block_map(
     .insert("sys:flavour".to_string(), Any::String(flavour.to_string()))
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Children array - insert empty array first, then populate
+  // Children - insert empty array first, then populate
   let empty_array = doc
     .create_array()
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -590,36 +300,31 @@ fn populate_block_map(
     }
   }
 
-  // Paragraph type
-  if let Some(ptype) = paragraph_type {
+  // Block type (for paragraphs and lists)
+  if let Some(btype) = block_type {
     block
       .insert(
         "prop:type".to_string(),
-        Any::String(ptype.as_str().to_string()),
+        Any::String(btype.as_str().to_string()),
       )
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // List type and checked state
-  if let Some(ltype) = list_type {
+  // Checked state (for todo items)
+  if let Some(is_checked) = checked {
     block
       .insert(
-        "prop:type".to_string(),
-        Any::String(ltype.as_str().to_string()),
+        "prop:checked".to_string(),
+        if is_checked { Any::True } else { Any::False },
       )
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    if matches!(ltype, ListType::Todo(_)) {
-      block
-        .insert(
-          "prop:checked".to_string(),
-          if ltype.is_checked() {
-            Any::True
-          } else {
-            Any::False
-          },
-        )
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
+  }
+
+  // Code language
+  if let Some(lang) = code_language {
+    block
+      .insert("prop:language".to_string(), Any::String(lang.to_string()))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
   Ok(())
@@ -633,8 +338,8 @@ fn build_block_map(
   flavour: &str,
   title: Option<&str>,
   text_content: Option<&str>,
-  paragraph_type: Option<ParagraphType>,
-  list_type: Option<ListType>,
+  block_type: Option<BlockType>,
+  checked: Option<bool>,
   children: Vec<String>,
 ) -> Result<y_octo::Map, ParseError> {
   let mut block = doc
@@ -649,7 +354,7 @@ fn build_block_map(
     .insert("sys:flavour".to_string(), Any::String(flavour.to_string()))
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Children array
+  // Children
   let mut children_array = doc
     .create_array()
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -662,7 +367,7 @@ fn build_block_map(
     .insert("sys:children".to_string(), children_array)
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Title (for page blocks)
+  // Title
   if let Some(title) = title {
     block
       .insert("prop:title".to_string(), Any::String(title.to_string()))
@@ -682,36 +387,24 @@ fn build_block_map(
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // Paragraph type
-  if let Some(ptype) = paragraph_type {
+  // Block type
+  if let Some(btype) = block_type {
     block
       .insert(
         "prop:type".to_string(),
-        Any::String(ptype.as_str().to_string()),
+        Any::String(btype.as_str().to_string()),
       )
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // List type and checked state
-  if let Some(ltype) = list_type {
+  // Checked state
+  if let Some(is_checked) = checked {
     block
       .insert(
-        "prop:type".to_string(),
-        Any::String(ltype.as_str().to_string()),
+        "prop:checked".to_string(),
+        if is_checked { Any::True } else { Any::False },
       )
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    if matches!(ltype, ListType::Todo(_)) {
-      block
-        .insert(
-          "prop:checked".to_string(),
-          if ltype.is_checked() {
-            Any::True
-          } else {
-            Any::False
-          },
-        )
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
   }
 
   Ok(block)
@@ -752,7 +445,7 @@ mod tests {
   }
 
   #[test]
-  fn test_extract_title() {
+  fn test_extract_title_usage() {
     assert_eq!(extract_title("# My Title\n\nContent"), "My Title");
     assert_eq!(extract_title("No heading"), "Untitled");
     assert_eq!(extract_title("## Secondary\n\nContent"), "Untitled");
