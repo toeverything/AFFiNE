@@ -2,6 +2,7 @@ import { type ServiceIdentifier } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { Bound, clamp, Point } from '@blocksuite/global/gfx';
 import { signal } from '@preact/signals-core';
+import { SnapOverlay } from '../../../../affine/gfx/pointer/src/snap/snap-overlay';
 import last from 'lodash-es/last.js';
 
 import type { PointerEventState } from '../../event/state/pointer.js';
@@ -61,6 +62,12 @@ export class InteractivityManager extends GfxExtension {
   private readonly _disposable = new DisposableGroup();
 
   private canvasEventHandler = new GfxViewEventManager(this.gfx);
+  private snapOverlay: SnapOverlay;
+
+  constructor(...args: ConstructorParameters<typeof GfxExtension>) {
+    super(...args);
+    this.snapOverlay = new SnapOverlay(this.gfx);
+  }
 
   override mounted(): void {
     this.canvasEventHandler = new GfxViewEventManager(this.gfx);
@@ -390,22 +397,23 @@ export class InteractivityManager extends GfxExtension {
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])
       );
 
+      let dx = dragLastPos.x - internal.dragStartPos.x;
+      let dy = dragLastPos.y - internal.dragStartPos.y;
+
+      const isShiftPressed = this.keyboard.shiftKey$.peek();
+      if (isShiftPressed) {
+        const snappedPoint = this.snapOverlay.snapDragAngle(internal.dragStartPos, dragLastPos, true);
+        dx = snappedPoint.x - internal.dragStartPos.x;
+        dy = snappedPoint.y - internal.dragStartPos.y;
+      }
+
       const moveContext: ExtensionDragMoveContext = {
         ...internal,
         event,
         dragLastPos,
-        dx: dragLastPos.x - internal.dragStartPos.x,
-        dy: dragLastPos.y - internal.dragStartPos.y,
+        dx,
+        dy,
       };
-
-      // If shift key is pressed, restrict the movement to one direction
-      if (this.keyboard.shiftKey$.peek()) {
-        const angle = Math.abs(Math.atan2(moveContext.dy, moveContext.dx));
-        const direction =
-          angle < Math.PI / 4 || angle > 3 * (Math.PI / 4) ? 'dy' : 'dx';
-
-        moveContext[direction] = 0;
-      }
 
       this._safeExecute(() => {
         activeExtensionHandlers.forEach(handler =>
