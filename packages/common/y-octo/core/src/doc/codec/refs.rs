@@ -453,15 +453,15 @@ mod tests {
 
   #[cfg(not(loom))]
   fn struct_info_round_trip(info: &mut Node) -> JwstCodecResult {
-    if let Node::Item(item) = info {
-      if let Some(item) = item.get_mut() {
-        if !item.is_valid() {
-          return Ok(());
-        }
+    if let Node::Item(item) = info
+      && let Some(item) = item.get_mut()
+    {
+      if !item.is_valid() {
+        return Ok(());
+      }
 
-        if item.content.countable() {
-          item.flags.set_countable();
-        }
+      if item.content.countable() {
+        item.flags.set_countable();
       }
     }
     let mut encoder = RawEncoder::default();
