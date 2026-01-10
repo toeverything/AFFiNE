@@ -61,6 +61,9 @@ enum DiffOp {
 /// to update only what changed. This enables proper CRDT merging with
 /// concurrent edits from other clients.
 ///
+/// If the existing document is empty or invalid, falls back to creating
+/// a new document from the markdown using `markdown_to_ydoc`.
+///
 /// # Arguments
 /// * `existing_binary` - The current document binary
 /// * `new_markdown` - The new markdown content
@@ -74,7 +77,15 @@ pub fn update_ydoc(
   doc_id: &str,
 ) -> Result<Vec<u8>, ParseError> {
   // Load and parse the existing document
-  let mut existing = load_existing_doc(existing_binary, doc_id)?;
+  // If the document is empty or invalid, fall back to creating a new one
+  let mut existing = match load_existing_doc(existing_binary, doc_id) {
+    Ok(doc) => doc,
+    Err(ParseError::InvalidBinary) | Err(ParseError::ParserError(_)) => {
+      // Empty or invalid document - create from scratch
+      return super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id);
+    }
+    Err(e) => return Err(e),
+  };
 
   // Parse new markdown into content blocks
   let new_blocks = parse_markdown_to_content_blocks(new_markdown)?;
@@ -787,25 +798,41 @@ fn update_block_content(
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // Update checked state if changed
-  if new_block.checked.is_some() {
-    block
-      .insert(
-        "prop:checked".to_string(),
-        if new_block.checked.unwrap() {
-          Any::True
-        } else {
-          Any::False
-        },
-      )
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  // Update checked state - set if present, clear if stale
+  match new_block.checked {
+    Some(checked) => {
+      block
+        .insert(
+          "prop:checked".to_string(),
+          if checked { Any::True } else { Any::False },
+        )
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    }
+    None => {
+      // Clear stale checked state if block had it but shouldn't anymore
+      if block.get("prop:checked").is_some() {
+        block
+          .insert("prop:checked".to_string(), Any::Undefined)
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
   }
 
-  // Update language if changed
-  if let Some(ref language) = new_block.language {
-    block
-      .insert("prop:language".to_string(), Any::String(language.clone()))
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  // Update language - set if present, clear if stale
+  match &new_block.language {
+    Some(language) => {
+      block
+        .insert("prop:language".to_string(), Any::String(language.clone()))
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    }
+    None => {
+      // Clear stale language if block had it but shouldn't anymore
+      if block.get("prop:language").is_some() {
+        block
+          .insert("prop:language".to_string(), Any::Undefined)
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
   }
 
   Ok(())
@@ -817,32 +844,39 @@ fn apply_text_diff(
   old_content: &str,
   new_content: &str,
 ) -> Result<(), ParseError> {
-  // Use Myers diff algorithm for character-level changes
+  // Use greedy diff algorithm for character-level changes
   let old_chars: Vec<char> = old_content.chars().collect();
   let new_chars: Vec<char> = new_content.chars().collect();
 
   let ops = compute_text_diff(&old_chars, &new_chars);
 
   // Apply operations in order, adjusting positions based on accumulated offset
+  // IMPORTANT: y_octo uses UTF-16 code units for positions, not char indices
   let mut offset = 0i64;
   for op in ops {
     match op {
-      TextDiffOp::Delete { start, len } => {
+      TextDiffOp::Delete {
+        start_utf16,
+        len_utf16,
+      } => {
         // Guard against negative positions from offset calculations
-        let adjusted_start = (start as i64 + offset).max(0) as u64;
+        let adjusted_start = (start_utf16 as i64 + offset).max(0) as u64;
         text
-          .remove(adjusted_start, len as u64)
+          .remove(adjusted_start, len_utf16 as u64)
           .map_err(|e| ParseError::ParserError(e.to_string()))?;
-        offset -= len as i64;
+        offset -= len_utf16 as i64;
       }
-      TextDiffOp::Insert { pos, chars } => {
+      TextDiffOp::Insert {
+        pos_utf16,
+        text: insert_text,
+      } => {
         // Guard against negative positions from offset calculations
-        let adjusted_pos = (pos as i64 + offset).max(0) as u64;
-        let insert_str: String = chars.iter().collect();
+        let adjusted_pos = (pos_utf16 as i64 + offset).max(0) as u64;
+        let utf16_len: usize = insert_text.chars().map(|c| c.len_utf16()).sum();
         text
-          .insert(adjusted_pos, &insert_str)
+          .insert(adjusted_pos, &insert_text)
           .map_err(|e| ParseError::ParserError(e.to_string()))?;
-        offset += chars.len() as i64;
+        offset += utf16_len as i64;
       }
     }
   }
@@ -852,12 +886,17 @@ fn apply_text_diff(
 
 #[derive(Debug)]
 enum TextDiffOp {
-  Delete { start: usize, len: usize },
-  Insert { pos: usize, chars: Vec<char> },
+  /// Delete operation with UTF-16 code unit positions
+  Delete {
+    start_utf16: usize,
+    len_utf16: usize,
+  },
+  /// Insert operation with UTF-16 code unit position and text to insert
+  Insert { pos_utf16: usize, text: String },
 }
 
-/// Computes character-level diff between two strings using greedy matching
-/// This produces a minimal edit sequence for common cases like appending text
+/// Computes character-level diff between two strings using greedy matching.
+/// Returns operations with UTF-16 code unit positions (required by y_octo).
 fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
   // Find common prefix
   let mut prefix_len = 0;
@@ -885,21 +924,21 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
 
   #[derive(Debug, Clone)]
   enum Edit {
-    Keep,
-    Delete,
-    Insert(char),
+    Keep(char),   // Keep this char from old
+    Delete(char), // Delete this char from old
+    Insert(char), // Insert this char (from new)
   }
 
   let mut edits = Vec::new();
 
-  // Keep prefix
-  for _ in 0..prefix_len {
-    edits.push(Edit::Keep);
+  // Keep prefix (store the actual chars for UTF-16 length calculation)
+  for i in 0..prefix_len {
+    edits.push(Edit::Keep(old[i]));
   }
 
   // Delete middle of old
-  for _ in 0..old_mid_len {
-    edits.push(Edit::Delete);
+  for i in 0..old_mid_len {
+    edits.push(Edit::Delete(old[prefix_len + i]));
   }
 
   // Insert middle of new
@@ -907,84 +946,84 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
     edits.push(Edit::Insert(new[new_mid_start + i]));
   }
 
-  // Keep suffix
-  for _ in 0..suffix_len {
-    edits.push(Edit::Keep);
+  // Keep suffix (store the actual chars for UTF-16 length calculation)
+  for i in 0..suffix_len {
+    edits.push(Edit::Keep(old[prefix_len + old_mid_len + i]));
   }
 
-  // Convert edits to operations, tracking position in old string
+  // Convert edits to operations, tracking position in UTF-16 code units
   let mut ops = Vec::new();
-  let mut old_pos = 0usize;
+  let mut old_pos_utf16 = 0usize;
 
   // Pending delete
-  let mut del_start: Option<usize> = None;
-  let mut del_count = 0usize;
+  let mut del_start_utf16: Option<usize> = None;
+  let mut del_len_utf16 = 0usize;
 
   // Pending insert
-  let mut ins_pos: Option<usize> = None;
-  let mut ins_chars: Vec<char> = Vec::new();
+  let mut ins_pos_utf16: Option<usize> = None;
+  let mut ins_text = String::new();
 
   for edit in edits {
     match edit {
-      Edit::Keep => {
+      Edit::Keep(c) => {
         // Flush pending operations
-        if let Some(start) = del_start.take() {
+        if let Some(start) = del_start_utf16.take() {
           ops.push(TextDiffOp::Delete {
-            start,
-            len: del_count,
+            start_utf16: start,
+            len_utf16: del_len_utf16,
           });
-          del_count = 0;
+          del_len_utf16 = 0;
         }
-        if let Some(pos) = ins_pos.take() {
+        if let Some(pos) = ins_pos_utf16.take() {
           ops.push(TextDiffOp::Insert {
-            pos,
-            chars: std::mem::take(&mut ins_chars),
+            pos_utf16: pos,
+            text: std::mem::take(&mut ins_text),
           });
         }
-        old_pos += 1;
+        old_pos_utf16 += c.len_utf16();
       }
-      Edit::Delete => {
+      Edit::Delete(c) => {
         // Flush pending inserts first
-        if let Some(pos) = ins_pos.take() {
+        if let Some(pos) = ins_pos_utf16.take() {
           ops.push(TextDiffOp::Insert {
-            pos,
-            chars: std::mem::take(&mut ins_chars),
+            pos_utf16: pos,
+            text: std::mem::take(&mut ins_text),
           });
         }
-        if del_start.is_none() {
-          del_start = Some(old_pos);
+        if del_start_utf16.is_none() {
+          del_start_utf16 = Some(old_pos_utf16);
         }
-        del_count += 1;
-        old_pos += 1;
+        del_len_utf16 += c.len_utf16();
+        old_pos_utf16 += c.len_utf16();
       }
       Edit::Insert(c) => {
         // Flush pending deletes first
-        if let Some(start) = del_start.take() {
+        if let Some(start) = del_start_utf16.take() {
           ops.push(TextDiffOp::Delete {
-            start,
-            len: del_count,
+            start_utf16: start,
+            len_utf16: del_len_utf16,
           });
-          del_count = 0;
+          del_len_utf16 = 0;
         }
-        if ins_pos.is_none() {
-          ins_pos = Some(old_pos);
+        if ins_pos_utf16.is_none() {
+          ins_pos_utf16 = Some(old_pos_utf16);
         }
-        ins_chars.push(c);
+        ins_text.push(c);
       }
     }
   }
 
   // Flush remaining operations
-  if let Some(start) = del_start {
+  if let Some(start) = del_start_utf16 {
     ops.push(TextDiffOp::Delete {
-      start,
-      len: del_count,
+      start_utf16: start,
+      len_utf16: del_len_utf16,
     });
   }
-  if let Some(pos) = ins_pos {
+  if let Some(pos) = ins_pos_utf16 {
     ops.push(TextDiffOp::Insert {
-      pos,
-      chars: ins_chars,
+      pos_utf16: pos,
+      text: ins_text,
     });
   }
 
@@ -1067,12 +1106,44 @@ mod tests {
     let new: Vec<char> = "hello world".chars().collect();
     let ops = compute_text_diff(&old, &new);
 
-    // Should have one insert operation
+    // Should have one insert operation at UTF-16 position 5
     assert!(!ops.is_empty());
     match &ops[0] {
-      TextDiffOp::Insert { chars, .. } => {
-        let inserted: String = chars.iter().collect();
-        assert_eq!(inserted, " world");
+      TextDiffOp::Insert { pos_utf16, text } => {
+        assert_eq!(*pos_utf16, 5); // "hello" is 5 UTF-16 code units
+        assert_eq!(text, " world");
+      }
+      _ => panic!("Expected Insert operation"),
+    }
+  }
+
+  #[test]
+  fn test_compute_text_diff_emoji() {
+    // Test with emoji (outside BMP, uses 2 UTF-16 code units per char)
+    let old: Vec<char> = "a😀b".chars().collect();
+    let new: Vec<char> = "a😀c".chars().collect();
+    let ops = compute_text_diff(&old, &new);
+
+    // Should delete 'b' at UTF-16 position 3 (1 for 'a', 2 for emoji)
+    // Insert position is 4 (after 'b'), but offset adjustment in apply_text_diff
+    // accounts for the delete (-1), resulting in actual insert at position 3
+    assert_eq!(ops.len(), 2);
+    match &ops[0] {
+      TextDiffOp::Delete {
+        start_utf16,
+        len_utf16,
+      } => {
+        assert_eq!(*start_utf16, 3); // 'a'=1, '😀'=2, total=3
+        assert_eq!(*len_utf16, 1); // 'b' is 1 UTF-16 code unit
+      }
+      _ => panic!("Expected Delete operation"),
+    }
+    match &ops[1] {
+      TextDiffOp::Insert { pos_utf16, text } => {
+        // Position recorded as 4 (after processing delete in old string)
+        // Offset adjustment will bring this to 3 when applied
+        assert_eq!(*pos_utf16, 4);
+        assert_eq!(text, "c");
       }
       _ => panic!("Expected Insert operation"),
     }
@@ -1330,6 +1401,33 @@ mod tests {
       block_count >= 4,
       "Should have merged blocks, got {}",
       block_count
+    );
+  }
+
+  #[test]
+  fn test_update_ydoc_empty_binary_fallback() {
+    // Test that update_ydoc falls back to markdown_to_ydoc for empty binaries
+    let markdown = "# New Document\n\nCreated from empty binary.";
+    let doc_id = "empty-fallback-test";
+
+    // Empty binary should trigger fallback
+    let result = update_ydoc(&[], markdown, doc_id).expect("Should create from empty");
+    assert!(!result.is_empty(), "Result should not be empty");
+
+    // [0, 0] minimal empty binary should also trigger fallback
+    let result = update_ydoc(&[0, 0], markdown, doc_id).expect("Should create from minimal empty");
+    assert!(!result.is_empty(), "Result should not be empty");
+
+    // Verify the result is a valid document
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&result)
+      .expect("Should apply created doc");
+
+    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
+    assert!(
+      !blocks_map.is_empty(),
+      "Document created from empty should have blocks"
     );
   }
 }

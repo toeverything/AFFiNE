@@ -154,6 +154,8 @@ fn parse_markdown_to_blocks(
   let mut current_paragraph_type = ParagraphType::Text;
   let mut in_list = false;
   let mut list_type_stack: Vec<ListType> = Vec::new();
+  // Per-item type override for task list markers (resets at each Item start)
+  let mut current_item_type: Option<ListType> = None;
   let mut in_code_block = false;
   let mut code_language = String::new();
   let mut skip_first_h1 = true; // Skip first H1 as it becomes the title
@@ -239,18 +241,20 @@ fn parse_markdown_to_blocks(
         }
       }
       Event::Start(Tag::Item) => {
-        // List item start - text will be collected
+        // List item start - reset per-item type override
+        current_item_type = None;
       }
       Event::End(TagEnd::Item) => {
-        if let Some(&list_type) = list_type_stack.last() {
-          flush_list_block(&mut current_text, list_type, blocks, content_block_ids);
-        }
+        // Use per-item override if set (for task items), otherwise use stack type
+        let list_type = current_item_type
+          .take()
+          .or_else(|| list_type_stack.last().copied())
+          .unwrap_or(ListType::Bulleted);
+        flush_list_block(&mut current_text, list_type, blocks, content_block_ids);
       }
       Event::TaskListMarker(checked) => {
-        // Update the current list type to be a todo item
-        if let Some(last) = list_type_stack.last_mut() {
-          *last = ListType::Todo(checked);
-        }
+        // Set per-item type override for this specific item only
+        current_item_type = Some(ListType::Todo(checked));
       }
       Event::Start(Tag::CodeBlock(kind)) => {
         in_code_block = true;
