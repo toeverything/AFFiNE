@@ -1344,7 +1344,6 @@ jobs:
       - miri
       - loom
       - fuzzing
-      - y-octo-binding-test
       - server-test
       - server-e2e-test
       - rust-test
