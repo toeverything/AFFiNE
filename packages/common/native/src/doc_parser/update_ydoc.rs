@@ -619,7 +619,7 @@ fn apply_diff(
         // Update existing block content
         let block_id = &existing.content_block_ids[*old_idx];
         let new_block = &new_blocks[*new_idx];
-        update_block_content(&mut blocks_map, block_id, new_block)?;
+        update_block_content(&mut existing.doc, &mut blocks_map, block_id, new_block)?;
         new_children.push(block_id.clone());
       }
     }
@@ -757,6 +757,7 @@ fn create_new_block(
 
 /// Updates an existing block's content using text-level diff
 fn update_block_content(
+  doc: &mut Doc,
   blocks_map: &mut Map,
   block_id: &str,
   new_block: &ContentBlock,
@@ -771,13 +772,21 @@ fn update_block_content(
     let old_content = text.to_string();
     apply_text_diff(&mut text, &old_content, &new_block.content)?;
   } else if !new_block.content.is_empty() {
-    // Block didn't have text before, but now it does
-    // We need to get the doc from the block somehow
-    // For now, we'll update via the block's text field
-    // This is a limitation - we can only update existing text
-    return Err(ParseError::ParserError(
-      "Cannot add text to block without existing text field".into(),
-    ));
+    // Block didn't have text before, but now it does (e.g., divider becoming paragraph)
+    // Create a new text field using two-phase approach to avoid forward parent references
+    let text = doc
+      .create_text()
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    block
+      .insert("prop:text".to_string(), text)
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+    // Now retrieve and populate the text
+    if let Some(mut text) = block.get("prop:text").and_then(|v| v.to_text()) {
+      text
+        .insert(0, &new_block.content)
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    }
   }
 
   // Update checked state if changed
@@ -816,19 +825,21 @@ fn apply_text_diff(
 
   let ops = compute_text_diff(&old_chars, &new_chars);
 
-  // Apply operations in reverse order to maintain correct indices
+  // Apply operations in order, adjusting positions based on accumulated offset
   let mut offset = 0i64;
   for op in ops {
     match op {
       TextDiffOp::Delete { start, len } => {
-        let adjusted_start = (start as i64 + offset) as u64;
+        // Guard against negative positions from offset calculations
+        let adjusted_start = (start as i64 + offset).max(0) as u64;
         text
           .remove(adjusted_start, len as u64)
           .map_err(|e| ParseError::ParserError(e.to_string()))?;
         offset -= len as i64;
       }
       TextDiffOp::Insert { pos, chars } => {
-        let adjusted_pos = (pos as i64 + offset) as u64;
+        // Guard against negative positions from offset calculations
+        let adjusted_pos = (pos as i64 + offset).max(0) as u64;
         let insert_str: String = chars.iter().collect();
         text
           .insert(adjusted_pos, &insert_str)
