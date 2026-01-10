@@ -66,7 +66,9 @@ export class NotionHtmlDeltaConverter extends DeltaASTConverter<
 
     const result =
       'children' in ast
-        ? ast.children.flatMap(child => this._spreadAstToDelta(child, options))
+         ? ast.children
+            .filter((child): child is HtmlAST => child != null)
+            .flatMap(child => this._spreadAstToDelta(child, options))
         : [];
 
     if (options.removeLastBr && result.length > 0) {
