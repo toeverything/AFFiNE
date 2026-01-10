@@ -2,7 +2,7 @@ import { type ServiceIdentifier } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { Bound, clamp, Point } from '@blocksuite/global/gfx';
 import { signal } from '@preact/signals-core';
-import { SnapOverlay } from '../../../../affine/gfx/pointer/src/snap/snap-overlay';
+import { SnapOverlay } from '@blocksuite/affine-gfx-pointer';
 import last from 'lodash-es/last.js';
 
 import type { PointerEventState } from '../../event/state/pointer.js';
