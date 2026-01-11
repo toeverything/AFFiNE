@@ -177,7 +177,9 @@ export class WorkspaceMcpProvider {
           title: z.string().describe('The title of the new document'),
           content: z
             .string()
-            .describe('The markdown content for the document body'),
+            .describe(
+              'The markdown content for the document body (should NOT include a title H1 - the title parameter will be used)'
+            ),
         }),
       },
       async ({ title, content }) => {
@@ -191,7 +193,11 @@ export class WorkspaceMcpProvider {
           // Combine title and content into markdown
           // Sanitize title by removing newlines and trimming
           const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-          const markdown = `# ${sanitizedTitle}\n\n${content}`;
+
+          // Strip any leading H1 from content to prevent duplicates
+          const strippedContent = content.replace(/^#\s+[^\n]*\n*/, '').trim();
+
+          const markdown = `# ${sanitizedTitle}\n\n${strippedContent}`;
 
           // Create the document
           const result = await this.writer.createDoc(
