@@ -170,10 +170,7 @@ pub struct AudioBufferList {
 }
 
 unsafe impl Encode for AudioBufferList {
-  const ENCODING: Encoding = Encoding::Struct(
-    "AudioBufferList",
-    &[<u32>::ENCODING, <[AudioBuffer; 1]>::ENCODING],
-  );
+  const ENCODING: Encoding = Encoding::Struct("AudioBufferList", &[<u32>::ENCODING, <[AudioBuffer; 1]>::ENCODING]);
 }
 
 unsafe impl RefEncode for AudioBufferList {

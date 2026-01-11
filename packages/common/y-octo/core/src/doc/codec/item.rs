@@ -232,12 +232,7 @@ impl Item {
     !has_id && self.parent.is_some() || has_id && self.parent.is_none() && self.parent_sub.is_none()
   }
 
-  pub fn read<R: CrdtReader>(
-    decoder: &mut R,
-    id: Id,
-    info: u8,
-    first_5_bit: u8,
-  ) -> JwstCodecResult<Self> {
+  pub fn read<R: CrdtReader>(decoder: &mut R, id: Id, info: u8, first_5_bit: u8) -> JwstCodecResult<Self> {
     let flags: ItemFlag = info.into();
     let has_left_id = flags.check(item_flags::ITEM_HAS_LEFT_ID);
     let has_right_id = flags.check(item_flags::ITEM_HAS_RIGHT_ID);
@@ -349,6 +344,22 @@ impl Item {
     self.content.write(encoder)?;
 
     Ok(())
+  }
+
+  pub fn deep_compare(&self, other: &Self) -> bool {
+    if self.id != other.id
+      || self.deleted() != other.deleted()
+      || self.len() != other.len()
+      || self.left.get().map(|l| l.last_id()) != other.left.get().map(|l| l.last_id())
+      || self.right.get().map(|r| r.id) != other.right.get().map(|r| r.id)
+      || self.origin_left_id != other.origin_left_id
+      || self.origin_right_id != other.origin_right_id
+      || self.parent_sub != other.parent_sub
+    {
+      return false;
+    }
+
+    true
   }
 }
 

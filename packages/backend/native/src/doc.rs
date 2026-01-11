@@ -1,6 +1,4 @@
-use affine_common::doc_parser::{
-  self, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent,
-};
+use affine_common::doc_parser::{self, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent};
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
@@ -103,10 +101,7 @@ pub fn parse_doc_from_binary(doc_bin: Buffer, doc_id: String) -> Result<NativeCr
 }
 
 #[napi]
-pub fn parse_page_doc(
-  doc_bin: Buffer,
-  max_summary_length: Option<i32>,
-) -> Result<Option<NativePageDocContent>> {
+pub fn parse_page_doc(doc_bin: Buffer, max_summary_length: Option<i32>) -> Result<Option<NativePageDocContent>> {
   let result = doc_parser::parse_page_doc(doc_bin.into(), max_summary_length.map(|v| v as isize))
     .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result.map(Into::into))
@@ -114,8 +109,8 @@ pub fn parse_page_doc(
 
 #[napi]
 pub fn parse_workspace_doc(doc_bin: Buffer) -> Result<Option<NativeWorkspaceDocContent>> {
-  let result = doc_parser::parse_workspace_doc(doc_bin.into())
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result =
+    doc_parser::parse_workspace_doc(doc_bin.into()).map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result.map(Into::into))
 }
 
@@ -126,21 +121,13 @@ pub fn parse_doc_to_markdown(
   ai_editable: Option<bool>,
   doc_url_prefix: Option<String>,
 ) -> Result<NativeMarkdownResult> {
-  let result = doc_parser::parse_doc_to_markdown(
-    doc_bin.into(),
-    doc_id,
-    ai_editable.unwrap_or(false),
-    doc_url_prefix,
-  )
-  .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = doc_parser::parse_doc_to_markdown(doc_bin.into(), doc_id, ai_editable.unwrap_or(false), doc_url_prefix)
+    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result.into())
 }
 
 #[napi]
-pub fn read_all_doc_ids_from_root_doc(
-  doc_bin: Buffer,
-  include_trash: Option<bool>,
-) -> Result<Vec<String>> {
+pub fn read_all_doc_ids_from_root_doc(doc_bin: Buffer, include_trash: Option<bool>) -> Result<Vec<String>> {
   let result = doc_parser::get_doc_ids_from_binary(doc_bin.into(), include_trash.unwrap_or(false))
     .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(result)

@@ -1223,11 +1223,6 @@ export const PackageList = [
     workspaceDependencies: ['blocksuite/affine/all'],
   },
   {
-    location: 'packages/common/y-octo/node',
-    name: '@y-octo/node',
-    workspaceDependencies: [],
-  },
-  {
     location: 'packages/frontend/admin',
     name: '@affine/admin',
     workspaceDependencies: [
@@ -1572,7 +1567,6 @@ export type PackageName =
   | '@toeverything/infra'
   | '@affine/nbstore'
   | '@affine/reader'
-  | '@y-octo/node'
   | '@affine/admin'
   | '@affine/android'
   | '@affine/electron'

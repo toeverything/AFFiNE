@@ -8,7 +8,6 @@
     ".",
     "blocksuite/**/*",
     "packages/*/*",
-    "packages/common/y-octo/node",
     "packages/frontend/apps/*",
     "tools/*",
     "docs/reference",

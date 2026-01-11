@@ -26,9 +26,7 @@ fn remove_op(doc: &yrs::Doc, nest_input: &YrsNestType, params: CRDTParam) {
       random_pick_num((len - 1) as u32, &params.insert_pos)
     };
 
-    iter
-      .nth(skip_step as usize)
-      .map(|(key, _value)| key.to_string())
+    iter.nth(skip_step as usize).map(|(key, _value)| key.to_string())
   };
 
   if let Some(key) = rand_key {
@@ -77,10 +75,7 @@ pub fn yrs_create_map_from_nest_type(
       let str = text.get_string(&trx);
       let len = str.chars().fold(0, |acc, _| acc + 1);
       let index = random_pick_num(len, insert_pos) as usize;
-      let byte_start_offset = str
-        .chars()
-        .take(index)
-        .fold(0, |acc, ch| acc + ch.len_utf8());
+      let byte_start_offset = str.chars().take(index).fold(0, |acc, ch| acc + ch.len_utf8());
 
       Some(text.insert_embed(&mut trx, byte_start_offset as u32, map_prelim))
     }
@@ -88,10 +83,7 @@ pub fn yrs_create_map_from_nest_type(
       let str = xml_text.get_string(&trx);
       let len = str.chars().fold(0, |acc, _| acc + 1);
       let index = random_pick_num(len, insert_pos) as usize;
-      let byte_start_offset = str
-        .chars()
-        .take(index)
-        .fold(0, |acc, ch| acc + ch.len_utf8());
+      let byte_start_offset = str.chars().take(index).fold(0, |acc, ch| acc + ch.len_utf8());
 
       Some(xml_text.insert_embed(&mut trx, byte_start_offset as u32, map_prelim))
     }

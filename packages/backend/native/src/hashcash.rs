@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use affine_common::hashcash::Stamp;
-use napi::{bindgen_prelude::AsyncTask, Env, Result as NapiResult, Task};
+use napi::{Env, Result as NapiResult, Task, bindgen_prelude::AsyncTask};
 use napi_derive::napi;
 
 pub struct AsyncVerifyChallengeResponse {
@@ -61,9 +61,6 @@ impl Task for AsyncMintChallengeResponse {
 }
 
 #[napi]
-pub fn mint_challenge_response(
-  resource: String,
-  bits: Option<u32>,
-) -> AsyncTask<AsyncMintChallengeResponse> {
+pub fn mint_challenge_response(resource: String, bits: Option<u32>) -> AsyncTask<AsyncMintChallengeResponse> {
   AsyncTask::new(AsyncMintChallengeResponse { bits, resource })
 }

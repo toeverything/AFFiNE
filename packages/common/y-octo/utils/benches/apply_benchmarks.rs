@@ -2,7 +2,7 @@ mod utils;
 
 use std::time::Duration;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use path_ext::PathExt;
 use utils::Files;
 
@@ -19,7 +19,7 @@ fn apply(c: &mut Criterion) {
       &file.content,
       |b, content| {
         b.iter(|| {
-          use yrs::{updates::decoder::Decode, Doc, Transact, Update};
+          use yrs::{Doc, Transact, Update, updates::decoder::Decode};
           let update = Update::decode_v1(content).unwrap();
           let doc = Doc::new();
           doc.transact_mut().apply_update(update).unwrap();
