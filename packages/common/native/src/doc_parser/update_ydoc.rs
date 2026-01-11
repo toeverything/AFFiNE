@@ -439,25 +439,15 @@ fn insert_and_get_text(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_o
     .ok_or_else(|| ParseError::ParserError("Failed to retrieve inserted text".into()))
 }
 
-/// Creates an empty Array, inserts it into the parent map, then returns it for population.
-fn insert_and_get_array(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_octo::Array, ParseError> {
-  let array = doc.create_array().map_err(|e| ParseError::ParserError(e.to_string()))?;
-  parent_map
-    .insert(key.to_string(), array)
-    .map_err(|e| ParseError::ParserError(e.to_string()))?;
-
-  parent_map
-    .get(key)
-    .and_then(|v| v.to_array())
-    .ok_or_else(|| ParseError::ParserError("Failed to retrieve inserted array".into()))
-}
-
 /// Creates a new block in the blocks map
 ///
 /// IMPORTANT: Uses two-phase approach for YJS compatibility:
 /// 1. Insert empty map into blocks_map first (gets clock value)
 /// 2. Then populate the map with properties (gets later clock values)
 /// This ensures parent items have earlier clocks than children.
+///
+/// Uses Any types (Any::Array, Any::String) for children and text to avoid
+/// the "get back" pattern which can hang in release builds.
 fn create_new_block(blocks_map: &mut Map, doc: &Doc, block: &ContentBlock) -> Result<String, ParseError> {
   let block_id = nanoid::nanoid!();
 
@@ -473,7 +463,7 @@ fn create_new_block(blocks_map: &mut Map, doc: &Doc, block: &ContentBlock) -> Re
     .and_then(|v| v.to_map())
     .ok_or_else(|| ParseError::ParserError("Failed to get inserted block map".into()))?;
 
-  // Step 3: Insert primitive values (these don't have nested structure issues)
+  // Step 3: Insert primitive values
   block_map
     .insert("sys:id".to_string(), Any::String(block_id.clone()))
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -499,14 +489,15 @@ fn create_new_block(blocks_map: &mut Map, doc: &Doc, block: &ContentBlock) -> Re
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // Step 4: Create and insert children array using two-phase helper
-  insert_and_get_array(doc, &mut block_map, "sys:children")?;
+  // Step 4: Use Any::Array for children (avoids "get back" pattern)
+  block_map
+    .insert("sys:children".to_string(), Any::Array(vec![]))
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Step 5: Create and insert text using two-phase helper, then populate
+  // Step 5: Use Any::String for text content (avoids "get back" pattern)
   if !block.content.is_empty() {
-    let mut text = insert_and_get_text(doc, &mut block_map, "prop:text")?;
-    text
-      .insert(0, &block.content)
+    block_map
+      .insert("prop:text".to_string(), Any::String(block.content.clone()))
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
@@ -776,7 +767,7 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
 fn update_note_children(
   blocks_map: &mut Map,
   note_id: &str,
-  doc: &Doc,
+  _doc: &Doc,
   new_children: Vec<String>,
 ) -> Result<(), ParseError> {
   let mut note_block = blocks_map
@@ -815,13 +806,11 @@ fn update_note_children(
       }
     }
   } else {
-    // Create new children array using two-phase helper
-    let mut children = insert_and_get_array(doc, &mut note_block, "sys:children")?;
-    for (idx, child_id) in new_children.into_iter().enumerate() {
-      children
-        .insert(idx as u64, Any::String(child_id))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
+    // Create new children array using Any::Array (avoids "get back" pattern)
+    let children_any: Vec<Any> = new_children.into_iter().map(Any::String).collect();
+    note_block
+      .insert("sys:children".to_string(), Any::Array(children_any))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
   Ok(())
