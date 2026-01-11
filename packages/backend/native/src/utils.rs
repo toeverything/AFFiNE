@@ -57,11 +57,11 @@ fn try_remove_label(s: &str, i: usize) -> Option<usize> {
     return None;
   }
 
-  if let Some(ch) = s[next_idx..].chars().next() {
-    if ch == '.' {
-      next_idx += ch.len_utf8();
-      return Some(next_idx);
-    }
+  if let Some(ch) = s[next_idx..].chars().next()
+    && ch == '.'
+  {
+    next_idx += ch.len_utf8();
+    return Some(next_idx);
   }
   None
 }
@@ -84,9 +84,7 @@ fn remove_label(s: &str) -> String {
 
 pub fn clean_content(content: &str) -> String {
   let content = content.replace("\x00", "");
-  remove_label(&collapse_whitespace(&content))
-    .trim()
-    .to_string()
+  remove_label(&collapse_whitespace(&content)).trim().to_string()
 }
 
 #[cfg(test)]

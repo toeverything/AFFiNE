@@ -1,5 +1,5 @@
 [package]
-edition = "2021"
+edition = "2024"
 name    = "affine_sqlite_v1"
 version = "0.0.0"
 

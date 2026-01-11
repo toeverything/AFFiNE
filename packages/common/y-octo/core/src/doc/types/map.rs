@@ -2,13 +2,18 @@ use std::{collections::hash_map::Iter, rc::Rc};
 
 use super::*;
 use crate::{
+  JwstCodecResult,
   doc::{AsInner, Node, Parent, YTypeRef},
-  impl_type, JwstCodecResult,
+  impl_type,
 };
 
 impl_type!(Map);
 
 pub(crate) trait MapType: AsInner<Inner = YTypeRef> {
+  fn _id(&self) -> Option<Id> {
+    self.as_inner().ty().and_then(|ty| ty.item.get().map(|item| item.id))
+  }
+
   fn _insert<V: Into<Value>>(&mut self, key: String, value: V) -> JwstCodecResult {
     if let Some((mut store, mut ty)) = self.as_inner().write() {
       let left = ty.map.get(&SmolStr::new(&key)).cloned();
@@ -54,12 +59,11 @@ pub(crate) trait MapType: AsInner<Inner = YTypeRef> {
   }
 
   fn _remove(&mut self, key: &str) {
-    if let Some((mut store, mut ty)) = self.as_inner().write() {
-      if let Some(item) = ty.map.get(key).cloned() {
-        if let Some(item) = item.get() {
-          store.delete_item(item, Some(&mut ty));
-        }
-      }
+    if let Some((mut store, mut ty)) = self.as_inner().write()
+      && let Some(item) = ty.map.get(key).cloned()
+      && let Some(item) = item.get()
+    {
+      store.delete_item(item, Some(&mut ty));
     }
   }
 
@@ -113,10 +117,10 @@ impl<'a> Iterator for EntriesInnerIterator<'a> {
   fn next(&mut self) -> Option<Self::Item> {
     if let Some(iter) = &mut self.iter {
       for (k, v) in iter {
-        if let Some(item) = v.get() {
-          if !item.deleted() {
-            return Some((k.as_str(), item));
-          }
+        if let Some(item) = v.get()
+          && !item.deleted()
+        {
+          return Some((k.as_str(), item));
         }
       }
 
@@ -154,6 +158,11 @@ impl<'a> Iterator for EntriesIterator<'a> {
 impl MapType for Map {}
 
 impl Map {
+  #[inline(always)]
+  pub fn id(&self) -> Option<Id> {
+    self._id()
+  }
+
   #[inline(always)]
   pub fn insert<V: Into<Value>>(&mut self, key: String, value: V) -> JwstCodecResult {
     self._insert(key, value)
@@ -220,7 +229,7 @@ impl serde::Serialize for Map {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{loom_model, Any, Doc};
+  use crate::{Any, Doc, loom_model};
 
   #[test]
   fn test_map_basic() {
@@ -228,10 +237,7 @@ mod tests {
       let doc = Doc::new();
       let mut map = doc.get_or_create_map("map").unwrap();
       map.insert("1".to_string(), "value").unwrap();
-      assert_eq!(
-        map.get("1").unwrap(),
-        Value::Any(Any::String("value".to_string()))
-      );
+      assert_eq!(map.get("1").unwrap(), Value::Any(Any::String("value".to_string())));
       assert!(!map.contains_key("nonexistent_key"));
       assert_eq!(map.len(), 1);
       assert!(map.contains_key("1"));
@@ -252,10 +258,7 @@ mod tests {
       let binary = doc.encode_update_v1().unwrap();
       let new_doc = Doc::try_from_binary_v1(binary).unwrap();
       let map = new_doc.get_or_create_map("map").unwrap();
-      assert_eq!(
-        map.get("1").unwrap(),
-        Value::Any(Any::String("value".to_string()))
-      );
+      assert_eq!(map.get("1").unwrap(), Value::Any(Any::String("value".to_string())));
       assert_eq!(map.get("2").unwrap(), Value::Any(Any::False));
       assert_eq!(map.len(), 2);
     });
@@ -268,10 +271,7 @@ mod tests {
       let mut map = doc.get_or_create_map("map").unwrap();
       map.insert("1".to_string(), "value").unwrap();
       map.insert("1".to_string(), "value2").unwrap();
-      assert_eq!(
-        map.get("1").unwrap(),
-        Value::Any(Any::String("value2".to_string()))
-      );
+      assert_eq!(map.get("1").unwrap(), Value::Any(Any::String("value2".to_string())));
       assert_eq!(map.len(), 1);
     });
   }
@@ -290,14 +290,8 @@ mod tests {
       {
         let doc = Doc::try_from_binary_v1(binary).unwrap();
         let map = doc.get_or_create_map("map").unwrap();
-        assert_eq!(
-          map.get("1").unwrap(),
-          Value::Any(Any::String("value1".to_string()))
-        );
-        assert_eq!(
-          map.get("2").unwrap(),
-          Value::Any(Any::String("value2".to_string()))
-        );
+        assert_eq!(map.get("1").unwrap(), Value::Any(Any::String("value1".to_string())));
+        assert_eq!(map.get("2").unwrap(), Value::Any(Any::String("value2".to_string())));
       }
     });
   }

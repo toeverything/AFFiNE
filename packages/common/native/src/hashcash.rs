@@ -34,11 +34,7 @@ impl Stamp {
   }
 
   pub fn check<S: AsRef<str>>(&self, bits: u32, resource: S) -> bool {
-    if self.version == "1"
-      && bits <= self.claim
-      && self.check_expiration()
-      && self.resource == resource.as_ref()
-    {
+    if self.version == "1" && bits <= self.claim && self.check_expiration() && self.resource == resource.as_ref() {
       let hex_digits = ((self.claim as f32) / 4.).floor() as usize;
 
       // check challenge
@@ -64,12 +60,7 @@ impl Stamp {
     let now = Utc::now();
     let ts = now.format("%Y%m%d%H%M%S");
     let bits = bits.unwrap_or(20);
-    let rand = String::from_iter(
-      Alphanumeric
-        .sample_iter(rng())
-        .take(SALT_LENGTH)
-        .map(char::from),
-    );
+    let rand = String::from_iter(Alphanumeric.sample_iter(rng()).take(SALT_LENGTH).map(char::from));
     let challenge = format!("{}:{}:{}:{}:{}:{}", version, bits, ts, &resource, "", rand);
 
     Stamp {
@@ -102,22 +93,12 @@ impl TryFrom<&str> for Stamp {
 
   fn try_from(value: &str) -> Result<Self, Self::Error> {
     let stamp_vec = value.split(':').collect::<Vec<&str>>();
-    if stamp_vec.len() != 7
-      || stamp_vec
-        .iter()
-        .enumerate()
-        .any(|(i, s)| i != 4 && s.is_empty())
-    {
-      return Err(format!(
-        "Malformed stamp, expected 6 parts, got {}",
-        stamp_vec.len()
-      ));
+    if stamp_vec.len() != 7 || stamp_vec.iter().enumerate().any(|(i, s)| i != 4 && s.is_empty()) {
+      return Err(format!("Malformed stamp, expected 6 parts, got {}", stamp_vec.len()));
     }
     Ok(Stamp {
       version: stamp_vec[0].to_string(),
-      claim: stamp_vec[1]
-        .parse()
-        .map_err(|_| "Malformed stamp".to_string())?,
+      claim: stamp_vec[1].parse().map_err(|_| "Malformed stamp".to_string())?,
       ts: stamp_vec[2].to_string(),
       resource: stamp_vec[3].to_string(),
       ext: stamp_vec[4].to_string(),
@@ -129,7 +110,7 @@ impl TryFrom<&str> for Stamp {
 
 #[cfg(test)]
 mod tests {
-  use rand::{distr::Alphanumeric, Rng};
+  use rand::{Rng, distr::Alphanumeric};
   use rayon::prelude::*;
 
   use super::Stamp;
@@ -139,9 +120,7 @@ mod tests {
     {
       let response = Stamp::mint("test".into(), Some(20)).format();
       assert!(
-        Stamp::try_from(response.as_str())
-          .unwrap()
-          .check(20, "test"),
+        Stamp::try_from(response.as_str()).unwrap().check(20, "test"),
         "should pass"
       );
     }
@@ -149,18 +128,14 @@ mod tests {
     {
       let response = Stamp::mint("test".into(), Some(19)).format();
       assert!(
-        !Stamp::try_from(response.as_str())
-          .unwrap()
-          .check(20, "test"),
+        !Stamp::try_from(response.as_str()).unwrap().check(20, "test"),
         "should fail with lower bits"
       );
     }
     {
       let response = Stamp::mint("test".into(), Some(20)).format();
       assert!(
-        !Stamp::try_from(response.as_str())
-          .unwrap()
-          .check(20, "test2"),
+        !Stamp::try_from(response.as_str()).unwrap().check(20, "test2"),
         "should fail with different resource"
       );
     }
@@ -177,10 +152,7 @@ mod tests {
     let response = Stamp::mint("test".into(), Some(20));
     assert_eq!(
       response.format(),
-      format!(
-        "1:20:{}:test::{}:{}",
-        response.ts, response.rand, response.counter
-      )
+      format!("1:20:{}:test::{}:{}", response.ts, response.rand, response.counter)
     );
   }
 
@@ -195,9 +167,7 @@ mod tests {
         .collect::<String>();
       let response = Stamp::mint(resource.clone(), Some(bit)).format();
       assert!(
-        Stamp::try_from(response.as_str())
-          .unwrap()
-          .check(bit, resource),
+        Stamp::try_from(response.as_str()).unwrap().check(bit, resource),
         "should pass"
       );
     });

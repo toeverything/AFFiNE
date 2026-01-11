@@ -20,6 +20,10 @@ impl Awareness {
     }
   }
 
+  pub fn local_id(&self) -> u64 {
+    self.local_id
+  }
+
   pub fn on_update(&mut self, f: impl Fn(&Awareness, AwarenessEvent) + Send + Sync + 'static) {
     self.callback = Some(Arc::new(f));
   }
@@ -29,10 +33,7 @@ impl Awareness {
   }
 
   pub fn get_local_state(&self) -> Option<String> {
-    self
-      .awareness
-      .get(&self.local_id)
-      .map(|state| state.content.clone())
+    self.awareness.get(&self.local_id).map(|state| state.content.clone())
   }
 
   fn mut_local_state(&mut self) -> &mut AwarenessState {
@@ -42,20 +43,14 @@ impl Awareness {
   pub fn set_local_state(&mut self, content: String) {
     self.mut_local_state().set_content(content);
     if let Some(cb) = self.callback.as_ref() {
-      cb(
-        self,
-        AwarenessEventBuilder::new().update(self.local_id).build(),
-      );
+      cb(self, AwarenessEventBuilder::new().update(self.local_id).build());
     }
   }
 
   pub fn clear_local_state(&mut self) {
     self.mut_local_state().delete();
     if let Some(cb) = self.callback.as_ref() {
-      cb(
-        self,
-        AwarenessEventBuilder::new().remove(self.local_id).build(),
-      );
+      cb(self, AwarenessEventBuilder::new().remove(self.local_id).build());
     }
   }
 
@@ -107,9 +102,7 @@ impl AwarenessEvent {
   pub fn get_updated(&self, states: &AwarenessStates) -> AwarenessStates {
     states
       .iter()
-      .filter(|(id, _)| {
-        self.added.contains(id) || self.updated.contains(id) || self.removed.contains(id)
-      })
+      .filter(|(id, _)| self.added.contains(id) || self.updated.contains(id) || self.removed.contains(id))
       .map(|(id, state)| (*id, state.clone()))
       .collect()
   }
@@ -187,14 +180,8 @@ mod tests {
         assert!(awareness.get_states().contains_key(&1));
 
         // local state will not apply
-        assert_eq!(
-          awareness.get_states().get(&0).unwrap().content,
-          "null".to_string()
-        );
-        assert_eq!(
-          awareness.get_states().get(&1).unwrap().content,
-          "test1".to_string()
-        );
+        assert_eq!(awareness.get_states().get(&0).unwrap().content, "null".to_string());
+        assert_eq!(awareness.get_states().get(&1).unwrap().content, "test1".to_string());
       }
 
       {

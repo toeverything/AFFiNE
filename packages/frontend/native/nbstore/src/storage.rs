@@ -3,9 +3,9 @@ use std::sync::Arc;
 use affine_schema::get_migrator;
 use memory_indexer::InMemoryIndex;
 use sqlx::{
+  Pool, Row,
   migrate::MigrateDatabase,
   sqlite::{Sqlite, SqliteConnectOptions, SqlitePoolOptions},
-  Pool, Row,
 };
 use tokio::sync::RwLock;
 
@@ -19,9 +19,7 @@ pub struct SqliteDocStorage {
 
 impl SqliteDocStorage {
   pub fn new(path: String) -> Self {
-    let sqlite_options = SqliteConnectOptions::new()
-      .filename(&path)
-      .foreign_keys(false);
+    let sqlite_options = SqliteConnectOptions::new().filename(&path).foreign_keys(false);
 
     let mut pool_options = SqlitePoolOptions::new();
 
@@ -94,9 +92,7 @@ impl SqliteDocStorage {
   /// Flush the WAL file to the database file.
   /// See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
   pub async fn checkpoint(&self) -> Result<()> {
-    sqlx::query("PRAGMA wal_checkpoint(FULL);")
-      .execute(&self.pool)
-      .await?;
+    sqlx::query("PRAGMA wal_checkpoint(FULL);").execute(&self.pool).await?;
 
     Ok(())
   }

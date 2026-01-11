@@ -6054,7 +6054,7 @@ checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "y-octo"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -6079,17 +6079,6 @@ dependencies = [
  "smol_str",
  "thiserror 2.0.17",
  "yrs",
-]
-
-[[package]]
-name = "y-octo-node"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "napi",
- "napi-build",
- "napi-derive",
- "y-octo",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-use affine_common::doc_parser::{parse_doc_from_binary, BlockInfo, CrawlResult, ParseError};
+use affine_common::doc_parser::{BlockInfo, CrawlResult, ParseError, parse_doc_from_binary};
 use memory_indexer::{SearchHit, SnapshotData};
 use napi_derive::napi;
 use serde::Serialize;
@@ -94,10 +94,7 @@ impl From<(u32, u32)> for NativeMatch {
 
 impl SqliteDocStorage {
   pub async fn crawl_doc_data(&self, doc_id: &str) -> Result<NativeCrawlResult> {
-    let doc_bin = self
-      .load_doc_binary(doc_id)
-      .await?
-      .ok_or(ParseError::DocNotFound)?;
+    let doc_bin = self.load_doc_binary(doc_id).await?.ok_or(ParseError::DocNotFound)?;
 
     let result = parse_doc_from_binary(doc_bin, doc_id.to_string())?;
     Ok(result.into())
@@ -113,8 +110,7 @@ impl SqliteDocStorage {
 
     updates.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
-    let mut segments =
-      Vec::with_capacity(snapshot.as_ref().map(|_| 1).unwrap_or(0) + updates.len());
+    let mut segments = Vec::with_capacity(snapshot.as_ref().map(|_| 1).unwrap_or(0) + updates.len());
     if let Some(record) = snapshot {
       segments.push(record.bin.to_vec());
     }
@@ -134,12 +130,10 @@ impl SqliteDocStorage {
       for row in snapshots {
         let index_name: String = row.get("index_name");
         let data: Vec<u8> = row.get("data");
-        if let Ok(decompressed) = zstd::stream::decode_all(std::io::Cursor::new(&data)) {
-          if let Ok((snapshot, _)) =
-            bincode::serde::decode_from_slice::<SnapshotData, _>(&decompressed, config)
-          {
-            index.load_snapshot(&index_name, snapshot);
-          }
+        if let Ok(decompressed) = zstd::stream::decode_all(std::io::Cursor::new(&data))
+          && let Ok((snapshot, _)) = bincode::serde::decode_from_slice::<SnapshotData, _>(&decompressed, config)
+        {
+          index.load_snapshot(&index_name, snapshot);
         }
       }
     }
@@ -156,8 +150,8 @@ impl SqliteDocStorage {
     if let Some(data) = snapshot_data {
       let blob = bincode::serde::encode_to_vec(&data, bincode::config::standard())
         .map_err(|e| Error::Serialization(e.to_string()))?;
-      let compressed = zstd::stream::encode_all(std::io::Cursor::new(&blob), 4)
-        .map_err(|e| Error::Serialization(e.to_string()))?;
+      let compressed =
+        zstd::stream::encode_all(std::io::Cursor::new(&blob), 4).map_err(|e| Error::Serialization(e.to_string()))?;
 
       let mut tx = self.pool.begin().await?;
 
@@ -201,13 +195,7 @@ impl SqliteDocStorage {
     memory_indexer::InMemoryIndex::snapshot_version()
   }
 
-  pub async fn fts_add(
-    &self,
-    index_name: &str,
-    doc_id: &str,
-    text: &str,
-    index: bool,
-  ) -> Result<()> {
+  pub async fn fts_add(&self, index_name: &str, doc_id: &str, text: &str, index: bool) -> Result<()> {
     let mut idx = self.index.write().await;
     idx.add_doc(index_name, doc_id, text, index);
     Ok(())
@@ -226,21 +214,10 @@ impl SqliteDocStorage {
 
   pub async fn fts_search(&self, index_name: &str, query: &str) -> Result<Vec<NativeSearchHit>> {
     let idx = self.index.read().await;
-    Ok(
-      idx
-        .search_hits(index_name, query)
-        .into_iter()
-        .map(Into::into)
-        .collect(),
-    )
+    Ok(idx.search_hits(index_name, query).into_iter().map(Into::into).collect())
   }
 
-  pub async fn fts_get_matches(
-    &self,
-    index_name: &str,
-    doc_id: &str,
-    query: &str,
-  ) -> Result<Vec<NativeMatch>> {
+  pub async fn fts_get_matches(&self, index_name: &str, doc_id: &str, query: &str) -> Result<Vec<NativeMatch>> {
     let idx = self.index.read().await;
     Ok(
       idx

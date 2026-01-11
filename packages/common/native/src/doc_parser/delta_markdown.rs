@@ -7,8 +7,7 @@ use std::{
 use y_octo::{AHashMap, Any, Map, Text, TextAttributes, TextDeltaOp, TextInsert, Value};
 
 use super::value::{
-  any_as_string, any_as_u64, any_truthy, build_reference_payload, params_any_map_to_json,
-  value_to_any,
+  any_as_string, any_as_u64, any_truthy, build_reference_payload, params_any_map_to_json, value_to_any,
 };
 
 #[derive(Debug, Clone)]
@@ -45,12 +44,7 @@ impl DeltaToMdOptions {
     }
 
     let mut parts = Vec::new();
-    parts.push(
-      reference
-        .ref_type
-        .clone()
-        .unwrap_or_else(|| "LinkedPage".into()),
-    );
+    parts.push(reference.ref_type.clone().unwrap_or_else(|| "LinkedPage".into()));
     parts.push(reference.page_id.clone());
     if let Some(mode) = reference.mode.as_ref() {
       parts.push(mode.clone());
@@ -60,22 +54,14 @@ impl DeltaToMdOptions {
   }
 }
 
-pub(super) fn text_to_markdown(
-  block: &Map,
-  key: &str,
-  options: &DeltaToMdOptions,
-) -> Option<String> {
+pub(super) fn text_to_markdown(block: &Map, key: &str, options: &DeltaToMdOptions) -> Option<String> {
   block
     .get(key)
     .and_then(|value| value.to_text())
     .map(|text| delta_to_markdown(&text, options))
 }
 
-pub(super) fn text_to_inline_markdown(
-  block: &Map,
-  key: &str,
-  options: &DeltaToMdOptions,
-) -> Option<String> {
+pub(super) fn text_to_inline_markdown(block: &Map, key: &str, options: &DeltaToMdOptions) -> Option<String> {
   block
     .get(key)
     .and_then(|value| value.to_text())
@@ -89,8 +75,7 @@ pub(super) fn extract_inline_references(delta: &[TextDeltaOp]) -> Vec<InlineRefe
   for op in delta {
     let attrs = match op {
       TextDeltaOp::Insert {
-        format: Some(format),
-        ..
+        format: Some(format), ..
       } => format,
       _ => continue,
     };
@@ -123,10 +108,7 @@ fn parse_inline_reference(value: &Any) -> Option<InlineReference> {
     _ => return None,
   };
 
-  let page_id = map
-    .get("pageId")
-    .and_then(any_as_string)
-    .map(str::to_string)?;
+  let page_id = map.get("pageId").and_then(any_as_string).map(str::to_string)?;
   let title = map.get("title").and_then(any_as_string).map(str::to_string);
   let ref_type = map.get("type").and_then(any_as_string).map(str::to_string);
   let params = map.get("params").and_then(|value| match value {
@@ -161,20 +143,12 @@ fn delta_to_inline_markdown(text: &Text, options: &DeltaToMdOptions) -> String {
   delta_to_markdown_with_options(&text.to_delta(), options, false)
 }
 
-fn delta_to_markdown_with_options(
-  delta: &[TextDeltaOp],
-  options: &DeltaToMdOptions,
-  trailing_newline: bool,
-) -> String {
+fn delta_to_markdown_with_options(delta: &[TextDeltaOp], options: &DeltaToMdOptions, trailing_newline: bool) -> String {
   let ops = build_delta_ops(delta);
   delta_ops_to_markdown_with_options(&ops, options, trailing_newline)
 }
 
-fn delta_ops_to_markdown_with_options(
-  ops: &[DeltaOp],
-  options: &DeltaToMdOptions,
-  trailing_newline: bool,
-) -> String {
+fn delta_ops_to_markdown_with_options(ops: &[DeltaOp], options: &DeltaToMdOptions, trailing_newline: bool) -> String {
   let root = convert_delta_ops(ops, options);
   let mut rendered = render_node(&root);
   rendered = rendered.trim_end().to_string();
@@ -235,10 +209,7 @@ fn delta_op_from_any(value: &Any) -> Option<DeltaOp> {
     _ => DeltaInsert::Embed(vec![insert_value.clone()]),
   };
 
-  let attributes = map
-    .get("attributes")
-    .and_then(any_to_attributes)
-    .unwrap_or_default();
+  let attributes = map.get("attributes").and_then(any_to_attributes).unwrap_or_default();
 
   Some(DeltaOp { insert, attributes })
 }
@@ -260,10 +231,7 @@ fn delta_any_to_inline_markdown(value: &Any, options: &DeltaToMdOptions) -> Opti
   delta_ops_from_any(value).map(|ops| delta_ops_to_markdown_with_options(&ops, options, false))
 }
 
-pub(super) fn delta_value_to_inline_markdown(
-  value: &Value,
-  options: &DeltaToMdOptions,
-) -> Option<String> {
+pub(super) fn delta_value_to_inline_markdown(value: &Value, options: &DeltaToMdOptions) -> Option<String> {
   if let Some(text) = value.to_text() {
     return Some(delta_to_inline_markdown(&text, options));
   }
@@ -428,13 +396,7 @@ fn convert_delta_ops(ops: &[DeltaOp], options: &DeltaToMdOptions) -> Rc<RefCell<
               }
             }
 
-            apply_inline_attributes(
-              &mut el,
-              &op.attributes,
-              next_attrs,
-              &mut active_inline,
-              options,
-            );
+            apply_inline_attributes(&mut el, &op.attributes, next_attrs, &mut active_inline, options);
             Node::append(&el, Node::new_text(segment));
             if line_index + 1 < lines.len() {
               new_line(&root, &mut line, &mut el, &mut active_inline);
@@ -504,10 +466,10 @@ fn apply_inline_attributes(
     if !is_inline_attribute(attr) || !any_truthy(value) {
       continue;
     }
-    if let Some(active) = active_inline.get(attr) {
-      if active == value {
-        continue;
-      }
+    if let Some(active) = active_inline.get(attr)
+      && active == value
+    {
+      continue;
     }
 
     let next_matches = next
@@ -532,11 +494,7 @@ fn apply_inline_attributes(
   }
 }
 
-fn inline_node_for_attr(
-  attr: &str,
-  attrs: &TextAttributes,
-  options: &DeltaToMdOptions,
-) -> Option<Rc<RefCell<Node>>> {
+fn inline_node_for_attr(attr: &str, attrs: &TextAttributes, options: &DeltaToMdOptions) -> Option<Rc<RefCell<Node>>> {
   match attr {
     "italic" => Some(Node::new_inline("_", "_")),
     "bold" => Some(Node::new_inline("**", "**")),
@@ -544,13 +502,10 @@ fn inline_node_for_attr(
       .get(attr)
       .and_then(any_as_string)
       .map(|url| Node::new_inline("[", &format!("]({url})"))),
-    "reference" => attrs
-      .get(attr)
-      .and_then(parse_inline_reference)
-      .map(|reference| {
-        let (title, link) = options.build_reference_link(&reference);
-        Node::new_inline("[", &format!("{title}]({link})"))
-      }),
+    "reference" => attrs.get(attr).and_then(parse_inline_reference).map(|reference| {
+      let (title, link) = options.build_reference_link(&reference);
+      Node::new_inline("[", &format!("{title}]({link})"))
+    }),
     "strike" => Some(Node::new_inline("~~", "~~")),
     "code" => Some(Node::new_inline("`", "`")),
     _ => None,
@@ -562,10 +517,7 @@ fn has_block_level_attribute(attrs: &TextAttributes) -> bool {
 }
 
 fn is_inline_attribute(attr: &str) -> bool {
-  matches!(
-    attr,
-    "italic" | "bold" | "link" | "reference" | "strike" | "code"
-  )
+  matches!(attr, "italic" | "bold" | "link" | "reference" | "strike" | "code")
 }
 
 fn encode_link(link: &str) -> String {
@@ -683,9 +635,7 @@ impl Node {
   fn append(parent: &Rc<RefCell<Node>>, child: Rc<RefCell<Node>>) {
     if let Some(old_parent) = child.borrow().parent.as_ref().and_then(|p| p.upgrade()) {
       let mut old_parent = old_parent.borrow_mut();
-      old_parent
-        .children
-        .retain(|existing| !Rc::ptr_eq(existing, &child));
+      old_parent.children.retain(|existing| !Rc::ptr_eq(existing, &child));
     }
 
     child.borrow_mut().parent = Some(Rc::downgrade(parent));

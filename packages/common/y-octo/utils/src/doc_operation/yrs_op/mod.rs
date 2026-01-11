@@ -14,8 +14,8 @@ use xml_element::*;
 use xml_fragment::*;
 use xml_text::*;
 use yrs::{
-  Array, ArrayPrelim, ArrayRef, Doc, GetString, Map, MapPrelim, MapRef, Text, TextPrelim, TextRef,
-  Transact, XmlFragment, XmlTextPrelim, XmlTextRef,
+  Array, ArrayPrelim, ArrayRef, Doc, GetString, Map, MapPrelim, MapRef, Text, TextPrelim, TextRef, Transact,
+  XmlFragment, XmlTextPrelim, XmlTextRef,
 };
 
 use super::*;
@@ -66,12 +66,7 @@ impl OpsRegistry<'_> {
     }
   }
 
-  pub fn operate_yrs_nest_type(
-    &self,
-    doc: &yrs::Doc,
-    cur_crdt_nest_type: YrsNestType,
-    crdt_param: CRDTParam,
-  ) {
+  pub fn operate_yrs_nest_type(&self, doc: &yrs::Doc, cur_crdt_nest_type: YrsNestType, crdt_param: CRDTParam) {
     let ops = self.get_ops_from_yrs_nest_type(&cur_crdt_nest_type);
     ops
       .get(match &crdt_param.nest_data_op_type {
@@ -83,11 +78,7 @@ impl OpsRegistry<'_> {
   }
 }
 
-pub fn yrs_create_nest_type_from_root(
-  doc: &yrs::Doc,
-  target_type: CRDTNestType,
-  key: &str,
-) -> YrsNestType {
+pub fn yrs_create_nest_type_from_root(doc: &yrs::Doc, target_type: CRDTNestType, key: &str) -> YrsNestType {
   match target_type {
     CRDTNestType::Array => YrsNestType::ArrayType(doc.get_or_insert_array(key)),
     CRDTNestType::Map => YrsNestType::MapType(doc.get_or_insert_map(key)),
@@ -141,17 +132,13 @@ pub fn gen_nest_type_from_nest_type(
   nest_type: &mut YrsNestType,
 ) -> Option<YrsNestType> {
   match crdt_param.new_nest_type {
-    CRDTNestType::Array => {
-      yrs_create_array_from_nest_type(doc, nest_type, &crdt_param.insert_pos, crdt_param.key)
-        .map(YrsNestType::ArrayType)
-    }
+    CRDTNestType::Array => yrs_create_array_from_nest_type(doc, nest_type, &crdt_param.insert_pos, crdt_param.key)
+      .map(YrsNestType::ArrayType),
     CRDTNestType::Map => {
-      yrs_create_map_from_nest_type(doc, nest_type, &crdt_param.insert_pos, crdt_param.key)
-        .map(YrsNestType::MapType)
+      yrs_create_map_from_nest_type(doc, nest_type, &crdt_param.insert_pos, crdt_param.key).map(YrsNestType::MapType)
     }
     CRDTNestType::Text => {
-      yrs_create_text_from_nest_type(doc, nest_type, &crdt_param.insert_pos, crdt_param.key)
-        .map(YrsNestType::TextType)
+      yrs_create_text_from_nest_type(doc, nest_type, &crdt_param.insert_pos, crdt_param.key).map(YrsNestType::TextType)
     }
     _ => None,
   }
