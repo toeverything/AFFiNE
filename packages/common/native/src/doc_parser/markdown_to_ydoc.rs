@@ -115,9 +115,12 @@ pub fn markdown_to_ydoc(markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseEr
 
 /// Builds the y-octo document from parsed blocks.
 ///
-/// Uses a one-phase approach: each block is fully built before inserting into
-/// the blocks map. This avoids a bug in y-octo where getting maps back after
-/// insertion and populating them causes hangs with 7+ nested maps.
+/// Uses a two-phase approach to ensure Yjs compatibility:
+/// 1. Phase 1: Create and insert empty maps into blocks_map (establishes parent items)
+/// 2. Phase 2: Populate each map with properties (child items reference existing parents)
+///
+/// This ordering ensures that when items reference their parent map's ID in the
+/// encoded binary, the parent ID always has a lower clock value, which Yjs requires.
 fn build_ydoc(
   doc_id: &str,
   title: &str,
@@ -136,59 +139,90 @@ fn build_ydoc(
   let page_id = nanoid::nanoid!();
   let note_id = nanoid::nanoid!();
 
-  // Build and insert page block
-  let page_block = build_block_map(
-    &doc,
-    &page_id,
-    PAGE_FLAVOUR,
-    Some(title),
-    None,
-    None,
-    None,
-    None,
-    vec![note_id.clone()],
-  )?;
+  // ==== PHASE 1: Insert empty maps to establish parent items ====
+  // This ensures parent items have lower clock values than their children
+
+  // Insert empty page block map
   blocks_map
-    .insert(page_id.clone(), page_block)
+    .insert(
+      page_id.clone(),
+      doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?,
+    )
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Build and insert note block
-  let note_block = build_block_map(
-    &doc,
-    &note_id,
-    NOTE_FLAVOUR,
-    None,
-    None,
-    None,
-    None,
-    None,
-    content_block_ids.clone(),
-  )?;
+  // Insert empty note block map
   blocks_map
-    .insert(note_id.clone(), note_block)
+    .insert(
+      note_id.clone(),
+      doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?,
+    )
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Build and insert content blocks
-  for block in content_blocks {
-    let content_block = build_block_map(
-      &doc,
-      &block.id,
-      &block.flavour,
-      None,
-      if block.text_content.is_empty() {
-        None
-      } else {
-        Some(&block.text_content)
-      },
-      block.block_type,
-      block.checked,
-      block.code_language.as_deref(),
-      Vec::new(),
-    )?;
-
+  // Insert empty content block maps
+  for block in &content_blocks {
     blocks_map
-      .insert(block.id.clone(), content_block)
+      .insert(
+        block.id.clone(),
+        doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?,
+      )
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // ==== PHASE 2: Populate the maps with their properties ====
+  // Now each map has an item with a lower clock, so children will reference correctly
+
+  // Populate page block
+  if let Some(page_map) = blocks_map.get(&page_id).and_then(|v| v.to_map()) {
+    populate_block_map(
+      &doc,
+      page_map,
+      &page_id,
+      PAGE_FLAVOUR,
+      Some(title),
+      None,
+      None,
+      None,
+      None,
+      vec![note_id.clone()],
+    )?;
+  }
+
+  // Populate note block
+  if let Some(note_map) = blocks_map.get(&note_id).and_then(|v| v.to_map()) {
+    populate_block_map(
+      &doc,
+      note_map,
+      &note_id,
+      NOTE_FLAVOUR,
+      None,
+      None,
+      None,
+      None,
+      None,
+      content_block_ids.clone(),
+    )?;
+  }
+
+  // Populate content blocks
+  for block in content_blocks {
+    if let Some(block_map) = blocks_map.get(&block.id).and_then(|v| v.to_map()) {
+      populate_block_map(
+        &doc,
+        block_map,
+        &block.id,
+        &block.flavour,
+        None,
+        if block.text_content.is_empty() {
+          None
+        } else {
+          Some(&block.text_content)
+        },
+        block.block_type,
+        block.checked,
+        block.code_language.as_deref(),
+        Vec::new(),
+      )?;
+    }
   }
 
   // Encode the document
@@ -197,14 +231,20 @@ fn build_ydoc(
     .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
-/// Builds a block map with the given properties.
+/// Populates an existing block map with the given properties.
 ///
-/// This function creates a complete block map that can be inserted into the blocks map.
-/// All properties are set before returning, avoiding the "get back and populate" pattern
-/// which causes hangs with many nested maps in y-octo.
+/// This function takes an already-inserted map and populates it with properties.
+/// The two-phase approach (insert empty map first, then populate) ensures that
+/// when child items reference the map as their parent, the parent's clock is lower.
+///
+/// IMPORTANT: We use Any types (Any::Array, Any::String) instead of CRDT types
+/// (y_octo::Array, y_octo::Text) for nested values. Any types are encoded inline
+/// as part of the item content, avoiding the forward reference issue where child
+/// items would reference a parent with a higher clock value.
 #[allow(clippy::too_many_arguments)]
-fn build_block_map(
-  doc: &y_octo::Doc,
+fn populate_block_map(
+  _doc: &y_octo::Doc,
+  mut block: y_octo::Map,
   block_id: &str,
   flavour: &str,
   title: Option<&str>,
@@ -213,9 +253,7 @@ fn build_block_map(
   checked: Option<bool>,
   code_language: Option<&str>,
   children: Vec<String>,
-) -> Result<y_octo::Map, ParseError> {
-  let mut block = doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?;
-
+) -> Result<(), ParseError> {
   // Required fields
   block
     .insert("sys:id".to_string(), Any::String(block_id.to_string()))
@@ -224,15 +262,10 @@ fn build_block_map(
     .insert("sys:flavour".to_string(), Any::String(flavour.to_string()))
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
-  // Children
-  let mut children_array = doc.create_array().map_err(|e| ParseError::ParserError(e.to_string()))?;
-  for (idx, child_id) in children.into_iter().enumerate() {
-    children_array
-      .insert(idx as u64, Any::String(child_id))
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-  }
+  // Children - use Any::Array which is encoded inline (no forward references)
+  let children_any: Vec<Any> = children.into_iter().map(Any::String).collect();
   block
-    .insert("sys:children".to_string(), children_array)
+    .insert("sys:children".to_string(), Any::Array(children_any))
     .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
   // Title
@@ -242,14 +275,11 @@ fn build_block_map(
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // Text content
+  // Text content - use Any::String instead of Y.Text
+  // This is simpler and avoids CRDT overhead for initial document creation
   if let Some(content) = text_content {
-    let mut text = doc.create_text().map_err(|e| ParseError::ParserError(e.to_string()))?;
-    text
-      .insert(0, content)
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
     block
-      .insert("prop:text".to_string(), text)
+      .insert("prop:text".to_string(), Any::String(content.to_string()))
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
@@ -277,7 +307,7 @@ fn build_block_map(
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  Ok(block)
+  Ok(())
 }
 
 #[cfg(test)]
