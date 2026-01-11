@@ -1,20 +1,32 @@
 //! Update YDoc module
 //!
-//! Provides functionality to update existing AFFiNE documents by applying
-//! surgical y-octo operations based on content differences.
+//! Provides functionality to update existing AFFiNE documents.
+//!
+//! Currently, updates replace the entire document content rather than computing
+//! deltas due to y-octo/Yjs binary encoding incompatibility. The structural
+//! diff code is preserved for future use when this is resolved.
 
+// These imports and types are used by the delta diff code which is currently
+// disabled but preserved for future use. Suppress unused warnings.
+#[allow(unused_imports)]
 use std::collections::HashMap;
 
+#[allow(unused_imports)]
 use y_octo::{Any, Doc, DocOptions, Map};
 
 use super::affine::ParseError;
+#[allow(unused_imports)]
 use super::blocksuite::{collect_child_ids, get_string};
+#[allow(unused_imports)]
 use super::markdown_utils::{BlockFlavour, ParsedBlock, extract_title, parse_markdown_blocks};
 
+#[allow(dead_code)]
 const PAGE_FLAVOUR: &str = "affine:page";
+#[allow(dead_code)]
 const NOTE_FLAVOUR: &str = "affine:note";
 
 /// Represents a content block for diffing purposes
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct ContentBlock {
   pub flavour: String,
@@ -24,6 +36,7 @@ pub struct ContentBlock {
   pub language: Option<String>, // For code blocks
 }
 
+#[allow(dead_code)]
 impl ContentBlock {
   /// Check if two blocks are similar enough to be considered "the same" for diffing
   fn is_similar(&self, other: &ContentBlock) -> bool {
@@ -32,6 +45,7 @@ impl ContentBlock {
 }
 
 /// Converts a ParsedBlock from the shared parser into a ContentBlock
+#[allow(dead_code)]
 impl From<ParsedBlock> for ContentBlock {
   fn from(parsed: ParsedBlock) -> Self {
     // Default paragraph type to "text" to match existing documents
@@ -52,6 +66,7 @@ impl From<ParsedBlock> for ContentBlock {
 }
 
 /// Represents the existing document structure
+#[allow(dead_code)]
 struct ExistingDoc {
   doc: Doc,
   page_id: String,
@@ -61,6 +76,7 @@ struct ExistingDoc {
 }
 
 /// Represents a diff operation
+#[allow(dead_code)]
 #[derive(Debug)]
 enum DiffOp {
   Keep(usize),          // old_idx - block unchanged
@@ -71,57 +87,31 @@ enum DiffOp {
 
 /// Updates an existing document with new markdown content.
 ///
-/// This function performs structural diffing between the existing document
-/// and the new markdown content, then applies minimal y-octo operations
-/// to update only what changed. This enables proper CRDT merging with
-/// concurrent edits from other clients.
+/// Currently, this function replaces the entire document content rather than
+/// computing a delta. This is because y-octo's delta encoding is not fully
+/// compatible with Yjs when applied to existing documents.
 ///
-/// If the existing document is empty or invalid, falls back to creating
-/// a new document from the markdown using `markdown_to_ydoc`.
+/// Future improvement: Implement proper delta computation once y-octo/Yjs
+/// binary compatibility is resolved.
 ///
 /// # Arguments
-/// * `existing_binary` - The current document binary
+/// * `_existing_binary` - The current document binary (currently unused)
 /// * `new_markdown` - The new markdown content
 /// * `doc_id` - The document ID
 ///
 /// # Returns
-/// A binary vector representing only the delta (changes) to apply
-pub fn update_ydoc(existing_binary: &[u8], new_markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseError> {
-  // Load and parse the existing document
-  // If the document is empty or invalid, fall back to creating a new one
-  let mut existing = match load_existing_doc(existing_binary, doc_id) {
-    Ok(doc) => doc,
-    Err(ParseError::InvalidBinary) | Err(ParseError::ParserError(_)) => {
-      // Empty or invalid document - create from scratch
-      return super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id);
-    }
-    Err(e) => return Err(e),
-  };
-
-  // Parse new markdown into content blocks
-  let new_blocks = parse_markdown_to_content_blocks(new_markdown)?;
-
-  // Compute diff between old and new blocks
-  let diff_ops = compute_diff(&existing.content_blocks, &new_blocks);
-
-  // Capture state before modifications to encode only the delta
-  let state_before = existing.doc.get_state_vector();
-
-  // Update the title if changed
-  let new_title = extract_title(new_markdown);
-  update_title(&mut existing, &new_title)?;
-
-  // Apply diff operations to update the document structure
-  apply_diff(&mut existing, &new_blocks, &diff_ops)?;
-
-  // Encode only the changes (delta) since state_before
-  existing
-    .doc
-    .encode_state_as_update_v1(&state_before)
-    .map_err(|e| ParseError::ParserError(e.to_string()))
+/// A binary vector containing the full document (replaces existing content)
+pub fn update_ydoc(_existing_binary: &[u8], new_markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseError> {
+  // Due to y-octo/Yjs delta encoding incompatibility, we create a fresh document
+  // with the new content. This replaces the document entirely rather than merging.
+  //
+  // TODO: Implement proper delta computation when y-octo produces Yjs-compatible
+  // deltas. The structural diff code below can be re-enabled at that time.
+  super::markdown_to_ydoc::markdown_to_ydoc(new_markdown, doc_id)
 }
 
 /// Loads an existing document and extracts its structure
+#[allow(dead_code)]
 fn load_existing_doc(binary: &[u8], doc_id: &str) -> Result<ExistingDoc, ParseError> {
   // Check for empty or minimal empty Y-Doc binary
   // [0, 0] represents an empty Y-Doc update (0 structs, 0 deletes) - a convention
@@ -194,6 +184,7 @@ fn load_existing_doc(binary: &[u8], doc_id: &str) -> Result<ExistingDoc, ParseEr
 }
 
 /// Extracts content block data from a y-octo Map
+#[allow(dead_code)]
 fn extract_content_block(block: &Map) -> ContentBlock {
   let flavour = get_string(block, "sys:flavour").unwrap_or_default();
   let block_type = get_string(block, "prop:type");
@@ -224,12 +215,14 @@ fn extract_content_block(block: &Map) -> ContentBlock {
 /// Parses markdown into content blocks for diffing.
 ///
 /// Uses the shared `parse_markdown_blocks` function and converts to `ContentBlock`.
+#[allow(dead_code)]
 fn parse_markdown_to_content_blocks(markdown: &str) -> Result<Vec<ContentBlock>, ParseError> {
   let parsed_blocks = parse_markdown_blocks(markdown, true);
   Ok(parsed_blocks.into_iter().map(ContentBlock::from).collect())
 }
 
 /// Updates the document title if it has changed
+#[allow(dead_code)]
 fn update_title(existing: &mut ExistingDoc, new_title: &str) -> Result<(), ParseError> {
   let blocks_map = existing
     .doc
@@ -251,6 +244,7 @@ fn update_title(existing: &mut ExistingDoc, new_title: &str) -> Result<(), Parse
 /// Computes the diff between old and new blocks using weighted LCS algorithm.
 /// Uses a two-tier matching: exact matches (same type + content) get priority,
 /// then similar matches (same type, different content) for update operations.
+#[allow(dead_code)]
 fn compute_diff(old_blocks: &[(String, ContentBlock)], new_blocks: &[ContentBlock]) -> Vec<DiffOp> {
   let old_len = old_blocks.len();
   let new_len = new_blocks.len();
@@ -338,6 +332,7 @@ fn compute_diff(old_blocks: &[(String, ContentBlock)], new_blocks: &[ContentBloc
 }
 
 /// Applies diff operations to update the document
+#[allow(dead_code)]
 fn apply_diff(existing: &mut ExistingDoc, new_blocks: &[ContentBlock], diff_ops: &[DiffOp]) -> Result<(), ParseError> {
   let mut blocks_map = existing
     .doc
@@ -427,6 +422,7 @@ fn apply_diff(existing: &mut ExistingDoc, new_blocks: &[ContentBlock], diff_ops:
 // avoiding "forward parent references" that YJS cannot handle.
 
 /// Creates an empty Text, inserts it into the parent map, then returns it for population.
+#[allow(dead_code)]
 fn insert_and_get_text(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_octo::Text, ParseError> {
   let text = doc.create_text().map_err(|e| ParseError::ParserError(e.to_string()))?;
   parent_map
@@ -440,6 +436,7 @@ fn insert_and_get_text(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_o
 }
 
 /// Creates an empty Array, inserts it into the parent map, then returns it for population.
+#[allow(dead_code)]
 fn insert_and_get_array(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_octo::Array, ParseError> {
   let array = doc.create_array().map_err(|e| ParseError::ParserError(e.to_string()))?;
   parent_map
@@ -458,6 +455,7 @@ fn insert_and_get_array(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_
 /// 1. Insert empty map into blocks_map first (gets clock value)
 /// 2. Then populate the map with properties (gets later clock values)
 /// This ensures parent items have earlier clocks than children.
+#[allow(dead_code)]
 fn create_new_block(blocks_map: &mut Map, doc: &Doc, block: &ContentBlock) -> Result<String, ParseError> {
   let block_id = nanoid::nanoid!();
 
@@ -514,6 +512,7 @@ fn create_new_block(blocks_map: &mut Map, doc: &Doc, block: &ContentBlock) -> Re
 }
 
 /// Updates an existing block's content using text-level diff
+#[allow(dead_code)]
 fn update_block_content(
   doc: &mut Doc,
   blocks_map: &mut Map,
@@ -576,6 +575,7 @@ fn update_block_content(
 }
 
 /// Applies a text-level diff to a YText field
+#[allow(dead_code)]
 fn apply_text_diff(text: &mut y_octo::Text, old_content: &str, new_content: &str) -> Result<(), ParseError> {
   // Use greedy diff algorithm for character-level changes
   let old_chars: Vec<char> = old_content.chars().collect();
@@ -630,6 +630,7 @@ fn apply_text_diff(text: &mut y_octo::Text, old_content: &str, new_content: &str
   Ok(())
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum TextDiffOp {
   /// Delete operation with UTF-16 code unit positions
@@ -640,6 +641,7 @@ enum TextDiffOp {
 
 /// Computes character-level diff between two strings using greedy matching.
 /// Returns operations with UTF-16 code unit positions (required by y_octo).
+#[allow(dead_code)]
 fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
   // Find common prefix
   let mut prefix_len = 0;
@@ -773,6 +775,7 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
 }
 
 /// Updates the note block's children array, only if the children have changed
+#[allow(dead_code)]
 fn update_note_children(
   blocks_map: &mut Map,
   note_id: &str,
@@ -936,213 +939,71 @@ mod tests {
   }
 
   #[test]
-  fn test_update_ydoc_roundtrip() {
-    use crate::doc_parser::markdown_to_ydoc;
-
-    // Create initial document
-    let initial_md = "# Test Document\n\nFirst paragraph.\n\nSecond paragraph.";
+  fn test_update_ydoc_creates_valid_document() {
+    // Since update_ydoc now creates a fresh document (not delta),
+    // we just verify the output is a valid document
+    let markdown = "# Test Document\n\nFirst paragraph.\n\nSecond paragraph.";
     let doc_id = "update-test";
 
-    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
+    // Existing binary doesn't matter - we create fresh
+    let result = update_ydoc(&[], markdown, doc_id).expect("Should create doc");
+    assert!(!result.is_empty(), "Result should not be empty");
 
-    // Update with new content
-    let updated_md = "# Test Document\n\nFirst paragraph.\n\nModified second paragraph.\n\nNew third paragraph.";
-
-    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
-
-    // Delta should not be empty (changes were made)
-    assert!(!delta.is_empty(), "Delta should contain changes");
-
-    // Apply delta to original and verify structure
+    // Verify it's a valid document
     let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    doc
-      .apply_update_from_binary_v1(&initial_bin)
-      .expect("Should apply initial");
-    doc.apply_update_from_binary_v1(&delta).expect("Should apply delta");
+    doc.apply_update_from_binary_v1(&result).expect("Should apply result");
 
-    // Verify the document has the expected structure
     let blocks_map = doc.get_map("blocks").expect("Should have blocks");
     assert!(!blocks_map.is_empty(), "Blocks should not be empty");
   }
 
   #[test]
-  fn test_update_ydoc_title_change() {
-    use crate::doc_parser::markdown_to_ydoc;
+  fn test_update_ydoc_with_different_content() {
+    // Test that update_ydoc correctly creates a document with new content
+    let markdown = "# New Title\n\nCompletely new content.";
+    let doc_id = "update-new-content-test";
 
-    let initial_md = "# Original Title\n\nContent here.";
-    let doc_id = "title-test";
+    // Even with existing binary, we create fresh with new content
+    let existing = vec![0, 0]; // Empty doc binary
+    let result = update_ydoc(&existing, markdown, doc_id).expect("Should create doc");
 
-    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
-
-    let updated_md = "# New Title\n\nContent here.";
-    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
-
-    // Apply and verify
     let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    doc
-      .apply_update_from_binary_v1(&initial_bin)
-      .expect("Should apply initial");
-    doc.apply_update_from_binary_v1(&delta).expect("Should apply delta");
+    doc.apply_update_from_binary_v1(&result).expect("Should apply result");
 
     let blocks_map = doc.get_map("blocks").expect("Should have blocks");
-    assert!(!blocks_map.is_empty());
+    // Should have: page + note + 1 content block = 3 blocks
+    assert!(blocks_map.len() >= 3, "Should have at least 3 blocks");
   }
 
   #[test]
-  fn test_update_ydoc_no_changes() {
-    use crate::doc_parser::markdown_to_ydoc;
+  fn test_update_ydoc_with_complex_content() {
+    // Test that update_ydoc handles complex markdown
+    let markdown = r#"# Complex Document
 
-    let markdown = "# Same Title\n\nSame content.";
-    let doc_id = "no-change-test";
+## Section 1
 
-    let initial_bin = markdown_to_ydoc(markdown, doc_id).expect("Should create initial doc");
+Paragraph text here.
 
-    // Update with identical content
-    let delta = update_ydoc(&initial_bin, markdown, doc_id).expect("Should compute delta");
+- List item 1
+- List item 2
 
-    // Applying the delta should not fail
+```rust
+fn main() {}
+```
+
+---
+
+Final paragraph.
+"#;
+    let doc_id = "update-complex-test";
+
+    let result = update_ydoc(&[], markdown, doc_id).expect("Should create doc");
+
     let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    doc
-      .apply_update_from_binary_v1(&initial_bin)
-      .expect("Should apply initial");
-    doc
-      .apply_update_from_binary_v1(&delta)
-      .expect("Should apply delta even with no changes");
-
-    // Document should still be valid
-    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
-    assert!(!blocks_map.is_empty());
-  }
-
-  #[test]
-  fn test_update_ydoc_add_block() {
-    use crate::doc_parser::markdown_to_ydoc;
-
-    // Create initial document with one paragraph
-    let initial_md = "# Add Block Test\n\nOriginal paragraph.";
-    let doc_id = "add-block-test";
-
-    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
-    let initial_size = initial_bin.len();
-
-    // Add a new paragraph
-    let updated_md = "# Add Block Test\n\nOriginal paragraph.\n\nNew paragraph added.";
-    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
-
-    // Delta should be smaller than a full document (indicates true delta encoding)
-    // Note: For small changes, delta might not always be smaller due to overhead
-    assert!(!delta.is_empty(), "Delta should contain changes");
-
-    // Apply delta and verify
-    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    doc
-      .apply_update_from_binary_v1(&initial_bin)
-      .expect("Should apply initial");
-    doc
-      .apply_update_from_binary_v1(&delta)
-      .expect("Should apply delta with new block");
-
-    // Verify block count increased
-    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
-    let block_count = blocks_map.len();
-    // Should have: page + note + 2 content blocks = 4 blocks
-    assert!(block_count >= 4, "Should have at least 4 blocks, got {}", block_count);
-
-    println!(
-      "Add block test: initial={} bytes, delta={} bytes, blocks={}",
-      initial_size,
-      delta.len(),
-      block_count
-    );
-  }
-
-  #[test]
-  fn test_update_ydoc_delete_block() {
-    use crate::doc_parser::markdown_to_ydoc;
-
-    // Create initial document with two paragraphs
-    let initial_md = "# Delete Block Test\n\nFirst paragraph.\n\nSecond paragraph to delete.";
-    let doc_id = "delete-block-test";
-
-    let initial_bin = markdown_to_ydoc(initial_md, doc_id).expect("Should create initial doc");
-
-    // Remove the second paragraph
-    let updated_md = "# Delete Block Test\n\nFirst paragraph.";
-    let delta = update_ydoc(&initial_bin, updated_md, doc_id).expect("Should compute delta");
-
-    assert!(!delta.is_empty(), "Delta should contain changes");
-
-    // Apply delta and verify
-    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    doc
-      .apply_update_from_binary_v1(&initial_bin)
-      .expect("Should apply initial");
-    doc
-      .apply_update_from_binary_v1(&delta)
-      .expect("Should apply delta with block deletion");
-
-    // Verify document still valid
-    let blocks_map = doc.get_map("blocks").expect("Should have blocks");
-    assert!(!blocks_map.is_empty(), "Blocks should not be empty after deletion");
-  }
-
-  #[test]
-  fn test_update_ydoc_concurrent_merge_simulation() {
-    use crate::doc_parser::markdown_to_ydoc;
-
-    // This test simulates concurrent editing by creating two different updates
-    // from the same base document and merging them.
-    let base_md = "# Concurrent Test\n\nBase paragraph.";
-    let doc_id = "concurrent-test";
-
-    let base_bin = markdown_to_ydoc(base_md, doc_id).expect("Should create base doc");
-
-    // Client A modifies the paragraph
-    let client_a_md = "# Concurrent Test\n\nModified by client A.";
-    let delta_a = update_ydoc(&base_bin, client_a_md, doc_id).expect("Delta A");
-
-    // Client B adds a new paragraph (from same base)
-    let client_b_md = "# Concurrent Test\n\nBase paragraph.\n\nAdded by client B.";
-    let delta_b = update_ydoc(&base_bin, client_b_md, doc_id).expect("Delta B");
-
-    // Apply both deltas to base document
-    let mut final_doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    final_doc.apply_update_from_binary_v1(&base_bin).expect("Apply base");
-    final_doc.apply_update_from_binary_v1(&delta_a).expect("Apply delta A");
-    final_doc.apply_update_from_binary_v1(&delta_b).expect("Apply delta B");
-
-    // Document should be valid with merged changes
-    let blocks_map = final_doc.get_map("blocks").expect("Should have blocks");
-    assert!(!blocks_map.is_empty(), "Merged document should have blocks");
-
-    // Should have more blocks than just page + note + 1 paragraph
-    // The merge should result in at least 4 blocks (page, note, modified para, new para)
-    let block_count = blocks_map.len();
-    println!("Concurrent merge test: final block count = {}", block_count);
-    assert!(block_count >= 4, "Should have merged blocks, got {}", block_count);
-  }
-
-  #[test]
-  fn test_update_ydoc_empty_binary_fallback() {
-    // Test that update_ydoc falls back to markdown_to_ydoc for empty binaries
-    let markdown = "# New Document\n\nCreated from empty binary.";
-    let doc_id = "empty-fallback-test";
-
-    // Empty binary should trigger fallback
-    let result = update_ydoc(&[], markdown, doc_id).expect("Should create from empty");
-    assert!(!result.is_empty(), "Result should not be empty");
-
-    // [0, 0] minimal empty binary should also trigger fallback
-    let result = update_ydoc(&[0, 0], markdown, doc_id).expect("Should create from minimal empty");
-    assert!(!result.is_empty(), "Result should not be empty");
-
-    // Verify the result is a valid document
-    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
-    doc
-      .apply_update_from_binary_v1(&result)
-      .expect("Should apply created doc");
+    doc.apply_update_from_binary_v1(&result).expect("Should apply result");
 
     let blocks_map = doc.get_map("blocks").expect("Should have blocks");
-    assert!(!blocks_map.is_empty(), "Document created from empty should have blocks");
+    // Should have multiple blocks for complex content
+    assert!(blocks_map.len() >= 5, "Should have many blocks for complex content");
   }
 }

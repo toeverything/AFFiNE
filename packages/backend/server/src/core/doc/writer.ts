@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
-import { markdownToDocBinary, updateDocWithMarkdown } from '../../native';
+import { markdownToDocBinary } from '../../native';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 export interface CreateDocResult {
@@ -49,9 +49,12 @@ export class DocWriter {
   /**
    * Updates an existing document with new markdown content.
    *
-   * Uses structural diffing to compute minimal changes between the existing
-   * document and new markdown, then applies only the delta. This preserves
-   * document history and enables proper CRDT merging with concurrent edits.
+   * Due to y-octo/Yjs binary format incompatibility, this method deletes
+   * the existing document and creates a fresh one with the new content.
+   * This replaces the document entirely rather than merging changes.
+   *
+   * Note: This approach loses document history and concurrent edits.
+   * A proper CRDT merge implementation requires Yjs compatibility.
    *
    * @param workspaceId - The workspace ID
    * @param docId - The document ID to update
@@ -68,25 +71,21 @@ export class DocWriter {
       `Updating doc ${docId} in workspace ${workspaceId} from markdown`
     );
 
-    // Fetch existing document
+    // Verify the document exists
     const existingDoc = await this.storage.getDoc(workspaceId, docId);
     if (!existingDoc?.bin) {
       throw new NotFoundException(`Document ${docId} not found`);
     }
 
-    // Compute delta update using structural diff
-    // Use zero-copy buffer view when possible for native function
-    const existingBinary = Buffer.isBuffer(existingDoc.bin)
-      ? existingDoc.bin
-      : Buffer.from(
-          existingDoc.bin.buffer,
-          existingDoc.bin.byteOffset,
-          existingDoc.bin.byteLength
-        );
-    const delta = updateDocWithMarkdown(existingBinary, markdown, docId);
+    // Delete the existing document
+    // This clears all stored updates and the snapshot
+    await this.storage.deleteDoc(workspaceId, docId);
 
-    // Push only the delta changes
-    await this.storage.pushDocUpdates(workspaceId, docId, [delta], editorId);
+    // Create a fresh document with the new content
+    const binary = markdownToDocBinary(markdown, docId);
+
+    // Push as a new document
+    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
 
     return { success: true };
   }
