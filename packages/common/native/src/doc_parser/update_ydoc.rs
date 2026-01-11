@@ -774,34 +774,21 @@ fn update_note_children(
     .ok_or_else(|| ParseError::ParserError("Note block not found".into()))?;
 
   // Get existing children array
+  // Note: Caller already checks if children changed, so no redundant check here
   if let Some(mut children) = note_block.get("sys:children").and_then(|v| v.to_array()) {
-    // Check if children actually changed
-    let existing_children: Vec<String> = children
-      .iter()
-      .filter_map(|v| {
-        v.to_any().and_then(|a| match a {
-          Any::String(s) => Some(s.clone()),
-          _ => None,
-        })
-      })
-      .collect();
+    // Clear existing children
+    let len = children.len();
+    if len > 0 {
+      children
+        .remove(0, len)
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    }
 
-    // Only update if different
-    if existing_children != new_children {
-      // Clear existing children
-      let len = children.len();
-      if len > 0 {
-        children
-          .remove(0, len)
-          .map_err(|e| ParseError::ParserError(e.to_string()))?;
-      }
-
-      // Add new children
-      for (idx, child_id) in new_children.into_iter().enumerate() {
-        children
-          .insert(idx as u64, Any::String(child_id))
-          .map_err(|e| ParseError::ParserError(e.to_string()))?;
-      }
+    // Add new children
+    for (idx, child_id) in new_children.into_iter().enumerate() {
+      children
+        .insert(idx as u64, Any::String(child_id))
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
     }
   } else {
     // Create new children array using Any::Array (avoids "get back" pattern)

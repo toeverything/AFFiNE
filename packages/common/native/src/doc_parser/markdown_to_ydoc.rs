@@ -19,6 +19,7 @@ struct BlockBuilder {
   block_type: Option<BlockType>,
   checked: Option<bool>,
   code_language: Option<String>,
+  #[allow(dead_code)] // Reserved for future nested block support
   children: Vec<String>,
 }
 
@@ -55,11 +56,6 @@ impl BlockBuilder {
       self.code_language = Some(lang.to_string());
     }
     self
-  }
-
-  #[allow(dead_code)]
-  fn add_child(&mut self, child_id: &str) {
-    self.children.push(child_id.to_string());
   }
 }
 

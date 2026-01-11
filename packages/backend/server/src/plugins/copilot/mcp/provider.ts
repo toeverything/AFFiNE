@@ -195,7 +195,10 @@ export class WorkspaceMcpProvider {
           const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
 
           // Strip any leading H1 from content to prevent duplicates
-          const strippedContent = content.replace(/^#\s+[^\n]*\n*/, '').trim();
+          // Handles: "# Title", "  # Title", "# Title #", "# Title ##"
+          const strippedContent = content
+            .replace(/^\s*#\s+[^\n]*#*\s*\n*/, '')
+            .trim();
 
           const markdown = `# ${sanitizedTitle}\n\n${strippedContent}`;
 

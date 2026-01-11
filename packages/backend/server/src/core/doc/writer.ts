@@ -33,7 +33,7 @@ export class DocWriter {
   ): Promise<CreateDocResult> {
     const docId = nanoid();
 
-    this.logger.log(
+    this.logger.debug(
       `Creating doc ${docId} in workspace ${workspaceId} from markdown`
     );
 
@@ -64,7 +64,7 @@ export class DocWriter {
     markdown: string,
     editorId?: string
   ): Promise<UpdateDocResult> {
-    this.logger.log(
+    this.logger.debug(
       `Updating doc ${docId} in workspace ${workspaceId} from markdown`
     );
 
