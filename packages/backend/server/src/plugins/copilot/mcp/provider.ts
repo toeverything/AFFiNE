@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { pick } from 'lodash-es';
 import z from 'zod/v3';
 
-import { DocReader } from '../../../core/doc';
+import { DocReader, DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { clearEmbeddingChunk } from '../../../models';
 import { IndexerService } from '../../indexer';
@@ -15,6 +15,7 @@ export class WorkspaceMcpProvider {
   constructor(
     private readonly ac: AccessController,
     private readonly reader: DocReader,
+    private readonly writer: DocWriter,
     private readonly context: CopilotContextService,
     private readonly indexer: IndexerService
   ) {}
@@ -162,6 +163,119 @@ export class WorkspaceMcpProvider {
             text: JSON.stringify(pick(doc, 'docId', 'title', 'createdAt')),
           })),
         } as const;
+      }
+    );
+
+    // Write tools - create, update, append documents
+    server.registerTool(
+      'create_document',
+      {
+        title: 'Create Document',
+        description:
+          'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document.',
+        inputSchema: z.object({
+          title: z.string().describe('The title of the new document'),
+          content: z
+            .string()
+            .describe('The markdown content for the document body'),
+        }),
+      },
+      async ({ title, content }) => {
+        try {
+          // Check if user can create docs in this workspace
+          await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .assert('Workspace.CreateDoc');
+
+          // Combine title and content into markdown
+          // Sanitize title by removing newlines and trimming
+          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          const markdown = `# ${sanitizedTitle}\n\n${content}`;
+
+          // Create the document
+          const result = await this.writer.createDoc(
+            workspaceId,
+            markdown,
+            userId
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  docId: result.docId,
+                  message: `Document "${title}" created successfully`,
+                }),
+              },
+            ],
+          } as const;
+        } catch (error) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+          };
+        }
+      }
+    );
+
+    server.registerTool(
+      'update_document',
+      {
+        title: 'Update Document',
+        description:
+          'Update an existing document with new markdown content. Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration.',
+        inputSchema: z.object({
+          docId: z.string().describe('The ID of the document to update'),
+          content: z
+            .string()
+            .describe(
+              'The complete new markdown content for the document (including title as H1)'
+            ),
+        }),
+      },
+      async ({ docId, content }) => {
+        try {
+          // Check if user can update this doc
+          await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .assert('Doc.Update');
+
+          // Update the document
+          await this.writer.updateDoc(workspaceId, docId, content, userId);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  docId,
+                  message: `Document updated successfully`,
+                }),
+              },
+            ],
+          } as const;
+        } catch (error) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+          };
+        }
       }
     );
 
