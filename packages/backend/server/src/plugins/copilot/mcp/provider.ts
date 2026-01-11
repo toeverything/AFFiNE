@@ -166,7 +166,7 @@ export class WorkspaceMcpProvider {
       }
     );
 
-    // Write tools - create, update, append documents
+    // Write tools - create and update documents
     server.registerTool(
       'create_document',
       {
@@ -174,7 +174,7 @@ export class WorkspaceMcpProvider {
         description:
           'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document.',
         inputSchema: z.object({
-          title: z.string().describe('The title of the new document'),
+          title: z.string().min(1).describe('The title of the new document'),
           content: z
             .string()
             .describe(
@@ -193,12 +193,14 @@ export class WorkspaceMcpProvider {
           // Combine title and content into markdown
           // Sanitize title by removing newlines and trimming
           const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          if (!sanitizedTitle) {
+            throw new Error('Title cannot be empty');
+          }
 
           // Strip any leading H1 from content to prevent duplicates
           // Handles: "# Title", "  # Title", "# Title #", "# Title ##"
-          const strippedContent = content
-            .replace(/^\s*#\s+[^\n]*#*\s*\n*/, '')
-            .trim();
+          // Note: Don't trim() to preserve meaningful leading whitespace
+          const strippedContent = content.replace(/^\s*#\s+[^\n]*#*\s*\n*/, '');
 
           const markdown = `# ${sanitizedTitle}\n\n${strippedContent}`;
 
