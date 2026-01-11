@@ -581,15 +581,14 @@ fn apply_text_diff(text: &mut y_octo::Text, old_content: &str, new_content: &str
     match op {
       TextDiffOp::Delete { start_utf16, len_utf16 } => {
         let raw_pos = start_utf16 as i64 + offset;
-        // Debug assertion: negative position indicates a bug in diff computation
-        debug_assert!(
-          raw_pos >= 0,
-          "Unexpected negative position in Delete: start_utf16={}, offset={}, raw_pos={}",
-          start_utf16,
-          offset,
-          raw_pos
-        );
-        let adjusted_start = raw_pos.max(0) as u64;
+        // Fail fast if position goes negative - indicates a bug in diff computation
+        if raw_pos < 0 {
+          return Err(ParseError::ParserError(format!(
+            "Invalid delete position: start_utf16={}, offset={}, raw_pos={}",
+            start_utf16, offset, raw_pos
+          )));
+        }
+        let adjusted_start = raw_pos as u64;
         text
           .remove(adjusted_start, len_utf16 as u64)
           .map_err(|e| ParseError::ParserError(e.to_string()))?;
@@ -600,15 +599,14 @@ fn apply_text_diff(text: &mut y_octo::Text, old_content: &str, new_content: &str
         text: insert_text,
       } => {
         let raw_pos = pos_utf16 as i64 + offset;
-        // Debug assertion: negative position indicates a bug in diff computation
-        debug_assert!(
-          raw_pos >= 0,
-          "Unexpected negative position in Insert: pos_utf16={}, offset={}, raw_pos={}",
-          pos_utf16,
-          offset,
-          raw_pos
-        );
-        let adjusted_pos = raw_pos.max(0) as u64;
+        // Fail fast if position goes negative - indicates a bug in diff computation
+        if raw_pos < 0 {
+          return Err(ParseError::ParserError(format!(
+            "Invalid insert position: pos_utf16={}, offset={}, raw_pos={}",
+            pos_utf16, offset, raw_pos
+          )));
+        }
+        let adjusted_pos = raw_pos as u64;
         let utf16_len: usize = insert_text.chars().map(|c| c.len_utf16()).sum();
         text
           .insert(adjusted_pos, &insert_text)
