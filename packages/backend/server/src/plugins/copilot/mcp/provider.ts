@@ -198,9 +198,12 @@ export class WorkspaceMcpProvider {
           }
 
           // Strip any leading H1 from content to prevent duplicates
-          // Handles: "# Title", "  # Title", "# Title #", "# Title ##"
-          // Note: Don't trim() to preserve meaningful leading whitespace
-          const strippedContent = content.replace(/^\s*#\s+[^\n]*#*\s*\n*/, '');
+          // Per CommonMark spec, ATX headings allow only 0-3 spaces before the #
+          // Handles: "# Title", "  # Title", "# Title #"
+          const strippedContent = content.replace(
+            /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
+            ''
+          );
 
           const markdown = `# ${sanitizedTitle}\n\n${strippedContent}`;
 
@@ -253,14 +256,28 @@ export class WorkspaceMcpProvider {
         }),
       },
       async ({ docId, content }) => {
-        try {
-          // Check if user can update this doc
-          await this.ac
-            .user(userId)
-            .workspace(workspaceId)
-            .doc(docId)
-            .assert('Doc.Update');
+        const notFoundError: CallToolResult = {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `Doc with id ${docId} not found.`,
+            },
+          ],
+        };
 
+        // Use can() instead of assert() to avoid leaking doc existence info
+        const accessible = await this.ac
+          .user(userId)
+          .workspace(workspaceId)
+          .doc(docId)
+          .can('Doc.Update');
+
+        if (!accessible) {
+          return notFoundError;
+        }
+
+        try {
           // Update the document
           await this.writer.updateDoc(workspaceId, docId, content, userId);
 

@@ -173,14 +173,17 @@ fn load_existing_doc(binary: &[u8], doc_id: &str) -> Result<ExistingDoc, ParseEr
   let note_block = block_pool
     .get(&note_id)
     .ok_or_else(|| ParseError::ParserError("note block not found".into()))?;
-  let content_block_ids = collect_child_ids(note_block);
+  let raw_content_block_ids = collect_child_ids(note_block);
 
-  // Extract content blocks with their data
+  // Extract content blocks with their data, filtering to only existing blocks
+  // This ensures content_block_ids and content_blocks stay in sync
   let mut content_blocks = Vec::new();
-  for block_id in &content_block_ids {
-    if let Some(block) = block_pool.get(block_id) {
+  let mut content_block_ids = Vec::new();
+  for block_id in raw_content_block_ids {
+    if let Some(block) = block_pool.get(&block_id) {
       let content_block = extract_content_block(block);
       content_blocks.push((block_id.clone(), content_block));
+      content_block_ids.push(block_id);
     }
   }
 
@@ -197,11 +200,8 @@ fn load_existing_doc(binary: &[u8], doc_id: &str) -> Result<ExistingDoc, ParseEr
 fn extract_content_block(block: &Map) -> ContentBlock {
   let flavour = get_string(block, "sys:flavour").unwrap_or_default();
   let block_type = get_string(block, "prop:type");
-  let content = block
-    .get("prop:text")
-    .and_then(|v| v.to_text())
-    .map(|t| t.to_string())
-    .unwrap_or_default();
+  // Use get_string which handles both Y.Text and Any::String via value_to_string
+  let content = get_string(block, "prop:text").unwrap_or_default();
   let checked = block
     .get("prop:checked")
     .and_then(|v| v.to_any())
