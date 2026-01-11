@@ -11,6 +11,7 @@ use crate::{
 };
 
 pub type ChangedTypeRefs = HashMap<YTypeRef, Vec<SmolStr>>;
+type PendingTypes = HashMap<Id, YTypeRef>;
 
 unsafe impl Send for DocStore {}
 unsafe impl Sync for DocStore {}
@@ -134,7 +135,7 @@ impl DocStore {
             return Err(JwstCodecError::StructClockInvalid { expect, actually });
           }
         } else {
-          warn!("client {client_id} has no struct info");
+          warn!("client {} has no struct info", client_id);
         }
         structs.push_back(item);
       }
@@ -148,27 +149,28 @@ impl DocStore {
 
   /// binary search struct info on a sorted array
   pub fn get_node_index(items: &VecDeque<Node>, clock: Clock) -> Option<usize> {
-    let mut left = 0;
-    let mut right = items.len() - 1;
-    let middle = &items[right];
-    let middle_clock = middle.clock();
-    if middle_clock == clock {
-      return Some(right);
+    if items.is_empty() {
+      return None;
     }
-    let mut middle_index = (clock / (middle_clock + middle.len() - 1)) as usize * right;
-    while left <= right {
+
+    let mut left = 0usize;
+    let mut right = items.len();
+
+    while left < right {
+      let middle_index = left + (right - left) / 2;
       let middle = &items[middle_index];
       let middle_clock = middle.clock();
-      if middle_clock <= clock {
-        if clock < middle_clock + middle.len() {
-          return Some(middle_index);
-        }
+      let middle_end = middle_clock.saturating_add(middle.len());
+
+      if clock < middle_clock {
+        right = middle_index;
+      } else if clock >= middle_end {
         left = middle_index + 1;
       } else {
-        right = middle_index - 1;
+        return Some(middle_index);
       }
-      middle_index = (left + right) / 2;
     }
+
     None
   }
 
@@ -347,7 +349,7 @@ impl DocStore {
   ///       `doc.get_or_create_text("content")`)
   ///     - [Parent::Id] for type as item (e.g `doc.create_text()`)
   ///     - [None] means borrow left.parent or right.parent
-  pub fn repair(&mut self, item: &mut Item, store_ref: StoreRef) -> JwstCodecResult {
+  pub fn repair(&mut self, item: &mut Item, store_ref: StoreRef, pending_types: &PendingTypes) -> JwstCodecResult {
     if let Some(left_id) = item.origin_left_id {
       if let Node::Item(left_ref) = self.split_at_and_get_left(left_id)? {
         item.origin_left_id = left_ref.get().map(|left| left.last_id());
@@ -393,8 +395,12 @@ impl DocStore {
             }
           }
           _ => {
-            // GC & Skip are not valid parent, take it.
-            item.parent.take();
+            if let Some(ty) = pending_types.get(parent_id) {
+              item.parent.replace(Parent::Type(ty.clone()));
+            } else {
+              // GC & Skip are not valid parent, take it.
+              item.parent.take();
+            }
           }
         }
       }
@@ -1125,6 +1131,50 @@ mod tests {
       doc_store.add_node(struct_info2).unwrap();
 
       assert_eq!(doc_store.get_node(Id::new(1, 35)), None);
+    });
+
+    loom_model!({
+      let mut failures: Vec<&'static str> = Vec::new();
+
+      {
+        let mut doc_store = DocStore::with_client(1);
+        let struct_info = Node::new_gc(Id::new(1, 0), 1);
+        doc_store.add_node(struct_info).unwrap();
+
+        let items = doc_store.items.get(&1).unwrap();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| DocStore::get_node_index(items, 1)));
+
+        match result {
+          Ok(index) if index.is_none() => {}
+          Ok(_) => failures.push("len=1 clock beyond end should return None"),
+          Err(_) => failures.push("len=1 clock beyond end should not panic"),
+        }
+      }
+
+      {
+        let mut doc_store = DocStore::with_client(1);
+        let struct_info1 = Node::new_gc(Id::new(1, 0), 1);
+        let struct_info2 = Node::new_gc(Id::new(1, 1), 1);
+        doc_store.add_node(struct_info1).unwrap();
+        doc_store.add_node(struct_info2).unwrap();
+
+        let items = doc_store.items.get(&1).unwrap();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+          DocStore::get_node_index(items, u64::MAX)
+        }));
+
+        match result {
+          Ok(index) if index.is_none() => {}
+          Ok(_) => failures.push("huge clock should return None"),
+          Err(_) => failures.push("huge clock should not panic"),
+        }
+      }
+
+      assert!(
+        failures.is_empty(),
+        "get_node_index edge cases failed: {}",
+        failures.join(", ")
+      );
     });
   }
 
