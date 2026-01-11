@@ -400,9 +400,9 @@ export class InteractivityManager extends GfxExtension {
       let dx = dragLastPos.x - internal.dragStartPos.x;
       let dy = dragLastPos.y - internal.dragStartPos.y;
 
-      const isShiftPressed = this.keyboard.shiftKey$.peek();
-      if (isShiftPressed) {
-        const snappedPoint = this.snapOverlay.snapDragAngle(internal.dragStartPos, dragLastPos, true);
+      
+      if (this.keyboard.shiftKey$.peek()) {
+          const snappedPoint = this.snapOverlay.snapDragAngle(internal.dragStartPos, dragLastPos, this.keyboard.shiftKey$.peek());
         dx = snappedPoint.x - internal.dragStartPos.x;
         dy = snappedPoint.y - internal.dragStartPos.y;
       }
