@@ -52,5 +52,4 @@ export const AFFINE_PRO_LICENSE_AES_KEY =
 
 // MCP write tools exports
 export const markdownToDocBinary = serverNativeModule.markdownToDocBinary;
-// Note: updateDocWithMarkdown exists in native but is not used due to y-octo/Yjs
-// binary format incompatibility. Updates are handled by delete + recreate instead.
+export const updateDocWithMarkdown = serverNativeModule.updateDocWithMarkdown;
