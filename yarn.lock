@@ -457,7 +457,6 @@ __metadata:
     graphemer: "npm:^1.4.0"
     graphql: "npm:^16.9.0"
     history: "npm:^5.3.0"
-    ical.js: "npm:^2.1.0"
     idb: "npm:^8.0.0"
     idb-keyval: "npm:^6.2.2"
     image-blob-reduce: "npm:^4.1.0"
@@ -27303,13 +27302,6 @@ __metadata:
     typescript:
       optional: true
   checksum: 10/76961aadcafe301c475e801df914827ea7470987f9b7cf552596bab60117165efaaffcbb69d937af943db5e4eb46cb7798f79042b657ade10dc8983f63c28753
-  languageName: node
-  linkType: hard
-
-"ical.js@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "ical.js@npm:2.1.0"
-  checksum: 10/2c1ac836a3a87a6958ab5386f26965a70328ca5566dd84fc641726aef893adb43433aa35d7ea576b890e8461ce54995f9fa82bfa32ce8b186b9b9d4788a6f894
   languageName: node
   linkType: hard
 

@@ -65,7 +65,6 @@
     "graphemer": "^1.4.0",
     "graphql": "^16.9.0",
     "history": "^5.3.0",
-    "ical.js": "^2.1.0",
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.2",
     "image-blob-reduce": "^4.1.0",

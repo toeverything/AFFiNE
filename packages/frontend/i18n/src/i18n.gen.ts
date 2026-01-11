@@ -8265,6 +8265,12 @@ export function useAFFiNEI18N(): {
         readonly name: string;
     }): string;
     /**
+      * `No journal page found for {{date}}. Please create a journal page first.`
+      */
+    ["com.affine.integration.calendar.no-journal"](options: {
+        readonly date: string;
+    }): string;
+    /**
       * `MCP Server`
       */
     ["com.affine.integration.mcp-server.name"](): string;

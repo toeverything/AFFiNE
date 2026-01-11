@@ -2074,6 +2074,7 @@
   "com.affine.integration.calendar.show-events-desc": "Enabling this setting allows you to connect your calendar events to your Journal in AFFiNE",
   "com.affine.integration.calendar.show-all-day-events": "Show all day event",
   "com.affine.integration.calendar.unsubscribe-content": "Are you sure you want to unsubscribe \"{{name}}\"? Unsubscribing this account will remove its data from Journal.",
+  "com.affine.integration.calendar.no-journal": "No journal page found for {{date}}. Please create a journal page first.",
   "com.affine.integration.mcp-server.name": "MCP Server",
   "com.affine.integration.mcp-server.desc": "Enable other MCP Client to search and read the doc of AFFiNE.",
   "com.affine.audio.notes": "Notes",
