@@ -93,23 +93,23 @@ export class CalendarService {
     );
     const subscriptions =
       await this.models.calendarSubscription.listByAccount(accountId);
+    const needToStopChannel = subscriptions.filter(
+      s => s.customChannelId && s.customResourceId
+    );
 
-    if (provider?.stopChannel && subscriptions.length > 0) {
+    if (provider?.stopChannel && needToStopChannel.length > 0) {
       const accountTokens = this.models.calendarAccount.decryptTokens(account);
       const accessToken = accountTokens.accessToken;
       if (accessToken) {
         await Promise.allSettled(
-          subscriptions.map(subscription => {
-            if (
-              !subscription.customChannelId ||
-              !subscription.customResourceId
-            ) {
+          needToStopChannel.map(s => {
+            if (!s.customChannelId || !s.customResourceId) {
               return Promise.resolve();
             }
             return provider.stopChannel?.({
               accessToken,
-              channelId: subscription.customChannelId,
-              resourceId: subscription.customResourceId,
+              channelId: s.customChannelId,
+              resourceId: s.customResourceId,
             });
           })
         );
