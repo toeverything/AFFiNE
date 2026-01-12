@@ -774,30 +774,12 @@ fn update_note_children(blocks_map: &mut Map, note_id: &str, new_children: Vec<S
     .and_then(|v| v.to_map())
     .ok_or_else(|| ParseError::ParserError("Note block not found".into()))?;
 
-  // Get existing children array
-  // Note: Caller already checks if children changed, so no redundant check here
-  if let Some(mut children) = note_block.get("sys:children").and_then(|v| v.to_array()) {
-    // Clear existing children
-    let len = children.len();
-    if len > 0 {
-      children
-        .remove(0, len)
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
-
-    // Add new children
-    for (idx, child_id) in new_children.into_iter().enumerate() {
-      children
-        .insert(idx as u64, Any::String(child_id))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-    }
-  } else {
-    // Create new children array using Any::Array (avoids "get back" pattern)
-    let children_any: Vec<Any> = new_children.into_iter().map(Any::String).collect();
-    note_block
-      .insert("sys:children".to_string(), Any::Array(children_any))
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
-  }
+  // Replace children atomically with Any::Array (single CRDT operation)
+  // This is cleaner than clearing element-by-element and re-inserting
+  let children_any: Vec<Any> = new_children.into_iter().map(Any::String).collect();
+  note_block
+    .insert("sys:children".to_string(), Any::Array(children_any))
+    .map_err(|e| ParseError::ParserError(e.to_string()))?;
 
   Ok(())
 }
