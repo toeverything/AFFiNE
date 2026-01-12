@@ -557,6 +557,156 @@ export const getBlobUploadPartUrlMutation = {
 }`,
 };
 
+export const calendarAccountCalendarsQuery = {
+  id: 'calendarAccountCalendarsQuery' as const,
+  op: 'calendarAccountCalendars',
+  query: `query calendarAccountCalendars($accountId: String!) {
+  calendarAccountCalendars(accountId: $accountId) {
+    id
+    accountId
+    provider
+    externalCalendarId
+    displayName
+    timezone
+    color
+    enabled
+    lastSyncAt
+  }
+}`,
+};
+
+export const calendarAccountsQuery = {
+  id: 'calendarAccountsQuery' as const,
+  op: 'calendarAccounts',
+  query: `query calendarAccounts {
+  calendarAccounts {
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
+  }
+}`,
+};
+
+export const calendarEventsQuery = {
+  id: 'calendarEventsQuery' as const,
+  op: 'calendarEvents',
+  query: `query calendarEvents($workspaceCalendarId: String!, $from: DateTime!, $to: DateTime!) {
+  calendarEvents(workspaceCalendarId: $workspaceCalendarId, from: $from, to: $to) {
+    id
+    subscriptionId
+    externalEventId
+    recurrenceId
+    status
+    title
+    description
+    location
+    startAtUtc
+    endAtUtc
+    originalTimezone
+    allDay
+  }
+}`,
+};
+
+export const calendarProvidersQuery = {
+  id: 'calendarProvidersQuery' as const,
+  op: 'calendarProviders',
+  query: `query calendarProviders {
+  calendarProviders
+}`,
+};
+
+export const linkCalendarAccountMutation = {
+  id: 'linkCalendarAccountMutation' as const,
+  op: 'linkCalendarAccount',
+  query: `mutation linkCalendarAccount($input: LinkCalendarAccountInput!) {
+  linkCalendarAccount(input: $input)
+}`,
+};
+
+export const unlinkCalendarAccountMutation = {
+  id: 'unlinkCalendarAccountMutation' as const,
+  op: 'unlinkCalendarAccount',
+  query: `mutation unlinkCalendarAccount($accountId: String!) {
+  unlinkCalendarAccount(accountId: $accountId)
+}`,
+};
+
+export const updateCalendarAccountMutation = {
+  id: 'updateCalendarAccountMutation' as const,
+  op: 'updateCalendarAccount',
+  query: `mutation updateCalendarAccount($accountId: String!, $refreshIntervalMinutes: Int!) {
+  updateCalendarAccount(
+    accountId: $accountId
+    refreshIntervalMinutes: $refreshIntervalMinutes
+  ) {
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
+  }
+}`,
+};
+
+export const updateWorkspaceCalendarsMutation = {
+  id: 'updateWorkspaceCalendarsMutation' as const,
+  op: 'updateWorkspaceCalendars',
+  query: `mutation updateWorkspaceCalendars($input: UpdateWorkspaceCalendarsInput!) {
+  updateWorkspaceCalendars(input: $input) {
+    id
+    workspaceId
+    createdByUserId
+    displayNameOverride
+    colorOverride
+    enabled
+    items {
+      id
+      subscriptionId
+      sortOrder
+      colorOverride
+      enabled
+    }
+  }
+}`,
+};
+
+export const workspaceCalendarsQuery = {
+  id: 'workspaceCalendarsQuery' as const,
+  op: 'workspaceCalendars',
+  query: `query workspaceCalendars($workspaceId: String!) {
+  workspaceCalendars(workspaceId: $workspaceId) {
+    id
+    workspaceId
+    createdByUserId
+    displayNameOverride
+    colorOverride
+    enabled
+    items {
+      id
+      subscriptionId
+      sortOrder
+      colorOverride
+      enabled
+    }
+  }
+}`,
+};
+
 export const cancelSubscriptionMutation = {
   id: 'cancelSubscriptionMutation' as const,
   op: 'cancelSubscription',

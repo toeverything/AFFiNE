@@ -8832,6 +8832,13 @@ export function useAFFiNEI18N(): {
       */
     ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
     /**
+      * `Calendar provider request error, status: {{status}}, message: {{message}}`
+      */
+    ["error.CALENDAR_PROVIDER_REQUEST_ERROR"](options: Readonly<{
+        status: string;
+        message: string;
+    }>): string;
+    /**
       * `Copilot session not found.`
       */
     ["error.COPILOT_SESSION_NOT_FOUND"](): string;

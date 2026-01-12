@@ -50,6 +50,7 @@ import { VersionModule } from './core/version';
 import { WorkspaceModule } from './core/workspaces';
 import { Env } from './env';
 import { ModelsModule } from './models';
+import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { CustomerIoModule } from './plugins/customerio';
@@ -188,6 +189,7 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
+      CalendarModule,
       CustomerIoModule,
       CommentModule,
       AccessTokenModule,

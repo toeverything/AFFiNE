@@ -1,0 +1,13 @@
+query calendarAccountCalendars($accountId: String!) {
+  calendarAccountCalendars(accountId: $accountId) {
+    id
+    accountId
+    provider
+    externalCalendarId
+    displayName
+    timezone
+    color
+    enabled
+    lastSyncAt
+  }
+}

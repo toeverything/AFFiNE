@@ -650,6 +650,40 @@
         }
       }
     },
+    "calendar": {
+      "type": "object",
+      "description": "Configuration for calendar module",
+      "properties": {
+        "google": {
+          "type": "object",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\"}\n@link https://developers.google.com/calendar/api/guides/push",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "externalWebhookUrl": {
+              "type": "string"
+            },
+            "webhookVerificationToken": {
+              "type": "string"
+            }
+          },
+          "default": {
+            "enabled": false,
+            "clientId": "",
+            "clientSecret": "",
+            "externalWebhookUrl": "",
+            "webhookVerificationToken": ""
+          }
+        }
+      }
+    },
     "captcha": {
       "type": "object",
       "description": "Configuration for captcha module",
