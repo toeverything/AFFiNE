@@ -239,7 +239,7 @@ type CalendarSubscriptionObjectType {
   externalCalendarId: String!
   id: String!
   lastSyncAt: DateTime
-  provider: String!
+  provider: CalendarProviderType!
   timezone: String
 }
 

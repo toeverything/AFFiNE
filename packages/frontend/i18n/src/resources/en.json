@@ -2196,6 +2196,7 @@
   "error.WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION": "A workspace is required to checkout for team subscription.",
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Workspace id is required to update team subscription.",
   "error.MANAGED_BY_APP_STORE_OR_PLAY": "This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.",
+  "error.CALENDAR_PROVIDER_REQUEST_ERROR": "Calendar provider request error, status: {{status}}, message: {{message}}",
   "error.COPILOT_SESSION_NOT_FOUND": "Copilot session not found.",
   "error.COPILOT_SESSION_INVALID_INPUT": "Copilot session input is invalid.",
   "error.COPILOT_SESSION_DELETED": "Copilot session has been deleted.",

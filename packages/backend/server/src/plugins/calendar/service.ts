@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarAccount, Prisma } from '@prisma/client';
 import { addDays, subDays } from 'date-fns';
 
@@ -236,6 +237,7 @@ export class CalendarService {
     const { timeMin, timeMax } = this.getSyncWindow();
     const shouldUseSyncToken =
       !!subscription.syncToken && options?.forceFull !== true;
+    let synced = false;
 
     try {
       await this.syncWithProvider({
@@ -251,7 +253,7 @@ export class CalendarService {
         subscriptionTimezone: subscription.timezone ?? undefined,
       });
 
-      await this.ensureWebhookChannel(subscription, provider, accessToken);
+      synced = true;
     } catch (error) {
       if (error instanceof CalendarSyncTokenInvalid) {
         await this.models.calendarSubscription.updateSync(subscription.id, {
@@ -266,19 +268,22 @@ export class CalendarService {
           timeMax,
           subscriptionTimezone: subscription.timezone ?? undefined,
         });
+        synced = true;
+      } else {
+        if (this.isTokenInvalidError(error)) {
+          await this.invalidateAccount(account.id, (error as Error).message);
+        } else {
+          this.logger.warn(
+            `Calendar sync failed for subscription ${subscription.id}`,
+            error as Error
+          );
+        }
         return;
       }
+    }
 
-      if (this.isTokenInvalidError(error)) {
-        await this.invalidateAccount(account.id, (error as Error).message);
-        return;
-      }
-
-      this.logger.warn(
-        `Calendar sync failed for subscription ${subscription.id}`,
-        error as Error
-      );
-      return;
+    if (synced) {
+      await this.ensureWebhookChannel(subscription, provider, accessToken);
     }
 
     await this.models.calendarSubscription.updateLastSyncAt(
@@ -328,6 +333,7 @@ export class CalendarService {
     return events;
   }
 
+  @Transactional()
   async updateWorkspaceCalendars(params: {
     workspaceId: string;
     userId: string;
@@ -434,25 +440,36 @@ export class CalendarService {
     });
 
     const cancelledEventIds: string[] = [];
+    const failedEventIds: string[] = [];
     for (const event of response.events) {
       if (event.status === 'cancelled') {
         cancelledEventIds.push(event.id);
         continue;
       }
 
-      await this.models.calendarEvent.upsert(
-        this.mapProviderEvent(
-          params.subscriptionId,
-          event,
-          params.subscriptionTimezone
-        )
-      );
+      try {
+        await this.models.calendarEvent.upsert(
+          this.mapProviderEvent(
+            params.subscriptionId,
+            event,
+            params.subscriptionTimezone
+          )
+        );
+      } catch {
+        failedEventIds.push(event.id);
+      }
     }
 
     if (cancelledEventIds.length > 0) {
       await this.models.calendarEvent.deleteByExternalIds(
         params.subscriptionId,
         cancelledEventIds
+      );
+    }
+    if (failedEventIds.length > 0) {
+      this.logger.warn(
+        `Failed to upsert ${failedEventIds.length} events for subscription ${params.subscriptionId}`,
+        { failedEventIds }
       );
     }
 

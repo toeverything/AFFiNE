@@ -54,8 +54,8 @@ export class CalendarSubscriptionObjectType {
   @Field()
   accountId!: string;
 
-  @Field()
-  provider!: string;
+  @Field(() => CalendarProviderName)
+  provider!: CalendarProviderName;
 
   @Field()
   externalCalendarId!: string;

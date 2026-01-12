@@ -295,7 +295,7 @@ export interface CalendarSubscriptionObjectType {
   externalCalendarId: Scalars['String']['output'];
   id: Scalars['String']['output'];
   lastSyncAt: Maybe<Scalars['DateTime']['output']>;
-  provider: Scalars['String']['output'];
+  provider: CalendarProviderType;
   timezone: Maybe<Scalars['String']['output']>;
 }
 
@@ -3931,7 +3931,7 @@ export type CalendarAccountCalendarsQuery = {
     __typename?: 'CalendarSubscriptionObjectType';
     id: string;
     accountId: string;
-    provider: string;
+    provider: CalendarProviderType;
     externalCalendarId: string;
     displayName: string | null;
     timezone: string | null;
