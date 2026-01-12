@@ -5,7 +5,9 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
+import { CryptoHelper } from '../../../base';
 import { ConfigModule } from '../../../base/config';
+import { ServerConfigModule } from '../../../core/config';
 import type {
   UpsertCalendarAccountInput,
   UpsertCalendarSubscriptionInput,
@@ -15,12 +17,14 @@ import { CalendarModule } from '..';
 import {
   CalendarProvider,
   CalendarProviderFactory,
-  CalendarProviderListEventsParams,
   CalendarProviderName,
-  CalendarProviderWatchParams,
   CalendarSyncTokenInvalid,
 } from '../providers';
-import { CalendarProviderStopParams } from '../providers/def';
+import type {
+  CalendarProviderListEventsParams,
+  CalendarProviderStopParams,
+  CalendarProviderWatchParams,
+} from '../providers/def';
 import { CalendarService } from '../service';
 
 class MockCalendarProvider extends CalendarProvider {
@@ -64,6 +68,7 @@ class MockCalendarProvider extends CalendarProvider {
 
 const module = await createModule({
   imports: [
+    ServerConfigModule,
     CalendarModule,
     ConfigModule.override({
       calendar: {
@@ -81,6 +86,7 @@ const module = await createModule({
 const calendarService = module.get(CalendarService);
 const providerFactory = module.get(CalendarProviderFactory);
 const models = module.get(Models);
+module.get(CryptoHelper).onConfigInit();
 
 const createAccount = async (
   userId: string,
