@@ -353,7 +353,10 @@ pub(crate) fn extract_title(markdown: &str) -> String {
 
   for event in parser {
     match event {
-      Event::Start(Tag::Heading { level, .. }) if level == HeadingLevel::H1 => {
+      Event::Start(Tag::Heading {
+        level: HeadingLevel::H1,
+        ..
+      }) => {
         in_heading = true;
       }
       Event::Text(text) if in_heading => {

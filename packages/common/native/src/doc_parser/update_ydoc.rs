@@ -146,10 +146,10 @@ fn load_existing_doc(binary: &[u8], doc_id: &str) -> Result<ExistingDoc, ParseEr
   // Build block index
   let mut block_pool: HashMap<String, Map> = HashMap::new();
   for (_, value) in blocks_map.iter() {
-    if let Some(block_map) = value.to_map() {
-      if let Some(block_id) = get_string(&block_map, "sys:id") {
-        block_pool.insert(block_id, block_map);
-      }
+    if let Some(block_map) = value.to_map()
+      && let Some(block_id) = get_string(&block_map, "sys:id")
+    {
+      block_pool.insert(block_id, block_map);
     }
   }
 
@@ -449,6 +449,7 @@ fn insert_and_get_text(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_o
 /// IMPORTANT: Uses two-phase approach for YJS compatibility:
 /// 1. Insert empty map into blocks_map first (gets clock value)
 /// 2. Then populate the map with properties (gets later clock values)
+///
 /// This ensures parent items have earlier clocks than children.
 ///
 /// Uses Any types (Any::Array, Any::String) for children and text to avoid
@@ -668,23 +669,23 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
   let mut edits = Vec::new();
 
   // Keep prefix (store the actual chars for UTF-16 length calculation)
-  for i in 0..prefix_len {
-    edits.push(Edit::Keep(old[i]));
+  for &c in old.iter().take(prefix_len) {
+    edits.push(Edit::Keep(c));
   }
 
   // Delete middle of old
-  for i in 0..old_mid_len {
-    edits.push(Edit::Delete(old[prefix_len + i]));
+  for &c in old.iter().skip(prefix_len).take(old_mid_len) {
+    edits.push(Edit::Delete(c));
   }
 
   // Insert middle of new
-  for i in 0..new_mid_len {
-    edits.push(Edit::Insert(new[new_mid_start + i]));
+  for &c in new.iter().skip(new_mid_start).take(new_mid_len) {
+    edits.push(Edit::Insert(c));
   }
 
   // Keep suffix (store the actual chars for UTF-16 length calculation)
-  for i in 0..suffix_len {
-    edits.push(Edit::Keep(old[prefix_len + old_mid_len + i]));
+  for &c in old.iter().skip(prefix_len + old_mid_len).take(suffix_len) {
+    edits.push(Edit::Keep(c));
   }
 
   // Convert edits to operations, tracking position in UTF-16 code units
