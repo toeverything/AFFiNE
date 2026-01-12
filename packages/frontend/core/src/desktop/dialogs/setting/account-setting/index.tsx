@@ -22,6 +22,7 @@ import { AuthService, ServerService } from '../../../../modules/cloud';
 import type { SettingState } from '../types';
 import { AIUsagePanel } from './ai-usage-panel';
 import { DeleteAccount } from './delete-account';
+import { IntegrationsPanel } from './integrations-panel';
 import { StorageProgress } from './storage-progress';
 import * as styles from './style.css';
 
@@ -241,6 +242,7 @@ export const AccountSetting = ({
         {serverFeatures?.copilot && (
           <AIUsagePanel onChangeSettingState={onChangeSettingState} />
         )}
+        <IntegrationsPanel />
         <SettingRow
           name={t[`Sign out`]()}
           desc={t['com.affine.setting.sign.out.message']()}

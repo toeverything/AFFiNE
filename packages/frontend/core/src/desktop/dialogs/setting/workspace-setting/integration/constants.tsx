@@ -31,12 +31,13 @@ const INTEGRATION_LIST = [
     icon: <IntegrationTypeIcon type="readwise" />,
     setting: <ReadwiseSettingPanel />,
   },
-  BUILD_CONFIG.isElectron && {
+  {
     id: 'calendar' as const,
     name: 'com.affine.integration.calendar.name',
     desc: 'com.affine.integration.calendar.desc',
     icon: <TodayIcon />,
     setting: <CalendarSettingPanel />,
+    cloud: true,
   },
   {
     id: 'mcp-server' as const,

@@ -1,123 +1,216 @@
-import { Entity, LiveData, ObjectPool } from '@toeverything/infra';
-import { type Dayjs } from 'dayjs';
-import ICAL from 'ical.js';
-import { Observable, switchMap } from 'rxjs';
-
 import type {
-  CalendarStore,
-  CalendarSubscriptionConfig,
-} from '../store/calendar';
+  CalendarAccountCalendarsQuery,
+  CalendarAccountsQuery,
+  CalendarEventsQuery,
+  WorkspaceCalendarItemInput,
+  WorkspaceCalendarsQuery,
+} from '@affine/graphql';
+import { Entity, LiveData } from '@toeverything/infra';
+import dayjs, { type Dayjs } from 'dayjs';
+
+import type { CalendarStore } from '../store/calendar';
 import type { CalendarEvent } from '../type';
-import { parseCalendarUrl } from '../utils/calendar-url-parser';
-import { CalendarSubscription } from './calendar-subscription';
 
 export class CalendarIntegration extends Entity {
   constructor(private readonly store: CalendarStore) {
     super();
   }
 
-  private readonly subscriptionPool = new ObjectPool<
-    string,
-    CalendarSubscription
-  >();
-
-  colors = this.store.colors;
-  subscriptions$ = LiveData.from(
-    this.store.watchSubscriptionMap().pipe(
-      switchMap(subs => {
-        const refs = Object.entries(subs ?? {}).map(([url]) => {
-          const exists = this.subscriptionPool.get(url);
-          if (exists) {
-            return exists;
-          }
-          const subscription = this.framework.createEntity(
-            CalendarSubscription,
-            { url }
-          );
-          const ref = this.subscriptionPool.put(url, subscription);
-          return ref;
-        });
-
-        return new Observable<CalendarSubscription[]>(subscribe => {
-          subscribe.next(refs.map(ref => ref.obj));
-          return () => {
-            refs.forEach(ref => ref.release());
-          };
-        });
-      })
-    ),
+  accounts$ = new LiveData<CalendarAccountsQuery['calendarAccounts'][number][]>(
     []
   );
-  subscription$(url: string) {
-    return this.subscriptions$.map(subscriptions =>
-      subscriptions.find(sub => sub.url === url)
-    );
-  }
-  eventsByDateMap$ = LiveData.computed(get => {
-    return get(this.subscriptions$)
-      .map(sub => get(sub.eventsByDateMap$))
-      .reduce((acc, map) => {
-        for (const [date, events] of map) {
-          acc.set(
-            date,
-            acc.has(date) ? [...(acc.get(date) ?? []), ...events] : [...events]
-          );
-        }
-        return acc;
-      }, new Map<string, CalendarEvent[]>());
+  accountCalendars$ = new LiveData<
+    Map<
+      string,
+      CalendarAccountCalendarsQuery['calendarAccountCalendars'][number][]
+    >
+  >(new Map());
+  workspaceCalendars$ = new LiveData<
+    WorkspaceCalendarsQuery['workspaceCalendars'][number][]
+  >([]);
+  readonly eventsByDateMap$ = new LiveData<
+    Map<string, CalendarEventsQuery['calendarEvents'][number][]>
+  >(new Map());
+  readonly eventDates$ = LiveData.computed(get => {
+    const eventsByDateMap = get(this.eventsByDateMap$);
+    const dates = new Set<string>();
+    for (const [date, events] of eventsByDateMap) {
+      if (events.length > 0) {
+        dates.add(date);
+      }
+    }
+    return dates;
+  });
+
+  private readonly subscriptionInfoById$ = LiveData.computed(get => {
+    const accountCalendars = get(this.accountCalendars$);
+    const workspaceCalendars = get(this.workspaceCalendars$);
+    const subscriptionInfo = new Map<
+      string,
+      {
+        subscription: CalendarAccountCalendarsQuery['calendarAccountCalendars'][number];
+        colorOverride?: string | null;
+      }
+    >();
+
+    for (const calendars of accountCalendars.values()) {
+      for (const calendar of calendars) {
+        subscriptionInfo.set(calendar.id, { subscription: calendar });
+      }
+    }
+
+    for (const item of workspaceCalendars[0]?.items ?? []) {
+      const existing = subscriptionInfo.get(item.subscriptionId);
+      if (!existing) continue;
+      subscriptionInfo.set(item.subscriptionId, {
+        ...existing,
+        colorOverride: item.colorOverride,
+      });
+    }
+
+    return subscriptionInfo;
   });
 
   eventsByDate$(date: Dayjs) {
-    return this.eventsByDateMap$.map(eventsByDateMap => {
-      const dateKey = date.format('YYYY-MM-DD');
-      const events = [...(eventsByDateMap.get(dateKey) || [])];
+    const dateKey = date.format('YYYY-MM-DD');
+    return LiveData.computed(get => {
+      const subscriptionInfoById = get(this.subscriptionInfoById$);
+      const eventsByDateMap = get(this.eventsByDateMap$);
+      const events = eventsByDateMap.get(dateKey) ?? [];
 
-      // sort events by start time
-      return events.sort((a, b) => {
-        return (
-          (a.startAt?.toJSDate().getTime() ?? 0) -
-          (b.startAt?.toJSDate().getTime() ?? 0)
+      return events
+        .map(event => {
+          const subscriptionInfo = subscriptionInfoById.get(
+            event.subscriptionId
+          );
+          return {
+            id: event.id,
+            subscriptionId: event.subscriptionId,
+            title: event.title ?? '',
+            startAt: dayjs(event.startAtUtc),
+            endAt: dayjs(event.endAtUtc),
+            allDay: event.allDay,
+            date,
+            calendarName:
+              subscriptionInfo?.subscription.displayName ??
+              subscriptionInfo?.subscription.externalCalendarId ??
+              '',
+            calendarColor:
+              subscriptionInfo?.colorOverride ??
+              subscriptionInfo?.subscription.color ??
+              undefined,
+          } satisfies CalendarEvent;
+        })
+        .sort(
+          (left, right) => left.startAt.valueOf() - right.startAt.valueOf()
         );
-      });
     });
   }
 
-  async verifyUrl(_url: string) {
-    const url = parseCalendarUrl(_url);
-    try {
-      const response = await fetch(url);
-      const content = await response.text();
-      ICAL.parse(content);
-      return content;
-    } catch (err) {
-      console.error(err);
-      throw new Error('Failed to verify URL');
+  async loadAccountCalendars(signal?: AbortSignal) {
+    const accounts = await this.store.fetchAccounts(signal);
+    this.accounts$.setValue(accounts);
+
+    const calendarsByAccount = new Map<
+      string,
+      CalendarAccountCalendarsQuery['calendarAccountCalendars'][number][]
+    >();
+
+    await Promise.all(
+      accounts.map(async account => {
+        try {
+          const calendars = await this.store.fetchAccountCalendars(
+            account.id,
+            signal
+          );
+          calendarsByAccount.set(account.id, calendars);
+        } catch (error) {
+          console.error('Failed to load calendar subscriptions', error);
+          calendarsByAccount.set(account.id, []);
+        }
+      })
+    );
+
+    this.accountCalendars$.setValue(calendarsByAccount);
+    return calendarsByAccount;
+  }
+
+  async revalidateWorkspaceCalendars(signal?: AbortSignal) {
+    const calendars = await this.store.fetchWorkspaceCalendars(signal);
+    this.workspaceCalendars$.setValue(calendars);
+    return calendars;
+  }
+
+  async updateWorkspaceCalendars(items: WorkspaceCalendarItemInput[]) {
+    const updated = await this.store.updateWorkspaceCalendars(items);
+    const next = [...this.workspaceCalendars$.value];
+    const index = next.findIndex(calendar => calendar.id === updated.id);
+    if (index >= 0) {
+      next[index] = updated;
+    } else {
+      next.push(updated);
     }
+    this.workspaceCalendars$.setValue(next);
+    return updated;
   }
 
-  async createSubscription(url: string) {
-    try {
-      const content = await this.verifyUrl(url);
-      this.store.addSubscription(url);
-      this.store.setSubscriptionCache(url, content).catch(console.error);
-    } catch (err) {
-      console.error(err);
-      throw new Error('Failed to verify URL');
-    }
-  }
-
-  getSubscription(url: string) {
-    return this.store.getSubscription(url);
-  }
-
-  deleteSubscription(url: string) {
-    this.store.removeSubscription(url);
-  }
-
-  updateSubscription(
-    url: string,
-    updates: Partial<Omit<CalendarSubscriptionConfig, 'url'>>
+  async revalidateEventsRange(
+    rangeStart: Dayjs,
+    rangeEnd: Dayjs,
+    signal?: AbortSignal
   ) {
-    this.store.updateSubscription(url, updates);
+    const start = rangeStart.startOf('day');
+    const end = rangeEnd.endOf('day');
+    const workspaceCalendarId = this.workspaceCalendars$.value[0]?.id;
+    const next = new Map(this.eventsByDateMap$.value);
+    let cursor = start;
+    while (cursor.isBefore(end, 'day') || cursor.isSame(end, 'day')) {
+      next.set(cursor.format('YYYY-MM-DD'), []);
+      cursor = cursor.add(1, 'day');
+    }
+    if (!workspaceCalendarId) {
+      this.eventsByDateMap$.setValue(next);
+      return [];
+    }
+
+    const events = await this.store.fetchEvents(
+      workspaceCalendarId,
+      start.toISOString(),
+      end.toISOString(),
+      signal
+    );
+    for (const event of events) {
+      const startAt = dayjs(event.startAtUtc);
+      const endAt = dayjs(event.endAtUtc);
+      let current = startAt.isBefore(start, 'day') ? start : startAt;
+      const rangeEndDay = endAt.isAfter(end, 'day') ? end : endAt;
+
+      while (
+        current.isBefore(rangeEndDay, 'day') ||
+        current.isSame(rangeEndDay, 'day')
+      ) {
+        if (
+          current.isSame(endAt, 'day') &&
+          endAt.hour() === 0 &&
+          endAt.minute() === 0
+        ) {
+          break;
+        }
+        const dateKey = current.format('YYYY-MM-DD');
+        const list = next.get(dateKey);
+        if (list) {
+          list.push(event);
+        } else {
+          next.set(dateKey, [event]);
+        }
+        current = current.add(1, 'day');
+      }
+    }
+    this.eventsByDateMap$.setValue(next);
+    return events;
+  }
+
+  async revalidateEvents(date: Dayjs, signal?: AbortSignal) {
+    return await this.revalidateEventsRange(date, date, signal);
   }
 }
