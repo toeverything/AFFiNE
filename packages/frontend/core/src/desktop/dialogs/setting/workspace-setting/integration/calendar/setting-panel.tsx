@@ -81,7 +81,7 @@ export const CalendarSettingPanel = () => {
     } finally {
       setSaving(false);
     }
-  }, [calendar, orderedSubscriptions, selectedIds]);
+  }, [calendar, orderedSubscriptions, selectedIds, t]);
 
   const hasCalendars = orderedSubscriptions.length > 0;
 

@@ -8227,18 +8227,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.calendar.new-url-label"](): string;
     /**
-      * `This is a duplicate calendar`
-      */
-    ["com.affine.integration.calendar.new-duplicate-error-title"](): string;
-    /**
-      * `This subscription calendar already exists in the account of subscribed calendars.`
-      */
-    ["com.affine.integration.calendar.new-duplicate-error-content"](): string;
-    /**
-      * `An error occurred while adding the calendar`
-      */
-    ["com.affine.integration.calendar.new-error"](): string;
-    /**
       * `An error occurred while saving the calendar settings`
       */
     ["com.affine.integration.calendar.save_error"](): string;
@@ -8845,13 +8833,6 @@ export function useAFFiNEI18N(): {
       * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
       */
     ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
-    /**
-      * `Calendar provider request error, status: {{status}}, message: {{message}}`
-      */
-    ["error.CALENDAR_PROVIDER_REQUEST_ERROR"](options: Readonly<{
-        status: string;
-        message: string;
-    }>): string;
     /**
       * `Copilot session not found.`
       */
