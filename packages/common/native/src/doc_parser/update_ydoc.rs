@@ -411,7 +411,7 @@ fn apply_diff(existing: &mut ExistingDoc, new_blocks: &[ContentBlock], diff_ops:
     .unwrap_or_default();
 
   if current_children != new_children {
-    update_note_children(&mut blocks_map, &existing.note_id, &existing.doc, new_children)?;
+    update_note_children(&mut blocks_map, &existing.note_id, new_children)?;
   }
 
   Ok(())
@@ -768,12 +768,7 @@ fn compute_text_diff(old: &[char], new: &[char]) -> Vec<TextDiffOp> {
 }
 
 /// Updates the note block's children array, only if the children have changed
-fn update_note_children(
-  blocks_map: &mut Map,
-  note_id: &str,
-  _doc: &Doc,
-  new_children: Vec<String>,
-) -> Result<(), ParseError> {
+fn update_note_children(blocks_map: &mut Map, note_id: &str, new_children: Vec<String>) -> Result<(), ParseError> {
   let mut note_block = blocks_map
     .get(note_id)
     .and_then(|v| v.to_map())
