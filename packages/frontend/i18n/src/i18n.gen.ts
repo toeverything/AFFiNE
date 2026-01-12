@@ -8229,7 +8229,7 @@ export function useAFFiNEI18N(): {
     /**
       * `An error occurred while saving the calendar settings`
       */
-    ["com.affine.integration.calendar.save_error"](): string;
+    ["com.affine.integration.calendar.save-error"](): string;
     /**
       * `All day`
       */
