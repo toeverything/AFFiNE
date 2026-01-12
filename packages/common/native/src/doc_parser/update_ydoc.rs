@@ -7,9 +7,11 @@ use std::collections::HashMap;
 
 use y_octo::{Any, Doc, DocOptions, Map};
 
-use super::affine::ParseError;
-use super::blocksuite::{collect_child_ids, get_string};
-use super::markdown_utils::{BlockFlavour, ParsedBlock, extract_title, parse_markdown_blocks};
+use super::{
+  affine::ParseError,
+  blocksuite::{collect_child_ids, get_string},
+  markdown_utils::{BlockFlavour, ParsedBlock, extract_title, parse_markdown_blocks},
+};
 
 const PAGE_FLAVOUR: &str = "affine:page";
 const NOTE_FLAVOUR: &str = "affine:note";
@@ -25,7 +27,8 @@ pub struct ContentBlock {
 }
 
 impl ContentBlock {
-  /// Check if two blocks are similar enough to be considered "the same" for diffing
+  /// Check if two blocks are similar enough to be considered "the same" for
+  /// diffing
   fn is_similar(&self, other: &ContentBlock) -> bool {
     self.flavour == other.flavour && self.block_type == other.block_type
   }
@@ -223,7 +226,8 @@ fn extract_content_block(block: &Map) -> ContentBlock {
 
 /// Parses markdown into content blocks for diffing.
 ///
-/// Uses the shared `parse_markdown_blocks` function and converts to `ContentBlock`.
+/// Uses the shared `parse_markdown_blocks` function and converts to
+/// `ContentBlock`.
 fn parse_markdown_to_content_blocks(markdown: &str) -> Result<Vec<ContentBlock>, ParseError> {
   let parsed_blocks = parse_markdown_blocks(markdown, true);
   Ok(parsed_blocks.into_iter().map(ContentBlock::from).collect())
@@ -426,7 +430,8 @@ fn apply_diff(existing: &mut ExistingDoc, new_blocks: &[ContentBlock], diff_ops:
 // This ensures parent items always have earlier clocks than children,
 // avoiding "forward parent references" that YJS cannot handle.
 
-/// Creates an empty Text, inserts it into the parent map, then returns it for population.
+/// Creates an empty Text, inserts it into the parent map, then returns it for
+/// population.
 fn insert_and_get_text(doc: &Doc, parent_map: &mut Map, key: &str) -> Result<y_octo::Text, ParseError> {
   let text = doc.create_text().map_err(|e| ParseError::ParserError(e.to_string()))?;
   parent_map
@@ -521,8 +526,8 @@ fn update_block_content(
     let old_content = text.to_string();
     apply_text_diff(&mut text, &old_content, &new_block.content)?;
   } else if !new_block.content.is_empty() {
-    // Block didn't have text before, but now it does (e.g., divider becoming paragraph)
-    // Use two-phase helper to avoid forward parent references
+    // Block didn't have text before, but now it does (e.g., divider becoming
+    // paragraph) Use two-phase helper to avoid forward parent references
     let mut text = insert_and_get_text(doc, &mut block, "prop:text")?;
     text
       .insert(0, &new_block.content)
@@ -1090,7 +1095,8 @@ mod tests {
     assert!(!blocks_map.is_empty(), "Merged document should have blocks");
 
     // Should have more blocks than just page + note + 1 paragraph
-    // The merge should result in at least 4 blocks (page, note, modified para, new para)
+    // The merge should result in at least 4 blocks (page, note, modified para, new
+    // para)
     let block_count = blocks_map.len();
     println!("Concurrent merge test: final block count = {}", block_count);
     assert!(block_count >= 4, "Should have merged blocks, got {}", block_count);

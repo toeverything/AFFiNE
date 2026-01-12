@@ -82,17 +82,20 @@ pub struct ParsedBlock {
 
 /// Parses markdown content into a list of parsed blocks.
 ///
-/// This is the shared parsing logic used by both `markdown_to_ydoc` and `update_ydoc`.
+/// This is the shared parsing logic used by both `markdown_to_ydoc` and
+/// `update_ydoc`.
 ///
 /// # Arguments
 /// * `markdown` - The markdown content to parse
-/// * `skip_first_h1` - If true, the first H1 heading is skipped (used as document title)
+/// * `skip_first_h1` - If true, the first H1 heading is skipped (used as
+///   document title)
 ///
 /// # Returns
 /// A vector of parsed blocks
 pub fn parse_markdown_blocks(markdown: &str, skip_first_h1: bool) -> Vec<ParsedBlock> {
-  // Note: ENABLE_TABLES is included for future support, but table events currently
-  // fall through to the catch-all match arm. Table content appears as plain text.
+  // Note: ENABLE_TABLES is included for future support, but table events
+  // currently fall through to the catch-all match arm. Table content appears as
+  // plain text.
   let options = Options::ENABLE_STRIKETHROUGH
     | Options::ENABLE_TABLES
     | Options::ENABLE_TASKLISTS

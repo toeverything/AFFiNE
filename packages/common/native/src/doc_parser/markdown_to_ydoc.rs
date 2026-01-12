@@ -1,11 +1,14 @@
 //! Markdown to YDoc conversion module
 //!
-//! Converts markdown content into AFFiNE-compatible y-octo document binary format.
+//! Converts markdown content into AFFiNE-compatible y-octo document binary
+//! format.
 
 use y_octo::{Any, DocOptions};
 
-use super::affine::ParseError;
-use super::markdown_utils::{BlockType, ParsedBlock, extract_title, parse_markdown_blocks};
+use super::{
+  affine::ParseError,
+  markdown_utils::{BlockType, ParsedBlock, extract_title, parse_markdown_blocks},
+};
 
 /// Block types used in AFFiNE documents
 const PAGE_FLAVOUR: &str = "affine:page";
@@ -80,7 +83,8 @@ impl From<ParsedBlock> for BlockBuilder {
   }
 }
 
-/// Parses markdown and converts it to an AFFiNE-compatible y-octo document binary.
+/// Parses markdown and converts it to an AFFiNE-compatible y-octo document
+/// binary.
 ///
 /// # Arguments
 /// * `markdown` - The markdown content to convert
@@ -112,11 +116,14 @@ pub fn markdown_to_ydoc(markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseEr
 /// Builds the y-octo document from parsed blocks.
 ///
 /// Uses a two-phase approach to ensure Yjs compatibility:
-/// 1. Phase 1: Create and insert empty maps into blocks_map (establishes parent items)
-/// 2. Phase 2: Populate each map with properties (child items reference existing parents)
+/// 1. Phase 1: Create and insert empty maps into blocks_map (establishes parent
+///    items)
+/// 2. Phase 2: Populate each map with properties (child items reference
+///    existing parents)
 ///
 /// This ordering ensures that when items reference their parent map's ID in the
-/// encoded binary, the parent ID always has a lower clock value, which Yjs requires.
+/// encoded binary, the parent ID always has a lower clock value, which Yjs
+/// requires.
 fn build_ydoc(
   doc_id: &str,
   title: &str,
@@ -165,7 +172,8 @@ fn build_ydoc(
   }
 
   // ==== PHASE 2: Populate the maps with their properties ====
-  // Now each map has an item with a lower clock, so children will reference correctly
+  // Now each map has an item with a lower clock, so children will reference
+  // correctly
 
   // Populate page block
   if let Some(page_map) = blocks_map.get(&page_id).and_then(|v| v.to_map()) {
@@ -229,14 +237,15 @@ fn build_ydoc(
 
 /// Populates an existing block map with the given properties.
 ///
-/// This function takes an already-inserted map and populates it with properties.
-/// The two-phase approach (insert empty map first, then populate) ensures that
-/// when child items reference the map as their parent, the parent's clock is lower.
+/// This function takes an already-inserted map and populates it with
+/// properties. The two-phase approach (insert empty map first, then populate)
+/// ensures that when child items reference the map as their parent, the
+/// parent's clock is lower.
 ///
 /// IMPORTANT: We use Any types (Any::Array, Any::String) instead of CRDT types
-/// (y_octo::Array, y_octo::Text) for nested values. Any types are encoded inline
-/// as part of the item content, avoiding the forward reference issue where child
-/// items would reference a parent with a higher clock value.
+/// (y_octo::Array, y_octo::Text) for nested values. Any types are encoded
+/// inline as part of the item content, avoiding the forward reference issue
+/// where child items would reference a parent with a higher clock value.
 #[allow(clippy::too_many_arguments)]
 fn populate_block_map(
   _doc: &y_octo::Doc,
