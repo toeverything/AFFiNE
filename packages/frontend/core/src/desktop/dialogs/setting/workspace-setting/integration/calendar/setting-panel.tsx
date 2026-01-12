@@ -75,7 +75,9 @@ export const CalendarSettingPanel = () => {
         }));
       await calendar.updateWorkspaceCalendars(items);
     } catch (error) {
-      notify.error({ title: 'Failed to save calendar settings' });
+      notify.error({
+        title: t['com.affine.integration.calendar.save_error'](),
+      });
     } finally {
       setSaving(false);
     }
@@ -126,7 +128,9 @@ export const CalendarSettingPanel = () => {
           );
         })}
         {!hasCalendars ? (
-          <div className={styles.empty}>No calendars available.</div>
+          <div className={styles.empty}>
+            {t['com.affine.integration.calendar.no-calendar']()}
+          </div>
         ) : null}
       </div>
       <div className={styles.actions}>

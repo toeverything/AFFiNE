@@ -70,7 +70,7 @@ export const IntegrationsPanel = () => {
         setProviders(providersData.calendarProviders);
       } catch (error) {
         if (
-          !signal?.aborted ||
+          signal?.aborted ||
           (error instanceof UserFriendlyError && error.is('REQUEST_ABORTED'))
         ) {
           return;

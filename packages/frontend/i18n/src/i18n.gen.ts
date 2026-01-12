@@ -8239,6 +8239,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.calendar.new-error"](): string;
     /**
+      * `An error occurred while saving the calendar settings`
+      */
+    ["com.affine.integration.calendar.save_error"](): string;
+    /**
       * `All day`
       */
     ["com.affine.integration.calendar.all-day"](): string;
@@ -8270,6 +8274,10 @@ export function useAFFiNEI18N(): {
     ["com.affine.integration.calendar.no-journal"](options: {
         readonly date: string;
     }): string;
+    /**
+      * `No subscribed calendars yet.`
+      */
+    ["com.affine.integration.calendar.no-calendar"](): string;
     /**
       * `MCP Server`
       */
