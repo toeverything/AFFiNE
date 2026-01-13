@@ -228,12 +228,6 @@ export class IndexerService {
       return;
     }
     const result = await readAllBlocksFromDocSnapshot(docId, docSnapshot.blob);
-    if (!result) {
-      this.logger.warn(
-        `parse doc ${workspaceId}/${docId} failed, workspaceSnapshot size: ${workspaceSnapshot.blob.length}, docSnapshot size: ${docSnapshot.blob.length}`
-      );
-      return;
-    }
     await this.write(
       SearchTable.doc,
       [
