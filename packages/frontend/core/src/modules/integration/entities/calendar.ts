@@ -1,5 +1,4 @@
 import type {
-  CalendarAccountCalendarsQuery,
   CalendarAccountsQuery,
   CalendarEventsQuery,
   WorkspaceCalendarItemInput,
@@ -16,20 +15,29 @@ export class CalendarIntegration extends Entity {
     super();
   }
 
-  accounts$ = new LiveData<CalendarAccountsQuery['calendarAccounts'][number][]>(
-    []
-  );
+  accounts$ = new LiveData<
+    NonNullable<
+      CalendarAccountsQuery['currentUser']
+    >['calendarAccounts'][number][]
+  >([]);
   accountCalendars$ = new LiveData<
     Map<
       string,
-      CalendarAccountCalendarsQuery['calendarAccountCalendars'][number][]
+      NonNullable<
+        NonNullable<
+          CalendarAccountsQuery['currentUser']
+        >['calendarAccounts'][number]
+      >['calendars']
     >
   >(new Map());
   workspaceCalendars$ = new LiveData<
-    WorkspaceCalendarsQuery['workspaceCalendars'][number][]
+    WorkspaceCalendarsQuery['workspace']['calendars'][number][]
   >([]);
   readonly eventsByDateMap$ = new LiveData<
-    Map<string, CalendarEventsQuery['calendarEvents'][number][]>
+    Map<
+      string,
+      CalendarEventsQuery['workspace']['calendars'][number]['events'][number][]
+    >
   >(new Map());
   readonly eventDates$ = LiveData.computed(get => {
     const eventsByDateMap = get(this.eventsByDateMap$);
@@ -48,7 +56,11 @@ export class CalendarIntegration extends Entity {
     const subscriptionInfo = new Map<
       string,
       {
-        subscription: CalendarAccountCalendarsQuery['calendarAccountCalendars'][number];
+        subscription: NonNullable<
+          NonNullable<
+            CalendarAccountsQuery['currentUser']
+          >['calendarAccounts'][number]
+        >['calendars'][number];
         colorOverride?: string | null;
       }
     >();
@@ -113,23 +125,16 @@ export class CalendarIntegration extends Entity {
 
     const calendarsByAccount = new Map<
       string,
-      CalendarAccountCalendarsQuery['calendarAccountCalendars'][number][]
+      NonNullable<
+        NonNullable<
+          CalendarAccountsQuery['currentUser']
+        >['calendarAccounts'][number]
+      >['calendars']
     >();
 
-    await Promise.all(
-      accounts.map(async account => {
-        try {
-          const calendars = await this.store.fetchAccountCalendars(
-            account.id,
-            signal
-          );
-          calendarsByAccount.set(account.id, calendars);
-        } catch (error) {
-          console.error('Failed to load calendar subscriptions', error);
-          calendarsByAccount.set(account.id, []);
-        }
-      })
-    );
+    accounts.forEach(account => {
+      calendarsByAccount.set(account.id, account.calendars ?? []);
+    });
 
     this.accountCalendars$.setValue(calendarsByAccount);
     return calendarsByAccount;

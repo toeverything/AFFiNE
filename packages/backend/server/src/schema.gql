@@ -193,6 +193,7 @@ type BlobUploadedPart {
 }
 
 type CalendarAccountObjectType {
+  calendars: [CalendarSubscriptionObjectType!]!
   calendarsCount: Int!
   createdAt: DateTime!
   displayName: String
@@ -1384,6 +1385,9 @@ type Mutation {
 
   """Update workspace flags and features for admin"""
   adminUpdateWorkspace(input: AdminUpdateWorkspaceInput!): AdminWorkspace
+
+  """Apply updates to a doc using LLM and return the merged markdown."""
+  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String!
   approveMember(userId: String!, workspaceId: String!): Boolean!
 
   """Ban an user"""
@@ -1449,7 +1453,7 @@ type Mutation {
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
   generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
-  getBlobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!, workspaceId: String!): BlobUploadPart!
+  getBlobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!, workspaceId: String!): BlobUploadPart! @deprecated(reason: "use WorkspaceType.blobUploadPartUrl")
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 
@@ -1572,7 +1576,7 @@ type Mutation {
   uploadCommentAttachment(attachment: Upload!, docId: String!, workspaceId: String!): String!
 
   """validate app configuration"""
-  validateAppConfig(updates: [UpdateAppConfigInput!]!): [AppConfigValidateResult!]!
+  validateAppConfig(updates: [UpdateAppConfigInput!]!): [AppConfigValidateResult!]! @deprecated(reason: "use Query.validateAppConfig")
   verifyEmail(token: String!): Boolean!
 }
 
@@ -1750,7 +1754,7 @@ type PublicUserType {
 }
 
 type Query {
-  accessTokens: [AccessToken!]!
+  accessTokens: [AccessToken!]! @deprecated(reason: "use currentUser.accessTokens")
 
   """Get workspace detail for admin"""
   adminWorkspace(id: String!): AdminWorkspace
@@ -1765,11 +1769,7 @@ type Query {
   appConfig: JSONObject!
 
   """Apply updates to a doc using LLM and return the merged markdown."""
-  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String!
-  calendarAccountCalendars(accountId: String!): [CalendarSubscriptionObjectType!]!
-  calendarAccounts: [CalendarAccountObjectType!]!
-  calendarEvents(from: DateTime!, to: DateTime!, workspaceCalendarId: String!): [CalendarEventObjectType!]!
-  calendarProviders: [CalendarProviderType!]!
+  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String! @deprecated(reason: "use Mutation.applyDocUpdates")
   collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.quotaUsage` instead")
 
   """Get current user"""
@@ -1794,7 +1794,7 @@ type Query {
 
   """query workspace embedding status"""
   queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
-  revealedAccessTokens: [RevealedAccessToken!]!
+  revealedAccessTokens: [RevealedAccessToken!]! @deprecated(reason: "use currentUser.revealedAccessTokens")
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -1814,9 +1814,11 @@ type Query {
   """Get users count"""
   usersCount(filter: ListUserInput): Int!
 
+  """validate app configuration"""
+  validateAppConfig(updates: [UpdateAppConfigInput!]!): [AppConfigValidateResult!]!
+
   """Get workspace by id"""
   workspace(id: String!): WorkspaceType!
-  workspaceCalendars(workspaceId: String!): [WorkspaceCalendarObjectType!]!
 
   """Get workspace role permissions"""
   workspaceRolePermissions(id: String!): WorkspaceRolePermissions! @deprecated(reason: "use WorkspaceType[permissions] instead")
@@ -2048,6 +2050,7 @@ type ServerConfigType {
 
   """server base url"""
   baseUrl: String!
+  calendarProviders: [CalendarProviderType!]!
 
   """credentials requirement"""
   credentialsRequirement: CredentialsRequirementType!
@@ -2345,8 +2348,11 @@ type UserSettingsType {
 }
 
 type UserType {
+  accessTokens: [AccessToken!]!
+
   """User avatar url"""
   avatarUrl: String
+  calendarAccounts: [CalendarAccountObjectType!]!
   copilot(workspaceId: String): Copilot!
 
   """User email verified"""
@@ -2382,6 +2388,7 @@ type UserType {
   notifications(pagination: PaginationInput!): PaginatedNotificationObjectType!
   quota: UserQuotaType!
   quotaUsage: UserQuotaUsageType!
+  revealedAccessTokens: [RevealedAccessToken!]!
 
   """Get user settings"""
   settings: UserSettingsType!
@@ -2421,6 +2428,7 @@ type WorkspaceCalendarObjectType {
   createdByUserId: String!
   displayNameOverride: String
   enabled: Boolean!
+  events(from: DateTime!, to: DateTime!): [CalendarEventObjectType!]!
   id: String!
   items: [WorkspaceCalendarItemObjectType!]!
   workspaceId: String!
@@ -2511,11 +2519,15 @@ type WorkspaceType {
   """Search a specific table with aggregate"""
   aggregate(input: AggregateInput!): AggregateResultObjectType!
 
+  """Get blob upload part url"""
+  blobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!): BlobUploadPart!
+
   """List blobs of workspace"""
   blobs: [ListedBlob!]!
 
   """Blobs size of workspace"""
   blobsSize: Int!
+  calendars: [WorkspaceCalendarObjectType!]!
 
   """Get comment changes of a doc"""
   commentChanges(docId: String!, pagination: PaginationInput!): PaginatedCommentChangeObjectType!

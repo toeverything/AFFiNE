@@ -3,34 +3,17 @@ import {
   Field,
   InputType,
   Mutation,
-  ObjectType,
+  Parent,
   Query,
+  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 
+import { ActionForbidden } from '../../base';
 import { Models } from '../../models';
 import { CurrentUser } from '../auth/session';
-
-@ObjectType()
-class AccessToken {
-  @Field()
-  id!: string;
-
-  @Field()
-  name!: string;
-
-  @Field()
-  createdAt!: Date;
-
-  @Field(() => Date, { nullable: true })
-  expiresAt!: Date | null;
-}
-
-@ObjectType()
-class RevealedAccessToken extends AccessToken {
-  @Field()
-  token!: string;
-}
+import { UserType } from '../user';
+import { AccessToken, RevealedAccessToken } from './types';
 
 @InputType()
 class GenerateAccessTokenInput {
@@ -45,12 +28,16 @@ class GenerateAccessTokenInput {
 export class AccessTokenResolver {
   constructor(private readonly models: Models) {}
 
-  @Query(() => [AccessToken])
+  @Query(() => [AccessToken], {
+    deprecationReason: 'use currentUser.accessTokens',
+  })
   async accessTokens(@CurrentUser() user: CurrentUser): Promise<AccessToken[]> {
     return await this.models.accessToken.list(user.id);
   }
 
-  @Query(() => [RevealedAccessToken])
+  @Query(() => [RevealedAccessToken], {
+    deprecationReason: 'use currentUser.revealedAccessTokens',
+  })
   async revealedAccessTokens(
     @CurrentUser() user: CurrentUser
   ): Promise<RevealedAccessToken[]> {
@@ -76,5 +63,32 @@ export class AccessTokenResolver {
   ): Promise<boolean> {
     await this.models.accessToken.revoke(id, user.id);
     return true;
+  }
+}
+
+@Resolver(() => UserType)
+export class UserAccessTokenResolver {
+  constructor(private readonly models: Models) {}
+
+  @ResolveField(() => [AccessToken])
+  async accessTokens(
+    @CurrentUser() currentUser: CurrentUser,
+    @Parent() user: UserType
+  ): Promise<AccessToken[]> {
+    if (!currentUser || currentUser.id !== user.id) {
+      throw new ActionForbidden();
+    }
+    return await this.models.accessToken.list(user.id);
+  }
+
+  @ResolveField(() => [RevealedAccessToken])
+  async revealedAccessTokens(
+    @CurrentUser() currentUser: CurrentUser,
+    @Parent() user: UserType
+  ): Promise<RevealedAccessToken[]> {
+    if (!currentUser || currentUser.id !== user.id) {
+      throw new ActionForbidden();
+    }
+    return await this.models.accessToken.list(user.id, true);
   }
 }

@@ -230,13 +230,31 @@ export class AppConfigResolver {
     return await this.service.updateConfig(me.id, updates);
   }
 
-  @Mutation(() => [AppConfigValidateResult], {
+  @Query(() => [AppConfigValidateResult], {
     description: 'validate app configuration',
   })
   async validateAppConfig(
     @Args('updates', { type: () => [UpdateAppConfigInput] })
     updates: UpdateAppConfigInput[]
   ): Promise<AppConfigValidateResult[]> {
+    return this.validateConfigInternal(updates);
+  }
+
+  @Mutation(() => [AppConfigValidateResult], {
+    description: 'validate app configuration',
+    deprecationReason: 'use Query.validateAppConfig',
+    name: 'validateAppConfig',
+  })
+  async validateAppConfigMutation(
+    @Args('updates', { type: () => [UpdateAppConfigInput] })
+    updates: UpdateAppConfigInput[]
+  ): Promise<AppConfigValidateResult[]> {
+    return this.validateConfigInternal(updates);
+  }
+
+  private validateConfigInternal(
+    updates: UpdateAppConfigInput[]
+  ): AppConfigValidateResult[] {
     const errors = this.service.validateConfig(updates);
 
     return updates.map(update => {

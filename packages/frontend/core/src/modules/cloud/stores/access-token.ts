@@ -8,8 +8,9 @@ import { Store } from '@toeverything/infra';
 
 import type { GraphQLService } from '../services/graphql';
 
-export type AccessToken =
-  ListUserAccessTokensQuery['revealedAccessTokens'][number];
+export type AccessToken = NonNullable<
+  ListUserAccessTokensQuery['currentUser']
+>['revealedAccessTokens'][number];
 
 export class AccessTokenStore extends Store {
   constructor(private readonly gqlService: GraphQLService) {
@@ -22,7 +23,7 @@ export class AccessTokenStore extends Store {
       context: { signal },
     });
 
-    return data.revealedAccessTokens;
+    return data.currentUser?.revealedAccessTokens ?? [];
   }
 
   async generateUserAccessToken(

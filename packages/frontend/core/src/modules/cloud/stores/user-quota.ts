@@ -1,4 +1,4 @@
-import { quotaQuery } from '@affine/graphql';
+import { getCurrentUserProfileQuery } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
 import type { GraphQLService } from '../services/graphql';
@@ -10,7 +10,7 @@ export class UserQuotaStore extends Store {
 
   async fetchUserQuota(abortSignal?: AbortSignal) {
     const data = await this.graphqlService.gql({
-      query: quotaQuery,
+      query: getCurrentUserProfileQuery,
       context: {
         signal: abortSignal,
       },

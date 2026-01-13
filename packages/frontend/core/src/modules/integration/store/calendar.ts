@@ -1,6 +1,4 @@
 import {
-  type CalendarAccountCalendarsQuery,
-  calendarAccountCalendarsQuery,
   type CalendarAccountsQuery,
   calendarAccountsQuery,
   type CalendarEventsQuery,
@@ -34,38 +32,27 @@ export class CalendarStore extends Store {
 
   async fetchAccounts(signal?: AbortSignal) {
     const gql = this.gql;
-    if (!gql) return [] satisfies CalendarAccountsQuery['calendarAccounts'];
+    if (!gql)
+      return [] satisfies NonNullable<
+        CalendarAccountsQuery['currentUser']
+      >['calendarAccounts'];
     const data = await gql({
       query: calendarAccountsQuery,
       context: { signal },
     });
-    return data.calendarAccounts;
-  }
-
-  async fetchAccountCalendars(accountId: string, signal?: AbortSignal) {
-    const gql = this.gql;
-    if (!gql) {
-      return [] satisfies CalendarAccountCalendarsQuery['calendarAccountCalendars'];
-    }
-    const data = await gql({
-      query: calendarAccountCalendarsQuery,
-      variables: { accountId },
-      context: { signal },
-    });
-    return data.calendarAccountCalendars;
+    return data.currentUser?.calendarAccounts ?? [];
   }
 
   async fetchWorkspaceCalendars(signal?: AbortSignal) {
     const gql = this.gql;
-    if (!gql) {
-      return [] satisfies WorkspaceCalendarsQuery['workspaceCalendars'];
-    }
+    if (!gql)
+      return [] satisfies WorkspaceCalendarsQuery['workspace']['calendars'];
     const data = await gql({
       query: workspaceCalendarsQuery,
       variables: { workspaceId: this.workspaceId },
       context: { signal },
     });
-    return data.workspaceCalendars;
+    return data.workspace.calendars;
   }
 
   async updateWorkspaceCalendars(items: WorkspaceCalendarItemInput[]) {
@@ -92,16 +79,19 @@ export class CalendarStore extends Store {
     signal?: AbortSignal
   ) {
     const gql = this.gql;
-    if (!gql) return [] satisfies CalendarEventsQuery['calendarEvents'];
+    if (!gql)
+      return [] satisfies CalendarEventsQuery['workspace']['calendars'][number]['events'];
     const data = await gql({
       query: calendarEventsQuery,
       variables: {
-        workspaceCalendarId,
+        workspaceId: this.workspaceId,
         from,
         to,
       },
       context: { signal },
     });
-    return data.calendarEvents;
+    const calendars = data.workspace.calendars;
+    const calendar = calendars.find(item => item.id === workspaceCalendarId);
+    return calendar?.events ?? [];
   }
 }
