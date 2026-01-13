@@ -210,14 +210,6 @@ export class IndexerService {
     docId: string,
     options?: OperationOptions
   ) {
-    const workspaceSnapshot = await this.models.doc.getSnapshot(
-      workspaceId,
-      workspaceId
-    );
-    if (!workspaceSnapshot) {
-      this.logger.debug(`workspace ${workspaceId} not found`);
-      return;
-    }
     const docSnapshot = await this.models.doc.getSnapshot(workspaceId, docId);
     if (!docSnapshot) {
       this.logger.debug(`doc ${workspaceId}/${docId} not found`);
@@ -227,64 +219,81 @@ export class IndexerService {
       this.logger.debug(`doc ${workspaceId}/${docId} is empty, skip indexing`);
       return;
     }
-    const result = await readAllBlocksFromDocSnapshot(docId, docSnapshot.blob);
-    if (!result) {
-      this.logger.warn(
-        `parse doc ${workspaceId}/${docId} failed, workspaceSnapshot size: ${workspaceSnapshot.blob.length}, docSnapshot size: ${docSnapshot.blob.length}`
-      );
-      return;
-    }
-    await this.write(
-      SearchTable.doc,
-      [
-        {
-          workspaceId,
-          docId,
-          title: result.title,
-          summary: result.summary,
-          // NOTE(@fengmk): journal is not supported yet
-          // journal: result.journal,
-          createdByUserId: docSnapshot.createdBy ?? '',
-          updatedByUserId: docSnapshot.updatedBy ?? '',
-          createdAt: docSnapshot.createdAt,
-          updatedAt: docSnapshot.updatedAt,
-        },
-      ],
-      options
-    );
-    await this.deleteBlocksByDocId(workspaceId, docId, options);
-    await this.write(
-      SearchTable.block,
-      result.blocks.map(block => ({
-        workspaceId,
-        docId,
-        blockId: block.blockId,
-        content: block.content ?? '',
-        flavour: block.flavour,
-        blob: block.blob,
-        refDocId: block.refDocId,
-        ref: block.ref,
-        parentFlavour: block.parentFlavour,
-        parentBlockId: block.parentBlockId,
-        additional: block.additional
-          ? JSON.stringify(block.additional)
-          : undefined,
-        markdownPreview: undefined,
-        createdByUserId: docSnapshot.createdBy ?? '',
-        updatedByUserId: docSnapshot.updatedBy ?? '',
-        createdAt: docSnapshot.createdAt,
-        updatedAt: docSnapshot.updatedAt,
-      })),
-      options
-    );
-
-    await this.queue.add('copilot.embedding.updateDoc', {
+    const metadata = {
       workspaceId,
       docId,
-    });
-    this.logger.log(
-      `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
-    );
+      docSnapshotSize: docSnapshot.blob.length,
+    };
+
+    try {
+      const result = await readAllBlocksFromDocSnapshot(
+        docId,
+        docSnapshot.blob
+      );
+      if (result) {
+        await this.write(
+          SearchTable.doc,
+          [
+            {
+              workspaceId,
+              docId,
+              title: result.title,
+              summary: result.summary,
+              // NOTE(@fengmk): journal is not supported yet
+              // journal: result.journal,
+              createdByUserId: docSnapshot.createdBy ?? '',
+              updatedByUserId: docSnapshot.updatedBy ?? '',
+              createdAt: docSnapshot.createdAt,
+              updatedAt: docSnapshot.updatedAt,
+            },
+          ],
+          options
+        );
+        await this.deleteBlocksByDocId(workspaceId, docId, options);
+        await this.write(
+          SearchTable.block,
+          result.blocks.map(block => ({
+            workspaceId,
+            docId,
+            blockId: block.blockId,
+            content: block.content ?? '',
+            flavour: block.flavour,
+            blob: block.blob,
+            refDocId: block.refDocId,
+            ref: block.ref,
+            parentFlavour: block.parentFlavour,
+            parentBlockId: block.parentBlockId,
+            additional: block.additional
+              ? JSON.stringify(block.additional)
+              : undefined,
+            markdownPreview: undefined,
+            createdByUserId: docSnapshot.createdBy ?? '',
+            updatedByUserId: docSnapshot.updatedBy ?? '',
+            createdAt: docSnapshot.createdAt,
+            updatedAt: docSnapshot.updatedAt,
+          })),
+          options
+        );
+
+        await this.queue.add('copilot.embedding.updateDoc', {
+          workspaceId,
+          docId,
+        });
+        this.logger.verbose(
+          `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
+        );
+      } else {
+        this.logger.warn(
+          `failed to parse ${workspaceId}/${docId}, no result returned`,
+          metadata
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `failed to parse ${workspaceId}/${docId}: ${err}`,
+        metadata
+      );
+    }
   }
 
   async deleteDoc(
