@@ -230,64 +230,57 @@ export class IndexerService {
         docId,
         docSnapshot.blob
       );
-      if (result) {
-        await this.write(
-          SearchTable.doc,
-          [
-            {
-              workspaceId,
-              docId,
-              title: result.title,
-              summary: result.summary,
-              // NOTE(@fengmk): journal is not supported yet
-              // journal: result.journal,
-              createdByUserId: docSnapshot.createdBy ?? '',
-              updatedByUserId: docSnapshot.updatedBy ?? '',
-              createdAt: docSnapshot.createdAt,
-              updatedAt: docSnapshot.updatedAt,
-            },
-          ],
-          options
-        );
-        await this.deleteBlocksByDocId(workspaceId, docId, options);
-        await this.write(
-          SearchTable.block,
-          result.blocks.map(block => ({
+      await this.write(
+        SearchTable.doc,
+        [
+          {
             workspaceId,
             docId,
-            blockId: block.blockId,
-            content: block.content ?? '',
-            flavour: block.flavour,
-            blob: block.blob,
-            refDocId: block.refDocId,
-            ref: block.ref,
-            parentFlavour: block.parentFlavour,
-            parentBlockId: block.parentBlockId,
-            additional: block.additional
-              ? JSON.stringify(block.additional)
-              : undefined,
-            markdownPreview: undefined,
+            title: result.title,
+            summary: result.summary,
+            // NOTE(@fengmk): journal is not supported yet
+            // journal: result.journal,
             createdByUserId: docSnapshot.createdBy ?? '',
             updatedByUserId: docSnapshot.updatedBy ?? '',
             createdAt: docSnapshot.createdAt,
             updatedAt: docSnapshot.updatedAt,
-          })),
-          options
-        );
-
-        await this.queue.add('copilot.embedding.updateDoc', {
+          },
+        ],
+        options
+      );
+      await this.deleteBlocksByDocId(workspaceId, docId, options);
+      await this.write(
+        SearchTable.block,
+        result.blocks.map(block => ({
           workspaceId,
           docId,
-        });
-        this.logger.verbose(
-          `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
-        );
-      } else {
-        this.logger.warn(
-          `failed to parse ${workspaceId}/${docId}, no result returned`,
-          metadata
-        );
-      }
+          blockId: block.blockId,
+          content: block.content ?? '',
+          flavour: block.flavour,
+          blob: block.blob,
+          refDocId: block.refDocId,
+          ref: block.ref,
+          parentFlavour: block.parentFlavour,
+          parentBlockId: block.parentBlockId,
+          additional: block.additional
+            ? JSON.stringify(block.additional)
+            : undefined,
+          markdownPreview: undefined,
+          createdByUserId: docSnapshot.createdBy ?? '',
+          updatedByUserId: docSnapshot.updatedBy ?? '',
+          createdAt: docSnapshot.createdAt,
+          updatedAt: docSnapshot.updatedAt,
+        })),
+        options
+      );
+
+      await this.queue.add('copilot.embedding.updateDoc', {
+        workspaceId,
+        docId,
+      });
+      this.logger.verbose(
+        `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
+      );
     } catch (err) {
       this.logger.warn(
         `failed to parse ${workspaceId}/${docId}: ${err}`,
