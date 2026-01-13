@@ -35,6 +35,23 @@ export class DocWriter {
     markdown: string,
     editorId?: string
   ): Promise<CreateDocResult> {
+    // Fetch workspace root doc first - reject if not found
+    // The root doc (docId = workspaceId) contains meta.pages array
+    const rootDoc = await this.storage.getDoc(workspaceId, workspaceId);
+    if (!rootDoc?.bin) {
+      throw new NotFoundException(
+        `Workspace ${workspaceId} not found or has no root document`
+      );
+    }
+
+    const rootDocBin = Buffer.isBuffer(rootDoc.bin)
+      ? rootDoc.bin
+      : Buffer.from(
+          rootDoc.bin.buffer,
+          rootDoc.bin.byteOffset,
+          rootDoc.bin.byteLength
+        );
+
     const docId = nanoid();
 
     this.logger.debug(
@@ -44,36 +61,24 @@ export class DocWriter {
     // Convert markdown to y-octo binary
     const binary = markdownToDocBinary(markdown, docId);
 
-    // Push the document update to storage
-    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
-
     // Extract title from markdown (first H1 heading)
     const titleMatch = markdown.match(/^#\s+(.+?)(?:\s*#+)?\s*$/m);
     const title = titleMatch ? titleMatch[1].trim() : undefined;
 
-    // Update the workspace root doc to include this new document
-    // The root doc (docId = workspaceId) contains meta.pages array
-    const rootDoc = await this.storage.getDoc(workspaceId, workspaceId);
-    const rootDocBin = rootDoc?.bin
-      ? Buffer.isBuffer(rootDoc.bin)
-        ? rootDoc.bin
-        : Buffer.from(
-            rootDoc.bin.buffer,
-            rootDoc.bin.byteOffset,
-            rootDoc.bin.byteLength
-          )
-      : Buffer.alloc(0);
-
+    // Prepare root doc update to register the new document
     const rootDocUpdate = addDocToRootDoc(rootDocBin, docId, title);
+
+    // Push both updates together - root doc first, then the new doc
     await this.storage.pushDocUpdates(
       workspaceId,
       workspaceId,
       [rootDocUpdate],
       editorId
     );
+    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
 
     this.logger.debug(
-      `Registered doc ${docId} in workspace ${workspaceId} root doc`
+      `Created and registered doc ${docId} in workspace ${workspaceId}`
     );
 
     return { docId };
