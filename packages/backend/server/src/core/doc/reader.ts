@@ -213,11 +213,9 @@ export class DatabaseDocReader extends DocReader {
     guid: string,
     fullContent?: boolean
   ): Promise<PageDocContent | null> {
-    const docRecord = await this.workspace.getDoc(workspaceId, guid);
-    if (!docRecord) {
-      return null;
-    }
-    return this.parseDocContent(docRecord.bin, fullContent ? -1 : 150);
+    const docBinary = await this.workspace.getDocBinNative(workspaceId, guid);
+    if (!docBinary) return null;
+    return this.parseDocContent(docBinary, fullContent ? -1 : 150);
   }
 
   protected override async getWorkspaceContentWithoutCache(
