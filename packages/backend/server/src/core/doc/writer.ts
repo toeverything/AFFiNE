@@ -1,7 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
-import { markdownToDocBinary, updateDocWithMarkdown } from '../../native';
+import {
+  addDocToRootDoc,
+  markdownToDocBinary,
+  updateDocWithMarkdown,
+} from '../../native';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 export interface CreateDocResult {
@@ -40,8 +44,37 @@ export class DocWriter {
     // Convert markdown to y-octo binary
     const binary = markdownToDocBinary(markdown, docId);
 
-    // Push the update to storage
+    // Push the document update to storage
     await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
+
+    // Extract title from markdown (first H1 heading)
+    const titleMatch = markdown.match(/^#\s+(.+?)(?:\s*#+)?\s*$/m);
+    const title = titleMatch ? titleMatch[1].trim() : undefined;
+
+    // Update the workspace root doc to include this new document
+    // The root doc (docId = workspaceId) contains meta.pages array
+    const rootDoc = await this.storage.getDoc(workspaceId, workspaceId);
+    const rootDocBin = rootDoc?.bin
+      ? Buffer.isBuffer(rootDoc.bin)
+        ? rootDoc.bin
+        : Buffer.from(
+            rootDoc.bin.buffer,
+            rootDoc.bin.byteOffset,
+            rootDoc.bin.byteLength
+          )
+      : Buffer.alloc(0);
+
+    const rootDocUpdate = addDocToRootDoc(rootDocBin, docId, title);
+    await this.storage.pushDocUpdates(
+      workspaceId,
+      workspaceId,
+      [rootDocUpdate],
+      editorId
+    );
+
+    this.logger.debug(
+      `Registered doc ${docId} in workspace ${workspaceId} root doc`
+    );
 
     return { docId };
   }

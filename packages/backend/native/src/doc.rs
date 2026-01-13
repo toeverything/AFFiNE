@@ -164,3 +164,20 @@ pub fn update_doc_with_markdown(existing_binary: Buffer, new_markdown: String, d
     .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
   Ok(Buffer::from(result))
 }
+
+/// Adds a document ID to the workspace root doc's meta.pages array.
+/// This registers the document in the workspace so it appears in the UI.
+///
+/// # Arguments
+/// * `root_doc_bin` - The current root doc binary (workspaceId doc)
+/// * `doc_id` - The document ID to add
+/// * `title` - Optional title for the document
+///
+/// # Returns
+/// A Buffer containing the y-octo update binary to apply to the root doc
+#[napi]
+pub fn add_doc_to_root_doc(root_doc_bin: Buffer, doc_id: String, title: Option<String>) -> Result<Buffer> {
+  let result = doc_parser::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref())
+    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  Ok(Buffer::from(result))
+}
