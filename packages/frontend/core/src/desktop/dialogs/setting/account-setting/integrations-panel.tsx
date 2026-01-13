@@ -24,7 +24,9 @@ import {
 import { CollapsibleWrapper } from '../layout';
 import * as styles from './integrations-panel.css';
 
-type CalendarAccount = CalendarAccountsQuery['calendarAccounts'][number];
+type CalendarAccount = NonNullable<
+  CalendarAccountsQuery['currentUser']
+>['calendarAccounts'][number];
 
 const providerMeta = {
   [CalendarProviderType.Google]: {
@@ -66,8 +68,8 @@ export const IntegrationsPanel = () => {
             context: { signal },
           }),
         ]);
-        setAccounts(accountsData.calendarAccounts);
-        setProviders(providersData.calendarProviders);
+        setAccounts(accountsData.currentUser?.calendarAccounts ?? []);
+        setProviders(providersData.serverConfig.calendarProviders ?? []);
       } catch (error) {
         if (
           signal?.aborted ||

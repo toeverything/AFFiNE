@@ -2,13 +2,17 @@ import {
   Args,
   GraphQLISODateTime,
   Mutation,
-  Query,
+  Parent,
+  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 
-import { AuthenticationRequired } from '../../base';
+import { ActionForbidden, AuthenticationRequired } from '../../base';
 import { CurrentUser } from '../../core/auth';
+import { ServerConfigType } from '../../core/config/types';
 import { AccessController } from '../../core/permission';
+import { UserType } from '../../core/user';
+import { WorkspaceType } from '../../core/workspaces';
 import { Models } from '../../models';
 import { CalendarOAuthService } from './oauth';
 import { CalendarProviderFactory, CalendarProviderName } from './providers';
@@ -22,70 +26,100 @@ import {
   WorkspaceCalendarObjectType,
 } from './types';
 
-@Resolver(() => CalendarAccountObjectType)
-export class CalendarResolver {
-  constructor(
-    private readonly calendar: CalendarService,
-    private readonly oauth: CalendarOAuthService,
-    private readonly models: Models,
-    private readonly access: AccessController,
-    private readonly providerFactory: CalendarProviderFactory
-  ) {}
+@Resolver(() => ServerConfigType)
+export class CalendarServerConfigResolver {
+  constructor(private readonly providerFactory: CalendarProviderFactory) {}
 
-  @Query(() => [CalendarAccountObjectType])
-  async calendarAccounts(@CurrentUser() user: CurrentUser) {
+  @ResolveField(() => [CalendarProviderName])
+  calendarProviders() {
+    return this.providerFactory.providers;
+  }
+}
+
+@Resolver(() => UserType)
+export class UserCalendarResolver {
+  constructor(private readonly calendar: CalendarService) {}
+
+  @ResolveField(() => [CalendarAccountObjectType])
+  async calendarAccounts(
+    @CurrentUser() currentUser: CurrentUser,
+    @Parent() user: UserType
+  ) {
+    if (!currentUser || currentUser.id !== user.id) {
+      throw new ActionForbidden();
+    }
     return await this.calendar.listAccounts(user.id);
   }
+}
 
-  @Query(() => [CalendarSubscriptionObjectType])
-  async calendarAccountCalendars(
+@Resolver(() => CalendarAccountObjectType)
+export class CalendarAccountResolver {
+  constructor(private readonly calendar: CalendarService) {}
+
+  @ResolveField(() => [CalendarSubscriptionObjectType])
+  async calendars(
     @CurrentUser() user: CurrentUser,
-    @Args('accountId') accountId: string
+    @Parent() account: CalendarAccountObjectType
   ) {
-    return await this.calendar.listAccountCalendars(user.id, accountId);
+    return await this.calendar.listAccountCalendars(user.id, account.id);
   }
+}
 
-  @Query(() => [WorkspaceCalendarObjectType])
-  async workspaceCalendars(
+@Resolver(() => WorkspaceType)
+export class WorkspaceCalendarResolver {
+  constructor(
+    private readonly calendar: CalendarService,
+    private readonly access: AccessController
+  ) {}
+
+  @ResolveField(() => [WorkspaceCalendarObjectType])
+  async calendars(
     @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string
+    @Parent() workspace: WorkspaceType
   ) {
     await this.access
       .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.CreateDoc');
-    return await this.calendar.getWorkspaceCalendars(workspaceId);
+      .workspace(workspace.id)
+      .assert('Workspace.Settings.Read');
+    return await this.calendar.getWorkspaceCalendars(workspace.id);
   }
+}
 
-  @Query(() => [CalendarEventObjectType])
-  async calendarEvents(
+@Resolver(() => WorkspaceCalendarObjectType)
+export class WorkspaceCalendarEventsResolver {
+  constructor(
+    private readonly calendar: CalendarService,
+    private readonly access: AccessController
+  ) {}
+
+  @ResolveField(() => [CalendarEventObjectType])
+  async events(
     @CurrentUser() user: CurrentUser,
-    @Args('workspaceCalendarId') workspaceCalendarId: string,
+    @Parent() calendar: WorkspaceCalendarObjectType,
     @Args({ name: 'from', type: () => GraphQLISODateTime }) from: Date,
     @Args({ name: 'to', type: () => GraphQLISODateTime }) to: Date
   ) {
-    const workspaceCalendar =
-      await this.models.workspaceCalendar.get(workspaceCalendarId);
-    if (!workspaceCalendar) {
-      return [];
-    }
-
     await this.access
       .user(user.id)
-      .workspace(workspaceCalendar.workspaceId)
-      .assert('Workspace.CreateDoc');
+      .workspace(calendar.workspaceId)
+      .assert('Workspace.Settings.Read');
 
     return await this.calendar.listWorkspaceEvents({
-      workspaceCalendarId,
+      workspaceCalendarId: calendar.id,
       from,
       to,
     });
   }
+}
 
-  @Query(() => [CalendarProviderName])
-  async calendarProviders() {
-    return this.providerFactory.providers;
-  }
+@Resolver(() => CalendarAccountObjectType)
+export class CalendarMutationResolver {
+  constructor(
+    private readonly calendar: CalendarService,
+    private readonly oauth: CalendarOAuthService,
+    private readonly models: Models,
+    private readonly access: AccessController
+  ) {}
 
   @Mutation(() => String)
   async linkCalendarAccount(

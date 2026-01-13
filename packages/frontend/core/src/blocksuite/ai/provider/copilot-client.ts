@@ -6,7 +6,7 @@ import {
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
-  applyDocUpdatesQuery,
+  applyDocUpdatesMutation,
   cleanupCopilotSessionMutation,
   createCopilotContextMutation,
   createCopilotMessageMutation,
@@ -557,7 +557,7 @@ export class CopilotClient {
     updates: string
   ) {
     return this.gql({
-      query: applyDocUpdatesQuery,
+      query: applyDocUpdatesMutation,
       variables: {
         workspaceId,
         docId,
