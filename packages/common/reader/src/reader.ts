@@ -18,7 +18,7 @@ import {
   type TransformerMiddleware,
   type YBlock,
 } from '@blocksuite/affine/store';
-import { uniq, uniqBy } from 'lodash-es';
+import { uniqBy } from 'lodash-es';
 import {
   Array as YArray,
   type Doc as YDoc,
