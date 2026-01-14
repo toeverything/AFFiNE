@@ -280,20 +280,20 @@ export const ga4 = {
 
   reset() {
     if (!ensureGtagLoaded()) return;
-    window.gtag('set', 'user_id', undefined);
-    window.gtag('set', 'user_properties', {});
+    window.gtag?.('set', 'user_id', undefined);
+    window.gtag?.('set', 'user_properties', {});
   },
 
   setUserId(userId?: string) {
     if (!ensureGtagLoaded()) return;
-    window.gtag('set', 'user_id', userId ? String(userId) : undefined);
+    window.gtag?.('set', 'user_id', userId ? String(userId) : undefined);
   },
 
   setUserProperties(props: Record<string, unknown>) {
     if (!ensureGtagLoaded()) return;
     const sanitized = sanitizeUserProperties(props);
     if (Object.keys(sanitized).length === 0) return;
-    window.gtag('set', 'user_properties', sanitized);
+    window.gtag?.('set', 'user_properties', sanitized);
   },
 
   track(eventName: string, props: Record<string, unknown> = {}) {
@@ -302,7 +302,7 @@ export const ga4 = {
     if (!EVENT_NAME_RE.test(mappedEvent)) return;
 
     const sanitized = sanitizeParams(props);
-    window.gtag('event', mappedEvent, sanitized);
+    window.gtag?.('event', mappedEvent, sanitized);
   },
 
   pageview(props: Record<string, unknown> = {}) {
@@ -323,7 +323,7 @@ export const ga4 = {
     delete customParams.location;
 
     const sanitized = sanitizeParams(customParams, 22);
-    window.gtag('event', 'page_view', {
+    window.gtag?.('event', 'page_view', {
       page_location: pageLocation,
       page_path: pagePath,
       page_title: document.title,
