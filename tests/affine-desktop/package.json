@@ -13,5 +13,5 @@
     "fs-extra": "^11.2.0",
     "playwright": "=1.52.0"
   },
-  "version": "0.25.7"
+  "version": "0.26.0"
 }

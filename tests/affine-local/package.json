@@ -12,5 +12,5 @@
     "@playwright/test": "=1.52.0",
     "webpack": "^5.102.1"
   },
-  "version": "0.25.7"
+  "version": "0.26.0"
 }
