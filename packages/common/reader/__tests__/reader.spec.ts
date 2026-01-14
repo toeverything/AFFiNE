@@ -2,7 +2,13 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { expect, test } from 'vitest';
-import { applyUpdate, Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  Map as YMap,
+  Text as YText,
+} from 'yjs';
 
 import {
   parsePageDoc,
@@ -159,4 +165,80 @@ test('should parse page full doc work with ai editable', () => {
   });
 
   expect(result.md).toMatchSnapshot();
+});
+
+test('should index references from database rich-text cells', async () => {
+  const doc = new YDoc({
+    guid: 'db-doc',
+  });
+  const blocks = doc.getMap('blocks');
+
+  const pageTitle = new YText();
+  pageTitle.insert(0, 'Page');
+  const page = new YMap();
+  page.set('sys:id', 'page');
+  page.set('sys:flavour', 'affine:page');
+  page.set('sys:children', YArray.from(['note']));
+  page.set('prop:title', pageTitle);
+  blocks.set('page', page);
+
+  const note = new YMap();
+  note.set('sys:id', 'note');
+  note.set('sys:flavour', 'affine:note');
+  note.set('sys:children', YArray.from(['db']));
+  note.set('prop:displayMode', 'page');
+  blocks.set('note', note);
+
+  const dbTitle = new YText();
+  dbTitle.insert(0, 'Database');
+  const db = new YMap();
+  db.set('sys:id', 'db');
+  db.set('sys:flavour', 'affine:database');
+  db.set('sys:children', new YArray());
+  db.set('prop:title', dbTitle);
+
+  const columns = new YArray();
+  const column = new YMap();
+  column.set('id', 'col1');
+  column.set('name', 'Text');
+  column.set('type', 'rich-text');
+  column.set('data', new YMap());
+  columns.push([column]);
+  db.set('prop:columns', columns);
+
+  const cellText = new YText();
+  cellText.applyDelta([
+    { insert: 'See ' },
+    {
+      insert: 'Target',
+      attributes: {
+        reference: {
+          pageId: 'target-doc',
+          params: { mode: 'page' },
+        },
+      },
+    },
+  ]);
+
+  const cell = new YMap();
+  cell.set('columnId', 'col1');
+  cell.set('value', cellText);
+  const row = new YMap();
+  row.set('col1', cell);
+  const cells = new YMap();
+  cells.set('row1', row);
+  db.set('prop:cells', cells);
+
+  blocks.set('db', db);
+
+  const result = await readAllBlocksFromDoc({
+    ydoc: doc,
+    spaceId: 'test-space',
+  });
+
+  const dbBlock = result?.blocks.find(block => block.blockId === 'db');
+  expect(dbBlock?.refDocId).toEqual(['target-doc']);
+  expect(dbBlock?.ref).toEqual([
+    JSON.stringify({ docId: 'target-doc', mode: 'page' }),
+  ]);
 });

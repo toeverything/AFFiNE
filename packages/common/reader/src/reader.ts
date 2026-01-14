@@ -18,7 +18,7 @@ import {
   type TransformerMiddleware,
   type YBlock,
 } from '@blocksuite/affine/store';
-import { uniq } from 'lodash-es';
+import { uniqBy } from 'lodash-es';
 import {
   Array as YArray,
   type Doc as YDoc,
@@ -57,6 +57,81 @@ const bookmarkFlavours = new Set([
   'affine:embed-github',
   'affine:embed-loom',
 ]);
+
+const collectInlineReferences = (
+  deltas: DeltaInsert<AffineTextAttributes>[]
+): { refDocId: string; ref: string }[] =>
+  uniqBy(
+    deltas
+      .flatMap(delta => {
+        if (
+          delta.attributes &&
+          delta.attributes.reference &&
+          delta.attributes.reference.pageId
+        ) {
+          const { pageId: refDocId, params = {} } = delta.attributes.reference;
+          return {
+            refDocId,
+            ref: JSON.stringify({ docId: refDocId, ...params }),
+          };
+        }
+        return null;
+      })
+      .filter((ref): ref is { refDocId: string; ref: string } => ref !== null),
+    item => item.ref
+  );
+
+const getTextDeltasFromCellValue = (
+  value: unknown
+): DeltaInsert<AffineTextAttributes>[] | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof YText) {
+    return value.toDelta() as DeltaInsert<AffineTextAttributes>[];
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const maybeText = value as { yText?: unknown };
+    if (maybeText.yText instanceof YText) {
+      return maybeText.yText.toDelta() as DeltaInsert<AffineTextAttributes>[];
+    }
+  }
+
+  if (value instanceof YMap) {
+    const marker = value.get('$blocksuite:internal:text$');
+    const delta = value.get('delta');
+    if (marker) {
+      if (delta instanceof YArray) {
+        return delta
+          .toArray()
+          .map(entry => (entry instanceof YMap ? entry.toJSON() : entry)) as
+          | DeltaInsert<AffineTextAttributes>[]
+          | null;
+      }
+      if (Array.isArray(delta)) {
+        return delta as DeltaInsert<AffineTextAttributes>[];
+      }
+    }
+  }
+
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    '$blocksuite:internal:text$' in value
+  ) {
+    const delta = (value as { delta?: unknown }).delta;
+    if (delta instanceof YArray) {
+      return delta.toArray() as DeltaInsert<AffineTextAttributes>[];
+    }
+    if (Array.isArray(delta)) {
+      return delta as DeltaInsert<AffineTextAttributes>[];
+    }
+  }
+
+  return null;
+};
 
 function generateMarkdownPreviewBuilder(
   workspaceId: string,
@@ -587,25 +662,7 @@ export async function readAllBlocksFromDoc({
       }
 
       const deltas: DeltaInsert<AffineTextAttributes>[] = text.toDelta();
-      const refs = uniq(
-        deltas
-          .flatMap(delta => {
-            if (
-              delta.attributes &&
-              delta.attributes.reference &&
-              delta.attributes.reference.pageId
-            ) {
-              const { pageId: refDocId, params = {} } =
-                delta.attributes.reference;
-              return {
-                refDocId,
-                ref: JSON.stringify({ docId: refDocId, ...params }),
-              };
-            }
-            return null;
-          })
-          .filter(ref => !!ref)
-      );
+      const refs = collectInlineReferences(deltas);
 
       const databaseName =
         flavour === 'affine:paragraph' && parentFlavour === 'affine:database' // if block is a database row
@@ -741,6 +798,29 @@ export async function readAllBlocksFromDoc({
         }
       }
 
+      const databaseRefs: { refDocId: string; ref: string }[] = [];
+      const cellsObj = block.get('prop:cells');
+      if (cellsObj instanceof YMap) {
+        for (const row of cellsObj.values()) {
+          if (!(row instanceof YMap)) {
+            continue;
+          }
+          for (const cell of row.values()) {
+            if (!(cell instanceof YMap)) {
+              continue;
+            }
+            const deltas = getTextDeltasFromCellValue(cell.get('value'));
+            if (!deltas?.length) {
+              continue;
+            }
+            const refs = collectInlineReferences(deltas);
+            if (refs.length) {
+              databaseRefs.push(...refs);
+            }
+          }
+        }
+      }
+
       blockDocuments.push({
         ...commonBlockProps,
         content: texts,
@@ -748,6 +828,16 @@ export async function readAllBlocksFromDoc({
           ...commonBlockProps.additional,
           databaseName: databaseTitle?.toString(),
         },
+        ...(databaseRefs.length
+          ? databaseRefs.reduce<{ refDocId: string[]; ref: string[] }>(
+              (prev, curr) => {
+                prev.refDocId.push(curr.refDocId);
+                prev.ref.push(curr.ref);
+                return prev;
+              },
+              { refDocId: [], ref: [] }
+            )
+          : {}),
       });
     } else if (flavour === 'affine:latex') {
       blockDocuments.push({

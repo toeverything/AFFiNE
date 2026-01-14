@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
@@ -8,8 +10,8 @@ use super::{
     DocContext, collect_child_ids, get_block_id, get_flavour, get_list_depth, get_string, nearest_by_flavour,
   },
   delta_markdown::{
-    DeltaToMdOptions, delta_value_to_inline_markdown, extract_inline_references, text_to_inline_markdown,
-    text_to_markdown,
+    DeltaToMdOptions, InlineReferencePayload, delta_value_to_inline_markdown, extract_inline_references,
+    extract_inline_references_from_value, text_to_inline_markdown, text_to_markdown,
   },
   value::{any_as_string, any_truthy, build_reference_payload, params_value_to_json, value_to_string},
 };
@@ -500,6 +502,11 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
         compose_additional(&display_mode, note_block_id.as_ref(), database_name.as_ref()),
       );
       info.content = Some(texts);
+      let refs = collect_database_cell_references(block);
+      if !refs.is_empty() {
+        info.ref_doc_id = Some(refs.iter().map(|r| r.doc_id.clone()).collect());
+        info.ref_info = Some(refs.into_iter().map(|r| r.payload).collect());
+      }
       blocks.push(info);
       continue;
     }
@@ -750,6 +757,38 @@ fn gather_database_texts(block: &Map) -> (Vec<String>, Option<String>) {
   (texts, database_title)
 }
 
+fn collect_database_cell_references(block: &Map) -> Vec<InlineReferencePayload> {
+  let cells_map = match block.get("prop:cells").and_then(|value| value.to_map()) {
+    Some(map) => map,
+    None => return Vec::new(),
+  };
+
+  let mut refs = Vec::new();
+  let mut seen: HashSet<(String, String)> = HashSet::new();
+
+  for row in cells_map.values() {
+    let Some(row_map) = row.to_map() else {
+      continue;
+    };
+    for cell in row_map.values() {
+      let Some(cell_map) = cell.to_map() else {
+        continue;
+      };
+      let Some(value) = cell_map.get("value") else {
+        continue;
+      };
+      for reference in extract_inline_references_from_value(&value) {
+        let key = (reference.doc_id.clone(), reference.payload.clone());
+        if seen.insert(key) {
+          refs.push(reference);
+        }
+      }
+    }
+  }
+
+  refs
+}
+
 fn gather_table_contents(block: &Map) -> Vec<String> {
   let mut contents = Vec::new();
   for key in block.keys() {
@@ -983,6 +1022,9 @@ fn append_summary(summary: &mut String, remaining: &mut isize, text_len: usize, 
 
 #[cfg(test)]
 mod tests {
+  use serde_json::json;
+  use y_octo::{AHashMap, Any, TextAttributes, TextDeltaOp, TextInsert, Value};
+
   use super::*;
 
   #[test]
@@ -998,6 +1040,97 @@ mod tests {
       serde_json::from_slice::<serde_json::Value>(json).unwrap(),
       serde_json::json!(result),
       config
+    );
+  }
+
+  #[test]
+  fn test_database_cell_references() {
+    let doc_id = "doc-with-db".to_string();
+    let doc = DocOptions::new().with_guid(doc_id.clone()).build();
+    let mut blocks = doc.get_or_create_map("blocks").unwrap();
+
+    let mut page = doc.create_map().unwrap();
+    page.insert("sys:id".into(), "page").unwrap();
+    page.insert("sys:flavour".into(), "affine:page").unwrap();
+    let mut page_children = doc.create_array().unwrap();
+    page_children.push("note").unwrap();
+    page.insert("sys:children".into(), Value::Array(page_children)).unwrap();
+    let mut page_title = doc.create_text().unwrap();
+    page_title.insert(0, "Page").unwrap();
+    page.insert("prop:title".into(), Value::Text(page_title)).unwrap();
+    blocks.insert("page".into(), Value::Map(page)).unwrap();
+
+    let mut note = doc.create_map().unwrap();
+    note.insert("sys:id".into(), "note").unwrap();
+    note.insert("sys:flavour".into(), "affine:note").unwrap();
+    let mut note_children = doc.create_array().unwrap();
+    note_children.push("db").unwrap();
+    note.insert("sys:children".into(), Value::Array(note_children)).unwrap();
+    note.insert("prop:displayMode".into(), "page").unwrap();
+    blocks.insert("note".into(), Value::Map(note)).unwrap();
+
+    let mut db = doc.create_map().unwrap();
+    db.insert("sys:id".into(), "db").unwrap();
+    db.insert("sys:flavour".into(), "affine:database").unwrap();
+    db.insert("sys:children".into(), Value::Array(doc.create_array().unwrap()))
+      .unwrap();
+    let mut db_title = doc.create_text().unwrap();
+    db_title.insert(0, "Database").unwrap();
+    db.insert("prop:title".into(), Value::Text(db_title)).unwrap();
+
+    let mut columns = doc.create_array().unwrap();
+    let mut column = doc.create_map().unwrap();
+    column.insert("id".into(), "col1").unwrap();
+    column.insert("name".into(), "Text").unwrap();
+    column.insert("type".into(), "rich-text").unwrap();
+    column
+      .insert("data".into(), Value::Map(doc.create_map().unwrap()))
+      .unwrap();
+    columns.push(Value::Map(column)).unwrap();
+    db.insert("prop:columns".into(), Value::Array(columns)).unwrap();
+
+    let mut cell_text = doc.create_text().unwrap();
+    let mut reference = AHashMap::default();
+    reference.insert("pageId".into(), Any::String("target-doc".into()));
+    let mut params = AHashMap::default();
+    params.insert("mode".into(), Any::String("page".into()));
+    reference.insert("params".into(), Any::Object(params));
+    let mut attrs = TextAttributes::new();
+    attrs.insert("reference".into(), Any::Object(reference));
+    cell_text
+      .apply_delta(&[
+        TextDeltaOp::Insert {
+          insert: TextInsert::Text("See ".into()),
+          format: None,
+        },
+        TextDeltaOp::Insert {
+          insert: TextInsert::Text("Target".into()),
+          format: Some(attrs),
+        },
+      ])
+      .unwrap();
+
+    let mut cell = doc.create_map().unwrap();
+    cell.insert("columnId".into(), "col1").unwrap();
+    cell.insert("value".into(), Value::Text(cell_text)).unwrap();
+    let mut row = doc.create_map().unwrap();
+    row.insert("col1".into(), Value::Map(cell)).unwrap();
+    let mut cells = doc.create_map().unwrap();
+    cells.insert("row1".into(), Value::Map(row)).unwrap();
+    db.insert("prop:cells".into(), Value::Map(cells)).unwrap();
+
+    blocks.insert("db".into(), Value::Map(db)).unwrap();
+
+    let doc_bin = doc.encode_update_v1().unwrap();
+    let result = parse_doc_from_binary(doc_bin, doc_id).unwrap();
+    let db_block = result.blocks.iter().find(|block| block.block_id == "db").unwrap();
+    assert_eq!(db_block.ref_doc_id, Some(vec!["target-doc".to_string()]));
+    assert_eq!(
+      db_block.ref_info,
+      Some(vec![build_reference_payload(
+        "target-doc",
+        Some(json!({"mode": "page"}))
+      )])
     );
   }
 
