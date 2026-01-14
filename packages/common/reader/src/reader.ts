@@ -18,7 +18,7 @@ import {
   type TransformerMiddleware,
   type YBlock,
 } from '@blocksuite/affine/store';
-import { uniq } from 'lodash-es';
+import { uniq, uniqBy } from 'lodash-es';
 import {
   Array as YArray,
   type Doc as YDoc,
@@ -61,7 +61,7 @@ const bookmarkFlavours = new Set([
 const collectInlineReferences = (
   deltas: DeltaInsert<AffineTextAttributes>[]
 ): { refDocId: string; ref: string }[] =>
-  uniq(
+  uniqBy(
     deltas
       .flatMap(delta => {
         if (
@@ -77,7 +77,8 @@ const collectInlineReferences = (
         }
         return null;
       })
-      .filter((ref): ref is { refDocId: string; ref: string } => ref !== null)
+      .filter((ref): ref is { refDocId: string; ref: string } => ref !== null),
+    item => item.ref
   );
 
 const getTextDeltasFromCellValue = (
