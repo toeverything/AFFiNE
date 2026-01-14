@@ -26,6 +26,18 @@ export interface PageDetailEditorProps {
 }
 
 export const PageDetailEditor = ({
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+
+  useEffect(() => {
+    const text = document.body.innerText || "";
+    const words = text.trim().split(/\s+/).filter(Boolean);
+
+    setCharCount(text.length);
+    setWordCount(words.length);
+  });
+  
+
   onLoad,
   readonly,
 }: PageDetailEditorProps) => {
@@ -52,11 +64,11 @@ export const PageDetailEditor = ({
   useEffect(() => {
     editor.doc.blockSuiteDoc.readonly = readonly ?? false;
   }, [editor, readonly]);
-
-  return (
+return (
+  <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
     <BlockSuiteEditor
       className={clsx(styles.editor, {
-        'full-screen': !isSharedMode && fullWidthLayout,
+        'full-screen': isSharedMode && fullWidthLayout,
         'is-public': isSharedMode,
       })}
       mode={mode}
@@ -66,5 +78,18 @@ export const PageDetailEditor = ({
       readonly={readonly}
       onEditorReady={onLoad}
     />
-  );
+
+    <div
+      style={{
+        padding: "8px",
+        borderTop: "1px solid #ccc",
+        fontSize: "12px",
+        opacity: 0.8
+      }}
+    >
+      Words: {wordCount} | Characters: {charCount}
+    </div>
+  </div>
+);
+
 };

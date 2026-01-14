@@ -38,3 +38,4 @@ export const LanguageSetting = () => {
     </RowLayout>
   );
 };
+
