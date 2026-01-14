@@ -1046,7 +1046,7 @@ mod tests {
   #[test]
   fn test_database_cell_references() {
     let doc_id = "doc-with-db".to_string();
-    let mut doc = DocOptions::new().with_guid(doc_id.clone()).build();
+    let doc = DocOptions::new().with_guid(doc_id.clone()).build();
     let mut blocks = doc.get_or_create_map("blocks").unwrap();
 
     let mut page = doc.create_map().unwrap();
