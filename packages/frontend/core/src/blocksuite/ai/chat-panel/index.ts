@@ -32,7 +32,6 @@ import type { SearchMenuConfig } from '../components/ai-chat-add-context';
 import type { DocDisplayConfig } from '../components/ai-chat-chips';
 import type { ChatContextValue } from '../components/ai-chat-content';
 import type {
-  AINetworkSearchConfig,
   AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
@@ -94,9 +93,6 @@ export class ChatPanel extends SignalWatcher(
 
   @property({ attribute: false })
   accessor appSidebarConfig!: AppSidebarConfig;
-
-  @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
@@ -430,7 +426,6 @@ export class ChatPanel extends SignalWatcher(
         .doc=${this.doc}
         .playgroundConfig=${this.playgroundConfig}
         .appSidebarConfig=${this.appSidebarConfig}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .docDisplayConfig=${this.docDisplayConfig}
@@ -458,7 +453,6 @@ export class ChatPanel extends SignalWatcher(
           .createSession=${this.createSession}
           .workspaceId=${this.doc.workspace.id}
           .docId=${this.doc.id}
-          .networkSearchConfig=${this.networkSearchConfig}
           .reasoningConfig=${this.reasoningConfig}
           .searchMenuConfig=${this.searchMenuConfig}
           .docDisplayConfig=${this.docDisplayConfig}

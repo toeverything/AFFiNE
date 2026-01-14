@@ -24,12 +24,8 @@ export const AIChatBlockPeekView = ({
   model,
   host,
 }: AIChatBlockPeekViewProps) => {
-  const {
-    docDisplayConfig,
-    searchMenuConfig,
-    networkSearchConfig,
-    reasoningConfig,
-  } = useAIChatConfig();
+  const { docDisplayConfig, searchMenuConfig, reasoningConfig } =
+    useAIChatConfig();
 
   const framework = useFramework();
   const serverService = framework.get(ServerService);
@@ -47,7 +43,6 @@ export const AIChatBlockPeekView = ({
       host,
       docDisplayConfig,
       searchMenuConfig,
-      networkSearchConfig,
       reasoningConfig,
       serverService,
       affineFeatureFlagService,
@@ -64,7 +59,6 @@ export const AIChatBlockPeekView = ({
     host,
     docDisplayConfig,
     searchMenuConfig,
-    networkSearchConfig,
     reasoningConfig,
     serverService,
     affineFeatureFlagService,
