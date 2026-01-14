@@ -1,6 +1,6 @@
 import { shallowEqual } from '@affine/component';
 import { ServerDeploymentType } from '@affine/graphql';
-import { mixpanel } from '@affine/track';
+import { tracker } from '@affine/track';
 import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
 import type { AuthAccountInfo, Server, ServersService } from '../../cloud';
@@ -47,19 +47,19 @@ export class TelemetryService extends Service {
     const unsubscribe = this.currentAccount$.subscribe(
       ({ account, selfHosted }) => {
         if (prevAccount) {
-          mixpanel.reset();
+          tracker.reset();
         }
         // the isSelfHosted property from environment is not reliable
         if (selfHosted !== prevSelfHosted) {
-          mixpanel.register({
+          tracker.register({
             isSelfHosted: selfHosted,
           });
         }
         prevSelfHosted = selfHosted;
         prevAccount = account ?? null;
         if (account) {
-          mixpanel.identify(account.id);
-          mixpanel.people.set({
+          tracker.identify(account.id);
+          tracker.people.set({
             $email: account.email,
             $name: account.label,
             $avatar: account.avatar,
@@ -78,7 +78,7 @@ export class TelemetryService extends Service {
 
   registerMiddlewares() {
     this.disposables.push(
-      mixpanel.middleware((_event, parameters) => {
+      tracker.middleware((_event, parameters) => {
         const extraContext = this.extractGlobalContext();
         return {
           ...extraContext,

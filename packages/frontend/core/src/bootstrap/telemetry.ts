@@ -1,7 +1,7 @@
-import { mixpanel, sentry } from '@affine/track';
+import { ga4, sentry, tracker } from '@affine/track';
 import { APP_SETTINGS_STORAGE_KEY } from '@toeverything/infra/atom';
 
-mixpanel.init();
+tracker.init();
 sentry.init();
 
 if (typeof localStorage !== 'undefined') {
@@ -18,5 +18,6 @@ if (typeof localStorage !== 'undefined') {
     // see: https://docs.mixpanel.com/docs/privacy/protecting-user-data
     // mixpanel.opt_out_tracking();
     sentry.disable();
+    ga4.setEnabled(false);
   }
 }

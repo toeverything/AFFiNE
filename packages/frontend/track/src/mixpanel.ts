@@ -2,6 +2,8 @@ import { DebugLogger } from '@affine/debug';
 import type { Dict, OverridedMixpanel } from 'mixpanel-browser';
 import mixpanelBrowser from 'mixpanel-browser';
 
+import { ga4 } from './ga4';
+
 const logger = new DebugLogger('mixpanel');
 
 type Middleware = (
@@ -43,9 +45,11 @@ function createMixpanel() {
     register(props: Dict) {
       logger.debug('register with', props);
       mixpanel.register(props);
+      ga4.setUserProperties(props);
     },
     reset() {
       mixpanel.reset();
+      ga4.reset();
       this.init();
     },
     track(event_name: string, properties?: Record<string, any>) {
@@ -58,6 +62,7 @@ function createMixpanel() {
       logger.debug('track', event_name, middlewareProperties);
 
       mixpanel.track(event_name as string, middlewareProperties);
+      ga4.track(event_name as string, middlewareProperties);
     },
     middleware(cb: Middleware): () => void {
       middlewares.add(cb);
@@ -67,9 +72,11 @@ function createMixpanel() {
     },
     opt_out_tracking() {
       mixpanel.opt_out_tracking();
+      ga4.setEnabled(false);
     },
     opt_in_tracking() {
       mixpanel.opt_in_tracking();
+      ga4.setEnabled(true);
     },
     has_opted_in_tracking() {
       mixpanel.has_opted_in_tracking();
@@ -79,9 +86,16 @@ function createMixpanel() {
     },
     identify(unique_id?: string) {
       mixpanel.identify(unique_id);
+      ga4.setUserId(unique_id);
     },
     get people() {
-      return mixpanel.people;
+      const people = mixpanel.people;
+      return {
+        set: (props: Dict) => {
+          people?.set?.(props);
+          ga4.setUserProperties(props);
+        },
+      } as typeof mixpanel.people;
     },
     track_pageview(properties?: { location?: string }) {
       const middlewareProperties = Array.from(middlewares).reduce(
@@ -92,13 +106,14 @@ function createMixpanel() {
       );
       logger.debug('track_pageview', middlewareProperties);
       mixpanel.track_pageview(middlewareProperties);
+      ga4.pageview(middlewareProperties);
     },
   };
 
   return wrapped;
 }
 
-export const mixpanel = createMixpanel();
+export const tracker = createMixpanel();
 
 function createProxyHandler() {
   const handler = {
