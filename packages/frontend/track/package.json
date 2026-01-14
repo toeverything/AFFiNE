@@ -2,7 +2,7 @@
   "name": "@affine/track",
   "type": "module",
   "private": true,
-  "version": "0.25.7",
+  "version": "0.26.0",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -10,7 +10,7 @@
     "@affine/debug": "workspace:*",
     "@sentry/react": "^9.47.1",
     "mixpanel-browser": "^2.56.0",
-    "react-router-dom": "^6.30.2"
+    "react-router-dom": "^6.30.3"
   },
   "devDependencies": {
     "@types/mixpanel-browser": "^2.50.2",

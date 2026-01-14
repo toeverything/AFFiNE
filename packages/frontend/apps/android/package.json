@@ -1,6 +1,6 @@
 {
   "name": "@affine/android",
-  "version": "0.25.7",
+  "version": "0.26.0",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "scripts": {
@@ -31,7 +31,7 @@
     "next-themes": "^0.4.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-router-dom": "^6.30.2"
+    "react-router-dom": "^6.30.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",

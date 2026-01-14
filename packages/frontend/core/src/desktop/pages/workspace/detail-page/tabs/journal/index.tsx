@@ -442,7 +442,7 @@ const ConflictList = ({
   ...attrs
 }: ConflictListProps) => {
   const t = useI18n();
-  const currentDoc = useService(DocService).doc;
+  const currentDocId = useServiceOptional(DocService)?.doc.id;
   const journalService = useService(JournalService);
   const { openConfirmModal } = useConfirmModal();
 
@@ -479,7 +479,7 @@ const ConflictList = ({
       {...attrs}
     >
       {docRecords.map(docRecord => {
-        const isCurrent = docRecord.id === currentDoc.id;
+        const isCurrent = currentDocId ? docRecord.id === currentDocId : false;
         return (
           <PageItem
             aria-selected={isCurrent}

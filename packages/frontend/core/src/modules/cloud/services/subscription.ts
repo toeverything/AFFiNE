@@ -1,5 +1,5 @@
 import { type CreateCheckoutSessionInput } from '@affine/graphql';
-import { mixpanel } from '@affine/track';
+import { tracker } from '@affine/track';
 import { OnEvent, Service } from '@toeverything/infra';
 
 import { Subscription } from '../entities/subscription';
@@ -18,7 +18,7 @@ export class SubscriptionService extends Service {
       .map(sub => !!sub)
       .distinctUntilChanged()
       .subscribe(ai => {
-        mixpanel.people.set({
+        tracker.people.set({
           ai,
         });
       });
@@ -26,7 +26,7 @@ export class SubscriptionService extends Service {
       .map(sub => !!sub)
       .distinctUntilChanged()
       .subscribe(pro => {
-        mixpanel.people.set({
+        tracker.people.set({
           pro,
         });
       });

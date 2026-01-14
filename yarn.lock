@@ -230,7 +230,7 @@ __metadata:
     react-dom: "npm:^19.2.1"
     react-hook-form: "npm:^7.54.1"
     react-resizable-panels: "npm:^3.0.6"
-    react-router-dom: "npm:^7.10.1"
+    react-router-dom: "npm:^7.12.0"
     shadcn-ui: "npm:^0.9.5"
     sonner: "npm:^2.0.7"
     swr: "npm:^2.3.7"
@@ -270,7 +270,7 @@ __metadata:
     next-themes: "npm:^0.4.4"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -357,7 +357,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:19.2.1"
     react-paginate: "npm:^8.3.0"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     react-transition-state: "npm:^2.2.0"
     sonner: "npm:^2.0.7"
     storybook: "npm:^10.1.5"
@@ -476,7 +476,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-error-boundary: "npm:^6.0.0"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     react-transition-state: "npm:^2.2.0"
     react-virtuoso: "npm:^4.12.3"
     rxjs: "npm:^7.8.2"
@@ -547,7 +547,7 @@ __metadata:
     next-themes: "npm:^0.4.4"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.7.2"
     uuid: "npm:^11.1.0"
     webm-muxer: "npm:^5.0.3"
@@ -706,7 +706,7 @@ __metadata:
     next-themes: "npm:^0.4.4"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.7.2"
     yjs: "npm:^13.6.27"
   languageName: unknown
@@ -762,7 +762,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -896,7 +896,7 @@ __metadata:
     vitest: "npm:^3.2.4"
   peerDependencies:
     react: ^19.2.1
-    react-router-dom: ^7.5.1
+    react-router-dom: ^7.12.0
   languageName: unknown
   linkType: soft
 
@@ -1062,7 +1062,7 @@ __metadata:
     "@types/mixpanel-browser": "npm:^2.50.2"
     "@types/react": "npm:^19.0.1"
     mixpanel-browser: "npm:^2.56.0"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
@@ -1085,7 +1085,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
-    react-router-dom: "npm:^6.30.2"
+    react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -15412,10 +15412,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@remix-run/router@npm:1.23.1":
-  version: 1.23.1
-  resolution: "@remix-run/router@npm:1.23.1"
-  checksum: 10/f54845ad174564f157a2255aec8446a7f4f4e543d9d6ef9ec749d32d1fdc57273d9cc80574f87f411c2790fbe51a242273abe7002d118515038eaf4aefd3d988
+"@remix-run/router@npm:1.23.2":
+  version: 1.23.2
+  resolution: "@remix-run/router@npm:1.23.2"
+  checksum: 10/50eb497854881bbd2e1016d4eb83c935ecd618e1c3888b74718851317e3b04edbaae9fe1baa49ec08c5c52cfe7118f4664e37144813d9500f45f922d6602a782
   languageName: node
   linkType: hard
 
@@ -34078,45 +34078,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:^6.30.2":
-  version: 6.30.2
-  resolution: "react-router-dom@npm:6.30.2"
+"react-router-dom@npm:^6.30.3":
+  version: 6.30.3
+  resolution: "react-router-dom@npm:6.30.3"
   dependencies:
-    "@remix-run/router": "npm:1.23.1"
-    react-router: "npm:6.30.2"
+    "@remix-run/router": "npm:1.23.2"
+    react-router: "npm:6.30.3"
   peerDependencies:
     react: ">=16.8"
     react-dom: ">=16.8"
-  checksum: 10/ca60fd157c8e1019c9994a7262a8c054326c2d5bba4bbd3b4a19918a1a21f1486cf7a1087dd3aee22c01381496b4712cd80cbd5b5388c956cdbb58541ee52194
+  checksum: 10/db974d801070e9967a076b31edca902e127793e02dc79f364461b94e81846a588c241d72e069f5b586b4a90ffd99798f5cb97753ac9d22fe90afa6dc008ab520
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:^7.10.1":
-  version: 7.10.1
-  resolution: "react-router-dom@npm:7.10.1"
+"react-router-dom@npm:^7.12.0":
+  version: 7.12.0
+  resolution: "react-router-dom@npm:7.12.0"
   dependencies:
-    react-router: "npm:7.10.1"
+    react-router: "npm:7.12.0"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10/a3dbf65aa036015a8199bc40a0863bda8234ed71c0df32e5c7355380ff1337aa346cc516837c2e4dce0edd6a96d3d9625cbcccd388b265b8b809f0d89cd3e85f
+  checksum: 10/d2733cbb00f00617a227a454b3fb76645433ce8564b02a0ff05064a2da782ce192a8d87a2f2ab0c92f899689c0b562096ec8217b6af483b97c17e540257ed5e9
   languageName: node
   linkType: hard
 
-"react-router@npm:6.30.2":
-  version: 6.30.2
-  resolution: "react-router@npm:6.30.2"
+"react-router@npm:6.30.3":
+  version: 6.30.3
+  resolution: "react-router@npm:6.30.3"
   dependencies:
-    "@remix-run/router": "npm:1.23.1"
+    "@remix-run/router": "npm:1.23.2"
   peerDependencies:
     react: ">=16.8"
-  checksum: 10/537bd68aa9e8125e1b20702180d4d875421150280e2c4c039c663a105da05956a457cb4d0f4f6a56605d6cadf9b1c1282dc45a9845f81bdca9bc87364eafc073
+  checksum: 10/1a51bdcc42b8d7979228dea8b5c44a28a4add9b681781f75b74f5f920d20058a92ffe5f1d0ba0621f03abe1384b36025b53b402515ecb35f27a6a2f2f25d6fbe
   languageName: node
   linkType: hard
 
-"react-router@npm:7.10.1":
-  version: 7.10.1
-  resolution: "react-router@npm:7.10.1"
+"react-router@npm:7.12.0, react-router@npm:^7.9.4":
+  version: 7.12.0
+  resolution: "react-router@npm:7.12.0"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -34126,23 +34126,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10/0de854fe2d7d4d8f62337b829dd51fc8ce8167d8dd57e286b55ed6113a5910abe94164f47dda5f0bf2b4344abddaaf1ad6cbe87c0e63ab1ab3766155262dd7da
-  languageName: node
-  linkType: hard
-
-"react-router@npm:^7.9.4":
-  version: 7.11.0
-  resolution: "react-router@npm:7.11.0"
-  dependencies:
-    cookie: "npm:^1.0.1"
-    set-cookie-parser: "npm:^2.6.0"
-  peerDependencies:
-    react: ">=18"
-    react-dom: ">=18"
-  peerDependenciesMeta:
-    react-dom:
-      optional: true
-  checksum: 10/34c787880f19a7fadaef2906ecd0c1a1576052ad240bfba72708840d5e5181f604818351ff2e82d2761a2f33dfd63e2f68ab35ffd7552aa04563f1a7154b5b58
+  checksum: 10/578324f792721200bd57a220c7931af692613943051c9bb0c6303613849ec9a2c2365a3a6afe1b3976c13edc8f71616bb9cfdb13c0ac501f239ad11a6884e3f8
   languageName: node
   linkType: hard
 

@@ -3,7 +3,7 @@ name: renderer
 description: AFFiNE renderer server
 type: application
 version: 0.0.0
-appVersion: "0.25.7"
+appVersion: "0.26.0"
 dependencies:
   - name: gcloud-sql-proxy
     version: 0.0.0
