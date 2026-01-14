@@ -102,6 +102,49 @@ pub(super) fn extract_inline_references(delta: &[TextDeltaOp]) -> Vec<InlineRefe
   refs
 }
 
+pub(super) fn extract_inline_references_from_value(value: &Value) -> Vec<InlineReferencePayload> {
+  if let Some(text) = value.to_text() {
+    return extract_inline_references(&text.to_delta());
+  }
+
+  let Some(any) = value_to_any(value) else {
+    return Vec::new();
+  };
+
+  extract_inline_references_from_any(&any)
+}
+
+fn extract_inline_references_from_any(value: &Any) -> Vec<InlineReferencePayload> {
+  let Some(ops) = delta_ops_from_any(value) else {
+    return Vec::new();
+  };
+
+  let mut refs = Vec::new();
+  let mut seen: HashSet<(String, String)> = HashSet::new();
+
+  for op in ops {
+    let reference = match op.attributes.get("reference").and_then(parse_inline_reference) {
+      Some(reference) => reference,
+      None => continue,
+    };
+
+    let payload = match inline_reference_payload(&reference) {
+      Some(payload) => payload,
+      None => continue,
+    };
+
+    let key = (reference.page_id.clone(), payload.clone());
+    if seen.insert(key.clone()) {
+      refs.push(InlineReferencePayload {
+        doc_id: key.0,
+        payload: key.1,
+      });
+    }
+  }
+
+  refs
+}
+
 fn parse_inline_reference(value: &Any) -> Option<InlineReference> {
   let map = match value {
     Any::Object(map) => map,
