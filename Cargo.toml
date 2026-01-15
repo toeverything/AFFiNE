@@ -46,7 +46,7 @@ resolver = "3"
   libc = "0.2"
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }
-  memory-indexer = "0.2.1"
+  memory-indexer = "0.3.0"
   mimalloc = "0.1"
   mp4parse = "0.17"
   nanoid = "0.4"
