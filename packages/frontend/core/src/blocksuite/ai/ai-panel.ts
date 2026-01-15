@@ -1,4 +1,3 @@
-import { AINetworkSearchService } from '@affine/core/modules/ai-button/services/network-search';
 import { Bound } from '@blocksuite/affine/global/gfx';
 import {
   ImageBlockModel,
@@ -22,7 +21,6 @@ import {
   ReplaceIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
-import type { FrameworkProvider } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 
 import { insertFromMarkdown } from '../utils';
@@ -301,11 +299,9 @@ export function buildCopyConfig(panel: AffineAIPanelWidget) {
 }
 
 export function buildAIPanelConfig(
-  panel: AffineAIPanelWidget,
-  framework: FrameworkProvider
+  panel: AffineAIPanelWidget
 ): AffineAIPanelWidgetConfig {
   const ctx = new AIContext();
-  const searchService = framework.get(AINetworkSearchService);
   return {
     answerRenderer: createAIScrollableTextRenderer(
       {
@@ -318,10 +314,5 @@ export function buildAIPanelConfig(
     generatingStateConfig: buildGeneratingConfig(),
     errorStateConfig: buildErrorConfig(panel),
     copy: buildCopyConfig(panel),
-    networkSearchConfig: {
-      visible: searchService.visible,
-      enabled: searchService.enabled,
-      setEnabled: searchService.setEnabled,
-    },
   };
 }

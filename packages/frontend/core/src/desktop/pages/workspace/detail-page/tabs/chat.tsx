@@ -58,7 +58,6 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
   const {
     docDisplayConfig,
     searchMenuConfig,
-    networkSearchConfig,
     reasoningConfig,
     playgroundConfig,
   } = useAIChatConfig();
@@ -88,7 +87,6 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
 
       chatPanelRef.current.docDisplayConfig = docDisplayConfig;
       chatPanelRef.current.searchMenuConfig = searchMenuConfig;
-      chatPanelRef.current.networkSearchConfig = networkSearchConfig;
       chatPanelRef.current.reasoningConfig = reasoningConfig;
       chatPanelRef.current.playgroundConfig = playgroundConfig;
       chatPanelRef.current.extensions = specs;
@@ -139,7 +137,6 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     docDisplayConfig,
     editor,
     framework,
-    networkSearchConfig,
     searchMenuConfig,
     reasoningConfig,
     playgroundConfig,

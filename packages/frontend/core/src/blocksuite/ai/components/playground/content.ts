@@ -16,11 +16,7 @@ import type { AppSidebarConfig } from '../../chat-panel/chat-config';
 import { AIProvider } from '../../provider';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { DocDisplayConfig } from '../ai-chat-chips';
-import type {
-  AINetworkSearchConfig,
-  AIPlaygroundConfig,
-  AIReasoningConfig,
-} from '../ai-chat-input';
+import type { AIPlaygroundConfig, AIReasoningConfig } from '../ai-chat-input';
 
 export class PlaygroundContent extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -63,9 +59,6 @@ export class PlaygroundContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor doc!: Store;
-
-  @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
@@ -347,7 +340,6 @@ export class PlaygroundContent extends SignalWatcher(
                 .host=${this.host}
                 .doc=${this.doc}
                 .session=${session}
-                .networkSearchConfig=${this.networkSearchConfig}
                 .reasoningConfig=${this.reasoningConfig}
                 .playgroundConfig=${this.playgroundConfig}
                 .appSidebarConfig=${this.appSidebarConfig}
