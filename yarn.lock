@@ -26695,18 +26695,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^20.0.0":
-  version: 20.0.7
-  resolution: "happy-dom@npm:20.0.7"
-  dependencies:
-    "@types/node": "npm:^20.0.0"
-    "@types/whatwg-mimetype": "npm:^3.0.2"
-    whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10/1161bfe8fcac0fd093b8fbe8af29e8a6525437f17424be97b21401f0741e6473541b30b080066a32990b884eae4b83a1fd1f948a52607975bc98d1b90b394509
-  languageName: node
-  linkType: hard
-
-"happy-dom@npm:^20.3.0":
+"happy-dom@npm:^20.0.0, happy-dom@npm:^20.3.0":
   version: 20.3.0
   resolution: "happy-dom@npm:20.3.0"
   dependencies:
@@ -38882,22 +38871,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.17.1, ws@npm:^8.18.0, ws@npm:^8.18.2":
-  version: 8.18.3
-  resolution: "ws@npm:8.18.3"
-  peerDependencies:
-    bufferutil: ^4.0.1
-    utf-8-validate: ">=5.0.2"
-  peerDependenciesMeta:
-    bufferutil:
-      optional: true
-    utf-8-validate:
-      optional: true
-  checksum: 10/725964438d752f0ab0de582cd48d6eeada58d1511c3f613485b5598a83680bedac6187c765b0fe082e2d8cc4341fc57707c813ae780feee82d0c5efe6a4c61b6
-  languageName: node
-  linkType: hard
-
-"ws@npm:^8.18.3":
+"ws@npm:^8.17.1, ws@npm:^8.18.0, ws@npm:^8.18.2, ws@npm:^8.18.3":
   version: 8.19.0
   resolution: "ws@npm:8.19.0"
   peerDependencies:
