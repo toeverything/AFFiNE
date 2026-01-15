@@ -23,6 +23,7 @@ vi.mock('@affine/core/blocksuite/manager/view', () => ({
 }));
 
 describe('ai effects registration split', () => {
+  const testTimeout = process.env.CI ? 30000 : 10000;
   const originalCustomElements = globalThis.customElements;
   const originalWindow = globalThis.window;
   const originalDocument = globalThis.document;
@@ -60,38 +61,46 @@ describe('ai effects registration split', () => {
     vi.restoreAllMocks();
   });
 
-  test('registerAIEditorEffects skips app-only elements', async () => {
-    const dom = new Window();
-    applyDomGlobals(dom);
-    const defineSpy = vi.spyOn(dom.customElements, 'define');
+  test(
+    'registerAIEditorEffects skips app-only elements',
+    async () => {
+      const dom = new Window();
+      applyDomGlobals(dom);
+      const defineSpy = vi.spyOn(dom.customElements, 'define');
 
-    const { registerAIEditorEffects } =
-      await import('@affine/core/blocksuite/ai/effects/editor');
+      const { registerAIEditorEffects } =
+        await import('@affine/core/blocksuite/ai/effects/editor');
 
-    registerAIEditorEffects();
+      registerAIEditorEffects();
 
-    const defined = new Set(defineSpy.mock.calls.map(([name]) => name));
+      const defined = new Set(defineSpy.mock.calls.map(([name]) => name));
 
-    expect(defined.has('affine-ai-chat')).toBe(true);
-    expect(defined.has('chat-panel')).toBe(false);
-    expect(defined.has('text-renderer')).toBe(true);
-  }, 10000);
+      expect(defined.has('affine-ai-chat')).toBe(true);
+      expect(defined.has('chat-panel')).toBe(false);
+      expect(defined.has('text-renderer')).toBe(true);
+    },
+    testTimeout
+  );
 
-  test('registerAIAppEffects skips editor-only elements', async () => {
-    const dom = new Window();
-    applyDomGlobals(dom);
-    const defineSpy = vi.spyOn(dom.customElements, 'define');
+  test(
+    'registerAIAppEffects skips editor-only elements',
+    async () => {
+      const dom = new Window();
+      applyDomGlobals(dom);
+      const defineSpy = vi.spyOn(dom.customElements, 'define');
 
-    const { registerAIAppEffects } =
-      await import('@affine/core/blocksuite/ai/effects/app');
+      const { registerAIAppEffects } =
+        await import('@affine/core/blocksuite/ai/effects/app');
 
-    registerAIAppEffects();
+      registerAIAppEffects();
 
-    const defined = new Set(defineSpy.mock.calls.map(([name]) => name));
+      const defined = new Set(defineSpy.mock.calls.map(([name]) => name));
 
-    expect(defined.has('ai-chat-content')).toBe(true);
-    expect(defined.has('chat-panel')).toBe(false);
-    expect(defined.has('affine-ai-chat')).toBe(false);
-    expect(defined.has('text-renderer')).toBe(true);
-  }, 10000);
+      expect(defined.has('ai-chat-content')).toBe(true);
+      expect(defined.has('chat-panel')).toBe(false);
+      expect(defined.has('affine-ai-chat')).toBe(false);
+      expect(defined.has('text-renderer')).toBe(true);
+    },
+    testTimeout
+  );
 });
