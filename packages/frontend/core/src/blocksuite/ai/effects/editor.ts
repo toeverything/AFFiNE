@@ -53,11 +53,12 @@ import { EdgelessCopilotPanel } from '../widgets/edgeless-copilot-panel';
 import { EdgelessCopilotToolbarEntry } from '../widgets/edgeless-copilot-panel/toolbar-entry';
 import { registerAISharedEffects } from './shared';
 
-let editorRegistered = false;
+const editorRegistries = new WeakSet<CustomElementRegistry>();
 
 export function registerAIEditorEffects() {
-  if (editorRegistered) return;
-  editorRegistered = true;
+  const registry = customElements;
+  if (editorRegistries.has(registry)) return;
+  editorRegistries.add(registry);
 
   registerAISharedEffects();
   componentAiItemEffects();

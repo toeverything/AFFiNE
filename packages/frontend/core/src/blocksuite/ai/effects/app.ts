@@ -38,11 +38,12 @@ import { AIChatBlockPeekView } from '../peek-view/chat-block-peek-view';
 import { DateTime } from '../peek-view/date-time';
 import { registerAISharedEffects } from './shared';
 
-let appRegistered = false;
+const appRegistries = new WeakSet<CustomElementRegistry>();
 
 export function registerAIAppEffects() {
-  if (appRegistered) return;
-  appRegistered = true;
+  const registry = customElements;
+  if (appRegistries.has(registry)) return;
+  appRegistries.add(registry);
 
   registerAISharedEffects();
   componentPlaygroundEffects();

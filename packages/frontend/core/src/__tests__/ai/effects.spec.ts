@@ -61,7 +61,6 @@ describe('ai effects registration split', () => {
   });
 
   test('registerAIEditorEffects skips app-only elements', async () => {
-    vi.resetModules();
     const dom = new Window();
     applyDomGlobals(dom);
     const defineSpy = vi.spyOn(dom.customElements, 'define');
@@ -79,7 +78,6 @@ describe('ai effects registration split', () => {
   }, 10000);
 
   test('registerAIAppEffects skips editor-only elements', async () => {
-    vi.resetModules();
     const dom = new Window();
     applyDomGlobals(dom);
     const defineSpy = vi.spyOn(dom.customElements, 'define');

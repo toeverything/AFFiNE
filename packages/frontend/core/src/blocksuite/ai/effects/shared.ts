@@ -28,11 +28,12 @@ import { AISlidesRenderer } from '../messages/slides-renderer';
 import { AIAnswerWrapper } from '../messages/wrapper';
 import { registerMiniMindmapBlocks } from '../mini-mindmap';
 
-let sharedRegistered = false;
+const sharedRegistries = new WeakSet<CustomElementRegistry>();
 
 export function registerAISharedEffects() {
-  if (sharedRegistered) return;
-  sharedRegistered = true;
+  const registry = customElements;
+  if (sharedRegistries.has(registry)) return;
+  sharedRegistries.add(registry);
 
   registerMiniMindmapBlocks();
   tooltipEffects();
