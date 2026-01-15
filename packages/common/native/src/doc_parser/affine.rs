@@ -606,6 +606,9 @@ pub fn add_doc_to_root_doc(root_doc_bin: Vec<u8>, doc_id: &str, title: Option<&s
     doc
   };
 
+  // Capture state before modifications to encode only the delta
+  let state_before = doc.get_state_vector();
+
   // Get or create the meta map
   let mut meta = doc.get_or_create_map("meta")?;
 
@@ -682,12 +685,10 @@ pub fn add_doc_to_root_doc(root_doc_bin: Vec<u8>, doc_id: &str, title: Option<&s
       .map_err(|e| ParseError::ParserError(e.to_string()))?;
   }
 
-  // Encode the update
-  let update = doc.encode_update_v1();
-  match update {
-    Ok(bytes) => Ok(bytes.to_vec()),
-    Err(e) => Err(ParseError::ParserError(e.to_string())),
-  }
+  // Encode only the changes (delta) since state_before
+  doc
+    .encode_state_as_update_v1(&state_before)
+    .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
 fn paragraph_prefix(type_: &str) -> &'static str {

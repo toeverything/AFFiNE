@@ -545,9 +545,7 @@ fn update_block_content(
     None => {
       // Clear stale checked state if block had it but shouldn't anymore
       if block.get("prop:checked").is_some() {
-        block
-          .insert("prop:checked".to_string(), Any::Undefined)
-          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+        block.remove("prop:checked");
       }
     }
   }
@@ -562,9 +560,7 @@ fn update_block_content(
     None => {
       // Clear stale language if block had it but shouldn't anymore
       if block.get("prop:language").is_some() {
-        block
-          .insert("prop:language".to_string(), Any::Undefined)
-          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+        block.remove("prop:language");
       }
     }
   }
