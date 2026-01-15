@@ -4,6 +4,20 @@ export declare class Tokenizer {
   count(content: string, allowedSpecial?: Array<string> | undefined | null): number
 }
 
+/**
+ * Adds a document ID to the workspace root doc's meta.pages array.
+ * This registers the document in the workspace so it appears in the UI.
+ *
+ * # Arguments
+ * * `root_doc_bin` - The current root doc binary (workspaceId doc)
+ * * `doc_id` - The document ID to add
+ * * `title` - Optional title for the document
+ *
+ * # Returns
+ * A Buffer containing the y-octo update binary to apply to the root doc
+ */
+export declare function addDocToRootDoc(rootDocBin: Buffer, docId: string, title?: string | undefined | null): Buffer
+
 export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
