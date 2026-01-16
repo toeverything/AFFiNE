@@ -1,6 +1,6 @@
 {
   "name": "@affine/routes",
-  "version": "0.25.7",
+  "version": "0.26.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -18,6 +18,6 @@
   },
   "peerDependencies": {
     "react": "^19.2.1",
-    "react-router-dom": "^7.5.1"
+    "react-router-dom": "^7.12.0"
   }
 }

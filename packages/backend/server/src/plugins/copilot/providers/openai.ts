@@ -394,7 +394,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       'responses' in this.#instance &&
       !this.isReasoningModel(model)
     ) {
-      return ['web_search_preview', openai.tools.webSearchPreview({})];
+      return ['web_search_preview', openai.tools.webSearch({})];
     } else if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
     }

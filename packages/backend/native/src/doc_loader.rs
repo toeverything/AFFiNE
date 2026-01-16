@@ -1,8 +1,8 @@
 use affine_common::doc_loader::Doc;
 use napi::{
+  Env, Result, Task,
   anyhow::anyhow,
   bindgen_prelude::{AsyncTask, Buffer},
-  Env, Result, Task,
 };
 
 #[napi(object)]

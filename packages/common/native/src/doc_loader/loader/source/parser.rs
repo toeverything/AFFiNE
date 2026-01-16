@@ -59,11 +59,7 @@ pub struct LanguageParser {
 
 impl Debug for LanguageParser {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(
-      f,
-      "LanguageParser {{ language: {:?} }}",
-      self.parser_options.language
-    )
+    write!(f, "LanguageParser {{ language: {:?} }}", self.parser_options.language)
   }
 }
 
@@ -77,10 +73,7 @@ impl Clone for LanguageParser {
 }
 
 pub fn get_language_by_filename(name: &str) -> LoaderResult<Language> {
-  let extension = name
-    .split('.')
-    .next_back()
-    .ok_or(LoaderError::UnsupportedLanguage)?;
+  let extension = name.split('.').next_back().ok_or(LoaderError::UnsupportedLanguage)?;
   let language = match extension.to_lowercase().as_str() {
     "rs" => Language::Rust,
     "c" => Language::C,
@@ -133,10 +126,7 @@ impl LanguageParser {
 
 impl LanguageParser {
   pub fn parse_code(&mut self, code: &String) -> LoaderResult<Vec<Document>> {
-    let tree = self
-      .parser
-      .parse(code, None)
-      .ok_or(LoaderError::UnsupportedLanguage)?;
+    let tree = self.parser.parse(code, None).ok_or(LoaderError::UnsupportedLanguage)?;
     if self.parser_options.parser_threshold > tree.root_node().end_position().row as u64 {
       return Ok(vec![Document::new(code).with_metadata(HashMap::from([
         (
@@ -152,11 +142,7 @@ impl LanguageParser {
     self.extract_functions_classes(tree, code)
   }
 
-  pub fn extract_functions_classes(
-    &self,
-    tree: Tree,
-    code: &String,
-  ) -> LoaderResult<Vec<Document>> {
+  pub fn extract_functions_classes(&self, tree: Tree, code: &String) -> LoaderResult<Vec<Document>> {
     let mut chunks = Vec::new();
 
     let count = tree.root_node().child_count();

@@ -49,3 +49,8 @@ export const readAllDocIdsFromRootDoc =
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
+
+// MCP write tools exports
+export const markdownToDocBinary = serverNativeModule.markdownToDocBinary;
+export const updateDocWithMarkdown = serverNativeModule.updateDocWithMarkdown;
+export const addDocToRootDoc = serverNativeModule.addDocToRootDoc;

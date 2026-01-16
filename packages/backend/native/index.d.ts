@@ -4,6 +4,20 @@ export declare class Tokenizer {
   count(content: string, allowedSpecial?: Array<string> | undefined | null): number
 }
 
+/**
+ * Adds a document ID to the workspace root doc's meta.pages array.
+ * This registers the document in the workspace so it appears in the UI.
+ *
+ * # Arguments
+ * * `root_doc_bin` - The current root doc binary (workspaceId doc)
+ * * `doc_id` - The document ID to add
+ * * `title` - Optional title for the document
+ *
+ * # Returns
+ * A Buffer containing the y-octo update binary to apply to the root doc
+ */
+export declare function addDocToRootDoc(rootDocBin: Buffer, docId: string, title?: string | undefined | null): Buffer
+
 export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
@@ -18,6 +32,18 @@ export declare function fromModelName(modelName: string): Tokenizer | null
 export declare function getMime(input: Uint8Array): string
 
 export declare function htmlSanitize(input: string): string
+
+/**
+ * Converts markdown content to AFFiNE-compatible y-octo document binary.
+ *
+ * # Arguments
+ * * `markdown` - The markdown content to convert
+ * * `doc_id` - The document ID to use for the y-octo doc
+ *
+ * # Returns
+ * A Buffer containing the y-octo document update binary
+ */
+export declare function markdownToDocBinary(markdown: string, docId: string): Buffer
 
 /**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
@@ -76,5 +102,19 @@ export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number |
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
+
+/**
+ * Updates an existing document with new markdown content.
+ * Uses structural and text-level diffing to apply minimal changes.
+ *
+ * # Arguments
+ * * `existing_binary` - The current document binary
+ * * `new_markdown` - The new markdown content to apply
+ * * `doc_id` - The document ID
+ *
+ * # Returns
+ * A Buffer containing only the delta (changes) as a y-octo update binary
+ */
+export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

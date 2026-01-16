@@ -1,0 +1,3 @@
+mutation linkCalendarAccount($input: LinkCalendarAccountInput!) {
+  linkCalendarAccount(input: $input)
+}

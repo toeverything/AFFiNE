@@ -64,5 +64,5 @@
   "devDependencies": {
     "vitest": "^3.2.4"
   },
-  "version": "0.25.7"
+  "version": "0.26.0"
 }

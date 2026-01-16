@@ -75,11 +75,14 @@ export async function run() {
   }
 
   const url = app.get(URLHelper);
-  const listeningHost = '0.0.0.0';
 
-  await app.listen(config.server.port, listeningHost);
+  await app.listen(config.server.port, config.server.listenAddr);
+
+  const formattedAddr = config.server.listenAddr.includes(':')
+    ? `[${config.server.listenAddr}]`
+    : config.server.listenAddr;
 
   logger.log(`AFFiNE Server is running in [${env.DEPLOYMENT_TYPE}] mode`);
-  logger.log(`Listening on http://${listeningHost}:${config.server.port}`);
+  logger.log(`Listening on http://${formattedAddr}:${config.server.port}`);
   logger.log(`And the public server should be recognized as ${url.baseUrl}`);
 }

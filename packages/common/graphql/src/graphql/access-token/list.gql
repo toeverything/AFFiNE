@@ -1,9 +1,11 @@
 query listUserAccessTokens {
-  revealedAccessTokens {
-    id
-    name
-    createdAt
-    expiresAt
-    token
+  currentUser {
+    revealedAccessTokens {
+      id
+      name
+      createdAt
+      expiresAt
+      token
+    }
   }
 }

@@ -60,7 +60,7 @@ export class NotificationStore extends Store {
       },
     });
 
-    return result.currentUser?.notificationCount;
+    return result.currentUser?.notifications.totalCount;
   }
 
   async listNotification(pagination: PaginationInput, signal?: AbortSignal) {

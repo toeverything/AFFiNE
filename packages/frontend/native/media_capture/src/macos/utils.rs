@@ -2,8 +2,8 @@ use std::{cell::RefCell, collections::HashMap, ffi::c_void, mem::size_of};
 
 use core_foundation::string::CFString;
 use coreaudio::sys::{
-  kAudioObjectPropertyElementMain, kAudioObjectPropertyScopeGlobal, AudioObjectGetPropertyData,
-  AudioObjectID, AudioObjectPropertyAddress,
+  AudioObjectGetPropertyData, AudioObjectID, AudioObjectPropertyAddress, kAudioObjectPropertyElementMain,
+  kAudioObjectPropertyScopeGlobal,
 };
 use rubato::{FastFixedIn, PolynomialDegree, Resampler};
 
@@ -29,7 +29,7 @@ impl BufferedResampler {
     let ratio = to_sr / from_sr;
     let resampler = FastFixedIn::<f32>::new(
       ratio,
-      1.0, // max_resample_ratio_relative (must be >= 1.0, use 1.0 for fixed ratio)
+      1.0,                      // max_resample_ratio_relative (must be >= 1.0, use 1.0 for fixed ratio)
       PolynomialDegree::Linear, // Use Linear interpolation quality
       RESAMPLER_INPUT_CHUNK,
       channels,
@@ -58,9 +58,7 @@ impl BufferedResampler {
       // Drain exactly one chunk per channel
       let mut chunk: Vec<Vec<f32>> = Vec::with_capacity(self.channels);
       for ch in 0..self.channels {
-        let tail = self.fifo[ch]
-          .drain(..RESAMPLER_INPUT_CHUNK)
-          .collect::<Vec<_>>();
+        let tail = self.fifo[ch].drain(..RESAMPLER_INPUT_CHUNK).collect::<Vec<_>>();
         chunk.push(tail);
       }
 
@@ -171,20 +169,14 @@ pub fn process_audio_frame(
     if current_sample_rate != target_sample_rate {
       // Use (or create) a persistent BufferedResampler
 
-      let out_vec = RESAMPLER_CACHE.with(|cache| {
+      RESAMPLER_CACHE.with(|cache| {
         let mut map = cache.borrow_mut();
-        let key = (
-          current_sample_rate as u32,
-          target_sample_rate as u32,
-          2usize,
-        );
+        let key = (current_sample_rate as u32, target_sample_rate as u32, 2usize);
         let resampler = map
           .entry(key)
           .or_insert_with(|| BufferedResampler::new(current_sample_rate, target_sample_rate, 2));
         resampler.feed(&[left, right])
-      });
-
-      out_vec
+      })
     } else {
       // No resampling needed, just interleave existing left/right data
       let mut interleaved: Vec<f32> = Vec::with_capacity(left.len() * 2);
@@ -202,11 +194,7 @@ pub fn process_audio_frame(
     if current_sample_rate != target_sample_rate {
       let out_vec = RESAMPLER_CACHE.with(|cache| {
         let mut map = cache.borrow_mut();
-        let key = (
-          current_sample_rate as u32,
-          target_sample_rate as u32,
-          1usize,
-        );
+        let key = (current_sample_rate as u32, target_sample_rate as u32, 1usize);
         let resampler = map
           .entry(key)
           .or_insert_with(|| BufferedResampler::new(current_sample_rate, target_sample_rate, 1));

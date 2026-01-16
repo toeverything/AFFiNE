@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
@@ -5,16 +7,13 @@ use y_octo::{Any, DocOptions, JwstCodecError, Map, Value};
 
 use super::{
   blocksuite::{
-    collect_child_ids, get_block_id, get_flavour, get_list_depth, get_string, nearest_by_flavour,
-    DocContext,
+    DocContext, collect_child_ids, get_block_id, get_flavour, get_list_depth, get_string, nearest_by_flavour,
   },
   delta_markdown::{
-    delta_value_to_inline_markdown, extract_inline_references, text_to_inline_markdown,
-    text_to_markdown, DeltaToMdOptions,
+    DeltaToMdOptions, InlineReferencePayload, delta_value_to_inline_markdown, extract_inline_references,
+    extract_inline_references_from_value, text_to_inline_markdown, text_to_markdown,
   },
-  value::{
-    any_as_string, any_truthy, build_reference_payload, params_value_to_json, value_to_string,
-  },
+  value::{any_as_string, any_truthy, build_reference_payload, params_value_to_json, value_to_string},
 };
 
 const SUMMARY_LIMIT: usize = 1000;
@@ -402,17 +401,10 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       None => continue,
     };
 
-    let parent_block = parent_block_id
-      .as_ref()
-      .and_then(|id| context.block_pool.get(id));
+    let parent_block = parent_block_id.as_ref().and_then(|id| context.block_pool.get(id));
     let parent_flavour = parent_block.and_then(get_flavour);
 
-    let note_block = nearest_by_flavour(
-      &block_id,
-      NOTE_FLAVOUR,
-      &context.parent_lookup,
-      &context.block_pool,
-    );
+    let note_block = nearest_by_flavour(&block_id, NOTE_FLAVOUR, &context.parent_lookup, &context.block_pool);
     let note_block_id = note_block.as_ref().and_then(get_block_id);
     let display_mode = determine_display_mode(note_block.as_ref());
 
@@ -438,14 +430,9 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       continue;
     }
 
-    if matches!(
-      flavour.as_str(),
-      "affine:paragraph" | "affine:list" | "affine:code"
-    ) {
+    if matches!(flavour.as_str(), "affine:paragraph" | "affine:list" | "affine:code") {
       if let Some(text) = block.get("prop:text").and_then(|value| value.to_text()) {
-        let database_name = if flavour == "affine:paragraph"
-          && parent_flavour.as_deref() == Some("affine:database")
-        {
+        let database_name = if flavour == "affine:paragraph" && parent_flavour.as_deref() == Some("affine:database") {
           parent_block.and_then(|map| get_string(map, "prop:title"))
         } else {
           None
@@ -467,10 +454,7 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
       continue;
     }
 
-    if matches!(
-      flavour.as_str(),
-      "affine:embed-linked-doc" | "affine:embed-synced-doc"
-    ) {
+    if matches!(flavour.as_str(), "affine:embed-linked-doc" | "affine:embed-synced-doc") {
       if let Some(page_id) = get_string(block, "prop:pageId") {
         let mut info = build_block(None);
         let payload = embed_ref_payload(block, &page_id);
@@ -515,13 +499,14 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
         &flavour,
         parent_flavour.as_ref(),
         parent_block_id.as_ref(),
-        compose_additional(
-          &display_mode,
-          note_block_id.as_ref(),
-          database_name.as_ref(),
-        ),
+        compose_additional(&display_mode, note_block_id.as_ref(), database_name.as_ref()),
       );
       info.content = Some(texts);
+      let refs = collect_database_cell_references(block);
+      if !refs.is_empty() {
+        info.ref_doc_id = Some(refs.iter().map(|r| r.doc_id.clone()).collect());
+        info.ref_info = Some(refs.into_iter().map(|r| r.payload).collect());
+      }
       blocks.push(info);
       continue;
     }
@@ -559,10 +544,7 @@ pub fn parse_doc_from_binary(doc_bin: Vec<u8>, doc_id: String) -> Result<CrawlRe
   })
 }
 
-pub fn get_doc_ids_from_binary(
-  doc_bin: Vec<u8>,
-  include_trash: bool,
-) -> Result<Vec<String>, ParseError> {
+pub fn get_doc_ids_from_binary(doc_bin: Vec<u8>, include_trash: bool) -> Result<Vec<String>, ParseError> {
   if doc_bin.is_empty() || doc_bin == [0, 0] {
     return Err(ParseError::InvalidBinary);
   }
@@ -600,6 +582,113 @@ pub fn get_doc_ids_from_binary(
   }
 
   Ok(doc_ids)
+}
+
+/// Adds a document ID to the root doc's meta.pages array.
+/// Returns a binary update that can be applied to the root doc.
+///
+/// # Arguments
+/// * `root_doc_bin` - The current root doc binary
+/// * `doc_id` - The document ID to add
+/// * `title` - Optional title for the document
+///
+/// # Returns
+/// A Vec<u8> containing the y-octo update binary to add the doc
+pub fn add_doc_to_root_doc(root_doc_bin: Vec<u8>, doc_id: &str, title: Option<&str>) -> Result<Vec<u8>, ParseError> {
+  // Handle empty or minimal root doc - create a new one
+  let doc = if root_doc_bin.is_empty() || root_doc_bin == [0, 0] {
+    DocOptions::new().build()
+  } else {
+    let mut doc = DocOptions::new().build();
+    doc
+      .apply_update_from_binary_v1(&root_doc_bin)
+      .map_err(|_| ParseError::InvalidBinary)?;
+    doc
+  };
+
+  // Capture state before modifications to encode only the delta
+  let state_before = doc.get_state_vector();
+
+  // Get or create the meta map
+  let mut meta = doc.get_or_create_map("meta")?;
+
+  // Get existing pages array or create new one
+  let pages_exists = meta.get("pages").and_then(|v| v.to_array()).is_some();
+
+  if pages_exists {
+    // Get the existing array and add to it
+    let mut pages = meta.get("pages").and_then(|v| v.to_array()).unwrap();
+
+    // Check if doc already exists
+    let doc_exists = pages.iter().any(|page_val| {
+      page_val
+        .to_map()
+        .and_then(|page| get_string(&page, "id"))
+        .map(|id| id == doc_id)
+        .unwrap_or(false)
+    });
+
+    if !doc_exists {
+      // Create a new page entry
+      let page_map = doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+      // Insert into pages array first, then populate
+      let idx = pages.len();
+      pages
+        .insert(idx, page_map)
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+      // Now get the inserted map and populate it
+      if let Some(mut inserted_page) = pages.get(idx).and_then(|v| v.to_map()) {
+        inserted_page
+          .insert("id".to_string(), Any::String(doc_id.to_string()))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+        if let Some(t) = title {
+          inserted_page
+            .insert("title".to_string(), Any::String(t.to_string()))
+            .map_err(|e| ParseError::ParserError(e.to_string()))?;
+        }
+
+        // Set createDate to current timestamp
+        let timestamp = std::time::SystemTime::now()
+          .duration_since(std::time::UNIX_EPOCH)
+          .map(|d| d.as_millis() as i64)
+          .unwrap_or(0);
+        inserted_page
+          .insert("createDate".to_string(), Any::BigInt64(timestamp))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
+  } else {
+    // Create new pages array with this doc
+    let page_entry = vec![Any::Object(
+      [
+        ("id".to_string(), Any::String(doc_id.to_string())),
+        ("title".to_string(), Any::String(title.unwrap_or("").to_string())),
+        (
+          "createDate".to_string(),
+          Any::BigInt64(
+            std::time::SystemTime::now()
+              .duration_since(std::time::UNIX_EPOCH)
+              .map(|d| d.as_millis() as i64)
+              .unwrap_or(0),
+          ),
+        ),
+      ]
+      .into_iter()
+      .collect(),
+    )];
+
+    meta
+      .insert("pages".to_string(), Any::Array(page_entry))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // Encode only the changes (delta) since state_before
+  doc
+    .encode_state_as_update_v1(&state_before)
+    .map_err(|e| ParseError::ParserError(e.to_string()))
 }
 
 fn paragraph_prefix(type_: &str) -> &'static str {
@@ -695,10 +784,7 @@ fn compose_additional(
   database_name: Option<&String>,
 ) -> Option<String> {
   let mut payload = JsonMap::new();
-  payload.insert(
-    "displayMode".into(),
-    JsonValue::String(display_mode.to_string()),
-  );
+  payload.insert("displayMode".into(), JsonValue::String(display_mode.to_string()));
   if let Some(note_id) = note_block_id {
     payload.insert("noteBlockId".into(), JsonValue::String(note_id.clone()));
   }
@@ -721,10 +807,7 @@ fn apply_doc_ref(info: &mut BlockInfo, page_id: String, payload: Option<String>)
 }
 
 fn embed_ref_payload(block: &Map, page_id: &str) -> Option<String> {
-  let params = block
-    .get("prop:params")
-    .as_ref()
-    .and_then(params_value_to_json);
+  let params = block.get("prop:params").as_ref().and_then(params_value_to_json);
   Some(build_reference_payload(page_id, params))
 }
 
@@ -746,10 +829,10 @@ fn gather_surface_texts(block: &Map) -> Vec<String> {
 
   if let Some(value_map) = elements.get("value").and_then(|value| value.to_map()) {
     for value in value_map.values() {
-      if let Some(element) = value.to_map() {
-        if let Some(text) = element.get("text").and_then(|value| value.to_text()) {
-          texts.push(text.to_string());
-        }
+      if let Some(element) = value.to_map()
+        && let Some(text) = element.get("text").and_then(|value| value.to_text())
+      {
+        texts.push(text.to_string());
       }
     }
   }
@@ -781,15 +864,47 @@ fn gather_database_texts(block: &Map) -> (Vec<String>, Option<String>) {
   (texts, database_title)
 }
 
+fn collect_database_cell_references(block: &Map) -> Vec<InlineReferencePayload> {
+  let cells_map = match block.get("prop:cells").and_then(|value| value.to_map()) {
+    Some(map) => map,
+    None => return Vec::new(),
+  };
+
+  let mut refs = Vec::new();
+  let mut seen: HashSet<(String, String)> = HashSet::new();
+
+  for row in cells_map.values() {
+    let Some(row_map) = row.to_map() else {
+      continue;
+    };
+    for cell in row_map.values() {
+      let Some(cell_map) = cell.to_map() else {
+        continue;
+      };
+      let Some(value) = cell_map.get("value") else {
+        continue;
+      };
+      for reference in extract_inline_references_from_value(&value) {
+        let key = (reference.doc_id.clone(), reference.payload.clone());
+        if seen.insert(key) {
+          refs.push(reference);
+        }
+      }
+    }
+  }
+
+  refs
+}
+
 fn gather_table_contents(block: &Map) -> Vec<String> {
   let mut contents = Vec::new();
   for key in block.keys() {
-    if key.starts_with("prop:cells.") && key.ends_with(".text") {
-      if let Some(value) = block.get(key).and_then(|value| value_to_string(&value)) {
-        if !value.is_empty() {
-          contents.push(value);
-        }
-      }
+    if key.starts_with("prop:cells.")
+      && key.ends_with(".text")
+      && let Some(value) = block.get(key).and_then(|value| value_to_string(&value))
+      && !value.is_empty()
+    {
+      contents.push(value);
     }
   }
   contents
@@ -800,11 +915,7 @@ struct DatabaseTable {
   rows: Vec<Vec<String>>,
 }
 
-fn build_database_table(
-  block: &Map,
-  context: &DocContext,
-  md_options: &DeltaToMdOptions,
-) -> Option<DatabaseTable> {
+fn build_database_table(block: &Map, context: &DocContext, md_options: &DeltaToMdOptions) -> Option<DatabaseTable> {
   let columns = parse_database_columns(block)?;
   let cells_map = block.get("prop:cells").and_then(|v| v.to_map())?;
   let child_ids = collect_child_ids(block);
@@ -826,15 +937,14 @@ fn build_database_table(
             cell_text = text;
           }
         }
-      } else if let Some(row_cells) = &row_cells {
-        if let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map()) {
-          if let Some(value) = cell_val.get("value") {
-            if let Some(text_md) = delta_value_to_inline_markdown(&value, md_options) {
-              cell_text = text_md;
-            } else {
-              cell_text = format_cell_value(&value, column);
-            }
-          }
+      } else if let Some(row_cells) = &row_cells
+        && let Some(cell_val) = row_cells.get(&column.id).and_then(|v| v.to_map())
+        && let Some(value) = cell_val.get("value")
+      {
+        if let Some(text_md) = delta_value_to_inline_markdown(&value, md_options) {
+          cell_text = text_md;
+        } else {
+          cell_text = format_cell_value(&value, column);
         }
       }
 
@@ -852,26 +962,26 @@ fn append_database_summary(summary: &mut String, block: &Map, context: &DocConte
     return;
   };
 
-  if let Some(title) = get_string(block, "prop:title") {
-    if !title.is_empty() {
-      summary.push_str(&title);
-      summary.push('|');
-    }
+  if let Some(title) = get_string(block, "prop:title")
+    && !title.is_empty()
+  {
+    summary.push_str(&title);
+    summary.push('|');
   }
 
   for column in table.columns.iter() {
-    if let Some(name) = column.name.as_ref() {
-      if !name.is_empty() {
-        summary.push_str(name);
-        summary.push('|');
-      }
+    if let Some(name) = column.name.as_ref()
+      && !name.is_empty()
+    {
+      summary.push_str(name);
+      summary.push('|');
     }
     for option in column.options.iter() {
-      if let Some(value) = option.value.as_ref() {
-        if !value.is_empty() {
-          summary.push_str(value);
-          summary.push('|');
-        }
+      if let Some(value) = option.value.as_ref()
+        && !value.is_empty()
+      {
+        summary.push_str(value);
+        summary.push('|');
       }
     }
   }
@@ -920,9 +1030,7 @@ struct DatabaseColumn {
 }
 
 fn parse_database_columns(block: &Map) -> Option<Vec<DatabaseColumn>> {
-  let columns = block
-    .get("prop:columns")
-    .and_then(|value| value.to_array())?;
+  let columns = block.get("prop:columns").and_then(|value| value.to_array())?;
   let mut parsed = Vec::new();
   for column_value in columns.iter() {
     if let Some(column) = column_value.to_map() {
@@ -967,9 +1075,7 @@ fn format_option_tag(option: &DatabaseOption) -> String {
   let value = option.value.as_deref().unwrap_or_default();
   let color = option.color.as_deref().unwrap_or_default();
 
-  format!(
-    "<span data-affine-option data-value=\"{id}\" data-option-color=\"{color}\">{value}</span>"
-  )
+  format!("<span data-affine-option data-value=\"{id}\" data-option-color=\"{color}\">{value}</span>")
 }
 
 fn format_cell_value(value: &Value, column: &DatabaseColumn) -> String {
@@ -991,15 +1097,8 @@ fn format_cell_value(value: &Value, column: &DatabaseColumn) -> String {
     }
     "multi-select" => {
       let ids: Vec<String> = match value {
-        Value::Any(Any::Array(ids)) => ids
-          .iter()
-          .filter_map(any_as_string)
-          .map(str::to_string)
-          .collect(),
-        Value::Array(array) => array
-          .iter()
-          .filter_map(|id_val| value_to_string(&id_val))
-          .collect(),
+        Value::Any(Any::Array(ids)) => ids.iter().filter_map(any_as_string).map(str::to_string).collect(),
+        Value::Array(array) => array.iter().filter_map(|id_val| value_to_string(&id_val)).collect(),
         _ => Vec::new(),
       };
 
@@ -1030,6 +1129,9 @@ fn append_summary(summary: &mut String, remaining: &mut isize, text_len: usize, 
 
 #[cfg(test)]
 mod tests {
+  use serde_json::json;
+  use y_octo::{AHashMap, Any, TextAttributes, TextDeltaOp, TextInsert, Value};
+
   use super::*;
 
   #[test]
@@ -1045,6 +1147,97 @@ mod tests {
       serde_json::from_slice::<serde_json::Value>(json).unwrap(),
       serde_json::json!(result),
       config
+    );
+  }
+
+  #[test]
+  fn test_database_cell_references() {
+    let doc_id = "doc-with-db".to_string();
+    let doc = DocOptions::new().with_guid(doc_id.clone()).build();
+    let mut blocks = doc.get_or_create_map("blocks").unwrap();
+
+    let mut page = doc.create_map().unwrap();
+    page.insert("sys:id".into(), "page").unwrap();
+    page.insert("sys:flavour".into(), "affine:page").unwrap();
+    let mut page_children = doc.create_array().unwrap();
+    page_children.push("note").unwrap();
+    page.insert("sys:children".into(), Value::Array(page_children)).unwrap();
+    let mut page_title = doc.create_text().unwrap();
+    page_title.insert(0, "Page").unwrap();
+    page.insert("prop:title".into(), Value::Text(page_title)).unwrap();
+    blocks.insert("page".into(), Value::Map(page)).unwrap();
+
+    let mut note = doc.create_map().unwrap();
+    note.insert("sys:id".into(), "note").unwrap();
+    note.insert("sys:flavour".into(), "affine:note").unwrap();
+    let mut note_children = doc.create_array().unwrap();
+    note_children.push("db").unwrap();
+    note.insert("sys:children".into(), Value::Array(note_children)).unwrap();
+    note.insert("prop:displayMode".into(), "page").unwrap();
+    blocks.insert("note".into(), Value::Map(note)).unwrap();
+
+    let mut db = doc.create_map().unwrap();
+    db.insert("sys:id".into(), "db").unwrap();
+    db.insert("sys:flavour".into(), "affine:database").unwrap();
+    db.insert("sys:children".into(), Value::Array(doc.create_array().unwrap()))
+      .unwrap();
+    let mut db_title = doc.create_text().unwrap();
+    db_title.insert(0, "Database").unwrap();
+    db.insert("prop:title".into(), Value::Text(db_title)).unwrap();
+
+    let mut columns = doc.create_array().unwrap();
+    let mut column = doc.create_map().unwrap();
+    column.insert("id".into(), "col1").unwrap();
+    column.insert("name".into(), "Text").unwrap();
+    column.insert("type".into(), "rich-text").unwrap();
+    column
+      .insert("data".into(), Value::Map(doc.create_map().unwrap()))
+      .unwrap();
+    columns.push(Value::Map(column)).unwrap();
+    db.insert("prop:columns".into(), Value::Array(columns)).unwrap();
+
+    let mut cell_text = doc.create_text().unwrap();
+    let mut reference = AHashMap::default();
+    reference.insert("pageId".into(), Any::String("target-doc".into()));
+    let mut params = AHashMap::default();
+    params.insert("mode".into(), Any::String("page".into()));
+    reference.insert("params".into(), Any::Object(params));
+    let mut attrs = TextAttributes::new();
+    attrs.insert("reference".into(), Any::Object(reference));
+    cell_text
+      .apply_delta(&[
+        TextDeltaOp::Insert {
+          insert: TextInsert::Text("See ".into()),
+          format: None,
+        },
+        TextDeltaOp::Insert {
+          insert: TextInsert::Text("Target".into()),
+          format: Some(attrs),
+        },
+      ])
+      .unwrap();
+
+    let mut cell = doc.create_map().unwrap();
+    cell.insert("columnId".into(), "col1").unwrap();
+    cell.insert("value".into(), Value::Text(cell_text)).unwrap();
+    let mut row = doc.create_map().unwrap();
+    row.insert("col1".into(), Value::Map(cell)).unwrap();
+    let mut cells = doc.create_map().unwrap();
+    cells.insert("row1".into(), Value::Map(row)).unwrap();
+    db.insert("prop:cells".into(), Value::Map(cells)).unwrap();
+
+    blocks.insert("db".into(), Value::Map(db)).unwrap();
+
+    let doc_bin = doc.encode_update_v1().unwrap();
+    let result = parse_doc_from_binary(doc_bin, doc_id).unwrap();
+    let db_block = result.blocks.iter().find(|block| block.block_id == "db").unwrap();
+    assert_eq!(db_block.ref_doc_id, Some(vec!["target-doc".to_string()]));
+    assert_eq!(
+      db_block.ref_info,
+      Some(vec![build_reference_payload(
+        "target-doc",
+        Some(json!({"mode": "page"}))
+      )])
     );
   }
 

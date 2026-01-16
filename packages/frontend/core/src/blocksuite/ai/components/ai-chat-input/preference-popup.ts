@@ -24,7 +24,6 @@ import {
   DoneIcon,
   LockIcon,
   ThinkingIcon,
-  WebIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { computed } from '@preact/signals-core';
@@ -100,19 +99,6 @@ export class ChatInputPreference extends SignalWatcher(
     | ((extendedThinking: boolean) => void)
     | undefined;
   // --------- extended thinking props end ---------
-
-  // --------- search props start ---------
-  @property({ attribute: false })
-  accessor networkSearchVisible: boolean = false;
-
-  @property({ attribute: false })
-  accessor isNetworkActive: boolean = false;
-
-  @property({ attribute: false })
-  accessor onNetworkActiveChange:
-    | ((isNetworkActive: boolean) => void)
-    | undefined;
-  // --------- search props end ---------
 
   @property({ attribute: false })
   accessor serverService!: ServerService;
@@ -206,31 +192,21 @@ export class ChatInputPreference extends SignalWatcher(
       })
     );
 
-    if (this.networkSearchVisible) {
-      searchItems.push(
-        menu.toggleSwitch({
-          name: 'Web Search',
-          prefix: WebIcon(),
-          on: this.isNetworkActive,
-          onChange: (value: boolean) => this.onNetworkActiveChange?.(value),
-          class: { 'preference-action': true },
-          testId: 'chat-network-search',
-        }),
-        menu.toggleSwitch({
-          name: 'Workspace All Docs',
-          prefix: CloudWorkspaceIcon(),
-          on:
-            !!this.toolsConfigService.config.value.searchWorkspace &&
-            !!this.toolsConfigService.config.value.readingDocs,
-          onChange: (value: boolean) =>
-            this.toolsConfigService.setConfig({
-              searchWorkspace: value,
-              readingDocs: value,
-            }),
-          class: { 'preference-action': true },
-        })
-      );
-    }
+    searchItems.push(
+      menu.toggleSwitch({
+        name: 'Workspace All Docs',
+        prefix: CloudWorkspaceIcon(),
+        on:
+          !!this.toolsConfigService.config.value.searchWorkspace &&
+          !!this.toolsConfigService.config.value.readingDocs,
+        onChange: (value: boolean) =>
+          this.toolsConfigService.setConfig({
+            searchWorkspace: value,
+            readingDocs: value,
+          }),
+        class: { 'preference-action': true },
+      })
+    );
 
     popMenu(popupTargetFromElement(element), {
       options: {

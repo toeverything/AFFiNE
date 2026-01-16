@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron-renderer",
   "private": true,
-  "version": "0.25.7",
+  "version": "0.26.0",
   "type": "module",
   "scripts": {
     "build": "affine bundle",
@@ -19,13 +19,13 @@
     "@emotion/react": "^11.14.0",
     "@sentry/react": "^9.47.1",
     "@toeverything/infra": "workspace:*",
-    "@toeverything/theme": "^1.1.16",
+    "@toeverything/theme": "^1.1.23",
     "@vanilla-extract/css": "^1.17.0",
     "async-call-rpc": "^6.4.2",
     "next-themes": "^0.4.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-router-dom": "^6.30.2",
+    "react-router-dom": "^6.30.3",
     "uuid": "^11.1.0",
     "webm-muxer": "^5.0.3"
   },

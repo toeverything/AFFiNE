@@ -1,6 +1,6 @@
 {
   "name": "@affine/web",
-  "version": "0.25.7",
+  "version": "0.26.0",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "browser": "src/index.tsx",
@@ -20,7 +20,7 @@
     "@toeverything/infra": "workspace:*",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-router-dom": "^6.30.2"
+    "react-router-dom": "^6.30.3"
   },
   "devDependencies": {
     "@types/react": "^19.0.1",

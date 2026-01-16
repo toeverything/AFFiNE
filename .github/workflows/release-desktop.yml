@@ -67,6 +67,7 @@ jobs:
           SENTRY_RELEASE: ${{ inputs.app-version }}
           RELEASE_VERSION: ${{ inputs.app-version }}
           MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4

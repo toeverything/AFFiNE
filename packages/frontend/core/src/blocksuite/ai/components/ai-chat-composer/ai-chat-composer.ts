@@ -55,11 +55,7 @@ import {
   isTagChip,
   omitChip,
 } from '../ai-chat-chips';
-import type {
-  AIChatInputContext,
-  AINetworkSearchConfig,
-  AIReasoningConfig,
-} from '../ai-chat-input';
+import type { AIChatInputContext, AIReasoningConfig } from '../ai-chat-input';
 import { MAX_IMAGE_COUNT } from '../ai-chat-input/const';
 
 export const EMBEDDING_STATUS_CHECK_INTERVAL = 10000;
@@ -112,9 +108,6 @@ export class AIChatComposer extends SignalWatcher(
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
-
-  @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
@@ -199,7 +192,6 @@ export class AIChatComposer extends SignalWatcher(
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}

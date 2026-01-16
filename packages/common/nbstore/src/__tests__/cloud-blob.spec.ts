@@ -3,7 +3,7 @@ import {
   BlobUploadMethod,
   completeBlobUploadMutation,
   createBlobUploadMutation,
-  getBlobUploadPartUrlMutation,
+  getBlobUploadPartUrlQuery,
   setBlobMutation,
   workspaceBlobQuotaQuery,
 } from '@affine/graphql';
@@ -128,10 +128,12 @@ test('falls back to graphql and aborts when multipart upload fails', async () =>
         },
       };
     }
-    if (query === getBlobUploadPartUrlMutation) {
+    if (query === getBlobUploadPartUrlQuery) {
       return {
-        getBlobUploadPartUrl: {
-          uploadUrl: 'https://upload.example.com/part',
+        workspace: {
+          blobUploadPartUrl: {
+            uploadUrl: 'https://upload.example.com/part',
+          },
         },
       };
     }

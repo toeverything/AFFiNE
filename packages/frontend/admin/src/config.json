@@ -216,6 +216,11 @@
       "type": "Array",
       "desc": "Multiple hosts the server will accept requests from."
     },
+    "listenAddr": {
+      "type": "String",
+      "desc": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).",
+      "env": "LISTEN_ADDR"
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",
@@ -240,6 +245,34 @@
       "env": "DOC_SERVICE_ENDPOINT"
     }
   },
+  "telemetry": {
+    "allowedOrigin": {
+      "type": "Array",
+      "desc": "Allowed origins for telemetry collection."
+    },
+    "ga4.measurementId": {
+      "type": "String",
+      "desc": "GA4 Measurement ID for Measurement Protocol.",
+      "env": "GA4_MEASUREMENT_ID"
+    },
+    "ga4.apiSecret": {
+      "type": "String",
+      "desc": "GA4 API secret for Measurement Protocol.",
+      "env": "GA4_API_SECRET"
+    },
+    "dedupe.ttlHours": {
+      "type": "Number",
+      "desc": "Telemetry dedupe TTL in hours."
+    },
+    "dedupe.maxEntries": {
+      "type": "Number",
+      "desc": "Telemetry dedupe max entries."
+    },
+    "batch.maxEvents": {
+      "type": "Number",
+      "desc": "Max events per telemetry batch."
+    }
+  },
   "client": {
     "versionControl.enabled": {
       "type": "Boolean",
@@ -248,6 +281,13 @@
     "versionControl.requiredVersion": {
       "type": "String",
       "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
+    }
+  },
+  "calendar": {
+    "google": {
+      "type": "Object",
+      "desc": "Google Calendar integration config",
+      "link": "https://developers.google.com/calendar/api/guides/push"
     }
   },
   "captcha": {

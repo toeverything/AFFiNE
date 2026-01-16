@@ -32,6 +32,7 @@ model User {
   WorkspaceInvitations WorkspaceUserRole[]    @relation("inviter")
   docPermissions       WorkspaceDocUserRole[]
   connectedAccounts    ConnectedAccount[]
+  calendarAccounts     CalendarAccount[]
   sessions             UserSession[]
   aiSessions           AiSession[]
   appConfigs           AppConfig[]
@@ -48,6 +49,7 @@ model User {
   replies              Reply[]
   commentAttachments   CommentAttachment[]    @relation("createdCommentAttachments")
   AccessToken          AccessToken[]
+  workspaceCalendars   WorkspaceCalendar[]
 
   @@index([email])
   @@map("users")
@@ -129,6 +131,7 @@ model Workspace {
   embedFiles                 AiWorkspaceFiles[]
   comments                   Comment[]
   commentAttachments         CommentAttachment[]
+  workspaceCalendars         WorkspaceCalendar[]
   workspaceAdminStats        WorkspaceAdminStats[]
   workspaceAdminStatsDirties WorkspaceAdminStatsDirty[]
 
@@ -910,4 +913,141 @@ model AccessToken {
 
   @@index([userId])
   @@map("access_tokens")
+}
+
+model CalendarAccount {
+  id                     String    @id @default(uuid()) @db.VarChar
+  userId                 String    @map("user_id") @db.VarChar
+  provider               String    @db.VarChar
+  providerAccountId      String    @map("provider_account_id") @db.VarChar
+  displayName            String?   @map("display_name") @db.VarChar
+  email                  String?   @db.VarChar
+  accessToken            String?   @map("access_token") @db.Text
+  refreshToken           String?   @map("refresh_token") @db.Text
+  expiresAt              DateTime? @map("expires_at") @db.Timestamptz(3)
+  scope                  String?   @db.Text
+  status                 String    @default("active") @db.VarChar
+  lastError              String?   @map("last_error") @db.Text
+  refreshIntervalMinutes Int       @default(30) @map("refresh_interval_minutes")
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions CalendarSubscription[]
+
+  @@unique([userId, provider, providerAccountId])
+  @@index([userId])
+  @@index([provider, providerAccountId])
+  @@map("calendar_accounts")
+}
+
+model CalendarSubscription {
+  id                 String    @id @default(uuid()) @db.VarChar
+  accountId          String    @map("account_id") @db.VarChar
+  provider           String    @db.VarChar
+  externalCalendarId String    @map("external_calendar_id") @db.VarChar
+  displayName        String?   @map("display_name") @db.VarChar
+  timezone           String?   @db.VarChar
+  color              String?   @db.VarChar
+  enabled            Boolean   @default(true)
+  syncToken          String?   @map("sync_token") @db.Text
+  lastSyncAt         DateTime? @map("last_sync_at") @db.Timestamptz(3)
+  customChannelId    String?   @map("custom_channel_id") @db.VarChar
+  customResourceId   String?   @map("custom_resource_id") @db.VarChar
+  channelExpiration  DateTime? @map("channel_expiration") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  account        CalendarAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  workspaceItems WorkspaceCalendarItem[]
+  events         CalendarEvent[]
+
+  @@unique([accountId, externalCalendarId])
+  @@index([accountId])
+  @@index([provider, externalCalendarId])
+  @@map("calendar_subscriptions")
+}
+
+model WorkspaceCalendar {
+  id                  String   @id @default(uuid()) @db.VarChar
+  workspaceId         String   @map("workspace_id") @db.VarChar
+  createdByUserId     String   @map("created_by_user_id") @db.VarChar
+  displayNameOverride String?  @map("display_name_override") @db.VarChar
+  colorOverride       String?  @map("color_override") @db.VarChar
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace     Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdByUser User                    @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  items         WorkspaceCalendarItem[]
+
+  @@index([workspaceId])
+  @@map("workspace_calendars")
+}
+
+model WorkspaceCalendarItem {
+  id                  String   @id @default(uuid()) @db.VarChar
+  workspaceCalendarId String   @map("workspace_calendar_id") @db.VarChar
+  subscriptionId      String   @map("subscription_id") @db.VarChar
+  sortOrder           Int?     @map("sort_order")
+  colorOverride       String?  @map("color_override") @db.VarChar
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspaceCalendar WorkspaceCalendar    @relation(fields: [workspaceCalendarId], references: [id], onDelete: Cascade)
+  subscription      CalendarSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceCalendarId, subscriptionId])
+  @@index([subscriptionId])
+  @@map("workspace_calendar_items")
+}
+
+model CalendarEvent {
+  id                String    @id @default(uuid()) @db.VarChar
+  subscriptionId    String    @map("subscription_id") @db.VarChar
+  externalEventId   String    @map("external_event_id") @db.VarChar
+  recurrenceId      String?   @map("recurrence_id") @db.VarChar
+  etag              String?   @db.VarChar
+  status            String?   @db.VarChar
+  title             String?   @db.VarChar
+  description       String?   @db.Text
+  location          String?   @db.VarChar
+  startAtUtc        DateTime  @map("start_at_utc") @db.Timestamptz(3)
+  endAtUtc          DateTime  @map("end_at_utc") @db.Timestamptz(3)
+  originalTimezone  String?   @map("original_timezone") @db.VarChar
+  allDay            Boolean   @default(false) @map("all_day")
+  providerUpdatedAt DateTime? @map("provider_updated_at") @db.Timestamptz(3)
+  raw               Json      @db.JsonB
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subscription CalendarSubscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  instances    CalendarEventInstance[]
+
+  @@unique([subscriptionId, externalEventId, recurrenceId])
+  @@index([subscriptionId, startAtUtc])
+  @@index([subscriptionId, endAtUtc])
+  @@map("calendar_events")
+}
+
+model CalendarEventInstance {
+  id                String    @id @default(uuid()) @db.VarChar
+  calendarEventId   String    @map("calendar_event_id") @db.VarChar
+  recurrenceId      String    @map("recurrence_id") @db.VarChar
+  startAtUtc        DateTime  @map("start_at_utc") @db.Timestamptz(3)
+  endAtUtc          DateTime  @map("end_at_utc") @db.Timestamptz(3)
+  originalTimezone  String?   @map("original_timezone") @db.VarChar
+  allDay            Boolean   @default(false) @map("all_day")
+  providerUpdatedAt DateTime? @map("provider_updated_at") @db.Timestamptz(3)
+  raw               Json      @db.JsonB
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  calendarEvent CalendarEvent @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
+
+  @@unique([calendarEventId, recurrenceId])
+  @@index([calendarEventId, startAtUtc])
+  @@map("calendar_event_instances")
 }

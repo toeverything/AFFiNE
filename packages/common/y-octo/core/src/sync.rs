@@ -1,21 +1,21 @@
+pub use std::sync::{Arc, Weak};
 #[allow(unused)]
 #[cfg(not(loom))]
 pub(crate) use std::sync::{
-  atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU8, Ordering},
   Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
+  atomic::{AtomicBool, AtomicU8, AtomicU16, AtomicU32, Ordering},
 };
-pub use std::sync::{Arc, Weak};
 #[cfg(all(test, not(loom)))]
 pub(crate) use std::{
-  sync::{atomic::AtomicUsize, MutexGuard},
+  sync::{MutexGuard, atomic::AtomicUsize},
   thread,
 };
 
 #[cfg(loom)]
 pub(crate) use loom::{
   sync::{
-    atomic::{AtomicBool, AtomicU16, AtomicU8, AtomicUsize, Ordering},
     Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+    atomic::{AtomicBool, AtomicU8, AtomicU16, AtomicU32, AtomicUsize, Ordering},
   },
   thread,
 };

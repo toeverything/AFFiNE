@@ -18,7 +18,15 @@ export type { DatePickerProps } from './types';
  */
 export const DatePicker = (props: DatePickerProps) => {
   const finalProps = { ...defaultDatePickerProps, ...props };
-  const { value, gapX, gapY, cellFontSize, cellSize, onChange } = finalProps;
+  const {
+    value,
+    gapX,
+    gapY,
+    cellFontSize,
+    cellSize,
+    onChange,
+    onCursorChange: handleCursorChange,
+  } = finalProps;
 
   const [mode, setMode] = useState<SelectMode>('day');
   const [cursor, setCursor] = useState(dayjs(value));
@@ -41,12 +49,16 @@ export const DatePicker = (props: DatePickerProps) => {
     [onChange]
   );
 
-  const onCursorChange = useCallback((newCursor: dayjs.Dayjs) => {
-    // validate range
-    if (newCursor.isBefore(DATE_MIN)) newCursor = dayjs(DATE_MIN);
-    else if (newCursor.isAfter(DATE_MAX)) newCursor = dayjs(DATE_MAX);
-    setCursor(newCursor);
-  }, []);
+  const onCursorChange = useCallback(
+    (newCursor: dayjs.Dayjs) => {
+      // validate range
+      if (newCursor.isBefore(DATE_MIN)) newCursor = dayjs(DATE_MIN);
+      else if (newCursor.isAfter(DATE_MAX)) newCursor = dayjs(DATE_MAX);
+      setCursor(newCursor);
+      handleCursorChange?.(newCursor);
+    },
+    [handleCursorChange]
+  );
 
   return (
     <div

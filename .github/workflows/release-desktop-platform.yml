@@ -69,6 +69,7 @@ jobs:
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       SENTRY_RELEASE: ${{ inputs.app_version }}
       MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+      GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v4
 

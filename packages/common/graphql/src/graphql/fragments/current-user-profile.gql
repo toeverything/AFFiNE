@@ -1,0 +1,36 @@
+fragment CurrentUserProfile on UserType {
+  id
+  name
+  email
+  avatarUrl
+  emailVerified
+  features
+  settings {
+    receiveInvitationEmail
+    receiveMentionEmail
+    receiveCommentEmail
+  }
+  quota {
+    name
+    blobLimit
+    storageQuota
+    historyPeriod
+    memberLimit
+    humanReadable {
+      name
+      blobLimit
+      storageQuota
+      historyPeriod
+      memberLimit
+    }
+  }
+  quotaUsage {
+    storageQuota
+  }
+  copilot {
+    quota {
+      limit
+      used
+    }
+  }
+}

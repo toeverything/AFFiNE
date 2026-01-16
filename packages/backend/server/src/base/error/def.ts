@@ -643,6 +643,14 @@ export const USER_FRIENDLY_ERRORS = {
       'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
   },
 
+  // Calendar errors
+  calendar_provider_request_error: {
+    type: 'internal_server_error',
+    args: { status: 'number', message: 'string' },
+    message: ({ status, message }) =>
+      `Calendar provider request error, status: ${status}, message: ${message}`,
+  },
+
   // Copilot errors
   copilot_session_not_found: {
     type: 'resource_not_found',

@@ -74,7 +74,7 @@ export class DocBacklinks extends Entity {
                 'markdownPreview',
               ],
               pagination: {
-                limit: 5, // the max number of backlinks to show for each doc
+                limit: BUILD_CONFIG.isElectron ? 100 : 5, // the max number of backlinks to show for each doc
               },
             },
             pagination: {
