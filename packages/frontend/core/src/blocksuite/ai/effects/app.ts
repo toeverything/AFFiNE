@@ -36,9 +36,50 @@ import { ImagePreviewGrid } from '../components/image-preview-grid';
 import { effects as componentPlaygroundEffects } from '../components/playground';
 import { AIChatBlockPeekView } from '../peek-view/chat-block-peek-view';
 import { DateTime } from '../peek-view/date-time';
+import { type AppEffectElementTag, appEffectElementTags } from './registry';
 import { registerAISharedEffects } from './shared';
 
 const appRegistries = new WeakSet<CustomElementRegistry>();
+const appElements = {
+  'chat-action-list': ChatActionList,
+  'chat-copy-more': ChatCopyMore,
+  'image-preview-grid': ImagePreviewGrid,
+  'action-wrapper': ActionWrapper,
+  'action-image-to-text': ActionImageToText,
+  'action-image': ActionImage,
+  'action-make-real': ActionMakeReal,
+  'action-mindmap': ActionMindmap,
+  'action-slides': ActionSlides,
+  'action-text': ActionText,
+  'ai-loading': AILoading,
+  'ai-chat-content': AIChatContent,
+  'ai-chat-toolbar': AIChatToolbar,
+  'ai-session-history': AISessionHistory,
+  'ai-chat-messages': AIChatMessages,
+  'ai-chat-input': AIChatInput,
+  'ai-chat-add-context': AIChatAddContext,
+  'ai-chat-embedding-status-tooltip': AIChatEmbeddingStatusTooltip,
+  'ai-chat-composer': AIChatComposer,
+  'chat-panel-chips': ChatPanelChips,
+  'ai-history-clear': AIHistoryClear,
+  'chat-panel-add-popover': ChatPanelAddPopover,
+  'chat-input-preference': ChatInputPreference,
+  'chat-panel-candidates-popover': ChatPanelCandidatesPopover,
+  'chat-panel-doc-chip': ChatPanelDocChip,
+  'chat-panel-file-chip': ChatPanelFileChip,
+  'chat-panel-tag-chip': ChatPanelTagChip,
+  'chat-panel-collection-chip': ChatPanelCollectionChip,
+  'chat-panel-selected-chip': ChatPanelSelectedChip,
+  'chat-panel-attachment-chip': ChatPanelAttachmentChip,
+  'chat-panel-chip': ChatPanelChip,
+  'chat-assistant-avatar': AssistantAvatar,
+  'chat-message-action': ChatMessageAction,
+  'chat-message-assistant': ChatMessageAssistant,
+  'chat-message-user': ChatMessageUser,
+  'ai-chat-block-peek-view': AIChatBlockPeekView,
+  'date-time': DateTime,
+  'chat-panel-split-view': ChatPanelSplitView,
+} satisfies Record<AppEffectElementTag, CustomElementConstructor>;
 
 export function registerAIAppEffects() {
   const registry = customElements;
@@ -48,48 +89,7 @@ export function registerAIAppEffects() {
   registerAISharedEffects();
   componentPlaygroundEffects();
 
-  customElements.define('chat-action-list', ChatActionList);
-  customElements.define('chat-copy-more', ChatCopyMore);
-  customElements.define('image-preview-grid', ImagePreviewGrid);
-  customElements.define('action-wrapper', ActionWrapper);
-  customElements.define('action-image-to-text', ActionImageToText);
-  customElements.define('action-image', ActionImage);
-  customElements.define('action-make-real', ActionMakeReal);
-  customElements.define('action-mindmap', ActionMindmap);
-  customElements.define('action-slides', ActionSlides);
-  customElements.define('action-text', ActionText);
-  customElements.define('ai-loading', AILoading);
-  customElements.define('ai-chat-content', AIChatContent);
-  customElements.define('ai-chat-toolbar', AIChatToolbar);
-  customElements.define('ai-session-history', AISessionHistory);
-  customElements.define('ai-chat-messages', AIChatMessages);
-  customElements.define('ai-chat-input', AIChatInput);
-  customElements.define('ai-chat-add-context', AIChatAddContext);
-  customElements.define(
-    'ai-chat-embedding-status-tooltip',
-    AIChatEmbeddingStatusTooltip
-  );
-  customElements.define('ai-chat-composer', AIChatComposer);
-  customElements.define('chat-panel-chips', ChatPanelChips);
-  customElements.define('ai-history-clear', AIHistoryClear);
-  customElements.define('chat-panel-add-popover', ChatPanelAddPopover);
-  customElements.define('chat-input-preference', ChatInputPreference);
-  customElements.define(
-    'chat-panel-candidates-popover',
-    ChatPanelCandidatesPopover
-  );
-  customElements.define('chat-panel-doc-chip', ChatPanelDocChip);
-  customElements.define('chat-panel-file-chip', ChatPanelFileChip);
-  customElements.define('chat-panel-tag-chip', ChatPanelTagChip);
-  customElements.define('chat-panel-collection-chip', ChatPanelCollectionChip);
-  customElements.define('chat-panel-selected-chip', ChatPanelSelectedChip);
-  customElements.define('chat-panel-attachment-chip', ChatPanelAttachmentChip);
-  customElements.define('chat-panel-chip', ChatPanelChip);
-  customElements.define('chat-assistant-avatar', AssistantAvatar);
-  customElements.define('chat-message-action', ChatMessageAction);
-  customElements.define('chat-message-assistant', ChatMessageAssistant);
-  customElements.define('chat-message-user', ChatMessageUser);
-  customElements.define('ai-chat-block-peek-view', AIChatBlockPeekView);
-  customElements.define('date-time', DateTime);
-  customElements.define('chat-panel-split-view', ChatPanelSplitView);
+  for (const tag of appEffectElementTags) {
+    customElements.define(tag, appElements[tag]);
+  }
 }

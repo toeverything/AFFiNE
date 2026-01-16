@@ -51,9 +51,45 @@ import {
 } from '../widgets/edgeless-copilot';
 import { EdgelessCopilotPanel } from '../widgets/edgeless-copilot-panel';
 import { EdgelessCopilotToolbarEntry } from '../widgets/edgeless-copilot-panel/toolbar-entry';
+import {
+  type EditorEffectElementTag,
+  editorEffectElementTags,
+} from './registry';
 import { registerAISharedEffects } from './shared';
 
 const editorRegistries = new WeakSet<CustomElementRegistry>();
+const editorElements = {
+  'ask-ai-icon': AskAIIcon,
+  'ask-ai-button': AskAIButton,
+  'ask-ai-toolbar-button': AskAIToolbarButton,
+  'ask-ai-panel': AskAIPanel,
+  'affine-edgeless-ai-chat': EdgelessAIChatBlockComponent,
+  'affine-ai-chat': AIChatBlockComponent,
+  'ai-chat-block-message': AIChatBlockMessage,
+  'ai-chat-block-messages': AIChatBlockMessages,
+  'ai-scrollable-text-renderer': AIScrollableTextRenderer,
+  'image-placeholder': ImagePlaceholder,
+  'chat-image': ChatImage,
+  'chat-images': ChatImages,
+  'user-info': UserInfo,
+  'generating-placeholder': GeneratingPlaceholder,
+  'ai-finish-tip': AIFinishTip,
+  'ai-panel-divider': AIPanelDivider,
+  'ai-panel-answer': AIPanelAnswer,
+  'ai-panel-input': AIPanelInput,
+  'ai-panel-generating': AIPanelGenerating,
+  'ai-panel-error': AIPanelError,
+  'ai-block-diff-options': BlockDiffOptions,
+  [AFFINE_BLOCK_DIFF_PLAYGROUND]: BlockDiffPlayground,
+  [AFFINE_BLOCK_DIFF_PLAYGROUND_MODAL]: BlockDiffPlaygroundModal,
+  [AFFINE_AI_PANEL_WIDGET]: AffineAIPanelWidget,
+  [AFFINE_EDGELESS_COPILOT_WIDGET]: EdgelessCopilotWidget,
+  [AFFINE_BLOCK_DIFF_WIDGET_FOR_BLOCK]: AffineBlockDiffWidgetForBlock,
+  [AFFINE_BLOCK_DIFF_WIDGET_FOR_PAGE]: AffineBlockDiffWidgetForPage,
+  'edgeless-copilot-panel': EdgelessCopilotPanel,
+  'edgeless-copilot-toolbar-entry': EdgelessCopilotToolbarEntry,
+  'transcription-block': LitTranscriptionBlock,
+} satisfies Record<EditorEffectElementTag, CustomElementConstructor>;
 
 export function registerAIEditorEffects() {
   const registry = customElements;
@@ -63,52 +99,7 @@ export function registerAIEditorEffects() {
   registerAISharedEffects();
   componentAiItemEffects();
 
-  customElements.define('ask-ai-icon', AskAIIcon);
-  customElements.define('ask-ai-button', AskAIButton);
-  customElements.define('ask-ai-toolbar-button', AskAIToolbarButton);
-  customElements.define('ask-ai-panel', AskAIPanel);
-  customElements.define(
-    'affine-edgeless-ai-chat',
-    EdgelessAIChatBlockComponent
-  );
-  customElements.define('affine-ai-chat', AIChatBlockComponent);
-  customElements.define('ai-chat-block-message', AIChatBlockMessage);
-  customElements.define('ai-chat-block-messages', AIChatBlockMessages);
-  customElements.define(
-    'ai-scrollable-text-renderer',
-    AIScrollableTextRenderer
-  );
-  customElements.define('image-placeholder', ImagePlaceholder);
-  customElements.define('chat-image', ChatImage);
-  customElements.define('chat-images', ChatImages);
-  customElements.define('user-info', UserInfo);
-  customElements.define('generating-placeholder', GeneratingPlaceholder);
-  customElements.define('ai-finish-tip', AIFinishTip);
-  customElements.define('ai-panel-divider', AIPanelDivider);
-  customElements.define('ai-panel-answer', AIPanelAnswer);
-  customElements.define('ai-panel-input', AIPanelInput);
-  customElements.define('ai-panel-generating', AIPanelGenerating);
-  customElements.define('ai-panel-error', AIPanelError);
-  customElements.define('ai-block-diff-options', BlockDiffOptions);
-  customElements.define(AFFINE_BLOCK_DIFF_PLAYGROUND, BlockDiffPlayground);
-  customElements.define(
-    AFFINE_BLOCK_DIFF_PLAYGROUND_MODAL,
-    BlockDiffPlaygroundModal
-  );
-  customElements.define(AFFINE_AI_PANEL_WIDGET, AffineAIPanelWidget);
-  customElements.define(AFFINE_EDGELESS_COPILOT_WIDGET, EdgelessCopilotWidget);
-  customElements.define(
-    AFFINE_BLOCK_DIFF_WIDGET_FOR_BLOCK,
-    AffineBlockDiffWidgetForBlock
-  );
-  customElements.define(
-    AFFINE_BLOCK_DIFF_WIDGET_FOR_PAGE,
-    AffineBlockDiffWidgetForPage
-  );
-  customElements.define('edgeless-copilot-panel', EdgelessCopilotPanel);
-  customElements.define(
-    'edgeless-copilot-toolbar-entry',
-    EdgelessCopilotToolbarEntry
-  );
-  customElements.define('transcription-block', LitTranscriptionBlock);
+  for (const tag of editorEffectElementTags) {
+    customElements.define(tag, editorElements[tag]);
+  }
 }

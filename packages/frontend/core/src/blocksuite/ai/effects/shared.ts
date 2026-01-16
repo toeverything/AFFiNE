@@ -27,8 +27,38 @@ import { AIErrorWrapper } from '../messages/error';
 import { AISlidesRenderer } from '../messages/slides-renderer';
 import { AIAnswerWrapper } from '../messages/wrapper';
 import { registerMiniMindmapBlocks } from '../mini-mindmap';
+import {
+  type SharedEffectElementTag,
+  sharedEffectElementTags,
+} from './registry';
 
 const sharedRegistries = new WeakSet<CustomElementRegistry>();
+const sharedElements = {
+  'ai-error-wrapper': AIErrorWrapper,
+  'ai-slides-renderer': AISlidesRenderer,
+  'ai-answer-wrapper': AIAnswerWrapper,
+  'chat-content-images': ChatContentImages,
+  'chat-content-pure-text': ChatContentPureText,
+  'chat-content-rich-text': ChatContentRichText,
+  'chat-content-stream-objects': ChatContentStreamObjects,
+  'text-renderer': TextRenderer,
+  'tool-call-card': ToolCallCard,
+  'tool-result-card': ToolResultCard,
+  'tool-call-failed': ToolFailedCard,
+  'doc-semantic-search-result': DocSemanticSearchResult,
+  'doc-keyword-search-result': DocKeywordSearchResult,
+  'doc-read-result': DocReadResult,
+  'doc-write-tool': DocWriteTool,
+  'web-crawl-tool': WebCrawlTool,
+  'web-search-tool': WebSearchTool,
+  'section-edit-tool': SectionEditTool,
+  'doc-compose-tool': DocComposeTool,
+  'code-artifact-tool': CodeArtifactTool,
+  'code-highlighter': CodeHighlighter,
+  'artifact-preview-panel': ArtifactPreviewPanel,
+  'doc-edit-tool': DocEditTool,
+  'artifact-skeleton': ArtifactSkeleton,
+} satisfies Record<SharedEffectElementTag, CustomElementConstructor>;
 
 export function registerAISharedEffects() {
   const registry = customElements;
@@ -38,31 +68,7 @@ export function registerAISharedEffects() {
   registerMiniMindmapBlocks();
   tooltipEffects();
 
-  customElements.define('ai-error-wrapper', AIErrorWrapper);
-  customElements.define('ai-slides-renderer', AISlidesRenderer);
-  customElements.define('ai-answer-wrapper', AIAnswerWrapper);
-  customElements.define('chat-content-images', ChatContentImages);
-  customElements.define('chat-content-pure-text', ChatContentPureText);
-  customElements.define('chat-content-rich-text', ChatContentRichText);
-  customElements.define(
-    'chat-content-stream-objects',
-    ChatContentStreamObjects
-  );
-  customElements.define('text-renderer', TextRenderer);
-  customElements.define('tool-call-card', ToolCallCard);
-  customElements.define('tool-result-card', ToolResultCard);
-  customElements.define('tool-call-failed', ToolFailedCard);
-  customElements.define('doc-semantic-search-result', DocSemanticSearchResult);
-  customElements.define('doc-keyword-search-result', DocKeywordSearchResult);
-  customElements.define('doc-read-result', DocReadResult);
-  customElements.define('doc-write-tool', DocWriteTool);
-  customElements.define('web-crawl-tool', WebCrawlTool);
-  customElements.define('web-search-tool', WebSearchTool);
-  customElements.define('section-edit-tool', SectionEditTool);
-  customElements.define('doc-compose-tool', DocComposeTool);
-  customElements.define('code-artifact-tool', CodeArtifactTool);
-  customElements.define('code-highlighter', CodeHighlighter);
-  customElements.define('artifact-preview-panel', ArtifactPreviewPanel);
-  customElements.define('doc-edit-tool', DocEditTool);
-  customElements.define('artifact-skeleton', ArtifactSkeleton);
+  for (const tag of sharedEffectElementTags) {
+    customElements.define(tag, sharedElements[tag]);
+  }
 }
