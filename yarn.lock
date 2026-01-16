@@ -251,6 +251,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/nbstore": "workspace:*"
+    "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
     "@capacitor/android": "npm:^7.0.0"
@@ -686,6 +687,7 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/nbstore": "workspace:*"
+    "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
     "@capacitor/app": "npm:^7.0.0"
@@ -753,6 +755,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/nbstore": "workspace:*"
+    "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
     "@sentry/react": "npm:^9.47.1"
@@ -882,6 +885,17 @@ __metadata:
     yjs: "npm:^13.6.27"
   peerDependencies:
     "@blocksuite/affine": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@affine/revert-update@workspace:tools/revert-update":
+  version: 0.0.0-use.local
+  resolution: "@affine/revert-update@workspace:tools/revert-update"
+  dependencies:
+    "@affine-tools/cli": "workspace:*"
+    "@types/node": "npm:^22.0.0"
+    typescript: "npm:^5.7.2"
+    yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
 
@@ -1059,9 +1073,8 @@ __metadata:
   dependencies:
     "@affine/debug": "workspace:*"
     "@sentry/react": "npm:^9.47.1"
-    "@types/mixpanel-browser": "npm:^2.50.2"
     "@types/react": "npm:^19.0.1"
-    mixpanel-browser: "npm:^2.56.0"
+    nanoid: "npm:^5.1.6"
     react-router-dom: "npm:^6.30.3"
     vitest: "npm:^3.2.4"
   languageName: unknown
@@ -15625,20 +15638,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rrweb/types@npm:^2.0.0-alpha.18":
-  version: 2.0.0-alpha.18
-  resolution: "@rrweb/types@npm:2.0.0-alpha.18"
-  checksum: 10/ddb632d49490ac6c20d011825b7b44e28a3783bbdabdf72f09649fdf2c5e107f756e7d926e5074b827c2311f28562905e8fa1911bbe8119ca014b3e24fb87f72
-  languageName: node
-  linkType: hard
-
-"@rrweb/utils@npm:^2.0.0-alpha.18":
-  version: 2.0.0-alpha.18
-  resolution: "@rrweb/utils@npm:2.0.0-alpha.18"
-  checksum: 10/d0ca790639816b13dcd353b9669059373c1f56585a5ad4a03c7559fd1d6cdae104e63f50f0076053b67ae1635be0f7b0e9bcb42ab9f9e094358952760499133d
-  languageName: node
-  linkType: hard
-
 "@scarf/scarf@npm:=1.4.0":
   version: 1.4.0
   resolution: "@scarf/scarf@npm:1.4.0"
@@ -17886,13 +17885,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/css-font-loading-module@npm:0.0.7":
-  version: 0.0.7
-  resolution: "@types/css-font-loading-module@npm:0.0.7"
-  checksum: 10/f70b9098ee3b2e006f5f6d5cecc627dcc7b898f266bfc594e73a8720636f1a3bc5f8c38fa0e8f7e5b7878038b46fd70da0c797c3288e072af984097210f4c056
-  languageName: node
-  linkType: hard
-
 "@types/d3-array@npm:*":
   version: 3.2.2
   resolution: "@types/d3-array@npm:3.2.2"
@@ -18562,13 +18554,6 @@ __metadata:
   version: 1.3.5
   resolution: "@types/mime@npm:1.3.5"
   checksum: 10/e29a5f9c4776f5229d84e525b7cd7dd960b51c30a0fb9a028c0821790b82fca9f672dab56561e2acd9e8eed51d431bde52eafdfef30f643586c4162f1aecfc78
-  languageName: node
-  linkType: hard
-
-"@types/mixpanel-browser@npm:^2.50.2":
-  version: 2.60.0
-  resolution: "@types/mixpanel-browser@npm:2.60.0"
-  checksum: 10/99c1f4601f5d56e86635237ff086d46593bbe826da1c0ff53e28cec146b63b8a70d15ab7fc0950c955f9e75213bac80299938478d1118c1ca3ac8b46c2b9244a
   languageName: node
   linkType: hard
 
@@ -19750,13 +19735,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xstate/fsm@npm:^1.4.0":
-  version: 1.6.5
-  resolution: "@xstate/fsm@npm:1.6.5"
-  checksum: 10/deae1501169d41d5395ce1581d7b08bde17911b7dec1533eacd5bee17060d22273055d6d6bc7e8f32222a502e4dcf510cd29064a5c9c5fa5aa2ced0ad60b2512
-  languageName: node
-  linkType: hard
-
 "@xtuc/ieee754@npm:^1.2.0":
   version: 1.2.0
   resolution: "@xtuc/ieee754@npm:1.2.0"
@@ -20609,7 +20587,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-arraybuffer@npm:^1.0.1, base64-arraybuffer@npm:^1.0.2":
+"base64-arraybuffer@npm:^1.0.2":
   version: 1.0.2
   resolution: "base64-arraybuffer@npm:1.0.2"
   checksum: 10/15e6400d2d028bf18be4ed97702b11418f8f8779fb8c743251c863b726638d52f69571d4cc1843224da7838abef0949c670bde46936663c45ad078e89fee5c62
@@ -20638,11 +20616,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.8.25":
-  version: 2.8.28
-  resolution: "baseline-browser-mapping@npm:2.8.28"
+  version: 2.9.14
+  resolution: "baseline-browser-mapping@npm:2.9.14"
   bin:
     baseline-browser-mapping: dist/cli.js
-  checksum: 10/f54abab4d61b2105c628581ae89220924ed83bcf43dbc621672e4c2498af527a054aa38f9e14dd73a11550290e6bcef6f60eaccd1f1de4f557b941b43162a5e4
+  checksum: 10/a329881e5f673c0834843640e9c954c478f643fb983449c99850392e48cf52dfb1dc3de8d81c6a6a2802c86310833accc5e3deb6bef5fb6e329989e28ca5489b
   languageName: node
   linkType: hard
 
@@ -30902,22 +30880,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mitt@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "mitt@npm:3.0.1"
-  checksum: 10/287c70d8e73ffc25624261a4989c783768aed95ecb60900f051d180cf83e311e3e59865bfd6e9d029cdb149dc20ba2f128a805e9429c5c4ce33b1416c65bbd14
-  languageName: node
-  linkType: hard
-
-"mixpanel-browser@npm:^2.56.0":
-  version: 2.65.0
-  resolution: "mixpanel-browser@npm:2.65.0"
-  dependencies:
-    rrweb: "npm:2.0.0-alpha.18"
-  checksum: 10/0cc14191ef6bc9ec051bba62807f85426cabc48154a7ee8ba0b9770237f5701a10cd8cbc6178c12ee4ddac2ebc037d81335107c41f6c633ed9bd1f8f3d40abc7
-  languageName: node
-  linkType: hard
-
 "mixpanel@npm:^0.18.0":
   version: 0.18.1
   resolution: "mixpanel@npm:0.18.1"
@@ -33273,7 +33235,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.4.33, postcss@npm:^8.4.38, postcss@npm:^8.4.41, postcss@npm:^8.4.49, postcss@npm:^8.5.6":
+"postcss@npm:^8.4.33, postcss@npm:^8.4.41, postcss@npm:^8.4.49, postcss@npm:^8.5.6":
   version: 8.5.6
   resolution: "postcss@npm:8.5.6"
   dependencies:
@@ -34968,40 +34930,6 @@ __metadata:
     parseurl: "npm:^1.3.3"
     path-to-regexp: "npm:^8.0.0"
   checksum: 10/8949bd1d3da5403cc024e2989fee58d7fda0f3ffe9f2dc5b8a192f295f400b3cde307b0b554f7d44851077640f36962ca469a766b3d57410d7d96245a7ba6c91
-  languageName: node
-  linkType: hard
-
-"rrdom@npm:^2.0.0-alpha.18":
-  version: 2.0.0-alpha.18
-  resolution: "rrdom@npm:2.0.0-alpha.18"
-  dependencies:
-    rrweb-snapshot: "npm:^2.0.0-alpha.18"
-  checksum: 10/4b02e60a6828dd29893b2a003e7611f8db275bb21b24a0b8db97ecbfd75020b6d4be26e90ada0cae4a9b28fdc75fa258dd174d21e33d30c33aded797cc23b9bc
-  languageName: node
-  linkType: hard
-
-"rrweb-snapshot@npm:^2.0.0-alpha.18":
-  version: 2.0.0-alpha.18
-  resolution: "rrweb-snapshot@npm:2.0.0-alpha.18"
-  dependencies:
-    postcss: "npm:^8.4.38"
-  checksum: 10/5dbc717cf80057855d43c7afdbffc117af5074dc627c5b1375234512f1b04c03756836605cf8cb9615639a244fe6d5b2a139955a4ab131a2050dab7808332aa2
-  languageName: node
-  linkType: hard
-
-"rrweb@npm:2.0.0-alpha.18":
-  version: 2.0.0-alpha.18
-  resolution: "rrweb@npm:2.0.0-alpha.18"
-  dependencies:
-    "@rrweb/types": "npm:^2.0.0-alpha.18"
-    "@rrweb/utils": "npm:^2.0.0-alpha.18"
-    "@types/css-font-loading-module": "npm:0.0.7"
-    "@xstate/fsm": "npm:^1.4.0"
-    base64-arraybuffer: "npm:^1.0.1"
-    mitt: "npm:^3.0.0"
-    rrdom: "npm:^2.0.0-alpha.18"
-    rrweb-snapshot: "npm:^2.0.0-alpha.18"
-  checksum: 10/44efc0475a70c0a53f8eafc08159ccaaab56396c2cf2233a132bccb4d98c801b555d6d1bab7267a51bf5312766f908952bd75659d3d84e31c1a1e51cc76631ee
   languageName: node
   linkType: hard
 

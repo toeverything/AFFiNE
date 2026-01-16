@@ -245,6 +245,34 @@
       "env": "DOC_SERVICE_ENDPOINT"
     }
   },
+  "telemetry": {
+    "allowedOrigin": {
+      "type": "Array",
+      "desc": "Allowed origins for telemetry collection."
+    },
+    "ga4.measurementId": {
+      "type": "String",
+      "desc": "GA4 Measurement ID for Measurement Protocol.",
+      "env": "GA4_MEASUREMENT_ID"
+    },
+    "ga4.apiSecret": {
+      "type": "String",
+      "desc": "GA4 API secret for Measurement Protocol.",
+      "env": "GA4_API_SECRET"
+    },
+    "dedupe.ttlHours": {
+      "type": "Number",
+      "desc": "Telemetry dedupe TTL in hours."
+    },
+    "dedupe.maxEntries": {
+      "type": "Number",
+      "desc": "Telemetry dedupe max entries."
+    },
+    "batch.maxEvents": {
+      "type": "Number",
+      "desc": "Max events per telemetry batch."
+    }
+  },
   "client": {
     "versionControl.enabled": {
       "type": "Boolean",
