@@ -1074,6 +1074,7 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@sentry/react": "npm:^9.47.1"
     "@types/react": "npm:^19.0.1"
+    nanoid: "npm:^5.1.6"
     react-router-dom: "npm:^6.30.3"
     vitest: "npm:^3.2.4"
   languageName: unknown

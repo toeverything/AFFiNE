@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { nanoid } from 'nanoid';
 
 import type { TelemetryEvent } from './telemetry';
 import { sendTelemetryEvent, setTelemetryContext } from './telemetry';
@@ -152,7 +153,7 @@ function buildEvent(
     userProperties,
     clientId,
     sessionId,
-    eventId: generateId(),
+    eventId: nanoid(),
     timestampMicros: Date.now() * 1000,
     context: buildContext(),
   };
@@ -183,16 +184,9 @@ function normalizeProperties(properties?: RawTrackProperties): TrackProperties {
   return properties as Record<string, unknown>;
 }
 
-function generateId() {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
 function readPersistentId(key: string, storage: Storage | null, renew = false) {
   if (!storage) {
-    return generateId();
+    return nanoid();
   }
   if (!renew) {
     const existing = storage.getItem(key);
@@ -200,7 +194,7 @@ function readPersistentId(key: string, storage: Storage | null, renew = false) {
       return existing;
     }
   }
-  const id = generateId();
+  const id = nanoid();
   try {
     storage.setItem(key, id);
   } catch {

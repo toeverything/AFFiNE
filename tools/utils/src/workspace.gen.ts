@@ -1302,6 +1302,7 @@ export const PackageList = [
       'packages/common/env',
       'packages/frontend/i18n',
       'packages/common/nbstore',
+      'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
     ],
