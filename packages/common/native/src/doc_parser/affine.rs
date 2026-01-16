@@ -584,6 +584,113 @@ pub fn get_doc_ids_from_binary(doc_bin: Vec<u8>, include_trash: bool) -> Result<
   Ok(doc_ids)
 }
 
+/// Adds a document ID to the root doc's meta.pages array.
+/// Returns a binary update that can be applied to the root doc.
+///
+/// # Arguments
+/// * `root_doc_bin` - The current root doc binary
+/// * `doc_id` - The document ID to add
+/// * `title` - Optional title for the document
+///
+/// # Returns
+/// A Vec<u8> containing the y-octo update binary to add the doc
+pub fn add_doc_to_root_doc(root_doc_bin: Vec<u8>, doc_id: &str, title: Option<&str>) -> Result<Vec<u8>, ParseError> {
+  // Handle empty or minimal root doc - create a new one
+  let doc = if root_doc_bin.is_empty() || root_doc_bin == [0, 0] {
+    DocOptions::new().build()
+  } else {
+    let mut doc = DocOptions::new().build();
+    doc
+      .apply_update_from_binary_v1(&root_doc_bin)
+      .map_err(|_| ParseError::InvalidBinary)?;
+    doc
+  };
+
+  // Capture state before modifications to encode only the delta
+  let state_before = doc.get_state_vector();
+
+  // Get or create the meta map
+  let mut meta = doc.get_or_create_map("meta")?;
+
+  // Get existing pages array or create new one
+  let pages_exists = meta.get("pages").and_then(|v| v.to_array()).is_some();
+
+  if pages_exists {
+    // Get the existing array and add to it
+    let mut pages = meta.get("pages").and_then(|v| v.to_array()).unwrap();
+
+    // Check if doc already exists
+    let doc_exists = pages.iter().any(|page_val| {
+      page_val
+        .to_map()
+        .and_then(|page| get_string(&page, "id"))
+        .map(|id| id == doc_id)
+        .unwrap_or(false)
+    });
+
+    if !doc_exists {
+      // Create a new page entry
+      let page_map = doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+      // Insert into pages array first, then populate
+      let idx = pages.len();
+      pages
+        .insert(idx, page_map)
+        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+      // Now get the inserted map and populate it
+      if let Some(mut inserted_page) = pages.get(idx).and_then(|v| v.to_map()) {
+        inserted_page
+          .insert("id".to_string(), Any::String(doc_id.to_string()))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+
+        if let Some(t) = title {
+          inserted_page
+            .insert("title".to_string(), Any::String(t.to_string()))
+            .map_err(|e| ParseError::ParserError(e.to_string()))?;
+        }
+
+        // Set createDate to current timestamp
+        let timestamp = std::time::SystemTime::now()
+          .duration_since(std::time::UNIX_EPOCH)
+          .map(|d| d.as_millis() as i64)
+          .unwrap_or(0);
+        inserted_page
+          .insert("createDate".to_string(), Any::BigInt64(timestamp))
+          .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      }
+    }
+  } else {
+    // Create new pages array with this doc
+    let page_entry = vec![Any::Object(
+      [
+        ("id".to_string(), Any::String(doc_id.to_string())),
+        ("title".to_string(), Any::String(title.unwrap_or("").to_string())),
+        (
+          "createDate".to_string(),
+          Any::BigInt64(
+            std::time::SystemTime::now()
+              .duration_since(std::time::UNIX_EPOCH)
+              .map(|d| d.as_millis() as i64)
+              .unwrap_or(0),
+          ),
+        ),
+      ]
+      .into_iter()
+      .collect(),
+    )];
+
+    meta
+      .insert("pages".to_string(), Any::Array(page_entry))
+      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+  }
+
+  // Encode only the changes (delta) since state_before
+  doc
+    .encode_state_as_update_v1(&state_before)
+    .map_err(|e| ParseError::ParserError(e.to_string()))
+}
+
 fn paragraph_prefix(type_: &str) -> &'static str {
   match type_ {
     "h1" => "# ",

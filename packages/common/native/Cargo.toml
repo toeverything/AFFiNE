@@ -37,15 +37,25 @@ tree-sitter = [
   "dep:tree-sitter-scala",
   "dep:tree-sitter-typescript",
 ]
-ydoc-loader = ["assert-json-diff", "serde", "serde_json", "thiserror", "y-octo"]
+ydoc-loader = [
+  "assert-json-diff",
+  "nanoid",
+  "pulldown-cmark",
+  "serde",
+  "serde_json",
+  "thiserror",
+  "y-octo",
+]
 
 [dependencies]
 assert-json-diff = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 docx-parser = { workspace = true, optional = true }
 infer = { workspace = true, optional = true }
+nanoid = { workspace = true, optional = true }
 path-ext = { workspace = true, optional = true }
 pdf-extract = { workspace = true, optional = true }
+pulldown-cmark = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 readability = { workspace = true, optional = true, default-features = false }
 serde = { workspace = true, optional = true, features = ["derive"] }

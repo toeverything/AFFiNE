@@ -71,6 +71,7 @@ resolver = "3"
   phf = { version = "0.11", features = ["macros"] }
   proptest = "1.3"
   proptest-derive = "0.5"
+  pulldown-cmark = "0.13"
   rand = "0.9"
   rand_chacha = "0.9"
   rand_distr = "0.5"
