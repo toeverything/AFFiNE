@@ -16,10 +16,23 @@ type Middleware = (
 
 const CLIENT_ID_KEY = 'affine_telemetry_client_id';
 const SESSION_ID_KEY = 'affine_telemetry_session_id';
+const SESSION_NUMBER_KEY = 'affine_telemetry_session_number';
+const SESSION_NUMBER_CURRENT_KEY = 'affine_telemetry_session_number_current';
+const LAST_ACTIVITY_KEY = 'affine_telemetry_last_activity_ms';
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 let enabled = true;
-let clientId = readPersistentId(CLIENT_ID_KEY, localStorageSafe());
-let sessionId = readPersistentId(SESSION_ID_KEY, sessionStorageSafe());
+const clientStorage = localStorageSafe();
+const hasClientId = clientStorage?.getItem(CLIENT_ID_KEY);
+let clientId = readPersistentId(CLIENT_ID_KEY, clientStorage);
+let pendingFirstVisit = !hasClientId;
+let sessionId = 0;
+let sessionNumber = 0;
+let lastActivityMs = 0;
+let sessionStartSent = false;
+let engagementTrackingEnabled = false;
+let visibleSinceMs: number | null = null;
+let pendingEngagementMs = 0;
 
 let userId: string | undefined;
 let userProperties: Record<string, unknown> = {};
@@ -48,7 +61,7 @@ export const tracker = {
   reset() {
     userId = undefined;
     userProperties = {};
-    sessionId = readPersistentId(SESSION_ID_KEY, sessionStorageSafe(), true);
+    startNewSession(Date.now(), sessionStorageSafe());
     setTelemetryContext(
       { userId, userProperties },
       { replaceUserProperties: true }
@@ -67,10 +80,7 @@ export const tracker = {
       normalizeProperties(properties)
     );
     logger.debug('track', eventName, middlewareProperties);
-    const event = buildEvent(eventName, middlewareProperties);
-    void sendTelemetryEvent(event).catch(error => {
-      logger.error('failed to send telemetry event', error);
-    });
+    dispatchEvents(buildQueuedEvents(eventName, middlewareProperties));
   },
 
   track_pageview(properties?: { location?: string; [key: string]: unknown }) {
@@ -94,10 +104,7 @@ export const tracker = {
       pageTitle: pageTitle ?? middlewareProperties?.pageTitle,
     };
     logger.debug('track_pageview', params);
-    const event = buildEvent('track_pageview', params);
-    void sendTelemetryEvent(event).catch(error => {
-      logger.error('failed to send telemetry pageview', error);
-    });
+    dispatchEvents(buildQueuedEvents('track_pageview', params));
   },
 
   middleware(cb: Middleware): () => void {
@@ -140,6 +147,260 @@ export const tracker = {
     };
   },
 };
+
+function dispatchEvents(events: TelemetryEvent[]) {
+  for (const event of events) {
+    void sendTelemetryEvent(event).catch(error => {
+      logger.error(`failed to send telemetry event ${event.eventName}`, error);
+    });
+  }
+}
+
+function buildQueuedEvents(
+  eventName: string,
+  params?: Record<string, unknown>,
+  options: { now?: number; engagementMs?: number } = {}
+) {
+  const now = options.now ?? Date.now();
+  const {
+    sessionId: nextSessionId,
+    sessionNumber: nextSessionNumber,
+    preEvents,
+  } = prepareSession(now);
+  const engagementMs = options.engagementMs ?? consumeEngagementTime(now);
+  const eventParams = mergeSessionParams(
+    params,
+    nextSessionId,
+    nextSessionNumber,
+    engagementMs
+  );
+  return [...preEvents, buildEvent(eventName, eventParams)];
+}
+
+function prepareSession(now: number) {
+  const sessionStorage = sessionStorageSafe();
+  if (sessionStorage) {
+    const storedSessionId = readPositiveNumber(sessionStorage, SESSION_ID_KEY);
+    const storedLastActivity = readPositiveNumber(
+      sessionStorage,
+      LAST_ACTIVITY_KEY
+    );
+    const expired =
+      !storedSessionId ||
+      !storedLastActivity ||
+      now - storedLastActivity > SESSION_TIMEOUT_MS;
+
+    if (expired) {
+      startNewSession(now, sessionStorage);
+    } else {
+      sessionId = storedSessionId;
+      sessionNumber = readCurrentSessionNumber(sessionStorage, clientStorage);
+      updateLastActivity(now, sessionStorage);
+    }
+  } else {
+    const expired =
+      !sessionId ||
+      !lastActivityMs ||
+      now - lastActivityMs > SESSION_TIMEOUT_MS;
+    if (expired) {
+      startNewSession(now, null);
+    } else {
+      lastActivityMs = now;
+      if (!sessionNumber) {
+        sessionNumber = 1;
+      }
+    }
+  }
+
+  const preEvents: TelemetryEvent[] = [];
+  if (pendingFirstVisit) {
+    pendingFirstVisit = false;
+    preEvents.push(
+      buildEvent(
+        'first_visit',
+        mergeSessionParams({}, sessionId, sessionNumber, 1)
+      )
+    );
+  }
+  if (!sessionStartSent) {
+    sessionStartSent = true;
+    preEvents.push(
+      buildEvent(
+        'session_start',
+        mergeSessionParams({}, sessionId, sessionNumber, 1)
+      )
+    );
+  }
+  return { sessionId, sessionNumber, preEvents };
+}
+
+function mergeSessionParams(
+  params: Record<string, unknown> | undefined,
+  nextSessionId: number,
+  nextSessionNumber: number,
+  engagementMs: number
+) {
+  const merged: Record<string, unknown> = {
+    ...(params ?? {}),
+  };
+  if (Number.isFinite(nextSessionId) && nextSessionId > 0) {
+    merged.session_id = nextSessionId;
+  }
+  if (Number.isFinite(nextSessionNumber) && nextSessionNumber > 0) {
+    merged.session_number = nextSessionNumber;
+  }
+  if (Number.isFinite(engagementMs)) {
+    merged.engagement_time_msec = engagementMs;
+  }
+  return merged;
+}
+
+function startNewSession(now: number, sessionStorage: Storage | null) {
+  sessionId = Math.floor(now / 1000);
+  sessionNumber = incrementSessionNumber(clientStorage, sessionStorage);
+  updateLastActivity(now, sessionStorage);
+  writeNumber(sessionStorage, SESSION_ID_KEY, sessionId);
+  sessionStartSent = false;
+  resetEngagementState(now);
+}
+
+function updateLastActivity(now: number, sessionStorage: Storage | null) {
+  lastActivityMs = now;
+  writeNumber(sessionStorage, LAST_ACTIVITY_KEY, now);
+}
+
+function consumeEngagementTime(now: number) {
+  initEngagementTracking(now);
+  if (visibleSinceMs !== null) {
+    pendingEngagementMs += now - visibleSinceMs;
+    visibleSinceMs = now;
+  }
+  const engagementMs = Math.max(0, Math.round(pendingEngagementMs));
+  pendingEngagementMs = 0;
+  return engagementMs;
+}
+
+function resetEngagementState(now: number) {
+  pendingEngagementMs = 0;
+  visibleSinceMs = isDocumentVisible() ? now : null;
+}
+
+function initEngagementTracking(now: number) {
+  if (engagementTrackingEnabled || typeof document === 'undefined') {
+    return;
+  }
+  engagementTrackingEnabled = true;
+  resetEngagementState(now);
+
+  document.addEventListener('visibilitychange', () => {
+    const now = Date.now();
+    if (visibleSinceMs !== null) {
+      pendingEngagementMs += now - visibleSinceMs;
+    }
+    visibleSinceMs = isDocumentVisible() ? now : null;
+    if (!isDocumentVisible()) {
+      dispatchUserEngagement(now);
+    }
+  });
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+      dispatchUserEngagement(Date.now());
+    });
+  }
+}
+
+function dispatchUserEngagement(now: number) {
+  if (!enabled) {
+    return;
+  }
+  const engagementMs = consumeEngagementTime(now);
+  if (engagementMs <= 0) {
+    return;
+  }
+  dispatchEvents(
+    buildQueuedEvents(
+      'user_engagement',
+      { engagement_time_msec: engagementMs },
+      { now, engagementMs }
+    )
+  );
+}
+
+function isDocumentVisible() {
+  try {
+    return (
+      typeof document !== 'undefined' && document.visibilityState !== 'hidden'
+    );
+  } catch {
+    return true;
+  }
+}
+
+function readPositiveNumber(storage: Storage | null, key: string) {
+  if (!storage) {
+    return undefined;
+  }
+  const raw = storage.getItem(key);
+  if (!raw) {
+    return undefined;
+  }
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  return value;
+}
+
+function writeNumber(storage: Storage | null, key: string, value: number) {
+  if (!storage) {
+    return;
+  }
+  try {
+    storage.setItem(key, String(value));
+  } catch {
+    return;
+  }
+}
+
+function readCurrentSessionNumber(
+  sessionStorage: Storage,
+  localStorage: Storage | null
+) {
+  const current = readPositiveNumber(
+    sessionStorage,
+    SESSION_NUMBER_CURRENT_KEY
+  );
+  if (current) {
+    return current;
+  }
+
+  const fallback = localStorage
+    ? (readPositiveNumber(localStorage, SESSION_NUMBER_KEY) ?? 1)
+    : sessionNumber || 1;
+
+  writeNumber(sessionStorage, SESSION_NUMBER_CURRENT_KEY, fallback);
+  if (localStorage && !readPositiveNumber(localStorage, SESSION_NUMBER_KEY)) {
+    writeNumber(localStorage, SESSION_NUMBER_KEY, fallback);
+  }
+  return fallback;
+}
+
+function incrementSessionNumber(
+  localStorage: Storage | null,
+  sessionStorage: Storage | null
+) {
+  if (!localStorage) {
+    const next = (sessionNumber || 0) + 1;
+    writeNumber(sessionStorage, SESSION_NUMBER_CURRENT_KEY, next);
+    return next;
+  }
+  const current = readPositiveNumber(localStorage, SESSION_NUMBER_KEY) ?? 0;
+  const next = current + 1;
+  writeNumber(localStorage, SESSION_NUMBER_KEY, next);
+  writeNumber(sessionStorage, SESSION_NUMBER_CURRENT_KEY, next);
+  return next;
+}
 
 function buildEvent(
   eventName: string,

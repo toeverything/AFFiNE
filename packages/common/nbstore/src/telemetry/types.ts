@@ -5,7 +5,7 @@ export type TelemetryEvent = {
   userProperties?: Record<string, unknown>;
   userId?: string;
   clientId: string;
-  sessionId?: string;
+  sessionId?: string | number;
   eventId: string;
   timestampMicros?: number;
   context?: {

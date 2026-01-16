@@ -71,6 +71,8 @@ const DROP_MAPPED_PARAMS = new Set(['doc_id', 'workspace_id', 'server_id']);
 const PRIORITY_KEYS = new Set([
   'event_id',
   'session_id',
+  'session_number',
+  'engagement_time_msec',
   'ui_page',
   'ui_segment',
   'ui_module',
