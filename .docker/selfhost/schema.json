@@ -634,6 +634,45 @@
         }
       }
     },
+    "telemetry": {
+      "type": "object",
+      "description": "Configuration for telemetry module",
+      "properties": {
+        "allowedOrigin": {
+          "type": "array",
+          "description": "Allowed origins for telemetry collection.\n@default [\"localhost\",\"127.0.0.1\"]",
+          "default": [
+            "localhost",
+            "127.0.0.1"
+          ]
+        },
+        "ga4.measurementId": {
+          "type": "string",
+          "description": "GA4 Measurement ID for Measurement Protocol.\n@default \"\"\n@environment `GA4_MEASUREMENT_ID`",
+          "default": ""
+        },
+        "ga4.apiSecret": {
+          "type": "string",
+          "description": "GA4 API secret for Measurement Protocol.\n@default \"\"\n@environment `GA4_API_SECRET`",
+          "default": ""
+        },
+        "dedupe.ttlHours": {
+          "type": "number",
+          "description": "Telemetry dedupe TTL in hours.\n@default 24",
+          "default": 24
+        },
+        "dedupe.maxEntries": {
+          "type": "number",
+          "description": "Telemetry dedupe max entries.\n@default 100000",
+          "default": 100000
+        },
+        "batch.maxEvents": {
+          "type": "number",
+          "description": "Max events per telemetry batch.\n@default 25",
+          "default": 25
+        }
+      }
+    },
     "client": {
       "type": "object",
       "description": "Configuration for client module",
