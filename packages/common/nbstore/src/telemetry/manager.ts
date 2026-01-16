@@ -175,6 +175,10 @@ export class TelemetryManager {
       '/api/telemetry/collect',
       this.context.officialEndpoint
     );
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 10000);
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -182,6 +186,7 @@ export class TelemetryManager {
         'x-affine-version': BUILD_CONFIG.appVersion,
       },
       body: JSON.stringify(batch),
+      signal: abortController.signal,
     });
 
     if (!response.ok) {
@@ -189,6 +194,8 @@ export class TelemetryManager {
       throw new Error(
         `Telemetry HTTP failed with ${response.status}: ${text || 'unknown error'}`
       );
+    } else {
+      clearTimeout(timeoutId);
     }
 
     const payload = (await response.json().catch(() => null)) as TelemetryAck;

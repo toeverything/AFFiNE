@@ -1,6 +1,6 @@
 import { CleanedTelemetryEvent, Scalar } from './cleaner';
 
-const GA4_ENDPOINT = 'https://www.google-analytics.com/debug/mp/collect';
+const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
 
 type Ga4Payload = {
   client_id: string;
@@ -66,10 +66,6 @@ export class Ga4Client {
       throw new Error(
         `GA4 request failed with ${response.status}: ${body || 'unknown error'}`
       );
-    } else {
-      const body = await response.text().catch(() => '');
-      // For debug endpoint, log the response
-      console.log('GA4 response:', body);
     }
   }
 }
