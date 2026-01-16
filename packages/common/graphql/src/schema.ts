@@ -259,6 +259,14 @@ export interface CalendarAccountObjectType {
   updatedAt: Scalars['DateTime']['output'];
 }
 
+export interface CalendarCalDavProviderPresetObjectType {
+  __typename?: 'CalendarCalDAVProviderPresetObjectType';
+  docsUrl: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  requiresAppPassword: Maybe<Scalars['Boolean']['output']>;
+}
+
 export interface CalendarEventObjectType {
   __typename?: 'CalendarEventObjectType';
   allDay: Scalars['Boolean']['output'];
@@ -1466,6 +1474,13 @@ export interface LimitedUserType {
   hasPassword: Maybe<Scalars['Boolean']['output']>;
 }
 
+export interface LinkCalDavAccountInput {
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  password: Scalars['String']['input'];
+  providerPresetId: Scalars['String']['input'];
+  username: Scalars['String']['input'];
+}
+
 export interface LinkCalendarAccountInput {
   provider: CalendarProviderType;
   redirectUri?: InputMaybe<Scalars['String']['input']>;
@@ -1632,6 +1647,7 @@ export interface Mutation {
   installLicense: License;
   inviteMembers: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
+  linkCalDAVAccount: CalendarAccountObjectType;
   linkCalendarAccount: Scalars['String']['output'];
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
@@ -1941,6 +1957,10 @@ export interface MutationLeaveWorkspaceArgs {
   sendLeaveMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
   workspaceName?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface MutationLinkCalDavAccountArgs {
+  input: LinkCalDavAccountInput;
 }
 
 export interface MutationLinkCalendarAccountArgs {
@@ -2699,6 +2719,7 @@ export interface ServerConfigType {
   availableWorkspaceFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
+  calendarCalDAVProviders: Array<CalendarCalDavProviderPresetObjectType>;
   calendarProviders: Array<CalendarProviderType>;
   /** credentials requirement */
   credentialsRequirement: CredentialsRequirementType;
@@ -3956,6 +3977,35 @@ export type CalendarProvidersQuery = {
   serverConfig: {
     __typename?: 'ServerConfigType';
     calendarProviders: Array<CalendarProviderType>;
+    calendarCalDAVProviders: Array<{
+      __typename?: 'CalendarCalDAVProviderPresetObjectType';
+      id: string;
+      label: string;
+      requiresAppPassword: boolean | null;
+      docsUrl: string | null;
+    }>;
+  };
+};
+
+export type LinkCalDavAccountMutationVariables = Exact<{
+  input: LinkCalDavAccountInput;
+}>;
+
+export type LinkCalDavAccountMutation = {
+  __typename?: 'Mutation';
+  linkCalDAVAccount: {
+    __typename?: 'CalendarAccountObjectType';
+    id: string;
+    provider: CalendarProviderType;
+    providerAccountId: string;
+    displayName: string | null;
+    email: string | null;
+    status: string;
+    lastError: string | null;
+    refreshIntervalMinutes: number;
+    calendarsCount: number;
+    createdAt: string;
+    updatedAt: string;
   };
 };
 
@@ -7655,6 +7705,11 @@ export type Mutations =
       name: 'createBlobUploadMutation';
       variables: CreateBlobUploadMutationVariables;
       response: CreateBlobUploadMutation;
+    }
+  | {
+      name: 'linkCalDAVAccountMutation';
+      variables: LinkCalDAVAccountMutationVariables;
+      response: LinkCalDAVAccountMutation;
     }
   | {
       name: 'linkCalendarAccountMutation';

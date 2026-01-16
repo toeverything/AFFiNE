@@ -7,7 +7,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { ActionForbidden, AuthenticationRequired } from '../../base';
+import { ActionForbidden, AuthenticationRequired, Config } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { ServerConfigType } from '../../core/config/types';
 import { AccessController } from '../../core/permission';
@@ -19,8 +19,10 @@ import { CalendarProviderFactory, CalendarProviderName } from './providers';
 import { CalendarService } from './service';
 import {
   CalendarAccountObjectType,
+  CalendarCalDAVProviderPresetObjectType,
   CalendarEventObjectType,
   CalendarSubscriptionObjectType,
+  LinkCalDAVAccountInput,
   LinkCalendarAccountInput,
   UpdateWorkspaceCalendarsInput,
   WorkspaceCalendarObjectType,
@@ -28,11 +30,28 @@ import {
 
 @Resolver(() => ServerConfigType)
 export class CalendarServerConfigResolver {
-  constructor(private readonly providerFactory: CalendarProviderFactory) {}
+  constructor(
+    private readonly providerFactory: CalendarProviderFactory,
+    private readonly config: Config
+  ) {}
 
   @ResolveField(() => [CalendarProviderName])
   calendarProviders() {
     return this.providerFactory.providers;
+  }
+
+  @ResolveField(() => [CalendarCalDAVProviderPresetObjectType])
+  calendarCalDAVProviders() {
+    const caldavConfig = this.config.calendar.caldav;
+    if (!caldavConfig?.enabled) {
+      return [];
+    }
+    return caldavConfig.providers.map(provider => ({
+      id: provider.id,
+      label: provider.label,
+      requiresAppPassword: provider.requiresAppPassword ?? null,
+      docsUrl: provider.docsUrl ?? null,
+    }));
   }
 }
 
@@ -138,6 +157,21 @@ export class CalendarMutationResolver {
 
     const callbackUrl = this.calendar.getCallbackUrl();
     return this.calendar.getAuthUrl(input.provider, state, callbackUrl);
+  }
+
+  @Mutation(() => CalendarAccountObjectType)
+  async linkCalDAVAccount(
+    @CurrentUser() user: CurrentUser | null,
+    @Args('input') input: LinkCalDAVAccountInput
+  ) {
+    if (!user) {
+      throw new AuthenticationRequired();
+    }
+
+    return await this.calendar.linkCalDAVAccount({
+      userId: user.id,
+      input,
+    });
   }
 
   @Mutation(() => CalendarAccountObjectType, { nullable: true })

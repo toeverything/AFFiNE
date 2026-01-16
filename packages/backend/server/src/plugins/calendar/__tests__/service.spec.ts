@@ -21,6 +21,7 @@ import {
   CalendarSyncTokenInvalid,
 } from '../providers';
 import type {
+  CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,
   CalendarProviderStopParams,
   CalendarProviderWatchParams,
@@ -46,7 +47,7 @@ class MockCalendarProvider extends CalendarProvider {
     return { providerAccountId: 'mock-account' };
   }
 
-  override async listCalendars(_accessToken: string) {
+  override async listCalendars(_params: CalendarProviderListCalendarsParams) {
     return [];
   }
 

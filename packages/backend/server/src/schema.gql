@@ -206,6 +206,13 @@ type CalendarAccountObjectType {
   updatedAt: DateTime!
 }
 
+type CalendarCalDAVProviderPresetObjectType {
+  docsUrl: String
+  id: String!
+  label: String!
+  requiresAppPassword: Boolean
+}
+
 type CalendarEventObjectType {
   allDay: Boolean!
   description: String
@@ -1274,6 +1281,13 @@ type LimitedUserType {
   hasPassword: Boolean
 }
 
+input LinkCalDAVAccountInput {
+  displayName: String
+  password: String!
+  providerPresetId: String!
+  username: String!
+}
+
 input LinkCalendarAccountInput {
   provider: CalendarProviderType!
   redirectUri: String
@@ -1462,6 +1476,7 @@ type Mutation {
   installLicense(license: Upload!, workspaceId: String!): License!
   inviteMembers(emails: [String!]!, workspaceId: String!): [InviteResult!]!
   leaveWorkspace(sendLeaveMail: Boolean @deprecated(reason: "no used anymore"), workspaceId: String!, workspaceName: String @deprecated(reason: "no longer used")): Boolean!
+  linkCalDAVAccount(input: LinkCalDAVAccountInput!): CalendarAccountObjectType!
   linkCalendarAccount(input: LinkCalendarAccountInput!): String!
 
   """mention user in a doc"""
@@ -2039,6 +2054,7 @@ type ServerConfigType {
 
   """server base url"""
   baseUrl: String!
+  calendarCalDAVProviders: [CalendarCalDAVProviderPresetObjectType!]!
   calendarProviders: [CalendarProviderType!]!
 
   """credentials requirement"""

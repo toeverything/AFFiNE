@@ -8,6 +8,7 @@ import { addDays, subDays } from 'date-fns';
 import {
   CalendarProviderRequestError,
   Config,
+  GraphqlBadRequest,
   Mutex,
   URLHelper,
 } from '../../base';
@@ -20,10 +21,18 @@ import {
   CalendarSyncTokenInvalid,
 } from './providers';
 import { CalendarProviderFactory } from './providers';
+import type { CalendarCalDAVProviderPreset } from './config';
 
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const DEFAULT_PAST_DAYS = 90;
 const DEFAULT_FUTURE_DAYS = 180;
+
+type LinkCalDAVAccountInput = {
+  providerPresetId: string;
+  username: string;
+  password: string;
+  displayName?: string | null;
+};
 
 @Injectable()
 export class CalendarService {
@@ -159,6 +168,92 @@ export class CalendarService {
     return account;
   }
 
+  async linkCalDAVAccount(params: {
+    userId: string;
+    input: LinkCalDAVAccountInput;
+  }) {
+    const caldavConfig = this.config.calendar.caldav;
+    if (!caldavConfig?.enabled) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_disabled',
+        message: 'CalDAV integration is not enabled.',
+      });
+    }
+
+    const preset = caldavConfig.providers.find(
+      provider => provider.id === params.input.providerPresetId
+    );
+    if (!preset) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_provider_not_found',
+        message: 'CalDAV provider is not available.',
+      });
+    }
+
+    const provider = this.requireProvider(CalendarProviderName.CalDAV);
+    if (!('discoverAccount' in provider)) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_provider_unavailable',
+        message: 'CalDAV provider is not configured.',
+      });
+    }
+
+    const discovery = await (
+      provider as CalendarProvider & {
+        discoverAccount: (input: {
+          preset: CalendarCalDAVProviderPreset;
+          username: string;
+          password: string;
+        }) => Promise<{
+          providerAccountId: string;
+          serverUrl: string;
+          principalUrl: string;
+          calendarHomeUrl: string;
+          authType?: string | null;
+        }>;
+      }
+    ).discoverAccount({
+      preset,
+      username: params.input.username,
+      password: params.input.password,
+    });
+
+    const account = await this.models.calendarAccount.upsert({
+      userId: params.userId,
+      provider: CalendarProviderName.CalDAV,
+      providerAccountId: discovery.providerAccountId,
+      displayName: params.input.displayName ?? null,
+      email: params.input.username,
+      accessToken: params.input.password,
+      refreshToken: null,
+      expiresAt: null,
+      scope: null,
+      status: 'active',
+      lastError: null,
+      providerPresetId: params.input.providerPresetId,
+      serverUrl: discovery.serverUrl,
+      principalUrl: discovery.principalUrl,
+      calendarHomeUrl: discovery.calendarHomeUrl,
+      username: params.input.username,
+      authType: discovery.authType ?? null,
+    });
+
+    try {
+      await this.syncAccountCalendars(account.id);
+    } catch (error) {
+      if (error instanceof CalendarProviderRequestError) {
+        await this.models.calendarAccount.updateStatus(
+          account.id,
+          'invalid',
+          error.message
+        );
+      }
+      throw error;
+    }
+
+    return account;
+  }
+
   async syncAccountCalendars(accountId: string) {
     const account = await this.models.calendarAccount.get(accountId);
     if (!account) {
@@ -177,7 +272,10 @@ export class CalendarService {
       return;
     }
 
-    const calendars = await provider.listCalendars(accessToken);
+    const calendars = await provider.listCalendars({
+      accessToken,
+      account,
+    });
     const upserted = [];
     for (const calendar of calendars) {
       upserted.push(
@@ -245,6 +343,7 @@ export class CalendarService {
         subscriptionId: subscription.id,
         calendarId: subscription.externalCalendarId,
         accessToken,
+        account,
         syncToken: shouldUseSyncToken
           ? (subscription.syncToken ?? undefined)
           : undefined,
@@ -264,6 +363,7 @@ export class CalendarService {
           subscriptionId: subscription.id,
           calendarId: subscription.externalCalendarId,
           accessToken,
+          account,
           timeMin,
           timeMax,
           subscriptionTimezone: subscription.timezone ?? undefined,
@@ -410,7 +510,21 @@ export class CalendarService {
   }
 
   isProviderAvailable(provider: CalendarProviderName) {
-    return !!this.providerFactory.get(provider);
+    return this.isProviderAvailableFor(provider);
+  }
+
+  isProviderAvailableFor(
+    provider: CalendarProviderName,
+    options?: { oauth?: boolean }
+  ) {
+    const instance = this.providerFactory.get(provider);
+    if (!instance) {
+      return false;
+    }
+    if (options?.oauth) {
+      return instance.supportsOAuth;
+    }
+    return true;
   }
 
   getAuthUrl(
@@ -418,7 +532,14 @@ export class CalendarService {
     state: string,
     redirectUri: string
   ) {
-    return this.requireProvider(provider).getAuthUrl(state, redirectUri);
+    const instance = this.requireProvider(provider);
+    if (!instance.supportsOAuth) {
+      throw new GraphqlBadRequest({
+        code: 'calendar_provider_oauth_unsupported',
+        message: 'Selected calendar provider does not support OAuth.',
+      });
+    }
+    return instance.getAuthUrl(state, redirectUri);
   }
 
   private async syncWithProvider(params: {
@@ -426,6 +547,7 @@ export class CalendarService {
     subscriptionId: string;
     calendarId: string;
     accessToken: string;
+    account: CalendarAccount;
     syncToken?: string;
     timeMin?: string;
     timeMax?: string;
@@ -434,6 +556,7 @@ export class CalendarService {
     const response = await params.provider.listEvents({
       accessToken: params.accessToken,
       calendarId: params.calendarId,
+      account: params.account,
       syncToken: params.syncToken,
       timeMin: params.timeMin,
       timeMax: params.timeMax,
@@ -632,7 +755,8 @@ export class CalendarService {
 
   private isTokenInvalidError(error: unknown) {
     if (error instanceof CalendarProviderRequestError) {
-      if (error.status === 401) {
+      const status = error.data?.status ?? error.status;
+      if (status === 401) {
         return true;
       }
       return error.message.includes('invalid_grant');

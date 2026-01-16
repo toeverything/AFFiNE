@@ -656,7 +656,33 @@ export const calendarProvidersQuery = {
   op: 'calendarProviders',
   query: `query calendarProviders {
   serverConfig {
+    calendarCalDAVProviders {
+      id
+      label
+      requiresAppPassword
+      docsUrl
+    }
     calendarProviders
+  }
+}`,
+};
+
+export const linkCalDAVAccountMutation = {
+  id: 'linkCalDAVAccountMutation' as const,
+  op: 'linkCalDAVAccount',
+  query: `mutation linkCalDAVAccount($input: LinkCalDAVAccountInput!) {
+  linkCalDAVAccount(input: $input) {
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
   }
 }`,
 };

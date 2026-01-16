@@ -868,6 +868,72 @@
             "externalWebhookUrl": "",
             "webhookVerificationToken": ""
           }
+        },
+        "caldav": {
+          "type": "object",
+          "description": "CalDAV integration config\n@default {\"enabled\":false,\"allowCustomProvider\":false,\"providers\":[],\"allowInsecureHttp\":false,\"allowedHosts\":[],\"blockPrivateNetwork\":true,\"requestTimeoutMs\":10000,\"maxRedirects\":5}",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "allowCustomProvider": {
+              "type": "boolean"
+            },
+            "providers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "serverUrl": {
+                    "type": "string"
+                  },
+                  "authType": {
+                    "type": "string"
+                  },
+                  "requiresAppPassword": {
+                    "type": "boolean"
+                  },
+                  "docsUrl": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "allowInsecureHttp": {
+              "type": "boolean"
+            },
+            "allowedHosts": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blockPrivateNetwork": {
+              "type": "boolean"
+            },
+            "requestTimeoutMs": {
+              "type": "number"
+            },
+            "maxRedirects": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "enabled": false,
+            "allowCustomProvider": false,
+            "providers": [],
+            "allowInsecureHttp": false,
+            "allowedHosts": [],
+            "blockPrivateNetwork": true,
+            "requestTimeoutMs": 10000,
+            "maxRedirects": 5
+          }
         }
       }
     },

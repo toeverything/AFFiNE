@@ -937,6 +937,12 @@ model CalendarAccount {
   providerAccountId      String    @map("provider_account_id") @db.VarChar
   displayName            String?   @map("display_name") @db.VarChar
   email                  String?   @db.VarChar
+  providerPresetId       String?   @map("provider_preset_id") @db.VarChar
+  serverUrl              String?   @map("server_url") @db.VarChar
+  principalUrl           String?   @map("principal_url") @db.VarChar
+  calendarHomeUrl        String?   @map("calendar_home_url") @db.VarChar
+  username               String?   @db.VarChar
+  authType               String?   @map("auth_type") @db.VarChar
   accessToken            String?   @map("access_token") @db.Text
   refreshToken           String?   @map("refresh_token") @db.Text
   expiresAt              DateTime? @map("expires_at") @db.Timestamptz(3)
