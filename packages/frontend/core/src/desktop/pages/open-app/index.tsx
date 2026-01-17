@@ -1,15 +1,13 @@
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import { GraphQLService } from '@affine/core/modules/cloud';
+import { AuthService } from '@affine/core/modules/cloud';
 import { OpenInAppPage } from '@affine/core/modules/open-in-app/views/open-in-app-page';
 import {
   appSchemaUrl,
   appSchemes,
   channelToScheme,
 } from '@affine/core/utils/channel';
-import type { GetCurrentUserQuery } from '@affine/graphql';
-import { getCurrentUserQuery } from '@affine/graphql';
 import { useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import { AppContainer } from '../../components/app-container';
@@ -49,37 +47,42 @@ const OpenUrl = () => {
 /**
  * @deprecated
  */
-const OpenOAuthJwt = () => {
-  const [currentUser, setCurrentUser] = useState<
-    GetCurrentUserQuery['currentUser'] | null
-  >(null);
+const OpenAppSignInRedirect = () => {
+  const authService = useService(AuthService);
   const [params] = useSearchParams();
-  const graphqlService = useService(GraphQLService);
+  const triggeredRef = useRef(false);
+  const [urlToOpen, setUrlToOpen] = useState<string | null>(null);
 
   const maybeScheme = appSchemes.safeParse(params.get('scheme'));
   const scheme = maybeScheme.success
     ? maybeScheme.data
     : channelToScheme[BUILD_CONFIG.appBuildType];
-  const next = params.get('next') || '';
+  const next = params.get('next') || undefined;
 
   useEffect(() => {
-    graphqlService
-      .gql({
-        query: getCurrentUserQuery,
-      })
-      .then(res => {
-        setCurrentUser(res?.currentUser || null);
+    if (triggeredRef.current) {
+      return;
+    }
+    triggeredRef.current = true;
+
+    authService
+      .createOpenAppSignInCode()
+      .then(code => {
+        const authParams = new URLSearchParams();
+        authParams.set('method', 'open-app-signin');
+        authParams.set(
+          'payload',
+          JSON.stringify(next ? { code, next } : { code })
+        );
+        authParams.set('server', location.origin);
+        setUrlToOpen(`${scheme}://authentication?${authParams.toString()}`);
       })
       .catch(console.error);
-  }, [graphqlService]);
+  }, [authService, next, scheme]);
 
-  if (!currentUser || !currentUser?.token?.sessionToken) {
+  if (!urlToOpen) {
     return <AppContainer fallback />;
   }
-
-  const urlToOpen = `${scheme}://signin-redirect?token=${
-    currentUser.token.sessionToken
-  }&next=${next}`;
 
   return <OpenInAppPage urlToOpen={urlToOpen} />;
 };
@@ -91,7 +94,7 @@ export const Component = () => {
   if (action === 'url') {
     return <OpenUrl />;
   } else if (action === 'signin-redirect') {
-    return <OpenOAuthJwt />;
+    return <OpenAppSignInRedirect />;
   }
   return null;
 };

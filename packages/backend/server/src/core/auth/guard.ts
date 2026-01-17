@@ -12,6 +12,7 @@ import { Socket } from 'socket.io';
 import {
   AccessDenied,
   AuthenticationRequired,
+  Cache,
   Config,
   CryptoHelper,
   getRequestResponseFromContext,
@@ -23,6 +24,8 @@ import { Session, TokenSession } from './session';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
 const INTERNAL_ENTRYPOINT_SYMBOL = Symbol('internal');
+const INTERNAL_ACCESS_TOKEN_TTL_MS = 5 * 60 * 1000;
+const INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
 
 @Injectable()
 export class AuthGuard implements CanActivate, OnModuleInit {
@@ -30,6 +33,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   constructor(
     private readonly crypto: CryptoHelper,
+    private readonly cache: Cache,
     private readonly ref: ModuleRef,
     private readonly reflector: Reflector
   ) {}
@@ -48,10 +52,28 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       [clazz, handler]
     );
     if (isInternal) {
-      // check access token: data,signature
       const accessToken = req.get('x-access-token');
-      if (accessToken && this.crypto.verify(accessToken)) {
-        return true;
+      if (accessToken) {
+        const payload = this.crypto.parseInternalAccessToken(accessToken);
+        if (payload) {
+          const now = Date.now();
+          const method = req.method.toUpperCase();
+          const path = req.path;
+
+          const timestampInRange =
+            payload.ts <= now + INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS &&
+            now - payload.ts <= INTERNAL_ACCESS_TOKEN_TTL_MS;
+
+          if (timestampInRange && payload.m === method && payload.p === path) {
+            const nonceKey = `rpc:nonce:${payload.nonce}`;
+            const ok = await this.cache.setnx(nonceKey, 1, {
+              ttl: INTERNAL_ACCESS_TOKEN_TTL_MS,
+            });
+            if (ok) {
+              return true;
+            }
+          }
+        }
       }
       throw new AccessDenied('Invalid internal request');
     }

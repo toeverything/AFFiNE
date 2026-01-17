@@ -1,6 +1,7 @@
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
+import { ActionForbidden } from '../../error';
 import { URLHelper } from '../url';
 
 const test = ava as TestFn<{
@@ -83,6 +84,30 @@ test('can create link', t => {
     t.context.url.link('/path', { a: 1, b: '/path' }),
     'https://app.affine.local/path?a=1&b=%2Fpath'
   );
+});
+
+test('can validate callbackUrl allowlist', t => {
+  t.true(t.context.url.isAllowedCallbackUrl('/magic-link'));
+  t.true(
+    t.context.url.isAllowedCallbackUrl('https://app.affine.local/magic-link')
+  );
+  t.false(
+    t.context.url.isAllowedCallbackUrl('https://evil.example/magic-link')
+  );
+});
+
+test('can validate redirect_uri allowlist', t => {
+  t.true(t.context.url.isAllowedRedirectUri('/redirect-proxy'));
+  t.true(t.context.url.isAllowedRedirectUri('https://github.com'));
+  t.false(t.context.url.isAllowedRedirectUri('javascript:alert(1)'));
+  t.false(t.context.url.isAllowedRedirectUri('https://evilgithub.com'));
+});
+
+test('can create safe link', t => {
+  t.is(t.context.url.safeLink('/path'), 'https://app.affine.local/path');
+  t.throws(() => t.context.url.safeLink('https://evil.example/magic-link'), {
+    instanceOf: ActionForbidden,
+  });
 });
 
 test('can safe redirect', t => {

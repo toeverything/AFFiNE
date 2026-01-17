@@ -5,7 +5,30 @@ import type { Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
 import { Config } from '../config';
+import { ActionForbidden } from '../error';
 import { OnEvent } from '../event';
+
+const ALLOWED_REDIRECT_PROTOCOLS = new Set(['http:', 'https:']);
+// Keep in sync with frontend /redirect-proxy allowlist.
+const TRUSTED_REDIRECT_DOMAINS = [
+  'google.com',
+  'stripe.com',
+  'github.com',
+  'twitter.com',
+  'discord.gg',
+  'youtube.com',
+  't.me',
+  'reddit.com',
+  'affine.pro',
+].map(d => d.toLowerCase());
+
+function normalizeHostname(hostname: string) {
+  return hostname.toLowerCase().replace(/\.$/, '');
+}
+
+function hostnameMatchesDomain(hostname: string, domain: string) {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
 
 @Injectable()
 export class URLHelper {
@@ -110,6 +133,13 @@ export class URLHelper {
     return this.url(path, query).toString();
   }
 
+  safeLink(path: string, query: Record<string, any> = {}) {
+    if (!this.isAllowedCallbackUrl(path)) {
+      throw new ActionForbidden();
+    }
+    return this.link(path, query);
+  }
+
   safeRedirect(res: Response, to: string) {
     try {
       const finalTo = new URL(decodeURIComponent(to), this.requestBaseUrl);
@@ -129,6 +159,68 @@ export class URLHelper {
 
     // redirect to home if the url is invalid
     return res.redirect(this.baseUrl);
+  }
+
+  isAllowedCallbackUrl(url: string): boolean {
+    if (!url) {
+      return false;
+    }
+
+    // Allow same-app relative paths (e.g. `/magic-link?...`).
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      return true;
+    }
+
+    try {
+      const u = new URL(url);
+      if (!ALLOWED_REDIRECT_PROTOCOLS.has(u.protocol)) {
+        return false;
+      }
+      if (u.username || u.password) {
+        return false;
+      }
+      return this.allowedOrigins.includes(u.origin);
+    } catch {
+      return false;
+    }
+  }
+
+  isAllowedRedirectUri(redirectUri: string): boolean {
+    if (!redirectUri) {
+      return false;
+    }
+
+    // Allow internal navigation (e.g. `/` or `/redirect-proxy?...`).
+    if (redirectUri.startsWith('/') && !redirectUri.startsWith('//')) {
+      return true;
+    }
+
+    try {
+      const u = new URL(redirectUri);
+      if (!ALLOWED_REDIRECT_PROTOCOLS.has(u.protocol)) {
+        return false;
+      }
+      if (u.username || u.password) {
+        return false;
+      }
+
+      const hostname = normalizeHostname(u.hostname);
+
+      // Allow server known hosts.
+      for (const origin of this.allowedOrigins) {
+        const allowedHost = normalizeHostname(new URL(origin).hostname);
+        if (hostname === allowedHost) {
+          return true;
+        }
+      }
+
+      // Allow known trusted domains (for redirect-proxy).
+      return TRUSTED_REDIRECT_DOMAINS.some(domain =>
+        hostnameMatchesDomain(hostname, domain)
+      );
+    } catch {
+      return false;
+    }
   }
 
   verify(url: string | URL) {

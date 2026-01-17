@@ -130,7 +130,7 @@ export abstract class DocStorageAdapter extends Connection {
     snapshot: DocRecord | null,
     finalUpdate: DocUpdate
   ) {
-    this.logger.log(
+    this.logger.verbose(
       `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
     );
 
@@ -152,7 +152,7 @@ export abstract class DocStorageAdapter extends Connection {
 
     // always mark updates as merged unless throws
     const count = await this.markUpdatesMerged(spaceId, docId, updates);
-    this.logger.log(
+    this.logger.verbose(
       `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
     );
 

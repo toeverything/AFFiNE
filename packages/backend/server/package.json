@@ -152,6 +152,7 @@
     "nodemon": "^3.1.11",
     "react-email": "4.0.11",
     "sinon": "^21.0.1",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
     "why-is-node-running": "^3.2.2"
   },

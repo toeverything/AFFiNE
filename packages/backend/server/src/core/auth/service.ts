@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
@@ -39,6 +41,7 @@ export class AuthService implements OnApplicationBootstrap {
   };
   static readonly sessionCookieName = 'affine_session';
   static readonly userCookieName = 'affine_user_id';
+  static readonly csrfCookieName = 'affine_csrf_token';
 
   constructor(
     private readonly config: Config,
@@ -171,6 +174,11 @@ export class AuthService implements OnApplicationBootstrap {
       expires: newExpiresAt,
       ...this.cookieOptions,
     });
+    res.cookie(AuthService.csrfCookieName, randomUUID(), {
+      expires: newExpiresAt,
+      ...this.cookieOptions,
+      httpOnly: false,
+    });
 
     return true;
   }
@@ -207,6 +215,12 @@ export class AuthService implements OnApplicationBootstrap {
       expires: userSession.expiresAt ?? void 0,
     });
 
+    res.cookie(AuthService.csrfCookieName, randomUUID(), {
+      ...this.cookieOptions,
+      httpOnly: false,
+      expires: userSession.expiresAt ?? void 0,
+    });
+
     this.setUserCookie(res, userId);
   }
 
@@ -227,6 +241,7 @@ export class AuthService implements OnApplicationBootstrap {
   private clearCookies(res: Response<any, Record<string, any>>) {
     res.clearCookie(AuthService.sessionCookieName);
     res.clearCookie(AuthService.userCookieName);
+    res.clearCookie(AuthService.csrfCookieName);
   }
 
   setUserCookie(res: Response, userId: string) {

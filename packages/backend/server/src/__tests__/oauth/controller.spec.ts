@@ -68,7 +68,7 @@ test("should be able to redirect to oauth provider's login page", async t => {
 
   const res = await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Google' })
+    .send({ provider: 'Google', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const { url } = res.body;
@@ -100,7 +100,7 @@ test('should be able to redirect to oauth provider with multiple hosts', async t
   const res = await app
     .POST('/api/oauth/preflight')
     .set('host', 'test.affine.dev')
-    .send({ provider: 'Google' })
+    .send({ provider: 'Google', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const { url } = res.body;
@@ -154,6 +154,39 @@ test('should be able to redirect to oauth provider with client_nonce', async t =
   t.is(state.client, 'affine');
   t.falsy(state.clientNonce);
   t.truthy(state.state);
+});
+
+test('should forbid preflight with untrusted redirect_uri', async t => {
+  const { app } = t.context;
+
+  await app
+    .POST('/api/oauth/preflight')
+    .send({
+      provider: 'Google',
+      redirect_uri: 'https://evil.example',
+      client_nonce: 'test-nonce',
+    })
+    .expect(HttpStatus.FORBIDDEN);
+  t.pass();
+});
+
+test('should throw if client_nonce is missing in preflight', async t => {
+  const { app } = t.context;
+
+  await app
+    .POST('/api/oauth/preflight')
+    .send({ provider: 'Google' })
+    .expect(HttpStatus.BAD_REQUEST)
+    .expect({
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `client_nonce`.',
+      data: { name: 'client_nonce' },
+    });
+
+  t.pass();
 });
 
 test('should throw if provider is invalid', async t => {
@@ -320,7 +353,7 @@ test('should throw if provider is invalid in callback uri', async t => {
 function mockOAuthProvider(
   app: TestingApp,
   email: string,
-  clientNonce?: string
+  clientNonce: string = randomUUID()
 ) {
   const provider = app.get(GoogleOAuthProvider);
   const oauth = app.get(OAuthService);
@@ -337,16 +370,18 @@ function mockOAuthProvider(
     email,
     avatarUrl: 'avatar',
   });
+
+  return clientNonce;
 }
 
 test('should be able to sign up with oauth', async t => {
   const { app, db } = t.context;
 
-  mockOAuthProvider(app, 'u2@affine.pro');
+  const clientNonce = mockOAuthProvider(app, 'u2@affine.pro');
 
   await app
     .POST('/api/oauth/callback')
-    .send({ code: '1', state: '1' })
+    .send({ code: '1', state: '1', client_nonce: clientNonce })
     .expect(HttpStatus.OK);
 
   const sessionUser = await currentUser(app);
@@ -427,11 +462,11 @@ test('should throw if client_nonce is invalid', async t => {
 test('should not throw if account registered', async t => {
   const { app, u1 } = t.context;
 
-  mockOAuthProvider(app, u1.email);
+  const clientNonce = mockOAuthProvider(app, u1.email);
 
   const res = await app
     .POST('/api/oauth/callback')
-    .send({ code: '1', state: '1' })
+    .send({ code: '1', state: '1', client_nonce: clientNonce })
     .expect(HttpStatus.OK);
 
   t.is(res.body.id, u1.id);
@@ -442,9 +477,11 @@ test('should be able to fullfil user with oauth sign in', async t => {
 
   const u3 = await app.createUser('u3@affine.pro');
 
-  mockOAuthProvider(app, u3.email);
+  const clientNonce = mockOAuthProvider(app, u3.email);
 
-  await app.POST('/api/oauth/callback').send({ code: '1', state: '1' });
+  await app
+    .POST('/api/oauth/callback')
+    .send({ code: '1', state: '1', client_nonce: clientNonce });
 
   const sessionUser = await currentUser(app);
 

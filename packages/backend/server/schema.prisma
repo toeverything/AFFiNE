@@ -106,6 +106,21 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+model MagicLinkOtp {
+  id          String   @id @default(uuid()) @db.VarChar
+  email       String   @unique @db.Text
+  otpHash     String   @map("otp_hash") @db.VarChar
+  token       String   @db.Text
+  clientNonce String?  @map("client_nonce") @db.Text
+  attempts    Int      @default(0)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@map("magic_link_otps")
+}
+
 model Workspace {
   // NOTE: manually set this column type to identity in migration file
   sid                 Int      @unique @default(autoincrement())

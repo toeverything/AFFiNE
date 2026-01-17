@@ -1,3 +1,5 @@
+import { generateKeyPairSync } from 'node:crypto';
+
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
@@ -7,11 +9,20 @@ const test = ava as TestFn<{
   crypto: CryptoHelper;
 }>;
 
-const privateKey = `-----BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgS3IAkshQuSmFWGpe
-rGTg2vwaC3LdcvBQlYHHMBYJZMyhRANCAAQXdT/TAh4neNEpd4UqpDIEqWv0XvFo
-BRJxGsC5I/fetqObdx1+KEjcm8zFU2xLaUTw9IZCu8OslloOjQv4ur0a
------END PRIVATE KEY-----`;
+function generateTestPrivateKey(): string {
+  const { privateKey } = generateKeyPairSync('ec', {
+    namedCurve: 'prime256v1',
+  });
+  return privateKey
+    .export({
+      type: 'pkcs8',
+      format: 'pem',
+    })
+    .toString();
+}
+
+const privateKey = generateTestPrivateKey();
+const privateKey2 = generateTestPrivateKey();
 
 test.beforeEach(async t => {
   t.context.crypto = new CryptoHelper({
@@ -30,6 +41,21 @@ test('should be able to sign and verify', t => {
   t.false(t.context.crypto.verify(`${data},fake-signature`));
 });
 
+test('should verify signatures across key rotation', t => {
+  const data = 'hello world';
+  const signatureV1 = t.context.crypto.sign(data);
+  t.true(t.context.crypto.verify(signatureV1));
+
+  (t.context.crypto as any).config.crypto.privateKey = privateKey2;
+  t.context.crypto.onConfigChanged({
+    updates: { crypto: { privateKey: privateKey2 } },
+  } as any);
+
+  const signatureV2 = t.context.crypto.sign(data);
+  t.true(t.context.crypto.verify(signatureV1));
+  t.true(t.context.crypto.verify(signatureV2));
+});
+
 test('should same data should get different signature', t => {
   const data = 'hello world';
   const signature = t.context.crypto.sign(data);
@@ -46,11 +72,12 @@ test('should be able to encrypt and decrypt', t => {
   );
 
   const encrypted = t.context.crypto.encrypt(data);
+  const encrypted2 = t.context.crypto.encrypt(data);
   const decrypted = t.context.crypto.decrypt(encrypted);
 
   // we are using a stub to make sure the iv is always 0,
-  // the encrypted result will always be the same
-  t.is(encrypted, 'AAAAAAAAAAAAAAAAOXbR/9glITL3BcO3kPd6fGOMasSkPQ==');
+  // the encrypted result will always be the same for the same key+data
+  t.is(encrypted2, encrypted);
   t.is(decrypted, data);
 
   stub.restore();
@@ -73,6 +100,24 @@ test('should be able to digest', t => {
 test('should be able to safe compare', t => {
   t.true(t.context.crypto.compare('abc', 'abc'));
   t.false(t.context.crypto.compare('abc', 'def'));
+});
+
+test('should sign and parse internal access token', t => {
+  const token = t.context.crypto.signInternalAccessToken({
+    method: 'GET',
+    path: '/rpc/workspaces/123/docs/456',
+    now: 1700000000000,
+    nonce: 'nonce-123',
+  });
+
+  const payload = t.context.crypto.parseInternalAccessToken(token);
+  t.deepEqual(payload, {
+    v: 1,
+    ts: 1700000000000,
+    nonce: 'nonce-123',
+    m: 'GET',
+    p: '/rpc/workspaces/123/docs/456',
+  });
 });
 
 test('should be able to hash and verify password', async t => {

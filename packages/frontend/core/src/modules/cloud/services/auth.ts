@@ -165,6 +165,32 @@ export class AuthService extends Service {
     }
   }
 
+  async createOpenAppSignInCode() {
+    const res = await this.fetchService.fetch(
+      '/api/auth/open-app/sign-in-code',
+      {
+        method: 'POST',
+      }
+    );
+    const body = (await res.json()) as { code?: string };
+
+    if (!body.code) {
+      throw new Error('Missing open-app sign-in code');
+    }
+
+    return body.code;
+  }
+
+  async signInOpenAppSignInCode(code: string) {
+    await this.fetchService.fetch('/api/auth/open-app/sign-in', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+      headers: { 'content-type': 'application/json' },
+    });
+
+    this.session.revalidate();
+  }
+
   async signInPassword(credential: {
     email: string;
     password: string;

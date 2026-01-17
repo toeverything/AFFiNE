@@ -5,6 +5,7 @@ import { HttpStatus } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
+import supertest from 'supertest';
 
 import { parseCookies as safeParseCookies } from '../../base/utils/request';
 import { AuthService } from '../../core/auth/service';
@@ -126,6 +127,36 @@ test('should not be able to sign in if forbidden', async t => {
   t.pass();
 });
 
+test('should forbid magic link with external callbackUrl', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app
+    .POST('/api/auth/sign-in')
+    .send({
+      email: u1.email,
+      callbackUrl: 'https://evil.example/magic-link',
+    })
+    .expect(HttpStatus.FORBIDDEN);
+  t.pass();
+});
+
+test('should forbid magic link with untrusted redirect_uri in callbackUrl', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app
+    .POST('/api/auth/sign-in')
+    .send({
+      email: u1.email,
+      callbackUrl: '/magic-link?redirect_uri=https://evil.example',
+    })
+    .expect(HttpStatus.FORBIDDEN);
+  t.pass();
+});
+
 test('should be able to sign out', async t => {
   const { app } = t.context;
 
@@ -136,11 +167,80 @@ test('should be able to sign out', async t => {
     .send({ email: u1.email, password: u1.password })
     .expect(200);
 
-  await app.GET('/api/auth/sign-out').expect(200);
+  await app.POST('/api/auth/sign-out').expect(200);
 
   const session = await currentUser(app);
 
   t.falsy(session);
+});
+
+test('should reject sign out when csrf token mismatched', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app
+    .POST('/api/auth/sign-in')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  await app
+    .POST('/api/auth/sign-out')
+    .set('x-affine-csrf-token', 'invalid')
+    .expect(HttpStatus.FORBIDDEN);
+
+  const session = await currentUser(app);
+  t.is(session?.id, u1.id);
+});
+
+test('should sign in desktop app via one-time open-app code', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app
+    .POST('/api/auth/sign-in')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  const codeRes = await app.POST('/api/auth/open-app/sign-in-code').expect(201);
+
+  const code = codeRes.body.code as string;
+  t.truthy(code);
+
+  const exchangeRes = await supertest(app.getHttpServer())
+    .post('/api/auth/open-app/sign-in')
+    .send({ code })
+    .expect(201);
+
+  const exchangedCookies = exchangeRes.get('Set-Cookie') ?? [];
+  t.true(
+    exchangedCookies.some(c =>
+      c.startsWith(`${AuthService.sessionCookieName}=`)
+    )
+  );
+
+  const cookieHeader = exchangedCookies.map(c => c.split(';')[0]).join('; ');
+  const sessionRes = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Cookie', cookieHeader)
+    .expect(200);
+
+  t.is(sessionRes.body.user?.id, u1.id);
+
+  // one-time use
+  await supertest(app.getHttpServer())
+    .post('/api/auth/open-app/sign-in')
+    .send({ code })
+    .expect(400)
+    .expect({
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'INVALID_AUTH_STATE',
+      message:
+        'Invalid auth state. You might start the auth progress from another device.',
+    });
 });
 
 test('should be able to correct user id cookie', async t => {
@@ -228,7 +328,7 @@ test('should be able to sign out multiple accounts in one session', async t => {
   const u2 = await app.signupV1('u2@affine.pro');
 
   // sign out u2
-  await app.GET(`/api/auth/sign-out?user_id=${u2.id}`).expect(200);
+  await app.POST(`/api/auth/sign-out?user_id=${u2.id}`).expect(200);
 
   // list [u1]
   let session = await app.GET('/api/auth/session').expect(200);
@@ -241,7 +341,7 @@ test('should be able to sign out multiple accounts in one session', async t => {
     .expect(200);
 
   // sign out all account in session
-  await app.GET('/api/auth/sign-out').expect(200);
+  await app.POST('/api/auth/sign-out').expect(200);
 
   session = await app.GET('/api/auth/session').expect(200);
   t.falsy(session.body.user);
@@ -336,4 +436,57 @@ test('should not be able to sign in if token is invalid', async t => {
     .expect(400);
 
   t.is(res.body.message, 'An invalid email token provided.');
+});
+
+test('should not allow magic link OTP replay', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app.POST('/api/auth/sign-in').send({ email: u1.email }).expect(200);
+  const signInMail = app.mails.last('SignIn');
+  const url = new URL(signInMail.props.url);
+  const email = url.searchParams.get('email');
+  const token = url.searchParams.get('token');
+
+  await app.POST('/api/auth/magic-link').send({ email, token }).expect(201);
+
+  await app
+    .POST('/api/auth/magic-link')
+    .send({ email, token })
+    .expect(400)
+    .expect({
+      status: 400,
+      code: 'Bad Request',
+      type: 'INVALID_INPUT',
+      name: 'INVALID_EMAIL_TOKEN',
+      message: 'An invalid email token provided.',
+    });
+  t.pass();
+});
+
+test('should lock magic link OTP after too many attempts', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app.POST('/api/auth/sign-in').send({ email: u1.email }).expect(200);
+  const signInMail = app.mails.last('SignIn');
+  const url = new URL(signInMail.props.url);
+  const email = url.searchParams.get('email');
+  const token = url.searchParams.get('token') as string;
+
+  const wrongOtp = token === '000000' ? '000001' : '000000';
+
+  for (let i = 0; i < 10; i++) {
+    await app
+      .POST('/api/auth/magic-link')
+      .send({ email, token: wrongOtp })
+      .expect(400);
+  }
+
+  await app.POST('/api/auth/magic-link').send({ email, token }).expect(400);
+
+  const session = await currentUser(app);
+  t.falsy(session);
 });

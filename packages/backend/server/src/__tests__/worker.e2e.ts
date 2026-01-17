@@ -1,3 +1,5 @@
+import * as dns from 'node:dns/promises';
+
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
@@ -14,12 +16,29 @@ const test = ava as TestFn<TestContext>;
 test.before(async t => {
   // @ts-expect-error test
   env.DEPLOYMENT_TYPE = 'selfhosted';
+
+  // Avoid relying on real DNS during tests. SSRF protection uses dns.lookup().
+  Sinon.stub(dns, 'lookup').callsFake(async (...args: any[]) => {
+    const options = args[1];
+    const result = [{ address: '93.184.216.34', family: 4 }];
+    if (
+      options &&
+      typeof options === 'object' &&
+      'all' in options &&
+      options.all
+    ) {
+      return result as any;
+    }
+    return result[0] as any;
+  });
+
   const app = await createTestingApp();
 
   t.context.app = app;
 });
 
 test.after.always(async t => {
+  Sinon.restore();
   await t.context.app.close();
 });
 
@@ -29,7 +48,8 @@ const assertAndSnapshotRaw = async (
   message: string,
   options?: {
     status?: number;
-    origin?: string;
+    origin?: string | null;
+    referer?: string | null;
     method?: 'GET' | 'OPTIONS' | 'POST';
     body?: any;
     checker?: (res: Response) => any;
@@ -38,15 +58,20 @@ const assertAndSnapshotRaw = async (
   const {
     status = 200,
     origin = 'http://localhost',
+    referer,
     method = 'GET',
     checker = () => {},
   } = options || {};
   const { app } = t.context;
-  const res = app[method](route)
-    .set('Origin', origin)
-    .send(options?.body)
-    .expect(status)
-    .expect(checker);
+  const req = app[method](route);
+  if (origin) {
+    req.set('Origin', origin);
+  }
+  if (referer) {
+    req.set('Referer', referer);
+  }
+
+  const res = req.send(options?.body).expect(status).expect(checker);
   await t.notThrowsAsync(res, message);
   t.snapshot((await res).body);
 };
@@ -79,6 +104,14 @@ test('should proxy image', async t => {
   {
     await assertAndSnapshot(
       '/api/worker/image-proxy?url=http://example.com/image.png',
+      'should return 400 if origin and referer are missing',
+      { status: 400, origin: null, referer: null }
+    );
+  }
+
+  {
+    await assertAndSnapshot(
+      '/api/worker/image-proxy?url=http://example.com/image.png',
       'should return 400 for invalid origin header',
       { status: 400, origin: 'http://invalid.com' }
     );
@@ -86,17 +119,13 @@ test('should proxy image', async t => {
 
   {
     const fakeBuffer = Buffer.from('fake image');
-    const fakeResponse = {
-      ok: true,
+    const fakeResponse = new Response(fakeBuffer, {
+      status: 200,
       headers: {
-        get: (header: string) => {
-          if (header.toLowerCase() === 'content-type') return 'image/png';
-          if (header.toLowerCase() === 'content-disposition') return 'inline';
-          return null;
-        },
+        'content-type': 'image/png',
+        'content-disposition': 'inline',
       },
-      arrayBuffer: async () => fakeBuffer,
-    } as any;
+    });
 
     const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeResponse);
 
@@ -130,6 +159,18 @@ test('should preview link', async t => {
     '/api/worker/link-preview',
     'should return 400 if request body is invalid',
     { status: 400, method: 'POST' }
+  );
+
+  await assertAndSnapshot(
+    '/api/worker/link-preview',
+    'should return 400 if origin and referer are missing',
+    {
+      status: 400,
+      method: 'POST',
+      origin: null,
+      referer: null,
+      body: { url: 'http://external.com/page' },
+    }
   );
 
   await assertAndSnapshot(

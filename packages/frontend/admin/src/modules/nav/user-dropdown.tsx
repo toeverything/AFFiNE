@@ -64,7 +64,7 @@ export function UserDropdown({ isCollapsed }: UserDropdownProps) {
   const relative = useRevalidateCurrentUser();
 
   const handleLogout = useCallback(() => {
-    affineFetch('/api/auth/sign-out')
+    affineFetch('/api/auth/sign-out', { method: 'POST' })
       .then(() => {
         toast.success('Logged out successfully');
         return relative();

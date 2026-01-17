@@ -240,18 +240,6 @@ export class AppConfigResolver {
     return this.validateConfigInternal(updates);
   }
 
-  @Mutation(() => [AppConfigValidateResult], {
-    description: 'validate app configuration',
-    deprecationReason: 'use Query.validateAppConfig',
-    name: 'validateAppConfig',
-  })
-  async validateAppConfigMutation(
-    @Args('updates', { type: () => [UpdateAppConfigInput] })
-    updates: UpdateAppConfigInput[]
-  ): Promise<AppConfigValidateResult[]> {
-    return this.validateConfigInternal(updates);
-  }
-
   private validateConfigInternal(
     updates: UpdateAppConfigInput[]
   ): AppConfigValidateResult[] {

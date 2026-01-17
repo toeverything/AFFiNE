@@ -125,16 +125,6 @@ export const OnboardingPage = ({
     return null;
   }
 
-  // deprecated
-  // TODO(@forehalo): remove
-  if (callbackUrl?.startsWith('/open-app/signin-redirect')) {
-    const url = new URL(callbackUrl, window.location.origin);
-    url.searchParams.set('next', 'onboarding');
-    console.log('redirect to', url.toString());
-    window.location.assign(url.toString());
-    return null;
-  }
-
   if (question) {
     return (
       <ScrollableLayout

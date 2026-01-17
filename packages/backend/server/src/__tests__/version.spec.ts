@@ -27,7 +27,7 @@ function checkVersion(enabled = true) {
     client: {
       versionControl: {
         enabled,
-        requiredVersion: '>=0.20.0',
+        requiredVersion: '>=0.25.0',
       },
     },
   });
@@ -88,23 +88,23 @@ test('should passthrough is version range is invalid', async t => {
 });
 
 test('should pass if client version is allowed', async t => {
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.20.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
 
   t.is(res.status, 200);
 
-  res = await app.GET('/guarded/test').set('x-affine-version', '0.21.0');
+  res = await app.GET('/guarded/test').set('x-affine-version', '0.26.0');
 
   t.is(res.status, 200);
 
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.19.0',
+        requiredVersion: '>=0.25.0',
       },
     },
   });
 
-  res = await app.GET('/guarded/test').set('x-affine-version', '0.19.0');
+  res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
 
   t.is(res.status, 200);
 });
@@ -115,7 +115,7 @@ test('should fail if client version is not set or invalid', async t => {
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [unset_or_invalid], required version is [>=0.20.0].'
+    'Unsupported client with version [unset_or_invalid], required version is [>=0.25.0].'
   );
 
   res = await app.GET('/guarded/test').set('x-affine-version', 'invalid');
@@ -123,7 +123,7 @@ test('should fail if client version is not set or invalid', async t => {
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [invalid], required version is [>=0.20.0].'
+    'Unsupported client with version [invalid], required version is [>=0.25.0].'
   );
 });
 
@@ -131,17 +131,17 @@ test('should tell upgrade if client version is lower than allowed', async t => {
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.21.0 <=0.22.0',
+        requiredVersion: '>=0.26.0 <=0.27.0',
       },
     },
   });
 
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.20.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
 
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [0.20.0], required version is [>=0.21.0 <=0.22.0].'
+    'Unsupported client with version [0.25.0], required version is [>=0.26.0 <=0.27.0].'
   );
 });
 
@@ -149,17 +149,17 @@ test('should tell downgrade if client version is higher than allowed', async t =
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.20.0 <=0.22.0',
+        requiredVersion: '>=0.25.0 <=0.26.0',
       },
     },
   });
 
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.23.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.27.0');
 
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [0.23.0], required version is [>=0.20.0 <=0.22.0].'
+    'Unsupported client with version [0.27.0], required version is [>=0.25.0 <=0.26.0].'
   );
 });
 
@@ -167,25 +167,25 @@ test('should test prerelease version', async t => {
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.19.0',
+        requiredVersion: '>=0.25.0',
       },
     },
   });
 
   let res = await app
     .GET('/guarded/test')
-    .set('x-affine-version', '0.19.0-canary.1');
+    .set('x-affine-version', '0.25.0-canary.1');
 
-  // 0.19.0-canary.1 is lower than 0.19.0 obviously
+  // 0.25.0-canary.1 is lower than 0.25.0 obviously
   t.is(res.status, 403);
 
   res = await app
     .GET('/guarded/test')
-    .set('x-affine-version', '0.20.0-canary.1');
+    .set('x-affine-version', '0.26.0-canary.1');
 
   t.is(res.status, 200);
 
-  res = await app.GET('/guarded/test').set('x-affine-version', '0.20.0-beta.2');
+  res = await app.GET('/guarded/test').set('x-affine-version', '0.26.0-beta.2');
 
   t.is(res.status, 200);
 });
