@@ -266,13 +266,13 @@ impl TableState {
   }
 }
 
-pub(crate) fn parse_markdown_blocks(markdown: &str, skip_first_h1: bool) -> Result<Vec<BlockNode>, ParseError> {
+pub(crate) fn parse_markdown_blocks(markdown: &str) -> Result<Vec<BlockNode>, ParseError> {
   if markdown.len() > MAX_MARKDOWN_CHARS {
     return Err(ParseError::ParserError("markdown_too_large".into()));
   }
 
   validate_markdown(markdown)?;
-  let parsed = parse_markdown(markdown, skip_first_h1)?;
+  let parsed = parse_markdown(markdown)?;
   if count_tree_nodes(&parsed.blocks) > MAX_BLOCKS {
     return Err(ParseError::ParserError("block_count_too_large".into()));
   }
@@ -282,7 +282,7 @@ pub(crate) fn parse_markdown_blocks(markdown: &str, skip_first_h1: bool) -> Resu
 /// Parses markdown content into blocks suitable for building a ydoc.
 ///
 /// The first H1 can be skipped to act as the document title.
-pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<MarkdownDocument, ParseError> {
+pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseError> {
   // Note: ENABLE_TABLES is included for future support, but table events
   // currently fall through to the catch-all match arm. Table content appears as
   // plain text.
@@ -295,8 +295,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
   let mut list_items: Vec<BlockDraft> = Vec::new();
   let mut active: Option<BlockDraft> = None;
   let mut in_blockquote = false;
-  let mut skip_heading = false;
-  let mut h1_seen = !skip_first_h1;
   let mut pending_image: Option<ImageDraft> = None;
   let mut pending_bookmark: Option<String> = None;
   let mut table_state: Option<TableState> = None;
@@ -451,21 +449,12 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
 
     match event {
       Event::Start(Tag::Heading { level, .. }) => {
-        if level == HeadingLevel::H1 && !h1_seen {
-          h1_seen = true;
-          skip_heading = true;
-          continue;
-        }
         active = Some(BlockDraft::new(
           BlockFlavour::Paragraph,
           Some(BlockType::from_heading_level(level)),
         ));
       }
       Event::End(TagEnd::Heading(_)) => {
-        if skip_heading {
-          skip_heading = false;
-          continue;
-        }
         if let Some(block) = active.take() {
           attach_block(block.finish(), &mut list_items, &mut blocks);
         }
@@ -480,9 +469,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::End(TagEnd::Paragraph) => {
-        if skip_heading {
-          continue;
-        }
         if let Some(url) = pending_bookmark.take()
           && active.as_ref().is_some_and(|block| block.is_empty())
         {
@@ -579,9 +565,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::Start(Tag::Image { dest_url, .. }) => {
-        if skip_heading {
-          continue;
-        }
         if let Some(block) = active.take()
           && !block.is_empty()
         {
@@ -601,9 +584,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::Text(text) => {
-        if skip_heading {
-          continue;
-        }
         if pending_bookmark.is_some() && !text.trim().is_empty() {
           pending_bookmark = None;
         }
@@ -618,9 +598,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::Html(html) | Event::InlineHtml(html) => {
-        if skip_heading {
-          continue;
-        }
         if is_ai_editable_comment(&html) {
           continue;
         }
@@ -663,9 +640,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::Code(code) => {
-        if skip_heading {
-          continue;
-        }
         if pending_bookmark.is_some() && !code.trim().is_empty() {
           pending_bookmark = None;
         }
@@ -681,9 +655,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::SoftBreak | Event::HardBreak => {
-        if skip_heading {
-          continue;
-        }
         if pending_bookmark.is_some() {
           pending_bookmark = None;
         }
@@ -705,9 +676,6 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         }
       }
       Event::Rule => {
-        if skip_heading {
-          continue;
-        }
         let divider = BlockDraft::new(BlockFlavour::Divider, None).finish();
         attach_block(divider, &mut list_items, &mut blocks);
       }
@@ -1038,7 +1006,7 @@ mod tests {
 
   #[test]
   fn test_parse_markdown_blocks_simple() {
-    let doc = parse_markdown("# Title\n\nParagraph text.", false).expect("parse markdown");
+    let doc = parse_markdown("# Title\n\nParagraph text.").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 2);
     assert_eq!(doc.blocks[0].spec.block_type, Some(BlockType::H1));
     assert_eq!(doc.blocks[1].spec.flavour, BlockFlavour::Paragraph);
@@ -1046,14 +1014,14 @@ mod tests {
 
   #[test]
   fn test_parse_markdown_blocks_with_headings() {
-    let doc = parse_markdown("# Title\n\n## Section\n\nText.", false).expect("parse markdown");
+    let doc = parse_markdown("# Title\n\n## Section\n\nText.").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 3);
     assert_eq!(doc.blocks[1].spec.block_type, Some(BlockType::H2));
   }
 
   #[test]
   fn test_parse_markdown_blocks_lists() {
-    let doc = parse_markdown("# Title\n\n- Item 1\n- Item 2", false).expect("parse markdown");
+    let doc = parse_markdown("# Title\n\n- Item 1\n- Item 2").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 3);
     assert_eq!(doc.blocks[1].spec.flavour, BlockFlavour::List);
     assert_eq!(doc.blocks[1].spec.block_type, Some(BlockType::Bulleted));
@@ -1061,7 +1029,7 @@ mod tests {
 
   #[test]
   fn test_parse_markdown_blocks_task_list() {
-    let doc = parse_markdown("# Title\n\n- [ ] Unchecked\n- [x] Checked", false).expect("parse markdown");
+    let doc = parse_markdown("# Title\n\n- [ ] Unchecked\n- [x] Checked").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 3);
     assert_eq!(doc.blocks[1].spec.block_type, Some(BlockType::Todo));
     assert_eq!(doc.blocks[1].spec.checked, Some(false));
@@ -1070,7 +1038,7 @@ mod tests {
 
   #[test]
   fn test_parse_markdown_blocks_code() {
-    let doc = parse_markdown("# Title\n\n```rust\nfn main() {}\n```", false).expect("parse markdown");
+    let doc = parse_markdown("# Title\n\n```rust\nfn main() {}\n```").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 2);
     assert_eq!(doc.blocks[1].spec.flavour, BlockFlavour::Code);
     assert_eq!(doc.blocks[1].spec.language, Some("rust".to_string()));
@@ -1078,14 +1046,14 @@ mod tests {
 
   #[test]
   fn test_parse_markdown_blocks_divider() {
-    let doc = parse_markdown("# Title\n\nBefore\n\n---\n\nAfter", false).expect("parse markdown");
+    let doc = parse_markdown("# Title\n\nBefore\n\n---\n\nAfter").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 4);
     assert_eq!(doc.blocks[2].spec.flavour, BlockFlavour::Divider);
   }
 
   #[test]
   fn test_parse_markdown_blocks_image() {
-    let doc = parse_markdown("![Alt](blob://image-id)", false).expect("parse markdown");
+    let doc = parse_markdown("![Alt](blob://image-id)").expect("parse markdown");
     assert_eq!(doc.blocks.len(), 1);
     assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::Image);
     assert_eq!(doc.blocks[0].spec.image.as_ref().unwrap().source_id, "image-id");
@@ -1094,7 +1062,7 @@ mod tests {
   #[test]
   fn test_parse_markdown_blocks_table() {
     let markdown = "| A | B |\n| --- | --- |\n| 1 | 2 |";
-    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    let doc = parse_markdown(markdown).expect("parse markdown");
     assert_eq!(doc.blocks.len(), 1);
     assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::Table);
     assert_eq!(doc.blocks[0].spec.table.as_ref().unwrap().rows.len(), 2);
@@ -1103,7 +1071,7 @@ mod tests {
   #[test]
   fn test_parse_markdown_blocks_table_html_break() {
     let markdown = "| A | B |\n| --- | --- |\n| 1<br />2 | 3 |";
-    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    let doc = parse_markdown(markdown).expect("parse markdown");
     let rows = &doc.blocks[0].spec.table.as_ref().unwrap().rows;
     assert_eq!(rows[1][0], "1\n2");
   }
@@ -1111,7 +1079,7 @@ mod tests {
   #[test]
   fn test_parse_markdown_blocks_bookmark() {
     let markdown = "[](Bookmark,https://example.com)";
-    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    let doc = parse_markdown(markdown).expect("parse markdown");
     assert_eq!(doc.blocks.len(), 1);
     assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::Bookmark);
     assert_eq!(doc.blocks[0].spec.bookmark.as_ref().unwrap().url, "https://example.com");
@@ -1120,7 +1088,7 @@ mod tests {
   #[test]
   fn test_parse_markdown_blocks_embed_youtube() {
     let markdown = r#"<iframe src="https://www.youtube.com/embed/abc123"></iframe>"#;
-    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    let doc = parse_markdown(markdown).expect("parse markdown");
     assert_eq!(doc.blocks.len(), 1);
     assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::EmbedYoutube);
     assert_eq!(doc.blocks[0].spec.embed_youtube.as_ref().unwrap().video_id, "abc123");
@@ -1133,7 +1101,7 @@ mod tests {
     use super::super::inline::InlineStyle;
 
     let markdown = "**Bold** _Italic_ ~~Strike~~ `Code` [Link](https://example.com)";
-    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    let doc = parse_markdown(markdown).expect("parse markdown");
     assert_eq!(doc.blocks.len(), 1);
 
     let has_attr = |key: &str| {

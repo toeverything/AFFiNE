@@ -176,7 +176,7 @@ pub fn parse_page_doc(
 
   while let Some((_parent_block_id, block_id)) = walker.next() {
     let Some(block) = context.block_pool.get(&block_id) else {
-      break;
+      continue;
     };
 
     let Some(flavour) = get_flavour(block) else {

@@ -166,82 +166,80 @@ export class WorkspaceMcpProvider {
       }
     );
 
-    // Write tools - create and update documents
-    server.registerTool(
-      'create_document',
-      {
-        title: 'Create Document',
-        description:
-          'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document.',
-        inputSchema: z.object({
-          title: z.string().min(1).describe('The title of the new document'),
-          content: z
-            .string()
-            .describe(
-              'The markdown content for the document body (should NOT include a title H1 - the title parameter will be used)'
-            ),
-        }),
-      },
-      async ({ title, content }) => {
-        try {
-          // Check if user can create docs in this workspace
-          await this.ac
-            .user(userId)
-            .workspace(workspaceId)
-            .assert('Workspace.CreateDoc');
-
-          // Sanitize title by removing newlines and trimming
-          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-          if (!sanitizedTitle) {
-            throw new Error('Title cannot be empty');
-          }
-
-          // Strip any leading H1 from content to prevent duplicates
-          // Per CommonMark spec, ATX headings allow only 0-3 spaces before the #
-          // Handles: "# Title", "  # Title", "# Title #"
-          const strippedContent = content.replace(
-            /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
-            ''
-          );
-
-          // Create the document
-          const result = await this.writer.createDoc(
-            workspaceId,
-            sanitizedTitle,
-            strippedContent,
-            userId
-          );
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  success: true,
-                  docId: result.docId,
-                  message: `Document "${title}" created successfully`,
-                }),
-              },
-            ],
-          } as const;
-        } catch (error) {
-          return {
-            isError: true,
-            content: [
-              {
-                type: 'text',
-                text: `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              },
-            ],
-          };
-        }
-      }
-    );
-
     if (
       BUILD_CONFIG.debug ||
       ['canary', 'internal'].includes(BUILD_CONFIG.appBuildType)
     ) {
+      // Write tools - create and update documents
+      server.registerTool(
+        'create_document',
+        {
+          title: 'Create Document',
+          description:
+            'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document.',
+          inputSchema: z.object({
+            title: z.string().min(1).describe('The title of the new document'),
+            content: z
+              .string()
+              .describe('The markdown content for the document body'),
+          }),
+        },
+        async ({ title, content }) => {
+          try {
+            // Check if user can create docs in this workspace
+            await this.ac
+              .user(userId)
+              .workspace(workspaceId)
+              .assert('Workspace.CreateDoc');
+
+            // Sanitize title by removing newlines and trimming
+            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+            if (!sanitizedTitle) {
+              throw new Error('Title cannot be empty');
+            }
+
+            // Strip any leading H1 from content to prevent duplicates
+            // Per CommonMark spec, ATX headings allow only 0-3 spaces before the #
+            // Handles: "# Title", "  # Title", "# Title #"
+            const strippedContent = content.replace(
+              /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
+              ''
+            );
+
+            // Create the document
+            const result = await this.writer.createDoc(
+              workspaceId,
+              sanitizedTitle,
+              strippedContent,
+              userId
+            );
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    success: true,
+                    docId: result.docId,
+                    message: `Document "${title}" created successfully`,
+                  }),
+                },
+              ],
+            } as const;
+          } catch (error) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                },
+              ],
+            };
+          }
+        }
+      );
+
       server.registerTool(
         'update_document',
         {

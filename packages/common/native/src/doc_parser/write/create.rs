@@ -27,7 +27,7 @@ use super::{
 /// # Returns
 /// A binary vector containing the y-octo encoded document update
 pub fn build_full_doc(title: &str, markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseError> {
-  let nodes = parse_markdown_blocks(markdown, false)?;
+  let nodes = parse_markdown_blocks(markdown)?;
   build_doc_update(doc_id, title, &nodes)
 }
 

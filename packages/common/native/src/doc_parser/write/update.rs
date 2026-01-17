@@ -59,7 +59,7 @@ enum PatchOp {
 /// # Returns
 /// A binary vector representing only the delta (changes) to apply
 pub fn update_doc(existing_binary: &[u8], new_markdown: &str, doc_id: &str) -> Result<Vec<u8>, ParseError> {
-  let mut new_nodes = parse_markdown_blocks(new_markdown, false)?;
+  let mut new_nodes = parse_markdown_blocks(new_markdown)?;
   let state = load_doc_state(existing_binary, doc_id)?;
 
   check_limits(&state.blocks, &new_nodes)?;

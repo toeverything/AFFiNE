@@ -13,6 +13,20 @@ impl<'a> MarkdownWriter<'a> {
   }
 
   pub(crate) fn push_paragraph(&mut self, prefix: &str, text: &str) {
+    if prefix == "> " {
+      let quoted = text
+        .split('\n')
+        .map(|line| format!("{prefix}{line}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+      self.output.push_str(&quoted);
+      if !text.ends_with('\n') {
+        self.output.push('\n');
+      }
+      self.output.push('\n');
+      return;
+    }
+
     self.output.push_str(prefix);
     self.output.push_str(text);
     if !text.ends_with('\n') {
@@ -68,17 +82,11 @@ pub(crate) fn paragraph_prefix(type_: &str) -> &'static str {
   }
 }
 
-pub(crate) fn list_prefix(type_: &str, checked: bool) -> &'static str {
-  match type_ {
-    "bulleted" => "* ",
-    "todo" => {
-      if checked {
-        "- [x] "
-      } else {
-        "- [ ] "
-      }
-    }
-    _ => "1. ",
+pub(crate) fn list_prefix(r#type: &str, checked: bool, order: Option<i64>) -> String {
+  match r#type {
+    "bulleted" => "* ".to_string(),
+    "todo" => if checked { "- [x] " } else { "- [ ] " }.to_string(),
+    _ => format!("{}. ", order.unwrap_or(1)),
   }
 }
 
@@ -106,11 +114,11 @@ impl<'a> MarkdownRenderer<'a> {
       BlockFlavour::List => {
         let type_ = spec.block_type_str().unwrap_or("bulleted");
         let checked = spec.checked.unwrap_or(false);
-        let prefix = list_prefix(type_, checked);
+        let prefix = list_prefix(type_, checked, spec.order);
         let indent = list_indent(list_depth);
         let text_md = delta_ops_to_markdown(&spec.text, self.options);
         let mut writer = MarkdownWriter::new(output);
-        writer.push_list_item(&indent, prefix, &text_md);
+        writer.push_list_item(&indent, &prefix, &text_md);
       }
       BlockFlavour::Code => {
         let text = delta_ops_to_plain_text(&spec.text);

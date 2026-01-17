@@ -42,33 +42,23 @@ pub fn update_root_doc_meta_title(root_doc_bin: &[u8], doc_id: &str, title: &str
   }
 
   if !found {
-    let page_map = doc.create_map().map_err(|e| ParseError::ParserError(e.to_string()))?;
+    let page_map = doc.create_map()?;
 
     let idx = pages.len();
-    pages
-      .insert(idx, Value::Map(page_map))
-      .map_err(|e| ParseError::ParserError(e.to_string()))?;
+    pages.insert(idx, Value::Map(page_map))?;
 
     if let Some(mut inserted_page) = pages.get(idx).and_then(|v| v.to_map()) {
-      inserted_page
-        .insert("id".to_string(), Any::String(doc_id.to_string()))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
-      inserted_page
-        .insert("title".to_string(), Any::String(title.to_string()))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      inserted_page.insert("id".to_string(), Any::String(doc_id.to_string()))?;
+      inserted_page.insert("title".to_string(), Any::String(title.to_string()))?;
 
       let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
         .unwrap_or(0);
-      inserted_page
-        .insert("createDate".to_string(), Any::Float64((timestamp as f64).into()))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      inserted_page.insert("createDate".to_string(), Any::Float64((timestamp as f64).into()))?;
 
-      let tags = doc.create_array().map_err(|e| ParseError::ParserError(e.to_string()))?;
-      inserted_page
-        .insert("tags".to_string(), Value::Array(tags))
-        .map_err(|e| ParseError::ParserError(e.to_string()))?;
+      let tags = doc.create_array()?;
+      inserted_page.insert("tags".to_string(), Value::Array(tags))?;
     }
   }
 
