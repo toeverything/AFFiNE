@@ -281,25 +281,22 @@ pub fn parse_doc_to_markdown(
       0
     };
     let ai_block = ai_editable && block_level == 2;
-    let mut placeholder = false;
+
     let mut block_markdown = String::new();
 
     match flavour.as_str() {
       "affine:database" => {
-        if ai_block {
-          placeholder = true;
-        } else {
-          let title = get_string(block, "prop:title").unwrap_or_default();
-          block_markdown.push_str(&format!("\n### {title}\n"));
+        let title = get_string(block, "prop:title").unwrap_or_default();
+        block_markdown.push_str(&format!("\n### {title}\n"));
 
-          if let Some(table) = build_database_table(block, &context, &md_options)
-            && let Some(table_md) = database_table_markdown(table)
-          {
-            let mut writer = MarkdownWriter::new(&mut block_markdown);
-            writer.push_table(&table_md);
-          }
+        if let Some(table) = build_database_table(block, &context, &md_options)
+          && let Some(table_md) = database_table_markdown(table)
+        {
+          let mut writer = MarkdownWriter::new(&mut block_markdown);
+          writer.push_table(&table_md);
         }
       }
+      "affine:note" | "affine:surface" | "affine:frame" => {}
       _ => {
         if let Some(block_flavour) = BlockFlavour::from_str(flavour.as_str()) {
           let spec = BlockSpec::from_block_map_with_flavour(block, block_flavour);
@@ -309,20 +306,16 @@ pub fn parse_doc_to_markdown(
             0
           };
           renderer.write_block(&mut block_markdown, &spec, list_depth);
+        } else {
+          return Err(ParseError::ParserError(format!("unsupported_block_flavour:{flavour}")));
         }
       }
     }
 
     if ai_block {
-      if placeholder {
-        markdown.push_str(&format!("<!-- block_id={block_id} flavour={flavour} placeholder -->\n"));
-      } else if !block_markdown.is_empty() {
-        markdown.push_str(&format!("<!-- block_id={block_id} flavour={flavour} -->\n"));
-        markdown.push_str(&block_markdown);
-      }
-    } else {
-      markdown.push_str(&block_markdown);
+      markdown.push_str(&format!("<!-- block_id={block_id} flavour={flavour} -->\n"));
     }
+    markdown.push_str(&block_markdown);
   }
 
   Ok(MarkdownResult {

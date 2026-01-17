@@ -3,8 +3,9 @@ use y_octo::{Text, TextDeltaOp, TextInsert};
 use super::{
   super::schema::{
     PROP_CAPTION, PROP_CELLS_PREFIX, PROP_CHECKED, PROP_COLUMNS_PREFIX, PROP_HEIGHT, PROP_LANGUAGE, PROP_ORDER,
-    PROP_ROWS_PREFIX, PROP_SOURCE_ID, PROP_TEXT, PROP_TYPE, PROP_WIDTH, SYS_CHILDREN, SYS_FLAVOUR, SYS_ID, SYS_VERSION,
-    table_cell_text_key, table_column_id_key, table_column_order_key, table_row_id_key, table_row_order_key,
+    PROP_ROWS_PREFIX, PROP_SOURCE_ID, PROP_TEXT, PROP_TYPE, PROP_URL, PROP_VIDEO_ID, PROP_WIDTH, SYS_CHILDREN,
+    SYS_FLAVOUR, SYS_ID, SYS_VERSION, table_cell_text_key, table_column_id_key, table_column_order_key,
+    table_row_id_key, table_row_order_key,
   },
   *,
 };
@@ -25,6 +26,9 @@ pub(super) fn block_version(flavour: &str) -> i32 {
     "affine:divider" => 1,
     "affine:image" => 1,
     "affine:table" => 1,
+    "affine:bookmark" => 1,
+    "affine:embed-youtube" => 1,
+    "affine:callout" => 1,
     _ => 1,
   }
 }
@@ -42,6 +46,15 @@ pub(super) struct ImageBlockProps<'a> {
   pub caption: Option<&'a str>,
   pub width: Option<f64>,
   pub height: Option<f64>,
+}
+
+pub(super) struct BookmarkBlockProps<'a> {
+  pub url: &'a str,
+  pub caption: Option<&'a str>,
+}
+
+pub(super) struct EmbedYoutubeBlockProps<'a> {
+  pub video_id: &'a str,
 }
 
 pub(super) fn insert_text(doc: &Doc, block: &mut Map, key: &str, ops: &[TextDeltaOp]) -> Result<(), ParseError> {
@@ -198,6 +211,35 @@ pub(super) fn apply_image_block_props(
   Ok(())
 }
 
+pub(super) fn apply_bookmark_block_props(
+  block: &mut Map,
+  props: &BookmarkBlockProps<'_>,
+  clear_missing: bool,
+) -> Result<(), ParseError> {
+  block.insert(PROP_URL.to_string(), Any::String(props.url.to_string()))?;
+
+  match props.caption {
+    Some(caption) => {
+      block.insert(PROP_CAPTION.to_string(), Any::String(caption.to_string()))?;
+    }
+    None => {
+      if clear_missing && block.get(PROP_CAPTION).is_some() {
+        block.remove(PROP_CAPTION);
+      }
+    }
+  }
+
+  Ok(())
+}
+
+pub(super) fn apply_embed_youtube_block_props(
+  block: &mut Map,
+  props: &EmbedYoutubeBlockProps<'_>,
+) -> Result<(), ParseError> {
+  block.insert(PROP_VIDEO_ID.to_string(), Any::String(props.video_id.to_string()))?;
+  Ok(())
+}
+
 pub(super) fn apply_table_block_props(block: &mut Map, rows: &[Vec<String>]) -> Result<(), ParseError> {
   clear_table_props(block);
 
@@ -256,6 +298,36 @@ pub(super) fn apply_block_spec(
         height: image.height,
       };
       apply_image_block_props(block, &props, options.clear_missing)?;
+    }
+    BlockFlavour::Bookmark => {
+      if options.preserve_text {
+        return Ok(());
+      }
+      let bookmark = spec
+        .bookmark
+        .as_ref()
+        .ok_or_else(|| ParseError::ParserError("bookmark spec missing".into()))?;
+      let props = BookmarkBlockProps {
+        url: &bookmark.url,
+        caption: bookmark.caption.as_deref(),
+      };
+      apply_bookmark_block_props(block, &props, options.clear_missing)?;
+    }
+    BlockFlavour::EmbedYoutube => {
+      if options.preserve_text {
+        return Ok(());
+      }
+      let embed = spec
+        .embed_youtube
+        .as_ref()
+        .ok_or_else(|| ParseError::ParserError("embed spec missing".into()))?;
+      let props = EmbedYoutubeBlockProps {
+        video_id: &embed.video_id,
+      };
+      apply_embed_youtube_block_props(block, &props)?;
+    }
+    BlockFlavour::Callout => {
+      return Ok(());
     }
     BlockFlavour::Table => {
       if options.preserve_text {

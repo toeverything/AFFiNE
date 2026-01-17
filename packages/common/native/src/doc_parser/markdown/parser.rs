@@ -8,7 +8,10 @@ use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 use super::{
   super::{
     ParseError,
-    block_spec::{BlockFlavour, BlockNode, BlockSpec, BlockType, ImageSpec, TableSpec, count_tree_nodes},
+    block_spec::{
+      BlockFlavour, BlockNode, BlockSpec, BlockType, BookmarkSpec, EmbedYoutubeSpec, ImageSpec, TableSpec,
+      count_tree_nodes,
+    },
   },
   inline::InlineStyle,
 };
@@ -176,6 +179,8 @@ impl BlockDraft {
         order: self.order,
         image: None,
         table: None,
+        bookmark: None,
+        embed_youtube: None,
       },
       children: self.children,
     }
@@ -293,6 +298,7 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
   let mut skip_heading = false;
   let mut h1_seen = !skip_first_h1;
   let mut pending_image: Option<ImageDraft> = None;
+  let mut pending_bookmark: Option<String> = None;
   let mut table_state: Option<TableState> = None;
 
   for event in parser {
@@ -408,6 +414,14 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
           }
           table_handled = true;
         }
+        Event::Html(html) | Event::InlineHtml(html) => {
+          if is_html_line_break(html) {
+            state.push_text("\n");
+          } else if !html.trim().is_empty() {
+            state.push_text(html);
+          }
+          table_handled = true;
+        }
         Event::End(TagEnd::Table) => {
           if state.cell_in_progress {
             state.finish_cell();
@@ -467,6 +481,13 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
       }
       Event::End(TagEnd::Paragraph) => {
         if skip_heading {
+          continue;
+        }
+        if let Some(url) = pending_bookmark.take()
+          && active.as_ref().is_some_and(|block| block.is_empty())
+        {
+          active = None;
+          attach_block(bookmark_block(url), &mut list_items, &mut blocks);
           continue;
         }
         if in_blockquote {
@@ -583,6 +604,9 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         if skip_heading {
           continue;
         }
+        if pending_bookmark.is_some() && !text.trim().is_empty() {
+          pending_bookmark = None;
+        }
         if let Some(image) = pending_image.as_mut() {
           image.caption.push_str(&text);
         } else if let Some(block) = active.as_mut() {
@@ -597,6 +621,9 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         if skip_heading {
           continue;
         }
+        if is_ai_editable_comment(&html) {
+          continue;
+        }
         if let Some(image) = parse_img_tag(&html) {
           if let Some(block) = active.take()
             && !block.is_empty()
@@ -605,6 +632,23 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
           }
           let image = image.finish()?;
           attach_block(image_block(image), &mut list_items, &mut blocks);
+        } else if let Some(video_id) = parse_iframe_tag(&html) {
+          if let Some(block) = active.take()
+            && !block.is_empty()
+          {
+            attach_block(block.finish(), &mut list_items, &mut blocks);
+          }
+          attach_block(embed_youtube_block(video_id), &mut list_items, &mut blocks);
+        } else if is_html_line_break(&html) {
+          if let Some(image) = pending_image.as_mut() {
+            image.caption.push(' ');
+          } else if let Some(block) = active.as_mut() {
+            let attrs = inline.attrs();
+            block.push_text("\n", attrs);
+          } else if let Some(item) = list_items.last_mut() {
+            let attrs = inline.attrs();
+            item.push_text("\n", attrs);
+          }
         } else {
           if let Some(block) = active.as_mut() {
             let attrs = inline.attrs();
@@ -624,6 +668,9 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
         if skip_heading {
           continue;
         }
+        if pending_bookmark.is_some() && !code.trim().is_empty() {
+          pending_bookmark = None;
+        }
         if let Some(image) = pending_image.as_mut() {
           image.caption.push_str(&code);
         } else {
@@ -638,6 +685,9 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
       Event::SoftBreak | Event::HardBreak => {
         if skip_heading {
           continue;
+        }
+        if pending_bookmark.is_some() {
+          pending_bookmark = None;
         }
         if let Some(image) = pending_image.as_mut() {
           image.caption.push(' ');
@@ -669,8 +719,23 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
       Event::End(TagEnd::Emphasis) => inline.pop(InlineAttr::new(InlineStyle::Italic)),
       Event::Start(Tag::Strikethrough) => inline.push(InlineAttr::new(InlineStyle::Strike)),
       Event::End(TagEnd::Strikethrough) => inline.pop(InlineAttr::new(InlineStyle::Strike)),
-      Event::Start(Tag::Link { dest_url, .. }) => inline.push(InlineAttr::link(dest_url.to_string())),
-      Event::End(TagEnd::Link) => inline.pop(InlineAttr::new(InlineStyle::Link)),
+      Event::Start(Tag::Link { dest_url, .. }) => {
+        if let Some(url) = parse_bookmark_url(&dest_url)
+          && active
+            .as_ref()
+            .is_some_and(|block| block.flavour == BlockFlavour::Paragraph && block.is_empty())
+          && list_items.is_empty()
+        {
+          pending_bookmark = Some(url);
+        } else {
+          inline.push(InlineAttr::link(dest_url.to_string()));
+        }
+      }
+      Event::End(TagEnd::Link) => {
+        if pending_bookmark.is_none() {
+          inline.pop(InlineAttr::new(InlineStyle::Link));
+        }
+      }
       _ => {}
     }
   }
@@ -699,7 +764,16 @@ pub(super) fn validate_markdown(markdown: &str) -> Result<(), ParseError> {
     match event {
       Event::Start(tag) => ensure_supported_tag(&tag)?,
       Event::Html(html) | Event::InlineHtml(html) => {
+        if is_ai_editable_comment(&html) {
+          continue;
+        }
         if parse_img_tag(&html).is_some() {
+          continue;
+        }
+        if parse_iframe_tag(&html).is_some() {
+          continue;
+        }
+        if is_html_line_break(&html) {
           continue;
         }
         return Err(ParseError::ParserError("unsupported_markdown:html".into()));
@@ -766,13 +840,65 @@ fn parse_img_tag(html: &str) -> Option<ImageDraft> {
   })
 }
 
+fn parse_iframe_tag(html: &str) -> Option<String> {
+  let tag = html.trim();
+  if !tag.starts_with("<iframe") {
+    return None;
+  }
+  let attrs = parse_html_attrs(tag);
+  let src = attrs.get("src")?;
+  parse_youtube_video_id(src)
+}
+
+fn parse_youtube_video_id(src: &str) -> Option<String> {
+  let src = src.trim();
+  let embed_pos = src.find("/embed/")?;
+  let id = &src[embed_pos + "/embed/".len()..];
+  let id = id.split(['?', '#', '/']).next().unwrap_or("");
+  if id.is_empty() { None } else { Some(id.to_string()) }
+}
+
+fn is_ai_editable_comment(html: &str) -> bool {
+  let trimmed = html.trim();
+  if !trimmed.starts_with("<!--") || !trimmed.ends_with("-->") {
+    return false;
+  }
+  let body = trimmed.trim_start_matches("<!--").trim_end_matches("-->").trim();
+  body.contains("block_id=") && body.contains("flavour=")
+}
+
+fn is_html_line_break(html: &str) -> bool {
+  let trimmed = html.trim();
+  if !trimmed.starts_with('<') || !trimmed.ends_with('>') {
+    return false;
+  }
+  let inner = trimmed.trim_start_matches('<').trim_end_matches('>').trim();
+  let inner = inner.trim_end_matches('/').trim();
+  inner.eq_ignore_ascii_case("br")
+}
+
+fn parse_bookmark_url(dest_url: &str) -> Option<String> {
+  let (prefix, url) = dest_url.split_once(',')?;
+  if !prefix.trim().eq_ignore_ascii_case("bookmark") {
+    return None;
+  }
+  let url = url.trim();
+  if url.is_empty() { None } else { Some(url.to_string()) }
+}
+
 fn parse_html_attrs(tag: &str) -> HashMap<String, String> {
   let mut attrs = HashMap::new();
   let chars: Vec<char> = tag.chars().collect();
-  let mut i = match tag.find("<img") {
-    Some(pos) => pos + 4,
+  let mut i = match tag.find('<') {
+    Some(pos) => pos + 1,
     None => return attrs,
   };
+  while i < chars.len() && chars[i].is_whitespace() {
+    i += 1;
+  }
+  while i < chars.len() && !chars[i].is_whitespace() && chars[i] != '>' {
+    i += 1;
+  }
   while i < chars.len() {
     while i < chars.len() && chars[i].is_whitespace() {
       i += 1;
@@ -839,6 +965,44 @@ fn image_block(image: ImageSpec) -> BlockNode {
       order: None,
       image: Some(image),
       table: None,
+      bookmark: None,
+      embed_youtube: None,
+    },
+    children: Vec::new(),
+  }
+}
+
+fn embed_youtube_block(video_id: String) -> BlockNode {
+  BlockNode {
+    spec: BlockSpec {
+      flavour: BlockFlavour::EmbedYoutube,
+      block_type: None,
+      text: Vec::new(),
+      checked: None,
+      language: None,
+      order: None,
+      image: None,
+      table: None,
+      bookmark: None,
+      embed_youtube: Some(EmbedYoutubeSpec { video_id }),
+    },
+    children: Vec::new(),
+  }
+}
+
+fn bookmark_block(url: String) -> BlockNode {
+  BlockNode {
+    spec: BlockSpec {
+      flavour: BlockFlavour::Bookmark,
+      block_type: None,
+      text: Vec::new(),
+      checked: None,
+      language: None,
+      order: None,
+      image: None,
+      table: None,
+      bookmark: Some(BookmarkSpec { url, caption: None }),
+      embed_youtube: None,
     },
     children: Vec::new(),
   }
@@ -855,6 +1019,8 @@ fn table_block(rows: Vec<Vec<String>>) -> BlockNode {
       order: None,
       image: None,
       table: Some(TableSpec { rows }),
+      bookmark: None,
+      embed_youtube: None,
     },
     children: Vec::new(),
   }
@@ -937,6 +1103,32 @@ mod tests {
   }
 
   #[test]
+  fn test_parse_markdown_blocks_table_html_break() {
+    let markdown = "| A | B |\n| --- | --- |\n| 1<br />2 | 3 |";
+    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    let rows = &doc.blocks[0].spec.table.as_ref().unwrap().rows;
+    assert_eq!(rows[1][0], "1\n2");
+  }
+
+  #[test]
+  fn test_parse_markdown_blocks_bookmark() {
+    let markdown = "[](Bookmark,https://example.com)";
+    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    assert_eq!(doc.blocks.len(), 1);
+    assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::Bookmark);
+    assert_eq!(doc.blocks[0].spec.bookmark.as_ref().unwrap().url, "https://example.com");
+  }
+
+  #[test]
+  fn test_parse_markdown_blocks_embed_youtube() {
+    let markdown = r#"<iframe src="https://www.youtube.com/embed/abc123"></iframe>"#;
+    let doc = parse_markdown(markdown, false).expect("parse markdown");
+    assert_eq!(doc.blocks.len(), 1);
+    assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::EmbedYoutube);
+    assert_eq!(doc.blocks[0].spec.embed_youtube.as_ref().unwrap().video_id, "abc123");
+  }
+
+  #[test]
   fn test_parse_markdown_inline_attrs() {
     use y_octo::{Any, TextDeltaOp};
 
@@ -978,6 +1170,13 @@ mod tests {
   }
 
   #[test]
+  fn test_validate_markdown_allows_br_html() {
+    let markdown = "# Title\n\n| A | B |\n| --- | --- |\n| 1<br />2 | 3 |";
+    let result = validate_markdown(markdown);
+    assert!(result.is_ok());
+  }
+
+  #[test]
   fn test_validate_markdown_allows_image() {
     let markdown = "# Title\n\n![Alt](https://example.com/image.png)";
     let result = validate_markdown(markdown);
@@ -989,6 +1188,16 @@ mod tests {
     let markdown = r#"# Title
 
 <img src="blob://image-id" alt="Alt" width="320" height="200" />
+"#;
+    let result = validate_markdown(markdown);
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_validate_markdown_allows_iframe_html() {
+    let markdown = r#"# Title
+
+<iframe src="https://www.youtube.com/embed/abc123"></iframe>
 "#;
     let result = validate_markdown(markdown);
     assert!(result.is_ok());

@@ -113,7 +113,7 @@ fn build_stored_tree(block_id: &str, block: &Map, pool: &HashMap<String, Map>) -
   let spec = BlockSpec::from_block_map(block)?;
 
   let child_ids = collect_child_ids(block);
-  if !child_ids.is_empty() && spec.flavour != BlockFlavour::List {
+  if !child_ids.is_empty() && !matches!(spec.flavour, BlockFlavour::List | BlockFlavour::Callout) {
     return Err(ParseError::ParserError(format!(
       "unsupported children on block: {block_id}"
     )));
@@ -166,7 +166,12 @@ fn sync_nodes(
         new_children.push(new_id);
       }
       PatchOp::Delete(old_idx) => {
-        collect_tree_ids(&current[old_idx], &mut to_remove);
+        let node = &current[old_idx];
+        if node.spec.flavour == BlockFlavour::Callout {
+          new_children.push(node.id.clone());
+        } else {
+          collect_tree_ids(node, &mut to_remove);
+        }
       }
     }
   }
@@ -256,7 +261,7 @@ fn update_block_props(
   };
 
   let preserve = match target.flavour {
-    BlockFlavour::Image | BlockFlavour::Table => preserve_text,
+    BlockFlavour::Image | BlockFlavour::Table | BlockFlavour::Bookmark | BlockFlavour::EmbedYoutube => preserve_text,
     _ => preserve_text || text_delta_eq(&node.spec.text, &target.text),
   };
 
@@ -314,7 +319,7 @@ mod tests {
 
   use super::{super::builder::text_ops_from_plain, *};
   use crate::doc_parser::{
-    block_spec::BlockType, blocksuite::get_string, build_full_doc, markdown::MAX_MARKDOWN_CHARS,
+    block_spec::BlockType, blocksuite::get_string, build_full_doc, markdown::MAX_MARKDOWN_CHARS, parse_doc_to_markdown,
   };
 
   #[test]
@@ -343,6 +348,8 @@ mod tests {
       order: None,
       image: None,
       table: None,
+      bookmark: None,
+      embed_youtube: None,
     };
     let b2 = BlockSpec {
       flavour: BlockFlavour::Paragraph,
@@ -353,6 +360,8 @@ mod tests {
       order: None,
       image: None,
       table: None,
+      bookmark: None,
+      embed_youtube: None,
     };
     let b3 = BlockSpec {
       flavour: BlockFlavour::Paragraph,
@@ -363,6 +372,8 @@ mod tests {
       order: None,
       image: None,
       table: None,
+      bookmark: None,
+      embed_youtube: None,
     };
 
     assert!(b1.is_similar(&b2));
@@ -427,6 +438,36 @@ mod tests {
     doc
       .apply_update_from_binary_v1(&delta)
       .expect("Should apply delta even with no changes");
+  }
+
+  #[test]
+  fn test_update_ydoc_ignores_ai_editable_comments() {
+    let markdown = "Plain paragraph.";
+    let doc_id = "ai-comment-test";
+
+    let initial_bin = build_full_doc("Title", markdown, doc_id).expect("Should create initial doc");
+
+    let ai_markdown = parse_doc_to_markdown(initial_bin.clone(), doc_id.to_string(), true, None)
+      .expect("parse doc")
+      .markdown;
+    assert!(ai_markdown.contains("block_id="));
+
+    let delta = update_doc(&initial_bin, &ai_markdown, doc_id).expect("Should compute delta");
+
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc
+      .apply_update_from_binary_v1(&initial_bin)
+      .expect("Should apply initial");
+    doc.apply_update_from_binary_v1(&delta).expect("Should apply delta");
+
+    let before = parse_doc_to_markdown(initial_bin, doc_id.to_string(), false, None)
+      .expect("parse before")
+      .markdown;
+    let after = parse_doc_to_markdown(doc.encode_update_v1().unwrap(), doc_id.to_string(), false, None)
+      .expect("parse after")
+      .markdown;
+
+    assert_eq!(after, before);
   }
 
   #[test]

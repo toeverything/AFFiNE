@@ -127,6 +127,22 @@ impl<'a> MarkdownRenderer<'a> {
           output.push_str(&image.render_markdown());
         }
       }
+      BlockFlavour::Bookmark => {
+        if let Some(bookmark) = spec.bookmark.as_ref() {
+          output.push_str(&format!("\n[](Bookmark,{})\n\n", bookmark.url));
+        }
+      }
+      BlockFlavour::EmbedYoutube => {
+        if let Some(embed) = spec.embed_youtube.as_ref() {
+          output.push_str(
+            &format!(
+              "\n        <iframe\n          type=\"text/html\"\n          width=\"100%\"\n          height=\"410px\"\n          src=\"https://www.youtube.com/embed/{}\"\n          frameborder=\"0\"\n          allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\"\n          allowfullscreen\n          credentialless>\n        </iframe>\n\n",
+              embed.video_id
+            )
+          );
+        }
+      }
+      BlockFlavour::Callout => {}
       BlockFlavour::Table => {
         if let Some(table) = spec.table.as_ref()
           && let Some(table_md) = table.render_markdown()

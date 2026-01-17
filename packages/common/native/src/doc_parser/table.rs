@@ -45,7 +45,27 @@ fn format_table_cell(cell: &str, options: MarkdownTableOptions) -> String {
     value = value.replace('|', "\\|");
   }
   if !options.newline_replacement.is_empty() {
-    value = value.replace('\n', options.newline_replacement);
+    value = collapse_newlines(&value, options.newline_replacement);
   }
   value
+}
+
+fn collapse_newlines(value: &str, replacement: &str) -> String {
+  if replacement.is_empty() {
+    return value.to_string();
+  }
+  let mut out = String::with_capacity(value.len());
+  let mut in_newline = false;
+  for ch in value.chars() {
+    if ch == '\n' {
+      if !in_newline {
+        out.push_str(replacement);
+        in_newline = true;
+      }
+    } else {
+      in_newline = false;
+      out.push(ch);
+    }
+  }
+  out
 }

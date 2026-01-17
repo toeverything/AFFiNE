@@ -18,6 +18,21 @@ pub enum ParseError {
 
 impl From<JwstCodecError> for ParseError {
   fn from(value: JwstCodecError) -> Self {
+    if matches!(
+      value,
+      JwstCodecError::DamagedDocumentJson
+        | JwstCodecError::IncompleteDocument(_)
+        | JwstCodecError::InvalidWriteBuffer(_)
+        | JwstCodecError::UpdateInvalid(_)
+        | JwstCodecError::StructClockInvalid { expect: _, actually: _ }
+        | JwstCodecError::StructSequenceInvalid { client_id: _, clock: _ }
+        | JwstCodecError::StructSequenceNotExists(_)
+        | JwstCodecError::RootStructNotFound(_)
+        | JwstCodecError::ParentNotFound
+        | JwstCodecError::IndexOutOfBound(_)
+    ) {
+      return ParseError::InvalidBinary;
+    }
     Self::ParserError(value.to_string())
   }
 }

@@ -25,6 +25,8 @@ pub(super) const PROP_SOURCE_ID: &str = "prop:sourceId";
 pub(super) const PROP_CAPTION: &str = "prop:caption";
 pub(super) const PROP_WIDTH: &str = "prop:width";
 pub(super) const PROP_HEIGHT: &str = "prop:height";
+pub(super) const PROP_URL: &str = "prop:url";
+pub(super) const PROP_VIDEO_ID: &str = "prop:videoId";
 
 pub(super) const PROP_ROWS_PREFIX: &str = "prop:rows.";
 pub(super) const PROP_COLUMNS_PREFIX: &str = "prop:columns.";

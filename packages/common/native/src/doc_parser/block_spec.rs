@@ -5,8 +5,8 @@ use super::{
   blocksuite::get_string,
   schema::{
     PROP_CAPTION, PROP_CHECKED, PROP_COLUMN_ID_SUFFIX, PROP_COLUMNS_PREFIX, PROP_HEIGHT, PROP_LANGUAGE, PROP_ORDER,
-    PROP_ORDER_SUFFIX, PROP_ROW_ID_SUFFIX, PROP_ROWS_PREFIX, PROP_SOURCE_ID, PROP_TEXT, PROP_TYPE, PROP_WIDTH,
-    SYS_FLAVOUR, table_cell_text_key,
+    PROP_ORDER_SUFFIX, PROP_ROW_ID_SUFFIX, PROP_ROWS_PREFIX, PROP_SOURCE_ID, PROP_TEXT, PROP_TYPE, PROP_URL,
+    PROP_VIDEO_ID, PROP_WIDTH, SYS_FLAVOUR, table_cell_text_key,
   },
   table::{MarkdownTableOptions, render_markdown_table},
   value::{value_to_f64, value_to_string},
@@ -21,6 +21,9 @@ pub enum BlockFlavour {
   Divider,
   Image,
   Table,
+  Bookmark,
+  EmbedYoutube,
+  Callout,
 }
 
 impl BlockFlavour {
@@ -32,6 +35,9 @@ impl BlockFlavour {
       BlockFlavour::Divider => "affine:divider",
       BlockFlavour::Image => "affine:image",
       BlockFlavour::Table => "affine:table",
+      BlockFlavour::Bookmark => "affine:bookmark",
+      BlockFlavour::EmbedYoutube => "affine:embed-youtube",
+      BlockFlavour::Callout => "affine:callout",
     }
   }
 
@@ -43,6 +49,9 @@ impl BlockFlavour {
       "affine:divider" => Some(BlockFlavour::Divider),
       "affine:image" => Some(BlockFlavour::Image),
       "affine:table" => Some(BlockFlavour::Table),
+      "affine:bookmark" => Some(BlockFlavour::Bookmark),
+      "affine:embed-youtube" => Some(BlockFlavour::EmbedYoutube),
+      "affine:callout" => Some(BlockFlavour::Callout),
       _ => None,
     }
   }
@@ -244,6 +253,17 @@ impl TableSpec {
   }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct BookmarkSpec {
+  pub(super) url: String,
+  pub(super) caption: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct EmbedYoutubeSpec {
+  pub(super) video_id: String,
+}
+
 #[derive(Debug, Clone)]
 pub(super) struct BlockSpec {
   pub(super) flavour: BlockFlavour,
@@ -254,6 +274,8 @@ pub(super) struct BlockSpec {
   pub(super) order: Option<i64>,
   pub(super) image: Option<ImageSpec>,
   pub(super) table: Option<TableSpec>,
+  pub(super) bookmark: Option<BookmarkSpec>,
+  pub(super) embed_youtube: Option<EmbedYoutubeSpec>,
 }
 
 impl BlockSpec {
@@ -264,6 +286,8 @@ impl BlockSpec {
       && self.language == other.language
       && self.image == other.image
       && self.table == other.table
+      && self.bookmark == other.bookmark
+      && self.embed_youtube == other.embed_youtube
       && text_delta_eq(&self.text, &other.text)
   }
 
@@ -296,6 +320,8 @@ impl BlockSpec {
         order: None,
         image: Some(ImageSpec::from_block_map(block)),
         table: None,
+        bookmark: None,
+        embed_youtube: None,
       };
     }
 
@@ -309,6 +335,43 @@ impl BlockSpec {
         order: None,
         image: None,
         table: Some(TableSpec::from_block_map(block)),
+        bookmark: None,
+        embed_youtube: None,
+      };
+    }
+
+    if flavour == BlockFlavour::Bookmark {
+      return BlockSpec {
+        flavour,
+        block_type: None,
+        text: Vec::new(),
+        checked: None,
+        language: None,
+        order: None,
+        image: None,
+        table: None,
+        bookmark: Some(BookmarkSpec {
+          url: get_string(block, PROP_URL).unwrap_or_default(),
+          caption: get_string(block, PROP_CAPTION),
+        }),
+        embed_youtube: None,
+      };
+    }
+
+    if flavour == BlockFlavour::EmbedYoutube {
+      return BlockSpec {
+        flavour,
+        block_type: None,
+        text: Vec::new(),
+        checked: None,
+        language: None,
+        order: None,
+        image: None,
+        table: None,
+        bookmark: None,
+        embed_youtube: Some(EmbedYoutubeSpec {
+          video_id: get_string(block, PROP_VIDEO_ID).unwrap_or_default(),
+        }),
       };
     }
 
@@ -350,6 +413,8 @@ impl BlockSpec {
       order,
       image: None,
       table: None,
+      bookmark: None,
+      embed_youtube: None,
     }
   }
 }

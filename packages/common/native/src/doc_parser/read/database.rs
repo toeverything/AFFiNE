@@ -70,7 +70,9 @@ pub(super) fn build_database_table(
 
       row.push(cell_text);
     }
-    rows.push(row);
+    if row.iter().any(|cell| !cell.is_empty()) {
+      rows.push(row);
+    }
   }
 
   Some(DatabaseTable { columns, rows })
@@ -86,7 +88,7 @@ pub(super) fn database_table_markdown(table: DatabaseTable) -> Option<String> {
   rows.push(header);
   rows.extend(table.rows);
 
-  let options = MarkdownTableOptions::new(true, "<br>", false);
+  let options = MarkdownTableOptions::new(false, "<br />", true);
   render_markdown_table(&rows, options)
 }
 
