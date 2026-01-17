@@ -283,9 +283,6 @@ pub(crate) fn parse_markdown_blocks(markdown: &str) -> Result<Vec<BlockNode>, Pa
 ///
 /// The first H1 can be skipped to act as the document title.
 pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseError> {
-  // Note: ENABLE_TABLES is included for future support, but table events
-  // currently fall through to the catch-all match arm. Table content appears as
-  // plain text.
   let parser = Parser::new_ext(markdown, markdown_options());
 
   let mut blocks: Vec<BlockNode> = Vec::new();
@@ -522,7 +519,7 @@ pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseEr
         };
 
         let mut draft = BlockDraft::new(BlockFlavour::List, Some(block_type));
-        draft.checked = Some(false);
+        draft.checked = None;
         draft.order = order;
         list_items.push(draft);
       }
