@@ -190,7 +190,6 @@ export class WorkspaceMcpProvider {
             .workspace(workspaceId)
             .assert('Workspace.CreateDoc');
 
-          // Combine title and content into markdown
           // Sanitize title by removing newlines and trimming
           const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
           if (!sanitizedTitle) {
@@ -205,12 +204,11 @@ export class WorkspaceMcpProvider {
             ''
           );
 
-          const markdown = `# ${sanitizedTitle}\n\n${strippedContent}`;
-
           // Create the document
           const result = await this.writer.createDoc(
             workspaceId,
-            markdown,
+            sanitizedTitle,
+            strippedContent,
             userId
           );
 
@@ -245,13 +243,13 @@ export class WorkspaceMcpProvider {
       {
         title: 'Update Document',
         description:
-          'Update an existing document with new markdown content. Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration.',
+          'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. Database blocks are not supported for updates.',
         inputSchema: z.object({
           docId: z.string().describe('The ID of the document to update'),
           content: z
             .string()
             .describe(
-              'The complete new markdown content for the document (including title as H1)'
+              'The complete new markdown content for the document body (do NOT include a title H1)'
             ),
         }),
       },
@@ -300,6 +298,79 @@ export class WorkspaceMcpProvider {
               {
                 type: 'text',
                 text: `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+          };
+        }
+      }
+    );
+
+    server.registerTool(
+      'update_document_meta',
+      {
+        title: 'Update Document Metadata',
+        description: 'Update document metadata (currently title only).',
+        inputSchema: z.object({
+          docId: z.string().describe('The ID of the document to update'),
+          title: z.string().min(1).describe('The new document title'),
+        }),
+      },
+      async ({ docId, title }) => {
+        const notFoundError: CallToolResult = {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `Doc with id ${docId} not found.`,
+            },
+          ],
+        };
+
+        // Use can() instead of assert() to avoid leaking doc existence info
+        const accessible = await this.ac
+          .user(userId)
+          .workspace(workspaceId)
+          .doc(docId)
+          .can('Doc.Update');
+
+        if (!accessible) {
+          return notFoundError;
+        }
+
+        try {
+          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          if (!sanitizedTitle) {
+            throw new Error('Title cannot be empty');
+          }
+
+          await this.writer.updateDocMeta(
+            workspaceId,
+            docId,
+            {
+              title: sanitizedTitle,
+            },
+            userId
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  docId,
+                  message: `Document title updated successfully`,
+                }),
+              },
+            ],
+          } as const;
+        } catch (error) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
               },
             ],
           };
