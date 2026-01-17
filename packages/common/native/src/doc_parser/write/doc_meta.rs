@@ -130,11 +130,11 @@ mod tests {
     let pages = meta.get("pages").and_then(|v| v.to_array()).expect("pages array");
     let mut title = None;
     for page in pages.iter() {
-      if let Some(page_map) = page.to_map() {
-        if get_string(&page_map, "id").as_deref() == Some(doc_id) {
-          title = get_string(&page_map, "title");
-          break;
-        }
+      if let Some(page_map) = page.to_map()
+        && get_string(&page_map, "id").as_deref() == Some(doc_id)
+      {
+        title = get_string(&page_map, "title");
+        break;
       }
     }
     assert_eq!(title.as_deref(), Some("New Title"));

@@ -649,19 +649,17 @@ pub(super) fn parse_markdown(markdown: &str, skip_first_h1: bool) -> Result<Mark
             let attrs = inline.attrs();
             item.push_text("\n", attrs);
           }
-        } else {
-          if let Some(block) = active.as_mut() {
-            let attrs = inline.attrs();
-            block.push_text(&html, attrs);
-          } else if let Some(item) = list_items.last_mut() {
-            let attrs = inline.attrs();
-            item.push_text(&html, attrs);
-          } else if !html.trim().is_empty() {
-            let mut draft = BlockDraft::new(BlockFlavour::Code, None);
-            draft.language = Some("html".to_string());
-            draft.push_text(&html, None);
-            attach_block(draft.finish(), &mut list_items, &mut blocks);
-          }
+        } else if let Some(block) = active.as_mut() {
+          let attrs = inline.attrs();
+          block.push_text(&html, attrs);
+        } else if let Some(item) = list_items.last_mut() {
+          let attrs = inline.attrs();
+          item.push_text(&html, attrs);
+        } else if !html.trim().is_empty() {
+          let mut draft = BlockDraft::new(BlockFlavour::Code, None);
+          draft.language = Some("html".to_string());
+          draft.push_text(&html, None);
+          attach_block(draft.finish(), &mut list_items, &mut blocks);
         }
       }
       Event::Code(code) => {
