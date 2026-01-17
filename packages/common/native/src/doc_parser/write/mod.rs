@@ -8,6 +8,7 @@ pub use create::build_full_doc;
 pub use doc_meta::{update_doc_title, update_root_doc_meta_title};
 pub use root_doc::add_doc_to_root_doc;
 pub use update::update_doc;
+use y_octo::{Any, Doc, Map, Value};
 
 use super::{
   ParseError,
@@ -16,4 +17,3 @@ use super::{
   doc_loader::{load_doc, load_doc_or_new},
   schema::{NOTE_FLAVOUR, PAGE_FLAVOUR, PROP_TITLE},
 };
-use y_octo::{Any, Doc, Map, Value};
