@@ -238,145 +238,150 @@ export class WorkspaceMcpProvider {
       }
     );
 
-    server.registerTool(
-      'update_document',
-      {
-        title: 'Update Document',
-        description:
-          'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. Database blocks are not supported for updates.',
-        inputSchema: z.object({
-          docId: z.string().describe('The ID of the document to update'),
-          content: z
-            .string()
-            .describe(
-              'The complete new markdown content for the document body (do NOT include a title H1)'
-            ),
-        }),
-      },
-      async ({ docId, content }) => {
-        const notFoundError: CallToolResult = {
-          isError: true,
-          content: [
-            {
-              type: 'text',
-              text: `Doc with id ${docId} not found.`,
-            },
-          ],
-        };
-
-        // Use can() instead of assert() to avoid leaking doc existence info
-        const accessible = await this.ac
-          .user(userId)
-          .workspace(workspaceId)
-          .doc(docId)
-          .can('Doc.Update');
-
-        if (!accessible) {
-          return notFoundError;
-        }
-
-        try {
-          // Update the document
-          await this.writer.updateDoc(workspaceId, docId, content, userId);
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  success: true,
-                  docId,
-                  message: `Document updated successfully`,
-                }),
-              },
-            ],
-          } as const;
-        } catch (error) {
-          return {
+    if (
+      BUILD_CONFIG.debug ||
+      ['canary', 'internal'].includes(BUILD_CONFIG.appBuildType)
+    ) {
+      server.registerTool(
+        'update_document',
+        {
+          title: 'Update Document',
+          description:
+            'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. Database blocks are not supported for updates.',
+          inputSchema: z.object({
+            docId: z.string().describe('The ID of the document to update'),
+            content: z
+              .string()
+              .describe(
+                'The complete new markdown content for the document body (do NOT include a title H1)'
+              ),
+          }),
+        },
+        async ({ docId, content }) => {
+          const notFoundError: CallToolResult = {
             isError: true,
             content: [
               {
                 type: 'text',
-                text: `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                text: `Doc with id ${docId} not found.`,
               },
             ],
           };
-        }
-      }
-    );
 
-    server.registerTool(
-      'update_document_meta',
-      {
-        title: 'Update Document Metadata',
-        description: 'Update document metadata (currently title only).',
-        inputSchema: z.object({
-          docId: z.string().describe('The ID of the document to update'),
-          title: z.string().min(1).describe('The new document title'),
-        }),
-      },
-      async ({ docId, title }) => {
-        const notFoundError: CallToolResult = {
-          isError: true,
-          content: [
-            {
-              type: 'text',
-              text: `Doc with id ${docId} not found.`,
-            },
-          ],
-        };
+          // Use can() instead of assert() to avoid leaking doc existence info
+          const accessible = await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .can('Doc.Update');
 
-        // Use can() instead of assert() to avoid leaking doc existence info
-        const accessible = await this.ac
-          .user(userId)
-          .workspace(workspaceId)
-          .doc(docId)
-          .can('Doc.Update');
-
-        if (!accessible) {
-          return notFoundError;
-        }
-
-        try {
-          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-          if (!sanitizedTitle) {
-            throw new Error('Title cannot be empty');
+          if (!accessible) {
+            return notFoundError;
           }
 
-          await this.writer.updateDocMeta(
-            workspaceId,
-            docId,
-            {
-              title: sanitizedTitle,
-            },
-            userId
-          );
+          try {
+            // Update the document
+            await this.writer.updateDoc(workspaceId, docId, content, userId);
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify({
-                  success: true,
-                  docId,
-                  message: `Document title updated successfully`,
-                }),
-              },
-            ],
-          } as const;
-        } catch (error) {
-          return {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    success: true,
+                    docId,
+                    message: `Document updated successfully`,
+                  }),
+                },
+              ],
+            } as const;
+          } catch (error) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                },
+              ],
+            };
+          }
+        }
+      );
+
+      server.registerTool(
+        'update_document_meta',
+        {
+          title: 'Update Document Metadata',
+          description: 'Update document metadata (currently title only).',
+          inputSchema: z.object({
+            docId: z.string().describe('The ID of the document to update'),
+            title: z.string().min(1).describe('The new document title'),
+          }),
+        },
+        async ({ docId, title }) => {
+          const notFoundError: CallToolResult = {
             isError: true,
             content: [
               {
                 type: 'text',
-                text: `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                text: `Doc with id ${docId} not found.`,
               },
             ],
           };
+
+          // Use can() instead of assert() to avoid leaking doc existence info
+          const accessible = await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .can('Doc.Update');
+
+          if (!accessible) {
+            return notFoundError;
+          }
+
+          try {
+            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+            if (!sanitizedTitle) {
+              throw new Error('Title cannot be empty');
+            }
+
+            await this.writer.updateDocMeta(
+              workspaceId,
+              docId,
+              {
+                title: sanitizedTitle,
+              },
+              userId
+            );
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({
+                    success: true,
+                    docId,
+                    message: `Document title updated successfully`,
+                  }),
+                },
+              ],
+            } as const;
+          } catch (error) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                },
+              ],
+            };
+          }
         }
-      }
-    );
+      );
+    }
 
     return server;
   }
