@@ -6,8 +6,11 @@ use std::{
 
 use y_octo::{AHashMap, Any, Map, Text, TextAttributes, TextDeltaOp, TextInsert, Value};
 
-use super::value::{
-  any_as_string, any_as_u64, any_truthy, build_reference_payload, params_any_map_to_json, value_to_any,
+use super::{
+  super::value::{
+    any_as_string, any_as_u64, any_truthy, build_reference_payload, params_any_map_to_json, value_to_any,
+  },
+  inline::InlineStyle,
 };
 
 #[derive(Debug, Clone)]
@@ -20,18 +23,18 @@ struct InlineReference {
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct InlineReferencePayload {
-  pub(super) doc_id: String,
-  pub(super) payload: String,
+pub(crate) struct InlineReferencePayload {
+  pub(crate) doc_id: String,
+  pub(crate) payload: String,
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct DeltaToMdOptions {
+pub(crate) struct DeltaToMdOptions {
   doc_url_prefix: Option<String>,
 }
 
 impl DeltaToMdOptions {
-  pub(super) fn new(doc_url_prefix: Option<String>) -> Self {
+  pub(crate) fn new(doc_url_prefix: Option<String>) -> Self {
     Self { doc_url_prefix }
   }
 
@@ -54,21 +57,32 @@ impl DeltaToMdOptions {
   }
 }
 
-pub(super) fn text_to_markdown(block: &Map, key: &str, options: &DeltaToMdOptions) -> Option<String> {
-  block
-    .get(key)
-    .and_then(|value| value.to_text())
-    .map(|text| delta_to_markdown(&text, options))
-}
-
-pub(super) fn text_to_inline_markdown(block: &Map, key: &str, options: &DeltaToMdOptions) -> Option<String> {
+pub(crate) fn text_to_inline_markdown(block: &Map, key: &str, options: &DeltaToMdOptions) -> Option<String> {
   block
     .get(key)
     .and_then(|value| value.to_text())
     .map(|text| delta_to_inline_markdown(&text, options))
 }
 
-pub(super) fn extract_inline_references(delta: &[TextDeltaOp]) -> Vec<InlineReferencePayload> {
+pub(crate) fn delta_ops_to_markdown(ops: &[TextDeltaOp], options: &DeltaToMdOptions) -> String {
+  delta_to_markdown_with_options(ops, options, true)
+}
+
+pub(crate) fn delta_ops_to_plain_text(ops: &[TextDeltaOp]) -> String {
+  let mut out = String::new();
+  for op in ops {
+    if let TextDeltaOp::Insert {
+      insert: TextInsert::Text(text),
+      ..
+    } = op
+    {
+      out.push_str(text);
+    }
+  }
+  out
+}
+
+pub(crate) fn extract_inline_references(delta: &[TextDeltaOp]) -> Vec<InlineReferencePayload> {
   let mut refs = Vec::new();
   let mut seen: HashSet<(String, String)> = HashSet::new();
 
@@ -80,7 +94,7 @@ pub(super) fn extract_inline_references(delta: &[TextDeltaOp]) -> Vec<InlineRefe
       _ => continue,
     };
 
-    let reference = match attrs.get("reference").and_then(parse_inline_reference) {
+    let reference = match attrs.get(InlineStyle::Reference.key()).and_then(parse_inline_reference) {
       Some(reference) => reference,
       None => continue,
     };
@@ -102,7 +116,7 @@ pub(super) fn extract_inline_references(delta: &[TextDeltaOp]) -> Vec<InlineRefe
   refs
 }
 
-pub(super) fn extract_inline_references_from_value(value: &Value) -> Vec<InlineReferencePayload> {
+pub(crate) fn extract_inline_references_from_value(value: &Value) -> Vec<InlineReferencePayload> {
   if let Some(text) = value.to_text() {
     return extract_inline_references(&text.to_delta());
   }
@@ -123,7 +137,11 @@ fn extract_inline_references_from_any(value: &Any) -> Vec<InlineReferencePayload
   let mut seen: HashSet<(String, String)> = HashSet::new();
 
   for op in ops {
-    let reference = match op.attributes.get("reference").and_then(parse_inline_reference) {
+    let reference = match op
+      .attributes
+      .get(InlineStyle::Reference.key())
+      .and_then(parse_inline_reference)
+    {
       Some(reference) => reference,
       None => continue,
     };
@@ -176,10 +194,6 @@ fn parse_inline_reference(value: &Any) -> Option<InlineReference> {
 fn inline_reference_payload(reference: &InlineReference) -> Option<String> {
   let params = reference.params.as_ref().map(params_any_map_to_json);
   Some(build_reference_payload(&reference.page_id, params))
-}
-
-fn delta_to_markdown(text: &Text, options: &DeltaToMdOptions) -> String {
-  delta_to_markdown_with_options(&text.to_delta(), options, true)
 }
 
 fn delta_to_inline_markdown(text: &Text, options: &DeltaToMdOptions) -> String {
@@ -274,7 +288,7 @@ fn delta_any_to_inline_markdown(value: &Any, options: &DeltaToMdOptions) -> Opti
   delta_ops_from_any(value).map(|ops| delta_ops_to_markdown_with_options(&ops, options, false))
 }
 
-pub(super) fn delta_value_to_inline_markdown(value: &Value, options: &DeltaToMdOptions) -> Option<String> {
+pub(crate) fn delta_value_to_inline_markdown(value: &Value, options: &DeltaToMdOptions) -> Option<String> {
   if let Some(text) = value.to_text() {
     return Some(delta_to_inline_markdown(&text, options));
   }
@@ -538,19 +552,29 @@ fn apply_inline_attributes(
 }
 
 fn inline_node_for_attr(attr: &str, attrs: &TextAttributes, options: &DeltaToMdOptions) -> Option<Rc<RefCell<Node>>> {
-  match attr {
-    "italic" => Some(Node::new_inline("_", "_")),
-    "bold" => Some(Node::new_inline("**", "**")),
-    "link" => attrs
+  let style = InlineStyle::from_key(attr)?;
+  if let Some(delimiter) = style.delimiter() {
+    return Some(Node::new_inline(delimiter.open, delimiter.close));
+  }
+
+  match style {
+    InlineStyle::Underline => Some(Node::new_inline("<u>", "</u>")),
+    InlineStyle::Color => {
+      let color = attrs.get(attr).and_then(any_as_string)?.trim();
+      if color.is_empty() {
+        None
+      } else {
+        Some(Node::new_inline(&format!("<span style=\"color: {color}\">"), "</span>"))
+      }
+    }
+    InlineStyle::Link => attrs
       .get(attr)
       .and_then(any_as_string)
       .map(|url| Node::new_inline("[", &format!("]({url})"))),
-    "reference" => attrs.get(attr).and_then(parse_inline_reference).map(|reference| {
+    InlineStyle::Reference => attrs.get(attr).and_then(parse_inline_reference).map(|reference| {
       let (title, link) = options.build_reference_link(&reference);
       Node::new_inline("[", &format!("{title}]({link})"))
     }),
-    "strike" => Some(Node::new_inline("~~", "~~")),
-    "code" => Some(Node::new_inline("`", "`")),
     _ => None,
   }
 }
@@ -560,7 +584,7 @@ fn has_block_level_attribute(attrs: &TextAttributes) -> bool {
 }
 
 fn is_inline_attribute(attr: &str) -> bool {
-  matches!(attr, "italic" | "bold" | "link" | "reference" | "strike" | "code")
+  InlineStyle::from_key(attr).is_some()
 }
 
 fn encode_link(link: &str) -> String {
@@ -741,13 +765,17 @@ fn new_line(
 #[cfg(test)]
 mod tests {
   use serde_json::Value;
+  use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 
   use super::*;
 
   #[test]
   fn test_delta_to_inline_markdown_link() {
     let mut attrs = TextAttributes::new();
-    attrs.insert("link".into(), Any::String("https://example.com".into()));
+    attrs.insert(
+      InlineStyle::Link.key().into(),
+      Any::String("https://example.com".into()),
+    );
 
     let delta = vec![TextDeltaOp::Insert {
       insert: TextInsert::Text("AFFiNE".into()),
@@ -767,7 +795,7 @@ mod tests {
     ref_map.insert("type".into(), Any::String("LinkedPage".into()));
 
     let mut attrs = TextAttributes::new();
-    attrs.insert("reference".into(), Any::Object(ref_map));
+    attrs.insert(InlineStyle::Reference.key().into(), Any::Object(ref_map));
 
     let delta = vec![TextDeltaOp::Insert {
       insert: TextInsert::Text("Doc Title".into()),
@@ -780,5 +808,35 @@ mod tests {
 
     let payload: Value = serde_json::from_str(&refs[0].payload).unwrap();
     assert_eq!(payload, serde_json::json!({ "docId": "doc123" }));
+  }
+
+  #[test]
+  fn test_delta_to_inline_markdown_underline() {
+    let mut attrs = TextAttributes::new();
+    attrs.insert(InlineStyle::Underline.key().into(), Any::True);
+
+    let delta = vec![TextDeltaOp::Insert {
+      insert: TextInsert::Text("Under".into()),
+      format: Some(attrs),
+    }];
+
+    let options = DeltaToMdOptions::new(None);
+    let rendered = delta_to_markdown_with_options(&delta, &options, false);
+    assert_eq!(rendered, "<u>Under</u>");
+  }
+
+  #[test]
+  fn test_delta_to_inline_markdown_color() {
+    let mut attrs = TextAttributes::new();
+    attrs.insert(InlineStyle::Color.key().into(), Any::String("red".into()));
+
+    let delta = vec![TextDeltaOp::Insert {
+      insert: TextInsert::Text("Red".into()),
+      format: Some(attrs),
+    }];
+
+    let options = DeltaToMdOptions::new(None);
+    let rendered = delta_to_markdown_with_options(&delta, &options, false);
+    assert_eq!(rendered, "<span style=\"color: red\">Red</span>");
   }
 }

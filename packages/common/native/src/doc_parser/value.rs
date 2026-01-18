@@ -81,6 +81,16 @@ pub(super) fn value_to_any(value: &Value) -> Option<Any> {
   None
 }
 
+pub(super) fn value_to_f64(value: Value) -> Option<f64> {
+  value.to_any().and_then(|any| match any {
+    Any::Integer(v) => Some(v as f64),
+    Any::BigInt64(v) => Some(v as f64),
+    Any::Float32(v) => Some(v.0 as f64),
+    Any::Float64(v) => Some(v.0),
+    _ => None,
+  })
+}
+
 pub(super) fn any_to_string(any: &Any) -> Option<String> {
   match any {
     Any::String(value) => Some(value.to_string()),

@@ -27,23 +27,24 @@ export interface Chunk {
   content: string
 }
 
-export declare function fromModelName(modelName: string): Tokenizer | null
-
-export declare function getMime(input: Uint8Array): string
-
-export declare function htmlSanitize(input: string): string
-
 /**
  * Converts markdown content to AFFiNE-compatible y-octo document binary.
  *
  * # Arguments
+ * * `title` - The document title
  * * `markdown` - The markdown content to convert
  * * `doc_id` - The document ID to use for the y-octo doc
  *
  * # Returns
  * A Buffer containing the y-octo document update binary
  */
-export declare function markdownToDocBinary(markdown: string, docId: string): Buffer
+export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
+
+export declare function fromModelName(modelName: string): Tokenizer | null
+
+export declare function getMime(input: Uint8Array): string
+
+export declare function htmlSanitize(input: string): string
 
 /**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
@@ -104,8 +105,37 @@ export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocCon
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 
 /**
+ * Updates or creates the docProperties record for a document.
+ *
+ * # Arguments
+ * * `existing_binary` - The current docProperties document binary
+ * * `properties_doc_id` - The docProperties document ID
+ *   (db$${workspaceId}$docProperties)
+ * * `target_doc_id` - The document ID to update in docProperties
+ * * `created_by` - Optional creator user ID
+ * * `updated_by` - Optional updater user ID
+ *
+ * # Returns
+ * A Buffer containing only the delta (changes) as a y-octo update binary
+ */
+export declare function updateDocProperties(existingBinary: Buffer, propertiesDocId: string, targetDocId: string, createdBy?: string | undefined | null, updatedBy?: string | undefined | null): Buffer
+
+/**
+ * Updates a document's title without touching content blocks.
+ *
+ * # Arguments
+ * * `existing_binary` - The current document binary
+ * * `title` - The new title
+ * * `doc_id` - The document ID
+ *
+ * # Returns
+ * A Buffer containing only the delta (changes) as a y-octo update binary
+ */
+export declare function updateDocTitle(existingBinary: Buffer, title: string, docId: string): Buffer
+
+/**
  * Updates an existing document with new markdown content.
- * Uses structural and text-level diffing to apply minimal changes.
+ * Uses structural diffing to apply block-level replacements for changes.
  *
  * # Arguments
  * * `existing_binary` - The current document binary
@@ -116,5 +146,18 @@ export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: 
  * A Buffer containing only the delta (changes) as a y-octo update binary
  */
 export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
+
+/**
+ * Updates a document title in the workspace root doc's meta.pages array.
+ *
+ * # Arguments
+ * * `root_doc_bin` - The current root doc binary (workspaceId doc)
+ * * `doc_id` - The document ID to update
+ * * `title` - The new title for the document
+ *
+ * # Returns
+ * A Buffer containing the y-octo update binary to apply to the root doc
+ */
+export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

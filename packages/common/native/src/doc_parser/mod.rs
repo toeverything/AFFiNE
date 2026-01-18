@@ -1,19 +1,21 @@
-mod affine;
+mod block_spec;
 mod blocksuite;
-mod delta_markdown;
-#[cfg(feature = "ydoc-loader")]
-mod markdown_to_ydoc;
-#[cfg(feature = "ydoc-loader")]
-mod markdown_utils;
-#[cfg(feature = "ydoc-loader")]
-mod update_ydoc;
+mod doc_loader;
+mod error;
+mod markdown;
+mod read;
+#[cfg(test)]
+mod roundtrip_tests;
+mod schema;
+mod table;
 mod value;
+mod write;
 
-pub use affine::{
-  BlockInfo, CrawlResult, MarkdownResult, PageDocContent, ParseError, WorkspaceDocContent, add_doc_to_root_doc,
-  get_doc_ids_from_binary, parse_doc_from_binary, parse_doc_to_markdown, parse_page_doc, parse_workspace_doc,
+pub use error::ParseError;
+pub use read::{
+  BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent, get_doc_ids_from_binary,
+  parse_doc_from_binary, parse_doc_to_markdown, parse_page_doc, parse_workspace_doc,
 };
-#[cfg(feature = "ydoc-loader")]
-pub use markdown_to_ydoc::markdown_to_ydoc;
-#[cfg(feature = "ydoc-loader")]
-pub use update_ydoc::update_ydoc;
+pub use write::{
+  add_doc_to_root_doc, build_full_doc, update_doc, update_doc_properties, update_doc_title, update_root_doc_meta_title,
+};

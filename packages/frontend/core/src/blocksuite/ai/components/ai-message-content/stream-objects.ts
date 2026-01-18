@@ -131,6 +131,16 @@ export class ChatContentStreamObjects extends WithDisposable(
           .data=${streamObject}
           .width=${this.width}
         ></doc-read-result>`;
+      case 'doc_create':
+      case 'doc_update':
+      case 'doc_update_meta':
+        return html`<doc-write-tool
+          .data=${streamObject}
+          .width=${this.width}
+          .peekViewService=${this.peekViewService}
+          .docDisplayService=${this.docDisplayService}
+          .onOpenDoc=${this.onOpenDoc}
+        ></doc-write-tool>`;
       case 'section_edit':
         return html`
           <section-edit-tool
@@ -223,6 +233,16 @@ export class ChatContentStreamObjects extends WithDisposable(
           .peekViewService=${this.peekViewService}
           .onOpenDoc=${this.onOpenDoc}
         ></doc-read-result>`;
+      case 'doc_create':
+      case 'doc_update':
+      case 'doc_update_meta':
+        return html`<doc-write-tool
+          .data=${streamObject}
+          .width=${this.width}
+          .peekViewService=${this.peekViewService}
+          .docDisplayService=${this.docDisplayService}
+          .onOpenDoc=${this.onOpenDoc}
+        ></doc-write-tool>`;
       case 'section_edit':
         return html`
           <section-edit-tool
