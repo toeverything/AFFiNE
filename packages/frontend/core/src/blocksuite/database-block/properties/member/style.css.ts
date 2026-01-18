@@ -1,8 +1,10 @@
 import { style } from '@vanilla-extract/css';
 
 export const memberPopoverContainer = style({
-  padding: '8px 0 0 0',
-  width: '415px',
+  padding: '8px',
+  width: '100%',
+  maxWidth: '415px',
+  boxSizing: 'border-box',
 });
 
 export const memberPopoverContent = style({
