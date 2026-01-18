@@ -64,6 +64,7 @@ import { DocEditTool } from './components/ai-tools/doc-edit';
 import { DocKeywordSearchResult } from './components/ai-tools/doc-keyword-search-result';
 import { DocReadResult } from './components/ai-tools/doc-read-result';
 import { DocSemanticSearchResult } from './components/ai-tools/doc-semantic-search-result';
+import { DocWriteTool } from './components/ai-tools/doc-write';
 import { SectionEditTool } from './components/ai-tools/section-edit';
 import { ToolCallCard } from './components/ai-tools/tool-call-card';
 import { ToolFailedCard } from './components/ai-tools/tool-failed-card';
@@ -222,6 +223,7 @@ export function registerAIEffects() {
   customElements.define('doc-semantic-search-result', DocSemanticSearchResult);
   customElements.define('doc-keyword-search-result', DocKeywordSearchResult);
   customElements.define('doc-read-result', DocReadResult);
+  customElements.define('doc-write-tool', DocWriteTool);
   customElements.define('web-crawl-tool', WebCrawlTool);
   customElements.define('web-search-tool', WebSearchTool);
   customElements.define('section-edit-tool', SectionEditTool);

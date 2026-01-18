@@ -558,6 +558,15 @@ fn inline_node_for_attr(attr: &str, attrs: &TextAttributes, options: &DeltaToMdO
   }
 
   match style {
+    InlineStyle::Underline => Some(Node::new_inline("<u>", "</u>")),
+    InlineStyle::Color => {
+      let color = attrs.get(attr).and_then(any_as_string)?.trim();
+      if color.is_empty() {
+        None
+      } else {
+        Some(Node::new_inline(&format!("<span style=\"color: {color}\">"), "</span>"))
+      }
+    }
     InlineStyle::Link => attrs
       .get(attr)
       .and_then(any_as_string)
@@ -756,6 +765,7 @@ fn new_line(
 #[cfg(test)]
 mod tests {
   use serde_json::Value;
+  use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 
   use super::*;
 
@@ -798,5 +808,35 @@ mod tests {
 
     let payload: Value = serde_json::from_str(&refs[0].payload).unwrap();
     assert_eq!(payload, serde_json::json!({ "docId": "doc123" }));
+  }
+
+  #[test]
+  fn test_delta_to_inline_markdown_underline() {
+    let mut attrs = TextAttributes::new();
+    attrs.insert(InlineStyle::Underline.key().into(), Any::True);
+
+    let delta = vec![TextDeltaOp::Insert {
+      insert: TextInsert::Text("Under".into()),
+      format: Some(attrs),
+    }];
+
+    let options = DeltaToMdOptions::new(None);
+    let rendered = delta_to_markdown_with_options(&delta, &options, false);
+    assert_eq!(rendered, "<u>Under</u>");
+  }
+
+  #[test]
+  fn test_delta_to_inline_markdown_color() {
+    let mut attrs = TextAttributes::new();
+    attrs.insert(InlineStyle::Color.key().into(), Any::String("red".into()));
+
+    let delta = vec![TextDeltaOp::Insert {
+      insert: TextInsert::Text("Red".into()),
+      format: Some(attrs),
+    }];
+
+    let options = DeltaToMdOptions::new(None);
+    let rendered = delta_to_markdown_with_options(&delta, &options, false);
+    assert_eq!(rendered, "<span style=\"color: red\">Red</span>");
   }
 }

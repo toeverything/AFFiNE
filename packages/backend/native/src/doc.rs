@@ -182,6 +182,37 @@ pub fn update_doc_title(existing_binary: Buffer, title: String, doc_id: String) 
   Ok(Buffer::from(result))
 }
 
+/// Updates or creates the docProperties record for a document.
+///
+/// # Arguments
+/// * `existing_binary` - The current docProperties document binary
+/// * `properties_doc_id` - The docProperties document ID
+///   (db$${workspaceId}$docProperties)
+/// * `target_doc_id` - The document ID to update in docProperties
+/// * `created_by` - Optional creator user ID
+/// * `updated_by` - Optional updater user ID
+///
+/// # Returns
+/// A Buffer containing only the delta (changes) as a y-octo update binary
+#[napi]
+pub fn update_doc_properties(
+  existing_binary: Buffer,
+  properties_doc_id: String,
+  target_doc_id: String,
+  created_by: Option<String>,
+  updated_by: Option<String>,
+) -> Result<Buffer> {
+  let result = doc_parser::update_doc_properties(
+    &existing_binary,
+    &properties_doc_id,
+    &target_doc_id,
+    created_by.as_deref(),
+    updated_by.as_deref(),
+  )
+  .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  Ok(Buffer::from(result))
+}
+
 /// Adds a document ID to the workspace root doc's meta.pages array.
 /// This registers the document in the workspace so it appears in the UI.
 ///

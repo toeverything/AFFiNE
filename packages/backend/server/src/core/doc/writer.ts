@@ -1,9 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
+import { EventBus } from '../../base';
 import {
   addDocToRootDoc,
   createDocWithMarkdown,
+  updateDocProperties,
   updateDocTitle,
   updateDocWithMarkdown,
   updateRootDocMetaTitle,
@@ -18,11 +20,27 @@ export interface UpdateDocResult {
   success: boolean;
 }
 
+declare global {
+  interface Events {
+    'doc.updates.pushed': {
+      spaceType: 'workspace' | 'userspace';
+      spaceId: string;
+      docId: string;
+      updates: Uint8Array[];
+      timestamp: number;
+      editor?: string;
+    };
+  }
+}
+
 @Injectable()
 export class DocWriter {
   private readonly logger = new Logger(DocWriter.name);
 
-  constructor(private readonly storage: PgWorkspaceDocStorageAdapter) {}
+  constructor(
+    private readonly storage: PgWorkspaceDocStorageAdapter,
+    private readonly event: EventBus
+  ) {}
 
   /**
    * Creates a new document from markdown content.
@@ -69,13 +87,43 @@ export class DocWriter {
     const rootDocUpdate = addDocToRootDoc(rootDocBin, docId, title);
 
     // Push both updates together - root doc first, then the new doc
-    await this.storage.pushDocUpdates(
+    const rootTimestamp = await this.storage.pushDocUpdates(
       workspaceId,
       workspaceId,
       [rootDocUpdate],
       editorId
     );
-    await this.storage.pushDocUpdates(workspaceId, docId, [binary], editorId);
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId: workspaceId,
+      updates: [rootDocUpdate],
+      timestamp: rootTimestamp,
+      editor: editorId,
+    });
+
+    const docTimestamp = await this.storage.pushDocUpdates(
+      workspaceId,
+      docId,
+      [binary],
+      editorId
+    );
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId,
+      updates: [binary],
+      timestamp: docTimestamp,
+      editor: editorId,
+    });
+
+    await this.updateDocProperties(
+      workspaceId,
+      docId,
+      {
+        createdBy: editorId,
+        updatedBy: editorId,
+      },
+      editorId
+    );
 
     this.logger.debug(
       `Created and registered doc ${docId} in workspace ${workspaceId}`
@@ -126,7 +174,26 @@ export class DocWriter {
     const delta = updateDocWithMarkdown(existingBinary, markdown, docId);
 
     // Push only the delta changes
-    await this.storage.pushDocUpdates(workspaceId, docId, [delta], editorId);
+    const timestamp = await this.storage.pushDocUpdates(
+      workspaceId,
+      docId,
+      [delta],
+      editorId
+    );
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId,
+      updates: [delta],
+      timestamp,
+      editor: editorId,
+    });
+
+    await this.updateDocProperties(
+      workspaceId,
+      docId,
+      { updatedBy: editorId },
+      editorId
+    );
 
     return { success: true };
   }
@@ -185,19 +252,116 @@ export class DocWriter {
       meta.title
     );
 
-    await this.storage.pushDocUpdates(
+    const rootTimestamp = await this.storage.pushDocUpdates(
       workspaceId,
       workspaceId,
       [rootMetaUpdate],
       editorId
     );
-    await this.storage.pushDocUpdates(
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId: workspaceId,
+      updates: [rootMetaUpdate],
+      timestamp: rootTimestamp,
+      editor: editorId,
+    });
+
+    const docTimestamp = await this.storage.pushDocUpdates(
       workspaceId,
       docId,
       [titleUpdate],
       editorId
     );
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId,
+      updates: [titleUpdate],
+      timestamp: docTimestamp,
+      editor: editorId,
+    });
+
+    await this.updateDocProperties(
+      workspaceId,
+      docId,
+      { updatedBy: editorId },
+      editorId
+    );
 
     return { success: true };
+  }
+
+  private emitDocUpdatesPushed(payload: {
+    spaceId: string;
+    docId: string;
+    updates: Uint8Array[];
+    timestamp: number;
+    editor?: string;
+  }) {
+    this.event.emit('doc.updates.pushed', {
+      spaceType: 'workspace',
+      spaceId: payload.spaceId,
+      docId: payload.docId,
+      updates: payload.updates,
+      timestamp: payload.timestamp,
+      editor: payload.editor,
+    });
+  }
+
+  private async updateDocProperties(
+    workspaceId: string,
+    docId: string,
+    props: { createdBy?: string; updatedBy?: string },
+    editorId?: string
+  ) {
+    if (!editorId) {
+      return;
+    }
+    if (
+      workspaceId === docId ||
+      docId.startsWith('db$') ||
+      docId.startsWith('userdata$')
+    ) {
+      return;
+    }
+    if (!props.createdBy && !props.updatedBy) {
+      return;
+    }
+
+    const propertiesDocId = `db$${workspaceId}$docProperties`;
+    const existingDoc = await this.storage.getDoc(workspaceId, propertiesDocId);
+    const existingBinary = existingDoc?.bin
+      ? Buffer.isBuffer(existingDoc.bin)
+        ? existingDoc.bin
+        : Buffer.from(
+            existingDoc.bin.buffer,
+            existingDoc.bin.byteOffset,
+            existingDoc.bin.byteLength
+          )
+      : Buffer.alloc(0);
+
+    const update = updateDocProperties(
+      existingBinary,
+      propertiesDocId,
+      docId,
+      props.createdBy,
+      props.updatedBy
+    );
+    if (this.storage.isEmptyBin(update)) {
+      return;
+    }
+
+    const timestamp = await this.storage.pushDocUpdates(
+      workspaceId,
+      propertiesDocId,
+      [update],
+      editorId
+    );
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId: propertiesDocId,
+      updates: [update],
+      timestamp,
+      editor: editorId,
+    });
   }
 }

@@ -105,6 +105,22 @@ export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocCon
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 
 /**
+ * Updates or creates the docProperties record for a document.
+ *
+ * # Arguments
+ * * `existing_binary` - The current docProperties document binary
+ * * `properties_doc_id` - The docProperties document ID
+ *   (db$${workspaceId}$docProperties)
+ * * `target_doc_id` - The document ID to update in docProperties
+ * * `created_by` - Optional creator user ID
+ * * `updated_by` - Optional updater user ID
+ *
+ * # Returns
+ * A Buffer containing only the delta (changes) as a y-octo update binary
+ */
+export declare function updateDocProperties(existingBinary: Buffer, propertiesDocId: string, targetDocId: string, createdBy?: string | undefined | null, updatedBy?: string | undefined | null): Buffer
+
+/**
  * Updates a document's title without touching content blocks.
  *
  * # Arguments

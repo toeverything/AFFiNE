@@ -166,17 +166,14 @@ export class WorkspaceMcpProvider {
       }
     );
 
-    if (
-      BUILD_CONFIG.debug ||
-      ['canary', 'internal'].includes(BUILD_CONFIG.appBuildType)
-    ) {
+    if (env.dev || env.namespaces.canary) {
       // Write tools - create and update documents
       server.registerTool(
         'create_document',
         {
           title: 'Create Document',
           description:
-            'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document.',
+            'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document. This tool not support insert or update database block and image yet.',
           inputSchema: z.object({
             title: z.string().min(1).describe('The title of the new document'),
             content: z
@@ -245,7 +242,7 @@ export class WorkspaceMcpProvider {
         {
           title: 'Update Document',
           description:
-            'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. Database blocks are not supported for updates.',
+            'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. This tool not support insert or update database block and image yet.',
           inputSchema: z.object({
             docId: z.string().describe('The ID of the document to update'),
             content: z

@@ -11,8 +11,8 @@ use super::{
     schema::{PROP_BACKGROUND, PROP_DISPLAY_MODE, PROP_ELEMENTS, PROP_HIDDEN, PROP_INDEX, PROP_XYWH, SURFACE_FLAVOUR},
   },
   builder::{
-    boxed_empty_map, insert_block_map, insert_block_tree, insert_children, insert_sys_fields, insert_text,
-    note_background_map, text_ops_from_plain,
+    BOXED_NATIVE_TYPE, NOTE_BG_DARK, NOTE_BG_LIGHT, boxed_empty_map, insert_block_map, insert_block_tree,
+    insert_children, insert_sys_fields, insert_text, note_background_map, text_ops_from_plain,
   },
   *,
 };
@@ -55,14 +55,19 @@ fn build_doc_update(doc_id: &str, title: &str, blocks: &[BlockNode]) -> Result<V
   // Surface block
   insert_sys_fields(&mut surface_map, &surface_id, SURFACE_FLAVOUR)?;
   insert_children(&doc, &mut surface_map, &[])?;
-  let boxed = boxed_empty_map(&doc)?;
-  surface_map.insert(PROP_ELEMENTS.to_string(), Value::Map(boxed))?;
+  let mut boxed = boxed_empty_map(&doc)?;
+  surface_map.insert(PROP_ELEMENTS.to_string(), Value::Map(boxed.clone()))?;
+  boxed.insert("type".to_string(), Any::String(BOXED_NATIVE_TYPE.to_string()))?;
+  let value = doc.create_map()?;
+  boxed.insert("value".to_string(), Value::Map(value))?;
 
   // Note block
   insert_sys_fields(&mut note_map, &note_id, NOTE_FLAVOUR)?;
   insert_children(&doc, &mut note_map, &content_ids)?;
-  let background = note_background_map(&doc)?;
-  note_map.insert(PROP_BACKGROUND.to_string(), Value::Map(background))?;
+  let mut background = note_background_map(&doc)?;
+  note_map.insert(PROP_BACKGROUND.to_string(), Value::Map(background.clone()))?;
+  background.insert("light".to_string(), Any::String(NOTE_BG_LIGHT.to_string()))?;
+  background.insert("dark".to_string(), Any::String(NOTE_BG_DARK.to_string()))?;
   note_map.insert(PROP_XYWH.to_string(), Any::String("[0,0,800,95]".to_string()))?;
   note_map.insert(PROP_INDEX.to_string(), Any::String("a0".to_string()))?;
   note_map.insert(PROP_HIDDEN.to_string(), Any::False)?;

@@ -102,6 +102,7 @@ export function setupAIProvider(
         selectedSnapshot: contexts?.selectedSnapshot,
         selectedMarkdown: contexts?.selectedMarkdown,
         html: contexts?.html,
+        ...(options.docId ? { currentDocId: options.docId } : {}),
       },
       endpoint: Endpoint.StreamObject,
     });

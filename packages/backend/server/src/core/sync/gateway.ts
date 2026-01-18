@@ -6,9 +6,10 @@ import {
   OnGatewayDisconnect,
   SubscribeMessage as RawSubscribeMessage,
   WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import { ClsInterceptor } from 'nestjs-cls';
-import { Socket } from 'socket.io';
+import { type Server, Socket } from 'socket.io';
 
 import {
   CallMetric,
@@ -18,6 +19,7 @@ import {
   GatewayErrorWrapper,
   metrics,
   NotInSpace,
+  OnEvent,
   SpaceAccessDenied,
 } from '../../base';
 import { Models } from '../../models';
@@ -141,6 +143,9 @@ export class SpaceSyncGateway
 {
   protected logger = new Logger(SpaceSyncGateway.name);
 
+  @WebSocketServer()
+  private readonly server!: Server;
+
   private connectionCount = 0;
 
   constructor(
@@ -164,6 +169,46 @@ export class SpaceSyncGateway
       `Connection disconnected, total: ${this.connectionCount}`
     );
     metrics.socketio.gauge('connections').record(this.connectionCount);
+  }
+
+  @OnEvent('doc.updates.pushed')
+  onDocUpdatesPushed({
+    spaceType,
+    spaceId,
+    docId,
+    updates,
+    timestamp,
+    editor,
+  }: Events['doc.updates.pushed']) {
+    if (!this.server || updates.length === 0) {
+      return;
+    }
+
+    const encodedUpdates = updates.map(update =>
+      Buffer.from(update).toString('base64')
+    );
+
+    this.server
+      .to(Room(spaceId, 'sync-019'))
+      .emit('space:broadcast-doc-updates', {
+        spaceType,
+        spaceId,
+        docId,
+        updates: encodedUpdates,
+        timestamp,
+      });
+
+    const room = `${spaceType}:${Room(spaceId)}`;
+    encodedUpdates.forEach(update => {
+      this.server.to(room).emit('space:broadcast-doc-update', {
+        spaceType,
+        spaceId,
+        docId,
+        update,
+        timestamp,
+        editor,
+      });
+    });
   }
 
   selectAdapter(client: Socket, spaceType: SpaceType): SyncSocketAdapter {

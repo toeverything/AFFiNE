@@ -261,7 +261,11 @@ fn update_block_props(
   };
 
   let preserve = match target.flavour {
-    BlockFlavour::Image | BlockFlavour::Table | BlockFlavour::Bookmark | BlockFlavour::EmbedYoutube => preserve_text,
+    BlockFlavour::Image
+    | BlockFlavour::Table
+    | BlockFlavour::Bookmark
+    | BlockFlavour::EmbedYoutube
+    | BlockFlavour::EmbedIframe => preserve_text,
     _ => preserve_text || text_delta_eq(&node.spec.text, &target.text),
   };
 
@@ -350,6 +354,7 @@ mod tests {
       table: None,
       bookmark: None,
       embed_youtube: None,
+      embed_iframe: None,
     };
     let b2 = BlockSpec {
       flavour: BlockFlavour::Paragraph,
@@ -362,6 +367,7 @@ mod tests {
       table: None,
       bookmark: None,
       embed_youtube: None,
+      embed_iframe: None,
     };
     let b3 = BlockSpec {
       flavour: BlockFlavour::Paragraph,
@@ -374,6 +380,7 @@ mod tests {
       table: None,
       bookmark: None,
       embed_youtube: None,
+      embed_iframe: None,
     };
 
     assert!(b1.is_similar(&b2));

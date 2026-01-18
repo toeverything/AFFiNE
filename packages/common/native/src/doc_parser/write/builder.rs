@@ -1,4 +1,4 @@
-use y_octo::{Text, TextDeltaOp, TextInsert};
+use y_octo::{TextDeltaOp, TextInsert};
 
 use super::{
   super::schema::{
@@ -11,8 +11,8 @@ use super::{
 };
 
 pub(super) const BOXED_NATIVE_TYPE: &str = "$blocksuite:internal:native$";
-const NOTE_BG_LIGHT: &str = "#ffffff";
-const NOTE_BG_DARK: &str = "#252525";
+pub(super) const NOTE_BG_LIGHT: &str = "#ffffff";
+pub(super) const NOTE_BG_DARK: &str = "#252525";
 const TABLE_ORDER_WIDTH: usize = 6;
 
 pub(super) fn block_version(flavour: &str) -> i32 {
@@ -28,6 +28,7 @@ pub(super) fn block_version(flavour: &str) -> i32 {
     "affine:table" => 1,
     "affine:bookmark" => 1,
     "affine:embed-youtube" => 1,
+    "affine:embed-iframe" => 1,
     "affine:callout" => 1,
     _ => 1,
   }
@@ -57,18 +58,18 @@ pub(super) struct EmbedYoutubeBlockProps<'a> {
   pub video_id: &'a str,
 }
 
-pub(super) fn insert_text(doc: &Doc, block: &mut Map, key: &str, ops: &[TextDeltaOp]) -> Result<(), ParseError> {
-  let text = build_text(doc, ops)?;
-  block.insert(key.to_string(), Value::Text(text))?;
-  Ok(())
+pub(super) struct EmbedIframeBlockProps<'a> {
+  pub url: &'a str,
 }
 
-pub(super) fn build_text(doc: &Doc, ops: &[TextDeltaOp]) -> Result<Text, ParseError> {
+pub(super) fn insert_text(doc: &Doc, block: &mut Map, key: &str, ops: &[TextDeltaOp]) -> Result<(), ParseError> {
   let mut text = doc.create_text()?;
+  // Attach first so updates encode parent types before their contents.
+  block.insert(key.to_string(), Value::Text(text.clone()))?;
   if !ops.is_empty() {
     text.apply_delta(ops)?;
   }
-  Ok(text)
+  Ok(())
 }
 
 pub(crate) fn text_ops_from_plain(text: &str) -> Vec<TextDeltaOp> {
@@ -84,10 +85,11 @@ pub(crate) fn text_ops_from_plain(text: &str) -> Vec<TextDeltaOp> {
 
 pub(super) fn insert_children(doc: &Doc, block: &mut Map, children: &[String]) -> Result<(), ParseError> {
   let mut array = doc.create_array()?;
+  // Attach first so updates encode parent types before their contents.
+  block.insert(SYS_CHILDREN.to_string(), Value::Array(array.clone()))?;
   for child_id in children {
     array.push(child_id.to_string())?;
   }
-  block.insert(SYS_CHILDREN.to_string(), Value::Array(array))?;
   Ok(())
 }
 
@@ -240,6 +242,14 @@ pub(super) fn apply_embed_youtube_block_props(
   Ok(())
 }
 
+pub(super) fn apply_embed_iframe_block_props(
+  block: &mut Map,
+  props: &EmbedIframeBlockProps<'_>,
+) -> Result<(), ParseError> {
+  block.insert(PROP_URL.to_string(), Any::String(props.url.to_string()))?;
+  Ok(())
+}
+
 pub(super) fn apply_table_block_props(block: &mut Map, rows: &[Vec<String>]) -> Result<(), ParseError> {
   clear_table_props(block);
 
@@ -326,6 +336,17 @@ pub(super) fn apply_block_spec(
       };
       apply_embed_youtube_block_props(block, &props)?;
     }
+    BlockFlavour::EmbedIframe => {
+      if options.preserve_text {
+        return Ok(());
+      }
+      let embed = spec
+        .embed_iframe
+        .as_ref()
+        .ok_or_else(|| ParseError::ParserError("embed spec missing".into()))?;
+      let props = EmbedIframeBlockProps { url: &embed.url };
+      apply_embed_iframe_block_props(block, &props)?;
+    }
     BlockFlavour::Callout => {
       return Ok(());
     }
@@ -397,16 +418,9 @@ fn format_table_order(index: usize) -> String {
 }
 
 pub(super) fn boxed_empty_map(doc: &Doc) -> Result<Map, ParseError> {
-  let mut boxed = doc.create_map()?;
-  let value = doc.create_map()?;
-  boxed.insert("type".to_string(), Any::String(BOXED_NATIVE_TYPE.to_string()))?;
-  boxed.insert("value".to_string(), Value::Map(value))?;
-  Ok(boxed)
+  doc.create_map().map_err(ParseError::from)
 }
 
 pub(super) fn note_background_map(doc: &Doc) -> Result<Map, ParseError> {
-  let mut map = doc.create_map()?;
-  map.insert("light".to_string(), Any::String(NOTE_BG_LIGHT.to_string()))?;
-  map.insert("dark".to_string(), Any::String(NOTE_BG_DARK.to_string()))?;
-  Ok(map)
+  doc.create_map().map_err(ParseError::from)
 }

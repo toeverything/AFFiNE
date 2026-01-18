@@ -9,8 +9,8 @@ use super::{
   super::{
     ParseError,
     block_spec::{
-      BlockFlavour, BlockNode, BlockSpec, BlockType, BookmarkSpec, EmbedYoutubeSpec, ImageSpec, TableSpec,
-      count_tree_nodes,
+      BlockFlavour, BlockNode, BlockSpec, BlockType, BookmarkSpec, EmbedIframeSpec, EmbedYoutubeSpec, ImageSpec,
+      TableSpec, count_tree_nodes,
     },
   },
   inline::InlineStyle,
@@ -56,6 +56,13 @@ impl InlineAttr {
     Self { style, value: None }
   }
 
+  fn color(value: String) -> Self {
+    Self {
+      style: InlineStyle::Color,
+      value: Some(value),
+    }
+  }
+
   fn link(url: String) -> Self {
     Self {
       style: InlineStyle::Link,
@@ -97,6 +104,11 @@ impl InlineState {
             attrs.insert(attr.key().into(), Any::String(url.clone()));
           }
         }
+        InlineStyle::Color => {
+          if let Some(color) = attr.value.as_ref() {
+            attrs.insert(attr.key().into(), Any::String(color.clone()));
+          }
+        }
         _ => {
           attrs.insert(attr.key().into(), Any::True);
         }
@@ -113,6 +125,11 @@ impl InlineState {
       InlineStyle::Link => {
         if let Some(url) = extra.value.as_ref() {
           attrs.insert(key.into(), Any::String(url.clone()));
+        }
+      }
+      InlineStyle::Color => {
+        if let Some(color) = extra.value.as_ref() {
+          attrs.insert(key.into(), Any::String(color.clone()));
         }
       }
       _ => {
@@ -181,6 +198,7 @@ impl BlockDraft {
         table: None,
         bookmark: None,
         embed_youtube: None,
+        embed_iframe: None,
       },
       children: self.children,
     }
@@ -267,12 +285,13 @@ impl TableState {
 }
 
 pub(crate) fn parse_markdown_blocks(markdown: &str) -> Result<Vec<BlockNode>, ParseError> {
-  if markdown.len() > MAX_MARKDOWN_CHARS {
+  let normalized = normalize_markdown(markdown);
+  if normalized.len() > MAX_MARKDOWN_CHARS {
     return Err(ParseError::ParserError("markdown_too_large".into()));
   }
 
-  validate_markdown(markdown)?;
-  let parsed = parse_markdown(markdown)?;
+  validate_markdown_inner(&normalized)?;
+  let parsed = parse_markdown_inner(&normalized)?;
   if count_tree_nodes(&parsed.blocks) > MAX_BLOCKS {
     return Err(ParseError::ParserError("block_count_too_large".into()));
   }
@@ -282,7 +301,7 @@ pub(crate) fn parse_markdown_blocks(markdown: &str) -> Result<Vec<BlockNode>, Pa
 /// Parses markdown content into blocks suitable for building a ydoc.
 ///
 /// The first H1 can be skipped to act as the document title.
-pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseError> {
+fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> {
   let parser = Parser::new_ext(markdown, markdown_options());
 
   let mut blocks: Vec<BlockNode> = Vec::new();
@@ -295,6 +314,7 @@ pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseEr
   let mut pending_image: Option<ImageDraft> = None;
   let mut pending_bookmark: Option<String> = None;
   let mut table_state: Option<TableState> = None;
+  let mut span_stack: Vec<bool> = Vec::new();
 
   for event in parser {
     let mut table_completed: Option<Vec<Vec<String>>> = None;
@@ -410,8 +430,14 @@ pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseEr
           table_handled = true;
         }
         Event::Html(html) | Event::InlineHtml(html) => {
-          if is_html_line_break(html) {
+          if let Some(text) = extract_wrapped_html_text(html) {
+            state.push_text(&text);
+          } else if is_html_line_break(html) {
             state.push_text("\n");
+          } else if let Some(tag) = parse_html_tag(html)
+            && matches!(tag.name.as_str(), "u" | "span")
+          {
+            // Ignore inline formatting tags inside table cells.
           } else if !html.trim().is_empty() {
             state.push_text(html);
           }
@@ -598,6 +624,19 @@ pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseEr
         if is_ai_editable_comment(&html) {
           continue;
         }
+        if let Some((text, attrs)) = parse_wrapped_inline_html(&html) {
+          if let Some(image) = pending_image.as_mut() {
+            image.caption.push_str(&text);
+          } else if let Some(block) = active.as_mut() {
+            block.push_text(&text, attrs);
+          } else if let Some(item) = list_items.last_mut() {
+            item.push_text(&text, attrs);
+          }
+          continue;
+        }
+        if handle_inline_html_tag(&html, &mut inline, &mut span_stack) {
+          continue;
+        }
         if let Some(image) = parse_img_tag(&html) {
           if let Some(block) = active.take()
             && !block.is_empty()
@@ -606,13 +645,20 @@ pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseEr
           }
           let image = image.finish()?;
           attach_block(image_block(image), &mut list_items, &mut blocks);
-        } else if let Some(video_id) = parse_iframe_tag(&html) {
+        } else if let Some(embed) = parse_iframe_tag(&html) {
           if let Some(block) = active.take()
             && !block.is_empty()
           {
             attach_block(block.finish(), &mut list_items, &mut blocks);
           }
-          attach_block(embed_youtube_block(video_id), &mut list_items, &mut blocks);
+          match embed {
+            IframeEmbed::Youtube(video_id) => {
+              attach_block(embed_youtube_block(video_id), &mut list_items, &mut blocks);
+            }
+            IframeEmbed::Iframe(url) => {
+              attach_block(embed_iframe_block(url), &mut list_items, &mut blocks);
+            }
+          }
         } else if is_html_line_break(&html) {
           if let Some(image) = pending_image.as_mut() {
             image.caption.push(' ');
@@ -720,7 +766,7 @@ pub(super) fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseEr
   Ok(MarkdownDocument { blocks })
 }
 
-pub(super) fn validate_markdown(markdown: &str) -> Result<(), ParseError> {
+fn validate_markdown_inner(markdown: &str) -> Result<(), ParseError> {
   let parser = Parser::new_ext(markdown, markdown_options());
 
   for event in parser {
@@ -737,6 +783,9 @@ pub(super) fn validate_markdown(markdown: &str) -> Result<(), ParseError> {
           continue;
         }
         if is_html_line_break(&html) {
+          continue;
+        }
+        if is_supported_inline_html(&html) {
           continue;
         }
         return Err(ParseError::ParserError("unsupported_markdown:html".into()));
@@ -803,22 +852,79 @@ fn parse_img_tag(html: &str) -> Option<ImageDraft> {
   })
 }
 
-fn parse_iframe_tag(html: &str) -> Option<String> {
+enum IframeEmbed {
+  Youtube(String),
+  Iframe(String),
+}
+
+fn parse_iframe_tag(html: &str) -> Option<IframeEmbed> {
   let tag = html.trim();
-  if !tag.starts_with("<iframe") {
+  if !tag.to_ascii_lowercase().starts_with("<iframe") {
     return None;
   }
   let attrs = parse_html_attrs(tag);
-  let src = attrs.get("src")?;
-  parse_youtube_video_id(src)
+  let src = attrs.get("src")?.trim();
+  if src.is_empty() {
+    return None;
+  }
+  if let Some(video_id) = parse_youtube_video_id(src) {
+    return Some(IframeEmbed::Youtube(video_id));
+  }
+  if is_valid_generic_embed_url(src) {
+    return Some(IframeEmbed::Iframe(src.to_string()));
+  }
+  None
 }
 
 fn parse_youtube_video_id(src: &str) -> Option<String> {
   let src = src.trim();
-  let embed_pos = src.find("/embed/")?;
-  let id = &src[embed_pos + "/embed/".len()..];
+  let prefix = "https://www.youtube.com/embed/";
+  if !src.starts_with(prefix) {
+    return None;
+  }
+  let id = &src[prefix.len()..];
   let id = id.split(['?', '#', '/']).next().unwrap_or("");
   if id.is_empty() { None } else { Some(id.to_string()) }
+}
+
+const AFFINE_DOMAINS: [&str; 6] = [
+  "affine.pro",
+  "app.affine.pro",
+  "insider.affine.pro",
+  "affine.fail",
+  "toeverything.app",
+  "apple.getaffineapp.com",
+];
+
+fn is_valid_generic_embed_url(url: &str) -> bool {
+  let Some(host) = parse_https_host(url) else {
+    return false;
+  };
+  !AFFINE_DOMAINS
+    .iter()
+    .any(|domain| host == *domain || host.ends_with(&format!(".{domain}")))
+}
+
+fn parse_https_host(url: &str) -> Option<String> {
+  let trimmed = url.trim();
+  if trimmed.is_empty() {
+    return None;
+  }
+  let lower = trimmed.to_ascii_lowercase();
+  let (scheme, rest) = lower.split_once("://")?;
+  if scheme != "https" {
+    return None;
+  }
+  let host_port = rest.split(&['/', '?', '#'][..]).next().unwrap_or("");
+  if host_port.is_empty() {
+    return None;
+  }
+  let host = host_port.split('@').last().unwrap_or("");
+  let host = host.split(':').next().unwrap_or("");
+  if host.is_empty() {
+    return None;
+  }
+  Some(host.to_string())
 }
 
 fn is_ai_editable_comment(html: &str) -> bool {
@@ -847,6 +953,304 @@ fn parse_bookmark_url(dest_url: &str) -> Option<String> {
   }
   let url = url.trim();
   if url.is_empty() { None } else { Some(url.to_string()) }
+}
+
+fn normalize_markdown(markdown: &str) -> String {
+  if !markdown.contains('<') {
+    return markdown.to_string();
+  }
+  normalize_html_lists(markdown)
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ListKind {
+  Unordered,
+  Ordered,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ListState {
+  kind: ListKind,
+  counter: usize,
+}
+
+fn normalize_html_lists(markdown: &str) -> String {
+  if !markdown.contains("<li") && !markdown.contains("<ul") && !markdown.contains("<ol") {
+    return markdown.to_string();
+  }
+
+  let mut out = String::with_capacity(markdown.len());
+  let mut in_fence = false;
+  let mut fence_marker: Option<String> = None;
+  let mut list_stack: Vec<ListState> = Vec::new();
+
+  for chunk in markdown.split_inclusive('\n') {
+    let line = chunk.strip_suffix('\n').unwrap_or(chunk);
+    let newline = if chunk.ends_with('\n') { "\n" } else { "" };
+    let trimmed = line.trim_start();
+
+    if let Some(marker) = fence_marker_start(trimmed) {
+      if !in_fence {
+        in_fence = true;
+        fence_marker = Some(marker.to_string());
+      } else if fence_marker.as_deref() == Some(marker) {
+        in_fence = false;
+        fence_marker = None;
+      }
+      out.push_str(line);
+      out.push_str(newline);
+      continue;
+    }
+
+    if in_fence {
+      out.push_str(line);
+      out.push_str(newline);
+      continue;
+    }
+
+    let normalized_line = normalize_html_lists_line(line, &mut list_stack);
+    out.push_str(&normalized_line);
+    out.push_str(newline);
+  }
+
+  out
+}
+
+fn fence_marker_start(line: &str) -> Option<&'static str> {
+  if line.starts_with("```") {
+    Some("```")
+  } else if line.starts_with("~~~") {
+    Some("~~~")
+  } else {
+    None
+  }
+}
+
+fn normalize_html_lists_line(line: &str, list_stack: &mut Vec<ListState>) -> String {
+  let mut out = String::with_capacity(line.len());
+  let bytes = line.as_bytes();
+  let mut i = 0;
+
+  while i < line.len() {
+    if bytes[i] == b'<' {
+      if let Some(rel_end) = line[i..].find('>') {
+        let end = i + rel_end;
+        let tag = &line[i..=end];
+        if let Some(tag_info) = parse_html_tag(tag) {
+          match tag_info.name.as_str() {
+            "ul" => {
+              if tag_info.closing {
+                list_stack.pop();
+              } else if !tag_info.self_closing {
+                list_stack.push(ListState {
+                  kind: ListKind::Unordered,
+                  counter: 0,
+                });
+              }
+            }
+            "ol" => {
+              if tag_info.closing {
+                list_stack.pop();
+              } else if !tag_info.self_closing {
+                list_stack.push(ListState {
+                  kind: ListKind::Ordered,
+                  counter: 0,
+                });
+              }
+            }
+            "li" => {
+              if tag_info.closing {
+                if !out.ends_with('\n') {
+                  out.push('\n');
+                }
+              } else {
+                if !out.is_empty() && !out.ends_with('\n') {
+                  out.push('\n');
+                }
+                let depth = list_stack.len().saturating_sub(1);
+                if depth > 0 {
+                  out.push_str(&"  ".repeat(depth));
+                }
+                let prefix = match list_stack.last_mut() {
+                  Some(state) => match state.kind {
+                    ListKind::Unordered => "- ".to_string(),
+                    ListKind::Ordered => {
+                      state.counter += 1;
+                      format!("{}. ", state.counter)
+                    }
+                  },
+                  None => "- ".to_string(),
+                };
+                out.push_str(&prefix);
+              }
+            }
+            _ => out.push_str(tag),
+          }
+          i = end + 1;
+          continue;
+        }
+      }
+    }
+
+    let ch = line[i..].chars().next().unwrap();
+    out.push(ch);
+    i += ch.len_utf8();
+  }
+
+  out
+}
+
+#[derive(Debug, Clone)]
+struct HtmlTag {
+  name: String,
+  closing: bool,
+  self_closing: bool,
+  attrs: HashMap<String, String>,
+}
+
+fn parse_html_tag(html: &str) -> Option<HtmlTag> {
+  let trimmed = html.trim();
+  if !trimmed.starts_with('<') || !trimmed.ends_with('>') {
+    return None;
+  }
+  if trimmed.starts_with("<!--") {
+    return None;
+  }
+  let mut inner = trimmed.trim_start_matches('<').trim_end_matches('>').trim();
+  let closing = inner.starts_with('/');
+  inner = inner.trim_start_matches('/');
+  let self_closing = inner.ends_with('/');
+  inner = inner.trim_end_matches('/').trim();
+  let name = inner.split_whitespace().next()?.to_lowercase();
+  let attrs = if closing {
+    HashMap::new()
+  } else {
+    parse_html_attrs(trimmed)
+  };
+  Some(HtmlTag {
+    name,
+    closing,
+    self_closing,
+    attrs,
+  })
+}
+
+fn parse_style_color(style: &str) -> Option<String> {
+  for part in style.split(';') {
+    let (key, value) = part.split_once(':')?;
+    if key.trim().eq_ignore_ascii_case("color") {
+      let color = value.trim();
+      if !color.is_empty() {
+        return Some(color.to_string());
+      }
+    }
+  }
+  None
+}
+
+fn parse_wrapped_inline_html(html: &str) -> Option<(String, Option<TextAttributes>)> {
+  let wrapped = parse_wrapped_html_text(html)?;
+  match wrapped.name.as_str() {
+    "u" => {
+      let mut attrs = TextAttributes::new();
+      attrs.insert(InlineStyle::Underline.key().into(), Any::True);
+      Some((wrapped.text, Some(attrs)))
+    }
+    "span" => {
+      let color = wrapped.attrs.get("style").and_then(|style| parse_style_color(style));
+      let attrs = color.map(|color| {
+        let mut attrs = TextAttributes::new();
+        attrs.insert(InlineStyle::Color.key().into(), Any::String(color));
+        attrs
+      });
+      Some((wrapped.text, attrs))
+    }
+    _ => None,
+  }
+}
+
+fn extract_wrapped_html_text(html: &str) -> Option<String> {
+  parse_wrapped_html_text(html).map(|wrapped| wrapped.text)
+}
+
+fn parse_wrapped_html_text(html: &str) -> Option<WrappedHtmlText> {
+  let trimmed = html.trim();
+  if !trimmed.starts_with('<') || !trimmed.ends_with('>') {
+    return None;
+  }
+  let open_end = trimmed.find('>')?;
+  let open_tag = &trimmed[..=open_end];
+  let open_info = parse_html_tag(open_tag)?;
+  if open_info.closing {
+    return None;
+  }
+  let close_tag = format!("</{}>", open_info.name);
+  if !trimmed.ends_with(&close_tag) {
+    return None;
+  }
+  let inner_start = open_end + 1;
+  let inner_end = trimmed.len().saturating_sub(close_tag.len());
+  if inner_start >= inner_end {
+    return None;
+  }
+  let inner = &trimmed[inner_start..inner_end];
+  if inner.contains('<') {
+    return None;
+  }
+  Some(WrappedHtmlText {
+    name: open_info.name,
+    attrs: open_info.attrs,
+    text: inner.to_string(),
+  })
+}
+
+#[derive(Debug, Clone)]
+struct WrappedHtmlText {
+  name: String,
+  attrs: HashMap<String, String>,
+  text: String,
+}
+
+fn handle_inline_html_tag(html: &str, inline: &mut InlineState, span_stack: &mut Vec<bool>) -> bool {
+  let Some(tag) = parse_html_tag(html) else {
+    return false;
+  };
+
+  match tag.name.as_str() {
+    "u" => {
+      if tag.closing {
+        inline.pop(InlineAttr::new(InlineStyle::Underline));
+      } else if !tag.self_closing {
+        inline.push(InlineAttr::new(InlineStyle::Underline));
+      }
+      true
+    }
+    "span" => {
+      if tag.closing {
+        if span_stack.pop().unwrap_or(false) {
+          inline.pop(InlineAttr::color(String::new()));
+        }
+      } else if !tag.self_closing {
+        let color = tag.attrs.get("style").and_then(|style| parse_style_color(style));
+        if let Some(color) = color {
+          inline.push(InlineAttr::color(color));
+          span_stack.push(true);
+        } else {
+          span_stack.push(false);
+        }
+      }
+      true
+    }
+    "ul" | "ol" | "li" => true,
+    _ => false,
+  }
+}
+
+fn is_supported_inline_html(html: &str) -> bool {
+  let Some(tag) = parse_html_tag(html) else {
+    return false;
+  };
+  matches!(tag.name.as_str(), "u" | "span" | "ul" | "ol" | "li")
 }
 
 fn parse_html_attrs(tag: &str) -> HashMap<String, String> {
@@ -930,6 +1334,7 @@ fn image_block(image: ImageSpec) -> BlockNode {
       table: None,
       bookmark: None,
       embed_youtube: None,
+      embed_iframe: None,
     },
     children: Vec::new(),
   }
@@ -948,6 +1353,26 @@ fn embed_youtube_block(video_id: String) -> BlockNode {
       table: None,
       bookmark: None,
       embed_youtube: Some(EmbedYoutubeSpec { video_id }),
+      embed_iframe: None,
+    },
+    children: Vec::new(),
+  }
+}
+
+fn embed_iframe_block(url: String) -> BlockNode {
+  BlockNode {
+    spec: BlockSpec {
+      flavour: BlockFlavour::EmbedIframe,
+      block_type: None,
+      text: Vec::new(),
+      checked: None,
+      language: None,
+      order: None,
+      image: None,
+      table: None,
+      bookmark: None,
+      embed_youtube: None,
+      embed_iframe: Some(EmbedIframeSpec { url }),
     },
     children: Vec::new(),
   }
@@ -966,6 +1391,7 @@ fn bookmark_block(url: String) -> BlockNode {
       table: None,
       bookmark: Some(BookmarkSpec { url, caption: None }),
       embed_youtube: None,
+      embed_iframe: None,
     },
     children: Vec::new(),
   }
@@ -984,6 +1410,7 @@ fn table_block(rows: Vec<Vec<String>>) -> BlockNode {
       table: Some(TableSpec { rows }),
       bookmark: None,
       embed_youtube: None,
+      embed_iframe: None,
     },
     children: Vec::new(),
   }
@@ -1000,6 +1427,15 @@ fn attach_block(block: BlockNode, list_items: &mut [BlockDraft], blocks: &mut Ve
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  fn parse_markdown(markdown: &str) -> Result<MarkdownDocument, ParseError> {
+    let normalized = normalize_markdown(markdown);
+    parse_markdown_inner(&normalized)
+  }
+  fn validate_markdown(markdown: &str) -> Result<(), ParseError> {
+    let normalized = normalize_markdown(markdown);
+    validate_markdown_inner(&normalized)
+  }
 
   #[test]
   fn test_parse_markdown_blocks_simple() {
@@ -1092,6 +1528,73 @@ mod tests {
   }
 
   #[test]
+  fn test_parse_markdown_blocks_embed_iframe_generic() {
+    let markdown = r#"<iframe src="https://example.com/embed"></iframe>"#;
+    let doc = parse_markdown(markdown).expect("parse markdown");
+    assert_eq!(doc.blocks.len(), 1);
+    assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::EmbedIframe);
+    assert_eq!(
+      doc.blocks[0].spec.embed_iframe.as_ref().unwrap().url,
+      "https://example.com/embed"
+    );
+  }
+
+  #[test]
+  fn test_parse_markdown_blocks_html_list() {
+    let markdown = "<ul><li>Item 1</li><li>Item 2</li></ul>";
+    let doc = parse_markdown(markdown).expect("parse markdown");
+    assert_eq!(doc.blocks.len(), 2);
+    assert_eq!(doc.blocks[0].spec.flavour, BlockFlavour::List);
+  }
+
+  #[test]
+  fn test_parse_markdown_blocks_html_underline() {
+    use y_octo::{Any, TextDeltaOp, TextInsert};
+
+    use super::super::inline::InlineStyle;
+
+    let markdown = "<u>Underlined</u>";
+    let doc = parse_markdown(markdown).expect("parse markdown");
+    assert_eq!(doc.blocks.len(), 1);
+
+    let text = doc.blocks[0].spec.text.iter().filter_map(|op| match op {
+      TextDeltaOp::Insert {
+        insert: TextInsert::Text(value),
+        ..
+      } => Some(value.as_str()),
+      _ => None,
+    });
+    assert_eq!(text.collect::<String>(), "Underlined");
+
+    let underline_attr = doc.blocks[0].spec.text.iter().find_map(|op| match op {
+      TextDeltaOp::Insert {
+        format: Some(attrs), ..
+      } => attrs.get(InlineStyle::Underline.key()),
+      _ => None,
+    });
+    assert!(matches!(underline_attr, Some(Any::True)));
+  }
+
+  #[test]
+  fn test_parse_markdown_blocks_html_span_color() {
+    use y_octo::{Any, TextDeltaOp};
+
+    use super::super::inline::InlineStyle;
+
+    let markdown = r#"<span style="color: red">Colored</span>"#;
+    let doc = parse_markdown(markdown).expect("parse markdown");
+    assert_eq!(doc.blocks.len(), 1);
+
+    let color_attr = doc.blocks[0].spec.text.iter().find_map(|op| match op {
+      TextDeltaOp::Insert {
+        format: Some(attrs), ..
+      } => attrs.get(InlineStyle::Color.key()),
+      _ => None,
+    });
+    assert!(matches!(color_attr, Some(Any::String(value)) if value == "red"));
+  }
+
+  #[test]
   fn test_parse_markdown_inline_attrs() {
     use y_octo::{Any, TextDeltaOp};
 
@@ -1162,6 +1665,53 @@ mod tests {
 
 <iframe src="https://www.youtube.com/embed/abc123"></iframe>
 "#;
+    let result = validate_markdown(markdown);
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_validate_markdown_allows_iframe_generic() {
+    let markdown = r#"# Title
+
+<iframe src="https://example.com/embed"></iframe>
+"#;
+    let result = validate_markdown(markdown);
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_validate_markdown_rejects_iframe_http() {
+    let markdown = r#"# Title
+
+<iframe src="http://example.com/embed"></iframe>
+"#;
+    let result = validate_markdown(markdown);
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn test_validate_markdown_rejects_iframe_affine_domain() {
+    let markdown = r#"# Title
+
+<iframe src="https://affine.pro/embed"></iframe>
+"#;
+    let result = validate_markdown(markdown);
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn test_validate_markdown_allows_inline_html_styles() {
+    let markdown = r#"# Title
+
+<u>Under</u> <span style="color: red">Red</span>
+"#;
+    let result = validate_markdown(markdown);
+    assert!(result.is_ok());
+  }
+
+  #[test]
+  fn test_validate_markdown_allows_html_list() {
+    let markdown = "<ul><li>Item 1</li><li>Item 2</li></ul>";
     let result = validate_markdown(markdown);
     assert!(result.is_ok());
   }

@@ -23,6 +23,7 @@ pub enum BlockFlavour {
   Table,
   Bookmark,
   EmbedYoutube,
+  EmbedIframe,
   Callout,
 }
 
@@ -37,6 +38,7 @@ impl BlockFlavour {
       BlockFlavour::Table => "affine:table",
       BlockFlavour::Bookmark => "affine:bookmark",
       BlockFlavour::EmbedYoutube => "affine:embed-youtube",
+      BlockFlavour::EmbedIframe => "affine:embed-iframe",
       BlockFlavour::Callout => "affine:callout",
     }
   }
@@ -51,6 +53,7 @@ impl BlockFlavour {
       "affine:table" => Some(BlockFlavour::Table),
       "affine:bookmark" => Some(BlockFlavour::Bookmark),
       "affine:embed-youtube" => Some(BlockFlavour::EmbedYoutube),
+      "affine:embed-iframe" => Some(BlockFlavour::EmbedIframe),
       "affine:callout" => Some(BlockFlavour::Callout),
       _ => None,
     }
@@ -264,6 +267,11 @@ pub(super) struct EmbedYoutubeSpec {
   pub(super) video_id: String,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct EmbedIframeSpec {
+  pub(super) url: String,
+}
+
 #[derive(Debug, Clone)]
 pub(super) struct BlockSpec {
   pub(super) flavour: BlockFlavour,
@@ -276,6 +284,7 @@ pub(super) struct BlockSpec {
   pub(super) table: Option<TableSpec>,
   pub(super) bookmark: Option<BookmarkSpec>,
   pub(super) embed_youtube: Option<EmbedYoutubeSpec>,
+  pub(super) embed_iframe: Option<EmbedIframeSpec>,
 }
 
 impl BlockSpec {
@@ -288,6 +297,7 @@ impl BlockSpec {
       && self.table == other.table
       && self.bookmark == other.bookmark
       && self.embed_youtube == other.embed_youtube
+      && self.embed_iframe == other.embed_iframe
       && text_delta_eq(&self.text, &other.text)
   }
 
@@ -322,6 +332,7 @@ impl BlockSpec {
         table: None,
         bookmark: None,
         embed_youtube: None,
+        embed_iframe: None,
       };
     }
 
@@ -337,6 +348,7 @@ impl BlockSpec {
         table: Some(TableSpec::from_block_map(block)),
         bookmark: None,
         embed_youtube: None,
+        embed_iframe: None,
       };
     }
 
@@ -355,6 +367,7 @@ impl BlockSpec {
           caption: get_string(block, PROP_CAPTION),
         }),
         embed_youtube: None,
+        embed_iframe: None,
       };
     }
 
@@ -371,6 +384,25 @@ impl BlockSpec {
         bookmark: None,
         embed_youtube: Some(EmbedYoutubeSpec {
           video_id: get_string(block, PROP_VIDEO_ID).unwrap_or_default(),
+        }),
+        embed_iframe: None,
+      };
+    }
+
+    if flavour == BlockFlavour::EmbedIframe {
+      return BlockSpec {
+        flavour,
+        block_type: None,
+        text: Vec::new(),
+        checked: None,
+        language: None,
+        order: None,
+        image: None,
+        table: None,
+        bookmark: None,
+        embed_youtube: None,
+        embed_iframe: Some(EmbedIframeSpec {
+          url: get_string(block, PROP_URL).unwrap_or_default(),
         }),
       };
     }
@@ -415,6 +447,7 @@ impl BlockSpec {
       table: None,
       bookmark: None,
       embed_youtube: None,
+      embed_iframe: None,
     }
   }
 }
@@ -553,5 +586,16 @@ mod tests {
         vec!["1".to_string(), "2".to_string()]
       ]
     );
+  }
+
+  #[test]
+  fn test_from_block_map_embed_iframe() {
+    let spec = spec_from_markdown(
+      r#"<iframe src="https://example.com/embed"></iframe>"#,
+      "block-spec-embed-iframe",
+      "affine:embed-iframe",
+    );
+    assert_eq!(spec.flavour, BlockFlavour::EmbedIframe);
+    assert_eq!(spec.embed_iframe.as_ref().unwrap().url, "https://example.com/embed");
   }
 }

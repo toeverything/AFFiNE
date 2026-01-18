@@ -150,6 +150,11 @@ impl<'a> MarkdownRenderer<'a> {
           );
         }
       }
+      BlockFlavour::EmbedIframe => {
+        if let Some(embed) = spec.embed_iframe.as_ref() {
+          output.push_str(&format!("\n<iframe src=\"{}\"></iframe>\n\n", embed.url));
+        }
+      }
       BlockFlavour::Callout => {}
       BlockFlavour::Table => {
         if let Some(table) = spec.table.as_ref()

@@ -23,9 +23,10 @@ use super::{
 const SUMMARY_LIMIT: usize = 1000;
 const DEFAULT_PAGE_TITLE: &str = "Untitled";
 
-const BOOKMARK_FLAVOURS: [&str; 5] = [
+const BOOKMARK_FLAVOURS: [&str; 6] = [
   "affine:bookmark",
   "affine:embed-youtube",
+  "affine:embed-iframe",
   "affine:embed-figma",
   "affine:embed-github",
   "affine:embed-loom",
