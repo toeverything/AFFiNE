@@ -45,8 +45,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
@@ -79,8 +77,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
       - name: Upload admin artifact
         uses: actions/upload-artifact@v4
         with:
@@ -113,8 +109,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
       - name: Upload mobile artifact
         uses: actions/upload-artifact@v4
         with:

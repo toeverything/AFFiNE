@@ -39,8 +39,6 @@ jobs:
         run: yarn affine @affine/ios build
         env:
           PUBLIC_PATH: '/'
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -69,8 +67,6 @@ jobs:
         run: yarn affine @affine/android build
         env:
           PUBLIC_PATH: '/'
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
