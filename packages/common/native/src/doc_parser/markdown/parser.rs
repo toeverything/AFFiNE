@@ -919,7 +919,7 @@ fn parse_https_host(url: &str) -> Option<String> {
   if host_port.is_empty() {
     return None;
   }
-  let host = host_port.split('@').last().unwrap_or("");
+  let host = host_port.split('@').next_back().unwrap_or("");
   let host = host.split(':').next().unwrap_or("");
   if host.is_empty() {
     return None;
@@ -1032,63 +1032,63 @@ fn normalize_html_lists_line(line: &str, list_stack: &mut Vec<ListState>) -> Str
   let mut i = 0;
 
   while i < line.len() {
-    if bytes[i] == b'<' {
-      if let Some(rel_end) = line[i..].find('>') {
-        let end = i + rel_end;
-        let tag = &line[i..=end];
-        if let Some(tag_info) = parse_html_tag(tag) {
-          match tag_info.name.as_str() {
-            "ul" => {
-              if tag_info.closing {
-                list_stack.pop();
-              } else if !tag_info.self_closing {
-                list_stack.push(ListState {
-                  kind: ListKind::Unordered,
-                  counter: 0,
-                });
-              }
+    if bytes[i] == b'<'
+      && let Some(rel_end) = line[i..].find('>')
+    {
+      let end = i + rel_end;
+      let tag = &line[i..=end];
+      if let Some(tag_info) = parse_html_tag(tag) {
+        match tag_info.name.as_str() {
+          "ul" => {
+            if tag_info.closing {
+              list_stack.pop();
+            } else if !tag_info.self_closing {
+              list_stack.push(ListState {
+                kind: ListKind::Unordered,
+                counter: 0,
+              });
             }
-            "ol" => {
-              if tag_info.closing {
-                list_stack.pop();
-              } else if !tag_info.self_closing {
-                list_stack.push(ListState {
-                  kind: ListKind::Ordered,
-                  counter: 0,
-                });
-              }
-            }
-            "li" => {
-              if tag_info.closing {
-                if !out.ends_with('\n') {
-                  out.push('\n');
-                }
-              } else {
-                if !out.is_empty() && !out.ends_with('\n') {
-                  out.push('\n');
-                }
-                let depth = list_stack.len().saturating_sub(1);
-                if depth > 0 {
-                  out.push_str(&"  ".repeat(depth));
-                }
-                let prefix = match list_stack.last_mut() {
-                  Some(state) => match state.kind {
-                    ListKind::Unordered => "- ".to_string(),
-                    ListKind::Ordered => {
-                      state.counter += 1;
-                      format!("{}. ", state.counter)
-                    }
-                  },
-                  None => "- ".to_string(),
-                };
-                out.push_str(&prefix);
-              }
-            }
-            _ => out.push_str(tag),
           }
-          i = end + 1;
-          continue;
+          "ol" => {
+            if tag_info.closing {
+              list_stack.pop();
+            } else if !tag_info.self_closing {
+              list_stack.push(ListState {
+                kind: ListKind::Ordered,
+                counter: 0,
+              });
+            }
+          }
+          "li" => {
+            if tag_info.closing {
+              if !out.ends_with('\n') {
+                out.push('\n');
+              }
+            } else {
+              if !out.is_empty() && !out.ends_with('\n') {
+                out.push('\n');
+              }
+              let depth = list_stack.len().saturating_sub(1);
+              if depth > 0 {
+                out.push_str(&"  ".repeat(depth));
+              }
+              let prefix = match list_stack.last_mut() {
+                Some(state) => match state.kind {
+                  ListKind::Unordered => "- ".to_string(),
+                  ListKind::Ordered => {
+                    state.counter += 1;
+                    format!("{}. ", state.counter)
+                  }
+                },
+                None => "- ".to_string(),
+              };
+              out.push_str(&prefix);
+            }
+          }
+          _ => out.push_str(tag),
         }
+        i = end + 1;
+        continue;
       }
     }
 
