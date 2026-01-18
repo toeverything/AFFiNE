@@ -1,11 +1,10 @@
 import { LifeCycleWatcher } from '@blocksuite/affine/std';
-import type { FrameworkProvider } from '@toeverything/infra';
 
 import { buildAIPanelConfig } from '../ai-panel';
 import { setupSpaceAIEntry } from '../entries/space/setup-space';
 import { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
 
-export function getAIPageRootWatcher(framework: FrameworkProvider) {
+export function getAIPageRootWatcher() {
   class AIPageRootWatcher extends LifeCycleWatcher {
     static override key = 'ai-page-root-watcher';
 
@@ -19,7 +18,7 @@ export function getAIPageRootWatcher(framework: FrameworkProvider) {
         const component = payload.view;
         if (component instanceof AffineAIPanelWidget) {
           component.style.width = '630px';
-          component.config = buildAIPanelConfig(component, framework);
+          component.config = buildAIPanelConfig(component);
           setupSpaceAIEntry(component);
         }
       });

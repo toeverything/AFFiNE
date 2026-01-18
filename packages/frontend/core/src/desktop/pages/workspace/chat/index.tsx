@@ -106,12 +106,8 @@ export const Component = () => {
 
   const workspaceId = useService(WorkspaceService).workspace.id;
 
-  const {
-    docDisplayConfig,
-    searchMenuConfig,
-    networkSearchConfig,
-    reasoningConfig,
-  } = useAIChatConfig();
+  const { docDisplayConfig, searchMenuConfig, reasoningConfig } =
+    useAIChatConfig();
 
   const createSession = useCallback(
     async (options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}) => {
@@ -218,7 +214,6 @@ export const Component = () => {
     content.host = mockStd?.host;
     content.docDisplayConfig = docDisplayConfig;
     content.searchMenuConfig = searchMenuConfig;
-    content.networkSearchConfig = networkSearchConfig;
     content.reasoningConfig = reasoningConfig;
     content.onContextChange = onContextChange;
     content.affineFeatureFlagService = framework.get(FeatureFlagService);
@@ -256,7 +251,6 @@ export const Component = () => {
     framework,
     isBodyProvided,
     mockStd,
-    networkSearchConfig,
     reasoningConfig,
     searchMenuConfig,
     workspaceId,

@@ -157,6 +157,7 @@
     { "path": "./tests/kit" },
     { "path": "./tools/cli" },
     { "path": "./tools/playstore-auto-bump" },
+    { "path": "./tools/revert-update" },
     { "path": "./tools/utils" }
   ]
 }

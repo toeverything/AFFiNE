@@ -1243,6 +1243,7 @@ export const PackageList = [
       'packages/common/env',
       'packages/frontend/i18n',
       'packages/common/nbstore',
+      'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
     ],
@@ -1284,6 +1285,7 @@ export const PackageList = [
       'packages/common/graphql',
       'packages/frontend/i18n',
       'packages/common/nbstore',
+      'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
       'tools/cli',
@@ -1300,6 +1302,7 @@ export const PackageList = [
       'packages/common/env',
       'packages/frontend/i18n',
       'packages/common/nbstore',
+      'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
     ],
@@ -1477,6 +1480,11 @@ export const PackageList = [
     workspaceDependencies: ['tools/cli', 'tools/utils'],
   },
   {
+    location: 'tools/revert-update',
+    name: '@affine/revert-update',
+    workspaceDependencies: ['tools/cli'],
+  },
+  {
     location: 'tools/utils',
     name: '@affine-tools/utils',
     workspaceDependencies: [],
@@ -1598,4 +1606,5 @@ export type PackageName =
   | '@affine/commitlint-config'
   | '@affine/copilot-result'
   | '@affine/playstore-auto-bump'
+  | '@affine/revert-update'
   | '@affine-tools/utils';
