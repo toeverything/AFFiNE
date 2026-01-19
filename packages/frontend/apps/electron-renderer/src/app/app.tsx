@@ -1,4 +1,5 @@
 import { AffineContext } from '@affine/core/components/context';
+import { useAtomValue } from '@affine/core/components/page-list/scoped-atoms';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
@@ -6,9 +7,10 @@ import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
+import { isOnBatteryAtom } from '../atoms/power';
 import { setupEffects } from './effects';
 import { DesktopLanguageSync } from './language-sync';
 import { DesktopThemeSync } from './theme-sync';
@@ -40,6 +42,15 @@ const future = {
 } as const;
 
 export function App() {
+  const isOnBattery = useAtomValue(isOnBatteryAtom);
+
+  useEffect(() => {
+    document.body.classList.toggle('on-battery', isOnBattery);
+    return () => {
+      document.body.classList.remove('on-battery');
+    };
+  }, [isOnBattery]);
+
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
