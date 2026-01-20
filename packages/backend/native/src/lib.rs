@@ -11,7 +11,7 @@ pub mod tiktoken;
 
 use std::fmt::{Debug, Display};
 
-use napi::{bindgen_prelude::*, Error, Result, Status};
+use napi::{Error, Result, Status, bindgen_prelude::*};
 use y_octo::Doc;
 
 #[cfg(not(target_arch = "arm"))]
@@ -58,5 +58,4 @@ pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
 pub const AFFINE_PRO_PUBLIC_KEY: Option<&'static str> = std::option_env!("AFFINE_PRO_PUBLIC_KEY");
 
 #[napi]
-pub const AFFINE_PRO_LICENSE_AES_KEY: Option<&'static str> =
-  std::option_env!("AFFINE_PRO_LICENSE_AES_KEY");
+pub const AFFINE_PRO_LICENSE_AES_KEY: Option<&'static str> = std::option_env!("AFFINE_PRO_LICENSE_AES_KEY");

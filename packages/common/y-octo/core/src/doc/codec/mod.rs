@@ -16,7 +16,7 @@ pub use delete_set::DeleteSet;
 pub use id::{Client, Clock, Id};
 pub use io::{CrdtRead, CrdtReader, CrdtWrite, CrdtWriter, RawDecoder, RawEncoder};
 pub(crate) use item::{Item, ItemRef, Parent};
-pub(crate) use item_flag::{item_flags, ItemFlag};
+pub(crate) use item_flag::{ItemFlag, item_flags};
 pub(crate) use refs::Node;
 pub use update::Update;
 #[cfg(test)]

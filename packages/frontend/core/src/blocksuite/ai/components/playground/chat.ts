@@ -25,11 +25,7 @@ import { AIProvider } from '../../provider';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { ChatContextValue } from '../ai-chat-content';
-import type {
-  AINetworkSearchConfig,
-  AIPlaygroundConfig,
-  AIReasoningConfig,
-} from '../ai-chat-input';
+import type { AIPlaygroundConfig, AIReasoningConfig } from '../ai-chat-input';
 import {
   type AIChatMessages,
   type ChatAction,
@@ -146,9 +142,6 @@ export class PlaygroundChat extends SignalWatcher(
 
   @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
-
-  @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
@@ -359,7 +352,6 @@ export class PlaygroundChat extends SignalWatcher(
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
         .aiToolsConfigService=${this.aiToolsConfigService}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .messages=${this.messages}
       ></ai-chat-messages>
@@ -372,7 +364,6 @@ export class PlaygroundChat extends SignalWatcher(
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}

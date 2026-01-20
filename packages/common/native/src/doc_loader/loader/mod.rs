@@ -23,6 +23,6 @@ pub trait Loader: Send + Sync {
 pub use docx::DocxLoader;
 pub use html::HtmlLoader;
 pub use pdf::PdfExtractLoader;
-pub use source::{get_language_by_filename, LanguageParserOptions, SourceCodeLoader};
+pub use source::{LanguageParserOptions, SourceCodeLoader, get_language_by_filename};
 pub use text::TextLoader;
 pub use url::Url;

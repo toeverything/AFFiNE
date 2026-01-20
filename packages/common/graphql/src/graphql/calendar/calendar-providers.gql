@@ -1,0 +1,5 @@
+query calendarProviders {
+  serverConfig {
+    calendarProviders
+  }
+}

@@ -141,8 +141,6 @@ export const signInPageContainer = style({
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-  position: 'relative',
-  zIndex: 1,
 });
 export const input = style({
   width: '330px',

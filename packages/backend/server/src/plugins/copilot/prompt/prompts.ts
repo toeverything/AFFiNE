@@ -1950,6 +1950,13 @@ User's preferred language is {{affine::language}}.
 User's timezone is {{affine::timezone}}.
 </real_world_info>
 
+{{#affine::hasCurrentDoc}}
+<current_document_context>
+The user is chatting within the current document: {{currentDocId}}.
+If the user's request relates to this document, call the doc_read tool with docId {{currentDocId}} to read it before answering.
+</current_document_context>
+{{/affine::hasCurrentDoc}}
+
 <content_analysis>
 - If documents are provided, analyze all documents based on the user's query
 - Identify key information relevant to the user's specific request
@@ -2086,7 +2093,10 @@ Below is the user's query. Please respond in the user's preferred language witho
   config: {
     tools: [
       'docRead',
-      'sectionEdit',
+      'docCreate',
+      'docUpdate',
+      'docUpdateMeta',
+      // 'sectionEdit',
       'docKeywordSearch',
       'docSemanticSearch',
       'webSearch',

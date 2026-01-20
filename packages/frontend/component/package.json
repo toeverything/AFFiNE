@@ -64,7 +64,7 @@
     "react": "^19.2.1",
     "react-dom": "19.2.1",
     "react-paginate": "^8.3.0",
-    "react-router-dom": "^6.30.2",
+    "react-router-dom": "^6.30.3",
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
@@ -88,5 +88,5 @@
     "vite": "^7.2.7",
     "vitest": "^3.2.4"
   },
-  "version": "0.25.7"
+  "version": "0.26.0"
 }

@@ -1,0 +1,7 @@
+#import './fragments/current-user-profile.gql'
+
+query getCurrentUserProfile {
+  currentUser {
+    ...CurrentUserProfile
+  }
+}

@@ -10,7 +10,6 @@ test.describe('AIChatWith/Network', () => {
     loggedInPage: page,
     utils,
   }) => {
-    await utils.chatPanel.enableNetworkSearch(page);
     await utils.chatPanel.makeChat(
       page,
       'What is the weather like in Shanghai today?'

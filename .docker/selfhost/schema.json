@@ -634,6 +634,45 @@
         }
       }
     },
+    "telemetry": {
+      "type": "object",
+      "description": "Configuration for telemetry module",
+      "properties": {
+        "allowedOrigin": {
+          "type": "array",
+          "description": "Allowed origins for telemetry collection.\n@default [\"localhost\",\"127.0.0.1\"]",
+          "default": [
+            "localhost",
+            "127.0.0.1"
+          ]
+        },
+        "ga4.measurementId": {
+          "type": "string",
+          "description": "GA4 Measurement ID for Measurement Protocol.\n@default \"\"\n@environment `GA4_MEASUREMENT_ID`",
+          "default": ""
+        },
+        "ga4.apiSecret": {
+          "type": "string",
+          "description": "GA4 API secret for Measurement Protocol.\n@default \"\"\n@environment `GA4_API_SECRET`",
+          "default": ""
+        },
+        "dedupe.ttlHours": {
+          "type": "number",
+          "description": "Telemetry dedupe TTL in hours.\n@default 24",
+          "default": 24
+        },
+        "dedupe.maxEntries": {
+          "type": "number",
+          "description": "Telemetry dedupe max entries.\n@default 100000",
+          "default": 100000
+        },
+        "batch.maxEvents": {
+          "type": "number",
+          "description": "Max events per telemetry batch.\n@default 25",
+          "default": 25
+        }
+      }
+    },
     "client": {
       "type": "object",
       "description": "Configuration for client module",
@@ -647,6 +686,40 @@
           "type": "string",
           "description": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect.\n@default \">=0.20.0\"",
           "default": ">=0.20.0"
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "description": "Configuration for calendar module",
+      "properties": {
+        "google": {
+          "type": "object",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\"}\n@link https://developers.google.com/calendar/api/guides/push",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "externalWebhookUrl": {
+              "type": "string"
+            },
+            "webhookVerificationToken": {
+              "type": "string"
+            }
+          },
+          "default": {
+            "enabled": false,
+            "clientId": "",
+            "clientSecret": "",
+            "externalWebhookUrl": "",
+            "webhookVerificationToken": ""
+          }
         }
       }
     },

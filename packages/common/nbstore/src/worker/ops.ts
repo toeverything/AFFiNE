@@ -16,6 +16,12 @@ import type { AwarenessRecord } from '../storage/awareness';
 import type { BlobSyncBlobState, BlobSyncState } from '../sync/blob';
 import type { DocSyncDocState, DocSyncState } from '../sync/doc';
 import type { IndexerDocSyncState, IndexerSyncState } from '../sync/indexer';
+import type {
+  TelemetryAck,
+  TelemetryContext,
+  TelemetryEvent,
+  TelemetryQueueState,
+} from '../telemetry/types';
 
 type StorageInitOptions = Values<{
   [key in keyof AvailableStorageImplementations]: {
@@ -178,4 +184,9 @@ export type WorkerManagerOps = {
     string,
   ];
   close: [string, void];
+  'telemetry.setContext': [TelemetryContext, void];
+  'telemetry.track': [TelemetryEvent, { queued: boolean }];
+  'telemetry.pageview': [TelemetryEvent, { queued: boolean }];
+  'telemetry.flush': [void, TelemetryAck];
+  'telemetry.getQueueState': [void, TelemetryQueueState];
 };

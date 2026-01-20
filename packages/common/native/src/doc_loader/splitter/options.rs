@@ -2,7 +2,7 @@
  * modified from https://github.com/Abraxas-365/langchain-rust/tree/v4.6.0/src/text_splitter
  */
 use text_splitter::ChunkConfig;
-use tiktoken_rs::{get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer, CoreBPE};
+use tiktoken_rs::{CoreBPE, get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer};
 
 use super::TextSplitterError;
 
@@ -79,8 +79,8 @@ impl TryFrom<&SplitterOptions> for ChunkConfig<CoreBPE> {
 
   fn try_from(options: &SplitterOptions) -> Result<Self, Self::Error> {
     let tk = if !options.encoding_name.is_empty() {
-      let tokenizer = SplitterOptions::get_tokenizer_from_str(&options.encoding_name)
-        .ok_or(TextSplitterError::TokenizerNotFound)?;
+      let tokenizer =
+        SplitterOptions::get_tokenizer_from_str(&options.encoding_name).ok_or(TextSplitterError::TokenizerNotFound)?;
 
       get_bpe_from_tokenizer(tokenizer).map_err(|_| TextSplitterError::InvalidTokenizer)?
     } else {

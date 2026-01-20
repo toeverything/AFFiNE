@@ -187,3 +187,32 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                   },
                 ]
               : [];
+
+export type TelemetryChannel =
+  | 'stable'
+  | 'beta'
+  | 'internal'
+  | 'canary'
+  | 'local';
+
+const OFFICIAL_TELEMETRY_ENDPOINTS: Record<TelemetryChannel, string> = {
+  stable: 'https://app.affine.pro',
+  beta: 'https://insider.affine.pro',
+  internal: 'https://insider.affine.pro',
+  canary: 'https://affine.fail',
+  local: 'http://localhost:8080',
+};
+
+export function getOfficialTelemetryEndpoint(
+  channel = BUILD_CONFIG.appBuildType
+): string {
+  if (BUILD_CONFIG.debug) {
+    return BUILD_CONFIG.isNative
+      ? OFFICIAL_TELEMETRY_ENDPOINTS.local
+      : location.origin;
+  } else if (['beta', 'internal', 'canary', 'stable'].includes(channel)) {
+    return OFFICIAL_TELEMETRY_ENDPOINTS[channel];
+  }
+
+  return OFFICIAL_TELEMETRY_ENDPOINTS.stable;
+}

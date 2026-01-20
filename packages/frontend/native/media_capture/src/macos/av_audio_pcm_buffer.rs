@@ -13,12 +13,8 @@ pub(crate) struct AVAudioPCMBuffer {
 
 #[allow(unused)]
 impl AVAudioPCMBuffer {
-  pub(crate) fn new(
-    audio_format: &AVAudioFormat,
-    buffer_list: *const AudioBufferList,
-  ) -> Result<Self, CoreAudioError> {
-    let cls =
-      AnyClass::get(c"AVAudioPCMBuffer").ok_or(CoreAudioError::AVAudioPCMBufferClassNotFound)?;
+  pub(crate) fn new(audio_format: &AVAudioFormat, buffer_list: *const AudioBufferList) -> Result<Self, CoreAudioError> {
+    let cls = AnyClass::get(c"AVAudioPCMBuffer").ok_or(CoreAudioError::AVAudioPCMBufferClassNotFound)?;
     let obj: *mut AnyObject = unsafe { msg_send![cls, alloc] };
     if obj.is_null() {
       return Err(CoreAudioError::AllocAVAudioPCMBufferFailed);

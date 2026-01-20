@@ -17,7 +17,6 @@ import { property } from 'lit/decorators.js';
 import type { SearchMenuConfig } from '../components/ai-chat-add-context';
 import type { DocDisplayConfig } from '../components/ai-chat-chips';
 import type {
-  AINetworkSearchConfig,
   AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
@@ -81,9 +80,6 @@ export class AIChatPanelTitle extends SignalWatcher(
   accessor appSidebarConfig!: AppSidebarConfig;
 
   @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
-
-  @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
@@ -142,7 +138,6 @@ export class AIChatPanelTitle extends SignalWatcher(
       <playground-content
         .host=${this.host}
         .doc=${this.doc}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .playgroundConfig=${this.playgroundConfig}
         .appSidebarConfig=${this.appSidebarConfig}

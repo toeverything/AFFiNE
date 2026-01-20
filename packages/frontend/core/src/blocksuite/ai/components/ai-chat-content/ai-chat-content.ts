@@ -33,10 +33,7 @@ import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
 import { extractSelectedContent } from '../../utils/extract';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { DocDisplayConfig } from '../ai-chat-chips';
-import type {
-  AINetworkSearchConfig,
-  AIReasoningConfig,
-} from '../ai-chat-input';
+import type { AIReasoningConfig } from '../ai-chat-input';
 import {
   type AIChatMessages,
   type ChatAction,
@@ -138,9 +135,6 @@ export class AIChatContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor docId: string | undefined;
-
-  @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
@@ -450,7 +444,6 @@ export class AIChatContent extends SignalWatcher(
         .affineThemeService=${this.affineThemeService}
         .notificationService=${this.notificationService}
         .aiToolsConfigService=${this.aiToolsConfigService}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .width=${this.width}
         .independentMode=${this.independentMode}
@@ -474,7 +467,6 @@ export class AIChatContent extends SignalWatcher(
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
-        .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}

@@ -31,6 +31,7 @@ import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspac
 import { getWorkerUrl } from '@affine/env/worker';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
+import { setTelemetryTransport } from '@affine/track';
 import { Container } from '@blocksuite/affine/global/di';
 import {
   docLinkBaseURLMiddleware,
@@ -56,6 +57,7 @@ import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { writeEndpointToken } from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
+setTelemetryTransport(storeManagerClient.telemetry);
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
