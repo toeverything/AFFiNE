@@ -1191,6 +1191,7 @@ export class ConnectorPathGenerator extends PathGenerator {
       getElementById: elementGetter ?? (() => null),
     });
     const points = path ?? instance._generateConnectorPath(connector) ?? [];
+    // Curve mode uses bezier bounding box, others use simple point bounds
     const bound =
       connector.mode === ConnectorMode.Curve
         ? getBezierCurveBoundingBox(getBezierParameters(points))
@@ -1267,7 +1268,12 @@ export class ConnectorPathGenerator extends PathGenerator {
     const { mode } = connector;
     if (mode === ConnectorMode.Straight) {
       return this._generateStraightConnectorPath(connector);
-    } else if (mode === ConnectorMode.Orthogonal) {
+    } else if (
+      mode === ConnectorMode.Orthogonal ||
+      mode === ConnectorMode.Rounded
+    ) {
+      // Rounded uses the same path generation as Orthogonal,
+      // the rounded corners are handled during rendering
       const start = this._getConnectorEndElement(connector, 'source');
       const end = this._getConnectorEndElement(connector, 'target');
 
