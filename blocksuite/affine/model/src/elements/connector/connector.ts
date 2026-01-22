@@ -29,6 +29,7 @@ import {
   CONNECTOR_LABEL_MAX_WIDTH,
   ConnectorLabelOffsetAnchor,
   ConnectorMode,
+  DEFAULT_CONNECTOR_CORNER_RADIUS,
   DEFAULT_CONNECTOR_MODE,
   DEFAULT_ROUGHNESS,
   FontFamily,
@@ -58,6 +59,7 @@ export const getConnectorModeName = (mode: ConnectorMode) => {
     [ConnectorMode.Straight]: 'Straight',
     [ConnectorMode.Orthogonal]: 'Elbowed',
     [ConnectorMode.Curve]: 'Curve',
+    [ConnectorMode.Rounded]: 'Rounded',
   }[mode];
 };
 
@@ -98,6 +100,7 @@ export type ConnectorElementProps = BaseElementProps & {
   rough?: boolean;
   source: Connection;
   target: Connection;
+  cornerRadius?: number;
 
   frontEndpointStyle?: PointStyle;
   rearEndpointStyle?: PointStyle;
@@ -460,6 +463,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
 
   @field()
   accessor mode: ConnectorMode = DEFAULT_CONNECTOR_MODE;
+
+  @field()
+  accessor cornerRadius: number = DEFAULT_CONNECTOR_CORNER_RADIUS;
 
   @derive((path: PointLocation[], instance) => {
     const { x, y } = instance;

@@ -21,6 +21,7 @@ import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { ConnectorTool } from '../connector-tool';
+import { ConnectorRIcon } from './icons';
 
 function ConnectorModeButtonGroup(
   mode: ConnectorMode,
@@ -50,6 +51,15 @@ function ConnectorModeButtonGroup(
         @click=${() => setConnectorMode({ mode: ConnectorMode.Orthogonal })}
       >
         ${ConnectorEIcon()}
+      </edgeless-tool-icon-button>
+      <edgeless-tool-icon-button
+        .active=${mode === ConnectorMode.Rounded}
+        .activeMode=${'background'}
+        .tooltip=${'Rounded'}
+        .iconSize=${'20px'}
+        @click=${() => setConnectorMode({ mode: ConnectorMode.Rounded })}
+      >
+        ${ConnectorRIcon()}
       </edgeless-tool-icon-button>
       <edgeless-tool-icon-button
         .active=${mode === ConnectorMode.Straight}

@@ -60,6 +60,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { isConnectorWithLabel } from '../connector-manager';
 import { mountConnectorLabelEditor } from '../text';
+import { ConnectorRIcon } from './icons';
 
 const FRONT_ENDPOINT_STYLE_LIST = [
   {
@@ -117,6 +118,11 @@ const CONNECTOR_MODE_LIST = [
     key: 'Elbowed',
     value: ConnectorMode.Orthogonal,
     icon: ConnectorEIcon(),
+  },
+  {
+    key: 'Rounded',
+    value: ConnectorMode.Rounded,
+    icon: ConnectorRIcon(),
   },
   {
     key: 'Straight',

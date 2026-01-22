@@ -31,6 +31,9 @@ export enum ConnectorMode {
   Straight,
   Orthogonal,
   Curve,
+  Rounded,
 }
 
 export const DEFAULT_CONNECTOR_MODE = ConnectorMode.Curve;
+
+export const DEFAULT_CONNECTOR_CORNER_RADIUS = 20;
