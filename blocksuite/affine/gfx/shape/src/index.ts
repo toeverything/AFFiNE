@@ -3,6 +3,7 @@ export * from './consts';
 export * from './draggable';
 export * from './element-renderer';
 export * from './element-view';
+export * from './imported-shapes';
 export * from './overlay';
 export * from './shape-tool';
 export * from './text';

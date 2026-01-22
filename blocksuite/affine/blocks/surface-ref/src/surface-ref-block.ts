@@ -382,19 +382,27 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     this._disposables.add(dispose);
   }
 
-  private _renderRefContent() {
+  private _renderRefContent(useLegacyWidth: boolean) {
     if (!this._referenceXYWH$.value) return nothing;
     const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
     const aspectRatio = h !== 0 ? w / h : 1;
+    const sizeScale = normalizePositiveNumber(
+      this.model.props.pageSizeScale,
+      1
+    );
+    const adjustedAspectRatio =
+      sizeScale === 1 ? aspectRatio : aspectRatio / sizeScale;
     const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
     const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
+
+    const viewportStyle = useLegacyWidth
+      ? { aspectRatio: `${adjustedAspectRatio}` }
+      : { aspectRatio: `${adjustedAspectRatio}`, width: '100%' };
 
     return html`<div class="ref-content">
       <div
         class="ref-viewport"
-        style=${styleMap({
-          aspectRatio: `${aspectRatio}`,
-        })}
+        style=${styleMap(viewportStyle)}
         data-theme=${edgelessTheme}
       >
         ${guard(this._previewDoc, () => {
@@ -456,13 +464,38 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     const { _referencedModel, model } = this;
     const isEmpty = !_referencedModel || !_referencedModel.xywh;
     const theme = this.std.get(ThemeProvider).theme$.value;
+    const widthScale = normalizePositiveNumber(
+      this.model.props.pageWidthScale,
+      1
+    );
+    const widthMode = this.model.props.pageWidthMode ?? 'page';
+    const useLegacyWidth =
+      widthMode === 'page' || (widthMode === 'scale' && widthScale === 1);
     const content = isEmpty
       ? html`<surface-ref-placeholder
           .referenceModel=${_referencedModel}
           .refFlavour=${model.props.refFlavour$.value}
           .theme=${theme}
         ></surface-ref-placeholder>`
-      : this._renderRefContent();
+      : this._renderRefContent(useLegacyWidth);
+
+    const baseWidth =
+      widthMode === 'full'
+        ? 'calc(100vw - (var(--affine-editor-side-padding, 0px) * 2))'
+        : widthMode === 'scale'
+          ? `calc(var(--affine-editor-width) * ${widthScale})`
+          : 'var(--affine-editor-width)';
+    const containerStyle = useLegacyWidth
+      ? {}
+      : {
+          width: baseWidth,
+          maxWidth: baseWidth,
+          marginLeft: widthMode === 'full' ? '0' : 'auto',
+          marginRight: widthMode === 'full' ? '0' : 'auto',
+          position: 'relative',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        };
 
     return html`
       <div
@@ -471,6 +504,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
           focused: this.selected$.value,
           'comment-highlighted': this.isCommentHighlighted,
         })}
+        style=${styleMap(containerStyle)}
         @click=${this._handleClick}
       >
         ${content}
@@ -502,6 +536,13 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   @query('editor-host')
   accessor previewEditor!: EditorHost | null;
+}
+
+function normalizePositiveNumber(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return value;
 }
 
 declare global {

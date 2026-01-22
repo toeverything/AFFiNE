@@ -124,7 +124,25 @@ export async function toggleMultipleEditors(page: Page) {
 }
 
 export async function switchEditorMode(page: Page) {
-  await page.click('sl-tooltip[content="Switch Editor"]');
+  const didToggle = await page.evaluate(() => {
+    const container = document.querySelector('affine-editor-container') as any;
+    if (!container || !('mode' in container)) {
+      return false;
+    }
+    container.mode = container.mode === 'edgeless' ? 'page' : 'edgeless';
+    return true;
+  });
+  if (!didToggle) {
+    const switcher = page.locator('sl-tooltip[content="Switch Editor"]');
+    if ((await switcher.count()) === 0) {
+      return;
+    }
+    await switcher.waitFor({ state: 'attached' });
+    if (!(await switcher.isVisible())) {
+      return;
+    }
+    await switcher.click({ force: true });
+  }
   // FIXME: listen to editor loaded event
   await waitNextFrame(page);
 }
@@ -379,10 +397,30 @@ export async function setEdgelessTool(
       // Avoid clicking on the shape-element (will trigger dragging mode)
       await shapeToolButton.click({ position: { x: 5, y: 5 } });
 
-      const squareShapeButton = page
-        .locator('edgeless-slide-menu edgeless-tool-icon-button')
-        .filter({ hasText: shape });
-      await squareShapeButton.click();
+      if (shape === Shape.Square) {
+        break;
+      }
+
+      const menu = page
+        .locator('edgeless-slide-menu, edgeless-shape-menu')
+        .first();
+      await menu.waitFor({ state: 'visible', timeout: 5000 });
+      const candidates = [
+        menu.locator('edgeless-tool-icon-button').filter({ hasText: shape }),
+        menu.getByLabel(shape, { exact: true }),
+        menu.getByRole('button', { name: shape }),
+      ];
+      let clicked = false;
+      for (const candidate of candidates) {
+        if (await candidate.count()) {
+          await candidate.first().click();
+          clicked = true;
+          break;
+        }
+      }
+      if (!clicked) {
+        throw new Error(`Shape option not found: ${shape}`);
+      }
       break;
     }
   }
@@ -1123,10 +1161,10 @@ export async function triggerShapeSwitch(
   const button = locatorComponentToolbar(page)
     .getByLabel('Switch shape type')
     .first();
-  await button.click();
+  await button.evaluate(el => (el as HTMLElement).click());
 
   const shapeButton = locatorComponentToolbar(page).getByLabel(type);
-  await shapeButton.click();
+  await shapeButton.evaluate(el => (el as HTMLElement).click());
 }
 
 export async function triggerComponentToolbarAction(
@@ -1238,7 +1276,16 @@ export async function triggerComponentToolbarAction(
     }
     case 'addGroup': {
       const button = locatorComponentToolbar(page).getByLabel(/^Group$/);
-      await button.click();
+      if (await button.count()) {
+        await button.evaluate(el => (el as HTMLElement).click());
+        break;
+      }
+      const moreButton = locatorComponentToolbarMoreButton(page);
+      await moreButton.click();
+      const actionButton = moreButton.locator('editor-menu-action').filter({
+        hasText: 'Group Section',
+      });
+      await actionButton.evaluate(el => (el as HTMLElement).click());
       break;
     }
     case 'addMindmap': {
@@ -1324,10 +1371,10 @@ export async function triggerComponentToolbarAction(
       break;
     }
     case 'quickConnect': {
-      const button = locatorComponentToolbar(page).getByRole('button', {
-        name: 'Draw connector',
-      });
-      await button.click();
+      const button = locatorComponentToolbar(page).locator(
+        '[data-testid="draw-connector"]'
+      );
+      await button.evaluate(el => (el as HTMLElement).click());
       break;
     }
     case 'turnIntoLinkedDoc': {
@@ -1645,6 +1692,14 @@ export async function getConnectorPath(page: Page, index = 0): Promise<IVec[]> {
   );
 }
 
+export async function getConnectorCount(page: Page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root');
+    if (!root) throw new Error('edgeless root not found');
+    return root.service.crud.getElementsByType('connector').length;
+  });
+}
+
 export async function getConnectorPathWithInOut(
   page: Page,
   index = 0
@@ -1863,15 +1918,20 @@ export async function createShapeElement(
   coord2: number[],
   shape = Shape.Square
 ) {
+  const beforeIds = await getIds(page, true);
   const start = await toViewCoord(page, coord1);
   const end = await toViewCoord(page, coord2);
-  const shapeId = await addBasicShapeElement(
+  const selectedId = await addBasicShapeElement(
     page,
     { x: start[0], y: start[1] },
     { x: end[0], y: end[1] },
     shape
   );
-  return shapeId;
+  await setEdgelessTool(page, 'default');
+  await waitNextFrame(page, 200);
+  const afterIds = await getIds(page, true);
+  const createdIds = afterIds.filter(id => !beforeIds.includes(id));
+  return createdIds[0] ?? selectedId;
 }
 
 export async function createConnectorElement(
@@ -1886,6 +1946,57 @@ export async function createConnectorElement(
     { x: start[0], y: start[1] },
     { x: end[0], y: end[1] }
   );
+  return (await getSelectedIds(page))[0];
+}
+
+type AnchorSide = 'left' | 'right' | 'top' | 'bottom' | 'center';
+
+function anchorPointFromBound(
+  bound: [number, number, number, number],
+  side: AnchorSide,
+  inset = 5
+): [number, number] {
+  const [x, y, w, h] = bound;
+  switch (side) {
+    case 'left':
+      return [x + inset, y + h / 2];
+    case 'right':
+      return [x + w - inset, y + h / 2];
+    case 'top':
+      return [x + w / 2, y + inset];
+    case 'bottom':
+      return [x + w / 2, y + h - inset];
+    case 'center':
+    default:
+      return [x + w / 2, y + h / 2];
+  }
+}
+
+export async function createConnectorElementBetweenShapes(
+  page: Page,
+  sourceId: string,
+  targetId: string,
+  sourceSide: AnchorSide = 'right',
+  targetSide: AnchorSide = 'left'
+) {
+  const sourceBound = await getEdgelessElementBound(page, sourceId);
+  const targetBound = await getEdgelessElementBound(page, targetId);
+  const sourcePoint = anchorPointFromBound(sourceBound, sourceSide);
+  const targetPoint = anchorPointFromBound(targetBound, targetSide);
+  return createConnectorElement(page, sourcePoint, targetPoint);
+}
+
+export async function createQuickConnectBetweenPoints(
+  page: Page,
+  sourcePoint: number[],
+  targetPoint: number[]
+) {
+  await setEdgelessTool(page, 'default');
+  const [sx, sy] = await toViewCoord(page, sourcePoint);
+  await page.mouse.click(sx, sy);
+  await triggerComponentToolbarAction(page, 'quickConnect');
+  const [tx, ty] = await toViewCoord(page, targetPoint);
+  await page.mouse.click(tx, ty);
   return (await getSelectedIds(page))[0];
 }
 
@@ -1986,6 +2097,23 @@ export async function selectElementInEdgeless(page: Page, elements: string[]) {
   );
 }
 
+export async function selectElementsByService(page: Page, elements: string[]) {
+  await page.evaluate(
+    ({ elements }) => {
+      const edgelessBlock = document.querySelector('affine-edgeless-root');
+      if (!edgelessBlock) {
+        throw new Error('edgeless block not found');
+      }
+
+      edgelessBlock.service.selection.set({
+        elements,
+        editing: false,
+      });
+    },
+    { elements }
+  );
+}
+
 export async function waitFontsLoaded(page: Page) {
   await page.evaluate(() => {
     const edgelessBlock = document.querySelector('affine-edgeless-root');
@@ -1995,6 +2123,119 @@ export async function waitFontsLoaded(page: Page) {
 
     return edgelessBlock.fontLoader?.ready;
   });
+}
+
+export async function setGridVisibility(page: Page, visible: boolean) {
+  await page.evaluate(visible => {
+    const root = document.querySelector('affine-edgeless-root');
+    if (!root) throw new Error('edgeless root not found');
+    localStorage.setItem(
+      'blocksuite:edgeless:showGrid',
+      JSON.stringify(visible)
+    );
+    root.dispatchEvent(
+      new CustomEvent('grid-visibility-changed', { detail: { visible } })
+    );
+  }, visible);
+}
+
+export async function setGridSize(page: Page, size: number) {
+  await page.evaluate(size => {
+    const root = document.querySelector('affine-edgeless-root');
+    if (!root) throw new Error('edgeless root not found');
+    localStorage.setItem('blocksuite:edgeless:gridSize', JSON.stringify(size));
+    root.dispatchEvent(
+      new CustomEvent('grid-size-changed', { detail: { size } })
+    );
+  }, size);
+}
+
+export async function setSnapToGrid(page: Page, enabled: boolean) {
+  await page.evaluate(enabled => {
+    const root = document.querySelector('affine-edgeless-root');
+    if (!root) throw new Error('edgeless root not found');
+    localStorage.setItem(
+      'blocksuite:edgeless:snapToGrid',
+      JSON.stringify(enabled)
+    );
+    root.dispatchEvent(
+      new CustomEvent('snap-to-grid-changed', { detail: { enabled } })
+    );
+  }, enabled);
+}
+
+export async function setSnapToGuides(page: Page, enabled: boolean) {
+  await page.evaluate(enabled => {
+    const root = document.querySelector('affine-edgeless-root');
+    if (!root) throw new Error('edgeless root not found');
+    localStorage.setItem(
+      'blocksuite:edgeless:snapToGuides',
+      JSON.stringify(enabled)
+    );
+    root.dispatchEvent(
+      new CustomEvent('snap-to-guides-changed', { detail: { enabled } })
+    );
+  }, enabled);
+}
+
+export async function setConnectorSnapToGrid(page: Page, enabled: boolean) {
+  await page.evaluate(enabled => {
+    localStorage.setItem(
+      'blocksuite:edgeless:connectorSnapToGrid',
+      JSON.stringify(enabled)
+    );
+  }, enabled);
+}
+
+export async function openShapeMenuWithoutSelection(page: Page) {
+  const shapeButton = await locatorEdgelessToolButton(page, 'shape', false);
+  await shapeButton.click({ position: { x: 5, y: 5 } });
+  const menu = page.locator('edgeless-slide-menu, edgeless-shape-menu');
+  await menu.first().waitFor({ state: 'visible' });
+  return menu;
+}
+
+export async function createIntersectingConnectors(page: Page) {
+  const firstId = await createConnectorElement(page, [0, 0], [200, 0]);
+  const secondId = await createConnectorElement(page, [100, -100], [100, 100]);
+  return { firstId, secondId };
+}
+
+export async function getConnectorRoutedPoints(page: Page, id: string) {
+  return page.evaluate(id => {
+    const root = document.querySelector('affine-edgeless-root');
+    if (!root) throw new Error('edgeless root not found');
+    const connector = root.gfx.getElementById(id);
+    if (!connector) throw new Error('connector not found');
+    return connector.routedPoints ?? [];
+  }, id);
+}
+
+export async function getConnectorJumpMarkers(page: Page, id: string) {
+  const routedPoints = await getConnectorRoutedPoints(page, id);
+  return routedPoints.filter(p => p.type === 1);
+}
+
+export async function sampleJumpMarkersDuringDrag(
+  page: Page,
+  id: string,
+  start: number[],
+  end: number[],
+  steps = 6
+) {
+  const [startX, startY] = await toViewCoord(page, start);
+  const [endX, endY] = await toViewCoord(page, end);
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  const samples: Array<Array<{ type: 0 | 1; x: number; y: number }>> = [];
+  for (let i = 1; i <= steps; i += 1) {
+    const x = startX + ((endX - startX) * i) / steps;
+    const y = startY + ((endY - startY) * i) / steps;
+    await page.mouse.move(x, y);
+    samples.push(await getConnectorRoutedPoints(page, id));
+  }
+  await page.mouse.up();
+  return samples;
 }
 
 export function isIntersected(

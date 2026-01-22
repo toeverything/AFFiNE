@@ -2831,6 +2831,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-block-image@workspace:blocksuite/affine/blocks/image"
   dependencies:
+    "@blocksuite/affine-block-frame": "workspace:*"
     "@blocksuite/affine-block-note": "workspace:*"
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
@@ -3290,6 +3291,7 @@ __metadata:
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-gfx-shape": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/affine-rich-text": "workspace:*"
     "@blocksuite/affine-shared": "workspace:*"
@@ -3318,6 +3320,7 @@ __metadata:
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-gfx-shape": "workspace:*"
     "@blocksuite/affine-gfx-text": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/affine-rich-text": "workspace:*"
@@ -3511,6 +3514,7 @@ __metadata:
     "@blocksuite/icons": "npm:^2.2.17"
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
+    "@floating-ui/dom": "npm:^1.6.12"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.23"
@@ -3519,6 +3523,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     minimatch: "npm:^10.1.1"
     rxjs: "npm:^7.8.2"
+    vitest: "npm:^3.2.4"
     yjs: "npm:^13.6.27"
     zod: "npm:^3.25.76"
   languageName: unknown
@@ -3956,6 +3961,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@blocksuite/affine-widget-edgeless-connector-anchors@workspace:*, @blocksuite/affine-widget-edgeless-connector-anchors@workspace:blocksuite/affine/widgets/edgeless-connector-anchors":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-widget-edgeless-connector-anchors@workspace:blocksuite/affine/widgets/edgeless-connector-anchors"
+  dependencies:
+    "@blocksuite/affine-block-surface": "workspace:*"
+    "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-gfx-connector": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/std": "workspace:*"
+    lit: "npm:^3.2.0"
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/affine-widget-edgeless-dragging-area@workspace:*, @blocksuite/affine-widget-edgeless-dragging-area@workspace:blocksuite/affine/widgets/edgeless-dragging-area":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-widget-edgeless-dragging-area@workspace:blocksuite/affine/widgets/edgeless-dragging-area"
@@ -4344,6 +4364,7 @@ __metadata:
     "@blocksuite/affine-shared": "workspace:*"
     "@blocksuite/affine-widget-drag-handle": "workspace:*"
     "@blocksuite/affine-widget-edgeless-auto-connect": "workspace:*"
+    "@blocksuite/affine-widget-edgeless-connector-anchors": "workspace:*"
     "@blocksuite/affine-widget-edgeless-dragging-area": "workspace:*"
     "@blocksuite/affine-widget-edgeless-selected-rect": "workspace:*"
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*"

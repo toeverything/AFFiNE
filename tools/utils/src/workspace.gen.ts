@@ -55,6 +55,7 @@ export const PackageList = [
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/drag-handle',
       'blocksuite/affine/widgets/edgeless-auto-connect',
+      'blocksuite/affine/widgets/edgeless-connector-anchors',
       'blocksuite/affine/widgets/edgeless-dragging-area',
       'blocksuite/affine/widgets/edgeless-selected-rect',
       'blocksuite/affine/widgets/edgeless-toolbar',
@@ -268,6 +269,7 @@ export const PackageList = [
     location: 'blocksuite/affine/blocks/image',
     name: '@blocksuite/affine-block-image',
     workspaceDependencies: [
+      'blocksuite/affine/blocks/frame',
       'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
@@ -547,6 +549,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
+      'blocksuite/affine/gfx/shape',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
@@ -563,6 +566,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
+      'blocksuite/affine/gfx/shape',
       'blocksuite/affine/gfx/text',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
@@ -886,6 +890,19 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/shared',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/widgets/edgeless-connector-anchors',
+    name: '@blocksuite/affine-widget-edgeless-connector-anchors',
+    workspaceDependencies: [
+      'blocksuite/affine/blocks/surface',
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/gfx/connector',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
@@ -1544,6 +1561,7 @@ export type PackageName =
   | '@blocksuite/affine-shared'
   | '@blocksuite/affine-widget-drag-handle'
   | '@blocksuite/affine-widget-edgeless-auto-connect'
+  | '@blocksuite/affine-widget-edgeless-connector-anchors'
   | '@blocksuite/affine-widget-edgeless-dragging-area'
   | '@blocksuite/affine-widget-edgeless-selected-rect'
   | '@blocksuite/affine-widget-edgeless-toolbar'

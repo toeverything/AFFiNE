@@ -16,6 +16,7 @@ import {
   SurfaceRefBlockSchema,
 } from '@blocksuite/affine-model';
 import {
+  ActionPlacement,
   NotificationProvider,
   type ToolbarContext,
   type ToolbarModuleConfig,
@@ -28,9 +29,11 @@ import {
 import { mountFrameTitleEditor } from '@blocksuite/affine-widget-frame-title';
 import { Bound } from '@blocksuite/global/gfx';
 import {
+  DownloadIcon,
   EditIcon,
   InsertIntoPageIcon,
   UngroupIcon,
+  UploadIcon,
 } from '@blocksuite/icons/lit';
 import { type BlockComponent, BlockFlavourIdentifier } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
@@ -38,6 +41,12 @@ import type { ExtensionType } from '@blocksuite/store';
 import { html } from 'lit';
 
 import { EdgelessFrameManagerIdentifier } from './frame-manager';
+import {
+  exportFrameMetadata,
+  exportFramePng,
+  importFrameMetadata,
+  importFramePng,
+} from './metadata';
 
 function getRootBlock(ctx: ToolbarContext): BlockComponent | null {
   const rootModel = ctx.store.root;
@@ -139,6 +148,53 @@ const builtinSurfaceToolbarConfig = {
 
         gfx.selection.clear();
       },
+    },
+    {
+      placement: ActionPlacement.More,
+      id: 'c.frame-metadata',
+      when: ctx => ctx.getSurfaceModelsByType(FrameBlockModel).length === 1,
+      actions: [
+        {
+          id: 'a.export-frame-metadata',
+          label: 'Export Frame Metadata',
+          icon: DownloadIcon(),
+          async run(ctx) {
+            const model = ctx.getCurrentModelByType(FrameBlockModel);
+            if (!model) return;
+            await exportFrameMetadata(ctx, model);
+          },
+        },
+        {
+          id: 'a.export-frame-png',
+          label: 'Export Frame PNG',
+          icon: DownloadIcon(),
+          async run(ctx) {
+            const model = ctx.getCurrentModelByType(FrameBlockModel);
+            if (!model) return;
+            await exportFramePng(ctx, model);
+          },
+        },
+        {
+          id: 'b.import-frame-metadata',
+          label: 'Import Frame Metadata',
+          icon: UploadIcon(),
+          async run(ctx) {
+            const model = ctx.getCurrentModelByType(FrameBlockModel);
+            if (!model) return;
+            await importFrameMetadata(ctx, model);
+          },
+        },
+        {
+          id: 'b.import-frame-png',
+          label: 'Import Frame PNG',
+          icon: UploadIcon(),
+          async run(ctx) {
+            const model = ctx.getCurrentModelByType(FrameBlockModel);
+            if (!model) return;
+            await importFramePng(ctx, model);
+          },
+        },
+      ],
     },
     {
       id: 'c.color-picker',

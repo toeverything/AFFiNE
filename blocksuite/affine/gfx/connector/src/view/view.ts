@@ -1,3 +1,4 @@
+import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import {
   type ConnectorElementModel,
   LocalShapeElementModel,
@@ -51,6 +52,25 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
       const edgeless = this.std.view.getBlock(this.std.store.root!.id);
 
       if (edgeless && !this.model.isLocked()) {
+        const center = this.model.getPointByOffsetDistance(0.5);
+        const size = this.model.labelXYWH
+          ? [this.model.labelXYWH[2], this.model.labelXYWH[3]]
+          : [80, 24];
+        const labelXYWH: [number, number, number, number] = [
+          center[0] - size[0] / 2,
+          center[1] - size[1] / 2,
+          size[0],
+          size[1],
+        ];
+        this.model.labelOffset = {
+          ...(this.model.labelOffset ?? { distance: 0.5 }),
+          distance: 0.5,
+        };
+        this.model.labelXYWH = labelXYWH;
+        this.std.get(EdgelessCRUDIdentifier).updateElement(this.model.id, {
+          labelOffset: { ...this.model.labelOffset },
+          labelXYWH,
+        });
         mountConnectorLabelEditor(
           this.model,
           edgeless,
@@ -145,6 +165,7 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
         labelElement.id = `#${this.model.id}-label`;
         labelElement.creator = this.model;
         labelElement.fillColor = 'transparent';
+        labelElement.filled = true;
         labelElement.strokeColor = 'transparent';
         labelElement.strokeWidth = 0;
 

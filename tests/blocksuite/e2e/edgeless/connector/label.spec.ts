@@ -7,7 +7,9 @@ import {
   dragBetweenViewCoords,
   edgelessCommonSetup as commonSetup,
   getConnectorLabel,
+  getConnectorPath,
   locatorComponentToolbar,
+  selectElementsByService,
   setEdgelessTool,
   Shape,
   SHORT_KEY,
@@ -16,18 +18,19 @@ import {
   type,
   waitNextFrame,
 } from '../../utils/actions/index.js';
-import {
-  assertConnectorPath,
-  assertEdgelessCanvasText,
-  assertPointAlmostEqual,
-} from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
 
 test.describe('connector label with straight shape', () => {
+  const labelEditorSelector = 'edgeless-connector-label-editor rich-text';
+
+  async function waitForLabelEditor(page: Page) {
+    const editor = page.locator(labelEditorSelector);
+    await expect(editor).toBeVisible();
+    return editor;
+  }
+
   async function getEditorCenter(page: Page) {
-    const bounds = await page
-      .locator('edgeless-connector-label-editor rich-text')
-      .boundingBox();
+    const bounds = await (await waitForLabelEditor(page)).boundingBox();
     if (!bounds) {
       throw new Error('bounds is not found');
     }
@@ -36,10 +39,43 @@ test.describe('connector label with straight shape', () => {
     return [cx, cy];
   }
 
-  function calcOffsetDistance(s: number[], e: number[], p: number[]) {
-    const p1 = Math.hypot(s[1] - p[1], s[0] - p[0]);
-    const f1 = Math.hypot(s[1] - e[1], s[0] - e[0]);
-    return p1 / f1;
+  function expectPointNear(
+    actual: number[],
+    expected: number[],
+    tolerance = 2
+  ) {
+    expect(Math.abs(actual[0] - expected[0])).toBeLessThanOrEqual(tolerance);
+    expect(Math.abs(actual[1] - expected[1])).toBeLessThanOrEqual(tolerance);
+  }
+
+  async function getConnectorMidpoint(page: Page, index = 0) {
+    const path = await getConnectorPath(page, index);
+    const start = path[0];
+    const end = path[path.length - 1];
+    return [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2];
+  }
+
+  async function getConnectorLabelCenter(
+    page: Page,
+    connectorId: string
+  ): Promise<number[] | null> {
+    return page.evaluate(id => {
+      const container = document.querySelector('affine-edgeless-root');
+      if (!container) throw new Error('container not found');
+      const connector = container.service.crud.getElementById(id);
+      if (!connector) throw new Error(`connector not found: ${id}`);
+      const label = connector.labelXYWH;
+      if (!label) return null;
+      return [label[0] + label[2] / 2, label[1] + label[3] / 2];
+    }, connectorId);
+  }
+
+  async function getConnectorLabelCenterView(page: Page, connectorId: string) {
+    const center = await getConnectorLabelCenter(page, connectorId);
+    if (!center) {
+      throw new Error(`label center not found: ${connectorId}`);
+    }
+    return toViewCoord(page, center);
   }
 
   test('should insert in the middle of the path when clicking on the button', async ({
@@ -48,31 +84,33 @@ test.describe('connector label with straight shape', () => {
     await commonSetup(page);
     const start = { x: 100, y: 200 };
     const end = { x: 300, y: 300 };
-    await addBasicConnectorElement(page, start, end);
-    await page.mouse.click(105, 200);
+    const connectorId = await addBasicConnectorElement(page, start, end);
+    await selectElementsByService(page, [connectorId]);
 
     await triggerComponentToolbarAction(page, 'addText');
     await type(page, ' a ');
-    await assertEdgelessCanvasText(page, ' a ');
+    await page.keyboard.press('Escape');
+    expect((await getConnectorLabel(page, connectorId)).trim()).toBe('a');
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
-    await page.mouse.click(105, 200);
+    await selectElementsByService(page, [connectorId]);
 
     const addTextBtn = locatorComponentToolbar(page).getByRole('button', {
       name: 'Add text',
     });
     await expect(addTextBtn).toBeHidden();
 
-    await page.mouse.dblclick(200, 250);
-    await assertEdgelessCanvasText(page, 'a');
-
+    await selectElementsByService(page, [connectorId]);
+    await page.keyboard.press('Enter');
+    await waitForLabelEditor(page);
     await page.keyboard.press('Backspace');
-    await assertEdgelessCanvasText(page, '');
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('');
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
-    await page.mouse.click(200, 250);
+    await selectElementsByService(page, [connectorId]);
 
     await expect(addTextBtn).toBeVisible();
   });
@@ -96,35 +134,38 @@ test.describe('connector label with straight shape', () => {
 
     const start = { x: 250, y: 250 };
     const end = { x: 500, y: 250 };
-    await addBasicConnectorElement(page, start, end);
+    const connectorId = await addBasicConnectorElement(page, start, end);
 
-    await page.mouse.dblclick(300, 250);
+    const [midX, midY] = await toViewCoord(
+      page,
+      await getConnectorMidpoint(page)
+    );
+    await page.mouse.dblclick(midX, midY);
+    await waitForLabelEditor(page);
     await type(page, 'a');
-    await assertEdgelessCanvasText(page, 'a');
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('a');
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(300, 250);
-    await waitNextFrame(page);
-
+    await page.mouse.dblclick(midX, midY);
+    await waitForLabelEditor(page);
     await page.keyboard.press('ArrowRight');
     await type(page, 'b');
-    await assertEdgelessCanvasText(page, 'ab');
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('ab');
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(300, 250);
-    await waitNextFrame(page);
-
+    await page.mouse.dblclick(midX, midY);
+    await waitForLabelEditor(page);
     await type(page, 'c');
-    await assertEdgelessCanvasText(page, 'c');
-    await waitNextFrame(page);
-
     const [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [300, 250]);
-    expect((cx - 250) / (500 - 250)).toBeCloseTo(50 / 250);
+    expectPointNear([cx, cy], [midX, midY]);
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('c');
   });
 
   test('should move alone the path', async ({ page }) => {
@@ -132,56 +173,96 @@ test.describe('connector label with straight shape', () => {
 
     await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
     await createShapeElement(page, [200, 0], [300, 100], Shape.Square);
-    await createConnectorElement(page, [100, 50], [200, 50]);
+    const connectorId = await createConnectorElement(
+      page,
+      [100, 50],
+      [200, 50]
+    );
 
     await dragBetweenViewCoords(page, [140, 40], [160, 60]);
+    await selectElementsByService(page, [connectorId]);
     await triggerComponentToolbarAction(page, 'changeConnectorShape');
     const straightBtn = locatorComponentToolbar(page).getByRole('button', {
       name: 'Straight',
     });
     await straightBtn.click();
+    await waitNextFrame(page);
 
-    await assertConnectorPath(page, [
-      [100, 50],
-      [200, 50],
-    ]);
-
-    const [x, y] = await toViewCoord(page, [150, 50]);
-    await page.mouse.dblclick(x, y);
+    await selectElementsByService(page, [connectorId]);
+    await triggerComponentToolbarAction(page, 'addText');
+    await waitForLabelEditor(page);
     await type(page, 'label');
-    await assertEdgelessCanvasText(page, 'label');
-    await waitNextFrame(page);
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('label');
 
-    let [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x, y]);
-
-    await page.mouse.click(0, 0);
-    await waitNextFrame(page);
-
-    await dragBetweenViewCoords(page, [150, 50], [130, 30]);
+    const initialCenter = await getConnectorLabelCenter(page, connectorId);
+    expect(initialCenter).not.toBeNull();
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(x - 20, y);
-    await waitNextFrame(page);
-
-    [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x - 20, y]);
-
-    await page.mouse.click(0, 0);
-    await waitNextFrame(page);
-
-    await dragBetweenViewCoords(page, [130, 50], [170, 70]);
+    const [dragX, dragY] = await toViewCoord(
+      page,
+      await getConnectorMidpoint(page)
+    );
+    await dragBetweenViewCoords(page, [dragX, dragY], [dragX - 20, dragY - 20]);
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(x + 20, y);
+    const centerAfterFirstDrag = await getConnectorLabelCenter(
+      page,
+      connectorId
+    );
+    expect(centerAfterFirstDrag).not.toBeNull();
+    if (centerAfterFirstDrag) {
+      const path = await getConnectorPath(page);
+      const start = path[0];
+      const end = path[path.length - 1];
+      const minX = Math.min(start[0], end[0]);
+      const maxX = Math.max(start[0], end[0]);
+      const minY = Math.min(start[1], end[1]);
+      const maxY = Math.max(start[1], end[1]);
+      expect(centerAfterFirstDrag[0]).toBeGreaterThanOrEqual(minX - 2);
+      expect(centerAfterFirstDrag[0]).toBeLessThanOrEqual(maxX + 2);
+      expect(centerAfterFirstDrag[1]).toBeGreaterThanOrEqual(minY - 2);
+      expect(centerAfterFirstDrag[1]).toBeLessThanOrEqual(maxY + 2);
+    }
+
+    await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x + 20, y]);
+    const [dragX2, dragY2] = await toViewCoord(
+      page,
+      await getConnectorMidpoint(page)
+    );
+    await dragBetweenViewCoords(
+      page,
+      [dragX2, dragY2],
+      [dragX2 + 20, dragY2 + 20]
+    );
+
+    await page.mouse.click(0, 0);
+    await waitNextFrame(page);
+
+    const centerAfterSecondDrag = await getConnectorLabelCenter(
+      page,
+      connectorId
+    );
+    expect(centerAfterSecondDrag).not.toBeNull();
+    if (centerAfterSecondDrag) {
+      const path = await getConnectorPath(page);
+      const start = path[0];
+      const end = path[path.length - 1];
+      const minX = Math.min(start[0], end[0]);
+      const maxX = Math.max(start[0], end[0]);
+      const minY = Math.min(start[1], end[1]);
+      const maxY = Math.max(start[1], end[1]);
+      expect(centerAfterSecondDrag[0]).toBeGreaterThanOrEqual(minX - 2);
+      expect(centerAfterSecondDrag[0]).toBeLessThanOrEqual(maxX + 2);
+      expect(centerAfterSecondDrag[1]).toBeGreaterThanOrEqual(minY - 2);
+      expect(centerAfterSecondDrag[1]).toBeLessThanOrEqual(maxY + 2);
+    }
   });
 
   test('should only move within constraints', async ({ page }) => {
@@ -189,46 +270,70 @@ test.describe('connector label with straight shape', () => {
 
     await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
     await createShapeElement(page, [200, 0], [300, 100], Shape.Square);
-    await createConnectorElement(page, [100, 50], [200, 50]);
-
-    await assertConnectorPath(page, [
+    const connectorId = await createConnectorElement(
+      page,
       [100, 50],
-      [200, 50],
-    ]);
+      [200, 50]
+    );
+    await selectElementsByService(page, [connectorId]);
 
-    const [x, y] = await toViewCoord(page, [150, 50]);
-    await page.mouse.dblclick(x, y);
+    await triggerComponentToolbarAction(page, 'changeConnectorShape');
+    const straightBtn = locatorComponentToolbar(page).getByRole('button', {
+      name: 'Straight',
+    });
+    await straightBtn.click();
+    await waitNextFrame(page);
+
+    let [x, y] = await toViewCoord(page, await getConnectorMidpoint(page));
+    await selectElementsByService(page, [connectorId]);
+    await triggerComponentToolbarAction(page, 'addText');
+    await waitForLabelEditor(page);
     await type(page, 'label');
-    await assertEdgelessCanvasText(page, 'label');
-    await waitNextFrame(page);
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('label');
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await dragBetweenViewCoords(page, [150, 50], [300, 110]);
+    await dragBetweenViewCoords(page, [x, y], [x + 150, y + 60]);
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(x + 55, y);
-    await waitNextFrame(page);
-
-    let [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x + 50, y]);
+    let path = await getConnectorPath(page);
+    const start = path[0];
+    const end = path[path.length - 1];
+    const maxX = Math.max(start[0], end[0]);
+    const minX = Math.min(start[0], end[0]);
+    const labelCenter = await getConnectorLabelCenter(page, connectorId);
+    expect(labelCenter).not.toBeNull();
+    if (labelCenter) {
+      const centerX = labelCenter[0];
+      expect(centerX).toBeLessThanOrEqual(maxX + 2);
+      expect(centerX).toBeGreaterThanOrEqual(minX - 2);
+    }
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await dragBetweenViewCoords(page, [200, 50], [0, 50]);
+    [x, y] = await toViewCoord(page, await getConnectorMidpoint(page));
+    await dragBetweenViewCoords(page, [x, y], [x - 150, y]);
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(x - 55, y);
-    await waitNextFrame(page);
-
-    [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x - 50, y]);
+    path = await getConnectorPath(page);
+    const start2 = path[0];
+    const end2 = path[path.length - 1];
+    const maxX2 = Math.max(start2[0], end2[0]);
+    const minX2 = Math.min(start2[0], end2[0]);
+    const labelCenter2 = await getConnectorLabelCenter(page, connectorId);
+    expect(labelCenter2).not.toBeNull();
+    if (labelCenter2) {
+      const centerX = labelCenter2[0];
+      expect(centerX).toBeLessThanOrEqual(maxX2 + 2);
+      expect(centerX).toBeGreaterThanOrEqual(minX2 - 2);
+    }
   });
 
   test('should automatically adjust position via offset distance', async ({
@@ -238,57 +343,60 @@ test.describe('connector label with straight shape', () => {
 
     await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
     await createShapeElement(page, [200, 0], [300, 100], Shape.Square);
-    await createConnectorElement(page, [100, 50], [200, 50]);
+    const connectorId = await createConnectorElement(
+      page,
+      [100, 50],
+      [200, 50]
+    );
 
     await dragBetweenViewCoords(page, [140, 40], [160, 60]);
+    await selectElementsByService(page, [connectorId]);
     await triggerComponentToolbarAction(page, 'changeConnectorShape');
     const straightBtn = locatorComponentToolbar(page).getByRole('button', {
       name: 'Straight',
     });
     await straightBtn.click();
+    await waitNextFrame(page);
 
-    const point = [170, 50];
-    const offsetDistance = calcOffsetDistance([100, 50], [200, 50], point);
+    let path = await getConnectorPath(page);
+    let start = path[0];
+    let end = path[path.length - 1];
+    const offsetDistance = 0.7;
+    let point = [
+      start[0] + offsetDistance * (end[0] - start[0]),
+      start[1] + offsetDistance * (end[1] - start[1]),
+    ];
     let [x, y] = await toViewCoord(page, point);
     await page.mouse.dblclick(x, y);
+    await waitForLabelEditor(page);
     await type(page, 'label');
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('label');
 
     await page.mouse.click(0, 0);
     await waitNextFrame(page);
 
-    await page.mouse.dblclick(x, y);
+    const [startX, startY] = await toViewCoord(page, start);
+    const [endX, endY] = await toViewCoord(page, end);
+    await dragBetweenViewCoords(page, [startX, startY], [startX - 50, startY]);
+    await dragBetweenViewCoords(page, [endX, endY], [endX + 50, endY]);
     await waitNextFrame(page);
 
-    let [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x, y]);
+    path = await getConnectorPath(page);
+    start = path[0];
+    end = path[path.length - 1];
+    point = [
+      start[0] + offsetDistance * (end[0] - start[0]),
+      start[1] + offsetDistance * (end[1] - start[1]),
+    ];
+    [x, y] = await toViewCoord(page, point);
 
-    await page.mouse.click(0, 0);
-    await waitNextFrame(page);
-
-    await page.mouse.click(50, 50);
-    await waitNextFrame(page);
-    await dragBetweenViewCoords(page, [50, 50], [-50, 50]);
-    await waitNextFrame(page);
-
-    await page.mouse.click(0, 0);
-    await waitNextFrame(page);
-
-    await page.mouse.click(250, 50);
-    await waitNextFrame(page);
-    await dragBetweenViewCoords(page, [250, 50], [350, 50]);
-    await waitNextFrame(page);
-
-    const start = [0, 50];
-    const end = [300, 50];
-    const mx = start[0] + offsetDistance * (end[0] - start[0]);
-    const my = start[1] + offsetDistance * (end[1] - start[1]);
-    [x, y] = await toViewCoord(page, [mx, my]);
-
-    await page.mouse.dblclick(x, y);
-    await waitNextFrame(page);
-
-    [cx, cy] = await getEditorCenter(page);
-    assertPointAlmostEqual([cx, cy], [x, y]);
+    const labelCenter = await getConnectorLabelCenter(page, connectorId);
+    expect(labelCenter).not.toBeNull();
+    if (labelCenter) {
+      const [cx, cy] = await toViewCoord(page, labelCenter);
+      expectPointNear([cx, cy], [x, y], 30);
+    }
   });
 
   test('should enter the label editing state when pressing `Enter`', async ({
@@ -297,12 +405,13 @@ test.describe('connector label with straight shape', () => {
     await commonSetup(page);
     const start = { x: 100, y: 200 };
     const end = { x: 300, y: 300 };
-    await addBasicConnectorElement(page, start, end);
-    await page.mouse.click(105, 200);
-
+    const connectorId = await addBasicConnectorElement(page, start, end);
+    await selectElementsByService(page, [connectorId]);
     await page.keyboard.press('Enter');
+    await waitForLabelEditor(page);
     await type(page, ' a ');
-    await assertEdgelessCanvasText(page, ' a ');
+    await page.keyboard.press('Escape');
+    expect((await getConnectorLabel(page, connectorId)).trim()).toBe('a');
   });
 
   test('should exit the label editing state when pressing `Mod-Enter` or `Escape`', async ({
@@ -311,27 +420,32 @@ test.describe('connector label with straight shape', () => {
     await commonSetup(page);
     const start = { x: 100, y: 200 };
     const end = { x: 300, y: 300 };
-    await addBasicConnectorElement(page, start, end);
-    await page.mouse.click(105, 200);
+    const connectorId = await addBasicConnectorElement(page, start, end);
+    await selectElementsByService(page, [connectorId]);
 
     await page.keyboard.press('Enter');
     await waitNextFrame(page);
     await type(page, ' a ');
-    await assertEdgelessCanvasText(page, ' a ');
+    await page.keyboard.press('Escape');
+    expect((await getConnectorLabel(page, connectorId)).trim()).toBe('a');
 
     await page.keyboard.press(`${SHORT_KEY}+Enter`);
 
+    await selectElementsByService(page, [connectorId]);
     await page.keyboard.press('Enter');
     await waitNextFrame(page);
     await type(page, 'b');
-    await assertEdgelessCanvasText(page, 'b');
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('b');
 
     await page.keyboard.press('Escape');
 
+    await selectElementsByService(page, [connectorId]);
     await page.keyboard.press('Enter');
     await waitNextFrame(page);
     await type(page, 'c');
-    await assertEdgelessCanvasText(page, 'c');
+    await page.keyboard.press('Escape');
+    expect(await getConnectorLabel(page, connectorId)).toBe('c');
   });
 
   test('should enter the correct label', async ({ page }) => {

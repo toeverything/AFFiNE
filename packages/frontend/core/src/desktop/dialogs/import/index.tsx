@@ -7,6 +7,7 @@ import {
   GlobalDialogService,
   type WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
+import { createBlockStdScope } from '@affine/core/modules/doc-info/use-std';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
 import { OrganizeService } from '@affine/core/modules/organize';
 import { UrlService } from '@affine/core/modules/url';
@@ -18,7 +19,16 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { openFilesWith } from '@blocksuite/affine/shared/utils';
+import {
+  createFrameFromMetadata,
+  extractFrameMetadataFromImage,
+} from '@blocksuite/affine/blocks/frame';
+import {
+  FrameBlockSchema,
+  ImageBlockModel,
+  SurfaceRefBlockSchema,
+} from '@blocksuite/affine/model';
+import { openFilesWith, transformModel } from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
   DocxTransformer,
@@ -198,6 +208,52 @@ type ImportResult = {
   rootFolderId?: string;
 };
 
+async function autoConvertMarkdownFrameImages(
+  docCollection: Workspace,
+  docIds: string[]
+) {
+  await Promise.all(
+    docIds.map(async docId => {
+      const doc = docCollection.getDoc(docId)?.getStore();
+      if (!doc) return;
+
+      const std = createBlockStdScope(doc);
+      const imageBlocks = doc
+        .getBlocksByFlavour('affine:image')
+        .map(block => block.model)
+        .filter(
+          (model): model is ImageBlockModel => model instanceof ImageBlockModel
+        );
+
+      for (const image of imageBlocks) {
+        const sourceId = image.props.sourceId;
+        if (!sourceId) continue;
+        const blob = await doc.blobSync.get(sourceId);
+        if (!blob) continue;
+        if (blob.type && !blob.type.startsWith('image/')) continue;
+
+        const file = new File(
+          [await blob.arrayBuffer()],
+          (blob as File).name ?? 'frame.png',
+          {
+            type: blob.type || 'image/png',
+          }
+        );
+        const metadata = await extractFrameMetadataFromImage(file);
+        if (!metadata) continue;
+
+        const frame = await createFrameFromMetadata(std, metadata);
+        if (!frame) continue;
+
+        transformModel(image, SurfaceRefBlockSchema.model.flavour, {
+          reference: frame.id,
+          refFlavour: FrameBlockSchema.model.flavour,
+        });
+      }
+    })
+  );
+}
+
 type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
   importFunction: (
@@ -328,6 +384,9 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         });
         if (docId) docIds.push(docId);
       }
+      if (docIds.length) {
+        await autoConvertMarkdownFrameImages(docCollection, docIds);
+      }
       return {
         docIds,
       };
@@ -352,6 +411,9 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         imported: file,
         extensions: getStoreManager().config.init().value.get('store'),
       });
+      if (docIds.length) {
+        await autoConvertMarkdownFrameImages(docCollection, docIds);
+      }
       return {
         docIds,
       };

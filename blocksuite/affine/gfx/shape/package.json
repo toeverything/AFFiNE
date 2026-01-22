@@ -22,6 +22,7 @@
     "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
+    "@floating-ui/dom": "^1.6.12",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
@@ -32,6 +33,9 @@
     "rxjs": "^7.8.2",
     "yjs": "^13.6.27",
     "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
   },
   "exports": {
     ".": "./src/index.ts",

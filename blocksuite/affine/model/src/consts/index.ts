@@ -1,4 +1,5 @@
 export * from './connector.js';
+export * from './connector.js';
 export * from './doc.js';
 export * from './edgeless-text.js';
 export * from './image.js';

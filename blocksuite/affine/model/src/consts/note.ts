@@ -43,6 +43,7 @@ export enum NoteDisplayMode {
 
 export enum StrokeStyle {
   Dash = 'dash',
+  Dot = 'dot',
   None = 'none',
   Solid = 'solid',
 }

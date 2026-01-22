@@ -4,11 +4,21 @@ import {
   EDGELESS_SELECTED_RECT_WIDGET,
   EdgelessSelectedRectWidget,
 } from './edgeless-selected-rect';
+import { EdgelessFlowchartShapePanel } from './flowchart-shape-panel';
+import { EdgelessMindmapShapePanel } from './mindmap-shape-panel';
 
 export function effects() {
   customElements.define(
     'edgeless-auto-complete-panel',
     EdgelessAutoCompletePanel
+  );
+  customElements.define(
+    'edgeless-flowchart-shape-panel',
+    EdgelessFlowchartShapePanel
+  );
+  customElements.define(
+    'edgeless-mindmap-shape-panel',
+    EdgelessMindmapShapePanel
   );
   customElements.define('edgeless-auto-complete', EdgelessAutoComplete);
   customElements.define(

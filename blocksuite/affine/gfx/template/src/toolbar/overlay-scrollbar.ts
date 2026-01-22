@@ -103,6 +103,9 @@ export class OverlayScrollbar extends LitElement {
 
       if (!scrollable) return;
 
+      event.preventDefault();
+      event.stopPropagation();
+
       // firefox may report a wheel event with deltaMode of value other than 0
       // we just simply multiply it by 16 which is common default line height to get the correct value
       const scrollDistance =

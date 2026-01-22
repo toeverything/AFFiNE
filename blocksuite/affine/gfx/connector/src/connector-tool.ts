@@ -7,6 +7,7 @@ import {
   type Connection,
   type ConnectorElementModel,
   ConnectorMode,
+  CONTAINER_TITLE_SIZE,
   GroupElementModel,
   ShapeElementModel,
   ShapeType,
@@ -21,7 +22,27 @@ import {
   calculateNearestLocation,
   type ConnectionOverlay,
   ConnectorEndpointLocations,
+  ConnectorEndpointLocationsOnActor,
+  ConnectorEndpointLocationsOnCallout,
+  ConnectorEndpointLocationsOnCloud,
+  ConnectorEndpointLocationsOnCube,
+  ConnectorEndpointLocationsOnCylinder,
+  ConnectorEndpointLocationsOnDataStorage,
+  ConnectorEndpointLocationsOnDiamond,
+  ConnectorEndpointLocationsOnDocument,
+  ConnectorEndpointLocationsOnEllipse,
+  ConnectorEndpointLocationsOnHexagon,
+  ConnectorEndpointLocationsOnInternalStorage,
+  ConnectorEndpointLocationsOnLogicAnd,
+  ConnectorEndpointLocationsOnLogicOr,
+  ConnectorEndpointLocationsOnNote,
+  ConnectorEndpointLocationsOnParallelogram,
+  ConnectorEndpointLocationsOnRectangle,
+  ConnectorEndpointLocationsOnStep,
+  ConnectorEndpointLocationsOnTape,
+  ConnectorEndpointLocationsOnTrapezoid,
   ConnectorEndpointLocationsOnTriangle,
+  ConnectorEndpointLocationsOnTriangleRight,
 } from './connector-manager';
 
 enum ConnectorToolMode {
@@ -33,6 +54,48 @@ enum ConnectorToolMode {
 
 export type ConnectorToolOptions = {
   mode: ConnectorMode;
+};
+
+const buildContainerTitleLocations = (
+  bound: Bound,
+  axis: 'vertical' | 'horizontal'
+): IVec[] => {
+  const size = axis === 'vertical' ? bound.h : bound.w;
+  const titleSize = Math.min(CONTAINER_TITLE_SIZE, size);
+  const contentSize = Math.max(size - titleSize, 0);
+  const titleMid = size > 0 ? titleSize / 2 / size : 0.5;
+  const contentMid = size > 0 ? (titleSize + contentSize / 2) / size : 0.5;
+
+  if (axis === 'vertical') {
+    return [
+      [0, titleMid],
+      [1, titleMid],
+      [0, contentMid],
+      [1, contentMid],
+      [0.5, 0],
+      [0.5, 1],
+    ];
+  }
+
+  return [
+    [titleMid, 0],
+    [titleMid, 1],
+    [contentMid, 0],
+    [contentMid, 1],
+    [0, 0.5],
+    [1, 0.5],
+  ];
+};
+
+const mergeLocations = (locations: IVec[], extras: IVec[]): IVec[] => {
+  const merged = [...locations, ...extras];
+  const seen = new Set<string>();
+  return merged.filter(([x, y]) => {
+    const key = `${x.toFixed(4)}:${y.toFixed(4)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };
 
 export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
@@ -52,6 +115,12 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
   private _sourceLocations: IVec[] = ConnectorEndpointLocations;
 
   private _startPoint: IVec | null = null;
+
+  /** Lock source position when user starts from a specific anchor. */
+  private _lockSourcePosition = false;
+
+  /** Skip the next click handler after programmatic start. */
+  private _skipClickOnce = false;
 
   private get _overlay() {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
@@ -92,6 +161,10 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
   }
 
   override click() {
+    if (this._skipClickOnce) {
+      this._skipClickOnce = false;
+      return;
+    }
     if (this._mode === ConnectorToolMode.Dragging) return;
     if (!this._connector) return;
 
@@ -121,6 +194,8 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
     this._sourceBounds = null;
     this._startPoint = null;
     this._allowCancel = false;
+    this._lockSourcePosition = false;
+    this._skipClickOnce = false;
   }
 
   override dragEnd() {
@@ -182,6 +257,9 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
       this._sourceBounds,
       this._sourceLocations
     );
+    if (this._lockSourcePosition && this._source) {
+      this._connector.source.position = this._source.position;
+    }
     this.gfx.updateElement(this._connector, {
       target,
       source: this._connector.source,
@@ -192,16 +270,81 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
     this._overlay?.clear();
   }
 
+  private _getConnectionLocationsForShape(element: GfxModel): IVec[] {
+    if (element instanceof ShapeElementModel) {
+      const bound = Bound.deserialize(element.xywh);
+      switch (element.shapeType) {
+        case ShapeType.MindmapBranch:
+          return [
+            [0, 0.5],
+            [1, 0.5],
+          ];
+        case ShapeType.VerticalContainer:
+          return mergeLocations(
+            ConnectorEndpointLocationsOnRectangle,
+            buildContainerTitleLocations(bound, 'vertical')
+          );
+        case ShapeType.HorizontalContainer:
+          return mergeLocations(
+            ConnectorEndpointLocationsOnRectangle,
+            buildContainerTitleLocations(bound, 'horizontal')
+          );
+        case ShapeType.Rect:
+          return ConnectorEndpointLocationsOnRectangle;
+        case ShapeType.Triangle:
+          return ConnectorEndpointLocationsOnTriangle;
+        case ShapeType.Diamond:
+          return ConnectorEndpointLocationsOnDiamond;
+        case ShapeType.Ellipse:
+          return ConnectorEndpointLocationsOnEllipse;
+        case ShapeType.TriangleRight:
+          return ConnectorEndpointLocationsOnTriangleRight;
+        case ShapeType.Hexagon:
+          return ConnectorEndpointLocationsOnHexagon;
+        case ShapeType.Parallelogram:
+          return ConnectorEndpointLocationsOnParallelogram;
+        case ShapeType.Trapezoid:
+          return ConnectorEndpointLocationsOnTrapezoid;
+        case ShapeType.Step:
+          return ConnectorEndpointLocationsOnStep;
+        case ShapeType.Cylinder:
+          return ConnectorEndpointLocationsOnCylinder;
+        case ShapeType.Cloud:
+          return ConnectorEndpointLocationsOnCloud;
+        case ShapeType.Document:
+          return ConnectorEndpointLocationsOnDocument;
+        case ShapeType.Note:
+          return ConnectorEndpointLocationsOnNote;
+        case ShapeType.Cube:
+          return ConnectorEndpointLocationsOnCube;
+        case ShapeType.Callout:
+          return ConnectorEndpointLocationsOnCallout;
+        case ShapeType.Actor:
+          return ConnectorEndpointLocationsOnActor;
+        case ShapeType.DataStorage:
+          return ConnectorEndpointLocationsOnDataStorage;
+        case ShapeType.Tape:
+          return ConnectorEndpointLocationsOnTape;
+        case ShapeType.InternalStorage:
+          return ConnectorEndpointLocationsOnInternalStorage;
+        case ShapeType.LogicAnd:
+          return ConnectorEndpointLocationsOnLogicAnd;
+        case ShapeType.LogicOr:
+          return ConnectorEndpointLocationsOnLogicOr;
+        default:
+          return ConnectorEndpointLocations;
+      }
+    }
+    return ConnectorEndpointLocations;
+  }
+
   quickConnect(point: IVec, element: GfxModel) {
+    this._lockSourcePosition = false;
     this._startPoint = this.gfx.viewport.toModelCoord(point[0], point[1]);
     this._mode = ConnectorToolMode.Quick;
     this._sourceBounds = Bound.deserialize(element.xywh);
     this._sourceBounds.rotate = element.rotate;
-    this._sourceLocations =
-      element instanceof ShapeElementModel &&
-      element.shapeType === ShapeType.Triangle
-        ? ConnectorEndpointLocationsOnTriangle
-        : ConnectorEndpointLocations;
+    this._sourceLocations = this._getConnectionLocationsForShape(element);
 
     this._source = {
       id: element.id,
@@ -210,6 +353,30 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
         this._sourceBounds,
         this._sourceLocations
       ),
+    };
+    this._allowCancel = true;
+
+    this._createConnector();
+
+    if (element instanceof GroupElementModel && this._overlay) {
+      this._overlay.sourceBounds = this._sourceBounds;
+    }
+
+    this.findTargetByPoint(point);
+  }
+
+  quickConnectFromAnchor(point: IVec, element: GfxModel, position: IVec) {
+    this._skipClickOnce = true;
+    this._lockSourcePosition = true;
+    this._startPoint = this.gfx.viewport.toModelCoord(point[0], point[1]);
+    this._mode = ConnectorToolMode.Quick;
+    this._sourceBounds = Bound.deserialize(element.xywh);
+    this._sourceBounds.rotate = element.rotate;
+    this._sourceLocations = this._getConnectionLocationsForShape(element);
+
+    this._source = {
+      id: element.id,
+      position,
     };
     this._allowCancel = true;
 
