@@ -25,7 +25,7 @@ html[data-active='true']:has([data-translucent='true']) {
 }
 
 /**
- * Off animation and transition when on battery
+ *  Disable animations and transitions when on battery
  */
 body.on-battery * {
   animation-duration: 0ms !important;

@@ -1,5 +1,4 @@
 import { AffineContext } from '@affine/core/components/context';
-import { useAtomValue } from '@affine/core/components/page-list/scoped-atoms';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
@@ -7,6 +6,7 @@ import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import { useAtomValue } from 'jotai';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 

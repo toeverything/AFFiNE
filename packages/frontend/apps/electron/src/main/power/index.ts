@@ -7,7 +7,7 @@ export const powerEvents = {
   /**
    * Subscribes to system power source changes.
    * Emits the initial state immediately upon subscription.
-   * * @param emit - Callback function to send power state to the renderer.
+   * @param emit - Callback function to send power state to the renderer.
    * @returns A cleanup function to remove listeners from powerMonitor.
    */
   'power-source': (emit: (isOnBattery: boolean) => void) => {
