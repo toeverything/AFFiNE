@@ -396,15 +396,13 @@ export class InteractivityManager extends GfxExtension {
       dragLastPos = Point.from(
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])
       );
-
       const snappedPoint = this.snapOverlay.snapDragAngle(
-+        internal.dragStartPos,
-+        dragLastPos,
-+        this.keyboard.shiftKey$.peek()
-+      );
-+      const dx = snappedPoint.x - internal.dragStartPos.x;
-+      const dy = snappedPoint.y - internal.dragStartPos.y;
-
+        internal.dragStartPos,
+        dragLastPos,
+        this.keyboard.shiftKey$.peek()
+      );
+      const dx = snappedPoint.x - internal.dragStartPos.x;
+      const dy = snappedPoint.y - internal.dragStartPos.y;
       const moveContext: ExtensionDragMoveContext = {
         ...internal,
         event,
