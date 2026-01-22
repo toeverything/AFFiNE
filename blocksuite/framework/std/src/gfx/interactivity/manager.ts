@@ -438,14 +438,18 @@ export class InteractivityManager extends GfxExtension {
       dragLastPos = Point.from(
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])
       );
-      const endContext: ExtensionDragEndContext = {
+      const snappedPoint = this.snapOverlay.snapDragAngle(
+        internal.dragStartPos,
+        dragLastPos,
+        this.keyboard.shiftKey$.peek()
+     );
+     const endContext: ExtensionDragEndContext = {
         ...internal,
         event,
         dragLastPos,
-        dx: dragLastPos.x - internal.dragStartPos.x,
-        dy: dragLastPos.y - internal.dragStartPos.y,
-      };
-
+        dx: snappedPoint.x - internal.dragStartPos.x,
+        dy: snappedPoint.y - internal.dragStartPos.y,
+     };
       this._safeExecute(() => {
         activeExtensionHandlers.forEach(handler =>
           handler?.onDragEnd?.(endContext)
