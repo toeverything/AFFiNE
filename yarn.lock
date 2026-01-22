@@ -28348,22 +28348,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.10.3":
-  version: 2.12.4
-  resolution: "jotai@npm:2.12.4"
-  peerDependencies:
-    "@types/react": ">=17.0.0"
-    react: ">=17.0.0"
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-    react:
-      optional: true
-  checksum: 10/385aaae8f89baee177240db36dd879ee56031a06b03b14644104ec09d729b03b99319855b874da3ff2e837fa8b7ac6ccdb823d60e36b63e081c365bf4c93d633
-  languageName: node
-  linkType: hard
-
-"jotai@npm:^2.16.2":
+"jotai@npm:^2.10.3, jotai@npm:^2.16.2":
   version: 2.16.2
   resolution: "jotai@npm:2.16.2"
   peerDependencies:
