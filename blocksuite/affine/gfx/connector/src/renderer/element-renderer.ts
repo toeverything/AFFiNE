@@ -89,6 +89,7 @@ export const connector: ElementRenderer<
     points,
     strokeStyle === 'dash',
     mode === ConnectorMode.Curve,
+    mode === ConnectorMode.Rounded,
     strokeColor
   );
   renderEndpoint(
@@ -134,9 +135,10 @@ function renderPoints(
   points: PointLocation[],
   dash: boolean,
   curve: boolean,
+  rounded: boolean,
   stroke: string
 ) {
-  const { seed, strokeWidth, roughness, rough } = model;
+  const { seed, strokeWidth, roughness, rough, cornerRadius } = model;
 
   if (rough) {
     const options = {
@@ -153,6 +155,7 @@ function renderPoints(
         options
       );
     } else {
+      // TODO: roughjs doesn't support arcTo, so rounded corners are not supported in rough mode
       rc.linearPath(points as unknown as [number, number][], options);
     }
   } else {
@@ -179,6 +182,20 @@ function renderPoints(
           );
         }
       });
+    } else if (rounded && points.length > 2) {
+      // Render path with rounded corners at bend points
+      const radius = cornerRadius ?? 20;
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length - 1; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const next = points[i + 1];
+        // Use arcTo to create rounded corner
+        ctx.arcTo(curr[0], curr[1], next[0], next[1], radius);
+      }
+      // Line to the last point
+      const lastPoint = points[points.length - 1];
+      ctx.lineTo(lastPoint[0], lastPoint[1]);
     } else {
       points.forEach((point, index) => {
         if (index === 0) {
