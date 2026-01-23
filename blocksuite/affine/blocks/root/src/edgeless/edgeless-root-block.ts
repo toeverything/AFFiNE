@@ -458,7 +458,9 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     // Wire snap to grid toggle
     this._disposables.addFromEvent(this, 'snap-to-grid-changed', (e: Event) => {
       const customEvent = e as CustomEvent<{ enabled: boolean }>;
-      const snapOverlay = this.gfx.getOverlay('snap-manager');
+      const snapOverlay = this.std.getOptional(
+        OverlayIdentifier('snap-manager')
+      );
       if (snapOverlay && 'setSnapToGrid' in snapOverlay) {
         (snapOverlay as any).setSnapToGrid(customEvent.detail.enabled);
       }
@@ -467,7 +469,9 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     // Update snap overlay grid size when grid size changes
     this._disposables.addFromEvent(this, 'grid-size-changed', (e: Event) => {
       const customEvent = e as CustomEvent<{ size: number }>;
-      const snapOverlay = this.gfx.getOverlay('snap-manager');
+      const snapOverlay = this.std.getOptional(
+        OverlayIdentifier('snap-manager')
+      );
       if (snapOverlay && 'setGridSize' in snapOverlay) {
         (snapOverlay as any).setGridSize(customEvent.detail.size);
       }
