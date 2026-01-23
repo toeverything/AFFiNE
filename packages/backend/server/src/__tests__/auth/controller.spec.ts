@@ -157,6 +157,33 @@ test('should be able to correct user id cookie', async t => {
   t.is(userIdCookie, u1.id);
 });
 
+test('should not throw on parse of a bad cookie', async t => {
+  const { app } = t.context;
+
+  const cookie_key = 'auth_session';
+  const cookie_val = '^13l3PK9qJs*J%X$MOOOIguhkqWvVh7*';
+
+  await app.signupV1('u1@affine.pro');
+
+  const req = app.GET('/api/auth/session');
+
+  let cookies = req.get('cookie') as unknown as string[];
+
+  cookies.push(`${cookie_key}=${cookie_val}`);
+
+  const res = await req.set('Cookie', cookies).expect(200);
+
+  let parsedCookies: Record<string, string>;
+
+  t.notThrows(() => {
+    parsedCookies = parseCookies(res);
+  });
+
+  const testCookie = parsedCookies![cookie_key];
+
+  t.is(cookie_val, testCookie);
+});
+
 // multiple accounts session tests
 test('should be able to sign in another account in one session', async t => {
   const { app } = t.context;
