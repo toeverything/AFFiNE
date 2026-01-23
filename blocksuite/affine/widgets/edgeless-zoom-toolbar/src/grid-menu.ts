@@ -6,15 +6,15 @@ import type { BlockStdScope } from '@blocksuite/std';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
-// Grid size options in pixels
-const GRID_SIZE_OPTIONS = [10, 50] as const;
-
 // Default values
 const DEFAULT_SHOW_GRID = true;
 const DEFAULT_GRID_SIZE = 20;
 const DEFAULT_CUSTOM_GRID_SIZE = 100;
 const DEFAULT_SNAP_TO_GUIDES = true;
 const DEFAULT_SNAP_TO_GRID = false;
+
+// Grid size options in pixels
+const GRID_SIZE_OPTIONS = [DEFAULT_GRID_SIZE, 50] as const;
 
 export class EdgelessGridMenu extends WithDisposable(LitElement) {
   static override styles = css`
@@ -149,6 +149,8 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
       font-size: 12px;
       color: var(--affine-text-primary-color);
       text-align: center;
+      width: 0;
+      min-width: 0;
     }
 
     .grid-size-custom:focus {
