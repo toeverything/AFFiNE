@@ -698,8 +698,24 @@ export class SnapOverlay extends Overlay {
     this._distributedAlignLines = [];
     this._updateAlignCandidates(bound);
 
+    let gridBoundCount = 0;
     for (const other of this._referenceBounds.all) {
       const closestDistances = this._calculateClosestDistances(bound, other);
+
+      // Debug: log when we find a grid bound (width or height is 0)
+      if (this._snapToGrid && (other.w === 0 || other.h === 0)) {
+        gridBoundCount++;
+        if (closestDistances.horiz || closestDistances.vert) {
+          console.log('[SnapToGrid] Found grid bound distance:', {
+            gridLine:
+              other.w === 0
+                ? `vertical x=${other.x}`
+                : `horizontal y=${other.y}`,
+            horiz: closestDistances.horiz?.distance,
+            vert: closestDistances.vert?.distance,
+          });
+        }
+      }
 
       if (
         closestDistances.horiz &&
@@ -716,6 +732,15 @@ export class SnapOverlay extends Overlay {
       ) {
         this._updateYAlignPoint(rst, bound, other, closestDistances);
       }
+    }
+
+    if (this._snapToGrid && gridBoundCount > 0) {
+      console.log(
+        '[SnapToGrid] Processed grid bounds:',
+        gridBoundCount,
+        'Result:',
+        rst
+      );
     }
 
     // point align priority is higher than distribute align
@@ -841,6 +866,17 @@ export class SnapOverlay extends Overlay {
     // Add grid lines as snap targets when snap-to-grid is enabled
     if (this._snapToGrid && this._gridSize > 0) {
       const gridBounds = this._generateGridBounds(movingBound);
+      console.log('[SnapToGrid] Generated grid bounds:', {
+        verticalCount: gridBounds.vertical.length,
+        horizontalCount: gridBounds.horizontal.length,
+        gridSize: this._gridSize,
+        movingBound: {
+          x: movingBound.x,
+          y: movingBound.y,
+          w: movingBound.w,
+          h: movingBound.h,
+        },
+      });
       verticalBounds.push(...gridBounds.vertical);
       horizBounds.push(...gridBounds.horizontal);
       allBounds.push(...gridBounds.all);
@@ -872,42 +908,42 @@ export class SnapOverlay extends Overlay {
     const endY = viewportBound.maxY;
 
     const threshold = ALIGN_THRESHOLD / this.gfx.viewport.zoom;
+    const rangeX = movingBound.w / 2 + threshold * 50; // Increased range
+    const rangeY = movingBound.h / 2 + threshold * 50; // Increased range
 
     // Create vertical grid line bounds (for x-axis snapping)
+    // These are vertical lines, so they have x position and span vertically
     for (let x = startX; x <= endX; x += this._gridSize) {
-      // Only create bounds near the moving element
-      if (
-        Math.abs(x - movingBound.center[0]) >
-        movingBound.w / 2 + threshold * 10
-      ) {
+      // Only create bounds reasonably near the moving element
+      if (Math.abs(x - movingBound.center[0]) > rangeX) {
         continue;
       }
 
+      // Vertical line: fixed x, spans full height
       const bound = new Bound(
         x,
-        Math.min(movingBound.y, viewportBound.y),
-        0.01, // Very thin bound
-        Math.max(movingBound.h, viewportBound.h)
+        viewportBound.y,
+        0, // Zero width for vertical line
+        viewportBound.h
       );
       verticalBounds.push(bound);
       allBounds.push(bound);
     }
 
     // Create horizontal grid line bounds (for y-axis snapping)
+    // These are horizontal lines, so they have y position and span horizontally
     for (let y = startY; y <= endY; y += this._gridSize) {
-      // Only create bounds near the moving element
-      if (
-        Math.abs(y - movingBound.center[1]) >
-        movingBound.h / 2 + threshold * 10
-      ) {
+      // Only create bounds reasonably near the moving element
+      if (Math.abs(y - movingBound.center[1]) > rangeY) {
         continue;
       }
 
+      // Horizontal line: fixed y, spans full width
       const bound = new Bound(
-        Math.min(movingBound.x, viewportBound.x),
+        viewportBound.x,
         y,
-        Math.max(movingBound.w, viewportBound.w),
-        0.01 // Very thin bound
+        viewportBound.w,
+        0 // Zero height for horizontal line
       );
       horizBounds.push(bound);
       allBounds.push(bound);
