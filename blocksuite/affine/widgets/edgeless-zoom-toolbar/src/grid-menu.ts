@@ -161,6 +161,17 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
     .grid-size-custom::placeholder {
       color: var(--affine-placeholder-color);
     }
+
+    /* Hide number input spinner arrows */
+    .grid-size-custom::-webkit-inner-spin-button,
+    .grid-size-custom::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .grid-size-custom {
+      -moz-appearance: textfield;
+    }
   `;
 
   @state()
@@ -228,6 +239,11 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
       this._customGridSize = value;
       this._setGridSize(value);
     }
+  };
+
+  private readonly _handleCustomGridSizeFocus = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    input.select();
   };
 
   private readonly _toggleSnapToGrid = () => {
@@ -333,6 +349,7 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
                       class="grid-size-custom"
                       .value=${this._customGridSize.toString()}
                       @input=${this._handleCustomGridSizeInput}
+                      @focus=${this._handleCustomGridSizeFocus}
                       @click=${stopPropagation}
                       placeholder="Custom"
                       min="1"
