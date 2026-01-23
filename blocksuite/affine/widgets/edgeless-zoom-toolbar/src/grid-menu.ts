@@ -243,6 +243,10 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
 
   private readonly _handleCustomGridSizeFocus = (e: Event) => {
     const input = e.target as HTMLInputElement;
+    // Apply the custom grid size when focused
+    if (this._customGridSize > 0) {
+      this._setGridSize(this._customGridSize);
+    }
     input.select();
   };
 
