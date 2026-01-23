@@ -19,22 +19,21 @@ import { AllShapeConfig } from '../toolbar/shape-menu-config';
 
 // Shape categories for the browser
 export const SHAPE_CATEGORIES = [
-  { id: 'all', name: 'All Shapes' },
+  { id: 'general', name: 'General' },
   { id: 'basic', name: 'Basic' },
   { id: 'flowchart', name: 'Flowchart' },
   { id: 'arrows', name: 'Arrows' },
+  { id: 'misc', name: 'Misc' },
 ] as const;
 
 export type ShapeCategory = (typeof SHAPE_CATEGORIES)[number]['id'];
 
 // Map shapes to categories
-// For now, basic shapes (rect, ellipse, diamond, triangle) are in 'basic'
-// More shapes will be added in future versions
 const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
-  rect: 'basic',
-  roundedRect: 'basic',
-  ellipse: 'basic',
-  diamond: 'basic',
+  rect: 'general',
+  roundedRect: 'general',
+  ellipse: 'general',
+  diamond: 'general',
   triangle: 'basic',
 };
 
@@ -212,7 +211,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   `;
 
   @state()
-  private accessor _selectedCategory: ShapeCategory = 'all';
+  private accessor _selectedCategory: ShapeCategory = 'general';
 
   @state()
   private accessor _searchKeyword = '';
@@ -248,13 +247,9 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   }
 
   private _getShapesForCategory(category: ShapeCategory) {
-    // Start with all shapes if 'all' category or if searching
-    let shapes =
-      category === 'all' || this._searchKeyword
-        ? [...AllShapeConfig]
-        : AllShapeConfig.filter(
-            shape => SHAPE_CATEGORY_MAP[shape.name] === category
-          );
+    let shapes = AllShapeConfig.filter(
+      shape => SHAPE_CATEGORY_MAP[shape.name] === category
+    );
 
     // Filter by search keyword if present
     if (this._searchKeyword) {

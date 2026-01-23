@@ -4,7 +4,6 @@ import {
 } from '@blocksuite/affine-ext-loader';
 
 import { effects } from './effects';
-import { GridOverlay } from './grid-overlay';
 import { edgelessZoomToolbarWidget } from './index';
 
 export class EdgelessZoomToolbarViewExtension extends ViewExtensionProvider {
@@ -19,7 +18,6 @@ export class EdgelessZoomToolbarViewExtension extends ViewExtensionProvider {
     super.setup(context);
     if (this.isEdgeless(context.scope)) {
       context.register(edgelessZoomToolbarWidget);
-      context.register(GridOverlay);
     }
   }
 }

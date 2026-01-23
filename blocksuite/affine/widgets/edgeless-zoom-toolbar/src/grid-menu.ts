@@ -1,13 +1,9 @@
-import { OverlayIdentifier } from '@blocksuite/affine-block-surface';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ArrowUpSmallIcon, GridIcon } from '@blocksuite/icons/lit';
 import type { BlockStdScope } from '@blocksuite/std';
-import { effect } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
-
-import type { GridOverlay } from './grid-overlay';
 
 // Grid size options in pixels
 const GRID_SIZE_OPTIONS = [10, 20, 40] as const;
@@ -155,12 +151,6 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
   @property({ attribute: false })
   accessor std!: BlockStdScope;
 
-  private get _gridOverlay(): GridOverlay | undefined {
-    return this.std.getOptional(
-      OverlayIdentifier('affine-grid-overlay')
-    ) as GridOverlay;
-  }
-
   private readonly _toggleMenu = (e: Event) => {
     e.stopPropagation();
     this._isOpen = !this._isOpen;
@@ -172,34 +162,22 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
 
   private readonly _toggleShowGrid = () => {
     this._showGrid = !this._showGrid;
-    const overlay = this._gridOverlay;
-    if (overlay) {
-      const GridOverlayClass =
-        overlay.constructor as typeof import('./grid-overlay').GridOverlay;
-      GridOverlayClass.setVisible(this._showGrid);
-      overlay.refresh();
-    }
+    // TODO: Implement actual grid rendering
   };
 
   private readonly _setGridSize = (size: number) => {
     this._gridSize = size;
-    const overlay = this._gridOverlay;
-    if (overlay) {
-      const GridOverlayClass =
-        overlay.constructor as typeof import('./grid-overlay').GridOverlay;
-      GridOverlayClass.setGridSize(size);
-      overlay.refresh();
-    }
+    // TODO: Implement actual grid size change
   };
 
   private readonly _toggleSnapToGrid = () => {
     this._snapToGrid = !this._snapToGrid;
-    // TODO: Wire up to snap manager when snap-to-grid is implemented
+    // TODO: Wire up to snap manager
   };
 
   private readonly _toggleSnapToGuides = () => {
     this._snapToGuides = !this._snapToGuides;
-    // Snap to guides is already enabled by default via SnapOverlay
+    // TODO: Wire up to snap manager
   };
 
   override connectedCallback() {
@@ -210,21 +188,6 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
         this._closeMenu();
       }
     });
-
-    // Sync state with GridOverlay signals
-    import('./grid-overlay')
-      .then(({ GridOverlay }) => {
-        this._disposables.add(
-          effect(() => {
-            this._showGrid = GridOverlay.visible$.value;
-            this._gridSize = GridOverlay.gridSize$.value;
-            this.requestUpdate();
-          })
-        );
-      })
-      .catch(() => {
-        // GridOverlay may not be available in all contexts
-      });
   }
 
   override render() {
