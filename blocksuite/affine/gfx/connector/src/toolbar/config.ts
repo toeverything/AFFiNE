@@ -13,6 +13,7 @@ import {
   type ConnectorElementProps,
   type ConnectorLabelProps,
   ConnectorMode,
+  DEFAULT_CONNECTOR_CORNER_RADIUS,
   DEFAULT_FRONT_ENDPOINT_STYLE,
   DEFAULT_REAR_ENDPOINT_STYLE,
   DefaultTheme,
@@ -335,6 +336,78 @@ export const connectorToolbarConfig = {
               currentValue: mode,
               onPick,
             });
+          },
+        },
+        {
+          id: 'e.corner-radius',
+          when(ctx) {
+            const models = ctx.getSurfaceModelsByType(ConnectorElementModel);
+            // Only show corner radius editor for Rounded connectors
+            return (
+              models.length > 0 &&
+              models.every(model => model.mode === ConnectorMode.Rounded)
+            );
+          },
+          content(ctx) {
+            const models = ctx.getSurfaceModelsByType(ConnectorElementModel);
+            if (!models.length) return null;
+
+            const field = 'cornerRadius';
+            const cornerRadius =
+              getMostCommonValue(models, field) ??
+              DEFAULT_CONNECTOR_CORNER_RADIUS;
+
+            const onInput = (e: InputEvent) => {
+              const target = e.target as HTMLInputElement;
+              const value = Math.max(0, Math.min(100, Number(target.value)));
+              updateModelsWith(ctx, models, field, value);
+            };
+
+            return html`
+              <div
+                style=${styleMap({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '0 8px',
+                })}
+              >
+                <span
+                  style=${styleMap({
+                    fontSize: '12px',
+                    color: 'var(--affine-text-secondary-color)',
+                    whiteSpace: 'nowrap',
+                  })}
+                  >Radius</span
+                >
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  .value=${String(cornerRadius)}
+                  @input=${onInput}
+                  style=${styleMap({
+                    width: '80px',
+                    accentColor: 'var(--affine-primary-color)',
+                  })}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  .value=${String(cornerRadius)}
+                  @input=${onInput}
+                  style=${styleMap({
+                    width: '48px',
+                    padding: '4px',
+                    border: '1px solid var(--affine-border-color)',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    textAlign: 'center',
+                  })}
+                />
+              </div>
+            `;
           },
         },
       ],

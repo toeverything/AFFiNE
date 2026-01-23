@@ -24,6 +24,7 @@ import {
   StrokeStyle,
 } from '@blocksuite/affine-model';
 import {
+  type ToolbarContext,
   type ToolbarGenericAction,
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
@@ -38,6 +39,7 @@ import { Bound } from '@blocksuite/global/gfx';
 import { AddTextIcon, ShapeIcon } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
 import { html } from 'lit';
+import { styleMap } from 'lit/directives/style-map.js';
 import isEqual from 'lodash-es/isEqual';
 
 import { normalizeShapeBound } from '../element-renderer';
@@ -99,6 +101,80 @@ export const shapeToolbarConfig = {
           currentValue: shapeName,
           onPick,
         });
+      },
+    },
+    {
+      id: 'c2.corner-radius',
+      when(ctx) {
+        const models = ctx.getSurfaceModelsByType(ShapeElementModel);
+        // Only show for rounded rect shapes (rect with radius > 0)
+        return (
+          models.length > 0 &&
+          models.every(
+            model =>
+              !hasGrouped(model) &&
+              model.shapeType === ShapeType.Rect &&
+              model.radius > 0
+          )
+        );
+      },
+      content(ctx) {
+        const models = ctx.getSurfaceModelsByType(ShapeElementModel);
+        if (!models.length) return null;
+
+        const radius = getMostCommonValue(models, 'radius') ?? 0.1;
+        // Convert proportional radius to percentage for display
+        const radiusPercent = Math.round(radius * 100);
+
+        const onInput = (e: InputEvent) => {
+          const target = e.target as HTMLInputElement;
+          const value = Math.max(0, Math.min(50, Number(target.value))) / 100;
+          ctx.std.store.captureSync();
+          for (const model of models) {
+            ctx.std
+              .get(EdgelessCRUDIdentifier)
+              .updateElement(model.id, { radius: value });
+          }
+        };
+
+        return html`
+          <div
+            style=${styleMap({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0 8px',
+            })}
+          >
+            <span
+              style=${styleMap({
+                fontSize: '12px',
+                color: 'var(--affine-text-secondary-color)',
+                whiteSpace: 'nowrap',
+              })}
+              >Corner</span
+            >
+            <input
+              type="range"
+              min="1"
+              max="50"
+              .value=${String(radiusPercent)}
+              @input=${onInput}
+              style=${styleMap({
+                width: '80px',
+                accentColor: 'var(--affine-primary-color)',
+              })}
+            />
+            <span
+              style=${styleMap({
+                fontSize: '12px',
+                color: 'var(--affine-text-primary-color)',
+                minWidth: '32px',
+              })}
+              >${radiusPercent}%</span
+            >
+          </div>
+        `;
       },
     },
     {
