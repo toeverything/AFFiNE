@@ -40,6 +40,8 @@ export class SnapOverlay extends Overlay {
   static override overlayName: string = 'snap-manager';
 
   private _enabled = true;
+  private _snapToGrid = false;
+  private _gridSize = 20;
   private _skippedElements: Set<GfxModel> = new Set();
 
   private _referenceBounds: {
@@ -101,6 +103,14 @@ export class SnapOverlay extends Overlay {
 
   getEnabled(): boolean {
     return this._enabled;
+  }
+
+  setSnapToGrid(enabled: boolean) {
+    this._snapToGrid = enabled;
+  }
+
+  setGridSize(size: number) {
+    this._gridSize = size;
   }
 
   private _alignDistributeHorizontally(
@@ -828,9 +838,84 @@ export class SnapOverlay extends Overlay {
       allBounds.push(candidate.elementBound);
     });
 
+    // Add grid lines as snap targets when snap-to-grid is enabled
+    if (this._snapToGrid && this._gridSize > 0) {
+      const gridBounds = this._generateGridBounds(movingBound);
+      verticalBounds.push(...gridBounds.vertical);
+      horizBounds.push(...gridBounds.horizontal);
+      allBounds.push(...gridBounds.all);
+    }
+
     this._referenceBounds = {
       horizontal: horizBounds,
       vertical: verticalBounds,
+      all: allBounds,
+    };
+  }
+
+  private _generateGridBounds(movingBound: Bound): {
+    vertical: Bound[];
+    horizontal: Bound[];
+    all: Bound[];
+  } {
+    const viewportBound = this.gfx.viewport.viewportBounds;
+    const verticalBounds: Bound[] = [];
+    const horizBounds: Bound[] = [];
+    const allBounds: Bound[] = [];
+
+    // Calculate grid lines in viewport
+    const startX =
+      Math.floor(viewportBound.x / this._gridSize) * this._gridSize;
+    const endX = viewportBound.maxX;
+    const startY =
+      Math.floor(viewportBound.y / this._gridSize) * this._gridSize;
+    const endY = viewportBound.maxY;
+
+    const threshold = ALIGN_THRESHOLD / this.gfx.viewport.zoom;
+
+    // Create vertical grid line bounds (for x-axis snapping)
+    for (let x = startX; x <= endX; x += this._gridSize) {
+      // Only create bounds near the moving element
+      if (
+        Math.abs(x - movingBound.center[0]) >
+        movingBound.w / 2 + threshold * 10
+      ) {
+        continue;
+      }
+
+      const bound = new Bound(
+        x,
+        Math.min(movingBound.y, viewportBound.y),
+        0.01, // Very thin bound
+        Math.max(movingBound.h, viewportBound.h)
+      );
+      verticalBounds.push(bound);
+      allBounds.push(bound);
+    }
+
+    // Create horizontal grid line bounds (for y-axis snapping)
+    for (let y = startY; y <= endY; y += this._gridSize) {
+      // Only create bounds near the moving element
+      if (
+        Math.abs(y - movingBound.center[1]) >
+        movingBound.h / 2 + threshold * 10
+      ) {
+        continue;
+      }
+
+      const bound = new Bound(
+        Math.min(movingBound.x, viewportBound.x),
+        y,
+        Math.max(movingBound.w, viewportBound.w),
+        0.01 // Very thin bound
+      );
+      horizBounds.push(bound);
+      allBounds.push(bound);
+    }
+
+    return {
+      vertical: verticalBounds,
+      horizontal: horizBounds,
       all: allBounds,
     };
   }

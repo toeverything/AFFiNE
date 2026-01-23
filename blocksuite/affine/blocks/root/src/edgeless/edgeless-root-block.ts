@@ -451,6 +451,24 @@ export class EdgelessRootBlockComponent extends BlockComponent<
         }
       }
     );
+
+    // Wire snap to grid toggle
+    this._disposables.addFromEvent(this, 'snap-to-grid-changed', (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      const snapOverlay = this.gfx.getOverlay('snap-manager');
+      if (snapOverlay && 'setSnapToGrid' in snapOverlay) {
+        (snapOverlay as any).setSnapToGrid(customEvent.detail.enabled);
+      }
+    });
+
+    // Update snap overlay grid size when grid size changes
+    this._disposables.addFromEvent(this, 'grid-size-changed', (e: Event) => {
+      const customEvent = e as CustomEvent<{ size: number }>;
+      const snapOverlay = this.gfx.getOverlay('snap-manager');
+      if (snapOverlay && 'setGridSize' in snapOverlay) {
+        (snapOverlay as any).setGridSize(customEvent.detail.size);
+      }
+    });
   }
 
   override connectedCallback() {
@@ -518,12 +536,22 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
     this._refreshLayerViewport();
 
-    // Apply initial snap-to-guides setting
+    // Apply initial snap settings
     const store = this.std.get(EditPropsStore);
     const snapToGuides = store.getStorage('edgelessSnapToGuides') ?? true;
+    const snapToGrid = store.getStorage('edgelessSnapToGrid') ?? false;
+    const gridSize = store.getStorage('edgelessGridSize') ?? 20;
     const snapOverlay = this.gfx.getOverlay('snap-manager');
-    if (snapOverlay && 'setEnabled' in snapOverlay) {
-      (snapOverlay as any).setEnabled(snapToGuides);
+    if (snapOverlay) {
+      if ('setEnabled' in snapOverlay) {
+        (snapOverlay as any).setEnabled(snapToGuides);
+      }
+      if ('setSnapToGrid' in snapOverlay) {
+        (snapOverlay as any).setSnapToGrid(snapToGrid);
+      }
+      if ('setGridSize' in snapOverlay) {
+        (snapOverlay as any).setGridSize(gridSize);
+      }
     }
   }
 
