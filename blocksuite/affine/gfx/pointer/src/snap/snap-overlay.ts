@@ -106,10 +106,12 @@ export class SnapOverlay extends Overlay {
   }
 
   setSnapToGrid(enabled: boolean) {
+    console.log('[SnapToGrid] setSnapToGrid called:', enabled);
     this._snapToGrid = enabled;
   }
 
   setGridSize(size: number) {
+    console.log('[SnapToGrid] setGridSize called:', size);
     this._gridSize = size;
   }
 
@@ -674,6 +676,12 @@ export class SnapOverlay extends Overlay {
   }
 
   align(bound: Bound): { dx: number; dy: number } {
+    console.log(
+      '[SnapToGrid] align() called, enabled:',
+      this._enabled,
+      'snapToGrid:',
+      this._snapToGrid
+    );
     const rst = { dx: 0, dy: 0 };
 
     // If snapping is disabled, return no adjustment
@@ -824,6 +832,12 @@ export class SnapOverlay extends Overlay {
   }
 
   private _updateAlignCandidates(movingBound: Bound) {
+    console.log(
+      '[SnapToGrid] _updateAlignCandidates called, snapToGrid:',
+      this._snapToGrid,
+      'gridSize:',
+      this._gridSize
+    );
     movingBound = movingBound.expand(ALIGN_THRESHOLD * this.gfx.viewport.zoom);
 
     const viewportBound = this.gfx.viewport.viewportBounds;

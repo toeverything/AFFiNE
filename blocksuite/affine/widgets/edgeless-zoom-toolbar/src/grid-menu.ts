@@ -197,6 +197,7 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
 
   private readonly _toggleSnapToGrid = () => {
     this._snapToGrid = !this._snapToGrid;
+    console.log('[GridMenu] toggleSnapToGrid:', this._snapToGrid);
     this._editPropsStore.setStorage('edgelessSnapToGrid', this._snapToGrid);
     this.dispatchEvent(
       new CustomEvent('snap-to-grid-changed', {
