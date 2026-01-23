@@ -4,14 +4,16 @@ import {
 } from '@blocksuite/affine-components/toolbar';
 import type { ShapeName, ShapeStyle } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
-import { stopPropagation } from '@blocksuite/affine-shared/utils';
+import {
+  requestConnectedFrame,
+  stopPropagation,
+} from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { AllShapeConfig } from '../toolbar/shape-menu-config';
 
@@ -54,7 +56,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     :host {
       position: absolute;
       font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
-      z-index: 1;
+      z-index: var(--affine-z-index-popover);
     }
 
     .shape-browser-panel {
@@ -223,12 +225,14 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   }
 
   override firstUpdated() {
-    this._disposables.addFromEvent(document, 'click', evt => {
-      if (this.contains(evt.target as HTMLElement)) {
-        return;
-      }
-      this._closePanel();
-    });
+    requestConnectedFrame(() => {
+      this._disposables.addFromEvent(document, 'click', evt => {
+        if (this.contains(evt.target as HTMLElement)) {
+          return;
+        }
+        this._closePanel();
+      });
+    }, this);
   }
 
   override render() {

@@ -1,26 +1,18 @@
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { ArrowUpSmallIcon, GridIcon } from '@blocksuite/icons/lit';
 import type { BlockStdScope } from '@blocksuite/std';
-import { signal } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 // Grid size options in pixels
 const GRID_SIZE_OPTIONS = [10, 20, 40] as const;
 
-export class EdgelessGridMenu extends SignalWatcher(
-  WithDisposable(LitElement)
-) {
+export class EdgelessGridMenu extends WithDisposable(LitElement) {
   static override styles = css`
     :host {
       display: flex;
       align-items: center;
-      position: relative;
-    }
-
-    .grid-menu-wrapper {
-      position: relative;
     }
 
     .grid-menu-trigger {
@@ -54,16 +46,15 @@ export class EdgelessGridMenu extends SignalWatcher(
 
     .grid-menu-dropdown {
       position: absolute;
-      bottom: 100%;
+      bottom: calc(100% + 8px);
       left: 0;
-      margin-bottom: 8px;
       background: var(--affine-background-overlay-panel-color);
       border-radius: 8px;
       border: 1px solid var(--affine-border-color);
       box-shadow: var(--affine-shadow-2);
       padding: 8px;
       min-width: 180px;
-      z-index: 10;
+      z-index: var(--affine-z-index-popover);
     }
 
     .menu-section {
@@ -142,45 +133,52 @@ export class EdgelessGridMenu extends SignalWatcher(
     }
   `;
 
-  // Grid settings signals
-  private readonly _showGrid$ = signal(false);
-  private readonly _gridSize$ = signal(20);
-  private readonly _snapToGrid$ = signal(true);
-  private readonly _snapToGuides$ = signal(true);
-
   @state()
   private accessor _isOpen = false;
+
+  @state()
+  private accessor _showGrid = false;
+
+  @state()
+  private accessor _gridSize = 20;
+
+  @state()
+  private accessor _snapToGrid = true;
+
+  @state()
+  private accessor _snapToGuides = true;
 
   @property({ attribute: false })
   accessor std!: BlockStdScope;
 
-  private _toggleMenu() {
+  private readonly _toggleMenu = (e: Event) => {
+    e.stopPropagation();
     this._isOpen = !this._isOpen;
-  }
+  };
 
-  private _closeMenu() {
+  private readonly _closeMenu = () => {
     this._isOpen = false;
-  }
+  };
 
-  private _toggleShowGrid() {
-    this._showGrid$.value = !this._showGrid$.value;
+  private readonly _toggleShowGrid = () => {
+    this._showGrid = !this._showGrid;
     // TODO: Implement actual grid rendering
-  }
+  };
 
-  private _setGridSize(size: number) {
-    this._gridSize$.value = size;
+  private readonly _setGridSize = (size: number) => {
+    this._gridSize = size;
     // TODO: Implement actual grid size change
-  }
+  };
 
-  private _toggleSnapToGrid() {
-    this._snapToGrid$.value = !this._snapToGrid$.value;
+  private readonly _toggleSnapToGrid = () => {
+    this._snapToGrid = !this._snapToGrid;
     // TODO: Wire up to snap manager
-  }
+  };
 
-  private _toggleSnapToGuides() {
-    this._snapToGuides$.value = !this._snapToGuides$.value;
+  private readonly _toggleSnapToGuides = () => {
+    this._snapToGuides = !this._snapToGuides;
     // TODO: Wire up to snap manager
-  }
+  };
 
   override connectedCallback() {
     super.connectedCallback();
@@ -193,21 +191,18 @@ export class EdgelessGridMenu extends SignalWatcher(
   }
 
   override render() {
-    const showGrid = this._showGrid$.value;
-    const gridSize = this._gridSize$.value;
-    const snapToGrid = this._snapToGrid$.value;
-    const snapToGuides = this._snapToGuides$.value;
-
     return html`
       <div
-        class="grid-menu-wrapper"
+        style="position: relative;"
         @dblclick=${stopPropagation}
         @mousedown=${stopPropagation}
         @mouseup=${stopPropagation}
         @pointerdown=${stopPropagation}
       >
         <button
-          class="grid-menu-trigger ${showGrid || this._isOpen ? 'active' : ''}"
+          class="grid-menu-trigger ${this._showGrid || this._isOpen
+            ? 'active'
+            : ''}"
           @click=${this._toggleMenu}
           title="Grid & Snap Settings"
         >
@@ -223,8 +218,9 @@ export class EdgelessGridMenu extends SignalWatcher(
                     <label>
                       <input
                         type="checkbox"
-                        .checked=${showGrid}
+                        .checked=${this._showGrid}
                         @change=${this._toggleShowGrid}
+                        @click=${stopPropagation}
                       />
                       Show Grid
                     </label>
@@ -237,7 +233,7 @@ export class EdgelessGridMenu extends SignalWatcher(
                     ${GRID_SIZE_OPTIONS.map(
                       size => html`
                         <button
-                          class="grid-size-option ${gridSize === size
+                          class="grid-size-option ${this._gridSize === size
                             ? 'selected'
                             : ''}"
                           @click=${() => this._setGridSize(size)}
@@ -255,8 +251,9 @@ export class EdgelessGridMenu extends SignalWatcher(
                     <label>
                       <input
                         type="checkbox"
-                        .checked=${snapToGrid}
+                        .checked=${this._snapToGrid}
                         @change=${this._toggleSnapToGrid}
+                        @click=${stopPropagation}
                       />
                       Snap to grid
                     </label>
@@ -265,8 +262,9 @@ export class EdgelessGridMenu extends SignalWatcher(
                     <label>
                       <input
                         type="checkbox"
-                        .checked=${snapToGuides}
+                        .checked=${this._snapToGuides}
                         @change=${this._toggleSnapToGuides}
+                        @click=${stopPropagation}
                       />
                       Snap to guides
                     </label>

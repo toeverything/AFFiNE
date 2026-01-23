@@ -25,7 +25,6 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
       display: block;
       width: 100%;
       height: 100%;
-      position: relative;
     }
     edgeless-toolbar-button,
     .shapes {
@@ -113,7 +112,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     }) as EventListener);
 
     this._openedBrowserPanel = panel;
-    this.renderRoot.append(panel);
+    document.body.append(panel);
 
     requestAnimationFrame(() => {
       const arrowEl = panel.renderRoot.querySelector('.arrow') as HTMLElement;
