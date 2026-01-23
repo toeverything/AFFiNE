@@ -613,8 +613,8 @@ export class SnapOverlay extends Overlay {
   alignResize(position: IVec, direction: ('vertical' | 'horizontal')[]) {
     const rst = { dx: 0, dy: 0 };
 
-    // If snapping is disabled, return no adjustment
-    if (!this._enabled) {
+    // If both snap-to-guides and snap-to-grid are disabled, return no adjustment
+    if (!this._enabled && !this._snapToGrid) {
       this._intraGraphicAlignLines = {
         horizontal: [],
         vertical: [],
@@ -684,8 +684,8 @@ export class SnapOverlay extends Overlay {
     );
     const rst = { dx: 0, dy: 0 };
 
-    // If snapping is disabled, return no adjustment
-    if (!this._enabled) {
+    // If both snap-to-guides and snap-to-grid are disabled, return no adjustment
+    if (!this._enabled && !this._snapToGrid) {
       this._intraGraphicAlignLines = {
         horizontal: [],
         vertical: [],
@@ -709,9 +709,10 @@ export class SnapOverlay extends Overlay {
     let gridBoundCount = 0;
     for (const other of this._referenceBounds.all) {
       const closestDistances = this._calculateClosestDistances(bound, other);
+      const isGridBound = other.w === 0 || other.h === 0;
 
       // Debug: log when we find a grid bound (width or height is 0)
-      if (this._snapToGrid && (other.w === 0 || other.h === 0)) {
+      if (this._snapToGrid && isGridBound) {
         gridBoundCount++;
         if (closestDistances.horiz || closestDistances.vert) {
           console.log('[SnapToGrid] Found grid bound distance:', {
@@ -725,20 +726,36 @@ export class SnapOverlay extends Overlay {
         }
       }
 
+      // For grid bounds, only update dx/dy without showing guide lines
+      // For object bounds, only process if snap-to-guides is enabled
+      const shouldProcessBound = isGridBound ? this._snapToGrid : this._enabled;
+
       if (
+        shouldProcessBound &&
         closestDistances.horiz &&
         (!this._intraGraphicAlignLines.horizontal.length ||
           Math.abs(closestDistances.horiz.distance) < Math.abs(rst.dx))
       ) {
-        this._updateXAlignPoint(rst, bound, other, closestDistances);
+        if (isGridBound) {
+          // For grid bounds, just update dx without creating guide lines
+          rst.dx = closestDistances.horiz.distance;
+        } else {
+          this._updateXAlignPoint(rst, bound, other, closestDistances);
+        }
       }
 
       if (
+        shouldProcessBound &&
         closestDistances.vert &&
         (!this._intraGraphicAlignLines.vertical.length ||
           Math.abs(closestDistances.vert.distance) < Math.abs(rst.dy))
       ) {
-        this._updateYAlignPoint(rst, bound, other, closestDistances);
+        if (isGridBound) {
+          // For grid bounds, just update dy without creating guide lines
+          rst.dy = closestDistances.vert.distance;
+        } else {
+          this._updateYAlignPoint(rst, bound, other, closestDistances);
+        }
       }
     }
 
@@ -752,12 +769,15 @@ export class SnapOverlay extends Overlay {
     }
 
     // point align priority is higher than distribute align
-    if (rst.dx === 0) {
-      this._alignDistributeHorizontally(rst, bound, threshold, viewport);
-    }
+    // Only do distribute alignment when snap-to-guides is enabled
+    if (this._enabled) {
+      if (rst.dx === 0) {
+        this._alignDistributeHorizontally(rst, bound, threshold, viewport);
+      }
 
-    if (rst.dy === 0) {
-      this._alignDistributeVertically(rst, bound, threshold, viewport);
+      if (rst.dy === 0) {
+        this._alignDistributeVertically(rst, bound, threshold, viewport);
+      }
     }
 
     this._renderer?.refresh();
@@ -766,8 +786,9 @@ export class SnapOverlay extends Overlay {
   }
 
   override render(ctx: CanvasRenderingContext2D) {
-    // Don't render snap lines if snapping is disabled
-    if (!this._enabled) return;
+    // Don't render snap lines if both snap-to-guides and snap-to-grid are disabled
+    // Note: Grid lines are never added to _intraGraphicAlignLines, so they won't be rendered
+    if (!this._enabled && !this._snapToGrid) return;
 
     if (
       this._intraGraphicAlignLines.vertical.length === 0 &&
