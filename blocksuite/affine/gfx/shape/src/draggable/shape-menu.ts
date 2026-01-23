@@ -13,7 +13,11 @@ import {
 } from '@blocksuite/affine-shared/services';
 import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { StyleGeneralIcon, StyleScribbleIcon } from '@blocksuite/icons/lit';
+import {
+  ArrowUpSmallIcon,
+  StyleGeneralIcon,
+  StyleScribbleIcon,
+} from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import {
   GfxControllerIdentifier,
@@ -48,6 +52,15 @@ export class EdgelessShapeMenu extends SignalWatcher(
     }
     .shape-type-container svg,
     .shape-style-container svg {
+      fill: var(--affine-icon-color);
+      stroke: none;
+    }
+    .more-shapes-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .more-shapes-button svg {
       fill: var(--affine-icon-color);
       stroke: none;
     }
@@ -187,6 +200,16 @@ export class EdgelessShapeMenu extends SignalWatcher(
                 `;
               }
             )}
+            <edgeless-tool-icon-button
+              class="more-shapes-button"
+              .tooltip=${'More shapes'}
+              .active=${false}
+              .activeMode=${'background'}
+              .iconSize=${'20px'}
+              @click=${() => this.onMoreClick?.()}
+            >
+              ${ArrowUpSmallIcon()}
+            </edgeless-tool-icon-button>
           </div>
           <menu-divider .vertical=${true}></menu-divider>
           <edgeless-color-panel
@@ -206,4 +229,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   @property({ attribute: false })
   accessor onChange!: (name: ShapeName) => void;
+
+  @property({ attribute: false })
+  accessor onMoreClick: (() => void) | undefined;
 }

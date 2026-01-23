@@ -50,6 +50,39 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
           });
           this._updateOverlay();
         };
+        ele.onMoreClick = () => {
+          this._showShapeBrowser();
+        };
+      },
+    });
+  }
+
+  private _showShapeBrowser() {
+    // Close the current menu first
+    if (this.popper) {
+      this.popper.dispose();
+      this.popper = null;
+    }
+    // Show the shape browser panel
+    this.createPopper('edgeless-shape-browser-panel', this, {
+      setProps: ele => {
+        ele.slots.select.subscribe((shapeName: ShapeName) => {
+          this.setEdgelessTool(this.type, {
+            shapeName,
+          });
+          this._updateOverlay();
+          // Close the browser after selection
+          if (this.popper) {
+            this.popper.dispose();
+            this.popper = null;
+          }
+        });
+        ele.slots.close.subscribe(() => {
+          if (this.popper) {
+            this.popper.dispose();
+            this.popper = null;
+          }
+        });
       },
     });
   }
