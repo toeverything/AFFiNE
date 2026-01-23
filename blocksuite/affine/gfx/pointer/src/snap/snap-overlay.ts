@@ -39,6 +39,7 @@ const STROKE_WIDTH = 2;
 export class SnapOverlay extends Overlay {
   static override overlayName: string = 'snap-manager';
 
+  private _enabled = true;
   private _skippedElements: Set<GfxModel> = new Set();
 
   private _referenceBounds: {
@@ -89,6 +90,17 @@ export class SnapOverlay extends Overlay {
     this._skippedElements.clear();
 
     super.clear();
+  }
+
+  setEnabled(enabled: boolean) {
+    this._enabled = enabled;
+    if (!enabled) {
+      this.clear();
+    }
+  }
+
+  getEnabled(): boolean {
+    return this._enabled;
   }
 
   private _alignDistributeHorizontally(
@@ -589,6 +601,17 @@ export class SnapOverlay extends Overlay {
   alignResize(position: IVec, direction: ('vertical' | 'horizontal')[]) {
     const rst = { dx: 0, dy: 0 };
 
+    // If snapping is disabled, return no adjustment
+    if (!this._enabled) {
+      this._intraGraphicAlignLines = {
+        horizontal: [],
+        vertical: [],
+      };
+      this._distributedAlignLines = [];
+      this._renderer?.refresh();
+      return rst;
+    }
+
     const { viewport } = this.gfx;
     const threshold = ALIGN_THRESHOLD / viewport.zoom;
     const searchBound = new Bound(
@@ -642,6 +665,18 @@ export class SnapOverlay extends Overlay {
 
   align(bound: Bound): { dx: number; dy: number } {
     const rst = { dx: 0, dy: 0 };
+
+    // If snapping is disabled, return no adjustment
+    if (!this._enabled) {
+      this._intraGraphicAlignLines = {
+        horizontal: [],
+        vertical: [],
+      };
+      this._distributedAlignLines = [];
+      this._renderer?.refresh();
+      return rst;
+    }
+
     const threshold = ALIGN_THRESHOLD / this.gfx.viewport.zoom;
 
     const { viewport } = this.gfx;
@@ -688,6 +723,9 @@ export class SnapOverlay extends Overlay {
   }
 
   override render(ctx: CanvasRenderingContext2D) {
+    // Don't render snap lines if snapping is disabled
+    if (!this._enabled) return;
+
     if (
       this._intraGraphicAlignLines.vertical.length === 0 &&
       this._intraGraphicAlignLines.horizontal.length === 0 &&

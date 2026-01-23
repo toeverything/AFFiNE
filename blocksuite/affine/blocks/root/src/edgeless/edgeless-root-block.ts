@@ -438,6 +438,19 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       this._gridSize = customEvent.detail.size;
       this._refreshLayerViewport();
     });
+
+    // Wire snap to guides toggle
+    this._disposables.addFromEvent(
+      this,
+      'snap-to-guides-changed',
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ enabled: boolean }>;
+        const snapOverlay = this.gfx.getOverlay('snap-manager');
+        if (snapOverlay && 'setEnabled' in snapOverlay) {
+          (snapOverlay as any).setEnabled(customEvent.detail.enabled);
+        }
+      }
+    );
   }
 
   override connectedCallback() {
@@ -504,6 +517,14 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     );
 
     this._refreshLayerViewport();
+
+    // Apply initial snap-to-guides setting
+    const store = this.std.get(EditPropsStore);
+    const snapToGuides = store.getStorage('edgelessSnapToGuides') ?? true;
+    const snapOverlay = this.gfx.getOverlay('snap-manager');
+    if (snapOverlay && 'setEnabled' in snapOverlay) {
+      (snapOverlay as any).setEnabled(snapToGuides);
+    }
   }
 
   override renderBlock() {
