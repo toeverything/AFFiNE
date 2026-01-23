@@ -106,12 +106,10 @@ export class SnapOverlay extends Overlay {
   }
 
   setSnapToGrid(enabled: boolean) {
-    console.log('[SnapToGrid] setSnapToGrid called:', enabled);
     this._snapToGrid = enabled;
   }
 
   setGridSize(size: number) {
-    console.log('[SnapToGrid] setGridSize called:', size);
     this._gridSize = size;
   }
 
@@ -676,12 +674,6 @@ export class SnapOverlay extends Overlay {
   }
 
   align(bound: Bound): { dx: number; dy: number } {
-    console.log(
-      '[SnapToGrid] align() called, enabled:',
-      this._enabled,
-      'snapToGrid:',
-      this._snapToGrid
-    );
     const rst = { dx: 0, dy: 0 };
 
     // If both snap-to-guides and snap-to-grid are disabled, return no adjustment
@@ -706,25 +698,9 @@ export class SnapOverlay extends Overlay {
     this._distributedAlignLines = [];
     this._updateAlignCandidates(bound);
 
-    let gridBoundCount = 0;
     for (const other of this._referenceBounds.all) {
       const closestDistances = this._calculateClosestDistances(bound, other);
       const isGridBound = other.w === 0 || other.h === 0;
-
-      // Debug: log when we find a grid bound (width or height is 0)
-      if (this._snapToGrid && isGridBound) {
-        gridBoundCount++;
-        if (closestDistances.horiz || closestDistances.vert) {
-          console.log('[SnapToGrid] Found grid bound distance:', {
-            gridLine:
-              other.w === 0
-                ? `vertical x=${other.x}`
-                : `horizontal y=${other.y}`,
-            horiz: closestDistances.horiz?.distance,
-            vert: closestDistances.vert?.distance,
-          });
-        }
-      }
 
       // For grid bounds, only update dx/dy without showing guide lines
       // For object bounds, only process if snap-to-guides is enabled
@@ -757,15 +733,6 @@ export class SnapOverlay extends Overlay {
           this._updateYAlignPoint(rst, bound, other, closestDistances);
         }
       }
-    }
-
-    if (this._snapToGrid && gridBoundCount > 0) {
-      console.log(
-        '[SnapToGrid] Processed grid bounds:',
-        gridBoundCount,
-        'Result:',
-        rst
-      );
     }
 
     // point align priority is higher than distribute align
@@ -853,12 +820,6 @@ export class SnapOverlay extends Overlay {
   }
 
   private _updateAlignCandidates(movingBound: Bound) {
-    console.log(
-      '[SnapToGrid] _updateAlignCandidates called, snapToGrid:',
-      this._snapToGrid,
-      'gridSize:',
-      this._gridSize
-    );
     movingBound = movingBound.expand(ALIGN_THRESHOLD * this.gfx.viewport.zoom);
 
     const viewportBound = this.gfx.viewport.viewportBounds;
@@ -901,17 +862,6 @@ export class SnapOverlay extends Overlay {
     // Add grid lines as snap targets when snap-to-grid is enabled
     if (this._snapToGrid && this._gridSize > 0) {
       const gridBounds = this._generateGridBounds(movingBound);
-      console.log('[SnapToGrid] Generated grid bounds:', {
-        verticalCount: gridBounds.vertical.length,
-        horizontalCount: gridBounds.horizontal.length,
-        gridSize: this._gridSize,
-        movingBound: {
-          x: movingBound.x,
-          y: movingBound.y,
-          w: movingBound.w,
-          h: movingBound.h,
-        },
-      });
       verticalBounds.push(...gridBounds.vertical);
       horizBounds.push(...gridBounds.horizontal);
       allBounds.push(...gridBounds.all);

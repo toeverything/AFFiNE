@@ -7,11 +7,12 @@ import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 // Grid size options in pixels
-const GRID_SIZE_OPTIONS = [10, 20, 40] as const;
+const GRID_SIZE_OPTIONS = [10, 50] as const;
 
 // Default values
 const DEFAULT_SHOW_GRID = true;
 const DEFAULT_GRID_SIZE = 20;
+const DEFAULT_CUSTOM_GRID_SIZE = 100;
 const DEFAULT_SNAP_TO_GUIDES = true;
 const DEFAULT_SNAP_TO_GRID = false;
 
@@ -138,6 +139,26 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
       color: var(--affine-white);
       border-color: var(--affine-primary-color);
     }
+
+    .grid-size-custom {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid var(--affine-border-color);
+      border-radius: 4px;
+      background: transparent;
+      font-size: 12px;
+      color: var(--affine-text-primary-color);
+      text-align: center;
+    }
+
+    .grid-size-custom:focus {
+      outline: none;
+      border-color: var(--affine-primary-color);
+    }
+
+    .grid-size-custom::placeholder {
+      color: var(--affine-placeholder-color);
+    }
   `;
 
   @state()
@@ -148,6 +169,9 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
 
   @state()
   private accessor _gridSize = DEFAULT_GRID_SIZE;
+
+  @state()
+  private accessor _customGridSize = DEFAULT_CUSTOM_GRID_SIZE;
 
   @state()
   private accessor _snapToGrid = DEFAULT_SNAP_TO_GRID;
@@ -195,9 +219,17 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
     );
   };
 
+  private readonly _handleCustomGridSizeInput = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const value = parseInt(input.value, 10);
+    if (!isNaN(value) && value > 0) {
+      this._customGridSize = value;
+      this._setGridSize(value);
+    }
+  };
+
   private readonly _toggleSnapToGrid = () => {
     this._snapToGrid = !this._snapToGrid;
-    console.log('[GridMenu] toggleSnapToGrid:', this._snapToGrid);
     this._editPropsStore.setStorage('edgelessSnapToGrid', this._snapToGrid);
     this.dispatchEvent(
       new CustomEvent('snap-to-grid-changed', {
@@ -294,6 +326,15 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
                         </button>
                       `
                     )}
+                    <input
+                      type="number"
+                      class="grid-size-custom"
+                      .value=${this._customGridSize.toString()}
+                      @input=${this._handleCustomGridSizeInput}
+                      @click=${stopPropagation}
+                      placeholder="Custom"
+                      min="1"
+                    />
                   </div>
                 </div>
 
