@@ -73,14 +73,26 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     ${unsafeCSS(lightToolbarStyles('.edgeless-shapes-panel'))}
     ${unsafeCSS(darkToolbarStyles('.edgeless-shapes-panel'))}
 
-    .panel-header {
+    .search-bar {
       padding: 21px 24px;
       font-size: 18px;
-      color: var(--affine-text-primary-color);
+      color: var(--affine-secondary);
       border-bottom: 1px solid var(--affine-divider-color);
-      font-weight: 500;
 
       flex-shrink: 0;
+    }
+
+    .search-input {
+      border: 0;
+      color: var(--affine-text-primary-color);
+      font-size: 20px;
+      background-color: inherit;
+      outline: none;
+      width: 100%;
+    }
+
+    .search-input::placeholder {
+      color: var(--affine-text-secondary-color);
     }
 
     .shape-categories {
@@ -201,6 +213,9 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   @state()
   private accessor _selectedCategory: ShapeCategory = 'general';
 
+  @state()
+  private accessor _searchKeyword = '';
+
   @property({ attribute: false })
   accessor edgeless!: BlockComponent;
 
@@ -227,10 +242,26 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     this._selectedCategory = category;
   }
 
+  private _updateSearchKeyword(e: InputEvent) {
+    this._searchKeyword = (e.target as HTMLInputElement).value;
+  }
+
   private _getShapesForCategory(category: ShapeCategory) {
-    return AllShapeConfig.filter(
+    let shapes = AllShapeConfig.filter(
       shape => SHAPE_CATEGORY_MAP[shape.name] === category
     );
+
+    // Filter by search keyword if present
+    if (this._searchKeyword) {
+      const keyword = this._searchKeyword.toLowerCase();
+      shapes = shapes.filter(
+        shape =>
+          shape.name.toLowerCase().includes(keyword) ||
+          shape.tooltip.toLowerCase().includes(keyword)
+      );
+    }
+
+    return shapes;
   }
 
   override connectedCallback(): void {
@@ -257,7 +288,17 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
 
     return html`
       <div class="edgeless-shapes-panel" data-app-theme=${appTheme ?? 'light'}>
-        <div class="panel-header">Shapes</div>
+        <div class="search-bar">
+          <input
+            class="search-input"
+            type="text"
+            placeholder="Search shapes..."
+            @input=${this._updateSearchKeyword}
+            @cut=${stopPropagation}
+            @copy=${stopPropagation}
+            @paste=${stopPropagation}
+          />
+        </div>
         <div class="shape-categories">
           ${repeat(
             SHAPE_CATEGORIES,
