@@ -3,6 +3,7 @@ import {
   DefaultTool,
   getBgGridGap,
   normalizeWheelDeltaY,
+  OverlayIdentifier,
   type SurfaceBlockComponent,
   type SurfaceBlockModel,
 } from '@blocksuite/affine-block-surface';
@@ -445,7 +446,9 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       'snap-to-guides-changed',
       (e: Event) => {
         const customEvent = e as CustomEvent<{ enabled: boolean }>;
-        const snapOverlay = this.gfx.getOverlay('snap-manager');
+        const snapOverlay = this.std.getOptional(
+          OverlayIdentifier('snap-manager')
+        );
         if (snapOverlay && 'setEnabled' in snapOverlay) {
           (snapOverlay as any).setEnabled(customEvent.detail.enabled);
         }
@@ -541,7 +544,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     const snapToGuides = store.getStorage('edgelessSnapToGuides') ?? true;
     const snapToGrid = store.getStorage('edgelessSnapToGrid') ?? false;
     const gridSize = store.getStorage('edgelessGridSize') ?? 20;
-    const snapOverlay = this.gfx.getOverlay('snap-manager');
+    const snapOverlay = this.std.getOptional(OverlayIdentifier('snap-manager'));
     if (snapOverlay) {
       if ('setEnabled' in snapOverlay) {
         (snapOverlay as any).setEnabled(snapToGuides);
