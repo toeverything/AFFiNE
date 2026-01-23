@@ -241,57 +241,9 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
     }
   };
 
-  private readonly _handleCustomGridSizeMouseDown = (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    console.log(
-      '[GridMenu] mousedown - activeElement:',
-      document.activeElement,
-      'input:',
-      input,
-      'isSame:',
-      document.activeElement === input
-    );
-    // If input is already focused, prevent default to avoid cursor placement
-    if (document.activeElement === input) {
-      console.log('[GridMenu] mousedown - preventing default and selecting');
-      e.preventDefault();
-      input.select();
-      console.log(
-        '[GridMenu] mousedown - selection:',
-        input.selectionStart,
-        input.selectionEnd,
-        'value:',
-        input.value
-      );
-    }
-  };
-
   private readonly _handleCustomGridSizeFocus = (e: Event) => {
     const input = e.target as HTMLInputElement;
-    console.log('[GridMenu] focus - selecting text');
     input.select();
-    console.log(
-      '[GridMenu] focus - selection:',
-      input.selectionStart,
-      input.selectionEnd,
-      'value:',
-      input.value
-    );
-  };
-
-  private readonly _handleCustomGridSizeClick = (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    console.log(
-      '[GridMenu] click - selection before:',
-      input.selectionStart,
-      input.selectionEnd
-    );
-    e.stopPropagation();
-    console.log(
-      '[GridMenu] click - selection after:',
-      input.selectionStart,
-      input.selectionEnd
-    );
   };
 
   private readonly _toggleSnapToGrid = () => {
@@ -393,15 +345,12 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
                       `
                     )}
                     <input
-                      type="number"
+                      type="text"
                       class="grid-size-custom"
                       .value=${this._customGridSize.toString()}
                       @input=${this._handleCustomGridSizeInput}
-                      @mousedown=${this._handleCustomGridSizeMouseDown}
                       @focus=${this._handleCustomGridSizeFocus}
-                      @click=${this._handleCustomGridSizeClick}
                       placeholder="Custom"
-                      min="1"
                     />
                   </div>
                 </div>
