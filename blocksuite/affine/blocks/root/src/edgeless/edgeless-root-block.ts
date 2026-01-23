@@ -487,12 +487,29 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     this.keyboardManager = new EdgelessPageKeyboardManager(this);
 
     this.handleEvent('selectionChange', () => {
+      console.log('[DEBUG] selectionChange event fired');
+      console.log('[DEBUG] host.selection.value:', this.host.selection.value);
+
       const surface = this.host.selection.value.find(
         (sel): sel is SurfaceSelection => sel.is(SurfaceSelection)
       );
-      if (!surface) return;
+
+      console.log('[DEBUG] surface selection:', surface);
+      if (!surface) {
+        console.log('[DEBUG] No surface selection found');
+        return;
+      }
+
+      console.log('[DEBUG] surface.elements:', surface.elements);
+      if (surface.elements.length === 0) {
+        console.log('[DEBUG] No elements in selection');
+        return;
+      }
 
       const el = this.gfx.getElementById(surface.elements[0]);
+      console.log('[DEBUG] Retrieved element:', el);
+      console.log('[DEBUG] isCanvasElement check:', isCanvasElement(el));
+
       if (isCanvasElement(el)) {
         // Log all properties of the selected element
         console.group('🔍 Selected Element Properties');
