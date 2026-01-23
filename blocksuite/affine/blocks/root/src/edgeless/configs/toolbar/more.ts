@@ -370,6 +370,92 @@ export const moreActions = [
     ],
   },
 
+  // Properties Group
+  {
+    id: 'd.z.properties',
+    label: 'Properties',
+    run(ctx) {
+      const models = ctx.getSurfaceModels();
+      if (!models.length) return;
+
+      // Log all properties to console for investigation
+      models.forEach((model, index) => {
+        console.log(`[Properties] Element ${index + 1}:`, {
+          id: model.id,
+          type: 'type' in model ? model.type : model.flavour,
+          flavour: model.flavour,
+          fullObject: model,
+          // Common properties
+          xywh: 'xywh' in model ? model.xywh : undefined,
+          index: 'index' in model ? model.index : undefined,
+          // All enumerable properties
+          allProperties: Object.getOwnPropertyNames(model).reduce(
+            (acc, key) => {
+              try {
+                acc[key] = (model as any)[key];
+              } catch (e) {
+                acc[key] = `[Error accessing property: ${e}]`;
+              }
+              return acc;
+            },
+            {} as Record<string, any>
+          ),
+          // Prototype properties
+          prototypeProperties: Object.getOwnPropertyNames(
+            Object.getPrototypeOf(model)
+          ).filter(key => !['constructor'].includes(key)),
+        });
+
+        // Log specific properties based on type
+        if ('type' in model) {
+          const elementType = model.type;
+          console.log(`[Properties] ${elementType} specific properties:`, {
+            // Shape properties
+            ...(elementType === 'shape'
+              ? {
+                  shapeType: (model as any).shapeType,
+                  radius: (model as any).radius,
+                  filled: (model as any).filled,
+                  fillColor: (model as any).fillColor,
+                  strokeColor: (model as any).strokeColor,
+                  strokeWidth: (model as any).strokeWidth,
+                  strokeStyle: (model as any).strokeStyle,
+                  shapeStyle: (model as any).shapeStyle,
+                  text: (model as any).text,
+                }
+              : {}),
+            // Connector properties
+            ...(elementType === 'connector'
+              ? {
+                  mode: (model as any).mode,
+                  stroke: (model as any).stroke,
+                  strokeWidth: (model as any).strokeWidth,
+                  strokeStyle: (model as any).strokeStyle,
+                  rough: (model as any).rough,
+                  source: (model as any).source,
+                  target: (model as any).target,
+                  frontEndpointStyle: (model as any).frontEndpointStyle,
+                  rearEndpointStyle: (model as any).rearEndpointStyle,
+                  text: (model as any).text,
+                }
+              : {}),
+            // Text properties (if has text)
+            ...((model as any).text
+              ? {
+                  fontFamily: (model as any).fontFamily,
+                  fontSize: (model as any).fontSize,
+                  fontWeight: (model as any).fontWeight,
+                  fontStyle: (model as any).fontStyle,
+                  textAlign: (model as any).textAlign,
+                  color: (model as any).color,
+                }
+              : {}),
+          });
+        }
+      });
+    },
+  },
+
   // Deleting Group
   {
     id: 'e.delete',
