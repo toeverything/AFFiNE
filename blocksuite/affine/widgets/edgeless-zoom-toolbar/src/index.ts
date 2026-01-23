@@ -81,8 +81,8 @@ export class AffineEdgelessZoomToolbarWidget extends WidgetComponent<RootBlockMo
     }
 
     return html`
-      <edgeless-grid-menu .std=${this.std}></edgeless-grid-menu>
       <edgeless-zoom-toolbar .std=${this.std}></edgeless-zoom-toolbar>
+      <edgeless-grid-menu .std=${this.std}></edgeless-grid-menu>
       <zoom-bar-toggle-button .std=${this.std}></zoom-bar-toggle-button>
     `;
   }

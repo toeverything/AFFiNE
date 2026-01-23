@@ -14,6 +14,7 @@ import {
 import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
+  ArrowDownSmallIcon,
   ArrowUpSmallIcon,
   StyleGeneralIcon,
   StyleScribbleIcon,
@@ -202,13 +203,13 @@ export class EdgelessShapeMenu extends SignalWatcher(
             )}
             <edgeless-tool-icon-button
               class="more-shapes-button"
-              .tooltip=${'More shapes'}
-              .active=${false}
+              .tooltip=${this.browserOpen ? 'Close' : 'More shapes'}
+              .active=${this.browserOpen}
               .activeMode=${'background'}
               .iconSize=${'20px'}
               @click=${() => this.onMoreClick?.()}
             >
-              ${ArrowUpSmallIcon()}
+              ${this.browserOpen ? ArrowDownSmallIcon() : ArrowUpSmallIcon()}
             </edgeless-tool-icon-button>
           </div>
           <menu-divider .vertical=${true}></menu-divider>
@@ -232,4 +233,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   @property({ attribute: false })
   accessor onMoreClick: (() => void) | undefined;
+
+  @property({ attribute: false })
+  accessor browserOpen = false;
 }

@@ -20,6 +20,7 @@
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/icons": "^2.2.17",
+    "@floating-ui/dom": "^1.6.12",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@lit/context": "^1.1.2",

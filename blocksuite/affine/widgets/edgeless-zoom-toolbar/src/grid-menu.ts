@@ -1,6 +1,6 @@
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { ArrowDownSmallIcon, GridIcon } from '@blocksuite/icons/lit';
+import { ArrowUpSmallIcon, GridIcon } from '@blocksuite/icons/lit';
 import type { BlockStdScope } from '@blocksuite/std';
 import { signal } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
@@ -16,6 +16,11 @@ export class EdgelessGridMenu extends SignalWatcher(
     :host {
       display: flex;
       align-items: center;
+      position: relative;
+    }
+
+    .grid-menu-wrapper {
+      position: relative;
     }
 
     .grid-menu-trigger {
@@ -195,18 +200,19 @@ export class EdgelessGridMenu extends SignalWatcher(
 
     return html`
       <div
+        class="grid-menu-wrapper"
         @dblclick=${stopPropagation}
         @mousedown=${stopPropagation}
         @mouseup=${stopPropagation}
         @pointerdown=${stopPropagation}
       >
         <button
-          class="grid-menu-trigger ${showGrid ? 'active' : ''}"
+          class="grid-menu-trigger ${showGrid || this._isOpen ? 'active' : ''}"
           @click=${this._toggleMenu}
           title="Grid & Snap Settings"
         >
           ${GridIcon({ width: '20px', height: '20px' })}
-          ${ArrowDownSmallIcon({ width: '16px', height: '16px' })}
+          ${ArrowUpSmallIcon({ width: '16px', height: '16px' })}
         </button>
 
         ${this._isOpen

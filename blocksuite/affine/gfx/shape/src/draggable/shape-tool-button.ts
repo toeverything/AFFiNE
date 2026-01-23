@@ -1,9 +1,20 @@
 import { type ShapeName, ShapeType } from '@blocksuite/affine-model';
+import { once } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
+import {
+  arrow,
+  autoUpdate,
+  computePosition,
+  offset,
+  shift,
+} from '@floating-ui/dom';
 import { css, html, LitElement } from 'lit';
+import { state } from 'lit/decorators.js';
 
+import type { EdgelessShapeBrowserPanel } from '../components/shape-browser-panel.js';
 import { ShapeTool } from '../shape-tool.js';
+import type { EdgelessShapeMenu } from './shape-menu.js';
 import type { DraggableShape } from './utils.js';
 
 export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
@@ -14,6 +25,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
       display: block;
       width: 100%;
       height: 100%;
+      position: relative;
     }
     edgeless-toolbar-button,
     .shapes {
@@ -21,6 +33,18 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
       height: 64px;
     }
   `;
+
+  private _cleanup: (() => void) | null = null;
+  private _autoUpdateCleanup: (() => void) | null = null;
+  private _menuElement: EdgelessShapeMenu | null = null;
+
+  @state()
+  private accessor _browserOpen = false;
+
+  @state()
+  private accessor _openedBrowserPanel: EdgelessShapeBrowserPanel | null = null;
+
+  override type = ShapeTool;
 
   private readonly _handleShapeClick = (shape: DraggableShape) => {
     this.setEdgelessTool(this.type, {
@@ -38,12 +62,17 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     if (!this.popper) this._toggleMenu();
   };
 
-  override type = ShapeTool;
+  override connectedCallback() {
+    super.connectedCallback();
+    this.disposables.add(() => this._autoUpdateCleanup?.());
+  }
 
   private _toggleMenu() {
     this.createPopper('edgeless-shape-menu', this, {
       setProps: ele => {
+        this._menuElement = ele;
         ele.edgeless = this.edgeless;
+        ele.browserOpen = this._browserOpen;
         ele.onChange = (shapeName: ShapeName) => {
           this.setEdgelessTool(this.type, {
             shapeName,
@@ -51,40 +80,80 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
           this._updateOverlay();
         };
         ele.onMoreClick = () => {
-          this._showShapeBrowser();
+          this._toggleShapeBrowser();
         };
       },
     });
   }
 
-  private _showShapeBrowser() {
-    // Close the current menu first
-    if (this.popper) {
-      this.popper.dispose();
-      this.popper = null;
+  private _toggleShapeBrowser() {
+    if (this._openedBrowserPanel) {
+      this._closeBrowser();
+      return;
     }
-    // Show the shape browser panel
-    this.createPopper('edgeless-shape-browser-panel', this, {
-      setProps: ele => {
-        ele.slots.select.subscribe((shapeName: ShapeName) => {
-          this.setEdgelessTool(this.type, {
-            shapeName,
-          });
-          this._updateOverlay();
-          // Close the browser after selection
-          if (this.popper) {
-            this.popper.dispose();
-            this.popper = null;
-          }
-        });
-        ele.slots.close.subscribe(() => {
-          if (this.popper) {
-            this.popper.dispose();
-            this.popper = null;
-          }
-        });
-      },
+
+    this._browserOpen = true;
+    if (this._menuElement) {
+      this._menuElement.browserOpen = true;
+    }
+
+    const panel = document.createElement('edgeless-shape-browser-panel');
+    panel.edgeless = this.edgeless;
+
+    this._cleanup = once(panel, 'closepanel', () => {
+      this._closeBrowser();
     });
+
+    // Handle shape selection
+    panel.addEventListener('shapeselect', ((e: CustomEvent) => {
+      const shapeName = e.detail.shapeName;
+      this.setEdgelessTool(this.type, { shapeName });
+      this._updateOverlay();
+      this._closeBrowser();
+    }) as EventListener);
+
+    this._openedBrowserPanel = panel;
+    this.renderRoot.append(panel);
+
+    requestAnimationFrame(() => {
+      const arrowEl = panel.renderRoot.querySelector('.arrow') as HTMLElement;
+      this._autoUpdateCleanup?.();
+      this._autoUpdateCleanup = autoUpdate(this, panel, () => {
+        computePosition(this, panel, {
+          placement: 'top',
+          middleware: [offset(20), arrow({ element: arrowEl }), shift()],
+        })
+          .then(({ x, y, middlewareData }) => {
+            panel.style.left = `${x}px`;
+            panel.style.top = `${y}px`;
+
+            if (arrowEl) {
+              arrowEl.style.left = `${
+                (middlewareData.arrow?.x ?? 0) - (middlewareData.shift?.x ?? 0)
+              }px`;
+            }
+          })
+          .catch(e => {
+            console.warn("Can't compute position", e);
+          });
+      });
+    });
+  }
+
+  private _closeBrowser() {
+    if (this._openedBrowserPanel) {
+      this._openedBrowserPanel.remove();
+      this._openedBrowserPanel = null;
+      this._cleanup?.();
+      this._cleanup = null;
+      this._autoUpdateCleanup?.();
+      this._autoUpdateCleanup = null;
+      this._browserOpen = false;
+      if (this._menuElement) {
+        this._menuElement.browserOpen = false;
+      }
+      this.requestUpdate();
+    }
   }
 
   private _updateOverlay() {
