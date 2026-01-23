@@ -243,7 +243,26 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
 
   private readonly _handleCustomGridSizeFocus = (e: Event) => {
     const input = e.target as HTMLInputElement;
+    console.log(
+      '[GridMenu] focus - before select, selection:',
+      input.selectionStart,
+      input.selectionEnd
+    );
     input.select();
+    console.log(
+      '[GridMenu] focus - after select, selection:',
+      input.selectionStart,
+      input.selectionEnd
+    );
+  };
+
+  private readonly _handleCustomGridSizeClick = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    console.log(
+      '[GridMenu] click - selection:',
+      input.selectionStart,
+      input.selectionEnd
+    );
   };
 
   private readonly _toggleSnapToGrid = () => {
@@ -350,6 +369,7 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
                       .value=${this._customGridSize.toString()}
                       @input=${this._handleCustomGridSizeInput}
                       @focus=${this._handleCustomGridSizeFocus}
+                      @click=${this._handleCustomGridSizeClick}
                       placeholder="Custom"
                     />
                   </div>
