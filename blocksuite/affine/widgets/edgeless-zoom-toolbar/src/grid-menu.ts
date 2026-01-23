@@ -1,3 +1,4 @@
+import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ArrowUpSmallIcon, GridIcon } from '@blocksuite/icons/lit';
@@ -7,6 +8,12 @@ import { property, state } from 'lit/decorators.js';
 
 // Grid size options in pixels
 const GRID_SIZE_OPTIONS = [10, 20, 40] as const;
+
+// Default values
+const DEFAULT_SHOW_GRID = true;
+const DEFAULT_GRID_SIZE = 20;
+const DEFAULT_SNAP_TO_GUIDES = true;
+const DEFAULT_SNAP_TO_GRID = false;
 
 export class EdgelessGridMenu extends WithDisposable(LitElement) {
   static override styles = css`
@@ -137,19 +144,23 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
   private accessor _isOpen = false;
 
   @state()
-  private accessor _showGrid = false;
+  private accessor _showGrid = DEFAULT_SHOW_GRID;
 
   @state()
-  private accessor _gridSize = 20;
+  private accessor _gridSize = DEFAULT_GRID_SIZE;
 
   @state()
-  private accessor _snapToGrid = true;
+  private accessor _snapToGrid = DEFAULT_SNAP_TO_GRID;
 
   @state()
-  private accessor _snapToGuides = true;
+  private accessor _snapToGuides = DEFAULT_SNAP_TO_GUIDES;
 
   @property({ attribute: false })
   accessor std!: BlockStdScope;
+
+  private get _editPropsStore() {
+    return this.std.get(EditPropsStore);
+  }
 
   private readonly _toggleMenu = (e: Event) => {
     e.stopPropagation();
@@ -162,26 +173,66 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
 
   private readonly _toggleShowGrid = () => {
     this._showGrid = !this._showGrid;
-    // TODO: Implement actual grid rendering
+    this._editPropsStore.setStorage('edgelessShowGrid', this._showGrid);
+    this.dispatchEvent(
+      new CustomEvent('grid-visibility-changed', {
+        detail: { visible: this._showGrid },
+        bubbles: true,
+        composed: true,
+      })
+    );
   };
 
   private readonly _setGridSize = (size: number) => {
     this._gridSize = size;
-    // TODO: Implement actual grid size change
+    this._editPropsStore.setStorage('edgelessGridSize', size);
+    this.dispatchEvent(
+      new CustomEvent('grid-size-changed', {
+        detail: { size },
+        bubbles: true,
+        composed: true,
+      })
+    );
   };
 
   private readonly _toggleSnapToGrid = () => {
     this._snapToGrid = !this._snapToGrid;
-    // TODO: Wire up to snap manager
+    this._editPropsStore.setStorage('edgelessSnapToGrid', this._snapToGrid);
+    this.dispatchEvent(
+      new CustomEvent('snap-to-grid-changed', {
+        detail: { enabled: this._snapToGrid },
+        bubbles: true,
+        composed: true,
+      })
+    );
   };
 
   private readonly _toggleSnapToGuides = () => {
     this._snapToGuides = !this._snapToGuides;
-    // TODO: Wire up to snap manager
+    this._editPropsStore.setStorage('edgelessSnapToGuides', this._snapToGuides);
+    this.dispatchEvent(
+      new CustomEvent('snap-to-guides-changed', {
+        detail: { enabled: this._snapToGuides },
+        bubbles: true,
+        composed: true,
+      })
+    );
   };
+
+  private _loadSettings() {
+    const store = this._editPropsStore;
+    this._showGrid = store.getStorage('edgelessShowGrid') ?? DEFAULT_SHOW_GRID;
+    this._gridSize = store.getStorage('edgelessGridSize') ?? DEFAULT_GRID_SIZE;
+    this._snapToGuides =
+      store.getStorage('edgelessSnapToGuides') ?? DEFAULT_SNAP_TO_GUIDES;
+    this._snapToGrid =
+      store.getStorage('edgelessSnapToGrid') ?? DEFAULT_SNAP_TO_GRID;
+  }
 
   override connectedCallback() {
     super.connectedCallback();
+    this._loadSettings();
+
     // Close menu when clicking outside
     this._disposables.addFromEvent(document, 'click', (e: Event) => {
       if (!this.contains(e.target as Node)) {

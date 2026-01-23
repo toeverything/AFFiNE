@@ -44,6 +44,13 @@ const LocalPropsSchema = z.object({
   presentNoFrameToastShown: z.boolean(),
 
   autoHideEmbedHTMLFullScreenToolbar: z.boolean(),
+
+  // Grid settings
+  edgelessShowGrid: z.boolean(),
+  edgelessGridSize: z.number(),
+  // Snap settings
+  edgelessSnapToGuides: z.boolean(),
+  edgelessSnapToGrid: z.boolean(),
 });
 
 type SessionProps = z.infer<typeof SessionPropsSchema>;
@@ -137,6 +144,14 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:' + id + ':showBidirectional';
       case 'autoHideEmbedHTMLFullScreenToolbar':
         return 'blocksuite:embedHTML:autoHideFullScreenToolbar';
+      case 'edgelessShowGrid':
+        return 'blocksuite:edgeless:showGrid';
+      case 'edgelessGridSize':
+        return 'blocksuite:edgeless:gridSize';
+      case 'edgelessSnapToGuides':
+        return 'blocksuite:edgeless:snapToGuides';
+      case 'edgelessSnapToGrid':
+        return 'blocksuite:edgeless:snapToGrid';
       default:
         return key;
     }

@@ -96,10 +96,13 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     }
   `;
 
+  private _gridSize = 20;
+  private _gridVisible = true;
+
   private readonly _refreshLayerViewport = requestThrottledConnectedFrame(
     () => {
       const { zoom, translateX, translateY } = this.gfx.viewport;
-      const gap = getBgGridGap(zoom);
+      const gap = getBgGridGap(zoom, this._gridSize);
 
       if (this.backgroundElm) {
         this.backgroundElm.style.setProperty(
@@ -109,6 +112,13 @@ export class EdgelessRootBlockComponent extends BlockComponent<
         this.backgroundElm.style.setProperty(
           'background-size',
           `${gap}px ${gap}px`
+        );
+        // Show/hide grid
+        this.backgroundElm.style.setProperty(
+          'background-image',
+          this._gridVisible
+            ? 'radial-gradient(var(--affine-edgeless-grid-color) 1px, var(--affine-background-primary-color) 1px)'
+            : 'none'
         );
       }
     },
@@ -405,10 +415,36 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     return super.bindHotKey(keymap, options);
   }
 
+  private _initGridSettings() {
+    const store = this.std.get(EditPropsStore);
+
+    // Load initial settings
+    this._gridVisible = store.getStorage('edgelessShowGrid') ?? true;
+    this._gridSize = store.getStorage('edgelessGridSize') ?? 20;
+
+    // Listen for changes from grid menu
+    this._disposables.addFromEvent(
+      this,
+      'grid-visibility-changed',
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ visible: boolean }>;
+        this._gridVisible = customEvent.detail.visible;
+        this._refreshLayerViewport();
+      }
+    );
+
+    this._disposables.addFromEvent(this, 'grid-size-changed', (e: Event) => {
+      const customEvent = e as CustomEvent<{ size: number }>;
+      this._gridSize = customEvent.detail.size;
+      this._refreshLayerViewport();
+    });
+  }
+
   override connectedCallback() {
     super.connectedCallback();
 
     this._initViewport();
+    this._initGridSettings();
 
     this.keyboardManager = new EdgelessPageKeyboardManager(this);
 
