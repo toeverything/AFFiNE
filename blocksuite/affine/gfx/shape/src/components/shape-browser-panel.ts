@@ -52,6 +52,7 @@ const Triangle = html`<svg
 </svg>`;
 
 export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
+  // Matching template-panel.ts styling exactly
   static override styles = css`
     :host {
       position: absolute;
@@ -59,32 +60,35 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       z-index: var(--affine-z-index-popover);
     }
 
-    .shape-browser-panel {
-      width: 320px;
+    .edgeless-shapes-panel {
+      width: 467px;
       height: 400px;
       border-radius: 12px;
       background-color: var(--affine-background-overlay-panel-color);
       box-shadow: 0px 10px 80px 0px rgba(0, 0, 0, 0.2);
+
       display: flex;
       flex-direction: column;
     }
-    ${unsafeCSS(lightToolbarStyles('.shape-browser-panel'))}
-    ${unsafeCSS(darkToolbarStyles('.shape-browser-panel'))}
+    ${unsafeCSS(lightToolbarStyles('.edgeless-shapes-panel'))}
+    ${unsafeCSS(darkToolbarStyles('.edgeless-shapes-panel'))}
 
     .panel-header {
-      padding: 16px;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 21px 24px;
+      font-size: 18px;
       color: var(--affine-text-primary-color);
       border-bottom: 1px solid var(--affine-divider-color);
+      font-weight: 500;
+
       flex-shrink: 0;
     }
 
-    .categories {
+    .shape-categories {
       display: flex;
       padding: 6px 8px;
       gap: 4px;
-      overflow-x: auto;
+      overflow-x: scroll;
+
       flex-shrink: 0;
     }
 
@@ -110,49 +114,61 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     .shapes-viewport {
       position: relative;
       flex-grow: 1;
-      overflow: hidden;
     }
 
     .shapes-scrollcontent {
-      overflow-y: auto;
+      overflow: hidden;
       height: 100%;
       width: 100%;
     }
 
-    .shapes-grid {
+    .shapes-list {
       padding: 10px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      display: flex;
+      align-items: flex-start;
+      align-content: flex-start;
+      gap: 10px 20px;
+      flex-wrap: wrap;
     }
 
     .shape-item {
       position: relative;
+      width: 100px;
+      height: 70px;
+      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.02);
+      background-color: var(--affine-background-primary-color);
+      border-radius: 4px;
+      cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 12px 8px;
-      background-color: var(--affine-background-primary-color);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
     }
 
-    .shape-item:hover {
+    .shape-item svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--affine-icon-color);
+      stroke: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .shape-item:hover::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--affine-black-10);
+      border-radius: 4px;
       background-color: var(--affine-hover-color);
     }
 
     .shape-item.active {
-      background-color: var(--affine-hover-color);
-      outline: 1px solid var(--affine-primary-color);
-    }
-
-    .shape-item svg {
-      width: 24px;
-      height: 24px;
-      fill: var(--affine-icon-color);
-      stroke: none;
+      outline: 2px solid var(--affine-primary-color);
     }
 
     .shape-name {
@@ -160,10 +176,8 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       color: var(--affine-text-secondary-color);
       margin-top: 4px;
       text-align: center;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
+      position: relative;
+      z-index: 1;
     }
 
     .empty-state {
@@ -173,6 +187,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       padding: 32px;
       color: var(--affine-text-secondary-color);
       font-size: 14px;
+      width: 100%;
     }
 
     .arrow {
@@ -220,6 +235,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.addEventListener('keydown', stopPropagation, false);
     this._disposables.addFromEvent(this, 'click', stopPropagation);
     this._disposables.addFromEvent(this, 'wheel', stopPropagation);
   }
@@ -240,13 +256,9 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     const appTheme = this.edgeless?.std?.get(ThemeProvider)?.app$?.value;
 
     return html`
-      <div
-        class="shape-browser-panel"
-        data-app-theme=${appTheme ?? 'light'}
-        @keydown=${stopPropagation}
-      >
+      <div class="edgeless-shapes-panel" data-app-theme=${appTheme ?? 'light'}>
         <div class="panel-header">Shapes</div>
-        <div class="categories">
+        <div class="shape-categories">
           ${repeat(
             SHAPE_CATEGORIES,
             cat => cat.id,
@@ -263,8 +275,8 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
           )}
         </div>
         <div class="shapes-viewport">
-          <div class="shapes-scrollcontent">
-            <div class="shapes-grid">
+          <div class="shapes-scrollcontent" data-scrollable>
+            <div class="shapes-list">
               ${shapesInCategory.length > 0
                 ? repeat(
                     shapesInCategory,
@@ -275,7 +287,6 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
                           ? 'active'
                           : ''}"
                         @click=${() => this._onSelect(name)}
-                        title=${tooltip}
                       >
                         ${generalIcon}
                         <span class="shape-name">${tooltip}</span>
@@ -287,6 +298,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
                   </div>`}
             </div>
           </div>
+          <overlay-scrollbar></overlay-scrollbar>
         </div>
         <div class="arrow">${Triangle}</div>
       </div>

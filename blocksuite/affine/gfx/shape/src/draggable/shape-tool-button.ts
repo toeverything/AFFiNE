@@ -115,10 +115,16 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     document.body.append(panel);
 
     requestAnimationFrame(() => {
+      // Find the More button in the shape menu as the positioning reference
+      const moreButton = this._menuElement?.renderRoot.querySelector(
+        '.more-shapes-button'
+      ) as HTMLElement | null;
+      const referenceEl = moreButton ?? this._menuElement ?? this;
+
       const arrowEl = panel.renderRoot.querySelector('.arrow') as HTMLElement;
       this._autoUpdateCleanup?.();
-      this._autoUpdateCleanup = autoUpdate(this, panel, () => {
-        computePosition(this, panel, {
+      this._autoUpdateCleanup = autoUpdate(referenceEl, panel, () => {
+        computePosition(referenceEl, panel, {
           placement: 'top',
           middleware: [offset(20), arrow({ element: arrowEl }), shift()],
         })
