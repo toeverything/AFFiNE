@@ -1,6 +1,7 @@
 import {
   ConnectorMode,
   DefaultTheme,
+  type JumpStyle,
   type LineWidth,
 } from '@blocksuite/affine-model';
 import {
@@ -74,6 +75,29 @@ function ConnectorModeButtonGroup(
   `;
 }
 
+function JumpStyleSelector(
+  jumpStyle: JumpStyle,
+  onChange: (props: Record<string, unknown>) => void
+) {
+  return html`
+    <div class="jump-style-selector">
+      <label class="jump-style-label">Jump:</label>
+      <select
+        class="jump-style-select"
+        .value=${jumpStyle}
+        @change=${(e: Event) =>
+          onChange({ jumpStyle: (e.target as HTMLSelectElement).value })}
+      >
+        <option value="none">None</option>
+        <option value="arc">Arc</option>
+        <option value="gap">Gap</option>
+        <option value="sharp">Sharp</option>
+        <option value="line">Line</option>
+      </select>
+    </div>
+  `;
+}
+
 export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
   SignalWatcher(LitElement)
 ) {
@@ -109,12 +133,37 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
       background-color: var(--affine-border-color);
       display: inline-block;
     }
+
+    .jump-style-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .jump-style-label {
+      font-size: 12px;
+      color: var(--affine-text-secondary-color);
+    }
+
+    .jump-style-select {
+      padding: 4px 8px;
+      border: 1px solid var(--affine-border-color);
+      border-radius: 4px;
+      background: var(--affine-background-primary-color);
+      color: var(--affine-text-primary-color);
+      font-size: 12px;
+      cursor: pointer;
+    }
   `;
 
   private readonly _props$ = computed(() => {
-    const { mode, stroke, strokeWidth } =
-      this.edgeless.std.get(EditPropsStore).lastProps$.value.connector;
-    return { mode, stroke, strokeWidth };
+    const {
+      mode,
+      stroke,
+      strokeWidth,
+      jumpStyle = 'none',
+    } = this.edgeless.std.get(EditPropsStore).lastProps$.value.connector;
+    return { mode, stroke, strokeWidth, jumpStyle };
   });
 
   private readonly _theme$ = computed(() => {
@@ -124,11 +173,12 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
   override type = ConnectorTool;
 
   override render() {
-    const { stroke, strokeWidth, mode } = this._props$.value;
+    const { stroke, strokeWidth, mode, jumpStyle } = this._props$.value;
     const connectorModeButtonGroup = ConnectorModeButtonGroup(
       mode,
       this.onChange
     );
+    const jumpStyleSelector = JumpStyleSelector(jumpStyle, this.onChange);
 
     return html`
       <edgeless-slide-menu>
@@ -153,6 +203,8 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
             @select=${(e: ColorEvent) =>
               this.onChange({ stroke: e.detail.value })}
           ></edgeless-color-panel>
+          <div class="submenu-divider"></div>
+          ${jumpStyleSelector}
         </div>
       </edgeless-slide-menu>
     `;
