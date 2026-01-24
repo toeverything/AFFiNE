@@ -13,7 +13,6 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import type { EditorHost } from '@blocksuite/std';
 import type { GfxModel } from '@blocksuite/std/gfx';
 import { autoUpdate, computePosition, flip, offset } from '@floating-ui/dom';
-import { signal } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -449,24 +448,19 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
   override connectedCallback() {
     super.connectedCallback();
-    console.log('[PropertiesModal] connectedCallback called');
 
     // Delay attaching click-outside listener to avoid immediate closure
     // from the same click event that opened the modal
     setTimeout(() => {
-      console.log('[PropertiesModal] Attaching click-outside listeners');
-
       // Use both click and touchend for better touch device support
       this.disposables.addFromEvent(document, 'click', (e: Event) => {
         if (!this.contains(e.target as Node)) {
-          console.log('[PropertiesModal] Click outside detected, hiding...');
           this._hide();
         }
       });
 
       this.disposables.addFromEvent(document, 'touchend', (e: Event) => {
         if (!this.contains(e.target as Node)) {
-          console.log('[PropertiesModal] Touch outside detected, hiding...');
           this._hide();
         }
       });
@@ -474,13 +468,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
   }
 
   override firstUpdated() {
-    console.log('[PropertiesModal] firstUpdated called');
-    console.log('[PropertiesModal] referenceElement:', this.referenceElement);
-
-    if (!this.referenceElement) {
-      console.warn('[PropertiesModal] No reference element found!');
-      return;
-    }
+    if (!this.referenceElement) return;
 
     this.disposables.add(
       autoUpdate(this.referenceElement, this, () => {
@@ -490,7 +478,6 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
           middleware: [flip(), offset(8)],
         })
           .then(({ x, y }) => {
-            console.log('[PropertiesModal] Positioned at:', { x, y });
             this.style.left = `${x}px`;
             this.style.top = `${y}px`;
           })
@@ -502,20 +489,13 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     this.disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
       e.stopPropagation();
       if (e.key === 'Escape') {
-        console.log('[PropertiesModal] ESC pressed, hiding...');
         this._hide();
       }
     });
   }
 
   override render() {
-    console.log('[PropertiesModal] render called');
-    console.log('[PropertiesModal] model:', this.model);
-
-    if (!this.model) {
-      console.warn('[PropertiesModal] No model, returning null');
-      return null;
-    }
+    if (!this.model) return null;
 
     const isShape = this.model instanceof ShapeElementModel;
     const isConnector = this.model instanceof ConnectorElementModel;
@@ -524,8 +504,6 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
       : isConnector
         ? 'Connector'
         : 'Element';
-
-    console.log('[PropertiesModal] Rendering', elementType, 'properties');
 
     return html`
       <div class="properties-modal-wrapper" @click=${stopPropagation}>

@@ -383,13 +383,10 @@ export const moreActions = [
       return models.length === 1;
     },
     run(ctx) {
-      console.log('[Properties] Button clicked');
       const models = ctx.getSurfaceModels();
-      console.log('[Properties] Models:', models);
       if (models.length !== 1) return;
 
       const model = models[0];
-      console.log('[Properties] Selected model:', model);
 
       // Try multiple selectors to find the toolbar element
       let toolbarElement =
@@ -398,13 +395,8 @@ export const moreActions = [
         document.querySelector('[aria-label="More menu"]') ||
         document.querySelector('editor-menu-button');
 
-      console.log('[Properties] Toolbar element:', toolbarElement);
-
       // If still no element, use a virtual reference at the center of viewport
       if (!toolbarElement) {
-        console.warn(
-          '[Properties] No toolbar element found, using viewport positioning'
-        );
         const virtualElement = {
           getBoundingClientRect: () => ({
             x: window.innerWidth / 2,
@@ -421,16 +413,13 @@ export const moreActions = [
       }
 
       // Create and show the properties modal
-      console.log('[Properties] Creating modal...');
       const modal = new PropertiesModal();
       modal.host = ctx.host;
       modal.model = model;
       modal.referenceElement = toolbarElement;
       modal.abortController = new AbortController();
 
-      console.log('[Properties] Appending modal to body...');
       document.body.appendChild(modal);
-      console.log('[Properties] Modal appended:', modal);
     },
   },
 
