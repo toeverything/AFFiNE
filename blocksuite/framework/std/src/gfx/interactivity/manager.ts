@@ -447,7 +447,7 @@ export class InteractivityManager extends GfxExtension {
         internal.dragStartPos,
         dragLastPos,
         this.keyboard.shiftKey$.peek()
-      );
+       ) ?? dragLastPos;
 
       const finalPoint = snappedPoint ?? dragLastPos;
       
@@ -457,7 +457,7 @@ export class InteractivityManager extends GfxExtension {
         dragLastPos: finalPoint,
         dx: finalPoint.x - internal.dragStartPos.x,
         dy: finalPoint.y - internal.dragStartPos.y,
-      };
+       };
 
       this._safeExecute(() => {
         activeExtensionHandlers.forEach(handler =>
