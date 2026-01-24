@@ -304,8 +304,11 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
           .value=${model.radius.toString()}
           @input=${(e: Event) => {
             const target = e.target as HTMLInputElement;
-            const value = parseFloat(target.value);
+            let value = parseFloat(target.value);
             if (!isNaN(value)) {
+              // Clamp value between 0 and 1
+              value = Math.max(0, Math.min(1, value));
+              target.value = value.toString();
               this._updateProperty('radius', value);
             }
           }}
@@ -327,8 +330,9 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
           }}
         >
           <option value="0">Straight</option>
-          <option value="1">Orthogonal</option>
+          <option value="1">Elbowed</option>
           <option value="2">Curve</option>
+          <option value="3">Rounded</option>
         </select>
       </div>
 
