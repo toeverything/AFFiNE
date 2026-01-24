@@ -21,6 +21,8 @@ import {
   calculateNearestLocation,
   type ConnectionOverlay,
   ConnectorEndpointLocations,
+  ConnectorEndpointLocationsOnDiamond,
+  ConnectorEndpointLocationsOnRectangle,
   ConnectorEndpointLocationsOnTriangle,
 } from './connector-manager';
 
@@ -192,16 +194,30 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
     this._overlay?.clear();
   }
 
+  private _getConnectionLocationsForShape(element: GfxModel): IVec[] {
+    if (element instanceof ShapeElementModel) {
+      switch (element.shapeType) {
+        case ShapeType.Rect:
+          return ConnectorEndpointLocationsOnRectangle;
+        case ShapeType.Triangle:
+          return ConnectorEndpointLocationsOnTriangle;
+        case ShapeType.Diamond:
+          return ConnectorEndpointLocationsOnDiamond;
+        case ShapeType.Ellipse:
+          return ConnectorEndpointLocationsOnDiamond; // Same as diamond
+        default:
+          return ConnectorEndpointLocations;
+      }
+    }
+    return ConnectorEndpointLocations;
+  }
+
   quickConnect(point: IVec, element: GfxModel) {
     this._startPoint = this.gfx.viewport.toModelCoord(point[0], point[1]);
     this._mode = ConnectorToolMode.Quick;
     this._sourceBounds = Bound.deserialize(element.xywh);
     this._sourceBounds.rotate = element.rotate;
-    this._sourceLocations =
-      element instanceof ShapeElementModel &&
-      element.shapeType === ShapeType.Triangle
-        ? ConnectorEndpointLocationsOnTriangle
-        : ConnectorEndpointLocations;
+    this._sourceLocations = this._getConnectionLocationsForShape(element);
 
     this._source = {
       id: element.id,

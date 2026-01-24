@@ -60,14 +60,64 @@ export const ConnectorEndpointLocations: IVec[] = [
 ];
 
 export const ConnectorEndpointLocationsOnTriangle: IVec[] = [
-  // At top
+  // At top (apex)
   [0.5, 0],
-  // At right
+  // At right side
   [0.75, 0.5],
-  // At bottom
+  // At bottom: left quarter, center, right quarter
+  [0.25, 1],
   [0.5, 1],
-  // At left
+  [0.75, 1],
+  // At left side
   [0.25, 0.5],
+];
+
+// Extended connection points for rectangle (16 points total)
+export const ConnectorEndpointLocationsOnRectangle: IVec[] = [
+  // Top edge: left quarter, center, right quarter
+  [0.25, 0],
+  [0.5, 0],
+  [0.75, 0],
+  // Top-right corner
+  [1, 0],
+  // Right edge: top quarter, center, bottom quarter
+  [1, 0.25],
+  [1, 0.5],
+  [1, 0.75],
+  // Bottom-right corner
+  [1, 1],
+  // Bottom edge: right quarter, center, left quarter
+  [0.75, 1],
+  [0.5, 1],
+  [0.25, 1],
+  // Bottom-left corner
+  [0, 1],
+  // Left edge: bottom quarter, center, top quarter
+  [0, 0.75],
+  [0, 0.5],
+  [0, 0.25],
+  // Top-left corner
+  [0, 0],
+];
+
+// Extended connection points for diamond/ellipse (8 points total)
+export const ConnectorEndpointLocationsOnDiamond: IVec[] = [
+  // Top
+  [0.5, 0],
+  // Top-right (halfway between top and right)
+  [0.75, 0.25],
+  // Right
+  [1, 0.5],
+  // Bottom-right (halfway between right and bottom)
+  [0.75, 0.75],
+  // Bottom
+  [0.5, 1],
+  // Bottom-left (halfway between bottom and left)
+  [0.25, 0.75],
+  // Left
+  [0, 0.5],
+  // Top-left (halfway between left and top)
+  [0.25, 0.25],
 ];
 
 export function isConnectorWithLabel(model: GfxModel | GfxLocalElementModel) {
@@ -130,31 +180,67 @@ export function isConnectorAndBindingsAllSelected(
   return false;
 }
 
+/**
+ * Get connection point locations for a given element based on its shape type
+ */
+export function getConnectionLocationsForElement(ele: GfxModel): IVec[] {
+  // Check if element is a ShapeElementModel and get shape-specific locations
+  if ('shapeType' in ele) {
+    const shapeType = (ele as any).shapeType;
+    switch (shapeType) {
+      case 'rect':
+        return ConnectorEndpointLocationsOnRectangle;
+      case 'triangle':
+        return ConnectorEndpointLocationsOnTriangle;
+      case 'diamond':
+        return ConnectorEndpointLocationsOnDiamond;
+      case 'ellipse':
+        return ConnectorEndpointLocationsOnDiamond; // Same as diamond
+      default:
+        return ConnectorEndpointLocations;
+    }
+  }
+  return ConnectorEndpointLocations;
+}
+
 export function getAnchors(ele: GfxModel) {
   const bound = Bound.deserialize(ele.xywh);
-  const offset = 10;
   const anchors: { point: PointLocation; coord: IVec }[] = [];
   const rotate = ele.rotate;
+  const locations = getConnectionLocationsForElement(ele);
 
-  (
-    [
-      [bound.center[0], bound.y - offset],
-      [bound.center[0], bound.maxY + offset],
-      [bound.x - offset, bound.center[1]],
-      [bound.maxX + offset, bound.center[1]],
-    ] satisfies IVec[]
-  )
-    .map(vec => getPointFromBoundsWithRotation({ ...bound, rotate }, vec))
-    .forEach(vec => {
-      const rst = ele.getLineIntersections(bound.center, vec);
-      if (!rst) return;
+  // For each connection location (relative coordinates), calculate the actual point
+  locations.forEach(location => {
+    // Convert relative location to absolute position
+    const absPoint: IVec = [
+      bound.x + location[0] * bound.w,
+      bound.y + location[1] * bound.h,
+    ];
 
-      const originPoint = getPointFromBoundsWithRotation(
-        { ...bound, rotate: -rotate },
-        rst[0]
-      );
-      anchors.push({ point: rst[0], coord: bound.toRelative(originPoint) });
-    });
+    // Apply rotation if needed
+    const rotatedPoint = getPointFromBoundsWithRotation(
+      { ...bound, rotate },
+      absPoint
+    );
+
+    // Get the intersection point with the shape's edge
+    const rst = ele.getLineIntersections(bound.center, rotatedPoint);
+    if (!rst) {
+      // If no intersection, use the calculated point directly
+      anchors.push({
+        point: rotatedPoint,
+        coord: location,
+      });
+      return;
+    }
+
+    const originPoint = getPointFromBoundsWithRotation(
+      { ...bound, rotate: -rotate },
+      rst[0]
+    );
+    anchors.push({ point: rst[0], coord: bound.toRelative(originPoint) });
+  });
+
   return anchors;
 }
 
