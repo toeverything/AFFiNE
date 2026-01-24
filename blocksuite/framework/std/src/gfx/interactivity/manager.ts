@@ -125,8 +125,7 @@ export class InteractivityManager extends GfxExtension {
     });
 
     const handledByView =
-      this.canvasEventHandler.dispatch(eventName, evt) ?? false;
-
+      this.canvasEventHandler?.dispatch(eventName, evt) ?? false;
     return {
       preventDefaultState,
       handledByView,
