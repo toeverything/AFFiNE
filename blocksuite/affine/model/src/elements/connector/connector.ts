@@ -42,6 +42,8 @@ import {
 } from '../../consts/index';
 import { type Color, DefaultTheme } from '../../themes/index';
 
+export type JumpStyle = 'none' | 'arc' | 'gap' | 'sharp' | 'line';
+
 export type SerializedConnection = {
   id?: string;
   position?: `[${number},${number}]` | PointLocation;
@@ -104,6 +106,13 @@ export type ConnectorElementProps = BaseElementProps & {
 
   frontEndpointStyle?: PointStyle;
   rearEndpointStyle?: PointStyle;
+
+  // Waypoints for connector routing
+  waypoints?: IVec[];
+
+  // Jump styles for connector intersections
+  jumpStyle?: JumpStyle;
+  jumpSize?: number;
 } & ConnectorLabelProps;
 
 export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorElementProps> {
@@ -513,6 +522,26 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    */
   @field()
   accessor text: Y.Text | undefined = undefined;
+
+  /**
+   * User-defined waypoints for connector routing.
+   * These are intermediate control points that the connector path passes through.
+   */
+  @field()
+  accessor waypoints: IVec[] | undefined = undefined;
+
+  /**
+   * Jump style for rendering connector intersections.
+   * Options: 'none', 'arc', 'gap', 'sharp', 'line'
+   */
+  @field('none' as JumpStyle)
+  accessor jumpStyle!: JumpStyle;
+
+  /**
+   * Jump size in pixels for rendering jumps at intersections.
+   */
+  @field(10)
+  accessor jumpSize!: number;
 
   @local()
   accessor xywh: SerializedXYWH = '[0,0,0,0]';
