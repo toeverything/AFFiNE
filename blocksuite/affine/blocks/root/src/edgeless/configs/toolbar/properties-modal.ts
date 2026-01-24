@@ -445,16 +445,32 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
   override connectedCallback() {
     super.connectedCallback();
+    console.log('[PropertiesModal] connectedCallback called');
 
+    // Use both click and touchend for better touch device support
     this.disposables.addFromEvent(document, 'click', (e: Event) => {
       if (!this.contains(e.target as Node)) {
+        console.log('[PropertiesModal] Click outside detected, hiding...');
+        this._hide();
+      }
+    });
+
+    this.disposables.addFromEvent(document, 'touchend', (e: Event) => {
+      if (!this.contains(e.target as Node)) {
+        console.log('[PropertiesModal] Touch outside detected, hiding...');
         this._hide();
       }
     });
   }
 
   override firstUpdated() {
-    if (!this.referenceElement) return;
+    console.log('[PropertiesModal] firstUpdated called');
+    console.log('[PropertiesModal] referenceElement:', this.referenceElement);
+
+    if (!this.referenceElement) {
+      console.warn('[PropertiesModal] No reference element found!');
+      return;
+    }
 
     this.disposables.add(
       autoUpdate(this.referenceElement, this, () => {
@@ -464,6 +480,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
           middleware: [flip(), offset(8)],
         })
           .then(({ x, y }) => {
+            console.log('[PropertiesModal] Positioned at:', { x, y });
             this.style.left = `${x}px`;
             this.style.top = `${y}px`;
           })
@@ -475,13 +492,20 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     this.disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
       e.stopPropagation();
       if (e.key === 'Escape') {
+        console.log('[PropertiesModal] ESC pressed, hiding...');
         this._hide();
       }
     });
   }
 
   override render() {
-    if (!this.model) return null;
+    console.log('[PropertiesModal] render called');
+    console.log('[PropertiesModal] model:', this.model);
+
+    if (!this.model) {
+      console.warn('[PropertiesModal] No model, returning null');
+      return null;
+    }
 
     const isShape = this.model instanceof ShapeElementModel;
     const isConnector = this.model instanceof ConnectorElementModel;
@@ -490,6 +514,8 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
       : isConnector
         ? 'Connector'
         : 'Element';
+
+    console.log('[PropertiesModal] Rendering', elementType, 'properties');
 
     return html`
       <div class="properties-modal-wrapper" @click=${stopPropagation}>

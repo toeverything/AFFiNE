@@ -383,25 +383,32 @@ export const moreActions = [
       return models.length === 1;
     },
     run(ctx) {
+      console.log('[Properties] Button clicked');
       const models = ctx.getSurfaceModels();
+      console.log('[Properties] Models:', models);
       if (models.length !== 1) return;
 
       const model = models[0];
+      console.log('[Properties] Selected model:', model);
 
       // Find the toolbar element to use as reference for positioning
       const toolbarElement = document.querySelector(
         'affine-toolbar-widget editor-toolbar'
       );
+      console.log('[Properties] Toolbar element:', toolbarElement);
       if (!toolbarElement) return;
 
       // Create and show the properties modal
+      console.log('[Properties] Creating modal...');
       const modal = new PropertiesModal();
       modal.host = ctx.host;
       modal.model = model;
       modal.referenceElement = toolbarElement;
       modal.abortController = new AbortController();
 
+      console.log('[Properties] Appending modal to body...');
       document.body.appendChild(modal);
+      console.log('[Properties] Modal appended:', modal);
     },
   },
 
