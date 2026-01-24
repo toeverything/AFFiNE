@@ -391,12 +391,34 @@ export const moreActions = [
       const model = models[0];
       console.log('[Properties] Selected model:', model);
 
-      // Find the toolbar element to use as reference for positioning
-      const toolbarElement = document.querySelector(
-        'affine-toolbar-widget editor-toolbar'
-      );
+      // Try multiple selectors to find the toolbar element
+      let toolbarElement =
+        document.querySelector('editor-toolbar') ||
+        document.querySelector('affine-toolbar-widget') ||
+        document.querySelector('[aria-label="More menu"]') ||
+        document.querySelector('editor-menu-button');
+
       console.log('[Properties] Toolbar element:', toolbarElement);
-      if (!toolbarElement) return;
+
+      // If still no element, use a virtual reference at the center of viewport
+      if (!toolbarElement) {
+        console.warn(
+          '[Properties] No toolbar element found, using viewport positioning'
+        );
+        const virtualElement = {
+          getBoundingClientRect: () => ({
+            x: window.innerWidth / 2,
+            y: 100,
+            width: 0,
+            height: 0,
+            top: 100,
+            left: window.innerWidth / 2,
+            right: window.innerWidth / 2,
+            bottom: 100,
+          }),
+        };
+        toolbarElement = virtualElement as any;
+      }
 
       // Create and show the properties modal
       console.log('[Properties] Creating modal...');
