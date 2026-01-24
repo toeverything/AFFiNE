@@ -22,6 +22,7 @@ import {
   type ConnectionOverlay,
   ConnectorEndpointLocations,
   ConnectorEndpointLocationsOnDiamond,
+  ConnectorEndpointLocationsOnEllipse,
   ConnectorEndpointLocationsOnRectangle,
   ConnectorEndpointLocationsOnTriangle,
 } from './connector-manager';
@@ -204,7 +205,7 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
         case ShapeType.Diamond:
           return ConnectorEndpointLocationsOnDiamond;
         case ShapeType.Ellipse:
-          return ConnectorEndpointLocationsOnDiamond; // Same as diamond
+          return ConnectorEndpointLocationsOnEllipse;
         default:
           return ConnectorEndpointLocations;
       }

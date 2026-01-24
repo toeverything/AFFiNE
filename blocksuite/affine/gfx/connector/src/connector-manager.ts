@@ -100,7 +100,7 @@ export const ConnectorEndpointLocationsOnRectangle: IVec[] = [
   [0, 0],
 ];
 
-// Extended connection points for diamond/ellipse (8 points total)
+// Extended connection points for diamond (8 points total)
 export const ConnectorEndpointLocationsOnDiamond: IVec[] = [
   // Top
   [0.5, 0],
@@ -118,6 +118,28 @@ export const ConnectorEndpointLocationsOnDiamond: IVec[] = [
   [0, 0.5],
   // Top-left (halfway between left and top)
   [0.25, 0.25],
+];
+
+// Extended connection points for ellipse (8 points total)
+// Points calculated using trigonometry to sit on the actual ellipse curve
+// Formula: x = 0.5 + 0.5 * cos(angle), y = 0.5 + 0.5 * sin(angle)
+export const ConnectorEndpointLocationsOnEllipse: IVec[] = [
+  // Top (270°)
+  [0.5, 0],
+  // Top-right (315°)
+  [0.8536, 0.1464],
+  // Right (0°)
+  [1, 0.5],
+  // Bottom-right (45°)
+  [0.8536, 0.8536],
+  // Bottom (90°)
+  [0.5, 1],
+  // Bottom-left (135°)
+  [0.1464, 0.8536],
+  // Left (180°)
+  [0, 0.5],
+  // Top-left (225°)
+  [0.1464, 0.1464],
 ];
 
 export function isConnectorWithLabel(model: GfxModel | GfxLocalElementModel) {
@@ -195,7 +217,7 @@ export function getConnectionLocationsForElement(ele: GfxModel): IVec[] {
       case 'diamond':
         return ConnectorEndpointLocationsOnDiamond;
       case 'ellipse':
-        return ConnectorEndpointLocationsOnDiamond; // Same as diamond
+        return ConnectorEndpointLocationsOnEllipse;
       default:
         return ConnectorEndpointLocations;
     }
@@ -998,7 +1020,7 @@ export class ConnectionOverlay extends Overlay {
     const zoom = this.gfx.viewport.zoom;
     const radius = 5 / zoom;
     const color = this._emphasisColor;
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.3; // Reduced from 0.6 to make lighter
     let lineWidth = 1 / zoom;
     if (this.sourceBounds) {
       renderRect(ctx, this.sourceBounds, color, lineWidth);
@@ -1007,13 +1029,13 @@ export class ConnectionOverlay extends Overlay {
       renderRect(ctx, this.targetBounds, color, lineWidth);
     }
 
-    lineWidth = 2 / zoom;
+    // Keep lineWidth at 1px instead of 2px for thinner strokes
     this.points.forEach(p => {
       ctx.beginPath();
       ctx.arc(p[0], p[1], radius, 0, PI2);
       ctx.fillStyle = 'white';
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = lineWidth; // Now using 1/zoom instead of 2/zoom
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
@@ -1025,7 +1047,7 @@ export class ConnectionOverlay extends Overlay {
       ctx.arc(this.highlightPoint[0], this.highlightPoint[1], radius, 0, PI2);
       ctx.fillStyle = color;
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = 1 / zoom; // Use 1px stroke for consistency
       ctx.fill();
       ctx.stroke();
       ctx.closePath();

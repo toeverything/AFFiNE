@@ -739,6 +739,12 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   }
 
   override render() {
+    // Don't show auto-complete for connectors or invalid types
+    if (!this.canShowAutoComplete) {
+      this.removeOverlay();
+      return nothing;
+    }
+
     const isShape = this.current instanceof ShapeElementModel;
     const isMindMap = this.current.group instanceof MindmapElementModel;
 
