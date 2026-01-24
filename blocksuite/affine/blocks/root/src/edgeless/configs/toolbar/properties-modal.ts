@@ -447,20 +447,26 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     super.connectedCallback();
     console.log('[PropertiesModal] connectedCallback called');
 
-    // Use both click and touchend for better touch device support
-    this.disposables.addFromEvent(document, 'click', (e: Event) => {
-      if (!this.contains(e.target as Node)) {
-        console.log('[PropertiesModal] Click outside detected, hiding...');
-        this._hide();
-      }
-    });
+    // Delay attaching click-outside listener to avoid immediate closure
+    // from the same click event that opened the modal
+    setTimeout(() => {
+      console.log('[PropertiesModal] Attaching click-outside listeners');
 
-    this.disposables.addFromEvent(document, 'touchend', (e: Event) => {
-      if (!this.contains(e.target as Node)) {
-        console.log('[PropertiesModal] Touch outside detected, hiding...');
-        this._hide();
-      }
-    });
+      // Use both click and touchend for better touch device support
+      this.disposables.addFromEvent(document, 'click', (e: Event) => {
+        if (!this.contains(e.target as Node)) {
+          console.log('[PropertiesModal] Click outside detected, hiding...');
+          this._hide();
+        }
+      });
+
+      this.disposables.addFromEvent(document, 'touchend', (e: Event) => {
+        if (!this.contains(e.target as Node)) {
+          console.log('[PropertiesModal] Touch outside detected, hiding...');
+          this._hide();
+        }
+      });
+    }, 100);
   }
 
   override firstUpdated() {
