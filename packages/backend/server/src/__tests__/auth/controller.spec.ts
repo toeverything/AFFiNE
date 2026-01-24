@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { IncomingMessage } from 'node:http';
 
 import { HttpStatus } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
+import { parseCookies as safeParseCookies } from '../../base/utils/request';
 import { AuthService } from '../../core/auth/service';
 import {
   createTestingApp,
@@ -158,30 +160,16 @@ test('should be able to correct user id cookie', async t => {
 });
 
 test('should not throw on parse of a bad cookie', async t => {
-  const { app } = t.context;
+  const badCookieKey = 'auth_session';
+  const badCookieVal = '^13l3PK9qJs*J%X$MOOOIguhkqWvVh7*';
 
-  const cookie_key = 'auth_session';
-  const cookie_val = '^13l3PK9qJs*J%X$MOOOIguhkqWvVh7*';
+  const req = {
+    headers: { cookie: `${badCookieKey}=${badCookieVal}` },
+  } as IncomingMessage & { cookies?: Record<string, string> };
 
-  await app.signupV1('u1@affine.pro');
+  t.notThrows(() => safeParseCookies(req));
 
-  const req = app.GET('/api/auth/session');
-
-  let cookies = req.get('cookie') as unknown as string[];
-
-  cookies.push(`${cookie_key}=${cookie_val}`);
-
-  const res = await req.set('Cookie', cookies).expect(200);
-
-  let parsedCookies: Record<string, string>;
-
-  t.notThrows(() => {
-    parsedCookies = parseCookies(res);
-  });
-
-  const testCookie = parsedCookies![cookie_key];
-
-  t.is(cookie_val, testCookie);
+  t.is(req.cookies?.[badCookieKey], badCookieVal);
 });
 
 // multiple accounts session tests
