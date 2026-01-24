@@ -46,6 +46,7 @@ import {
   GroupIcon,
   LinkedPageIcon,
   ResetIcon,
+  SettingsIcon,
 } from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import { GfxBlockElementModel, type GfxModel } from '@blocksuite/std/gfx';
@@ -55,6 +56,7 @@ import { duplicate } from '../../utils/clipboard-utils';
 import { getSortedCloneElements } from '../../utils/clone-utils';
 import { moveConnectors } from '../../utils/connector';
 import { deleteElements } from '../../utils/crud';
+import { PropertiesModal } from './properties-modal';
 import {
   createLinkedDocFromEdgelessElements,
   createLinkedDocFromNote,
@@ -374,85 +376,32 @@ export const moreActions = [
   {
     id: 'd.z.properties',
     label: 'Properties',
+    icon: SettingsIcon(),
+    when(ctx) {
+      const models = ctx.getSurfaceModels();
+      // Only show for single selection of shapes or connectors
+      return models.length === 1;
+    },
     run(ctx) {
       const models = ctx.getSurfaceModels();
-      if (!models.length) return;
+      if (models.length !== 1) return;
 
-      // Log all properties to console for investigation
-      models.forEach((model, index) => {
-        console.log(`[Properties] Element ${index + 1}:`, {
-          id: model.id,
-          type: 'type' in model ? model.type : model.flavour,
-          flavour: model.flavour,
-          fullObject: model,
-          // Common properties
-          xywh: 'xywh' in model ? model.xywh : undefined,
-          index: 'index' in model ? model.index : undefined,
-          // All enumerable properties
-          allProperties: Object.getOwnPropertyNames(model).reduce(
-            (acc, key) => {
-              try {
-                acc[key] = (model as any)[key];
-              } catch (e) {
-                acc[key] = `[Error accessing property: ${e}]`;
-              }
-              return acc;
-            },
-            {} as Record<string, any>
-          ),
-          // Prototype properties
-          prototypeProperties: Object.getOwnPropertyNames(
-            Object.getPrototypeOf(model)
-          ).filter(key => !['constructor'].includes(key)),
-        });
+      const model = models[0];
 
-        // Log specific properties based on type
-        if ('type' in model) {
-          const elementType = model.type;
-          console.log(`[Properties] ${elementType} specific properties:`, {
-            // Shape properties
-            ...(elementType === 'shape'
-              ? {
-                  shapeType: (model as any).shapeType,
-                  radius: (model as any).radius,
-                  filled: (model as any).filled,
-                  fillColor: (model as any).fillColor,
-                  strokeColor: (model as any).strokeColor,
-                  strokeWidth: (model as any).strokeWidth,
-                  strokeStyle: (model as any).strokeStyle,
-                  shapeStyle: (model as any).shapeStyle,
-                  text: (model as any).text,
-                }
-              : {}),
-            // Connector properties
-            ...(elementType === 'connector'
-              ? {
-                  mode: (model as any).mode,
-                  stroke: (model as any).stroke,
-                  strokeWidth: (model as any).strokeWidth,
-                  strokeStyle: (model as any).strokeStyle,
-                  rough: (model as any).rough,
-                  source: (model as any).source,
-                  target: (model as any).target,
-                  frontEndpointStyle: (model as any).frontEndpointStyle,
-                  rearEndpointStyle: (model as any).rearEndpointStyle,
-                  text: (model as any).text,
-                }
-              : {}),
-            // Text properties (if has text)
-            ...((model as any).text
-              ? {
-                  fontFamily: (model as any).fontFamily,
-                  fontSize: (model as any).fontSize,
-                  fontWeight: (model as any).fontWeight,
-                  fontStyle: (model as any).fontStyle,
-                  textAlign: (model as any).textAlign,
-                  color: (model as any).color,
-                }
-              : {}),
-          });
-        }
-      });
+      // Find the toolbar element to use as reference for positioning
+      const toolbarElement = document.querySelector(
+        'affine-toolbar-widget editor-toolbar'
+      );
+      if (!toolbarElement) return;
+
+      // Create and show the properties modal
+      const modal = new PropertiesModal();
+      modal.host = ctx.host;
+      modal.model = model;
+      modal.referenceElement = toolbarElement;
+      modal.abortController = new AbortController();
+
+      document.body.appendChild(modal);
     },
   },
 
