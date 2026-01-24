@@ -61,7 +61,7 @@ export class InteractivityManager extends GfxExtension {
 
   private readonly _disposable = new DisposableGroup();
 
-  private canvasEventHandler = new GfxViewEventManager(this.gfx);
+  private canvasEventHandler?: GfxViewEventManager;
   private snapOverlay?: SnapOverlay;
 
   constructor(...args: ConstructorParameters<typeof GfxExtension>) {
@@ -70,23 +70,20 @@ export class InteractivityManager extends GfxExtension {
 
   mounted() {
     this.snapOverlay = new SnapOverlay(this.gfx);
-    this.canvasEventHandler = new CanvasEventHandler(this.gfx, this.snapOverlay);
+    this.canvasEventHandler = new GfxViewEventManager(this.gfx);
   }
   
-  unmounted() {
-    this.snapOverlay?.clear();
-    this.snapOverlay = undefined;
   
-    this.canvasEventHandler?.destroy();
-    this.canvasEventHandler = undefined;
-  }
-
   activeInteraction$ = signal<null | {
     type: 'move' | 'resize' | 'rotate';
     elements: GfxModel[];
   } | null>(null);
 
   override unmounted(): void {
+    this.snapOverlay?.clear();
+    this.snapOverlay = undefined;
+    this.canvasEventHandler?.destroy();
+    this.canvasEventHandler = undefined;
     this._disposable.dispose();
     this.interactExtensions.forEach(ext => {
       ext.unmounted();
