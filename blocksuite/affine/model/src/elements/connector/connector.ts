@@ -417,6 +417,15 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   @local()
   accessor absolutePath: PointLocation[] = [];
 
+  /**
+   * Routed points with jump markers for rendering.
+   * Calculated during path updates based on intersections with other connectors.
+   * Not persisted - recalculated on each path update.
+   */
+  @local()
+  accessor routedPoints: Array<{ type: 0 | 1; x: number; y: number }> | null =
+    null;
+
   @field('None' as PointStyle)
   accessor frontEndpointStyle!: PointStyle;
 

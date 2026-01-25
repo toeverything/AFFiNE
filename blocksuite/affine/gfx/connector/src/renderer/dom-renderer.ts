@@ -442,17 +442,35 @@ export const connectorBaseDomRenderer = (
     return adjustedPoint;
   });
 
-  // TODO: Wire up jump rendering when view layer integration is complete
-  // To enable jumps:
-  // 1. Get all connectors from the view/store layer
-  // 2. Call: const routedPoints = updateConnectorJumps(model, allConnectors)
-  // 3. If routedPoints.length > 0 && jumpStyle !== 'none':
-  //    pathData = createConnectorPathWithJumps(routedPoints, jumpStyle, jumpSize, strokeWidth)
-  // 4. Else: pathData = createConnectorPath(adjustedPoints, mode)
-  //
-  // For now, using standard rendering until intersection detection is wired up
+  // Check if jump rendering is needed and available
+  let pathData: string;
 
-  const pathData = createConnectorPath(adjustedPoints, mode);
+  if (
+    'routedPoints' in model &&
+    model.routedPoints &&
+    model.routedPoints.length > 0 &&
+    jumpStyle !== 'none' &&
+    mode !== ConnectorMode.Curve
+  ) {
+    // Use jump-aware rendering with routed points
+    // Adjust routed points relative to SVG coordinate system
+    const adjustedRoutedPoints = model.routedPoints.map(pt => ({
+      type: pt.type,
+      x: pt.x - offsetX,
+      y: pt.y - offsetY,
+    }));
+
+    pathData = createConnectorPathWithJumps(
+      adjustedRoutedPoints,
+      jumpStyle,
+      jumpSize,
+      strokeWidth
+    );
+  } else {
+    // Standard rendering without jumps
+    pathData = createConnectorPath(adjustedPoints, mode);
+  }
+
   pathElement.setAttribute('d', pathData);
   pathElement.setAttribute('stroke', strokeColor);
   pathElement.setAttribute('stroke-width', String(strokeWidth));
