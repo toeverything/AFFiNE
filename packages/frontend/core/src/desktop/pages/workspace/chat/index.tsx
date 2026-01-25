@@ -21,6 +21,7 @@ import {
   EventSourceService,
   FetchService,
   GraphQLService,
+  ServerService,
   SubscriptionService,
 } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
@@ -228,6 +229,7 @@ export const Component = () => {
     );
     content.aiDraftService = framework.get(AIDraftService);
     content.aiToolsConfigService = framework.get(AIToolsConfigService);
+    content.serverService = framework.get(ServerService);
     content.subscriptionService = framework.get(SubscriptionService);
     content.aiModelService = framework.get(AIModelService);
     content.onAISubscribe = handleAISubscribe;
