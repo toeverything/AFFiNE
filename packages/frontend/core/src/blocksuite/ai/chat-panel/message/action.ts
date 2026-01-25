@@ -5,7 +5,7 @@ import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { type ChatAction } from '../../components/ai-chat-messages';
-import { HISTORY_IMAGE_ACTIONS } from '../const';
+import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 
 export class ChatMessageAction extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })

@@ -1,6 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import type { AIChatParams, ChatPanel } from '@affine/core/blocksuite/ai';
+import type { AIChatParams } from '@affine/core/blocksuite/ai';
 import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
@@ -103,7 +103,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
-  const chatPanelRef = useRef<ChatPanel | null>(null);
 
   const peekView = useService(PeekViewService).peekView;
 
@@ -373,7 +372,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           icon={<AiIcon />}
           unmountOnInactive={false}
         >
-          <EditorChatPanel editor={editorContainer} ref={chatPanelRef} />
+          <EditorChatPanel editor={editorContainer} />
         </ViewSidebarTab>
       )}
 
