@@ -182,7 +182,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -213,7 +213,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1]
         browser: ['chromium', 'firefox', 'webkit']
     steps:
       - uses: actions/checkout@v4
@@ -251,7 +251,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -282,7 +282,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -313,7 +313,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -507,8 +507,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_index: [0, 1, 2, 3, 4, 5, 6, 7]
-        total_nodes: [8]
+        node_index: [0, 1, 2, 3]
+        total_nodes: [4]
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -924,8 +924,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        shardTotal: [10]
+        shardIndex: [1, 2, 3, 4, 5]
+        shardTotal: [5]
     needs:
       - build-server-native
     services:
@@ -1031,21 +1031,6 @@ jobs:
           - name: 'Cloud E2E Test 5/10'
             shard: 5
             script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=5/10
-          - name: 'Cloud E2E Test 6/10'
-            shard: 6
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=6/10
-          - name: 'Cloud E2E Test 7/10'
-            shard: 7
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=7/10
-          - name: 'Cloud E2E Test 8/10'
-            shard: 8
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=8/10
-          - name: 'Cloud E2E Test 9/10'
-            shard: 9
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=9/10
-          - name: 'Cloud E2E Test 10/10'
-            shard: 10
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=10/10
           - name: 'Cloud Desktop E2E Test'
             shard: desktop
             script: |

@@ -5,7 +5,11 @@ import {
   type ChatContextValue,
 } from '@affine/core/blocksuite/ai/components/ai-chat-content';
 import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
-import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
+import {
+  AIChatToolbar,
+  configureAIChatToolbar,
+  getOrCreateAIChatToolbar,
+} from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import type { PromptKey } from '@affine/core/blocksuite/ai/provider/prompt';
 import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
@@ -37,6 +41,7 @@ import {
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { useI18n } from '@affine/i18n';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { BlockStdScope } from '@blocksuite/affine/std';
 import type { Workspace } from '@blocksuite/affine/store';
@@ -45,6 +50,7 @@ import { useFramework, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { createSessionDeleteHandler } from '../chat-panel-utils';
 import * as styles from './index.css';
 
 type CopilotSession = Awaited<ReturnType<CopilotClient['getSession']>>;
@@ -88,6 +94,7 @@ function useMockStd() {
 }
 
 export const Component = () => {
+  const t = useI18n();
   const framework = useFramework();
   const [isBodyProvided, setIsBodyProvided] = useState(false);
   const [isHeaderProvided, setIsHeaderProvided] = useState(false);
@@ -193,9 +200,45 @@ export const Component = () => {
   );
 
   const confirmModal = useConfirmModal();
+  const notificationService = useMemo(
+    () =>
+      new NotificationServiceImpl(
+        confirmModal.closeConfirmModal,
+        confirmModal.openConfirmModal
+      ),
+    [confirmModal.closeConfirmModal, confirmModal.openConfirmModal]
+  );
   const specs = useAISpecs();
   const mockStd = useMockStd();
   const handleAISubscribe = useAISubscribe();
+
+  const deleteSession = useMemo(
+    () =>
+      createSessionDeleteHandler({
+        t,
+        notificationService,
+        cleanupSession: async sessionToDelete => {
+          await client.cleanupSessions({
+            workspaceId: sessionToDelete.workspaceId,
+            docId: sessionToDelete.docId || undefined,
+            sessionIds: [sessionToDelete.sessionId],
+          });
+        },
+        isActiveSession: sessionToDelete =>
+          sessionToDelete.sessionId === currentSession?.sessionId,
+        onActiveSessionDeleted: () => {
+          setCurrentSession(null);
+          reMountChatContent();
+        },
+      }),
+    [
+      client,
+      currentSession?.sessionId,
+      notificationService,
+      reMountChatContent,
+      t,
+    ]
+  );
 
   // init or update ai-chat-content
   useEffect(() => {
@@ -223,10 +266,7 @@ export const Component = () => {
     );
     content.peekViewService = framework.get(PeekViewService);
     content.affineThemeService = framework.get(AppThemeService);
-    content.notificationService = new NotificationServiceImpl(
-      confirmModal.closeConfirmModal,
-      confirmModal.openConfirmModal
-    );
+    content.notificationService = notificationService;
     content.aiDraftService = framework.get(AIDraftService);
     content.aiToolsConfigService = framework.get(AIToolsConfigService);
     content.serverService = framework.get(ServerService);
@@ -258,6 +298,7 @@ export const Component = () => {
     workspaceId,
     confirmModal,
     onContextChange,
+    notificationService,
     specs,
     onOpenDoc,
     handleAISubscribe,
@@ -268,39 +309,31 @@ export const Component = () => {
     if (!isHeaderProvided || !chatToolContainerRef.current) {
       return;
     }
-    let tool = chatTool;
-
-    if (!tool) {
-      tool = new AIChatToolbar();
-    }
-
-    tool.session = currentSession;
-    tool.workspaceId = workspaceId;
-    tool.status = status;
-    tool.docDisplayConfig = docDisplayConfig;
-    tool.onOpenSession = onOpenSession;
-    tool.notificationService = new NotificationServiceImpl(
-      confirmModal.closeConfirmModal,
-      confirmModal.openConfirmModal
-    );
-
-    tool.onNewSession = () => {
-      if (!currentSession) return;
-      setCurrentSession(null);
-      reMountChatContent();
-    };
-
-    tool.onTogglePin = async () => {
-      await togglePin();
-    };
-
-    tool.onOpenDoc = (docId: string, sessionId: string) => {
-      const { workbench } = framework.get(WorkbenchService);
-      const viewService = framework.get(ViewService);
-      workbench.open(`/${docId}?sessionId=${sessionId}`, { at: 'active' });
-      workbench.openSidebar();
-      viewService.view.activeSidebarTab('chat');
-    };
+    const tool = getOrCreateAIChatToolbar(chatTool);
+    configureAIChatToolbar(tool, {
+      session: currentSession,
+      workspaceId,
+      status,
+      docDisplayConfig,
+      notificationService,
+      onOpenSession,
+      onNewSession: () => {
+        if (!currentSession) return;
+        setCurrentSession(null);
+        reMountChatContent();
+      },
+      onTogglePin: togglePin,
+      onOpenDoc: (docId: string, sessionId: string) => {
+        const { workbench } = framework.get(WorkbenchService);
+        const viewService = framework.get(ViewService);
+        workbench.open(`/${docId}?sessionId=${sessionId}`, { at: 'active' });
+        workbench.openSidebar();
+        viewService.view.activeSidebarTab('chat');
+      },
+      onSessionDelete: (sessionToDelete: BlockSuitePresets.AIRecentSession) => {
+        deleteSession(sessionToDelete).catch(console.error);
+      },
+    });
 
     // initial props
     if (!chatTool) {
@@ -318,8 +351,10 @@ export const Component = () => {
     workspaceId,
     confirmModal,
     framework,
+    deleteSession,
     status,
     reMountChatContent,
+    notificationService,
   ]);
 
   useEffect(() => {
@@ -390,7 +425,7 @@ export const Component = () => {
 
   return (
     <>
-      <ViewTitle title="Intelligence" />
+      <ViewTitle title={t['com.affine.workspaceSubPath.chat']()} />
       <ViewIcon icon="ai" />
       <ViewHeader>
         <div className={styles.chatHeader}>

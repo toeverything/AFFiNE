@@ -868,6 +868,37 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.ai.template-insert.failed"](): string;
     /**
+      * `AFFiNE AI`
+      */
+    ["com.affine.ai.chat-panel.title"](): string;
+    /**
+      * `AFFiNE AI is loading history...`
+      */
+    ["com.affine.ai.chat-panel.loading-history"](): string;
+    /**
+      * `Embedding {{done}}/{{total}}`
+      */
+    ["com.affine.ai.chat-panel.embedding-progress"](options: Readonly<{
+        done: string;
+        total: string;
+    }>): string;
+    /**
+      * `Delete this history?`
+      */
+    ["com.affine.ai.chat-panel.session.delete.confirm.title"](): string;
+    /**
+      * `Do you want to delete this AI conversation history? Once deleted, it cannot be recovered.`
+      */
+    ["com.affine.ai.chat-panel.session.delete.confirm.message"](): string;
+    /**
+      * `History deleted`
+      */
+    ["com.affine.ai.chat-panel.session.delete.toast.success"](): string;
+    /**
+      * `Failed to delete history`
+      */
+    ["com.affine.ai.chat-panel.session.delete.toast.failed"](): string;
+    /**
       * `All docs`
       */
     ["com.affine.all-pages.header"](): string;
@@ -7246,6 +7277,10 @@ export function useAFFiNEI18N(): {
       * `All docs`
       */
     ["com.affine.workspaceSubPath.all"](): string;
+    /**
+      * `Intelligence`
+      */
+    ["com.affine.workspaceSubPath.chat"](): string;
     /**
       * `Trash`
       */
