@@ -28423,23 +28423,17 @@ __metadata:
   linkType: hard
 
 "jotai@npm:^2.10.3":
-  version: 2.16.2
-  resolution: "jotai@npm:2.16.2"
+  version: 2.12.4
+  resolution: "jotai@npm:2.12.4"
   peerDependencies:
-    "@babel/core": ">=7.0.0"
-    "@babel/template": ">=7.0.0"
     "@types/react": ">=17.0.0"
     react: ">=17.0.0"
   peerDependenciesMeta:
-    "@babel/core":
-      optional: true
-    "@babel/template":
-      optional: true
     "@types/react":
       optional: true
     react:
       optional: true
-  checksum: 10/b927e137590c73f169c5d971f40be400ec4455e2167f27e77ccff96ee5f2d5faf78df194d1e1367856491c12e87d7648ec11ca406b13612f5fe898443b4df694
+  checksum: 10/385aaae8f89baee177240db36dd879ee56031a06b03b14644104ec09d729b03b99319855b874da3ff2e837fa8b7ac6ccdb823d60e36b63e081c365bf4c93d633
   languageName: node
   linkType: hard
 
