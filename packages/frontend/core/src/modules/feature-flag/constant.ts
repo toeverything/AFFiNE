@@ -295,7 +295,7 @@ export const AFFINE_FLAGS = {
     description:
       'Experimental export PDFs support, it may contain the wrong style.',
     configurable: true,
-    defaultState: false,
+    defaultState: !isMobile,
   },
 } satisfies { [key in string]: FlagInfo };
 
