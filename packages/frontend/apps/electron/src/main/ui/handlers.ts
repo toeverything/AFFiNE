@@ -237,11 +237,16 @@ export const uiHandlers = {
         preferCSSPageSize: true,
       });
 
-      await writeFile(ret.filePath, pdfData);
-      return { filePath: ret.filePath };
+      const outputPath = ret.filePath.toLowerCase().endsWith('.pdf')
+        ? ret.filePath
+        : `${ret.filePath}.pdf`;
+
+      await writeFile(outputPath, pdfData);
+      return { filePath: outputPath };
     } catch (err) {
       logger.error('exportToPdf', err);
-      return { error: (err as Error).message };
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message || 'unknown-error' };
     }
   },
 
