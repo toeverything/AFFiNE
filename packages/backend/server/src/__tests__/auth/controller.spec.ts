@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { IncomingMessage } from 'node:http';
 
 import { HttpStatus } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
+import { parseCookies as safeParseCookies } from '../../base/utils/request';
 import { AuthService } from '../../core/auth/service';
 import {
   createTestingApp,
@@ -155,6 +157,19 @@ test('should be able to correct user id cookie', async t => {
   const userIdCookie = setCookies[AuthService.userCookieName];
 
   t.is(userIdCookie, u1.id);
+});
+
+test('should not throw on parse of a bad cookie', async t => {
+  const badCookieKey = 'auth_session';
+  const badCookieVal = '^13l3PK9qJs*J%X$MOOOIguhkqWvVh7*';
+
+  const req = {
+    headers: { cookie: `${badCookieKey}=${badCookieVal}` },
+  } as IncomingMessage & { cookies?: Record<string, string> };
+
+  t.notThrows(() => safeParseCookies(req));
+
+  t.is(req.cookies?.[badCookieKey], badCookieVal);
 });
 
 // multiple accounts session tests

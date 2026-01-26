@@ -6,7 +6,11 @@ import {
   type ChatContextValue,
 } from '@affine/core/blocksuite/ai/components/ai-chat-content';
 import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
-import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
+import {
+  AIChatToolbar,
+  configureAIChatToolbar,
+  getOrCreateAIChatToolbar,
+} from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import { createPlaygroundModal } from '@affine/core/blocksuite/ai/components/playground/modal';
 import { registerAIAppEffects } from '@affine/core/blocksuite/ai/effects/app';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
@@ -31,6 +35,7 @@ import type {
   CopilotChatHistoryFragment,
   UpdateChatSessionInput,
 } from '@affine/graphql';
+import { useI18n } from '@affine/i18n';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
@@ -40,6 +45,7 @@ import { useFramework, useService } from '@toeverything/infra';
 import { html } from 'lit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { createSessionDeleteHandler } from '../../chat-panel-utils';
 import * as styles from './chat.css';
 import {
   resolveInitialSession,
@@ -56,6 +62,7 @@ export interface SidebarTabProps {
 export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const framework = useFramework();
   const workbench = useService(WorkbenchService).workbench;
+  const t = useI18n();
 
   const { closeConfirmModal, openConfirmModal } = useConfirmModal();
   const notificationService = useMemo(
@@ -230,30 +237,24 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     [doc, openSession, session?.pinned, session?.sessionId, workbench]
   );
 
-  const deleteSession = useCallback(
-    async (sessionToDelete: BlockSuitePresets.AIRecentSession) => {
-      if (!AIProvider.histories) {
-        return;
-      }
-      const confirm = await notificationService.confirm({
-        title: 'Delete this history?',
-        message:
-          'Do you want to delete this AI conversation history? Once deleted, it cannot be recovered.',
-        confirmText: 'Delete',
-        cancelText: 'Cancel',
-      });
-      if (confirm) {
-        await AIProvider.histories.cleanup(
-          sessionToDelete.workspaceId,
-          sessionToDelete.docId || undefined,
-          [sessionToDelete.sessionId]
-        );
-        if (sessionToDelete.sessionId === session?.sessionId) {
-          newSession();
-        }
-      }
-    },
-    [newSession, notificationService, session?.sessionId]
+  const deleteSession = useMemo(
+    () =>
+      createSessionDeleteHandler({
+        t,
+        notificationService,
+        canDeleteSession: () => Boolean(AIProvider.histories),
+        cleanupSession: async sessionToDelete => {
+          await AIProvider.histories?.cleanup(
+            sessionToDelete.workspaceId,
+            sessionToDelete.docId || undefined,
+            [sessionToDelete.sessionId]
+          );
+        },
+        isActiveSession: sessionToDelete =>
+          sessionToDelete.sessionId === session?.sessionId,
+        onActiveSessionDeleted: newSession,
+      }),
+    [newSession, notificationService, session?.sessionId, t]
   );
 
   const togglePin = useCallback(async () => {
@@ -460,31 +461,26 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       return;
     }
 
-    let tool = chatToolbar;
-
-    if (!tool) {
-      tool = new AIChatToolbar();
-    }
-
-    tool.session = session;
-    tool.workspaceId = doc.workspace.id;
-    tool.docId = doc.id;
-    tool.status = status;
-    tool.docDisplayConfig = docDisplayConfig;
-    tool.notificationService = notificationService;
-    tool.onNewSession = newSession;
-    tool.onTogglePin = togglePin;
-    tool.onOpenSession = (sessionId: string) => {
-      openSession(sessionId).catch(console.error);
-    };
-    tool.onOpenDoc = (docId: string, sessionId: string) => {
-      openDoc(docId, sessionId).catch(console.error);
-    };
-    tool.onSessionDelete = (
-      sessionToDelete: BlockSuitePresets.AIRecentSession
-    ) => {
-      deleteSession(sessionToDelete).catch(console.error);
-    };
+    const tool = getOrCreateAIChatToolbar(chatToolbar);
+    configureAIChatToolbar(tool, {
+      session,
+      workspaceId: doc.workspace.id,
+      docId: doc.id,
+      status,
+      docDisplayConfig,
+      notificationService,
+      onNewSession: newSession,
+      onTogglePin: togglePin,
+      onOpenSession: (sessionId: string) => {
+        openSession(sessionId).catch(console.error);
+      },
+      onOpenDoc: (docId: string, sessionId: string) => {
+        openDoc(docId, sessionId).catch(console.error);
+      },
+      onSessionDelete: (sessionToDelete: BlockSuitePresets.AIRecentSession) => {
+        deleteSession(sessionToDelete).catch(console.error);
+      },
+    });
 
     if (!chatToolbar) {
       chatToolbarContainerRef.current.append(tool);
@@ -618,7 +614,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
           <div className={styles.loading}>
             <Logo1Icon className={styles.loadingIcon} />
             <div className={styles.loadingTitle}>
-              AFFiNE AI is loading history...
+              {t['com.affine.ai.chat-panel.loading-history']()}
             </div>
           </div>
         </div>
@@ -628,10 +624,13 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
             <div className={styles.title}>
               {isEmbedding ? (
                 <span data-testid="chat-panel-embedding-progress">
-                  Embedding {done}/{total}
+                  {t.t('com.affine.ai.chat-panel.embedding-progress', {
+                    done,
+                    total,
+                  })}
                 </span>
               ) : (
-                'AFFiNE AI'
+                t['com.affine.ai.chat-panel.title']()
               )}
             </div>
             {playgroundVisible ? (
