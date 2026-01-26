@@ -1,4 +1,4 @@
-import { ipcMain, webContents } from 'electron';
+import { ipcMain, powerMonitor, webContents } from 'electron';
 
 import {
   AFFINE_EVENT_CHANNEL_NAME,
@@ -7,6 +7,7 @@ import {
 import { applicationMenuEvents } from './application-menu';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
+import { powerEvents } from './power';
 import { recordingEvents } from './recording';
 import { sharedStorageEvents } from './shared-storage';
 import { uiEvents } from './ui/events';
@@ -20,6 +21,7 @@ export const allEvents = {
   sharedStorage: sharedStorageEvents,
   recording: recordingEvents,
   popup: popupEvents,
+  power: powerEvents,
 };
 
 const subscriptions = new Map<number, Set<string>>();
@@ -71,6 +73,13 @@ export function registerEvents() {
     if (typeof channel !== 'string') return;
     if (action === 'subscribe') {
       addSubscription(event.sender, channel);
+      if (channel === 'power:power-source') {
+        event.sender.send(
+          AFFINE_EVENT_CHANNEL_NAME,
+          channel,
+          powerMonitor.isOnBatteryPower()
+        );
+      }
     } else {
       removeSubscription(event.sender, channel);
     }

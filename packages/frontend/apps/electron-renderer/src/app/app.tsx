@@ -6,10 +6,10 @@ import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
-import { setupEffects } from './effects';
+import { setupEffects, useIsOnBattery } from './effects';
 import { DesktopLanguageSync } from './language-sync';
 import { DesktopThemeSync } from './theme-sync';
 
@@ -40,6 +40,15 @@ const future = {
 } as const;
 
 export function App() {
+  const isOnBattery = useIsOnBattery();
+
+  useEffect(() => {
+    document.body.classList.toggle('on-battery', isOnBattery);
+    return () => {
+      document.body.classList.remove('on-battery');
+    };
+  }, [isOnBattery]);
+
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>

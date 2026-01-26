@@ -19,12 +19,12 @@ import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
 import { AffineIcon } from '../../_common/icons';
-import { AIPreloadConfig } from '../../chat-panel/preload-config';
 import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
 import { mergeStreamObjects } from '../../utils/stream-objects';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 import { type ChatContextValue } from '../ai-chat-content/type';
 import type { AIReasoningConfig } from '../ai-chat-input';
+import { AIPreloadConfig } from './preload-config';
 import {
   type HistoryMessage,
   isChatAction,

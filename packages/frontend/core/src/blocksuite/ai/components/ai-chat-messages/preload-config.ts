@@ -6,7 +6,7 @@ import {
   SendIcon,
 } from '@blocksuite/icons/lit';
 
-import { AIProvider } from '../provider/ai-provider.js';
+import { AIProvider } from '../../provider/ai-provider.js';
 import completeWritingWithAI from './templates/completeWritingWithAI.zip';
 import freelyCommunicateWithAI from './templates/freelyCommunicateWithAI.zip';
 import readAforeign from './templates/readAforeign.zip';

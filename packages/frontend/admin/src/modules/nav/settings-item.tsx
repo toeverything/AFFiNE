@@ -76,6 +76,11 @@ export const SettingsItem = ({ isCollapsed }: { isCollapsed: boolean }) => {
                     </NavLink>
                   </li>
                 ))}
+                {UNKNOWN_CONFIG_GROUPS.length ? (
+                  <li className="flex px-2 pt-1 pb-0.5 text-xs font-medium opacity-70">
+                    Experimental
+                  </li>
+                ) : null}
                 {UNKNOWN_CONFIG_GROUPS.map(group => (
                   <li key={group.module} className="flex">
                     <NavLink
@@ -84,7 +89,7 @@ export const SettingsItem = ({ isCollapsed }: { isCollapsed: boolean }) => {
                         buttonVariants({
                           variant: 'ghost',
                           className:
-                            'p-2 rounded-[6px] text-[14px] w-full justify-start font-normal',
+                            'p-2 pl-6 rounded-[6px] text-[14px] w-full justify-start font-normal',
                         })
                       )}
                       style={({ isActive }) => ({
@@ -154,23 +159,26 @@ export const SettingsItem = ({ isCollapsed }: { isCollapsed: boolean }) => {
                   changeModule={setCurrentModule}
                 />
               ))}
-              <Accordion type="multiple" className="w-full">
-                <AccordionItem value="item-1" className="border-b-0">
-                  <AccordionTrigger className="ml-8 py-2 px-2 rounded [&[data-state=closed]>svg]:rotate-270 [&[data-state=open]>svg]:rotate-360">
-                    Experimental
-                  </AccordionTrigger>
-                  <AccordionContent className="flex flex-col gap-1 py-1">
-                    {UNKNOWN_CONFIG_GROUPS.map(group => (
-                      <NormalSubItem
-                        key={group.module}
-                        module={group.module}
-                        title={group.name}
-                        changeModule={setCurrentModule}
-                      />
-                    ))}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              {UNKNOWN_CONFIG_GROUPS.length ? (
+                <Accordion type="multiple" className="w-full">
+                  <AccordionItem value="item-1" className="border-b-0">
+                    <AccordionTrigger className="ml-8 py-2 px-2 rounded [&[data-state=closed]>svg]:rotate-270 [&[data-state=open]>svg]:rotate-360">
+                      Experimental
+                    </AccordionTrigger>
+                    <AccordionContent className="flex flex-col gap-1 py-1">
+                      {UNKNOWN_CONFIG_GROUPS.map(group => (
+                        <NormalSubItem
+                          key={group.module}
+                          module={group.module}
+                          title={group.name}
+                          changeModule={setCurrentModule}
+                          indent="nested"
+                        />
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              ) : null}
             </ScrollAreaPrimitive.Viewport>
             <ScrollAreaPrimitive.ScrollAreaScrollbar
               className={cn(
