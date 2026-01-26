@@ -255,7 +255,7 @@ __metadata:
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
     "@capacitor/android": "npm:^7.0.0"
-    "@capacitor/app": "npm:^7.0.0"
+    "@capacitor/app": "npm:^8.0.0"
     "@capacitor/cli": "npm:^7.0.0"
     "@capacitor/core": "npm:^7.0.0"
     "@capacitor/keyboard": "npm:^7.0.0"
@@ -691,7 +691,7 @@ __metadata:
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
-    "@capacitor/app": "npm:^7.0.0"
+    "@capacitor/app": "npm:^8.0.0"
     "@capacitor/browser": "npm:^7.0.0"
     "@capacitor/cli": "npm:^7.0.0"
     "@capacitor/core": "npm:^7.0.0"
@@ -4590,12 +4590,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@capacitor/app@npm:^7.0.0":
-  version: 7.0.1
-  resolution: "@capacitor/app@npm:7.0.1"
+"@capacitor/app@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@capacitor/app@npm:8.0.0"
   peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/c260e141005b19499df255729a2b76a6e4f6662d3eaee2b3b46de577c0be6fa2ec61f1a45d9b52c1791a1b855f4a04ef81f3422b3c07c99e6b24d400be71a64f
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/47346f67817c102381c6aa6fba4523d9d27185797e24782d3ebb010f9042c2b1f0322209359ec4dc8656a98186e8d2322a188bbf6171916a51663a45cbb63e86
   languageName: node
   linkType: hard
 
