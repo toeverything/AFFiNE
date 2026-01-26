@@ -934,7 +934,7 @@ __metadata:
     "@affine/server-native": "workspace:*"
     "@ai-sdk/anthropic": "npm:^2.0.54"
     "@ai-sdk/google": "npm:^2.0.45"
-    "@ai-sdk/google-vertex": "npm:^3.0.88"
+    "@ai-sdk/google-vertex": "npm:^4.0.0"
     "@ai-sdk/openai": "npm:^2.0.80"
     "@ai-sdk/openai-compatible": "npm:^1.0.28"
     "@ai-sdk/perplexity": "npm:^2.0.21"
@@ -1104,7 +1104,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.57, @ai-sdk/anthropic@npm:^2.0.54":
+"@ai-sdk/anthropic@npm:3.0.23":
+  version: 3.0.23
+  resolution: "@ai-sdk/anthropic@npm:3.0.23"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.5"
+    "@ai-sdk/provider-utils": "npm:4.0.9"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10/d5cc65f91470db9ea2a75e1f2dae4d8801feeac34c0cfc4f9ec7cbb7b1e4f849acc312a7b738fd5ecda91eedc4d5ac5dcd29ec1a25631e032b2b12b77af6b270
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/anthropic@npm:^2.0.54":
   version: 2.0.57
   resolution: "@ai-sdk/anthropic@npm:2.0.57"
   dependencies:
@@ -1129,22 +1141,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/google-vertex@npm:^3.0.88":
-  version: 3.0.97
-  resolution: "@ai-sdk/google-vertex@npm:3.0.97"
+"@ai-sdk/google-vertex@npm:^4.0.0":
+  version: 4.0.28
+  resolution: "@ai-sdk/google-vertex@npm:4.0.28"
   dependencies:
-    "@ai-sdk/anthropic": "npm:2.0.57"
-    "@ai-sdk/google": "npm:2.0.52"
-    "@ai-sdk/provider": "npm:2.0.1"
-    "@ai-sdk/provider-utils": "npm:3.0.20"
+    "@ai-sdk/anthropic": "npm:3.0.23"
+    "@ai-sdk/google": "npm:3.0.13"
+    "@ai-sdk/provider": "npm:3.0.5"
+    "@ai-sdk/provider-utils": "npm:4.0.9"
     google-auth-library: "npm:^10.5.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10/74a96a17617bd4c8ba52a72baf9bb089d774120ae10219f8ff62627695e030718ac08badb873ac3bb05b4c203f56e2d13b3eea86687e6d2c32af03806f16d0a4
+  checksum: 10/467becf34d0e1665bf4d940543e4bf441da8326599aed3aa0b9fa349975230f8561dc64b26cf92555fb4d148702d9899e875ebe087625088e55ba20401ebcdd8
   languageName: node
   linkType: hard
 
-"@ai-sdk/google@npm:2.0.52, @ai-sdk/google@npm:^2.0.45":
+"@ai-sdk/google@npm:3.0.13":
+  version: 3.0.13
+  resolution: "@ai-sdk/google@npm:3.0.13"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.5"
+    "@ai-sdk/provider-utils": "npm:4.0.9"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10/2fe4a28fa4c8628f3e4a455bf773909666fda148bb312a2e1d9cc1bdb4ac07132ffa1a52d81a1a004e2a9bc31579a3b38e087edcfd5d46cddc9a87f31eaa5712
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/google@npm:^2.0.45":
   version: 2.0.52
   resolution: "@ai-sdk/google@npm:2.0.52"
   dependencies:
@@ -1205,12 +1229,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/provider-utils@npm:4.0.9":
+  version: 4.0.9
+  resolution: "@ai-sdk/provider-utils@npm:4.0.9"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.5"
+    "@standard-schema/spec": "npm:^1.1.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10/dc5db534efaaff5d32cefde7dea8de1832369f3c78ce432588d8169de5c22dd0220727f306170861c69baf131b2adce4f62801d51db957812c4778777c93f915
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/provider@npm:2.0.1":
   version: 2.0.1
   resolution: "@ai-sdk/provider@npm:2.0.1"
   dependencies:
     json-schema: "npm:^0.4.0"
   checksum: 10/b828707f5731b705154174950f3b407b63b5d7e79d641c794fa87e45a2a07534d8a6739f7ec4b4ead8c5edbe19c6e34ceecf67fabbe300413208734486c63fdb
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider@npm:3.0.5":
+  version: 3.0.5
+  resolution: "@ai-sdk/provider@npm:3.0.5"
+  dependencies:
+    json-schema: "npm:^0.4.0"
+  checksum: 10/ff0e09515b74dae21e1886b335e2ad820e05688ca00323cb97343ede638b46786997fc074202ba7c6cca95e2ec76acf608bde3f3bccd4e05e062ed93a3a8b82e
   languageName: node
   linkType: hard
 
@@ -16973,10 +17019,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@standard-schema/spec@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@standard-schema/spec@npm:1.0.0"
-  checksum: 10/aee780cc1431888ca4b9aba9b24ffc8f3073fc083acc105e3951481478a2f4dc957796931b2da9e2d8329584cf211e4542275f188296c1cdff3ed44fd93a8bc8
+"@standard-schema/spec@npm:^1.0.0, @standard-schema/spec@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@standard-schema/spec@npm:1.1.0"
+  checksum: 10/a209615c9e8b2ea535d7db0a5f6aa0f962fd4ab73ee86a46c100fb78116964af1f55a27c1794d4801e534a196794223daa25ff5135021e03c7828aa3d95e1763
   languageName: node
   linkType: hard
 

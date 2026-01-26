@@ -29,7 +29,7 @@
     "@affine/server-native": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.54",
     "@ai-sdk/google": "^2.0.45",
-    "@ai-sdk/google-vertex": "^3.0.88",
+    "@ai-sdk/google-vertex": "^4.0.0",
     "@ai-sdk/openai": "^2.0.80",
     "@ai-sdk/openai-compatible": "^1.0.28",
     "@ai-sdk/perplexity": "^2.0.21",
