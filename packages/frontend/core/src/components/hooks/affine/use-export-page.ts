@@ -245,15 +245,11 @@ async function preparePrintFrameForPdfExport(
                 const target = iframe.contentWindow.document.styleSheets[0];
                 target.insertRule(cssRule.cssText, target.cssRules.length);
               }
-            } catch (e) {
-              if (element.href) {
-                console.warn(
-                  '[export pdf] css cannot be applied when exporting pdf, this may be because of CORS policy from its domain.',
-                  element.href
-                );
-              } else {
-                throw e;
-              }
+            } catch {
+              console.warn(
+                '[export pdf] css cannot be applied when exporting pdf; skipping this stylesheet.',
+                element.href ?? 'inline stylesheet'
+              );
             }
           }
 
