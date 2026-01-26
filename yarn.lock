@@ -546,7 +546,6 @@ __metadata:
     "@vanilla-extract/css": "npm:^1.17.0"
     async-call-rpc: "npm:^6.4.2"
     cross-env: "npm:^10.1.0"
-    jotai: "npm:^2.16.2"
     next-themes: "npm:^0.4.4"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
@@ -28423,7 +28422,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai@npm:^2.10.3, jotai@npm:^2.16.2":
+"jotai@npm:^2.10.3":
   version: 2.16.2
   resolution: "jotai@npm:2.16.2"
   peerDependencies:

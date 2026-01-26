@@ -6,12 +6,10 @@ import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
-import { useAtomValue } from 'jotai';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
-import { isOnBatteryAtom } from '../atoms/power';
-import { setupEffects } from './effects';
+import { setupEffects, useIsOnBattery } from './effects';
 import { DesktopLanguageSync } from './language-sync';
 import { DesktopThemeSync } from './theme-sync';
 
@@ -42,7 +40,7 @@ const future = {
 } as const;
 
 export function App() {
-  const isOnBattery = useAtomValue(isOnBatteryAtom);
+  const isOnBattery = useIsOnBattery();
 
   useEffect(() => {
     document.body.classList.toggle('on-battery', isOnBattery);

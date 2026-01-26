@@ -1,4 +1,4 @@
-import { ipcMain, webContents } from 'electron';
+import { ipcMain, powerMonitor, webContents } from 'electron';
 
 import {
   AFFINE_EVENT_CHANNEL_NAME,
@@ -73,6 +73,13 @@ export function registerEvents() {
     if (typeof channel !== 'string') return;
     if (action === 'subscribe') {
       addSubscription(event.sender, channel);
+      if (channel === 'power:power-source') {
+        event.sender.send(
+          AFFINE_EVENT_CHANNEL_NAME,
+          channel,
+          powerMonitor.isOnBatteryPower()
+        );
+      }
     } else {
       removeSubscription(event.sender, channel);
     }

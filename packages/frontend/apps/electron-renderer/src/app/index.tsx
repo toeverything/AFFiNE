@@ -2,30 +2,12 @@ import './setup';
 
 import { appConfigProxy } from '@affine/core/components/hooks/use-app-config-storage';
 import { Telemetry } from '@affine/core/components/telemetry';
-import { getDefaultStore } from 'jotai';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { isOnBatteryAtom } from '../atoms/power';
 import { App } from './app';
 
 function main() {
-  /**
-   * Initializes global store listeners.
-   */
-  const store = getDefaultStore();
-  if (window.__apis?.events?.power) {
-    const unsubscribe = window.__apis.events.power['power-source'](
-      (isOnBattery: boolean) => {
-        store.set(isOnBatteryAtom, isOnBattery);
-      }
-    );
-
-    if (typeof unsubscribe === 'function') {
-      window.addEventListener('beforeunload', unsubscribe);
-    }
-  }
-
   // load persistent config for electron
   // TODO(@Peng): should be sync, but it's not necessary for now
   appConfigProxy
