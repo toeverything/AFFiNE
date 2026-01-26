@@ -291,7 +291,7 @@ export const AFFINE_FLAGS = {
   enable_pdfmake_export: {
     category: 'blocksuite',
     bsFlag: 'enable_pdfmake_export',
-    displayName: 'Enable PDF Export',
+    displayName: 'Enable PDF Export (Experimental)',
     description:
       'Experimental export PDFs support, it may contain the wrong style.',
     configurable: true,

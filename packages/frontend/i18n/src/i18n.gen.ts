@@ -236,6 +236,10 @@ export function useAFFiNEI18N(): {
       */
     ["Export to PNG"](): string;
     /**
+      * `Export to PDF`
+      */
+    ["Export to PDF"](): string;
+    /**
       * `File already exists`
       */
     FILE_ALREADY_EXISTS(): string;

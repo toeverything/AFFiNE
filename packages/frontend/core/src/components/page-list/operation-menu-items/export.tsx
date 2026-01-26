@@ -75,9 +75,7 @@ export const ExportMenuItems = ({
 }: ExportProps) => {
   const t = useI18n();
   const featureFlags = useService(FeatureFlagService).flags;
-  const enable_pdfmake_export = useLiveData(
-    featureFlags.enable_pdfmake_export.$
-  );
+  const enablePdfmakeExport = useLiveData(featureFlags.enable_pdfmake_export.$);
 
   return (
     <>
@@ -104,15 +102,16 @@ export const ExportMenuItems = ({
         icon={<ExportToMarkdownIcon />}
         label={t['Export to Markdown']()}
       />
-      {pageMode !== 'edgeless' && enable_pdfmake_export && (
-        <ExportMenuItem
-          onSelect={() => exportHandler('pdf-export')}
-          className={className}
-          type="pdf-export"
-          icon={<PrinterIcon />}
-          label={t['Export to PDF']()}
-        />
-      )}
+      {pageMode !== 'edgeless' &&
+        (BUILD_CONFIG.isElectron || enablePdfmakeExport) && (
+          <ExportMenuItem
+            onSelect={() => exportHandler('pdf-export')}
+            className={className}
+            type="pdf-export"
+            icon={<PrinterIcon />}
+            label={t['Export to PDF']()}
+          />
+        )}
       <ExportMenuItem
         onSelect={() => exportHandler('snapshot')}
         className={className}

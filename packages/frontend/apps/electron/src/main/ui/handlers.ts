@@ -1,4 +1,14 @@
-import { app, clipboard, nativeImage, nativeTheme } from 'electron';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  nativeImage,
+  nativeTheme,
+} from 'electron';
 import { getLinkPreview } from 'link-preview-js';
 import { map, shareReplay } from 'rxjs';
 
@@ -36,6 +46,12 @@ import { showTabContextMenu } from '../windows-manager/context-menu';
 import { getOrCreateCustomThemeWindow } from '../windows-manager/custom-theme-window';
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
+
+interface ExportPdfResult {
+  filePath?: string;
+  canceled?: boolean;
+  error?: string;
+}
 
 const TraySettingsState = {
   $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
@@ -184,6 +200,49 @@ export const uiHandlers = {
   },
   openExternal(_, url: string) {
     return openExternalSafely(url);
+  },
+  exportToPdf: async (
+    e,
+    { title }: { title?: string }
+  ): Promise<ExportPdfResult> => {
+    try {
+      const window =
+        BrowserWindow.fromWebContents(e.sender) ?? (await getMainWindow());
+      if (!window) {
+        return { error: 'main-window-not-found' };
+      }
+
+      const sanitizedTitle = (title || 'Untitled')
+        .trim()
+        .replace(/[/\\?%*:|"<>]/g, '-');
+      const defaultPath = join(
+        app.getPath('downloads'),
+        `${sanitizedTitle || 'Untitled'}.pdf`
+      );
+
+      const ret = await dialog.showSaveDialog(window, {
+        properties: ['showOverwriteConfirmation'],
+        title: 'Export to PDF',
+        buttonLabel: 'Export',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+        defaultPath,
+      });
+
+      if (ret.canceled || !ret.filePath) {
+        return { canceled: true };
+      }
+
+      const pdfData = await e.sender.printToPDF({
+        printBackground: true,
+        preferCSSPageSize: true,
+      });
+
+      await writeFile(ret.filePath, pdfData);
+      return { filePath: ret.filePath };
+    } catch (err) {
+      logger.error('exportToPdf', err);
+      return { error: (err as Error).message };
+    }
   },
 
   // tab handlers
