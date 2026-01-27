@@ -280,8 +280,9 @@ export class AffineToolbarWidget extends WidgetComponent {
         zIndex: 'var(--affine-z-index-popover, 1000)',
         display: 'none',
         opacity: '0',
-        width: 'max-content',
-        touchAction: 'none',
+        maxWidth: 'calc(100vw - 32px)',
+        overflowX: 'auto',
+        touchAction: 'pan-x',
       });
       document.body.append(toolbar);
       disposables.add(() => toolbar.remove());
