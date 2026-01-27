@@ -26,7 +26,7 @@ import { property, state } from 'lit/decorators.js';
 
 import { type ChatAction } from '../../components/ai-chat-messages';
 import { createTextRenderer } from '../../components/text-renderer';
-import { HISTORY_IMAGE_ACTIONS } from '../const';
+import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 
 const icons: Record<string, TemplateResult<1>> = {
   'Fix spelling for it': DoneIcon(),
