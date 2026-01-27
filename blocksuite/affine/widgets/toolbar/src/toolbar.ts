@@ -271,9 +271,11 @@ export class AffineToolbarWidget extends WidgetComponent {
 
     if (IS_MOBILE) {
       // On mobile, use fixed positioning and handle toolbar visibility directly
-      // via selectionchange to avoid rendering issues with the flag system
+      // via selectionchange to avoid rendering issues with the flag system.
+      // Toolbar stays in shadowRoot so theme styles naturally apply.
       Object.assign(toolbar.style, {
         position: 'fixed',
+        top: 'auto',
         left: '50%',
         bottom: '16px',
         transform: 'translateX(-50%)',
@@ -284,8 +286,7 @@ export class AffineToolbarWidget extends WidgetComponent {
         overflowX: 'auto',
         touchAction: 'pan-x',
       });
-      document.body.append(toolbar);
-      disposables.add(() => toolbar.remove());
+      this.shadowRoot!.append(toolbar);
 
       // Position toolbar above virtual keyboard using Visual Viewport API
       const updatePosition = () => {
@@ -311,7 +312,10 @@ export class AffineToolbarWidget extends WidgetComponent {
       const updateToolbar = () => {
         const sel = window.getSelection();
         const hasSelection =
-          sel && !sel.isCollapsed && sel.toString().length > 0;
+          sel &&
+          sel.rangeCount > 0 &&
+          !sel.isCollapsed &&
+          sel.toString().length > 0;
         const range = hasSelection ? sel.getRangeAt(0) : null;
         const inEditor = range && host.contains(range.commonAncestorContainer);
 
@@ -326,12 +330,18 @@ export class AffineToolbarWidget extends WidgetComponent {
       };
 
       let timeout: ReturnType<typeof setTimeout> | null = null;
+      let touchTimeout: ReturnType<typeof setTimeout> | null = null;
       disposables.addFromEvent(document, 'selectionchange', () => {
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(updateToolbar, 50);
       });
       disposables.addFromEvent(host, 'touchend', () => {
-        setTimeout(updateToolbar, 100);
+        if (touchTimeout) clearTimeout(touchTimeout);
+        touchTimeout = setTimeout(updateToolbar, 100);
+      });
+      disposables.add(() => {
+        if (timeout) clearTimeout(timeout);
+        if (touchTimeout) clearTimeout(touchTimeout);
       });
     } else {
       this.shadowRoot!.append(toolbar);
