@@ -332,7 +332,13 @@ async function exportPdfUsingElectronPrintToPDF(
     const result = await desktopApiHandler.ui.exportToPdf({
       title: page.meta?.title,
     });
-    return result?.canceled ? 'canceled' : 'completed';
+    if (!result) {
+      throw new Error('export-to-pdf-failed');
+    }
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    return result.canceled ? 'canceled' : 'completed';
   } finally {
     cleanup();
   }
