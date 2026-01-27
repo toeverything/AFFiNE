@@ -20,6 +20,7 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { matchModels } from '@blocksuite/affine-shared/utils';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import {
   Bound,
   getCommonBound,
@@ -268,9 +269,72 @@ export class AffineToolbarWidget extends WidgetComponent {
     const { flags, flavour$, message$, placement$ } = toolbarRegistry;
     const context = new ToolbarContext(std);
 
-    // TODO(@fundon): fix toolbar position shaking when the wheel scrolls
-    // document.body.append(toolbar);
-    this.shadowRoot!.append(toolbar);
+    if (IS_MOBILE) {
+      // On mobile, use fixed positioning and handle toolbar visibility directly
+      // via selectionchange to avoid rendering issues with the flag system
+      Object.assign(toolbar.style, {
+        position: 'fixed',
+        left: '50%',
+        bottom: '16px',
+        transform: 'translateX(-50%)',
+        zIndex: 'var(--affine-z-index-popover, 1000)',
+        display: 'none',
+        opacity: '0',
+        width: 'max-content',
+        touchAction: 'none',
+      });
+      document.body.append(toolbar);
+      disposables.add(() => toolbar.remove());
+
+      // Position toolbar above virtual keyboard using Visual Viewport API
+      const updatePosition = () => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+        toolbar.style.bottom = `${Math.max(16, keyboardHeight + 16)}px`;
+      };
+      if (window.visualViewport) {
+        disposables.addFromEvent(
+          window.visualViewport,
+          'resize',
+          updatePosition
+        );
+        disposables.addFromEvent(
+          window.visualViewport,
+          'scroll',
+          updatePosition
+        );
+      }
+
+      // Show/hide toolbar based on text selection
+      const updateToolbar = () => {
+        const sel = window.getSelection();
+        const hasSelection =
+          sel && !sel.isCollapsed && sel.toString().length > 0;
+        const range = hasSelection ? sel.getRangeAt(0) : null;
+        const inEditor = range && host.contains(range.commonAncestorContainer);
+
+        if (hasSelection && inEditor) {
+          toolbar.style.display = 'flex';
+          toolbar.style.opacity = '1';
+          renderToolbar(toolbar, context, 'affine:note');
+        } else {
+          toolbar.style.display = 'none';
+          toolbar.style.opacity = '0';
+        }
+      };
+
+      let timeout: ReturnType<typeof setTimeout> | null = null;
+      disposables.addFromEvent(document, 'selectionchange', () => {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(updateToolbar, 50);
+      });
+      disposables.addFromEvent(host, 'touchend', () => {
+        setTimeout(updateToolbar, 100);
+      });
+    } else {
+      this.shadowRoot!.append(toolbar);
+    }
 
     // Formatting
     // Selects text in note.
@@ -633,6 +697,9 @@ export class AffineToolbarWidget extends WidgetComponent {
 
     disposables.add(
       effect(() => {
+        // On mobile, toolbar visibility is handled directly via selectionchange
+        if (IS_MOBILE) return;
+
         const value = flags.value$.value;
 
         // Hides toolbar
@@ -662,6 +729,9 @@ export class AffineToolbarWidget extends WidgetComponent {
 
     disposables.add(
       effect(() => {
+        // On mobile, toolbar visibility and positioning is handled directly via selectionchange
+        if (IS_MOBILE) return;
+
         if (!abortController.signal.aborted) {
           abortController.abort();
         }
