@@ -692,7 +692,7 @@ __metadata:
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
     "@capacitor/app": "npm:^7.0.0"
-    "@capacitor/browser": "npm:^7.0.0"
+    "@capacitor/browser": "npm:^8.0.0"
     "@capacitor/cli": "npm:^7.0.0"
     "@capacitor/core": "npm:^7.0.0"
     "@capacitor/haptics": "npm:^7.0.0"
@@ -4599,12 +4599,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@capacitor/browser@npm:^7.0.0":
-  version: 7.0.1
-  resolution: "@capacitor/browser@npm:7.0.1"
+"@capacitor/browser@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@capacitor/browser@npm:8.0.0"
   peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/0d15b5e94f7c753f4fc0c1a4c719ad4af67b31aac458a5dc0919cb80024a92813b7e84b8fddc21301b0c64e19b3568202f484265a40454c1e1560884d2415beb
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/cd8d3fa35c976b0aaabe9922d0486bca835479298c54283db90ad500214c8d32974a2fc84f17fd816ebf4c7643150e7262b9108c5e8bbbad5e758dba53939af1
   languageName: node
   linkType: hard
 
