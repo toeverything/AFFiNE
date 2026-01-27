@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -189,6 +189,12 @@ class AdminUpdateWorkspaceInput extends PartialType(
 export class AdminWorkspaceResolver {
   constructor(private readonly models: Models) {}
 
+  private assertCloudOnly() {
+    if (env.selfhosted) {
+      throw new NotFoundException();
+    }
+  }
+
   @Query(() => [AdminWorkspace], {
     description: 'List workspaces for admin',
   })
@@ -196,6 +202,7 @@ export class AdminWorkspaceResolver {
     @Args('filter', { type: () => ListWorkspaceInput })
     filter: ListWorkspaceInput
   ) {
+    this.assertCloudOnly();
     const { rows } = await this.models.workspace.adminListWorkspaces({
       first: filter.first,
       skip: filter.skip,
@@ -219,6 +226,7 @@ export class AdminWorkspaceResolver {
     @Args('filter', { type: () => ListWorkspaceInput })
     filter: ListWorkspaceInput
   ) {
+    this.assertCloudOnly();
     const total = await this.models.workspace.adminCountWorkspaces({
       keyword: filter.keyword,
       features: filter.features,
@@ -238,6 +246,7 @@ export class AdminWorkspaceResolver {
     nullable: true,
   })
   async adminWorkspace(@Args('id') id: string) {
+    this.assertCloudOnly();
     const { rows } = await this.models.workspace.adminListWorkspaces({
       first: 1,
       skip: 0,
@@ -318,6 +327,7 @@ export class AdminWorkspaceResolver {
     @Args('input', { type: () => AdminUpdateWorkspaceInput })
     input: AdminUpdateWorkspaceInput
   ) {
+    this.assertCloudOnly();
     const { id, features, ...updates } = input;
 
     if (Object.keys(updates).length) {

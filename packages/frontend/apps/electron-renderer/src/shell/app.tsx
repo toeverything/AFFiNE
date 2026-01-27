@@ -32,6 +32,7 @@ export function App() {
     BUILD_CONFIG.isElectron &&
     environment.isMacOs &&
     appSettings.enableBlurBackground;
+
   return (
     <FrameworkRoot framework={frameworkProvider}>
       <ThemeProvider>

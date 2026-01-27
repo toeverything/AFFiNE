@@ -322,3 +322,7 @@ math {
 .ai-block-diff-deleted .affine-block-component {
   margin: 0 !important;
 }
+
+html[data-image-antialiasing='off'] img {
+  image-rendering: pixelated;
+}

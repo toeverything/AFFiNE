@@ -112,7 +112,7 @@ jobs:
           enableScripts: false
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.4
+          xcode-version: 26.2
       - name: Install Swiftformat
         run: brew install swiftformat
       - name: Cap sync

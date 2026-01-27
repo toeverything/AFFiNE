@@ -959,6 +959,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.customize-theme.title"](): string;
     /**
+      * `Images`
+      */
+    ["com.affine.appearanceSettings.images.title"](): string;
+    /**
+      * `Smooth image rendering`
+      */
+    ["com.affine.appearanceSettings.images.antialiasing.title"](): string;
+    /**
+      * `When disabled, images are rendered using nearest-neighbor scaling for crisp pixels.`
+      */
+    ["com.affine.appearanceSettings.images.antialiasing.description"](): string;
+    /**
       * `Reset all`
       */
     ["com.affine.appearanceSettings.customize-theme.reset"](): string;

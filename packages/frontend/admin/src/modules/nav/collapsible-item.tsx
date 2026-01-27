@@ -8,14 +8,17 @@ export const NormalSubItem = ({
   module,
   title,
   changeModule,
+  indent = 'normal',
 }: {
   module: string;
   title: string;
   changeModule?: (module: string) => void;
+  indent?: 'normal' | 'nested';
 }) => {
   const handleClick = useCallback(() => {
     changeModule?.(module);
   }, [changeModule, module]);
+  const indentClassName = indent === 'nested' ? 'ml-12' : 'ml-8';
   return (
     <div className="w-full flex">
       <NavLink
@@ -25,7 +28,11 @@ export const NormalSubItem = ({
           return cn(
             buttonVariants({
               variant: 'ghost',
-              className: `ml-8 px-2 w-full justify-start ${isActive ? 'bg-zinc-100' : ''}`,
+              className: cn(
+                indentClassName,
+                'px-2 w-full justify-start',
+                isActive && 'bg-zinc-100'
+              ),
             })
           );
         }}
