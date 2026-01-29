@@ -32,7 +32,7 @@
     "@ai-sdk/google-vertex": "^3.0.88",
     "@ai-sdk/openai": "^2.0.80",
     "@ai-sdk/openai-compatible": "^1.0.28",
-    "@ai-sdk/perplexity": "^2.0.21",
+    "@ai-sdk/perplexity": "^3.0.0",
     "@apollo/server": "^4.12.2",
     "@aws-sdk/client-s3": "^3.948.0",
     "@aws-sdk/s3-request-presigner": "^3.948.0",

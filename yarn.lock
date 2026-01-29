@@ -937,7 +937,7 @@ __metadata:
     "@ai-sdk/google-vertex": "npm:^3.0.88"
     "@ai-sdk/openai": "npm:^2.0.80"
     "@ai-sdk/openai-compatible": "npm:^1.0.28"
-    "@ai-sdk/perplexity": "npm:^2.0.21"
+    "@ai-sdk/perplexity": "npm:^3.0.0"
     "@apollo/server": "npm:^4.12.2"
     "@aws-sdk/client-s3": "npm:^3.948.0"
     "@aws-sdk/s3-request-presigner": "npm:^3.948.0"
@@ -1180,15 +1180,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/perplexity@npm:^2.0.21":
-  version: 2.0.23
-  resolution: "@ai-sdk/perplexity@npm:2.0.23"
+"@ai-sdk/perplexity@npm:^3.0.0":
+  version: 3.0.15
+  resolution: "@ai-sdk/perplexity@npm:3.0.15"
   dependencies:
-    "@ai-sdk/provider": "npm:2.0.1"
-    "@ai-sdk/provider-utils": "npm:3.0.20"
+    "@ai-sdk/provider": "npm:3.0.6"
+    "@ai-sdk/provider-utils": "npm:4.0.11"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10/b7d5ba8618bde044b88e69be17e2fc03127e15de1e23f5e64c4db799d83e536f8551bae6b7f484eef3bec1c064ee7848e6c4a18d06ffc3fc18129d25110e7f9e
+  checksum: 10/4d96adb8c67c2187f5fbdfb0f771d4defbaef8a27d257f7fd60f1a22bda0f78fb2c9353b0ebd21d353be6e765f994f7c57b96d35bbf18a086b3ff55a35bee518
   languageName: node
   linkType: hard
 
@@ -1205,12 +1205,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/provider-utils@npm:4.0.11":
+  version: 4.0.11
+  resolution: "@ai-sdk/provider-utils@npm:4.0.11"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.6"
+    "@standard-schema/spec": "npm:^1.1.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10/1b372bb07403ba42e4f585c6f629d90a07c525ea0dca25ccc13d327b9ef4c91281c212275955d8d7377529c3c25d68e19c8a0073299610847f96856028165cb7
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/provider@npm:2.0.1":
   version: 2.0.1
   resolution: "@ai-sdk/provider@npm:2.0.1"
   dependencies:
     json-schema: "npm:^0.4.0"
   checksum: 10/b828707f5731b705154174950f3b407b63b5d7e79d641c794fa87e45a2a07534d8a6739f7ec4b4ead8c5edbe19c6e34ceecf67fabbe300413208734486c63fdb
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider@npm:3.0.6":
+  version: 3.0.6
+  resolution: "@ai-sdk/provider@npm:3.0.6"
+  dependencies:
+    json-schema: "npm:^0.4.0"
+  checksum: 10/9ad7211e4ea390d1a8b15817086c5953eb73c97b54fa080a0a51791315ad8e41ba21d964a67660775d07039c95989e0af8e4ee776dab0150e142b6a0362b80c1
   languageName: node
   linkType: hard
 
@@ -16973,10 +16995,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@standard-schema/spec@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@standard-schema/spec@npm:1.0.0"
-  checksum: 10/aee780cc1431888ca4b9aba9b24ffc8f3073fc083acc105e3951481478a2f4dc957796931b2da9e2d8329584cf211e4542275f188296c1cdff3ed44fd93a8bc8
+"@standard-schema/spec@npm:^1.0.0, @standard-schema/spec@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@standard-schema/spec@npm:1.1.0"
+  checksum: 10/a209615c9e8b2ea535d7db0a5f6aa0f962fd4ab73ee86a46c100fb78116964af1f55a27c1794d4801e534a196794223daa25ff5135021e03c7828aa3d95e1763
   languageName: node
   linkType: hard
 
