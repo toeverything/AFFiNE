@@ -197,6 +197,23 @@ export const AppearanceSettings = () => {
         {enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
 
+      <SettingWrapper title={t['com.affine.appearanceSettings.images.title']()}>
+        <SettingRow
+          name={t['com.affine.appearanceSettings.images.antialiasing.title']()}
+          desc={t[
+            'com.affine.appearanceSettings.images.antialiasing.description'
+          ]()}
+          data-testid="image-antialiasing-trigger"
+        >
+          <Switch
+            checked={!appSettings.disableImageAntialiasing}
+            onChange={checked =>
+              updateSettings('disableImageAntialiasing', !checked)
+            }
+          />
+        </SettingRow>
+      </SettingWrapper>
+
       {BUILD_CONFIG.isWeb && !environment.isMobile ? (
         <SettingWrapper title={t['com.affine.setting.appearance.links']()}>
           <SettingRow

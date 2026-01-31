@@ -286,7 +286,16 @@ mod tests {
 
     let mut reader = RawDecoder::new(&update);
     let tag_type = reader.read_u8()?;
-    assert_eq!(Content::read(&mut reader, tag_type)?, *content);
+    let decoded = Content::read(&mut reader, tag_type)?;
+    match (&decoded, content) {
+      (Content::Type(decoded_ty), Content::Type(original_ty)) => {
+        let decoded_ty = decoded_ty.ty().expect("decoded ytype must exist");
+        let original_ty = original_ty.ty().expect("original ytype must exist");
+        assert_eq!(decoded_ty.kind(), original_ty.kind());
+        assert_eq!(decoded_ty.name.as_deref(), original_ty.name.as_deref());
+      }
+      _ => assert_eq!(decoded, *content),
+    }
 
     Ok(())
   }

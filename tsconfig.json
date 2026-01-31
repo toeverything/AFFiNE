@@ -156,7 +156,9 @@
     { "path": "./tests/blocksuite" },
     { "path": "./tests/kit" },
     { "path": "./tools/cli" },
+    { "path": "./tools/doc-diff" },
     { "path": "./tools/playstore-auto-bump" },
+    { "path": "./tools/revert-update" },
     { "path": "./tools/utils" }
   ]
 }

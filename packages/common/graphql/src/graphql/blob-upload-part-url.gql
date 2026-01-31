@@ -1,7 +1,9 @@
-mutation getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
-  getBlobUploadPartUrl(workspaceId: $workspaceId, key: $key, uploadId: $uploadId, partNumber: $partNumber) {
-    uploadUrl
-    headers
-    expiresAt
+query getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+  workspace(id: $workspaceId) {
+    blobUploadPartUrl(key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+      uploadUrl
+      headers
+      expiresAt
+    }
   }
 }

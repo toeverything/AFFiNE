@@ -100,6 +100,9 @@ test('should throw error when doc service internal error', async t => {
   mock.method(adapter, 'getDoc', async () => {
     throw new Error('mock doc service internal error');
   });
+  mock.method(adapter, 'getDocBinNative', async () => {
+    throw new Error('mock doc service internal error');
+  });
   let err = await t.throwsAsync(docReader.getDoc(workspace.id, docId), {
     instanceOf: UserFriendlyError,
     message: 'An internal error occurred.',

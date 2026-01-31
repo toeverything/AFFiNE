@@ -3,5 +3,5 @@
   "private": true,
   "types": "./__all.d.ts",
   "type": "module",
-  "version": "0.25.7"
+  "version": "0.26.0"
 }

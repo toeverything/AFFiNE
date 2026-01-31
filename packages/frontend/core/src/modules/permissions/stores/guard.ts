@@ -1,8 +1,8 @@
 import {
   type GetDocRolePermissionsQuery,
   getDocRolePermissionsQuery,
-  type GetWorkspaceRolePermissionsQuery,
-  getWorkspaceRolePermissionsQuery,
+  type GetWorkspaceInfoQuery,
+  getWorkspaceInfoQuery,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
@@ -10,7 +10,7 @@ import type { WorkspaceServerService } from '../../cloud';
 import type { WorkspaceService } from '../../workspace';
 
 export type WorkspacePermissionActions = keyof Omit<
-  GetWorkspaceRolePermissionsQuery['workspaceRolePermissions']['permissions'],
+  GetWorkspaceInfoQuery['workspace']['permissions'],
   '__typename'
 >;
 
@@ -34,12 +34,12 @@ export class GuardStore extends Store {
       throw new Error('No server');
     }
     const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceRolePermissionsQuery,
+      query: getWorkspaceInfoQuery,
       variables: {
-        id: this.workspaceService.workspace.id,
+        workspaceId: this.workspaceService.workspace.id,
       },
     });
-    return data.workspaceRolePermissions.permissions;
+    return data.workspace.permissions;
   }
 
   async getDocPermissions(

@@ -1,0 +1,22 @@
+{
+  "name": "@affine/doc-diff",
+  "version": "0.26.0",
+  "private": true,
+  "type": "module",
+  "description": "Diff AFFiNE Yjs snapshot docs (rootdoc/folder/favorite)",
+  "main": "index.ts",
+  "scripts": {
+    "diff": "r ./src/index.ts",
+    "diff:root": "r ./src/index.ts root",
+    "diff:folder": "r ./src/index.ts folder",
+    "diff:favorite": "r ./src/index.ts favorite"
+  },
+  "dependencies": {
+    "@affine-tools/cli": "workspace:*",
+    "typescript": "^5.7.2",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

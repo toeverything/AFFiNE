@@ -1,4 +1,4 @@
-mutation validateConfig($updates: [UpdateAppConfigInput!]!) {
+query validateConfig($updates: [UpdateAppConfigInput!]!) {
   validateAppConfig(updates: $updates) {
     module
     key

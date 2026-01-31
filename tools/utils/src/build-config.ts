@@ -54,6 +54,7 @@ export function getBuildConfig(
         CAPTCHA_SITE_KEY: process.env.CAPTCHA_SITE_KEY ?? '',
         SENTRY_DSN: process.env.SENTRY_DSN ?? '',
         MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN ?? '',
+        GA4_MEASUREMENT_ID: process.env.GA4_MEASUREMENT_ID ?? '',
       };
     },
     get beta() {

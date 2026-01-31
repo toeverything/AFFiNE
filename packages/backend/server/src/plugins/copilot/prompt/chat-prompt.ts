@@ -127,6 +127,7 @@ export class ChatPrompt {
       selectedMarkdown,
       selectedSnapshot,
       html,
+      currentDocId,
     } = params;
     return {
       'affine::date': new Date().toLocaleDateString(),
@@ -135,6 +136,8 @@ export class ChatPrompt {
       'affine::hasDocsRef': Array.isArray(docs) && docs.length > 0,
       'affine::hasFilesRef': Array.isArray(files) && files.length > 0,
       'affine::hasSelected': !!selectedMarkdown || !!selectedSnapshot || !!html,
+      'affine::hasCurrentDoc':
+        typeof currentDocId === 'string' && currentDocId.trim().length > 0,
     };
   }
 

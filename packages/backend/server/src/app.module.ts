@@ -45,11 +45,13 @@ import { QuotaModule } from './core/quota';
 import { SelfhostModule } from './core/selfhost';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
+import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
 import { VersionModule } from './core/version';
 import { WorkspaceModule } from './core/workspaces';
 import { Env } from './env';
 import { ModelsModule } from './models';
+import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { CustomerIoModule } from './plugins/customerio';
@@ -174,7 +176,7 @@ export function buildAppModule(env: Env) {
     // renderer server only
     .useIf(() => env.flavors.renderer, DocRendererModule)
     // sync server only
-    .useIf(() => env.flavors.sync, SyncModule)
+    .useIf(() => env.flavors.sync, SyncModule, TelemetryModule)
     // graphql server only
     .useIf(
       () => env.flavors.graphql,
@@ -188,7 +190,9 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
+      CalendarModule,
       CustomerIoModule,
+      TelemetryModule,
       CommentModule,
       AccessTokenModule,
       QueueDashboardModule

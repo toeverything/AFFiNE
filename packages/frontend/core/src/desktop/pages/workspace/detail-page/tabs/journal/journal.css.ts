@@ -1,6 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { style, styleVariants } from '@vanilla-extract/css';
 
 const interactive = style({
   position: 'relative',
@@ -244,17 +244,25 @@ export const journalDateCell = style([
     },
   },
 ]);
+export const journalDateCellDotContainer = style({
+  display: 'flex',
+  gap: 4,
+  justifyContent: 'center',
+  marginTop: 4,
+});
 export const journalDateCellDot = style({
   width: 4,
   height: 4,
   borderRadius: '50%',
-  backgroundColor: cssVar('primaryColor'),
-  position: 'absolute',
-  bottom: 0,
-  left: '50%',
-  transform: 'translateX(-50%)',
 });
-export const spacer = style({
-  height: 0,
-  flexGrow: 1,
+export const journalDateCellDotType = styleVariants({
+  journal: {
+    backgroundColor: cssVarV2.calendar.blue,
+  },
+  event: {
+    backgroundColor: cssVarV2.calendar.green,
+  },
+  activity: {
+    backgroundColor: cssVarV2.calendar.red,
+  },
 });

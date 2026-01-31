@@ -1,17 +1,11 @@
-import { Divider, IconButton } from '@affine/component';
+import { Divider } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
-import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
+import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import {
-  type HtmlHTMLAttributes,
-  type ReactNode,
-  useCallback,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useRef } from 'react';
 
+import { CollapsibleWrapper } from '../../layout';
 import * as styles from './layout.css';
 
 export const SeeAllLink = () => {
@@ -27,42 +21,6 @@ export const SeeAllLink = () => {
       {t['com.affine.payment.see-all-plans']()}
       {<ArrowRightBigIcon width="16" height="16" />}
     </a>
-  );
-};
-
-interface PricingCollapsibleProps extends Omit<
-  HtmlHTMLAttributes<HTMLDivElement>,
-  'title'
-> {
-  title?: ReactNode;
-  caption?: ReactNode;
-}
-
-export const PricingCollapsible = ({
-  title,
-  caption,
-  children,
-}: PricingCollapsibleProps) => {
-  const [open, setOpen] = useState(true);
-  const toggle = useCallback(() => setOpen(prev => !prev), []);
-  return (
-    <Collapsible.Root open={open} onOpenChange={setOpen}>
-      <section className={styles.collapsibleHeader}>
-        <div className={styles.collapsibleHeaderContent}>
-          <div className={styles.collapsibleHeaderTitle}>{title}</div>
-          <div className={styles.collapsibleHeaderCaption}>{caption}</div>
-        </div>
-        <IconButton onClick={toggle} size="20">
-          <ArrowUpSmallIcon
-            style={{
-              transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
-              transition: 'transform 0.23s ease',
-            }}
-          />
-        </IconButton>
-      </section>
-      <Collapsible.Content>{children}</Collapsible.Content>
-    </Collapsible.Root>
   );
 };
 
@@ -112,7 +70,7 @@ export const CloudPlanLayout = ({
   scrollRef,
 }: PlanCardProps) => {
   return (
-    <PricingCollapsible title={title} caption={caption}>
+    <CollapsibleWrapper title={title} caption={caption}>
       <div className={styles.affineCloudHeader}>
         <div>{select}</div>
         <div>{toggle}</div>
@@ -134,6 +92,6 @@ export const CloudPlanLayout = ({
           {lifetime}
         </div>
       ) : null}
-    </PricingCollapsible>
+    </CollapsibleWrapper>
   );
 };

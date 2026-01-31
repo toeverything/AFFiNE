@@ -1,6 +1,6 @@
 {
   "name": "@affine/playstore-auto-bump",
-  "version": "0.25.7",
+  "version": "0.26.0",
   "private": true,
   "type": "module",
   "description": "Automatically bump the versionCode and versionName of an Android app from the Google Play Store versions",

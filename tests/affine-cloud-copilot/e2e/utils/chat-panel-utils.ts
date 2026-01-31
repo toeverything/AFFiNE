@@ -337,22 +337,6 @@ export class ChatPanelUtils {
     });
   }
 
-  public static async enableNetworkSearch(page: Page) {
-    await this.openChatInputPreference(page);
-    const networkSearch = page.getByTestId('chat-network-search');
-    if ((await networkSearch.getAttribute('data-active')) === 'false') {
-      await networkSearch.click();
-    }
-  }
-
-  public static async disableNetworkSearch(page: Page) {
-    await this.openChatInputPreference(page);
-    const networkSearch = page.getByTestId('chat-network-search');
-    if ((await networkSearch.getAttribute('data-active')) === 'true') {
-      await networkSearch.click();
-    }
-  }
-
   public static async enableReasoning(page: Page) {
     await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
@@ -367,10 +351,5 @@ export class ChatPanelUtils {
     if ((await reasoning.getAttribute('data-active')) === 'true') {
       await reasoning.click();
     }
-  }
-
-  public static async isNetworkSearchEnabled(page: Page) {
-    const networkSearch = await page.getByTestId('chat-network-search');
-    return (await networkSearch.getAttribute('aria-disabled')) === 'false';
   }
 }

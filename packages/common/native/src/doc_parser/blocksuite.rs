@@ -2,7 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use y_octo::Map;
 
-use super::value::value_to_string;
+use super::{
+  schema::{SYS_CHILDREN, SYS_FLAVOUR, SYS_ID},
+  value::value_to_string,
+};
 
 pub(super) struct BlockIndex {
   pub(super) block_pool: HashMap<String, Map>,
@@ -96,7 +99,7 @@ pub(super) fn find_block_id_by_flavour(block_pool: &HashMap<String, Map>, flavou
 
 pub(super) fn collect_child_ids(block: &Map) -> Vec<String> {
   block
-    .get("sys:children")
+    .get(SYS_CHILDREN)
     .and_then(|value| value.to_array())
     .map(|array| {
       array
@@ -108,11 +111,11 @@ pub(super) fn collect_child_ids(block: &Map) -> Vec<String> {
 }
 
 pub(super) fn get_block_id(block: &Map) -> Option<String> {
-  get_string(block, "sys:id")
+  get_string(block, SYS_ID)
 }
 
 pub(super) fn get_flavour(block: &Map) -> Option<String> {
-  get_string(block, "sys:flavour")
+  get_string(block, SYS_FLAVOUR)
 }
 
 pub(super) fn get_string(block: &Map, key: &str) -> Option<String> {
@@ -156,4 +159,18 @@ pub(super) fn nearest_by_flavour(
     cursor = parent_lookup.get(&node).cloned();
   }
   None
+}
+
+pub(super) fn find_child_id_by_flavour(
+  parent: &Map,
+  block_pool: &HashMap<String, Map>,
+  flavour: &str,
+) -> Option<String> {
+  collect_child_ids(parent).into_iter().find(|id| {
+    block_pool
+      .get(id)
+      .and_then(get_flavour)
+      .as_deref()
+      .is_some_and(|value| value == flavour)
+  })
 }

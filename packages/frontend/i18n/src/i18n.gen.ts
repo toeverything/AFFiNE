@@ -868,6 +868,37 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.ai.template-insert.failed"](): string;
     /**
+      * `AFFiNE AI`
+      */
+    ["com.affine.ai.chat-panel.title"](): string;
+    /**
+      * `AFFiNE AI is loading history...`
+      */
+    ["com.affine.ai.chat-panel.loading-history"](): string;
+    /**
+      * `Embedding {{done}}/{{total}}`
+      */
+    ["com.affine.ai.chat-panel.embedding-progress"](options: Readonly<{
+        done: string;
+        total: string;
+    }>): string;
+    /**
+      * `Delete this history?`
+      */
+    ["com.affine.ai.chat-panel.session.delete.confirm.title"](): string;
+    /**
+      * `Do you want to delete this AI conversation history? Once deleted, it cannot be recovered.`
+      */
+    ["com.affine.ai.chat-panel.session.delete.confirm.message"](): string;
+    /**
+      * `History deleted`
+      */
+    ["com.affine.ai.chat-panel.session.delete.toast.success"](): string;
+    /**
+      * `Failed to delete history`
+      */
+    ["com.affine.ai.chat-panel.session.delete.toast.failed"](): string;
+    /**
       * `All docs`
       */
     ["com.affine.all-pages.header"](): string;
@@ -927,6 +958,18 @@ export function useAFFiNEI18N(): {
       * `Customize Theme`
       */
     ["com.affine.appearanceSettings.customize-theme.title"](): string;
+    /**
+      * `Images`
+      */
+    ["com.affine.appearanceSettings.images.title"](): string;
+    /**
+      * `Smooth image rendering`
+      */
+    ["com.affine.appearanceSettings.images.antialiasing.title"](): string;
+    /**
+      * `When disabled, images are rendered using nearest-neighbor scaling for crisp pixels.`
+      */
+    ["com.affine.appearanceSettings.images.antialiasing.description"](): string;
     /**
       * `Reset all`
       */
@@ -7247,6 +7290,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspaceSubPath.all"](): string;
     /**
+      * `Intelligence`
+      */
+    ["com.affine.workspaceSubPath.chat"](): string;
+    /**
       * `Trash`
       */
     ["com.affine.workspaceSubPath.trash"](): string;
@@ -8227,17 +8274,9 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.calendar.new-url-label"](): string;
     /**
-      * `This is a duplicate calendar`
+      * `An error occurred while saving the calendar settings`
       */
-    ["com.affine.integration.calendar.new-duplicate-error-title"](): string;
-    /**
-      * `This subscription calendar already exists in the account of subscribed calendars.`
-      */
-    ["com.affine.integration.calendar.new-duplicate-error-content"](): string;
-    /**
-      * `An error occurred while adding the calendar`
-      */
-    ["com.affine.integration.calendar.new-error"](): string;
+    ["com.affine.integration.calendar.save-error"](): string;
     /**
       * `All day`
       */
@@ -8264,6 +8303,16 @@ export function useAFFiNEI18N(): {
     ["com.affine.integration.calendar.unsubscribe-content"](options: {
         readonly name: string;
     }): string;
+    /**
+      * `No journal page found for {{date}}. Please create a journal page first.`
+      */
+    ["com.affine.integration.calendar.no-journal"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `No subscribed calendars yet.`
+      */
+    ["com.affine.integration.calendar.no-calendar"](): string;
     /**
       * `MCP Server`
       */
@@ -8831,6 +8880,13 @@ export function useAFFiNEI18N(): {
       * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
       */
     ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
+    /**
+      * `Calendar provider request error, status: {{status}}, message: {{message}}`
+      */
+    ["error.CALENDAR_PROVIDER_REQUEST_ERROR"](options: Readonly<{
+        status: string;
+        message: string;
+    }>): string;
     /**
       * `Copilot session not found.`
       */
