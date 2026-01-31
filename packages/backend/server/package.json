@@ -84,7 +84,7 @@
     "eventemitter2": "^6.4.9",
     "exa-js": "^1.6.13",
     "express": "^5.0.1",
-    "fast-xml-parser": "^5.0.0",
+    "fast-xml-parser": "^5.3.4",
     "get-stream": "^9.0.1",
     "google-auth-library": "^10.2.0",
     "graphql": "^16.9.0",
