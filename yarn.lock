@@ -313,7 +313,7 @@ __metadata:
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.1.0"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
-    "@chromatic-com/storybook": "npm:^4.1.3"
+    "@chromatic-com/storybook": "npm:^5.0.0"
     "@emotion/react": "npm:^11.14.0"
     "@emotion/styled": "npm:^11.14.0"
     "@radix-ui/react-avatar": "npm:^1.1.11"
@@ -4743,18 +4743,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chromatic-com/storybook@npm:^4.1.3":
-  version: 4.1.3
-  resolution: "@chromatic-com/storybook@npm:4.1.3"
+"@chromatic-com/storybook@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@chromatic-com/storybook@npm:5.0.0"
   dependencies:
     "@neoconfetti/react": "npm:^1.0.0"
-    chromatic: "npm:^13.3.3"
+    chromatic: "npm:^13.3.4"
     filesize: "npm:^10.0.12"
     jsonfile: "npm:^6.1.0"
     strip-ansi: "npm:^7.1.0"
   peerDependencies:
-    storybook: ^0.0.0-0 || ^9.0.0 || ^9.1.0-0 || ^9.2.0-0 || ^10.0.0-0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0
-  checksum: 10/e5f33dc69442f4173cd76e8a5527d6b8a8e8c3870bd2483c2460a5e48bef5ca35b7f2b0c81209dcb10c83a8cbb629230d8a989d9a2328aa01ade8f4209e30dd1
+    storybook: ^0.0.0-0 || ^10.1.0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0
+  checksum: 10/4964c1086f4aaaf5a0db80063801fafd0595546e22914dff1e6e0869dad9cf9f9cae66bd41133f1bbd0d59696923ca65e9734b76ca4a6ca13f1f97e9d4286e64
   languageName: node
   linkType: hard
 
@@ -21701,9 +21701,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chromatic@npm:^13.3.3":
-  version: 13.3.4
-  resolution: "chromatic@npm:13.3.4"
+"chromatic@npm:^13.3.4":
+  version: 13.3.5
+  resolution: "chromatic@npm:13.3.5"
   peerDependencies:
     "@chromatic-com/cypress": ^0.*.* || ^1.0.0
     "@chromatic-com/playwright": ^0.*.* || ^1.0.0
@@ -21716,7 +21716,7 @@ __metadata:
     chroma: dist/bin.js
     chromatic: dist/bin.js
     chromatic-cli: dist/bin.js
-  checksum: 10/9c9f576940f8a1d2d293a1cbf8ebcbcf8a8ec23af288c287e907d56d3f4e155289ac302fdd2e219c96b10f6243348d1264992c23164ac0cd914c6c3da856e006
+  checksum: 10/d660e926e2763158eb216c12fd443ac909235b62e0855d6485c5ec270cbde8ce6d5467fc9792a988f2cd4c32722efb9899982b26d4bd8265381846c7d7006c21
   languageName: node
   linkType: hard
 
