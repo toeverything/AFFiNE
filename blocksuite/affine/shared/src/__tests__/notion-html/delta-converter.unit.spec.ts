@@ -1,9 +1,10 @@
 import type { DeltaInsert } from '@blocksuite/store';
+import type { ElementContent } from 'hast';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { AffineTextAttributes } from '../../../../types/index.js';
 import { NotionHtmlDeltaConverter } from '../../adapters/notion-html/delta-converter.js';
 import type { HtmlAST } from '../../adapters/types/hast.js';
+import type { AffineTextAttributes } from '../../types/index.js';
 
 describe('NotionHtmlDeltaConverter', () => {
   let converter: NotionHtmlDeltaConverter;
@@ -26,7 +27,7 @@ describe('NotionHtmlDeltaConverter', () => {
           properties: {},
           children: [{ type: 'text', value: 'Hello' }],
         },
-        null as unknown as HtmlAST, // Simulate a null child
+        null as unknown as ElementContent, // Simulate a null child
         {
           type: 'element',
           tagName: 'p',
@@ -60,7 +61,7 @@ describe('NotionHtmlDeltaConverter', () => {
           properties: {},
           children: [{ type: 'text', value: 'First' }],
         },
-        undefined as unknown as HtmlAST, // Simulate an undefined child
+        undefined as unknown as ElementContent, // Simulate an undefined child
         {
           type: 'element',
           tagName: 'p',
