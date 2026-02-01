@@ -258,7 +258,7 @@ __metadata:
     "@capacitor/app": "npm:^7.0.0"
     "@capacitor/cli": "npm:^7.0.0"
     "@capacitor/core": "npm:^7.0.0"
-    "@capacitor/keyboard": "npm:^7.0.0"
+    "@capacitor/keyboard": "npm:^8.0.0"
     "@capacitor/status-bar": "npm:^7.0.0"
     "@capgo/inappbrowser": "npm:^7.1.0"
     "@sentry/react": "npm:^9.47.1"
@@ -708,7 +708,7 @@ __metadata:
     "@capacitor/core": "npm:^7.0.0"
     "@capacitor/haptics": "npm:^7.0.0"
     "@capacitor/ios": "npm:^7.0.0"
-    "@capacitor/keyboard": "npm:^7.0.0"
+    "@capacitor/keyboard": "npm:^8.0.0"
     "@sentry/react": "npm:^9.47.1"
     "@toeverything/infra": "workspace:^"
     "@types/react": "npm:^19.0.1"
@@ -4674,12 +4674,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@capacitor/keyboard@npm:^7.0.0":
-  version: 7.0.4
-  resolution: "@capacitor/keyboard@npm:7.0.4"
+"@capacitor/keyboard@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@capacitor/keyboard@npm:8.0.0"
   peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/0faff0fea73d1922a1c5c5c206cd892f4de4935b821890b7032dfc1545e38b7181ec0787c10109f83a66e6389c6eda0a490551fe205192d9e77ad81f18f1c840
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/2853fa04ff05908ec3915e791661e4950ffbea3ed8b67fa7932d234c50f55930ba2bfcdd3f210515d9fdc06dee06b2b657d161f62036bd338e0dc23e52c73dac
   languageName: node
   linkType: hard
 

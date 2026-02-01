@@ -22,7 +22,7 @@
     "@capacitor/android": "^7.0.0",
     "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0",
-    "@capacitor/keyboard": "^7.0.0",
+    "@capacitor/keyboard": "^8.0.0",
     "@capacitor/status-bar": "^7.0.0",
     "@capgo/inappbrowser": "^7.1.0",
     "@sentry/react": "^9.47.1",
