@@ -588,7 +588,7 @@ __metadata:
     "@electron-forge/shared-types": "npm:^7.10.2"
     "@pengx17/electron-forge-maker-appimage": "npm:^1.2.1"
     "@sentry/electron": "npm:^7.0.0"
-    "@sentry/esbuild-plugin": "npm:^3.0.0"
+    "@sentry/esbuild-plugin": "npm:^4.0.0"
     "@sentry/react": "npm:^9.47.1"
     "@toeverything/infra": "workspace:*"
     "@types/set-cookie-parser": "npm:^2.4.10"
@@ -15829,6 +15829,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sentry/babel-plugin-component-annotate@npm:4.8.0":
+  version: 4.8.0
+  resolution: "@sentry/babel-plugin-component-annotate@npm:4.8.0"
+  checksum: 10/7cc62dfea3dd3d895e52624c2b27a81c7c641d42a3de05ff14bf0fede9d876a9cfec11962d33bacf42dfea59ec75c4271448a6c284dc63c2c0bb634002419867
+  languageName: node
+  linkType: hard
+
 "@sentry/browser@npm:10.29.0":
   version: 10.29.0
   resolution: "@sentry/browser@npm:10.29.0"
@@ -15868,6 +15875,22 @@ __metadata:
     magic-string: "npm:0.30.8"
     unplugin: "npm:1.0.1"
   checksum: 10/6445bda6a963acc8fedd857c3783a21aa2ca147f8c5dced5b064d8d5756e87903346ce113a1f792f47f908184332917f8e413f52441dd33d0fb0eb197d638dc1
+  languageName: node
+  linkType: hard
+
+"@sentry/bundler-plugin-core@npm:4.8.0":
+  version: 4.8.0
+  resolution: "@sentry/bundler-plugin-core@npm:4.8.0"
+  dependencies:
+    "@babel/core": "npm:^7.18.5"
+    "@sentry/babel-plugin-component-annotate": "npm:4.8.0"
+    "@sentry/cli": "npm:^2.57.0"
+    dotenv: "npm:^16.3.1"
+    find-up: "npm:^5.0.0"
+    glob: "npm:^10.5.0"
+    magic-string: "npm:0.30.8"
+    unplugin: "npm:1.0.1"
+  checksum: 10/a19eaf1c118e273ed3383da0ede9365c23b5668871f21b89c22fb873ae29cf972464472d7c448f84afdea7e99e50dc5bf5f46579721f88696400cab994a2d123
   languageName: node
   linkType: hard
 
@@ -15927,7 +15950,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/cli@npm:^2.49.0":
+"@sentry/cli@npm:^2.49.0, @sentry/cli@npm:^2.57.0":
   version: 2.58.4
   resolution: "@sentry/cli@npm:2.58.4"
   dependencies:
@@ -15997,14 +16020,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/esbuild-plugin@npm:^3.0.0":
-  version: 3.6.1
-  resolution: "@sentry/esbuild-plugin@npm:3.6.1"
+"@sentry/esbuild-plugin@npm:^4.0.0":
+  version: 4.8.0
+  resolution: "@sentry/esbuild-plugin@npm:4.8.0"
   dependencies:
-    "@sentry/bundler-plugin-core": "npm:3.6.1"
+    "@sentry/bundler-plugin-core": "npm:4.8.0"
     unplugin: "npm:1.0.1"
     uuid: "npm:^9.0.0"
-  checksum: 10/b2b64e404d13589d98ff5ebc57a7e0a7cb9c3bada8aab20f9eb1beefb375deabf61658c96659f3a4f2a5dbd69e44ddf69fd1b5a17f31830a97ddbee8f589473a
+  checksum: 10/d5204896f1b2bc780ea9cac7e057746b9ac8a33591f16c754c03248e273e92a0bbaf46c66467d5300cb41f4763b2a82fa623bae3c853d5254dd6a68716017b2d
   languageName: node
   linkType: hard
 
@@ -26389,7 +26412,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^10.0.0, glob@npm:^10.2.2, glob@npm:^10.3.10, glob@npm:^10.4.1, glob@npm:^10.4.5":
+"glob@npm:^10.0.0, glob@npm:^10.2.2, glob@npm:^10.3.10, glob@npm:^10.4.1, glob@npm:^10.4.5, glob@npm:^10.5.0":
   version: 10.5.0
   resolution: "glob@npm:10.5.0"
   dependencies:
