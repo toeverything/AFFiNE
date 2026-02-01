@@ -145,7 +145,7 @@
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "@types/semver": "^7.5.8",
-    "@types/sinon": "^17.0.3",
+    "@types/sinon": "^21.0.0",
     "@types/supertest": "^6.0.2",
     "ava": "^6.4.0",
     "c8": "^10.1.3",
