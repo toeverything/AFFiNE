@@ -9,9 +9,8 @@ pub mod hashcash;
 pub mod html_sanitize;
 pub mod tiktoken;
 
-use std::fmt::{Debug, Display};
-
-use napi::{Error, Result, Status, bindgen_prelude::*};
+use affine_common::napi_utils::map_napi_err;
+use napi::{Result, Status, bindgen_prelude::*};
 use y_octo::Doc;
 
 #[cfg(not(target_arch = "arm"))]
@@ -21,35 +20,16 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[macro_use]
 extern crate napi_derive;
 
-fn map_err_inner<T, E: Display + Debug>(v: std::result::Result<T, E>, status: Status) -> Result<T> {
-  match v {
-    Ok(val) => Ok(val),
-    Err(e) => {
-      dbg!(&e);
-      Err(Error::new(status, e.to_string()))
-    }
-  }
-}
-
-macro_rules! map_err {
-  ($val: expr) => {
-    map_err_inner($val, Status::GenericFailure)
-  };
-  ($val: expr, $stauts: ident) => {
-    map_err_inner($val, $stauts)
-  };
-}
-
 /// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
 /// result binary.
 #[napi(catch_unwind)]
 pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
   let mut doc = Doc::default();
   for update in updates {
-    map_err!(doc.apply_update_from_binary_v1(update.as_ref()))?;
+    map_napi_err(doc.apply_update_from_binary_v1(update.as_ref()), Status::GenericFailure)?;
   }
 
-  let buf = map_err!(doc.encode_update_v1())?;
+  let buf = map_napi_err(doc.encode_update_v1(), Status::GenericFailure)?;
 
   Ok(buf.into())
 }
@@ -59,3 +39,17 @@ pub const AFFINE_PRO_PUBLIC_KEY: Option<&'static str> = std::option_env!("AFFINE
 
 #[napi]
 pub const AFFINE_PRO_LICENSE_AES_KEY: Option<&'static str> = std::option_env!("AFFINE_PRO_LICENSE_AES_KEY");
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn merge_updates_reports_generic_failure() {
+    let err = match merge_updates_in_apply_way(vec![Buffer::from(vec![0])]) {
+      Ok(_) => panic!("expected error"),
+      Err(err) => err,
+    };
+    assert_eq!(err.status, Status::GenericFailure);
+  }
+}

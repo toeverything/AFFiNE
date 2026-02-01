@@ -1,8 +1,11 @@
 import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
 import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import { DisposableGroup } from '@blocksuite/global/disposable';
-import type { UIEventStateContext } from '@blocksuite/std';
-import { TextSelection, WidgetComponent } from '@blocksuite/std';
+import {
+  TextSelection,
+  type UIEventStateContext,
+  WidgetComponent,
+} from '@blocksuite/std';
 import { InlineEditor } from '@blocksuite/std/inline';
 import debounce from 'lodash-es/debounce';
 
@@ -59,9 +62,7 @@ const showSlashMenu = debounce(
 );
 
 export class AffineSlashMenuWidget extends WidgetComponent {
-  private readonly _getInlineEditor = (
-    evt: KeyboardEvent | CompositionEvent
-  ) => {
+  private readonly _getInlineEditor = (evt: CompositionEvent | InputEvent) => {
     if (evt.target instanceof HTMLElement) {
       const editor = (
         evt.target.closest('.inline-editor') as {
@@ -152,18 +153,27 @@ export class AffineSlashMenuWidget extends WidgetComponent {
     this._handleInput(inlineEditor, true);
   };
 
-  private readonly _onKeyDown = (ctx: UIEventStateContext) => {
-    const eventState = ctx.get('keyboardState');
-    const event = eventState.raw;
+  private readonly _onBeforeInput = (ctx: UIEventStateContext) => {
+    const event = ctx.get('defaultState').event;
+    if (!(event instanceof InputEvent)) return;
 
-    const key = event.key;
+    // Skip non-character inputs and IME composition (handled by _onCompositionEnd)
+    if (event.data === null || event.isComposing) return;
 
-    if (event.isComposing || key !== AFFINE_SLASH_MENU_TRIGGER_KEY) return;
+    // Quick check: only proceed if the input contains the trigger key
+    if (!event.data.includes(AFFINE_SLASH_MENU_TRIGGER_KEY)) return;
 
     const inlineEditor = this._getInlineEditor(event);
     if (!inlineEditor) return;
 
-    this._handleInput(inlineEditor, false);
+    // Wait for the input to be processed, then handle it
+    // Pass true because after waitForUpdate(), the range is already synced
+    inlineEditor
+      .waitForUpdate()
+      .then(() => {
+        this._handleInput(inlineEditor, true);
+      })
+      .catch(console.error);
   };
 
   get config() {
@@ -177,8 +187,7 @@ export class AffineSlashMenuWidget extends WidgetComponent {
   override connectedCallback() {
     super.connectedCallback();
 
-    // this.handleEvent('beforeInput', this._onBeforeInput);
-    this.handleEvent('keyDown', this._onKeyDown);
+    this.handleEvent('beforeInput', this._onBeforeInput);
     this.handleEvent('compositionEnd', this._onCompositionEnd);
   }
 }

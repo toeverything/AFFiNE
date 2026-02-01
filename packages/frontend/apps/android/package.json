@@ -24,7 +24,7 @@
     "@capacitor/core": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
-    "@capgo/inappbrowser": "^7.1.0",
+    "@capgo/inappbrowser": "^8.0.0",
     "@sentry/react": "^9.47.1",
     "@toeverything/infra": "workspace:*",
     "async-call-rpc": "^6.4.2",

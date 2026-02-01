@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
+import { escapeRegExp } from 'lodash-es';
 
 const trustedDomain = [
   'google.com',
@@ -41,7 +42,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     if (
       target.hostname === window.location.hostname ||
       trustedDomain.some(domain =>
-        new RegExp(`.?${domain}$`).test(target.hostname)
+        new RegExp(`(^|\\.)${escapeRegExp(domain)}$`).test(target.hostname)
       )
     ) {
       location.href = redirectUri;

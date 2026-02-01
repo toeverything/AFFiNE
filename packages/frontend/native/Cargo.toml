@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 affine_common = { workspace = true, features = ["hashcash"] }
 affine_media_capture = { path = "./media_capture" }
-affine_nbstore = { path = "./nbstore" }
+affine_nbstore = { workspace = true, features = ["napi"] }
 affine_sqlite_v1 = { path = "./sqlite_v1" }
 napi = { workspace = true }
 napi-derive = { workspace = true }
@@ -24,6 +24,12 @@ sqlx = { workspace = true, default-features = false, features = [
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+mimalloc = { workspace = true }
+
+[target.'cfg(all(target_os = "linux", not(target_arch = "arm")))'.dependencies]
+mimalloc = { workspace = true, features = ["local_dynamic_tls"] }
 
 [dev-dependencies]
 chrono     = { workspace = true }

@@ -22,6 +22,7 @@ doc-loader = [
   "url",
 ]
 hashcash = ["chrono", "sha3", "rand"]
+napi = ["dep:napi"]
 tree-sitter = [
   "cc",
   "dep:tree-sitter",
@@ -53,6 +54,7 @@ chrono = { workspace = true, optional = true }
 docx-parser = { workspace = true, optional = true }
 infer = { workspace = true, optional = true }
 nanoid = { workspace = true, optional = true }
+napi = { workspace = true, optional = true }
 path-ext = { workspace = true, optional = true }
 pdf-extract = { workspace = true, optional = true }
 pulldown-cmark = { workspace = true, optional = true }
