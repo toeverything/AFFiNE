@@ -1,13 +1,11 @@
 {
-  "extends": "../../tsconfig.node.json",
+  "extends": "../../../tsconfig.node.json",
   "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "rootDir": "./src",
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./src"],
-  "references": [
-    { "path": "../utils" },
-    { "path": "../../packages/common/s3-compat" }
-  ]
+  "references": []
 }

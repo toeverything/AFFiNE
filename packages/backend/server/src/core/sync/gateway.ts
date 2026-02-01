@@ -23,6 +23,7 @@ import {
   SpaceAccessDenied,
 } from '../../base';
 import { Models } from '../../models';
+import { mergeUpdatesInApplyWay } from '../../native';
 import { CurrentUser } from '../auth';
 import {
   DocReader,
@@ -48,8 +49,9 @@ type EventResponse<Data = any> = Data extends never
       data: Data;
     };
 
-// 019 only receives space:broadcast-doc-updates and send space:push-doc-updates
-// 020 only receives space:broadcast-doc-update and send space:push-doc-update
+// sync-019: legacy 0.19.x clients (broadcast-doc-updates/push-doc-updates).
+// Remove after 2026-06-30 once metrics show 0 usage for 30 days.
+// 020+: receives space:broadcast-doc-updates (batch) and sends space:push-doc-update.
 type RoomType = 'sync' | `${string}:awareness` | 'sync-019';
 
 function Room(
@@ -105,6 +107,16 @@ interface PushDocUpdateMessage {
   update: string;
 }
 
+interface BroadcastDocUpdatesMessage {
+  spaceType: SpaceType;
+  spaceId: string;
+  docId: string;
+  updates: string[];
+  timestamp: number;
+  editor?: string;
+  compressed?: boolean;
+}
+
 interface LoadDocMessage {
   spaceType: SpaceType;
   spaceId: string;
@@ -157,6 +169,62 @@ export class SpaceSyncGateway
     private readonly models: Models
   ) {}
 
+  private encodeUpdates(updates: Uint8Array[]) {
+    return updates.map(update => Buffer.from(update).toString('base64'));
+  }
+
+  private buildBroadcastPayload(
+    spaceType: SpaceType,
+    spaceId: string,
+    docId: string,
+    updates: Uint8Array[],
+    timestamp: number,
+    editor?: string
+  ): BroadcastDocUpdatesMessage {
+    const encodedUpdates = this.encodeUpdates(updates);
+    if (updates.length <= 1) {
+      return {
+        spaceType,
+        spaceId,
+        docId,
+        updates: encodedUpdates,
+        timestamp,
+        editor,
+        compressed: false,
+      };
+    }
+
+    try {
+      const merged = mergeUpdatesInApplyWay(
+        updates.map(update => Buffer.from(update))
+      );
+      metrics.socketio.counter('doc_updates_compressed').add(1);
+      return {
+        spaceType,
+        spaceId,
+        docId,
+        updates: [Buffer.from(merged).toString('base64')],
+        timestamp,
+        editor,
+        compressed: true,
+      };
+    } catch (error) {
+      this.logger.warn(
+        'Failed to merge updates for broadcast, falling back to batch',
+        error as Error
+      );
+      return {
+        spaceType,
+        spaceId,
+        docId,
+        updates: encodedUpdates,
+        timestamp,
+        editor,
+        compressed: false,
+      };
+    }
+  }
+
   handleConnection() {
     this.connectionCount++;
     this.logger.debug(`New connection, total: ${this.connectionCount}`);
@@ -184,9 +252,7 @@ export class SpaceSyncGateway
       return;
     }
 
-    const encodedUpdates = updates.map(update =>
-      Buffer.from(update).toString('base64')
-    );
+    const encodedUpdates = this.encodeUpdates(updates);
 
     this.server
       .to(Room(spaceId, 'sync-019'))
@@ -196,19 +262,27 @@ export class SpaceSyncGateway
         docId,
         updates: encodedUpdates,
         timestamp,
-      });
-
-    const room = `${spaceType}:${Room(spaceId)}`;
-    encodedUpdates.forEach(update => {
-      this.server.to(room).emit('space:broadcast-doc-update', {
-        spaceType,
-        spaceId,
-        docId,
-        update,
-        timestamp,
         editor,
       });
-    });
+    metrics.socketio
+      .counter('sync_019_broadcast')
+      .add(encodedUpdates.length, { event: 'doc_updates_pushed' });
+
+    const room = `${spaceType}:${Room(spaceId)}`;
+    const payload = this.buildBroadcastPayload(
+      spaceType as SpaceType,
+      spaceId,
+      docId,
+      updates,
+      timestamp,
+      editor
+    );
+    this.server.to(room).emit('space:broadcast-doc-updates', payload);
+    metrics.socketio
+      .counter('doc_updates_broadcast')
+      .add(payload.updates.length, {
+        mode: payload.compressed ? 'compressed' : 'batch',
+      });
   }
 
   selectAdapter(client: Socket, spaceType: SpaceType): SyncSocketAdapter {
@@ -330,19 +404,35 @@ export class SpaceSyncGateway
       user.id
     );
 
+    metrics.socketio
+      .counter('sync_019_event')
+      .add(1, { event: 'push-doc-updates' });
+
     // broadcast to 0.19.x clients
-    client
-      .to(Room(spaceId, 'sync-019'))
-      .emit('space:broadcast-doc-updates', { ...message, timestamp });
+    client.to(Room(spaceId, 'sync-019')).emit('space:broadcast-doc-updates', {
+      ...message,
+      timestamp,
+      editor: user.id,
+    });
 
     // broadcast to new clients
-    updates.forEach(update => {
-      client.to(adapter.room(spaceId)).emit('space:broadcast-doc-update', {
-        ...message,
-        update,
-        timestamp,
+    const decodedUpdates = updates.map(update => Buffer.from(update, 'base64'));
+    const payload = this.buildBroadcastPayload(
+      spaceType,
+      spaceId,
+      docId,
+      decodedUpdates,
+      timestamp,
+      user.id
+    );
+    client
+      .to(adapter.room(spaceId))
+      .emit('space:broadcast-doc-updates', payload);
+    metrics.socketio
+      .counter('doc_updates_broadcast')
+      .add(payload.updates.length, {
+        mode: payload.compressed ? 'compressed' : 'batch',
       });
-    });
 
     return {
       data: {
@@ -378,16 +468,25 @@ export class SpaceSyncGateway
       docId,
       updates: [update],
       timestamp,
+      editor: user.id,
     });
 
-    client.to(adapter.room(spaceId)).emit('space:broadcast-doc-update', {
+    const payload = this.buildBroadcastPayload(
       spaceType,
       spaceId,
       docId,
-      update,
+      [Buffer.from(update, 'base64')],
       timestamp,
-      editor: user.id,
-    });
+      user.id
+    );
+    client
+      .to(adapter.room(spaceId))
+      .emit('space:broadcast-doc-updates', payload);
+    metrics.socketio
+      .counter('doc_updates_broadcast')
+      .add(payload.updates.length, {
+        mode: payload.compressed ? 'compressed' : 'batch',
+      });
 
     return {
       data: {

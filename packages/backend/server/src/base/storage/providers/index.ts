@@ -33,9 +33,44 @@ export type StorageProviderConfig = { bucket: string } & (
 
 const S3ConfigSchema: JSONSchema = {
   type: 'object',
-  description:
-    'The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html',
+  description: 'The config for the S3 compatible storage provider.',
   properties: {
+    endpoint: {
+      type: 'string',
+      description:
+        'The S3 compatible endpoint. Example: "https://s3.us-east-1.amazonaws.com" or "https://<account>.r2.cloudflarestorage.com".',
+    },
+    region: {
+      type: 'string',
+      description:
+        'The region for the storage provider. Example: "us-east-1" or "auto" for R2.',
+    },
+    forcePathStyle: {
+      type: 'boolean',
+      description: 'Whether to use path-style bucket addressing.',
+    },
+    requestTimeoutMs: {
+      type: 'number',
+      description: 'Request timeout in milliseconds.',
+    },
+    minPartSize: {
+      type: 'number',
+      description: 'Minimum multipart part size in bytes.',
+    },
+    presign: {
+      type: 'object',
+      description: 'Presigned URL behavior configuration.',
+      properties: {
+        expiresInSeconds: {
+          type: 'number',
+          description: 'Expiration time in seconds for presigned URLs.',
+        },
+        signContentTypeForPut: {
+          type: 'boolean',
+          description: 'Whether to sign Content-Type for presigned PUT.',
+        },
+      },
+    },
     credentials: {
       type: 'object',
       description: 'The credentials for the s3 compatible storage provider.',
@@ -44,6 +79,9 @@ const S3ConfigSchema: JSONSchema = {
           type: 'string',
         },
         secretAccessKey: {
+          type: 'string',
+        },
+        sessionToken: {
           type: 'string',
         },
       },

@@ -89,8 +89,54 @@ impl TryFrom<DocUpdate> for affine_nbstore::DocUpdate {
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(update.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
-      bin: update.bin.into(),
+      bin: Into::<Data>::into(
+        base64_simd::STANDARD
+          .decode_to_vec(update.bin)
+          .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
+      ),
     })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn doc_update_roundtrip_base64() {
+    let timestamp = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(1_700_000_000_000)
+      .unwrap()
+      .naive_utc();
+    let original = affine_nbstore::DocUpdate {
+      doc_id: "doc-1".to_string(),
+      timestamp,
+      bin: vec![1, 2, 3, 4, 5],
+    };
+
+    let encoded: DocUpdate = original.into();
+    let decoded = affine_nbstore::DocUpdate::try_from(encoded).unwrap();
+
+    assert_eq!(decoded.doc_id, "doc-1");
+    assert_eq!(decoded.timestamp, timestamp);
+    assert_eq!(decoded.bin, vec![1, 2, 3, 4, 5]);
+  }
+
+  #[test]
+  fn doc_update_rejects_invalid_base64() {
+    let update = DocUpdate {
+      doc_id: "doc-2".to_string(),
+      timestamp: 0,
+      bin: "not-base64!!".to_string(),
+    };
+
+    let err = match affine_nbstore::DocUpdate::try_from(update) {
+      Ok(_) => panic!("expected base64 decode error"),
+      Err(err) => err,
+    };
+    match err {
+      UniffiError::Base64DecodingError(_) => {}
+      other => panic!("unexpected error: {other:?}"),
+    }
   }
 }
 

@@ -4,7 +4,8 @@ import { S3StorageProvider } from '../providers/s3';
 import { SIGNED_URL_EXPIRED } from '../providers/utils';
 
 const config = {
-  region: 'auto',
+  region: 'us-east-1',
+  endpoint: 'https://s3.us-east-1.amazonaws.com',
   credentials: {
     accessKeyId: 'test',
     secretAccessKey: 'test',
@@ -24,6 +25,8 @@ test('presignPut should return url and headers', async t => {
   t.truthy(result);
   t.true(result!.url.length > 0);
   t.true(result!.url.includes('X-Amz-Algorithm=AWS4-HMAC-SHA256'));
+  t.true(result!.url.includes('X-Amz-SignedHeaders='));
+  t.true(result!.url.includes('content-type'));
   t.deepEqual(result!.headers, { 'Content-Type': 'text/plain' });
   const now = Date.now();
   t.true(result!.expiresAt.getTime() >= now + SIGNED_URL_EXPIRED * 1000 - 2000);
@@ -41,12 +44,15 @@ test('presignUploadPart should return url', async t => {
 
 test('createMultipartUpload should return uploadId', async t => {
   const provider = createProvider();
-  let receivedCommand: any;
-  const sendStub = async (command: any) => {
-    receivedCommand = command;
-    return { UploadId: 'upload-1' };
+  let receivedKey: string | undefined;
+  let receivedMeta: any;
+  (provider as any).client = {
+    createMultipartUpload: async (key: string, meta: any) => {
+      receivedKey = key;
+      receivedMeta = meta;
+      return { uploadId: 'upload-1' };
+    },
   };
-  (provider as any).client = { send: sendStub };
 
   const now = Date.now();
   const result = await provider.createMultipartUpload('key', {
@@ -56,25 +62,29 @@ test('createMultipartUpload should return uploadId', async t => {
   t.is(result?.uploadId, 'upload-1');
   t.true(result!.expiresAt.getTime() >= now + SIGNED_URL_EXPIRED * 1000 - 2000);
   t.true(result!.expiresAt.getTime() <= now + SIGNED_URL_EXPIRED * 1000 + 2000);
-  t.is(receivedCommand.input.Key, 'key');
-  t.is(receivedCommand.input.ContentType, 'text/plain');
+  t.is(receivedKey, 'key');
+  t.is(receivedMeta.contentType, 'text/plain');
 });
 
 test('completeMultipartUpload should order parts', async t => {
   const provider = createProvider();
-  let called = false;
-  const sendStub = async (command: any) => {
-    called = true;
-    t.deepEqual(command.input.MultipartUpload.Parts, [
-      { ETag: 'a', PartNumber: 1 },
-      { ETag: 'b', PartNumber: 2 },
-    ]);
+  let receivedParts: any;
+  (provider as any).client = {
+    completeMultipartUpload: async (
+      _key: string,
+      _uploadId: string,
+      parts: any
+    ) => {
+      receivedParts = parts;
+    },
   };
-  (provider as any).client = { send: sendStub };
 
   await provider.completeMultipartUpload('key', 'upload-1', [
     { partNumber: 2, etag: 'b' },
     { partNumber: 1, etag: 'a' },
   ]);
-  t.true(called);
+  t.deepEqual(receivedParts, [
+    { partNumber: 1, etag: 'a' },
+    { partNumber: 2, etag: 'b' },
+  ]);
 });

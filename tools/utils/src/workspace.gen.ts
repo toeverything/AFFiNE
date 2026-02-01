@@ -1166,6 +1166,7 @@ export const PackageList = [
     location: 'packages/backend/server',
     name: '@affine/server',
     workspaceDependencies: [
+      'packages/common/s3-compat',
       'packages/backend/native',
       'tools/cli',
       'tools/utils',
@@ -1221,6 +1222,11 @@ export const PackageList = [
     location: 'packages/common/reader',
     name: '@affine/reader',
     workspaceDependencies: ['blocksuite/affine/all'],
+  },
+  {
+    location: 'packages/common/s3-compat',
+    name: '@affine/s3-compat',
+    workspaceDependencies: [],
   },
   {
     location: 'packages/frontend/admin',
@@ -1462,7 +1468,7 @@ export const PackageList = [
   {
     location: 'tools/cli',
     name: '@affine-tools/cli',
-    workspaceDependencies: ['tools/utils'],
+    workspaceDependencies: ['tools/utils', 'packages/common/s3-compat'],
   },
   {
     location: 'tools/commitlint',
@@ -1580,6 +1586,7 @@ export type PackageName =
   | '@toeverything/infra'
   | '@affine/nbstore'
   | '@affine/reader'
+  | '@affine/s3-compat'
   | '@affine/admin'
   | '@affine/android'
   | '@affine/electron'

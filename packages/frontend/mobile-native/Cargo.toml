@@ -12,6 +12,7 @@ name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
 [features]
+default    = ["use-as-lib"]
 use-as-lib = ["affine_nbstore/use-as-lib"]
 
 [dependencies]

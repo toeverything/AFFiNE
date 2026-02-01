@@ -1,24 +1,12 @@
 /* oxlint-disable @typescript-eslint/no-non-null-assertion */
 import { Readable } from 'node:stream';
 
-import {
-  AbortMultipartUploadCommand,
-  CompleteMultipartUploadCommand,
-  CreateMultipartUploadCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  ListObjectsV2Command,
-  ListPartsCommand,
-  NoSuchKey,
-  NoSuchUpload,
-  NotFound,
-  PutObjectCommand,
-  S3Client,
-  S3ClientConfig,
-  UploadPartCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import type {
+  S3CompatClient,
+  S3CompatConfig,
+  S3CompatCredentials,
+} from '@affine/s3-compat';
+import { createS3CompatClient } from '@affine/s3-compat';
 import { Logger } from '@nestjs/common';
 
 import {
@@ -33,30 +21,55 @@ import {
 } from './provider';
 import { autoMetadata, SIGNED_URL_EXPIRED, toBuffer } from './utils';
 
-export interface S3StorageConfig extends S3ClientConfig {
+export interface S3StorageConfig {
+  endpoint?: string;
+  region: string;
+  credentials: S3CompatCredentials;
+  forcePathStyle?: boolean;
+  requestTimeoutMs?: number;
+  minPartSize?: number;
+  presign?: {
+    expiresInSeconds?: number;
+    signContentTypeForPut?: boolean;
+  };
   usePresignedURL?: {
     enabled: boolean;
   };
 }
 
+function resolveEndpoint(config: S3StorageConfig) {
+  if (config.endpoint) {
+    return config.endpoint;
+  }
+  if (config.region === 'us-east-1') {
+    return 'https://s3.amazonaws.com';
+  }
+  return `https://s3.${config.region}.amazonaws.com`;
+}
+
 export class S3StorageProvider implements StorageProvider {
   protected logger: Logger;
-  protected client: S3Client;
+  protected client: S3CompatClient;
   private readonly usePresignedURL: boolean;
 
   constructor(
     config: S3StorageConfig,
     public readonly bucket: string
   ) {
-    const { usePresignedURL, ...clientConfig } = config;
-    this.client = new S3Client({
-      region: 'auto',
-      // s3 client uses keep-alive by default to accelerate requests, and max requests queue is 50.
-      // If some of them are long holding or dead without response, the whole queue will block.
-      // By default no timeout is set for requests or connections, so we set them here.
-      requestHandler: { requestTimeout: 60_000, connectionTimeout: 10_000 },
+    const { usePresignedURL, presign, credentials, ...clientConfig } = config;
+
+    const compatConfig: S3CompatConfig = {
       ...clientConfig,
-    });
+      endpoint: resolveEndpoint(config),
+      bucket,
+      requestTimeoutMs: clientConfig.requestTimeoutMs ?? 60_000,
+      presign: {
+        expiresInSeconds: presign?.expiresInSeconds ?? SIGNED_URL_EXPIRED,
+        signContentTypeForPut: presign?.signContentTypeForPut ?? true,
+      },
+    };
+
+    this.client = createS3CompatClient(compatConfig, credentials);
     this.usePresignedURL = usePresignedURL?.enabled ?? false;
     this.logger = new Logger(`${S3StorageProvider.name}:${bucket}`);
   }
@@ -71,19 +84,10 @@ export class S3StorageProvider implements StorageProvider {
     metadata = autoMetadata(blob, metadata);
 
     try {
-      await this.client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: blob,
-
-          // metadata
-          ContentType: metadata.contentType,
-          ContentLength: metadata.contentLength,
-          // TODO(@forehalo): Cloudflare doesn't support CRC32, use md5 instead later.
-          // ChecksumCRC32: metadata.checksumCRC32,
-        })
-      );
+      await this.client.putObject(key, blob, {
+        contentType: metadata.contentType,
+        contentLength: metadata.contentLength,
+      });
 
       this.logger.verbose(`Object \`${key}\` put`);
     } catch (e) {
@@ -104,20 +108,12 @@ export class S3StorageProvider implements StorageProvider {
   ): Promise<PresignedUpload | undefined> {
     try {
       const contentType = metadata.contentType ?? 'application/octet-stream';
-      const url = await getSignedUrl(
-        this.client,
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          ContentType: contentType,
-        }),
-        { expiresIn: SIGNED_URL_EXPIRED }
-      );
+      const result = await this.client.presignPutObject(key, { contentType });
 
       return {
-        url,
-        headers: { 'Content-Type': contentType },
-        expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+        url: result.url,
+        headers: result.headers,
+        expiresAt: result.expiresAt,
       };
     } catch (e) {
       this.logger.error(
@@ -137,20 +133,16 @@ export class S3StorageProvider implements StorageProvider {
   ): Promise<MultipartUploadInit | undefined> {
     try {
       const contentType = metadata.contentType ?? 'application/octet-stream';
-      const response = await this.client.send(
-        new CreateMultipartUploadCommand({
-          Bucket: this.bucket,
-          Key: key,
-          ContentType: contentType,
-        })
-      );
+      const response = await this.client.createMultipartUpload(key, {
+        contentType,
+      });
 
-      if (!response.UploadId) {
+      if (!response.uploadId) {
         return;
       }
 
       return {
-        uploadId: response.UploadId,
+        uploadId: response.uploadId,
         expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
       };
     } catch (e) {
@@ -171,20 +163,15 @@ export class S3StorageProvider implements StorageProvider {
     partNumber: number
   ): Promise<PresignedUpload | undefined> {
     try {
-      const url = await getSignedUrl(
-        this.client,
-        new UploadPartCommand({
-          Bucket: this.bucket,
-          Key: key,
-          UploadId: uploadId,
-          PartNumber: partNumber,
-        }),
-        { expiresIn: SIGNED_URL_EXPIRED }
+      const result = await this.client.presignUploadPart(
+        key,
+        uploadId,
+        partNumber
       );
 
       return {
-        url,
-        expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+        url: result.url,
+        expiresAt: result.expiresAt,
       };
     } catch (e) {
       this.logger.error(
@@ -198,47 +185,9 @@ export class S3StorageProvider implements StorageProvider {
     key: string,
     uploadId: string
   ): Promise<MultipartUploadPart[] | undefined> {
-    const parts: MultipartUploadPart[] = [];
-    let partNumberMarker: string | undefined;
-
     try {
-      // ListParts is paginated by part number marker
-      // https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListParts.html
-      // R2 follows S3 semantics here.
-      while (true) {
-        const response = await this.client.send(
-          new ListPartsCommand({
-            Bucket: this.bucket,
-            Key: key,
-            UploadId: uploadId,
-            PartNumberMarker: partNumberMarker,
-          })
-        );
-
-        for (const part of response.Parts ?? []) {
-          if (!part.PartNumber || !part.ETag) {
-            continue;
-          }
-          parts.push({ partNumber: part.PartNumber, etag: part.ETag });
-        }
-
-        if (!response.IsTruncated) {
-          break;
-        }
-
-        if (response.NextPartNumberMarker === undefined) {
-          break;
-        }
-
-        partNumberMarker = response.NextPartNumberMarker;
-      }
-
-      return parts;
+      return await this.client.listParts(key, uploadId);
     } catch (e) {
-      // the upload may have been aborted/expired by provider lifecycle rules
-      if (e instanceof NoSuchUpload || e instanceof NotFound) {
-        return undefined;
-      }
       this.logger.error(`Failed to list multipart upload parts for \`${key}\``);
       throw e;
     }
@@ -254,19 +203,7 @@ export class S3StorageProvider implements StorageProvider {
         (left, right) => left.partNumber - right.partNumber
       );
 
-      await this.client.send(
-        new CompleteMultipartUploadCommand({
-          Bucket: this.bucket,
-          Key: key,
-          UploadId: uploadId,
-          MultipartUpload: {
-            Parts: orderedParts.map(part => ({
-              ETag: part.etag,
-              PartNumber: part.partNumber,
-            })),
-          },
-        })
-      );
+      await this.client.completeMultipartUpload(key, uploadId, orderedParts);
     } catch (e) {
       this.logger.error(`Failed to complete multipart upload for \`${key}\``);
       throw e;
@@ -275,13 +212,7 @@ export class S3StorageProvider implements StorageProvider {
 
   async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
     try {
-      await this.client.send(
-        new AbortMultipartUploadCommand({
-          Bucket: this.bucket,
-          Key: key,
-          UploadId: uploadId,
-        })
-      );
+      await this.client.abortMultipartUpload(key, uploadId);
     } catch (e) {
       this.logger.error(`Failed to abort multipart upload for \`${key}\``);
       throw e;
@@ -290,25 +221,19 @@ export class S3StorageProvider implements StorageProvider {
 
   async head(key: string) {
     try {
-      const obj = await this.client.send(
-        new HeadObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-        })
-      );
-
-      return {
-        contentType: obj.ContentType!,
-        contentLength: obj.ContentLength!,
-        lastModified: obj.LastModified!,
-        checksumCRC32: obj.ChecksumCRC32,
-      };
-    } catch (e) {
-      // 404
-      if (e instanceof NoSuchKey || e instanceof NotFound) {
+      const obj = await this.client.headObject(key);
+      if (!obj) {
         this.logger.verbose(`Object \`${key}\` not found`);
         return undefined;
       }
+
+      return {
+        contentType: obj.contentType ?? 'application/octet-stream',
+        contentLength: obj.contentLength ?? 0,
+        lastModified: obj.lastModified ?? new Date(0),
+        checksumCRC32: obj.checksumCRC32,
+      };
+    } catch (e) {
       this.logger.error(`Failed to head object \`${key}\``);
       throw e;
     }
@@ -323,25 +248,13 @@ export class S3StorageProvider implements StorageProvider {
     redirectUrl?: string;
   }> {
     try {
-      const command = new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-      });
-
       if (this.usePresignedURL && signedUrl) {
         const metadata = await this.head(key);
         if (metadata) {
-          const url = await getSignedUrl(
-            this.client,
-            new GetObjectCommand({
-              Bucket: this.bucket,
-              Key: key,
-            }),
-            { expiresIn: SIGNED_URL_EXPIRED }
-          );
+          const result = await this.client.presignGetObject(key);
 
           return {
-            redirectUrl: url,
+            redirectUrl: result.url,
             metadata,
           };
         }
@@ -350,68 +263,41 @@ export class S3StorageProvider implements StorageProvider {
         return {};
       }
 
-      const obj = await this.client.send(command);
-
-      if (!obj.Body) {
+      const obj = await this.client.getObjectResponse(key);
+      if (!obj || !obj.body) {
         this.logger.verbose(`Object \`${key}\` not found`);
         return {};
       }
+
+      const contentType = obj.headers.get('content-type') ?? undefined;
+      const contentLengthHeader = obj.headers.get('content-length');
+      const contentLength = contentLengthHeader
+        ? Number(contentLengthHeader)
+        : undefined;
+      const lastModifiedHeader = obj.headers.get('last-modified');
+      const lastModified = lastModifiedHeader
+        ? new Date(lastModifiedHeader)
+        : undefined;
 
       this.logger.verbose(`Read object \`${key}\``);
       return {
-        // @ts-expect-errors ignore browser response type `Blob`
-        body: obj.Body,
+        body: Readable.fromWeb(obj.body as any),
         metadata: {
-          // always set when putting object
-          contentType: obj.ContentType ?? 'application/octet-stream',
-          contentLength: obj.ContentLength!,
-          lastModified: obj.LastModified!,
-          checksumCRC32: obj.ChecksumCRC32,
+          contentType: contentType ?? 'application/octet-stream',
+          contentLength: contentLength ?? 0,
+          lastModified: lastModified ?? new Date(0),
+          checksumCRC32: obj.headers.get('x-amz-checksum-crc32') ?? undefined,
         },
       };
     } catch (e) {
-      // 404
-      if (e instanceof NoSuchKey) {
-        this.logger.verbose(`Object \`${key}\` not found`);
-        return {};
-      }
       this.logger.error(`Failed to read object \`${key}\``);
       throw e;
     }
   }
 
   async list(prefix?: string): Promise<ListObjectsMetadata[]> {
-    // continuationToken should be `string | undefined`,
-    // but TypeScript will fail on type infer in the code below.
-    // Seems to be a bug in TypeScript
-    let continuationToken: any = undefined;
-    let hasMore = true;
-    let result: ListObjectsMetadata[] = [];
-
     try {
-      while (hasMore) {
-        const listResult = await this.client.send(
-          new ListObjectsV2Command({
-            Bucket: this.bucket,
-            Prefix: prefix,
-            ContinuationToken: continuationToken,
-          })
-        );
-
-        if (listResult.Contents?.length) {
-          result = result.concat(
-            listResult.Contents.map(r => ({
-              key: r.Key!,
-              lastModified: r.LastModified!,
-              contentLength: r.Size!,
-            }))
-          );
-        }
-
-        // has more items not listed
-        hasMore = !!listResult.IsTruncated;
-        continuationToken = listResult.NextContinuationToken;
-      }
+      const result = await this.client.listObjectsV2(prefix);
 
       this.logger.verbose(
         `List ${result.length} objects with prefix \`${prefix}\``
@@ -425,12 +311,7 @@ export class S3StorageProvider implements StorageProvider {
 
   async delete(key: string): Promise<void> {
     try {
-      await this.client.send(
-        new DeleteObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-        })
-      );
+      await this.client.deleteObject(key);
 
       this.logger.verbose(`Deleted object \`${key}\``);
     } catch (e) {

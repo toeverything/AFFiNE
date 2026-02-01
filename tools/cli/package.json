@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@affine-tools/utils": "workspace:*",
-    "@aws-sdk/client-s3": "^3.948.0",
+    "@affine/s3-compat": "workspace:*",
     "@napi-rs/simple-git": "^0.1.22",
     "@perfsee/webpack": "^1.13.0",
     "@sentry/webpack-plugin": "^3.0.0",

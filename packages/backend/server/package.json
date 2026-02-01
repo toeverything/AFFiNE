@@ -26,6 +26,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@affine/s3-compat": "workspace:*",
     "@affine/server-native": "workspace:*",
     "@ai-sdk/anthropic": "^2.0.54",
     "@ai-sdk/google": "^2.0.45",
@@ -34,8 +35,6 @@
     "@ai-sdk/openai-compatible": "^1.0.28",
     "@ai-sdk/perplexity": "^2.0.21",
     "@apollo/server": "^4.12.2",
-    "@aws-sdk/client-s3": "^3.948.0",
-    "@aws-sdk/s3-request-presigner": "^3.948.0",
     "@fal-ai/serverless-client": "^0.15.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^3.0.0",
     "@google-cloud/opentelemetry-resource-util": "^3.0.0",
