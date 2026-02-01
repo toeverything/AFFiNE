@@ -1015,7 +1015,7 @@ __metadata:
     "@types/mixpanel": "npm:^2.14.9"
     "@types/mustache": "npm:^4.2.5"
     "@types/node": "npm:^22.0.0"
-    "@types/nodemailer": "npm:^6.4.17"
+    "@types/nodemailer": "npm:^7.0.0"
     "@types/on-headers": "npm:^1.0.3"
     "@types/react": "npm:^19.0.1"
     "@types/react-dom": "npm:^19.0.2"
@@ -17456,12 +17456,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/nodemailer@npm:^6.4.17":
-  version: 6.4.17
-  resolution: "@types/nodemailer@npm:6.4.17"
+"@types/nodemailer@npm:^7.0.0":
+  version: 7.0.9
+  resolution: "@types/nodemailer@npm:7.0.9"
   dependencies:
     "@types/node": "npm:*"
-  checksum: 10/bd090c9a81f15ee5e1e2123de1004593bacc24d385460dd56c51ec657d61dc1cfd4f44fc71baac060a1abcb487aef5027509e0afd646e7118d7a8a13a95bad9d
+  checksum: 10/6bfca388af668a05a68e750a7acbd5736a3dcdf96f34f23bf4211ab152572d55008fd813e38bf03f944c6edbd002a7f98d6cee048343b8e840b3b91a00befac9
   languageName: node
   linkType: hard
 

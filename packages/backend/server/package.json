@@ -140,7 +140,7 @@
     "@types/mixpanel": "^2.14.9",
     "@types/mustache": "^4.2.5",
     "@types/node": "^22.0.0",
-    "@types/nodemailer": "^6.4.17",
+    "@types/nodemailer": "^7.0.0",
     "@types/on-headers": "^1.0.3",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
