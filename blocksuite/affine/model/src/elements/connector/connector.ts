@@ -355,6 +355,11 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       const [x, y, w, h] = this.labelXYWH!;
       this.labelXYWH = [x + offset[0], y + offset[1], w, h];
     }
+
+    // Update waypoints position
+    if (this.waypoints && this.waypoints.length > 0) {
+      this.waypoints = this.waypoints.map(wp => Vec.add(wp, offset) as IVec);
+    }
   }
 
   resize(originalPath: PointLocation[], matrix: DOMMatrix) {

@@ -157,12 +157,14 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
   `;
 
   private readonly _props$ = computed(() => {
-    const {
-      mode,
-      stroke,
-      strokeWidth,
-      jumpStyle = 'none',
-    } = this.edgeless.std.get(EditPropsStore).lastProps$.value.connector;
+    const connectorProps =
+      this.edgeless.std.get(EditPropsStore).lastProps$.value.connector;
+    const { mode, stroke, strokeWidth } = connectorProps;
+    // jumpStyle may not exist in lastProps if not yet added to the store
+    const jumpStyle: JumpStyle =
+      'jumpStyle' in connectorProps
+        ? (connectorProps.jumpStyle as JumpStyle)
+        : 'none';
     return { mode, stroke, strokeWidth, jumpStyle };
   });
 

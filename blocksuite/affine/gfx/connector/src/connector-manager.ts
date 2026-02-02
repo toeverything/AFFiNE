@@ -250,7 +250,7 @@ export function getAnchors(ele: GfxModel) {
     if (!rst) {
       // If no intersection, use the calculated point directly
       anchors.push({
-        point: rotatedPoint,
+        point: PointLocation.fromVec(rotatedPoint),
         coord: location,
       });
       return;
@@ -260,7 +260,10 @@ export function getAnchors(ele: GfxModel) {
       { ...bound, rotate: -rotate },
       rst[0]
     );
-    anchors.push({ point: rst[0], coord: bound.toRelative(originPoint) });
+    anchors.push({
+      point: PointLocation.fromVec(rst[0]),
+      coord: bound.toRelative(originPoint),
+    });
   });
 
   return anchors;
@@ -1393,6 +1396,22 @@ export class ConnectorPathGenerator extends PathGenerator {
       const endBound = end
         ? Bound.from(getBoundWithRotation(rBound(end)))
         : null;
+
+      // Check for user-defined waypoints (only on ConnectorElementModel, not Local)
+      const waypoints =
+        'waypoints' in connector ? connector.waypoints : undefined;
+
+      if (waypoints && waypoints.length > 0) {
+        // Route through waypoints
+        return this._generatePathThroughWaypoints(
+          startPoint,
+          endPoint,
+          startBound,
+          endBound,
+          waypoints
+        );
+      }
+
       const path = this.generateOrthogonalConnectorPath({
         startPoint,
         endPoint,
@@ -1404,6 +1423,68 @@ export class ConnectorPathGenerator extends PathGenerator {
       return this._generateCurveConnectorPath(connector);
     }
     throw new Error('unknown connector mode');
+  }
+
+  /**
+   * Generate a path that routes through user-defined waypoints.
+   * Waypoints are intermediate turn points that the connector must pass through.
+   */
+  private _generatePathThroughWaypoints(
+    startPoint: PointLocation,
+    endPoint: PointLocation,
+    _startBound: Bound | null,
+    _endBound: Bound | null,
+    waypoints: IVec[]
+  ): PointLocation[] {
+    // Build path by connecting: start -> wp1 -> wp2 -> ... -> end
+    // Each waypoint represents a turn point in the orthogonal path
+
+    const fullPath: PointLocation[] = [startPoint];
+
+    // For orthogonal connectors, waypoints define the turn points
+    // We create a simple path that goes through each waypoint in order
+    // with orthogonal (horizontal/vertical) segments
+
+    let currentPoint = startPoint;
+
+    waypoints.forEach(wp => {
+      // Create orthogonal path from current point to waypoint
+      // We need to determine if we should go horizontal-then-vertical
+      // or vertical-then-horizontal based on the direction
+
+      const dx = wp[0] - currentPoint[0];
+      const dy = wp[1] - currentPoint[1];
+
+      // For the first segment from start, prefer to exit based on start bound
+      // For subsequent segments, alternate based on previous direction
+
+      if (Math.abs(dx) > 0.001 && Math.abs(dy) > 0.001) {
+        // Need a turn - add intermediate point
+        // Go horizontal first, then vertical
+        const intermediate = new PointLocation([wp[0], currentPoint[1]]);
+        fullPath.push(intermediate);
+      }
+
+      const wpPoint = new PointLocation(wp);
+      fullPath.push(wpPoint);
+      currentPoint = wpPoint;
+    });
+
+    // Final segment: last waypoint (or start) to end
+    const lastPoint = fullPath[fullPath.length - 1];
+    const dx = endPoint[0] - lastPoint[0];
+    const dy = endPoint[1] - lastPoint[1];
+
+    if (Math.abs(dx) > 0.001 && Math.abs(dy) > 0.001) {
+      // Need a turn to reach end - add intermediate point
+      // Go horizontal first to align X, then vertical
+      const intermediate = new PointLocation([endPoint[0], lastPoint[1]]);
+      fullPath.push(intermediate);
+    }
+
+    fullPath.push(endPoint);
+
+    return fullPath;
   }
 
   private _generateCurveConnectorPath(

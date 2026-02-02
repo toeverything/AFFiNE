@@ -46,6 +46,12 @@ export interface ConnectorSegment {
 const EPSILON = 0.001;
 
 /**
+ * Fixed length for tail segments (the non-draggable portions near shape connections).
+ * This ensures tails remain short while allowing the movable segments to be dragged.
+ */
+const TAIL_LENGTH = 20;
+
+/**
  * Calculate the distance between two points.
  */
 function distance(a: IVec, b: IVec): number {
@@ -91,24 +97,36 @@ export function determineOrientation(
 /**
  * Determine if a segment is a tail (not draggable) or movable.
  *
- * Tails are the first and last segments, which connect directly to shapes.
- * All segments in between are movable.
+ * Rules (consistent across ALL connector shapes):
+ * - Tails are SHORT segments (≤ TAIL_LENGTH * 2) at shape connections (first/last position)
+ * - Long first/last segments ARE draggable (they're not just tails)
+ * - Middle segments are ALWAYS movable
+ * - Single-segment path: ALWAYS movable (splits into S-shape when dragged)
  *
- * SPECIAL CASE: A single-segment path (2 points) IS movable.
- * When dragged, it splits into 3 segments (creating an S-shape).
+ * This ensures consistent behavior whether connector started as straight line, L-shape, or S-shape.
  */
 function determineTailOrMovable(
   index: number,
-  totalSegments: number
+  totalSegments: number,
+  segmentLength: number
 ): 'tail' | 'movable' {
   // Special case: single segment paths are movable (they split when dragged)
   if (totalSegments === 1) {
     return 'movable';
   }
-  // First and last segments are tails
-  if (index === 0 || index === totalSegments - 1) {
+
+  // Middle segments are ALWAYS movable
+  if (index > 0 && index < totalSegments - 1) {
+    return 'movable';
+  }
+
+  // First and last segments: tail if short, movable if long
+  // This allows users to drag long edge segments while keeping short tails fixed
+  const tailThreshold = TAIL_LENGTH * 2; // 40px
+  if (segmentLength <= tailThreshold) {
     return 'tail';
   }
+
   return 'movable';
 }
 
@@ -133,14 +151,15 @@ export function parsePathToSegments(path: IVec[]): ConnectorSegment[] {
   for (let i = 0; i < totalSegments; i++) {
     const start = path[i];
     const end = path[i + 1];
+    const segmentLength = distance(start, end);
 
     const segment: ConnectorSegment = {
       start: [start[0], start[1]],
       end: [end[0], end[1]],
       orientation: determineOrientation(start, end),
-      length: distance(start, end),
+      length: segmentLength,
       midpoint: midpoint(start, end),
-      type: determineTailOrMovable(i, totalSegments),
+      type: determineTailOrMovable(i, totalSegments, segmentLength),
       index: i,
     };
 
@@ -208,6 +227,9 @@ export function constrainDrag(
  * 1. Apply delta to the segment's start and end points
  * 2. Update adjacent segments to maintain connectivity
  *
+ * NOTE: This function does NOT create new segments. For first/last segment
+ * dragging that requires new segments, use updateSegmentWithNewSegments instead.
+ *
  * @param segments - All segments
  * @param draggedIndex - Index of the segment being dragged
  * @param delta - Constrained movement [dx, dy]
@@ -270,6 +292,177 @@ export function updateSegmentPosition(
 }
 
 /**
+ * Update segment position with new segment creation for L-shapes and similar.
+ *
+ * When dragging the first or last segment of an L-shape (or any path where
+ * these segments are movable), we need to:
+ * 1. Keep the original start/end point fixed (at the shape connection)
+ * 2. Create a new perpendicular segment to connect to the moved segment
+ * 3. Move the segment to its new position
+ *
+ * Example: L-shape with first segment being dragged right:
+ *
+ * Before:           After dragging B right:
+ *    A                  A
+ *    │                  │
+ *    B                  └───E────┐   E created (new segment)
+ *    │                           │
+ *    └─────D─────         ──►  B (moved right)
+ *                                │
+ *                                └─────D─────
+ *
+ * @param segments - All segments
+ * @param draggedIndex - Index of the segment being dragged
+ * @param delta - Constrained movement [dx, dy]
+ * @returns Object with updated segments and flag indicating if new segments were created
+ */
+export function updateSegmentWithNewSegments(
+  segments: ConnectorSegment[],
+  draggedIndex: number,
+  delta: IVec
+): { segments: ConnectorSegment[]; created: boolean } {
+  if (draggedIndex < 0 || draggedIndex >= segments.length) {
+    return { segments, created: false };
+  }
+
+  // Check if we need to create new segments
+  // This happens when dragging first or last segment that's movable
+  const isFirstSegment = draggedIndex === 0;
+  const isLastSegment = draggedIndex === segments.length - 1;
+
+  // For middle segments, use regular update (no new segments needed)
+  if (!isFirstSegment && !isLastSegment) {
+    return {
+      segments: updateSegmentPosition(segments, draggedIndex, delta),
+      created: false,
+    };
+  }
+
+  const dragged = segments[draggedIndex];
+
+  // Only create new segments if there's actual movement
+  const hasDelta = Math.abs(delta[0]) > EPSILON || Math.abs(delta[1]) > EPSILON;
+  if (!hasDelta) {
+    return { segments, created: false };
+  }
+
+  // Build new path with additional segment
+  let newPath: IVec[];
+
+  if (isFirstSegment) {
+    // Dragging the first segment - keep start point fixed, create new segment
+    const fixedStart = [...dragged.start] as IVec;
+    const newSegmentEnd: IVec = [
+      dragged.start[0] + delta[0],
+      dragged.start[1] + delta[1],
+    ];
+
+    // New path: fixedStart -> newCorner -> movedSegmentEnd -> rest of path
+    newPath = [fixedStart];
+
+    // Add the new corner point (creates new perpendicular segment E)
+    if (dragged.orientation === 'vertical') {
+      // Vertical segment moved horizontally
+      // New segment E is horizontal from fixedStart.x to newX at fixedStart.y
+      newPath.push([newSegmentEnd[0], fixedStart[1]]);
+    } else {
+      // Horizontal segment moved vertically
+      // New segment E is vertical from fixedStart.y to newY at fixedStart.x
+      newPath.push([fixedStart[0], newSegmentEnd[1]]);
+    }
+
+    // Add the moved segment's end point
+    const movedEnd: IVec = [
+      dragged.end[0] + delta[0],
+      dragged.end[1] + delta[1],
+    ];
+    newPath.push(movedEnd);
+
+    // Add remaining segments' end points, preserving target connection
+    // For L-shape (2 segments), we just need to add the target endpoint directly
+    // The path becomes: source -> newCorner -> movedEnd -> target
+    if (segments.length === 2) {
+      // L-shape: preserve the target endpoint (segments[1].end)
+      newPath.push([...segments[1].end] as IVec);
+    } else {
+      // More complex paths (3+ segments): handle connectivity adjustments
+      for (let i = 1; i < segments.length; i++) {
+        const seg = segments[i];
+        const isLastSegment = i === segments.length - 1;
+
+        if (isLastSegment) {
+          // Always preserve the target connection point
+          newPath.push([...seg.end] as IVec);
+        } else if (i === 1) {
+          // First remaining segment - adjust connectivity to movedEnd
+          if (dragged.orientation === 'vertical') {
+            // Our segment moved horizontally, next segment's start X changes
+            newPath.push([movedEnd[0], seg.end[1]]);
+          } else {
+            // Our segment moved vertically, next segment's start Y changes
+            newPath.push([seg.end[0], movedEnd[1]]);
+          }
+        } else {
+          newPath.push([...seg.end] as IVec);
+        }
+      }
+    }
+  } else {
+    // isLastSegment - Dragging the last segment - keep end point fixed, create new segment
+    const fixedEnd = [...dragged.end] as IVec;
+    const newSegmentStart: IVec = [
+      dragged.end[0] + delta[0],
+      dragged.end[1] + delta[1],
+    ];
+
+    // Start with existing path up to (but not including) the last segment
+    newPath = [[...segments[0].start] as IVec];
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i];
+      if (i === segments.length - 2) {
+        // The second-to-last segment needs its end adjusted
+        const movedStart: IVec = [
+          dragged.start[0] + delta[0],
+          dragged.start[1] + delta[1],
+        ];
+        if (dragged.orientation === 'vertical') {
+          // Our segment moved horizontally, prev segment's end X changes
+          newPath.push([movedStart[0], seg.start[1]]);
+        } else {
+          // Our segment moved vertically, prev segment's end Y changes
+          newPath.push([seg.start[0], movedStart[1]]);
+        }
+      } else {
+        newPath.push([...seg.end] as IVec);
+      }
+    }
+
+    // Add the moved segment's start point
+    const movedStart: IVec = [
+      dragged.start[0] + delta[0],
+      dragged.start[1] + delta[1],
+    ];
+    newPath.push(movedStart);
+
+    // Add the new corner point (creates new perpendicular segment E)
+    if (dragged.orientation === 'vertical') {
+      // Vertical segment moved horizontally
+      // New segment E is horizontal from newX to fixedEnd.x at newSegmentStart.y
+      newPath.push([fixedEnd[0], newSegmentStart[1]]);
+    } else {
+      // Horizontal segment moved vertically
+      // New segment E is vertical from newY to fixedEnd.y at newSegmentStart.x
+      newPath.push([newSegmentStart[0], fixedEnd[1]]);
+    }
+
+    // Add the fixed end point
+    newPath.push(fixedEnd);
+  }
+
+  return { segments: parsePathToSegments(newPath), created: true };
+}
+
+/**
  * Convert segments back to a path array.
  *
  * @param segments - Array of segments
@@ -291,20 +484,21 @@ export function segmentsToPath(segments: ConnectorSegment[]): PointLocation[] {
  * Split a 2-point line into an S-shape when its midpoint is dragged.
  *
  * For a horizontal line dragged vertically:
- *   Before: [start] ────────── [end]
- *   After:  [start]─┐
- *                   │
- *                   └─[end]
+ *   Before: [start] ──A──x─────B─────x──C── [end]
+ *
+ *   After:        ┌───B───┐
+ *          ──A──x─┘       └─x──C──
+ *                 D       E
+ *
+ *   Where A and C are tails (not draggable), and D, B, E are movable.
  *
  * For a vertical line dragged horizontally:
- *   Before: [start]
- *              │
- *           [end]
- *   After:  [start]
- *              │
- *              └───┐
- *                  │
- *               [end]
+ *   Similar structure rotated 90 degrees.
+ *
+ * The key insight from CONNECTOR_DYNAMICS.md:
+ * - Tails (A, C) are short fixed segments near shape connections
+ * - After split, we get 3 movable segments (D, B, E)
+ * - This requires 6 path points to create 5 segments (2 tails + 3 movable)
  *
  * @param segments - Current segments (should be single segment for 2-point path)
  * @param delta - Constrained movement [dx, dy]
@@ -323,37 +517,337 @@ export function splitSegmentToSShape(
   const start = original.start;
   const end = original.end;
 
-  // Calculate the midpoint of the original segment
-  const mid = original.midpoint;
-
-  // Create 3 new segments forming an S-shape
-  // The middle segment moves by delta, creating perpendicular tails
+  // Calculate the tail length, capped to not exceed segment length
+  const segmentLength = original.length;
+  const tailLen = Math.min(TAIL_LENGTH, segmentLength / 4);
 
   let newPath: IVec[];
 
   if (original.orientation === 'horizontal') {
     // Horizontal line dragged vertically
-    // Creates: start -> (mid.x, start.y) -> (mid.x, start.y + delta.y) -> end
-    // Actually: vertical tail from start, horizontal middle, vertical tail to end
-    const midY = mid[1] + delta[1];
+    // Creates 6 points: start -> tailEnd -> corner1 -> corner2 -> tailStart -> end
+    // Where:
+    //   - A (start to tailEnd): horizontal tail
+    //   - D (tailEnd to corner1): vertical movable
+    //   - B (corner1 to corner2): horizontal movable (the dragged segment)
+    //   - E (corner2 to tailStart): vertical movable
+    //   - C (tailStart to end): horizontal tail
+
+    const direction = end[0] > start[0] ? 1 : -1;
+    const tailEndX = start[0] + tailLen * direction;
+    const tailStartX = end[0] - tailLen * direction;
+    const newY = start[1] + delta[1];
+
     newPath = [
-      start,
-      [start[0], midY], // First turn point
-      [end[0], midY], // Second turn point
-      end,
+      start, // Point 0: start
+      [tailEndX, start[1]], // Point 1: end of tail A, start of D
+      [tailEndX, newY], // Point 2: end of D, start of B (corner)
+      [tailStartX, newY], // Point 3: end of B, start of E (corner)
+      [tailStartX, end[1]], // Point 4: end of E, start of tail C
+      end, // Point 5: end
     ];
   } else {
     // Vertical line dragged horizontally
-    // Creates vertical tail from start, horizontal middle, vertical tail to end
-    const midX = mid[0] + delta[0];
+    // Creates 6 points for vertical orientation
+
+    const direction = end[1] > start[1] ? 1 : -1;
+    const tailEndY = start[1] + tailLen * direction;
+    const tailStartY = end[1] - tailLen * direction;
+    const newX = start[0] + delta[0];
+
     newPath = [
-      start,
-      [midX, start[1]], // First turn point
-      [midX, end[1]], // Second turn point
-      end,
+      start, // Point 0: start
+      [start[0], tailEndY], // Point 1: end of tail A, start of D
+      [newX, tailEndY], // Point 2: end of D, start of B (corner)
+      [newX, tailStartY], // Point 3: end of B, start of E (corner)
+      [end[0], tailStartY], // Point 4: end of E, start of tail C
+      end, // Point 5: end
     ];
   }
 
   // Parse the new path into segments
+  return parsePathToSegments(newPath);
+}
+
+/**
+ * Shape bounds information for tail detachment detection.
+ */
+export interface ShapeBounds {
+  /** Left edge X coordinate */
+  x: number;
+  /** Top edge Y coordinate */
+  y: number;
+  /** Width of the shape */
+  w: number;
+  /** Height of the shape */
+  h: number;
+}
+
+/**
+ * Detect and handle tail detachment when dragging a segment.
+ *
+ * Tail detachment occurs when a segment adjacent to a tail is dragged
+ * past the shape boundary, causing the tail to "flip" direction.
+ *
+ * For example, when segment D (adjacent to tail A at source shape) is
+ * dragged past the shape's boundary:
+ *
+ * Before:
+ *   [Shape] ──A──┬──D──┐
+ *                │     │
+ *                │     B
+ *
+ * After dragging D past shape left edge:
+ *          ┌──D──┐
+ *          │     │
+ *   ┌──────┼─────┤
+ *   │      F     │     (F is new segment, A removed)
+ *   └──────┴─────┘
+ *          │
+ *          B
+ *
+ * @param segments - Current segments
+ * @param draggedIndex - Index of segment being dragged
+ * @param delta - Constrained movement [dx, dy]
+ * @param sourceBounds - Bounds of source shape (if connected), null otherwise
+ * @param targetBounds - Bounds of target shape (if connected), null otherwise
+ * @returns Object with updated segments and flag indicating if detachment occurred
+ */
+export function updateSegmentWithTailDetachment(
+  segments: ConnectorSegment[],
+  draggedIndex: number,
+  delta: IVec,
+  sourceBounds: ShapeBounds | null,
+  targetBounds: ShapeBounds | null
+): { segments: ConnectorSegment[]; detached: boolean } {
+  if (draggedIndex < 0 || draggedIndex >= segments.length) {
+    return { segments, detached: false };
+  }
+
+  // First, perform the regular segment update
+  const updated = updateSegmentPosition(segments, draggedIndex, delta);
+
+  // Check for source tail detachment (index 0 is a tail)
+  if (
+    draggedIndex === 1 &&
+    segments.length >= 2 &&
+    segments[0].type === 'tail' &&
+    sourceBounds
+  ) {
+    const tail = updated[0];
+    const dragged = updated[1];
+
+    // Check if the dragged segment has moved past the shape boundary
+    // For a vertical dragged segment moving horizontally:
+    // - If it moves left past the shape's left edge, detach
+    // For a horizontal dragged segment moving vertically:
+    // - If it moves up past the shape's top edge (or down past bottom), detach
+    const shouldDetach = checkTailDetachment(
+      tail,
+      dragged,
+      sourceBounds,
+      'source'
+    );
+
+    if (shouldDetach) {
+      const restructured = performTailDetachment(
+        updated,
+        0, // tail index
+        draggedIndex,
+        sourceBounds,
+        'source'
+      );
+      return { segments: restructured, detached: true };
+    }
+  }
+
+  // Check for target tail detachment (last segment is a tail)
+  const lastIndex = segments.length - 1;
+  if (
+    draggedIndex === lastIndex - 1 &&
+    segments.length >= 2 &&
+    segments[lastIndex].type === 'tail' &&
+    targetBounds
+  ) {
+    const tail = updated[lastIndex];
+    const dragged = updated[draggedIndex];
+
+    const shouldDetach = checkTailDetachment(
+      tail,
+      dragged,
+      targetBounds,
+      'target'
+    );
+
+    if (shouldDetach) {
+      const restructured = performTailDetachment(
+        updated,
+        lastIndex, // tail index
+        draggedIndex,
+        targetBounds,
+        'target'
+      );
+      return { segments: restructured, detached: true };
+    }
+  }
+
+  return { segments: updated, detached: false };
+}
+
+/**
+ * Check if a tail should be detached based on the dragged segment position.
+ */
+function checkTailDetachment(
+  tail: ConnectorSegment,
+  _dragged: ConnectorSegment,
+  shapeBounds: ShapeBounds,
+  connection: 'source' | 'target'
+): boolean {
+  // The adjacent point is where the tail meets the dragged segment
+  const adjacentPoint = connection === 'source' ? tail.end : tail.start;
+
+  // Check if the adjacent point (where tail meets the dragged segment)
+  // has moved past the shape boundary in the direction of the drag
+
+  if (tail.orientation === 'horizontal') {
+    // Horizontal tail - check if X coordinate has crossed shape boundary
+    if (connection === 'source') {
+      // Source tail goes from shape rightward
+      // Detach if the tail end (adjacent to dragged) is now LEFT of shape's left edge
+      if (adjacentPoint[0] < shapeBounds.x) {
+        return true;
+      }
+    } else {
+      // Target tail comes from right to shape
+      // Detach if the tail start (adjacent to dragged) is now RIGHT of shape's right edge
+      if (adjacentPoint[0] > shapeBounds.x + shapeBounds.w) {
+        return true;
+      }
+    }
+  } else {
+    // Vertical tail - check if Y coordinate has crossed shape boundary
+    if (connection === 'source') {
+      // Source tail goes from shape downward
+      // Detach if the tail end (adjacent to dragged) is now ABOVE shape's top edge
+      if (adjacentPoint[1] < shapeBounds.y) {
+        return true;
+      }
+    } else {
+      // Target tail comes from below to shape
+      // Detach if the tail start (adjacent to dragged) is now BELOW shape's bottom edge
+      if (adjacentPoint[1] > shapeBounds.y + shapeBounds.h) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Perform the tail detachment operation.
+ *
+ * This removes the old tail and creates a new segment structure:
+ * - The old tail is removed
+ * - A new segment F is created perpendicular to the old tail
+ * - The path is adjusted to maintain connectivity
+ */
+function performTailDetachment(
+  segments: ConnectorSegment[],
+  tailIndex: number,
+  draggedIndex: number,
+  _shapeBounds: ShapeBounds,
+  connection: 'source' | 'target'
+): ConnectorSegment[] {
+  const tail = segments[tailIndex];
+  const dragged = segments[draggedIndex];
+
+  // The connection point stays at the shape boundary
+  const connectionPoint =
+    connection === 'source' ? [...tail.start] : [...tail.end];
+
+  // Calculate the new structure:
+  // 1. Keep the connection point on the shape
+  // 2. Create a new perpendicular segment (F) from the connection point
+  // 3. Connect F to the dragged segment
+
+  let newPath: IVec[];
+
+  if (connection === 'source') {
+    // Source tail detachment
+    // Original: connectionPoint -> tailEnd -> draggedEnd -> ...
+    // New: connectionPoint -> newCorner1 -> newCorner2 -> draggedEnd -> ...
+
+    if (tail.orientation === 'horizontal') {
+      // Horizontal tail was connecting shape right side
+      // After detachment, create vertical segment from shape right side
+
+      // The new Y position is where the dragged segment is now
+      const newY = dragged.start[1];
+
+      // Create the new path:
+      // connectionPoint -> [shapeRightX, newY] -> draggedStart -> ...rest
+      newPath = [
+        connectionPoint as IVec,
+        [connectionPoint[0], newY], // New corner (vertical F segment)
+        dragged.start,
+        dragged.end,
+      ];
+
+      // Add remaining segments
+      for (let i = draggedIndex + 1; i < segments.length; i++) {
+        newPath.push(segments[i].end);
+      }
+    } else {
+      // Vertical tail was connecting shape bottom side
+      // After detachment, create horizontal segment from shape bottom side
+
+      const newX = dragged.start[0];
+
+      newPath = [
+        connectionPoint as IVec,
+        [newX, connectionPoint[1]], // New corner (horizontal F segment)
+        dragged.start,
+        dragged.end,
+      ];
+
+      // Add remaining segments
+      for (let i = draggedIndex + 1; i < segments.length; i++) {
+        newPath.push(segments[i].end);
+      }
+    }
+  } else {
+    // Target tail detachment
+    // Original: ...-> draggedStart -> draggedEnd -> tailStart -> connectionPoint
+    // New: ...-> draggedStart -> draggedEnd -> newCorner -> connectionPoint
+
+    if (tail.orientation === 'horizontal') {
+      const newY = dragged.end[1];
+
+      // Build path from start
+      newPath = [segments[0].start];
+
+      // Add segments up to and including dragged
+      for (let i = 0; i <= draggedIndex; i++) {
+        newPath.push(segments[i].end);
+      }
+
+      // Add new corner and connection point
+      newPath.push([connectionPoint[0], newY]); // New corner (vertical F segment)
+      newPath.push(connectionPoint as IVec);
+    } else {
+      const newX = dragged.end[0];
+
+      newPath = [segments[0].start];
+
+      for (let i = 0; i <= draggedIndex; i++) {
+        newPath.push(segments[i].end);
+      }
+
+      newPath.push([newX, connectionPoint[1]]); // New corner (horizontal F segment)
+      newPath.push(connectionPoint as IVec);
+    }
+  }
+
   return parsePathToSegments(newPath);
 }

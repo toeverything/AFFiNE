@@ -16,13 +16,21 @@ export const connectorWatcher: SurfaceMiddleware = (
     surface.hasElementById(id) || surface.store.hasBlock(id);
   const elementGetter = (id: string) =>
     surface.getElementById(id) ?? (surface.store.getModelById(id) as GfxModel);
-  const updateConnectorPath = (connector: ConnectorElementModel) => {
+  const updateConnectorPath = (
+    connector: ConnectorElementModel,
+    clearWaypoints = false
+  ) => {
     if (
       ((connector.source?.id && hasElementById(connector.source.id)) ||
         (!connector.source?.id && connector.source?.position)) &&
       ((connector.target?.id && hasElementById(connector.target.id)) ||
         (!connector.target?.id && connector.target?.position))
     ) {
+      // Clear waypoints if a connected shape moved
+      // Waypoints are in absolute coordinates and don't move with shapes
+      if (clearWaypoints && connector.waypoints) {
+        connector.waypoints = undefined;
+      }
       ConnectorPathGenerator.updatePath(connector, null, elementGetter);
     }
   };
@@ -51,21 +59,34 @@ export const connectorWatcher: SurfaceMiddleware = (
     });
   };
 
+  // Track connectors that need waypoints cleared (due to shape movement)
   const pendingList = new Set<ConnectorElementModel>();
+  const pendingClearWaypoints = new Set<ConnectorElementModel>();
   let pendingFlag = false;
-  const addToUpdateList = (connector: ConnectorElementModel) => {
+
+  const addToUpdateList = (
+    connector: ConnectorElementModel,
+    clearWaypoints = false
+  ) => {
     pendingList.add(connector);
+    if (clearWaypoints) {
+      pendingClearWaypoints.add(connector);
+    }
 
     if (!pendingFlag) {
       pendingFlag = true;
       queueMicrotask(() => {
         // First update all connector paths
-        pendingList.forEach(updateConnectorPath);
+        pendingList.forEach(c => {
+          const shouldClearWaypoints = pendingClearWaypoints.has(c);
+          updateConnectorPath(c, shouldClearWaypoints);
+        });
 
         // Then calculate jumps for connectors that need them
         updateJumpsForConnectors(pendingList);
 
         pendingList.clear();
+        pendingClearWaypoints.clear();
         pendingFlag = false;
       });
     }
@@ -80,14 +101,17 @@ export const connectorWatcher: SurfaceMiddleware = (
       if ('type' in element && element.type === 'connector') {
         addToUpdateList(element as ConnectorElementModel);
       } else {
-        surface.getConnectors(id).forEach(addToUpdateList);
+        surface.getConnectors(id).forEach(c => addToUpdateList(c));
       }
     }),
     surface.elementUpdated.subscribe(({ id, props }) => {
       const element = elementGetter(id);
 
       if (props['xywh'] || props['rotate']) {
-        surface.getConnectors(id).forEach(addToUpdateList);
+        // Shape moved - clear waypoints so connector path regenerates cleanly
+        surface
+          .getConnectors(id)
+          .forEach(c => addToUpdateList(c, true /* clearWaypoints */));
       }
 
       if (
@@ -103,7 +127,10 @@ export const connectorWatcher: SurfaceMiddleware = (
         payload.type === 'add' ||
         (payload.type === 'update' && payload.props.key === 'xywh')
       ) {
-        surface.getConnectors(payload.id).forEach(addToUpdateList);
+        // Shape moved - clear waypoints so connector path regenerates cleanly
+        surface
+          .getConnectors(payload.id)
+          .forEach(c => addToUpdateList(c, true /* clearWaypoints */));
       }
     }),
   ];

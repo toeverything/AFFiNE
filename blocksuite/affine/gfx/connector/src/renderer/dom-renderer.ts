@@ -13,7 +13,7 @@ import {
 import { PointLocation, SVGPathBuilder } from '@blocksuite/global/gfx';
 
 import { isConnectorWithLabel } from '../connector-manager';
-import { type RoutedPoint, updateConnectorJumps } from '../jump-calculator';
+import { type RoutedPoint } from '../jump-calculator';
 import { DEFAULT_ARROW_SIZE } from './utils';
 
 interface PathBounds {
@@ -346,9 +346,12 @@ export const connectorBaseDomRenderer = (
     rearEndpointStyle,
     strokeWidth,
     stroke,
-    jumpStyle = 'none',
-    jumpSize = 10,
   } = model;
+  // jumpStyle and jumpSize only exist on ConnectorElementModel, not LocalConnectorElementModel
+  const jumpStyle: JumpStyle =
+    'jumpStyle' in model ? (model.jumpStyle as JumpStyle) : 'none';
+  const jumpSize: number =
+    'jumpSize' in model ? (model.jumpSize as number) : 10;
 
   // Clear previous content
   element.innerHTML = '';

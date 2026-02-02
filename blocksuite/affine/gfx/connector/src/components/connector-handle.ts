@@ -2,11 +2,13 @@ import {
   EdgelessLegacySlotIdentifier,
   OverlayIdentifier,
 } from '@blocksuite/affine-block-surface';
-import type { ConnectorElementModel } from '@blocksuite/affine-model';
-import { ConnectorMode } from '@blocksuite/affine-model';
+import {
+  type ConnectorElementModel,
+  ConnectorMode,
+} from '@blocksuite/affine-model';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { IVec } from '@blocksuite/global/gfx';
-import { Vec } from '@blocksuite/global/gfx';
+import { getBoundFromPoints, PointLocation, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import {
   type BlockComponent,
@@ -28,8 +30,10 @@ import {
   getCursorForSegment,
   parsePathToSegments,
   segmentsToPath,
+  type ShapeBounds,
   splitSegmentToSShape,
-  updateSegmentPosition,
+  updateSegmentWithNewSegments,
+  updateSegmentWithTailDetachment,
 } from '../utils/connector-segment';
 
 const SIZE = 12;
@@ -131,10 +135,24 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
     this._draggingSegmentIndex = segmentIndex;
     this._dragStartPos = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
 
+    // Capture state for undo BEFORE making any changes
+    this.doc.captureSync();
+
     slots.elementResizeStart.next();
 
     // Track the current segment index being dragged (may change after split)
     let currentSegmentIndex = segmentIndex;
+
+    // Helper to get shape bounds from connector source/target
+    const getShapeBounds = (
+      connection: typeof connector.source | typeof connector.target
+    ): ShapeBounds | null => {
+      if (!connection?.id) return null;
+      const element = gfx.getElementById(connection.id);
+      if (!element || !('elementBound' in element)) return null;
+      const bound = element.elementBound;
+      return { x: bound.x, y: bound.y, w: bound.w, h: bound.h };
+    };
 
     const onMove = (moveEvent: PointerEvent) => {
       const currentPos = gfx.viewport.toModelCoordFromClientCoord([
@@ -142,7 +160,7 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
         moveEvent.y,
       ]);
 
-      // Calculate raw delta
+      // Calculate raw delta (in absolute/model coordinates)
       const rawDeltaX = currentPos[0] - this._dragStartPos[0];
       const rawDeltaY = currentPos[1] - this._dragStartPos[1];
 
@@ -159,41 +177,128 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
 
       let updatedSegments: ConnectorSegment[];
 
-      // Check if this is a 2-point path (single segment) - needs splitting
+      // Consistent handling based on segment position, not connector shape:
+      // - Single segment: split into S-shape
+      // - First or last segment: create new segments to preserve endpoints
+      // - Middle segment: regular update with tail detachment detection
+      const isFirstSegment = currentSegmentIndex === 0;
+      const isLastSegment = currentSegmentIndex === this._segments.length - 1;
+
       if (this._segments.length === 1) {
-        // Split the segment into an S-shape
+        // Single segment - split into S-shape with tails
         updatedSegments = splitSegmentToSShape(
           this._segments,
           constrainedDelta
         );
-        // After split, the movable segment is now at index 1 (middle segment)
-        currentSegmentIndex = 1;
-      } else {
-        // Update existing segments normally
-        updatedSegments = updateSegmentPosition(
+        // After split, we have 5 segments: A(tail), D, B, E, C(tail)
+        // The dragged segment B is now at index 2 (middle of the 3 movable segments)
+        currentSegmentIndex = 2;
+      } else if (isFirstSegment || isLastSegment) {
+        // First or last segment - create new segments to preserve endpoints
+        // This works for L-shapes (2 segments), S-shapes dragging edge segments, etc.
+        const newSegResult = updateSegmentWithNewSegments(
           this._segments,
           currentSegmentIndex,
           constrainedDelta
         );
+        updatedSegments = newSegResult.segments;
+        // After creating new segments, the dragged segment index shifts
+        if (newSegResult.created && isFirstSegment) {
+          currentSegmentIndex = 1;
+        }
+      } else {
+        // Middle segment - use tail detachment detection
+        const sourceBounds = getShapeBounds(connector.source);
+        const targetBounds = getShapeBounds(connector.target);
+
+        // Convert segments to absolute coordinates for tail detachment check
+        const { x: connX, y: connY } = connector;
+        const absoluteSegments = this._segments.map(s => ({
+          ...s,
+          start: [s.start[0] + connX, s.start[1] + connY] as IVec,
+          end: [s.end[0] + connX, s.end[1] + connY] as IVec,
+          midpoint: [s.midpoint[0] + connX, s.midpoint[1] + connY] as IVec,
+        }));
+
+        // updateSegmentWithTailDetachment handles both:
+        // 1. Regular position updates (via updateSegmentPosition internally)
+        // 2. Tail detachment when segment is dragged past shape boundary
+        const result = updateSegmentWithTailDetachment(
+          absoluteSegments,
+          currentSegmentIndex,
+          constrainedDelta,
+          sourceBounds,
+          targetBounds
+        );
+
+        // Convert back to relative coordinates
+        updatedSegments = result.segments.map(s => ({
+          ...s,
+          start: [s.start[0] - connX, s.start[1] - connY] as IVec,
+          end: [s.end[0] - connX, s.end[1] - connY] as IVec,
+          midpoint: [s.midpoint[0] - connX, s.midpoint[1] - connY] as IVec,
+        }));
       }
 
-      // Convert back to path
-      const newPath = segmentsToPath(updatedSegments);
+      // Convert segments back to path (still in relative coordinates)
+      const relativePath = segmentsToPath(updatedSegments);
 
-      // Update the connector path
-      // The path is relative to the connector's xywh, but we're working in absolute coords
-      // For now, update the path directly - this may need adjustment based on coordinate system
-      connector.path = newPath;
+      // Convert to absolute coordinates using current connector position
+      const { x: connX, y: connY } = connector;
+      const absolutePath = relativePath.map(
+        p => new PointLocation([p[0] + connX, p[1] + connY])
+      );
+
+      // Calculate new bounding box from absolute path
+      const newBound = getBoundFromPoints(absolutePath);
+
+      // Convert back to relative coordinates using new bounds
+      const newRelativePath = absolutePath.map(p =>
+        PointLocation.fromVec([p[0] - newBound.x, p[1] - newBound.y])
+      );
+
+      // Update connector with new bounds and path
+      // Setting updatingPath prevents path regeneration
+      connector.updatingPath = true;
+      connector.xywh = newBound.serialize();
+      connector.path = newRelativePath;
+      connector.updatingPath = false;
+
+      // Update segments to use new relative coordinates for next iteration
+      this._segments = parsePathToSegments(
+        newRelativePath.map(p => [p[0], p[1]] as IVec)
+      );
 
       // Update start position for next delta calculation
       this._dragStartPos = currentPos;
-      this._segments = updatedSegments;
 
       this.requestUpdate();
     };
 
     const onUp = () => {
       this._draggingSegmentIndex = -1;
+
+      // Extract waypoints from the modified path for persistence
+      // Waypoints are the intermediate points (excluding start and end)
+      // They need to be in absolute coordinates for path regeneration
+      const absolutePath = connector.absolutePath;
+      if (absolutePath.length > 2) {
+        // Extract intermediate points as waypoints (absolute coordinates)
+        const waypoints: IVec[] = absolutePath
+          .slice(1, -1)
+          .map(p => [p[0], p[1]] as IVec);
+
+        // Only save waypoints if there are intermediate points
+        // This persists the user's segment modifications
+        if ('waypoints' in connector) {
+          (connector as ConnectorElementModel).waypoints =
+            waypoints.length > 0 ? waypoints : undefined;
+        }
+      } else if ('waypoints' in connector) {
+        // Path has only 2 points, clear any existing waypoints
+        (connector as ConnectorElementModel).waypoints = undefined;
+      }
+
       this.doc.captureSync();
       _disposables.dispose();
       this._disposables = new DisposableGroup();

@@ -138,7 +138,10 @@ function renderPoints(
   rounded: boolean,
   stroke: string
 ) {
-  const { seed, strokeWidth, roughness, rough, cornerRadius } = model;
+  const { seed, strokeWidth, roughness, rough } = model;
+  // cornerRadius only exists on ConnectorElementModel, not LocalConnectorElementModel
+  const cornerRadius: number =
+    'cornerRadius' in model ? (model.cornerRadius as number) : 20;
 
   if (rough) {
     const options = {
@@ -187,10 +190,11 @@ function renderPoints(
       const radius = cornerRadius ?? 20;
       ctx.moveTo(points[0][0], points[0][1]);
       for (let i = 1; i < points.length - 1; i++) {
-        const prev = points[i - 1];
+        const _prev = points[i - 1];
         const curr = points[i];
         const next = points[i + 1];
-        // Use arcTo to create rounded corner
+        // Use arcTo to create rounded corner (prev point is implicit in current path position)
+        void _prev; // Mark as intentionally unused
         ctx.arcTo(curr[0], curr[1], next[0], next[1], radius);
       }
       // Line to the last point
