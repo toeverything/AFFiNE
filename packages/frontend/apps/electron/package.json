@@ -53,7 +53,7 @@
     "@sentry/react": "^9.47.1",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
-    "@types/uuid": "^10.0.0",
+    "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "app-builder-lib": "^26.1.0",
     "builder-util-runtime": "^9.5.0",
