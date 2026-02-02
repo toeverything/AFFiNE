@@ -1,4 +1,4 @@
-import test from 'ava';
+import test, { type ExecutionContext } from 'ava';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
 import { Doc, encodeStateAsUpdate } from 'yjs';
 
@@ -9,6 +9,15 @@ type WebsocketResponse<T> =
   | { data: T };
 
 const WS_TIMEOUT_MS = 5_000;
+
+function unwrapResponse<T>(t: ExecutionContext, res: WebsocketResponse<T>): T {
+  if ('data' in res) {
+    return res.data;
+  }
+
+  t.log(res);
+  throw new Error(`Websocket error: ${res.error.name}: ${res.error.message}`);
+}
 
 async function withTimeout<T>(
   promise: Promise<T>,
@@ -159,30 +168,25 @@ test('clientVersion=0.25.0 should only receive space:broadcast-doc-update', asyn
   try {
     await Promise.all([waitForConnect(sender), waitForConnect(receiver)]);
 
-    const receiverJoin = await emitWithAck<{
-      clientId: string;
-      success: boolean;
-    }>(receiver, 'space:join', {
-      spaceType: 'userspace',
-      spaceId,
-      clientVersion: '0.25.0',
-    });
-    if (!('data' in receiverJoin)) {
-      t.log(receiverJoin);
-    }
-    t.true('data' in receiverJoin);
-    t.true(receiverJoin.data.success);
+    const receiverJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        receiver,
+        'space:join',
+        { spaceType: 'userspace', spaceId, clientVersion: '0.25.0' }
+      )
+    );
+    t.true(receiverJoin.success);
 
-    const senderJoin = await emitWithAck<{
-      clientId: string;
-      success: boolean;
-    }>(sender, 'space:join', {
-      spaceType: 'userspace',
-      spaceId,
-      clientVersion: '0.26.0',
-    });
-    t.true('data' in senderJoin);
-    t.true(senderJoin.data.success);
+    const senderJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        sender,
+        'space:join',
+        { spaceType: 'userspace', spaceId, clientVersion: '0.26.0' }
+      )
+    );
+    t.true(senderJoin.success);
 
     const onUpdate = waitForEvent<{
       spaceType: string;
@@ -202,7 +206,7 @@ test('clientVersion=0.25.0 should only receive space:broadcast-doc-update', asyn
         update,
       }
     );
-    t.true('data' in pushRes);
+    unwrapResponse(t, pushRes);
 
     const message = await onUpdate;
     t.is(message.spaceType, 'userspace');
@@ -228,30 +232,25 @@ test('clientVersion>=0.26.0 should only receive space:broadcast-doc-updates', as
   try {
     await Promise.all([waitForConnect(sender), waitForConnect(receiver)]);
 
-    const receiverJoin = await emitWithAck<{
-      clientId: string;
-      success: boolean;
-    }>(receiver, 'space:join', {
-      spaceType: 'userspace',
-      spaceId,
-      clientVersion: '0.26.0',
-    });
-    if (!('data' in receiverJoin)) {
-      t.log(receiverJoin);
-    }
-    t.true('data' in receiverJoin);
-    t.true(receiverJoin.data.success);
+    const receiverJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        receiver,
+        'space:join',
+        { spaceType: 'userspace', spaceId, clientVersion: '0.26.0' }
+      )
+    );
+    t.true(receiverJoin.success);
 
-    const senderJoin = await emitWithAck<{
-      clientId: string;
-      success: boolean;
-    }>(sender, 'space:join', {
-      spaceType: 'userspace',
-      spaceId,
-      clientVersion: '0.25.0',
-    });
-    t.true('data' in senderJoin);
-    t.true(senderJoin.data.success);
+    const senderJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        sender,
+        'space:join',
+        { spaceType: 'userspace', spaceId, clientVersion: '0.25.0' }
+      )
+    );
+    t.true(senderJoin.success);
 
     const onUpdates = waitForEvent<{
       spaceType: string;
@@ -271,7 +270,7 @@ test('clientVersion>=0.26.0 should only receive space:broadcast-doc-updates', as
         update,
       }
     );
-    t.true('data' in pushRes);
+    unwrapResponse(t, pushRes);
 
     const message = await onUpdates;
     t.is(message.spaceType, 'userspace');
@@ -294,14 +293,15 @@ test('clientVersion<0.25.0 should be rejected and disconnected', async t => {
   try {
     await waitForConnect(socket);
 
-    const res = await emitWithAck<{ clientId: string; success: boolean }>(
-      socket,
-      'space:join',
-      { spaceType: 'userspace', spaceId, clientVersion: '0.24.4' }
+    const res = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        socket,
+        'space:join',
+        { spaceType: 'userspace', spaceId, clientVersion: '0.24.4' }
+      )
     );
-
-    t.true('data' in res);
-    t.false(res.data.success);
+    t.false(res.success);
 
     await waitForDisconnect(socket);
   } finally {
@@ -317,19 +317,20 @@ test('space:join-awareness should reject clientVersion<0.25.0', async t => {
   try {
     await waitForConnect(socket);
 
-    const res = await emitWithAck<{ clientId: string; success: boolean }>(
-      socket,
-      'space:join-awareness',
-      {
-        spaceType: 'userspace',
-        spaceId,
-        docId: 'doc-awareness',
-        clientVersion: '0.24.4',
-      }
+    const res = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        socket,
+        'space:join-awareness',
+        {
+          spaceType: 'userspace',
+          spaceId,
+          docId: 'doc-awareness',
+          clientVersion: '0.24.4',
+        }
+      )
     );
-
-    t.true('data' in res);
-    t.false(res.data.success);
+    t.false(res.success);
 
     await waitForDisconnect(socket);
   } finally {
