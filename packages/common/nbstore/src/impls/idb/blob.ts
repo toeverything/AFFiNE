@@ -1,5 +1,9 @@
 import { share } from '../../connection';
-import { type BlobRecord, BlobStorageBase } from '../../storage';
+import {
+  type BlobRecord,
+  BlobStorageBase,
+  type ListedBlobRecord,
+} from '../../storage';
 import { IDBConnection, type IDBConnectionOptions } from './db';
 
 export class IndexedDBBlobStorage extends BlobStorageBase {
@@ -32,9 +36,7 @@ export class IndexedDBBlobStorage extends BlobStorageBase {
   }
 
   override async set(blob: BlobRecord) {
-    const trx = this.db.transaction(['blobs', 'blobData'], 'readwrite', {
-      durability: 'relaxed',
-    });
+    const trx = this.db.transaction(['blobs', 'blobData'], 'readwrite');
     await trx.objectStore('blobs').put({
       key: blob.key,
       mime: blob.mime,
@@ -50,15 +52,11 @@ export class IndexedDBBlobStorage extends BlobStorageBase {
 
   override async delete(key: string, permanently: boolean) {
     if (permanently) {
-      const trx = this.db.transaction(['blobs', 'blobData'], 'readwrite', {
-        durability: 'relaxed',
-      });
+      const trx = this.db.transaction(['blobs', 'blobData'], 'readwrite');
       await trx.objectStore('blobs').delete(key);
       await trx.objectStore('blobData').delete(key);
     } else {
-      const trx = this.db.transaction('blobs', 'readwrite', {
-        durability: 'relaxed',
-      });
+      const trx = this.db.transaction('blobs', 'readwrite');
       const blob = await trx.store.get(key);
       if (blob) {
         await trx.store.put({
@@ -70,37 +68,29 @@ export class IndexedDBBlobStorage extends BlobStorageBase {
   }
 
   override async release() {
-    const trx = this.db.transaction(['blobs', 'blobData'], 'readwrite', {
-      durability: 'relaxed',
-    });
+    const trx = this.db.transaction(['blobs', 'blobData'], 'readwrite');
 
-    const store = trx.objectStore('blobs');
-    const getAllRecords = store.getAllRecords?.bind(store);
-    const blobs =
-      typeof getAllRecords === 'function'
-        ? (await getAllRecords()).map(record => record.value)
-        : await store.getAll();
+    const it = trx.objectStore('blobs').iterate();
 
-    const deleted = blobs.filter(blob => blob.deletedAt);
-
-    await Promise.all(
-      deleted.map(blob =>
-        Promise.all([
-          store.delete(blob.key),
-          trx.objectStore('blobData').delete(blob.key),
-        ])
-      )
-    );
+    for await (const item of it) {
+      if (item.value.deletedAt) {
+        await item.delete();
+        await trx.objectStore('blobData').delete(item.value.key);
+      }
+    }
   }
 
   override async list() {
     const trx = this.db.transaction('blobs', 'readonly');
-    const getAllRecords = trx.store.getAllRecords?.bind(trx.store);
-    const blobs =
-      typeof getAllRecords === 'function'
-        ? (await getAllRecords()).map(record => record.value)
-        : await trx.store.getAll();
+    const it = trx.store.iterate();
 
-    return blobs.filter(blob => !blob.deletedAt);
+    const blobs: ListedBlobRecord[] = [];
+    for await (const item of it) {
+      if (!item.value.deletedAt) {
+        blobs.push(item.value);
+      }
+    }
+
+    return blobs;
   }
 }
