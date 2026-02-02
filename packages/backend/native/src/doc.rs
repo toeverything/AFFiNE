@@ -1,4 +1,7 @@
-use affine_common::doc_parser::{self, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent};
+use affine_common::{
+  doc_parser::{self, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent},
+  napi_utils::map_napi_err,
+};
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
@@ -95,22 +98,25 @@ impl From<CrawlResult> for NativeCrawlResult {
 
 #[napi]
 pub fn parse_doc_from_binary(doc_bin: Buffer, doc_id: String) -> Result<NativeCrawlResult> {
-  let result = doc_parser::parse_doc_from_binary(doc_bin.into(), doc_id)
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::parse_doc_from_binary(doc_bin.into(), doc_id),
+    Status::GenericFailure,
+  )?;
   Ok(result.into())
 }
 
 #[napi]
 pub fn parse_page_doc(doc_bin: Buffer, max_summary_length: Option<i32>) -> Result<Option<NativePageDocContent>> {
-  let result = doc_parser::parse_page_doc(doc_bin.into(), max_summary_length.map(|v| v as isize))
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::parse_page_doc(doc_bin.into(), max_summary_length.map(|v| v as isize)),
+    Status::GenericFailure,
+  )?;
   Ok(result.map(Into::into))
 }
 
 #[napi]
 pub fn parse_workspace_doc(doc_bin: Buffer) -> Result<Option<NativeWorkspaceDocContent>> {
-  let result =
-    doc_parser::parse_workspace_doc(doc_bin.into()).map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(doc_parser::parse_workspace_doc(doc_bin.into()), Status::GenericFailure)?;
   Ok(result.map(Into::into))
 }
 
@@ -121,15 +127,19 @@ pub fn parse_doc_to_markdown(
   ai_editable: Option<bool>,
   doc_url_prefix: Option<String>,
 ) -> Result<NativeMarkdownResult> {
-  let result = doc_parser::parse_doc_to_markdown(doc_bin.into(), doc_id, ai_editable.unwrap_or(false), doc_url_prefix)
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::parse_doc_to_markdown(doc_bin.into(), doc_id, ai_editable.unwrap_or(false), doc_url_prefix),
+    Status::GenericFailure,
+  )?;
   Ok(result.into())
 }
 
 #[napi]
 pub fn read_all_doc_ids_from_root_doc(doc_bin: Buffer, include_trash: Option<bool>) -> Result<Vec<String>> {
-  let result = doc_parser::get_doc_ids_from_binary(doc_bin.into(), include_trash.unwrap_or(false))
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::get_doc_ids_from_binary(doc_bin.into(), include_trash.unwrap_or(false)),
+    Status::GenericFailure,
+  )?;
   Ok(result)
 }
 
@@ -144,8 +154,10 @@ pub fn read_all_doc_ids_from_root_doc(doc_bin: Buffer, include_trash: Option<boo
 /// A Buffer containing the y-octo document update binary
 #[napi]
 pub fn create_doc_with_markdown(title: String, markdown: String, doc_id: String) -> Result<Buffer> {
-  let result = doc_parser::build_full_doc(&title, &markdown, &doc_id)
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::build_full_doc(&title, &markdown, &doc_id),
+    Status::GenericFailure,
+  )?;
   Ok(Buffer::from(result))
 }
 
@@ -161,8 +173,10 @@ pub fn create_doc_with_markdown(title: String, markdown: String, doc_id: String)
 /// A Buffer containing only the delta (changes) as a y-octo update binary
 #[napi]
 pub fn update_doc_with_markdown(existing_binary: Buffer, new_markdown: String, doc_id: String) -> Result<Buffer> {
-  let result = doc_parser::update_doc(&existing_binary, &new_markdown, &doc_id)
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::update_doc(&existing_binary, &new_markdown, &doc_id),
+    Status::GenericFailure,
+  )?;
   Ok(Buffer::from(result))
 }
 
@@ -177,8 +191,10 @@ pub fn update_doc_with_markdown(existing_binary: Buffer, new_markdown: String, d
 /// A Buffer containing only the delta (changes) as a y-octo update binary
 #[napi]
 pub fn update_doc_title(existing_binary: Buffer, title: String, doc_id: String) -> Result<Buffer> {
-  let result = doc_parser::update_doc_title(&existing_binary, &doc_id, &title)
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::update_doc_title(&existing_binary, &doc_id, &title),
+    Status::GenericFailure,
+  )?;
   Ok(Buffer::from(result))
 }
 
@@ -202,14 +218,16 @@ pub fn update_doc_properties(
   created_by: Option<String>,
   updated_by: Option<String>,
 ) -> Result<Buffer> {
-  let result = doc_parser::update_doc_properties(
-    &existing_binary,
-    &properties_doc_id,
-    &target_doc_id,
-    created_by.as_deref(),
-    updated_by.as_deref(),
-  )
-  .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::update_doc_properties(
+      &existing_binary,
+      &properties_doc_id,
+      &target_doc_id,
+      created_by.as_deref(),
+      updated_by.as_deref(),
+    ),
+    Status::GenericFailure,
+  )?;
   Ok(Buffer::from(result))
 }
 
@@ -225,8 +243,10 @@ pub fn update_doc_properties(
 /// A Buffer containing the y-octo update binary to apply to the root doc
 #[napi]
 pub fn add_doc_to_root_doc(root_doc_bin: Buffer, doc_id: String, title: Option<String>) -> Result<Buffer> {
-  let result = doc_parser::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref())
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref()),
+    Status::GenericFailure,
+  )?;
   Ok(Buffer::from(result))
 }
 
@@ -241,7 +261,9 @@ pub fn add_doc_to_root_doc(root_doc_bin: Buffer, doc_id: String, title: Option<S
 /// A Buffer containing the y-octo update binary to apply to the root doc
 #[napi]
 pub fn update_root_doc_meta_title(root_doc_bin: Buffer, doc_id: String, title: String) -> Result<Buffer> {
-  let result = doc_parser::update_root_doc_meta_title(&root_doc_bin, &doc_id, &title)
-    .map_err(|e| Error::new(Status::GenericFailure, e.to_string()))?;
+  let result = map_napi_err(
+    doc_parser::update_root_doc_meta_title(&root_doc_bin, &doc_id, &title),
+    Status::GenericFailure,
+  )?;
   Ok(Buffer::from(result))
 }

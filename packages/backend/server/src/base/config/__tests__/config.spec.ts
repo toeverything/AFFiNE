@@ -141,7 +141,7 @@ test('should override correctly', t => {
           config: {
             credentials: {
               accessKeyId: '1',
-              accessKeySecret: '1',
+              secretAccessKey: '1',
             },
           },
         },
@@ -169,7 +169,7 @@ test('should override correctly', t => {
     config: {
       credentials: {
         accessKeyId: '1',
-        accessKeySecret: '1',
+        secretAccessKey: '1',
       },
     },
   });

@@ -1,7 +1,6 @@
-use affine_common::doc_loader::Doc;
+use affine_common::{doc_loader::Doc, napi_utils::map_napi_err};
 use napi::{
-  Env, Result, Task,
-  anyhow::anyhow,
+  Env, Result, Status, Task,
   bindgen_prelude::{AsyncTask, Buffer},
 };
 
@@ -54,7 +53,7 @@ impl Task for AsyncParseDocResponse {
   type JsValue = ParsedDoc;
 
   fn compute(&mut self) -> Result<Self::Output> {
-    let doc = Doc::new(&self.file_path, &self.doc).map_err(|e| anyhow!(e))?;
+    let doc = map_napi_err(Doc::new(&self.file_path, &self.doc), Status::GenericFailure)?;
     Ok(Document { inner: doc })
   }
 

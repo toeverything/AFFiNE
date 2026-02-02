@@ -49,7 +49,7 @@
     "@electron-forge/shared-types": "^7.10.2",
     "@pengx17/electron-forge-maker-appimage": "^1.2.1",
     "@sentry/electron": "^7.0.0",
-    "@sentry/esbuild-plugin": "^3.0.0",
+    "@sentry/esbuild-plugin": "^4.0.0",
     "@sentry/react": "^9.47.1",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",

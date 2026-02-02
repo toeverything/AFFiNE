@@ -73,7 +73,7 @@
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@chromatic-com/storybook": "^4.1.3",
+    "@chromatic-com/storybook": "^5.0.0",
     "@storybook/react": "^10.0.0",
     "@storybook/react-vite": "^10.0.0",
     "@testing-library/dom": "^10.4.0",

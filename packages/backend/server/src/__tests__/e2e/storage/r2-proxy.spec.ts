@@ -41,9 +41,7 @@ class MockR2Provider extends R2StorageProvider {
     super(config, bucket);
   }
 
-  destroy() {
-    this.client.destroy();
-  }
+  destroy() {}
 
   // @ts-ignore expect override
   override async proxyPutObject(
@@ -66,7 +64,7 @@ class MockR2Provider extends R2StorageProvider {
     body: any,
     options: { contentLength?: number } = {}
   ) {
-    const etag = `"etag-${partNumber}"`;
+    const etag = `etag-${partNumber}`;
     this.partCalls.push({
       key,
       uploadId,
@@ -322,7 +320,7 @@ e2e('should proxy multipart upload and return etag', async t => {
     .send(payload);
 
   t.is(res.status, 200);
-  t.is(res.get('etag'), '"etag-1"');
+  t.is(res.get('etag'), 'etag-1');
 
   const calls = getProvider().partCalls;
   t.is(calls.length, 1);
@@ -356,7 +354,7 @@ e2e('should resume multipart upload and return uploaded parts', async t => {
   const init2 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
   t.is(init2.method, 'MULTIPART');
   t.is(init2.uploadId, 'upload-id');
-  t.deepEqual(init2.uploadedParts, [{ partNumber: 1, etag: '"etag-1"' }]);
+  t.deepEqual(init2.uploadedParts, [{ partNumber: 1, etag: 'etag-1' }]);
   t.is(getProvider().createMultipartCalls, 1);
 });
 
