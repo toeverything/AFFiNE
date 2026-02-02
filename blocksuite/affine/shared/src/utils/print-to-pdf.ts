@@ -35,9 +35,28 @@ export async function printToPdf(
                 overflow: initial !important;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
+                color: #000 !important;
+                background: #fff !important;
+                color-scheme: light !important;
               }
-              ::-webkit-scrollbar {
-                display: none;
+              ::-webkit-scrollbar { 
+                display: none; 
+              }
+              :root, body {
+                --affine-text-primary: #000 !important;
+                --affine-text-secondary: #111 !important;
+                --affine-text-tertiary: #333 !important;
+                --affine-background-primary: #fff !important;
+                --affine-background-secondary: #fff !important;
+                --affine-background-tertiary: #fff !important;
+              }
+              body, [data-theme='dark'] {
+                color: #000 !important;
+                background: #fff !important;
+              }
+              body * {
+                color: #000 !important;
+                -webkit-text-fill-color: #000 !important;
               }
               :root {
                 --affine-note-shadow-box: none !important;
@@ -94,6 +113,14 @@ export async function printToPdf(
         rootElement,
         true
       ) as HTMLDivElement;
+
+      // force light theme in print iframe
+      iframe.contentWindow.document.documentElement.setAttribute(
+        'data-theme',
+        'light'
+      );
+      iframe.contentWindow.document.body.setAttribute('data-theme', 'light');
+      importedRoot.setAttribute('data-theme', 'light');
 
       // draw saved canvas image to canvas
       const allImportedCanvas = importedRoot.getElementsByTagName('canvas');
