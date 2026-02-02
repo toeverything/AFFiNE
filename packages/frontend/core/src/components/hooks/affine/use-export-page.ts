@@ -4,7 +4,9 @@ import {
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor/blocksuite-editor';
+import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { EditorService } from '@affine/core/modules/editor';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace/global-schema';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -27,7 +29,11 @@ import {
   PdfTransformer,
   ZipTransformer,
 } from '@blocksuite/affine/widgets/linked-doc';
-import { useLiveData, useService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServiceOptional,
+} from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 
@@ -41,10 +47,14 @@ type ExportType =
   | 'snapshot'
   | 'pdf-export';
 
+type ExportResult = 'completed' | 'canceled';
+
 interface ExportHandlerOptions {
   page: Store;
   editorContainer: AffineEditorContainer;
   type: ExportType;
+  enablePdfmakeExport: boolean;
+  desktopApiHandler?: DesktopApiService['handler'];
 }
 
 interface AdapterResult {
@@ -141,10 +151,205 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
   }
 }
 
+async function preparePrintFrameForPdfExport(
+  rootElement: HTMLElement
+): Promise<{
+  cleanup: () => void;
+}> {
+  const iframeId = 'affine-export-pdf-frame';
+  const iframe = document.createElement('iframe');
+  iframe.id = iframeId;
+  iframe.style.display = 'none';
+  iframe.style.border = '0';
+  iframe.setAttribute('aria-hidden', 'true');
+  document.body.append(iframe);
+
+  const style = document.createElement('style');
+  style.dataset.affineExportPdf = 'true';
+  style.textContent = `@media print {
+    body > * {
+      display: none !important;
+    }
+    body > #${iframeId} {
+      display: block !important;
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  }`;
+  document.head.append(style);
+
+  const canvasImgObjectUrlMap = new Map<string, string>();
+  const allCanvas = rootElement.getElementsByTagName('canvas');
+
+  let cleanedUp = false;
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+
+    iframe.remove();
+    style.remove();
+
+    for (const canvas of allCanvas) {
+      delete canvas.dataset['printToPdfCanvasKey'];
+    }
+    for (const url of canvasImgObjectUrlMap.values()) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      iframe.onload = async () => {
+        try {
+          if (!iframe.contentWindow) {
+            throw new Error('unable to prepare print iframe for pdf export');
+          }
+
+          iframe.contentWindow.document
+            .write(`<!DOCTYPE html><html><head><style>
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              height: initial !important;
+              overflow: initial !important;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              background: white;
+            }
+            ::-webkit-scrollbar {
+              display: none;
+            }
+            :root {
+              --affine-note-shadow-box: none !important;
+              --affine-note-shadow-sticker: none !important;
+            }
+          </style></head><body></body></html>`);
+
+          const currentTheme =
+            document.documentElement.getAttribute('data-theme');
+          if (currentTheme) {
+            iframe.contentWindow.document.documentElement.setAttribute(
+              'data-theme',
+              currentTheme
+            );
+          }
+
+          // copy all styles to iframe
+          for (const element of document.styleSheets) {
+            try {
+              for (const cssRule of element.cssRules) {
+                const target = iframe.contentWindow.document.styleSheets[0];
+                target.insertRule(cssRule.cssText, target.cssRules.length);
+              }
+            } catch {
+              console.warn(
+                '[export pdf] css cannot be applied when exporting pdf; skipping this stylesheet.',
+                element.href ?? 'inline stylesheet'
+              );
+            }
+          }
+
+          // convert all canvas to image
+          let canvasKey = 1;
+          for (const canvas of allCanvas) {
+            canvas.dataset['printToPdfCanvasKey'] = canvasKey.toString();
+            canvasKey++;
+            const canvasImgBlob = await new Promise<Blob | null>(resolve => {
+              try {
+                canvas.toBlob(resolve);
+              } catch {
+                resolve(null);
+              }
+            });
+            if (!canvasImgBlob) {
+              console.warn(
+                '[export pdf] canvas cannot be converted to image when exporting pdf, this may be because of CORS policy'
+              );
+              continue;
+            }
+            canvasImgObjectUrlMap.set(
+              canvas.dataset['printToPdfCanvasKey'],
+              URL.createObjectURL(canvasImgBlob)
+            );
+          }
+
+          const importedRoot = iframe.contentWindow.document.importNode(
+            rootElement,
+            true
+          ) as HTMLDivElement;
+
+          // draw saved canvas image to canvas
+          const allImportedCanvas = importedRoot.getElementsByTagName('canvas');
+          for (const importedCanvas of allImportedCanvas) {
+            const importedCanvasKey =
+              importedCanvas.dataset['printToPdfCanvasKey'];
+            if (!importedCanvasKey) continue;
+
+            const canvasImg = canvasImgObjectUrlMap.get(importedCanvasKey);
+            const ctx = importedCanvas.getContext('2d');
+            if (!canvasImg || !ctx) continue;
+
+            const image = new Image();
+            image.src = canvasImg;
+            await image.decode();
+            ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+          }
+
+          iframe.contentWindow.document.body.append(importedRoot);
+
+          // wait a bit for fonts/assets
+          await (iframe.contentWindow.document as any).fonts?.ready?.catch?.(
+            () => undefined
+          );
+          await new Promise<void>(resolve => setTimeout(resolve, 300));
+
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      };
+      iframe.srcdoc = '<!DOCTYPE html>';
+    });
+  } catch (e) {
+    cleanup();
+    throw e;
+  }
+
+  return { cleanup };
+}
+
+async function exportPdfUsingElectronPrintToPDF(
+  page: Store,
+  editorContainer: AffineEditorContainer,
+  desktopApiHandler: DesktopApiService['handler']
+): Promise<ExportResult> {
+  const { cleanup } = await preparePrintFrameForPdfExport(editorContainer);
+  try {
+    const result = await desktopApiHandler.ui.exportToPdf({
+      title: page.meta?.title,
+    });
+    if (!result) {
+      throw new Error('export-to-pdf-failed');
+    }
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    return result.canceled ? 'canceled' : 'completed';
+  } finally {
+    cleanup();
+  }
+}
+
 async function exportHandler({
   page,
   type,
   editorContainer,
+  enablePdfmakeExport,
+  desktopApiHandler,
 }: ExportHandlerOptions) {
   const editorRoot = document.querySelector('editor-host');
   track.$.sharePanel.$.export({
@@ -153,33 +358,48 @@ async function exportHandler({
   switch (type) {
     case 'html':
       await exportToHtml(page, editorRoot?.std);
-      return;
+      return 'completed';
     case 'markdown':
       await exportToMarkdown(page, editorRoot?.std);
-      return;
+      return 'completed';
     case 'snapshot':
       await ZipTransformer.exportDocs(
         page.workspace,
         getAFFiNEWorkspaceSchema(),
         [page]
       );
-      return;
+      return 'completed';
     case 'pdf':
       await printToPdf(editorContainer);
-      return;
+      return 'completed';
     case 'png': {
       await editorRoot?.std.get(ExportManager).exportPng();
-      return;
+      return 'completed';
     }
     case 'pdf-export': {
-      await PdfTransformer.exportDoc(page);
-      return;
+      if (enablePdfmakeExport) {
+        await PdfTransformer.exportDoc(page);
+        return 'completed';
+      }
+
+      if (BUILD_CONFIG.isElectron && desktopApiHandler) {
+        return await exportPdfUsingElectronPrintToPDF(
+          page,
+          editorContainer,
+          desktopApiHandler
+        );
+      }
+
+      await printToPdf(editorContainer);
+      return 'completed';
     }
   }
 }
 
 export const useExportPage = () => {
   const editor = useService(EditorService).editor;
+  const featureFlags = useService(FeatureFlagService).flags;
+  const desktopApi = useServiceOptional(DesktopApiService);
   const editorContainer = useLiveData(editor.editorContainer$);
   const blocksuiteDoc = editor.doc.blockSuiteDoc;
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
@@ -199,15 +419,21 @@ export const useExportPage = () => {
         key: globalLoadingID,
       });
       try {
-        await exportHandler({
+        const result = await exportHandler({
           page: blocksuiteDoc,
           type,
           editorContainer: originEditorContainer,
+          enablePdfmakeExport: Boolean(
+            featureFlags.enable_pdfmake_export.value
+          ),
+          desktopApiHandler: desktopApi?.handler,
         });
-        notify.success({
-          title: t['com.affine.export.success.title'](),
-          message: t['com.affine.export.success.message'](),
-        });
+        if (result === 'completed') {
+          notify.success({
+            title: t['com.affine.export.success.title'](),
+            message: t['com.affine.export.success.message'](),
+          });
+        }
       } catch (err) {
         console.error(err);
         notify.error({
@@ -221,6 +447,8 @@ export const useExportPage = () => {
     [
       blocksuiteDoc,
       editorContainer,
+      featureFlags,
+      desktopApi,
       pushGlobalLoadingEvent,
       resolveGlobalLoadingEvent,
       t,
