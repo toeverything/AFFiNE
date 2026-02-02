@@ -30,10 +30,8 @@ import {
   getCursorForSegment,
   parsePathToSegments,
   segmentsToPath,
-  type ShapeBounds,
   splitSegmentToSShape,
   updateSegmentWithNewSegments,
-  updateSegmentWithTailDetachment,
 } from '../utils/connector-segment';
 
 const SIZE = 12;
@@ -143,17 +141,6 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
     // Track the current segment index being dragged (may change after split)
     let currentSegmentIndex = segmentIndex;
 
-    // Helper to get shape bounds from connector source/target
-    const getShapeBounds = (
-      connection: typeof connector.source | typeof connector.target
-    ): ShapeBounds | null => {
-      if (!connection?.id) return null;
-      const element = gfx.getElementById(connection.id);
-      if (!element || !('elementBound' in element)) return null;
-      const bound = element.elementBound;
-      return { x: bound.x, y: bound.y, w: bound.w, h: bound.h };
-    };
-
     const onMove = (moveEvent: PointerEvent) => {
       const currentPos = gfx.viewport.toModelCoordFromClientCoord([
         moveEvent.x,
@@ -177,13 +164,12 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
 
       let updatedSegments: ConnectorSegment[];
 
-      // Consistent handling based on segment position, not connector shape:
-      // - Single segment: split into S-shape
-      // - First or last segment: create new segments to preserve endpoints
-      // - Middle segment: regular update with tail detachment detection
-      const isFirstSegment = currentSegmentIndex === 0;
-      const isLastSegment = currentSegmentIndex === this._segments.length - 1;
-
+      // Consistent handling for ALL connector shapes:
+      // - Single segment: split into S-shape with tails
+      // - Multiple segments: updateSegmentWithNewSegments handles all cases:
+      //   - First/last segments: creates new segments to preserve endpoints
+      //   - Middle segments adjacent to tails: creates new segments to preserve tails
+      //   - Middle segments not adjacent to tails: adjusts adjacent segments
       if (this._segments.length === 1) {
         // Single segment - split into S-shape with tails
         updatedSegments = splitSegmentToSShape(
@@ -193,51 +179,20 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
         // After split, we have 5 segments: A(tail), D, B, E, C(tail)
         // The dragged segment B is now at index 2 (middle of the 3 movable segments)
         currentSegmentIndex = 2;
-      } else if (isFirstSegment || isLastSegment) {
-        // First or last segment - create new segments to preserve endpoints
-        // This works for L-shapes (2 segments), S-shapes dragging edge segments, etc.
+      } else {
+        // Multiple segments - use unified update function
+        // This handles first/last segments AND middle segments adjacent to tails
         const newSegResult = updateSegmentWithNewSegments(
           this._segments,
           currentSegmentIndex,
           constrainedDelta
         );
         updatedSegments = newSegResult.segments;
-        // After creating new segments, the dragged segment index shifts
-        if (newSegResult.created && isFirstSegment) {
-          currentSegmentIndex = 1;
+        // When a new segment is created BEFORE the dragged segment, the index shifts by 1
+        // This happens when: dragging first segment, or dragging middle segment adjacent to a tail on the left
+        if (newSegResult.createdBefore) {
+          currentSegmentIndex = currentSegmentIndex + 1;
         }
-      } else {
-        // Middle segment - use tail detachment detection
-        const sourceBounds = getShapeBounds(connector.source);
-        const targetBounds = getShapeBounds(connector.target);
-
-        // Convert segments to absolute coordinates for tail detachment check
-        const { x: connX, y: connY } = connector;
-        const absoluteSegments = this._segments.map(s => ({
-          ...s,
-          start: [s.start[0] + connX, s.start[1] + connY] as IVec,
-          end: [s.end[0] + connX, s.end[1] + connY] as IVec,
-          midpoint: [s.midpoint[0] + connX, s.midpoint[1] + connY] as IVec,
-        }));
-
-        // updateSegmentWithTailDetachment handles both:
-        // 1. Regular position updates (via updateSegmentPosition internally)
-        // 2. Tail detachment when segment is dragged past shape boundary
-        const result = updateSegmentWithTailDetachment(
-          absoluteSegments,
-          currentSegmentIndex,
-          constrainedDelta,
-          sourceBounds,
-          targetBounds
-        );
-
-        // Convert back to relative coordinates
-        updatedSegments = result.segments.map(s => ({
-          ...s,
-          start: [s.start[0] - connX, s.start[1] - connY] as IVec,
-          end: [s.end[0] - connX, s.end[1] - connY] as IVec,
-          midpoint: [s.midpoint[0] - connX, s.midpoint[1] - connY] as IVec,
-        }));
       }
 
       // Convert segments back to path (still in relative coordinates)

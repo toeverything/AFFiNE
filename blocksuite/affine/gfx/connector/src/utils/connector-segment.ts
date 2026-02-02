@@ -292,6 +292,138 @@ export function updateSegmentPosition(
 }
 
 /**
+ * Update middle segment position while preserving adjacent tails.
+ *
+ * When dragging a middle segment that's adjacent to a tail:
+ * - The tail should NOT be stretched/shrunk
+ * - Instead, create a new perpendicular segment to bridge the gap
+ *
+ * Example: S-shape with E (vertical) dragged left:
+ *
+ * Before:                    After dragging E left:
+ *      ┌─B─┐                      ┌─B─┐
+ *      │   │                      │   │
+ *      D   E                      D   E
+ *      │   │                      │   │
+ *   A──┘   └──C──              A──┘   └─F──C──
+ *                                       (F created)
+ *
+ * C is a tail and stays fixed. F is created to bridge E to C.
+ *
+ * @param segments - All segments
+ * @param draggedIndex - Index of the middle segment being dragged
+ * @param delta - Constrained movement [dx, dy]
+ * @returns Object with updated segments and flag indicating if new segments were created
+ */
+export function updateMiddleSegmentPreservingTails(
+  segments: ConnectorSegment[],
+  draggedIndex: number,
+  delta: IVec
+): { segments: ConnectorSegment[]; created: boolean; createdBefore: boolean } {
+  if (draggedIndex <= 0 || draggedIndex >= segments.length - 1) {
+    // Not a middle segment
+    return { segments, created: false, createdBefore: false };
+  }
+
+  const dragged = segments[draggedIndex];
+  const prev = segments[draggedIndex - 1];
+  const next = segments[draggedIndex + 1];
+
+  const prevIsTail = prev.type === 'tail';
+  const nextIsTail = next.type === 'tail';
+
+  // If neither adjacent segment is a tail, use regular update
+  if (!prevIsTail && !nextIsTail) {
+    return {
+      segments: updateSegmentPosition(segments, draggedIndex, delta),
+      created: false,
+      createdBefore: false,
+    };
+  }
+
+  // Only create new segments if there's actual movement
+  const hasDelta = Math.abs(delta[0]) > EPSILON || Math.abs(delta[1]) > EPSILON;
+  if (!hasDelta) {
+    return { segments, created: false, createdBefore: false };
+  }
+
+  // Calculate dragged segment's new positions
+  const draggedNewStart: IVec = [
+    dragged.start[0] + delta[0],
+    dragged.start[1] + delta[1],
+  ];
+  const draggedNewEnd: IVec = [
+    dragged.end[0] + delta[0],
+    dragged.end[1] + delta[1],
+  ];
+
+  // Build new path point by point, preserving tails
+  const newPath: IVec[] = [];
+
+  // Add all points before the dragged segment
+  for (let i = 0; i < draggedIndex; i++) {
+    if (i === 0) {
+      newPath.push([...segments[i].start] as IVec);
+    }
+    newPath.push([...segments[i].end] as IVec);
+  }
+
+  // Handle connection from prev to dragged
+  if (prevIsTail) {
+    // Prev is a tail - keep its end fixed, add bridge to dragged's new start
+    // The tail's end is already in newPath, now add bridge point
+    if (dragged.orientation === 'vertical') {
+      // Bridge is horizontal at tail's Y, going to dragged's new X
+      newPath.push([draggedNewStart[0], prev.end[1]]);
+    } else {
+      // Bridge is vertical at tail's X, going to dragged's new Y
+      newPath.push([prev.end[0], draggedNewStart[1]]);
+    }
+  } else {
+    // Prev is not a tail - adjust the last point to connect to dragged's new position
+    const lastIdx = newPath.length - 1;
+    if (dragged.orientation === 'vertical') {
+      newPath[lastIdx][0] = draggedNewStart[0];
+    } else {
+      newPath[lastIdx][1] = draggedNewStart[1];
+    }
+  }
+
+  // Add the dragged segment's new end point
+  // Note: The start is implicitly connected by the previous point
+  newPath.push(draggedNewEnd);
+
+  // Handle connection from dragged to next
+  if (nextIsTail) {
+    // Next is a tail - add bridge from dragged's new end to tail's fixed start
+    if (dragged.orientation === 'vertical') {
+      // Bridge is horizontal from dragged's new X to tail's X
+      newPath.push([next.start[0], draggedNewEnd[1]]);
+    } else {
+      // Bridge is vertical from dragged's new Y to tail's Y
+      newPath.push([draggedNewEnd[0], next.start[1]]);
+    }
+    // Add tail's end (start is implicitly the bridge end)
+    newPath.push([...next.end] as IVec);
+  } else {
+    // Next is not a tail - it will be adjusted, add its end
+    // The connection point is implicitly at dragged's new end position
+    newPath.push([...next.end] as IVec);
+  }
+
+  // Add remaining segments after next
+  for (let i = draggedIndex + 2; i < segments.length; i++) {
+    newPath.push([...segments[i].end] as IVec);
+  }
+
+  return {
+    segments: parsePathToSegments(newPath),
+    created: prevIsTail || nextIsTail,
+    createdBefore: prevIsTail,
+  };
+}
+
+/**
  * Update segment position with new segment creation for L-shapes and similar.
  *
  * When dragging the first or last segment of an L-shape (or any path where
@@ -320,9 +452,9 @@ export function updateSegmentWithNewSegments(
   segments: ConnectorSegment[],
   draggedIndex: number,
   delta: IVec
-): { segments: ConnectorSegment[]; created: boolean } {
+): { segments: ConnectorSegment[]; created: boolean; createdBefore: boolean } {
   if (draggedIndex < 0 || draggedIndex >= segments.length) {
-    return { segments, created: false };
+    return { segments, created: false, createdBefore: false };
   }
 
   // Check if we need to create new segments
@@ -330,12 +462,9 @@ export function updateSegmentWithNewSegments(
   const isFirstSegment = draggedIndex === 0;
   const isLastSegment = draggedIndex === segments.length - 1;
 
-  // For middle segments, use regular update (no new segments needed)
+  // For middle segments, use tail-preserving update (creates new segments if adjacent to tails)
   if (!isFirstSegment && !isLastSegment) {
-    return {
-      segments: updateSegmentPosition(segments, draggedIndex, delta),
-      created: false,
-    };
+    return updateMiddleSegmentPreservingTails(segments, draggedIndex, delta);
   }
 
   const dragged = segments[draggedIndex];
@@ -343,7 +472,7 @@ export function updateSegmentWithNewSegments(
   // Only create new segments if there's actual movement
   const hasDelta = Math.abs(delta[0]) > EPSILON || Math.abs(delta[1]) > EPSILON;
   if (!hasDelta) {
-    return { segments, created: false };
+    return { segments, created: false, createdBefore: false };
   }
 
   // Build new path with additional segment
@@ -459,7 +588,13 @@ export function updateSegmentWithNewSegments(
     newPath.push(fixedEnd);
   }
 
-  return { segments: parsePathToSegments(newPath), created: true };
+  // For first segment drag, new segment is created before the dragged one (index shifts)
+  // For last segment drag, new segment is created after the dragged one (index stays)
+  return {
+    segments: parsePathToSegments(newPath),
+    created: true,
+    createdBefore: isFirstSegment,
+  };
 }
 
 /**
