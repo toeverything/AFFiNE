@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
 import { escapeRegExp } from 'lodash-es';
+import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
 
 const trustedDomain = [
   'google.com',
