@@ -188,11 +188,10 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
           constrainedDelta
         );
         updatedSegments = newSegResult.segments;
-        // When a new segment is created BEFORE the dragged segment, the index shifts by 1
-        // This happens when: dragging first segment, or dragging middle segment adjacent to a tail on the left
-        if (newSegResult.createdBefore) {
-          currentSegmentIndex = currentSegmentIndex + 1;
-        }
+        // When segments are created BEFORE the dragged segment, the index shifts
+        // - First segment drag: 2 segments created before (tail + bridge)
+        // - Middle segment with prevIsTail: 1 segment created before (bridge)
+        currentSegmentIndex += newSegResult.segmentsCreatedBefore;
       }
 
       // Convert segments back to path (still in relative coordinates)

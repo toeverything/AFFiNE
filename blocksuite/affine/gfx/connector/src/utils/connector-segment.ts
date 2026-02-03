@@ -319,10 +319,14 @@ export function updateMiddleSegmentPreservingTails(
   segments: ConnectorSegment[],
   draggedIndex: number,
   delta: IVec
-): { segments: ConnectorSegment[]; created: boolean; createdBefore: boolean } {
+): {
+  segments: ConnectorSegment[];
+  created: boolean;
+  segmentsCreatedBefore: number;
+} {
   if (draggedIndex <= 0 || draggedIndex >= segments.length - 1) {
     // Not a middle segment
-    return { segments, created: false, createdBefore: false };
+    return { segments, created: false, segmentsCreatedBefore: 0 };
   }
 
   const dragged = segments[draggedIndex];
@@ -337,14 +341,14 @@ export function updateMiddleSegmentPreservingTails(
     return {
       segments: updateSegmentPosition(segments, draggedIndex, delta),
       created: false,
-      createdBefore: false,
+      segmentsCreatedBefore: 0,
     };
   }
 
   // Only create new segments if there's actual movement
   const hasDelta = Math.abs(delta[0]) > EPSILON || Math.abs(delta[1]) > EPSILON;
   if (!hasDelta) {
-    return { segments, created: false, createdBefore: false };
+    return { segments, created: false, segmentsCreatedBefore: 0 };
   }
 
   // Calculate dragged segment's new positions
@@ -419,7 +423,8 @@ export function updateMiddleSegmentPreservingTails(
   return {
     segments: parsePathToSegments(newPath),
     created: prevIsTail || nextIsTail,
-    createdBefore: prevIsTail,
+    // When prevIsTail, one bridge segment is created before the dragged segment
+    segmentsCreatedBefore: prevIsTail ? 1 : 0,
   };
 }
 
@@ -452,9 +457,13 @@ export function updateSegmentWithNewSegments(
   segments: ConnectorSegment[],
   draggedIndex: number,
   delta: IVec
-): { segments: ConnectorSegment[]; created: boolean; createdBefore: boolean } {
+): {
+  segments: ConnectorSegment[];
+  created: boolean;
+  segmentsCreatedBefore: number;
+} {
   if (draggedIndex < 0 || draggedIndex >= segments.length) {
-    return { segments, created: false, createdBefore: false };
+    return { segments, created: false, segmentsCreatedBefore: 0 };
   }
 
   // Check if we need to create new segments
@@ -472,63 +481,99 @@ export function updateSegmentWithNewSegments(
   // Only create new segments if there's actual movement
   const hasDelta = Math.abs(delta[0]) > EPSILON || Math.abs(delta[1]) > EPSILON;
   if (!hasDelta) {
-    return { segments, created: false, createdBefore: false };
+    return { segments, created: false, segmentsCreatedBefore: 0 };
   }
 
   // Build new path with additional segment
   let newPath: IVec[];
 
   if (isFirstSegment) {
-    // Dragging the first segment - keep start point fixed, create new segment
+    // Dragging the first segment - create a proper tail at the shape connection
+    // Structure: fixedStart -> tailEnd -> bridgeEnd -> movedEnd -> rest
+    // This creates: Tail A (short) -> Bridge F (movable) -> Moved segment -> rest
     const fixedStart = [...dragged.start] as IVec;
-    const newSegmentEnd: IVec = [
-      dragged.start[0] + delta[0],
-      dragged.start[1] + delta[1],
-    ];
 
-    // New path: fixedStart -> newCorner -> movedSegmentEnd -> rest of path
-    newPath = [fixedStart];
+    // Calculate tail length (like S-shape does)
+    const tailLen = Math.min(TAIL_LENGTH, dragged.length / 4);
 
-    // Add the new corner point (creates new perpendicular segment E)
-    if (dragged.orientation === 'vertical') {
-      // Vertical segment moved horizontally
-      // New segment E is horizontal from fixedStart.x to newX at fixedStart.y
-      newPath.push([newSegmentEnd[0], fixedStart[1]]);
-    } else {
-      // Horizontal segment moved vertically
-      // New segment E is vertical from fixedStart.y to newY at fixedStart.x
-      newPath.push([fixedStart[0], newSegmentEnd[1]]);
-    }
-
-    // Add the moved segment's end point
+    // Calculate moved segment's end position
     const movedEnd: IVec = [
       dragged.end[0] + delta[0],
       dragged.end[1] + delta[1],
     ];
-    newPath.push(movedEnd);
+
+    newPath = [fixedStart];
+
+    if (dragged.orientation === 'horizontal') {
+      // Horizontal segment moved vertically
+      // Tail A: horizontal from fixedStart, length = tailLen
+      // Bridge F: vertical from tailEnd to the moved Y position
+      const direction = dragged.end[0] > dragged.start[0] ? 1 : -1;
+      const tailEnd: IVec = [
+        fixedStart[0] + tailLen * direction,
+        fixedStart[1],
+      ];
+      const bridgeEnd: IVec = [tailEnd[0], fixedStart[1] + delta[1]];
+
+      newPath.push(tailEnd); // End of tail A
+      newPath.push(bridgeEnd); // End of bridge F, start of moved segment
+      newPath.push(movedEnd); // End of moved segment
+    } else {
+      // Vertical segment moved horizontally
+      // Tail A: vertical from fixedStart, length = tailLen
+      // Bridge F: horizontal from tailEnd to the moved X position
+      const direction = dragged.end[1] > dragged.start[1] ? 1 : -1;
+      const tailEnd: IVec = [
+        fixedStart[0],
+        fixedStart[1] + tailLen * direction,
+      ];
+      const bridgeEnd: IVec = [fixedStart[0] + delta[0], tailEnd[1]];
+
+      newPath.push(tailEnd); // End of tail A
+      newPath.push(bridgeEnd); // End of bridge F, start of moved segment
+      newPath.push(movedEnd); // End of moved segment
+    }
 
     // Add remaining segments' end points, preserving target connection
-    // For L-shape (2 segments), we just need to add the target endpoint directly
-    // The path becomes: source -> newCorner -> movedEnd -> target
     if (segments.length === 2) {
-      // L-shape: preserve the target endpoint (segments[1].end)
-      newPath.push([...segments[1].end] as IVec);
+      // L-shape: add corner point to ensure orthogonality, then target
+      const target = segments[1].end;
+      if (dragged.orientation === 'horizontal') {
+        // Moved segment is horizontal, next segment should be vertical
+        // Add corner at [movedEnd[0], target[1]] if different from target
+        const corner: IVec = [movedEnd[0], target[1]];
+        if (
+          Math.abs(corner[0] - target[0]) > EPSILON ||
+          Math.abs(corner[1] - target[1]) > EPSILON
+        ) {
+          newPath.push(corner);
+        }
+      } else {
+        // Moved segment is vertical, next segment should be horizontal
+        // Add corner at [target[0], movedEnd[1]] if different from target
+        const corner: IVec = [target[0], movedEnd[1]];
+        if (
+          Math.abs(corner[0] - target[0]) > EPSILON ||
+          Math.abs(corner[1] - target[1]) > EPSILON
+        ) {
+          newPath.push(corner);
+        }
+      }
+      newPath.push([...target] as IVec);
     } else {
       // More complex paths (3+ segments): handle connectivity adjustments
       for (let i = 1; i < segments.length; i++) {
         const seg = segments[i];
-        const isLastSegment = i === segments.length - 1;
+        const isLast = i === segments.length - 1;
 
-        if (isLastSegment) {
+        if (isLast) {
           // Always preserve the target connection point
           newPath.push([...seg.end] as IVec);
         } else if (i === 1) {
           // First remaining segment - adjust connectivity to movedEnd
           if (dragged.orientation === 'vertical') {
-            // Our segment moved horizontally, next segment's start X changes
             newPath.push([movedEnd[0], seg.end[1]]);
           } else {
-            // Our segment moved vertically, next segment's start Y changes
             newPath.push([seg.end[0], movedEnd[1]]);
           }
         } else {
@@ -537,11 +582,19 @@ export function updateSegmentWithNewSegments(
       }
     }
   } else {
-    // isLastSegment - Dragging the last segment - keep end point fixed, create new segment
+    // isLastSegment - Dragging the last segment - create a proper tail at the target connection
+    // Structure: prev segments (adjusted) -> bridgeStart -> tailStart -> fixedEnd
+    // The previous segment is stretched/adjusted to reach the moved position
+    // This creates: ... -> Adjusted prev -> Moved (shortened) -> Bridge F -> Tail C
     const fixedEnd = [...dragged.end] as IVec;
-    const newSegmentStart: IVec = [
-      dragged.end[0] + delta[0],
-      dragged.end[1] + delta[1],
+
+    // Calculate tail length (like S-shape does)
+    const tailLen = Math.min(TAIL_LENGTH, dragged.length / 4);
+
+    // Calculate where the moved segment starts (previous segment's end, adjusted)
+    const movedStart: IVec = [
+      dragged.start[0] + delta[0],
+      dragged.start[1] + delta[1],
     ];
 
     // Start with existing path up to (but not including) the last segment
@@ -549,51 +602,53 @@ export function updateSegmentWithNewSegments(
     for (let i = 0; i < segments.length - 1; i++) {
       const seg = segments[i];
       if (i === segments.length - 2) {
-        // The second-to-last segment needs its end adjusted
-        const movedStart: IVec = [
-          dragged.start[0] + delta[0],
-          dragged.start[1] + delta[1],
-        ];
+        // The segment just before the dragged one needs to stretch to reach movedStart
         if (dragged.orientation === 'vertical') {
-          // Our segment moved horizontally, prev segment's end X changes
-          newPath.push([movedStart[0], seg.start[1]]);
+          // Dragged is vertical, so prev segment's end X changes
+          newPath.push([movedStart[0], seg.end[1]]);
         } else {
-          // Our segment moved vertically, prev segment's end Y changes
-          newPath.push([seg.start[0], movedStart[1]]);
+          // Dragged is horizontal, so prev segment's end Y changes
+          newPath.push([seg.end[0], movedStart[1]]);
         }
       } else {
         newPath.push([...seg.end] as IVec);
       }
     }
 
-    // Add the moved segment's start point
-    const movedStart: IVec = [
-      dragged.start[0] + delta[0],
-      dragged.start[1] + delta[1],
-    ];
-    newPath.push(movedStart);
-
-    // Add the new corner point (creates new perpendicular segment E)
-    if (dragged.orientation === 'vertical') {
-      // Vertical segment moved horizontally
-      // New segment E is horizontal from newX to fixedEnd.x at newSegmentStart.y
-      newPath.push([fixedEnd[0], newSegmentStart[1]]);
-    } else {
+    // Calculate tail and bridge positions
+    if (dragged.orientation === 'horizontal') {
       // Horizontal segment moved vertically
-      // New segment E is vertical from newY to fixedEnd.y at newSegmentStart.x
-      newPath.push([newSegmentStart[0], fixedEnd[1]]);
-    }
+      // Tail C: horizontal at fixedEnd, length = tailLen
+      // Bridge F: vertical from bridgeStart to tailStart
+      const direction = dragged.end[0] > dragged.start[0] ? 1 : -1;
+      const tailStart: IVec = [fixedEnd[0] - tailLen * direction, fixedEnd[1]];
+      const bridgeStart: IVec = [tailStart[0], movedStart[1]];
 
-    // Add the fixed end point
-    newPath.push(fixedEnd);
+      // Moved segment: from adjusted prev end (movedStart) to bridgeStart
+      newPath.push(bridgeStart); // End of moved segment
+      newPath.push(tailStart); // Bridge goes from bridgeStart to here
+      newPath.push(fixedEnd); // End of tail C
+    } else {
+      // Vertical segment moved horizontally
+      // Tail C: vertical at fixedEnd, length = tailLen
+      // Bridge F: horizontal from bridgeStart to tailStart
+      const direction = dragged.end[1] > dragged.start[1] ? 1 : -1;
+      const tailStart: IVec = [fixedEnd[0], fixedEnd[1] - tailLen * direction];
+      const bridgeStart: IVec = [movedStart[0], tailStart[1]];
+
+      // Moved segment: from adjusted prev end (movedStart) to bridgeStart
+      newPath.push(bridgeStart); // End of moved segment
+      newPath.push(tailStart); // Bridge goes from bridgeStart to here
+      newPath.push(fixedEnd); // End of tail C
+    }
   }
 
-  // For first segment drag, new segment is created before the dragged one (index shifts)
-  // For last segment drag, new segment is created after the dragged one (index stays)
+  // For first segment drag, TWO segments are created before (tail + bridge), index shifts by 2
+  // For last segment drag, segments are created after, index stays the same
   return {
     segments: parsePathToSegments(newPath),
     created: true,
-    createdBefore: isFirstSegment,
+    segmentsCreatedBefore: isFirstSegment ? 2 : 0,
   };
 }
 
