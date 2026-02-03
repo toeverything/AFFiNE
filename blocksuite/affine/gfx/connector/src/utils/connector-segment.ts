@@ -562,23 +562,31 @@ export function updateSegmentWithNewSegments(
       newPath.push([...target] as IVec);
     } else {
       // More complex paths (3+ segments): handle connectivity adjustments
-      for (let i = 1; i < segments.length; i++) {
-        const seg = segments[i];
-        const isLast = i === segments.length - 1;
-
-        if (isLast) {
-          // Always preserve the target connection point
-          newPath.push([...seg.end] as IVec);
-        } else if (i === 1) {
-          // First remaining segment - adjust connectivity to movedEnd
-          if (dragged.orientation === 'vertical') {
-            newPath.push([movedEnd[0], seg.end[1]]);
-          } else {
-            newPath.push([seg.end[0], movedEnd[1]]);
-          }
-        } else {
-          newPath.push([...seg.end] as IVec);
+      // First, add corner point to ensure orthogonality from movedEnd to first remaining segment
+      const firstRemaining = segments[1];
+      if (dragged.orientation === 'horizontal') {
+        // Moved segment is horizontal, next should be vertical
+        const corner: IVec = [movedEnd[0], firstRemaining.end[1]];
+        if (
+          Math.abs(corner[0] - firstRemaining.end[0]) > EPSILON ||
+          Math.abs(corner[1] - firstRemaining.end[1]) > EPSILON
+        ) {
+          newPath.push(corner);
         }
+      } else {
+        // Moved segment is vertical, next should be horizontal
+        const corner: IVec = [firstRemaining.end[0], movedEnd[1]];
+        if (
+          Math.abs(corner[0] - firstRemaining.end[0]) > EPSILON ||
+          Math.abs(corner[1] - firstRemaining.end[1]) > EPSILON
+        ) {
+          newPath.push(corner);
+        }
+      }
+
+      // Add remaining segments' endpoints
+      for (let i = 1; i < segments.length; i++) {
+        newPath.push([...segments[i].end] as IVec);
       }
     }
   } else {
