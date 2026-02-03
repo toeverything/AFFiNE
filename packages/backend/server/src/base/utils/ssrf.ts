@@ -236,7 +236,7 @@ export async function safeFetch(
   };
 
   while (true) {
-    const response = await fetch(current.toString(), requestInit);
+    const response = await fetch(current, requestInit);
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
