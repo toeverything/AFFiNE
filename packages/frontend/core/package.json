@@ -91,7 +91,7 @@
     "semver": "^7.7.3",
     "ses": "^1.14.0",
     "shiki": "^3.19.0",
-    "socket.io-client": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "swr": "^2.3.7",
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "y-protocols": "^1.0.6",

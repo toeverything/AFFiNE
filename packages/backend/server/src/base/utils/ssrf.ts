@@ -9,6 +9,17 @@ const DEFAULT_ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 const BLOCKED_IPS = new BlockList();
 const ALLOWED_IPV6 = new BlockList();
 
+export type DnsLookup = typeof dns.lookup;
+let dnsLookup: DnsLookup = dns.lookup;
+
+export function __setDnsLookupForTests(lookup: DnsLookup) {
+  dnsLookup = lookup;
+}
+
+export function __resetDnsLookupForTests() {
+  dnsLookup = dns.lookup;
+}
+
 export type SSRFBlockReason =
   | 'invalid_url'
   | 'disallowed_protocol'
@@ -112,7 +123,7 @@ async function resolveHostAddresses(hostname: string): Promise<string[]> {
     return ['127.0.0.1', '::1'];
   }
 
-  const results = await dns.lookup(hostname, {
+  const results = await dnsLookup(hostname, {
     all: true,
     verbatim: true,
   });

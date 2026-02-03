@@ -63,7 +63,6 @@ export interface AddContextDocInput {
 }
 
 export interface AddContextFileInput {
-  blobId?: InputMaybe<Scalars['String']['input']>;
   contextId: Scalars['String']['input'];
 }
 
@@ -978,12 +977,14 @@ export type ErrorDataUnion =
   | NoMoreSeatDataType
   | NotInSpaceDataType
   | QueryTooLongDataType
+  | ResponseTooLargeErrorDataType
   | RuntimeConfigNotFoundDataType
   | SameSubscriptionRecurringDataType
   | SpaceAccessDeniedDataType
   | SpaceNotFoundDataType
   | SpaceOwnerNotFoundDataType
   | SpaceShouldHaveOnlyOneOwnerDataType
+  | SsrfBlockedErrorDataType
   | SubscriptionAlreadyExistsDataType
   | SubscriptionNotExistsDataType
   | SubscriptionPlanNotFoundDataType
@@ -1107,6 +1108,7 @@ export enum ErrorNames {
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
   QUERY_TOO_LONG = 'QUERY_TOO_LONG',
   REPLY_NOT_FOUND = 'REPLY_NOT_FOUND',
+  RESPONSE_TOO_LARGE_ERROR = 'RESPONSE_TOO_LARGE_ERROR',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
   SAME_EMAIL_PROVIDED = 'SAME_EMAIL_PROVIDED',
   SAME_SUBSCRIPTION_RECURRING = 'SAME_SUBSCRIPTION_RECURRING',
@@ -1116,6 +1118,7 @@ export enum ErrorNames {
   SPACE_NOT_FOUND = 'SPACE_NOT_FOUND',
   SPACE_OWNER_NOT_FOUND = 'SPACE_OWNER_NOT_FOUND',
   SPACE_SHOULD_HAVE_ONLY_ONE_OWNER = 'SPACE_SHOULD_HAVE_ONLY_ONE_OWNER',
+  SSRF_BLOCKED_ERROR = 'SSRF_BLOCKED_ERROR',
   STORAGE_QUOTA_EXCEEDED = 'STORAGE_QUOTA_EXCEEDED',
   SUBSCRIPTION_ALREADY_EXISTS = 'SUBSCRIPTION_ALREADY_EXISTS',
   SUBSCRIPTION_EXPIRED = 'SUBSCRIPTION_EXPIRED',
@@ -1622,23 +1625,17 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   generateUserAccessToken: RevealedAccessToken;
-  /** @deprecated use WorkspaceType.blobUploadPartUrl */
-  getBlobUploadPartUrl: BlobUploadPart;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
   importUsers: Array<UserImportResultType>;
   installLicense: License;
-  /** @deprecated use [inviteMembers] instead */
-  inviteBatch: Array<InviteResult>;
   inviteMembers: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
   linkCalendarAccount: Scalars['String']['output'];
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
   publishDoc: DocType;
-  /** @deprecated use publishDoc instead */
-  publishPage: DocType;
   /** queue workspace doc embedding */
   queueWorkspaceEmbedding: Scalars['Boolean']['output'];
   /** mark all notifications as read */
@@ -1668,14 +1665,10 @@ export interface Mutation {
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryAudioTranscription: Maybe<TranscriptionResultType>;
-  /** @deprecated use [revokeMember] instead */
-  revoke: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
   revokePublicDoc: DocType;
-  /** @deprecated use revokePublicDoc instead */
-  revokePublicPage: DocType;
   revokeUserAccessToken: Scalars['Boolean']['output'];
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
@@ -1720,11 +1713,6 @@ export interface Mutation {
   uploadAvatar: UserType;
   /** Upload a comment attachment and return the access url */
   uploadCommentAttachment: Scalars['String']['output'];
-  /**
-   * validate app configuration
-   * @deprecated use Query.validateAppConfig
-   */
-  validateAppConfig: Array<AppConfigValidateResult>;
   verifyEmail: Scalars['Boolean']['output'];
 }
 
@@ -1925,13 +1913,6 @@ export interface MutationGenerateUserAccessTokenArgs {
   input: GenerateAccessTokenInput;
 }
 
-export interface MutationGetBlobUploadPartUrlArgs {
-  key: Scalars['String']['input'];
-  partNumber: Scalars['Int']['input'];
-  uploadId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -1948,12 +1929,6 @@ export interface MutationImportUsersArgs {
 
 export interface MutationInstallLicenseArgs {
   license: Scalars['Upload']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationInviteBatchArgs {
-  emails: Array<Scalars['String']['input']>;
-  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -1979,12 +1954,6 @@ export interface MutationMentionUserArgs {
 export interface MutationPublishDocArgs {
   docId: Scalars['String']['input'];
   mode?: InputMaybe<PublicDocMode>;
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationPublishPageArgs {
-  mode?: InputMaybe<PublicDocMode>;
-  pageId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2052,11 +2021,6 @@ export interface MutationRetryAudioTranscriptionArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRevokeArgs {
-  userId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationRevokeDocUserRolesArgs {
   input: RevokeDocUserRoleInput;
 }
@@ -2071,11 +2035,6 @@ export interface MutationRevokeMemberArgs {
 }
 
 export interface MutationRevokePublicDocArgs {
-  docId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationRevokePublicPageArgs {
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
@@ -2210,10 +2169,6 @@ export interface MutationUploadCommentAttachmentArgs {
   attachment: Scalars['Upload']['input'];
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationValidateAppConfigArgs {
-  updates: Array<UpdateAppConfigInput>;
 }
 
 export interface MutationVerifyEmailArgs {
@@ -2401,8 +2356,6 @@ export interface PublicUserType {
 
 export interface Query {
   __typename?: 'Query';
-  /** @deprecated use currentUser.accessTokens */
-  accessTokens: Array<AccessToken>;
   /** Get workspace detail for admin */
   adminWorkspace: Maybe<AdminWorkspace>;
   /** List workspaces for admin */
@@ -2416,23 +2369,11 @@ export interface Query {
    * @deprecated use Mutation.applyDocUpdates
    */
   applyDocUpdates: Scalars['String']['output'];
-  /** @deprecated use `user.quotaUsage` instead */
-  collectAllBlobSizes: WorkspaceBlobSizes;
   /** Get current user */
   currentUser: Maybe<UserType>;
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
-  /**
-   * Get is admin of workspace
-   * @deprecated use WorkspaceType[role] instead
-   */
-  isAdmin: Scalars['Boolean']['output'];
-  /**
-   * Get is owner of workspace
-   * @deprecated use WorkspaceType[role] instead
-   */
-  isOwner: Scalars['Boolean']['output'];
   /** List all copilot prompts */
   listCopilotPrompts: Array<CopilotPromptType>;
   prices: Array<SubscriptionPrice>;
@@ -2492,14 +2433,6 @@ export interface QueryErrorArgs {
 
 export interface QueryGetInviteInfoArgs {
   inviteId: Scalars['String']['input'];
-}
-
-export interface QueryIsAdminArgs {
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface QueryIsOwnerArgs {
-  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryPublicUserByIdArgs {
@@ -2628,6 +2561,12 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface ResponseTooLargeErrorDataType {
+  __typename?: 'ResponseTooLargeErrorDataType';
+  limitBytes: Scalars['Int']['output'];
+  receivedBytes: Scalars['Int']['output'];
 }
 
 export interface RevealedAccessToken {
@@ -2810,6 +2749,11 @@ export interface SpaceOwnerNotFoundDataType {
 export interface SpaceShouldHaveOnlyOneOwnerDataType {
   __typename?: 'SpaceShouldHaveOnlyOneOwnerDataType';
   spaceId: Scalars['String']['output'];
+}
+
+export interface SsrfBlockedErrorDataType {
+  __typename?: 'SsrfBlockedErrorDataType';
+  reason: Scalars['String']['output'];
 }
 
 export interface StreamObject {
@@ -3126,11 +3070,6 @@ export interface VersionRejectedDataType {
   version: Scalars['String']['output'];
 }
 
-export interface WorkspaceBlobSizes {
-  __typename?: 'WorkspaceBlobSizes';
-  size: Scalars['SafeInt']['output'];
-}
-
 export interface WorkspaceCalendarItemInput {
   colorOverride?: InputMaybe<Scalars['String']['input']>;
   sortOrder?: InputMaybe<Scalars['Int']['input']>;
@@ -3308,11 +3247,6 @@ export interface WorkspaceType {
   public: Scalars['Boolean']['output'];
   /** Get public docs of a workspace */
   publicDocs: Array<DocType>;
-  /**
-   * Get public page of a workspace by page id.
-   * @deprecated use [WorkspaceType.doc] instead
-   */
-  publicPage: Maybe<DocType>;
   /** quota of workspace */
   quota: WorkspaceQuotaType;
   /** Get recently updated docs of a workspace */
@@ -3375,10 +3309,6 @@ export interface WorkspaceTypeMembersArgs {
 }
 
 export interface WorkspaceTypePageMetaArgs {
-  pageId: Scalars['String']['input'];
-}
-
-export interface WorkspaceTypePublicPageArgs {
   pageId: Scalars['String']['input'];
 }
 

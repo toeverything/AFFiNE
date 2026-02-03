@@ -8505,6 +8505,17 @@ export function useAFFiNEI18N(): {
         readonly message: string;
     }): string;
     /**
+      * `Invalid URL`
+      */
+    ["error.SSRF_BLOCKED_ERROR"](): string;
+    /**
+      * `Response too large ({{receivedBytes}} bytes), limit is {{limitBytes}} bytes`
+      */
+    ["error.RESPONSE_TOO_LARGE_ERROR"](options: Readonly<{
+        receivedBytes: string;
+        limitBytes: string;
+    }>): string;
+    /**
       * `Email service is not configured.`
       */
     ["error.EMAIL_SERVICE_NOT_CONFIGURED"](): string;

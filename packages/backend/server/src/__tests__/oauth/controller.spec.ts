@@ -194,7 +194,7 @@ test('should throw if provider is invalid', async t => {
 
   await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Invalid' })
+    .send({ provider: 'Invalid', client_nonce: 'test-nonce' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,

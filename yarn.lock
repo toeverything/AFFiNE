@@ -485,7 +485,7 @@ __metadata:
     semver: "npm:^7.7.3"
     ses: "npm:^1.14.0"
     shiki: "npm:^3.19.0"
-    socket.io-client: "npm:^4.8.1"
+    socket.io-client: "npm:^4.8.3"
     swr: "npm:^2.3.7"
     tinykeys: "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch"
     vitest: "npm:^3.2.4"
@@ -562,7 +562,7 @@ __metadata:
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.7.2"
-    uuid: "npm:^11.1.0"
+    uuid: "npm:^13.0.0"
     webm-muxer: "npm:^5.0.3"
   languageName: unknown
   linkType: soft
@@ -617,7 +617,7 @@ __metadata:
     set-cookie-parser: "npm:^2.7.1"
     tree-kill: "npm:^1.2.2"
     ts-node: "npm:^10.9.2"
-    uuid: "npm:^11.1.0"
+    uuid: "npm:^13.0.0"
     vitest: "npm:^3.2.4"
     yjs: "npm:^13.6.27"
     zod: "npm:^3.25.76"
@@ -750,7 +750,7 @@ __metadata:
     react-dom: "npm:^19.2.1"
     react-markdown: "npm:^10.1.0"
     socket.io: "npm:^4.7.4"
-    socket.io-client: "npm:^4.7.4"
+    socket.io-client: "npm:^4.8.3"
     swr: "npm:^2.3.7"
     tailwindcss: "npm:^4.1.17"
     tsx: "npm:^4.19.2"
@@ -861,8 +861,8 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.1.6"
     rxjs: "npm:^7.8.2"
-    socket.io-client: "npm:^4.8.1"
-    uuid: "npm:^11.1.0"
+    socket.io-client: "npm:^4.8.3"
+    uuid: "npm:^13.0.0"
     vitest: "npm:^3.2.4"
     y-protocols: "npm:^1.0.6"
     yjs: "npm:^13.6.27"
@@ -871,7 +871,7 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     idb: ^8.0.0
-    socket.io-client: ^4.7.5
+    socket.io-client: ^4.8.3
   languageName: unknown
   linkType: soft
 
@@ -34564,18 +34564,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"socket.io-client@npm:^4.7.4, socket.io-client@npm:^4.8.1":
-  version: 4.8.1
-  resolution: "socket.io-client@npm:4.8.1"
-  dependencies:
-    "@socket.io/component-emitter": "npm:~3.1.0"
-    debug: "npm:~4.3.2"
-    engine.io-client: "npm:~6.6.1"
-    socket.io-parser: "npm:~4.2.4"
-  checksum: 10/7480cf1ab30eba371a96dd1ce2ce9018dcbeaf81035a066fb89d99df0d0a6388b05840c92d970317c739956b68b28b0f4833f3b18e460a24eef557b9bca127c1
-  languageName: node
-  linkType: hard
-
 "socket.io-client@npm:^4.8.3":
   version: 4.8.3
   resolution: "socket.io-client@npm:4.8.3"
@@ -36866,7 +36854,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:*":
+"uuid@npm:*, uuid@npm:^13.0.0":
   version: 13.0.0
   resolution: "uuid@npm:13.0.0"
   bin:

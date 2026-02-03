@@ -2131,6 +2131,8 @@
   "error.BAD_REQUEST": "Bad request.",
   "error.GRAPHQL_BAD_REQUEST": "GraphQL bad request, code: {{code}}, {{message}}",
   "error.HTTP_REQUEST_ERROR": "HTTP request error, message: {{message}}",
+  "error.SSRF_BLOCKED_ERROR": "Invalid URL",
+  "error.RESPONSE_TOO_LARGE_ERROR": "Response too large ({{receivedBytes}} bytes), limit is {{limitBytes}} bytes",
   "error.EMAIL_SERVICE_NOT_CONFIGURED": "Email service is not configured.",
   "error.QUERY_TOO_LONG": "Query is too long, max length is {{max}}.",
   "error.VALIDATION_ERROR": "Validation error, errors: {{errors}}",

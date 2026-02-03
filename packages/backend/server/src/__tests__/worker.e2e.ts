@@ -1,10 +1,14 @@
-import * as dns from 'node:dns/promises';
-
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
+import { LookupAddress } from 'dns';
 import Sinon from 'sinon';
 import type { Response } from 'supertest';
 
+import {
+  __resetDnsLookupForTests,
+  __setDnsLookupForTests,
+  type DnsLookup,
+} from '../base/utils/ssrf';
 import { createTestingApp, TestingApp } from './utils';
 
 type TestContext = {
@@ -13,24 +17,21 @@ type TestContext = {
 
 const test = ava as TestFn<TestContext>;
 
+const LookupAddressStub = (async (_hostname, options) => {
+  const result = [{ address: '76.76.21.21', family: 4 }] as LookupAddress[];
+  const isOptions = options && typeof options === 'object';
+  if (isOptions && 'all' in options && options.all) {
+    return result;
+  }
+  return result[0];
+}) as DnsLookup;
+
 test.before(async t => {
   // @ts-expect-error test
   env.DEPLOYMENT_TYPE = 'selfhosted';
 
   // Avoid relying on real DNS during tests. SSRF protection uses dns.lookup().
-  Sinon.stub(dns, 'lookup').callsFake(async (...args: any[]) => {
-    const options = args[1];
-    const result = [{ address: '93.184.216.34', family: 4 }];
-    if (
-      options &&
-      typeof options === 'object' &&
-      'all' in options &&
-      options.all
-    ) {
-      return result as any;
-    }
-    return result[0] as any;
-  });
+  __setDnsLookupForTests(LookupAddressStub);
 
   const app = await createTestingApp();
 
@@ -39,6 +40,7 @@ test.before(async t => {
 
 test.after.always(async t => {
   Sinon.restore();
+  __resetDnsLookupForTests();
   await t.context.app.close();
 });
 
@@ -57,7 +59,7 @@ const assertAndSnapshotRaw = async (
 ) => {
   const {
     status = 200,
-    origin = 'http://localhost',
+    origin = 'http://localhost:3010',
     referer,
     method = 'GET',
     checker = () => {},
