@@ -1,4 +1,4 @@
-mutation linkCalDAVAccount($input: LinkCalDAVAccountInput!) {
+mutation linkCalDavAccount($input: LinkCalDAVAccountInput!) {
   linkCalDAVAccount(input: $input) {
     id
     provider

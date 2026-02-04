@@ -667,10 +667,10 @@ export const calendarProvidersQuery = {
 }`,
 };
 
-export const linkCalDAVAccountMutation = {
-  id: 'linkCalDAVAccountMutation' as const,
-  op: 'linkCalDAVAccount',
-  query: `mutation linkCalDAVAccount($input: LinkCalDAVAccountInput!) {
+export const linkCalDavAccountMutation = {
+  id: 'linkCalDavAccountMutation' as const,
+  op: 'linkCalDavAccount',
+  query: `mutation linkCalDavAccount($input: LinkCalDAVAccountInput!) {
   linkCalDAVAccount(input: $input) {
     id
     provider

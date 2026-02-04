@@ -132,24 +132,15 @@ export const empty = style({
 });
 
 export const caldavDialog = style({
-  width: 420,
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
-  padding: 4,
-});
-
-export const caldavTitle = style({
-  fontSize: 16,
-  lineHeight: '24px',
-  fontWeight: 600,
-  color: cssVarV2.text.primary,
+  gap: 20,
 });
 
 export const caldavField = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 6,
+  gap: 10,
 });
 
 export const caldavLabel = style({
@@ -186,6 +177,6 @@ export const caldavError = style({
 export const caldavFooter = style({
   display: 'flex',
   justifyContent: 'flex-end',
-  gap: 8,
-  paddingTop: 4,
+  gap: 12,
+  marginTop: 12,
 });

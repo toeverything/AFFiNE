@@ -12,11 +12,11 @@ import { UrlService } from '@affine/core/modules/url';
 import { UserFriendlyError } from '@affine/error';
 import {
   type CalendarAccountsQuery,
-  type CalendarProvidersQuery,
   calendarAccountsQuery,
+  type CalendarProvidersQuery,
   calendarProvidersQuery,
   CalendarProviderType,
-  linkCalDAVAccountMutation,
+  linkCalDavAccountMutation,
   linkCalendarAccountMutation,
   unlinkCalendarAccountMutation,
 } from '@affine/graphql';
@@ -131,7 +131,11 @@ const CalDAVLinkDialog = ({
   );
 
   const handleSubmit = useCallback(async () => {
-    const nextErrors: { provider?: string; username?: string; password?: string } = {};
+    const nextErrors: {
+      provider?: string;
+      username?: string;
+      password?: string;
+    } = {};
     if (!selectedProvider) {
       nextErrors.provider = 'Please select a provider.';
     }
@@ -149,7 +153,7 @@ const CalDAVLinkDialog = ({
     setSubmitting(true);
     try {
       await gqlService.gql({
-        query: linkCalDAVAccountMutation,
+        query: linkCalDavAccountMutation,
         variables: {
           input: {
             providerPresetId: selectedProvider!.id,
@@ -171,17 +175,26 @@ const CalDAVLinkDialog = ({
     } finally {
       setSubmitting(false);
     }
-  }, [displayName, gqlService, onClose, onLinked, password, selectedProvider, username]);
+  }, [
+    displayName,
+    gqlService,
+    onClose,
+    onLinked,
+    password,
+    selectedProvider,
+    username,
+  ]);
 
   return (
     <Modal
       open={open}
+      width={480}
+      title="Link CalDAV account"
       onOpenChange={nextOpen => {
         if (!nextOpen) onClose();
       }}
       contentOptions={{ className: styles.caldavDialog }}
     >
-      <div className={styles.caldavTitle}>Link CalDAV account</div>
       <div className={styles.caldavField}>
         <div className={styles.caldavLabel}>Provider</div>
         <Menu
@@ -467,7 +480,8 @@ export const IntegrationsPanel = () => {
             <div className={styles.accountList}>
               {accounts.map(account => {
                 const meta = providerMeta[account.provider];
-                const title = account.displayName ?? account.email ?? account.id;
+                const title =
+                  account.displayName ?? account.email ?? account.id;
                 const subtitle = account.displayName ? account.email : null;
                 const showStatus =
                   account.status !== 'active' || Boolean(account.lastError);

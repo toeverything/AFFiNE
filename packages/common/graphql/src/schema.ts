@@ -7707,9 +7707,9 @@ export type Mutations =
       response: CreateBlobUploadMutation;
     }
   | {
-      name: 'linkCalDAVAccountMutation';
-      variables: LinkCalDAVAccountMutationVariables;
-      response: LinkCalDAVAccountMutation;
+      name: 'linkCalDavAccountMutation';
+      variables: LinkCalDavAccountMutationVariables;
+      response: LinkCalDavAccountMutation;
     }
   | {
       name: 'linkCalendarAccountMutation';
