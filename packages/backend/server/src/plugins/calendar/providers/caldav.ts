@@ -4,6 +4,7 @@ import { isIP } from 'node:net';
 
 import { Injectable } from '@nestjs/common';
 import { XMLParser } from 'fast-xml-parser';
+import { escape } from 'lodash-es';
 
 import { CalendarProviderRequestError, GraphqlBadRequest } from '../../../base';
 import type {
@@ -1172,7 +1173,7 @@ export class CalDAVProvider extends CalendarProvider {
   ): Promise<CalendarProviderListEventsResult> {
     const body = `<?xml version="1.0" encoding="UTF-8"?>
 <D:sync-collection xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
-  <D:sync-token>${syncToken}</D:sync-token>
+  <D:sync-token>${escape(syncToken)}</D:sync-token>
   <D:sync-level>1</D:sync-level>
   <D:prop>
     <D:getetag />

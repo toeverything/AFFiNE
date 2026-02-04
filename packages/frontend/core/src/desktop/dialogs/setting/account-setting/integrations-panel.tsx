@@ -7,6 +7,10 @@ import {
   Modal,
   notify,
 } from '@affine/component';
+import {
+  useQuery,
+  type UseQueryConfig,
+} from '@affine/core/components/hooks/use-query';
 import { GraphQLService } from '@affine/core/modules/cloud';
 import { UrlService } from '@affine/core/modules/url';
 import { UserFriendlyError } from '@affine/error';
@@ -16,6 +20,7 @@ import {
   type CalendarProvidersQuery,
   calendarProvidersQuery,
   CalendarProviderType,
+  type GraphQLQuery,
   linkCalDavAccountMutation,
   linkCalendarAccountMutation,
   unlinkCalendarAccountMutation,
@@ -137,13 +142,16 @@ const CalDAVLinkDialog = ({
       password?: string;
     } = {};
     if (!selectedProvider) {
-      nextErrors.provider = 'Please select a provider.';
+      nextErrors.provider =
+        t['com.affine.integration.calendar.caldav.field.provider.error']();
     }
     if (!username.trim()) {
-      nextErrors.username = 'Username is required.';
+      nextErrors.username =
+        t['com.affine.integration.calendar.caldav.field.username.error']();
     }
     if (!password) {
-      nextErrors.password = 'Password is required.';
+      nextErrors.password =
+        t['com.affine.integration.calendar.caldav.field.password.error']();
     }
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
@@ -169,7 +177,7 @@ const CalDAVLinkDialog = ({
       const message =
         error instanceof UserFriendlyError ? error.message : String(error);
       notify.error({
-        title: 'Failed to link CalDAV account',
+        title: t['com.affine.integration.calendar.caldav.link.failed'](),
         message: message || undefined,
       });
     } finally {
@@ -182,6 +190,7 @@ const CalDAVLinkDialog = ({
     onLinked,
     password,
     selectedProvider,
+    t,
     username,
   ]);
 
@@ -189,14 +198,16 @@ const CalDAVLinkDialog = ({
     <Modal
       open={open}
       width={480}
-      title="Link CalDAV account"
+      title={t['com.affine.integration.calendar.caldav.link.title']()}
       onOpenChange={nextOpen => {
         if (!nextOpen) onClose();
       }}
       contentOptions={{ className: styles.caldavDialog }}
     >
       <div className={styles.caldavField}>
-        <div className={styles.caldavLabel}>Provider</div>
+        <div className={styles.caldavLabel}>
+          {t['com.affine.integration.calendar.caldav.field.provider']()}
+        </div>
         <Menu
           items={providers.map(provider => (
             <MenuItem
@@ -212,7 +223,10 @@ const CalDAVLinkDialog = ({
             className={styles.caldavProviderButton}
             disabled={!providers.length}
           >
-            {selectedProvider?.label ?? 'Select provider'}
+            {selectedProvider?.label ??
+              t[
+                'com.affine.integration.calendar.caldav.field.provider.placeholder'
+              ]()}
           </Button>
         </Menu>
         {errors.provider ? (
@@ -220,7 +234,7 @@ const CalDAVLinkDialog = ({
         ) : null}
         {selectedProvider?.requiresAppPassword ? (
           <div className={styles.caldavHint}>
-            App-specific password required.
+            {t['com.affine.integration.calendar.caldav.hint.app-password']()}
             {selectedProvider.docsUrl ? (
               <a
                 className={styles.caldavLink}
@@ -228,7 +242,7 @@ const CalDAVLinkDialog = ({
                 target="_blank"
                 rel="noreferrer"
               >
-                Learn more
+                {t['com.affine.integration.calendar.caldav.hint.learn-more']()}
               </a>
             ) : null}
           </div>
@@ -240,17 +254,21 @@ const CalDAVLinkDialog = ({
               target="_blank"
               rel="noreferrer"
             >
-              Provider setup guide
+              {t['com.affine.integration.calendar.caldav.hint.guide']()}
             </a>
           </div>
         ) : null}
       </div>
       <div className={styles.caldavField}>
-        <div className={styles.caldavLabel}>Username</div>
+        <div className={styles.caldavLabel}>
+          {t['com.affine.integration.calendar.caldav.field.username']()}
+        </div>
         <Input
           value={username}
           onInput={handleUsernameInput}
-          placeholder="email@example.com"
+          placeholder={t[
+            'com.affine.integration.calendar.caldav.field.username.placeholder'
+          ]()}
           status={errors.username ? 'error' : 'default'}
           disabled={submitting}
         />
@@ -259,11 +277,15 @@ const CalDAVLinkDialog = ({
         ) : null}
       </div>
       <div className={styles.caldavField}>
-        <div className={styles.caldavLabel}>Password</div>
+        <div className={styles.caldavLabel}>
+          {t['com.affine.integration.calendar.caldav.field.password']()}
+        </div>
         <Input
           value={password}
           onInput={handlePasswordInput}
-          placeholder="Password or app-specific password"
+          placeholder={t[
+            'com.affine.integration.calendar.caldav.field.password.placeholder'
+          ]()}
           type="password"
           status={errors.password ? 'error' : 'default'}
           disabled={submitting}
@@ -273,11 +295,15 @@ const CalDAVLinkDialog = ({
         ) : null}
       </div>
       <div className={styles.caldavField}>
-        <div className={styles.caldavLabel}>Display name (optional)</div>
+        <div className={styles.caldavLabel}>
+          {t['com.affine.integration.calendar.caldav.field.displayName']()}
+        </div>
         <Input
           value={displayName}
           onInput={handleDisplayNameInput}
-          placeholder="My CalDAV"
+          placeholder={t[
+            'com.affine.integration.calendar.caldav.field.displayName.placeholder'
+          ]()}
           disabled={submitting}
         />
       </div>
@@ -291,7 +317,7 @@ const CalDAVLinkDialog = ({
           disabled={submitting || !providers.length}
           onClick={() => void handleSubmit()}
         >
-          Link
+          {t['com.affine.integration.calendar.account.link']()}
         </Button>
       </div>
     </Modal>
@@ -302,71 +328,61 @@ export const IntegrationsPanel = () => {
   const t = useI18n();
   const gqlService = useService(GraphQLService);
   const urlService = useService(UrlService);
-  const [accounts, setAccounts] = useState<CalendarAccount[]>([]);
-  const [providers, setProviders] = useState<CalendarProviderType[]>([]);
-  const [caldavProviders, setCaldavProviders] = useState<
-    CalendarCalDAVProvider[]
-  >([]);
-  const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
   const [unlinkingAccountId, setUnlinkingAccountId] = useState<string | null>(
     null
   );
   const [openedExternalWindow, setOpenedExternalWindow] = useState(false);
   const [caldavDialogOpen, setCaldavDialogOpen] = useState(false);
-
-  const revalidate = useCallback(
-    async (signal?: AbortSignal) => {
-      setLoading(true);
-      try {
-        const [accountsData, providersData] = await Promise.all([
-          gqlService.gql({
-            query: calendarAccountsQuery,
-            context: { signal },
-          }),
-          gqlService.gql({
-            query: calendarProvidersQuery,
-            context: { signal },
-          }),
-        ]);
-        setAccounts(accountsData.currentUser?.calendarAccounts ?? []);
-        setProviders(providersData.serverConfig.calendarProviders ?? []);
-        setCaldavProviders(
-          providersData.serverConfig.calendarCalDAVProviders ?? []
-        );
-      } catch (error) {
-        if (
-          signal?.aborted ||
-          (error instanceof UserFriendlyError && error.is('REQUEST_ABORTED'))
-        ) {
-          return;
-        }
-
-        notify.error({
-          title: 'Failed to load calendar accounts',
-          message: String(error) || undefined,
-        });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [gqlService]
+  const makeConfig: <Query extends GraphQLQuery>(
+    title: string
+  ) => UseQueryConfig<Query> = useCallback(
+    title => ({
+      suspense: false,
+      revalidateOnFocus: openedExternalWindow,
+      onError: error => {
+        notify.error({ title, message: String(error) || undefined });
+      },
+    }),
+    [openedExternalWindow]
   );
 
-  useEffect(() => {
-    const controller = new AbortController();
-    revalidate(controller.signal).catch(() => undefined);
-    return () => controller.abort();
-  }, [revalidate]);
+  const {
+    data: accountsData,
+    isLoading: accountsLoading,
+    mutate: mutateAccounts,
+  } = useQuery(
+    { query: calendarAccountsQuery },
+    useMemo(
+      () =>
+        makeConfig(t['com.affine.integration.calendar.account.load-error']()),
+      [makeConfig, t]
+    )
+  );
 
-  useEffect(() => {
-    if (!openedExternalWindow) return;
-    const handleFocus = () => {
-      revalidate().catch(() => undefined);
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [openedExternalWindow, revalidate]);
+  const {
+    data: providersData,
+    isLoading: providersLoading,
+    mutate: mutateProviders,
+  } = useQuery(
+    { query: calendarProvidersQuery },
+
+    useMemo(
+      () =>
+        makeConfig(t['com.affine.integration.calendar.provider.load-error']()),
+      [makeConfig, t]
+    )
+  );
+
+  const accounts: CalendarAccount[] =
+    accountsData?.currentUser?.calendarAccounts ?? [];
+  const providers = useMemo(
+    () => providersData?.serverConfig.calendarProviders ?? [],
+    [providersData]
+  );
+  const caldavProviders =
+    providersData?.serverConfig.calendarCalDAVProviders ?? [];
+  const loading = accountsLoading || providersLoading;
 
   const providerOptions = useMemo(() => {
     return providers.map(provider => {
@@ -400,12 +416,14 @@ export const IntegrationsPanel = () => {
         urlService.openExternal(data.linkCalendarAccount);
         setOpenedExternalWindow(true);
       } catch (error) {
-        notify.error({ title: 'Failed to start calendar authorization' });
+        notify.error({
+          title: t['com.affine.integration.calendar.auth.start-error'](),
+        });
       } finally {
         setLinking(false);
       }
     },
-    [gqlService, urlService]
+    [gqlService, t, urlService]
   );
 
   const handleUnlink = useCallback(
@@ -418,14 +436,34 @@ export const IntegrationsPanel = () => {
             accountId,
           },
         });
-        setAccounts(prev => prev.filter(account => account.id !== accountId));
+        await mutateAccounts(
+          current => {
+            if (!current?.currentUser) {
+              return current;
+            }
+            return {
+              ...current,
+              currentUser: {
+                ...current.currentUser,
+                calendarAccounts: current.currentUser.calendarAccounts.filter(
+                  account => account.id !== accountId
+                ),
+              },
+            };
+          },
+          {
+            revalidate: false,
+          }
+        );
       } catch (error) {
-        notify.error({ title: 'Failed to unlink calendar account' });
+        notify.error({
+          title: t['com.affine.integration.calendar.account.unlink-error'](),
+        });
       } finally {
         setUnlinkingAccountId(null);
       }
     },
-    [gqlService]
+    [gqlService, mutateAccounts, t]
   );
 
   return (
@@ -435,7 +473,9 @@ export const IntegrationsPanel = () => {
         providers={caldavProviders}
         onClose={() => setCaldavDialogOpen(false)}
         onLinked={() => {
-          revalidate().catch(() => undefined);
+          void Promise.all([mutateAccounts(), mutateProviders()]).catch(
+            () => undefined
+          );
         }}
       />
       <CollapsibleWrapper
@@ -462,12 +502,12 @@ export const IntegrationsPanel = () => {
                 contentOptions={{ align: 'end' }}
               >
                 <Button variant="primary" loading={linking}>
-                  Link
+                  {t['com.affine.integration.calendar.account.link']()}
                 </Button>
               </Menu>
             ) : (
               <Button variant="primary" disabled>
-                Link
+                {t['com.affine.integration.calendar.account.link']()}
               </Button>
             )}
           </div>
@@ -486,8 +526,12 @@ export const IntegrationsPanel = () => {
                 const showStatus =
                   account.status !== 'active' || Boolean(account.lastError);
                 const statusMessage = account.lastError
-                  ? `Authorization failed: ${account.lastError}`
-                  : 'Authorization failed. Please reconnect your account.';
+                  ? t['com.affine.integration.calendar.account.status.failed']({
+                      error: account.lastError,
+                    })
+                  : t[
+                      'com.affine.integration.calendar.account.status.failed-reconnect'
+                    ]();
 
                 return (
                   <div key={account.id} className={styles.accountRow}>
@@ -500,8 +544,9 @@ export const IntegrationsPanel = () => {
                         <div className={styles.accountMeta}>
                           {subtitle ? <span>{subtitle}</span> : null}
                           <span>
-                            {account.calendarsCount} calendar
-                            {account.calendarsCount === 1 ? '' : 's'}
+                            {t['com.affine.integration.calendar.account.count'](
+                              { count: String(account.calendarsCount) }
+                            )}
                           </span>
                         </div>
                         {showStatus ? (
@@ -518,7 +563,7 @@ export const IntegrationsPanel = () => {
                         disabled={unlinkingAccountId === account.id}
                         onClick={() => void handleUnlink(account.id)}
                       >
-                        Unlink
+                        {t['com.affine.integration.calendar.account.unlink']()}
                       </Button>
                     </div>
                   </div>
@@ -526,7 +571,9 @@ export const IntegrationsPanel = () => {
               })}
             </div>
           ) : (
-            <div className={styles.empty}>No calendar accounts linked yet.</div>
+            <div className={styles.empty}>
+              {t['com.affine.integration.calendar.account.linked-empty']()}
+            </div>
           )}
         </div>
       </CollapsibleWrapper>

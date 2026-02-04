@@ -22,17 +22,11 @@ import {
   CalendarSyncTokenInvalid,
 } from './providers';
 import { CalendarProviderFactory } from './providers';
+import type { LinkCalDAVAccountInput } from './types';
 
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const DEFAULT_PAST_DAYS = 90;
 const DEFAULT_FUTURE_DAYS = 180;
-
-type LinkCalDAVAccountInput = {
-  providerPresetId: string;
-  username: string;
-  password: string;
-  displayName?: string | null;
-};
 
 @Injectable()
 export class CalendarService {

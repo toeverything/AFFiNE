@@ -8282,6 +8282,114 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.calendar.all-day"](): string;
     /**
+      * `Failed to load calendar accounts`
+      */
+    ["com.affine.integration.calendar.account.load-error"](): string;
+    /**
+      * `Failed to load calendar providers`
+      */
+    ["com.affine.integration.calendar.provider.load-error"](): string;
+    /**
+      * `Failed to start calendar authorization`
+      */
+    ["com.affine.integration.calendar.auth.start-error"](): string;
+    /**
+      * `Failed to unlink calendar account`
+      */
+    ["com.affine.integration.calendar.account.unlink-error"](): string;
+    /**
+      * `Unlink`
+      */
+    ["com.affine.integration.calendar.account.unlink"](): string;
+    /**
+      * `Link`
+      */
+    ["com.affine.integration.calendar.account.link"](): string;
+    /**
+      * `No calendar accounts linked yet.`
+      */
+    ["com.affine.integration.calendar.account.linked-empty"](): string;
+    /**
+      * `Authorization failed: {{error}}`
+      */
+    ["com.affine.integration.calendar.account.status.failed"](options: {
+        readonly error: string;
+    }): string;
+    /**
+      * `Authorization failed. Please reconnect your account.`
+      */
+    ["com.affine.integration.calendar.account.status.failed-reconnect"](): string;
+    /**
+      * `{{count}} calendar`
+      */
+    ["com.affine.integration.calendar.account.count"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Link CalDAV account`
+      */
+    ["com.affine.integration.calendar.caldav.link.title"](): string;
+    /**
+      * `Failed to link CalDAV account`
+      */
+    ["com.affine.integration.calendar.caldav.link.failed"](): string;
+    /**
+      * `Provider`
+      */
+    ["com.affine.integration.calendar.caldav.field.provider"](): string;
+    /**
+      * `Select provider`
+      */
+    ["com.affine.integration.calendar.caldav.field.provider.placeholder"](): string;
+    /**
+      * `Please select a provider.`
+      */
+    ["com.affine.integration.calendar.caldav.field.provider.error"](): string;
+    /**
+      * `Username`
+      */
+    ["com.affine.integration.calendar.caldav.field.username"](): string;
+    /**
+      * `email@example.com`
+      */
+    ["com.affine.integration.calendar.caldav.field.username.placeholder"](): string;
+    /**
+      * `Username is required.`
+      */
+    ["com.affine.integration.calendar.caldav.field.username.error"](): string;
+    /**
+      * `Password`
+      */
+    ["com.affine.integration.calendar.caldav.field.password"](): string;
+    /**
+      * `Password or app-specific password`
+      */
+    ["com.affine.integration.calendar.caldav.field.password.placeholder"](): string;
+    /**
+      * `Password is required.`
+      */
+    ["com.affine.integration.calendar.caldav.field.password.error"](): string;
+    /**
+      * `Display name (optional)`
+      */
+    ["com.affine.integration.calendar.caldav.field.displayName"](): string;
+    /**
+      * `My CalDAV`
+      */
+    ["com.affine.integration.calendar.caldav.field.displayName.placeholder"](): string;
+    /**
+      * `App-specific password required.`
+      */
+    ["com.affine.integration.calendar.caldav.hint.app-password"](): string;
+    /**
+      * `Learn more`
+      */
+    ["com.affine.integration.calendar.caldav.hint.learn-more"](): string;
+    /**
+      * `Provider setup guide`
+      */
+    ["com.affine.integration.calendar.caldav.hint.guide"](): string;
+    /**
       * `New doc`
       */
     ["com.affine.integration.calendar.new-doc"](): string;
