@@ -240,7 +240,7 @@ const CalDAVLinkDialog = ({
                 className={styles.caldavLink}
                 href={selectedProvider.docsUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noreferrer noopener"
               >
                 {t['com.affine.integration.calendar.caldav.hint.learn-more']()}
               </a>
@@ -252,7 +252,7 @@ const CalDAVLinkDialog = ({
               className={styles.caldavLink}
               href={selectedProvider.docsUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noreferrer noopener"
             >
               {t['com.affine.integration.calendar.caldav.hint.guide']()}
             </a>

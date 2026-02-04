@@ -1,12 +1,15 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { lookup } from 'node:dns/promises';
-import { isIP } from 'node:net';
 
 import { Injectable } from '@nestjs/common';
 import { XMLParser } from 'fast-xml-parser';
 import { escape } from 'lodash-es';
 
-import { CalendarProviderRequestError, GraphqlBadRequest } from '../../../base';
+import {
+  assertSsrFSafeUrl,
+  CalendarProviderRequestError,
+  GraphqlBadRequest,
+  SsrfBlockedError,
+} from '../../../base';
 import type {
   CalendarCalDAVAuthType,
   CalendarCalDAVProviderPreset,
@@ -32,6 +35,8 @@ const XML_PARSER = new XMLParser({
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_REDIRECTS = 5;
+const CALDAV_ALLOWED_PROTOCOLS = new Set(['https:']);
+const CALDAV_ALLOWED_PROTOCOLS_INSECURE = new Set(['http:', 'https:']);
 
 type CalDAVCredentials = {
   username: string;
@@ -491,73 +496,6 @@ const hasCalendarResourceType = (value: unknown): boolean => {
   return false;
 };
 
-const isPrivateIpv4 = (ip: string) => {
-  const parts = ip.split('.').map(Number);
-  if (parts.length !== 4) {
-    return false;
-  }
-  const [a, b] = parts;
-  if (a === 10 || a === 127 || a === 0) {
-    return true;
-  }
-  if (a === 169 && b === 254) {
-    return true;
-  }
-  if (a === 172 && b >= 16 && b <= 31) {
-    return true;
-  }
-  if (a === 192 && b === 168) {
-    return true;
-  }
-  if (a === 100 && b >= 64 && b <= 127) {
-    return true;
-  }
-  if (a === 192 && b === 0) {
-    return true;
-  }
-  if (a === 198 && b >= 18 && b <= 19) {
-    return true;
-  }
-  if (a >= 224) {
-    return true;
-  }
-  return false;
-};
-
-const isPrivateIpv6 = (ip: string) => {
-  const normalized = ip.toLowerCase();
-  if (normalized === '::' || normalized === '::1') {
-    return true;
-  }
-  if (normalized.startsWith('fe80:')) {
-    return true;
-  }
-  if (normalized.startsWith('fc') || normalized.startsWith('fd')) {
-    return true;
-  }
-  if (normalized.startsWith('ff')) {
-    return true;
-  }
-  if (normalized.startsWith('2001:db8')) {
-    return true;
-  }
-  const mapped = normalized.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
-  if (mapped) {
-    return isPrivateIpv4(mapped[1]);
-  }
-  return false;
-};
-
-const isPrivateIp = (ip: string) => {
-  if (isIP(ip) === 4) {
-    return isPrivateIpv4(ip);
-  }
-  if (isIP(ip) === 6) {
-    return isPrivateIpv6(ip);
-  }
-  return false;
-};
-
 const isAllowedHost = (host: string, allowedHosts: string[]) => {
   const normalizedHost = host.toLowerCase();
   return allowedHosts.some(entry => {
@@ -668,38 +606,50 @@ class CalDAVRequestPolicy {
       return;
     }
 
-    if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
-      throw new GraphqlBadRequest({
-        code: 'caldav_private_network',
-        message: 'CalDAV host is in a private network.',
-      });
-    }
-
-    if (isIP(hostname)) {
-      if (isPrivateIp(hostname)) {
-        throw new GraphqlBadRequest({
-          code: 'caldav_private_network',
-          message: 'CalDAV host is in a private network.',
-        });
-      }
-      return;
-    }
-
-    let addresses: { address: string }[] = [];
     try {
-      addresses = await lookup(hostname, { all: true });
-    } catch {
-      throw new GraphqlBadRequest({
-        code: 'caldav_dns_failed',
-        message: 'Unable to resolve CalDAV host.',
+      await assertSsrFSafeUrl(url, {
+        allowedProtocols: this.allowInsecureHttp
+          ? CALDAV_ALLOWED_PROTOCOLS_INSECURE
+          : CALDAV_ALLOWED_PROTOCOLS,
       });
-    }
+    } catch (error) {
+      if (error instanceof SsrfBlockedError) {
+        const reason = String(error.data?.reason ?? '');
 
-    if (addresses.some(item => isPrivateIp(item.address))) {
-      throw new GraphqlBadRequest({
-        code: 'caldav_private_network',
-        message: 'CalDAV host is in a private network.',
-      });
+        if (reason === 'blocked_ip') {
+          throw new GraphqlBadRequest({
+            code: 'caldav_private_network',
+            message: 'CalDAV host is in a private network.',
+          });
+        }
+
+        if (reason === 'unresolvable_hostname') {
+          throw new GraphqlBadRequest({
+            code: 'caldav_dns_failed',
+            message: 'Unable to resolve CalDAV host.',
+          });
+        }
+
+        if (reason === 'disallowed_protocol') {
+          throw new GraphqlBadRequest({
+            code: 'caldav_insecure_url',
+            message: 'CalDAV URL must use https.',
+          });
+        }
+
+        if (
+          reason === 'invalid_url' ||
+          reason === 'blocked_hostname' ||
+          reason === 'url_has_credentials'
+        ) {
+          throw new GraphqlBadRequest({
+            code: 'caldav_invalid_url',
+            message: 'CalDAV URL is invalid.',
+          });
+        }
+      }
+
+      throw error;
     }
   }
 }
