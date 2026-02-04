@@ -1,6 +1,7 @@
 import { CalDAVProvider } from './caldav';
 import { GoogleCalendarProvider } from './google';
 
+export { CalDAVProvider } from './caldav';
 export type {
   CalendarAccountProfile,
   CalendarProviderCalendar,
@@ -17,6 +18,5 @@ export { CalendarProviderName } from './def';
 export { CalendarProvider } from './def';
 export { CalendarProviderFactory } from './factory';
 export { CalendarSyncTokenInvalid, GoogleCalendarProvider } from './google';
-export { CalDAVProvider } from './caldav';
 
 export const CalendarProviders = [GoogleCalendarProvider, CalDAVProvider];

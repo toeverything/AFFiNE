@@ -5,8 +5,8 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { ConfigModule } from '../../../base/config';
 import { CryptoHelper, GraphqlBadRequest, Mutex } from '../../../base';
+import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { Models } from '../../../models';
 import { CalendarModule } from '..';
@@ -146,7 +146,9 @@ const calendarQueryResponse = `<?xml version="1.0" encoding="UTF-8"?>
   </response>
 </multistatus>`;
 
-const createCalDAVServer = async (options?: { syncCollectionStatus?: number }) => {
+const createCalDAVServer = async (options?: {
+  syncCollectionStatus?: number;
+}) => {
   const requests: Array<{ method: string; url: string; body: string }> = [];
   const server = createServer(async (req, res) => {
     const chunks: Buffer[] = [];

@@ -111,7 +111,9 @@ const splitHeaderTokens = (value: string) =>
     .map(token => token.trim())
     .filter(Boolean);
 
-const parseDigestChallenge = (header: string | null): DigestChallenge | null => {
+const parseDigestChallenge = (
+  header: string | null
+): DigestChallenge | null => {
   if (!header) {
     return null;
   }
@@ -163,7 +165,10 @@ const buildDigestAuthHeader = (params: {
 
   const ha1Raw = `${params.username}:${realm}:${params.password}`;
   const ha1 = isSess
-    ? hashString(algorithm, `${hashString(algorithm, ha1Raw)}:${nonce}:${cnonce}`)
+    ? hashString(
+        algorithm,
+        `${hashString(algorithm, ha1Raw)}:${nonce}:${cnonce}`
+      )
     : hashString(algorithm, ha1Raw);
   const ha2 = hashString(algorithm, `${params.method}:${params.uri}`);
 
@@ -225,7 +230,9 @@ const parseIcalDate = (value: string) => {
 };
 
 const parseIcalDateTime = (value: string) => {
-  const match = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z|[+-]\d{4})?$/);
+  const match = value.match(
+    /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z|[+-]\d{4})?$/
+  );
   if (!match) {
     return null;
   }
@@ -390,9 +397,7 @@ const parseIcalEvents = (params: {
       const start = dtstart
         ? parseIcalTime(dtstart.value, dtstart.params.TZID)
         : null;
-      const end = dtend
-        ? parseIcalTime(dtend.value, dtend.params.TZID)
-        : start;
+      const end = dtend ? parseIcalTime(dtend.value, dtend.params.TZID) : start;
       const originalStartTime = recurrenceId
         ? parseIcalTime(recurrenceId.value, recurrenceId.params.TZID)
         : undefined;
@@ -408,11 +413,12 @@ const parseIcalEvents = (params: {
           summary: summary ? unescapeIcalText(summary) : undefined,
           description: description ? unescapeIcalText(description) : undefined,
           location: location ? unescapeIcalText(location) : undefined,
-          updated: updated && updated instanceof Date
-            ? updated.toISOString()
-            : updated && 'date' in updated
-              ? `${updated.date}Z`
-              : undefined,
+          updated:
+            updated && updated instanceof Date
+              ? updated.toISOString()
+              : updated && 'date' in updated
+                ? `${updated.date}Z`
+                : undefined,
           recurringEventId: uid,
           originalStartTime: originalStartTime ?? undefined,
           start,
@@ -441,14 +447,17 @@ const parseIcalEvents = (params: {
     const namePart = line.slice(0, separatorIndex);
     const value = line.slice(separatorIndex + 1);
     const [rawName, ...paramParts] = namePart.split(';');
-    const lineParams = paramParts.reduce<Record<string, string>>((acc, part) => {
-      const [key, ...rest] = part.split('=');
-      if (!key) {
+    const lineParams = paramParts.reduce<Record<string, string>>(
+      (acc, part) => {
+        const [key, ...rest] = part.split('=');
+        if (!key) {
+          return acc;
+        }
+        acc[key] = rest.join('=');
         return acc;
-      }
-      acc[key] = rest.join('=');
-      return acc;
-    }, {});
+      },
+      {}
+    );
 
     pushProp(rawName, value, lineParams);
   }
@@ -559,7 +568,9 @@ const isAllowedHost = (host: string, allowedHosts: string[]) => {
       const suffix = normalized.slice(2);
       return normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`);
     }
-    return normalizedHost === normalized || normalizedHost.endsWith(`.${normalized}`);
+    return (
+      normalizedHost === normalized || normalizedHost.endsWith(`.${normalized}`)
+    );
   });
 };
 
@@ -579,14 +590,20 @@ class CalDAVRequestPolicy {
   }
 
   private get timeoutMs() {
-    return this.config.calendar.caldav.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+    return (
+      this.config.calendar.caldav.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS
+    );
   }
 
   private get maxRedirects() {
     return this.config.calendar.caldav.maxRedirects ?? DEFAULT_MAX_REDIRECTS;
   }
 
-  async fetch(url: string, init: RequestInit, redirects = 0): Promise<Response> {
+  async fetch(
+    url: string,
+    init: RequestInit,
+    redirects = 0
+  ): Promise<Response> {
     await this.assertAllowedUrl(url);
 
     const controller = new AbortController();
@@ -625,7 +642,10 @@ class CalDAVRequestPolicy {
       });
     }
 
-    if (url.protocol !== 'https:' && !(url.protocol === 'http:' && this.allowInsecureHttp)) {
+    if (
+      url.protocol !== 'https:' &&
+      !(url.protocol === 'http:' && this.allowInsecureHttp)
+    ) {
       throw new GraphqlBadRequest({
         code: 'caldav_insecure_url',
         message: 'CalDAV URL must use https.',
@@ -633,7 +653,10 @@ class CalDAVRequestPolicy {
     }
 
     const hostname = url.hostname.toLowerCase();
-    if (this.allowedHosts.length && !isAllowedHost(hostname, this.allowedHosts)) {
+    if (
+      this.allowedHosts.length &&
+      !isAllowedHost(hostname, this.allowedHosts)
+    ) {
       throw new GraphqlBadRequest({
         code: 'caldav_host_blocked',
         message: 'CalDAV host is not allowed.',
@@ -700,7 +723,8 @@ class CalDAVClient {
       if (this.preferredAuthType === 'digest') {
         return this.requestDigest(url, init);
       }
-      const authType = this.preferredAuthType === 'auto' ? 'basic' : this.preferredAuthType;
+      const authType =
+        this.preferredAuthType === 'auto' ? 'basic' : this.preferredAuthType;
       if (authType === 'basic') {
         headers.set(
           'Authorization',
@@ -835,6 +859,9 @@ export class CalDAVProvider extends CalendarProvider {
     return false;
   }
 
+  override watchCalendar = undefined;
+  override stopChannel = undefined;
+
   override getAuthUrl(): string {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -842,6 +869,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
+  // eslint-disable-next-line sonarjs/no-identical-functions
   override async exchangeCode(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -849,6 +877,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
+  // eslint-disable-next-line sonarjs/no-identical-functions
   override async refreshTokens(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -856,6 +885,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
+  // eslint-disable-next-line sonarjs/no-identical-functions
   override async getAccountProfile(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -868,17 +898,30 @@ export class CalDAVProvider extends CalendarProvider {
     username: string;
     password: string;
   }): Promise<CalDAVDiscoveryResult> {
-    const policy = new CalDAVRequestPolicy({ calendar: { caldav: this.config } });
+    const policy = new CalDAVRequestPolicy({
+      calendar: { caldav: this.config },
+    });
     const client = new CalDAVClient(
       policy,
       { username: params.username, password: params.password },
       params.preset.authType ?? 'auto'
     );
 
-    const discoveryUrl = await this.resolveDiscoveryUrl(client, params.preset.serverUrl);
-    const principalUrl = await this.fetchCurrentUserPrincipal(client, discoveryUrl);
-    const calendarHomeUrl = await this.fetchCalendarHomeSet(client, principalUrl, discoveryUrl);
-    const providerAccountId = principalUrl || `${params.username}@${new URL(discoveryUrl).hostname}`;
+    const discoveryUrl = await this.resolveDiscoveryUrl(
+      client,
+      params.preset.serverUrl
+    );
+    const principalUrl = await this.fetchCurrentUserPrincipal(
+      client,
+      discoveryUrl
+    );
+    const calendarHomeUrl = await this.fetchCalendarHomeSet(
+      client,
+      principalUrl,
+      discoveryUrl
+    );
+    const providerAccountId =
+      principalUrl || `${params.username}@${new URL(discoveryUrl).hostname}`;
 
     return {
       providerAccountId,
@@ -899,7 +942,9 @@ export class CalDAVProvider extends CalendarProvider {
       });
     }
 
-    const policy = new CalDAVRequestPolicy({ calendar: { caldav: this.config } });
+    const policy = new CalDAVRequestPolicy({
+      calendar: { caldav: this.config },
+    });
     const client = new CalDAVClient(
       policy,
       {
@@ -956,7 +1001,8 @@ export class CalDAVProvider extends CalendarProvider {
       calendars.push({
         id: resolveHref(href, url),
         summary: readText(prop?.displayname ?? null) ?? undefined,
-        timeZone: extractCalendarTimezone(prop?.['calendar-timezone']) ?? undefined,
+        timeZone:
+          extractCalendarTimezone(prop?.['calendar-timezone']) ?? undefined,
         colorId: readText(prop?.['calendar-color'] ?? null) ?? undefined,
       });
     }
@@ -974,7 +1020,9 @@ export class CalDAVProvider extends CalendarProvider {
       });
     }
 
-    const policy = new CalDAVRequestPolicy({ calendar: { caldav: this.config } });
+    const policy = new CalDAVRequestPolicy({
+      calendar: { caldav: this.config },
+    });
     const client = new CalDAVClient(
       policy,
       {
@@ -984,7 +1032,10 @@ export class CalDAVProvider extends CalendarProvider {
       (params.account.authType as CalendarCalDAVAuthType) ?? 'auto'
     );
 
-    const calendarUrl = resolveHref(params.calendarId, params.account.serverUrl);
+    const calendarUrl = resolveHref(
+      params.calendarId,
+      params.account.serverUrl
+    );
 
     if (params.syncToken) {
       try {
@@ -1000,7 +1051,12 @@ export class CalDAVProvider extends CalendarProvider {
       }
     }
 
-    return await this.calendarQuery(client, calendarUrl, params.timeMin, params.timeMax);
+    return await this.calendarQuery(
+      client,
+      calendarUrl,
+      params.timeMin,
+      params.timeMax
+    );
   }
 
   private shouldResetSyncToken(status: number) {
@@ -1023,7 +1079,10 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  private async fetchCurrentUserPrincipal(client: CalDAVClient, baseUrl: string) {
+  private async fetchCurrentUserPrincipal(
+    client: CalDAVClient,
+    baseUrl: string
+  ) {
     const body = `<?xml version="1.0" encoding="UTF-8"?>
 <D:propfind xmlns:D="DAV:">
   <D:prop>

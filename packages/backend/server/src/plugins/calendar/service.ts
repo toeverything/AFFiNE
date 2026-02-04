@@ -13,6 +13,7 @@ import {
   URLHelper,
 } from '../../base';
 import { Models } from '../../models';
+import type { CalendarCalDAVProviderPreset } from './config';
 import {
   CalendarProvider,
   CalendarProviderEvent,
@@ -21,7 +22,6 @@ import {
   CalendarSyncTokenInvalid,
 } from './providers';
 import { CalendarProviderFactory } from './providers';
-import type { CalendarCalDAVProviderPreset } from './config';
 
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const DEFAULT_PAST_DAYS = 90;
