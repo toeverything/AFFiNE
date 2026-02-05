@@ -953,8 +953,8 @@ export class InteractivityManager extends GfxExtension {
           true
         ) ?? currentHandlePos;
 
-        scaleX = xSign ? currentPos.x / (originalBound.w * xSign) : 1;
-        scaleY = ySign ? currentPos.y / (originalBound.h * ySign) : 1;
+        scaleX = handleSign.x ? snappedPos.x / (originalBound.w * handleSign.x) : 1;
+        scaleY = handleSign.y ? snappedPos.y / (originalBound.h * handleSign.y) : 1;
       }
 
       const suggested: { scaleX: number; scaleY: number; priority?: number }[] = [];
