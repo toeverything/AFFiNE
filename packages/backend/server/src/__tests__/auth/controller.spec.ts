@@ -264,6 +264,23 @@ test('should be able to sign out when duplicated csrf cookies exist', async t =>
   t.falsy(sessionRes.body.user);
 });
 
+test('should be able to sign out via GET /api/auth/sign-out (deprecated)', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app
+    .POST('/api/auth/sign-in')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  const res = await app.GET('/api/auth/sign-out').expect(200);
+  t.is(res.headers.deprecation, 'true');
+
+  const session = await currentUser(app);
+  t.falsy(session);
+});
+
 test('should reject sign out when csrf token mismatched', async t => {
   const { app } = t.context;
 

@@ -229,6 +229,29 @@ export class AuthController {
   }
 
   @Public()
+  /**
+   * @deprecated Kept for 0.25 clients that still call GET `/api/auth/sign-out`.
+   * Use POST `/api/auth/sign-out` instead.
+   */
+  @Get('/sign-out')
+  async signOutDeprecated(
+    @Res() res: Response,
+    @Session() session: Session | undefined,
+    @Query('user_id') userId: string | undefined
+  ) {
+    res.setHeader('Deprecation', 'true');
+
+    if (!session) {
+      res.status(HttpStatus.OK).send({});
+      return;
+    }
+
+    await this.auth.signOut(session.sessionId, userId);
+    await this.auth.refreshCookies(res, session.sessionId);
+
+    res.status(HttpStatus.OK).send({});
+  }
+
   @Post('/sign-out')
   async signOut(
     @Req() req: Request,
