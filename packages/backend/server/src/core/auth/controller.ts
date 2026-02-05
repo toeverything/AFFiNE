@@ -245,7 +245,10 @@ export class AuthController {
       | string
       | undefined;
     const csrfHeader = req.get('x-affine-csrf-token');
-    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    if (
+      csrfHeader && // optional for backward compatibility, drop after 0.25.0 outdated
+      (!csrfCookie || csrfCookie !== csrfHeader)
+    ) {
       throw new ActionForbidden();
     }
 

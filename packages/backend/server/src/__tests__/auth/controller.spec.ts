@@ -202,6 +202,68 @@ test('should be able to sign out', async t => {
   t.falsy(session);
 });
 
+test('should be able to sign out when csrf header is missing (compat)', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  const signInRes = await supertest(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  const cookies = parseCookies(signInRes);
+  const cookieHeader = Object.entries(cookies)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('; ');
+
+  await supertest(app.getHttpServer())
+    .post('/api/auth/sign-out')
+    .set('Cookie', cookieHeader)
+    .expect(200);
+
+  const sessionRes = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Cookie', cookieHeader)
+    .expect(200);
+
+  t.falsy(sessionRes.body.user);
+});
+
+test('should be able to sign out when duplicated csrf cookies exist', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  const signInRes = await supertest(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  const cookies = parseCookies(signInRes);
+  const csrf = cookies[AuthService.csrfCookieName];
+
+  const cookieHeader = [
+    `${AuthService.sessionCookieName}=${cookies[AuthService.sessionCookieName]}`,
+    `${AuthService.userCookieName}=${cookies[AuthService.userCookieName]}`,
+    `${AuthService.csrfCookieName}=${csrf}`,
+    `${AuthService.csrfCookieName}=${randomUUID()}`,
+  ].join('; ');
+
+  await supertest(app.getHttpServer())
+    .post('/api/auth/sign-out')
+    .set('Cookie', cookieHeader)
+    .set('x-affine-csrf-token', csrf)
+    .expect(200);
+
+  const sessionRes = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Cookie', cookieHeader)
+    .expect(200);
+
+  t.falsy(sessionRes.body.user);
+});
+
 test('should reject sign out when csrf token mismatched', async t => {
   const { app } = t.context;
 
