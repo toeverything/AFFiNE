@@ -252,6 +252,7 @@ export class AuthController {
     res.status(HttpStatus.OK).send({});
   }
 
+  @Public()
   @Post('/sign-out')
   async signOut(
     @Req() req: Request,
