@@ -947,14 +947,33 @@ export class InteractivityManager extends GfxExtension {
       let snappedPos = currentHandlePos;
       if (this.keyboard.shiftKey$.peek()) {
         // Snap resize handle if Shift is held
-        snappedPos = this.snapOverlay?.snapDragAngle(
-          originalBound.topLeft,
-          currentHandlePos,
-          true
-        ) ?? currentHandlePos;
+        // Compute fixed-corner anchor (same logic as getCoordsTransform)
+        const anchorWorld = new Point(
+          handleSign.x > 0 ? originalBound.left : originalBound.right,
+          handleSign.y > 0 ? originalBound.top : originalBound.bottom
+        );
+        
+        // Snap in world space using the correct anchor
+        snappedPos =
+          this.snapOverlay?.snapDragAngle(anchorWorld, currentHandlePos, true) ??
+          currentHandlePos;
+        
+        // Convert snapped position to local space
+        const snappedLocal = toLocal(snappedPos);
+        const anchorLocal = toLocal(anchorWorld);
+        
+        // Local delta relative to anchor
+        const deltaLocal = snappedLocal.sub(anchorLocal);
+        
+        // Compute scale using local delta (same as getScaleFromDelta)
+        scaleX = handleSign.x
+          ? (deltaLocal.x / originalBound.w) * handleSign.x
+          : 1;
+        
+        scaleY = handleSign.y
+          ? (deltaLocal.y / originalBound.h) * handleSign.y
+          : 1;
 
-        scaleX = handleSign.x ? snappedPos.x / (originalBound.w * handleSign.x) : 1;
-        scaleY = handleSign.y ? snappedPos.y / (originalBound.h * handleSign.y) : 1;
       }
 
       const suggested: { scaleX: number; scaleY: number; priority?: number }[] = [];
