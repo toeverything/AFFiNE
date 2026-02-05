@@ -117,8 +117,6 @@
     "socket.io": "^4.8.1",
     "stripe": "^17.7.0",
     "tldts": "^7.0.19",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
     "winston": "^3.17.0",
     "yjs": "^13.6.27",
     "zod": "^3.25.76"
@@ -154,6 +152,8 @@
     "sinon": "^21.0.1",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
     "why-is-node-running": "^3.2.2"
   },
   "nodemonConfig": {

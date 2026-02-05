@@ -8,6 +8,7 @@ const DEFAULT_APP_ROOT = path.resolve(SCRIPT_DIR, '..');
 const APP_ROOT = process.env.APP_ROOT ?? DEFAULT_APP_ROOT;
 const TARGETARCH = process.env.TARGETARCH ?? '';
 const TARGETVARIANT = process.env.TARGETVARIANT ?? '';
+const ALLOW_RUN = process.env.AFFINE_DOCKER_CLEAN === '1';
 const VERBOSE = process.env.AFFINE_DOCKER_CLEAN_VERBOSE === '1';
 
 function log(message) {
@@ -312,6 +313,11 @@ const targetKey = normalizeTargetKey(TARGETARCH, TARGETVARIANT);
 
 log(`root=${APP_ROOT} target=${targetKey || '(unknown)'}`);
 
+if (!ALLOW_RUN) {
+  log('skip (set AFFINE_DOCKER_CLEAN=1 to enable)');
+  process.exit(0);
+}
+
 const deletedStaticMaps = await deleteFilesByExtension(
   path.join(APP_ROOT, 'static'),
   '.map'
@@ -333,3 +339,17 @@ await pruneOptionalNativeDeps(
 );
 
 await prunePrismaEngines(APP_ROOT, targetKey);
+
+await Promise.all([
+  rmrf(path.join(APP_ROOT, 'node_modules', 'typescript')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'node_modules', 'ts-node')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'node_modules', '@types')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'src')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'scripts')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, '.gitignore')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, '.dockerignore')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, '.env.example')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'ava.config.js')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'tsconfig.json')).catch(() => {}),
+  rmrf(path.join(APP_ROOT, 'config.example.json')).catch(() => {}),
+]);
