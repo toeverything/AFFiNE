@@ -86,6 +86,29 @@ test('can create link', t => {
   );
 });
 
+test('addSimpleQuery should not double encode', t => {
+  t.is(
+    t.context.url.addSimpleQuery(
+      'https://app.affine.local/path',
+      'redirect_uri',
+      '/path'
+    ),
+    'https://app.affine.local/path?redirect_uri=%2Fpath'
+  );
+});
+
+test('addSimpleQuery should allow unescaped value when escape=false', t => {
+  t.is(
+    t.context.url.addSimpleQuery(
+      'https://app.affine.local/path',
+      'session_id',
+      '{CHECKOUT_SESSION_ID}',
+      false
+    ),
+    'https://app.affine.local/path?session_id={CHECKOUT_SESSION_ID}'
+  );
+});
+
 test('can validate callbackUrl allowlist', t => {
   t.true(t.context.url.isAllowedCallbackUrl('/magic-link'));
   t.true(

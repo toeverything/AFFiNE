@@ -1,13 +1,14 @@
-import { Controller, Get, HttpStatus, INestApplication } from '@nestjs/common';
+import { Controller, Get, HttpStatus } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import request from 'supertest';
 
+import { ConfigFactory } from '../../base';
 import { AuthModule, CurrentUser, Public, Session } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { Models } from '../../models';
-import { createTestingApp } from '../utils';
+import { createTestingApp, TestingApp } from '../utils';
 
 @Controller('/')
 class TestController {
@@ -29,14 +30,15 @@ class TestController {
 }
 
 const test = ava as TestFn<{
-  app: INestApplication;
+  app: TestingApp;
+  server: any;
+  auth: AuthService;
+  models: Models;
+  db: PrismaClient;
+  config: ConfigFactory;
+  u1: CurrentUser;
+  sessionId: string;
 }>;
-
-let server!: any;
-let auth!: AuthService;
-let u1!: CurrentUser;
-
-let sessionId = '';
 
 test.before(async t => {
   const app = await createTestingApp({
@@ -44,16 +46,30 @@ test.before(async t => {
     controllers: [TestController],
   });
 
-  auth = app.get(AuthService);
-  u1 = await auth.signUp('u1@affine.pro', '1');
-
-  const models = app.get(Models);
-  const session = await models.session.createSession();
-  sessionId = session.id;
-  await auth.createUserSession(u1.id, sessionId);
-
-  server = app.getHttpServer();
   t.context.app = app;
+  t.context.server = app.getHttpServer();
+  t.context.auth = app.get(AuthService);
+  t.context.models = app.get(Models);
+  t.context.db = app.get(PrismaClient);
+  t.context.config = app.get(ConfigFactory);
+});
+
+test.beforeEach(async t => {
+  Sinon.restore();
+  await t.context.app.initTestingDB();
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: false,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
+  const session = await t.context.models.session.createSession();
+  t.context.sessionId = session.id;
+  await t.context.auth.createUserSession(t.context.u1.id, t.context.sessionId);
 });
 
 test.after.always(async t => {
@@ -61,92 +77,95 @@ test.after.always(async t => {
 });
 
 test('should be able to visit public api if not signed in', async t => {
-  const res = await request(server).get('/public').expect(200);
+  const res = await request(t.context.server).get('/public').expect(200);
 
   t.is(res.body.user, undefined);
 });
 
 test('should be able to visit public api if signed in', async t => {
-  const res = await request(server)
+  const res = await request(t.context.server)
     .get('/public')
-    .set('Cookie', `${AuthService.sessionCookieName}=${sessionId}`)
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
     .expect(HttpStatus.OK);
 
-  t.is(res.body.user.id, u1.id);
+  t.is(res.body.user.id, t.context.u1.id);
 });
 
 test('should not be able to visit private api if not signed in', async t => {
-  await request(server).get('/private').expect(HttpStatus.UNAUTHORIZED).expect({
-    status: 401,
-    code: 'Unauthorized',
-    type: 'AUTHENTICATION_REQUIRED',
-    name: 'AUTHENTICATION_REQUIRED',
-    message: 'You must sign in first to access this resource.',
-  });
+  await request(t.context.server)
+    .get('/private')
+    .expect(HttpStatus.UNAUTHORIZED)
+    .expect({
+      status: 401,
+      code: 'Unauthorized',
+      type: 'AUTHENTICATION_REQUIRED',
+      name: 'AUTHENTICATION_REQUIRED',
+      message: 'You must sign in first to access this resource.',
+    });
 
   t.assert(true);
 });
 
 test('should be able to visit private api if signed in', async t => {
-  const res = await request(server)
+  const res = await request(t.context.server)
     .get('/private')
-    .set('Cookie', `${AuthService.sessionCookieName}=${sessionId}`)
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
     .expect(HttpStatus.OK);
 
-  t.is(res.body.user.id, u1.id);
+  t.is(res.body.user.id, t.context.u1.id);
 });
 
 test('should be able to visit private api with access token', async t => {
   const models = t.context.app.get(Models);
   const token = await models.accessToken.create({
-    userId: u1.id,
+    userId: t.context.u1.id,
     name: 'test',
   });
 
-  const res = await request(server)
+  const res = await request(t.context.server)
     .get('/private')
     .set('Authorization', `Bearer ${token.token}`)
     .expect(HttpStatus.OK);
 
-  t.is(res.body.user.id, u1.id);
+  t.is(res.body.user.id, t.context.u1.id);
 });
 
 test('should be able to parse session cookie', async t => {
-  const spy = Sinon.spy(auth, 'getUserSession');
-  await request(server)
+  const spy = Sinon.spy(t.context.auth, 'getUserSession');
+  await request(t.context.server)
     .get('/public')
-    .set('cookie', `${AuthService.sessionCookieName}=${sessionId}`)
+    .set('cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
     .expect(200);
 
-  t.deepEqual(spy.firstCall.args, [sessionId, undefined]);
+  t.deepEqual(spy.firstCall.args, [t.context.sessionId, undefined]);
   spy.restore();
 });
 
 test('should be able to parse bearer token', async t => {
-  const spy = Sinon.spy(auth, 'getUserSession');
+  const spy = Sinon.spy(t.context.auth, 'getUserSession');
 
-  await request(server)
+  await request(t.context.server)
     .get('/public')
-    .auth(sessionId, { type: 'bearer' })
+    .auth(t.context.sessionId, { type: 'bearer' })
     .expect(200);
 
-  t.deepEqual(spy.firstCall.args, [sessionId, undefined]);
+  t.deepEqual(spy.firstCall.args, [t.context.sessionId, undefined]);
   spy.restore();
 });
 
 test('should be able to refresh session if needed', async t => {
   await t.context.app.get(PrismaClient).userSession.updateMany({
     where: {
-      sessionId,
+      sessionId: t.context.sessionId,
     },
     data: {
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 /* expires in 1 hour */),
     },
   });
 
-  const res = await request(server)
+  const res = await request(t.context.server)
     .get('/session')
-    .set('cookie', `${AuthService.sessionCookieName}=${sessionId}`)
+    .set('cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
     .expect(200);
 
   const cookie = res
@@ -154,4 +173,102 @@ test('should be able to refresh session if needed', async t => {
     ?.find(c => c.startsWith(AuthService.sessionCookieName));
 
   t.truthy(cookie);
+});
+
+test('should record refresh client version when refreshed', async t => {
+  await t.context.db.userSession.updateMany({
+    where: { sessionId: t.context.sessionId },
+    data: {
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 /* expires in 1 hour */),
+    },
+  });
+
+  await request(t.context.server)
+    .get('/session')
+    .set('cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+    .set('x-affine-version', '0.25.2')
+    .expect(200);
+
+  const userSession = await t.context.db.userSession.findFirst({
+    where: { sessionId: t.context.sessionId, userId: t.context.u1.id },
+  });
+  t.is(userSession?.refreshClientVersion, '0.25.2');
+});
+
+test('should allow auth when header is missing but stored version is valid', async t => {
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  await t.context.db.userSession.updateMany({
+    where: { sessionId: t.context.sessionId },
+    data: { signInClientVersion: '0.25.0' },
+  });
+
+  const res = await request(t.context.server)
+    .get('/private')
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+    .expect(200);
+
+  t.is(res.body.user.id, t.context.u1.id);
+});
+
+test('should kick out unsupported client version on non-public handler', async t => {
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  const res = await request(t.context.server)
+    .get('/private')
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+    .set('x-affine-version', '0.24.0')
+    .expect(403);
+
+  const setCookies = res.get('Set-Cookie') ?? [];
+  t.true(
+    setCookies.some(c => c.startsWith(`${AuthService.sessionCookieName}=`))
+  );
+  t.true(setCookies.some(c => c.startsWith(`${AuthService.userCookieName}=`)));
+  t.true(setCookies.some(c => c.startsWith(`${AuthService.csrfCookieName}=`)));
+
+  const session = await t.context.db.session.findFirst({
+    where: { id: t.context.sessionId },
+  });
+  t.is(session, null);
+});
+
+test('should not block public handler when client version is unsupported', async t => {
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  const res = await request(t.context.server)
+    .get('/public')
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+    .set('x-affine-version', '0.24.0')
+    .expect(200);
+
+  t.is(res.body.user, undefined);
+
+  const setCookies = res.get('Set-Cookie') ?? [];
+  t.true(
+    setCookies.some(c => c.startsWith(`${AuthService.sessionCookieName}=`))
+  );
+  t.true(setCookies.some(c => c.startsWith(`${AuthService.userCookieName}=`)));
+  t.true(setCookies.some(c => c.startsWith(`${AuthService.csrfCookieName}=`)));
 });

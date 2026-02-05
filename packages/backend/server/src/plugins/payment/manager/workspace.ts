@@ -120,7 +120,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
         },
       },
       ...discounts,
-      success_url: this.url.link(params.successCallbackLink),
+      success_url: this.url.safeLink(params.successCallbackLink || '/'),
     });
   }
 

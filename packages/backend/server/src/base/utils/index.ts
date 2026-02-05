@@ -1,6 +1,7 @@
 export * from './duration';
 export * from './promise';
 export * from './request';
+export * from './request-tracker';
 export * from './ssrf';
 export * from './stream';
 export * from './types';

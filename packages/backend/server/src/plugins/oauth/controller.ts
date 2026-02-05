@@ -15,6 +15,7 @@ import type { Request, Response } from 'express';
 import {
   ActionForbidden,
   Config,
+  getClientVersionFromRequest,
   InvalidAuthState,
   InvalidOauthCallbackState,
   MissingOauthQueryParameter,
@@ -50,6 +51,7 @@ export class OAuthController {
   @Post('/preflight')
   @HttpCode(HttpStatus.OK)
   async preflight(
+    @Req() req: Request,
     @Body('provider') unknownProviderName?: keyof typeof OAuthProviderName,
     @Body('redirect_uri') redirectUri?: string,
     @Body('client') client?: string,
@@ -75,11 +77,13 @@ export class OAuthController {
       throw new ActionForbidden();
     }
 
+    const clientVersion = getClientVersionFromRequest(req);
     const state = await this.oauth.saveOAuthState({
       provider: providerName,
       redirectUri,
       client,
       clientNonce,
+      clientVersion,
       ...(pkce
         ? {
             pkce: {
@@ -220,7 +224,7 @@ export class OAuthController {
       tokens
     );
 
-    await this.auth.setCookies(req, res, user.id);
+    await this.auth.setCookies(req, res, user.id, state.clientVersion);
 
     if (
       state.provider === OAuthProviderName.Apple &&

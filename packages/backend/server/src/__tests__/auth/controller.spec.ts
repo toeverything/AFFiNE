@@ -53,6 +53,34 @@ test('should be able to sign in with credential', async t => {
   t.is(session?.id, u1.id);
 });
 
+test('should record sign in client version when header is provided', async t => {
+  const { app, db } = t.context;
+
+  const u1 = await app.createUser('u1@affine.pro');
+
+  await app
+    .POST('/api/auth/sign-in')
+    .set('x-affine-version', '0.25.1')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  const userSession1 = await db.userSession.findFirst({
+    where: { userId: u1.id },
+  });
+  t.is(userSession1?.signInClientVersion, '0.25.1');
+
+  // should not overwrite existing value with null/undefined
+  await app
+    .POST('/api/auth/sign-in')
+    .send({ email: u1.email, password: u1.password })
+    .expect(200);
+
+  const userSession2 = await db.userSession.findFirst({
+    where: { userId: u1.id },
+  });
+  t.is(userSession2?.signInClientVersion, '0.25.1');
+});
+
 test('should be able to sign in with email', async t => {
   const { app } = t.context;
 

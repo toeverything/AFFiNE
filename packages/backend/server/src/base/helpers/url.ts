@@ -109,7 +109,7 @@ export class URLHelper {
   ) {
     const urlObj = new URL(url);
     if (escape) {
-      urlObj.searchParams.set(key, encodeURIComponent(value));
+      urlObj.searchParams.set(key, String(value));
       return urlObj.toString();
     } else {
       const query =

@@ -83,11 +83,13 @@ model Session {
 }
 
 model UserSession {
-  id        String    @id @default(uuid()) @db.VarChar
-  sessionId String    @map("session_id") @db.VarChar
-  userId    String    @map("user_id") @db.VarChar
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                   String    @id @default(uuid()) @db.VarChar
+  sessionId            String    @map("session_id") @db.VarChar
+  userId               String    @map("user_id") @db.VarChar
+  expiresAt            DateTime? @map("expires_at") @db.Timestamptz(3)
+  signInClientVersion  String?   @map("sign_in_client_version") @db.VarChar
+  refreshClientVersion String?   @map("refresh_client_version") @db.VarChar
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

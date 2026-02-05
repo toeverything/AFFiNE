@@ -73,7 +73,7 @@ test('should passthrough if version check is not enabled', async t => {
   spy.restore();
 });
 
-test('should passthrough is version range is invalid', async t => {
+test('should enforce hard required version when version range is invalid', async t => {
   config.override({
     client: {
       versionControl: {
@@ -82,9 +82,17 @@ test('should passthrough is version range is invalid', async t => {
     },
   });
 
-  let res = await app.GET('/guarded/test').set('x-affine-version', 'invalid');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
 
   t.is(res.status, 200);
+
+  res = await app.GET('/guarded/test').set('x-affine-version', 'invalid');
+
+  t.is(res.status, 403);
+  t.is(
+    res.body.message,
+    'Unsupported client with version [invalid], required version is [>=0.25.0].'
+  );
 });
 
 test('should pass if client version is allowed', async t => {

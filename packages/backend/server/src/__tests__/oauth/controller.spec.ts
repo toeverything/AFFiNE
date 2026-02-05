@@ -6,7 +6,7 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { AppModule } from '../../app.module';
-import { URLHelper } from '../../base';
+import { ConfigFactory, URLHelper } from '../../base';
 import { ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
@@ -56,6 +56,14 @@ test.before(async t => {
 test.beforeEach(async t => {
   Sinon.restore();
   await t.context.app.initTestingDB();
+  t.context.app.get(ConfigFactory).override({
+    client: {
+      versionControl: {
+        enabled: false,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
   t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
 });
 
@@ -154,6 +162,56 @@ test('should be able to redirect to oauth provider with client_nonce', async t =
   t.is(state.client, 'affine');
   t.falsy(state.clientNonce);
   t.truthy(state.state);
+});
+
+test('should record sign in client version from oauth preflight state', async t => {
+  const { app, db } = t.context;
+
+  const config = app.get(ConfigFactory);
+  config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  const preflightRes = await app
+    .POST('/api/oauth/preflight')
+    .set('x-affine-version', '0.25.3')
+    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .expect(HttpStatus.OK);
+
+  const redirect = new URL(preflightRes.body.url as string);
+  const stateParam = redirect.searchParams.get('state');
+  t.truthy(stateParam);
+
+  // state should be a json string
+  const rawState = JSON.parse(stateParam!);
+
+  const provider = app.get(GoogleOAuthProvider);
+  Sinon.stub(provider, 'getToken').resolves({ accessToken: '1' });
+  Sinon.stub(provider, 'getUser').resolves({
+    id: '1',
+    email: 'oauth-version@affine.pro',
+    avatarUrl: 'avatar',
+  });
+
+  const callbackRes = await app
+    .POST('/api/oauth/callback')
+    .send({ code: '1', state: stateParam, client_nonce: 'test-nonce' })
+    .expect(HttpStatus.OK);
+
+  const userId = callbackRes.body.id as string;
+  t.truthy(userId);
+
+  const userSession = await db.userSession.findFirst({
+    where: { userId },
+  });
+  t.is(userSession?.signInClientVersion, '0.25.3');
+  t.is(userSession?.refreshClientVersion, null);
+  t.truthy(rawState.state);
 });
 
 test('should forbid preflight with untrusted redirect_uri', async t => {

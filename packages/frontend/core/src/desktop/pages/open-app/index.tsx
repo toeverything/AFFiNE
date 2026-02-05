@@ -1,5 +1,10 @@
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { AuthService } from '@affine/core/modules/cloud';
+import {
+  buildAuthenticationDeepLink,
+  buildOpenAppUrlRoute,
+  normalizeOpenAppSignInNextParam,
+} from '@affine/core/modules/open-in-app';
 import { OpenInAppPage } from '@affine/core/modules/open-in-app/views/open-in-app-page';
 import {
   appSchemaUrl,
@@ -7,8 +12,8 @@ import {
   channelToScheme,
 } from '@affine/core/utils/channel';
 import { useService } from '@toeverything/infra';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { AppContainer } from '../../components/app-container';
 
@@ -51,13 +56,16 @@ const OpenAppSignInRedirect = () => {
   const authService = useService(AuthService);
   const [params] = useSearchParams();
   const triggeredRef = useRef(false);
-  const [urlToOpen, setUrlToOpen] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const maybeScheme = appSchemes.safeParse(params.get('scheme'));
   const scheme = maybeScheme.success
     ? maybeScheme.data
     : channelToScheme[BUILD_CONFIG.appBuildType];
-  const next = params.get('next') || undefined;
+  const next = normalizeOpenAppSignInNextParam(
+    params.get('next'),
+    location.origin
+  );
 
   useEffect(() => {
     if (triggeredRef.current) {
@@ -68,23 +76,18 @@ const OpenAppSignInRedirect = () => {
     authService
       .createOpenAppSignInCode()
       .then(code => {
-        const authParams = new URLSearchParams();
-        authParams.set('method', 'open-app-signin');
-        authParams.set(
-          'payload',
-          JSON.stringify(next ? { code, next } : { code })
-        );
-        authParams.set('server', location.origin);
-        setUrlToOpen(`${scheme}://authentication?${authParams.toString()}`);
+        const urlToOpen = buildAuthenticationDeepLink({
+          scheme,
+          method: 'open-app-signin',
+          payload: next ? { code, next } : { code },
+          server: location.origin,
+        });
+        navigate(buildOpenAppUrlRoute(urlToOpen), { replace: true });
       })
       .catch(console.error);
-  }, [authService, next, scheme]);
+  }, [authService, navigate, next, scheme]);
 
-  if (!urlToOpen) {
-    return <AppContainer fallback />;
-  }
-
-  return <OpenInAppPage urlToOpen={urlToOpen} />;
+  return <AppContainer fallback />;
 };
 
 export const Component = () => {

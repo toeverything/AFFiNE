@@ -7,6 +7,7 @@ import type {
 import { Injectable, SetMetadata } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
+import semver from 'semver';
 import { Socket } from 'socket.io';
 
 import {
@@ -15,8 +16,10 @@ import {
   Cache,
   Config,
   CryptoHelper,
+  getClientVersionFromRequest,
   getRequestResponseFromContext,
   parseCookies,
+  UnsupportedClientVersion,
 } from '../../base';
 import { WEBSOCKET_OPTIONS } from '../../base/websocket';
 import { AuthService } from './service';
@@ -30,10 +33,13 @@ const INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
 @Injectable()
 export class AuthGuard implements CanActivate, OnModuleInit {
   private auth!: AuthService;
+  private readonly cachedVersionRange = new Map<string, semver.Range | null>();
+  private static readonly HARD_REQUIRED_VERSION = '>=0.25.0';
 
   constructor(
     private readonly crypto: CryptoHelper,
     private readonly cache: Cache,
+    private readonly config: Config,
     private readonly ref: ModuleRef,
     private readonly reflector: Reflector
   ) {}
@@ -78,13 +84,13 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       throw new AccessDenied('Invalid internal request');
     }
 
-    const authedUser = await this.signIn(req, res);
-
     // api is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(
       PUBLIC_ENTRYPOINT_SYMBOL,
       [clazz, handler]
     );
+
+    const authedUser = await this.signIn(req, res, isPublic);
 
     if (isPublic) {
       return true;
@@ -99,9 +105,10 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   async signIn(
     req: Request,
-    res?: Response
+    res?: Response,
+    isPublic = false
   ): Promise<Session | TokenSession | null> {
-    const userSession = await this.signInWithCookie(req, res);
+    const userSession = await this.signInWithCookie(req, res, isPublic);
     if (userSession) {
       return userSession;
     }
@@ -111,7 +118,8 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   async signInWithCookie(
     req: Request,
-    res?: Response
+    res?: Response,
+    isPublic = false
   ): Promise<Session | null> {
     if (req.session) {
       return req.session;
@@ -121,8 +129,38 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     const userSession = await this.auth.getUserSessionFromRequest(req, res);
 
     if (userSession) {
+      const headerClientVersion = getClientVersionFromRequest(req);
+      if (this.config.client.versionControl.enabled) {
+        const clientVersion =
+          headerClientVersion ??
+          userSession.session.refreshClientVersion ??
+          userSession.session.signInClientVersion;
+
+        const versionCheckResult = this.checkClientVersion(clientVersion);
+        if (!versionCheckResult.ok) {
+          await this.auth.signOut(userSession.session.sessionId);
+          if (res) {
+            await this.auth.refreshCookies(res, userSession.session.sessionId);
+          }
+
+          if (isPublic) {
+            return null;
+          }
+
+          throw new UnsupportedClientVersion({
+            clientVersion: clientVersion ?? 'unset_or_invalid',
+            requiredVersion: versionCheckResult.requiredVersion,
+          });
+        }
+      }
+
       if (res) {
-        await this.auth.refreshUserSessionIfNeeded(res, userSession.session);
+        await this.auth.refreshUserSessionIfNeeded(
+          res,
+          userSession.session,
+          undefined,
+          headerClientVersion
+        );
       }
 
       req.session = {
@@ -154,6 +192,59 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
     return null;
   }
+
+  private getVersionRange(versionRange: string): semver.Range | null {
+    if (this.cachedVersionRange.has(versionRange)) {
+      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return this.cachedVersionRange.get(versionRange)!;
+    }
+
+    let range: semver.Range | null = null;
+    try {
+      range = new semver.Range(versionRange, { loose: false });
+      if (!semver.validRange(range)) {
+        range = null;
+      }
+    } catch {
+      range = null;
+    }
+
+    this.cachedVersionRange.set(versionRange, range);
+    return range;
+  }
+
+  private checkClientVersion(
+    clientVersion?: string | null
+  ): { ok: true } | { ok: false; requiredVersion: string } {
+    const requiredVersion = this.config.client.versionControl.requiredVersion;
+
+    const configRange = this.getVersionRange(requiredVersion);
+    if (
+      configRange &&
+      (!clientVersion ||
+        !semver.satisfies(clientVersion, configRange, {
+          includePrerelease: true,
+        }))
+    ) {
+      return { ok: false, requiredVersion };
+    }
+
+    const hardRange = this.getVersionRange(AuthGuard.HARD_REQUIRED_VERSION);
+    if (!hardRange) {
+      return { ok: true };
+    }
+
+    if (
+      !clientVersion ||
+      !semver.satisfies(clientVersion, hardRange, {
+        includePrerelease: true,
+      })
+    ) {
+      return { ok: false, requiredVersion: AuthGuard.HARD_REQUIRED_VERSION };
+    }
+
+    return { ok: true };
+  }
 }
 
 /**
@@ -184,7 +275,13 @@ export const AuthWebsocketOptionsProvider: FactoryProvider = {
           ...upgradeReq.cookies,
         };
 
-        const session = await guard.signIn(upgradeReq);
+        const session = await (async () => {
+          try {
+            return await guard.signIn(upgradeReq);
+          } catch {
+            return null;
+          }
+        })();
 
         return !!session;
       },

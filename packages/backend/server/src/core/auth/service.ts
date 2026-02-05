@@ -4,7 +4,11 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, SignUpForbidden } from '../../base';
+import {
+  Config,
+  getClientVersionFromRequest,
+  SignUpForbidden,
+} from '../../base';
 import { Models, type User, type UserSession } from '../../models';
 import { Mailer } from '../mail/mailer';
 import { createDevUsers } from './dev';
@@ -130,11 +134,17 @@ export class AuthService implements OnApplicationBootstrap {
     return await this.models.session.findUserSessionsBySessionId(sessionId);
   }
 
-  async createUserSession(userId: string, sessionId?: string, ttl?: number) {
+  async createUserSession(
+    userId: string,
+    sessionId?: string,
+    ttl?: number,
+    signInClientVersion?: string
+  ) {
     return await this.models.session.createOrRefreshUserSession(
       userId,
       sessionId,
-      ttl
+      ttl,
+      signInClientVersion
     );
   }
 
@@ -159,11 +169,13 @@ export class AuthService implements OnApplicationBootstrap {
   async refreshUserSessionIfNeeded(
     res: Response,
     userSession: UserSession,
-    ttr?: number
+    ttr?: number,
+    refreshClientVersion?: string
   ): Promise<boolean> {
     const newExpiresAt = await this.models.session.refreshUserSessionIfNeeded(
       userSession,
-      ttr
+      ttr,
+      refreshClientVersion
     );
     if (!newExpiresAt) {
       // no need to refresh
@@ -205,10 +217,22 @@ export class AuthService implements OnApplicationBootstrap {
     };
   }
 
-  async setCookies(req: Request, res: Response, userId: string) {
+  async setCookies(
+    req: Request,
+    res: Response,
+    userId: string,
+    clientVersion?: string
+  ) {
     const { sessionId } = this.getSessionOptionsFromRequest(req);
 
-    const userSession = await this.createUserSession(userId, sessionId);
+    const signInClientVersion =
+      clientVersion ?? getClientVersionFromRequest(req);
+    const userSession = await this.createUserSession(
+      userId,
+      sessionId,
+      undefined,
+      signInClientVersion
+    );
 
     res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
       ...this.cookieOptions,
