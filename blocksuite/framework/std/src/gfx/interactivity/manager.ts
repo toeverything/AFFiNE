@@ -561,10 +561,10 @@ export class InteractivityManager extends GfxExtension {
       const snappedAngle = this.keyboard.shiftKey$.peek()
         ? this.snapOverlay?.snapRotateAngle(baseAngle) ?? baseAngle
         : baseAngle;
-
+      const snappedDelta = snappedAngle - initialRotate;
       options.onRotateUpdate?.({
         currentAngle: snappedAngle,
-        delta: payload.delta,
+        delta: snappedDelta,
       });
 
       payload.data.forEach(
@@ -982,9 +982,9 @@ export class InteractivityManager extends GfxExtension {
     },
     onResizeStart: ({ handleSign, handlePos, data }) => {
       this.activeInteraction$.value = { type: 'resize', elements };
-      extensionHandlers.forEach(ext =>
-        ext.onResizeStart?.({ elements, handle, handlePos, handleSign })
-      );
+      extensionHandlers.forEach(ext => {
+        ext.onResizeStart?.({ elements, handle, handlePos, handleSign });
+      });
       options.onResizeStart?.();
       data.forEach(({ model }) => {
         if (!viewConfigMap.has(model.id)) return;
@@ -1027,9 +1027,9 @@ export class InteractivityManager extends GfxExtension {
     },
     onResizeEnd: ({ handleSign, handlePos, data }) => {
       this.activeInteraction$.value = null;
-      extensionHandlers.forEach(ext =>
-        ext.onResizeEnd?.({ elements, handle, handlePos, handleSign })
-      );
+      extensionHandlers.forEach(ext => {
+       ext.onResizeEnd?.({ elements, handle, handlePos, handleSign });
+     });
       options.onResizeEnd?.();
       this.std.store.transact(() => {
         data.forEach(({ model }) => {
