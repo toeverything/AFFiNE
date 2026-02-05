@@ -89,12 +89,30 @@ export async function clickLocatorByRatio(
   locator: Locator,
   { xRatio = 0.5, yRatio = 0.5 } = {}
 ) {
-  await expect(locator).toBeVisible();
-  const box = await locator.boundingBox();
-  if (!box) throw new Error(`error getting locator's bounding box`);
+  const box = await getLocatorBox(locator);
 
   await page.mouse.click(
     box.x + box.width * xRatio,
     box.y + box.height * yRatio
   );
+}
+
+export async function dblclickLocatorByRatio(
+  page: Page,
+  locator: Locator,
+  { xRatio = 0.5, yRatio = 0.5 } = {}
+) {
+  const box = await getLocatorBox(locator);
+
+  await page.mouse.dblclick(
+    box.x + box.width * xRatio,
+    box.y + box.height * yRatio
+  );
+}
+
+async function getLocatorBox(locator: Locator) {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`error getting locator's bounding box`);
+  return box;
 }
