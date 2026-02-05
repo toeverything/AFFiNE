@@ -959,12 +959,18 @@ export class InteractivityManager extends GfxExtension {
           currentHandlePos;
         
         // Convert snapped position to local space
-        const snappedLocal = toLocal(snappedPos);
-        const anchorLocal = toLocal(anchorWorld);
+       // Convert world-space points into local space using the resize transform
+        const invMatrix = matrix.clone().invert();
         
-        // Local delta relative to anchor
+        const snappedLocal = Point.from(
+          invMatrix.apply([snappedPos.x, snappedPos.y])
+        );
+        
+        const anchorLocal = Point.from(
+          invMatrix.apply([anchorWorld.x, anchorWorld.y])
+        );
+        
         const deltaLocal = snappedLocal.sub(anchorLocal);
-        
         // Compute scale using local delta (same as getScaleFromDelta)
         scaleX = handleSign.x
           ? (deltaLocal.x / originalBound.w) * handleSign.x
