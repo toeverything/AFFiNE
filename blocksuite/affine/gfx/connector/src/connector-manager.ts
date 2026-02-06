@@ -1447,6 +1447,9 @@ export class ConnectorPathGenerator extends PathGenerator {
 
     let currentPoint = startPoint;
 
+    // Small tolerance to avoid creating micro-segments from tiny float drift.
+    const axisEpsilon = 0.5;
+
     waypoints.forEach(wp => {
       // Create orthogonal path from current point to waypoint
       // We need to determine if we should go horizontal-then-vertical
@@ -1458,14 +1461,28 @@ export class ConnectorPathGenerator extends PathGenerator {
       // For the first segment from start, prefer to exit based on start bound
       // For subsequent segments, alternate based on previous direction
 
-      if (Math.abs(dx) > 0.001 && Math.abs(dy) > 0.001) {
+      // If both axes move beyond tolerance, add an elbow.
+      if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
         // Need a turn - add intermediate point
         // Go horizontal first, then vertical
         const intermediate = new PointLocation([wp[0], currentPoint[1]]);
         fullPath.push(intermediate);
       }
 
-      const wpPoint = new PointLocation(wp);
+      // Snap near-aligned points to avoid tiny segments.
+      const snappedWp: IVec = [
+        Math.abs(dx) <= axisEpsilon ? currentPoint[0] : wp[0],
+        Math.abs(dy) <= axisEpsilon ? currentPoint[1] : wp[1],
+      ];
+      // If snapping collapses the point, skip it.
+      if (
+        Math.abs(snappedWp[0] - currentPoint[0]) <= axisEpsilon &&
+        Math.abs(snappedWp[1] - currentPoint[1]) <= axisEpsilon
+      ) {
+        return;
+      }
+
+      const wpPoint = new PointLocation(snappedWp);
       fullPath.push(wpPoint);
       currentPoint = wpPoint;
     });
@@ -1475,7 +1492,7 @@ export class ConnectorPathGenerator extends PathGenerator {
     const dx = endPoint[0] - lastPoint[0];
     const dy = endPoint[1] - lastPoint[1];
 
-    if (Math.abs(dx) > 0.001 && Math.abs(dy) > 0.001) {
+    if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
       // Need a turn to reach end - add intermediate point
       // Go horizontal first to align X, then vertical
       const intermediate = new PointLocation([endPoint[0], lastPoint[1]]);
