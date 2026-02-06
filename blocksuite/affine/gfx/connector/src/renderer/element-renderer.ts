@@ -193,12 +193,38 @@ function renderPoints(
       const radius = cornerRadius ?? DEFAULT_CONNECTOR_CORNER_RADIUS;
       ctx.moveTo(points[0][0], points[0][1]);
       for (let i = 1; i < points.length - 1; i++) {
-        const _prev = points[i - 1];
+        const prev = points[i - 1];
         const curr = points[i];
         const next = points[i + 1];
-        // Use arcTo to create rounded corner (prev point is implicit in current path position)
-        void _prev; // Mark as intentionally unused
-        ctx.arcTo(curr[0], curr[1], next[0], next[1], radius);
+        const len1 = Math.hypot(curr[0] - prev[0], curr[1] - prev[1]);
+        const len2 = Math.hypot(next[0] - curr[0], next[1] - curr[1]);
+
+        if (len1 < 0.001 || len2 < 0.001) {
+          ctx.lineTo(curr[0], curr[1]);
+          continue;
+        }
+
+        const r = Math.min(radius, len1 / 2, len2 / 2);
+        const v1x = (curr[0] - prev[0]) / len1;
+        const v1y = (curr[1] - prev[1]) / len1;
+        const v2x = (next[0] - curr[0]) / len2;
+        const v2y = (next[1] - curr[1]) / len2;
+        const startX = curr[0] - v1x * r;
+        const startY = curr[1] - v1y * r;
+        const endX = curr[0] + v2x * r;
+        const endY = curr[1] + v2y * r;
+
+        // Draw to the start of the corner rounding.
+        ctx.lineTo(startX, startY);
+
+        if (r < radius) {
+          // When the segments are too short for a circular arc, use a
+          // quadratic spline to keep the corner smooth and consistent.
+          ctx.quadraticCurveTo(curr[0], curr[1], endX, endY);
+        } else {
+          // Use arcTo to create a circular rounded corner.
+          ctx.arcTo(curr[0], curr[1], next[0], next[1], r);
+        }
       }
       // Line to the last point
       const lastPoint = points[points.length - 1];
