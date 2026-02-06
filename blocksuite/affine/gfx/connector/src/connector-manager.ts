@@ -1465,7 +1465,7 @@ export class ConnectorPathGenerator extends PathGenerator {
     // Small tolerance to avoid creating micro-segments from tiny float drift.
     const axisEpsilon = 0.5;
 
-    waypoints.forEach(wp => {
+    waypoints.forEach((wp, index) => {
       // Create orthogonal path from current point to waypoint
       // We need to determine if we should go horizontal-then-vertical
       // or vertical-then-horizontal based on the direction
@@ -1473,8 +1473,24 @@ export class ConnectorPathGenerator extends PathGenerator {
       const dx = wp[0] - currentPoint[0];
       const dy = wp[1] - currentPoint[1];
 
+      const prevWaypoint = index > 0 ? waypoints[index - 1] : null;
+      const isDuplicateWaypoint =
+        prevWaypoint &&
+        Math.abs(prevWaypoint[0] - wp[0]) <= axisEpsilon &&
+        Math.abs(prevWaypoint[1] - wp[1]) <= axisEpsilon;
+
       // For the first segment from start, prefer to exit based on start bound
       // For subsequent segments, alternate based on previous direction
+
+      // Preserve explicit duplicate waypoints to create a zero-length segment.
+      if (
+        isDuplicateWaypoint &&
+        Math.abs(dx) <= axisEpsilon &&
+        Math.abs(dy) <= axisEpsilon
+      ) {
+        fullPath.push(new PointLocation([currentPoint[0], currentPoint[1]]));
+        return;
+      }
 
       // If both axes move beyond tolerance, add an elbow.
       if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {

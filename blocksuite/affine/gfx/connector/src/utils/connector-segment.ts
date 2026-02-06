@@ -148,15 +148,60 @@ export function parsePathToSegments(path: IVec[]): ConnectorSegment[] {
   const segments: ConnectorSegment[] = [];
   const totalSegments = path.length - 1;
 
+  const oppositeOrientation = (orientation: 'horizontal' | 'vertical') =>
+    orientation === 'horizontal' ? 'vertical' : 'horizontal';
+
+  const resolveZeroLengthOrientation = (
+    index: number
+  ): 'horizontal' | 'vertical' => {
+    // Zero-length segments are used to represent a perpendicular handle
+    // when adding a waypoint. Infer orientation from neighbors.
+    const prevStart = index > 0 ? path[index - 1] : null;
+    const prevEnd = index > 0 ? path[index] : null;
+    const nextStart = index + 1 < path.length - 1 ? path[index + 1] : null;
+    const nextEnd = index + 2 < path.length ? path[index + 2] : null;
+
+    const prevOrientation =
+      prevStart && prevEnd && distance(prevStart, prevEnd) >= EPSILON
+        ? determineOrientation(prevStart, prevEnd)
+        : null;
+    const nextOrientation =
+      nextStart && nextEnd && distance(nextStart, nextEnd) >= EPSILON
+        ? determineOrientation(nextStart, nextEnd)
+        : null;
+
+    if (prevOrientation && nextOrientation) {
+      return prevOrientation === nextOrientation
+        ? oppositeOrientation(prevOrientation)
+        : prevOrientation;
+    }
+
+    if (prevOrientation) {
+      return oppositeOrientation(prevOrientation);
+    }
+
+    if (nextOrientation) {
+      return oppositeOrientation(nextOrientation);
+    }
+
+    // Fall back to horizontal to match default orientation behavior.
+    return 'horizontal';
+  };
+
   for (let i = 0; i < totalSegments; i++) {
     const start = path[i];
     const end = path[i + 1];
     const segmentLength = distance(start, end);
 
+    const orientation =
+      segmentLength < EPSILON
+        ? resolveZeroLengthOrientation(i)
+        : determineOrientation(start, end);
+
     const segment: ConnectorSegment = {
       start: [start[0], start[1]],
       end: [end[0], end[1]],
-      orientation: determineOrientation(start, end),
+      orientation,
       length: segmentLength,
       midpoint: midpoint(start, end),
       type: determineTailOrMovable(i, totalSegments, segmentLength),
