@@ -96,7 +96,10 @@ export const connectorWatcher: SurfaceMiddleware = (
       if (
         'type' in element &&
         element.type === 'connector' &&
-        (props['mode'] !== undefined || props['target'] || props['source'])
+        (props['mode'] !== undefined ||
+          props['target'] ||
+          props['source'] ||
+          props['waypoints'] !== undefined)
       ) {
         addToUpdateList(element as ConnectorElementModel);
       }
