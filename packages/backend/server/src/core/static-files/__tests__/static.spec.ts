@@ -163,6 +163,26 @@ test.serial('uses mobile root only in dev namespace for mobile UA', async t => {
 
     const webAssetRes = await request(app).get('/assets/main.js').expect(200);
     t.is(webAssetRes.text, 'web-asset');
+
+    const mobileFromHint = await request(app)
+      .get('/assets/main.js')
+      .set('user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+      .set('sec-ch-ua-mobile', '?1')
+      .expect(200);
+    t.is(mobileFromHint.text, 'mobile-asset');
+
+    const desktopFromHint = await request(app)
+      .get('/assets/main.js')
+      .set('user-agent', mobileUA)
+      .set('sec-ch-ua-mobile', '?0')
+      .expect(200);
+    t.is(desktopFromHint.text, 'web-asset');
+
+    const mobileFromPlatformHint = await request(app)
+      .get('/assets/main.js')
+      .set('sec-ch-ua-platform', '"Android"')
+      .expect(200);
+    t.is(mobileFromPlatformHint.text, 'mobile-asset');
   } finally {
     // @ts-expect-error test override
     env.projectRoot = prevProjectRoot;
