@@ -55,7 +55,12 @@ export function triangle(
       {
         seed,
         roughness: shapeStyle === 'Scribbled' ? roughness : 0,
-        strokeLineDash: strokeStyle === 'dash' ? [12, 12] : undefined,
+        strokeLineDash:
+          strokeStyle === 'dash'
+            ? [12, 12]
+            : strokeStyle === 'dot'
+              ? [Math.max(1, strokeWidth), strokeWidth * 2.5]
+              : undefined,
         stroke: strokeStyle === 'none' ? 'none' : strokeColor,
         strokeWidth,
         fill: filled ? fillColor : undefined,

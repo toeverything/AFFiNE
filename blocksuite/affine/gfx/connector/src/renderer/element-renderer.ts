@@ -20,6 +20,7 @@ import {
   type JumpStyle,
   type LocalConnectorElementModel,
   type PointStyle,
+  StrokeStyle,
 } from '@blocksuite/affine-model';
 import {
   getBezierParameters,
@@ -90,7 +91,7 @@ export const connector: ElementRenderer<
     ctx,
     rc,
     points,
-    strokeStyle === 'dash',
+    strokeStyle,
     mode === ConnectorMode.Curve,
     mode === ConnectorMode.Rounded,
     strokeColor
@@ -136,7 +137,7 @@ function renderPoints(
   ctx: CanvasRenderingContext2D,
   rc: RoughCanvas,
   points: PointLocation[],
-  dash: boolean,
+  strokeStyle: StrokeStyle,
   curve: boolean,
   rounded: boolean,
   stroke: string
@@ -158,7 +159,12 @@ function renderPoints(
       seed,
       roughness,
       stroke,
-      strokeLineDash: dash ? [12, 12] : undefined,
+      strokeLineDash:
+        strokeStyle === StrokeStyle.Dash
+          ? [12, 12]
+          : strokeStyle === StrokeStyle.Dot
+            ? [0, strokeWidth * 2.5]
+            : undefined,
       strokeWidth,
     };
     if (curve) {
@@ -177,7 +183,13 @@ function renderPoints(
     ctx.lineWidth = strokeWidth;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    dash && ctx.setLineDash([12, 12]);
+    if (strokeStyle === StrokeStyle.Dash) {
+      ctx.setLineDash([12, 12]);
+    } else if (strokeStyle === StrokeStyle.Dot) {
+      ctx.setLineDash([0, strokeWidth * 2.5]);
+    } else {
+      ctx.setLineDash([]);
+    }
     ctx.beginPath();
     if (curve) {
       points.forEach((point, index) => {

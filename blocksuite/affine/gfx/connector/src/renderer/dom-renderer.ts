@@ -380,6 +380,9 @@ export const connectorBaseDomRenderer = (
   // Apply stroke style
   if (strokeStyle === 'dash') {
     pathElement.setAttribute('stroke-dasharray', '12,12');
+  } else if (strokeStyle === 'dot') {
+    const gap = strokeWidth * 2.5;
+    pathElement.setAttribute('stroke-dasharray', `0, ${gap}`);
   }
 
   // Apply markers
