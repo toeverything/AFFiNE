@@ -11,10 +11,12 @@ import {
   EdgelessCRUDIdentifier,
   getSurfaceComponent,
 } from '@blocksuite/affine-block-surface';
+import { ConnectorPathGenerator } from '@blocksuite/affine-gfx-connector';
 import { createGroupFromSelectedCommand } from '@blocksuite/affine-gfx-group';
 import {
   AttachmentBlockModel,
   BookmarkBlockModel,
+  ConnectorElementModel,
   EmbedLinkedDocBlockSchema,
   EmbedLinkedDocModel,
   EmbedSyncedDocBlockSchema,
@@ -39,6 +41,7 @@ import {
   ArrowDownBigIcon,
   ArrowUpBigIcon,
   ArrowUpBigTopIcon,
+  BanIcon,
   CopyIcon,
   DeleteIcon,
   DuplicateIcon,
@@ -372,6 +375,49 @@ export const moreActions = [
     ],
   },
 
+  // Connector Waypoints Group
+  {
+    id: 'd.waypoints',
+    actions: [
+      {
+        id: 'a.clear-waypoints',
+        label: 'Clear waypoints',
+        icon: BanIcon(),
+        when(ctx) {
+          const models = ctx.getSurfaceModels();
+          if (models.length !== 1) return false;
+          return ctx.matchModel(models[0], ConnectorElementModel);
+        },
+        run(ctx) {
+          const models = ctx.getSurfaceModels();
+          if (models.length !== 1) return;
+
+          const model = models[0];
+          if (!ctx.matchModel(model, ConnectorElementModel)) return;
+
+          ctx.store.transact(() => {
+            ctx.store.captureSync();
+            (model as ConnectorElementModel).waypoints = undefined;
+          });
+          ConnectorPathGenerator.updatePath(
+            model as ConnectorElementModel,
+            null,
+            id =>
+              ctx.gfx.surface?.getElementById(id) ??
+              (ctx.std.store.getModelById(id) as GfxModel | null)
+          );
+          ctx.gfx.selection.set({ elements: [], editing: false });
+          queueMicrotask(() => {
+            ctx.gfx.selection.set({
+              elements: [model.id],
+              editing: false,
+            });
+          });
+        },
+      },
+    ],
+  },
+
   // Properties Group
   {
     id: 'd.z.properties',
@@ -389,12 +435,13 @@ export const moreActions = [
       const model = models[0];
 
       // Try multiple selectors to find the toolbar element
-      let toolbarElement =
+      const toolbarElement =
         document.querySelector('editor-toolbar') ||
         document.querySelector('affine-toolbar-widget') ||
         document.querySelector('[aria-label="More menu"]') ||
         document.querySelector('editor-menu-button');
 
+      let referenceElement: Element;
       // If still no element, use a virtual reference at the center of viewport
       if (!toolbarElement) {
         const virtualElement = {
@@ -409,14 +456,16 @@ export const moreActions = [
             bottom: 100,
           }),
         };
-        toolbarElement = virtualElement as any;
+        referenceElement = virtualElement as Element;
+      } else {
+        referenceElement = toolbarElement as Element;
       }
 
       // Create and show the properties modal
       const modal = new PropertiesModal();
       modal.host = ctx.host;
       modal.model = model;
-      modal.referenceElement = toolbarElement;
+      modal.referenceElement = referenceElement;
       modal.abortController = new AbortController();
 
       document.body.appendChild(modal);

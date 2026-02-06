@@ -1447,14 +1447,13 @@ export class ConnectorPathGenerator extends PathGenerator {
     const pointsEqual = (a: IVec | PointLocation, b: IVec | PointLocation) =>
       Math.abs(a[0] - b[0]) < 0.001 && Math.abs(a[1] - b[1]) < 0.001;
 
-    // Build path by connecting: start -> wp1 -> wp2 -> ... -> end
-    // Each waypoint represents a turn point in the orthogonal path
+    // Build path by connecting: start -> tail anchor -> wp1 -> ... -> tail anchor -> end
+    // Waypoints represent intermediate turn points; tail anchors preserve orientation.
 
     const fullPath: PointLocation[] = [startPoint];
 
-    // For orthogonal connectors, waypoints define the turn points
-    // We create a simple path that goes through each waypoint in order
-    // with orthogonal (horizontal/vertical) segments
+    // For orthogonal connectors, waypoints define the turn points.
+    // We build a path through them while keeping tail anchors perpendicular.
 
     const startAnchor = new PointLocation(nextStartPoint);
     if (!pointsEqual(startPoint, nextStartPoint)) {
@@ -1503,7 +1502,7 @@ export class ConnectorPathGenerator extends PathGenerator {
       currentPoint = wpPoint;
     });
 
-    // Final segment: last waypoint (or start) to end
+    // Final segment: last waypoint (or start anchor) to end anchor/end
     const endAnchor = new PointLocation(lastEndPoint);
     const lastPoint = fullPath[fullPath.length - 1];
     const dx = endAnchor[0] - lastPoint[0];
