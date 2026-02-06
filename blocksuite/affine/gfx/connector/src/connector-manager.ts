@@ -1436,6 +1436,17 @@ export class ConnectorPathGenerator extends PathGenerator {
     _endBound: Bound | null,
     waypoints: IVec[]
   ): PointLocation[] {
+    const [, , nextStartPoint, lastEndPoint] =
+      this._prepareOrthogonalConnectorInfo({
+        startPoint,
+        endPoint,
+        startBound: _startBound,
+        endBound: _endBound,
+      });
+
+    const pointsEqual = (a: IVec | PointLocation, b: IVec | PointLocation) =>
+      Math.abs(a[0] - b[0]) < 0.001 && Math.abs(a[1] - b[1]) < 0.001;
+
     // Build path by connecting: start -> wp1 -> wp2 -> ... -> end
     // Each waypoint represents a turn point in the orthogonal path
 
@@ -1445,7 +1456,12 @@ export class ConnectorPathGenerator extends PathGenerator {
     // We create a simple path that goes through each waypoint in order
     // with orthogonal (horizontal/vertical) segments
 
-    let currentPoint = startPoint;
+    const startAnchor = new PointLocation(nextStartPoint);
+    if (!pointsEqual(startPoint, nextStartPoint)) {
+      fullPath.push(startAnchor);
+    }
+
+    let currentPoint = startAnchor;
 
     // Small tolerance to avoid creating micro-segments from tiny float drift.
     const axisEpsilon = 0.5;
@@ -1488,18 +1504,25 @@ export class ConnectorPathGenerator extends PathGenerator {
     });
 
     // Final segment: last waypoint (or start) to end
+    const endAnchor = new PointLocation(lastEndPoint);
     const lastPoint = fullPath[fullPath.length - 1];
-    const dx = endPoint[0] - lastPoint[0];
-    const dy = endPoint[1] - lastPoint[1];
+    const dx = endAnchor[0] - lastPoint[0];
+    const dy = endAnchor[1] - lastPoint[1];
 
     if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
       // Need a turn to reach end - add intermediate point
       // Go horizontal first to align X, then vertical
-      const intermediate = new PointLocation([endPoint[0], lastPoint[1]]);
+      const intermediate = new PointLocation([endAnchor[0], lastPoint[1]]);
       fullPath.push(intermediate);
     }
 
-    fullPath.push(endPoint);
+    if (!pointsEqual(lastPoint, endAnchor)) {
+      fullPath.push(endAnchor);
+    }
+
+    if (!pointsEqual(endAnchor, endPoint)) {
+      fullPath.push(endPoint);
+    }
 
     return fullPath;
   }
