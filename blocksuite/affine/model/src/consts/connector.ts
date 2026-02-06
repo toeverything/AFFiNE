@@ -36,4 +36,5 @@ export enum ConnectorMode {
 
 export const DEFAULT_CONNECTOR_MODE = ConnectorMode.Curve;
 
+// Default radius used for rounded connectors.
 export const DEFAULT_CONNECTOR_CORNER_RADIUS = 20;

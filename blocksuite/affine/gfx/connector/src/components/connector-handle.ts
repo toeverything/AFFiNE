@@ -428,9 +428,9 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
     };
 
     // Parse path into segments for segment handles
-    // Only show segment handles for orthogonal (elbow) connectors
+    // Only show segment handles for orthogonal (elbow) and rounded connectors
     const showSegmentHandles =
-      mode === ConnectorMode.Orthogonal || mode === ConnectorMode.Curve;
+      mode === ConnectorMode.Orthogonal || mode === ConnectorMode.Rounded;
 
     let segmentHandles: TemplateResult | typeof nothing = nothing;
     // Show handles for paths with 2+ points (including simple 2-point lines)
