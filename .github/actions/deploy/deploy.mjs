@@ -38,24 +38,17 @@ const replicaConfig = {
     graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 1,
     doc: Number(process.env.BETA_DOC_REPLICA) || 1,
   },
-  canary: {
-    front: 1,
-    graphql: 1,
-    doc: 1,
-  },
+  canary: { front: 1, graphql: 1, doc: 1 },
 };
 
 const cpuConfig = {
-  beta: {
-    front: '2',
-    graphql: '1',
-    doc: '1',
-  },
-  canary: {
-    front: '2',
-    graphql: '1',
-    doc: '1',
-  },
+  beta: { front: '2', graphql: '1', doc: '1' },
+  canary: { front: '500m', graphql: '1', doc: '500m' },
+};
+
+const memoryConfig = {
+  beta: { front: '1Gi', graphql: '1Gi', doc: '1Gi' },
+  canary: { front: '512Mi', graphql: '512Mi', doc: '512Mi' },
 };
 
 const createHelmCommand = ({ isDryRun }) => {
@@ -97,13 +90,22 @@ const createHelmCommand = ({ isDryRun }) => {
   );
 
   const cpu = cpuConfig[buildType];
-  const resources = cpu
-    ? [
-        `--set        front.resources.requests.cpu="${cpu.front}"`,
-        `--set        graphql.resources.requests.cpu="${cpu.graphql}"`,
-        `--set        doc.resources.requests.cpu="${cpu.doc}"`,
-      ]
-    : [];
+  const memory = memoryConfig[buildType];
+  let resources = [];
+  if (cpu) {
+    resources = resources.concat([
+      `--set        front.resources.requests.cpu="${cpu.front}"`,
+      `--set        graphql.resources.requests.cpu="${cpu.graphql}"`,
+      `--set        doc.resources.requests.cpu="${cpu.doc}"`,
+    ]);
+  }
+  if (memory) {
+    resources = resources.concat([
+      `--set        front.resources.requests.memory="${memory.front}"`,
+      `--set        graphql.resources.requests.memory="${memory.graphql}"`,
+      `--set        doc.resources.requests.memory="${memory.doc}"`,
+    ]);
+  }
 
   const replica = replicaConfig[buildType] || replicaConfig.canary;
 
