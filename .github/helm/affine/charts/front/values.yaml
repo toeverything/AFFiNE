@@ -1,0 +1,60 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/toeverything/affine
+  pullPolicy: IfNotPresent
+  tag: ''
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+# map to NODE_ENV environment variable
+env: 'production'
+nodeOptions: '--max-old-space-size=3072'
+app:
+  # AFFINE_SERVER_PORT
+  port: 3010
+  # AFFINE_SERVER_SUB_PATH
+  path: ''
+  # AFFINE_SERVER_HOST
+  host: '0.0.0.0'
+  https: true
+serviceAccount:
+  create: true
+  annotations: {}
+  name: 'affine-front'
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+resources:
+  requests:
+    cpu: '2'
+    memory: 4Gi
+
+probe:
+  initialDelaySeconds: 20
+
+services:
+  sync:
+    name: affine-sync
+    type: ClusterIP
+    port: 3010
+    annotations:
+      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+  renderer:
+    name: affine-renderer
+    type: ClusterIP
+    port: 3000
+    annotations:
+      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+  web:
+    name: affine-web
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

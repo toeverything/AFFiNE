@@ -47,27 +47,27 @@ graphql:
     annotations:
       cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
 
-sync:
-  service:
-    type: ClusterIP
-    port: 3010
-    annotations:
-      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
-
-renderer:
-  service:
-    type: ClusterIP
-    port: 3000
-    annotations:
-      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
-
 doc:
   service:
     type: ClusterIP
     annotations:
       cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
 
-web:
-  service:
-    type: ClusterIP
-    port: 8080
+front:
+  services:
+    sync:
+      name: affine-sync
+      type: ClusterIP
+      port: 3010
+      annotations:
+        cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+    renderer:
+      name: affine-renderer
+      type: ClusterIP
+      port: 3000
+      annotations:
+        cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+    web:
+      name: affine-web
+      type: ClusterIP
+      port: 8080

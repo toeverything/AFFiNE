@@ -263,18 +263,7 @@ jobs:
         with:
           app-version: ${{ inputs.app-version }}
 
-      - name: Build front Dockerfile
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{inputs.build-type}}-${{ inputs.git-short-hash }}
-
-      - name: Build graphql Dockerfile
+      - name: Build backend Dockerfile
         uses: docker/build-push-action@v6
         with:
           context: .

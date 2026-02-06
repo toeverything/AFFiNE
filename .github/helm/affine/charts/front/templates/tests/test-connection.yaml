@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "sync.fullname" . }}-test-connection"
+  name: "{{ include "front.fullname" . }}-test-connection"
   labels:
-    {{- include "sync.labels" . | nindent 4 }}
+    {{- include "front.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
 spec:
@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "sync.fullname" . }}:{{ .Values.service.port }}']
+      args: ['{{ .Values.services.sync.name }}:{{ .Values.services.sync.port }}']
   restartPolicy: Never
