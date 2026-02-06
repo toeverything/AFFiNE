@@ -345,7 +345,6 @@ await Promise.all([
   rmrf(path.join(APP_ROOT, 'node_modules', 'ts-node')).catch(() => {}),
   rmrf(path.join(APP_ROOT, 'node_modules', '@types')).catch(() => {}),
   rmrf(path.join(APP_ROOT, 'src')).catch(() => {}),
-  rmrf(path.join(APP_ROOT, 'scripts')).catch(() => {}),
   rmrf(path.join(APP_ROOT, '.gitignore')).catch(() => {}),
   rmrf(path.join(APP_ROOT, '.dockerignore')).catch(() => {}),
   rmrf(path.join(APP_ROOT, '.env.example')).catch(() => {}),
