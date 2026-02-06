@@ -2,6 +2,7 @@ import test, { type ExecutionContext } from 'ava';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
 import { Doc, encodeStateAsUpdate } from 'yjs';
 
+import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../base';
 import { createTestingApp, TestingApp } from '../utils';
 
 type WebsocketResponse<T> =
@@ -9,6 +10,10 @@ type WebsocketResponse<T> =
   | { data: T };
 
 const WS_TIMEOUT_MS = 5_000;
+
+function makeCanaryDateVersion(date: Date, build = '015') {
+  return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
+}
 
 function unwrapResponse<T>(t: ExecutionContext, res: WebsocketResponse<T>): T {
   if ('data' in res) {
@@ -285,6 +290,83 @@ test('clientVersion>=0.26.0 should only receive space:broadcast-doc-updates', as
   }
 });
 
+test('canary date clientVersion should use sync-026 in canary namespace', async t => {
+  const prevNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+
+  try {
+    const { user, cookieHeader } = await login(app);
+    const spaceId = user.id;
+    const update = createYjsUpdateBase64();
+
+    const sender = createClient(url, cookieHeader);
+    const receiver = createClient(url, cookieHeader);
+
+    try {
+      await Promise.all([waitForConnect(sender), waitForConnect(receiver)]);
+
+      const receiverJoin = unwrapResponse(
+        t,
+        await emitWithAck<{ clientId: string; success: boolean }>(
+          receiver,
+          'space:join',
+          {
+            spaceType: 'userspace',
+            spaceId,
+            clientVersion: makeCanaryDateVersion(new Date(), '015'),
+          }
+        )
+      );
+      t.true(receiverJoin.success);
+
+      const senderJoin = unwrapResponse(
+        t,
+        await emitWithAck<{ clientId: string; success: boolean }>(
+          sender,
+          'space:join',
+          { spaceType: 'userspace', spaceId, clientVersion: '0.25.0' }
+        )
+      );
+      t.true(senderJoin.success);
+
+      const onUpdates = waitForEvent<{
+        spaceType: string;
+        spaceId: string;
+        docId: string;
+        updates: string[];
+      }>(receiver, 'space:broadcast-doc-updates');
+      const noUpdate = expectNoEvent(receiver, 'space:broadcast-doc-update');
+
+      const pushRes = await emitWithAck<{ accepted: true; timestamp?: number }>(
+        sender,
+        'space:push-doc-update',
+        {
+          spaceType: 'userspace',
+          spaceId,
+          docId: 'doc-canary',
+          update,
+        }
+      );
+      unwrapResponse(t, pushRes);
+
+      const message = await onUpdates;
+      t.is(message.spaceType, 'userspace');
+      t.is(message.spaceId, spaceId);
+      t.is(message.docId, 'doc-canary');
+      t.deepEqual(message.updates, [update]);
+
+      await noUpdate;
+    } finally {
+      sender.disconnect();
+      receiver.disconnect();
+    }
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = prevNamespace;
+  }
+});
+
 test('clientVersion<0.25.0 should be rejected and disconnected', async t => {
   const { user, cookieHeader } = await login(app);
   const spaceId = user.id;
@@ -306,6 +388,48 @@ test('clientVersion<0.25.0 should be rejected and disconnected', async t => {
     await waitForDisconnect(socket);
   } finally {
     socket.disconnect();
+  }
+});
+
+test('old canary date clientVersion should be rejected and disconnected in canary namespace', async t => {
+  const prevNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+
+  try {
+    const { user, cookieHeader } = await login(app);
+    const spaceId = user.id;
+
+    const socket = createClient(url, cookieHeader);
+    try {
+      await waitForConnect(socket);
+
+      const old = new Date(
+        Date.now() -
+          (CANARY_CLIENT_VERSION_MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000
+      );
+
+      const res = unwrapResponse(
+        t,
+        await emitWithAck<{ clientId: string; success: boolean }>(
+          socket,
+          'space:join',
+          {
+            spaceType: 'userspace',
+            spaceId,
+            clientVersion: makeCanaryDateVersion(old, '015'),
+          }
+        )
+      );
+      t.false(res.success);
+
+      await waitForDisconnect(socket);
+    } finally {
+      socket.disconnect();
+    }
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = prevNamespace;
   }
 });
 

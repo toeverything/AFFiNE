@@ -1,3 +1,4 @@
+export * from './client-version';
 export * from './duration';
 export * from './promise';
 export * from './request';

@@ -14,6 +14,7 @@ import {
   AccessDenied,
   AuthenticationRequired,
   Cache,
+  checkCanaryDateClientVersion,
   Config,
   CryptoHelper,
   getClientVersionFromRequest,
@@ -35,6 +36,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
   private auth!: AuthService;
   private readonly cachedVersionRange = new Map<string, semver.Range | null>();
   private static readonly HARD_REQUIRED_VERSION = '>=0.25.0';
+  private static readonly CANARY_REQUIRED_VERSION = 'canary (within 2 months)';
 
   constructor(
     private readonly crypto: CryptoHelper,
@@ -217,6 +219,15 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     clientVersion?: string | null
   ): { ok: true } | { ok: false; requiredVersion: string } {
     const requiredVersion = this.config.client.versionControl.requiredVersion;
+
+    if (clientVersion && env.namespaces.canary) {
+      const canaryCheck = checkCanaryDateClientVersion(clientVersion);
+      if (canaryCheck.matched) {
+        return canaryCheck.allowed
+          ? { ok: true }
+          : { ok: false, requiredVersion: AuthGuard.CANARY_REQUIRED_VERSION };
+      }
+    }
 
     const configRange = this.getVersionRange(requiredVersion);
     if (

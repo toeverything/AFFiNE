@@ -4,7 +4,7 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import request from 'supertest';
 
-import { ConfigFactory } from '../../base';
+import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, ConfigFactory } from '../../base';
 import { AuthModule, CurrentUser, Public, Session } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { Models } from '../../models';
@@ -27,6 +27,10 @@ class TestController {
   session(@Session() session: Session) {
     return session;
   }
+}
+
+function makeCanaryDateVersion(date: Date, build = '015') {
+  return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
 }
 
 const test = ava as TestFn<{
@@ -271,4 +275,69 @@ test('should not block public handler when client version is unsupported', async
   );
   t.true(setCookies.some(c => c.startsWith(`${AuthService.userCookieName}=`)));
   t.true(setCookies.some(c => c.startsWith(`${AuthService.csrfCookieName}=`)));
+});
+
+test('should allow recent canary date version in canary namespace', async t => {
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  const prevNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+
+  try {
+    const res = await request(t.context.server)
+      .get('/private')
+      .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+      .set('x-affine-version', makeCanaryDateVersion(new Date(), '015'))
+      .expect(200);
+
+    t.is(res.body.user.id, t.context.u1.id);
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = prevNamespace;
+  }
+});
+
+test('should kick out old canary date version in canary namespace', async t => {
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  const prevNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+
+  try {
+    const old = new Date(
+      Date.now() -
+        (CANARY_CLIENT_VERSION_MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000
+    );
+    const oldVersion = makeCanaryDateVersion(old, '015');
+
+    const res = await request(t.context.server)
+      .get('/private')
+      .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+      .set('x-affine-version', oldVersion)
+      .expect(403);
+
+    t.is(
+      res.body.message,
+      `Unsupported client with version [${oldVersion}], required version is [canary (within 2 months)].`
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = prevNamespace;
+  }
 });
