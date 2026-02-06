@@ -88,8 +88,13 @@ export function updateConnectorJumps(
 
     // Check against all other connectors
     for (const other of allConnectors) {
-      // Skip self and connectors with no jump style
-      if (other.id === connector.id || other.jumpStyle === 'none') {
+      // Skip self
+      if (other.id === connector.id) {
+        continue;
+      }
+
+      // Only jump over connectors below this one in z-order.
+      if (other.index >= connector.index) {
         continue;
       }
 

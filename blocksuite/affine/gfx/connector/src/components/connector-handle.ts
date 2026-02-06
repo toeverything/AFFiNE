@@ -24,6 +24,7 @@ import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import type { ConnectionOverlay } from '../connector-manager';
+import { updateConnectorJumps as calculateConnectorJumps } from '../jump-calculator';
 import {
   type ConnectorSegment,
   constrainDrag,
@@ -219,6 +220,23 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
       connector.updatingPath = true;
       connector.xywh = newBound.serialize();
       connector.path = newRelativePath;
+      // Update jump rendering during drag when enabled.
+      if (
+        connector.jumpStyle !== 'none' &&
+        connector.mode !== ConnectorMode.Curve
+      ) {
+        const allConnectors = this.gfx.surface?.getElementsByType(
+          'connector'
+        ) as ConnectorElementModel[] | undefined;
+        if (allConnectors) {
+          const routedPoints = calculateConnectorJumps(
+            connector,
+            allConnectors
+          );
+          connector.routedPoints =
+            routedPoints.length > 0 ? routedPoints : null;
+        }
+      }
       connector.updatingPath = false;
 
       // Update segments to use new relative coordinates for next iteration

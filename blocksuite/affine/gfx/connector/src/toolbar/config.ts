@@ -16,6 +16,7 @@ import {
   DEFAULT_FRONT_ENDPOINT_STYLE,
   DEFAULT_REAR_ENDPOINT_STYLE,
   DefaultTheme,
+  type JumpStyle,
   LineWidth,
   PointStyle,
   resolveColor,
@@ -55,7 +56,7 @@ import {
   StartPointTriangleIcon,
 } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
-import { html } from 'lit';
+import { html, svg } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { isConnectorWithLabel } from '../connector-manager';
@@ -130,6 +131,128 @@ const CONNECTOR_MODE_LIST = [
     icon: ConnectorLIcon(),
   },
 ] as const satisfies MenuItem<ConnectorMode>[];
+
+const JumpLineIcon = () => svg`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 10H8"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <path
+    d="M12 10H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <path
+    d="M10 6V14"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+const JumpNoneIcon = () => svg`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 10H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+const JumpArcIcon = () => svg`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 12C6 6 14 6 17 12"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+const JumpGapIcon = () => svg`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 10H8"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+  <path
+    d="M12 10H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+const JumpSharpIcon = () => svg`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 10H8V6H12V10H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+const JUMP_STYLE_LIST = [
+  {
+    key: 'None',
+    value: 'none',
+    icon: JumpNoneIcon(),
+  },
+  {
+    key: 'Arc',
+    value: 'arc',
+    icon: JumpArcIcon(),
+  },
+  {
+    key: 'Gap',
+    value: 'gap',
+    icon: JumpGapIcon(),
+  },
+  {
+    key: 'Sharp',
+    value: 'sharp',
+    icon: JumpSharpIcon(),
+  },
+  {
+    key: 'Line',
+    value: 'line',
+    icon: JumpLineIcon(),
+  },
+] as const satisfies MenuItem<JumpStyle>[];
 
 export const connectorToolbarConfig = {
   actions: [
@@ -333,6 +456,28 @@ export const connectorToolbarConfig = {
               tooltip: 'Connector shape',
               items: CONNECTOR_MODE_LIST,
               currentValue: mode,
+              onPick,
+            });
+          },
+        },
+        {
+          id: 'e.jump-style',
+          content(ctx) {
+            const models = ctx.getSurfaceModelsByType(ConnectorElementModel);
+            if (!models.length) return null;
+
+            const field = 'jumpStyle';
+            const jumpStyle =
+              getMostCommonValue(models, field) ?? ('none' as JumpStyle);
+            const onPick = (value: JumpStyle) => {
+              updateModelsWith(ctx, models, field, value);
+            };
+
+            return renderMenu({
+              label: 'Jump',
+              tooltip: 'Jump style',
+              items: JUMP_STYLE_LIST,
+              currentValue: jumpStyle,
               onPick,
             });
           },

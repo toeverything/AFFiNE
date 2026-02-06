@@ -17,6 +17,7 @@ import {
   ConnectorMode,
   DEFAULT_CONNECTOR_CORNER_RADIUS,
   DefaultTheme,
+  type JumpStyle,
   type LocalConnectorElementModel,
   type PointStyle,
 } from '@blocksuite/affine-model';
@@ -28,6 +29,7 @@ import { deltaInsertsToChunks } from '@blocksuite/std/inline';
 
 import { isConnectorWithLabel } from '../connector-manager';
 import {
+  createConnectorPathWithJumps,
   DEFAULT_ARROW_SIZE,
   getArrowOptions,
   renderArrow,
@@ -140,6 +142,11 @@ function renderPoints(
   stroke: string
 ) {
   const { seed, strokeWidth, roughness, rough } = model;
+  // jumpStyle and jumpSize only exist on ConnectorElementModel, not LocalConnectorElementModel
+  const jumpStyle: JumpStyle =
+    'jumpStyle' in model ? (model.jumpStyle as JumpStyle) : 'none';
+  const jumpSize: number =
+    'jumpSize' in model ? (model.jumpSize as number) : 10;
   // cornerRadius only exists on ConnectorElementModel, not LocalConnectorElementModel
   const cornerRadius: number =
     'cornerRadius' in model
@@ -188,6 +195,31 @@ function renderPoints(
           );
         }
       });
+    } else if (
+      !curve &&
+      jumpStyle !== 'none' &&
+      'routedPoints' in model &&
+      model.routedPoints &&
+      model.routedPoints.length > 0
+    ) {
+      // Jump rendering uses routed points (absolute). Convert to local coords.
+      const baseX = 'x' in model ? (model.x as number) : 0;
+      const baseY = 'y' in model ? (model.y as number) : 0;
+      const localRoutedPoints = model.routedPoints.map(pt => ({
+        type: pt.type,
+        x: pt.x - baseX,
+        y: pt.y - baseY,
+      }));
+      const pathData = createConnectorPathWithJumps(
+        localRoutedPoints,
+        jumpStyle,
+        jumpSize,
+        strokeWidth
+      );
+      ctx.stroke(new Path2D(pathData));
+      ctx.closePath();
+      ctx.restore();
+      return;
     } else if (rounded && points.length > 2) {
       // Render path with rounded corners at bend points
       const radius = cornerRadius ?? DEFAULT_CONNECTOR_CORNER_RADIUS;

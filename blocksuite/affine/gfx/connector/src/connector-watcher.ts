@@ -99,7 +99,8 @@ export const connectorWatcher: SurfaceMiddleware = (
         (props['mode'] !== undefined ||
           props['target'] ||
           props['source'] ||
-          props['waypoints'] !== undefined)
+          props['waypoints'] !== undefined ||
+          props['jumpStyle'] !== undefined)
       ) {
         addToUpdateList(element as ConnectorElementModel);
       }
@@ -114,11 +115,11 @@ export const connectorWatcher: SurfaceMiddleware = (
     }),
   ];
 
-  surface
-    .getElementsByType('connector')
-    .forEach(connector =>
-      updateConnectorPath(connector as ConnectorElementModel)
-    );
+  const initialConnectors = surface.getElementsByType(
+    'connector'
+  ) as ConnectorElementModel[];
+  initialConnectors.forEach(connector => updateConnectorPath(connector));
+  updateJumpsForConnectors(new Set(initialConnectors));
 
   return () => {
     disposables.forEach(d => d.unsubscribe());
