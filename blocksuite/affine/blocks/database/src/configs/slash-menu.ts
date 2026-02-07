@@ -9,7 +9,11 @@ import {
 } from '@blocksuite/icons/lit';
 
 import { insertDatabaseBlockCommand } from '../commands';
-import { KanbanViewTooltip, TableViewTooltip } from './tooltips';
+import {
+  ChartViewTooltip,
+  KanbanViewTooltip,
+  TableViewTooltip,
+} from './tooltips';
 
 export const databaseSlashMenuConfig: SlashMenuConfig = {
   disableWhen: ({ model }) => model.flavour === 'affine:database',
@@ -65,6 +69,38 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
           .pipe(getSelectedModelsCommand)
           .pipe(insertDatabaseBlockCommand, {
             viewType: viewPresets.kanbanViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .pipe(({ insertedDatabaseBlockId }) => {
+            if (insertedDatabaseBlockId) {
+              const telemetry = std.getOptional(TelemetryProvider);
+              telemetry?.track('BlockCreated', {
+                blockType: 'affine:database',
+              });
+            }
+          })
+          .run();
+      },
+    },
+    {
+      name: 'Chart View',
+      description: 'Display items as a chart.',
+      searchAlias: ['chart'],
+      icon: DatabaseKanbanViewIcon(),
+      tooltip: {
+        figure: ChartViewTooltip,
+        caption: 'Chart View',
+      },
+      group: '7_Database@4',
+      when: ({ model }) =>
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.chartViewMeta.type,
             place: 'after',
             removeEmptyLine: true,
           })

@@ -265,17 +265,15 @@ export class TableRowView extends SignalWatcher(
               </dv-table-view-cell-container>
               <div class="${cellDivider}"></div>
             </div>
-            ${!column.readonly$.value &&
-            column.view.mainProperties$.value.titleColumn === column.id
+            ${column.view.mainProperties$.value.titleColumn === column.id &&
+            !view.readonly$.value
               ? html`<div class="row-ops show-on-hover-row">
                   <div class="row-op" @click="${clickDetail}">
                     ${CenterPeekIcon()}
                   </div>
-                  ${!view.readonly$.value
-                    ? html`<div class="row-op" @click="${openMenu}">
-                        ${MoreHorizontalIcon()}
-                      </div>`
-                    : nothing}
+                  <div class="row-op" @click="${openMenu}">
+                    ${MoreHorizontalIcon()}
+                  </div>
                 </div>`
               : nothing}
           `;

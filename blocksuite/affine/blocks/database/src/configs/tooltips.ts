@@ -179,3 +179,25 @@ export const ToDoListTooltip = html`<svg width="170" height="68" viewBox="0 0 17
 </g>
 </svg>
 `;
+
+// prettier-ignore
+export const ChartViewTooltip = html`
+  <svg
+    aria-hidden="true"
+    role="graphics-symbol"
+    viewBox="0 0 20 20"
+    class="viewChart"
+    style="
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: rgba(255, 255, 255, 0.81);
+      flex-shrink: 0;
+      margin-right: 6px;
+    "
+  >
+    <path
+      d="M2.375 10a7.625 7.625 0 1 1 15.25 0 7.625 7.625 0 0 1-15.25 0m1.25 0a6.375 6.375 0 0 0 11.208 4.157L9.65 10.632a.63.63 0 0 1-.274-.517v-6.46A6.376 6.376 0 0 0 3.625 10m12.75 0c0-.935-.201-1.823-.563-2.623l-4.65 2.772 4.39 2.986A6.35 6.35 0 0 0 16.375 10m-1.187-3.706a6.37 6.37 0 0 0-4.563-2.639v5.36z"
+    ></path>
+  </svg>
+`;

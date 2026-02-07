@@ -50,6 +50,14 @@ export class TableViewUILogic extends DataViewUILogicBase<
   hotkeysController = new TableHotkeysController(this);
   selectionController = new TableSelectionController(this);
 
+  onBeforeOpenRowDetail(_rowId: string): void {
+    // subclasses can override
+  }
+
+  onAfterCloseRowDetail(_rowId: string): void {
+    // subclasses can override
+  }
+
   private get readonly() {
     return this.view.readonly$.value;
   }

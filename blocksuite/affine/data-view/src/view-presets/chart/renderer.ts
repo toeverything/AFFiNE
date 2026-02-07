@@ -1,0 +1,14 @@
+import { createIcon } from '../../core/utils/uni-icon.js';
+import { chartViewModel } from './define.js';
+import { ChartViewUILogic } from './pc/chart-view-ui-logic.js';
+
+export const chartViewMeta = chartViewModel.createMeta({
+  // Use a pie chart emoji as a temporary icon until a proper icon is available
+  icon: createIcon('DatabaseKanbanViewIcon'), // TODO: Replace with proper ChartIcon when available
+  // On desktop, use ChartViewUILogic
+  // @ts-expect-error: typesafe mismatch between view.manager signatures
+  pcLogic: () => ChartViewUILogic,
+  // On mobile, for now use the same logic (or you could implement a mobile‐specific UI)
+  // TODO: Implement a mobile‐specific UI
+  //mobileLogic: () => ChartViewUILogic,
+});

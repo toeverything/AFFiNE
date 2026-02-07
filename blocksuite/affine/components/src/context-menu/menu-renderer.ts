@@ -378,8 +378,10 @@ declare global {
 }
 
 export const getDefaultModalRoot = (ele: HTMLElement) => {
+  // Prefer explicit popup container (e.g., dialogs) over editor-host
+  // so popups render inside the correct stacking context
   const host: HTMLElement | null =
-    ele.closest('editor-host') ?? ele.closest('.data-view-popup-container');
+    ele.closest('.data-view-popup-container') ?? ele.closest('editor-host');
   if (host) {
     return host;
   }

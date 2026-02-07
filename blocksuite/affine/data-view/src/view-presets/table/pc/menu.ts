@@ -22,12 +22,14 @@ export const openDetail = (
   selection: TableSelectionController
 ) => {
   const old = selection.selection;
+  tableViewLogic.onBeforeOpenRowDetail(rowId);
   selection.selection = undefined;
   tableViewLogic.root.openDetailPanel({
     view: selection.logic.view,
     rowId: rowId,
     onClose: () => {
       selection.selection = old;
+      tableViewLogic.onAfterCloseRowDetail(rowId);
     },
   });
 };
