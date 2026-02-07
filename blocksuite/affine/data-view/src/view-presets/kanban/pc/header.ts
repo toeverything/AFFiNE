@@ -11,7 +11,7 @@ import { html } from 'lit/static-html.js';
 
 import { groupTraitKey } from '../../../core/group-by/trait.js';
 import type { SingleView } from '../../../core/index.js';
-import { isKanbanGroupableProperty } from '../group-by-utils.js';
+import { canGroupable } from '../group-by-utils.js';
 
 const styles = css`
   affine-data-view-kanban-header {
@@ -48,10 +48,7 @@ export class KanbanHeader extends SignalWatcher(
             if (column.id === groupTrait.property$.value?.id) {
               return false;
             }
-            return isKanbanGroupableProperty(
-              this.view.manager.dataSource,
-              column.id
-            );
+            return canGroupable(this.view.manager.dataSource, column.id);
           })
           .map(column => {
             return menu.action({

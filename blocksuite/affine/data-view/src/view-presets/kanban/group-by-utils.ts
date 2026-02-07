@@ -9,6 +9,11 @@ import { getGroupByService } from '../../core/group-by/matcher.js';
 type KanbanGroupCapability = 'mutable' | 'immutable' | 'none';
 
 const KANBAN_DEFAULT_STATUS_OPTIONS = ['Todo', 'In Progress', 'Done'];
+const SHOW_EMPTY_GROUPS_BY_DEFAULT = new Set(['select', 'multi-select']);
+
+export const getKanbanDefaultHideEmpty = (groupName?: string): boolean => {
+  return !groupName || !SHOW_EMPTY_GROUPS_BY_DEFAULT.has(groupName);
+};
 
 const getKanbanGroupCapability = (
   dataSource: DataSource,
@@ -56,10 +61,7 @@ const createGroupByFromColumn = (
   );
 };
 
-export const isKanbanGroupableProperty = (
-  dataSource: DataSource,
-  propertyId: string
-) => {
+export const canGroupable = (dataSource: DataSource, propertyId: string) => {
   return (
     getKanbanGroupCapability(dataSource, propertyId) !== 'none' &&
     hasMatchingGroupBy(dataSource, propertyId)
@@ -118,7 +120,7 @@ export const resolveKanbanGroupBy = (
   current?: GroupBy
 ): GroupBy | undefined => {
   const keepColumnId =
-    current?.columnId && isKanbanGroupableProperty(dataSource, current.columnId)
+    current?.columnId && canGroupable(dataSource, current.columnId)
       ? current.columnId
       : undefined;
 
@@ -135,7 +137,6 @@ export const resolveKanbanGroupBy = (
   return {
     ...next,
     sort: current?.sort,
-    // Kanban should display empty groups (e.g. predefined status columns) by default.
-    hideEmpty: current?.hideEmpty ?? false,
+    hideEmpty: current?.hideEmpty ?? getKanbanDefaultHideEmpty(next.name),
   };
 };

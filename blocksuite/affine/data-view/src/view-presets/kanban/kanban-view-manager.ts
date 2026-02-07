@@ -19,7 +19,10 @@ import { PropertyBase } from '../../core/view-manager/property.js';
 import { SingleViewBase } from '../../core/view-manager/single-view.js';
 import type { ViewManager } from '../../core/view-manager/view-manager.js';
 import type { KanbanViewColumn, KanbanViewData } from './define.js';
-import { resolveKanbanGroupBy } from './group-by-utils.js';
+import {
+  getKanbanDefaultHideEmpty,
+  resolveKanbanGroupBy,
+} from './group-by-utils.js';
 
 const materializeColumnsByPropertyIds = (
   columns: KanbanViewColumn[],
@@ -109,7 +112,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     }
     return {
       ...groupBy,
-      hideEmpty: false,
+      hideEmpty: getKanbanDefaultHideEmpty(groupBy.name),
     };
   });
 
