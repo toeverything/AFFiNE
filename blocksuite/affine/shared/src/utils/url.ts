@@ -185,7 +185,6 @@ const COMMON_TLDS = new Set([
   'gov',
   'info',
   'io',
-  'io',
   'jp',
   'me',
   'mil',
