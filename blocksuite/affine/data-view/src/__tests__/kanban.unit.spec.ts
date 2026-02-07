@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { GroupBy } from '../core/common/types.js';
 import type { DataSource } from '../core/data-source/base.js';
+import { DetailSelection } from '../core/detail/selection.js';
 import { groupByMatchers } from '../core/group-by/define.js';
 import { t } from '../core/logical/type-presets.js';
+import type { DataViewCellLifeCycle } from '../core/property/index.js';
 import { checkboxPropertyModelConfig } from '../property-presets/checkbox/define.js';
 import { multiSelectPropertyModelConfig } from '../property-presets/multi-select/define.js';
 import { selectPropertyModelConfig } from '../property-presets/select/define.js';
@@ -454,6 +456,62 @@ describe('kanban', () => {
       expect(next?.columnId).toBe('checkbox');
       expect(next?.name).toBe('boolean');
       expect(next?.hideEmpty).toBe(true);
+    });
+  });
+
+  describe('detail selection', () => {
+    it('should avoid recursive selection update when exiting select edit mode', () => {
+      vi.stubGlobal('requestAnimationFrame', ((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0;
+      }) as typeof requestAnimationFrame);
+      try {
+        let selection: DetailSelection;
+        let beforeExitCalls = 0;
+
+        const cell = {
+          beforeEnterEditMode: () => true,
+          beforeExitEditingMode: () => {
+            beforeExitCalls += 1;
+            selection.selection = {
+              propertyId: 'status',
+              isEditing: false,
+            };
+          },
+          afterEnterEditingMode: () => {},
+          focusCell: () => true,
+          blurCell: () => true,
+          forceUpdate: () => {},
+        } satisfies DataViewCellLifeCycle;
+
+        const field = {
+          isFocus$: signal(false),
+          isEditing$: signal(false),
+          cell,
+          focus: () => {},
+          blur: () => {},
+        };
+
+        const detail = {
+          querySelector: () => field,
+        };
+
+        selection = new DetailSelection(detail);
+        selection.selection = {
+          propertyId: 'status',
+          isEditing: true,
+        };
+
+        selection.selection = {
+          propertyId: 'status',
+          isEditing: false,
+        };
+
+        expect(beforeExitCalls).toBe(1);
+        expect(field.isEditing$.value).toBe(false);
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
   });
 });
