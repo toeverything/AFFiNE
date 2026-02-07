@@ -3906,20 +3906,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@blocksuite/affine-widget-connection-point-hover@workspace:*, @blocksuite/affine-widget-connection-point-hover@workspace:blocksuite/affine/widgets/connection-point-hover":
-  version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-widget-connection-point-hover@workspace:blocksuite/affine/widgets/connection-point-hover"
-  dependencies:
-    "@blocksuite/affine-block-surface": "workspace:*"
-    "@blocksuite/affine-ext-loader": "workspace:*"
-    "@blocksuite/affine-gfx-connector": "workspace:*"
-    "@blocksuite/affine-model": "workspace:*"
-    "@blocksuite/global": "workspace:*"
-    "@blocksuite/std": "workspace:*"
-    lit: "npm:^3.2.0"
-  languageName: unknown
-  linkType: soft
-
 "@blocksuite/affine-widget-drag-handle@workspace:*, @blocksuite/affine-widget-drag-handle@workspace:blocksuite/affine/widgets/drag-handle":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-widget-drag-handle@workspace:blocksuite/affine/widgets/drag-handle"
@@ -3968,6 +3954,21 @@ __metadata:
     "@toeverything/theme": "npm:^1.1.23"
     lit: "npm:^3.2.0"
     rxjs: "npm:^7.8.2"
+  languageName: unknown
+  linkType: soft
+
+"@blocksuite/affine-widget-edgeless-connector-anchors@workspace:*, @blocksuite/affine-widget-edgeless-connector-anchors@workspace:blocksuite/affine/widgets/edgeless-connector-anchors":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-widget-edgeless-connector-anchors@workspace:blocksuite/affine/widgets/edgeless-connector-anchors"
+  dependencies:
+    "@blocksuite/affine-block-surface": "workspace:*"
+    "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-gfx-connector": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/std": "workspace:*"
+    lit: "npm:^3.2.0"
   languageName: unknown
   linkType: soft
 
@@ -4357,9 +4358,9 @@ __metadata:
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/affine-rich-text": "workspace:*"
     "@blocksuite/affine-shared": "workspace:*"
-    "@blocksuite/affine-widget-connection-point-hover": "workspace:*"
     "@blocksuite/affine-widget-drag-handle": "workspace:*"
     "@blocksuite/affine-widget-edgeless-auto-connect": "workspace:*"
+    "@blocksuite/affine-widget-edgeless-connector-anchors": "workspace:*"
     "@blocksuite/affine-widget-edgeless-dragging-area": "workspace:*"
     "@blocksuite/affine-widget-edgeless-selected-rect": "workspace:*"
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*"
