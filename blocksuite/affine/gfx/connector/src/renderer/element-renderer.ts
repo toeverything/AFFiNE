@@ -222,13 +222,28 @@ function renderPoints(
         x: pt.x - baseX,
         y: pt.y - baseY,
       }));
-      const pathData = createConnectorPathWithJumps(
-        localRoutedPoints,
-        jumpStyle,
-        jumpSize,
-        strokeWidth
-      );
-      ctx.stroke(new Path2D(pathData));
+
+      if (rounded) {
+        renderRoundedJumps(
+          ctx,
+          localRoutedPoints,
+          jumpStyle,
+          jumpSize,
+          strokeWidth,
+          cornerRadius
+        );
+        ctx.stroke();
+      } else {
+        const pathData = createConnectorPathWithJumps(
+          localRoutedPoints,
+          jumpStyle,
+          jumpSize,
+          strokeWidth,
+          rounded,
+          cornerRadius
+        );
+        ctx.stroke(new Path2D(pathData));
+      }
       ctx.closePath();
       ctx.restore();
       return;
@@ -285,6 +300,142 @@ function renderPoints(
     ctx.stroke();
     ctx.closePath();
     ctx.restore();
+  }
+}
+
+function renderRoundedJumps(
+  ctx: CanvasRenderingContext2D,
+  routedPoints: Array<{ type: 0 | 1; x: number; y: number }>,
+  jumpStyle: JumpStyle,
+  jumpSize: number,
+  strokeWidth: number,
+  cornerRadius: number
+) {
+  const size = (jumpSize - 2) / 2 + strokeWidth;
+  const gapOffset = Math.max(strokeWidth, size * 0.2);
+  let currentSegment: Array<{ x: number; y: number }> = [];
+
+  if (routedPoints.length > 0) {
+    currentSegment.push({ x: routedPoints[0].x, y: routedPoints[0].y });
+  }
+
+  const flushSegment = () => {
+    if (currentSegment.length < 2) {
+      currentSegment = [];
+      return;
+    }
+    ctx.moveTo(currentSegment[0].x, currentSegment[0].y);
+    for (let i = 1; i < currentSegment.length - 1; i++) {
+      const prev = currentSegment[i - 1];
+      const curr = currentSegment[i];
+      const next = currentSegment[i + 1];
+      const len1 = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+      const len2 = Math.hypot(next.x - curr.x, next.y - curr.y);
+      if (len1 < 0.001 || len2 < 0.001) {
+        ctx.lineTo(curr.x, curr.y);
+        continue;
+      }
+      const r = Math.min(cornerRadius, len1 / 2, len2 / 2);
+      const v1x = (curr.x - prev.x) / len1;
+      const v1y = (curr.y - prev.y) / len1;
+      const v2x = (next.x - curr.x) / len2;
+      const v2y = (next.y - curr.y) / len2;
+      const startX = curr.x - v1x * r;
+      const startY = curr.y - v1y * r;
+      const endX = curr.x + v2x * r;
+      const endY = curr.y + v2y * r;
+      ctx.lineTo(startX, startY);
+      if (r < cornerRadius) {
+        ctx.quadraticCurveTo(curr.x, curr.y, endX, endY);
+      } else {
+        ctx.arcTo(curr.x, curr.y, next.x, next.y, r);
+      }
+    }
+    const last = currentSegment[currentSegment.length - 1];
+    ctx.lineTo(last.x, last.y);
+    currentSegment = [];
+  };
+
+  for (let i = 0; i < routedPoints.length - 1; i++) {
+    const current = routedPoints[i];
+    const next = routedPoints[i + 1];
+
+    if (next.type === 1) {
+      const dx = next.x - current.x;
+      const dy = next.y - current.y;
+      const len = Math.hypot(dx, dy);
+      if (len > 0) {
+        const nx = (dx / len) * size;
+        const ny = (dy / len) * size;
+        const p0x = next.x - nx;
+        const p0y = next.y - ny;
+        const p1x = next.x + nx;
+        const p1y = next.y + ny;
+        const gap0x = p0x - (dx / len) * gapOffset;
+        const gap0y = p0y - (dy / len) * gapOffset;
+        const gap1x = p1x + (dx / len) * gapOffset;
+        const gap1y = p1y + (dy / len) * gapOffset;
+        const f =
+          Math.round(nx) < 0 || (Math.round(nx) === 0 && Math.round(ny) <= 0)
+            ? 1
+            : -1;
+
+        currentSegment.push({ x: gap0x, y: gap0y });
+        flushSegment();
+
+        if (jumpStyle === 'arc') {
+          const arcF = f * 1.3;
+          ctx.lineTo(gap0x, gap0y);
+          ctx.moveTo(p0x, p0y);
+          ctx.bezierCurveTo(
+            p0x - ny * arcF,
+            p0y + nx * arcF,
+            p1x - ny * arcF,
+            p1y + nx * arcF,
+            p1x,
+            p1y
+          );
+          ctx.moveTo(gap1x, gap1y);
+          currentSegment.push({ x: gap1x, y: gap1y });
+          continue;
+        }
+
+        switch (jumpStyle) {
+          case 'sharp':
+            ctx.lineTo(gap0x, gap0y);
+            ctx.moveTo(p0x, p0y);
+            ctx.lineTo(p0x - ny * f, p0y + nx * f);
+            ctx.lineTo(p1x - ny * f, p1y + nx * f);
+            ctx.lineTo(p1x, p1y);
+            ctx.moveTo(gap1x, gap1y);
+            break;
+          case 'line':
+            ctx.lineTo(gap0x, gap0y);
+            ctx.moveTo(p0x, p0y);
+            ctx.moveTo(p0x + ny * f, p0y - nx * f);
+            ctx.lineTo(p0x - ny * f, p0y + nx * f);
+            ctx.moveTo(p1x - ny * f, p1y + nx * f);
+            ctx.lineTo(p1x + ny * f, p1y - nx * f);
+            ctx.moveTo(gap1x, gap1y);
+            break;
+          case 'gap':
+            ctx.lineTo(gap0x, gap0y);
+            ctx.moveTo(gap1x, gap1y);
+            break;
+          default:
+            ctx.lineTo(next.x, next.y);
+            break;
+        }
+
+        currentSegment.push({ x: gap1x, y: gap1y });
+      }
+    } else {
+      currentSegment.push({ x: next.x, y: next.y });
+    }
+  }
+
+  if (currentSegment.length > 1) {
+    flushSegment();
   }
 }
 

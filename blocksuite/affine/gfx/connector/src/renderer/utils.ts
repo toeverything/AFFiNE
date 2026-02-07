@@ -29,111 +29,233 @@ export function createConnectorPathWithJumps(
   routedPoints: { type: 0 | 1; x: number; y: number }[],
   jumpStyle: JumpStyle,
   jumpSize: number,
-  strokeWidth: number
+  strokeWidth: number,
+  rounded: boolean = false,
+  cornerRadius: number = 0
 ): string {
   if (routedPoints.length < 2) return '';
 
   const pathBuilder = new SVGPathBuilder();
-  const size = (jumpSize - 2) / 2 + strokeWidth;
-  let moveTo = true;
-  let pendingMoveTo: { x: number; y: number } | null = null;
+  const size = jumpSize / 2 + strokeWidth * 1.5;
+  if (!rounded || cornerRadius <= 0) {
+    let moveTo = true;
+    let pendingMoveTo: { x: number; y: number } | null = null;
 
-  for (let i = 0; i < routedPoints.length - 1; i++) {
-    let current = routedPoints[i];
-    const next = routedPoints[i + 1];
+    for (let i = 0; i < routedPoints.length - 1; i++) {
+      let current = routedPoints[i];
+      const next = routedPoints[i + 1];
 
-    if (pendingMoveTo) {
-      // After a jump, resume the path at the far side of the gap.
-      current = { type: 0, x: pendingMoveTo.x, y: pendingMoveTo.y };
-      pathBuilder.moveTo(current.x, current.y);
-      pendingMoveTo = null;
-      moveTo = false;
-    } else if (i === 0 || moveTo) {
-      pathBuilder.moveTo(current.x, current.y);
-      moveTo = false;
-    }
+      if (pendingMoveTo) {
+        // After a jump, resume the path at the far side of the gap.
+        current = { type: 0, x: pendingMoveTo.x, y: pendingMoveTo.y };
+        pathBuilder.moveTo(current.x, current.y);
+        pendingMoveTo = null;
+        moveTo = false;
+      } else if (i === 0 || moveTo) {
+        pathBuilder.moveTo(current.x, current.y);
+        moveTo = false;
+      }
 
-    // Type 1 means jump point (intersection)
-    if (next.type === 1) {
-      // Calculate direction vector and perpendicular offset
-      const dx = next.x - current.x;
-      const dy = next.y - current.y;
-      const len = Math.hypot(dx, dy);
+      // Type 1 means jump point (intersection)
+      if (next.type === 1) {
+        // Calculate direction vector and perpendicular offset
+        const dx = next.x - current.x;
+        const dy = next.y - current.y;
+        const len = Math.hypot(dx, dy);
 
-      if (len > 0) {
-        const nx = (dx / len) * size;
-        const ny = (dy / len) * size;
+        if (len > 0) {
+          const nx = (dx / len) * size;
+          const ny = (dy / len) * size;
 
-        const p0x = next.x - nx;
-        const p0y = next.y - ny;
-        const p1x = next.x + nx;
-        const p1y = next.y + ny;
+          const p0x = next.x - nx;
+          const p0y = next.y - ny;
+          const p1x = next.x + nx;
+          const p1y = next.y + ny;
 
-        // Determine flip factor for jump direction
-        const f =
-          Math.round(nx) < 0 || (Math.round(nx) === 0 && Math.round(ny) <= 0)
-            ? 1
-            : -1;
+          const gapOffset = Math.max(strokeWidth, size * 0.2);
+          const gap0x = p0x - (dx / len) * gapOffset;
+          const gap0y = p0y - (dy / len) * gapOffset;
+          const gap1x = p1x + (dx / len) * gapOffset;
+          const gap1y = p1y + (dy / len) * gapOffset;
 
-        // Render based on jump style
-        switch (jumpStyle) {
-          case 'sharp':
-            // Sharp angle perpendicular to line
-            pathBuilder.lineTo(p0x, p0y);
-            pathBuilder.lineTo(p0x - ny * f, p0y + nx * f);
-            pathBuilder.lineTo(p1x - ny * f, p1y + nx * f);
-            pathBuilder.lineTo(p1x, p1y);
-            break;
+          // Determine flip factor for jump direction
+          const f =
+            Math.round(nx) < 0 || (Math.round(nx) === 0 && Math.round(ny) <= 0)
+              ? 1
+              : -1;
 
-          case 'arc': {
-            // Curved arc over intersection
-            const arcF = f * 1.3;
-            pathBuilder.lineTo(p0x, p0y);
-            pathBuilder.curveTo(
-              p0x - ny * arcF,
-              p0y + nx * arcF,
-              p1x - ny * arcF,
-              p1y + nx * arcF,
-              p1x,
-              p1y
-            );
-            break;
+          // Render based on jump style
+          switch (jumpStyle) {
+            case 'sharp':
+              // Sharp angle perpendicular to line
+              pathBuilder.lineTo(gap0x, gap0y);
+              pathBuilder.moveTo(p0x, p0y);
+              pathBuilder.lineTo(p0x - ny * f, p0y + nx * f);
+              pathBuilder.lineTo(p1x - ny * f, p1y + nx * f);
+              pathBuilder.lineTo(p1x, p1y);
+              pathBuilder.moveTo(gap1x, gap1y);
+              break;
+
+            case 'arc': {
+              // Curved arc over intersection
+              const arcF = f * 1.3;
+              pathBuilder.lineTo(gap0x, gap0y);
+              pathBuilder.moveTo(p0x, p0y);
+              pathBuilder.curveTo(
+                p0x - ny * arcF,
+                p0y + nx * arcF,
+                p1x - ny * arcF,
+                p1y + nx * arcF,
+                p1x,
+                p1y
+              );
+              pathBuilder.moveTo(gap1x, gap1y);
+              break;
+            }
+
+            case 'line':
+              // Crossing lines (X shape)
+              pathBuilder.lineTo(gap0x, gap0y);
+              pathBuilder.moveTo(p0x, p0y);
+              pathBuilder.moveTo(p0x + ny * f, p0y - nx * f);
+              pathBuilder.lineTo(p0x - ny * f, p0y + nx * f);
+              pathBuilder.moveTo(p1x - ny * f, p1y + nx * f);
+              pathBuilder.lineTo(p1x + ny * f, p1y - nx * f);
+              pathBuilder.moveTo(gap1x, gap1y);
+              moveTo = true;
+              pendingMoveTo = { x: gap1x, y: gap1y };
+              break;
+
+            case 'gap':
+              // Gap - just move without drawing
+              pathBuilder.lineTo(gap0x, gap0y);
+              pathBuilder.moveTo(gap1x, gap1y);
+              moveTo = true;
+              pendingMoveTo = { x: gap1x, y: gap1y };
+              break;
+
+            default:
+              // 'none' - straight through
+              pathBuilder.lineTo(next.x, next.y);
+              break;
           }
 
-          case 'line':
-            // Crossing lines (X shape)
-            pathBuilder.lineTo(p0x, p0y);
-            pathBuilder.moveTo(p0x + ny * f, p0y - nx * f);
-            pathBuilder.lineTo(p0x - ny * f, p0y + nx * f);
-            pathBuilder.moveTo(p1x - ny * f, p1y + nx * f);
-            pathBuilder.lineTo(p1x + ny * f, p1y - nx * f);
-            pathBuilder.moveTo(p1x, p1y);
+          if (jumpStyle === 'sharp' || jumpStyle === 'arc') {
+            pendingMoveTo = { x: gap1x, y: gap1y };
             moveTo = true;
-            pendingMoveTo = { x: p1x, y: p1y };
-            break;
-
-          case 'gap':
-            // Gap - just move without drawing
-            pathBuilder.lineTo(p0x, p0y);
-            pathBuilder.moveTo(p1x, p1y);
-            moveTo = true;
-            pendingMoveTo = { x: p1x, y: p1y };
-            break;
-
-          default:
-            // 'none' - straight through
-            pathBuilder.lineTo(next.x, next.y);
-            break;
+          }
         }
-
-        if (jumpStyle === 'sharp' || jumpStyle === 'arc') {
-          pendingMoveTo = { x: p1x, y: p1y };
-          moveTo = true;
-        }
+      } else {
+        // Normal waypoint - just draw line
+        pathBuilder.lineTo(next.x, next.y);
       }
-    } else {
-      // Normal waypoint - just draw line
-      pathBuilder.lineTo(next.x, next.y);
+    }
+  } else {
+    const flushRoundedSegment = (points: { x: number; y: number }[]) => {
+      if (points.length < 2) return;
+      pathBuilder.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length - 1; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const next = points[i + 1];
+        const len1 = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+        const len2 = Math.hypot(next.x - curr.x, next.y - curr.y);
+        if (len1 < 0.001 || len2 < 0.001) {
+          pathBuilder.lineTo(curr.x, curr.y);
+          continue;
+        }
+        const r = Math.min(cornerRadius, len1 / 2, len2 / 2);
+        const v1x = (curr.x - prev.x) / len1;
+        const v1y = (curr.y - prev.y) / len1;
+        const v2x = (next.x - curr.x) / len2;
+        const v2y = (next.y - curr.y) / len2;
+        const startX = curr.x - v1x * r;
+        const startY = curr.y - v1y * r;
+        const endX = curr.x + v2x * r;
+        const endY = curr.y + v2y * r;
+        pathBuilder.lineTo(startX, startY);
+        pathBuilder.curveTo(curr.x, curr.y, curr.x, curr.y, endX, endY);
+      }
+      const last = points[points.length - 1];
+      pathBuilder.lineTo(last.x, last.y);
+    };
+
+    let segmentPoints: { x: number; y: number }[] = [];
+    if (routedPoints[0]) {
+      segmentPoints.push({ x: routedPoints[0].x, y: routedPoints[0].y });
+    }
+
+    for (let i = 0; i < routedPoints.length - 1; i++) {
+      const current = routedPoints[i];
+      const next = routedPoints[i + 1];
+
+      if (next.type === 1) {
+        if (segmentPoints.length > 1) {
+          flushRoundedSegment(segmentPoints);
+        }
+        segmentPoints = [];
+
+        const dx = next.x - current.x;
+        const dy = next.y - current.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          const nx = (dx / len) * size;
+          const ny = (dy / len) * size;
+          const p0x = next.x - nx;
+          const p0y = next.y - ny;
+          const p1x = next.x + nx;
+          const p1y = next.y + ny;
+          const f =
+            Math.round(nx) < 0 || (Math.round(nx) === 0 && Math.round(ny) <= 0)
+              ? 1
+              : -1;
+
+          switch (jumpStyle) {
+            case 'sharp':
+              pathBuilder.lineTo(p0x, p0y);
+              pathBuilder.lineTo(p0x - ny * f, p0y + nx * f);
+              pathBuilder.lineTo(p1x - ny * f, p1y + nx * f);
+              pathBuilder.lineTo(p1x, p1y);
+              break;
+            case 'arc': {
+              const arcF = f * 1.3;
+              pathBuilder.lineTo(p0x, p0y);
+              pathBuilder.curveTo(
+                p0x - ny * arcF,
+                p0y + nx * arcF,
+                p1x - ny * arcF,
+                p1y + nx * arcF,
+                p1x,
+                p1y
+              );
+              break;
+            }
+            case 'line':
+              pathBuilder.lineTo(p0x, p0y);
+              pathBuilder.moveTo(p0x + ny * f, p0y - nx * f);
+              pathBuilder.lineTo(p0x - ny * f, p0y + nx * f);
+              pathBuilder.moveTo(p1x - ny * f, p1y + nx * f);
+              pathBuilder.lineTo(p1x + ny * f, p1y - nx * f);
+              pathBuilder.moveTo(p1x, p1y);
+              break;
+            case 'gap':
+              pathBuilder.lineTo(p0x, p0y);
+              pathBuilder.moveTo(p1x, p1y);
+              break;
+            default:
+              pathBuilder.lineTo(next.x, next.y);
+              break;
+          }
+
+          segmentPoints.push({ x: p1x, y: p1y });
+        }
+      } else {
+        segmentPoints.push({ x: next.x, y: next.y });
+      }
+    }
+
+    if (segmentPoints.length > 1) {
+      flushRoundedSegment(segmentPoints);
     }
   }
 

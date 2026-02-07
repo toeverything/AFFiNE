@@ -1,4 +1,5 @@
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
+import { ConnectorMode } from '@blocksuite/affine-model';
 import type { IVec } from '@blocksuite/global/gfx';
 import type { PointLocation } from '@blocksuite/global/gfx';
 
@@ -69,6 +70,10 @@ export function updateConnectorJumps(
 ): RoutedPoint[] {
   const { absolutePath: path, jumpStyle } = connector;
 
+  if (connector.mode === ConnectorMode.Curve) {
+    return [];
+  }
+
   // Early return if no jump style or insufficient path points
   if (!path || path.length < 2 || jumpStyle === 'none') {
     return [];
@@ -93,10 +98,11 @@ export function updateConnectorJumps(
         continue;
       }
 
-      // Only jump over connectors below this one in z-order.
-      if (other.index >= connector.index) {
+      if (other.mode === ConnectorMode.Curve) {
         continue;
       }
+
+      // Z-order filtering should be handled by the caller.
 
       const otherPath = other.absolutePath;
       if (!otherPath || otherPath.length < 2) continue;

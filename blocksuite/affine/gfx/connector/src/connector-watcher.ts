@@ -17,6 +17,9 @@ export const connectorWatcher: SurfaceMiddleware = (
   const elementGetter = (id: string) =>
     surface.getElementById(id) ?? (surface.store.getModelById(id) as GfxModel);
   const updateConnectorPath = (connector: ConnectorElementModel) => {
+    if (connector.updatingPath) {
+      return;
+    }
     if (
       ((connector.source?.id && hasElementById(connector.source.id)) ||
         (!connector.source?.id && connector.source?.position)) &&
@@ -35,14 +38,27 @@ export const connectorWatcher: SurfaceMiddleware = (
     const allConnectors = Array.from(
       surface.getElementsByType('connector')
     ) as ConnectorElementModel[];
+    const orderedConnectors = [...allConnectors].sort((a, b) =>
+      a.index.localeCompare(b.index)
+    );
+    const orderMap = new Map(
+      orderedConnectors.map((connector, index) => [connector.id, index])
+    );
 
     connectors.forEach(connector => {
       if (
         connector.jumpStyle !== 'none' &&
         connector.absolutePath.length >= 2
       ) {
+        const connectorOrder = orderMap.get(connector.id) ?? 0;
+        const belowConnectors = orderedConnectors.filter(
+          other => (orderMap.get(other.id) ?? 0) < connectorOrder
+        );
         // Calculate jump points based on intersections
-        const routedPoints = calculateConnectorJumps(connector, allConnectors);
+        const routedPoints = calculateConnectorJumps(
+          connector,
+          belowConnectors
+        );
         connector.routedPoints = routedPoints.length > 0 ? routedPoints : null;
       } else {
         // Clear jump points if jump style is disabled
@@ -53,6 +69,7 @@ export const connectorWatcher: SurfaceMiddleware = (
 
   const pendingList = new Set<ConnectorElementModel>();
   let pendingFlag = false;
+  let pendingJumpRefresh = false;
 
   const addToUpdateList = (connector: ConnectorElementModel) => {
     pendingList.add(connector);
@@ -103,6 +120,43 @@ export const connectorWatcher: SurfaceMiddleware = (
           props['jumpStyle'] !== undefined)
       ) {
         addToUpdateList(element as ConnectorElementModel);
+      }
+
+      if (
+        'type' in element &&
+        element.type === 'connector' &&
+        props['index'] !== undefined
+      ) {
+        surface
+          .getElementsByType('connector')
+          .forEach(connector =>
+            addToUpdateList(connector as ConnectorElementModel)
+          );
+      }
+
+      if (
+        'type' in element &&
+        element.type === 'connector' &&
+        (props['xywh'] || props['path'])
+      ) {
+        const connector = element as ConnectorElementModel;
+        // Avoid heavy jump recalculation during drag updates.
+        if (!connector.updatingPath) {
+          surface
+            .getElementsByType('connector')
+            .forEach(connectorItem =>
+              addToUpdateList(connectorItem as ConnectorElementModel)
+            );
+        } else if (!pendingJumpRefresh) {
+          pendingJumpRefresh = true;
+          requestAnimationFrame(() => {
+            pendingJumpRefresh = false;
+            const allConnectors = surface.getElementsByType(
+              'connector'
+            ) as ConnectorElementModel[];
+            updateJumpsForConnectors(new Set(allConnectors));
+          });
+        }
       }
     }),
     surface.store.slots.blockUpdated.subscribe(payload => {

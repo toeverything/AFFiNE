@@ -359,11 +359,15 @@ export const connectorBaseDomRenderer = (
       y: pt.y - offsetY,
     }));
 
+    const cornerRadius =
+      'cornerRadius' in model ? (model.cornerRadius as number) : 0;
     pathData = createConnectorPathWithJumps(
       adjustedRoutedPoints,
       jumpStyle,
       jumpSize,
-      strokeWidth
+      strokeWidth,
+      mode === ConnectorMode.Rounded,
+      cornerRadius
     );
   } else {
     // Standard rendering without jumps

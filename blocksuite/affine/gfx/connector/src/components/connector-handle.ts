@@ -229,9 +229,19 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
           'connector'
         ) as ConnectorElementModel[] | undefined;
         if (allConnectors) {
+          const ordered = [...allConnectors].sort((a, b) =>
+            a.index.localeCompare(b.index)
+          );
+          const orderMap = new Map(
+            ordered.map((conn, index) => [conn.id, index])
+          );
+          const connectorOrder = orderMap.get(connector.id) ?? 0;
+          const belowConnectors = ordered.filter(
+            other => (orderMap.get(other.id) ?? 0) < connectorOrder
+          );
           const routedPoints = calculateConnectorJumps(
             connector,
-            allConnectors
+            belowConnectors
           );
           connector.routedPoints =
             routedPoints.length > 0 ? routedPoints : null;
@@ -376,6 +386,36 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
       } else if ('waypoints' in connector) {
         // Path has only 2 points, clear any existing waypoints
         (connector as ConnectorElementModel).waypoints = undefined;
+      }
+
+      // After drag ends, recompute jumps for all connectors so lines jumping
+      // over this connector are updated without relying on path watchers.
+      const allConnectors = this.gfx.surface?.getElementsByType('connector') as
+        | ConnectorElementModel[]
+        | undefined;
+      if (allConnectors && allConnectors.length > 0) {
+        const ordered = [...allConnectors].sort((a, b) =>
+          a.index.localeCompare(b.index)
+        );
+        const orderMap = new Map(
+          ordered.map((conn, index) => [conn.id, index])
+        );
+        ordered.forEach(connectorToUpdate => {
+          if (connectorToUpdate.jumpStyle === 'none') {
+            connectorToUpdate.routedPoints = null;
+            return;
+          }
+          const connectorOrder = orderMap.get(connectorToUpdate.id) ?? 0;
+          const belowConnectors = ordered.filter(
+            other => (orderMap.get(other.id) ?? 0) < connectorOrder
+          );
+          const routedPoints = calculateConnectorJumps(
+            connectorToUpdate,
+            belowConnectors
+          );
+          connectorToUpdate.routedPoints =
+            routedPoints.length > 0 ? routedPoints : null;
+        });
       }
 
       this.doc.captureSync();
