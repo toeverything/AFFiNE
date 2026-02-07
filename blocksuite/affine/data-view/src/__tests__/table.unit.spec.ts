@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import { parseNumber } from '../property-presets/number/utils/formatter.js';
 import { mobileEffects } from '../view-presets/table/mobile/effect.js';
 import type { MobileTableGroup } from '../view-presets/table/mobile/group.js';
 import { pcEffects } from '../view-presets/table/pc/effect.js';
@@ -32,5 +33,19 @@ describe('TableGroup', () => {
     expect(group.collapsed$.value).toBe(true);
     (group as any)._toggleCollapse();
     expect(group.collapsed$.value).toBe(false);
+  });
+});
+
+describe('number formatter', () => {
+  test('parses grouped number string pasted from clipboard', () => {
+    expect(parseNumber('14,901.5')).toBe(14901.5);
+  });
+
+  test('keeps regular decimal parsing', () => {
+    expect(parseNumber('123.45')).toBe(123.45);
+  });
+
+  test('supports comma as decimal separator in locale-specific input', () => {
+    expect(parseNumber('14901,5', ',')).toBe(14901.5);
   });
 });
