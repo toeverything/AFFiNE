@@ -141,7 +141,7 @@ function splitTokenByUrl(token: string, baseUrl: string): UrlTextSegment[] {
   if (core && isValidUrl(core, baseUrl)) {
     const segments: UrlTextSegment[] = [];
     appendUrlTextSegment(segments, { text: leading });
-    appendUrlTextSegment(segments, { text: core, link: core });
+    appendUrlTextSegment(segments, { text: core, link: normalizeUrl(core) });
     appendUrlTextSegment(segments, { text: trailing });
     return segments;
   }

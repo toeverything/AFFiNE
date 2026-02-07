@@ -122,9 +122,18 @@ describe('splitTextByUrl', () => {
     expect(splitTextByUrl('google.com and text')).toEqual([
       {
         text: 'google.com',
-        link: 'google.com',
+        link: 'https://google.com',
       },
       { text: ' and text' },
+    ]);
+  });
+
+  test('should normalize www domain token link while preserving display text', () => {
+    expect(splitTextByUrl('www.google.com')).toEqual([
+      {
+        text: 'www.google.com',
+        link: 'https://www.google.com',
+      },
     ]);
   });
 });
