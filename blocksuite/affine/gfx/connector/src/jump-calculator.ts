@@ -14,6 +14,21 @@ export interface RoutedPoint {
   y: number;
 }
 
+export type JumpOrder = {
+  ordered: ConnectorElementModel[];
+  orderMap: Map<string, number>;
+};
+
+export function buildJumpOrder(connectors: ConnectorElementModel[]): JumpOrder {
+  const ordered = [...connectors].sort((a, b) =>
+    a.index.localeCompare(b.index)
+  );
+  const orderMap = new Map(
+    ordered.map((connector, index) => [connector.id, index])
+  );
+  return { ordered, orderMap };
+}
+
 /**
  * Calculate line segment intersection point.
  * Returns null if segments don't intersect or are parallel.
@@ -66,7 +81,8 @@ function lineIntersection(
  */
 export function updateConnectorJumps(
   connector: ConnectorElementModel,
-  allConnectors: ConnectorElementModel[]
+  allConnectors: ConnectorElementModel[],
+  orderMap?: Map<string, number>
 ): RoutedPoint[] {
   const { absolutePath: path, jumpStyle } = connector;
 
@@ -102,7 +118,13 @@ export function updateConnectorJumps(
         continue;
       }
 
-      // Z-order filtering should be handled by the caller.
+      if (orderMap) {
+        const connectorOrder = orderMap.get(connector.id) ?? 0;
+        const otherOrder = orderMap.get(other.id) ?? 0;
+        if (otherOrder >= connectorOrder) {
+          continue;
+        }
+      }
 
       const otherPath = other.absolutePath;
       if (!otherPath || otherPath.length < 2) continue;

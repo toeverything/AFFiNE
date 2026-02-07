@@ -7,7 +7,10 @@ import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import type { GfxModel } from '@blocksuite/std/gfx';
 
 import { ConnectorPathGenerator } from './connector-manager';
-import { updateConnectorJumps as calculateConnectorJumps } from './jump-calculator';
+import {
+  buildJumpOrder,
+  updateConnectorJumps as calculateConnectorJumps,
+} from './jump-calculator';
 
 export const connectorWatcher: SurfaceMiddleware = (
   surface: SurfaceBlockModel
@@ -38,26 +41,18 @@ export const connectorWatcher: SurfaceMiddleware = (
     const allConnectors = Array.from(
       surface.getElementsByType('connector')
     ) as ConnectorElementModel[];
-    const orderedConnectors = [...allConnectors].sort((a, b) =>
-      a.index.localeCompare(b.index)
-    );
-    const orderMap = new Map(
-      orderedConnectors.map((connector, index) => [connector.id, index])
-    );
+    const { orderMap } = buildJumpOrder(allConnectors);
 
     connectors.forEach(connector => {
       if (
         connector.jumpStyle !== 'none' &&
         connector.absolutePath.length >= 2
       ) {
-        const connectorOrder = orderMap.get(connector.id) ?? 0;
-        const belowConnectors = orderedConnectors.filter(
-          other => (orderMap.get(other.id) ?? 0) < connectorOrder
-        );
         // Calculate jump points based on intersections
         const routedPoints = calculateConnectorJumps(
           connector,
-          belowConnectors
+          allConnectors,
+          orderMap
         );
         connector.routedPoints = routedPoints.length > 0 ? routedPoints : null;
       } else {

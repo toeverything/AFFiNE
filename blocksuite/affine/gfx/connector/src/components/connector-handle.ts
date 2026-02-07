@@ -24,7 +24,10 @@ import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import type { ConnectionOverlay } from '../connector-manager';
-import { updateConnectorJumps as calculateConnectorJumps } from '../jump-calculator';
+import {
+  buildJumpOrder,
+  updateConnectorJumps as calculateConnectorJumps,
+} from '../jump-calculator';
 import {
   type ConnectorSegment,
   constrainDrag,
@@ -87,6 +90,9 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
 
   /** Starting mouse position when segment drag began */
   private _dragStartPos: IVec = [0, 0];
+
+  /** Cached z-order map used during drag to avoid resorting every move */
+  private _jumpOrderMap: Map<string, number> | null = null;
 
   get connectionOverlay() {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
@@ -229,19 +235,14 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
           'connector'
         ) as ConnectorElementModel[] | undefined;
         if (allConnectors) {
-          const ordered = [...allConnectors].sort((a, b) =>
-            a.index.localeCompare(b.index)
-          );
-          const orderMap = new Map(
-            ordered.map((conn, index) => [conn.id, index])
-          );
-          const connectorOrder = orderMap.get(connector.id) ?? 0;
-          const belowConnectors = ordered.filter(
-            other => (orderMap.get(other.id) ?? 0) < connectorOrder
-          );
+          if (!this._jumpOrderMap) {
+            const { orderMap } = buildJumpOrder(allConnectors);
+            this._jumpOrderMap = orderMap;
+          }
           const routedPoints = calculateConnectorJumps(
             connector,
-            belowConnectors
+            allConnectors,
+            this._jumpOrderMap
           );
           connector.routedPoints =
             routedPoints.length > 0 ? routedPoints : null;
@@ -263,6 +264,7 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
     const onUp = () => {
       const draggedSegmentIndex = this._draggingSegmentIndex;
       this._draggingSegmentIndex = -1;
+      this._jumpOrderMap = null;
 
       const applySubsumption = (path: IVec[]) => {
         if (path.length < 4) return path;
@@ -394,24 +396,16 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
         | ConnectorElementModel[]
         | undefined;
       if (allConnectors && allConnectors.length > 0) {
-        const ordered = [...allConnectors].sort((a, b) =>
-          a.index.localeCompare(b.index)
-        );
-        const orderMap = new Map(
-          ordered.map((conn, index) => [conn.id, index])
-        );
+        const { ordered, orderMap } = buildJumpOrder(allConnectors);
         ordered.forEach(connectorToUpdate => {
           if (connectorToUpdate.jumpStyle === 'none') {
             connectorToUpdate.routedPoints = null;
             return;
           }
-          const connectorOrder = orderMap.get(connectorToUpdate.id) ?? 0;
-          const belowConnectors = ordered.filter(
-            other => (orderMap.get(other.id) ?? 0) < connectorOrder
-          );
           const routedPoints = calculateConnectorJumps(
             connectorToUpdate,
-            belowConnectors
+            allConnectors,
+            orderMap
           );
           connectorToUpdate.routedPoints =
             routedPoints.length > 0 ? routedPoints : null;
