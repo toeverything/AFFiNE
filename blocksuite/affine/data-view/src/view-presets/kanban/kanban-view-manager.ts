@@ -18,6 +18,7 @@ import { fromJson } from '../../core/property/utils';
 import { PropertyBase } from '../../core/view-manager/property.js';
 import { SingleViewBase } from '../../core/view-manager/single-view.js';
 import type { KanbanViewData } from './define.js';
+import { resolveKanbanGroupBy } from './group-by-utils.js';
 
 export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   propertiesRaw$ = computed(() => {
@@ -61,16 +62,27 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   );
 
   groupBy$ = computed(() => {
-    return this.data$.value?.groupBy;
+    const groupBy = this.data$.value?.groupBy;
+    if (!groupBy || groupBy.hideEmpty != null) {
+      return groupBy;
+    }
+    return {
+      ...groupBy,
+      hideEmpty: false,
+    };
   });
 
   groupTrait = this.traitSet(
     groupTraitKey,
     new GroupTrait(this.groupBy$, this, {
       groupBySet: groupBy => {
+        const nextGroupBy = resolveKanbanGroupBy(
+          this.manager.dataSource,
+          groupBy
+        );
         this.dataUpdate(() => {
           return {
-            groupBy: groupBy,
+            groupBy: nextGroupBy,
           };
         });
       },
