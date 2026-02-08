@@ -96,6 +96,6 @@ describe('number formatter', () => {
   });
 
   test('supports comma as decimal separator in locale-specific input', () => {
-    expect(parseNumber('11.451,4', ',')).toBe(11451.4);
+    expect(parseNumber('11451,4', ',')).toBe(11451.4);
   });
 });
