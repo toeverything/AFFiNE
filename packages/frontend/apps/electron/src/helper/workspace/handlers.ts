@@ -15,6 +15,7 @@ import { WorkspaceSQLiteDB } from '../nbstore/v1/workspace-db-adapter';
 import type { WorkspaceMeta } from '../type';
 import {
   getDeletedWorkspacesBasePath,
+  getSpaceBasePath,
   getSpaceDBPath,
   getWorkspaceBasePathV1,
   getWorkspaceMeta,
@@ -94,6 +95,33 @@ export async function storeWorkspaceMeta(
   } catch (err) {
     logger.error('storeWorkspaceMeta failed', err);
   }
+}
+
+export async function listLocalWorkspaceIds(): Promise<string[]> {
+  const localWorkspaceBasePath = path.join(
+    await getSpaceBasePath('workspace'),
+    'local'
+  );
+  if (!(await fs.pathExists(localWorkspaceBasePath))) {
+    return [];
+  }
+
+  const entries = await fs.readdir(localWorkspaceBasePath);
+  const ids = await Promise.all(
+    entries.map(async entry => {
+      const workspacePath = path.join(localWorkspaceBasePath, entry);
+      const stat = await fs.stat(workspacePath).catch(() => null);
+      if (!stat?.isDirectory()) {
+        return null;
+      }
+      if (!(await fs.pathExists(path.join(workspacePath, 'storage.db')))) {
+        return null;
+      }
+      return entry;
+    })
+  );
+
+  return ids.filter((id): id is string => typeof id === 'string');
 }
 
 type WorkspaceDocMeta = {

@@ -33,6 +33,43 @@ afterAll(() => {
 });
 
 describe('workspace db management', () => {
+  test('list local workspace ids', async () => {
+    const { listLocalWorkspaceIds } =
+      await import('@affine/electron/helper/workspace/handlers');
+    const validWorkspaceId = v4();
+    const noDbWorkspaceId = v4();
+    const fileEntry = 'README.txt';
+
+    const validWorkspacePath = path.join(
+      appDataPath,
+      'workspaces',
+      'local',
+      validWorkspaceId
+    );
+    const noDbWorkspacePath = path.join(
+      appDataPath,
+      'workspaces',
+      'local',
+      noDbWorkspaceId
+    );
+    const nonDirectoryPath = path.join(
+      appDataPath,
+      'workspaces',
+      'local',
+      fileEntry
+    );
+
+    await fs.ensureDir(validWorkspacePath);
+    await fs.ensureFile(path.join(validWorkspacePath, 'storage.db'));
+    await fs.ensureDir(noDbWorkspacePath);
+    await fs.outputFile(nonDirectoryPath, 'not-a-workspace');
+
+    const ids = await listLocalWorkspaceIds();
+    expect(ids).toContain(validWorkspaceId);
+    expect(ids).not.toContain(noDbWorkspaceId);
+    expect(ids).not.toContain(fileEntry);
+  });
+
   test('trash workspace', async () => {
     const { trashWorkspace } =
       await import('@affine/electron/helper/workspace/handlers');
