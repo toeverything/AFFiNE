@@ -73,12 +73,6 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
       return;
     }
 
-    console.log('[connector-tool:create]', {
-      mode: this._mode,
-      source: this._source,
-      startPoint: this._startPoint,
-    });
-
     this.doc.captureSync();
     const id = this.gfx.surface.addElement({
       type: CanvasElementType.CONNECTOR,
@@ -264,11 +258,6 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
   quickConnectFromAnchor(point: IVec, element: GfxModel, position: IVec) {
     this._skipClickOnce = true;
     this._lockSourcePosition = true;
-    console.log('[connector-tool:quickConnectFromAnchor]', {
-      point,
-      elementId: element.id,
-      position,
-    });
     this._startPoint = this.gfx.viewport.toModelCoord(point[0], point[1]);
     this._mode = ConnectorToolMode.Quick;
     this._sourceBounds = Bound.deserialize(element.xywh);

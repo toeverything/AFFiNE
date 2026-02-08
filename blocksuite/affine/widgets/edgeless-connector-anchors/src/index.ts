@@ -17,10 +17,6 @@ import { literal, unsafeStatic } from 'lit/static-html.js';
 export const AFFINE_EDGELESS_CONNECTOR_ANCHORS_WIDGET =
   'affine-edgeless-connector-anchors-widget';
 
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).__affineConnectorAnchorsWidgetLoaded = true;
-}
-
 export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
   static override styles = css`
     :host {
@@ -38,6 +34,9 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
   private _hoverHighlight: IVec | null = null;
 
   private _hoverConnection: { id?: string; position?: IVec } | null = null;
+
+  private _pendingPointer: IVec | null = null;
+  private _hoverRafId: number | null = null;
 
   private _clearOverlay() {
     this._hoveredElement = null;
@@ -60,10 +59,8 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
     const std = this.std;
     const edgeless = std.view.getBlock(std.store.root!.id);
     if (!edgeless?.host?.event) {
-      console.log('[connector-anchors] missing edgeless host event');
       return;
     }
-    console.log('[connector-anchors] widget mounted');
 
     _disposables.add(
       edgeless.host.event.add('dragStart', () => {
@@ -91,27 +88,30 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
 
         const state = ctx.get('pointerState');
         const [x, y] = gfx.viewport.toModelCoord(state.x, state.y);
-        const result = this._overlay?.renderConnector([x, y]);
-        console.log('[connector-anchors:hover]', {
-          x,
-          y,
-          id: result?.id,
-          highlight: this._overlay?.highlightPoint ?? null,
+        this._pendingPointer = [x, y];
+        if (this._hoverRafId) return;
+        this._hoverRafId = requestAnimationFrame(() => {
+          this._hoverRafId = null;
+          const pending = this._pendingPointer;
+          if (!pending) return;
+          this._pendingPointer = null;
+
+          const result = this._overlay?.renderConnector(pending);
+          if (!result?.id) {
+            this._clearOverlay();
+            return;
+          }
+
+          const element = gfx.getElementById(result.id) as GfxModel | null;
+          if (!element || ('type' in element && element.type === 'connector')) {
+            this._clearOverlay();
+            return;
+          }
+
+          this._hoveredElement = element;
+          this._hoverHighlight = this._overlay?.highlightPoint ?? null;
+          this._hoverConnection = result ?? null;
         });
-        if (!result?.id) {
-          this._clearOverlay();
-          return;
-        }
-
-        const element = gfx.getElementById(result.id) as GfxModel | null;
-        if (!element || ('type' in element && element.type === 'connector')) {
-          this._clearOverlay();
-          return;
-        }
-
-        this._hoveredElement = element;
-        this._hoverHighlight = this._overlay?.highlightPoint ?? null;
-        this._hoverConnection = result ?? null;
       })
     );
 
@@ -148,11 +148,6 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
         gfx.tool.setTool(ConnectorTool, { mode: lastMode });
         const tool = gfx.tool.get(ConnectorTool);
         const anchor = this._hoverConnection;
-        console.log('[connector-anchors:click]', {
-          elementId: this._hoveredElement.id,
-          anchor,
-          dist,
-        });
         if (anchor?.position) {
           tool.quickConnectFromAnchor(
             [state.x, state.y],
@@ -173,37 +168,8 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
     );
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    if (typeof globalThis !== 'undefined') {
-      (globalThis as any).__affineConnectorAnchorsWidgetConnected = true;
-    }
-  }
-
   override render() {
-    const styles = css`
-      .debug-dot {
-        position: absolute;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: rgba(255, 0, 0, 0.8);
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-      }
-    `;
-    let dotStyle = 'display: none;';
-    if (this._hoverHighlight) {
-      const [left, top] = this._gfx.viewport.toViewCoord(
-        this._hoverHighlight[0],
-        this._hoverHighlight[1]
-      );
-      dotStyle = `left: ${left}px; top: ${top}px;`;
-    }
-    return html`<style>
-        ${styles}
-      </style>
-      <div class="debug-dot" style=${dotStyle}></div>`;
+    return html``;
   }
 }
 
