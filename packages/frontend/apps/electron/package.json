@@ -54,7 +54,7 @@
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uuid": "^11.0.0",
-    "@vitejs/plugin-react-swc": "^3.7.2",
+    "@vitejs/plugin-react-swc": "^4.0.0",
     "app-builder-lib": "^26.1.0",
     "builder-util-runtime": "^9.5.0",
     "cross-env": "^10.1.0",
