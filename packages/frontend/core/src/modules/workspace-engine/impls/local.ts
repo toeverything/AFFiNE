@@ -167,10 +167,16 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         logger.error('Failed to scan local workspace ids', e);
       }
 
-      const mergedIds = [
-        ...new Set([...persistedIds, ...legacyIds, ...scannedIds]),
-      ];
-      setLocalWorkspaceIds(mergedIds);
+      setLocalWorkspaceIds(currentIds => {
+        return [
+          ...new Set([
+            ...currentIds,
+            ...persistedIds,
+            ...legacyIds,
+            ...scannedIds,
+          ]),
+        ];
+      });
     })()
       .catch(e => {
         logger.error('Failed to migrate local workspace ids', e);
