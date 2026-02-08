@@ -1,7 +1,7 @@
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
-import { ArrowUpSmallIcon, GridIcon } from '@blocksuite/icons/lit';
+import { GridIcon } from '@blocksuite/icons/lit';
 import type { BlockStdScope } from '@blocksuite/std';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -313,7 +313,6 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
           title="Grid & Snap Settings"
         >
           ${GridIcon({ width: '20px', height: '20px' })}
-          ${ArrowUpSmallIcon({ width: '16px', height: '16px' })}
         </button>
 
         ${this._isOpen
