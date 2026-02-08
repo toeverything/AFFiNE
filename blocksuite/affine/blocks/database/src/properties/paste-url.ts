@@ -8,6 +8,11 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import type { InlineRange } from '@blocksuite/std/inline';
 
+type UrlPasteInlineEditor = Pick<
+  AffineInlineEditor,
+  'insertText' | 'setInlineRange'
+>;
+
 export function analyzeTextForUrlPaste(text: string) {
   const segments = splitTextByUrl(text);
   const firstSegment = segments[0];
@@ -22,11 +27,12 @@ export function analyzeTextForUrlPaste(text: string) {
 }
 
 export function insertUrlTextSegments(
-  inlineEditor: AffineInlineEditor,
+  inlineEditor: UrlPasteInlineEditor,
   inlineRange: InlineRange,
   segments: UrlTextSegment[]
 ) {
   let index = inlineRange.index;
+  let replacedSelection = false;
   segments.forEach(segment => {
     if (!segment.text) return;
     const attributes: AffineTextAttributes | undefined = segment.link
@@ -35,11 +41,12 @@ export function insertUrlTextSegments(
     inlineEditor.insertText(
       {
         index,
-        length: 0,
+        length: replacedSelection ? 0 : inlineRange.length,
       },
       segment.text,
       attributes
     );
+    replacedSelection = true;
     index += segment.text.length;
   });
   inlineEditor.setInlineRange({
