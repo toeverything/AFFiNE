@@ -88,8 +88,14 @@ export function getCurrentNativeRange(selection = window.getSelection()) {
   return selection.getRangeAt(0);
 }
 
+// functions need to be mocked in unit-test
+export const api = {
+  caretRangeFromPoint,
+  resetNativeSelection,
+};
+
 export function handleNativeRangeAtPoint(x: number, y: number) {
-  const range = caretRangeFromPoint(x, y);
+  const range = api.caretRangeFromPoint(x, y);
   if (range) {
     normalizeCaretRange(range);
   }
@@ -97,7 +103,7 @@ export function handleNativeRangeAtPoint(x: number, y: number) {
   const startContainer = range?.startContainer;
   // click on rich text
   if (startContainer instanceof Node) {
-    resetNativeSelection(range);
+    api.resetNativeSelection(range);
   }
 }
 
