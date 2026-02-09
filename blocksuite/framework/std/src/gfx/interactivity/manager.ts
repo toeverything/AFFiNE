@@ -943,6 +943,7 @@ export class InteractivityManager extends GfxExtension {
       handlePos,
       currentHandlePos,
       lockRatio,
+      matrix,
     }) => {
       let snappedPos = currentHandlePos;
       if (this.keyboard.shiftKey$.peek()) {
@@ -961,6 +962,9 @@ export class InteractivityManager extends GfxExtension {
         // Convert snapped position to local space
        // Convert world-space points into local space using the resize transform
         const invMatrix = matrix.clone().invert();
+            if (!matrix) {
+              return { scaleX, scaleY };
+            }
         
         const snappedLocal = Point.from(
           invMatrix.apply([snappedPos.x, snappedPos.y])
