@@ -473,39 +473,40 @@ export const EdgelessNoteInteraction =
 
                   if (isClickOnTitle) {
                     handleNativeRangeAtPoint(e.clientX, e.clientY);
+                    return;
+                  }
+
+                  if (model.children.length === 0) {
+                    const blockId = std.store.addBlock(
+                      'affine:paragraph',
+                      { type: 'text' },
+                      model.id
+                    );
+
+                    if (blockId) {
+                      focusTextModel(std, blockId);
+                    }
                   } else {
-                    if (model.children.length === 0) {
-                      const blockId = std.store.addBlock(
-                        'affine:paragraph',
-                        { type: 'text' },
-                        model.id
+                    const rect = view
+                      .querySelector('.affine-block-children-container')
+                      ?.getBoundingClientRect();
+
+                    if (rect) {
+                      const offsetY = 8 * gfx.viewport.zoom;
+                      const offsetX = 2 * gfx.viewport.zoom;
+                      const x = clamp(
+                        e.clientX,
+                        rect.left + offsetX,
+                        rect.right - offsetX
                       );
-
-                      if (blockId) {
-                        focusTextModel(std, blockId);
-                      }
+                      const y = clamp(
+                        e.clientY,
+                        rect.top + offsetY,
+                        rect.bottom - offsetY
+                      );
+                      handleNativeRangeAtPoint(x, y);
                     } else {
-                      const rect = view
-                        .querySelector('.affine-block-children-container')
-                        ?.getBoundingClientRect();
-
-                      if (rect) {
-                        const offsetY = 8 * gfx.viewport.zoom;
-                        const offsetX = 2 * gfx.viewport.zoom;
-                        const x = clamp(
-                          e.clientX,
-                          rect.left + offsetX,
-                          rect.right - offsetX
-                        );
-                        const y = clamp(
-                          e.clientY,
-                          rect.top + offsetY,
-                          rect.bottom - offsetY
-                        );
-                        handleNativeRangeAtPoint(x, y);
-                      } else {
-                        handleNativeRangeAtPoint(e.clientX, e.clientY);
-                      }
+                      handleNativeRangeAtPoint(e.clientX, e.clientY);
                     }
                   }
                 })
