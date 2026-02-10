@@ -1,6 +1,6 @@
 {
   "name": "@affine-tools/cli",
-  "version": "0.25.7",
+  "version": "0.26.1",
   "type": "module",
   "private": true,
   "bin": {
@@ -16,10 +16,10 @@
   },
   "dependencies": {
     "@affine-tools/utils": "workspace:*",
-    "@aws-sdk/client-s3": "^3.948.0",
+    "@affine/s3-compat": "workspace:*",
     "@napi-rs/simple-git": "^0.1.22",
     "@perfsee/webpack": "^1.13.0",
-    "@sentry/webpack-plugin": "^3.0.0",
+    "@sentry/webpack-plugin": "^4.0.0",
     "@swc/core": "^1.10.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@vanilla-extract/webpack-plugin": "^2.3.15",
@@ -31,7 +31,7 @@
     "html-webpack-plugin": "^5.6.3",
     "inquirer": "^12.3.0",
     "jsonc-parser": "^3.3.1",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "mime-types": "^3.0.0",
     "mini-css-extract-plugin": "^2.9.2",
     "node-loader": "^2.1.0",

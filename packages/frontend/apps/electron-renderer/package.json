@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron-renderer",
   "private": true,
-  "version": "0.25.7",
+  "version": "0.26.1",
   "type": "module",
   "scripts": {
     "build": "affine bundle",
@@ -25,8 +25,8 @@
     "next-themes": "^0.4.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "react-router-dom": "^6.30.2",
-    "uuid": "^11.1.0",
+    "react-router-dom": "^6.30.3",
+    "uuid": "^13.0.0",
     "webm-muxer": "^5.0.3"
   },
   "devDependencies": {

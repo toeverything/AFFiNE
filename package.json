@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.25.7",
+  "version": "0.26.1",
   "private": true,
   "author": "toeverything",
   "license": "MIT",
@@ -8,7 +8,6 @@
     ".",
     "blocksuite/**/*",
     "packages/*/*",
-    "packages/common/y-octo/node",
     "packages/frontend/apps/*",
     "tools/*",
     "docs/reference",

@@ -273,7 +273,7 @@ e2e('should mark notification as read', async t => {
   const count = await app.gql({
     query: notificationCountQuery,
   });
-  t.is(count.currentUser!.notificationCount, 0);
+  t.is(count.currentUser!.notifications.totalCount, 0);
 
   // read again should work
   for (const notification of notifications) {

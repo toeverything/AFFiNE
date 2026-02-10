@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use affine_common::hashcash::Stamp;
-use napi::{bindgen_prelude::AsyncTask, Env, Result, Task};
+use napi::{Env, Result, Task, bindgen_prelude::AsyncTask};
 use napi_derive::napi;
 
 pub struct AsyncVerifyChallengeResponse {
@@ -61,9 +61,30 @@ impl Task for AsyncMintChallengeResponse {
 }
 
 #[napi]
-pub fn mint_challenge_response(
-  resource: String,
-  bits: Option<u32>,
-) -> AsyncTask<AsyncMintChallengeResponse> {
+pub fn mint_challenge_response(resource: String, bits: Option<u32>) -> AsyncTask<AsyncMintChallengeResponse> {
   AsyncTask::new(AsyncMintChallengeResponse { bits, resource })
+}
+
+#[cfg(test)]
+mod tests {
+  use napi::Task;
+
+  use super::*;
+
+  #[test]
+  fn hashcash_roundtrip() {
+    let resource = "test-resource".to_string();
+    let mut mint = AsyncMintChallengeResponse {
+      bits: Some(8),
+      resource: resource.clone(),
+    };
+    let stamp = mint.compute().unwrap();
+
+    let mut verify = AsyncVerifyChallengeResponse {
+      response: stamp,
+      bits: 8,
+      resource,
+    };
+    assert!(verify.compute().unwrap());
+  }
 }

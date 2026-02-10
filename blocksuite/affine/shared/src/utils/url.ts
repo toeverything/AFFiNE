@@ -95,28 +95,107 @@ export function isValidUrl(str: string, baseUrl = location.origin) {
   return result?.allowed ?? false;
 }
 
+const URL_SCHEME_IN_TOKEN_REGEXP =
+  /(?:https?:\/\/|ftp:\/\/|sftp:\/\/|mailto:|tel:|www\.)/i;
+
+const URL_LEADING_DELIMITER_REGEXP = /^[-([{<'"~]+/;
+
+const URL_TRAILING_DELIMITER_REGEXP = /[)\]}>.,;:!?'"]+$/;
+
+export type UrlTextSegment = {
+  text: string;
+  link?: string;
+};
+
+function appendUrlTextSegment(
+  segments: UrlTextSegment[],
+  segment: UrlTextSegment
+) {
+  if (!segment.text) return;
+  const last = segments[segments.length - 1];
+  if (last && !last.link && !segment.link) {
+    last.text += segment.text;
+    return;
+  }
+  segments.push(segment);
+}
+
+function splitTokenByUrl(token: string, baseUrl: string): UrlTextSegment[] {
+  const schemeMatch = token.match(URL_SCHEME_IN_TOKEN_REGEXP);
+  const schemeIndex = schemeMatch?.index;
+  if (typeof schemeIndex === 'number' && schemeIndex > 0) {
+    return [
+      { text: token.slice(0, schemeIndex) },
+      ...splitTokenByUrl(token.slice(schemeIndex), baseUrl),
+    ];
+  }
+
+  const leading = token.match(URL_LEADING_DELIMITER_REGEXP)?.[0] ?? '';
+  const withoutLeading = token.slice(leading.length);
+  const trailing =
+    withoutLeading.match(URL_TRAILING_DELIMITER_REGEXP)?.[0] ?? '';
+  const core = trailing
+    ? withoutLeading.slice(0, withoutLeading.length - trailing.length)
+    : withoutLeading;
+
+  if (core && isValidUrl(core, baseUrl)) {
+    const segments: UrlTextSegment[] = [];
+    appendUrlTextSegment(segments, { text: leading });
+    appendUrlTextSegment(segments, { text: core, link: normalizeUrl(core) });
+    appendUrlTextSegment(segments, { text: trailing });
+    return segments;
+  }
+
+  return [{ text: token }];
+}
+
+/**
+ * Split plain text into mixed segments, where only URL segments carry link metadata.
+ * This is used by paste handlers so text like `example:https://google.com` keeps
+ * normal text while only URL parts are linkified.
+ */
+export function splitTextByUrl(text: string, baseUrl = location.origin) {
+  const chunks = text.match(/\s+|\S+/g);
+  if (!chunks) {
+    return [];
+  }
+
+  const segments: UrlTextSegment[] = [];
+  chunks.forEach(chunk => {
+    if (/^\s+$/.test(chunk)) {
+      appendUrlTextSegment(segments, { text: chunk });
+      return;
+    }
+    splitTokenByUrl(chunk, baseUrl).forEach(segment => {
+      appendUrlTextSegment(segments, segment);
+    });
+  });
+  return segments;
+}
+
 // https://en.wikipedia.org/wiki/Top-level_domain
 const COMMON_TLDS = new Set([
-  'com',
-  'org',
-  'net',
-  'edu',
-  'gov',
-  'co',
-  'io',
-  'me',
-  'moe',
-  'mil',
-  'top',
-  'dev',
-  'xyz',
-  'info',
   'cat',
-  'ru',
+  'co',
+  'com',
   'de',
+  'dev',
+  'edu',
+  'eu',
+  'gov',
+  'info',
+  'io',
   'jp',
-  'uk',
+  'me',
+  'mil',
+  'moe',
+  'net',
+  'org',
   'pro',
+  'ru',
+  'top',
+  'uk',
+  'xyz',
 ]);
 
 function isCommonTLD(url: URL) {

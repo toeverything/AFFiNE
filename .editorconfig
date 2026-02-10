@@ -1,6 +1,8 @@
 # Editor configuration, see http://editorconfig.org
 root = true
 
+[*.rs]
+max_line_length = 120
 [*]
 charset = utf-8
 indent_style = space

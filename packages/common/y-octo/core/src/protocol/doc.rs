@@ -5,10 +5,9 @@ use super::*;
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum DocMessage {
   // state vector
-  // TODO: temporarily skipped in the test, because yrs decoding needs to ensure that the update
-  // in step1 is the correct state vector binary       and any data can be included in our
-  // implementation (we will ensure the correctness of encoding and decoding in the subsequent
-  // decoding process)
+  // TODO: temporarily skipped in the test, because yrs decoding needs to ensure that the update in step1 is the
+  // correct state vector binary       and any data can be included in our implementation (we will ensure the
+  // correctness of encoding and decoding in the subsequent decoding process)
   #[cfg_attr(test, proptest(skip))]
   Step1(Vec<u8>),
   // update

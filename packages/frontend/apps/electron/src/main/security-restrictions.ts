@@ -2,35 +2,7 @@ import { app } from 'electron';
 
 import { anotherHost, mainHost } from './constants';
 import { openExternalSafely } from './security/open-external';
-
-const extractRedirectTarget = (rawUrl: string) => {
-  try {
-    const parsed = new URL(rawUrl);
-    const redirectUri = parsed.searchParams.get('redirect_uri');
-    if (redirectUri) {
-      return redirectUri;
-    }
-
-    if (parsed.hash) {
-      const hash = parsed.hash.startsWith('#')
-        ? parsed.hash.slice(1)
-        : parsed.hash;
-
-      const queryIndex = hash.indexOf('?');
-      if (queryIndex !== -1) {
-        const hashParams = new URLSearchParams(hash.slice(queryIndex + 1));
-        const hashRedirect = hashParams.get('redirect_uri');
-        if (hashRedirect) {
-          return hashRedirect;
-        }
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-};
+import { validateRedirectProxyUrl } from './security/redirect-proxy';
 
 app.on('web-contents-created', (_, contents) => {
   const isInternalUrl = (url: string) => {
@@ -80,17 +52,18 @@ app.on('web-contents-created', (_, contents) => {
         console.error('[security] Failed to open external URL:', error);
       });
     } else if (url.includes('/redirect-proxy')) {
-      const redirectTarget = extractRedirectTarget(url);
-      if (redirectTarget) {
-        openExternalSafely(redirectTarget).catch(error => {
-          console.error('[security] Failed to open external URL:', error);
-        });
-      } else {
+      const result = validateRedirectProxyUrl(url);
+      if (!result.allow) {
         console.warn(
-          '[security] Blocked redirect proxy with missing redirect target:',
-          url
+          `[security] Blocked redirect proxy: ${result.reason}`,
+          result.redirectTarget ?? url
         );
+        return { action: 'deny' };
       }
+
+      openExternalSafely(result.redirectTarget).catch(error => {
+        console.error('[security] Failed to open external URL:', error);
+      });
     }
     // Prevent creating new window in application
     return { action: 'deny' };

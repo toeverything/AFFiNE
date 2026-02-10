@@ -14,7 +14,7 @@
     "@types/lodash-es": "^4.17.12",
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.2",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6"
   },
@@ -33,5 +33,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.7"
+  "version": "0.26.1"
 }

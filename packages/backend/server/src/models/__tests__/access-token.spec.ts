@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 
 import { createModule } from '../../__tests__/create-module';
@@ -23,8 +24,16 @@ test('should create access token', async t => {
   t.is(token.userId, user.id);
   t.is(token.name, 'test');
   t.truthy(token.token);
+  t.true(token.token.startsWith('ut_'));
   t.truthy(token.createdAt);
   t.is(token.expiresAt, null);
+
+  const row = await module.get(PrismaClient).accessToken.findUnique({
+    where: { id: token.id },
+  });
+  t.truthy(row);
+  t.regex(row!.token, /^[0-9a-f]{64}$/);
+  t.not(row!.token, token.token);
 });
 
 test('should create access token with expiration', async t => {
@@ -50,6 +59,22 @@ test('should list access tokens without token value', async t => {
   t.is(listed[0].token, undefined);
 });
 
+test('should not reveal access token value after creation', async t => {
+  const user = await module.create(Mockers.User);
+
+  const token = await models.accessToken.create({
+    userId: user.id,
+    name: 'test',
+  });
+
+  const listed = await models.accessToken.list(user.id, true);
+  const found = listed.find(item => item.id === token.id);
+
+  t.truthy(found);
+  t.is(found!.token, '[REDACTED]');
+  t.not(found!.token, token.token);
+});
+
 test('should be able to revoke access token', async t => {
   const user = await module.create(Mockers.User);
   const token = await module.create(Mockers.AccessToken, { userId: user.id });
@@ -62,7 +87,10 @@ test('should be able to revoke access token', async t => {
 
 test('should be able to get access token by token value', async t => {
   const user = await module.create(Mockers.User);
-  const token = await module.create(Mockers.AccessToken, { userId: user.id });
+  const token = await models.accessToken.create({
+    userId: user.id,
+    name: 'test',
+  });
 
   const found = await models.accessToken.getByToken(token.token);
   t.is(found?.id, token.id);
@@ -72,8 +100,9 @@ test('should be able to get access token by token value', async t => {
 
 test('should not get expired access token', async t => {
   const user = await module.create(Mockers.User);
-  const token = await module.create(Mockers.AccessToken, {
+  const token = await models.accessToken.create({
     userId: user.id,
+    name: 'test',
     expiresAt: Due.before('1s'),
   });
 

@@ -6,6 +6,7 @@ pub(crate) use search_marker::MarkerList;
 
 use super::*;
 
+#[derive(Debug)]
 pub(crate) struct ItemPosition {
   pub parent: YTypeRef,
   pub left: ItemRef,
@@ -56,6 +57,11 @@ impl ItemPosition {
 
 pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
   #[inline(always)]
+  fn _id(&self) -> Option<Id> {
+    self.as_inner().ty().and_then(|ty| ty.item.get().map(|item| item.id))
+  }
+
+  #[inline(always)]
   fn content_len(&self) -> u64 {
     self.as_inner().ty().unwrap().len
   }
@@ -84,22 +90,28 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
       return Some(pos);
     }
 
-    if let Some(markers) = &inner.markers {
-      if let Some(marker) = markers.find_marker(inner, index) {
-        if marker.index > remaining {
-          remaining = 0
-        } else {
-          remaining -= marker.index;
-        }
-        pos.index = marker.index;
-        pos.left = marker
-          .ptr
-          .get()
-          .map(|ptr| ptr.left.clone())
-          .unwrap_or_default();
-        pos.right = marker.ptr;
+    if let Some(markers) = &inner.markers
+      && let Some(marker) = markers.find_marker(inner, index)
+    {
+      if marker.index > remaining {
+        remaining = 0
+      } else {
+        remaining -= marker.index;
       }
+      pos.index = marker.index;
+      pos.left = marker.ptr.get().map(|ptr| ptr.left.clone()).unwrap_or_default();
+      pos.right = marker.ptr;
     };
+
+    // avoid the first item of the list being deleted
+    while let Some(item) = pos.right.get() {
+      if item.deleted() {
+        pos.right = item.right.clone();
+        continue;
+      } else {
+        break;
+      }
+    }
 
     while remaining > 0 {
       if let Some(item) = pos.right.get() {
@@ -141,16 +153,11 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
     Ok(())
   }
 
-  fn insert_after(
-    ty: &mut YType,
-    store: &mut DocStore,
-    pos: ItemPosition,
-    content: Content,
-  ) -> JwstCodecResult {
-    if let Some(markers) = &ty.markers {
-      if content.countable() {
-        markers.update_marker_changes(pos.index, content.clock_len() as i64);
-      }
+  fn insert_after(ty: &mut YType, store: &mut DocStore, pos: ItemPosition, content: Content) -> JwstCodecResult {
+    if let Some(markers) = &ty.markers
+      && content.countable()
+    {
+      markers.update_marker_changes(pos.index, content.clock_len() as i64);
     }
 
     let item = store.create_item(
@@ -189,7 +196,12 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
       return Ok(());
     }
 
-    if idx >= self.content_len() {
+    let content_len = self.content_len();
+    if content_len == 0 {
+      return Ok(());
+    }
+
+    if idx >= content_len {
       return Err(JwstCodecError::IndexOutOfBound(idx));
     }
 
@@ -204,34 +216,32 @@ pub(crate) trait ListType: AsInner<Inner = YTypeRef> {
     Ok(())
   }
 
-  fn remove_after(
-    ty: &mut YType,
-    store: &mut DocStore,
-    mut pos: ItemPosition,
-    len: u64,
-  ) -> JwstCodecResult {
+  fn remove_after(ty: &mut YType, store: &mut DocStore, mut pos: ItemPosition, len: u64) -> JwstCodecResult {
     pos.normalize(store)?;
 
     let mut remaining = len;
 
     while remaining > 0 {
-      if let Some(item) = pos.right.get() {
-        if item.indexable() {
-          let content_len = item.len();
-          if remaining < content_len {
-            store.split_node(item.id, remaining)?;
-            remaining = 0;
-          } else {
-            remaining -= content_len;
-          }
+      let item_ref = pos.right.clone();
+      let Some((indexable, content_len, item_id)) = item_ref.get().map(|item| (item.indexable(), item.len(), item.id))
+      else {
+        break;
+      };
 
-          store.delete_item(item, Some(ty));
+      if indexable {
+        if remaining < content_len {
+          store.split_node(item_id, remaining)?;
+          remaining = 0;
+        } else {
+          remaining -= content_len;
         }
 
-        pos.forward();
-      } else {
-        break;
+        if let Some(item) = item_ref.get() {
+          store.delete_item(item, Some(ty));
+        }
       }
+
+      pos.forward();
     }
 
     if let Some(markers) = &ty.markers {

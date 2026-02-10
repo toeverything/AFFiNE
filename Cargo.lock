@@ -43,8 +43,11 @@ dependencies = [
  "criterion",
  "docx-parser",
  "infer",
+ "nanoid",
+ "napi",
  "path-ext",
  "pdf-extract",
+ "pulldown-cmark",
  "rand 0.9.2",
  "rayon",
  "readability",
@@ -124,6 +127,7 @@ dependencies = [
  "affine_nbstore",
  "affine_sqlite_v1",
  "chrono",
+ "mimalloc",
  "napi",
  "napi-build",
  "napi-derive",
@@ -672,9 +676,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "bytes"
-version = "1.11.0"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b35204fbdc0b3f4446b89fc1ac2cf84a8a68971995d0bf2e925ec7cd960f9cb3"
+checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 
 [[package]]
 name = "camino"
@@ -1794,6 +1798,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "getopts"
+version = "0.2.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe4fbac503b8d1f88e6676011885f34b7174f46e59956bba534ba83abded4df"
+dependencies = [
+ "unicode-width",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2636,15 +2649,16 @@ checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
 name = "memory-indexer"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36308f8c9f537d7624a30cd4d6243c54143221e4e0dc2a699783c206604befbd"
+checksum = "c2b5b765680ef95f5cd17cae452625c014e03d148045dc1d9604fb00cb602888"
 dependencies = [
  "jieba-rs",
  "once_cell",
  "pinyin",
  "serde",
  "serde_json",
+ "smol_str",
  "strsim",
  "unicode-normalization",
  "unicode-script",
@@ -3279,9 +3293,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pinyin"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16f2611cd06a1ac239a0cea4521de9eb068a6ca110324ee00631aa68daa74fc0"
+checksum = "e225f595052d9c46045755be4b8d7950b6d9f3c33e0c0b74ba58f11bbfa8c64b"
 
 [[package]]
 name = "pkcs1"
@@ -3473,9 +3487,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e8bbe1a966bd2f362681a44f6edce3c2310ac21e4d5067a6e7ec396297a6ea0"
 dependencies = [
  "bitflags 2.10.0",
+ "getopts",
  "memchr",
+ "pulldown-cmark-escape",
  "unicase",
 ]
+
+[[package]]
+name = "pulldown-cmark-escape"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
 
 [[package]]
 name = "quick-error"
@@ -5161,6 +5183,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
+name = "unicode-width"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
+
+[[package]]
 name = "uniffi"
 version = "0.29.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6054,7 +6082,7 @@ checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "y-octo"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -6079,17 +6107,6 @@ dependencies = [
  "smol_str",
  "thiserror 2.0.17",
  "yrs",
-]
-
-[[package]]
-name = "y-octo-node"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "napi",
- "napi-build",
- "napi-derive",
- "y-octo",
 ]
 
 [[package]]

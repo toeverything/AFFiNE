@@ -5,7 +5,7 @@ import {
   completeBlobUploadMutation,
   createBlobUploadMutation,
   deleteBlobMutation,
-  getBlobUploadPartUrlMutation,
+  getBlobUploadPartUrlQuery,
   listBlobsQuery,
   releaseDeletedBlobsMutation,
   setBlobMutation,
@@ -265,16 +265,16 @@ export class CloudBlobStorage extends BlobStorageBase {
       const chunk = data.subarray(start, end);
 
       const part = await this.connection.gql({
-        query: getBlobUploadPartUrlMutation,
+        query: getBlobUploadPartUrlQuery,
         variables: { workspaceId: this.options.id, key, uploadId, partNumber },
         context: { signal },
       });
 
       const res = await this.fetchWithTimeout(
-        part.getBlobUploadPartUrl.uploadUrl,
+        part.workspace.blobUploadPartUrl.uploadUrl,
         {
           method: 'PUT',
-          headers: part.getBlobUploadPartUrl.headers ?? undefined,
+          headers: part.workspace.blobUploadPartUrl.headers ?? undefined,
           body: chunk,
           signal,
           timeout: UPLOAD_REQUEST_TIMEOUT,

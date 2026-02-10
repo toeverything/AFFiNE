@@ -87,12 +87,7 @@ fn convert_to_markdown() -> impl Iterator<Item = String> {
         let diff = -(1.0 - changes_dur_secs / base_dur_secs) * 100.0;
         difference = format!("{diff:+.2}%");
 
-        if is_significant(
-          changes_dur_secs,
-          changes_err_secs,
-          base_dur_secs,
-          base_err_secs,
-        ) {
+        if is_significant(changes_dur_secs, changes_err_secs, base_dur_secs, base_err_secs) {
           difference = format!("**{difference}**");
         }
       }
@@ -100,16 +95,8 @@ fn convert_to_markdown() -> impl Iterator<Item = String> {
       Some(format!(
         "| {} | {} | {} | {} |",
         name.replace('|', "\\|"),
-        if base_undefined {
-          "N/A"
-        } else {
-          &base_duration
-        },
-        if changes_undefined {
-          "N/A"
-        } else {
-          &changes_duration
-        },
+        if base_undefined { "N/A" } else { &base_duration },
+        if changes_undefined { "N/A" } else { &changes_duration },
         difference
       ))
     })

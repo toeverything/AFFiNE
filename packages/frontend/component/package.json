@@ -56,7 +56,7 @@
     "foxact": "^0.2.49",
     "jotai": "^2.10.3",
     "lit": "^3.2.1",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "lottie-react": "^2.4.0",
     "lottie-web": "^5.12.2",
     "nanoid": "^5.1.6",
@@ -64,7 +64,7 @@
     "react": "^19.2.1",
     "react-dom": "19.2.1",
     "react-paginate": "^8.3.0",
-    "react-router-dom": "^6.30.2",
+    "react-router-dom": "^6.30.3",
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
@@ -73,7 +73,7 @@
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@chromatic-com/storybook": "^4.1.3",
+    "@chromatic-com/storybook": "^5.0.0",
     "@storybook/react": "^10.0.0",
     "@storybook/react-vite": "^10.0.0",
     "@testing-library/dom": "^10.4.0",
@@ -88,5 +88,5 @@
     "vite": "^7.2.7",
     "vitest": "^3.2.4"
   },
-  "version": "0.25.7"
+  "version": "0.26.1"
 }

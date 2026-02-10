@@ -87,7 +87,7 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
       return { allow_promotion_codes: true };
     })();
 
-    let successUrl = this.url.link(params.successCallbackLink);
+    let successUrl = this.url.safeLink(params.successCallbackLink || '/');
     // stripe only accept unescaped '{CHECKOUT_SESSION_ID}' as query
     successUrl = this.url.addSimpleQuery(
       successUrl,

@@ -99,7 +99,13 @@ export const App = () => {
                 <Route path={ROUTES.admin.accounts} element={<Accounts />} />
                 <Route
                   path={ROUTES.admin.workspaces}
-                  element={<Workspaces />}
+                  element={
+                    environment.isSelfHosted ? (
+                      <Navigate to={ROUTES.admin.accounts} replace />
+                    ) : (
+                      <Workspaces />
+                    )
+                  }
                 />
                 <Route path={`${ROUTES.admin.queue}/*`} element={<Queue />} />
                 <Route path={ROUTES.admin.ai} element={<AI />} />

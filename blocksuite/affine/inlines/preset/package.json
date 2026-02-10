@@ -38,7 +38,7 @@
     "katex": "^0.16.27",
     "lit": "^3.2.0",
     "lit-html": "^3.2.1",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "remark-math": "^6.0.0",
     "rxjs": "^7.8.2",
     "shiki": "^3.19.0",
@@ -56,5 +56,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.25.7"
+  "version": "0.26.1"
 }

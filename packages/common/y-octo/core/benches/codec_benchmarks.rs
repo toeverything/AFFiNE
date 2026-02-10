@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
+use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
 use y_octo::{read_var_i32, read_var_u64, write_var_i32, write_var_u64};
 
 const BENCHMARK_SIZE: u32 = 100000;

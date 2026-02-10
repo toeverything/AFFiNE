@@ -213,11 +213,9 @@ export class DatabaseDocReader extends DocReader {
     guid: string,
     fullContent?: boolean
   ): Promise<PageDocContent | null> {
-    const docRecord = await this.workspace.getDoc(workspaceId, guid);
-    if (!docRecord) {
-      return null;
-    }
-    return this.parseDocContent(docRecord.bin, fullContent ? -1 : 150);
+    const docBinary = await this.workspace.getDocBinNative(workspaceId, guid);
+    if (!docBinary) return null;
+    return this.parseDocContent(docBinary, fullContent ? -1 : 150);
   }
 
   protected override async getWorkspaceContentWithoutCache(
@@ -259,12 +257,13 @@ export class RpcDocReader extends DatabaseDocReader {
     super(cache, models, blobStorage, workspace);
   }
 
-  private async fetch(
-    accessToken: string,
-    url: string,
-    method: 'GET' | 'POST',
-    body?: Uint8Array
-  ) {
+  private async fetch(url: string, method: 'GET' | 'POST', body?: Uint8Array) {
+    const { pathname } = new URL(url);
+    const accessToken = this.crypto.signInternalAccessToken({
+      method,
+      path: pathname,
+    });
+
     const headers: Record<string, string> = {
       'x-access-token': accessToken,
       'x-cloud-trace-context': getOrGenRequestId('rpc'),
@@ -295,9 +294,8 @@ export class RpcDocReader extends DatabaseDocReader {
     docId: string
   ): Promise<DocRecord | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -332,9 +330,8 @@ export class RpcDocReader extends DatabaseDocReader {
     aiEditable: boolean
   ): Promise<DocMarkdown | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown?aiEditable=${aiEditable}`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -360,9 +357,8 @@ export class RpcDocReader extends DatabaseDocReader {
     stateVector?: Uint8Array
   ): Promise<DocDiff | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'POST', stateVector);
+      const res = await this.fetch(url, 'POST', stateVector);
       if (!res) {
         return null;
       }
@@ -401,9 +397,8 @@ export class RpcDocReader extends DatabaseDocReader {
     fullContent = false
   ): Promise<PageDocContent | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content?full=${fullContent}`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -429,9 +424,8 @@ export class RpcDocReader extends DatabaseDocReader {
     workspaceId: string
   ): Promise<WorkspaceDocInfo | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/content`;
-    const accessToken = this.crypto.sign(workspaceId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }

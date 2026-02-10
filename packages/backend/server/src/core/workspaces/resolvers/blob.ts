@@ -7,7 +7,6 @@ import {
   Mutation,
   ObjectType,
   Parent,
-  Query,
   registerEnumType,
   ResolveField,
   Resolver,
@@ -33,7 +32,7 @@ import {
   MULTIPART_PART_SIZE,
   MULTIPART_THRESHOLD,
 } from '../../storage/constants';
-import { WorkspaceBlobSizes, WorkspaceType } from '../types';
+import { WorkspaceType } from '../types';
 
 enum BlobUploadMethod {
   GRAPHQL = 'GRAPHQL',
@@ -156,12 +155,17 @@ export class WorkspaceBlobResolver {
     return this.storage.totalSize(workspace.id);
   }
 
-  @Query(() => WorkspaceBlobSizes, {
-    deprecationReason: 'use `user.quotaUsage` instead',
+  @ResolveField(() => BlobUploadPart, {
+    description: 'Get blob upload part url',
   })
-  async collectAllBlobSizes(@CurrentUser() user: CurrentUser) {
-    const size = await this.quota.getUserStorageUsage(user.id);
-    return { size };
+  async blobUploadPartUrl(
+    @CurrentUser() user: CurrentUser,
+    @Parent() workspace: WorkspaceType,
+    @Args('key') key: string,
+    @Args('uploadId') uploadId: string,
+    @Args('partNumber', { type: () => Int }) partNumber: number
+  ): Promise<BlobUploadPart> {
+    return this.getUploadPart(user, workspace.id, key, uploadId, partNumber);
   }
 
   @Mutation(() => String)
@@ -399,13 +403,27 @@ export class WorkspaceBlobResolver {
     return key;
   }
 
-  @Mutation(() => BlobUploadPart)
-  async getBlobUploadPartUrl(
+  @Mutation(() => Boolean)
+  async abortBlobUpload(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('key') key: string,
-    @Args('uploadId') uploadId: string,
-    @Args('partNumber', { type: () => Int }) partNumber: number
+    @Args('uploadId') uploadId: string
+  ) {
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Blobs.Write');
+
+    return this.storage.abortMultipartUpload(workspaceId, key, uploadId);
+  }
+
+  private async getUploadPart(
+    user: CurrentUser,
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
   ): Promise<BlobUploadPart> {
     await this.ac
       .user(user.id)
@@ -427,21 +445,6 @@ export class WorkspaceBlobResolver {
       headers: part.headers,
       expiresAt: part.expiresAt,
     };
-  }
-
-  @Mutation(() => Boolean)
-  async abortBlobUpload(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('key') key: string,
-    @Args('uploadId') uploadId: string
-  ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
-
-    return this.storage.abortMultipartUpload(workspaceId, key, uploadId);
   }
 
   @Mutation(() => Boolean)

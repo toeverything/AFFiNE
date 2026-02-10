@@ -1,6 +1,7 @@
 import { NbstoreProvider } from '@affine/core/modules/storage';
 import { apis } from '@affine/electron-api';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
+import { setTelemetryTransport } from '@affine/track';
 import type { Framework } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { v4 as uuid } from 'uuid';
@@ -43,6 +44,7 @@ function createStoreManagerClient() {
 
 export function setupStoreManager(framework: Framework) {
   const storeManagerClient = createStoreManagerClient();
+  setTelemetryTransport(storeManagerClient.telemetry);
   window.addEventListener('beforeunload', () => {
     storeManagerClient.dispose();
   });

@@ -289,8 +289,7 @@ impl<T> FlattenGet<T> for Option<Somr<T>> {
 
 impl<T: PartialEq> PartialEq for Somr<T> {
   fn eq(&self, other: &Self) -> bool {
-    self.ptr() == other.ptr()
-      || !self.dangling() && !other.dangling() && self.inner() == other.inner()
+    self.ptr() == other.ptr() || !self.dangling() && !other.dangling() && self.inner() == other.inner()
   }
 }
 
@@ -385,10 +384,7 @@ mod tests {
       let five_ref = five.clone();
       assert!(!five_ref.is_owned());
       assert_eq!(five_ref.get(), Some(&5));
-      assert_eq!(
-        five_ref.ptr().as_ptr() as usize,
-        five.ptr().as_ptr() as usize
-      );
+      assert_eq!(five_ref.ptr().as_ptr() as usize, five.ptr().as_ptr() as usize);
 
       drop(five);
       // owner released

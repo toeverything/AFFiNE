@@ -58,6 +58,42 @@ export const credentialsRequirementsFragment = `fragment CredentialsRequirements
     ...PasswordLimits
   }
 }`;
+export const currentUserProfileFragment = `fragment CurrentUserProfile on UserType {
+  id
+  name
+  email
+  avatarUrl
+  emailVerified
+  features
+  settings {
+    receiveInvitationEmail
+    receiveMentionEmail
+    receiveCommentEmail
+  }
+  quota {
+    name
+    blobLimit
+    storageQuota
+    historyPeriod
+    memberLimit
+    humanReadable {
+      name
+      blobLimit
+      storageQuota
+      historyPeriod
+      memberLimit
+    }
+  }
+  quotaUsage {
+    storageQuota
+  }
+  copilot {
+    quota {
+      limit
+      used
+    }
+  }
+}`;
 export const passwordLimitsFragment = `fragment PasswordLimits on PasswordLimitsType {
   minLength
   maxLength
@@ -88,12 +124,14 @@ export const listUserAccessTokensQuery = {
   id: 'listUserAccessTokensQuery' as const,
   op: 'listUserAccessTokens',
   query: `query listUserAccessTokens {
-  revealedAccessTokens {
-    id
-    name
-    createdAt
-    expiresAt
-    token
+  currentUser {
+    revealedAccessTokens {
+      id
+      name
+      createdAt
+      expiresAt
+      token
+    }
   }
 }`,
 };
@@ -444,10 +482,10 @@ export const updateAppConfigMutation = {
 }`,
 };
 
-export const validateConfigMutation = {
-  id: 'validateConfigMutation' as const,
+export const validateConfigQuery = {
+  id: 'validateConfigQuery' as const,
   op: 'validateConfig',
-  query: `mutation validateConfig($updates: [UpdateAppConfigInput!]!) {
+  query: `query validateConfig($updates: [UpdateAppConfigInput!]!) {
   validateAppConfig(updates: $updates) {
     module
     key
@@ -540,19 +578,196 @@ export const createBlobUploadMutation = {
 }`,
 };
 
-export const getBlobUploadPartUrlMutation = {
-  id: 'getBlobUploadPartUrlMutation' as const,
+export const getBlobUploadPartUrlQuery = {
+  id: 'getBlobUploadPartUrlQuery' as const,
   op: 'getBlobUploadPartUrl',
-  query: `mutation getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
-  getBlobUploadPartUrl(
-    workspaceId: $workspaceId
-    key: $key
-    uploadId: $uploadId
-    partNumber: $partNumber
+  query: `query getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+  workspace(id: $workspaceId) {
+    blobUploadPartUrl(key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+      uploadUrl
+      headers
+      expiresAt
+    }
+  }
+}`,
+};
+
+export const calendarAccountsQuery = {
+  id: 'calendarAccountsQuery' as const,
+  op: 'calendarAccounts',
+  query: `query calendarAccounts {
+  currentUser {
+    calendarAccounts {
+      id
+      provider
+      providerAccountId
+      displayName
+      email
+      status
+      lastError
+      refreshIntervalMinutes
+      calendarsCount
+      createdAt
+      updatedAt
+      calendars {
+        id
+        accountId
+        provider
+        externalCalendarId
+        displayName
+        timezone
+        color
+        enabled
+        lastSyncAt
+      }
+    }
+  }
+}`,
+};
+
+export const calendarEventsQuery = {
+  id: 'calendarEventsQuery' as const,
+  op: 'calendarEvents',
+  query: `query calendarEvents($workspaceId: String!, $from: DateTime!, $to: DateTime!) {
+  workspace(id: $workspaceId) {
+    calendars {
+      id
+      events(from: $from, to: $to) {
+        id
+        subscriptionId
+        externalEventId
+        recurrenceId
+        status
+        title
+        description
+        location
+        startAtUtc
+        endAtUtc
+        originalTimezone
+        allDay
+      }
+    }
+  }
+}`,
+};
+
+export const calendarProvidersQuery = {
+  id: 'calendarProvidersQuery' as const,
+  op: 'calendarProviders',
+  query: `query calendarProviders {
+  serverConfig {
+    calendarCalDAVProviders {
+      id
+      label
+      requiresAppPassword
+      docsUrl
+    }
+    calendarProviders
+  }
+}`,
+};
+
+export const linkCalDavAccountMutation = {
+  id: 'linkCalDavAccountMutation' as const,
+  op: 'linkCalDavAccount',
+  query: `mutation linkCalDavAccount($input: LinkCalDAVAccountInput!) {
+  linkCalDAVAccount(input: $input) {
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
+  }
+}`,
+};
+
+export const linkCalendarAccountMutation = {
+  id: 'linkCalendarAccountMutation' as const,
+  op: 'linkCalendarAccount',
+  query: `mutation linkCalendarAccount($input: LinkCalendarAccountInput!) {
+  linkCalendarAccount(input: $input)
+}`,
+};
+
+export const unlinkCalendarAccountMutation = {
+  id: 'unlinkCalendarAccountMutation' as const,
+  op: 'unlinkCalendarAccount',
+  query: `mutation unlinkCalendarAccount($accountId: String!) {
+  unlinkCalendarAccount(accountId: $accountId)
+}`,
+};
+
+export const updateCalendarAccountMutation = {
+  id: 'updateCalendarAccountMutation' as const,
+  op: 'updateCalendarAccount',
+  query: `mutation updateCalendarAccount($accountId: String!, $refreshIntervalMinutes: Int!) {
+  updateCalendarAccount(
+    accountId: $accountId
+    refreshIntervalMinutes: $refreshIntervalMinutes
   ) {
-    uploadUrl
-    headers
-    expiresAt
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
+  }
+}`,
+};
+
+export const updateWorkspaceCalendarsMutation = {
+  id: 'updateWorkspaceCalendarsMutation' as const,
+  op: 'updateWorkspaceCalendars',
+  query: `mutation updateWorkspaceCalendars($input: UpdateWorkspaceCalendarsInput!) {
+  updateWorkspaceCalendars(input: $input) {
+    id
+    workspaceId
+    createdByUserId
+    displayNameOverride
+    colorOverride
+    enabled
+    items {
+      id
+      subscriptionId
+      sortOrder
+      colorOverride
+      enabled
+    }
+  }
+}`,
+};
+
+export const workspaceCalendarsQuery = {
+  id: 'workspaceCalendarsQuery' as const,
+  op: 'workspaceCalendars',
+  query: `query workspaceCalendars($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    calendars {
+      id
+      workspaceId
+      createdByUserId
+      displayNameOverride
+      colorOverride
+      enabled
+      items {
+        id
+        subscriptionId
+        sortOrder
+        colorOverride
+        enabled
+      }
+    }
   }
 }`,
 };
@@ -765,10 +980,10 @@ export const uploadCommentAttachmentMutation = {
   file: true,
 };
 
-export const applyDocUpdatesQuery = {
-  id: 'applyDocUpdatesQuery' as const,
+export const applyDocUpdatesMutation = {
+  id: 'applyDocUpdatesMutation' as const,
   op: 'applyDocUpdates',
-  query: `query applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) {
+  query: `mutation applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) {
   applyDocUpdates(
     workspaceId: $workspaceId
     docId: $docId
@@ -1598,6 +1813,17 @@ export const getCurrentUserFeaturesQuery = {
 }`,
 };
 
+export const getCurrentUserProfileQuery = {
+  id: 'getCurrentUserProfileQuery' as const,
+  op: 'getCurrentUserProfile',
+  query: `query getCurrentUserProfile {
+  currentUser {
+    ...CurrentUserProfile
+  }
+}
+${currentUserProfileFragment}`,
+};
+
 export const getCurrentUserQuery = {
   id: 'getCurrentUserQuery' as const,
   op: 'getCurrentUser',
@@ -1848,6 +2074,28 @@ export const getWorkspaceInfoQuery = {
   op: 'getWorkspaceInfo',
   query: `query getWorkspaceInfo($workspaceId: String!) {
   workspace(id: $workspaceId) {
+    permissions {
+      Workspace_Administrators_Manage
+      Workspace_Blobs_List
+      Workspace_Blobs_Read
+      Workspace_Blobs_Write
+      Workspace_Copilot
+      Workspace_CreateDoc
+      Workspace_Delete
+      Workspace_Organize_Read
+      Workspace_Payment_Manage
+      Workspace_Properties_Create
+      Workspace_Properties_Delete
+      Workspace_Properties_Read
+      Workspace_Properties_Update
+      Workspace_Read
+      Workspace_Settings_Read
+      Workspace_Settings_Update
+      Workspace_Sync
+      Workspace_TransferOwner
+      Workspace_Users_Manage
+      Workspace_Users_Read
+    }
     role
     team
   }
@@ -2186,7 +2434,9 @@ export const notificationCountQuery = {
   op: 'notificationCount',
   query: `query notificationCount {
   currentUser {
-    notificationCount
+    notifications(pagination: {first: 1}) {
+      totalCount
+    }
   }
 }`,
 };
@@ -2373,6 +2623,7 @@ export const serverConfigQuery = {
     features
     type
     initialized
+    calendarProviders
     credentialsRequirement {
       ...CredentialsRequirements
     }

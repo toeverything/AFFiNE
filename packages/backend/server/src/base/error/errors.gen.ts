@@ -54,6 +54,27 @@ export class HttpRequestError extends UserFriendlyError {
     super('bad_request', 'http_request_error', message, args);
   }
 }
+@ObjectType()
+class SsrfBlockedErrorDataType {
+  @Field() reason!: string
+}
+
+export class SsrfBlockedError extends UserFriendlyError {
+  constructor(args: SsrfBlockedErrorDataType, message?: string | ((args: SsrfBlockedErrorDataType) => string)) {
+    super('invalid_input', 'ssrf_blocked_error', message, args);
+  }
+}
+@ObjectType()
+class ResponseTooLargeErrorDataType {
+  @Field() limitBytes!: number
+  @Field() receivedBytes!: number
+}
+
+export class ResponseTooLargeError extends UserFriendlyError {
+  constructor(args: ResponseTooLargeErrorDataType, message?: string | ((args: ResponseTooLargeErrorDataType) => string)) {
+    super('invalid_input', 'response_too_large_error', message, args);
+  }
+}
 
 export class EmailServiceNotConfigured extends UserFriendlyError {
   constructor(message?: string) {
@@ -656,6 +677,17 @@ export class ManagedByAppStoreOrPlay extends UserFriendlyError {
     super('action_forbidden', 'managed_by_app_store_or_play', message);
   }
 }
+@ObjectType()
+class CalendarProviderRequestErrorDataType {
+  @Field() status!: number
+  @Field() message!: string
+}
+
+export class CalendarProviderRequestError extends UserFriendlyError {
+  constructor(args: CalendarProviderRequestErrorDataType, message?: string | ((args: CalendarProviderRequestErrorDataType) => string)) {
+    super('internal_server_error', 'calendar_provider_request_error', message, args);
+  }
+}
 
 export class CopilotSessionNotFound extends UserFriendlyError {
   constructor(message?: string) {
@@ -1120,6 +1152,8 @@ export enum ErrorNames {
   BAD_REQUEST,
   GRAPHQL_BAD_REQUEST,
   HTTP_REQUEST_ERROR,
+  SSRF_BLOCKED_ERROR,
+  RESPONSE_TOO_LARGE_ERROR,
   EMAIL_SERVICE_NOT_CONFIGURED,
   QUERY_TOO_LONG,
   VALIDATION_ERROR,
@@ -1196,6 +1230,7 @@ export enum ErrorNames {
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION,
   MANAGED_BY_APP_STORE_OR_PLAY,
+  CALENDAR_PROVIDER_REQUEST_ERROR,
   COPILOT_SESSION_NOT_FOUND,
   COPILOT_SESSION_INVALID_INPUT,
   COPILOT_SESSION_DELETED,
@@ -1262,5 +1297,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

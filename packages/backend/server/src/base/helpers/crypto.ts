@@ -76,6 +76,8 @@ export class CryptoHelper implements OnModuleInit {
     };
   };
 
+  private previousPublicKeys: KeyObject[] = [];
+
   AFFiNEProPublicKey: Buffer | null = null;
   AFFiNEProLicenseAESKey: Buffer | null = null;
 
@@ -101,11 +103,22 @@ export class CryptoHelper implements OnModuleInit {
   }
 
   private setup() {
+    const prevPublicKey = this.keyPair?.publicKey;
     const privateKey = this.config.crypto.privateKey || generatePrivateKey();
     const { priv, pub } = parseKey(privateKey);
     const publicKey = pub
       .export({ format: 'pem', type: 'spki' })
       .toString('utf8');
+
+    if (prevPublicKey) {
+      const prevPem = prevPublicKey
+        .export({ format: 'pem', type: 'spki' })
+        .toString('utf8');
+      if (prevPem !== publicKey) {
+        this.previousPublicKeys.unshift(prevPublicKey);
+        this.previousPublicKeys = this.previousPublicKeys.slice(0, 2);
+      }
+    }
 
     this.keyPair = {
       publicKey: pub,
@@ -143,15 +156,81 @@ export class CryptoHelper implements OnModuleInit {
     }
     const input = Buffer.from(data, 'utf-8');
     const sigBuf = Buffer.from(signature, 'base64');
-    if (this.keyType === 'ed25519') {
-      // Ed25519 verifies the message directly
-      return verify(null, input, this.keyPair.publicKey, sigBuf);
-    } else {
-      // ECDSA with SHA-256
-      const verify = createVerify('sha256');
-      verify.update(input);
-      verify.end();
-      return verify.verify(this.keyPair.publicKey, sigBuf);
+
+    const keys = [this.keyPair.publicKey, ...this.previousPublicKeys];
+    return keys.some(publicKey => {
+      const keyType = (publicKey.asymmetricKeyType as string) || 'ec';
+      if (keyType === 'ed25519') {
+        // Ed25519 verifies the message directly
+        return verify(null, input, publicKey, sigBuf);
+      } else {
+        // ECDSA with SHA-256
+        const verifier = createVerify('sha256');
+        verifier.update(input);
+        verifier.end();
+        return verifier.verify(publicKey, sigBuf);
+      }
+    });
+  }
+
+  signInternalAccessToken(input: {
+    method: string;
+    path: string;
+    now?: number;
+    nonce?: string;
+  }) {
+    const payload = {
+      v: 1 as const,
+      ts: input.now ?? Date.now(),
+      nonce: input.nonce ?? this.randomBytes(16).toString('base64url'),
+      m: input.method.toUpperCase(),
+      p: input.path,
+    };
+    const data = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'base64url'
+    );
+    return this.sign(data);
+  }
+
+  parseInternalAccessToken(signatureWithData: string): {
+    v: 1;
+    ts: number;
+    nonce: string;
+    m: string;
+    p: string;
+  } | null {
+    const [data, signature] = signatureWithData.split(',');
+    if (!signature) {
+      return null;
+    }
+    if (!this.verify(signatureWithData)) {
+      return null;
+    }
+    try {
+      const json = Buffer.from(data, 'base64url').toString('utf8');
+      const payload = JSON.parse(json) as unknown;
+      if (!payload || typeof payload !== 'object') {
+        return null;
+      }
+      const val = payload as {
+        v?: unknown;
+        ts?: unknown;
+        nonce?: unknown;
+        m?: unknown;
+        p?: unknown;
+      };
+      if (
+        val.v !== 1 ||
+        typeof val.ts !== 'number' ||
+        typeof val.nonce !== 'string' ||
+        typeof val.m !== 'string' ||
+        typeof val.p !== 'string'
+      ) {
+        return null;
+      }
+      return { v: 1, ts: val.ts, nonce: val.nonce, m: val.m, p: val.p };
+    } catch {
+      return null;
     }
   }
 

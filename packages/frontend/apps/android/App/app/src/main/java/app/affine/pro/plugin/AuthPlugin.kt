@@ -43,9 +43,15 @@ class AuthPlugin : Plugin() {
         launch(Dispatchers.IO) {
             try {
                 val endpoint = call.getStringEnsure("endpoint")
+                val csrfToken = CookieStore.getCookie(endpoint.toHttpUrl(), CookieStore.AFFINE_CSRF_TOKEN)
                 val request = Request.Builder()
                     .url("$endpoint/api/auth/sign-out")
-                    .get()
+                    .post("".toRequestBody("application/json".toMediaTypeOrNull()))
+                    .apply {
+                        if (csrfToken != null) {
+                            addHeader("x-affine-csrf-token", csrfToken)
+                        }
+                    }
                     .build()
                 OkHttp.client.newCall(request).executeAsync().use { response ->
                     if (response.code >= 400) {

@@ -91,12 +91,14 @@ export function Nav({ isCollapsed = false }: NavProps) {
           label="Accounts"
           isCollapsed={isCollapsed}
         />
-        <NavItem
-          to="/admin/workspaces"
-          icon={<LayoutDashboardIcon size={18} />}
-          label="Workspaces"
-          isCollapsed={isCollapsed}
-        />
+        {environment.isSelfHosted ? null : (
+          <NavItem
+            to="/admin/workspaces"
+            icon={<LayoutDashboardIcon size={18} />}
+            label="Workspaces"
+            isCollapsed={isCollapsed}
+          />
+        )}
         <NavItem
           to="/admin/queue"
           icon={<ListChecksIcon size={18} />}

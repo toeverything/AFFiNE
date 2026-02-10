@@ -3,32 +3,31 @@ use std::{
   os::windows::ffi::OsStringExt,
   process,
   sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc, Mutex,
+    atomic::{AtomicBool, AtomicUsize, Ordering},
   },
 };
 
 use napi::{
-  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
   Result,
+  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 use windows::{
-  core::Interface,
   Win32::{
     Foundation::CloseHandle,
     Media::Audio::{
-      eCapture, eCommunications, eConsole, AudioSessionState, AudioSessionStateActive,
-      IAudioSessionControl, IAudioSessionControl2, IAudioSessionEnumerator, IAudioSessionEvents,
-      IAudioSessionEvents_Impl, IAudioSessionManager2, IAudioSessionNotification,
-      IAudioSessionNotification_Impl, IMMDevice, IMMDeviceCollection, IMMDeviceEnumerator,
-      MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
+      AudioSessionState, AudioSessionStateActive, DEVICE_STATE_ACTIVE, IAudioSessionControl, IAudioSessionControl2,
+      IAudioSessionEnumerator, IAudioSessionEvents, IAudioSessionEvents_Impl, IAudioSessionManager2,
+      IAudioSessionNotification, IAudioSessionNotification_Impl, IMMDevice, IMMDeviceCollection, IMMDeviceEnumerator,
+      MMDeviceEnumerator, eCapture, eCommunications, eConsole,
     },
     System::{
-      Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED},
+      Com::{CLSCTX_ALL, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx},
       ProcessStatus::{GetModuleFileNameExW, GetProcessImageFileNameW},
       Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
     },
   },
+  core::Interface,
 };
 use windows_core::implement;
 
@@ -148,9 +147,7 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
     let currently_recording = newstate == AudioSessionStateActive;
 
     // Atomically swap the flag tracking this particular session
-    let previously_recording = self
-      .session_is_active
-      .swap(currently_recording, Ordering::SeqCst);
+    let previously_recording = self.session_is_active.swap(currently_recording, Ordering::SeqCst);
 
     // Update the global counter accordingly
     if !previously_recording && currently_recording {
@@ -272,12 +269,7 @@ impl SessionNotifier {
 
       if should_notify {
         self.callback.call(
-          Ok((
-            true,
-            process_name,
-            self.device_id.clone(),
-            self.device_name.clone(),
-          )),
+          Ok((true, process_name, self.device_id.clone(), self.device_name.clone())),
           ThreadsafeFunctionCallMode::NonBlocking,
         );
       }
@@ -309,8 +301,7 @@ pub fn register_audio_device_status_callback(
     let enumerator: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
 
     // Get all active capture devices
-    let device_collection: IMMDeviceCollection =
-      enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)?;
+    let device_collection: IMMDeviceCollection = enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)?;
 
     let device_count = device_collection.GetCount()?;
     let mut session_notifiers = Vec::new();
@@ -374,17 +365,14 @@ impl MicrophoneListener {
     let is_running = Arc::new(AtomicBool::new(false));
     let active_sessions = Arc::new(AtomicUsize::new(0));
 
-    let session_notifiers = match register_audio_device_status_callback(
-      is_running.clone(),
-      active_sessions.clone(),
-      Arc::new(callback),
-    ) {
-      Ok(notifiers) => notifiers,
-      Err(_) => {
-        // If registration fails, create a listener with empty notifiers
-        Vec::new()
-      }
-    };
+    let session_notifiers =
+      match register_audio_device_status_callback(is_running.clone(), active_sessions.clone(), Arc::new(callback)) {
+        Ok(notifiers) => notifiers,
+        Err(_) => {
+          // If registration fails, create a listener with empty notifiers
+          Vec::new()
+        }
+      };
 
     Self {
       is_running,
@@ -401,17 +389,13 @@ impl MicrophoneListener {
   pub fn is_process_using_microphone(process_id: u32) -> bool {
     // Use the proven get_all_audio_processes logic
     match get_all_audio_processes() {
-      Ok(processes) => processes
-        .iter()
-        .any(|p| p.process_id == process_id && p.is_running),
+      Ok(processes) => processes.iter().any(|p| p.process_id == process_id && p.is_running),
       Err(_) => false,
     }
   }
 }
 
-fn get_mgr_audio_session_running_status(
-  mgr: &IAudioSessionManager2,
-) -> windows_core::Result<(bool, String)> {
+fn get_mgr_audio_session_running_status(mgr: &IAudioSessionManager2) -> windows_core::Result<(bool, String)> {
   let list: IAudioSessionEnumerator = unsafe { mgr.GetSessionEnumerator()? };
   let sessions = unsafe { list.GetCount()? };
   for idx in 0..sessions {
@@ -445,8 +429,7 @@ fn get_mgr_audio_session_running_status(
 fn get_process_name(pid: u32) -> Option<String> {
   unsafe {
     // Open process with required access rights
-    let process_handle =
-      OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
+    let process_handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
 
     // Allocate a buffer large enough to hold extended-length paths (up to ~32K
     // characters) instead of the legacy MAX_PATH (260) limit.
@@ -489,8 +472,8 @@ pub fn list_audio_processes() -> Result<Vec<AudioProcess>> {
     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
   };
 
-  let result = get_all_audio_processes()
-    .map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
+  let result =
+    get_all_audio_processes().map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
 
   Ok(result)
 }
@@ -501,8 +484,7 @@ pub fn list_audio_devices() -> Result<Vec<AudioDevice>> {
     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
   };
 
-  let result = get_all_audio_devices()
-    .map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
+  let result = get_all_audio_devices().map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
 
   Ok(result)
 }
@@ -511,8 +493,7 @@ fn get_all_audio_processes() -> windows_core::Result<Vec<AudioProcess>> {
   unsafe {
     let enumerator: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
 
-    let device_collection: IMMDeviceCollection =
-      enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)?;
+    let device_collection: IMMDeviceCollection = enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)?;
 
     let device_count = device_collection.GetCount()?;
     let mut all_processes = Vec::new();
@@ -569,8 +550,7 @@ fn get_all_audio_devices() -> windows_core::Result<Vec<AudioDevice>> {
   unsafe {
     let enumerator: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
 
-    let device_collection: IMMDeviceCollection =
-      enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)?;
+    let device_collection: IMMDeviceCollection = enumerator.EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE)?;
 
     let device_count = device_collection.GetCount()?;
     let mut devices = Vec::new();
@@ -619,8 +599,8 @@ pub fn get_active_audio_processes() -> Result<Vec<AudioProcess>> {
     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
   };
 
-  let result = get_all_audio_processes()
-    .map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
+  let result =
+    get_all_audio_processes().map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
 
   // Filter to only return active/running processes
   let active_processes = result.into_iter().filter(|p| p.is_running).collect();
@@ -633,8 +613,8 @@ pub fn is_process_actively_using_microphone(pid: u32) -> Result<bool> {
     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
   };
 
-  let result = get_all_audio_processes()
-    .map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
+  let result =
+    get_all_audio_processes().map_err(|err| napi::Error::new(napi::Status::GenericFailure, err.message()))?;
 
   // Check if the PID exists in the list of active processes
   let is_active = result

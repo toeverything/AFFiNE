@@ -16,7 +16,6 @@ import { AIButtonProvider } from './provider/ai-button';
 import { AIButtonService } from './services/ai-button';
 import { AIDraftService } from './services/ai-draft';
 import { AIModelService } from './services/models';
-import { AINetworkSearchService } from './services/network-search';
 import { AIPlaygroundService } from './services/playground';
 import { AIReasoningService } from './services/reasoning';
 import { AIToolsConfigService } from './services/tools-config';
@@ -26,13 +25,6 @@ export const configureAIButtonModule = (framework: Framework) => {
     return new AIButtonService(container.getOptional(AIButtonProvider));
   });
 };
-
-export function configureAINetworkSearchModule(framework: Framework) {
-  framework.service(AINetworkSearchService, [
-    GlobalStateService,
-    FeatureFlagService,
-  ]);
-}
 
 export function configureAIReasoningModule(framework: Framework) {
   framework.service(AIReasoningService, [GlobalStateService]);

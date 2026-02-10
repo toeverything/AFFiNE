@@ -238,20 +238,6 @@ export class WorkspaceDocResolver {
     return this.models.doc.findPublics(workspace.id);
   }
 
-  @ResolveField(() => DocType, {
-    description: 'Get public page of a workspace by page id.',
-    complexity: 2,
-    nullable: true,
-    deprecationReason: 'use [WorkspaceType.doc] instead',
-  })
-  async publicPage(
-    @CurrentUser() me: CurrentUser,
-    @Parent() workspace: WorkspaceType,
-    @Args('pageId') pageId: string
-  ) {
-    return this.doc(me, workspace, pageId);
-  }
-
   @ResolveField(() => PaginatedDocType)
   async docs(
     @Parent() workspace: WorkspaceType,
@@ -314,24 +300,6 @@ export class WorkspaceDocResolver {
     };
   }
 
-  @Mutation(() => DocType, {
-    deprecationReason: 'use publishDoc instead',
-  })
-  async publishPage(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('pageId') pageId: string,
-    @Args({
-      name: 'mode',
-      type: () => PublicDocMode,
-      nullable: true,
-      defaultValue: PublicDocMode.Page,
-    })
-    mode: PublicDocMode
-  ) {
-    return this.publishDoc(user, workspaceId, pageId, mode);
-  }
-
   @Mutation(() => DocType)
   async publishDoc(
     @CurrentUser() user: CurrentUser,
@@ -362,17 +330,6 @@ export class WorkspaceDocResolver {
     );
 
     return doc;
-  }
-
-  @Mutation(() => DocType, {
-    deprecationReason: 'use revokePublicDoc instead',
-  })
-  async revokePublicPage(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('docId') docId: string
-  ) {
-    return this.revokePublicDoc(user, workspaceId, docId);
   }
 
   @Mutation(() => DocType)

@@ -44,18 +44,12 @@ pub struct SqliteDocStoragePool {
 }
 
 impl SqliteDocStoragePool {
-  async fn get_or_create_storage<'a>(
-    &'a self,
-    universal_id: String,
-    path: &str,
-  ) -> RefMut<'a, SqliteDocStorage> {
-    let lock = RwLockWriteGuard::map(self.inner.write().await, |lock| {
-      match lock.entry(universal_id) {
-        Entry::Occupied(entry) => entry.into_mut(),
-        Entry::Vacant(entry) => {
-          let storage = SqliteDocStorage::new(path.to_string());
-          entry.insert(storage)
-        }
+  async fn get_or_create_storage<'a>(&'a self, universal_id: String, path: &str) -> RefMut<'a, SqliteDocStorage> {
+    let lock = RwLockWriteGuard::map(self.inner.write().await, |lock| match lock.entry(universal_id) {
+      Entry::Occupied(entry) => entry.into_mut(),
+      Entry::Vacant(entry) => {
+        let storage = SqliteDocStorage::new(path.to_string());
+        entry.insert(storage)
       }
     });
 
@@ -79,9 +73,7 @@ impl SqliteDocStoragePool {
 
   /// Initialize the database and run migrations.
   pub async fn connect(&self, universal_id: String, path: String) -> Result<()> {
-    let storage = self
-      .get_or_create_storage(universal_id.to_owned(), &path)
-      .await;
+    let storage = self.get_or_create_storage(universal_id.to_owned(), &path).await;
 
     storage.connect().await?;
     Ok(())

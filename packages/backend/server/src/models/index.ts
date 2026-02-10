@@ -9,6 +9,10 @@ import { ModuleRef } from '@nestjs/core';
 import { ApplyType } from '../base';
 import { AccessTokenModel } from './access-token';
 import { BlobModel } from './blob';
+import { CalendarAccountModel } from './calendar-account';
+import { CalendarEventModel } from './calendar-event';
+import { CalendarEventInstanceModel } from './calendar-event-instance';
+import { CalendarSubscriptionModel } from './calendar-subscription';
 import { CommentModel } from './comment';
 import { CommentAttachmentModel } from './comment-attachment';
 import { AppConfigModel } from './config';
@@ -20,6 +24,7 @@ import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
 import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
+import { MagicLinkOtpModel } from './magic-link-otp';
 import { NotificationModel } from './notification';
 import { MODELS_SYMBOL } from './provider';
 import { SessionModel } from './session';
@@ -29,6 +34,7 @@ import { UserFeatureModel } from './user-feature';
 import { UserSettingsModel } from './user-settings';
 import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
+import { WorkspaceCalendarModel } from './workspace-calendar';
 import { WorkspaceFeatureModel } from './workspace-feature';
 import { WorkspaceUserModel } from './workspace-user';
 
@@ -36,6 +42,7 @@ const MODELS = {
   user: UserModel,
   session: SessionModel,
   verificationToken: VerificationTokenModel,
+  magicLinkOtp: MagicLinkOtpModel,
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
@@ -56,6 +63,11 @@ const MODELS = {
   commentAttachment: CommentAttachmentModel,
   blob: BlobModel,
   accessToken: AccessTokenModel,
+  calendarAccount: CalendarAccountModel,
+  calendarSubscription: CalendarSubscriptionModel,
+  calendarEvent: CalendarEventModel,
+  calendarEventInstance: CalendarEventInstanceModel,
+  workspaceCalendar: WorkspaceCalendarModel,
 };
 
 type ModelsType = {
@@ -108,6 +120,10 @@ const ModelsSymbolProvider: ExistingProvider = {
 export class ModelsModule {}
 
 export * from './blob';
+export * from './calendar-account';
+export * from './calendar-event';
+export * from './calendar-event-instance';
+export * from './calendar-subscription';
 export * from './comment';
 export * from './comment-attachment';
 export * from './common';
@@ -119,6 +135,7 @@ export * from './doc';
 export * from './doc-user';
 export * from './feature';
 export * from './history';
+export * from './magic-link-otp';
 export * from './notification';
 export * from './session';
 export * from './user';
@@ -127,5 +144,6 @@ export * from './user-feature';
 export * from './user-settings';
 export * from './verification-token';
 export * from './workspace';
+export * from './workspace-calendar';
 export * from './workspace-feature';
 export * from './workspace-user';

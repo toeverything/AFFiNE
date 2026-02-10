@@ -103,8 +103,7 @@ ios_new_version=${IOS_APP_VERSION:-$new_version}
 
 update_app_version_in_helm_charts ".github/helm/affine/Chart.yaml" "$new_version"
 update_app_version_in_helm_charts ".github/helm/affine/charts/graphql/Chart.yaml" "$new_version"
-update_app_version_in_helm_charts ".github/helm/affine/charts/sync/Chart.yaml" "$new_version"
-update_app_version_in_helm_charts ".github/helm/affine/charts/renderer/Chart.yaml" "$new_version"
+update_app_version_in_helm_charts ".github/helm/affine/charts/front/Chart.yaml" "$new_version"
 update_app_version_in_helm_charts ".github/helm/affine/charts/doc/Chart.yaml" "$new_version"
 
 update_app_stream_version "packages/frontend/apps/electron/resources/affine.metainfo.xml" "$new_version"

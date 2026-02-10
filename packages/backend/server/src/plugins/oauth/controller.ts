@@ -13,7 +13,9 @@ import { ConnectedAccount } from '@prisma/client';
 import type { Request, Response } from 'express';
 
 import {
+  ActionForbidden,
   Config,
+  getClientVersionFromRequest,
   InvalidAuthState,
   InvalidOauthCallbackState,
   MissingOauthQueryParameter,
@@ -49,6 +51,7 @@ export class OAuthController {
   @Post('/preflight')
   @HttpCode(HttpStatus.OK)
   async preflight(
+    @Req() req: Request,
     @Body('provider') unknownProviderName?: keyof typeof OAuthProviderName,
     @Body('redirect_uri') redirectUri?: string,
     @Body('client') client?: string,
@@ -56,6 +59,9 @@ export class OAuthController {
   ) {
     if (!unknownProviderName) {
       throw new MissingOauthQueryParameter({ name: 'provider' });
+    }
+    if (!clientNonce) {
+      throw new MissingOauthQueryParameter({ name: 'client_nonce' });
     }
 
     const providerName = OAuthProviderName[unknownProviderName];
@@ -67,11 +73,17 @@ export class OAuthController {
 
     const pkce = provider.requiresPkce ? this.oauth.createPkcePair() : null;
 
+    if (redirectUri && !this.url.isAllowedRedirectUri(redirectUri)) {
+      throw new ActionForbidden();
+    }
+
+    const clientVersion = getClientVersionFromRequest(req);
     const state = await this.oauth.saveOAuthState({
       provider: providerName,
       redirectUri,
       client,
       clientNonce,
+      clientVersion,
       ...(pkce
         ? {
             pkce: {
@@ -173,16 +185,6 @@ export class OAuthController {
       );
     }
 
-    // TODO(@fengmk2): clientNonce should be required after the client version >= 0.21.0
-    if (
-      state.clientNonce &&
-      state.clientNonce !== clientNonce &&
-      // apple sign in with nonce stored in id token
-      state.provider !== OAuthProviderName.Apple
-    ) {
-      throw new InvalidAuthState();
-    }
-
     if (!state.provider) {
       throw new MissingOauthQueryParameter({ name: 'provider' });
     }
@@ -191,6 +193,13 @@ export class OAuthController {
 
     if (!provider) {
       throw new UnknownOauthProvider({ name: state.provider ?? 'unknown' });
+    }
+
+    if (
+      state.provider !== OAuthProviderName.Apple &&
+      (!clientNonce || !state.clientNonce || state.clientNonce !== clientNonce)
+    ) {
+      throw new InvalidAuthState();
     }
 
     let tokens: Tokens;
@@ -215,13 +224,13 @@ export class OAuthController {
       tokens
     );
 
-    await this.auth.setCookies(req, res, user.id);
+    await this.auth.setCookies(req, res, user.id, state.clientVersion);
 
     if (
       state.provider === OAuthProviderName.Apple &&
       (!state.client || state.client === 'web')
     ) {
-      return res.redirect(this.url.link(state.redirectUri ?? '/'));
+      return this.url.safeRedirect(res, state.redirectUri ?? '/');
     }
 
     res.send({

@@ -17,6 +17,7 @@ import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import { canGroupable } from '../../view-presets/kanban/group-by-utils.js';
 import { KanbanSingleView } from '../../view-presets/kanban/kanban-view-manager.js';
 import { TableSingleView } from '../../view-presets/table/table-view-manager.js';
 import { dataViewCssVariable } from '../common/css-variable.js';
@@ -277,6 +278,9 @@ export const selectGroupByProperty = (
           .filter(property => {
             if (property.type$.value === 'title') {
               return false;
+            }
+            if (view instanceof KanbanSingleView) {
+              return canGroupable(view.manager.dataSource, property.id);
             }
             const dataType = property.dataType$.value;
             if (!dataType) {
