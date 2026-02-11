@@ -185,41 +185,6 @@ export class ListNumberingWatcherExtension extends StoreExtension {
           }
         }
 
-        // Update cache when a list is updated
-        if (payload.type === 'update' && payload.flavour === 'affine:list') {
-          const model = this.store.getBlock(payload.id)?.model;
-          if (!model || !matchModels(model, [ListBlockModel])) return;
-
-          const currentType = model.props.type;
-          const previousType = this._previousTypeCache.get(model);
-
-          // If type changed from numbered to something else, renumber the next items
-          if (previousType === 'numbered' && currentType !== 'numbered') {
-            const nextSiblingId = this._nextSiblingCache.get(model);
-
-            if (nextSiblingId) {
-              const nextSibling = this.store.getBlock(nextSiblingId)?.model;
-
-              if (
-                nextSibling &&
-                matchModels(nextSibling, [ListBlockModel]) &&
-                nextSibling.props.type === 'numbered'
-              ) {
-                correctNumberedListsOrderToPrev(this.store, nextSibling);
-              }
-            }
-          }
-
-          // Update caches for numbered lists
-          if (currentType === 'numbered') {
-            const nextSibling = this.store.getNext(model);
-            this._nextSiblingCache.set(model, nextSibling?.id ?? null);
-          }
-
-          // Always update the type cache
-          this._previousTypeCache.set(model, currentType);
-        }
-
         // Handle delete events
         if (payload.type !== 'delete') return;
 
