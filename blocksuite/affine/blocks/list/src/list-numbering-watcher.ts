@@ -1,8 +1,15 @@
 import { ListBlockModel } from '@blocksuite/affine-model';
 import { matchModels } from '@blocksuite/affine-shared/utils';
-import { StoreExtension } from '@blocksuite/store';
+import { type BlockModel, StoreExtension } from '@blocksuite/store';
 
 import { correctNumberedListsOrderToPrev } from './commands/utils.js';
+
+type BlockUpdatedPayload = {
+  type: 'add' | 'delete' | 'update';
+  model: BlockModel;
+  flavour: string;
+  id: string;
+};
 
 /**
  * Extension that watches for list block deletions and automatically
@@ -27,6 +34,12 @@ export class ListNumberingWatcherExtension extends StoreExtension {
     string | null
   >();
 
+  // Cache to store previous sibling info
+  private readonly _prevSiblingCache = new WeakMap<
+    ListBlockModel,
+    string | null
+  >();
+
   // Cache to store previous type of list items
   private readonly _previousTypeCache = new WeakMap<
     ListBlockModel,
@@ -42,7 +55,9 @@ export class ListNumberingWatcherExtension extends StoreExtension {
 
       if (model.props.type === 'numbered') {
         const nextSibling = this.store.getNext(model);
+        const prevSibling = this.store.getPrev(model);
         this._nextSiblingCache.set(model, nextSibling?.id ?? null);
+        this._prevSiblingCache.set(model, prevSibling?.id ?? null);
         this._previousTypeCache.set(model, 'numbered');
       }
 
@@ -61,9 +76,22 @@ export class ListNumberingWatcherExtension extends StoreExtension {
 
         // If type changed from numbered to something else, renumber the next items
         if (previousType === 'numbered' && currentType !== 'numbered') {
-          // Store the order before it gets cleared
           const nextSiblingId = this._nextSiblingCache.get(model);
+          const prevSiblingId = this._prevSiblingCache.get(model);
 
+          // Update the previous numbered sibling's cache to skip this item
+          if (prevSiblingId) {
+            const prevSibling = this.store.getBlock(prevSiblingId)?.model;
+            if (
+              prevSibling &&
+              matchModels(prevSibling, [ListBlockModel]) &&
+              prevSibling.props.type === 'numbered'
+            ) {
+              this._nextSiblingCache.set(prevSibling, nextSiblingId ?? null);
+            }
+          }
+
+          // Update the next sibling's cache to skip this item
           if (nextSiblingId) {
             const nextSibling = this.store.getBlock(nextSiblingId)?.model;
 
@@ -72,6 +100,8 @@ export class ListNumberingWatcherExtension extends StoreExtension {
               matchModels(nextSibling, [ListBlockModel]) &&
               nextSibling.props.type === 'numbered'
             ) {
+              this._prevSiblingCache.set(nextSibling, prevSiblingId ?? null);
+
               // Find the previous numbered sibling by traversing backwards
               const prevNumberedSibling = this._getPrevNumberedSibling(model);
 
@@ -101,7 +131,9 @@ export class ListNumberingWatcherExtension extends StoreExtension {
         // Update caches for numbered lists
         if (currentType === 'numbered') {
           const nextSibling = this.store.getNext(model);
+          const prevSibling = this.store.getPrev(model);
           this._nextSiblingCache.set(model, nextSibling?.id ?? null);
+          this._prevSiblingCache.set(model, prevSibling?.id ?? null);
         }
 
         // Always update the type cache
@@ -152,83 +184,111 @@ export class ListNumberingWatcherExtension extends StoreExtension {
 
     this.store.disposableGroup.add(
       this.store.slots.blockUpdated.subscribe(payload => {
-        // When a numbered list is added, update the previous sibling's cache
-        if (
-          payload.type === 'add' &&
-          payload.flavour === 'affine:list' &&
-          matchModels(payload.model, [ListBlockModel])
-        ) {
-          // Subscribe to props changes for the new list block
-          this._subscribeToModelChanges(payload.model);
-
-          if (payload.model.props.type === 'numbered') {
-            // Update cache for the new item
-            const nextSibling = this.store.getNext(payload.model);
-            this._nextSiblingCache.set(payload.model, nextSibling?.id ?? null);
-            this._previousTypeCache.set(payload.model, 'numbered');
-
-            // Update cache for the previous sibling (if it's also a numbered list)
-            const prevSibling = this.store.getPrev(payload.model);
-            if (
-              prevSibling &&
-              matchModels(prevSibling, [ListBlockModel]) &&
-              prevSibling.props.type === 'numbered'
-            ) {
-              this._nextSiblingCache.set(prevSibling, payload.model.id);
-            }
-          } else {
-            // For non-numbered lists, still cache the type
-            this._previousTypeCache.set(
-              payload.model,
-              payload.model.props.type
-            );
-          }
+        // Handle add events
+        if (payload.type === 'add') {
+          this._handleAddEvent(payload);
+          return;
         }
 
         // Handle delete events
-        if (payload.type !== 'delete') return;
-
-        if (payload.flavour !== 'affine:list') return;
-        if (!matchModels(payload.model, [ListBlockModel])) return;
-        if (payload.model.props.type !== 'numbered') return;
-
-        // Try to get next sibling from cache first
-        let nextSiblingId = this._nextSiblingCache.get(payload.model);
-
-        // If not in cache, find it through parent
-        if (!nextSiblingId) {
-          const parent = this.store.getParent(payload.model);
-          if (parent) {
-            const deletedIndex = parent.children.indexOf(payload.model);
-            if (
-              deletedIndex !== -1 &&
-              deletedIndex < parent.children.length - 1
-            ) {
-              const nextSibling = parent.children[deletedIndex + 1];
-              nextSiblingId = nextSibling?.id ?? null;
-            }
-          }
-        }
-
-        // If there's no next sibling, nothing to renumber
-        if (!nextSiblingId) {
+        if (payload.type === 'delete') {
+          this._handleDeleteEvent(payload);
           return;
         }
-
-        const nextSibling = this.store.getBlock(nextSiblingId)?.model;
-
-        // Only renumber if the next sibling is also a numbered list
-        if (
-          !nextSibling ||
-          !matchModels(nextSibling, [ListBlockModel]) ||
-          nextSibling.props.type !== 'numbered'
-        ) {
-          return;
-        }
-
-        // Renumber the next sibling and all continuous numbered lists after it
-        correctNumberedListsOrderToPrev(this.store, nextSibling);
       })
     );
+  }
+
+  private _handleAddEvent(payload: BlockUpdatedPayload) {
+    // Guard clauses
+    if (payload.flavour !== 'affine:list') return;
+    if (!matchModels(payload.model, [ListBlockModel])) return;
+
+    // Subscribe to props changes for the new list block
+    this._subscribeToModelChanges(payload.model);
+
+    // Cache the type for all list types
+    this._previousTypeCache.set(payload.model, payload.model.props.type);
+
+    // Only handle numbered lists for sibling cache updates
+    if (payload.model.props.type !== 'numbered') return;
+
+    // Update cache for the new numbered item
+    const nextSibling = this.store.getNext(payload.model);
+    const prevSibling = this.store.getPrev(payload.model);
+    this._nextSiblingCache.set(payload.model, nextSibling?.id ?? null);
+    this._prevSiblingCache.set(payload.model, prevSibling?.id ?? null);
+
+    // Update previous sibling's cache
+    if (
+      prevSibling &&
+      matchModels(prevSibling, [ListBlockModel]) &&
+      prevSibling.props.type === 'numbered'
+    ) {
+      this._nextSiblingCache.set(prevSibling, payload.model.id);
+    }
+
+    // Update next sibling's cache
+    if (
+      nextSibling &&
+      matchModels(nextSibling, [ListBlockModel]) &&
+      nextSibling.props.type === 'numbered'
+    ) {
+      this._prevSiblingCache.set(nextSibling, payload.model.id);
+    }
+  }
+
+  private _handleDeleteEvent(payload: BlockUpdatedPayload) {
+    // Guard clauses
+    if (payload.flavour !== 'affine:list') return;
+    if (!matchModels(payload.model, [ListBlockModel])) return;
+    if (payload.model.props.type !== 'numbered') return;
+
+    // Get cached siblings
+    const nextSiblingId = this._nextSiblingCache.get(payload.model) ?? null;
+    const prevSiblingId = this._prevSiblingCache.get(payload.model) ?? null;
+
+    // Update previous sibling's cache
+    this._updatePrevSiblingCache(prevSiblingId, nextSiblingId);
+
+    // Update next sibling's cache and renumber
+    this._updateNextSiblingCacheAndRenumber(nextSiblingId, prevSiblingId);
+  }
+
+  private _updatePrevSiblingCache(
+    prevSiblingId: string | null,
+    nextSiblingId: string | null
+  ) {
+    if (!prevSiblingId) return;
+
+    const prevSibling = this.store.getBlock(prevSiblingId)?.model;
+    if (
+      !prevSibling ||
+      !matchModels(prevSibling, [ListBlockModel]) ||
+      prevSibling.props.type !== 'numbered'
+    ) {
+      return;
+    }
+
+    this._nextSiblingCache.set(prevSibling, nextSiblingId);
+  }
+
+  private _updateNextSiblingCacheAndRenumber(
+    nextSiblingId: string | null,
+    prevSiblingId: string | null
+  ) {
+    if (!nextSiblingId) return;
+
+    const nextSibling = this.store.getBlock(nextSiblingId)?.model;
+    if (
+      !nextSibling ||
+      !matchModels(nextSibling, [ListBlockModel]) ||
+      nextSibling.props.type !== 'numbered'
+    ) {
+      return;
+    }
+
+    this._prevSiblingCache.set(nextSibling, prevSiblingId);
+    correctNumberedListsOrderToPrev(this.store, nextSibling);
   }
 }
