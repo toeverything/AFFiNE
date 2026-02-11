@@ -37,12 +37,7 @@ function extractTokenFromHeader(authorization: string) {
 
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
-  readonly cookieOptions: CookieOptions = {
-    sameSite: 'lax',
-    httpOnly: true,
-    path: '/',
-    secure: this.config.server.https,
-  };
+  readonly cookieOptions: CookieOptions;
   static readonly sessionCookieName = 'affine_session';
   static readonly userCookieName = 'affine_user_id';
   static readonly csrfCookieName = 'affine_csrf_token';
@@ -51,7 +46,14 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly config: Config,
     private readonly models: Models,
     private readonly mailer: Mailer
-  ) {}
+  ) {
+    this.cookieOptions = {
+      sameSite: 'lax',
+      httpOnly: true,
+      path: '/',
+      secure: this.config.server.https,
+    };
+  }
 
   async onApplicationBootstrap() {
     if (env.dev) {
