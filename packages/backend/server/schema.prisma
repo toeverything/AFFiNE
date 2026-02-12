@@ -362,7 +362,6 @@ model WorkspaceDocViewDaily {
 
   @@id([workspaceId, docId, date])
   @@index([workspaceId, date])
-  @@index([workspaceId, docId, date])
   @@map("workspace_doc_view_daily")
 }
 

@@ -203,6 +203,37 @@ function parseJsonCursor<T>(cursor?: string | null): T | null {
   }
 }
 
+function parseCursorDate(value: unknown): Date {
+  if (
+    typeof value !== 'string' &&
+    typeof value !== 'number' &&
+    !(value instanceof Date)
+  ) {
+    throw new BadRequest('Invalid pagination cursor');
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequest('Invalid pagination cursor');
+  }
+  return parsed;
+}
+
+function parseCursorNumber(value: unknown): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new BadRequest('Invalid pagination cursor');
+  }
+  return parsed;
+}
+
+function parseCursorString(value: unknown): string {
+  if (typeof value !== 'string' || !value) {
+    throw new BadRequest('Invalid pagination cursor');
+  }
+  return value;
+}
+
 @Injectable()
 export class WorkspaceAnalyticsModel extends BaseModel {
   constructor(private readonly redis: CacheRedis) {
@@ -767,15 +798,19 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       ? Prisma.sql`AND mla.last_accessed_at >= ${nonTeamAccessFrom}`
       : Prisma.empty;
     const cursorCondition = cursor
-      ? Prisma.sql`
-          AND (
-            mla.last_accessed_at < ${new Date(cursor.lastAccessedAt)}
-            OR (
-              mla.last_accessed_at = ${new Date(cursor.lastAccessedAt)}
-              AND mla.user_id > ${cursor.userId}
+      ? (() => {
+          const cursorLastAccessedAt = parseCursorDate(cursor.lastAccessedAt);
+          const cursorUserId = parseCursorString(cursor.userId);
+          return Prisma.sql`
+            AND (
+              mla.last_accessed_at < ${cursorLastAccessedAt}
+              OR (
+                mla.last_accessed_at = ${cursorLastAccessedAt}
+                AND mla.user_id > ${cursorUserId}
+              )
             )
-          )
-        `
+          `;
+        })()
       : Prisma.empty;
 
     const rows = await this.db.$queryRaw<
@@ -1046,22 +1081,25 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       return Prisma.empty;
     }
 
+    const workspaceId = parseCursorString(cursor.workspaceId);
+    const docId = parseCursorString(cursor.docId);
+
     if (orderBy === 'ViewsDesc') {
-      const sortValue = Number(cursor.sortValue ?? 0);
+      const sortValue = parseCursorNumber(cursor.sortValue);
       return Prisma.sql`
         AND (
           "sortValueViews" < ${sortValue}
-          OR ("sortValueViews" = ${sortValue} AND "workspaceId" > ${cursor.workspaceId})
+          OR ("sortValueViews" = ${sortValue} AND "workspaceId" > ${workspaceId})
           OR (
             "sortValueViews" = ${sortValue}
-            AND "workspaceId" = ${cursor.workspaceId}
-            AND "docId" > ${cursor.docId}
+            AND "workspaceId" = ${workspaceId}
+            AND "docId" > ${docId}
           )
         )
       `;
     }
 
-    const sortValue = new Date(String(cursor.sortValue));
+    const sortValue = parseCursorDate(cursor.sortValue);
     const sortField =
       orderBy === 'PublishedAtDesc'
         ? Prisma.raw('"sortValueDatePublishedAt"')
@@ -1069,11 +1107,11 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     return Prisma.sql`
       AND (
         ${sortField} < ${sortValue}
-        OR (${sortField} = ${sortValue} AND "workspaceId" > ${cursor.workspaceId})
+        OR (${sortField} = ${sortValue} AND "workspaceId" > ${workspaceId})
         OR (
           ${sortField} = ${sortValue}
-          AND "workspaceId" = ${cursor.workspaceId}
-          AND "docId" > ${cursor.docId}
+          AND "workspaceId" = ${workspaceId}
+          AND "docId" > ${docId}
         )
       )
     `;

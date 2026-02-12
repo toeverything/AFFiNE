@@ -217,6 +217,48 @@ e2e(
 
     t.truthy(conflict.errors?.length);
     t.is(conflict.errors![0].extensions.name, 'BAD_REQUEST');
+
+    const malformedDateCursor = await gql(query, {
+      pagination: {
+        first: 1,
+        offset: 0,
+        after: JSON.stringify({
+          orderBy: 'UpdatedAtDesc',
+          sortValue: 'not-a-date',
+          workspaceId: workspace.id,
+          docId: newerDocId,
+        }),
+      },
+      filter: {
+        includeTotal: false,
+        orderBy: 'UpdatedAtDesc',
+        workspaceId: workspace.id,
+      },
+    });
+
+    t.truthy(malformedDateCursor.errors?.length);
+    t.is(malformedDateCursor.errors![0].extensions.name, 'BAD_REQUEST');
+
+    const malformedViewsCursor = await gql(query, {
+      pagination: {
+        first: 1,
+        offset: 0,
+        after: JSON.stringify({
+          orderBy: 'ViewsDesc',
+          sortValue: 'NaN',
+          workspaceId: workspace.id,
+          docId: newerDocId,
+        }),
+      },
+      filter: {
+        includeTotal: false,
+        orderBy: 'ViewsDesc',
+        workspaceId: workspace.id,
+      },
+    });
+
+    t.truthy(malformedViewsCursor.errors?.length);
+    t.is(malformedViewsCursor.errors![0].extensions.name, 'BAD_REQUEST');
   }
 );
 
@@ -462,6 +504,39 @@ e2e(
           edge.node.user.id === staleMember.id
       )
     );
+
+    const malformedMembersCursor = await gql(
+      `
+      query DocMembersCursor($workspaceId: String!, $docId: String!, $after: String) {
+        workspace(id: $workspaceId) {
+          doc(docId: $docId) {
+            lastAccessedMembers(
+              pagination: { first: 10, offset: 0, after: $after }
+            ) {
+              edges {
+                node {
+                  user {
+                    id
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+      {
+        workspaceId: workspace.id,
+        docId,
+        after: JSON.stringify({
+          lastAccessedAt: 'not-a-date',
+          userId: owner.id,
+        }),
+      }
+    );
+
+    t.truthy(malformedMembersCursor.errors?.length);
+    t.is(malformedMembersCursor.errors![0].extensions.name, 'BAD_REQUEST');
 
     const privacyQuery = `
     query DocMembersPrivacy($workspaceId: String!, $docId: String!) {

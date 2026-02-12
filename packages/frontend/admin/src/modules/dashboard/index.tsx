@@ -50,6 +50,22 @@ const compactFormatter = new Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
+const utcDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+const utcDateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+});
 
 const STORAGE_DAY_OPTIONS = [7, 14, 30, 60, 90] as const;
 const SYNC_HOUR_OPTIONS = [1, 6, 12, 24, 48, 72] as const;
@@ -69,11 +85,11 @@ type TrendPoint = {
 };
 
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString();
+  return utcDateTimeFormatter.format(new Date(value));
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString();
+  return utcDateFormatter.format(new Date(value));
 }
 
 function downsample<T>(items: T[], maxPoints: number) {

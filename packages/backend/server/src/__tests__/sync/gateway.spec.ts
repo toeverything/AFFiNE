@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import test, { type ExecutionContext } from 'ava';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
 import { Doc, encodeStateAsUpdate } from 'yjs';
@@ -144,6 +145,44 @@ function createYjsUpdateBase64() {
   doc.getMap('m').set('k', 'v');
   const update = encodeStateAsUpdate(doc);
   return Buffer.from(update).toString('base64');
+}
+
+async function ensureSyncActiveUsersTable(db: PrismaClient) {
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS sync_active_users_minutely (
+      minute_ts TIMESTAMPTZ(3) NOT NULL PRIMARY KEY,
+      active_users INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT NOW()
+    )
+  `);
+}
+
+async function latestActiveUsers(db: PrismaClient) {
+  const rows = await db.$queryRaw<{ activeUsers: number }[]>`
+    SELECT active_users::integer AS "activeUsers"
+    FROM sync_active_users_minutely
+    ORDER BY minute_ts DESC
+    LIMIT 1
+  `;
+
+  if (!rows[0]) {
+    return null;
+  }
+
+  return Number(rows[0].activeUsers);
+}
+
+async function waitForActiveUsers(db: PrismaClient, expected: number) {
+  const deadline = Date.now() + WS_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const current = await latestActiveUsers(db);
+    if (current === expected) {
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  throw new Error(`Timed out waiting active users=${expected}`);
 }
 
 let app: TestingApp;
@@ -459,5 +498,24 @@ test('space:join-awareness should reject clientVersion<0.25.0', async t => {
     await waitForDisconnect(socket);
   } finally {
     socket.disconnect();
+  }
+});
+
+test('active users metric should dedupe multiple sockets for one user', async t => {
+  const db = app.get(PrismaClient);
+  await ensureSyncActiveUsersTable(db);
+
+  const { cookieHeader } = await login(app);
+  const first = createClient(url, cookieHeader);
+  const second = createClient(url, cookieHeader);
+
+  try {
+    await Promise.all([waitForConnect(first), waitForConnect(second)]);
+    await waitForActiveUsers(db, 1);
+    t.pass();
+  } finally {
+    first.disconnect();
+    second.disconnect();
+    await Promise.all([waitForDisconnect(first), waitForDisconnect(second)]);
   }
 });

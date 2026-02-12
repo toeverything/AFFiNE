@@ -33,8 +33,6 @@ CREATE TABLE IF NOT EXISTS "workspace_doc_view_daily" (
 
 CREATE INDEX IF NOT EXISTS "workspace_doc_view_daily_workspace_id_date_idx" ON "workspace_doc_view_daily" ("workspace_id", "date");
 
-CREATE INDEX IF NOT EXISTS "workspace_doc_view_daily_workspace_id_doc_id_date_idx" ON "workspace_doc_view_daily" ("workspace_id", "doc_id", "date");
-
 CREATE TABLE IF NOT EXISTS "workspace_member_last_access" (
   "workspace_id" VARCHAR NOT NULL,
   "user_id" VARCHAR NOT NULL,
