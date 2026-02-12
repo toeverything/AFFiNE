@@ -21,6 +21,7 @@ execSync(
   'cargo build -p affine_mobile_native --features use-as-lib --lib --release --target aarch64-apple-ios',
   {
     stdio: 'inherit',
+    env: { ...process.env, IPHONEOS_DEPLOYMENT_TARGET: '16.5' },
   }
 );
 

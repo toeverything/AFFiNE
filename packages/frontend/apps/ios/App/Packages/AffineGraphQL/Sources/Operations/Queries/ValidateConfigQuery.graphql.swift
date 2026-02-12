@@ -3,11 +3,11 @@
 
 @_exported import ApolloAPI
 
-public class ValidateConfigMutation: GraphQLMutation {
+public class ValidateConfigQuery: GraphQLQuery {
   public static let operationName: String = "validateConfig"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation validateConfig($updates: [UpdateAppConfigInput!]!) { validateAppConfig(updates: $updates) { __typename module key value valid error } }"#
+      #"query validateConfig($updates: [UpdateAppConfigInput!]!) { validateAppConfig(updates: $updates) { __typename module key value valid error } }"#
     ))
 
   public var updates: [UpdateAppConfigInput]
@@ -22,7 +22,7 @@ public class ValidateConfigMutation: GraphQLMutation {
     public let __data: DataDict
     public init(_dataDict: DataDict) { __data = _dataDict }
 
-    public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
+    public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Query }
     public static var __selections: [ApolloAPI.Selection] { [
       .field("validateAppConfig", [ValidateAppConfig].self, arguments: ["updates": .variable("updates")]),
     ] }

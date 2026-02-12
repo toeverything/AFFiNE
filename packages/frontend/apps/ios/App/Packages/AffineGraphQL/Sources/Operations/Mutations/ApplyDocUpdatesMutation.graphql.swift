@@ -3,11 +3,11 @@
 
 @_exported import ApolloAPI
 
-public class ApplyDocUpdatesQuery: GraphQLQuery {
+public class ApplyDocUpdatesMutation: GraphQLMutation {
   public static let operationName: String = "applyDocUpdates"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) { applyDocUpdates( workspaceId: $workspaceId docId: $docId op: $op updates: $updates ) }"#
+      #"mutation applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) { applyDocUpdates( workspaceId: $workspaceId docId: $docId op: $op updates: $updates ) }"#
     ))
 
   public var workspaceId: String
@@ -38,7 +38,7 @@ public class ApplyDocUpdatesQuery: GraphQLQuery {
     public let __data: DataDict
     public init(_dataDict: DataDict) { __data = _dataDict }
 
-    public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Query }
+    public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
       .field("applyDocUpdates", String.self, arguments: [
         "workspaceId": .variable("workspaceId"),
