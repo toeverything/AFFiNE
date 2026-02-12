@@ -1,8 +1,13 @@
 import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
+import { ROUTES } from '@affine/routes';
 import { AccountIcon, SelfhostIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { LayoutDashboardIcon, ListChecksIcon } from 'lucide-react';
+import {
+  BarChart3Icon,
+  LayoutDashboardIcon,
+  ListChecksIcon,
+} from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { ServerVersion } from './server-version';
@@ -85,22 +90,30 @@ export function Nav({ isCollapsed = false }: NavProps) {
           isCollapsed && 'items-center px-0 gap-1 overflow-visible'
         )}
       >
+        {environment.isSelfHosted ? null : (
+          <NavItem
+            to={ROUTES.admin.dashboard}
+            icon={<BarChart3Icon size={18} />}
+            label="Dashboard"
+            isCollapsed={isCollapsed}
+          />
+        )}
         <NavItem
-          to="/admin/accounts"
+          to={ROUTES.admin.accounts}
           icon={<AccountIcon fontSize={20} />}
           label="Accounts"
           isCollapsed={isCollapsed}
         />
         {environment.isSelfHosted ? null : (
           <NavItem
-            to="/admin/workspaces"
+            to={ROUTES.admin.workspaces}
             icon={<LayoutDashboardIcon size={18} />}
             label="Workspaces"
             isCollapsed={isCollapsed}
           />
         )}
         <NavItem
-          to="/admin/queue"
+          to={ROUTES.admin.queue}
           icon={<ListChecksIcon size={18} />}
           label="Queue"
           isCollapsed={isCollapsed}
@@ -113,7 +126,7 @@ export function Nav({ isCollapsed = false }: NavProps) {
         /> */}
         <SettingsItem isCollapsed={isCollapsed} />
         <NavItem
-          to="/admin/about"
+          to={ROUTES.admin.about}
           icon={<SelfhostIcon fontSize={20} />}
           label="About"
           isCollapsed={isCollapsed}

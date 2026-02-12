@@ -53,6 +53,7 @@
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^3.0.6",
     "react-router-dom": "^7.12.0",
+    "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
     "vaul": "^1.1.2",

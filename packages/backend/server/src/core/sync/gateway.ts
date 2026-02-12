@@ -1,4 +1,10 @@
-import { applyDecorators, Logger, UseInterceptors } from '@nestjs/common';
+import {
+  applyDecorators,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -24,6 +30,7 @@ import {
   OnEvent,
   SpaceAccessDenied,
 } from '../../base';
+import { SocketIoRedis } from '../../base/redis';
 import { Models } from '../../models';
 import { mergeUpdatesInApplyWay } from '../../native';
 import { CurrentUser } from '../auth';
@@ -190,7 +197,11 @@ interface UpdateAwarenessMessage {
 @WebSocketGateway()
 @UseInterceptors(ClsInterceptor)
 export class SpaceSyncGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleInit,
+    OnModuleDestroy
 {
   protected logger = new Logger(SpaceSyncGateway.name);
 
@@ -198,6 +209,8 @@ export class SpaceSyncGateway
   private readonly server!: Server;
 
   private connectionCount = 0;
+  private readonly activeConnectionSetKey = 'sync:presence:connections';
+  private flushTimer?: NodeJS.Timeout;
 
   constructor(
     private readonly ac: AccessController,
@@ -205,8 +218,25 @@ export class SpaceSyncGateway
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly socketRedis: SocketIoRedis
   ) {}
+
+  onModuleInit() {
+    this.flushTimer = setInterval(() => {
+      this.flushActiveUsersMinute().catch(error => {
+        this.logger.warn('Failed to flush active users minute', error as Error);
+      });
+    }, 60_000);
+    this.flushTimer.unref?.();
+  }
+
+  onModuleDestroy() {
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = undefined;
+    }
+  }
 
   private encodeUpdates(updates: Uint8Array[]) {
     return updates.map(update => Buffer.from(update).toString('base64'));
@@ -269,18 +299,70 @@ export class SpaceSyncGateway
     setImmediate(() => client.disconnect());
   }
 
-  handleConnection() {
+  handleConnection(client: Socket) {
     this.connectionCount++;
     this.logger.debug(`New connection, total: ${this.connectionCount}`);
     metrics.socketio.gauge('connections').record(this.connectionCount);
+    this.onConnectionPresenceChanged(client, 'add').catch(error => {
+      this.logger.warn(
+        'Failed to update connection presence on add',
+        error as Error
+      );
+    });
   }
 
-  handleDisconnect() {
+  handleDisconnect(client: Socket) {
     this.connectionCount--;
     this.logger.debug(
       `Connection disconnected, total: ${this.connectionCount}`
     );
     metrics.socketio.gauge('connections').record(this.connectionCount);
+    void this.onConnectionPresenceChanged(client, 'remove').catch(error => {
+      this.logger.warn(
+        'Failed to update connection presence on remove',
+        error as Error
+      );
+    });
+  }
+
+  private async onConnectionPresenceChanged(
+    client: Socket,
+    action: 'add' | 'remove'
+  ) {
+    try {
+      if (action === 'add') {
+        await this.socketRedis.sadd(this.activeConnectionSetKey, client.id);
+      } else {
+        await this.socketRedis.srem(this.activeConnectionSetKey, client.id);
+      }
+    } catch (error) {
+      this.logger.warn(
+        'Failed to update redis sync presence set, fallback to local counter',
+        error as Error
+      );
+    }
+
+    await this.flushActiveUsersMinute();
+  }
+
+  private async flushActiveUsersMinute() {
+    const minute = new Date();
+    minute.setSeconds(0, 0);
+
+    let activeUsers = this.connectionCount;
+    try {
+      activeUsers = await this.socketRedis.scard(this.activeConnectionSetKey);
+    } catch (error) {
+      this.logger.warn(
+        'Failed to read redis sync presence set, using local value',
+        error as Error
+      );
+    }
+
+    await this.models.workspaceAnalytics.upsertSyncActiveUsersMinute(
+      minute,
+      activeUsers
+    );
   }
 
   @OnEvent('doc.updates.pushed')

@@ -217,6 +217,35 @@ test('should be able to get doc', async t => {
   t.deepEqual(res.body, Buffer.from([0, 0]));
 });
 
+test('should record doc view when reading doc', async t => {
+  const { app, workspace: doc, models } = t.context;
+
+  doc.getDoc.resolves({
+    spaceId: '',
+    docId: '',
+    bin: Buffer.from([0, 0]),
+    timestamp: Date.now(),
+  });
+
+  const record = Sinon.stub(
+    models.workspaceAnalytics,
+    'recordDocView'
+  ).resolves();
+  await app.login(t.context.u1);
+
+  const res = await app.GET('/api/workspaces/private/docs/public');
+  t.is(res.status, HttpStatus.OK);
+  t.true(record.calledOnce);
+  t.like(record.firstCall.args[0], {
+    workspaceId: 'private',
+    docId: 'public',
+    userId: t.context.u1.id,
+    isGuest: false,
+  });
+
+  record.restore();
+});
+
 test('should be able to change page publish mode', async t => {
   const { app, workspace: doc, models } = t.context;
 
