@@ -13,7 +13,7 @@ import {
   getDocLastAccessedMembersQuery,
   getDocPageAnalyticsQuery,
 } from '@affine/graphql';
-import { i18nTime } from '@affine/i18n';
+import { i18nTime, useI18n } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
   CalendarPanelIcon,
@@ -59,6 +59,7 @@ function AnalyticsChartTooltip({
   active,
   payload,
 }: TooltipProps<number, string>) {
+  const t = useI18n();
   if (!active || !payload?.length) {
     return null;
   }
@@ -86,7 +87,7 @@ function AnalyticsChartTooltip({
           style={{ backgroundColor: totalViewsColor }}
           aria-hidden="true"
         />
-        Total Views
+        {t['com.affine.doc.analytics.chart.total-views']()}
         <span className={styles.tooltipValue}>
           {intFormatter.format(valueByKey.totalViews ?? point.totalViews)}
         </span>
@@ -97,7 +98,7 @@ function AnalyticsChartTooltip({
           style={{ backgroundColor: uniqueViewsColor }}
           aria-hidden="true"
         />
-        Unique Views
+        {t['com.affine.doc.analytics.chart.unique-views']()}
         <span className={styles.tooltipValue}>
           {intFormatter.format(valueByKey.uniqueViews ?? point.uniqueViews)}
         </span>
@@ -113,6 +114,7 @@ export const EditorAnalyticsPanel = ({
   workspaceId: string;
   docId: string;
 }) => {
+  const t = useI18n();
   const permission = useService(WorkspacePermissionService).permission;
   const workspaceDialogService = useService(WorkspaceDialogService);
   const isTeam = useLiveData(permission.isTeam$);
@@ -223,18 +225,20 @@ export const EditorAnalyticsPanel = ({
     });
   }, [workspaceDialogService]);
   const showTeamPlanToast = useCallback(() => {
-    toast('Doc analytics over 7 days require an AFFiNE Team subscription.');
-  }, []);
+    toast(t['com.affine.doc.analytics.paywall.toast']());
+  }, [t]);
 
   return (
     <div className={styles.root}>
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitle}>
-            <span>View Analytics</span>
+            <span>{t['com.affine.doc.analytics.title']()}</span>
             <span className={styles.sectionSubtitle}>
               {summary
-                ? `(${intFormatter.format(summary.totalViews)} total)`
+                ? t.t('com.affine.doc.analytics.summary.total', {
+                    count: intFormatter.format(summary.totalViews),
+                  })
                 : ''}
             </span>
           </div>
@@ -257,7 +261,9 @@ export const EditorAnalyticsPanel = ({
                           <button
                             type="button"
                             className={styles.lockButton}
-                            aria-label="Open pricing plans"
+                            aria-label={t[
+                              'com.affine.doc.analytics.paywall.open-pricing'
+                            ]()}
                             onClick={event => {
                               event.preventDefault();
                               event.stopPropagation();
@@ -276,8 +282,12 @@ export const EditorAnalyticsPanel = ({
                         setWindowDays(option);
                       }}
                     >
-                      Last {option} days
-                      {isLocked ? ' (Team)' : ''}
+                      {t.t('com.affine.doc.analytics.window.last-days', {
+                        days: option,
+                      })}
+                      {isLocked
+                        ? ` (${t['com.affine.payment.cloud.team-workspace.name']()})`
+                        : ''}
                     </MenuItem>
                   );
                 })}
@@ -291,26 +301,34 @@ export const EditorAnalyticsPanel = ({
               prefix={<CalendarPanelIcon />}
               suffix={<ArrowDownSmallIcon />}
             >
-              Last {effectiveWindowDays} days
+              {t.t('com.affine.doc.analytics.window.last-days', {
+                days: effectiveWindowDays,
+              })}
             </Button>
           </Menu>
         </div>
 
         <div className={styles.metrics}>
           <div className={styles.metricCard}>
-            <div className={styles.metricLabel}>Total</div>
+            <div className={styles.metricLabel}>
+              {t['com.affine.doc.analytics.metric.total']()}
+            </div>
             <div className={styles.metricValue}>
               {intFormatter.format(summary?.totalViews ?? 0)}
             </div>
           </div>
           <div className={styles.metricCard}>
-            <div className={styles.metricLabel}>Unique</div>
+            <div className={styles.metricLabel}>
+              {t['com.affine.doc.analytics.metric.unique']()}
+            </div>
             <div className={styles.metricValue}>
               {intFormatter.format(summary?.uniqueViews ?? 0)}
             </div>
           </div>
           <div className={styles.metricCard}>
-            <div className={styles.metricLabel}>Guest</div>
+            <div className={styles.metricLabel}>
+              {t['com.affine.doc.analytics.metric.guest']()}
+            </div>
             <div className={styles.metricValue}>
               {intFormatter.format(summary?.guestViews ?? 0)}
             </div>
@@ -322,7 +340,9 @@ export const EditorAnalyticsPanel = ({
             <Loading size={20} />
           </div>
         ) : analyticsError && !analytics ? (
-          <div className={styles.emptyState}>Unable to load analytics.</div>
+          <div className={styles.emptyState}>
+            {t['com.affine.doc.analytics.error.load-analytics']()}
+          </div>
         ) : chartPoints.length ? (
           <>
             <div className={styles.chartContainer}>
@@ -412,7 +432,7 @@ export const EditorAnalyticsPanel = ({
                   style={{ backgroundColor: totalViewsColor }}
                   aria-hidden="true"
                 />
-                Total Views
+                {t['com.affine.doc.analytics.chart.total-views']()}
               </span>
               <span className={styles.legendItem}>
                 <span
@@ -420,19 +440,21 @@ export const EditorAnalyticsPanel = ({
                   style={{ backgroundColor: uniqueViewsColor }}
                   aria-hidden="true"
                 />
-                Unique Views
+                {t['com.affine.doc.analytics.chart.unique-views']()}
               </span>
             </div>
           </>
         ) : (
-          <div className={styles.emptyState}>No page views in this window.</div>
+          <div className={styles.emptyState}>
+            {t['com.affine.doc.analytics.empty.no-page-views']()}
+          </div>
         )}
       </section>
 
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitle}>
-            <span>Viewers</span>
+            <span>{t['com.affine.doc.analytics.viewers.title']()}</span>
             <span className={styles.sectionSubtitle}>
               ({intFormatter.format(totalMembers)})
             </span>
@@ -444,7 +466,9 @@ export const EditorAnalyticsPanel = ({
             <Loading size={20} />
           </div>
         ) : membersError && !membersConnection ? (
-          <div className={styles.emptyState}>Unable to load viewers.</div>
+          <div className={styles.emptyState}>
+            {t['com.affine.doc.analytics.error.load-viewers']()}
+          </div>
         ) : members.length ? (
           <>
             <div className={styles.viewersList}>
@@ -472,12 +496,14 @@ export const EditorAnalyticsPanel = ({
                 className={styles.loadMoreButton}
                 onClick={() => setMembersPageSize(MAX_MEMBERS_PAGE_SIZE)}
               >
-                Show all viewers
+                {t['com.affine.doc.analytics.viewers.show-all']()}
               </Button>
             ) : null}
           </>
         ) : (
-          <div className={styles.emptyState}>No viewers in this window.</div>
+          <div className={styles.emptyState}>
+            {t['com.affine.doc.analytics.empty.no-viewers']()}
+          </div>
         )}
       </section>
     </div>

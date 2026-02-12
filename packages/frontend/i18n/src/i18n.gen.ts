@@ -4575,6 +4575,74 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.license-success.copy"](): string;
     /**
+      * `View analytics`
+      */
+    ["com.affine.doc.analytics.title"](): string;
+    /**
+      * `({{count}} total)`
+      */
+    ["com.affine.doc.analytics.summary.total"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Last {{days}} days`
+      */
+    ["com.affine.doc.analytics.window.last-days"](options: {
+        readonly days: string;
+    }): string;
+    /**
+      * `Total`
+      */
+    ["com.affine.doc.analytics.metric.total"](): string;
+    /**
+      * `Unique`
+      */
+    ["com.affine.doc.analytics.metric.unique"](): string;
+    /**
+      * `Guest`
+      */
+    ["com.affine.doc.analytics.metric.guest"](): string;
+    /**
+      * `Total views`
+      */
+    ["com.affine.doc.analytics.chart.total-views"](): string;
+    /**
+      * `Unique views`
+      */
+    ["com.affine.doc.analytics.chart.unique-views"](): string;
+    /**
+      * `Unable to load analytics.`
+      */
+    ["com.affine.doc.analytics.error.load-analytics"](): string;
+    /**
+      * `Unable to load viewers.`
+      */
+    ["com.affine.doc.analytics.error.load-viewers"](): string;
+    /**
+      * `No page views in this window.`
+      */
+    ["com.affine.doc.analytics.empty.no-page-views"](): string;
+    /**
+      * `No viewers in this window.`
+      */
+    ["com.affine.doc.analytics.empty.no-viewers"](): string;
+    /**
+      * `Viewers`
+      */
+    ["com.affine.doc.analytics.viewers.title"](): string;
+    /**
+      * `Show all viewers`
+      */
+    ["com.affine.doc.analytics.viewers.show-all"](): string;
+    /**
+      * `Open pricing plans`
+      */
+    ["com.affine.doc.analytics.paywall.open-pricing"](): string;
+    /**
+      * `Doc analytics over 7 days require an AFFiNE Team subscription.`
+      */
+    ["com.affine.doc.analytics.paywall.toast"](): string;
+    /**
       * `Close`
       */
     ["com.affine.peek-view-controls.close"](): string;
