@@ -337,6 +337,7 @@ export const popViewOptions = (
   const reopen = () => {
     popViewOptions(target, dataViewLogic);
   };
+  let handler: ReturnType<typeof popMenu>;
   const items: MenuConfig[] = [];
   items.push(
     menu.input({
@@ -350,16 +351,9 @@ export const popViewOptions = (
   items.push(
     menu.group({
       items: [
-        menu.action({
-          name: 'Layout',
-          postfix: html` <div
-              style="font-size: 14px;text-transform: capitalize;"
-            >
-              ${view.type}
-            </div>
-            ${ArrowRightSmallIcon()}`,
-          select: () => {
-            const viewTypes = view.manager.viewMetas.map<MenuConfig>(meta => {
+        menu => {
+          const viewTypeItems = menu.renderItems(
+            view.manager.viewMetas.map<MenuConfig>(meta => {
               return menu => {
                 if (!menu.search(meta.model.defaultName)) {
                   return;
@@ -379,10 +373,10 @@ export const popViewOptions = (
                     ? 'var(--affine-text-emphasis-color)'
                     : 'var(--affine-text-secondary-color)',
                 });
-                const data: MenuButtonData = {
+                const buttonData: MenuButtonData = {
                   content: () => html`
                     <div
-                      style="color:var(--affine-text-emphasis-color);width:100%;display: flex;flex-direction: column;align-items: center;justify-content: center;padding: 6px 16px;white-space: nowrap"
+                      style="width:100%;display: flex;flex-direction: column;align-items: center;justify-content: center;padding: 6px 16px;white-space: nowrap"
                     >
                       <div style="${iconStyle}">
                         ${renderUniLit(meta.renderer.icon)}
@@ -392,7 +386,7 @@ export const popViewOptions = (
                   `,
                   select: () => {
                     const id = view.manager.currentViewId$.value;
-                    if (!id) {
+                    if (!id || meta.type === view.type) {
                       return;
                     }
                     view.manager.viewChangeType(id, meta.type);
@@ -403,55 +397,35 @@ export const popViewOptions = (
                 const containerStyle = styleMap({
                   flex: '1',
                 });
-                return html` <affine-menu-button
+                return html`<affine-menu-button
                   style="${containerStyle}"
-                  .data="${data}"
+                  .data="${buttonData}"
                   .menu="${menu}"
                 ></affine-menu-button>`;
               };
-            });
-            const subHandler = popMenu(target, {
-              options: {
-                title: {
-                  onBack: reopen,
-                  text: 'Layout',
-                },
-                items: [
-                  menu => {
-                    const result = menu.renderItems(viewTypes);
-                    if (result.length) {
-                      return html` <div style="display: flex">${result}</div>`;
-                    }
-                    return html``;
-                  },
-                  // menu.toggleSwitch({
-                  //   name: 'Show block icon',
-                  //   on: true,
-                  //   onChange: value => {
-                  //     console.log(value);
-                  //   },
-                  // }),
-                  // menu.toggleSwitch({
-                  //   name: 'Show Vertical lines',
-                  //   on: true,
-                  //   onChange: value => {
-                  //     console.log(value);
-                  //   },
-                  // }),
-                ],
-              },
-              middleware: [
-                autoPlacement({
-                  allowedPlacements: ['bottom-start', 'top-start'],
-                }),
-                offset({ mainAxis: 15, crossAxis: -162 }),
-                shift({ crossAxis: true }),
-              ],
-            });
-            subHandler.menu.menuElement.style.minHeight = '550px';
-          },
-          prefix: LayoutIcon(),
-        }),
+            })
+          );
+          if (!viewTypeItems.length) {
+            return html``;
+          }
+          return html`
+            <div style="display:flex;align-items:center;gap:8px;padding:0 2px;">
+              <div
+                style="display:flex;align-items:center;color:var(--affine-icon-color);"
+              >
+                ${LayoutIcon()}
+              </div>
+              <div
+                style="font-size:14px;line-height:22px;color:var(--affine-text-secondary-color);"
+              >
+                Layout
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              ${viewTypeItems}
+            </div>
+          `;
+        },
       ],
     })
   );
@@ -486,7 +460,6 @@ export const popViewOptions = (
       ],
     })
   );
-  let handler: ReturnType<typeof popMenu>;
   handler = popMenu(target, {
     options: {
       title: {

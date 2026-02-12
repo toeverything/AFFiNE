@@ -4,6 +4,7 @@ import { CalendarProviderRequestError } from '../../../base';
 import { CalendarProvider } from './def';
 import {
   CalendarProviderEvent,
+  CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,
   CalendarProviderListEventsResult,
   CalendarProviderName,
@@ -171,7 +172,7 @@ export class GoogleCalendarProvider extends CalendarProvider {
     };
   }
 
-  async listCalendars(accessToken: string) {
+  async listCalendars(params: CalendarProviderListCalendarsParams) {
     const calendars: GoogleCalendarListResponse['items'] = [];
     let pageToken: string | undefined;
 
@@ -188,7 +189,7 @@ export class GoogleCalendarProvider extends CalendarProvider {
         url.toString(),
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${params.accessToken}`,
           },
         }
       );

@@ -1,0 +1,37 @@
+query getDocLastAccessedMembers(
+  $workspaceId: String!
+  $docId: String!
+  $pagination: PaginationInput!
+  $query: String
+  $includeTotal: Boolean
+) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      lastAccessedMembers(
+        pagination: $pagination
+        query: $query
+        includeTotal: $includeTotal
+      ) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            user {
+              id
+              name
+              avatarUrl
+            }
+            lastAccessedAt
+            lastDocId
+          }
+        }
+      }
+    }
+  }
+}

@@ -275,6 +275,26 @@ export const USER_FRIENDLY_ERRORS = {
     args: { message: 'string' },
     message: ({ message }) => `HTTP request error, message: ${message}`,
   },
+  ssrf_blocked_error: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => {
+      switch (reason) {
+        case 'unresolvable_hostname':
+          return 'Failed to resolve hostname';
+        case 'too_many_redirects':
+          return 'Too many redirects';
+        default:
+          return 'Invalid URL';
+      }
+    },
+  },
+  response_too_large_error: {
+    type: 'invalid_input',
+    args: { limitBytes: 'number', receivedBytes: 'number' },
+    message: ({ limitBytes, receivedBytes }) =>
+      `Response too large (${receivedBytes} bytes), limit is ${limitBytes} bytes`,
+  },
   email_service_not_configured: {
     type: 'internal_server_error',
     message: 'Email service is not configured.',

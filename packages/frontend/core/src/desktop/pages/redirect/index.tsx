@@ -1,21 +1,8 @@
 import { DebugLogger } from '@affine/debug';
-import { escapeRegExp } from 'lodash-es';
+import { isAllowedRedirectTarget } from '@toeverything/infra';
 import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
 
-const trustedDomain = [
-  'google.com',
-  'stripe.com',
-  'github.com',
-  'twitter.com',
-  'discord.gg',
-  'youtube.com',
-  't.me',
-  'reddit.com',
-  'affine.pro',
-];
-
 const logger = new DebugLogger('redirect_proxy');
-const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 
 /**
  * /redirect-proxy page
@@ -31,26 +18,13 @@ export const loader: LoaderFunction = async ({ request }) => {
     return { allow: false };
   }
 
-  try {
-    const target = new URL(redirectUri);
-
-    if (!ALLOWED_PROTOCOLS.has(target.protocol)) {
-      logger.warn('Blocked redirect with disallowed protocol', target.protocol);
-      return { allow: false };
-    }
-
-    if (
-      target.hostname === window.location.hostname ||
-      trustedDomain.some(domain =>
-        new RegExp(`(^|\\.)${escapeRegExp(domain)}$`).test(target.hostname)
-      )
-    ) {
-      location.href = redirectUri;
-      return { allow: true };
-    }
-  } catch (e) {
-    logger.error('Failed to parse redirect uri', e);
-    return { allow: false };
+  if (
+    isAllowedRedirectTarget(redirectUri, {
+      currentHostname: window.location.hostname,
+    })
+  ) {
+    location.href = redirectUri;
+    return { allow: true };
   }
 
   logger.warn('Blocked redirect to untrusted domain', redirectUri);

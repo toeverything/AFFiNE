@@ -12,10 +12,21 @@ import {
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import z, { ZodType } from 'zod';
 
+import {
+  bufferToArrayBuffer,
+  fetchBuffer,
+  OneMinute,
+  ResponseTooLargeError,
+  safeFetch,
+  SsrfBlockedError,
+} from '../../../base';
 import { CustomAITools } from '../tools';
 import { PromptMessage, StreamObject } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
+
+const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
+const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };
 
 const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
 const FORMAT_INFER_MAP: Record<string, string> = {
@@ -42,6 +53,11 @@ const FORMAT_INFER_MAP: Record<string, string> = {
   flv: 'video/flv',
 };
 
+async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
+  const { buffer } = await fetchBuffer(url, ATTACHMENT_MAX_BYTES);
+  return bufferToArrayBuffer(buffer);
+}
+
 export async function inferMimeType(url: string) {
   if (url.startsWith('data:')) {
     return url.split(';')[0].split(':')[1];
@@ -53,12 +69,15 @@ export async function inferMimeType(url: string) {
     if (ext) {
       return ext;
     }
-    const mimeType = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-    }).then(res => res.headers.get('Content-Type'));
-    if (mimeType) {
-      return mimeType;
+    try {
+      const mimeType = await safeFetch(
+        url,
+        { method: 'HEAD' },
+        ATTACH_HEAD_PARAMS
+      ).then(res => res.headers.get('content-type'));
+      if (mimeType) return mimeType;
+    } catch {
+      // ignore and fallback to default
     }
   }
   return 'application/octet-stream';
@@ -106,7 +125,16 @@ export async function chatToGPTMessage(
           if (SIMPLE_IMAGE_URL_REGEX.test(attachment)) {
             const data =
               attachment.startsWith('data:') || useBase64Attachment
-                ? await fetch(attachment).then(r => r.arrayBuffer())
+                ? await fetchArrayBuffer(attachment).catch(error => {
+                    // Avoid leaking internal details for blocked URLs.
+                    if (
+                      error instanceof SsrfBlockedError ||
+                      error instanceof ResponseTooLargeError
+                    ) {
+                      throw new Error('Attachment URL is not allowed');
+                    }
+                    throw error;
+                  })
                 : new URL(attachment);
             if (mediaType.startsWith('image/')) {
               contents.push({ type: 'image', image: data, mediaType });

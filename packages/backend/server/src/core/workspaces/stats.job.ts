@@ -124,6 +124,21 @@ export class WorkspaceStatsJob {
         `Recalibrate admin stats for ${processed} workspace(s) (last sid ${lastSid})`
       );
     }
+
+    try {
+      const snapshotted = await this.withAdvisoryLock(async tx => {
+        await this.writeDailySnapshot(tx);
+        return true;
+      });
+      if (snapshotted) {
+        this.logger.debug('Wrote daily workspace admin stats snapshot');
+      }
+    } catch (error) {
+      this.logger.error(
+        'Failed to write daily workspace admin stats snapshot',
+        error as Error
+      );
+    }
   }
 
   private async withAdvisoryLock<T>(
@@ -302,6 +317,33 @@ export class WorkspaceStatsJob {
       WHERE sid > ${lastSid}
       ORDER BY sid
       LIMIT ${limit}
+    `;
+  }
+
+  private async writeDailySnapshot(tx: Prisma.TransactionClient) {
+    await tx.$executeRaw`
+      INSERT INTO workspace_admin_stats_daily (
+        workspace_id,
+        date,
+        snapshot_size,
+        blob_size,
+        member_count,
+        updated_at
+      )
+      SELECT
+        workspace_id,
+        CURRENT_DATE,
+        snapshot_size,
+        blob_size,
+        member_count,
+        NOW()
+      FROM workspace_admin_stats
+      ON CONFLICT (workspace_id, date)
+      DO UPDATE SET
+        snapshot_size = EXCLUDED.snapshot_size,
+        blob_size = EXCLUDED.blob_size,
+        member_count = EXCLUDED.member_count,
+        updated_at = EXCLUDED.updated_at
     `;
   }
 }

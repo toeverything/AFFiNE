@@ -338,8 +338,8 @@ test.describe('kanban view selection', () => {
       rows: ['row1'],
       columns: [
         {
-          type: 'number',
-          value: [1],
+          type: 'checkbox',
+          value: [true],
         },
         {
           type: 'rich-text',
@@ -350,8 +350,6 @@ test.describe('kanban view selection', () => {
 
     await focusKanbanCardHeader(page);
     await assertKanbanCellSelected(page, {
-      // group by `number` column, `Ungroups` is hidden because it's empty (hideEmpty: true by default)
-      // so the first visible group is the one with value "1" at groupIndex: 0
       groupIndex: 0,
       cardIndex: 0,
       cellIndex: 0,
@@ -380,9 +378,9 @@ test.describe('kanban view selection', () => {
       rows: ['row1', 'row2'],
       columns: [
         {
-          type: 'number',
-          // Both rows have value 1 to put them in the same group
-          value: [1, 1],
+          type: 'checkbox',
+          // Both rows are checked so they stay in the same group.
+          value: [true, true],
         },
         {
           type: 'rich-text',
@@ -394,8 +392,6 @@ test.describe('kanban view selection', () => {
     await focusKanbanCardHeader(page);
     await pressArrowUp(page);
     await assertKanbanCellSelected(page, {
-      // `Ungroups` is hidden because it's empty (hideEmpty: true by default)
-      // so the first visible group is "1" at groupIndex: 0
       groupIndex: 0,
       cardIndex: 1,
       cellIndex: 2,
@@ -414,18 +410,18 @@ test.describe('kanban view selection', () => {
   }) => {
     await enterPlaygroundRoom(page);
     await initKanbanViewState(page, {
-      rows: ['row1', 'row2', 'row3'],
+      rows: ['row1', 'row2'],
       columns: [
         {
-          type: 'number',
-          value: [undefined, 1, 10],
+          type: 'checkbox',
+          value: [true, false],
         },
       ],
     });
 
     await focusKanbanCardHeader(page);
 
-    await pressArrowRight(page, 3);
+    await pressArrowRight(page, 2);
     await assertKanbanCellSelected(page, {
       groupIndex: 0,
       cardIndex: 0,
@@ -434,7 +430,7 @@ test.describe('kanban view selection', () => {
 
     await pressArrowLeft(page);
     await assertKanbanCellSelected(page, {
-      groupIndex: 2,
+      groupIndex: 1,
       cardIndex: 0,
       cellIndex: 0,
     });
@@ -480,11 +476,11 @@ test.describe('kanban view selection', () => {
   }) => {
     await enterPlaygroundRoom(page);
     await initKanbanViewState(page, {
-      rows: ['row1', 'row2', 'row3'],
+      rows: ['row1', 'row2'],
       columns: [
         {
-          type: 'number',
-          value: [undefined, 1, 10],
+          type: 'checkbox',
+          value: [true, false],
         },
       ],
     });
@@ -493,7 +489,7 @@ test.describe('kanban view selection', () => {
     await pressEscape(page);
     await pressEscape(page);
 
-    await pressArrowRight(page, 3);
+    await pressArrowRight(page, 2);
     await assertKanbanCardSelected(page, {
       groupIndex: 0,
       cardIndex: 0,
@@ -501,7 +497,7 @@ test.describe('kanban view selection', () => {
 
     await pressArrowLeft(page);
     await assertKanbanCardSelected(page, {
-      groupIndex: 2,
+      groupIndex: 1,
       cardIndex: 0,
     });
   });
@@ -512,8 +508,8 @@ test.describe('kanban view selection', () => {
       rows: ['row1', 'row2'],
       columns: [
         {
-          type: 'number',
-          value: [undefined, 1],
+          type: 'checkbox',
+          value: [true, false],
         },
       ],
     });

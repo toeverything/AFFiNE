@@ -228,11 +228,13 @@ async function getBlobUploadPartUrl(
 ) {
   const data = await gql(
     `
-      mutation getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
-        getBlobUploadPartUrl(workspaceId: $workspaceId, key: $key, uploadId: $uploadId, partNumber: $partNumber) {
-          uploadUrl
-          headers
-          expiresAt
+      query getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+        workspace(id: $workspaceId) {
+          blobUploadPartUrl(key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+            uploadUrl
+            headers
+            expiresAt
+          }
         }
       }
     `,
@@ -240,7 +242,7 @@ async function getBlobUploadPartUrl(
     'getBlobUploadPartUrl'
   );
 
-  return data.getBlobUploadPartUrl;
+  return data.workspace.blobUploadPartUrl;
 }
 
 async function setupWorkspace() {

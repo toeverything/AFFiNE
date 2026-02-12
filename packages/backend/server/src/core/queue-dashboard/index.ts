@@ -53,11 +53,20 @@ class QueueDashboardService implements OnModuleInit {
     ): Promise<void> => {
       try {
         const session = await this.authGuard.signIn(req, res);
-        const userId = session?.user?.id;
+        const user = session?.user;
+        const userId = user?.id;
+        const email = user?.email?.toLowerCase();
+
         const isAdmin = userId ? await this.feature.isAdmin(userId) : false;
         if (!isAdmin) {
           res.status(404).end();
           return;
+        }
+
+        if (req.method === 'GET' && (req.path === '/' || req.path === '')) {
+          this.logger.log(
+            `QueueDash accessed by ${userId} (${email ?? 'n/a'})`
+          );
         }
       } catch (error) {
         this.logger.warn('QueueDash auth failed', error as Error);

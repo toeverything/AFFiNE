@@ -2,7 +2,7 @@
   "name": "@affine/templates",
   "private": true,
   "sideEffect": false,
-  "version": "0.26.0",
+  "version": "0.26.1",
   "scripts": {
     "build": "node ./build-edgeless.mjs && node ./build-stickers.mjs",
     "postinstall": "yarn build"

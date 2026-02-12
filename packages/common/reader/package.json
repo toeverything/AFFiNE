@@ -1,7 +1,7 @@
 {
   "name": "@affine/reader",
   "type": "module",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "private": true,
   "sideEffects": false,
   "module": "./src/index.ts",
@@ -14,7 +14,7 @@
     "bundle": "node esbuild.config.js"
   },
   "dependencies": {
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "yjs": "^13.6.27"
   },
   "devDependencies": {

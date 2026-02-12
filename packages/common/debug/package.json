@@ -12,5 +12,5 @@
     "@types/debug": "^4.1.12",
     "vitest": "^3.2.4"
   },
-  "version": "0.26.0"
+  "version": "0.26.1"
 }

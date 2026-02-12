@@ -43,6 +43,7 @@ import { focusBlockEnd } from '@blocksuite/affine/shared/commands';
 import { getLastNoteBlock } from '@blocksuite/affine/shared/utils';
 import {
   AiIcon,
+  ChartPanelIcon,
   CommentIcon,
   ExportIcon,
   FrameIcon,
@@ -67,6 +68,7 @@ import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 import { DetailPageWrapper } from './detail-page-wrapper';
 import { EditorAdapterPanel } from './tabs/adapter';
+import { EditorAnalyticsPanel } from './tabs/analytics';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
@@ -427,6 +429,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           <Scrollable.Root className={styles.sidebarScrollArea}>
             <Scrollable.Viewport>
               <CommentSidebar />
+            </Scrollable.Viewport>
+            <Scrollable.Scrollbar />
+          </Scrollable.Root>
+        </ViewSidebarTab>
+      )}
+
+      {workspace.flavour === 'affine-cloud' && (
+        <ViewSidebarTab tabId="analytics" icon={<ChartPanelIcon />}>
+          <Scrollable.Root className={styles.sidebarScrollArea}>
+            <Scrollable.Viewport>
+              <EditorAnalyticsPanel workspaceId={workspace.id} docId={doc.id} />
             </Scrollable.Viewport>
             <Scrollable.Scrollbar />
           </Scrollable.Root>

@@ -28,7 +28,9 @@ object AuthInitializer {
                             .get(server.host + CookieStore.AFFINE_SESSION)
                         val userIdCookieStr = AFFiNEApp.context().dataStore
                             .get(server.host + CookieStore.AFFINE_USER_ID)
-                        if (sessionCookieStr.isEmpty() || userIdCookieStr.isEmpty()) {
+                        val csrfCookieStr = AFFiNEApp.context().dataStore
+                            .get(server.host + CookieStore.AFFINE_CSRF_TOKEN)
+                        if (sessionCookieStr.isEmpty() || userIdCookieStr.isEmpty() || csrfCookieStr.isEmpty()) {
                             Timber.i("[init] user has not signed in yet.")
                             return@launch
                         }
@@ -38,6 +40,8 @@ object AuthInitializer {
                                 ?: error("Parse session cookie fail:[ cookie = $sessionCookieStr ]"),
                             Cookie.parse(server, userIdCookieStr)
                                 ?: error("Parse user id cookie fail:[ cookie = $userIdCookieStr ]"),
+                            Cookie.parse(server, csrfCookieStr)
+                                ?: error("Parse csrf token cookie fail:[ cookie = $csrfCookieStr ]"),
                         )
                         CookieStore.saveCookies(server.host, cookies)
                         FileTree.get()?.checkAndUploadOldLogs(server)

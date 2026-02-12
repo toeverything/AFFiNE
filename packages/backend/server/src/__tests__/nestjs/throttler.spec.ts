@@ -1,4 +1,5 @@
 import { Controller, Get, HttpStatus, UseGuards } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import { type Response } from 'supertest';
@@ -140,6 +141,72 @@ test('should be able to prevent requests if limit is reached', async t => {
   const headers = rateLimitHeaders(res);
 
   t.is(headers.retryAfter, '10');
+
+  stub.restore();
+});
+
+test('should use session id as tracker when available', async t => {
+  const { app } = t.context;
+
+  const user = await app.signupV1('u1@affine.pro');
+  const userSession = await app.get(PrismaClient).userSession.findFirst({
+    where: { userId: user.id },
+  });
+  t.truthy(userSession);
+
+  const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
+    timeToExpire: 10,
+    totalHits: 1,
+    isBlocked: false,
+    timeToBlockExpire: 0,
+  });
+
+  await app.GET('/throttled/default').expect(200);
+
+  const key = stub.firstCall.args[0] as string;
+  t.true(key.startsWith(`throttler:${userSession!.sessionId};default`));
+
+  stub.restore();
+});
+
+test('should use CF-Connecting-IP as tracker when present', async t => {
+  const { app } = t.context;
+
+  const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
+    timeToExpire: 10,
+    totalHits: 1,
+    isBlocked: false,
+    timeToBlockExpire: 0,
+  });
+
+  await app
+    .GET('/nonthrottled/default')
+    .set('CF-Connecting-IP', '1.2.3.4')
+    .expect(200);
+
+  const key = stub.firstCall.args[0] as string;
+  t.true(key.startsWith('throttler:1.2.3.4;default'));
+
+  stub.restore();
+});
+
+test('should use X-Forwarded-For as tracker when present', async t => {
+  const { app } = t.context;
+
+  const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
+    timeToExpire: 10,
+    totalHits: 1,
+    isBlocked: false,
+    timeToBlockExpire: 0,
+  });
+
+  await app
+    .GET('/nonthrottled/default')
+    .set('X-Forwarded-For', '5.6.7.8, 9.9.9.9')
+    .expect(200);
+
+  const key = stub.firstCall.args[0] as string;
+  t.true(key.startsWith('throttler:5.6.7.8;default'));
 
   stub.restore();
 });

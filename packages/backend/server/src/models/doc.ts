@@ -131,7 +131,7 @@ export class DocModel extends BaseModel {
       },
     });
     if (count > 0) {
-      this.logger.log(
+      this.logger.verbose(
         `Deleted ${count} updates for workspace ${workspaceId} doc ${docId}`
       );
     }
@@ -159,7 +159,7 @@ export class DocModel extends BaseModel {
     //                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     const result: { updatedAt: Date }[] = await this.db.$queryRaw`
       INSERT INTO "snapshots" ("workspace_id", "guid", "blob", "size", "created_at", "updated_at", "created_by", "updated_by")
-      VALUES (${spaceId}, ${docId}, ${blob}, ${size}, DEFAULT, ${updatedAt}, ${editorId}, ${editorId})
+      VALUES (${spaceId}, ${docId}, ${blob}, ${size}, ${updatedAt}, ${updatedAt}, ${editorId}, ${editorId})
       ON CONFLICT ("workspace_id", "guid")
       DO UPDATE SET "blob" = ${blob}, "size" = ${size}, "updated_at" = ${updatedAt}, "updated_by" = ${editorId}
       WHERE "snapshots"."workspace_id" = ${spaceId} AND "snapshots"."guid" = ${docId} AND "snapshots"."updated_at" <= ${updatedAt}

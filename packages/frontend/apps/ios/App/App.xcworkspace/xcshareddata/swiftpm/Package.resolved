@@ -19,6 +19,15 @@
       }
     },
     {
+      "identity" : "highlightr",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/raspu/Highlightr",
+      "state" : {
+        "revision" : "05e7fcc63b33925cd0c1faaa205cdd5681e7bbef",
+        "version" : "2.3.0"
+      }
+    },
+    {
       "identity" : "listviewkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/ListViewKit",
@@ -28,12 +37,21 @@
       }
     },
     {
+      "identity" : "litext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/Litext",
+      "state" : {
+        "revision" : "c7e83f2f580ce34a102ca9ba9d2bb24e507dccd9",
+        "version" : "0.5.6"
+      }
+    },
+    {
       "identity" : "lrucache",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nicklockwood/LRUCache",
       "state" : {
-        "revision" : "542f0449556327415409ededc9c43a4bd0a397dc",
-        "version" : "1.0.7"
+        "revision" : "cb5b2bd0da83ad29c0bec762d39f41c8ad0eaf3e",
+        "version" : "1.2.1"
       }
     },
     {
@@ -41,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/MarkdownView",
       "state" : {
-        "revision" : "20fa808889944921e8da3a1c8317e8a557db373e",
-        "version" : "3.4.7"
+        "revision" : "8b8c1eecd251051c5ec2bdd5f31a2243efd9be6c",
+        "version" : "3.6.2"
       }
     },
     {
@@ -59,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/RevenueCat/purchases-ios-spm.git",
       "state" : {
-        "revision" : "6676da5c4c6a61e53b3139216a775d1224bf056e",
-        "version" : "5.56.1"
+        "revision" : "8f5df97653eb361a2097119479332afccf0aa816",
+        "version" : "5.58.0"
       }
     },
     {
@@ -70,15 +88,6 @@
       "state" : {
         "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
         "version" : "5.7.1"
-      }
-    },
-    {
-      "identity" : "splash",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/Splash",
-      "state" : {
-        "revision" : "de9cde249fdb7a173a6e6b950ab18b11f6c2a557",
-        "version" : "0.18.0"
       }
     },
     {
@@ -95,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
-        "version" : "0.6.0"
+        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
+        "version" : "0.7.1"
       }
     },
     {
@@ -120,10 +129,10 @@
     {
       "identity" : "swiftmath",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/SwiftMath",
+      "location" : "https://github.com/mgriebling/SwiftMath",
       "state" : {
-        "revision" : "cfd646dcac0c5553e21ebf1ee05f9078277518bc",
-        "version" : "1.7.2"
+        "revision" : "fa8244ed032f4a1ade4cb0571bf87d2f1a9fd2d7",
+        "version" : "1.7.3"
       }
     }
   ],

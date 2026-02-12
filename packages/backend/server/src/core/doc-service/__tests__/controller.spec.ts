@@ -77,14 +77,124 @@ test('should forbid access to rpc api with invalid access token', async t => {
   t.pass();
 });
 
+test('should forbid replayed internal access token', async t => {
+  const { app } = t.context;
+
+  const workspaceId = '123';
+  const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}`;
+  const token = t.context.crypto.signInternalAccessToken({
+    method: 'GET',
+    path,
+    nonce: `nonce-${randomUUID()}`,
+  });
+
+  await app.GET(path).set('x-access-token', token).expect(404);
+
+  await app
+    .GET(path)
+    .set('x-access-token', token)
+    .expect({
+      status: 403,
+      code: 'Forbidden',
+      type: 'NO_PERMISSION',
+      name: 'ACCESS_DENIED',
+      message: 'Invalid internal request',
+    })
+    .expect(403);
+  t.pass();
+});
+
+test('should forbid internal access token when method mismatched', async t => {
+  const { app } = t.context;
+
+  const workspaceId = '123';
+  const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
+  await app
+    .POST(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
+    .expect({
+      status: 403,
+      code: 'Forbidden',
+      type: 'NO_PERMISSION',
+      name: 'ACCESS_DENIED',
+      message: 'Invalid internal request',
+    })
+    .expect(403);
+  t.pass();
+});
+
+test('should forbid internal access token when path mismatched', async t => {
+  const { app } = t.context;
+
+  const workspaceId = '123';
+  const docId = '123';
+  const wrongPath = `/rpc/workspaces/${workspaceId}/docs/${docId}`;
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}/content`;
+  await app
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({
+        method: 'GET',
+        path: wrongPath,
+      })
+    )
+    .expect({
+      status: 403,
+      code: 'Forbidden',
+      type: 'NO_PERMISSION',
+      name: 'ACCESS_DENIED',
+      message: 'Invalid internal request',
+    })
+    .expect(403);
+  t.pass();
+});
+
+test('should forbid internal access token when expired', async t => {
+  const { app } = t.context;
+
+  const workspaceId = '123';
+  const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}`;
+  await app
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({
+        method: 'GET',
+        path,
+        now: Date.now() - 10 * 60 * 1000,
+        nonce: `nonce-${randomUUID()}`,
+      })
+    )
+    .expect({
+      status: 403,
+      code: 'Forbidden',
+      type: 'NO_PERMISSION',
+      name: 'ACCESS_DENIED',
+      message: 'Invalid internal request',
+    })
+    .expect(403);
+  t.pass();
+});
+
 test('should 404 when doc not found', async t => {
   const { app } = t.context;
 
   const workspaceId = '123';
   const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}`;
   await app
-    .GET(`/rpc/workspaces/${workspaceId}/docs/${docId}`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect({
       status: 404,
       code: 'Not Found',
@@ -111,9 +221,13 @@ test('should return doc when found', async t => {
     },
   ]);
 
+  const path = `/rpc/workspaces/${workspace.id}/docs/${docId}`;
   const res = await app
-    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .set('x-cloud-trace-context', 'test-trace-id/span-id')
     .expect(200)
     .expect('x-request-id', 'test-trace-id')
@@ -129,9 +243,13 @@ test('should 404 when doc diff not found', async t => {
 
   const workspaceId = '123';
   const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
   await app
-    .POST(`/rpc/workspaces/${workspaceId}/docs/${docId}/diff`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .POST(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'POST', path })
+    )
     .expect({
       status: 404,
       code: 'Not Found',
@@ -148,9 +266,13 @@ test('should 404 when doc content not found', async t => {
 
   const workspaceId = '123';
   const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}/content`;
   await app
-    .GET(`/rpc/workspaces/${workspaceId}/docs/${docId}/content`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect({
       status: 404,
       code: 'Not Found',
@@ -172,9 +294,13 @@ test('should get doc content in json format', async t => {
   });
 
   const docId = randomUUID();
+  const path = `/rpc/workspaces/${workspace.id}/docs/${docId}/content`;
   await app
-    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect('Content-Type', 'application/json; charset=utf-8')
     .expect({
       title: 'test title',
@@ -183,8 +309,11 @@ test('should get doc content in json format', async t => {
     .expect(200);
 
   await app
-    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content?full=false`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(`${path}?full=false`)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect('Content-Type', 'application/json; charset=utf-8')
     .expect({
       title: 'test title',
@@ -204,9 +333,13 @@ test('should get full doc content in json format', async t => {
   });
 
   const docId = randomUUID();
+  const path = `/rpc/workspaces/${workspace.id}/docs/${docId}/content`;
   await app
-    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content?full=true`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(`${path}?full=true`)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect('Content-Type', 'application/json; charset=utf-8')
     .expect({
       title: 'test title',
@@ -220,9 +353,13 @@ test('should 404 when workspace content not found', async t => {
   const { app } = t.context;
 
   const workspaceId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/content`;
   await app
-    .GET(`/rpc/workspaces/${workspaceId}/content`)
-    .set('x-access-token', t.context.crypto.sign(workspaceId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect({
       status: 404,
       code: 'Not Found',
@@ -244,9 +381,13 @@ test('should get workspace content in json format', async t => {
   });
 
   const workspaceId = randomUUID();
+  const path = `/rpc/workspaces/${workspaceId}/content`;
   await app
-    .GET(`/rpc/workspaces/${workspaceId}/content`)
-    .set('x-access-token', t.context.crypto.sign(workspaceId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect(200)
     .expect({
       name: 'test name',
@@ -265,9 +406,13 @@ test('should get doc markdown in json format', async t => {
   });
 
   const docId = randomUUID();
+  const path = `/rpc/workspaces/${workspace.id}/docs/${docId}/markdown`;
   await app
-    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/markdown`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect('Content-Type', 'application/json; charset=utf-8')
     .expect(200)
     .expect({
@@ -282,9 +427,13 @@ test('should 404 when doc markdown not found', async t => {
 
   const workspaceId = '123';
   const docId = '123';
+  const path = `/rpc/workspaces/${workspaceId}/docs/${docId}/markdown`;
   await app
-    .GET(`/rpc/workspaces/${workspaceId}/docs/${docId}/markdown`)
-    .set('x-access-token', t.context.crypto.sign(docId))
+    .GET(path)
+    .set(
+      'x-access-token',
+      t.context.crypto.signInternalAccessToken({ method: 'GET', path })
+    )
     .expect({
       status: 404,
       code: 'Not Found',

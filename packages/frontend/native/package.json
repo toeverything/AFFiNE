@@ -44,5 +44,5 @@
     "test": "ava",
     "version": "napi version"
   },
-  "version": "0.26.0"
+  "version": "0.26.1"
 }

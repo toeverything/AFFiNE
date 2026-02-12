@@ -23,6 +23,9 @@ export const Setup = lazy(
 export const Accounts = lazy(
   () => import(/* webpackChunkName: "accounts" */ './modules/accounts')
 );
+export const Dashboard = lazy(
+  () => import(/* webpackChunkName: "dashboard" */ './modules/dashboard')
+);
 export const Workspaces = lazy(
   () => import(/* webpackChunkName: "workspaces" */ './modules/workspaces')
 );
@@ -75,7 +78,15 @@ function RootRoutes() {
   }
 
   if (/^\/admin\/?$/.test(location.pathname)) {
-    return <Navigate to="/admin/accounts" />;
+    return (
+      <Navigate
+        to={
+          environment.isSelfHosted
+            ? ROUTES.admin.accounts
+            : ROUTES.admin.dashboard
+        }
+      />
+    );
   }
 
   return <Outlet />;
@@ -96,6 +107,16 @@ export const App = () => {
               <Route path={ROUTES.admin.auth} element={<Auth />} />
               <Route path={ROUTES.admin.setup} element={<Setup />} />
               <Route element={<AuthenticatedRoutes />}>
+                <Route
+                  path={ROUTES.admin.dashboard}
+                  element={
+                    environment.isSelfHosted ? (
+                      <Navigate to={ROUTES.admin.accounts} replace />
+                    ) : (
+                      <Dashboard />
+                    )
+                  }
+                />
                 <Route path={ROUTES.admin.accounts} element={<Accounts />} />
                 <Route
                   path={ROUTES.admin.workspaces}

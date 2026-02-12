@@ -204,7 +204,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       ],
       ...mode,
       ...discounts,
-      success_url: this.url.link(params.successCallbackLink),
+      success_url: this.url.safeLink(params.successCallbackLink || '/'),
     });
   }
 

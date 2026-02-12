@@ -7,15 +7,20 @@ import type {
 import { Injectable, SetMetadata } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
+import semver from 'semver';
 import { Socket } from 'socket.io';
 
 import {
   AccessDenied,
   AuthenticationRequired,
+  Cache,
+  checkCanaryDateClientVersion,
   Config,
   CryptoHelper,
+  getClientVersionFromRequest,
   getRequestResponseFromContext,
   parseCookies,
+  UnsupportedClientVersion,
 } from '../../base';
 import { WEBSOCKET_OPTIONS } from '../../base/websocket';
 import { AuthService } from './service';
@@ -23,13 +28,20 @@ import { Session, TokenSession } from './session';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
 const INTERNAL_ENTRYPOINT_SYMBOL = Symbol('internal');
+const INTERNAL_ACCESS_TOKEN_TTL_MS = 5 * 60 * 1000;
+const INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
 
 @Injectable()
 export class AuthGuard implements CanActivate, OnModuleInit {
   private auth!: AuthService;
+  private readonly cachedVersionRange = new Map<string, semver.Range | null>();
+  private static readonly HARD_REQUIRED_VERSION = '>=0.25.0';
+  private static readonly CANARY_REQUIRED_VERSION = 'canary (within 2 months)';
 
   constructor(
     private readonly crypto: CryptoHelper,
+    private readonly cache: Cache,
+    private readonly config: Config,
     private readonly ref: ModuleRef,
     private readonly reflector: Reflector
   ) {}
@@ -48,21 +60,39 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       [clazz, handler]
     );
     if (isInternal) {
-      // check access token: data,signature
       const accessToken = req.get('x-access-token');
-      if (accessToken && this.crypto.verify(accessToken)) {
-        return true;
+      if (accessToken) {
+        const payload = this.crypto.parseInternalAccessToken(accessToken);
+        if (payload) {
+          const now = Date.now();
+          const method = req.method.toUpperCase();
+          const path = req.path;
+
+          const timestampInRange =
+            payload.ts <= now + INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS &&
+            now - payload.ts <= INTERNAL_ACCESS_TOKEN_TTL_MS;
+
+          if (timestampInRange && payload.m === method && payload.p === path) {
+            const nonceKey = `rpc:nonce:${payload.nonce}`;
+            const ok = await this.cache.setnx(nonceKey, 1, {
+              ttl: INTERNAL_ACCESS_TOKEN_TTL_MS,
+            });
+            if (ok) {
+              return true;
+            }
+          }
+        }
       }
       throw new AccessDenied('Invalid internal request');
     }
-
-    const authedUser = await this.signIn(req, res);
 
     // api is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(
       PUBLIC_ENTRYPOINT_SYMBOL,
       [clazz, handler]
     );
+
+    const authedUser = await this.signIn(req, res, isPublic);
 
     if (isPublic) {
       return true;
@@ -77,9 +107,10 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   async signIn(
     req: Request,
-    res?: Response
+    res?: Response,
+    isPublic = false
   ): Promise<Session | TokenSession | null> {
-    const userSession = await this.signInWithCookie(req, res);
+    const userSession = await this.signInWithCookie(req, res, isPublic);
     if (userSession) {
       return userSession;
     }
@@ -89,7 +120,8 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   async signInWithCookie(
     req: Request,
-    res?: Response
+    res?: Response,
+    isPublic = false
   ): Promise<Session | null> {
     if (req.session) {
       return req.session;
@@ -99,8 +131,38 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     const userSession = await this.auth.getUserSessionFromRequest(req, res);
 
     if (userSession) {
+      const headerClientVersion = getClientVersionFromRequest(req);
+      if (this.config.client.versionControl.enabled) {
+        const clientVersion =
+          headerClientVersion ??
+          userSession.session.refreshClientVersion ??
+          userSession.session.signInClientVersion;
+
+        const versionCheckResult = this.checkClientVersion(clientVersion);
+        if (!versionCheckResult.ok) {
+          await this.auth.signOut(userSession.session.sessionId);
+          if (res) {
+            await this.auth.refreshCookies(res, userSession.session.sessionId);
+          }
+
+          if (isPublic) {
+            return null;
+          }
+
+          throw new UnsupportedClientVersion({
+            clientVersion: clientVersion ?? 'unset_or_invalid',
+            requiredVersion: versionCheckResult.requiredVersion,
+          });
+        }
+      }
+
       if (res) {
-        await this.auth.refreshUserSessionIfNeeded(res, userSession.session);
+        await this.auth.refreshUserSessionIfNeeded(
+          res,
+          userSession.session,
+          undefined,
+          headerClientVersion
+        );
       }
 
       req.session = {
@@ -132,6 +194,68 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
     return null;
   }
+
+  private getVersionRange(versionRange: string): semver.Range | null {
+    if (this.cachedVersionRange.has(versionRange)) {
+      // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return this.cachedVersionRange.get(versionRange)!;
+    }
+
+    let range: semver.Range | null = null;
+    try {
+      range = new semver.Range(versionRange, { loose: false });
+      if (!semver.validRange(range)) {
+        range = null;
+      }
+    } catch {
+      range = null;
+    }
+
+    this.cachedVersionRange.set(versionRange, range);
+    return range;
+  }
+
+  private checkClientVersion(
+    clientVersion?: string | null
+  ): { ok: true } | { ok: false; requiredVersion: string } {
+    const requiredVersion = this.config.client.versionControl.requiredVersion;
+
+    if (clientVersion && env.namespaces.canary) {
+      const canaryCheck = checkCanaryDateClientVersion(clientVersion);
+      if (canaryCheck.matched) {
+        return canaryCheck.allowed
+          ? { ok: true }
+          : { ok: false, requiredVersion: AuthGuard.CANARY_REQUIRED_VERSION };
+      }
+    }
+
+    const configRange = this.getVersionRange(requiredVersion);
+    if (
+      configRange &&
+      (!clientVersion ||
+        !semver.satisfies(clientVersion, configRange, {
+          includePrerelease: true,
+        }))
+    ) {
+      return { ok: false, requiredVersion };
+    }
+
+    const hardRange = this.getVersionRange(AuthGuard.HARD_REQUIRED_VERSION);
+    if (!hardRange) {
+      return { ok: true };
+    }
+
+    if (
+      !clientVersion ||
+      !semver.satisfies(clientVersion, hardRange, {
+        includePrerelease: true,
+      })
+    ) {
+      return { ok: false, requiredVersion: AuthGuard.HARD_REQUIRED_VERSION };
+    }
+
+    return { ok: true };
+  }
 }
 
 /**
@@ -162,7 +286,13 @@ export const AuthWebsocketOptionsProvider: FactoryProvider = {
           ...upgradeReq.cookies,
         };
 
-        const session = await guard.signIn(upgradeReq);
+        const session = await (async () => {
+          try {
+            return await guard.signIn(upgradeReq);
+          } catch {
+            return null;
+          }
+        })();
 
         return !!session;
       },

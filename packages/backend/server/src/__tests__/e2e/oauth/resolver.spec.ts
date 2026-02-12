@@ -71,39 +71,10 @@ e2e('should return apple oauth provider in version >= 0.22.0', async t => {
 });
 
 e2e(
-  'should not return apple oauth provider when client version is not specified',
+  'should return apple oauth provider when client version is not specified',
   async t => {
     const res = await app.gql({
       query: oauthProvidersQuery,
-    });
-
-    t.snapshot(res);
-  }
-);
-
-e2e('should not return apple oauth provider in version < 0.22.0', async t => {
-  const res = await app.gql({
-    query: oauthProvidersQuery,
-    context: {
-      headers: {
-        'x-affine-version': '0.21.0',
-      },
-    },
-  });
-
-  t.snapshot(res);
-});
-
-e2e(
-  'should not return apple oauth provider when client version format is not correct',
-  async t => {
-    const res = await app.gql({
-      query: oauthProvidersQuery,
-      context: {
-        headers: {
-          'x-affine-version': 'mock-invalid-version',
-        },
-      },
     });
 
     t.snapshot(res);

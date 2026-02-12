@@ -25,47 +25,32 @@ const buildType = BUILD_TYPE || 'canary';
 
 const isProduction = buildType === 'stable';
 const isBeta = buildType === 'beta';
+const isCanary = buildType === 'canary';
 const isInternal = buildType === 'internal';
+const isSpotEnabled = isBeta || isCanary;
 
 const replicaConfig = {
   stable: {
-    web: 2,
+    front: Number(process.env.PRODUCTION_FRONT_REPLICA) || 2,
     graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 2,
-    sync: Number(process.env.PRODUCTION_SYNC_REPLICA) || 2,
-    renderer: Number(process.env.PRODUCTION_RENDERER_REPLICA) || 2,
     doc: Number(process.env.PRODUCTION_DOC_REPLICA) || 2,
   },
   beta: {
-    web: 1,
+    front: Number(process.env.BETA_FRONT_REPLICA) || 1,
     graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 1,
-    sync: Number(process.env.BETA_SYNC_REPLICA) || 1,
-    renderer: Number(process.env.BETA_RENDERER_REPLICA) || 1,
     doc: Number(process.env.BETA_DOC_REPLICA) || 1,
   },
-  canary: {
-    web: 1,
-    graphql: 1,
-    sync: 1,
-    renderer: 1,
-    doc: 1,
-  },
+  canary: { front: 1, graphql: 1, doc: 1 },
 };
 
 const cpuConfig = {
-  beta: {
-    web: '300m',
-    graphql: '1',
-    sync: '1',
-    doc: '1',
-    renderer: '300m',
-  },
-  canary: {
-    web: '300m',
-    graphql: '1',
-    sync: '1',
-    doc: '1',
-    renderer: '300m',
-  },
+  beta: { front: '1', graphql: '1', doc: '1' },
+  canary: { front: '500m', graphql: '1', doc: '500m' },
+};
+
+const memoryConfig = {
+  beta: { front: '1Gi', graphql: '1Gi', doc: '1Gi' },
+  canary: { front: '512Mi', graphql: '512Mi', doc: '512Mi' },
 };
 
 const createHelmCommand = ({ isDryRun }) => {
@@ -89,32 +74,51 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string global.indexer.endpoint="${AFFINE_INDEXER_SEARCH_ENDPOINT}"`,
     `--set-string global.indexer.apiKey="${AFFINE_INDEXER_SEARCH_API_KEY}"`,
   ];
+  const cloudSqlNodeSelector = isBeta
+    ? `{ \\"iam.gke.io/gke-metadata-server-enabled\\": \\"true\\", \\"cloud.google.com/gke-spot\\": \\"true\\" }`
+    : `{ \\"iam.gke.io/gke-metadata-server-enabled\\": \\"true\\" }`;
   const serviceAnnotations = [
-    `--set-json   web.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
+    `--set-json   front.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
     `--set-json   graphql.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
-    `--set-json   sync.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
     `--set-json   doc.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
   ].concat(
     isProduction || isBeta || isInternal
       ? [
-          `--set-json   web.service.annotations="{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }"`,
+          `--set-json   front.services.web.annotations="{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }"`,
+          `--set-json   front.services.sync.annotations="{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }"`,
+          `--set-json   front.services.renderer.annotations="{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }"`,
           `--set-json   graphql.service.annotations="{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }"`,
-          `--set-json   sync.service.annotations="{ \\"cloud.google.com/neg\\": \\"{\\\\\\"ingress\\\\\\": true}\\" }"`,
           `--set-json   cloud-sql-proxy.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${CLOUD_SQL_IAM_ACCOUNT}\\" }"`,
-          `--set-json   cloud-sql-proxy.nodeSelector="{ \\"iam.gke.io/gke-metadata-server-enabled\\": \\"true\\" }"`,
+          `--set-json   cloud-sql-proxy.nodeSelector="${cloudSqlNodeSelector}"`,
         ]
       : []
   );
-
-  const cpu = cpuConfig[buildType];
-  const resources = cpu
+  const spotNodeSelector = `{ \\"cloud.google.com/gke-spot\\": \\"true\\" }`;
+  const spotScheduling = isSpotEnabled
     ? [
-        `--set        web.resources.requests.cpu="${cpu.web}"`,
-        `--set        graphql.resources.requests.cpu="${cpu.graphql}"`,
-        `--set        sync.resources.requests.cpu="${cpu.sync}"`,
-        `--set        doc.resources.requests.cpu="${cpu.doc}"`,
+        `--set-json   front.nodeSelector="${spotNodeSelector}"`,
+        `--set-json   graphql.nodeSelector="${spotNodeSelector}"`,
+        `--set-json   doc.nodeSelector="${spotNodeSelector}"`,
       ]
     : [];
+
+  const cpu = cpuConfig[buildType];
+  const memory = memoryConfig[buildType];
+  let resources = [];
+  if (cpu) {
+    resources = resources.concat([
+      `--set        front.resources.requests.cpu="${cpu.front}"`,
+      `--set        graphql.resources.requests.cpu="${cpu.graphql}"`,
+      `--set        doc.resources.requests.cpu="${cpu.doc}"`,
+    ]);
+  }
+  if (memory) {
+    resources = resources.concat([
+      `--set        front.resources.requests.memory="${memory.front}"`,
+      `--set        graphql.resources.requests.memory="${memory.graphql}"`,
+      `--set        doc.resources.requests.memory="${memory.doc}"`,
+    ]);
+  }
 
   const replica = replicaConfig[buildType] || replicaConfig.canary;
 
@@ -130,6 +134,7 @@ const createHelmCommand = ({ isDryRun }) => {
     .split(',')
     .map(host => host.trim())
     .filter(host => host);
+  const primaryHost = hosts[0] || '0.0.0.0';
   const deployCommand = [
     `helm upgrade --install affine .github/helm/affine`,
     `--namespace  ${namespace}`,
@@ -144,20 +149,17 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string global.version="${APP_VERSION}"`,
     ...redisAndPostgres,
     ...indexerOptions,
-    `--set        web.replicaCount=${replica.web}`,
-    `--set-string web.image.tag="${imageTag}"`,
+    `--set        front.replicaCount=${replica.front}`,
+    `--set-string front.image.tag="${imageTag}"`,
+    `--set-string front.app.host="${primaryHost}"`,
     `--set        graphql.replicaCount=${replica.graphql}`,
     `--set-string graphql.image.tag="${imageTag}"`,
-    `--set        graphql.app.host=${hosts[0]}`,
-    `--set        sync.replicaCount=${replica.sync}`,
-    `--set-string sync.image.tag="${imageTag}"`,
-    `--set-string renderer.image.tag="${imageTag}"`,
-    `--set        renderer.app.host=${hosts[0]}`,
-    `--set        renderer.replicaCount=${replica.renderer}`,
+    `--set-string graphql.app.host="${primaryHost}"`,
     `--set-string doc.image.tag="${imageTag}"`,
-    `--set        doc.app.host=${hosts[0]}`,
+    `--set-string doc.app.host="${primaryHost}"`,
     `--set        doc.replicaCount=${replica.doc}`,
     ...serviceAnnotations,
+    ...spotScheduling,
     ...resources,
     `--timeout 10m`,
     flag,

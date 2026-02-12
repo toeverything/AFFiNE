@@ -1,0 +1,39 @@
+query adminAllSharedLinks(
+  $pagination: PaginationInput!
+  $filter: AdminAllSharedLinksFilterInput
+) {
+  adminAllSharedLinks(pagination: $pagination, filter: $filter) {
+    totalCount
+    analyticsWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        workspaceId
+        docId
+        title
+        publishedAt
+        docUpdatedAt
+        workspaceOwnerId
+        lastUpdaterId
+        shareUrl
+        views
+        uniqueViews
+        guestViews
+        lastAccessedAt
+      }
+    }
+  }
+}

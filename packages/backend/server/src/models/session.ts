@@ -46,7 +46,8 @@ export class SessionModel extends BaseModel {
   async createOrRefreshUserSession(
     userId: string,
     sessionId?: string,
-    ttl = this.config.auth.session.ttl
+    ttl = this.config.auth.session.ttl,
+    signInClientVersion?: string
   ) {
     // check whether given session is valid
     if (sessionId) {
@@ -76,18 +77,21 @@ export class SessionModel extends BaseModel {
       },
       update: {
         expiresAt,
+        ...(signInClientVersion ? { signInClientVersion } : {}),
       },
       create: {
         sessionId,
         userId,
         expiresAt,
+        ...(signInClientVersion ? { signInClientVersion } : {}),
       },
     });
   }
 
   async refreshUserSessionIfNeeded(
     userSession: UserSession,
-    ttr = this.config.auth.session.ttr
+    ttr = this.config.auth.session.ttr,
+    refreshClientVersion?: string
   ): Promise<Date | undefined> {
     if (
       userSession.expiresAt &&
@@ -106,6 +110,7 @@ export class SessionModel extends BaseModel {
       },
       data: {
         expiresAt: newExpiresAt,
+        ...(refreshClientVersion ? { refreshClientVersion } : {}),
       },
     });
 

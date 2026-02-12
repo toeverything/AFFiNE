@@ -44,9 +44,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: affine-sync
+                name: {{ $.Values.front.services.sync.name }}
                 port:
-                  number: {{ $.Values.sync.service.port }}
+                  number: {{ $.Values.front.services.sync.port }}
           - path: /graphql
             pathType: Prefix
             backend:
@@ -65,15 +65,15 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: affine-renderer
+                name: {{ $.Values.front.services.renderer.name }}
                 port:
-                  number: {{ $.Values.renderer.service.port }}
+                  number: {{ $.Values.front.services.renderer.port }}
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: affine-web
+                name: {{ $.Values.front.services.web.name }}
                 port:
-                  number: {{ $.Values.web.service.port }}
+                  number: {{ $.Values.front.services.web.port }}
     {{- end }}
 {{- end }}

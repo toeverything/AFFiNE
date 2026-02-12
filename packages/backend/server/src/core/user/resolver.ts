@@ -66,21 +66,27 @@ export class UserResolver {
   ): Promise<typeof UserOrLimitedUser | null> {
     validators.assertValidEmail(email);
 
-    // TODO(@forehalo): need to limit a user can only get another user witch is in the same workspace
+    // NOTE: prevent user enumeration. Only allow querying users within the same workspace scope.
+    if (!currentUser) {
+      return null;
+    }
+
     const user = await this.models.user.getUserByEmail(email);
 
     // return empty response when user not exists
     if (!user) return null;
 
-    if (currentUser) {
+    if (user.id === currentUser.id) {
       return sessionUser(user);
     }
 
-    // only return limited info when not logged in
-    return {
-      email: user.email,
-      hasPassword: !!user.password,
-    };
+    const allowed = await this.models.workspaceUser.hasSharedWorkspace(
+      currentUser.id,
+      user.id
+    );
+    if (!allowed) return null;
+
+    return sessionUser(user);
   }
 
   @Throttle('strict')
