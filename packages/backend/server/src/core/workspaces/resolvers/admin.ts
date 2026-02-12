@@ -16,6 +16,8 @@ import {
 } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
+import { PaginationInput, URLHelper } from '../../../base';
+import { PageInfo } from '../../../base/graphql/pagination';
 import {
   Feature,
   Models,
@@ -25,6 +27,7 @@ import {
 } from '../../../models';
 import { Admin } from '../../common';
 import { WorkspaceUserType } from '../../user';
+import { TimeWindow } from './analytics-types';
 
 enum AdminWorkspaceSort {
   CreatedAt = 'CreatedAt',
@@ -38,6 +41,16 @@ enum AdminWorkspaceSort {
 
 registerEnumType(AdminWorkspaceSort, {
   name: 'AdminWorkspaceSort',
+});
+
+enum AdminSharedLinksOrder {
+  UpdatedAtDesc = 'UpdatedAtDesc',
+  PublishedAtDesc = 'PublishedAtDesc',
+  ViewsDesc = 'ViewsDesc',
+}
+
+registerEnumType(AdminSharedLinksOrder, {
+  name: 'AdminSharedLinksOrder',
 });
 
 @InputType()
@@ -104,6 +117,195 @@ class AdminWorkspaceSharedLink {
 
   @Field(() => Date, { nullable: true })
   publishedAt?: Date | null;
+}
+
+@InputType()
+class AdminDashboardInput {
+  @Field(() => String, { nullable: true, defaultValue: 'UTC' })
+  timezone?: string;
+
+  @Field(() => Int, { nullable: true, defaultValue: 30 })
+  storageHistoryDays?: number;
+
+  @Field(() => Int, { nullable: true, defaultValue: 48 })
+  syncHistoryHours?: number;
+
+  @Field(() => Int, { nullable: true, defaultValue: 28 })
+  sharedLinkWindowDays?: number;
+}
+
+@ObjectType()
+class AdminDashboardMinutePoint {
+  @Field(() => Date)
+  minute!: Date;
+
+  @Field(() => Int)
+  activeUsers!: number;
+}
+
+@ObjectType()
+class AdminDashboardValueDayPoint {
+  @Field(() => Date)
+  date!: Date;
+
+  @Field(() => SafeIntResolver)
+  value!: number;
+}
+
+@ObjectType()
+class AdminSharedLinkTopItem {
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => String)
+  docId!: string;
+
+  @Field(() => String, { nullable: true })
+  title?: string | null;
+
+  @Field(() => String)
+  shareUrl!: string;
+
+  @Field(() => Date, { nullable: true })
+  publishedAt?: Date | null;
+
+  @Field(() => SafeIntResolver)
+  views!: number;
+
+  @Field(() => SafeIntResolver)
+  uniqueViews!: number;
+
+  @Field(() => SafeIntResolver)
+  guestViews!: number;
+
+  @Field(() => Date, { nullable: true })
+  lastAccessedAt?: Date | null;
+}
+
+@ObjectType()
+class AdminDashboard {
+  @Field(() => Int)
+  syncActiveUsers!: number;
+
+  @Field(() => [AdminDashboardMinutePoint])
+  syncActiveUsersTimeline!: AdminDashboardMinutePoint[];
+
+  @Field(() => TimeWindow)
+  syncWindow!: TimeWindow;
+
+  @Field(() => SafeIntResolver)
+  copilotConversations!: number;
+
+  @Field(() => SafeIntResolver)
+  workspaceStorageBytes!: number;
+
+  @Field(() => SafeIntResolver)
+  blobStorageBytes!: number;
+
+  @Field(() => [AdminDashboardValueDayPoint])
+  workspaceStorageHistory!: AdminDashboardValueDayPoint[];
+
+  @Field(() => [AdminDashboardValueDayPoint])
+  blobStorageHistory!: AdminDashboardValueDayPoint[];
+
+  @Field(() => TimeWindow)
+  storageWindow!: TimeWindow;
+
+  @Field(() => [AdminSharedLinkTopItem])
+  topSharedLinks!: AdminSharedLinkTopItem[];
+
+  @Field(() => TimeWindow)
+  topSharedLinksWindow!: TimeWindow;
+
+  @Field(() => Date)
+  generatedAt!: Date;
+}
+
+@InputType()
+class AdminAllSharedLinksFilterInput {
+  @Field(() => String, { nullable: true })
+  keyword?: string;
+
+  @Field(() => String, { nullable: true })
+  workspaceId?: string;
+
+  @Field(() => Date, { nullable: true })
+  updatedAfter?: Date;
+
+  @Field(() => AdminSharedLinksOrder, {
+    nullable: true,
+    defaultValue: AdminSharedLinksOrder.UpdatedAtDesc,
+  })
+  orderBy?: AdminSharedLinksOrder;
+
+  @Field(() => Int, { nullable: true, defaultValue: 28 })
+  analyticsWindowDays?: number;
+
+  @Field(() => Boolean, { nullable: true, defaultValue: false })
+  includeTotal?: boolean;
+}
+
+@ObjectType()
+class AdminAllSharedLink {
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => String)
+  docId!: string;
+
+  @Field(() => String, { nullable: true })
+  title?: string | null;
+
+  @Field(() => Date, { nullable: true })
+  publishedAt?: Date | null;
+
+  @Field(() => Date, { nullable: true })
+  docUpdatedAt?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  workspaceOwnerId?: string | null;
+
+  @Field(() => String, { nullable: true })
+  lastUpdaterId?: string | null;
+
+  @Field(() => String)
+  shareUrl!: string;
+
+  @Field(() => SafeIntResolver, { nullable: true })
+  views?: number | null;
+
+  @Field(() => SafeIntResolver, { nullable: true })
+  uniqueViews?: number | null;
+
+  @Field(() => SafeIntResolver, { nullable: true })
+  guestViews?: number | null;
+
+  @Field(() => Date, { nullable: true })
+  lastAccessedAt?: Date | null;
+}
+
+@ObjectType()
+class AdminAllSharedLinkEdge {
+  @Field(() => String)
+  cursor!: string;
+
+  @Field(() => AdminAllSharedLink)
+  node!: AdminAllSharedLink;
+}
+
+@ObjectType()
+class PaginatedAdminAllSharedLink {
+  @Field(() => [AdminAllSharedLinkEdge])
+  edges!: AdminAllSharedLinkEdge[];
+
+  @Field(() => PageInfo)
+  pageInfo!: PageInfo;
+
+  @Field(() => Int, { nullable: true })
+  totalCount?: number;
+
+  @Field(() => TimeWindow)
+  analyticsWindow!: TimeWindow;
 }
 
 @ObjectType()
@@ -187,7 +389,10 @@ class AdminUpdateWorkspaceInput extends PartialType(
 @Admin()
 @Resolver(() => AdminWorkspace)
 export class AdminWorkspaceResolver {
-  constructor(private readonly models: Models) {}
+  constructor(
+    private readonly models: Models,
+    private readonly url: URLHelper
+  ) {}
 
   private assertCloudOnly() {
     if (env.selfhosted) {
@@ -259,6 +464,72 @@ export class AdminWorkspaceResolver {
       return null;
     }
     return row;
+  }
+
+  @Query(() => AdminDashboard, {
+    description: 'Get aggregated dashboard metrics for admin panel',
+  })
+  async adminDashboard(
+    @Args('input', { nullable: true, type: () => AdminDashboardInput })
+    input?: AdminDashboardInput
+  ) {
+    this.assertCloudOnly();
+    const dashboard = await this.models.workspaceAnalytics.adminGetDashboard({
+      timezone: input?.timezone,
+      storageHistoryDays: input?.storageHistoryDays,
+      syncHistoryHours: input?.syncHistoryHours,
+      sharedLinkWindowDays: input?.sharedLinkWindowDays,
+    });
+
+    return {
+      ...dashboard,
+      topSharedLinks: dashboard.topSharedLinks.map(link => ({
+        ...link,
+        shareUrl: this.url.link(`/workspace/${link.workspaceId}/${link.docId}`),
+      })),
+    };
+  }
+
+  @Query(() => PaginatedAdminAllSharedLink, {
+    description: 'List all shared links across workspaces for admin panel',
+  })
+  async adminAllSharedLinks(
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput,
+    @Args('filter', {
+      nullable: true,
+      type: () => AdminAllSharedLinksFilterInput,
+    })
+    filter?: AdminAllSharedLinksFilterInput
+  ) {
+    this.assertCloudOnly();
+    const result =
+      await this.models.workspaceAnalytics.adminPaginateAllSharedLinks({
+        keyword: filter?.keyword,
+        workspaceId: filter?.workspaceId,
+        updatedAfter: filter?.updatedAfter,
+        orderBy:
+          filter?.orderBy === AdminSharedLinksOrder.PublishedAtDesc
+            ? 'PublishedAtDesc'
+            : filter?.orderBy === AdminSharedLinksOrder.ViewsDesc
+              ? 'ViewsDesc'
+              : 'UpdatedAtDesc',
+        analyticsWindowDays: filter?.analyticsWindowDays,
+        includeTotal: filter?.includeTotal,
+        pagination,
+      });
+
+    return {
+      ...result,
+      edges: result.edges.map(edge => ({
+        ...edge,
+        node: {
+          ...edge.node,
+          shareUrl: this.url.link(
+            `/workspace/${edge.node.workspaceId}/${edge.node.docId}`
+          ),
+        },
+      })),
+    };
   }
 
   @ResolveField(() => [AdminWorkspaceMember], {

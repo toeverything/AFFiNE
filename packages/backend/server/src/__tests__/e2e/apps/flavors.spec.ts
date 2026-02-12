@@ -44,3 +44,12 @@ e2e('should init renderer service', async t => {
   const res = await app.GET('/info').expect(200);
   t.is(res.body.flavor, 'renderer');
 });
+
+e2e('should init front service', async t => {
+  // @ts-expect-error override
+  globalThis.env.FLAVOR = 'front';
+  await using app = await createApp();
+
+  const res = await app.GET('/info').expect(200);
+  t.is(res.body.flavor, 'front');
+});

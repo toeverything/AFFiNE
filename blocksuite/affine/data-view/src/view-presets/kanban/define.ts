@@ -2,9 +2,9 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 
 import type { GroupBy, GroupProperty } from '../../core/common/types.js';
 import type { FilterGroup } from '../../core/filter/types.js';
-import { defaultGroupBy, getGroupByService, t } from '../../core/index.js';
 import type { Sort } from '../../core/sort/types.js';
 import { type BasicViewDataType, viewType } from '../../core/view/data-view.js';
+import { resolveKanbanGroupBy } from './group-by-utils.js';
 import { KanbanSingleView } from './kanban-view-manager.js';
 
 export const kanbanViewType = viewType('kanban');
@@ -34,41 +34,16 @@ export const kanbanViewModel = kanbanViewType.createModel<KanbanViewData>({
   defaultName: 'Kanban View',
   dataViewManager: KanbanSingleView,
   defaultData: viewManager => {
-    const groupByService = getGroupByService(viewManager.dataSource);
-    const columns = viewManager.dataSource.properties$.value;
-    const allowList = columns.filter(columnId => {
-      const dataType = viewManager.dataSource.propertyDataTypeGet(columnId);
-      return dataType && !!groupByService?.matcher.match(dataType);
-    });
-    const getWeight = (columnId: string) => {
-      const dataType = viewManager.dataSource.propertyDataTypeGet(columnId);
-      if (!dataType || t.string.is(dataType) || t.richText.is(dataType)) {
-        return 0;
-      }
-      if (t.tag.is(dataType)) {
-        return 3;
-      }
-      if (t.array.is(dataType)) {
-        return 2;
-      }
-      return 1;
-    };
-    const columnId = allowList.sort((a, b) => getWeight(b) - getWeight(a))[0];
-    if (!columnId) {
+    const groupBy = resolveKanbanGroupBy(viewManager.dataSource);
+    if (!groupBy) {
       throw new BlockSuiteError(
         ErrorCode.DatabaseBlockError,
         'no groupable column found'
       );
     }
-    const type = viewManager.dataSource.propertyTypeGet(columnId);
-    const meta = type && viewManager.dataSource.propertyMetaGet(type);
-    const data = viewManager.dataSource.propertyDataGet(columnId);
-    if (!columnId || !meta || !data) {
-      throw new BlockSuiteError(
-        ErrorCode.DatabaseBlockError,
-        'not implement yet'
-      );
-    }
+
+    const columns = viewManager.dataSource.properties$.value;
+
     return {
       columns: columns.map(id => ({
         id: id,
@@ -78,7 +53,7 @@ export const kanbanViewModel = kanbanViewType.createModel<KanbanViewData>({
         op: 'and',
         conditions: [],
       },
-      groupBy: defaultGroupBy(viewManager.dataSource, meta, columnId, data),
+      groupBy,
       header: {
         titleColumn: viewManager.dataSource.properties$.value.find(
           id => viewManager.dataSource.propertyTypeGet(id) === 'title'

@@ -33,7 +33,7 @@ test('change email', async t => {
   const u2Email = 'u2@affine.pro';
 
   const user = await app.signupV1(u1Email);
-  await sendChangeEmail(app, u1Email, 'affine.pro');
+  await sendChangeEmail(app, u1Email, '/email-change');
 
   const changeMail = app.mails.last('ChangeEmail');
 
@@ -53,7 +53,7 @@ test('change email', async t => {
     app,
     changeEmailToken as string,
     u2Email,
-    'affine.pro'
+    '/email-change-verify'
   );
 
   const verifyMail = app.mails.last('VerifyChangeEmail');
@@ -94,7 +94,7 @@ test('set and change password', async t => {
   const u1Email = 'u1@affine.pro';
 
   const u1 = await app.signupV1(u1Email);
-  await sendSetPasswordEmail(app, u1Email, 'affine.pro');
+  await sendSetPasswordEmail(app, u1Email, '/password-change');
 
   const setPasswordMail = app.mails.last('ChangePassword');
   const link = new URL(setPasswordMail.props.url);
@@ -130,4 +130,30 @@ test('set and change password', async t => {
 
   t.not(user, null, 'failed to get current user');
   t.is(user?.email, u1Email, 'failed to get current user');
+});
+
+test('should forbid graphql callbackUrl to external origin', async t => {
+  const { app } = t.context;
+
+  const u1Email = 'u1@affine.pro';
+  await app.signupV1(u1Email);
+
+  const res = await app
+    .POST('/graphql')
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation($email: String!, $callbackUrl: String!) {
+          sendChangeEmail(email: $email, callbackUrl: $callbackUrl)
+        }
+      `,
+      variables: {
+        email: u1Email,
+        callbackUrl: 'https://evil.example',
+      },
+    })
+    .expect(200);
+
+  t.truthy(res.body.errors?.length);
+  t.is(res.body.errors[0].extensions?.name, 'ACTION_FORBIDDEN');
 });

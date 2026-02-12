@@ -17,6 +17,12 @@ export interface UpsertCalendarAccountInput extends CalendarAccountTokens {
   providerAccountId: string;
   displayName?: string | null;
   email?: string | null;
+  providerPresetId?: string | null;
+  serverUrl?: string | null;
+  principalUrl?: string | null;
+  calendarHomeUrl?: string | null;
+  username?: string | null;
+  authType?: string | null;
   status?: string | null;
   lastError?: string | null;
   refreshIntervalMinutes?: number | null;
@@ -73,6 +79,12 @@ export class CalendarAccountModel extends BaseModel {
       providerAccountId: input.providerAccountId,
       displayName: input.displayName ?? null,
       email: input.email ?? null,
+      providerPresetId: input.providerPresetId ?? null,
+      serverUrl: input.serverUrl ?? null,
+      principalUrl: input.principalUrl ?? null,
+      calendarHomeUrl: input.calendarHomeUrl ?? null,
+      username: input.username ?? null,
+      authType: input.authType ?? null,
       accessToken: accessToken ?? null,
       refreshToken: refreshToken ?? null,
       expiresAt: input.expiresAt ?? null,
@@ -85,6 +97,12 @@ export class CalendarAccountModel extends BaseModel {
     const updateData: Prisma.CalendarAccountUncheckedUpdateInput = {
       displayName: data.displayName,
       email: data.email,
+      providerPresetId: data.providerPresetId,
+      serverUrl: data.serverUrl,
+      principalUrl: data.principalUrl,
+      calendarHomeUrl: data.calendarHomeUrl,
+      username: data.username,
+      authType: data.authType,
       expiresAt: data.expiresAt,
       scope: data.scope,
       status: data.status,

@@ -16,6 +16,10 @@ export type GetJsonValueFromConfig<T> =
 export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
   name: string;
   hide?: boolean;
+  kanbanGroup?: {
+    enabled: boolean;
+    mutable?: boolean;
+  };
   propertyData: {
     schema: ZodType<Data>;
     default: () => Data;

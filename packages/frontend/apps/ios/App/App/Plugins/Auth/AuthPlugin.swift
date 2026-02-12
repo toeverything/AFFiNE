@@ -27,6 +27,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           } else {
             call.reject("Failed to sign in")
           }
+          return
         }
 
         guard let token = try self.tokenFromCookie(endpoint) else {
@@ -57,6 +58,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           } else {
             call.reject("Failed to sign in")
           }
+          return
         }
 
         guard let token = try self.tokenFromCookie(endpoint) else {
@@ -91,6 +93,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           } else {
             call.reject("Failed to sign in")
           }
+          return
         }
 
         guard let token = try self.tokenFromCookie(endpoint) else {
@@ -109,20 +112,24 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     Task {
       do {
         let endpoint = try call.getStringEnsure("endpoint")
+        let csrfToken = try self.csrfTokenFromCookie(endpoint)
 
-        let (data, response) = try await self.fetch(endpoint, method: "GET", action: "/api/auth/sign-out", headers: [:], body: nil)
+        let (data, response) = try await self.fetch(endpoint, method: "POST", action: "/api/auth/sign-out", headers: [
+          "x-affine-csrf-token": csrfToken,
+        ], body: nil)
 
         if response.statusCode >= 400 {
           if let textBody = String(data: data, encoding: .utf8) {
             call.reject(textBody)
           } else {
-            call.reject("Failed to sign in")
+            call.reject("Failed to sign out")
           }
+          return
         }
 
         call.resolve(["ok": true])
       } catch {
-        call.reject("Failed to sign in, \(error)", nil, error)
+        call.reject("Failed to sign out, \(error)", nil, error)
       }
     }
   }
@@ -139,6 +146,16 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     } else {
       return nil
     }
+  }
+
+  private func csrfTokenFromCookie(_ endpoint: String) throws -> String? {
+    guard let endpointUrl = URL(string: endpoint) else {
+      throw AuthError.invalidEndpoint
+    }
+
+    return HTTPCookieStorage.shared.cookies(for: endpointUrl)?.first(where: {
+      $0.name == "affine_csrf_token"
+    })?.value
   }
 
   private func fetch(_ endpoint: String, method: String, action: String, headers: [String: String?], body: Encodable?) async throws -> (Data, HTTPURLResponse) {

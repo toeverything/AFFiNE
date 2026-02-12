@@ -24,6 +24,7 @@ import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
 import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
+import { MagicLinkOtpModel } from './magic-link-otp';
 import { NotificationModel } from './notification';
 import { MODELS_SYMBOL } from './provider';
 import { SessionModel } from './session';
@@ -33,6 +34,7 @@ import { UserFeatureModel } from './user-feature';
 import { UserSettingsModel } from './user-settings';
 import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
+import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
 import { WorkspaceFeatureModel } from './workspace-feature';
 import { WorkspaceUserModel } from './workspace-user';
@@ -41,6 +43,7 @@ const MODELS = {
   user: UserModel,
   session: SessionModel,
   verificationToken: VerificationTokenModel,
+  magicLinkOtp: MagicLinkOtpModel,
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
@@ -66,6 +69,7 @@ const MODELS = {
   calendarEvent: CalendarEventModel,
   calendarEventInstance: CalendarEventInstanceModel,
   workspaceCalendar: WorkspaceCalendarModel,
+  workspaceAnalytics: WorkspaceAnalyticsModel,
 };
 
 type ModelsType = {
@@ -133,6 +137,7 @@ export * from './doc';
 export * from './doc-user';
 export * from './feature';
 export * from './history';
+export * from './magic-link-otp';
 export * from './notification';
 export * from './session';
 export * from './user';
@@ -141,6 +146,7 @@ export * from './user-feature';
 export * from './user-settings';
 export * from './verification-token';
 export * from './workspace';
+export * from './workspace-analytics';
 export * from './workspace-calendar';
 export * from './workspace-feature';
 export * from './workspace-user';

@@ -54,6 +54,7 @@ object CookieStore {
 
     const val AFFINE_SESSION = "affine_session"
     const val AFFINE_USER_ID = "affine_user_id"
+    const val AFFINE_CSRF_TOKEN = "affine_csrf_token"
 
     private val _cookies = ConcurrentHashMap<String, List<Cookie>>()
 
@@ -67,6 +68,9 @@ object CookieStore {
                 Timber.d("Update user id [${it.value}]")
                 AFFiNEApp.context().dataStore.set(host + AFFINE_USER_ID, it.toString())
                 Firebase.crashlytics.setUserId(it.value)
+            }
+            cookies.find { it.name == AFFINE_CSRF_TOKEN }?.let {
+                AFFiNEApp.context().dataStore.set(host + AFFINE_CSRF_TOKEN, it.toString())
             }
         }
     }

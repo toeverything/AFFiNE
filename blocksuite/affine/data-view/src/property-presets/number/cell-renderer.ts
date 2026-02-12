@@ -24,17 +24,11 @@ export class NumberCell extends BaseCellRenderer<
   private accessor _inputEle!: HTMLInputElement;
 
   private _getFormattedString(value: number | undefined = this.value) {
-    const enableNewFormatting =
-      this.view.featureFlags$.value.enable_number_formatting;
     const decimals = this.property.data$.value.decimal ?? 0;
     const formatMode = (this.property.data$.value.format ??
       'number') as NumberFormat;
 
-    return value != undefined
-      ? enableNewFormatting
-        ? formatNumber(value, formatMode, decimals)
-        : value.toString()
-      : '';
+    return value != undefined ? formatNumber(value, formatMode, decimals) : '';
   }
 
   private readonly _keydown = (e: KeyboardEvent) => {
@@ -58,9 +52,7 @@ export class NumberCell extends BaseCellRenderer<
       return;
     }
 
-    const enableNewFormatting =
-      this.view.featureFlags$.value.enable_number_formatting;
-    const value = enableNewFormatting ? parseNumber(str) : parseFloat(str);
+    const value = parseNumber(str);
     if (isNaN(value)) {
       if (this._inputEle) {
         this._inputEle.value = this.value

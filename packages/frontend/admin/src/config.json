@@ -288,6 +288,10 @@
       "type": "Object",
       "desc": "Google Calendar integration config",
       "link": "https://developers.google.com/calendar/api/guides/push"
+    },
+    "caldav": {
+      "type": "Object",
+      "desc": "CalDAV integration config"
     }
   },
   "captcha": {

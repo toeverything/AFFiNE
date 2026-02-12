@@ -1016,21 +1016,12 @@ jobs:
       fail-fast: false
       matrix:
         tests:
-          - name: 'Cloud E2E Test 1/10'
+          - name: 'Cloud E2E Test 1/2'
             shard: 1
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=1/10
-          - name: 'Cloud E2E Test 2/10'
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=1/2
+          - name: 'Cloud E2E Test 2/2'
             shard: 2
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=2/10
-          - name: 'Cloud E2E Test 3/10'
-            shard: 3
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=3/10
-          - name: 'Cloud E2E Test 4/10'
-            shard: 4
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=4/10
-          - name: 'Cloud E2E Test 5/10'
-            shard: 5
-            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=5/10
+            script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=2/2
           - name: 'Cloud Desktop E2E Test'
             shard: desktop
             script: |

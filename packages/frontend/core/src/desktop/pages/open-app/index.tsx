@@ -1,16 +1,19 @@
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import { GraphQLService } from '@affine/core/modules/cloud';
+import { AuthService } from '@affine/core/modules/cloud';
+import {
+  buildAuthenticationDeepLink,
+  buildOpenAppUrlRoute,
+  normalizeOpenAppSignInNextParam,
+} from '@affine/core/modules/open-in-app';
 import { OpenInAppPage } from '@affine/core/modules/open-in-app/views/open-in-app-page';
 import {
   appSchemaUrl,
   appSchemes,
   channelToScheme,
 } from '@affine/core/utils/channel';
-import type { GetCurrentUserQuery } from '@affine/graphql';
-import { getCurrentUserQuery } from '@affine/graphql';
 import { useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { AppContainer } from '../../components/app-container';
 
@@ -49,39 +52,42 @@ const OpenUrl = () => {
 /**
  * @deprecated
  */
-const OpenOAuthJwt = () => {
-  const [currentUser, setCurrentUser] = useState<
-    GetCurrentUserQuery['currentUser'] | null
-  >(null);
+const OpenAppSignInRedirect = () => {
+  const authService = useService(AuthService);
   const [params] = useSearchParams();
-  const graphqlService = useService(GraphQLService);
+  const triggeredRef = useRef(false);
+  const navigate = useNavigate();
 
   const maybeScheme = appSchemes.safeParse(params.get('scheme'));
   const scheme = maybeScheme.success
     ? maybeScheme.data
     : channelToScheme[BUILD_CONFIG.appBuildType];
-  const next = params.get('next') || '';
+  const next = normalizeOpenAppSignInNextParam(
+    params.get('next'),
+    location.origin
+  );
 
   useEffect(() => {
-    graphqlService
-      .gql({
-        query: getCurrentUserQuery,
-      })
-      .then(res => {
-        setCurrentUser(res?.currentUser || null);
+    if (triggeredRef.current) {
+      return;
+    }
+    triggeredRef.current = true;
+
+    authService
+      .createOpenAppSignInCode()
+      .then(code => {
+        const urlToOpen = buildAuthenticationDeepLink({
+          scheme,
+          method: 'open-app-signin',
+          payload: next ? { code, next } : { code },
+          server: location.origin,
+        });
+        navigate(buildOpenAppUrlRoute(urlToOpen), { replace: true });
       })
       .catch(console.error);
-  }, [graphqlService]);
+  }, [authService, navigate, next, scheme]);
 
-  if (!currentUser || !currentUser?.token?.sessionToken) {
-    return <AppContainer fallback />;
-  }
-
-  const urlToOpen = `${scheme}://signin-redirect?token=${
-    currentUser.token.sessionToken
-  }&next=${next}`;
-
-  return <OpenInAppPage urlToOpen={urlToOpen} />;
+  return <AppContainer fallback />;
 };
 
 export const Component = () => {
@@ -91,7 +97,7 @@ export const Component = () => {
   if (action === 'url') {
     return <OpenUrl />;
   } else if (action === 'signin-redirect') {
-    return <OpenOAuthJwt />;
+    return <OpenAppSignInRedirect />;
   }
   return null;
 };

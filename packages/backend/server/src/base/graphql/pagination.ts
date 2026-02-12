@@ -1,6 +1,8 @@
 import { PipeTransform, Type } from '@nestjs/common';
 import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
 
+import { BadRequest } from '../error';
+
 @InputType()
 export class PaginationInput {
   /**
@@ -13,11 +15,15 @@ export class PaginationInput {
    */
   static decode: PipeTransform<PaginationInput, PaginationInput> = {
     transform: value => {
-      return {
+      const input = {
         ...value,
+        first: Math.min(Math.max(value?.first ?? 10, 1), 100),
+        offset: Math.max(value?.offset ?? 0, 0),
         after: decode(value?.after),
         // before: decode(value.before),
       };
+      assertPaginationInput(input);
+      return input;
     },
   };
 
@@ -51,6 +57,18 @@ export class PaginationInput {
   // before?: string | null;
 }
 
+export function assertPaginationInput(paginationInput?: PaginationInput) {
+  if (!paginationInput) {
+    return;
+  }
+
+  if (paginationInput.after && paginationInput.offset > 0) {
+    throw new BadRequest(
+      'pagination.after and pagination.offset cannot be used together'
+    );
+  }
+}
+
 const encode = (input: unknown) => {
   let inputStr: string;
   if (input instanceof Date) {
@@ -65,7 +83,7 @@ const encode = (input: unknown) => {
 const decode = (base64String?: string | null) =>
   base64String ? Buffer.from(base64String, 'base64').toString('utf-8') : null;
 
-function encodeWithJson(input: unknown) {
+export function encodeWithJson(input: unknown) {
   return encode(JSON.stringify(input ?? null));
 }
 

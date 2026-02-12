@@ -112,7 +112,7 @@ export const KNOWN_CONFIG_GROUPS = [
         key: 'blob.storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
+        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
       {
         key: 'avatar.storage',
@@ -131,7 +131,7 @@ export const KNOWN_CONFIG_GROUPS = [
         key: 'avatar.storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
+        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
       {
         key: 'avatar.publicPath',
@@ -175,7 +175,7 @@ export const KNOWN_CONFIG_GROUPS = [
         key: 'storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
+        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
     ],
   } as ConfigGroup<'copilot'>,

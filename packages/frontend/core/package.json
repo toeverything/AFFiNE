@@ -2,7 +2,7 @@
   "name": "@affine/core",
   "type": "module",
   "private": true,
-  "version": "0.26.0",
+  "version": "0.26.1",
   "exports": {
     "./*": "./src/*",
     "./bootstrap": "./src/bootstrap/index.ts"
@@ -74,7 +74,7 @@
     "katex": "^0.16.27",
     "lib0": "^0.2.114",
     "lit": "^3.2.1",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "lottie-react": "^2.4.0",
     "mermaid": "^11.12.2",
     "mp4-muxer": "^5.2.2",
@@ -87,11 +87,12 @@
     "react-router-dom": "^6.30.3",
     "react-transition-state": "^2.2.0",
     "react-virtuoso": "^4.12.3",
+    "recharts": "^2.15.4",
     "rxjs": "^7.8.2",
     "semver": "^7.7.3",
     "ses": "^1.14.0",
     "shiki": "^3.19.0",
-    "socket.io-client": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "swr": "^2.3.7",
     "tinykeys": "patch:tinykeys@npm%3A2.1.0#~/.yarn/patches/tinykeys-npm-2.1.0-819feeaed0.patch",
     "y-protocols": "^1.0.6",
@@ -110,7 +111,7 @@
     "@vanilla-extract/css": "^1.17.0",
     "fake-indexeddb": "^6.0.0",
     "happy-dom": "^20.3.0",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "vitest": "^3.2.4"
   }
 }

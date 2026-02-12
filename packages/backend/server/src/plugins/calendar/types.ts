@@ -77,6 +77,21 @@ export class CalendarSubscriptionObjectType {
 }
 
 @ObjectType()
+export class CalendarCalDAVProviderPresetObjectType {
+  @Field()
+  id!: string;
+
+  @Field()
+  label!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  requiresAppPassword?: boolean | null;
+
+  @Field(() => String, { nullable: true })
+  docsUrl?: string | null;
+}
+
+@ObjectType()
 export class WorkspaceCalendarItemObjectType {
   @Field()
   id!: string;
@@ -185,4 +200,19 @@ export class LinkCalendarAccountInput {
 
   @Field(() => String, { nullable: true })
   redirectUri?: string | null;
+}
+
+@InputType()
+export class LinkCalDAVAccountInput {
+  @Field()
+  providerPresetId!: string;
+
+  @Field()
+  username!: string;
+
+  @Field()
+  password!: string;
+
+  @Field(() => String, { nullable: true })
+  displayName?: string | null;
 }

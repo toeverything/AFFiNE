@@ -88,7 +88,9 @@ async function handleAffineUrl(url: string) {
 
     if (
       !method ||
-      (method !== 'magic-link' && method !== 'oauth') ||
+      (method !== 'magic-link' &&
+        method !== 'oauth' &&
+        method !== 'open-app-signin') ||
       !payload
     ) {
       logger.error('Invalid authentication url', url);

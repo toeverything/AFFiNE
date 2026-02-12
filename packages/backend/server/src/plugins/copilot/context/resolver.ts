@@ -105,10 +105,6 @@ class RemoveContextDocInput {
 class AddContextFileInput {
   @Field(() => String)
   contextId!: string;
-
-  // @TODO(@darkskygit): remove this after client lower then 0.22 has been disconnected
-  @Field(() => String, { nullable: true, deprecationReason: 'Never used' })
-  blobId!: string | undefined;
 }
 
 @InputType()

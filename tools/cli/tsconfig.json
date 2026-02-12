@@ -6,5 +6,8 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./src"],
-  "references": [{ "path": "../utils" }]
+  "references": [
+    { "path": "../utils" },
+    { "path": "../../packages/common/s3-compat" }
+  ]
 }

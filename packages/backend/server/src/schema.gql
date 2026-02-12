@@ -27,8 +27,86 @@ input AddContextDocInput {
 }
 
 input AddContextFileInput {
-  blobId: String
   contextId: String!
+}
+
+type AdminAllSharedLink {
+  docId: String!
+  docUpdatedAt: DateTime
+  guestViews: SafeInt
+  lastAccessedAt: DateTime
+  lastUpdaterId: String
+  publishedAt: DateTime
+  shareUrl: String!
+  title: String
+  uniqueViews: SafeInt
+  views: SafeInt
+  workspaceId: String!
+  workspaceOwnerId: String
+}
+
+type AdminAllSharedLinkEdge {
+  cursor: String!
+  node: AdminAllSharedLink!
+}
+
+input AdminAllSharedLinksFilterInput {
+  analyticsWindowDays: Int = 28
+  includeTotal: Boolean = false
+  keyword: String
+  orderBy: AdminSharedLinksOrder = UpdatedAtDesc
+  updatedAfter: DateTime
+  workspaceId: String
+}
+
+type AdminDashboard {
+  blobStorageBytes: SafeInt!
+  blobStorageHistory: [AdminDashboardValueDayPoint!]!
+  copilotConversations: SafeInt!
+  generatedAt: DateTime!
+  storageWindow: TimeWindow!
+  syncActiveUsers: Int!
+  syncActiveUsersTimeline: [AdminDashboardMinutePoint!]!
+  syncWindow: TimeWindow!
+  topSharedLinks: [AdminSharedLinkTopItem!]!
+  topSharedLinksWindow: TimeWindow!
+  workspaceStorageBytes: SafeInt!
+  workspaceStorageHistory: [AdminDashboardValueDayPoint!]!
+}
+
+input AdminDashboardInput {
+  sharedLinkWindowDays: Int = 28
+  storageHistoryDays: Int = 30
+  syncHistoryHours: Int = 48
+  timezone: String = "UTC"
+}
+
+type AdminDashboardMinutePoint {
+  activeUsers: Int!
+  minute: DateTime!
+}
+
+type AdminDashboardValueDayPoint {
+  date: DateTime!
+  value: SafeInt!
+}
+
+type AdminSharedLinkTopItem {
+  docId: String!
+  guestViews: SafeInt!
+  lastAccessedAt: DateTime
+  publishedAt: DateTime
+  shareUrl: String!
+  title: String
+  uniqueViews: SafeInt!
+  views: SafeInt!
+  workspaceId: String!
+}
+
+enum AdminSharedLinksOrder {
+  PublishedAtDesc
+  UpdatedAtDesc
+  ViewsDesc
 }
 
 input AdminUpdateWorkspaceInput {
@@ -205,6 +283,13 @@ type CalendarAccountObjectType {
   refreshIntervalMinutes: Int!
   status: String!
   updatedAt: DateTime!
+}
+
+type CalendarCalDAVProviderPresetObjectType {
+  docsUrl: String
+  id: String!
+  label: String!
+  requiresAppPassword: Boolean
 }
 
 type CalendarEventObjectType {
@@ -714,6 +799,17 @@ type DocHistoryType {
   workspaceId: String!
 }
 
+type DocMemberLastAccess {
+  lastAccessedAt: DateTime!
+  lastDocId: String
+  user: PublicUserType!
+}
+
+type DocMemberLastAccessEdge {
+  cursor: String!
+  node: DocMemberLastAccess!
+}
+
 """Doc mode"""
 enum DocMode {
   edgeless
@@ -723,6 +819,32 @@ enum DocMode {
 type DocNotFoundDataType {
   docId: String!
   spaceId: String!
+}
+
+type DocPageAnalytics {
+  generatedAt: DateTime!
+  series: [DocPageAnalyticsPoint!]!
+  summary: DocPageAnalyticsSummary!
+  window: TimeWindow!
+}
+
+input DocPageAnalyticsInput {
+  timezone: String = "UTC"
+  windowDays: Int = 28
+}
+
+type DocPageAnalyticsPoint {
+  date: DateTime!
+  guestViews: SafeInt!
+  totalViews: SafeInt!
+  uniqueViews: SafeInt!
+}
+
+type DocPageAnalyticsSummary {
+  guestViews: SafeInt!
+  lastAccessedAt: DateTime
+  totalViews: SafeInt!
+  uniqueViews: SafeInt!
 }
 
 type DocPermissions {
@@ -757,6 +879,8 @@ enum DocRole {
 }
 
 type DocType {
+  """Doc page analytics in a time window"""
+  analytics(input: DocPageAnalyticsInput): DocPageAnalytics!
   createdAt: DateTime
 
   """Doc create user"""
@@ -767,6 +891,9 @@ type DocType {
   """paginated doc granted users list"""
   grantedUsersList(pagination: PaginationInput!): PaginatedGrantedDocUserType!
   id: String!
+
+  """Paginated last accessed members of the current doc"""
+  lastAccessedMembers(includeTotal: Boolean = false, pagination: PaginationInput!, query: String): PaginatedDocMemberLastAccess!
 
   """Doc last updated user"""
   lastUpdatedBy: PublicUserType
@@ -798,7 +925,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceFileEmbeddingDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotFailedToMatchContextDataType | CopilotFailedToMatchGlobalContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceFileEmbeddingDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotFailedToMatchContextDataType | CopilotFailedToMatchGlobalContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -912,6 +1039,7 @@ enum ErrorNames {
   PASSWORD_REQUIRED
   QUERY_TOO_LONG
   REPLY_NOT_FOUND
+  RESPONSE_TOO_LARGE_ERROR
   RUNTIME_CONFIG_NOT_FOUND
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
@@ -921,6 +1049,7 @@ enum ErrorNames {
   SPACE_NOT_FOUND
   SPACE_OWNER_NOT_FOUND
   SPACE_SHOULD_HAVE_ONLY_ONE_OWNER
+  SSRF_BLOCKED_ERROR
   STORAGE_QUOTA_EXCEEDED
   SUBSCRIPTION_ALREADY_EXISTS
   SUBSCRIPTION_EXPIRED
@@ -1273,6 +1402,13 @@ type LimitedUserType {
   hasPassword: Boolean
 }
 
+input LinkCalDAVAccountInput {
+  displayName: String
+  password: String!
+  providerPresetId: String!
+  username: String!
+}
+
 input LinkCalendarAccountInput {
   provider: CalendarProviderType!
   redirectUri: String
@@ -1453,22 +1589,20 @@ type Mutation {
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
   generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
-  getBlobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!, workspaceId: String!): BlobUploadPart! @deprecated(reason: "use WorkspaceType.blobUploadPartUrl")
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 
   """import users"""
   importUsers(input: ImportUsersInput!): [UserImportResultType!]!
   installLicense(license: Upload!, workspaceId: String!): License!
-  inviteBatch(emails: [String!]!, sendInviteMail: Boolean @deprecated(reason: "never used"), workspaceId: String!): [InviteResult!]! @deprecated(reason: "use [inviteMembers] instead")
   inviteMembers(emails: [String!]!, workspaceId: String!): [InviteResult!]!
   leaveWorkspace(sendLeaveMail: Boolean @deprecated(reason: "no used anymore"), workspaceId: String!, workspaceName: String @deprecated(reason: "no longer used")): Boolean!
+  linkCalDAVAccount(input: LinkCalDAVAccountInput!): CalendarAccountObjectType!
   linkCalendarAccount(input: LinkCalendarAccountInput!): String!
 
   """mention user in a doc"""
   mentionUser(input: MentionInput!): ID!
   publishDoc(docId: String!, mode: PublicDocMode = Page, workspaceId: String!): DocType!
-  publishPage(mode: PublicDocMode = Page, pageId: String!, workspaceId: String!): DocType! @deprecated(reason: "use publishDoc instead")
 
   """queue workspace doc embedding"""
   queueWorkspaceEmbedding(docId: [String!]!, workspaceId: String!): Boolean!
@@ -1510,12 +1644,10 @@ type Mutation {
   resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   retryAudioTranscription(jobId: String!, workspaceId: String!): TranscriptionResultType
-  revoke(userId: String!, workspaceId: String!): Boolean! @deprecated(reason: "use [revokeMember] instead")
   revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
   revokeInviteLink(workspaceId: String!): Boolean!
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
-  revokePublicPage(docId: String!, workspaceId: String!): DocType! @deprecated(reason: "use revokePublicDoc instead")
   revokeUserAccessToken(id: String!): Boolean!
   sendChangeEmail(callbackUrl: String!, email: String): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
@@ -1574,9 +1706,6 @@ type Mutation {
 
   """Upload a comment attachment and return the access url"""
   uploadCommentAttachment(attachment: Upload!, docId: String!, workspaceId: String!): String!
-
-  """validate app configuration"""
-  validateAppConfig(updates: [UpdateAppConfigInput!]!): [AppConfigValidateResult!]! @deprecated(reason: "use Query.validateAppConfig")
   verifyEmail(token: String!): Boolean!
 }
 
@@ -1669,6 +1798,13 @@ type PageInfo {
   startCursor: String
 }
 
+type PaginatedAdminAllSharedLink {
+  analyticsWindow: TimeWindow!
+  edges: [AdminAllSharedLinkEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
 type PaginatedCommentChangeObjectType {
   edges: [CommentChangeObjectTypeEdge!]!
   pageInfo: PageInfo!
@@ -1691,6 +1827,12 @@ type PaginatedCopilotWorkspaceFileType {
   edges: [CopilotWorkspaceFileTypeEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+type PaginatedDocMemberLastAccess {
+  edges: [DocMemberLastAccessEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
 }
 
 type PaginatedDocType {
@@ -1754,7 +1896,11 @@ type PublicUserType {
 }
 
 type Query {
-  accessTokens: [AccessToken!]! @deprecated(reason: "use currentUser.accessTokens")
+  """List all shared links across workspaces for admin panel"""
+  adminAllSharedLinks(filter: AdminAllSharedLinksFilterInput, pagination: PaginationInput!): PaginatedAdminAllSharedLink!
+
+  """Get aggregated dashboard metrics for admin panel"""
+  adminDashboard(input: AdminDashboardInput): AdminDashboard!
 
   """Get workspace detail for admin"""
   adminWorkspace(id: String!): AdminWorkspace
@@ -1770,7 +1916,6 @@ type Query {
 
   """Apply updates to a doc using LLM and return the merged markdown."""
   applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String! @deprecated(reason: "use Mutation.applyDocUpdates")
-  collectAllBlobSizes: WorkspaceBlobSizes! @deprecated(reason: "use `user.quotaUsage` instead")
 
   """Get current user"""
   currentUser: UserType
@@ -1778,12 +1923,6 @@ type Query {
 
   """get workspace invitation info"""
   getInviteInfo(inviteId: String!): InvitationType!
-
-  """Get is admin of workspace"""
-  isAdmin(workspaceId: String!): Boolean! @deprecated(reason: "use WorkspaceType[role] instead")
-
-  """Get is owner of workspace"""
-  isOwner(workspaceId: String!): Boolean! @deprecated(reason: "use WorkspaceType[role] instead")
 
   """List all copilot prompts"""
   listCopilotPrompts: [CopilotPromptType!]!
@@ -1918,6 +2057,11 @@ input ReplyUpdateInput {
   id: ID!
 }
 
+type ResponseTooLargeErrorDataType {
+  limitBytes: Int!
+  receivedBytes: Int!
+}
+
 type RevealedAccessToken {
   createdAt: DateTime!
   expiresAt: DateTime
@@ -2050,6 +2194,7 @@ type ServerConfigType {
 
   """server base url"""
   baseUrl: String!
+  calendarCalDAVProviders: [CalendarCalDAVProviderPresetObjectType!]!
   calendarProviders: [CalendarProviderType!]!
 
   """credentials requirement"""
@@ -2102,6 +2247,10 @@ type SpaceOwnerNotFoundDataType {
 
 type SpaceShouldHaveOnlyOneOwnerDataType {
   spaceId: String!
+}
+
+type SsrfBlockedErrorDataType {
+  reason: String!
 }
 
 type StreamObject {
@@ -2196,6 +2345,20 @@ type SubscriptionType {
 enum SubscriptionVariant {
   EA
   Onetime
+}
+
+enum TimeBucket {
+  Day
+  Minute
+}
+
+type TimeWindow {
+  bucket: TimeBucket!
+  effectiveSize: Int!
+  from: DateTime!
+  requestedSize: Int!
+  timezone: String!
+  to: DateTime!
 }
 
 type TranscriptionItemType {
@@ -2405,10 +2568,6 @@ type VersionRejectedDataType {
   version: String!
 }
 
-type WorkspaceBlobSizes {
-  size: SafeInt!
-}
-
 input WorkspaceCalendarItemInput {
   colorOverride: String
   sortOrder: Int
@@ -2590,9 +2749,6 @@ type WorkspaceType {
 
   """Get public docs of a workspace"""
   publicDocs: [DocType!]!
-
-  """Get public page of a workspace by page id."""
-  publicPage(pageId: String!): DocType @deprecated(reason: "use [WorkspaceType.doc] instead")
 
   """quota of workspace"""
   quota: WorkspaceQuotaType!

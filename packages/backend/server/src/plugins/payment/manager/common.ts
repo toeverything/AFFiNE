@@ -59,11 +59,13 @@ export const CheckoutParams = z.object({
 });
 
 export abstract class SubscriptionManager {
-  protected readonly scheduleManager = new ScheduleManager(this.stripeProvider);
+  protected readonly scheduleManager: ScheduleManager;
   constructor(
     protected readonly stripeProvider: StripeFactory,
     protected readonly db: PrismaClient
-  ) {}
+  ) {
+    this.scheduleManager = new ScheduleManager(this.stripeProvider);
+  }
 
   get stripe() {
     return this.stripeProvider.stripe;

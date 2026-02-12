@@ -130,3 +130,53 @@ export const empty = style({
   color: cssVarV2.text.secondary,
   padding: '12px 0',
 });
+
+export const caldavDialog = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 20,
+});
+
+export const caldavField = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+});
+
+export const caldavLabel = style({
+  fontSize: 12,
+  lineHeight: '18px',
+  color: cssVarV2.text.secondary,
+});
+
+export const caldavProviderButton = style({
+  width: '100%',
+  justifyContent: 'space-between',
+});
+
+export const caldavHint = style({
+  display: 'flex',
+  gap: 6,
+  flexWrap: 'wrap',
+  fontSize: 12,
+  lineHeight: '18px',
+  color: cssVarV2.text.secondary,
+});
+
+export const caldavLink = style({
+  color: cssVarV2.text.primary,
+  textDecoration: 'underline',
+});
+
+export const caldavError = style({
+  fontSize: 12,
+  lineHeight: '18px',
+  color: cssVarV2.status.error,
+});
+
+export const caldavFooter = style({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: 12,
+  marginTop: 12,
+});

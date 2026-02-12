@@ -38,12 +38,32 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
 
   onServerUpdate: ServerEventsMap['space:broadcast-doc-update'] = message => {
     if (
-      this.spaceType === message.spaceType &&
-      this.spaceId === message.spaceId
+      this.spaceType !== message.spaceType ||
+      this.spaceId !== message.spaceId
     ) {
+      return;
+    }
+
+    this.emit('update', {
+      docId: this.idConverter.oldIdToNewId(message.docId),
+      bin: base64ToUint8Array(message.update),
+      timestamp: new Date(message.timestamp),
+      editor: message.editor,
+    });
+  };
+
+  onServerUpdates: ServerEventsMap['space:broadcast-doc-updates'] = message => {
+    if (
+      this.spaceType !== message.spaceType ||
+      this.spaceId !== message.spaceId
+    ) {
+      return;
+    }
+
+    for (const update of message.updates) {
       this.emit('update', {
         docId: this.idConverter.oldIdToNewId(message.docId),
-        bin: base64ToUint8Array(message.update),
+        bin: base64ToUint8Array(update),
         timestamp: new Date(message.timestamp),
         editor: message.editor,
       });
@@ -52,7 +72,8 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
 
   readonly connection = new CloudDocStorageConnection(
     this.options,
-    this.onServerUpdate
+    this.onServerUpdate,
+    this.onServerUpdates
   );
 
   override async getDocSnapshot(docId: string) {
@@ -184,7 +205,8 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
 class CloudDocStorageConnection extends SocketConnection {
   constructor(
     private readonly options: CloudDocStorageOptions,
-    private readonly onServerUpdate: ServerEventsMap['space:broadcast-doc-update']
+    private readonly onServerUpdate: ServerEventsMap['space:broadcast-doc-update'],
+    private readonly onServerUpdates: ServerEventsMap['space:broadcast-doc-updates']
   ) {
     super(options.serverBaseUrl, options.isSelfHosted);
   }
@@ -210,6 +232,7 @@ class CloudDocStorageConnection extends SocketConnection {
       }
 
       socket.on('space:broadcast-doc-update', this.onServerUpdate);
+      socket.on('space:broadcast-doc-updates', this.onServerUpdates);
 
       return { socket, disconnect };
     } catch (e) {
@@ -230,6 +253,7 @@ class CloudDocStorageConnection extends SocketConnection {
       spaceId: this.options.id,
     });
     socket.off('space:broadcast-doc-update', this.onServerUpdate);
+    socket.off('space:broadcast-doc-updates', this.onServerUpdates);
     super.doDisconnect({ socket, disconnect });
   }
 

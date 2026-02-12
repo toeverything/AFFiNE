@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import { Readable } from 'node:stream';
 
-import { PutObjectCommand, UploadPartCommand } from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
 
 import {
@@ -39,9 +38,6 @@ export class R2StorageProvider extends S3StorageProvider {
         ...config,
         forcePathStyle: true,
         endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
-        // see https://github.com/aws/aws-sdk-js-v3/issues/6810
-        requestChecksumCalculation: 'WHEN_REQUIRED',
-        responseChecksumValidation: 'WHEN_REQUIRED',
       },
       bucket
     );
@@ -179,15 +175,10 @@ export class R2StorageProvider extends S3StorageProvider {
     body: Readable | Buffer | Uint8Array | string,
     options: { contentType?: string; contentLength?: number } = {}
   ) {
-    return this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: body,
-        ContentType: options.contentType,
-        ContentLength: options.contentLength,
-      })
-    );
+    return this.client.putObject(key, body as any, {
+      contentType: options.contentType,
+      contentLength: options.contentLength,
+    });
   }
 
   async proxyUploadPart(
@@ -197,18 +188,15 @@ export class R2StorageProvider extends S3StorageProvider {
     body: Readable | Buffer | Uint8Array | string,
     options: { contentLength?: number } = {}
   ) {
-    const result = await this.client.send(
-      new UploadPartCommand({
-        Bucket: this.bucket,
-        Key: key,
-        UploadId: uploadId,
-        PartNumber: partNumber,
-        Body: body,
-        ContentLength: options.contentLength,
-      })
+    const result = await this.client.uploadPart(
+      key,
+      uploadId,
+      partNumber,
+      body as any,
+      { contentLength: options.contentLength }
     );
 
-    return result.ETag;
+    return result.etag;
   }
 
   override async get(

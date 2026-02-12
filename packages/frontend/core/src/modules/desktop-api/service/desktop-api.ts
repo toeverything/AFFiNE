@@ -146,6 +146,14 @@ export class DesktopApiService extends Service {
             await authService.signInOauth(code, state, provider);
             break;
           }
+          case 'open-app-signin': {
+            const code = (payload as { code?: unknown }).code;
+            if (typeof code !== 'string' || !code) {
+              throw new Error('Invalid open-app sign-in payload');
+            }
+            await authService.signInOpenAppSignInCode(code);
+            break;
+          }
         }
       })().catch(e => {
         notify.error({

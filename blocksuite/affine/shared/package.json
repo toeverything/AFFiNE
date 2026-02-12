@@ -27,7 +27,7 @@
     "dompurify": "^3.3.0",
     "fractional-indexing": "^3.2.0",
     "lit": "^3.2.0",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "mdast-util-gfm-autolink-literal": "^2.0.1",
     "mdast-util-gfm-footnote": "^2.1.0",
     "mdast-util-gfm-strikethrough": "^2.0.0",
@@ -77,5 +77,5 @@
     "@types/pdfmake": "^0.2.12",
     "vitest": "^3.2.4"
   },
-  "version": "0.26.0"
+  "version": "0.26.1"
 }

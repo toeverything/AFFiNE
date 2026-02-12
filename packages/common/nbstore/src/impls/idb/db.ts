@@ -4,38 +4,6 @@ import { AutoReconnectConnection } from '../../connection';
 import type { SpaceType } from '../../utils/universal-id';
 import { type DocStorageSchema, migrator } from './schema';
 
-declare module 'idb' {
-  interface IDBPObjectStore {
-    getAllRecords?(
-      query?: IDBValidKey | IDBKeyRange | null,
-      count?: number | { direction?: IDBCursorDirection; count?: number }
-    ): Promise<IDBRecord[]>;
-  }
-  interface IDBPIndex {
-    getAllRecords?(
-      query?: IDBValidKey | IDBKeyRange | null,
-      count?: number | { direction?: IDBCursorDirection; count?: number }
-    ): Promise<IDBRecord[]>;
-  }
-  interface IDBObjectStore {
-    getAllRecords?(
-      query?: IDBValidKey | IDBKeyRange | null,
-      count?: number | { direction?: IDBCursorDirection; count?: number }
-    ): Promise<IDBRecord[]>;
-  }
-  interface IDBIndex {
-    getAllRecords?(
-      query?: IDBValidKey | IDBKeyRange | null,
-      count?: number | { direction?: IDBCursorDirection; count?: number }
-    ): Promise<IDBRecord[]>;
-  }
-  interface IDBRecord {
-    key: IDBValidKey;
-    primaryKey: IDBValidKey;
-    value: any;
-  }
-}
-
 export interface IDBConnectionOptions {
   flavour: string;
   type: SpaceType;

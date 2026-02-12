@@ -8,6 +8,8 @@ pub mod indexer_sync;
 pub mod pool;
 pub mod storage;
 
+#[cfg(not(feature = "use-as-lib"))]
+use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -23,7 +25,7 @@ type Result<T> = napi::Result<T>;
 #[cfg(not(feature = "use-as-lib"))]
 impl From<error::Error> for napi::Error {
   fn from(err: error::Error) -> Self {
-    napi::Error::new(napi::Status::GenericFailure, err.to_string())
+    to_napi_error(err, napi::Status::GenericFailure)
   }
 }
 
@@ -489,5 +491,17 @@ impl DocStorage {
     self.storage.set_space_id(space_id).await?;
     self.storage.close().await;
     Ok(())
+  }
+}
+
+#[cfg(all(test, not(feature = "use-as-lib")))]
+mod tests {
+  use super::error;
+
+  #[test]
+  fn napi_error_mapping_preserves_reason() {
+    let err: napi::Error = error::Error::InvalidOperation.into();
+    assert_eq!(err.status, napi::Status::GenericFailure);
+    assert!(err.reason.contains("Invalid operation"));
   }
 }

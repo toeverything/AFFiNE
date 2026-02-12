@@ -1672,41 +1672,11 @@ const imageActions: Prompt[] = [
       },
     ],
   },
-  // TODO(@darkskygit): deprecated, remove it after <0.22 version is outdated
-  {
-    name: 'debug:action:fal-remove-bg',
-    action: 'Remove background',
-    model: 'imageutils/rembg',
-    messages: [],
-  },
-  {
-    name: 'debug:action:fal-face-to-sticker',
-    action: 'Convert to sticker',
-    model: 'face-to-sticker',
-    messages: [],
-  },
   {
     name: 'debug:action:fal-teed',
     action: 'fal-teed',
     model: 'workflowutils/teed',
     messages: [{ role: 'user', content: '{{content}}' }],
-  },
-  {
-    name: 'debug:action:fal-sd15',
-    action: 'image',
-    model: 'lcm-sd15-i2i',
-    messages: [],
-  },
-  {
-    name: 'debug:action:fal-upscaler',
-    action: 'Clearer',
-    model: 'clarity-upscaler',
-    messages: [
-      {
-        role: 'user',
-        content: 'best quality, 8K resolution, highres, clarity, {{content}}',
-      },
-    ],
   },
 ];
 

@@ -4,11 +4,14 @@ import {
   type LoaderFunction,
   redirect,
   useLoaderData,
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 
 import { AuthService } from '../../../modules/cloud';
+import {
+  buildAuthenticationDeepLink,
+  buildOpenAppUrlRoute,
+} from '../../../modules/open-in-app';
 import { supportedClient } from './common';
 
 interface LoaderData {
@@ -44,13 +47,14 @@ export const loader: LoaderFunction = ({ request }) => {
     return redirect('/sign-in?error=Invalid callback parameters');
   }
 
-  const authParams = new URLSearchParams();
-  authParams.set('method', 'magic-link');
-  authParams.set('payload', JSON.stringify(payload));
+  const urlToOpen = buildAuthenticationDeepLink({
+    scheme: clientCheckResult.data,
+    method: 'magic-link',
+    payload,
+    server: location.origin,
+  });
 
-  return redirect(
-    `/open-app/url?url=${encodeURIComponent(`${client}://authentication?${authParams.toString()}`)}`
-  );
+  return redirect(buildOpenAppUrlRoute(urlToOpen));
 };
 
 export const Component = () => {

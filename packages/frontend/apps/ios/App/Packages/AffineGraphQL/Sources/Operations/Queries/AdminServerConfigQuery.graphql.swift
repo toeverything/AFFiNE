@@ -7,7 +7,7 @@ public class AdminServerConfigQuery: GraphQLQuery {
   public static let operationName: String = "adminServerConfig"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query adminServerConfig { serverConfig { __typename version baseUrl name features type initialized credentialsRequirement { __typename ...CredentialsRequirements } availableUpgrade { __typename changelog version publishedAt url } availableUserFeatures } }"#,
+      #"query adminServerConfig { serverConfig { __typename version baseUrl name features type initialized credentialsRequirement { __typename ...CredentialsRequirements } availableUpgrade { __typename changelog version publishedAt url } availableUserFeatures availableWorkspaceFeatures } }"#,
       fragments: [CredentialsRequirements.self, PasswordLimits.self]
     ))
 
@@ -44,6 +44,7 @@ public class AdminServerConfigQuery: GraphQLQuery {
         .field("credentialsRequirement", CredentialsRequirement.self),
         .field("availableUpgrade", AvailableUpgrade?.self),
         .field("availableUserFeatures", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
+        .field("availableWorkspaceFeatures", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
       ] }
 
       /// server version
@@ -64,6 +65,8 @@ public class AdminServerConfigQuery: GraphQLQuery {
       public var availableUpgrade: AvailableUpgrade? { __data["availableUpgrade"] }
       /// Features for user that can be configured
       public var availableUserFeatures: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["availableUserFeatures"] }
+      /// Workspace features available for admin configuration
+      public var availableWorkspaceFeatures: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["availableWorkspaceFeatures"] }
 
       /// ServerConfig.CredentialsRequirement
       ///
