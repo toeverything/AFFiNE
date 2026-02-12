@@ -15,17 +15,29 @@ import {
 import type {
   LocalShapeElementModel,
   ShapeElementModel,
-  ShapeType,
 } from '@blocksuite/affine-model';
-import { DefaultTheme, TextAlign } from '@blocksuite/affine-model';
+import { DefaultTheme, ShapeType, TextAlign } from '@blocksuite/affine-model';
 import type { IBound } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
 
+import { DRAWIO_STENCIL_SHAPE_MAP } from '../../drawio/stencil-map.js';
+import { getStencilShapeData } from '../../drawio/stencil-utils.js';
+import { actor } from './actor.js';
+import { cloud } from './cloud.js';
+import { cube } from './cube.js';
 import { diamond } from './diamond.js';
+import { document as documentShape } from './document.js';
 import { ellipse } from './ellipse.js';
+import { hexagon } from './hexagon.js';
+import { note } from './note.js';
+import { parallelogram } from './parallelogram.js';
 import { rect } from './rect.js';
+import { createStencilShapeRenderer } from './stencil-shape.js';
+import { step } from './step.js';
+import { trapezoid } from './trapezoid.js';
 import { triangle } from './triangle.js';
+import { triangleRight } from './triangle-right.js';
 import { type Colors, horizontalOffset, verticalOffset } from './utils.js';
 
 const shapeRenderers: Record<
@@ -39,10 +51,64 @@ const shapeRenderers: Record<
     colors: Colors
   ) => void
 > = {
+  ...(() => {
+    const resolveStencil = (shapeType: ShapeType) => {
+      const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType];
+      const stencil = name ? getStencilShapeData(name) : null;
+      return stencil ? createStencilShapeRenderer(stencil) : rect;
+    };
+
+    return {
+      callout: resolveStencil(ShapeType.Callout),
+      cylinder: resolveStencil(ShapeType.Cylinder),
+      dataStorage: resolveStencil(ShapeType.DataStorage),
+      internalStorage: resolveStencil(ShapeType.InternalStorage),
+      tape: resolveStencil(ShapeType.Tape),
+      logicAnd: resolveStencil(ShapeType.LogicAnd),
+      logicOr: resolveStencil(ShapeType.LogicOr),
+      flowchartProcess: resolveStencil(ShapeType.FlowchartProcess),
+      flowchartDecision: resolveStencil(ShapeType.FlowchartDecision),
+      flowchartData: resolveStencil(ShapeType.FlowchartData),
+      flowchartDocument: resolveStencil(ShapeType.FlowchartDocument),
+      flowchartManualInput: resolveStencil(ShapeType.FlowchartManualInput),
+      flowchartDelay: resolveStencil(ShapeType.FlowchartDelay),
+      flowchartPredefinedProcess: resolveStencil(
+        ShapeType.FlowchartPredefinedProcess
+      ),
+      flowchartStoredData: resolveStencil(ShapeType.FlowchartStoredData),
+      flowchartInternalStorage: resolveStencil(
+        ShapeType.FlowchartInternalStorage
+      ),
+      flowchartDatabase: resolveStencil(ShapeType.FlowchartDatabase),
+      flowchartSequentialData: resolveStencil(
+        ShapeType.FlowchartSequentialData
+      ),
+      flowchartTerminator: resolveStencil(ShapeType.FlowchartTerminator),
+      flowchartPreparation: resolveStencil(ShapeType.FlowchartPreparation),
+      flowchartMerge: resolveStencil(ShapeType.FlowchartMerge),
+      flowchartPaperTape: resolveStencil(ShapeType.FlowchartPaperTape),
+      arrowUp: resolveStencil(ShapeType.ArrowUp),
+      arrowDown: resolveStencil(ShapeType.ArrowDown),
+      arrowLeft: resolveStencil(ShapeType.ArrowLeft),
+      arrowRight: resolveStencil(ShapeType.ArrowRight),
+      arrowTwoWayHorizontal: resolveStencil(ShapeType.ArrowTwoWayHorizontal),
+      arrowTwoWayVertical: resolveStencil(ShapeType.ArrowTwoWayVertical),
+    };
+  })(),
   diamond,
   rect,
   triangle,
   ellipse,
+  triangleRight,
+  hexagon,
+  parallelogram,
+  trapezoid,
+  step,
+  cloud,
+  document: documentShape,
+  note,
+  cube,
+  actor,
 };
 
 export const shape: ElementRenderer<ShapeElementModel> = (

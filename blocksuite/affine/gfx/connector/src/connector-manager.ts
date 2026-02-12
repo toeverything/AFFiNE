@@ -1,5 +1,9 @@
 import { AStarRunner, Overlay } from '@blocksuite/affine-block-surface';
 import {
+  DRAWIO_STENCIL_SHAPE_MAP,
+  getStencilShapeData,
+} from '@blocksuite/affine-gfx-shape';
+import {
   type BrushElementModel,
   type Connection,
   ConnectorElementModel,
@@ -7,6 +11,7 @@ import {
   GroupElementModel,
   type LocalConnectorElementModel,
 } from '@blocksuite/affine-model';
+import { ShapeType } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import type { IBound, IVec, IVec3 } from '@blocksuite/global/gfx';
@@ -59,18 +64,32 @@ export const ConnectorEndpointLocations: IVec[] = [
   [0, 0.5],
 ];
 
-export const ConnectorEndpointLocationsOnTriangle: IVec[] = [
-  // At top (apex)
+const buildEdgeLocations = (corners: IVec[], between = 3): IVec[] => {
+  const locations: IVec[] = [];
+  const count = corners.length;
+
+  for (let i = 0; i < count; i += 1) {
+    const start = corners[i];
+    const end = corners[(i + 1) % count];
+    locations.push([...start]);
+
+    for (let j = 1; j <= between; j += 1) {
+      const t = j / (between + 1);
+      locations.push([
+        start[0] + (end[0] - start[0]) * t,
+        start[1] + (end[1] - start[1]) * t,
+      ]);
+    }
+  }
+
+  return locations;
+};
+
+export const ConnectorEndpointLocationsOnTriangle: IVec[] = buildEdgeLocations([
   [0.5, 0],
-  // At right side
-  [0.75, 0.5],
-  // At bottom: left quarter, center, right quarter
-  [0.25, 1],
-  [0.5, 1],
-  [0.75, 1],
-  // At left side
-  [0.25, 0.5],
-];
+  [1, 1],
+  [0, 1],
+]);
 
 // Extended connection points for rectangle (16 points total)
 export const ConnectorEndpointLocationsOnRectangle: IVec[] = [
@@ -101,46 +120,159 @@ export const ConnectorEndpointLocationsOnRectangle: IVec[] = [
 ];
 
 // Extended connection points for diamond (8 points total)
-export const ConnectorEndpointLocationsOnDiamond: IVec[] = [
-  // Top
+export const ConnectorEndpointLocationsOnDiamond: IVec[] = buildEdgeLocations([
   [0.5, 0],
-  // Top-right (halfway between top and right)
-  [0.75, 0.25],
-  // Right
   [1, 0.5],
-  // Bottom-right (halfway between right and bottom)
-  [0.75, 0.75],
-  // Bottom
   [0.5, 1],
-  // Bottom-left (halfway between bottom and left)
-  [0.25, 0.75],
-  // Left
   [0, 0.5],
-  // Top-left (halfway between left and top)
-  [0.25, 0.25],
-];
+]);
 
 // Extended connection points for ellipse (8 points total)
 // Points calculated using trigonometry to sit on the actual ellipse curve
 // Formula: x = 0.5 + 0.5 * cos(angle), y = 0.5 + 0.5 * sin(angle)
-export const ConnectorEndpointLocationsOnEllipse: IVec[] = [
-  // Top (270°)
-  [0.5, 0],
-  // Top-right (315°)
-  [0.8536, 0.1464],
-  // Right (0°)
+const buildEllipseLocations = (stepDegrees = 22.5): IVec[] => {
+  const locations: IVec[] = [];
+  for (let angle = 0; angle < 360; angle += stepDegrees) {
+    const rad = toRadian(angle);
+    locations.push([0.5 + 0.5 * Math.cos(rad), 0.5 + 0.5 * Math.sin(rad)]);
+  }
+  return locations;
+};
+
+export const ConnectorEndpointLocationsOnEllipse: IVec[] =
+  buildEllipseLocations();
+
+export const ConnectorEndpointLocationsOnTriangleRight: IVec[] =
+  buildEdgeLocations([
+    [0, 0],
+    [1, 0.5],
+    [0, 1],
+  ]);
+
+export const ConnectorEndpointLocationsOnHexagon: IVec[] = buildEdgeLocations([
+  [0.25, 0],
+  [0.75, 0],
   [1, 0.5],
-  // Bottom-right (45°)
-  [0.8536, 0.8536],
-  // Bottom (90°)
-  [0.5, 1],
-  // Bottom-left (135°)
-  [0.1464, 0.8536],
-  // Left (180°)
+  [0.75, 1],
+  [0.25, 1],
   [0, 0.5],
-  // Top-left (225°)
-  [0.1464, 0.1464],
+]);
+
+export const ConnectorEndpointLocationsOnParallelogram: IVec[] =
+  buildEdgeLocations([
+    [0.2, 0],
+    [1, 0],
+    [0.8, 1],
+    [0, 1],
+  ]);
+
+export const ConnectorEndpointLocationsOnTrapezoid: IVec[] = buildEdgeLocations(
+  [
+    [0.2, 0],
+    [0.8, 0],
+    [1, 1],
+    [0, 1],
+  ]
+);
+
+export const ConnectorEndpointLocationsOnStep: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [0.8, 0],
+  [1, 0.5],
+  [0.8, 1],
+  [1, 1],
+  [0, 1],
+  [0.2, 0.5],
+]);
+
+export const ConnectorEndpointLocationsOnCylinder: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnCloud: IVec[] = [
+  [0.25, 0.25],
+  [0.16, 0.5],
+  [0.31, 0.8],
+  [0.8, 0.8],
+  [0.875, 0.5],
+  [0.625, 0.2],
 ];
+
+export const ConnectorEndpointLocationsOnDocument: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnNote: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [0.8, 0],
+  [1, 0.2],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnCube: IVec[] = buildEdgeLocations([
+  [0.2, 0],
+  [1, 0],
+  [1, 0.8],
+  [0.8, 1],
+  [0, 1],
+  [0, 0.2],
+]);
+
+export const ConnectorEndpointLocationsOnCallout: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 0.75],
+  [0.6, 0.75],
+  [0.5, 1],
+  [0.4, 0.75],
+  [0, 0.75],
+]);
+
+export const ConnectorEndpointLocationsOnActor: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnDataStorage: IVec[] =
+  ConnectorEndpointLocationsOnCylinder;
+
+export const ConnectorEndpointLocationsOnTape: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnInternalStorage: IVec[] =
+  buildEdgeLocations([
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+  ]);
+
+export const ConnectorEndpointLocationsOnLogicAnd: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnLogicOr: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
 
 export function isConnectorWithLabel(model: GfxModel | GfxLocalElementModel) {
   return model instanceof ConnectorElementModel && model.hasLabel();
@@ -205,31 +337,220 @@ export function isConnectorAndBindingsAllSelected(
 /**
  * Get connection point locations for a given element based on its shape type
  */
-export function getConnectionLocationsForElement(ele: GfxModel): IVec[] {
+type ConnectionLocationResult = {
+  locations: IVec[];
+  fromStencil: boolean;
+};
+
+const getStencilConstraintLocations = (
+  shapeType: string
+): ConnectionLocationResult | null => {
+  const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
+  if (!name) return null;
+  const stencil = getStencilShapeData(name);
+  if (!stencil || stencil.constraints.length === 0) return null;
+  const locations: IVec[] = stencil.constraints.map(
+    constraint => [constraint.x, constraint.y] as IVec
+  );
+  const enhancedLocations = addStencilExtras(shapeType as ShapeType, locations);
+  return {
+    locations: enhancedLocations,
+    fromStencil: true,
+  };
+};
+
+const addStencilExtras = (shapeType: ShapeType, locations: IVec[]): IVec[] => {
+  const rectangularEdgePoints: IVec[] = [
+    [0.25, 0],
+    [0.5, 0],
+    [0.75, 0],
+    [0.25, 1],
+    [0.5, 1],
+    [0.75, 1],
+    [0, 0.25],
+    [0, 0.5],
+    [0, 0.75],
+    [1, 0.25],
+    [1, 0.5],
+    [1, 0.75],
+  ];
+  switch (shapeType) {
+    case ShapeType.Document:
+      return mergeLocations(locations, [
+        [0.25, 0],
+        [0.75, 0],
+        [0, 0.25],
+        [0, 0.75],
+        [1, 0.25],
+        [1, 0.75],
+      ]);
+    case ShapeType.Cylinder:
+      return mergeLocations(locations, [
+        [0.25, 0],
+        [0.75, 0],
+        [0.25, 1],
+        [0.75, 1],
+        [0, 0.33],
+        [0, 0.66],
+        [1, 0.33],
+        [1, 0.66],
+      ]);
+    case ShapeType.DataStorage:
+    case ShapeType.InternalStorage:
+      return mergeLocations(locations, rectangularEdgePoints);
+    case ShapeType.Tape:
+      return mergeLocations(locations, [
+        [0.25, 0.09],
+        [0.75, 0.09],
+        [0.25, 0.91],
+        [0.75, 0.91],
+        [0, 0.25],
+        [0, 0.75],
+        [1, 0.25],
+        [1, 0.75],
+      ]);
+    default:
+      return locations;
+  }
+};
+
+const mergeLocations = (locations: IVec[], extras: IVec[]): IVec[] => {
+  const merged = [...locations, ...extras];
+  const seen = new Set<string>();
+  return merged.filter(([x, y]) => {
+    const key = `${x.toFixed(4)}:${y.toFixed(4)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+export function getConnectionLocationsForElement(
+  ele: GfxModel
+): ConnectionLocationResult {
   // Check if element is a ShapeElementModel and get shape-specific locations
   if ('shapeType' in ele) {
     const shapeType = (ele as any).shapeType;
+    const stencilLocations = getStencilConstraintLocations(shapeType);
+    if (stencilLocations) return stencilLocations;
     switch (shapeType) {
       case 'rect':
-        return ConnectorEndpointLocationsOnRectangle;
+        return {
+          locations: ConnectorEndpointLocationsOnRectangle,
+          fromStencil: false,
+        };
       case 'triangle':
-        return ConnectorEndpointLocationsOnTriangle;
+        return {
+          locations: ConnectorEndpointLocationsOnTriangle,
+          fromStencil: false,
+        };
       case 'diamond':
-        return ConnectorEndpointLocationsOnDiamond;
+        return {
+          locations: ConnectorEndpointLocationsOnDiamond,
+          fromStencil: false,
+        };
       case 'ellipse':
-        return ConnectorEndpointLocationsOnEllipse;
+        return {
+          locations: ConnectorEndpointLocationsOnEllipse,
+          fromStencil: false,
+        };
+      case 'triangleRight':
+        return {
+          locations: ConnectorEndpointLocationsOnTriangleRight,
+          fromStencil: false,
+        };
+      case 'hexagon':
+        return {
+          locations: ConnectorEndpointLocationsOnHexagon,
+          fromStencil: false,
+        };
+      case 'parallelogram':
+        return {
+          locations: ConnectorEndpointLocationsOnParallelogram,
+          fromStencil: false,
+        };
+      case 'trapezoid':
+        return {
+          locations: ConnectorEndpointLocationsOnTrapezoid,
+          fromStencil: false,
+        };
+      case 'step':
+        return {
+          locations: ConnectorEndpointLocationsOnStep,
+          fromStencil: false,
+        };
+      case 'cylinder':
+        return {
+          locations: ConnectorEndpointLocationsOnCylinder,
+          fromStencil: false,
+        };
+      case 'cloud':
+        return {
+          locations: ConnectorEndpointLocationsOnCloud,
+          fromStencil: false,
+        };
+      case 'document':
+        return {
+          locations: ConnectorEndpointLocationsOnDocument,
+          fromStencil: false,
+        };
+      case 'note':
+        return {
+          locations: ConnectorEndpointLocationsOnNote,
+          fromStencil: false,
+        };
+      case 'cube':
+        return {
+          locations: ConnectorEndpointLocationsOnCube,
+          fromStencil: false,
+        };
+      case 'callout':
+        return {
+          locations: ConnectorEndpointLocationsOnCallout,
+          fromStencil: false,
+        };
+      case 'actor':
+        return {
+          locations: ConnectorEndpointLocationsOnActor,
+          fromStencil: false,
+        };
+      case 'dataStorage':
+        return {
+          locations: ConnectorEndpointLocationsOnDataStorage,
+          fromStencil: false,
+        };
+      case 'tape':
+        return {
+          locations: ConnectorEndpointLocationsOnTape,
+          fromStencil: false,
+        };
+      case 'internalStorage':
+        return {
+          locations: ConnectorEndpointLocationsOnInternalStorage,
+          fromStencil: false,
+        };
+      case 'logicAnd':
+        return {
+          locations: ConnectorEndpointLocationsOnLogicAnd,
+          fromStencil: false,
+        };
+      case 'logicOr':
+        return {
+          locations: ConnectorEndpointLocationsOnLogicOr,
+          fromStencil: false,
+        };
       default:
-        return ConnectorEndpointLocations;
+        return { locations: ConnectorEndpointLocations, fromStencil: false };
     }
   }
-  return ConnectorEndpointLocations;
+  return { locations: ConnectorEndpointLocations, fromStencil: false };
 }
 
 export function getAnchors(ele: GfxModel) {
   const bound = Bound.deserialize(ele.xywh);
   const anchors: { point: PointLocation; coord: IVec }[] = [];
   const rotate = ele.rotate;
-  const locations = getConnectionLocationsForElement(ele);
+  const { locations, fromStencil } = getConnectionLocationsForElement(ele);
 
   // For each connection location (relative coordinates), calculate the actual point
   locations.forEach(location => {
@@ -244,6 +565,14 @@ export function getAnchors(ele: GfxModel) {
       { ...bound, rotate },
       absPoint
     );
+
+    if (fromStencil) {
+      anchors.push({
+        point: PointLocation.fromVec(rotatedPoint),
+        coord: location,
+      });
+      return;
+    }
 
     // Get the intersection point with the shape's edge
     const rst = ele.getLineIntersections(bound.center, rotatedPoint);

@@ -11,6 +11,7 @@
     { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../text" },
+    { "path": "../shape" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

@@ -53,8 +53,8 @@ export class EdgelessShapeMenu extends SignalWatcher(
     }
     .shape-type-container svg,
     .shape-style-container svg {
-      fill: var(--affine-icon-color);
-      stroke: none;
+      fill: none;
+      stroke: var(--affine-icon-color);
     }
     .more-shapes-button {
       display: flex;
@@ -62,8 +62,8 @@ export class EdgelessShapeMenu extends SignalWatcher(
       justify-content: center;
     }
     .more-shapes-button svg {
-      fill: var(--affine-icon-color);
-      stroke: none;
+      fill: none;
+      stroke: var(--affine-icon-color);
     }
     menu-divider {
       height: 24px;

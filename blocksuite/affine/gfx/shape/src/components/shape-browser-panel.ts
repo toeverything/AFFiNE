@@ -34,8 +34,101 @@ const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
   roundedRect: 'general',
   ellipse: 'general',
   diamond: 'general',
-  triangle: 'basic',
+  triangle: 'general',
+  triangleRight: 'general',
+  hexagon: 'general',
+  parallelogram: 'general',
+  trapezoid: 'general',
+  step: 'general',
+  cylinder: 'general',
+  cloud: 'general',
+  document: 'general',
+  note: 'general',
+  cube: 'general',
+  callout: 'general',
+  actor: 'general',
+  dataStorage: 'general',
+  tape: 'general',
+  internalStorage: 'general',
+  logicAnd: 'general',
+  logicOr: 'general',
+  flowchartProcess: 'flowchart',
+  flowchartDecision: 'flowchart',
+  flowchartData: 'flowchart',
+  flowchartDocument: 'flowchart',
+  flowchartManualInput: 'flowchart',
+  flowchartDelay: 'flowchart',
+  flowchartPredefinedProcess: 'flowchart',
+  flowchartStoredData: 'flowchart',
+  flowchartInternalStorage: 'flowchart',
+  flowchartDatabase: 'flowchart',
+  flowchartSequentialData: 'flowchart',
+  flowchartTerminator: 'flowchart',
+  flowchartPreparation: 'flowchart',
+  flowchartMerge: 'flowchart',
+  flowchartPaperTape: 'flowchart',
+  arrowUp: 'arrows',
+  arrowDown: 'arrows',
+  arrowLeft: 'arrows',
+  arrowRight: 'arrows',
+  arrowTwoWayHorizontal: 'arrows',
+  arrowTwoWayVertical: 'arrows',
 };
+
+type ShapeBrowserItem = (typeof AllShapeConfig)[number] & {
+  id: string;
+  category: ShapeCategory;
+};
+
+const SHAPE_CONFIG_BY_NAME = AllShapeConfig.reduce(
+  (acc, item) => {
+    acc[item.name] = item;
+    return acc;
+  },
+  {} as Record<
+    (typeof AllShapeConfig)[number]['name'],
+    (typeof AllShapeConfig)[number]
+  >
+);
+
+const SHAPE_BROWSER_ITEMS: ShapeBrowserItem[] = [
+  {
+    id: 'rectangle',
+    category: 'general',
+    ...SHAPE_CONFIG_BY_NAME.rect,
+    tooltip: 'Rectangle',
+  },
+  {
+    id: 'roundedRect',
+    category: 'general',
+    ...SHAPE_CONFIG_BY_NAME.roundedRect,
+  },
+  {
+    id: 'ellipse',
+    category: 'general',
+    ...SHAPE_CONFIG_BY_NAME.ellipse,
+    tooltip: 'Ellipse',
+  },
+  {
+    id: 'square',
+    category: 'general',
+    ...SHAPE_CONFIG_BY_NAME.rect,
+    tooltip: 'Square',
+  },
+  {
+    id: 'circle',
+    category: 'general',
+    ...SHAPE_CONFIG_BY_NAME.ellipse,
+    tooltip: 'Circle',
+  },
+  ...AllShapeConfig.filter(
+    item => !['rect', 'roundedRect', 'ellipse'].includes(item.name)
+  ).map(item => ({
+    ...item,
+    id: item.name,
+    category: SHAPE_CATEGORY_MAP[item.name],
+  })),
+];
 
 // Triangle arrow pointing down (same as templates panel)
 const Triangle = html`<svg
@@ -160,8 +253,8 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     .shape-item svg {
       width: 32px;
       height: 32px;
-      fill: var(--affine-icon-color);
-      stroke: none;
+      fill: none;
+      stroke: var(--affine-icon-color);
       position: relative;
       z-index: 1;
     }
@@ -247,8 +340,8 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   }
 
   private _getShapesForCategory(category: ShapeCategory) {
-    let shapes = AllShapeConfig.filter(
-      shape => SHAPE_CATEGORY_MAP[shape.name] === category
+    let shapes = SHAPE_BROWSER_ITEMS.filter(
+      shape => shape.category === category
     );
 
     // Filter by search keyword if present
@@ -321,7 +414,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
               ${shapesInCategory.length > 0
                 ? repeat(
                     shapesInCategory,
-                    item => item.name,
+                    item => item.id,
                     ({ name, generalIcon, tooltip }) => html`
                       <div
                         class="shape-item ${this.selectedShape === name

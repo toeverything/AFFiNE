@@ -68,7 +68,7 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
     const attributes =
       this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
 
-    if (shapeName === 'roundedRect') {
+    if (shapeName === 'roundedRect' || shapeName === ShapeType.Rect) {
       width += 40;
     }
     // create a shape block when drag start

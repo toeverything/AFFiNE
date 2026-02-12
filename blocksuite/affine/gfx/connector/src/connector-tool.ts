@@ -21,10 +21,27 @@ import {
   calculateNearestLocation,
   type ConnectionOverlay,
   ConnectorEndpointLocations,
+  ConnectorEndpointLocationsOnActor,
+  ConnectorEndpointLocationsOnCallout,
+  ConnectorEndpointLocationsOnCloud,
+  ConnectorEndpointLocationsOnCube,
+  ConnectorEndpointLocationsOnCylinder,
+  ConnectorEndpointLocationsOnDataStorage,
   ConnectorEndpointLocationsOnDiamond,
+  ConnectorEndpointLocationsOnDocument,
   ConnectorEndpointLocationsOnEllipse,
+  ConnectorEndpointLocationsOnHexagon,
+  ConnectorEndpointLocationsOnInternalStorage,
+  ConnectorEndpointLocationsOnLogicAnd,
+  ConnectorEndpointLocationsOnLogicOr,
+  ConnectorEndpointLocationsOnNote,
+  ConnectorEndpointLocationsOnParallelogram,
   ConnectorEndpointLocationsOnRectangle,
+  ConnectorEndpointLocationsOnStep,
+  ConnectorEndpointLocationsOnTape,
+  ConnectorEndpointLocationsOnTrapezoid,
   ConnectorEndpointLocationsOnTriangle,
+  ConnectorEndpointLocationsOnTriangleRight,
 } from './connector-manager';
 
 enum ConnectorToolMode {
@@ -221,6 +238,40 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
           return ConnectorEndpointLocationsOnDiamond;
         case ShapeType.Ellipse:
           return ConnectorEndpointLocationsOnEllipse;
+        case ShapeType.TriangleRight:
+          return ConnectorEndpointLocationsOnTriangleRight;
+        case ShapeType.Hexagon:
+          return ConnectorEndpointLocationsOnHexagon;
+        case ShapeType.Parallelogram:
+          return ConnectorEndpointLocationsOnParallelogram;
+        case ShapeType.Trapezoid:
+          return ConnectorEndpointLocationsOnTrapezoid;
+        case ShapeType.Step:
+          return ConnectorEndpointLocationsOnStep;
+        case ShapeType.Cylinder:
+          return ConnectorEndpointLocationsOnCylinder;
+        case ShapeType.Cloud:
+          return ConnectorEndpointLocationsOnCloud;
+        case ShapeType.Document:
+          return ConnectorEndpointLocationsOnDocument;
+        case ShapeType.Note:
+          return ConnectorEndpointLocationsOnNote;
+        case ShapeType.Cube:
+          return ConnectorEndpointLocationsOnCube;
+        case ShapeType.Callout:
+          return ConnectorEndpointLocationsOnCallout;
+        case ShapeType.Actor:
+          return ConnectorEndpointLocationsOnActor;
+        case ShapeType.DataStorage:
+          return ConnectorEndpointLocationsOnDataStorage;
+        case ShapeType.Tape:
+          return ConnectorEndpointLocationsOnTape;
+        case ShapeType.InternalStorage:
+          return ConnectorEndpointLocationsOnInternalStorage;
+        case ShapeType.LogicAnd:
+          return ConnectorEndpointLocationsOnLogicAnd;
+        case ShapeType.LogicOr:
+          return ConnectorEndpointLocationsOnLogicOr;
         default:
           return ConnectorEndpointLocations;
       }

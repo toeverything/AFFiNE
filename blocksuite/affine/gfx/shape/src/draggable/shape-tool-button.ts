@@ -1,7 +1,9 @@
 import { type ShapeName, ShapeType } from '@blocksuite/affine-model';
+import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { once } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
+import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import {
   arrow,
   autoUpdate,
@@ -46,6 +48,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
   override type = ShapeTool;
 
   private readonly _handleShapeClick = (shape: DraggableShape) => {
+    this._syncShapeColors(shape.name);
     this.setEdgelessTool(this.type, {
       shapeName: shape.name,
     });
@@ -106,6 +109,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     // Handle shape selection
     panel.addEventListener('shapeselect', ((e: CustomEvent) => {
       const shapeName = e.detail.shapeName;
+      this._syncShapeColors(shapeName);
       this.setEdgelessTool(this.type, { shapeName });
       this._updateOverlay();
       this._closeBrowser();
@@ -166,6 +170,27 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     if (controller instanceof ShapeTool) {
       controller.createOverlay();
     }
+  }
+
+  private _syncShapeColors(nextShapeName: ShapeName) {
+    const gfx = this.edgeless.std.get(GfxControllerIdentifier);
+    const currentTool = gfx.tool.currentToolOption$.peek();
+    const currentShapeName =
+      currentTool && currentTool.toolType === ShapeTool
+        ? ((currentTool as { options?: { shapeName?: ShapeName } }).options
+            ?.shapeName ?? ShapeType.Rect)
+        : ShapeType.Rect;
+    if (currentShapeName === nextShapeName) return;
+
+    const propsStore = this.edgeless.std.get(EditPropsStore);
+    const currentProps =
+      propsStore.lastProps$.value[`shape:${currentShapeName}`];
+    propsStore.recordLastProps(`shape:${nextShapeName}`, {
+      fillColor: currentProps.fillColor,
+      strokeColor: currentProps.strokeColor,
+      filled: currentProps.filled,
+      strokeStyle: currentProps.strokeStyle,
+    });
   }
 
   override render() {
