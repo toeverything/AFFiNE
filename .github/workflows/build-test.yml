@@ -224,8 +224,6 @@ jobs:
         run: yarn workspace @blocksuite/playground build
 
       - name: Run playwright tests
-        env:
-          BROWSER: ${{ matrix.browser }}
         run: |
           yarn workspace @blocksuite/integration-test test:unit
           yarn workspace @affine-test/blocksuite test "cross-platform/" --forbid-only
@@ -266,6 +264,7 @@ jobs:
             "@affine/android"
             "@affine/admin"
             "@affine/electron-renderer"
+            "@affine/server"
           )
           summary="test-results-bundler-${AFFINE_BUNDLER}.txt"
           : > "$summary"

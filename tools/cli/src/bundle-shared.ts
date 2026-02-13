@@ -7,6 +7,7 @@ export const RSPACK_SUPPORTED_PACKAGES = [
   '@affine/ios',
   '@affine/android',
   '@affine/electron-renderer',
+  '@affine/server',
 ] as const;
 
 const rspackSupportedPackageSet = new Set<string>(RSPACK_SUPPORTED_PACKAGES);

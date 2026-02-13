@@ -23,6 +23,7 @@ import { type Bundler, getBundler } from './bundler';
 import { Option, PackageCommand } from './command';
 import {
   createHTMLTargetConfig as createRspackHTMLTargetConfig,
+  createNodeTargetConfig as createRspackNodeTargetConfig,
   createWorkerTargetConfig as createRspackWorkerTargetConfig,
 } from './rspack';
 import {
@@ -190,6 +191,11 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
           workerConfigs.map(config => config.name)
         ),
         ...workerConfigs,
+      ] as MultiRspackOptions;
+    }
+    case '@affine/server': {
+      return [
+        createRspackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value),
       ] as MultiRspackOptions;
     }
   }
