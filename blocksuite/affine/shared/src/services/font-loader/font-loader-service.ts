@@ -1,3 +1,4 @@
+import { FontFamily, FontStyle, FontWeight } from '@blocksuite/affine-model';
 import { createIdentifier } from '@blocksuite/global/di';
 import { IS_FIREFOX } from '@blocksuite/global/env';
 import { LifeCycleWatcher } from '@blocksuite/std';
@@ -44,6 +45,34 @@ export class FontLoaderService extends LifeCycleWatcher {
 
   private readonly _fontKey = ({ font, weight, style, url }: FontConfig) => {
     return `${font}:${weight}:${style}:${url}`;
+  };
+
+  private readonly _isCriticalCanvasFont = ({
+    font,
+    weight,
+    style,
+  }: FontConfig) => {
+    if (style !== FontStyle.Normal) return false;
+
+    if (font === FontFamily.Poppins) {
+      return (
+        weight === FontWeight.Regular ||
+        weight === FontWeight.Medium ||
+        weight === FontWeight.SemiBold
+      );
+    }
+
+    if (font === FontFamily.Inter) {
+      return weight === FontWeight.Regular || weight === FontWeight.SemiBold;
+    }
+
+    if (font === FontFamily.Kalam) {
+      // Mindmap style four uses bold Kalam text.
+      // We map to SemiBold because this is the strongest shipped Kalam weight.
+      return weight === FontWeight.SemiBold;
+    }
+
+    return false;
   };
 
   private readonly _scheduleDeferredLoad = (fonts: FontConfig[]) => {
@@ -137,8 +166,15 @@ export class FontLoaderService extends LifeCycleWatcher {
     if (!config || config.length === 0) {
       return;
     }
-    const eagerFonts = config.slice(0, 3);
-    const deferredFonts = config.slice(3);
+
+    const criticalFonts = config.filter(this._isCriticalCanvasFont);
+    const eagerFonts =
+      criticalFonts.length > 0 ? criticalFonts : config.slice(0, 3);
+    const eagerFontKeySet = new Set(eagerFonts.map(this._fontKey));
+    const deferredFonts = config.filter(
+      font => !eagerFontKeySet.has(this._fontKey(font))
+    );
+
     this.load(eagerFonts);
     this._scheduleDeferredLoad(deferredFonts);
   }

@@ -110,7 +110,25 @@ export function textPointToDomPoint(
     }
   }
 
-  return null;
+  // Fallback to linear scan when cache still misses. This keeps behavior
+  // stable even if MutationObserver-based invalidation lags behind.
+  const texts = getTextNodesFromElement(rootElement);
+  if (texts.length === 0) return null;
+
+  const goalIndex = texts.indexOf(text);
+  if (goalIndex < 0) return null;
+
+  let index = textOffset;
+  for (const beforeText of texts.slice(0, goalIndex)) {
+    index += calculateTextLength(beforeText);
+  }
+
+  const lineIndex = Array.from(rootElement.querySelectorAll('v-line')).indexOf(
+    lineElement
+  );
+  if (lineIndex < 0) return null;
+
+  return { text, index: index + lineIndex };
 }
 
 function getVNodesFromNode(node: Node): VElement[] | VLine[] | null {

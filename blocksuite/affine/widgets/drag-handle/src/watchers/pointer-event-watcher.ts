@@ -155,6 +155,8 @@ export class PointerEventWatcher {
 
   private _lastPointerHitBlockId: string | null = null;
 
+  private _lastPointerHitBlockElement: Element | null = null;
+
   /**
    * When pointer move on block, should show drag handle
    * And update hover block id and path
@@ -245,6 +247,7 @@ export class PointerEventWatcher {
       // When pointer not on block or on dragging, should do nothing
       if (!element) {
         this._lastPointerHitBlockId = null;
+        this._lastPointerHitBlockElement = null;
         return;
       }
 
@@ -256,29 +259,19 @@ export class PointerEventWatcher {
       const hitBlock = element.closest(`[${BLOCK_ID_ATTR}]`);
       const hitBlockId = hitBlock?.getAttribute(BLOCK_ID_ATTR) ?? null;
 
-      // Skip expensive closest-note lookup when pointer keeps moving inside
-      // the same anchored block.
-      const anchoredBlockId = this.widget.anchorBlockId.peek();
-      if (
-        hitBlockId &&
-        anchoredBlockId &&
-        this.widget.isBlockDragHandleVisible &&
-        hitBlockId === anchoredBlockId
-      ) {
-        this._lastPointerHitBlockId = hitBlockId;
-        return;
-      }
-
       // Pointer move events are high-frequency. If hovered block identity is
-      // unchanged, skip closest-note lookup.
+      // unchanged and the underlying block element is the same, skip the
+      // closest-note lookup.
       if (
         hitBlockId &&
         this.widget.isBlockDragHandleVisible &&
-        hitBlockId === this._lastPointerHitBlockId
+        hitBlockId === this._lastPointerHitBlockId &&
+        hitBlock === this._lastPointerHitBlockElement
       ) {
         return;
       }
       this._lastPointerHitBlockId = hitBlockId;
+      this._lastPointerHitBlockElement = hitBlock;
 
       // When pointer out of note block hover area or inside database, should hide drag handle
       const point = new Point(state.raw.x, state.raw.y);
@@ -385,6 +378,7 @@ export class PointerEventWatcher {
     this._lastHoveredBlockId = null;
     this._lastShowedBlock = null;
     this._lastPointerHitBlockId = null;
+    this._lastPointerHitBlockElement = null;
   }
 
   watch() {
