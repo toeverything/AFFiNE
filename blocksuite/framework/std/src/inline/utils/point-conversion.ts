@@ -13,6 +13,7 @@ import {
   calculateTextLength,
   getInlineRootTextCache,
   getTextNodesFromElement,
+  invalidateInlineRootTextCache,
 } from './text.js';
 
 export function nativePointToTextPoint(
@@ -71,19 +72,6 @@ export function textPointToDomPoint(
 
   if (!rootElement.contains(text)) return null;
 
-  const { textNodes, textNodeIndexMap, prefixLengths, lineIndexMap } =
-    getInlineRootTextCache(rootElement);
-  const texts = textNodes;
-  if (texts.length === 0) return null;
-
-  const goalIndex = textNodeIndexMap.get(text);
-  if (goalIndex === undefined) return null;
-  let index = prefixLengths[goalIndex] ?? 0;
-
-  if (text.wholeText !== ZERO_WIDTH_FOR_EMPTY_LINE) {
-    index += offset;
-  }
-
   const textParentElement = text.parentElement;
   if (!textParentElement) {
     throw new BlockSuiteError(
@@ -101,10 +89,28 @@ export function textPointToDomPoint(
     );
   }
 
-  const lineIndex = lineIndexMap.get(lineElement);
-  if (lineIndex === undefined) return null;
+  const textOffset = text.wholeText === ZERO_WIDTH_FOR_EMPTY_LINE ? 0 : offset;
 
-  return { text, index: index + lineIndex };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { textNodes, textNodeIndexMap, prefixLengths, lineIndexMap } =
+      getInlineRootTextCache(rootElement);
+    if (textNodes.length === 0) return null;
+
+    const goalIndex = textNodeIndexMap.get(text);
+    const lineIndex = lineIndexMap.get(lineElement);
+    if (goalIndex !== undefined && lineIndex !== undefined) {
+      const index = (prefixLengths[goalIndex] ?? 0) + textOffset;
+      return { text, index: index + lineIndex };
+    }
+
+    if (attempt === 0) {
+      // MutationObserver marks cache dirty asynchronously; force one sync retry
+      // when a newly-added node is queried within the same task.
+      invalidateInlineRootTextCache(rootElement);
+    }
+  }
+
+  return null;
 }
 
 function getVNodesFromNode(node: Node): VElement[] | VLine[] | null {

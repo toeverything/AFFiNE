@@ -34,7 +34,49 @@ type HoveredElemArea = {
 export class EdgelessWatcher {
   private _pendingHoveredElemArea: HoveredElemArea | null = null;
 
+  private _lastAppliedHoveredElemArea: HoveredElemArea | null = null;
+
   private _showDragHandleRafId: number | null = null;
+
+  private _surfaceElementUpdatedRafId: number | null = null;
+
+  private readonly _cloneArea = (area: HoveredElemArea): HoveredElemArea => ({
+    left: area.left,
+    top: area.top,
+    right: area.right,
+    bottom: area.bottom,
+    width: area.width,
+    height: area.height,
+    padding: area.padding,
+    containerWidth: area.containerWidth,
+  });
+
+  private readonly _isAreaEqual = (
+    left: HoveredElemArea | null,
+    right: HoveredElemArea | null
+  ) => {
+    if (!left || !right) return false;
+    return (
+      left.left === right.left &&
+      left.top === right.top &&
+      left.right === right.right &&
+      left.bottom === right.bottom &&
+      left.width === right.width &&
+      left.height === right.height &&
+      left.padding === right.padding &&
+      left.containerWidth === right.containerWidth
+    );
+  };
+
+  private readonly _scheduleShowDragHandleFromSurfaceUpdate = () => {
+    if (this._surfaceElementUpdatedRafId !== null) return;
+
+    this._surfaceElementUpdatedRafId = requestAnimationFrame(() => {
+      this._surfaceElementUpdatedRafId = null;
+      if (!this.widget.isGfxDragHandleVisible) return;
+      this._showDragHandle();
+    });
+  };
 
   private readonly _handleEdgelessToolUpdated = (
     newTool: ToolOptionWithType
@@ -86,6 +128,13 @@ export class EdgelessWatcher {
     this._pendingHoveredElemArea = null;
     if (!area) return;
 
+    if (
+      this.widget.isGfxDragHandleVisible &&
+      this._isAreaEqual(this._lastAppliedHoveredElemArea, area)
+    ) {
+      return;
+    }
+
     if (container.style.transition !== 'none') {
       container.style.transition = 'none';
     }
@@ -112,11 +161,23 @@ export class EdgelessWatcher {
     this.widget.handleAnchorModelDisposables();
 
     this.widget.activeDragHandle = 'gfx';
+    this._lastAppliedHoveredElemArea = this._cloneArea(area);
   };
 
   private readonly _showDragHandle = (area?: HoveredElemArea | null) => {
-    this._pendingHoveredElemArea = area ?? this.hoveredElemArea;
+    const nextArea = area ?? this.hoveredElemArea;
+    this._pendingHoveredElemArea = nextArea;
     if (!this._pendingHoveredElemArea) {
+      return;
+    }
+    if (
+      this.widget.isGfxDragHandleVisible &&
+      this._showDragHandleRafId === null &&
+      this._isAreaEqual(
+        this._lastAppliedHoveredElemArea,
+        this._pendingHoveredElemArea
+      )
+    ) {
       return;
     }
     if (this._showDragHandleRafId !== null) {
@@ -252,7 +313,12 @@ export class EdgelessWatcher {
         cancelAnimationFrame(this._showDragHandleRafId);
         this._showDragHandleRafId = null;
       }
+      if (this._surfaceElementUpdatedRafId !== null) {
+        cancelAnimationFrame(this._surfaceElementUpdatedRafId);
+        this._surfaceElementUpdatedRafId = null;
+      }
       this._pendingHoveredElemArea = null;
+      this._lastAppliedHoveredElemArea = null;
     });
 
     disposables.add(
@@ -297,7 +363,7 @@ export class EdgelessWatcher {
             this.widget.hide();
           }
           if (payload.type === 'update') {
-            this._showDragHandle();
+            this._scheduleShowDragHandleFromSurfaceUpdate();
           }
         }
       })
@@ -308,7 +374,7 @@ export class EdgelessWatcher {
         surface.elementUpdated.subscribe(({ id }) => {
           if (this.widget.isGfxDragHandleVisible) {
             if (id !== this.widget.anchorBlockId.peek()) return;
-            this._showDragHandle();
+            this._scheduleShowDragHandleFromSurfaceUpdate();
           }
         })
       );

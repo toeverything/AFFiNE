@@ -153,6 +153,8 @@ export class PointerEventWatcher {
 
   private _lastShowedBlock: { id: string; el: BlockComponent } | null = null;
 
+  private _lastPointerHitBlockId: string | null = null;
+
   /**
    * When pointer move on block, should show drag handle
    * And update hover block id and path
@@ -169,6 +171,7 @@ export class PointerEventWatcher {
       point
     );
     if (!closestBlock) {
+      this._lastPointerHitBlockId = null;
       this.widget.anchorBlockId.value = null;
       return;
     }
@@ -237,28 +240,45 @@ export class PointerEventWatcher {
 
       const state = ctx.get('pointerState');
 
-      // When pointer is moving, should do nothing
-      if (state.delta.x !== 0 && state.delta.y !== 0) return;
-
       const { target } = state.raw;
       const element = captureEventTarget(target);
       // When pointer not on block or on dragging, should do nothing
-      if (!element) return;
+      if (!element) {
+        this._lastPointerHitBlockId = null;
+        return;
+      }
 
       // When pointer on drag handle, should do nothing
       if (element.closest('.affine-drag-handle-container')) return;
 
       if (!this.widget.rootComponent) return;
 
+      const hitBlock = element.closest(`[${BLOCK_ID_ATTR}]`);
+      const hitBlockId = hitBlock?.getAttribute(BLOCK_ID_ATTR) ?? null;
+
       // Skip expensive closest-note lookup when pointer keeps moving inside
       // the same anchored block.
       const anchoredBlockId = this.widget.anchorBlockId.peek();
-      if (anchoredBlockId && this.widget.isBlockDragHandleVisible) {
-        const hitBlock = element.closest(`[${BLOCK_ID_ATTR}]`);
-        if (hitBlock?.getAttribute(BLOCK_ID_ATTR) === anchoredBlockId) {
-          return;
-        }
+      if (
+        hitBlockId &&
+        anchoredBlockId &&
+        this.widget.isBlockDragHandleVisible &&
+        hitBlockId === anchoredBlockId
+      ) {
+        this._lastPointerHitBlockId = hitBlockId;
+        return;
       }
+
+      // Pointer move events are high-frequency. If hovered block identity is
+      // unchanged, skip closest-note lookup.
+      if (
+        hitBlockId &&
+        this.widget.isBlockDragHandleVisible &&
+        hitBlockId === this._lastPointerHitBlockId
+      ) {
+        return;
+      }
+      this._lastPointerHitBlockId = hitBlockId;
 
       // When pointer out of note block hover area or inside database, should hide drag handle
       const point = new Point(state.raw.x, state.raw.y);
@@ -364,6 +384,7 @@ export class PointerEventWatcher {
   reset() {
     this._lastHoveredBlockId = null;
     this._lastShowedBlock = null;
+    this._lastPointerHitBlockId = null;
   }
 
   watch() {

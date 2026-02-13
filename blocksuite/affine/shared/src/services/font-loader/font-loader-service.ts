@@ -22,9 +22,17 @@ export class FontLoaderService extends LifeCycleWatcher {
 
   private static readonly DEFERRED_LOAD_DELAY_MS = 5000;
 
+  private static readonly DEFERRED_LOAD_BATCH_SIZE = 4;
+
+  private static readonly DEFERRED_LOAD_BATCH_INTERVAL_MS = 1000;
+
   private _idleLoadTaskId: number | null = null;
 
   private _lazyLoadTimeoutId: number | null = null;
+
+  private _deferredFontsQueue: FontConfig[] = [];
+
+  private _deferredFontsCursor = 0;
 
   private readonly _loadedFontKeys = new Set<string>();
 
@@ -42,6 +50,8 @@ export class FontLoaderService extends LifeCycleWatcher {
     if (fonts.length === 0 || typeof window === 'undefined') {
       return;
     }
+    this._deferredFontsQueue = fonts;
+    this._deferredFontsCursor = 0;
 
     const win = window as Window & {
       requestIdleCallback?: (
@@ -51,20 +61,37 @@ export class FontLoaderService extends LifeCycleWatcher {
       cancelIdleCallback?: (handle: number) => void;
     };
 
-    this._lazyLoadTimeoutId = window.setTimeout(() => {
-      this._lazyLoadTimeoutId = null;
-      if (typeof win.requestIdleCallback === 'function') {
-        this._idleLoadTaskId = win.requestIdleCallback(
-          () => {
-            this._idleLoadTaskId = null;
-            this.load(fonts);
-          },
-          { timeout: 2000 }
-        );
-        return;
-      }
-      this.load(fonts);
-    }, FontLoaderService.DEFERRED_LOAD_DELAY_MS);
+    const scheduleBatch = (delayMs: number) => {
+      this._lazyLoadTimeoutId = window.setTimeout(() => {
+        this._lazyLoadTimeoutId = null;
+        const runBatch = () => {
+          this._idleLoadTaskId = null;
+
+          const start = this._deferredFontsCursor;
+          const end = Math.min(
+            start + FontLoaderService.DEFERRED_LOAD_BATCH_SIZE,
+            this._deferredFontsQueue.length
+          );
+          const batch = this._deferredFontsQueue.slice(start, end);
+          this._deferredFontsCursor = end;
+          this.load(batch);
+
+          if (this._deferredFontsCursor < this._deferredFontsQueue.length) {
+            scheduleBatch(FontLoaderService.DEFERRED_LOAD_BATCH_INTERVAL_MS);
+          }
+        };
+
+        if (typeof win.requestIdleCallback === 'function') {
+          this._idleLoadTaskId = win.requestIdleCallback(runBatch, {
+            timeout: 2000,
+          });
+          return;
+        }
+        runBatch();
+      }, delayMs);
+    };
+
+    scheduleBatch(FontLoaderService.DEFERRED_LOAD_DELAY_MS);
   };
 
   private readonly _cancelDeferredLoad = () => {
@@ -87,6 +114,8 @@ export class FontLoaderService extends LifeCycleWatcher {
       window.clearTimeout(this._lazyLoadTimeoutId);
       this._lazyLoadTimeoutId = null;
     }
+    this._deferredFontsQueue = [];
+    this._deferredFontsCursor = 0;
   };
 
   load(fonts: FontConfig[]) {
@@ -116,7 +145,9 @@ export class FontLoaderService extends LifeCycleWatcher {
 
   override unmounted() {
     this._cancelDeferredLoad();
-    this.fontFaces.forEach(fontFace => document.fonts.delete(fontFace));
+    for (const fontFace of this.fontFaces) {
+      document.fonts.delete(fontFace);
+    }
     this.fontFaces.splice(0, this.fontFaces.length);
     this._loadedFontKeys.clear();
   }

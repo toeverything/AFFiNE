@@ -55,6 +55,13 @@ const buildInlineRootTextCache = (
   cache.dirty = false;
 };
 
+export function invalidateInlineRootTextCache(rootElement: HTMLElement) {
+  const cache = inlineRootTextCaches.get(rootElement);
+  if (cache) {
+    cache.dirty = true;
+  }
+}
+
 export function getInlineRootTextCache(rootElement: HTMLElement) {
   let cache = inlineRootTextCaches.get(rootElement);
   if (!cache) {

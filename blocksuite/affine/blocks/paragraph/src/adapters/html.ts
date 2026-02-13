@@ -129,6 +129,34 @@ const openParagraphBlocks = (
   }
 };
 
+const MULTI_PARAGRAPH_EMITTED_NODES_CONTEXT_KEY =
+  'affine:paragraph:multi-emitted-nodes';
+
+const markMultiParagraphEmitted = (walkerContext: any, node: HtmlAST) => {
+  const emittedNodes =
+    (walkerContext.getGlobalContext(
+      MULTI_PARAGRAPH_EMITTED_NODES_CONTEXT_KEY
+    ) as WeakSet<object> | undefined) ?? new WeakSet<object>();
+  emittedNodes.add(node as object);
+  walkerContext.setGlobalContext(
+    MULTI_PARAGRAPH_EMITTED_NODES_CONTEXT_KEY,
+    emittedNodes
+  );
+};
+
+const consumeMultiParagraphEmittedMark = (
+  walkerContext: any,
+  node: HtmlAST
+) => {
+  const emittedNodes = walkerContext.getGlobalContext(
+    MULTI_PARAGRAPH_EMITTED_NODES_CONTEXT_KEY
+  ) as WeakSet<object> | undefined;
+  if (!emittedNodes) {
+    return false;
+  }
+  return emittedNodes.delete(node as object);
+};
+
 export const paragraphBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
   flavour: ParagraphBlockSchema.model.flavour,
   toMatch: o =>
@@ -196,6 +224,7 @@ export const paragraphBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
 
           if (deltas.length > 1) {
             openParagraphBlocks(deltas, type, walkerContext);
+            markMultiParagraphEmitted(walkerContext, o.node);
             walkerContext.skipAllChildren();
             break;
           }
@@ -279,6 +308,9 @@ export const paragraphBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
           break;
         }
         case 'p': {
+          if (consumeMultiParagraphEmittedMark(walkerContext, o.node)) {
+            break;
+          }
           if (
             o.next?.type === 'element' &&
             o.next.tagName === 'div' &&
