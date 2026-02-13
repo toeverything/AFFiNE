@@ -266,7 +266,8 @@ export class PointerEventWatcher {
         hitBlockId &&
         this.widget.isBlockDragHandleVisible &&
         hitBlockId === this._lastPointerHitBlockId &&
-        hitBlock === this._lastPointerHitBlockElement
+        hitBlock === this._lastPointerHitBlockElement &&
+        isBlockIdEqual(this.widget.anchorBlockId.peek(), hitBlockId)
       ) {
         return;
       }
