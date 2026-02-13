@@ -1,13 +1,28 @@
 import { getCurrentUserQuery } from '@affine/graphql';
 
+import { JobExecutor } from '../../../base/job/queue/executor';
 import { DatabaseDocReader, DocReader } from '../../../core/doc';
 import { createApp } from '../create-app';
 import { e2e } from '../test';
 
-e2e('should init doc service', async t => {
+type TestFlavor = 'doc' | 'graphql' | 'sync' | 'renderer' | 'front';
+
+const createFlavorApp = async (flavor: TestFlavor) => {
   // @ts-expect-error override
-  globalThis.env.FLAVOR = 'doc';
-  await using app = await createApp();
+  globalThis.env.FLAVOR = flavor;
+  return await createApp({
+    tapModule(module) {
+      module.overrideProvider(JobExecutor).useValue({
+        onConfigInit: async () => {},
+        onConfigChanged: async () => {},
+        onModuleDestroy: async () => {},
+      });
+    },
+  });
+};
+
+e2e('should init doc service', async t => {
+  await using app = await createFlavorApp('doc');
 
   const res = await app.GET('/info').expect(200);
   t.is(res.body.flavor, 'doc');
@@ -16,9 +31,7 @@ e2e('should init doc service', async t => {
 });
 
 e2e('should init graphql service', async t => {
-  // @ts-expect-error override
-  globalThis.env.FLAVOR = 'graphql';
-  await using app = await createApp();
+  await using app = await createFlavorApp('graphql');
 
   const res = await app.GET('/info').expect(200);
 
@@ -29,27 +42,21 @@ e2e('should init graphql service', async t => {
 });
 
 e2e('should init sync service', async t => {
-  // @ts-expect-error override
-  globalThis.env.FLAVOR = 'sync';
-  await using app = await createApp();
+  await using app = await createFlavorApp('sync');
 
   const res = await app.GET('/info').expect(200);
   t.is(res.body.flavor, 'sync');
 });
 
 e2e('should init renderer service', async t => {
-  // @ts-expect-error override
-  globalThis.env.FLAVOR = 'renderer';
-  await using app = await createApp();
+  await using app = await createFlavorApp('renderer');
 
   const res = await app.GET('/info').expect(200);
   t.is(res.body.flavor, 'renderer');
 });
 
 e2e('should init front service', async t => {
-  // @ts-expect-error override
-  globalThis.env.FLAVOR = 'front';
-  await using app = await createApp();
+  await using app = await createFlavorApp('front');
 
   const res = await app.GET('/info').expect(200);
   t.is(res.body.flavor, 'front');
