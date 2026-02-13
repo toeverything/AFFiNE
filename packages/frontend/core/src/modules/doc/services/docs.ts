@@ -18,6 +18,7 @@ import type { DocPropertiesStore } from '../stores/doc-properties';
 import type { DocsStore } from '../stores/docs';
 import type { DocCreateOptions } from '../types';
 import { DocService } from './doc';
+import { getDuplicatedDocTitle } from './duplicate-title';
 
 const logger = new DebugLogger('DocsService');
 
@@ -286,13 +287,7 @@ export class DocsService extends Service {
     });
 
     // duplicate doc title
-    const originalTitle = sourceDoc.title$.value;
-    const lastDigitRegex = /\((\d+)\)$/;
-    const match = originalTitle.match(lastDigitRegex);
-    const newNumber = match ? parseInt(match[1], 10) + 1 : 1;
-    const newPageTitle =
-      originalTitle.replace(lastDigitRegex, '') + `(${newNumber})`;
-    targetDoc.changeDocTitle(newPageTitle);
+    targetDoc.changeDocTitle(getDuplicatedDocTitle(sourceDoc.title$.value));
 
     // duplicate doc properties
     const properties = sourceDoc.getProperties();

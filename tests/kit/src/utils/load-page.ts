@@ -1,5 +1,4 @@
 import type { Page } from '@playwright/test';
-import { expect } from '@playwright/test';
 
 export let coreUrl = 'http://localhost:8080';
 
@@ -21,6 +20,7 @@ export async function confirmCreateJournal(page: Page) {
 }
 
 export async function openJournalsPage(page: Page) {
+  const { expect } = await import('@playwright/test');
   await page.getByTestId('slider-bar-journals-button').click();
   await confirmCreateJournal(page);
   await expect(
