@@ -250,6 +250,16 @@ export class PointerEventWatcher {
 
       if (!this.widget.rootComponent) return;
 
+      // Skip expensive closest-note lookup when pointer keeps moving inside
+      // the same anchored block.
+      const anchoredBlockId = this.widget.anchorBlockId.peek();
+      if (anchoredBlockId && this.widget.isBlockDragHandleVisible) {
+        const hitBlock = element.closest(`[${BLOCK_ID_ATTR}]`);
+        if (hitBlock?.getAttribute(BLOCK_ID_ATTR) === anchoredBlockId) {
+          return;
+        }
+      }
+
       // When pointer out of note block hover area or inside database, should hide drag handle
       const point = new Point(state.raw.x, state.raw.y);
 

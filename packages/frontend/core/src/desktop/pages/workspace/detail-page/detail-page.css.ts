@@ -1,6 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const mainContainer = style({
   containerType: 'inline-size',
@@ -45,6 +45,12 @@ export const affineDocViewport = style({
       backgroundColor: cssVarV2.layer.background.hoverOverlay,
     },
   },
+});
+
+export const pageModeViewportContentBox = style({});
+globalStyle(`${pageModeViewportContentBox} >:first-child`, {
+  display: 'table !important',
+  minWidth: '100%',
 });
 
 export const scrollbar = style({

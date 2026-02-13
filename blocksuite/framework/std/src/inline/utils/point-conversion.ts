@@ -9,7 +9,11 @@ import {
   isVElement,
   isVLine,
 } from './guard.js';
-import { calculateTextLength, getTextNodesFromElement } from './text.js';
+import {
+  calculateTextLength,
+  getInlineRootTextCache,
+  getTextNodesFromElement,
+} from './text.js';
 
 export function nativePointToTextPoint(
   node: unknown,
@@ -67,14 +71,14 @@ export function textPointToDomPoint(
 
   if (!rootElement.contains(text)) return null;
 
-  const texts = getTextNodesFromElement(rootElement);
+  const { textNodes, textNodeIndexMap, prefixLengths, lineIndexMap } =
+    getInlineRootTextCache(rootElement);
+  const texts = textNodes;
   if (texts.length === 0) return null;
 
-  const goalIndex = texts.indexOf(text);
-  let index = 0;
-  for (const text of texts.slice(0, goalIndex)) {
-    index += calculateTextLength(text);
-  }
+  const goalIndex = textNodeIndexMap.get(text);
+  if (goalIndex === undefined) return null;
+  let index = prefixLengths[goalIndex] ?? 0;
 
   if (text.wholeText !== ZERO_WIDTH_FOR_EMPTY_LINE) {
     index += offset;
@@ -97,9 +101,8 @@ export function textPointToDomPoint(
     );
   }
 
-  const lineIndex = Array.from(rootElement.querySelectorAll('v-line')).indexOf(
-    lineElement
-  );
+  const lineIndex = lineIndexMap.get(lineElement);
+  if (lineIndex === undefined) return null;
 
   return { text, index: index + lineIndex };
 }
