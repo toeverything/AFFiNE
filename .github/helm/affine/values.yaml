@@ -47,12 +47,6 @@ graphql:
     annotations:
       cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
 
-doc:
-  service:
-    type: ClusterIP
-    annotations:
-      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
-
 front:
   services:
     sync:
@@ -71,3 +65,7 @@ front:
       name: affine-web
       type: ClusterIP
       port: 8080
+    doc:
+      type: ClusterIP
+      annotations:
+        cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'

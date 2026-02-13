@@ -1,5 +1,6 @@
 import { getCurrentUserQuery } from '@affine/graphql';
 
+import { DatabaseDocReader, DocReader } from '../../../core/doc';
 import { createApp } from '../create-app';
 import { e2e } from '../test';
 
@@ -52,4 +53,7 @@ e2e('should init front service', async t => {
 
   const res = await app.GET('/info').expect(200);
   t.is(res.body.flavor, 'front');
+
+  const docReader = app.get(DocReader);
+  t.true(docReader instanceof DatabaseDocReader);
 });
