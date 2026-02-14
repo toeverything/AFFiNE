@@ -6,6 +6,7 @@ import { signal } from '@preact/signals-core';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
+import { measureOperation } from '../../perf.js';
 import {
   type GfxGroupCompatibleInterface,
   isGfxGroupCompatibleModel,
@@ -74,6 +75,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
 
   protected _groupLikeModels = new Map<string, GfxGroupModel>();
 
+  protected _parentGroupMap = new Map<string, string>();
+
+  protected _groupChildIdsMap = new Map<string, string[]>();
+
   protected _middlewares: SurfaceMiddleware[] = [];
 
   protected _surfaceBlockModel = true;
@@ -131,6 +136,44 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
       this._init();
       subscription.unsubscribe();
     });
+  }
+
+  private _collectElementsToDelete(
+    id: string,
+    deleteElementIds: Set<string>,
+    orderedDeleteIds: string[],
+    deleteBlockIds: Set<string>
+  ) {
+    if (deleteElementIds.has(id)) {
+      return;
+    }
+
+    const element = this.getElementById(id);
+    if (!element) {
+      return;
+    }
+
+    deleteElementIds.add(id);
+
+    if (element instanceof GfxGroupLikeElementModel) {
+      element.childIds.forEach(childId => {
+        if (this.hasElementById(childId)) {
+          this._collectElementsToDelete(
+            childId,
+            deleteElementIds,
+            orderedDeleteIds,
+            deleteBlockIds
+          );
+          return;
+        }
+
+        if (this.store.hasBlock(childId)) {
+          deleteBlockIds.add(childId);
+        }
+      });
+    }
+
+    orderedDeleteIds.push(id);
   }
 
   private _createElementFromProps(
@@ -247,6 +290,26 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     };
   }
 
+  private _emitElementUpdated(
+    model: GfxPrimitiveElementModel,
+    payload: ElementUpdatedData
+  ) {
+    if (
+      isGfxGroupCompatibleModel(model) &&
+      ('childIds' in payload.props || 'childIds' in payload.oldValues)
+    ) {
+      const oldChildIds = Array.isArray(payload.oldValues['childIds'])
+        ? (payload.oldValues['childIds'] as string[])
+        : undefined;
+      this._syncGroupChildrenIndex(model.id, model.childIds, oldChildIds);
+    }
+
+    this.elementUpdated.next(payload);
+    Object.keys(payload.props).forEach(key => {
+      model.propsUpdated.next({ key });
+    });
+  }
+
   private _initElementModels() {
     const elementsYMap = this.elements.getValue()!;
     const addToType = (type: string, model: GfxPrimitiveElementModel) => {
@@ -260,6 +323,7 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
 
       if (isGfxGroupCompatibleModel(model)) {
         this._groupLikeModels.set(model.id, model);
+        this._syncGroupChildrenIndex(model.id, model.childIds, []);
       }
     };
     const removeFromType = (type: string, model: GfxPrimitiveElementModel) => {
@@ -270,7 +334,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
         sameTypeElements.splice(index, 1);
       }
 
-      if (this._groupLikeModels.has(model.id)) {
+      this._parentGroupMap.delete(model.id);
+
+      if (isGfxGroupCompatibleModel(model)) {
+        this._removeGroupFromChildrenIndex(model.id);
         this._groupLikeModels.delete(model.id);
       }
     };
@@ -304,9 +371,9 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
                     element,
                     {
                       onChange: payload => {
-                        this.elementUpdated.next(payload);
-                        Object.keys(payload.props).forEach(key => {
-                          model.model.propsUpdated.next({ key });
+                        this._emitElementUpdated(model.model, {
+                          ...payload,
+                          id,
                         });
                       },
                       skipFieldInit: true,
@@ -351,10 +418,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
         val,
         {
           onChange: payload => {
-            (this.elementUpdated.next(payload),
-              Object.keys(payload.props).forEach(key => {
-                model.model.propsUpdated.next({ key });
-              }));
+            this._emitElementUpdated(model.model, {
+              ...payload,
+              id: key,
+            });
           },
           skipFieldInit: true,
         }
@@ -371,8 +438,11 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     Object.values(this.store.blocks.peek()).forEach(block => {
       if (isGfxGroupCompatibleModel(block.model)) {
         this._groupLikeModels.set(block.id, block.model);
+        this._syncGroupChildrenIndex(block.id, block.model.childIds, []);
       }
     });
+
+    this._rebuildGroupChildrenIndex();
 
     elementsYMap.observe(onElementsMapChange);
 
@@ -381,11 +451,17 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
         case 'add':
           if (isGfxGroupCompatibleModel(payload.model)) {
             this._groupLikeModels.set(payload.id, payload.model);
+            this._syncGroupChildrenIndex(
+              payload.id,
+              payload.model.childIds,
+              []
+            );
           }
 
           break;
         case 'delete':
           if (isGfxGroupCompatibleModel(payload.model)) {
+            this._removeGroupFromChildrenIndex(payload.id);
             this._groupLikeModels.delete(payload.id);
           }
           {
@@ -393,6 +469,16 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
             if (group) {
               // oxlint-disable-next-line unicorn/prefer-dom-node-remove
               group.removeChild(payload.model as GfxModel);
+            }
+          }
+          this._parentGroupMap.delete(payload.id);
+
+          break;
+        case 'update':
+          if (payload.props.key === 'childElementIds') {
+            const group = this.store.getBlock(payload.id)?.model;
+            if (group && isGfxGroupCompatibleModel(group)) {
+              this._syncGroupChildrenIndex(group.id, group.childIds);
             }
           }
 
@@ -403,6 +489,8 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     this.deleted.subscribe(() => {
       elementsYMap.unobserve(onElementsMapChange);
       subscription.unsubscribe();
+      this._groupChildIdsMap.clear();
+      this._parentGroupMap.clear();
     });
   }
 
@@ -500,6 +588,71 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     return this._elementCtorMap[type];
   }
 
+  private _rebuildGroupChildrenIndex() {
+    this._groupChildIdsMap.clear();
+    this._parentGroupMap.clear();
+
+    this._groupLikeModels.forEach(group => {
+      this._syncGroupChildrenIndex(group.id, group.childIds, []);
+    });
+  }
+
+  private _removeFromParentGroupIfNeeded(
+    element: GfxModel,
+    deleteElementIds: Set<string>
+  ) {
+    const parentGroupId = this._parentGroupMap.get(element.id);
+
+    if (parentGroupId && deleteElementIds.has(parentGroupId)) {
+      return;
+    }
+
+    let parentGroup: GfxGroupModel | null = null;
+
+    if (parentGroupId) {
+      parentGroup = this._groupLikeModels.get(parentGroupId) ?? null;
+    }
+
+    parentGroup = parentGroup ?? this.getGroup(element.id);
+
+    if (parentGroup && !deleteElementIds.has(parentGroup.id)) {
+      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
+      parentGroup.removeChild(element);
+    }
+  }
+
+  private _removeGroupFromChildrenIndex(groupId: string) {
+    const previousChildIds = this._groupChildIdsMap.get(groupId) ?? [];
+
+    previousChildIds.forEach(childId => {
+      if (this._parentGroupMap.get(childId) === groupId) {
+        this._parentGroupMap.delete(childId);
+      }
+    });
+
+    this._groupChildIdsMap.delete(groupId);
+  }
+
+  private _syncGroupChildrenIndex(
+    groupId: string,
+    nextChildIds: string[],
+    previousChildIds?: string[]
+  ) {
+    const prev = previousChildIds ?? this._groupChildIdsMap.get(groupId) ?? [];
+
+    prev.forEach(childId => {
+      if (this._parentGroupMap.get(childId) === groupId) {
+        this._parentGroupMap.delete(childId);
+      }
+    });
+
+    nextChildIds.forEach(childId => {
+      this._parentGroupMap.set(childId, groupId);
+    });
+
+    this._groupChildIdsMap.set(groupId, [...nextChildIds]);
+  }
+
   addElement<T extends object = Record<string, unknown>>(
     props: Partial<T> & { type: string }
   ) {
@@ -526,9 +679,9 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
 
     const elementModel = this._createElementFromProps(props, {
       onChange: payload => {
-        this.elementUpdated.next(payload);
-        Object.keys(payload.props).forEach(key => {
-          elementModel.model.propsUpdated.next({ key });
+        this._emitElementUpdated(elementModel.model, {
+          ...payload,
+          id,
         });
       },
     });
@@ -560,24 +713,48 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
       return;
     }
 
-    this.store.transact(() => {
-      const element = this.getElementById(id)!;
-      const group = this.getGroup(id);
+    measureOperation('edgeless:delete-element', () => {
+      const deleteElementIds = new Set<string>();
+      const orderedDeleteIds: string[] = [];
+      const deleteBlockIds = new Set<string>();
 
-      if (element instanceof GfxGroupLikeElementModel) {
-        element.childIds.forEach(childId => {
-          if (this.hasElementById(childId)) {
-            this.deleteElement(childId);
-          } else if (this.store.hasBlock(childId)) {
-            this.store.deleteBlock(this.store.getBlock(childId)!.model);
-          }
-        });
+      this._collectElementsToDelete(
+        id,
+        deleteElementIds,
+        orderedDeleteIds,
+        deleteBlockIds
+      );
+
+      if (orderedDeleteIds.length === 0) {
+        return;
       }
 
-      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-      group?.removeChild(element as GfxModel);
+      this.store.transact(() => {
+        orderedDeleteIds.forEach(elementId => {
+          const element = this.getElementById(elementId);
 
-      this.elements.getValue()!.delete(id);
+          if (!element) {
+            return;
+          }
+
+          this._removeFromParentGroupIfNeeded(element, deleteElementIds);
+          this.elements.getValue()!.delete(elementId);
+        });
+
+        deleteBlockIds.forEach(blockId => {
+          const block = this.store.getBlock(blockId)?.model;
+
+          if (!block) {
+            return;
+          }
+
+          this._removeFromParentGroupIfNeeded(
+            block as GfxModel,
+            deleteElementIds
+          );
+          this.store.deleteBlock(block);
+        });
+      });
     });
   }
 
@@ -607,18 +784,31 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
   }
 
   getGroup(elem: string | GfxModel): GfxGroupModel | null {
-    elem =
+    const id = typeof elem === 'string' ? elem : elem.id;
+    const parentGroupId = this._parentGroupMap.get(id);
+
+    if (parentGroupId) {
+      const group = this._groupLikeModels.get(parentGroupId);
+      if (group) {
+        return group;
+      }
+
+      this._parentGroupMap.delete(id);
+    }
+
+    const model =
       typeof elem === 'string'
         ? ((this.getElementById(elem) ??
             this.store.getBlock(elem)?.model) as GfxModel)
         : elem;
 
-    if (!elem) return null;
+    if (!model) return null;
 
-    assertType<GfxModel>(elem);
+    assertType<GfxModel>(model);
 
     for (const group of this._groupLikeModels.values()) {
-      if (group.hasChild(elem)) {
+      if (group.hasChild(model)) {
+        this._parentGroupMap.set(id, group.id);
         return group;
       }
     }

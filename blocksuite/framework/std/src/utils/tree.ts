@@ -7,6 +7,11 @@ import {
 } from '../gfx/model/base.js';
 import type { GfxGroupModel, GfxModel } from '../gfx/model/model.js';
 
+type BatchGroupContainer = GfxGroupCompatibleInterface & {
+  addChildren?: (elements: GfxModel[]) => void;
+  removeChildren?: (elements: GfxModel[]) => void;
+};
+
 /**
  * Get the top elements from the list of elements, which are in some tree structures.
  *
@@ -48,6 +53,42 @@ export function getTopElements(elements: GfxModel[]): GfxModel[] {
   }
 
   return topElements;
+}
+
+export function batchAddChildren(
+  container: GfxGroupCompatibleInterface,
+  elements: GfxModel[]
+) {
+  const uniqueElements = [...new Set(elements)];
+  if (uniqueElements.length === 0) return;
+
+  const batchContainer = container as BatchGroupContainer;
+  if (batchContainer.addChildren) {
+    batchContainer.addChildren(uniqueElements);
+    return;
+  }
+
+  uniqueElements.forEach(element => {
+    container.addChild(element);
+  });
+}
+
+export function batchRemoveChildren(
+  container: GfxGroupCompatibleInterface,
+  elements: GfxModel[]
+) {
+  const uniqueElements = [...new Set(elements)];
+  if (uniqueElements.length === 0) return;
+
+  const batchContainer = container as BatchGroupContainer;
+  if (batchContainer.removeChildren) {
+    batchContainer.removeChildren(uniqueElements);
+    return;
+  }
+
+  uniqueElements.forEach(element => {
+    container.removeChild(element);
+  });
 }
 
 function traverse(

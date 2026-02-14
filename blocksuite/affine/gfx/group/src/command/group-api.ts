@@ -5,44 +5,78 @@ import {
 } from '@blocksuite/affine-model';
 import type { Command } from '@blocksuite/std';
 import {
+  batchAddChildren,
+  batchRemoveChildren,
+  type GfxController,
   GfxControllerIdentifier,
-  type GfxGroupCompatibleInterface,
   type GfxModel,
+  measureOperation,
 } from '@blocksuite/std/gfx';
+import { generateKeyBetween, generateNKeysBetween } from 'fractional-indexing';
 
-type BatchContainer = GfxGroupCompatibleInterface & {
-  addChildren?: (elements: GfxModel[]) => void;
-  removeChildren?: (elements: GfxModel[]) => void;
+const getTopLevelOrderedElements = (gfx: GfxController) => {
+  const topLevelElements = gfx.layer.layers.reduce<GfxModel[]>(
+    (elements, layer) => {
+      layer.elements.forEach(element => {
+        if (element.group === null) {
+          elements.push(element as GfxModel);
+        }
+      });
+
+      return elements;
+    },
+    []
+  );
+
+  topLevelElements.sort((a, b) => gfx.layer.compare(a, b));
+  return topLevelElements;
 };
 
-const addChildren = (
-  container: GfxGroupCompatibleInterface,
-  elements: GfxModel[]
+const buildUngroupIndexes = (
+  orderedElements: GfxModel[],
+  afterIndex: string | null,
+  beforeIndex: string | null,
+  fallbackAnchorIndex: string
 ) => {
-  const batchContainer = container as BatchContainer;
-  if (batchContainer.addChildren) {
-    batchContainer.addChildren(elements);
-    return;
+  if (orderedElements.length === 0) {
+    return [];
   }
 
-  elements.forEach(element => {
-    container.addChild(element);
-  });
-};
+  const count = orderedElements.length;
+  const tryGenerateN = (left: string | null, right: string | null) => {
+    try {
+      const generated = generateNKeysBetween(left, right, count);
+      return generated.length === count ? generated : null;
+    } catch {
+      return null;
+    }
+  };
 
-const removeChildren = (
-  container: GfxGroupCompatibleInterface,
-  elements: GfxModel[]
-) => {
-  const batchContainer = container as BatchContainer;
-  if (batchContainer.removeChildren) {
-    batchContainer.removeChildren(elements);
-    return;
-  }
+  const tryGenerateOneByOne = (left: string | null, right: string | null) => {
+    try {
+      let cursor = left;
+      return orderedElements.map(() => {
+        cursor = generateKeyBetween(cursor, right);
+        return cursor;
+      });
+    } catch {
+      return null;
+    }
+  };
 
-  elements.forEach(element => {
-    container.removeChild(element);
-  });
+  // Preferred: keep ungrouped children in the original group slot.
+  return (
+    tryGenerateN(afterIndex, beforeIndex) ??
+    // Fallback: ignore the upper bound when legacy/broken data has reversed interval.
+    tryGenerateN(afterIndex, null) ??
+    // Fallback: use group index as anchor when sibling interval is unavailable.
+    tryGenerateN(fallbackAnchorIndex, null) ??
+    // Last resort: always valid.
+    tryGenerateN(null, null) ??
+    // Defensive fallback for unexpected library behavior.
+    tryGenerateOneByOne(null, null) ??
+    []
+  );
 };
 
 export const createGroupCommand: Command<
@@ -78,87 +112,112 @@ export const createGroupFromSelectedCommand: Command<
   {},
   { groupId: string }
 > = (ctx, next) => {
-  const { std } = ctx;
-  const gfx = std.get(GfxControllerIdentifier);
-  const { selection, surface } = gfx;
+  measureOperation('edgeless:create-group-from-selected', () => {
+    const { std } = ctx;
+    const gfx = std.get(GfxControllerIdentifier);
+    const { selection, surface } = gfx;
 
-  if (!surface) {
-    return;
-  }
+    if (!surface) {
+      return;
+    }
 
-  if (
-    selection.selectedElements.length === 0 ||
-    !selection.selectedElements.every(
-      element =>
-        element.group === selection.firstElement.group &&
-        !(element.group instanceof MindmapElementModel)
-    )
-  ) {
-    return;
-  }
+    if (
+      selection.selectedElements.length === 0 ||
+      !selection.selectedElements.every(
+        element =>
+          element.group === selection.firstElement.group &&
+          !(element.group instanceof MindmapElementModel)
+      )
+    ) {
+      return;
+    }
 
-  const parent = selection.firstElement.group;
+    const parent = selection.firstElement.group;
 
-  if (parent !== null) {
-    removeChildren(parent, selection.selectedElements);
-  }
+    if (parent !== null) {
+      batchRemoveChildren(parent, selection.selectedElements);
+    }
 
-  const [_, result] = std.command.exec(createGroupCommand, {
-    elements: selection.selectedElements,
+    const [_, result] = std.command.exec(createGroupCommand, {
+      elements: selection.selectedElements,
+    });
+    if (!result.groupId) {
+      return;
+    }
+    const group = surface.getElementById(result.groupId);
+
+    if (parent !== null && group) {
+      batchAddChildren(parent, [group]);
+    }
+
+    selection.set({
+      editing: false,
+      elements: [result.groupId],
+    });
+
+    next({ groupId: result.groupId });
   });
-  if (!result.groupId) {
-    return;
-  }
-  const group = surface.getElementById(result.groupId);
-
-  if (parent !== null && group) {
-    parent.addChild(group);
-  }
-
-  selection.set({
-    editing: false,
-    elements: [result.groupId],
-  });
-
-  next({ groupId: result.groupId });
 };
 
 export const ungroupCommand: Command<{ group: GroupElementModel }, {}> = (
   ctx,
   next
 ) => {
-  const { std, group } = ctx;
-  const gfx = std.get(GfxControllerIdentifier);
-  const { selection } = gfx;
-  const parent = group.group;
-  const elements = [...group.childElements];
+  measureOperation('edgeless:ungroup', () => {
+    const { std, group } = ctx;
+    const gfx = std.get(GfxControllerIdentifier);
+    const { selection } = gfx;
+    const parent = group.group;
+    const elements = [...group.childElements];
 
-  if (group instanceof MindmapElementModel) {
-    return;
-  }
-
-  const orderedElements = [...elements].sort((a, b) => gfx.layer.compare(a, b));
-
-  std.store.transact(() => {
-    if (parent !== null) {
-      removeChildren(parent, [group]);
+    if (group instanceof MindmapElementModel) {
+      return;
     }
 
-    removeChildren(group, elements);
+    const orderedElements = [...elements].sort((a, b) =>
+      gfx.layer.compare(a, b)
+    );
+    const siblings = parent
+      ? [...parent.childElements].sort((a, b) => gfx.layer.compare(a, b))
+      : getTopLevelOrderedElements(gfx);
+    const groupPosition = siblings.indexOf(group);
+    const beforeSiblingIndex =
+      groupPosition > 0 ? (siblings[groupPosition - 1]?.index ?? null) : null;
+    const afterSiblingIndex =
+      groupPosition === -1
+        ? null
+        : (siblings[groupPosition + 1]?.index ?? null);
+    const nextIndexes = buildUngroupIndexes(
+      orderedElements,
+      beforeSiblingIndex,
+      afterSiblingIndex,
+      group.index
+    );
 
-    // keep relative index order of group children after ungroup
-    orderedElements.forEach(element => {
-      element.index = gfx.layer.generateIndex();
+    std.store.transact(() => {
+      if (parent !== null) {
+        batchRemoveChildren(parent, [group]);
+      }
+
+      batchRemoveChildren(group, elements);
+
+      // keep relative index order of group children after ungroup
+      orderedElements.forEach((element, idx) => {
+        const index = nextIndexes[idx];
+        if (element.index !== index) {
+          element.index = index;
+        }
+      });
+
+      if (parent !== null) {
+        batchAddChildren(parent, orderedElements);
+      }
     });
 
-    if (parent !== null) {
-      addChildren(parent, orderedElements);
-    }
+    selection.set({
+      editing: false,
+      elements: orderedElements.map(ele => ele.id),
+    });
+    next();
   });
-
-  selection.set({
-    editing: false,
-    elements: orderedElements.map(ele => ele.id),
-  });
-  next();
 };
