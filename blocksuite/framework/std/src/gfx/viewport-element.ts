@@ -112,6 +112,10 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
   private _lastViewportRefreshTime = 0;
 
+  private _pendingViewportRefreshTimer: ReturnType<
+    typeof globalThis.setTimeout
+  > | null = null;
+
   private readonly _pendingChildrenUpdates: {
     id: string;
     resolve: () => void;
@@ -122,6 +126,22 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
   }, this);
 
   private _updatingChildrenFlag = false;
+
+  private _clearPendingViewportRefreshTimer() {
+    if (this._pendingViewportRefreshTimer !== null) {
+      clearTimeout(this._pendingViewportRefreshTimer);
+      this._pendingViewportRefreshTimer = null;
+    }
+  }
+
+  private _scheduleTrailingViewportRefresh() {
+    this._clearPendingViewportRefreshTimer();
+    this._pendingViewportRefreshTimer = globalThis.setTimeout(() => {
+      this._pendingViewportRefreshTimer = null;
+      this._lastViewportRefreshTime = performance.now();
+      this._refreshViewport();
+    }, GfxViewportElement.VIEWPORT_REFRESH_MAX_INTERVAL);
+  }
 
   private _refreshViewportByViewportUpdate(update: {
     zoom: number;
@@ -155,9 +175,13 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         GfxViewportElement.VIEWPORT_REFRESH_PIXEL_THRESHOLD ||
       timeoutReached
     ) {
+      this._clearPendingViewportRefreshTimer();
       this._lastViewportRefreshTime = now;
       this._refreshViewport();
+      return;
     }
+
+    this._scheduleTrailingViewportRefresh();
   }
 
   override connectedCallback(): void {
@@ -175,10 +199,16 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     );
     this.disposables.add(
       this.viewport.sizeUpdated.subscribe(() => {
+        this._clearPendingViewportRefreshTimer();
         this._lastViewportRefreshTime = performance.now();
         this._refreshViewport();
       })
     );
+  }
+
+  override disconnectedCallback(): void {
+    this._clearPendingViewportRefreshTimer();
+    super.disconnectedCallback();
   }
 
   override render() {

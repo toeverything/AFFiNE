@@ -789,6 +789,7 @@ export class LayerManager extends GfxExtension {
 
   override unmounted() {
     this.slots.layerUpdated.complete();
+    this._groupChildSnapshot.clear();
     this._disposable.dispose();
   }
 

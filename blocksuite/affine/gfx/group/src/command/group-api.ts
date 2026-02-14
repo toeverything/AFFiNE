@@ -133,29 +133,35 @@ export const createGroupFromSelectedCommand: Command<
     }
 
     const parent = selection.firstElement.group;
+    let groupId: string | undefined;
+    std.store.transact(() => {
+      const [_, result] = std.command.exec(createGroupCommand, {
+        elements: selection.selectedElements,
+      });
 
-    if (parent !== null) {
-      batchRemoveChildren(parent, selection.selectedElements);
-    }
+      if (!result.groupId) {
+        return;
+      }
 
-    const [_, result] = std.command.exec(createGroupCommand, {
-      elements: selection.selectedElements,
+      groupId = result.groupId;
+      const group = surface.getElementById(groupId);
+
+      if (parent !== null && group) {
+        batchRemoveChildren(parent, selection.selectedElements);
+        batchAddChildren(parent, [group]);
+      }
     });
-    if (!result.groupId) {
-      return;
-    }
-    const group = surface.getElementById(result.groupId);
 
-    if (parent !== null && group) {
-      batchAddChildren(parent, [group]);
+    if (!groupId) {
+      return;
     }
 
     selection.set({
       editing: false,
-      elements: [result.groupId],
+      elements: [groupId],
     });
 
-    next({ groupId: result.groupId });
+    next({ groupId });
   });
 };
 
