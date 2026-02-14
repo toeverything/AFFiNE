@@ -775,6 +775,205 @@ export const FlowchartPaperTapeIcon = html`<svg
   />
 </svg>`;
 
+export const FlowchartAnnotation1Icon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6 3H3V17H6"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartAnnotation2Icon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M17 3H10V17H17M3 10H10"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartCardIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6 3H17V17H3V7L6 3Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartCollateIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M2 4H18L10 10L18 16H2L10 10Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartDirectDataIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="4,4 16,4 18,10 16,16 4,16 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartDisplayIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 10A6 6 0 0 1 10 4H16A3 3 0 0 1 16 16H10A6 6 0 0 1 4 10Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartLoopLimitIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6 3H14L17 6V17H3V6L6 3Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartManualOperationIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="2,4 18,4 15,16 5,16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartMultiDocumentIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 4H14V8C12.5 7.5 10.5 8.5 9 8V4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M6 7H16V12C14.5 11.5 12.5 12.5 11 12V7Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartOffPageReferenceIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="4,3 16,3 16,10 10,17 4,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartOrIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5" />
+  <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const FlowchartSortIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,2 18,10 10,18 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const FlowchartSummingFunctionIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5" />
+  <path d="M10 6V14M6 10H14" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
 export const ArrowUpIcon = html`<svg
   width="20"
   height="20"

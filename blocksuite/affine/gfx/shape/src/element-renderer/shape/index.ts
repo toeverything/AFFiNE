@@ -87,6 +87,25 @@ const shapeRenderers: Record<
       flowchartPreparation: resolveStencil(ShapeType.FlowchartPreparation),
       flowchartMerge: resolveStencil(ShapeType.FlowchartMerge),
       flowchartPaperTape: resolveStencil(ShapeType.FlowchartPaperTape),
+      flowchartAnnotation1: resolveStencil(ShapeType.FlowchartAnnotation1),
+      flowchartAnnotation2: resolveStencil(ShapeType.FlowchartAnnotation2),
+      flowchartCard: resolveStencil(ShapeType.FlowchartCard),
+      flowchartCollate: resolveStencil(ShapeType.FlowchartCollate),
+      flowchartDirectData: resolveStencil(ShapeType.FlowchartDirectData),
+      flowchartDisplay: resolveStencil(ShapeType.FlowchartDisplay),
+      flowchartLoopLimit: resolveStencil(ShapeType.FlowchartLoopLimit),
+      flowchartManualOperation: resolveStencil(
+        ShapeType.FlowchartManualOperation
+      ),
+      flowchartMultiDocument: resolveStencil(ShapeType.FlowchartMultiDocument),
+      flowchartOffPageReference: resolveStencil(
+        ShapeType.FlowchartOffPageReference
+      ),
+      flowchartOr: resolveStencil(ShapeType.FlowchartOr),
+      flowchartSort: resolveStencil(ShapeType.FlowchartSort),
+      flowchartSummingFunction: resolveStencil(
+        ShapeType.FlowchartSummingFunction
+      ),
       arrowUp: resolveStencil(ShapeType.ArrowUp),
       arrowDown: resolveStencil(ShapeType.ArrowDown),
       arrowLeft: resolveStencil(ShapeType.ArrowLeft),
