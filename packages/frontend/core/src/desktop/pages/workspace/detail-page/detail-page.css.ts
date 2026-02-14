@@ -48,10 +48,14 @@ export const affineDocViewport = style({
 });
 
 export const pageModeViewportContentBox = style({});
-globalStyle(`${pageModeViewportContentBox} >:first-child`, {
-  display: 'table !important',
-  minWidth: '100%',
-});
+globalStyle(
+  `${pageModeViewportContentBox} >:first-child:has(>[data-affine-editor-container])`,
+  { display: 'table !important', minWidth: '100%' }
+);
+globalStyle(
+  `${pageModeViewportContentBox} >:first-child:has(>[data-editor-loading="true"]) > [data-editor-loading="true"]`,
+  { flex: 1, minHeight: '100%' }
+);
 
 export const scrollbar = style({
   marginRight: '4px',
