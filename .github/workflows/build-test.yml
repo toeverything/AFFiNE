@@ -264,7 +264,6 @@ jobs:
             "@affine/android"
             "@affine/admin"
             "@affine/electron-renderer"
-            "@affine/server"
           )
           summary="test-results-bundler-${AFFINE_BUNDLER}.txt"
           : > "$summary"
