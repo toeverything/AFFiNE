@@ -4,7 +4,46 @@ import {
   MindmapElementModel,
 } from '@blocksuite/affine-model';
 import type { Command } from '@blocksuite/std';
-import { GfxControllerIdentifier, type GfxModel } from '@blocksuite/std/gfx';
+import {
+  GfxControllerIdentifier,
+  type GfxGroupCompatibleInterface,
+  type GfxModel,
+} from '@blocksuite/std/gfx';
+
+type BatchContainer = GfxGroupCompatibleInterface & {
+  addChildren?: (elements: GfxModel[]) => void;
+  removeChildren?: (elements: GfxModel[]) => void;
+};
+
+const addChildren = (
+  container: GfxGroupCompatibleInterface,
+  elements: GfxModel[]
+) => {
+  const batchContainer = container as BatchContainer;
+  if (batchContainer.addChildren) {
+    batchContainer.addChildren(elements);
+    return;
+  }
+
+  elements.forEach(element => {
+    container.addChild(element);
+  });
+};
+
+const removeChildren = (
+  container: GfxGroupCompatibleInterface,
+  elements: GfxModel[]
+) => {
+  const batchContainer = container as BatchContainer;
+  if (batchContainer.removeChildren) {
+    batchContainer.removeChildren(elements);
+    return;
+  }
+
+  elements.forEach(element => {
+    container.removeChild(element);
+  });
+};
 
 export const createGroupCommand: Command<
   { elements: GfxModel[] | string[] },
@@ -58,13 +97,10 @@ export const createGroupFromSelectedCommand: Command<
     return;
   }
 
-  const parent = selection.firstElement.group as GroupElementModel;
+  const parent = selection.firstElement.group;
 
   if (parent !== null) {
-    selection.selectedElements.forEach(element => {
-      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-      parent.removeChild(element);
-    });
+    removeChildren(parent, selection.selectedElements);
   }
 
   const [_, result] = std.command.exec(createGroupCommand, {
@@ -94,41 +130,35 @@ export const ungroupCommand: Command<{ group: GroupElementModel }, {}> = (
   const { std, group } = ctx;
   const gfx = std.get(GfxControllerIdentifier);
   const { selection } = gfx;
-  const parent = group.group as GroupElementModel;
-  const elements = group.childElements;
+  const parent = group.group;
+  const elements = [...group.childElements];
 
   if (group instanceof MindmapElementModel) {
     return;
   }
 
-  if (parent !== null) {
-    // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-    parent.removeChild(group);
-  }
+  const orderedElements = [...elements].sort((a, b) => gfx.layer.compare(a, b));
 
-  elements.forEach(element => {
-    // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-    group.removeChild(element);
+  std.store.transact(() => {
+    if (parent !== null) {
+      removeChildren(parent, [group]);
+    }
+
+    removeChildren(group, elements);
+
+    // keep relative index order of group children after ungroup
+    orderedElements.forEach(element => {
+      element.index = gfx.layer.generateIndex();
+    });
+
+    if (parent !== null) {
+      addChildren(parent, orderedElements);
+    }
   });
-
-  // keep relative index order of group children after ungroup
-  elements
-    .sort((a, b) => gfx.layer.compare(a, b))
-    .forEach(element => {
-      std.store.transact(() => {
-        element.index = gfx.layer.generateIndex();
-      });
-    });
-
-  if (parent !== null) {
-    elements.forEach(element => {
-      parent.addChild(element);
-    });
-  }
 
   selection.set({
     editing: false,
-    elements: elements.map(ele => ele.id),
+    elements: orderedElements.map(ele => ele.id),
   });
   next();
 };

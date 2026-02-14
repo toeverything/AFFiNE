@@ -26,19 +26,28 @@ import type { GfxGroupModel, GfxModel } from '../gfx/model/model.js';
  * The result should be `[G1, G4, E6]`
  */
 export function getTopElements(elements: GfxModel[]): GfxModel[] {
-  const results = new Set(elements);
+  const uniqueElements = [...new Set(elements)];
+  const selected = new Set(uniqueElements);
+  const topElements: GfxModel[] = [];
 
-  elements = [...new Set(elements)];
+  for (const element of uniqueElements) {
+    let ancestor = element.group;
+    let hasSelectedAncestor = false;
 
-  elements.forEach(e1 => {
-    elements.forEach(e2 => {
-      if (isGfxGroupCompatibleModel(e1) && e1.hasDescendant(e2)) {
-        results.delete(e2);
+    while (ancestor) {
+      if (selected.has(ancestor as GfxModel)) {
+        hasSelectedAncestor = true;
+        break;
       }
-    });
-  });
+      ancestor = ancestor.group;
+    }
 
-  return [...results];
+    if (!hasSelectedAncestor) {
+      topElements.push(element);
+    }
+  }
+
+  return topElements;
 }
 
 function traverse(
