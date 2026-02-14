@@ -2689,6 +2689,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     minimatch: "npm:^10.1.1"
     rxjs: "npm:^7.8.2"
+    vitest: "npm:^3.2.4"
     yjs: "npm:^13.6.27"
     zod: "npm:^3.25.76"
   languageName: unknown
@@ -2815,6 +2816,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     minimatch: "npm:^10.1.1"
     rxjs: "npm:^7.8.2"
+    vitest: "npm:^3.2.4"
     yjs: "npm:^13.6.27"
     zod: "npm:^3.25.76"
   languageName: unknown
