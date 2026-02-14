@@ -64,4 +64,13 @@ export const shapeMethods: Record<ShapeType, typeof rect> = {
   arrowRight: rect,
   arrowTwoWayHorizontal: rect,
   arrowTwoWayVertical: rect,
+  arrowBentLeft: rect,
+  arrowBentRight: rect,
+  arrowBentUp: rect,
+  arrowNotchedSignalIn: rect,
+  arrowNotchedRight: rect,
+  arrowNotchedStylised: rect,
+  arrowCalloutUp: rect,
+  arrowCalloutDouble: rect,
+  arrowCalloutQuad: rect,
 };

@@ -73,6 +73,15 @@ const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
   arrowRight: 'arrows',
   arrowTwoWayHorizontal: 'arrows',
   arrowTwoWayVertical: 'arrows',
+  arrowBentLeft: 'arrows',
+  arrowBentRight: 'arrows',
+  arrowBentUp: 'arrows',
+  arrowNotchedSignalIn: 'arrows',
+  arrowNotchedRight: 'arrows',
+  arrowNotchedStylised: 'arrows',
+  arrowCalloutUp: 'arrows',
+  arrowCalloutDouble: 'arrows',
+  arrowCalloutQuad: 'arrows',
 };
 
 type ShapeBrowserItem = (typeof AllShapeConfig)[number] & {

@@ -53,6 +53,15 @@ export enum ShapeType {
   ArrowRight = 'arrowRight',
   ArrowTwoWayHorizontal = 'arrowTwoWayHorizontal',
   ArrowTwoWayVertical = 'arrowTwoWayVertical',
+  ArrowBentLeft = 'arrowBentLeft',
+  ArrowBentRight = 'arrowBentRight',
+  ArrowBentUp = 'arrowBentUp',
+  ArrowNotchedSignalIn = 'arrowNotchedSignalIn',
+  ArrowNotchedRight = 'arrowNotchedRight',
+  ArrowNotchedStylised = 'arrowNotchedStylised',
+  ArrowCalloutUp = 'arrowCalloutUp',
+  ArrowCalloutDouble = 'arrowCalloutDouble',
+  ArrowCalloutQuad = 'arrowCalloutQuad',
 }
 
 export type ShapeName = ShapeType | 'roundedRect';

@@ -31,4 +31,13 @@ export const DRAWIO_STENCIL_SHAPE_MAP: Partial<Record<ShapeType, string>> = {
   [ShapeType.ArrowRight]: 'Arrow Right',
   [ShapeType.ArrowTwoWayHorizontal]: 'Two Way Arrow Horizontal',
   [ShapeType.ArrowTwoWayVertical]: 'Two Way Arrow Vertical',
+  [ShapeType.ArrowBentLeft]: 'Bent Left Arrow',
+  [ShapeType.ArrowBentRight]: 'Bent Right Arrow',
+  [ShapeType.ArrowBentUp]: 'Bent Up Arrow',
+  [ShapeType.ArrowNotchedSignalIn]: 'Notched Signal-in Arrow',
+  [ShapeType.ArrowNotchedRight]: 'Right Notched Arrow',
+  [ShapeType.ArrowNotchedStylised]: 'Stylised Notched Arrow',
+  [ShapeType.ArrowCalloutUp]: 'Callout Up Arrow',
+  [ShapeType.ArrowCalloutDouble]: 'Callout Double Arrow',
+  [ShapeType.ArrowCalloutQuad]: 'Callout Quad Arrow',
 };

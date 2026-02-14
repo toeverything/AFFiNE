@@ -354,7 +354,11 @@ type ConnectionLocationResult = {
 const getStencilConstraintLocations = (
   shapeType: string
 ): ConnectionLocationResult | null => {
-  if (shapeType === ShapeType.DataStorage || shapeType === ShapeType.Tape) {
+  if (
+    shapeType === ShapeType.DataStorage ||
+    shapeType === ShapeType.Tape ||
+    shapeType === ShapeType.Document
+  ) {
     return null;
   }
   const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
@@ -407,7 +411,7 @@ const getCustomLocations = (
   const shapeType = (ele as any).shapeType as ShapeType;
   switch (shapeType) {
     case ShapeType.Cube:
-      return { locations: buildCubeLocations(bound), fromStencil: true };
+      return { locations: buildCubeLocations(bound), fromStencil: false };
     case ShapeType.DataStorage:
     case ShapeType.Tape:
     case ShapeType.Document:

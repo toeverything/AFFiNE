@@ -226,6 +226,15 @@ export const NodePropsSchema = z.object({
   'shape:arrowRight': ShapeSchema,
   'shape:arrowTwoWayHorizontal': ShapeSchema,
   'shape:arrowTwoWayVertical': ShapeSchema,
+  'shape:arrowBentLeft': ShapeSchema,
+  'shape:arrowBentRight': ShapeSchema,
+  'shape:arrowBentUp': ShapeSchema,
+  'shape:arrowNotchedSignalIn': ShapeSchema,
+  'shape:arrowNotchedRight': ShapeSchema,
+  'shape:arrowNotchedStylised': ShapeSchema,
+  'shape:arrowCalloutUp': ShapeSchema,
+  'shape:arrowCalloutDouble': ShapeSchema,
+  'shape:arrowCalloutQuad': ShapeSchema,
   'shape:roundedRect': RoundedShapeSchema,
 });
 
