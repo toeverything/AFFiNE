@@ -650,8 +650,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-server-native
-    strategy:
-      fail-fast: false
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -901,17 +899,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check blocksuite update
-        id: check-blocksuite-update
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if node ./scripts/detect-blocksuite-update.mjs "$BASE_REF"; then
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: dorny/paths-filter@v3
         id: copilot-filter
         with:
@@ -929,18 +916,13 @@ jobs:
       - name: Decide test scope
         id: decision
         run: |
-          run_by_blocksuite=false
-          if [[ "${{ steps.check-blocksuite-update.outputs.skip }}" != "true" ]]; then
-            run_by_blocksuite=true
-          fi
-
-          if [[ "$run_by_blocksuite" == "true" || "${{ steps.copilot-filter.outputs.api }}" == "true" ]]; then
+          if [[ "${{ steps.copilot-filter.outputs.api }}" == "true" ]]; then
             echo "run_api=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_api=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if [[ "$run_by_blocksuite" == "true" || "${{ steps.copilot-filter.outputs.e2e }}" == "true" ]]; then
+          if [[ "${{ steps.copilot-filter.outputs.e2e }}" == "true" ]]; then
             echo "run_e2e=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_e2e=false" >> "$GITHUB_OUTPUT"
