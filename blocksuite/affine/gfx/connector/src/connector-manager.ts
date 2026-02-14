@@ -149,14 +149,17 @@ export const ConnectorEndpointLocationsOnTriangleRight: IVec[] =
     [0, 1],
   ]);
 
-export const ConnectorEndpointLocationsOnHexagon: IVec[] = buildEdgeLocations([
-  [0.25, 0],
-  [0.75, 0],
-  [1, 0.5],
-  [0.75, 1],
-  [0.25, 1],
-  [0, 0.5],
-]);
+export const ConnectorEndpointLocationsOnHexagon: IVec[] = buildEdgeLocations(
+  [
+    [0.25, 0],
+    [0.75, 0],
+    [1, 0.5],
+    [0.75, 1],
+    [0.25, 1],
+    [0, 0.5],
+  ],
+  1
+);
 
 export const ConnectorEndpointLocationsOnParallelogram: IVec[] =
   buildEdgeLocations([
@@ -216,14 +219,17 @@ export const ConnectorEndpointLocationsOnNote: IVec[] = buildEdgeLocations([
   [0, 1],
 ]);
 
-export const ConnectorEndpointLocationsOnCube: IVec[] = buildEdgeLocations([
-  [0.2, 0],
-  [1, 0],
-  [1, 0.8],
-  [0.8, 1],
-  [0, 1],
-  [0, 0.2],
-]);
+export const ConnectorEndpointLocationsOnCube: IVec[] = buildEdgeLocations(
+  [
+    [0.2, 0],
+    [1, 0],
+    [1, 0.8],
+    [0.8, 1],
+    [0, 1],
+    [0, 0.2],
+  ],
+  1
+);
 
 export const ConnectorEndpointLocationsOnCallout: IVec[] = buildEdgeLocations([
   [0, 0],
@@ -243,14 +249,17 @@ export const ConnectorEndpointLocationsOnActor: IVec[] = buildEdgeLocations([
 ]);
 
 export const ConnectorEndpointLocationsOnDataStorage: IVec[] =
-  ConnectorEndpointLocationsOnCylinder;
+  ConnectorEndpointLocationsOnRectangle;
 
-export const ConnectorEndpointLocationsOnTape: IVec[] = buildEdgeLocations([
-  [0, 0],
-  [1, 0],
-  [1, 1],
-  [0, 1],
-]);
+export const ConnectorEndpointLocationsOnTape: IVec[] = buildEdgeLocations(
+  [
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+  ],
+  3
+);
 
 export const ConnectorEndpointLocationsOnInternalStorage: IVec[] =
   buildEdgeLocations([
@@ -345,6 +354,9 @@ type ConnectionLocationResult = {
 const getStencilConstraintLocations = (
   shapeType: string
 ): ConnectionLocationResult | null => {
+  if (shapeType === ShapeType.DataStorage || shapeType === ShapeType.Tape) {
+    return null;
+  }
   const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
   if (!name) return null;
   const stencil = getStencilShapeData(name);
@@ -357,6 +369,52 @@ const getStencilConstraintLocations = (
     locations: enhancedLocations,
     fromStencil: true,
   };
+};
+
+const buildCubeLocations = (bound: Bound): IVec[] => {
+  const { w, h } = bound;
+  const isoAngle = (15 * Math.PI) / 200;
+  const isoH = Math.min(w * Math.tan(isoAngle), h * 0.5);
+  const t = isoH / h;
+
+  const corners: IVec[] = [
+    [0.5, 0],
+    [1, t],
+    [1, 1 - t],
+    [0.5, 1],
+    [0, 1 - t],
+    [0, t],
+  ];
+
+  const locations: IVec[] = [];
+  for (let i = 0; i < corners.length; i += 1) {
+    const start = corners[i];
+    const end = corners[(i + 1) % corners.length];
+    locations.push(start);
+    locations.push([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2]);
+  }
+  return locations;
+};
+
+const buildRectangularLocations = (): IVec[] =>
+  ConnectorEndpointLocationsOnRectangle;
+
+const getCustomLocations = (
+  ele: GfxModel,
+  bound: Bound
+): ConnectionLocationResult | null => {
+  if (!('shapeType' in ele)) return null;
+  const shapeType = (ele as any).shapeType as ShapeType;
+  switch (shapeType) {
+    case ShapeType.Cube:
+      return { locations: buildCubeLocations(bound), fromStencil: true };
+    case ShapeType.DataStorage:
+    case ShapeType.Tape:
+    case ShapeType.Document:
+      return { locations: buildRectangularLocations(), fromStencil: true };
+    default:
+      return null;
+  }
 };
 
 const addStencilExtras = (shapeType: ShapeType, locations: IVec[]): IVec[] => {
@@ -550,7 +608,9 @@ export function getAnchors(ele: GfxModel) {
   const bound = Bound.deserialize(ele.xywh);
   const anchors: { point: PointLocation; coord: IVec }[] = [];
   const rotate = ele.rotate;
-  const { locations, fromStencil } = getConnectionLocationsForElement(ele);
+  const custom = getCustomLocations(ele, bound);
+  const { locations, fromStencil } =
+    custom ?? getConnectionLocationsForElement(ele);
 
   // For each connection location (relative coordinates), calculate the actual point
   locations.forEach(location => {
