@@ -21,11 +21,18 @@ export const productionCacheGroups = {
   asyncVendor: {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {
+      const modulePath =
+        module?.nameForCondition?.() || module?.context || module?.resource;
+
+      if (!modulePath || typeof modulePath !== 'string') {
+        return 'app-async';
+      }
+
       // monorepo linked in node_modules, so it's not a npm package
-      if (!module.context.includes('node_modules')) {
+      if (!modulePath.includes('node_modules')) {
         return `app-async`;
       }
-      const name = module.context.match(
+      const name = modulePath.match(
         /[\\/]node_modules[\\/](.*?)([\\/]|$)/
       )?.[1];
       return `npm-async-${name}`;

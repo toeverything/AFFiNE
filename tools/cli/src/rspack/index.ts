@@ -332,7 +332,15 @@ export function createHTMLTargetConfig(
         minChunks: 1,
         maxInitialRequests: Number.MAX_SAFE_INTEGER,
         maxAsyncRequests: Number.MAX_SAFE_INTEGER,
-        cacheGroups: productionCacheGroups,
+        cacheGroups: {
+          ...productionCacheGroups,
+          // Rspack tends to pull async node_modules into the initial vendor chunk
+          // when `vendor` is configured as `chunks: 'all'`.
+          vendor: {
+            ...productionCacheGroups.vendor,
+            chunks: 'initial',
+          },
+        },
       },
     },
     //#endregion
