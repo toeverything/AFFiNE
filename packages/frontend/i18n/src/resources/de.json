@@ -1683,7 +1683,7 @@
   "com.affine.share-menu.option.link.no-access.description": "Nur Workspace-Mitglieder können auf diesen Link zugreifen",
   "com.affine.share-menu.option.link.readonly": "Nur Lesen",
   "com.affine.share-menu.option.link.readonly.description": "Jeder kann auf diesen Link zugreifen",
-  "com.affine.share-menu.workspace-sharing.disabled.tooltip": "Das Teilen für diesen Arbeitsbereich ist deaktiviert. Bitte kontaktiere einen Administrator, um es zu aktivieren.",
+  "com.affine.share-menu.workspace-sharing.disabled.tooltip": "Das Teilen für diesen Workspace ist deaktiviert. Bitte kontaktiere einen Administrator, um es zu aktivieren.",
   "com.affine.share-menu.option.permission.can-manage": "Kann verwalten",
   "com.affine.share-menu.option.permission.can-edit": "Kann bearbeiten",
   "com.affine.share-menu.option.permission.can-read": "Kann lesen",
