@@ -78,18 +78,20 @@ export const TopTip = ({
     showLocalDemoTips &&
     workspace.flavour === 'local'
   ) {
-    return (
-      <LocalDemoTips
-        isLoggedIn={isLoggedIn}
-        onLogin={onLogin}
-        onEnableCloud={() =>
-          confirmEnableCloud(workspace, { openPageId: pageId })
-        }
-        onClose={() => {
-          setShowLocalDemoTips(false);
-        }}
-      />
-    );
+    // Temporarily disabled local demo tips
+    return null;
+    // return (
+    //   <LocalDemoTips
+    //     isLoggedIn={isLoggedIn}
+    //     onLogin={onLogin}
+    //     onEnableCloud={() =>
+    //       confirmEnableCloud(workspace, { openPageId: pageId })
+    //     }
+    //     onClose={() => {
+    //       setShowLocalDemoTips(false);
+    //     }}
+    //   />
+    // );
   }
 
   return (

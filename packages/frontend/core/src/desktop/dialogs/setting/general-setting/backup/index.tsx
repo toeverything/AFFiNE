@@ -14,13 +14,20 @@ import {
 import { Avatar } from '@affine/component/ui/avatar';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import { BackupService } from '@affine/core/modules/backup/services';
+import { BackupService } from '@affine/core/modules/backup';
+import {
+  type WorkspaceMetadata,
+  WorkspaceProfileService,
+  WorkspacesService,
+} from '@affine/core/modules/workspace';
 import { i18nTime, useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import {
   DeleteIcon,
+  DownloadIcon,
   LocalWorkspaceIcon,
   MoreVerticalIcon,
+  UploadIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import bytes from 'bytes';
@@ -47,7 +54,7 @@ const BlobAvatar = ({
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!blob) return;
-    const url = URL.createObjectURL(new Blob([blob]));
+    const url = URL.createObjectURL(new Blob([blob as any]));
     setUrl(url);
     return () => {
       URL.revokeObjectURL(url);
@@ -190,9 +197,38 @@ const BackupWorkspaceItem = ({ item }: { item: BackupWorkspaceItem }) => {
 
 const PAGE_SIZE = 6;
 
+const WebBackupWorkspaceItem = ({ meta }: { meta: WorkspaceMetadata }) => {
+  const backupService = useService(BackupService);
+  const profileService = useService(WorkspaceProfileService);
+  const profile = useLiveData(profileService.getProfile(meta).profile$);
+
+  if (!profile) return null;
+
+  return (
+    <div data-testid="backup-workspace-item" className={styles.listItem}>
+      <Avatar colorfulFallback name={profile.name} rounded={4} size={32} />
+      <div className={styles.listItemLeftLabel}>
+        <div className={styles.listItemLeftLabelTitle}>{profile.name}</div>
+        <div className={styles.listItemLeftLabelDesc}>{'Local Workspace'}</div>
+      </div>
+      <div className={styles.listItemRightLabel}>
+        <IconButton
+          onClick={() => void backupService.downloadBackup(meta.id)}
+          tooltip="Export to ZIP"
+        >
+          <DownloadIcon />
+        </IconButton>
+      </div>
+    </div>
+  );
+};
+
 export const BackupSettingPanel = () => {
   const t = useI18n();
   const backupService = useService(BackupService);
+  const workspacesService = useService(WorkspacesService);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const { jumpToPage } = useNavigateHelper();
 
   useEffect(() => {
     backupService.revalidate();
@@ -213,9 +249,31 @@ export const BackupSettingPanel = () => {
         />
       );
     }
+
+    if (!BUILD_CONFIG.isElectron) {
+      // Web UI: List local workspaces for export
+      const localWorkspaces = workspaces.filter(w => w.flavour === 'local');
+
+      if (localWorkspaces.length === 0) {
+        return <Empty />;
+      }
+
+      return (
+        <div className={styles.list}>
+          {localWorkspaces.map(workspace => (
+            <WebBackupWorkspaceItem key={workspace.id} meta={workspace} />
+          ))}
+        </div>
+      );
+    }
+
     if (!backupWorkspaces) {
       return null;
     }
+    if (backupWorkspaces.items.length === 0) {
+      return <Empty />;
+    }
+
     return (
       <>
         <div className={styles.list}>
@@ -239,23 +297,69 @@ export const BackupSettingPanel = () => {
         )}
       </>
     );
-  }, [isLoading, backupWorkspaces, pageNum]);
+  }, [isLoading, backupWorkspaces, pageNum, workspaces]);
 
-  const isEmpty =
-    (backupWorkspaces?.items.length === 0 || !backupWorkspaces) && !isLoading;
+  const handleImportBackup = useCallback(async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+    input.onchange = async () => {
+      if (input.files && input.files.length > 0) {
+        const file = input.files[0];
+        try {
+          const newWorkspaceId = await backupService.importBackup(file);
+          workspacesService.list.revalidate();
+          notify.success({
+            title: t['com.affine.settings.workspace.backup.import.success'](),
+            actions: [
+              {
+                key: 'open',
+                label:
+                  t[
+                    'com.affine.settings.workspace.backup.import.success.action'
+                  ](),
+                onClick: () => {
+                  jumpToPage(newWorkspaceId, 'all');
+                },
+                autoClose: false,
+              },
+            ],
+          });
+        } catch (error) {
+          notify.error({ title: 'Import failed' });
+          console.error(error);
+        }
+      }
+    };
+    input.click();
+  }, [backupService, workspacesService, jumpToPage, t]);
 
   return (
     <>
-      <SettingHeader
-        title={t['com.affine.settings.workspace.backup']()}
-        subtitle={t['com.affine.settings.workspace.backup.subtitle']()}
-        data-testid="backup-title"
-      />
-      {isEmpty ? (
-        <Empty />
-      ) : (
-        <div className={styles.listContainer}>{innerElement}</div>
-      )}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        }}
+      >
+        <SettingHeader
+          title={t['com.affine.settings.workspace.backup']()}
+          subtitle={t['com.affine.settings.workspace.backup.subtitle']()}
+          data-testid="backup-title"
+        />
+        {!BUILD_CONFIG.isElectron && (
+          <IconButton
+            onClick={() => void handleImportBackup()}
+            tooltip="Import Backup"
+            style={{ marginTop: 4 }}
+          >
+            <UploadIcon />
+          </IconButton>
+        )}
+      </div>
+
+      <div className={styles.listContainer}>{innerElement}</div>
     </>
   );
 };

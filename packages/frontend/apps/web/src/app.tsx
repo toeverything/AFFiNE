@@ -2,6 +2,7 @@ import { AffineContext } from '@affine/core/components/context';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
+import { configureBackupModule } from '@affine/core/modules/backup';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
 import {
@@ -62,6 +63,7 @@ configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
+configureBackupModule(framework);
 framework.impl(NbstoreProvider, {
   openStore(key, options) {
     return storeManagerClient.open(key, options);

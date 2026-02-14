@@ -1,7 +1,7 @@
 import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
-import { configureDesktopBackupModule } from '@affine/core/modules/backup';
+import { configureBackupModule } from '@affine/core/modules/backup';
 import { ValidatorProvider } from '@affine/core/modules/cloud';
 import {
   configureDesktopApiModule,
@@ -31,7 +31,7 @@ export function setupModules() {
   configureDesktopApiModule(framework);
   configureSpellCheckSettingModule(framework);
   configureTraySettingModule(framework);
-  configureDesktopBackupModule(framework);
+  configureBackupModule(framework);
 
   framework.impl(PopupWindowProvider, p => {
     const apis = p.get(DesktopApiService).api;

@@ -125,14 +125,12 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       }
     }
 
-    if (BUILD_CONFIG.isElectron) {
-      settings.push({
-        key: 'backup',
-        title: t['com.affine.settings.workspace.backup'](),
-        icon: <FolderIcon />,
-        testId: 'backup-panel-trigger',
-      });
-    }
+    settings.push({
+      key: 'backup',
+      title: t['com.affine.settings.workspace.backup'](),
+      icon: <FolderIcon />,
+      testId: 'backup-panel-trigger',
+    });
 
     settings.push(
       {
