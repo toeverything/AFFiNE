@@ -8,7 +8,12 @@ import {
   mountShapeTextEditor,
 } from '@blocksuite/affine-gfx-shape';
 import type { ShapeName } from '@blocksuite/affine-model';
-import { ConnectorMode, ShapeElementModel } from '@blocksuite/affine-model';
+import {
+  ConnectorMode,
+  getShapeRadius,
+  getShapeType,
+  ShapeElementModel,
+} from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { clamp } from '@blocksuite/global/gfx';
@@ -21,7 +26,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import {
-  createShapeElement,
+  createEdgelessElement,
   Direction,
   getPosition,
   nextBound,
@@ -151,10 +156,14 @@ export class EdgelessFlowchartShapePanel extends WithDisposable(LitElement) {
 
   private _addShape(targetType: ShapeName) {
     const bound = this._computeNextBound();
-    const id = createShapeElement(this.edgeless, this.current, targetType);
+    const id = createEdgelessElement(this.edgeless, this.current, bound);
     if (!id) return;
 
-    this.crud.updateElement(id, { xywh: bound.serialize() });
+    this.crud.updateElement(id, {
+      xywh: bound.serialize(),
+      shapeType: getShapeType(targetType),
+      radius: getShapeRadius(targetType),
+    });
     this._addConnector(this.current.id, id);
 
     mountShapeTextEditor(
