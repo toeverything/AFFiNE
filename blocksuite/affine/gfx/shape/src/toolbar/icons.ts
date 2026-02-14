@@ -1,5 +1,7 @@
 import { html } from 'lit';
 
+import { buildDocumentPath } from '../element-renderer/shape/paths.js';
+
 export const SquareIcon = () =>
   html`<svg
     width="20"
@@ -437,10 +439,12 @@ export const DocumentIcon = html`<svg
   xmlns="http://www.w3.org/2000/svg"
 >
   <path
-    d="M3 3H17V13.5C15.7 12.5 14 14.5 12.5 13.5C11 12.5 9 14.5 7.5 13.5C6 12.5 4.3 14.5 3 13.5V3Z"
+    d="${buildDocumentPath(16, 14)}"
+    transform="translate(2 3)"
     stroke="currentColor"
     stroke-width="1.5"
     stroke-linejoin="round"
+    stroke-linecap="round"
   />
 </svg>`;
 
@@ -527,15 +531,10 @@ export const DataStorageIcon = html`<svg
   xmlns="http://www.w3.org/2000/svg"
 >
   <path
-    d="M3 6.8C3 6 6.134 5.4 10 5.4C13.866 5.4 17 6 17 6.8V13.2C17 14 13.866 14.6 10 14.6C6.134 14.6 3 14 3 13.2V6.8Z"
+    d="M5 4C3 10 3 10 5 16H15C13 10 13 10 15 4Z"
     stroke="currentColor"
     stroke-width="1.5"
     stroke-linejoin="round"
-  />
-  <path
-    d="M3 6.8C3 7.6 6.134 8.2 10 8.2C13.866 8.2 17 7.6 17 6.8"
-    stroke="currentColor"
-    stroke-width="1.5"
     stroke-linecap="round"
   />
 </svg>`;

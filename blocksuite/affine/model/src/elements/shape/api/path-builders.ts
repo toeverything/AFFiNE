@@ -29,10 +29,13 @@ export const buildCubePath = (width: number, height: number) => {
 export const buildCubeInnerPaths = (width: number, height: number) => {
   const isoAngle = (15 * Math.PI) / 200;
   const isoH = Math.min(width * Math.tan(isoAngle), height * 0.5);
+  const topLeft: [number, number] = [0, isoH];
+  const topRight: [number, number] = [width, isoH];
+  const mid: [number, number] = [width * 0.5, isoH * 2];
+  const bottom: [number, number] = [width * 0.5, height];
   return [
-    [`M 0 ${isoH}`, `L ${width * 0.5} ${isoH * 2}`, `L ${width} ${isoH}`].join(
-      ' '
-    ),
-    [`M ${width * 0.5} ${isoH * 2}`, `L ${width * 0.5} ${height}`].join(' '),
+    [`M ${topLeft[0]} ${topLeft[1]}`, `L ${mid[0]} ${mid[1]}`].join(' '),
+    [`M ${topRight[0]} ${topRight[1]}`, `L ${mid[0]} ${mid[1]}`].join(' '),
+    [`M ${mid[0]} ${mid[1]}`, `L ${bottom[0]} ${bottom[1]}`].join(' '),
   ];
 };
