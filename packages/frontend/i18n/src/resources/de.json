@@ -2251,7 +2251,7 @@
   "error.WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION": "Ein Workspace ist erforderlich, um für Team-Abonnement auszuchecken.",
   "error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION": "Workspace-ID ist erforderlich, um Teamabonnement zu aktualisieren.",
   "error.MANAGED_BY_APP_STORE_OR_PLAY": "Dieses Abonnement wird über den App Store oder Google Play verwaltet. Bitte verwalte es im entsprechenden Store.",
-  "error.CALENDAR_PROVIDER_REQUEST_ERROR": "Fehler bei der Anfrage des Kalenderanbieters, Status: {{status}}, Meldung: {{message}}",
+  "error.CALENDAR_PROVIDER_REQUEST_ERROR": "Fehler bei der Kalenderanbieter-Anfrage, Status: {{status}}, Meldung: {{message}}",
   "error.COPILOT_SESSION_NOT_FOUND": "Copilot-Sitzung nicht gefunden.",
   "error.COPILOT_SESSION_INVALID_INPUT": "Die Eingabe für die Copilot-Sitzung ist ungültig.",
   "error.COPILOT_SESSION_DELETED": "Copilot-Sitzung wurde gelöscht.",
