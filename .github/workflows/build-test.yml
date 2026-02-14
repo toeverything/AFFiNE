@@ -363,6 +363,7 @@ jobs:
         with:
           electron-install: true
           playwright-install: true
+          playwright-platform: 'chromium,firefox,webkit'
           full-cache: true
 
       - name: Download affine.linux-x64-gnu.node
