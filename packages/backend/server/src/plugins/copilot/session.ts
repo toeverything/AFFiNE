@@ -322,7 +322,7 @@ export class ChatSessionService {
 
   private stripNullBytes(value?: string | null): string {
     if (!value) return '';
-    return value.replace(/\u0000/g, '');
+    return value.replaceAll('\0', '');
   }
 
   private isNullByteError(error: unknown): boolean {

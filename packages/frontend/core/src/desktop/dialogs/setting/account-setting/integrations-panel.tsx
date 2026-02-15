@@ -157,14 +157,13 @@ const CalDAVLinkDialog = ({
       setErrors(nextErrors);
       return;
     }
-
     setSubmitting(true);
     try {
       await gqlService.gql({
         query: linkCalDavAccountMutation,
         variables: {
           input: {
-            providerPresetId: selectedProvider!.id,
+            providerPresetId: selectedProvider.id,
             username: username.trim(),
             password,
             displayName: displayName.trim() || null,
@@ -416,6 +415,7 @@ export const IntegrationsPanel = () => {
         urlService.openExternal(data.linkCalendarAccount);
         setOpenedExternalWindow(true);
       } catch (error) {
+        console.error('Failed to link calendar account', error);
         notify.error({
           title: t['com.affine.integration.calendar.auth.start-error'](),
         });
@@ -456,6 +456,7 @@ export const IntegrationsPanel = () => {
           }
         );
       } catch (error) {
+        console.error('Failed to unlink calendar account', error);
         notify.error({
           title: t['com.affine.integration.calendar.account.unlink-error'](),
         });

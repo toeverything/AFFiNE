@@ -66,6 +66,7 @@ export function SharedDataTable<TData extends { id: string }, TValue>({
     setColumnFilters([]);
   }, [resetFiltersDeps]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

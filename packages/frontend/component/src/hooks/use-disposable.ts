@@ -54,7 +54,7 @@ export function useDisposable<T extends Disposable | AsyncDisposable>(
         }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, deps || []);
 
   return state;

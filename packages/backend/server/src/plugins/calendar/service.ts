@@ -18,10 +18,10 @@ import {
   CalendarProvider,
   CalendarProviderEvent,
   CalendarProviderEventTime,
+  CalendarProviderFactory,
   CalendarProviderName,
   CalendarSyncTokenInvalid,
 } from './providers';
-import { CalendarProviderFactory } from './providers';
 import type { LinkCalDAVAccountInput } from './types';
 
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
@@ -654,8 +654,11 @@ export class CalendarService {
     }
 
     const zone = time.timeZone ?? fallbackTimezone ?? 'UTC';
+    if (!time.date) {
+      throw new Error('Calendar provider returned all-day event without date');
+    }
     return {
-      date: this.convertDateToUtc(time.date!, zone),
+      date: this.convertDateToUtc(time.date, zone),
       allDay: true,
     };
   }

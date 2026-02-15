@@ -9,7 +9,7 @@ import rehypeParse from 'rehype-parse';
 import { unified } from 'unified';
 
 import type { AffineTextAttributes } from '../../types/index.js';
-import { HtmlDeltaConverter } from '../html/delta-converter.js';
+import type { HtmlDeltaConverter } from '../html/delta-converter.js';
 import {
   rehypeInlineToBlock,
   rehypeWrapInlineElements,

@@ -69,7 +69,9 @@ const DesktopTagEditMenu = ({
             prefixIcon={<DeleteIcon />}
             type="danger"
             onClick={() => {
-              tag?.id ? onTagDelete(tag.id) : null;
+              if (tag?.id) {
+                onTagDelete(tag.id);
+              }
             }}
           >
             {t['Delete']()}

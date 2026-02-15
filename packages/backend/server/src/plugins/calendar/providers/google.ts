@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { CalendarProviderRequestError } from '../../../base';
-import { CalendarProvider } from './def';
 import {
+  CalendarProvider,
   CalendarProviderEvent,
   CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,

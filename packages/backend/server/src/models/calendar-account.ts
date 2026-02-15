@@ -110,10 +110,10 @@ export class CalendarAccountModel extends BaseModel {
       refreshIntervalMinutes: data.refreshIntervalMinutes,
     };
 
-    if (!!accessToken) {
+    if (accessToken) {
       updateData.accessToken = accessToken;
     }
-    if (!!refreshToken) {
+    if (refreshToken) {
       updateData.refreshToken = refreshToken;
     }
 

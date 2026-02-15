@@ -171,7 +171,7 @@ export class CopilotTranscriptionService {
     if (payload.success) {
       let { url, mimeType, infos } = payload.data;
       infos = infos || [];
-      if (url && mimeType && !infos.find(i => i.url === url)) {
+      if (url && mimeType && !infos.some(i => i.url === url)) {
         infos.push({ url, mimeType });
       }
 

@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { CalendarAccount } from '@prisma/client';
 
 import { CalendarProviderRequestError, Config, OnEvent } from '../../../base';
-import { CalendarProviderFactory } from './factory';
+import type { CalendarProviderFactory } from './factory';
 
 export enum CalendarProviderName {
   Google = 'google',

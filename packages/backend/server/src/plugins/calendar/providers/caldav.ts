@@ -113,7 +113,7 @@ const isRedirectStatus = (status: number) =>
 
 const splitHeaderTokens = (value: string) =>
   value
-    .split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/)
+    .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
     .map(token => token.trim())
     .filter(Boolean);
 

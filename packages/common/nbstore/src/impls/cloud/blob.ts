@@ -127,8 +127,11 @@ export class CloudBlobStorage extends BlobStorageBase {
 
       if (upload.method === BlobUploadMethod.PRESIGNED) {
         try {
+          if (!upload.uploadUrl) {
+            throw new Error('Missing upload URL for presigned upload.');
+          }
           await this.uploadViaPresigned(
-            upload.uploadUrl!,
+            upload.uploadUrl,
             upload.headers,
             blob.data,
             signal
@@ -143,15 +146,20 @@ export class CloudBlobStorage extends BlobStorageBase {
 
       if (upload.method === BlobUploadMethod.MULTIPART) {
         try {
+          if (!upload.uploadId || !upload.partSize) {
+            throw new Error(
+              'Missing upload ID or part size for multipart upload.'
+            );
+          }
           const parts = await this.uploadViaMultipart(
             blob.key,
-            upload.uploadId!,
-            upload.partSize!,
+            upload.uploadId,
+            upload.partSize,
             blob.data,
             upload.uploadedParts,
             signal
           );
-          await this.completeUpload(blob.key, upload.uploadId!, parts, signal);
+          await this.completeUpload(blob.key, upload.uploadId, parts, signal);
           return;
         } catch {
           if (upload.uploadId) {

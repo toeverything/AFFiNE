@@ -79,6 +79,6 @@ describe('tracker session signals', () => {
     const sessionStart = events.find(
       event => event.eventName === 'session_start'
     );
-    expect((sessionStart?.params as any).session_number).toBe(2);
+    expect(sessionStart?.params?.session_number).toBe(2);
   });
 });

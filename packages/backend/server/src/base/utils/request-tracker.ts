@@ -22,12 +22,14 @@ function firstNonEmpty(...values: Array<string | undefined>) {
 }
 
 export function getRequestClientIp(req: Request) {
-  return firstNonEmpty(
-    req.get('CF-Connecting-IP'),
-    firstForwardedForIp(req.get('X-Forwarded-For')),
-    req.get('X-Real-IP'),
-    req.ip
-  )!;
+  return (
+    firstNonEmpty(
+      req.get('CF-Connecting-IP'),
+      firstForwardedForIp(req.get('X-Forwarded-For')),
+      req.get('X-Real-IP'),
+      req.ip
+    ) ?? ''
+  );
 }
 
 export function getRequestTrackerId(req: Request) {
@@ -39,6 +41,7 @@ export function getRequestTrackerId(req: Request) {
       req.get('X-Real-IP'),
       req.get('CF-Ray'),
       req.ip
-    )!
+    ) ??
+    ''
   );
 }
