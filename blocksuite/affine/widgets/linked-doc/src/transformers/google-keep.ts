@@ -1,7 +1,9 @@
 import type {
+  BlockModel,
   DocMeta,
   ExtensionType,
   Schema,
+  Store,
   Workspace,
 } from '@blocksuite/store';
 
@@ -44,6 +46,21 @@ type GoogleKeepNote = {
 type GoogleKeepMeta = Partial<
   Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'favorite'>
 >;
+
+type ResolvedKeepAttachment = {
+  blob: Blob;
+  fileName: string;
+  mimeType: string;
+  isImage: boolean;
+};
+
+const KEEP_ATTACHMENTS_COLUMNS = 3;
+const KEEP_ATTACHMENTS_COLUMN_WIDTH = 260;
+const KEEP_ATTACHMENTS_GAP = 24;
+const KEEP_ATTACHMENTS_MAX_HEIGHT = 360;
+const KEEP_ATTACHMENTS_MIN_DIMENSION = 48;
+const KEEP_ATTACHMENTS_FRAME_PADDING = 20;
+const KEEP_ATTACHMENTS_PAGE_GAP = 180;
 
 function toTimestampFromUsec(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
@@ -112,22 +129,6 @@ function dirname(path: string): string {
   return index === -1 ? '' : normalized.slice(0, index);
 }
 
-function toBase64(bytes: Uint8Array): string {
-  const chunkSize = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-}
-
-async function blobToDataUrl(blob: Blob, mimetype?: string): Promise<string> {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  const mime = mimetype || blob.type || 'application/octet-stream';
-  return `data:${mime};base64,${toBase64(bytes)}`;
-}
-
 function resolveAttachmentBlob(
   notePath: string,
   filePath: string,
@@ -148,15 +149,122 @@ function resolveAttachmentBlob(
   return undefined;
 }
 
-async function renderAttachmentsHtml(
+function toFileName(path: string): string {
+  const normalized = normalizePath(path);
+  return normalized.split('/').pop() || 'attachment';
+}
+
+function getFirstModelByFlavour(
+  store: Store,
+  flavour: string
+): BlockModel | null {
+  const block = store.getBlocksByFlavour(flavour)[0];
+  return block?.model ?? null;
+}
+
+function ensureSurfaceModel(store: Store): BlockModel | null {
+  const existing = getFirstModelByFlavour(store, 'affine:surface');
+  if (existing) {
+    return existing;
+  }
+
+  const rootId = store.root?.id;
+  if (!rootId) {
+    return null;
+  }
+
+  const surfaceId = store.addBlock('affine:surface', {}, rootId);
+  return store.getModelById(surfaceId) as BlockModel | null;
+}
+
+function parseXywh(xywh: unknown): [number, number, number, number] | null {
+  if (typeof xywh !== 'string') {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(xywh) as unknown;
+    if (
+      Array.isArray(parsed) &&
+      parsed.length === 4 &&
+      parsed.every(value => typeof value === 'number' && Number.isFinite(value))
+    ) {
+      return parsed as [number, number, number, number];
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getAttachmentsAnchorFromNote(noteModel: BlockModel): {
+  x: number;
+  y: number;
+} {
+  const noteXywh = parseXywh((noteModel as { xywh?: unknown }).xywh);
+  if (!noteXywh) {
+    return { x: 0, y: 0 };
+  }
+
+  const [noteX, noteY, noteWidth] = noteXywh;
+  return {
+    x: noteX + noteWidth + KEEP_ATTACHMENTS_PAGE_GAP,
+    y: noteY,
+  };
+}
+
+async function readImageSize(
+  blob: Blob
+): Promise<{ width: number; height: number }> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(blob);
+      const size = { width: bitmap.width, height: bitmap.height };
+      bitmap.close();
+      return size;
+    } catch {
+      // fallback below
+    }
+  }
+
+  if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
+    try {
+      const objectUrl = URL.createObjectURL(blob);
+      const size = await new Promise<{ width: number; height: number }>(
+        (resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            resolve({
+              width: img.naturalWidth || img.width,
+              height: img.naturalHeight || img.height,
+            });
+          };
+          img.onerror = () => reject(new Error('Failed to decode image'));
+          img.src = objectUrl;
+        }
+      );
+      URL.revokeObjectURL(objectUrl);
+      return size;
+    } catch {
+      // fallback below
+    }
+  }
+
+  return { width: KEEP_ATTACHMENTS_COLUMN_WIDTH, height: 180 };
+}
+
+async function resolveKeepAttachments(
   note: GoogleKeepNote,
   notePath: string,
   files: Map<string, Blob>
-): Promise<string> {
-  if (!note.attachments?.length) return '';
+): Promise<ResolvedKeepAttachment[]> {
+  if (!note.attachments?.length) {
+    return [];
+  }
 
-  const imageBlocks: string[] = [];
-  const otherBlocks: string[] = [];
+  const result: ResolvedKeepAttachment[] = [];
+
   for (const attachment of note.attachments) {
     const filePath = attachment.filePath?.trim();
     if (!filePath) continue;
@@ -164,60 +272,220 @@ async function renderAttachmentsHtml(
     const blob = resolveAttachmentBlob(notePath, filePath, files);
     if (!blob) continue;
 
-    const dataUrl = await blobToDataUrl(blob, attachment.mimetype);
-    const mime = attachment.mimetype || blob.type || '';
-    const fileName = filePath.split('/').pop() || filePath;
-    const safeName = escapeHtml(fileName);
-
-    if (mime.startsWith('image/')) {
-      imageBlocks.push(
-        `<figure style="margin:0;"><img src="${dataUrl}" alt="${safeName}" style="width:100%;height:auto;display:block;border-radius:8px;" /><figcaption style="font-size:12px;opacity:.75;margin-top:4px;word-break:break-word;">${safeName}</figcaption></figure>`
-      );
-      continue;
-    }
-    if (mime.startsWith('audio/')) {
-      otherBlocks.push(
-        `<figure><audio controls src="${dataUrl}"></audio><figcaption>${safeName}</figcaption></figure>`
-      );
-      continue;
-    }
-    if (mime.startsWith('video/')) {
-      otherBlocks.push(
-        `<figure><video controls src="${dataUrl}"></video><figcaption>${safeName}</figcaption></figure>`
-      );
-      continue;
-    }
-
-    otherBlocks.push(
-      `<p><a href="${dataUrl}" download="${safeName}">${safeName}</a></p>`
-    );
+    const mimeType =
+      attachment.mimetype || blob.type || 'application/octet-stream';
+    result.push({
+      blob,
+      fileName: toFileName(filePath),
+      mimeType,
+      isImage: mimeType.startsWith('image/'),
+    });
   }
 
-  const blocks: string[] = [];
-  if (imageBlocks.length) {
-    blocks.push(
-      `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;">${imageBlocks.join('')}</div>`
-    );
-  }
-  blocks.push(...otherBlocks);
+  return result;
+}
 
-  if (!blocks.length) return '';
-  return `<section><p><strong>Attachments</strong></p>${blocks.join('')}</section>`;
+async function appendAttachmentBlocksToDoc({
+  collection,
+  docId,
+  attachments,
+}: {
+  collection: Workspace;
+  docId: string;
+  attachments: ResolvedKeepAttachment[];
+}): Promise<void> {
+  if (!attachments.length) {
+    return;
+  }
+
+  const store = collection.getDoc(docId)?.getStore({ id: docId });
+  if (!store) {
+    return;
+  }
+
+  const noteModel = getFirstModelByFlavour(store, 'affine:note');
+  if (!noteModel) {
+    return;
+  }
+
+  const imageAttachments = attachments.filter(attachment => attachment.isImage);
+  const fileAttachments = attachments.filter(attachment => !attachment.isImage);
+
+  let insertIndex = 0;
+
+  if (imageAttachments.length) {
+    const surfaceModel = ensureSurfaceModel(store);
+    if (surfaceModel) {
+      const anchor = getAttachmentsAnchorFromNote(noteModel);
+      const preparedImages = await Promise.all(
+        imageAttachments.map(async attachment => {
+          const blobWithType = new File(
+            [attachment.blob],
+            attachment.fileName,
+            {
+              type: attachment.mimeType,
+            }
+          );
+          const [sourceId, naturalSize] = await Promise.all([
+            store.blobSync.set(blobWithType),
+            readImageSize(attachment.blob),
+          ]);
+
+          return {
+            sourceId,
+            naturalWidth: Math.max(1, naturalSize.width),
+            naturalHeight: Math.max(1, naturalSize.height),
+          };
+        })
+      );
+
+      const rowHeights: number[] = [];
+      const imageLayouts = preparedImages.map((image, index) => {
+        const row = Math.floor(index / KEEP_ATTACHMENTS_COLUMNS);
+        const col = index % KEEP_ATTACHMENTS_COLUMNS;
+        // Keep aspect ratio: fit each image into column width and max row height.
+        const scale = Math.min(
+          KEEP_ATTACHMENTS_COLUMN_WIDTH / image.naturalWidth,
+          KEEP_ATTACHMENTS_MAX_HEIGHT / image.naturalHeight
+        );
+        const displayWidth = Math.max(
+          KEEP_ATTACHMENTS_MIN_DIMENSION,
+          Math.round(image.naturalWidth * scale)
+        );
+        const displayHeight = Math.max(
+          KEEP_ATTACHMENTS_MIN_DIMENSION,
+          Math.round(image.naturalHeight * scale)
+        );
+        rowHeights[row] = Math.max(rowHeights[row] ?? 0, displayHeight);
+
+        return {
+          ...image,
+          row,
+          col,
+          displayWidth,
+          displayHeight,
+        };
+      });
+
+      const rowOffsets: number[] = [];
+      let currentY = 0;
+      for (let row = 0; row < rowHeights.length; row += 1) {
+        rowOffsets[row] = currentY;
+        currentY += rowHeights[row] + KEEP_ATTACHMENTS_GAP;
+      }
+
+      const imageIds = imageLayouts.map(layout => {
+        const colStartX =
+          layout.col * (KEEP_ATTACHMENTS_COLUMN_WIDTH + KEEP_ATTACHMENTS_GAP);
+        const x =
+          anchor.x +
+          colStartX +
+          Math.max(
+            0,
+            Math.round(
+              (KEEP_ATTACHMENTS_COLUMN_WIDTH - layout.displayWidth) / 2
+            )
+          );
+        const y = anchor.y + rowOffsets[layout.row];
+
+        return store.addBlock(
+          'affine:image',
+          {
+            sourceId: layout.sourceId,
+            width: layout.naturalWidth,
+            height: layout.naturalHeight,
+            xywh: `[${x},${y},${layout.displayWidth},${layout.displayHeight}]`,
+          },
+          surfaceModel
+        );
+      });
+
+      if (imageIds.length) {
+        const maxColumns = Math.min(KEEP_ATTACHMENTS_COLUMNS, imageIds.length);
+        const contentWidth =
+          maxColumns * KEEP_ATTACHMENTS_COLUMN_WIDTH +
+          (maxColumns - 1) * KEEP_ATTACHMENTS_GAP;
+        const rows = Math.ceil(imageIds.length / KEEP_ATTACHMENTS_COLUMNS);
+        const contentHeight =
+          rowHeights.slice(0, rows).reduce((sum, height) => sum + height, 0) +
+          (rows - 1) * KEEP_ATTACHMENTS_GAP;
+
+        const frameX = anchor.x - KEEP_ATTACHMENTS_FRAME_PADDING;
+        const frameY = anchor.y - KEEP_ATTACHMENTS_FRAME_PADDING;
+        const frameWidth = contentWidth + KEEP_ATTACHMENTS_FRAME_PADDING * 2;
+        const frameHeight = contentHeight + KEEP_ATTACHMENTS_FRAME_PADDING * 2;
+
+        const frameId = store.addBlock(
+          'affine:frame',
+          {
+            xywh: `[${frameX},${frameY},${frameWidth},${frameHeight}]`,
+          },
+          surfaceModel
+        );
+
+        const frameModel = store.getModelById(frameId) as
+          | (BlockModel & {
+              addChildren?: (elements: BlockModel[]) => void;
+              props?: { childElementIds?: Record<string, boolean> };
+            })
+          | null;
+
+        const imageModels = imageIds
+          .map(id => store.getModelById(id))
+          .filter((model): model is BlockModel => Boolean(model));
+
+        if (frameModel?.addChildren && imageModels.length) {
+          frameModel.addChildren(imageModels);
+        } else if (imageModels.length) {
+          store.updateBlock(frameId, {
+            childElementIds: Object.fromEntries(
+              imageModels.map(model => [model.id, true])
+            ),
+          });
+        }
+
+        store.addBlock(
+          'affine:surface-ref',
+          {
+            reference: frameId,
+            refFlavour: 'affine:frame',
+            caption: '',
+          },
+          noteModel,
+          insertIndex
+        );
+        insertIndex += 1;
+      }
+    }
+  }
+
+  for (const attachment of fileAttachments) {
+    const file = new File([attachment.blob], attachment.fileName, {
+      type: attachment.mimeType,
+    });
+    const sourceId = await store.blobSync.set(file);
+
+    store.addBlock(
+      'affine:attachment',
+      {
+        name: attachment.fileName,
+        size: file.size,
+        type: attachment.mimeType,
+        sourceId,
+      },
+      noteModel,
+      insertIndex
+    );
+    insertIndex += 1;
+  }
 }
 
 async function toHtml(
   note: GoogleKeepNote,
-  fallbackTitle: string,
-  notePath: string,
-  files: Map<string, Blob>
+  fallbackTitle: string
 ): Promise<string> {
   const title = (note.title || '').trim() || fallbackTitle;
   const sections: string[] = [];
-
-  const attachmentsSection = await renderAttachmentsHtml(note, notePath, files);
-  if (attachmentsSection) {
-    sections.push(attachmentsSection);
-  }
 
   const text = (note.textContent || '').trim();
   if (text) {
@@ -319,9 +587,11 @@ async function importGoogleKeepZip({
   onProgress?.({ totalDocs: notesToImport.length, importedDocs });
 
   for (const { note, fallbackTitle, notePath } of notesToImport) {
-    const html = await toHtml(note, fallbackTitle, notePath, allFiles);
+    const html = await toHtml(note, fallbackTitle);
     const meta = toMeta(note, fallbackTitle);
     const tagNames = extractTagNames(note);
+    const attachments = await resolveKeepAttachments(note, notePath, allFiles);
+
     const docId = await HtmlTransformer.importHTMLToDoc({
       collection,
       schema,
@@ -330,6 +600,12 @@ async function importGoogleKeepZip({
       extensions,
     });
     if (docId) {
+      await appendAttachmentBlocksToDoc({
+        collection,
+        docId,
+        attachments,
+      });
+
       const tags =
         onResolveTags && tagNames.length
           ? (await onResolveTags(tagNames)).filter(Boolean)
