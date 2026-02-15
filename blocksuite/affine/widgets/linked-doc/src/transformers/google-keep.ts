@@ -1,10 +1,11 @@
-import type {
+import {
   BlockModel,
-  DocMeta,
-  ExtensionType,
+  type DocMeta,
+  type ExtensionType,
   Schema,
   Store,
-  Workspace,
+  Text,
+  type Workspace,
 } from '@blocksuite/store';
 
 import { HtmlTransformer } from './html.js';
@@ -62,6 +63,49 @@ const KEEP_ATTACHMENTS_MIN_DIMENSION = 48;
 const KEEP_ATTACHMENTS_FRAME_PADDING = 20;
 const KEEP_ATTACHMENTS_PAGE_GAP = 180;
 
+async function decodeBlobText(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (!bytes.length) {
+    return '';
+  }
+
+  // BOM-aware fast path.
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 0xef &&
+    bytes[1] === 0xbb &&
+    bytes[2] === 0xbf
+  ) {
+    return new TextDecoder('utf-8').decode(bytes.subarray(3));
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return new TextDecoder('utf-16le').decode(bytes.subarray(2));
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return new TextDecoder('utf-16be').decode(bytes.subarray(2));
+  }
+
+  const encodings = ['utf-8', 'utf-16le', 'utf-16be', 'windows-1252'] as const;
+  for (const encoding of encodings) {
+    try {
+      return new TextDecoder(encoding, { fatal: true }).decode(bytes);
+    } catch {
+      // try next
+    }
+  }
+
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+async function parseJsonBlob<T>(blob: Blob): Promise<T | null> {
+  const decoded = await decodeBlobText(blob);
+  try {
+    return JSON.parse(decoded) as T;
+  } catch {
+    return null;
+  }
+}
+
 function toTimestampFromUsec(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
   const num = Number(value);
@@ -69,8 +113,63 @@ function toTimestampFromUsec(value: unknown): number | undefined {
   return Math.round(num / 1000);
 }
 
+function normalizeTitle(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.replaceAll('\u0000', '').trim();
+}
+
+function fixPotentialMojibake(fileName: string): string {
+  if (!fileName) return fileName;
+  const looksBroken = /Ã.|Â.|â.|�/.test(fileName);
+  if (!looksBroken) return fileName;
+
+  try {
+    const bytes = Uint8Array.from(fileName, ch => ch.charCodeAt(0) & 0xff);
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    if (decoded && !decoded.includes('�')) {
+      return decoded;
+    }
+  } catch {
+    // keep original name
+  }
+
+  return fileName;
+}
+
+function stripHtml(text: string): string {
+  return text
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getFallbackTitleFromText(note: GoogleKeepNote): string {
+  const fromText = normalizeTitle(stripHtml(note.textContent ?? ''));
+  if (fromText) return fromText.slice(0, 120);
+
+  if (note.listContent?.length) {
+    const firstItem = normalizeTitle(note.listContent[0]?.text ?? '');
+    if (firstItem) return firstItem.slice(0, 120);
+  }
+
+  return '';
+}
+
+function pickNoteTitle(note: GoogleKeepNote, fileName: string): string {
+  const fromTitle = normalizeTitle(note.title);
+  if (fromTitle) return fromTitle;
+
+  const fromContent = getFallbackTitleFromText(note);
+  if (fromContent) return fromContent;
+
+  const baseName = fileName.replace(/\.json$/i, '') || 'Untitled';
+  return normalizeTitle(fixPotentialMojibake(baseName)) || 'Untitled';
+}
+
 function toMeta(note: GoogleKeepNote, fallbackTitle: string): GoogleKeepMeta {
-  const title = (note.title || '').trim() || fallbackTitle;
+  const title = normalizeTitle(note.title) || fallbackTitle;
   const meta: GoogleKeepMeta = { title };
 
   const created = toTimestampFromUsec(note.createdTimestampUsec);
@@ -212,6 +311,42 @@ function getAttachmentsAnchorFromNote(noteModel: BlockModel): {
     x: noteX + noteWidth + KEEP_ATTACHMENTS_PAGE_GAP,
     y: noteY,
   };
+}
+
+function syncRootTitle({
+  collection,
+  docId,
+  title,
+}: {
+  collection: Workspace;
+  docId: string;
+  title: string;
+}) {
+  const store = collection.getDoc(docId)?.getStore({ id: docId });
+  const root = store?.root;
+  if (!store || !root || root.flavour !== 'affine:page') {
+    return;
+  }
+
+  const nextTitle = title.trim();
+  if (!nextTitle) {
+    return;
+  }
+
+  const currentTitle = String(
+    (
+      root as {
+        props?: { title?: { toString: () => string } };
+      }
+    ).props?.title?.toString() ?? ''
+  );
+  if (currentTitle === nextTitle) {
+    return;
+  }
+
+  store.updateBlock(root.id, {
+    title: new Text(nextTitle),
+  });
 }
 
 async function readImageSize(
@@ -484,7 +619,7 @@ async function toHtml(
   note: GoogleKeepNote,
   fallbackTitle: string
 ): Promise<string> {
-  const title = (note.title || '').trim() || fallbackTitle;
+  const title = normalizeTitle(note.title) || fallbackTitle;
   const sections: string[] = [];
 
   const text = (note.textContent || '').trim();
@@ -557,14 +692,12 @@ async function importGoogleKeepZip({
 
   for (const candidate of candidates) {
     const fileName = candidate.path.split('/').pop() ?? 'keep-note.json';
-    const fallbackTitle = fileName.replace(/\.json$/i, '') || 'Untitled';
 
-    let note: GoogleKeepNote;
-    try {
-      note = JSON.parse(await candidate.content.text()) as GoogleKeepNote;
-    } catch {
+    const note = await parseJsonBlob<GoogleKeepNote>(candidate.content);
+    if (!note) {
       continue;
     }
+    const fallbackTitle = pickNoteTitle(note, fileName);
 
     // Keep exports include additional metadata JSON files. Ignore files that
     // do not look like an individual note payload.
@@ -613,6 +746,11 @@ async function importGoogleKeepZip({
       collection.meta.setDocMeta(docId, {
         ...meta,
         ...(tags?.length ? { tags } : {}),
+      });
+      syncRootTitle({
+        collection,
+        docId,
+        title: meta.title ?? fallbackTitle,
       });
       if (meta.favorite && onFavoriteImported) {
         await onFavoriteImported(docId);
