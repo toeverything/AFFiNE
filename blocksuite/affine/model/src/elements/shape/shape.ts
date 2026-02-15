@@ -43,6 +43,7 @@ export type ShapeProps = BaseElementProps & {
   shapeStyle: ShapeStyle;
   // https://github.com/rough-stuff/rough/wiki#roughness
   roughness?: number;
+  stencilName?: string;
 
   text?: Y.Text;
   textHorizontalAlign?: TextAlign;
@@ -153,6 +154,9 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   @field()
   accessor shapeType: ShapeType = ShapeType.Rect;
+
+  @field()
+  accessor stencilName: string | undefined = undefined;
 
   @field()
   accessor strokeColor: Color = DefaultTheme.shapeStrokeColor;

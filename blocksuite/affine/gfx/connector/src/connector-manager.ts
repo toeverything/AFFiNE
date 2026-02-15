@@ -352,7 +352,8 @@ type ConnectionLocationResult = {
 };
 
 const getStencilConstraintLocations = (
-  shapeType: string
+  shapeType: string,
+  stencilName?: string
 ): ConnectionLocationResult | null => {
   if (
     shapeType === ShapeType.DataStorage ||
@@ -361,7 +362,10 @@ const getStencilConstraintLocations = (
   ) {
     return null;
   }
-  const name = DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
+  const name =
+    shapeType === ShapeType.DrawioStencil
+      ? stencilName
+      : DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
   if (!name) return null;
   const stencil = getStencilShapeData(name);
   if (!stencil || stencil.constraints.length === 0) return null;
@@ -493,7 +497,10 @@ export function getConnectionLocationsForElement(
   // Check if element is a ShapeElementModel and get shape-specific locations
   if ('shapeType' in ele) {
     const shapeType = (ele as any).shapeType;
-    const stencilLocations = getStencilConstraintLocations(shapeType);
+    const stencilLocations = getStencilConstraintLocations(
+      shapeType,
+      (ele as any).stencilName
+    );
     if (stencilLocations) return stencilLocations;
     switch (shapeType) {
       case 'rect':

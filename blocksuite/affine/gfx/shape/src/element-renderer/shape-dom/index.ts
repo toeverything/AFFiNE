@@ -229,28 +229,52 @@ export const shapeDomRenderer = (
     const stencilName =
       model.shapeType === 'document'
         ? undefined
-        : DRAWIO_STENCIL_SHAPE_MAP[model.shapeType];
+        : model.shapeType === 'drawioStencil'
+          ? model.stencilName
+          : DRAWIO_STENCIL_SHAPE_MAP[model.shapeType];
     const stencil = stencilName ? getStencilShapeData(stencilName) : null;
 
     if (stencil) {
-      const paths = [
-        ...stencil.paths.map(commands =>
-          buildPathFromStencil(commands, width, height)
-        ),
-        ...stencil.strokes.map(commands =>
-          buildPathFromStencil(commands, width, height)
-        ),
-      ];
+      const isLibraryStencil = model.shapeType === 'drawioStencil';
+      const primaryCommands =
+        stencil.paths.length > 0 ? stencil.paths : stencil.strokes;
+      const fillCommands = isLibraryStencil
+        ? primaryCommands.filter(commands =>
+            commands.some(command => command.cmd === 'Z')
+          )
+        : stencil.paths;
+      const strokeCommands = isLibraryStencil
+        ? stencil.strokes.length > 0
+          ? stencil.strokes
+          : primaryCommands
+        : stencil.strokes;
+      const fillPaths = fillCommands.map(commands =>
+        buildPathFromStencil(commands, width, height)
+      );
+      const strokePaths = strokeCommands.map(commands =>
+        buildPathFromStencil(commands, width, height)
+      );
+      const paths = [...fillPaths, ...strokePaths];
 
       const svg = element.firstChild as SVGSVGElement;
       paths.forEach((pathData, index) => {
         const path = document.createElementNS(SVG_NS, 'path');
         path.setAttribute('d', pathData);
-        path.setAttribute(
-          'fill',
-          index < stencil.paths.length ? finalFillColor : 'none'
-        );
-        path.setAttribute('stroke', finalStrokeColor);
+        const isBackground = index < fillPaths.length;
+        const fillColor = isLibraryStencil
+          ? finalFillColor === 'transparent'
+            ? finalStrokeColor
+            : finalFillColor
+          : isBackground
+            ? finalFillColor
+            : 'none';
+        const strokeColor = isLibraryStencil
+          ? isBackground
+            ? 'none'
+            : finalStrokeColor
+          : finalStrokeColor;
+        path.setAttribute('fill', String(fillColor));
+        path.setAttribute('stroke', String(strokeColor));
         path.setAttribute('stroke-width', String(strokeW));
         if (finalStrokeDasharray !== 'none') {
           path.setAttribute('stroke-dasharray', finalStrokeDasharray);
@@ -392,7 +416,8 @@ export const shapeDomRenderer = (
           ? `${Math.max(1, strokeW)}, ${strokeW * 2.5}`
           : 'none';
     // Determine fill color
-    const finalFillColor = model.filled ? fillColor : 'transparent';
+    const isFilled = model.filled || model.shapeType === 'drawioStencil';
+    const finalFillColor = isFilled ? fillColor : 'transparent';
 
     // Build SVG safely with DOM-API
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -444,7 +469,7 @@ export const shapeDomRenderer = (
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     // innerHTML was already cleared by applyShapeSpecificStyles if necessary
-    element.style.backgroundColor = model.filled ? fillColor : 'transparent';
+    element.style.backgroundColor = isFilled ? fillColor : 'transparent';
     applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
   }
 

@@ -36,7 +36,8 @@ export class ShapeOverlay extends ToolOverlay {
       shapeStyle: ShapeStyle;
       fillColor: Color;
       strokeColor: Color;
-    }
+    },
+    stencilName?: string
   ) {
     super(gfx);
     const xywh = [
@@ -56,7 +57,13 @@ export class ShapeOverlay extends ToolOverlay {
     options.fill = fill;
     options.stroke = stroke;
 
-    this.shape = ShapeFactory.createShape(xywh, type, options, shapeStyle);
+    this.shape = ShapeFactory.createShape(
+      xywh,
+      type,
+      options,
+      shapeStyle,
+      stencilName
+    );
     this.disposables.add(
       effect(() => {
         const currentTool = this.gfx.tool.currentTool$.value;
@@ -65,7 +72,8 @@ export class ShapeOverlay extends ToolOverlay {
 
         assertType<ShapeTool>(currentTool);
 
-        const { shapeName } = currentTool.activatedOption;
+        const { shapeName, stencilName: nextStencilName } =
+          currentTool.activatedOption;
         const newOptions = {
           ...options,
         };
@@ -84,7 +92,8 @@ export class ShapeOverlay extends ToolOverlay {
           xywh,
           shapeName,
           newOptions,
-          shapeStyle
+          shapeStyle,
+          nextStencilName
         );
 
         const surface = getSurfaceComponent(this.gfx.std);

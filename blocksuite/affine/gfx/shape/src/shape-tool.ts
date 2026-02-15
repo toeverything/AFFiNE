@@ -31,6 +31,7 @@ import { ShapeOverlay } from './overlay/shape-overlay.js';
 
 export type ShapeToolOption = {
   shapeName: ShapeName;
+  stencilName?: string;
 };
 
 export class ShapeTool extends BaseTool<ShapeToolOption> {
@@ -64,7 +65,7 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
     height: number
   ): string {
     const { viewport } = this.gfx;
-    const { shapeName } = this.activatedOption;
+    const { shapeName, stencilName } = this.activatedOption;
     const attributes =
       this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
 
@@ -80,6 +81,8 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       shapeType: getShapeType(shapeName),
       xywh: bound.serialize(),
       radius: attributes.radius,
+      stencilName,
+      filled: shapeName === ShapeType.DrawioStencil ? true : attributes.filled,
     });
 
     this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
@@ -207,7 +210,7 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
     this.clearOverlay();
     if (this._disableOverlay) return;
     const options = SHAPE_OVERLAY_OPTIONS;
-    const { shapeName } = this.activatedOption;
+    const { shapeName, stencilName } = this.activatedOption;
     const attributes =
       this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
 
@@ -233,11 +236,17 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       default:
         options.strokeLineDash = [];
     }
-    this._shapeOverlay = new ShapeOverlay(this.gfx, shapeName, options, {
-      shapeStyle: attributes.shapeStyle,
-      fillColor: attributes.fillColor,
-      strokeColor: attributes.strokeColor,
-    });
+    this._shapeOverlay = new ShapeOverlay(
+      this.gfx,
+      shapeName,
+      options,
+      {
+        shapeStyle: attributes.shapeStyle,
+        fillColor: attributes.fillColor,
+        strokeColor: attributes.strokeColor,
+      },
+      stencilName
+    );
     this._surfaceComponent?.renderer.addOverlay(this._shapeOverlay);
   }
 

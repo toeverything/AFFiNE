@@ -75,6 +75,7 @@ export enum ShapeType {
   ArrowCalloutUp = 'arrowCalloutUp',
   ArrowCalloutDouble = 'arrowCalloutDouble',
   ArrowCalloutQuad = 'arrowCalloutQuad',
+  DrawioStencil = 'drawioStencil',
 }
 
 export type ShapeName = ShapeType | 'roundedRect';

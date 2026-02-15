@@ -1,5 +1,6 @@
 import type { Options, RoughCanvas } from '@blocksuite/affine-block-surface';
 import type { ShapeStyle } from '@blocksuite/affine-model';
+import { ShapeType } from '@blocksuite/affine-model';
 import type { XYWH } from '@blocksuite/global/gfx';
 
 import {
@@ -55,6 +56,10 @@ const drawStencilPaths = (
 export class StencilShape extends Shape {
   private readonly _stencil: StencilShapeData;
 
+  private _filterClosedPaths(paths: StencilShapeData['paths']) {
+    return paths.filter(commands => commands.some(cmd => cmd.cmd === 'Z'));
+  }
+
   constructor(
     xywh: XYWH,
     type: string,
@@ -67,6 +72,44 @@ export class StencilShape extends Shape {
   }
 
   draw(ctx: CanvasRenderingContext2D, rc: RoughCanvas): void {
+    if (this.type === ShapeType.DrawioStencil) {
+      const basePaths =
+        this._stencil.paths.length > 0
+          ? this._stencil.paths
+          : this._stencil.strokes;
+      const fillColor =
+        this.options.fill && this.options.fill !== 'transparent'
+          ? this.options.fill
+          : this.options.stroke;
+      const fillOnlyOptions = {
+        ...this.options,
+        stroke: 'transparent',
+        fill: fillColor,
+      };
+      if (typeof window !== 'undefined') {
+        const seen = ((window as any).__AFFINE_DRAWIO_DEBUG_SEEN ??= new Set());
+        if (!seen.has(`canvas:${this.type}`)) {
+          seen.add(`canvas:${this.type}`);
+          console.log('[drawio-canvas]', {
+            type: this.type,
+            width: this._stencil.width,
+            height: this._stencil.height,
+            basePaths,
+          });
+        }
+      }
+      drawStencilPaths(
+        ctx,
+        rc,
+        this._filterClosedPaths(basePaths),
+        false,
+        this.xywh,
+        fillOnlyOptions,
+        this.shapeStyle
+      );
+      return;
+    }
+
     drawStencilPaths(
       ctx,
       rc,

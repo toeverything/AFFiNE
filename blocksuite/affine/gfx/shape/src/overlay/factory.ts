@@ -1,5 +1,5 @@
 import type { Options } from '@blocksuite/affine-block-surface';
-import { type ShapeStyle,ShapeType } from '@blocksuite/affine-model';
+import { type ShapeStyle, ShapeType } from '@blocksuite/affine-model';
 import type { XYWH } from '@blocksuite/global/gfx';
 
 import { DRAWIO_STENCIL_SHAPE_MAP } from '../drawio/stencil-map.js';
@@ -37,14 +37,16 @@ export class ShapeFactory {
     xywh: XYWH,
     type: string,
     options: Options,
-    shapeStyle: ShapeStyle
+    shapeStyle: ShapeStyle,
+    stencilName?: string
   ): Shape {
-    const stencilName =
-      type === ShapeType.Document
+    const resolvedStencilName =
+      stencilName ??
+      (type === ShapeType.Document
         ? undefined
-        : DRAWIO_STENCIL_SHAPE_MAP[type as ShapeType];
-    if (stencilName) {
-      const stencil = getStencilShapeData(stencilName);
+        : DRAWIO_STENCIL_SHAPE_MAP[type as ShapeType]);
+    if (resolvedStencilName) {
+      const stencil = getStencilShapeData(resolvedStencilName);
       if (stencil) {
         return new StencilShape(xywh, type, options, shapeStyle, stencil);
       }
@@ -124,6 +126,8 @@ export class ShapeFactory {
         return new PathShape(xywh, type, options, shapeStyle, buildLogicOrPath);
       case 'roundedRect':
         return new RoundedRectShape(xywh, type, options, shapeStyle);
+      case 'drawioStencil':
+        return new RectShape(xywh, type, options, shapeStyle);
       default:
         throw new Error(`Unknown shape type: ${type}`);
     }

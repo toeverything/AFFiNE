@@ -58,6 +58,20 @@ const shapeRenderers: Record<
       return stencil ? createStencilShapeRenderer(stencil) : rect;
     };
 
+    const drawioStencil = (
+      model: ShapeElementModel | LocalShapeElementModel,
+      ctx: CanvasRenderingContext2D,
+      matrix: DOMMatrix,
+      renderer: CanvasRenderer,
+      rc: RoughCanvas,
+      colors: Colors
+    ) => {
+      const stencilName = (model as ShapeElementModel).stencilName;
+      const stencil = stencilName ? getStencilShapeData(stencilName) : null;
+      const render = stencil ? createStencilShapeRenderer(stencil) : rect;
+      render(model, ctx, matrix, renderer, rc, colors);
+    };
+
     return {
       callout: resolveStencil(ShapeType.Callout),
       cylinder: resolveStencil(ShapeType.Cylinder),
@@ -121,6 +135,7 @@ const shapeRenderers: Record<
       arrowCalloutUp: resolveStencil(ShapeType.ArrowCalloutUp),
       arrowCalloutDouble: resolveStencil(ShapeType.ArrowCalloutDouble),
       arrowCalloutQuad: resolveStencil(ShapeType.ArrowCalloutQuad),
+      drawioStencil,
     };
   })(),
   diamond,

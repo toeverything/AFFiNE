@@ -138,6 +138,7 @@ const ShapeObject = {
   textHorizontalAlign: TextAlignSchema.optional(),
   textVerticalAlign: TextVerticalAlignSchema.optional(),
   roughness: z.number(),
+  stencilName: z.string().optional(),
 };
 
 export const ShapeSchema = z.object(ShapeObject).default(DEFAULT_SHAPE);
@@ -248,6 +249,7 @@ export const NodePropsSchema = z.object({
   'shape:arrowCalloutUp': ShapeSchema,
   'shape:arrowCalloutDouble': ShapeSchema,
   'shape:arrowCalloutQuad': ShapeSchema,
+  'shape:drawioStencil': ShapeSchema,
   'shape:roundedRect': RoundedShapeSchema,
 });
 

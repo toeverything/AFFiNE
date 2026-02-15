@@ -1,3 +1,4 @@
+import { drawioLibraryStencilShapes } from './library-stencils.js';
 import { drawioStencilShapes } from './stencils.js';
 
 export type StencilCommand =
@@ -38,9 +39,13 @@ export type StencilShapeData = {
   }>;
 };
 
+const allStencilShapes = {
+  ...drawioStencilShapes,
+  ...drawioLibraryStencilShapes,
+} as unknown as Record<string, StencilShapeData>;
+
 export const getStencilShapeData = (name: string): StencilShapeData | null =>
-  (drawioStencilShapes as unknown as Record<string, StencilShapeData>)[name] ??
-  null;
+  allStencilShapes[name] ?? null;
 
 const scale = (value: number, total: number) => value * total;
 

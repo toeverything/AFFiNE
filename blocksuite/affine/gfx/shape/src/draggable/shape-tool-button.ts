@@ -108,9 +108,9 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
 
     // Handle shape selection
     panel.addEventListener('shapeselect', ((e: CustomEvent) => {
-      const shapeName = e.detail.shapeName;
-      this._syncShapeColors(shapeName);
-      this.setEdgelessTool(this.type, { shapeName });
+      const { shapeName, stencilName } = e.detail;
+      this._syncShapeColors(shapeName, stencilName);
+      this.setEdgelessTool(this.type, { shapeName, stencilName });
       this._updateOverlay();
       this._closeBrowser();
     }) as EventListener);
@@ -172,7 +172,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     }
   }
 
-  private _syncShapeColors(nextShapeName: ShapeName) {
+  private _syncShapeColors(nextShapeName: ShapeName, stencilName?: string) {
     const gfx = this.edgeless.std.get(GfxControllerIdentifier);
     const currentTool = gfx.tool.currentToolOption$.peek();
     const currentShapeName =
@@ -185,12 +185,16 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     const propsStore = this.edgeless.std.get(EditPropsStore);
     const currentProps =
       propsStore.lastProps$.value[`shape:${currentShapeName}`];
-    propsStore.recordLastProps(`shape:${nextShapeName}`, {
+    const nextProps = {
       fillColor: currentProps.fillColor,
       strokeColor: currentProps.strokeColor,
       filled: currentProps.filled,
       strokeStyle: currentProps.strokeStyle,
-    });
+    };
+    if (nextShapeName === ShapeType.DrawioStencil && stencilName) {
+      nextProps.filled = true;
+    }
+    propsStore.recordLastProps(`shape:${nextShapeName}`, nextProps);
   }
 
   override render() {

@@ -86,4 +86,5 @@ export const shapeMethods: Record<ShapeType, typeof rect> = {
   arrowCalloutUp: rect,
   arrowCalloutDouble: rect,
   arrowCalloutQuad: rect,
+  drawioStencil: rect,
 };
