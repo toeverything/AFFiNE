@@ -814,13 +814,17 @@ async function toHtml(
         const raw = (item.text || '').trim();
         if (!raw) return '';
         const checked = item.isChecked ?? item.checked ?? false;
-        const marker = checked ? '☑ ' : '☐ ';
-        return `<li>${marker}${escapeHtml(raw)}</li>`;
+        // Match AFFiNE HTML list adapter expectations so Keep checklists
+        // become native todo blocks instead of plain text markers.
+        const checkboxClass = checked ? 'checkbox-on' : 'checkbox-off';
+        return `<li><span class="${checkboxClass}"></span>${escapeHtml(raw)}</li>`;
       })
       .filter(Boolean)
       .join('');
     if (items) {
-      sections.push(`<section><ul>${items}</ul></section>`);
+      sections.push(
+        `<section><ul class="to-do-list" style="list-style-type: none; padding-inline-start: 18px;">${items}</ul></section>`
+      );
     }
   }
 
