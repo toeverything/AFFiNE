@@ -138,7 +138,7 @@ test('should return markdown content and skip page view when content-type is tex
 
   const res = await app
     .GET(`/workspace/${workspace.id}/${docId}`)
-    .set('content-type', 'text/markdown')
+    .set('accept', 'text/markdown')
     .expect(200);
 
   t.true(markdown.calledOnceWithExactly(workspace.id, docId, false));

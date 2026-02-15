@@ -44,6 +44,12 @@ const staticPaths = new Set([
   'trash',
 ]);
 
+const markdownType = [
+  'text/markdown',
+  'application/markdown',
+  'text/x-markdown',
+];
+
 @Controller('/workspace')
 export class DocRendererController {
   private readonly logger = new Logger(DocRendererController.name);
@@ -66,24 +72,6 @@ export class DocRendererController {
     return createHash('sha256')
       .update(`${workspaceId}:${docId}:${tracker}`)
       .digest('hex');
-  }
-
-  private isMarkdownContentRequest(req: Request) {
-    const headerContentType = req.header('content-type');
-    if (!headerContentType) {
-      return false;
-    }
-
-    const mimeType = headerContentType.split(';', 1)[0]?.trim().toLowerCase();
-    if (!mimeType) {
-      return false;
-    }
-
-    return (
-      mimeType === 'text/markdown' ||
-      mimeType === 'application/markdown' ||
-      mimeType === 'text/x-markdown'
-    );
   }
 
   private async allowDocPreview(workspaceId: string, docId: string) {
@@ -119,7 +107,10 @@ export class DocRendererController {
       workspaceId && !staticPaths.has(subPath) && restPaths.length === 0;
     const isWorkspaceDocPath = isWorkspacePath && workspaceId !== subPath;
 
-    if (isWorkspaceDocPath && this.isMarkdownContentRequest(req)) {
+    if (
+      isWorkspaceDocPath &&
+      req.accepts().some(t => markdownType.includes(t.toLowerCase()))
+    ) {
       try {
         const allowPreview = await this.allowDocPreview(workspaceId, subPath);
         if (!allowPreview) {
