@@ -46,7 +46,7 @@ import {
   SaveIcon,
   ZipIcon,
 } from '@blocksuite/icons/rc';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import {
@@ -215,10 +215,21 @@ function getFolderId(node: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+function isFolderNode(node: unknown): boolean {
+  const value = (node as Record<string, unknown>)['type$'] as
+    | { value?: string }
+    | undefined;
+  return value?.value === 'folder';
+}
+
 function flattenFolderOptions(node: unknown, depth = 0): FolderOption[] {
   const children = getFolderChildren(node);
   const result: FolderOption[] = [];
   for (const child of children) {
+    if (!isFolderNode(child)) {
+      continue;
+    }
+
     const childName = getFolderName(child);
     const childId = getFolderId(child);
     if (childId) {
@@ -250,6 +261,14 @@ type ImportResult = {
   rootFolderId?: string;
 };
 
+type ImportProgress = {
+  type: ImportType;
+  totalDocs: number;
+  importedDocs: number;
+  createdTags: number;
+  reusedExistingTags: number;
+};
+
 type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
   importFunction: (
@@ -260,7 +279,8 @@ type ImportConfig = {
     explorerIconService?: ExplorerIconService,
     favoriteService?: FavoriteService,
     tagService?: TagService,
-    googleKeepOptions?: GoogleKeepImportOptions
+    googleKeepOptions?: GoogleKeepImportOptions,
+    onImportProgress?: (progress: ImportProgress) => void
   ) => Promise<ImportResult>;
 };
 
@@ -527,7 +547,8 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       _explorerIconService,
       favoriteService,
       tagService,
-      googleKeepOptions
+      googleKeepOptions,
+      onImportProgress
     ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
@@ -540,11 +561,33 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         targetFolderId: googleKeepOptions?.targetFolderId,
       };
 
+      const initialExistingTagIds = new Set(
+        (tagService?.tagList.tagMetas$.value ?? []).map(tag => tag.id)
+      );
+      const createdTagIds = new Set<string>();
+      const reusedExistingTagIds = new Set<string>();
+      let totalDocs = 0;
+      let importedDocs = 0;
+      const pushProgress = () => {
+        onImportProgress?.({
+          type: 'googleKeep',
+          totalDocs,
+          importedDocs,
+          createdTags: createdTagIds.size,
+          reusedExistingTags: reusedExistingTagIds.size,
+        });
+      };
+
       const { docIds } = await GoogleKeepTransformer.importGoogleKeepZip({
         collection: docCollection,
         schema: getAFFiNEWorkspaceSchema(),
         imported: file,
         extensions: getStoreManager().config.init().value.get('store'),
+        onProgress: stats => {
+          totalDocs = stats.totalDocs;
+          importedDocs = stats.importedDocs;
+          pushProgress();
+        },
         onFavoriteImported: resolvedOptions.importFavorites
           ? docId => {
               if (!favoriteService) return;
@@ -584,6 +627,9 @@ const importConfigs: Record<ImportType, ImportConfig> = {
                   );
                   id = created.id;
                   tagNameToId.set(key, id);
+                  createdTagIds.add(id);
+                } else if (initialExistingTagIds.has(id)) {
+                  reusedExistingTagIds.add(id);
                 }
 
                 if (!result.includes(id)) {
@@ -591,6 +637,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
                 }
               }
 
+              pushProgress();
               return result;
             }
           : undefined,
@@ -833,7 +880,7 @@ const GoogleKeepImportOptionsPanel = ({
   );
 };
 
-const ImportingStatus = () => {
+const ImportingStatus = ({ progress }: { progress: ImportProgress | null }) => {
   const t = useI18n();
   return (
     <>
@@ -843,6 +890,18 @@ const ImportingStatus = () => {
       <p className={style.importStatusContent}>
         {t['com.affine.import.status.importing.message']()}
       </p>
+      {progress?.type === 'googleKeep' ? (
+        <p className={style.importStatusContent}>
+          {t['com.affine.import.google-keep.progress.docs']()}:&nbsp;
+          {progress.importedDocs} / {progress.totalDocs}
+          <br />
+          {t['com.affine.import.google-keep.progress.created-tags']()}:&nbsp;
+          {progress.createdTags}
+          <br />
+          {t['com.affine.import.google-keep.progress.existing-tags']()}:&nbsp;
+          {progress.reusedExistingTags}
+        </p>
+      ) : null}
     </>
   );
 };
@@ -923,6 +982,9 @@ export const ImportDialog = ({
       importTags: true,
       targetFolderId: undefined,
     });
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(
+    null
+  );
   const [importError, setImportError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const workspace = useService(WorkspaceService).workspace;
@@ -931,9 +993,9 @@ export const ImportDialog = ({
   const explorerIconService = useService(ExplorerIconService);
   const favoriteService = useService(FavoriteService);
   const tagService = useService(TagService);
-  const folderOptions = useMemo(
-    () => flattenFolderOptions(organizeService.folderTree.rootFolder),
-    [organizeService]
+  useLiveData(organizeService.folderTree.rootFolder.sortedChildren$);
+  const folderOptions = flattenFolderOptions(
+    organizeService.folderTree.rootFolder
   );
 
   const globalDialogService = useService(GlobalDialogService);
@@ -985,6 +1047,7 @@ export const ImportDialog = ({
   const handleImport = useAsyncCallback(
     async (type: ImportType, options?: GoogleKeepImportOptions) => {
       setImportError(null);
+      setImportProgress(null);
       try {
         const importConfig = importConfigs[type];
         const { acceptType, multiple } = importConfig.fileOptions;
@@ -1017,7 +1080,8 @@ export const ImportDialog = ({
             explorerIconService,
             favoriteService,
             tagService,
-            options
+            options,
+            setImportProgress
           );
 
         setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
@@ -1087,6 +1151,7 @@ export const ImportDialog = ({
 
   const handleRetry = () => {
     setPendingImportType(null);
+    setImportProgress(null);
     setStatus('idle');
   };
 
@@ -1106,7 +1171,7 @@ export const ImportDialog = ({
         onContinue={handleGoogleKeepContinue}
       />
     ),
-    importing: <ImportingStatus />,
+    importing: <ImportingStatus progress={importProgress} />,
     success: <SuccessStatus onComplete={handleComplete} />,
     error: <ErrorStatus error={importError} onRetry={handleRetry} />,
   };
