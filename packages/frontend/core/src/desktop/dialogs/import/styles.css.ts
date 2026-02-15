@@ -108,3 +108,31 @@ export const importItemPrefix = style({
 export const importItemSuffix = style({
   marginLeft: 'auto',
 });
+
+export const importOptionsPanel = style({
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+});
+
+export const importOptionRow = style({
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  fontSize: cssVar('fontBase'),
+  color: cssVar('textPrimaryColor'),
+});
+
+export const importFolderSelect = style({
+  width: '100%',
+  minHeight: '36px',
+  borderRadius: '8px',
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+  background: cssVarV2('layer/background/secondary'),
+  color: cssVar('textPrimaryColor'),
+  padding: '8px 10px',
+  fontSize: cssVar('fontSm'),
+});
