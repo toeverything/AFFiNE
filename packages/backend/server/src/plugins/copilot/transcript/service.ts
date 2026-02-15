@@ -15,14 +15,10 @@ import {
   sniffMime,
 } from '../../../base';
 import { Models } from '../../../models';
-import { PromptService } from '../prompt';
-import {
-  CopilotProvider,
-  CopilotProviderFactory,
-  CopilotProviderType,
-  ModelOutputType,
-  PromptMessage,
-} from '../providers';
+import { PromptService } from '../prompt/service';
+import type { CopilotProvider, PromptMessage } from '../providers';
+import { CopilotProviderFactory } from '../providers/factory';
+import { CopilotProviderType, ModelOutputType } from '../providers/types';
 import { CopilotStorage } from '../storage';
 import {
   AudioBlobInfos,

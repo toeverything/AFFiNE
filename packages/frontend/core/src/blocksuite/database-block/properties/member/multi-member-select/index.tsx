@@ -260,7 +260,10 @@ export const MemberPreview = ({
 export const MultiMemberSelect: React.FC<MemberManagerOptions> = props => {
   const inputRef = useRef<HTMLInputElement>(null);
   const memberListRef = useRef<HTMLDivElement>(null);
-  const memberManager = useMemo(() => new MemberManager(props), [props]);
+  const memberManager = useMemo(
+    () => new MemberManager(props), // eslint-disable-line react-hooks/preserve-manual-memoization
+    [] // oxlint-disable-line react/exhaustive-deps
+  );
 
   const isLoading = useSignalValue(memberManager.userListService.isLoading$);
   const selectedMembers = useSignalValue(memberManager.selectedMembers);

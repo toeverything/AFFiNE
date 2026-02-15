@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { Logger } from '@nestjs/common';
 import Piscina from 'piscina';
 
-import { CopilotChatOptions } from '../providers';
+import type { CopilotChatOptions } from '../providers/types';
 import type { NodeExecuteResult, NodeExecutor } from './executor';
 import { getWorkflowExecutor, NodeExecuteState } from './executor';
 import type {

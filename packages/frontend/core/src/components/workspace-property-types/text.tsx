@@ -108,7 +108,7 @@ const MobileTextValue = ({
   useEffect(() => {
     ref.current?.addEventListener('blur', handleBlur);
     return () => {
-      // oxlint-disable-next-line react-hooks/exhaustive-deps
+      // oxlint-disable-next-line react/exhaustive-deps
       ref.current?.removeEventListener('blur', handleBlur);
     };
   }, [handleBlur]);

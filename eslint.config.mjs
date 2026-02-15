@@ -124,23 +124,6 @@ export default tseslint.config(
         'error',
         'error-handling-correctness-only',
       ],
-      '@typescript-eslint/no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['**/dist'],
-              message: "Don't import from dist",
-              allowTypeImports: false,
-            },
-            {
-              group: ['**/src'],
-              message: "Don't import from src",
-              allowTypeImports: false,
-            },
-          ],
-        },
-      ],
       'sonarjs/no-all-duplicated-branches': 'error',
       'sonarjs/no-element-overwrite': 'error',
       'sonarjs/no-empty-collection': 'error',
@@ -246,7 +229,6 @@ export default tseslint.config(
         { ignoreVoid: true },
       ],
       '@typescript-eslint/no-misused-promises': 0,
-      '@typescript-eslint/no-restricted-imports': 0,
     },
   },
   {

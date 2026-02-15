@@ -28,13 +28,14 @@ import {
 import { SubscriptionService } from '../payment/service';
 import { SubscriptionPlan, SubscriptionStatus } from '../payment/types';
 import { ChatMessageCache } from './message';
-import { ChatPrompt, PromptService } from './prompt';
+import { ChatPrompt } from './prompt/chat-prompt';
+import { PromptService } from './prompt/service';
+import { CopilotProviderFactory } from './providers/factory';
 import {
-  CopilotProviderFactory,
   ModelOutputType,
-  PromptMessage,
-  PromptParams,
-} from './providers';
+  type PromptMessage,
+  type PromptParams,
+} from './providers/types';
 import {
   type ChatHistory,
   type ChatMessage,

@@ -47,14 +47,14 @@ import {
 } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
 import { CurrentUser, Public } from '../../core/auth';
-import { CopilotContextService } from './context';
+import { CopilotContextService } from './context/service';
+import { CopilotProviderFactory } from './providers/factory';
+import type { CopilotProvider } from './providers/provider';
 import {
-  CopilotProvider,
-  CopilotProviderFactory,
   ModelInputType,
   ModelOutputType,
-  StreamObject,
-} from './providers';
+  type StreamObject,
+} from './providers/types';
 import { StreamObjectParser } from './providers/utils';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';

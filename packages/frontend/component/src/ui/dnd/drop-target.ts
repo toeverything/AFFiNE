@@ -206,7 +206,7 @@ export const useDropTarget = <D extends DNDData = DNDData>(
           (dropTargetContext.fromExternalData as fromExternalData<D>))
         : undefined,
     };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [...deps, getOptions, dropTargetContext.fromExternalData]);
 
   const getDropTargetOptions = useCallback(() => {
