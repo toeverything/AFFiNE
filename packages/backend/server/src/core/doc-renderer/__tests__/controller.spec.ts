@@ -110,7 +110,7 @@ test('should record page view when rendering shared page', async t => {
   record.restore();
 });
 
-test('should return markdown content and skip page view when content-type is text/markdown', async t => {
+test('should return markdown content and skip page view when accept is text/markdown', async t => {
   const docId = randomUUID();
   const { app, adapter, models, docReader } = t.context;
 

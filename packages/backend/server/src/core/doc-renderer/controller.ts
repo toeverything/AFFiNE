@@ -105,10 +105,10 @@ export class DocRendererController {
     const [, , workspaceId, sub, ...rest] = req.path.split('/');
     const isWorkspace =
       workspaceId && sub && !staticPaths.has(sub) && rest.length === 0;
-    const isWorkspaceDocPath = isWorkspace && workspaceId !== sub;
+    const isDocPath = isWorkspace && workspaceId !== sub;
 
     if (
-      isWorkspaceDocPath &&
+      isDocPath &&
       req.accepts().some(t => markdownType.includes(t.toLowerCase()))
     ) {
       try {
@@ -135,12 +135,12 @@ export class DocRendererController {
     // /:workspaceId/:docId
     if (isWorkspace) {
       try {
-        opts = isWorkspaceDocPath
-          ? await this.getWorkspaceContent(workspaceId)
-          : await this.getPageContent(workspaceId, sub);
+        opts = isDocPath
+          ? await this.getPageContent(workspaceId, sub)
+          : await this.getWorkspaceContent(workspaceId);
         metrics.doc.counter('render').add(1);
 
-        if (opts && isWorkspaceDocPath) {
+        if (opts && isDocPath) {
           void this.models.workspaceAnalytics
             .recordDocView({
               workspaceId,
