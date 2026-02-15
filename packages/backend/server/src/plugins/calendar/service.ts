@@ -35,7 +35,7 @@ export class CalendarService {
 
   constructor(
     private readonly models: Models,
-    private readonly providerFactory: CalendarProviderFactory,
+    private readonly providerFactory: CalendarProviderFactory<CalendarProvider>,
     private readonly mutex: Mutex,
     private readonly config: Config,
     private readonly url: URLHelper

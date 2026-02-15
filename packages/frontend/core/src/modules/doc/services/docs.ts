@@ -8,7 +8,7 @@ import { ObjectPool, Service } from '@toeverything/infra';
 import { combineLatest, map } from 'rxjs';
 
 import { initDocFromProps } from '../../../blocksuite/initialization';
-import { getAFFiNEWorkspaceSchema } from '../../workspace';
+import { getAFFiNEWorkspaceSchema } from '../../workspace/global-schema';
 import type { Doc } from '../entities/doc';
 import { DocRecordList } from '../entities/record-list';
 import { DocCreated, DocInitialized } from '../events';

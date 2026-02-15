@@ -1,5 +1,4 @@
 import { createReactComponentFromLit } from '@affine/component';
-import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewProvider } from '@blocksuite/affine/components/peek';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -13,7 +12,6 @@ import {
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import {
   BlockStdScope,
-  BlockViewIdentifier,
   type EditorHost,
   ShadowlessElement,
 } from '@blocksuite/affine/std';
@@ -32,27 +30,12 @@ import { css, html, nothing, type PropertyValues, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { keyed } from 'lit/directives/keyed.js';
-import { literal } from 'lit/static-html.js';
 import React from 'react';
 import { filter } from 'rxjs/operators';
 
 import { markDownToDoc } from '../../utils';
 import type { AffineAIPanelState } from '../widgets/ai-panel/type';
-
-export const getCustomPageEditorBlockSpecs: () => ExtensionType[] = () => {
-  const manager = getViewManager().config.init().value;
-  return [
-    ...manager.get('page'),
-    {
-      setup: di => {
-        di.override(
-          BlockViewIdentifier('affine:page'),
-          () => literal`affine-page-root`
-        );
-      },
-    },
-  ];
-};
+import { getCustomPageEditorBlockSpecs } from './page-editor-block-specs';
 
 const customHeadingStyles = css`
   .custom-heading {

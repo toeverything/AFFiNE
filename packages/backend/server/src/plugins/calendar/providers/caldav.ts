@@ -22,8 +22,8 @@ import {
   CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,
   CalendarProviderListEventsResult,
-  CalendarProviderName,
 } from './def';
+import { CalendarProviderName } from './factory';
 import { CalendarSyncTokenInvalid } from './google';
 
 const XML_PARSER = new XMLParser({

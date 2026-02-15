@@ -4,7 +4,7 @@ import { Entity, LiveData, yjsGetPath } from '@toeverything/infra';
 import type { Observable } from 'rxjs';
 import { Doc as YDoc, transact } from 'yjs';
 
-import { DocsService } from '../../doc';
+import { DocsService } from '../../doc/services/docs';
 import { WorkspaceImpl } from '../impls/workspace';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';

@@ -7,11 +7,11 @@ import {
   CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,
   CalendarProviderListEventsResult,
-  CalendarProviderName,
   CalendarProviderTokens,
   CalendarProviderWatchParams,
   CalendarProviderWatchResult,
 } from './def';
+import { CalendarProviderName } from './factory';
 
 export class CalendarSyncTokenInvalid extends Error {
   readonly code = 'calendar_sync_token_invalid';

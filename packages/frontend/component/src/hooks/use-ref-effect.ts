@@ -81,7 +81,7 @@ export const useRefEffect = <T>(
         }
       };
     }, // Keep a ref to the latest dependencies
-     
+    // oxlint-disable-next-line react/exhaustive-deps
     (internalRef.dependencies_ = dependencies)
   );
 
