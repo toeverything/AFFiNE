@@ -25,6 +25,7 @@ import { LiveData, Service } from '@toeverything/infra';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
+import { normalizeSearchText } from '../../../utils/normalize-search-text';
 import type { DocRecord, DocsService } from '../../doc';
 import type { ExplorerIconService } from '../../explorer-icon/services/explorer-icon';
 import type { I18nService } from '../../i18n';
@@ -184,7 +185,9 @@ export class DocDisplayMetaService extends Service {
       const doc = get(this.docsService.list.doc$(docId));
       const referenced = !!options?.reference;
       const titleAlias = referenced ? options?.title : undefined;
-      const originalTitle = doc ? get(doc.title$) : '';
+      const originalTitle = doc
+        ? normalizeSearchText(get(doc.title$), { fallback: '' })
+        : '';
       // journal title
       const journalDateString = get(this.journalService.journalDate$(docId));
       const journalTitle = journalDateString
