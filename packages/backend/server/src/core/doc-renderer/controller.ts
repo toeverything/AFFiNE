@@ -102,27 +102,23 @@ export class DocRendererController {
 
     let opts: RenderOptions | null = null;
     // /workspace/:workspaceId/{:docId | staticPaths}
-    const [, , workspaceId, subPath, ...restPaths] = req.path.split('/');
-    const isWorkspacePath =
-      workspaceId && !staticPaths.has(subPath) && restPaths.length === 0;
-    const isWorkspaceDocPath = isWorkspacePath && workspaceId !== subPath;
+    const [, , workspaceId, sub, ...rest] = req.path.split('/');
+    const isWorkspace =
+      workspaceId && sub && !staticPaths.has(sub) && rest.length === 0;
+    const isWorkspaceDocPath = isWorkspace && workspaceId !== sub;
 
     if (
       isWorkspaceDocPath &&
       req.accepts().some(t => markdownType.includes(t.toLowerCase()))
     ) {
       try {
-        const allowPreview = await this.allowDocPreview(workspaceId, subPath);
+        const allowPreview = await this.allowDocPreview(workspaceId, sub);
         if (!allowPreview) {
           res.status(404).end();
           return;
         }
 
-        const markdown = await this.doc.getDocMarkdown(
-          workspaceId,
-          subPath,
-          false
-        );
+        const markdown = await this.doc.getDocMarkdown(workspaceId, sub, false);
         if (markdown) {
           res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
           res.send(markdown.markdown);
@@ -137,24 +133,24 @@ export class DocRendererController {
     }
 
     // /:workspaceId/:docId
-    if (isWorkspacePath) {
+    if (isWorkspace) {
       try {
         opts = isWorkspaceDocPath
           ? await this.getWorkspaceContent(workspaceId)
-          : await this.getPageContent(workspaceId, subPath);
+          : await this.getPageContent(workspaceId, sub);
         metrics.doc.counter('render').add(1);
 
         if (opts && isWorkspaceDocPath) {
           void this.models.workspaceAnalytics
             .recordDocView({
               workspaceId,
-              docId: subPath,
-              visitorId: this.buildVisitorId(req, workspaceId, subPath),
+              docId: sub,
+              visitorId: this.buildVisitorId(req, workspaceId, sub),
               isGuest: true,
             })
             .catch(error => {
               this.logger.warn(
-                `Failed to record shared page view: ${workspaceId}/${subPath}`,
+                `Failed to record shared page view: ${workspaceId}/${sub}`,
                 error as Error
               );
             });
