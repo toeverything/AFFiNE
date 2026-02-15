@@ -68,6 +68,39 @@ export class DocRendererController {
       .digest('hex');
   }
 
+  private isMarkdownContentRequest(req: Request) {
+    const headerContentType = req.header('content-type');
+    if (!headerContentType) {
+      return false;
+    }
+
+    const mimeType = headerContentType.split(';', 1)[0]?.trim().toLowerCase();
+    if (!mimeType) {
+      return false;
+    }
+
+    return (
+      mimeType === 'text/markdown' ||
+      mimeType === 'application/markdown' ||
+      mimeType === 'text/x-markdown'
+    );
+  }
+
+  private async allowDocPreview(workspaceId: string, docId: string) {
+    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
+    if (!allowSharing) return false;
+
+    let allowUrlPreview = await this.models.doc.isPublic(workspaceId, docId);
+
+    if (!allowUrlPreview) {
+      // if page is private, but workspace url preview is on
+      allowUrlPreview =
+        await this.models.workspace.allowUrlPreview(workspaceId);
+    }
+
+    return allowUrlPreview;
+  }
+
   @Public()
   @Get('/*path')
   async render(@Req() req: Request, @Res() res: Response) {
@@ -82,17 +115,45 @@ export class DocRendererController {
     let opts: RenderOptions | null = null;
     // /workspace/:workspaceId/{:docId | staticPaths}
     const [, , workspaceId, subPath, ...restPaths] = req.path.split('/');
+    const isWorkspacePath =
+      workspaceId && !staticPaths.has(subPath) && restPaths.length === 0;
+    const isWorkspaceDocPath = isWorkspacePath && workspaceId !== subPath;
+
+    if (isWorkspaceDocPath && this.isMarkdownContentRequest(req)) {
+      try {
+        const allowPreview = await this.allowDocPreview(workspaceId, subPath);
+        if (!allowPreview) {
+          res.status(404).end();
+          return;
+        }
+
+        const markdown = await this.doc.getDocMarkdown(
+          workspaceId,
+          subPath,
+          false
+        );
+        if (markdown) {
+          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+          res.send(markdown.markdown);
+          return;
+        }
+      } catch (e) {
+        this.logger.error('failed to render markdown page', e);
+      }
+
+      res.status(404).end();
+      return;
+    }
 
     // /:workspaceId/:docId
-    if (workspaceId && !staticPaths.has(subPath) && restPaths.length === 0) {
+    if (isWorkspacePath) {
       try {
-        opts =
-          workspaceId === subPath
-            ? await this.getWorkspaceContent(workspaceId)
-            : await this.getPageContent(workspaceId, subPath);
+        opts = isWorkspaceDocPath
+          ? await this.getWorkspaceContent(workspaceId)
+          : await this.getPageContent(workspaceId, subPath);
         metrics.doc.counter('render').add(1);
 
-        if (opts && workspaceId !== subPath) {
+        if (opts && isWorkspaceDocPath) {
           void this.models.workspaceAnalytics
             .recordDocView({
               workspaceId,
@@ -124,20 +185,7 @@ export class DocRendererController {
     workspaceId: string,
     docId: string
   ): Promise<RenderOptions | null> {
-    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
-    if (!allowSharing) {
-      return null;
-    }
-
-    let allowUrlPreview = await this.models.doc.isPublic(workspaceId, docId);
-
-    if (!allowUrlPreview) {
-      // if page is private, but workspace url preview is on
-      allowUrlPreview =
-        await this.models.workspace.allowUrlPreview(workspaceId);
-    }
-
-    if (allowUrlPreview) {
+    if (await this.allowDocPreview(workspaceId, docId)) {
       return this.doc.getDocContent(workspaceId, docId);
     }
 
