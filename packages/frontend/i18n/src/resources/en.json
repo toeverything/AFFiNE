@@ -625,6 +625,7 @@
   "com.affine.import.google-keep.options.title": "Google Keep import options",
   "com.affine.import.google-keep.options.favorites": "Import favorite status",
   "com.affine.import.google-keep.options.tags": "Import labels as tags (create missing tags)",
+  "com.affine.import.google-keep.options.attachments": "Import attachments",
   "com.affine.import.google-keep.options.target-folder": "Target folder",
   "com.affine.import.google-keep.options.target-folder.none": "No folder",
   "com.affine.import.google-keep.options.back": "Back",

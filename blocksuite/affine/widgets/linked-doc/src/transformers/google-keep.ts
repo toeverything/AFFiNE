@@ -15,6 +15,7 @@ type ImportGoogleKeepZipOptions = {
   collection: Workspace;
   schema: Schema;
   imported: Blob;
+  importAttachments?: boolean;
   extensions: ExtensionType[];
   onFavoriteImported?: (docId: string) => void | Promise<void>;
   onResolveTags?: (tagNames: string[]) => string[] | Promise<string[]>;
@@ -857,6 +858,7 @@ async function importGoogleKeepZip({
   collection,
   schema,
   imported,
+  importAttachments,
   extensions,
   onFavoriteImported,
   onResolveTags,
@@ -913,12 +915,15 @@ async function importGoogleKeepZip({
 
   let importedDocs = 0;
   onProgress?.({ totalDocs: notesToImport.length, importedDocs });
+  const shouldImportAttachments = importAttachments ?? true;
 
   for (const { note, fallbackTitle, notePath } of notesToImport) {
     const html = await toHtml(note, fallbackTitle);
     const meta = toMeta(note, fallbackTitle);
     const tagNames = extractTagNames(note);
-    const attachments = await resolveKeepAttachments(note, notePath, allFiles);
+    const attachments = shouldImportAttachments
+      ? await resolveKeepAttachments(note, notePath, allFiles)
+      : [];
 
     const docId = await HtmlTransformer.importHTMLToDoc({
       collection,
