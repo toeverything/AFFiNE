@@ -8,6 +8,7 @@ import {
   type WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
+import { FavoriteService } from '@affine/core/modules/favorite';
 import { OrganizeService } from '@affine/core/modules/organize';
 import { UrlService } from '@affine/core/modules/url';
 import {
@@ -207,7 +208,8 @@ type ImportConfig = {
     files: File[],
     handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>,
     organizeService?: OrganizeService,
-    explorerIconService?: ExplorerIconService
+    explorerIconService?: ExplorerIconService,
+    favoriteService?: FavoriteService
   ) => Promise<ImportResult>;
 };
 
@@ -465,7 +467,8 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       files,
       _handleImportAffineFile,
       _organizeService,
-      _explorerIconService
+      _explorerIconService,
+      favoriteService
     ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
@@ -477,6 +480,17 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         schema: getAFFiNEWorkspaceSchema(),
         imported: file,
         extensions: getStoreManager().config.init().value.get('store'),
+        onFavoriteImported: docId => {
+          if (!favoriteService) return;
+
+          const alreadyFavorite = favoriteService.favoriteList.isFavorite$(
+            'doc',
+            docId
+          ).value;
+          if (!alreadyFavorite) {
+            favoriteService.favoriteList.add('doc', docId);
+          }
+        },
       });
 
       return { docIds };
@@ -715,6 +729,7 @@ export const ImportDialog = ({
   const docCollection = workspace.docCollection;
   const organizeService = useService(OrganizeService);
   const explorerIconService = useService(ExplorerIconService);
+  const favoriteService = useService(FavoriteService);
 
   const globalDialogService = useService(GlobalDialogService);
 
@@ -794,7 +809,8 @@ export const ImportDialog = ({
             files,
             handleImportAffineFile,
             organizeService,
-            explorerIconService
+            explorerIconService,
+            favoriteService
           );
 
         setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
@@ -825,6 +841,7 @@ export const ImportDialog = ({
     [
       docCollection,
       explorerIconService,
+      favoriteService,
       handleImportAffineFile,
       organizeService,
       t,
