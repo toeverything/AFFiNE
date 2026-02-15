@@ -17,16 +17,28 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { AllShapeConfig } from '../toolbar/shape-menu-config';
 
-// Shape categories for the browser
-export const SHAPE_CATEGORIES = [
-  { id: 'general', name: 'General' },
-  { id: 'basic', name: 'Basic' },
-  { id: 'flowchart', name: 'Flowchart' },
-  { id: 'arrows', name: 'Arrows' },
-  { id: 'misc', name: 'Misc' },
-] as const;
+export type ShapeCategory =
+  | 'general'
+  | 'basic'
+  | 'flowchart'
+  | 'arrows'
+  | 'misc';
 
-export type ShapeCategory = (typeof SHAPE_CATEGORIES)[number]['id'];
+const SHAPE_CATEGORY_LABELS: Record<ShapeCategory, string> = {
+  general: 'General',
+  basic: 'Basic',
+  flowchart: 'Flowchart',
+  arrows: 'Arrows',
+  misc: 'Misc',
+};
+
+const SHAPE_CATEGORY_ORDER: ShapeCategory[] = [
+  'general',
+  'flowchart',
+  'arrows',
+  'basic',
+  'misc',
+];
 
 // Map shapes to categories
 const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
@@ -173,6 +185,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       position: absolute;
       font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
       z-index: var(--affine-z-index-popover);
+      pointer-events: auto;
     }
 
     .edgeless-shapes-panel {
@@ -184,6 +197,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
 
       display: flex;
       flex-direction: column;
+      pointer-events: auto;
     }
     ${unsafeCSS(lightToolbarStyles('.edgeless-shapes-panel'))}
     ${unsafeCSS(darkToolbarStyles('.edgeless-shapes-panel'))}
@@ -244,7 +258,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     }
 
     .shapes-scrollcontent {
-      overflow: hidden;
+      overflow: auto;
       height: 100%;
       width: 100%;
     }
@@ -379,11 +393,28 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     return shapes;
   }
 
+  private _getAvailableCategories() {
+    const shapes = this._searchKeyword
+      ? SHAPE_BROWSER_ITEMS.filter(shape => {
+          const keyword = this._searchKeyword.toLowerCase();
+          return (
+            shape.name.toLowerCase().includes(keyword) ||
+            shape.tooltip.toLowerCase().includes(keyword)
+          );
+        })
+      : SHAPE_BROWSER_ITEMS;
+    const categories = new Set(shapes.map(shape => shape.category));
+    return SHAPE_CATEGORY_ORDER.filter(id => categories.has(id)).map(id => ({
+      id,
+      name: SHAPE_CATEGORY_LABELS[id],
+    }));
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener('keydown', stopPropagation, false);
     this._disposables.addFromEvent(this, 'click', stopPropagation);
-    this._disposables.addFromEvent(this, 'wheel', stopPropagation);
+    this._disposables.addFromEvent(this, 'pointerdown', stopPropagation);
   }
 
   override firstUpdated() {
@@ -398,7 +429,13 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   }
 
   override render() {
-    const shapesInCategory = this._getShapesForCategory(this._selectedCategory);
+    const availableCategories = this._getAvailableCategories();
+    const selectedCategory = availableCategories.find(
+      cat => cat.id === this._selectedCategory
+    )?.id;
+    const effectiveCategory =
+      selectedCategory ?? availableCategories[0]?.id ?? 'general';
+    const shapesInCategory = this._getShapesForCategory(effectiveCategory);
     const appTheme = this.edgeless?.std?.get(ThemeProvider)?.app$?.value;
 
     return html`
@@ -416,11 +453,11 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
         </div>
         <div class="shape-categories">
           ${repeat(
-            SHAPE_CATEGORIES,
+            availableCategories,
             cat => cat.id,
             cat => html`
               <div
-                class="category-entry ${this._selectedCategory === cat.id
+                class="category-entry ${effectiveCategory === cat.id
                   ? 'selected'
                   : ''}"
                 @click=${() => this._selectCategory(cat.id)}
