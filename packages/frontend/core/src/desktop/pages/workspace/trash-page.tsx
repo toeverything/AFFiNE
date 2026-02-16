@@ -10,6 +10,7 @@ import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon, DeletePermanentlyIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -111,9 +112,23 @@ export const TrashPage = () => {
 
   const handleMultiDelete = useCallback(
     (ids: string[]) => {
+      let firstError: unknown;
+
       ids.forEach(pageId => {
-        permanentlyDeletePage(pageId);
+        try {
+          permanentlyDeletePage(pageId);
+        } catch (error) {
+          console.error(error);
+          firstError ??= error;
+        }
       });
+
+      if (firstError) {
+        const userFriendlyError = UserFriendlyError.fromAny(firstError);
+        toast(t[`error.${userFriendlyError.name}`](userFriendlyError.data));
+        return;
+      }
+
       toast(t['com.affine.toastMessage.permanentlyDeleted']());
     },
     [permanentlyDeletePage, t]
@@ -151,8 +166,27 @@ export const TrashPage = () => {
   );
 
   const onEmptyTrash = useCallback(() => {
-    onConfirmPermanentlyDelete(trashDocs.map(doc => doc.id));
-  }, [onConfirmPermanentlyDelete, trashDocs]);
+    const ids = trashDocs.map(doc => doc.id);
+    if (ids.length === 0) {
+      return;
+    }
+
+    openConfirmModal({
+      title: `${t['com.affine.workspaceSubPath.trash.empty']()}?`,
+      description: t['com.affine.trashOperation.emptyDescription']().replace(
+        '{{count}}',
+        String(ids.length)
+      ),
+      cancelText: t['Cancel'](),
+      confirmText: t['com.affine.trashOperation.delete'](),
+      confirmButtonOptions: {
+        variant: 'error',
+      },
+      onConfirm: () => {
+        handleMultiDelete(ids);
+      },
+    });
+  }, [handleMultiDelete, openConfirmModal, t, trashDocs]);
 
   useEffect(() => {
     const subscription = collectionRulesService
@@ -198,7 +232,7 @@ export const TrashPage = () => {
       <ViewHeader>
         <TrashHeader
           onEmptyTrash={onEmptyTrash}
-          disableEmptyTrash={trashDocs.length === 0 || (!isAdmin && !isOwner)}
+          disableEmptyTrash={isEmpty || (!isAdmin && !isOwner)}
         />
       </ViewHeader>
       <ViewBody>
