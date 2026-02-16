@@ -622,7 +622,7 @@
   "com.affine.import.modal.tip": "Wenn du Unterstützung für zusätzliche Dateitypen anfordern möchtest, lass es uns gerne wissen auf",
   "com.affine.import.google-keep": "Google Notizen Takeout (.zip)",
   "com.affine.import.google-keep.tooltip": "Importiere deine Notizen aus einem Google Takeout Export von Google Notizen.",
-  "com.affine.import.google-keep.options.title": "Google Notizen Import Einstellungen",
+  "com.affine.import.google-keep.options.title": "Google Notizen-Importeinstellungen",
   "com.affine.import.google-keep.options.favorites": "Die Favoriten-Kennzeichnung übernehmen",
   "com.affine.import.google-keep.options.tags": "Labels als Tags übernehmen (fehlende werden erstellt)",
   "com.affine.import.google-keep.options.attachments": "Anhänge importieren",
