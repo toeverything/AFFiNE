@@ -292,6 +292,7 @@ type ImportConfig = {
 type GoogleKeepImportOptions = {
   importFavorites: boolean;
   importTags: boolean;
+  importAttachments: boolean;
   targetFolderId?: string;
 };
 
@@ -564,6 +565,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       const resolvedOptions: GoogleKeepImportOptions = {
         importFavorites: googleKeepOptions?.importFavorites ?? true,
         importTags: googleKeepOptions?.importTags ?? true,
+        importAttachments: googleKeepOptions?.importAttachments ?? true,
         targetFolderId: googleKeepOptions?.targetFolderId,
       };
 
@@ -591,6 +593,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         collection: docCollection,
         schema: getAFFiNEWorkspaceSchema(),
         imported: file,
+        importAttachments: resolvedOptions.importAttachments,
         extensions: getStoreManager().config.init().value.get('store'),
         onProgress: stats => {
           totalDocs = stats.totalDocs;
@@ -860,6 +863,15 @@ const GoogleKeepImportOptionsPanel = ({
         </div>
         <div className={style.importOptionRow}>
           <span>
+            {t['com.affine.import.google-keep.options.attachments']()}
+          </span>
+          <Checkbox
+            checked={options.importAttachments}
+            onChange={(_, checked) => onChange({ importAttachments: checked })}
+          />
+        </div>
+        <div className={style.importOptionRow}>
+          <span>
             {t['com.affine.import.google-keep.options.target-folder']()}
           </span>
         </div>
@@ -994,6 +1006,7 @@ export const ImportDialog = ({
     useState<GoogleKeepImportOptions>({
       importFavorites: true,
       importTags: true,
+      importAttachments: true,
       targetFolderId: undefined,
     });
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(

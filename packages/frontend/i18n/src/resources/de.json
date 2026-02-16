@@ -625,6 +625,7 @@
   "com.affine.import.google-keep.options.title": "Google Notizen Import Einstellungen",
   "com.affine.import.google-keep.options.favorites": "Die Favoriten-Kennzeichnung übernehmen",
   "com.affine.import.google-keep.options.tags": "Labels als Tags übernehmen (fehlende werden erstellt)",
+  "com.affine.import.google-keep.options.attachments": "Anhänge importieren",
   "com.affine.import.google-keep.options.target-folder": "Zielordner wählen",
   "com.affine.import.google-keep.options.target-folder.none": "Kein Ordner",
   "com.affine.import.google-keep.options.back": "Zurück",
