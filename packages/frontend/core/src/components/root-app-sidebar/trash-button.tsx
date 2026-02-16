@@ -33,12 +33,27 @@ export const TrashButton = () => {
   const trashDocs = useLiveData(docsService.list.trashDocs$);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleEmptyTrash = useCallback(() => {
+  const handleEmptyTrash = useCallback(async () => {
     if (!trashDocs.length) {
       return;
     }
+    try {
+      const canTrashDocs = await Promise.all(
+        trashDocs.map(doc => guardService.can('Doc_Trash', doc.id))
+      );
+      if (canTrashDocs.some(canTrash => !canTrash)) {
+        toast(t['com.affine.no-permission']());
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+      const userFriendlyError = UserFriendlyError.fromAny(error);
+      toast(t[`error.${userFriendlyError.name}`](userFriendlyError.data));
+      return;
+    }
+
     openConfirmModal({
-      title: `${t['com.affine.workspaceSubPath.trash.empty']()}?`,
+      title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
       description: t['com.affine.trashOperation.deleteDescription'](),
       cancelText: t['Cancel'](),
       confirmText: t['com.affine.trashOperation.delete'](),
@@ -52,7 +67,7 @@ export const TrashButton = () => {
         toast(t['com.affine.toastMessage.permanentlyDeleted']());
       },
     });
-  }, [openConfirmModal, t, trashDocs, workspace.docCollection]);
+  }, [guardService, openConfirmModal, t, trashDocs, workspace.docCollection]);
 
   const { dropTargetRef, draggedOver } = useDropTarget<AffineDNDData>(
     () => ({
@@ -122,7 +137,7 @@ export const TrashButton = () => {
               type="danger"
               prefixIcon={<DeletePermanentlyIcon />}
               disabled={!trashDocs.length}
-              onClick={handleEmptyTrash}
+              onClick={() => void handleEmptyTrash()}
             >
               {t['com.affine.workspaceSubPath.trash.empty']()}
             </MenuItem>
