@@ -5,6 +5,7 @@ import {
 } from '@affine/core/components/explorer/context';
 import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-list';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
+import { useEmptyTrash } from '@affine/core/components/hooks/affine/use-empty-trash';
 import { Header } from '@affine/core/components/pure/header';
 import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import { DocsService } from '@affine/core/modules/doc';
@@ -66,6 +67,7 @@ export const TrashPage = () => {
   const docsService = useService(DocsService);
 
   const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
+  const { confirmAndEmptyTrash } = useEmptyTrash();
   const isActiveView = useIsActiveView();
   const { openConfirmModal } = useConfirmModal();
   const trashDocs = useLiveData(docsService.list.trashDocs$);
@@ -166,27 +168,10 @@ export const TrashPage = () => {
   );
 
   const onEmptyTrash = useCallback(() => {
-    const ids = trashDocs.map(doc => doc.id);
-    if (ids.length === 0) {
-      return;
-    }
-
-    openConfirmModal({
-      title: `${t['com.affine.workspaceSubPath.trash.empty']()}?`,
-      description: t['com.affine.trashOperation.emptyDescription']().replace(
-        '{{count}}',
-        String(ids.length)
-      ),
-      cancelText: t['Cancel'](),
-      confirmText: t['com.affine.trashOperation.delete'](),
-      confirmButtonOptions: {
-        variant: 'error',
-      },
-      onConfirm: () => {
-        handleMultiDelete(ids);
-      },
+    confirmAndEmptyTrash(trashDocs.map(doc => doc.id)).catch(() => {
+      // Errors are already handled in useEmptyTrash.
     });
-  }, [handleMultiDelete, openConfirmModal, t, trashDocs]);
+  }, [confirmAndEmptyTrash, trashDocs]);
 
   useEffect(() => {
     const subscription = collectionRulesService

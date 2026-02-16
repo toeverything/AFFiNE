@@ -7,7 +7,7 @@ import {
   useConfirmModal,
   useDropTarget,
 } from '@affine/component';
-import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
+import { useEmptyTrash } from '@affine/core/components/hooks/affine/use-empty-trash';
 import { MenuLinkItem } from '@affine/core/modules/app-sidebar/views';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
@@ -25,7 +25,7 @@ import { useCallback, useState } from 'react';
 export const TrashButton = () => {
   const t = useI18n();
   const docsService = useService(DocsService);
-  const { permanentlyDeletePage } = useBlockSuiteMetaHelper();
+  const { confirmAndEmptyTrash } = useEmptyTrash();
   const { openConfirmModal } = useConfirmModal();
   const globalContextService = useService(GlobalContextService);
   const trashActive = useLiveData(globalContextService.globalContext.isTrash.$);
@@ -34,49 +34,8 @@ export const TrashButton = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleEmptyTrash = useCallback(async () => {
-    if (!trashDocs.length) {
-      return;
-    }
-    try {
-      const canTrashDocs = await Promise.all(
-        trashDocs.map(doc => guardService.can('Doc_Delete', doc.id))
-      );
-      if (canTrashDocs.some(canTrash => !canTrash)) {
-        toast(t['com.affine.no-permission']());
-        return;
-      }
-    } catch (error) {
-      console.error(error);
-      const userFriendlyError = UserFriendlyError.fromAny(error);
-      toast(t[`error.${userFriendlyError.name}`](userFriendlyError.data));
-      return;
-    }
-
-    openConfirmModal({
-      title: `${t['com.affine.workspaceSubPath.trash.empty']()}?`,
-      description: t['com.affine.trashOperation.emptyDescription']().replace(
-        '{{count}}',
-        String(trashDocs.length)
-      ),
-      cancelText: t['Cancel'](),
-      confirmText: t['com.affine.trashOperation.delete'](),
-      confirmButtonOptions: {
-        variant: 'error',
-      },
-      onConfirm: () => {
-        try {
-          trashDocs.forEach(doc => {
-            permanentlyDeletePage(doc.id);
-          });
-          toast(t['com.affine.toastMessage.permanentlyDeleted']());
-        } catch (error) {
-          console.error(error);
-          const userFriendlyError = UserFriendlyError.fromAny(error);
-          toast(t[`error.${userFriendlyError.name}`](userFriendlyError.data));
-        }
-      },
-    });
-  }, [guardService, openConfirmModal, permanentlyDeletePage, t, trashDocs]);
+    await confirmAndEmptyTrash(trashDocs.map(doc => doc.id));
+  }, [confirmAndEmptyTrash, trashDocs]);
 
   const { dropTargetRef, draggedOver } = useDropTarget<AffineDNDData>(
     () => ({
