@@ -8,6 +8,9 @@ export const modalOverlay = style({
   zIndex: cssVar('zIndexModal'),
   backgroundColor: cssVarV2('layer/background/modal'),
   pointerEvents: 'auto',
+  overflow: 'hidden',
+  overscrollBehavior: 'none',
+  touchAction: 'none',
   selectors: {
     '&[data-anime-state="animating"]': {
       opacity: 0,

@@ -38,6 +38,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
   private _cleanup: (() => void) | null = null;
   private _autoUpdateCleanup: (() => void) | null = null;
   private _menuElement: EdgelessShapeMenu | null = null;
+  private _escapeCleanup: (() => void) | null = null;
 
   @state()
   private accessor _browserOpen = false;
@@ -67,6 +68,11 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
   override connectedCallback() {
     super.connectedCallback();
     this.disposables.add(() => this._autoUpdateCleanup?.());
+  }
+
+  override disconnectedCallback() {
+    this._closeBrowser();
+    super.disconnectedCallback();
   }
 
   private _toggleMenu() {
@@ -105,6 +111,16 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
     this._cleanup = once(panel, 'closepanel', () => {
       this._closeBrowser();
     });
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        this._closeBrowser();
+      }
+    };
+    document.addEventListener('keydown', onEscape);
+    this._escapeCleanup = () => {
+      document.removeEventListener('keydown', onEscape);
+    };
 
     // Handle shape selection
     panel.addEventListener('shapeselect', ((e: CustomEvent) => {
@@ -155,6 +171,8 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
       this._openedBrowserPanel = null;
       this._cleanup?.();
       this._cleanup = null;
+      this._escapeCleanup?.();
+      this._escapeCleanup = null;
       this._autoUpdateCleanup?.();
       this._autoUpdateCleanup = null;
       this._browserOpen = false;

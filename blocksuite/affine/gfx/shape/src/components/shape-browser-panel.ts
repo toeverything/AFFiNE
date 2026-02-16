@@ -349,12 +349,24 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     .shapes-viewport {
       position: relative;
       flex-grow: 1;
+      overscroll-behavior: contain;
     }
 
     .shapes-scrollcontent {
       overflow: auto;
       height: 100%;
       width: 100%;
+      overscroll-behavior: contain;
+      scrollbar-width: auto;
+    }
+
+    .shapes-scrollcontent::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    overlay-scrollbar {
+      display: none;
     }
 
     .shapes-list {
@@ -539,6 +551,34 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     this._disposables.addFromEvent(this, 'pointerdown', stopPropagation);
   }
 
+  override firstUpdated() {
+    const scrollContent = this.renderRoot.querySelector(
+      '.shapes-scrollcontent'
+    );
+    if (scrollContent) {
+      this._disposables.addFromEvent(
+        scrollContent,
+        'wheel',
+        (event: WheelEvent) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const element = scrollContent as HTMLElement;
+          element.scrollTop += event.deltaY;
+        },
+        { passive: false }
+      );
+    }
+
+    requestConnectedFrame(() => {
+      this._disposables.addFromEvent(document, 'click', evt => {
+        if (this.contains(evt.target as HTMLElement)) {
+          return;
+        }
+        this._closePanel();
+      });
+    }, this);
+  }
+
   override updated() {
     const canvases = this.renderRoot.querySelectorAll(
       'canvas.stencil-icon-canvas'
@@ -572,17 +612,6 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
       ctx.restore();
       canvas.dataset.drawn = 'true';
     });
-  }
-
-  override firstUpdated() {
-    requestConnectedFrame(() => {
-      this._disposables.addFromEvent(document, 'click', evt => {
-        if (this.contains(evt.target as HTMLElement)) {
-          return;
-        }
-        this._closePanel();
-      });
-    }, this);
   }
 
   override render() {

@@ -355,6 +355,62 @@ export const PeekViewModalContainer = forwardRef<
     };
   }, [onOpenChange]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.classList.contains(styles.modalOverlay)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener('wheel', onWheel, {
+      passive: false,
+      capture: true,
+    });
+    return () => {
+      document.removeEventListener('wheel', onWheel, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    const overlay = overlayRef.current as HTMLElement | null;
+    if (!overlay) return;
+
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target as HTMLElement | null;
+      console.log('[modal-overlay-wheel]', {
+        deltaY: event.deltaY,
+        target: target?.tagName,
+        targetClass: target?.className,
+        passive: event.cancelable === false,
+      });
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    const onDocWheel = (event: WheelEvent) => {
+      const target = event.target as HTMLElement | null;
+      console.log('[modal-doc-wheel]', {
+        deltaY: event.deltaY,
+        target: target?.tagName,
+        targetClass: target?.className,
+        cancelable: event.cancelable,
+      });
+      event.preventDefault();
+    };
+
+    overlay.addEventListener('wheel', onWheel, { passive: false });
+    document.addEventListener('wheel', onDocWheel, {
+      passive: false,
+      capture: true,
+    });
+    return () => {
+      overlay.removeEventListener('wheel', onWheel);
+      document.removeEventListener('wheel', onDocWheel, true);
+    };
+  }, [overlayRef]);
+
   useLayoutEffect(() => {
     if (animation === 'zoom') {
       open ? animateZoomIn() : animateZoomOut();
