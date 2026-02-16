@@ -3,6 +3,7 @@ import { apis } from '@affine/electron-api';
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 
 import { isLink } from '../modules/navigation/utils';
+import { toArrayBuffer } from './array-buffer';
 
 interface AudioEncodingConfig {
   sampleRate: number;
@@ -36,16 +37,6 @@ async function blobToArrayBuffer(
     return toArrayBuffer(blob);
   }
   return toArrayBuffer(blob);
-}
-
-function toArrayBuffer(data: ArrayBuffer | ArrayBufferView): ArrayBuffer {
-  if (data instanceof ArrayBuffer) {
-    return data;
-  }
-  return data.buffer.slice(
-    data.byteOffset,
-    data.byteOffset + data.byteLength
-  ) as ArrayBuffer;
 }
 
 function getRecordingFileUrl(filepath: string): URL {
@@ -175,7 +166,7 @@ async function encodeAudioFrames({
         numberOfFrames: chunk.length / numberOfChannels,
         numberOfChannels,
         timestamp: (offset * 1000000) / sampleRate,
-        data: chunk,
+        data: toArrayBuffer(chunk),
       });
 
       encoder.encode(frame);
@@ -448,7 +439,7 @@ export const createStreamEncoder = (
       numberOfFrames:
         buffer.length / BYTES_PER_SAMPLE / codecs.numberOfChannels,
       timestamp: 0,
-      data: buffer,
+      data: toArrayBuffer(buffer),
     });
   };
 

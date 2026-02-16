@@ -1,3 +1,4 @@
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
@@ -192,7 +193,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
-          return record ? new Blob([record.data], { type: record.mime }) : null;
+          return record
+            ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
+            : null;
         },
         delete: async () => {
           return;
@@ -391,7 +394,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     storage.connection.disconnect();
 
     if (localBlob) {
-      return new Blob([localBlob.data], { type: localBlob.mime });
+      return new Blob([toArrayBuffer(localBlob.data)], {
+        type: localBlob.mime,
+      });
     }
 
     const cloudBlob = await new CloudBlobStorage({
@@ -401,7 +406,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     if (!cloudBlob) {
       return null;
     }
-    return new Blob([cloudBlob.data], { type: cloudBlob.mime });
+    return new Blob([toArrayBuffer(cloudBlob.data)], { type: cloudBlob.mime });
   }
 
   async listBlobs(id: string): Promise<ListedBlobRecord[]> {
