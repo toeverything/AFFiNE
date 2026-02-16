@@ -13,6 +13,7 @@ type ImportGoogleKeepZipOptions = {
   schema: Schema;
   imported: Blob;
   extensions: ExtensionType[];
+  onFavoriteImported?: (docId: string) => void | Promise<void>;
 };
 
 type GoogleKeepListItem = {
@@ -137,6 +138,7 @@ async function importGoogleKeepZip({
   schema,
   imported,
   extensions,
+  onFavoriteImported,
 }: ImportGoogleKeepZipOptions): Promise<{ docIds: string[] }> {
   const unzip = new Unzip();
   await unzip.load(imported);
@@ -182,6 +184,9 @@ async function importGoogleKeepZip({
     });
     if (docId) {
       collection.meta.setDocMeta(docId, meta);
+      if (meta.favorite && onFavoriteImported) {
+        await onFavoriteImported(docId);
+      }
       docIds.push(docId);
     }
   }
