@@ -1841,6 +1841,7 @@
   "com.affine.workspaceSubPath.all": "Alle Seiten",
   "com.affine.workspaceSubPath.chat": "Intelligenz",
   "com.affine.workspaceSubPath.trash": "Papierkorb",
+  "com.affine.workspaceSubPath.trash.empty": "Papierkorb leeren",
   "com.affine.workspaceSubPath.trash.empty-description": "Gelöschte Seiten werden hier angezeigt.",
   "com.affine.write_with_a_blank_page": "Schreibe mit einer leeren Seite",
   "com.affine.yesterday": "Gestern",

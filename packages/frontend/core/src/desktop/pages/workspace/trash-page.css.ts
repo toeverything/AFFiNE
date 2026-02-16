@@ -19,3 +19,7 @@ export const trashIcon = style({
   color: cssVar('iconColor'),
   fontSize: cssVar('fontH5'),
 });
+
+export const emptyTrashButton = style({
+  borderRadius: '8px',
+});

@@ -1,4 +1,4 @@
-import { toast, useConfirmModal } from '@affine/component';
+import { IconButton, toast, useConfirmModal } from '@affine/component';
 import {
   createDocExplorerContext,
   DocExplorerContext,
@@ -7,10 +7,11 @@ import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-li
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { Header } from '@affine/core/components/pure/header';
 import { CollectionRulesService } from '@affine/core/modules/collection-rules';
+import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
-import { DeleteIcon } from '@blocksuite/icons/rc';
+import { DeleteIcon, DeletePermanentlyIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -24,7 +25,13 @@ import {
 import { EmptyPageList } from './page-list-empty';
 import * as styles from './trash-page.css';
 
-const TrashHeader = () => {
+const TrashHeader = ({
+  onEmptyTrash,
+  disableEmptyTrash,
+}: {
+  onEmptyTrash: () => void;
+  disableEmptyTrash: boolean;
+}) => {
   const t = useI18n();
   return (
     <Header
@@ -33,6 +40,18 @@ const TrashHeader = () => {
           <DeleteIcon className={styles.trashIcon} />
           {t['com.affine.workspaceSubPath.trash']()}
         </div>
+      }
+      right={
+        <IconButton
+          size="20"
+          className={styles.emptyTrashButton}
+          tooltip={t['com.affine.workspaceSubPath.trash.empty']()}
+          disabled={disableEmptyTrash}
+          onClick={onEmptyTrash}
+          data-testid="trash-empty-button"
+        >
+          <DeletePermanentlyIcon />
+        </IconButton>
       }
     />
   );
@@ -43,10 +62,12 @@ export const TrashPage = () => {
   const collectionRulesService = useService(CollectionRulesService);
   const globalContextService = useService(GlobalContextService);
   const permissionService = useService(WorkspacePermissionService);
+  const docsService = useService(DocsService);
 
   const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const isActiveView = useIsActiveView();
   const { openConfirmModal } = useConfirmModal();
+  const trashDocs = useLiveData(docsService.list.trashDocs$);
 
   const [explorerContextValue] = useState(() =>
     createDocExplorerContext({
@@ -129,6 +150,10 @@ export const TrashPage = () => {
     [handleMultiDelete, openConfirmModal, t]
   );
 
+  const onEmptyTrash = useCallback(() => {
+    onConfirmPermanentlyDelete(trashDocs.map(doc => doc.id));
+  }, [onConfirmPermanentlyDelete, trashDocs]);
+
   useEffect(() => {
     const subscription = collectionRulesService
       .watch({
@@ -171,7 +196,10 @@ export const TrashPage = () => {
       <ViewTitle title={t['Trash']()} />
       <ViewIcon icon={'trash'} />
       <ViewHeader>
-        <TrashHeader />
+        <TrashHeader
+          onEmptyTrash={onEmptyTrash}
+          disableEmptyTrash={trashDocs.length === 0}
+        />
       </ViewHeader>
       <ViewBody>
         <div className={styles.body}>

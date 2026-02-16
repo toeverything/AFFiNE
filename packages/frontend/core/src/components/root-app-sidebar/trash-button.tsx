@@ -1,5 +1,8 @@
 import {
   AnimatedDeleteIcon,
+  IconButton,
+  Menu,
+  MenuItem,
   toast,
   useConfirmModal,
   useDropTarget,
@@ -8,18 +11,47 @@ import { MenuLinkItem } from '@affine/core/modules/app-sidebar/views';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { GuardService } from '@affine/core/modules/permissions';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
+import {
+  DeletePermanentlyIcon,
+  MoreHorizontalIcon,
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback } from 'react';
 
 export const TrashButton = () => {
   const t = useI18n();
   const docsService = useService(DocsService);
+  const workspace = useService(WorkspaceService).workspace;
   const { openConfirmModal } = useConfirmModal();
   const globalContextService = useService(GlobalContextService);
   const trashActive = useLiveData(globalContextService.globalContext.isTrash.$);
   const guardService = useService(GuardService);
+  const trashDocs = useLiveData(docsService.list.trashDocs$);
+
+  const handleEmptyTrash = useCallback(() => {
+    if (!trashDocs.length) {
+      return;
+    }
+    openConfirmModal({
+      title: `${t['com.affine.workspaceSubPath.trash.empty']()}?`,
+      description: t['com.affine.trashOperation.deleteDescription'](),
+      cancelText: t['Cancel'](),
+      confirmText: t['com.affine.trashOperation.delete'](),
+      confirmButtonOptions: {
+        variant: 'error',
+      },
+      onConfirm: () => {
+        trashDocs.forEach(doc => {
+          workspace.docCollection.removeDoc(doc.id);
+        });
+        toast(t['com.affine.toastMessage.permanentlyDeleted']());
+      },
+    });
+  }, [openConfirmModal, t, trashDocs, workspace.docCollection]);
 
   const { dropTargetRef, draggedOver } = useDropTarget<AffineDNDData>(
     () => ({
@@ -79,6 +111,25 @@ export const TrashButton = () => {
       icon={<AnimatedDeleteIcon closed={draggedOver} />}
       active={trashActive || draggedOver}
       to={'/trash'}
+      postfix={
+        <Menu
+          items={
+            <MenuItem
+              type="danger"
+              prefixIcon={<DeletePermanentlyIcon />}
+              disabled={!trashDocs.length}
+              onClick={handleEmptyTrash}
+            >
+              {t['com.affine.workspaceSubPath.trash.empty']()}
+            </MenuItem>
+          }
+        >
+          <IconButton size="16" data-testid="trash-operation-menu-button">
+            <MoreHorizontalIcon />
+          </IconButton>
+        </Menu>
+      }
+      postfixDisplay="hover"
     >
       <span data-testid="trash-page">
         {t['com.affine.workspaceSubPath.trash']()}

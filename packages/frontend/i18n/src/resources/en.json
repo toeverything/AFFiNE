@@ -1841,6 +1841,7 @@
   "com.affine.workspaceSubPath.all": "All docs",
   "com.affine.workspaceSubPath.chat": "Intelligence",
   "com.affine.workspaceSubPath.trash": "Trash",
+  "com.affine.workspaceSubPath.trash.empty": "Empty trash",
   "com.affine.workspaceSubPath.trash.empty-description": "Deleted docs will appear here.",
   "com.affine.write_with_a_blank_page": "Write with a blank page",
   "com.affine.yesterday": "Yesterday",
