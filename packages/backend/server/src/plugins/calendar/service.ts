@@ -105,11 +105,11 @@ export class CalendarService {
       const accessToken = accountTokens.accessToken;
       if (accessToken) {
         await Promise.allSettled(
-          needToStopChannel.map(s => {
+          needToStopChannel.map(async s => {
             if (!s.customChannelId || !s.customResourceId) {
-              return Promise.resolve();
+              return;
             }
-            return provider.stopChannel?.({
+            return await provider.stopChannel?.({
               accessToken,
               channelId: s.customChannelId,
               resourceId: s.customResourceId,

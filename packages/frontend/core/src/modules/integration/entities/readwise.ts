@@ -234,7 +234,7 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
   async deleteAll() {
     const refs = await this.getRefs();
     await Promise.all(
-      refs.map(ref => {
+      refs.map(async ref => {
         const doc = this.docsService.list.doc$(ref.id).value;
         if (doc) {
           doc.moveToTrash();

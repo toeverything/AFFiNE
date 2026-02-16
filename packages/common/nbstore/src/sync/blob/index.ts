@@ -190,6 +190,7 @@ export class BlobSyncImpl implements BlobSync {
   ): Promise<void> {
     return Promise.race([
       Promise.all(
+        // eslint-disable-next-line @typescript-eslint/await-thenable
         peerId
           ? [this.fullDownloadPeer(peerId)]
           : this.peers.map(p => this.fullDownloadPeer(p.peerId))
