@@ -67,7 +67,7 @@ export const autoScrollOnBoundary = (
   };
 
   const cancelBoxListen = effect(() => {
-    box.value;
+    void box.value;
     startUpdate();
   });
 

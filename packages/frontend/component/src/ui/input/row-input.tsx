@@ -69,7 +69,7 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
       if (!onBlur) return;
       selectRef.current?.addEventListener('blur', onBlur as any);
       return () => {
-        // oxlint-disable-next-line react-hooks/exhaustive-deps
+        // oxlint-disable-next-line react/exhaustive-deps
         selectRef.current?.removeEventListener('blur', onBlur as any);
       };
     }, [onBlur, selectRef]);

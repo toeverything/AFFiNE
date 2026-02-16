@@ -44,11 +44,11 @@ const staticPaths = new Set([
   'trash',
 ]);
 
-const markdownType = [
+const markdownType = new Set([
   'text/markdown',
   'application/markdown',
   'text/x-markdown',
-];
+]);
 
 @Controller('/workspace')
 export class DocRendererController {
@@ -109,7 +109,7 @@ export class DocRendererController {
 
     if (
       isDocPath &&
-      req.accepts().some(t => markdownType.includes(t.toLowerCase()))
+      req.accepts().some(t => markdownType.has(t.toLowerCase()))
     ) {
       try {
         const allowPreview = await this.allowDocPreview(workspaceId, sub);

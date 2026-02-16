@@ -10,12 +10,12 @@ import { Container } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { sha } from '@blocksuite/global/utils';
 import type {
+  DocMeta,
   ExtensionType,
   Schema,
   Store,
   Workspace,
 } from '@blocksuite/store';
-import type { DocMeta } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';

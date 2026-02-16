@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { AiPrompt, PrismaClient } from '@prisma/client';
 
-import { PromptConfig, PromptMessage } from '../providers';
+import type { PromptConfig, PromptMessage } from '../providers/types';
 
 type Prompt = Omit<
   AiPrompt,

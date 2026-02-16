@@ -18,10 +18,10 @@ import {
   CalendarProvider,
   CalendarProviderEvent,
   CalendarProviderEventTime,
+  CalendarProviderFactory,
   CalendarProviderName,
   CalendarSyncTokenInvalid,
 } from './providers';
-import { CalendarProviderFactory } from './providers';
 import type { LinkCalDAVAccountInput } from './types';
 
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
@@ -35,7 +35,7 @@ export class CalendarService {
 
   constructor(
     private readonly models: Models,
-    private readonly providerFactory: CalendarProviderFactory,
+    private readonly providerFactory: CalendarProviderFactory<CalendarProvider>,
     private readonly mutex: Mutex,
     private readonly config: Config,
     private readonly url: URLHelper
@@ -105,11 +105,11 @@ export class CalendarService {
       const accessToken = accountTokens.accessToken;
       if (accessToken) {
         await Promise.allSettled(
-          needToStopChannel.map(s => {
+          needToStopChannel.map(async s => {
             if (!s.customChannelId || !s.customResourceId) {
-              return Promise.resolve();
+              return;
             }
-            return provider.stopChannel?.({
+            return await provider.stopChannel?.({
               accessToken,
               channelId: s.customChannelId,
               resourceId: s.customResourceId,
@@ -654,8 +654,11 @@ export class CalendarService {
     }
 
     const zone = time.timeZone ?? fallbackTimezone ?? 'UTC';
+    if (!time.date) {
+      throw new Error('Calendar provider returned all-day event without date');
+    }
     return {
-      date: this.convertDateToUtc(time.date!, zone),
+      date: this.convertDateToUtc(time.date, zone),
       allDay: true,
     };
   }

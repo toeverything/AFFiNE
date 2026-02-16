@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import type { Request } from 'express';
 
 import { OneMB, readBufferWithLimit } from '../../base';
-import type { PromptTools } from './providers';
+import type { PromptTools } from './providers/types';
 import type { ToolsConfig } from './types';
 
 export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;

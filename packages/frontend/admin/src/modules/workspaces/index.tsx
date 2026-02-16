@@ -1,4 +1,5 @@
-import { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import type { FeatureType } from '@affine/graphql';
+import { AdminWorkspaceSort } from '@affine/graphql';
 import { useState } from 'react';
 
 import { Header } from '../header';

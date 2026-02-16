@@ -1,7 +1,7 @@
 import { minimatch } from 'minimatch';
 
 import { SCHEMA_NOT_FOUND_MESSAGE } from '../consts.js';
-import { BlockSchema, type BlockSchemaType } from '../model/index.js';
+import { BlockSchema, type BlockSchemaType } from '../model/block/zod.js';
 import { SchemaValidateError } from './error.js';
 
 /**

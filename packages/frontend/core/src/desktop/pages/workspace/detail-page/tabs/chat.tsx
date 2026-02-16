@@ -6,8 +6,8 @@ import {
   type ChatContextValue,
 } from '@affine/core/blocksuite/ai/components/ai-chat-content';
 import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
+import type { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import {
-  AIChatToolbar,
   configureAIChatToolbar,
   getOrCreateAIChatToolbar,
 } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';

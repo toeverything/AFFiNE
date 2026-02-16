@@ -125,6 +125,7 @@ export class CopilotTranscriptionResolver {
       user.id,
       workspaceId,
       blobId,
+      // eslint-disable-next-line @typescript-eslint/await-thenable
       await Promise.all(allBlobs)
     );
 

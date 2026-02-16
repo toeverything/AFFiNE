@@ -22,7 +22,7 @@ import clsx from 'clsx';
 import { lazy, Suspense, useCallback, useEffect } from 'react';
 import type { Subscription } from 'rxjs';
 
-import { WorkbenchService } from '../../../workbench';
+import { WorkbenchService } from '../../../workbench/services/workbench';
 import type { DocReferenceInfo } from '../../entities/peek-view';
 import { PeekViewService } from '../../services/peek-view';
 import { useEditor } from '../utils';

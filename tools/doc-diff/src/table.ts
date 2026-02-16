@@ -1,4 +1,5 @@
-import { Doc, Map as YMap } from 'yjs';
+import type { Doc } from 'yjs';
+import { Map as YMap } from 'yjs';
 
 import { diffKeyedRecords, type KeyedRecord } from './diff';
 import { formatValue, toPlain } from './plain';

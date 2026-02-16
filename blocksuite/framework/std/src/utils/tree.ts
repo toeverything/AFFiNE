@@ -87,6 +87,7 @@ export function batchRemoveChildren(
   }
 
   uniqueElements.forEach(element => {
+    // oxlint-disable-next-line unicorn/prefer-dom-node-remove
     container.removeChild(element);
   });
 }
@@ -114,7 +115,9 @@ function traverse(
       });
     }
 
-    postCallBack && postCallBack(element);
+    if (postCallBack) {
+      postCallBack(element);
+    }
   };
 
   innerTraverse(element);

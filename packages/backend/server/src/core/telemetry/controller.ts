@@ -2,9 +2,11 @@ import { Body, Controller, Options, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import { BadRequest, Throttle, UseNamedGuard } from '../../base';
-import type { CurrentUser as CurrentUserType } from '../auth';
-import { Public } from '../auth';
-import { CurrentUser } from '../auth';
+import {
+  CurrentUser,
+  type CurrentUser as CurrentUserType,
+  Public,
+} from '../auth';
 import { TelemetryService } from './service';
 import { TelemetryAck, type TelemetryBatch } from './types';
 

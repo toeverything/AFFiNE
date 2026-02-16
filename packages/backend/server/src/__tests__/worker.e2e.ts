@@ -1,6 +1,7 @@
+import { LookupAddress } from 'node:dns';
+
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
-import { LookupAddress } from 'dns';
 import Sinon from 'sinon';
 import type { Response } from 'supertest';
 
@@ -14,7 +15,6 @@ import { createTestingApp, TestingApp } from './utils';
 type TestContext = {
   app: TestingApp;
 };
-
 const test = ava as TestFn<TestContext>;
 
 const LookupAddressStub = (async (_hostname, options) => {

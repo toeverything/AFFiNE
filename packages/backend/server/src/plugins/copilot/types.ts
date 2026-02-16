@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import type { ChatPrompt } from './prompt';
-import { PromptMessageSchema, PureMessageSchema } from './providers';
+import type { ChatPrompt } from './prompt/chat-prompt';
+import { PromptMessageSchema, PureMessageSchema } from './providers/types';
 
 const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 

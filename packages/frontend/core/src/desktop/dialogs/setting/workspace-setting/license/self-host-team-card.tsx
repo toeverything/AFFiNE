@@ -73,6 +73,7 @@ export const SelfHostTeamCard = () => {
                 license?.expiredAt || 0
               ).toLocaleDateString(),
               leftDays: Math.floor(
+                // eslint-disable-next-line react-hooks/purity
                 (new Date(license?.expiredAt || 0).getTime() - Date.now()) /
                   (1000 * 60 * 60 * 24)
               ).toLocaleString(),
