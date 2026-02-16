@@ -23,7 +23,6 @@ import {
 } from '../components/ui/sheet';
 import { Logo } from './accounts/components/logo';
 import { useMediaQuery } from './common';
-import { NavContext } from './nav/context';
 import { Nav } from './nav/nav';
 import {
   PanelContext,
@@ -42,10 +41,6 @@ export function Layout({ children }: PropsWithChildren) {
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
   const location = useLocation();
-
-  const [activeTab, setActiveTab] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState('server');
-  const [currentModule, setCurrentModule] = useState('server');
 
   const handleLeftExpand = useCallback(() => {
     if (leftPanelRef.current?.getSize() === 0) {
@@ -151,36 +146,25 @@ export function Layout({ children }: PropsWithChildren) {
         },
       }}
     >
-      <NavContext.Provider
-        value={{
-          activeTab,
-          activeSubTab,
-          currentModule,
-          setActiveTab,
-          setActiveSubTab,
-          setCurrentModule,
-        }}
-      >
-        <TooltipProvider delayDuration={0}>
-          <div className="flex h-screen w-full overflow-hidden">
-            <ResizablePanelGroup direction="horizontal">
-              <LeftPanel
-                panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
-                onExpand={handleLeftExpand}
-                onCollapse={handleLeftCollapse}
-              />
-              <ResizablePanel id="1" order={1} minSize={50} defaultSize={50}>
-                {children}
-              </ResizablePanel>
-              <RightPanel
-                panelRef={rightPanelRef as RefObject<ImperativePanelHandle>}
-                onExpand={handleRightExpand}
-                onCollapse={handleRightCollapse}
-              />
-            </ResizablePanelGroup>
-          </div>
-        </TooltipProvider>
-      </NavContext.Provider>
+      <TooltipProvider delayDuration={0}>
+        <div className="flex h-screen w-full overflow-hidden">
+          <ResizablePanelGroup direction="horizontal">
+            <LeftPanel
+              panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
+              onExpand={handleLeftExpand}
+              onCollapse={handleLeftCollapse}
+            />
+            <ResizablePanel id="1" order={1} minSize={50} defaultSize={50}>
+              {children}
+            </ResizablePanel>
+            <RightPanel
+              panelRef={rightPanelRef as RefObject<ImperativePanelHandle>}
+              onExpand={handleRightExpand}
+              onCollapse={handleRightCollapse}
+            />
+          </ResizablePanelGroup>
+        </div>
+      </TooltipProvider>
     </PanelContext.Provider>
   );
 }

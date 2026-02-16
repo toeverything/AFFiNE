@@ -134,12 +134,7 @@ export const App = () => {
                 <Route
                   path={ROUTES.admin.settings.index}
                   element={<Settings />}
-                >
-                  <Route
-                    path={ROUTES.admin.settings.module}
-                    element={<Settings />}
-                  />
-                </Route>
+                />
               </Route>
             </Route>
           </Routes>

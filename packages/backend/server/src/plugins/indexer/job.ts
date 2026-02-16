@@ -132,6 +132,10 @@ export class IndexerJob {
         indexed: true,
       });
     }
+    if (!missingDocIds.length && !deletedDocIds.length) {
+      this.logger.verbose(`workspace ${workspaceId} is already indexed`);
+      return;
+    }
     this.logger.log(
       `indexed workspace ${workspaceId} with ${missingDocIds.length} missing docs and ${deletedDocIds.length} deleted docs`
     );

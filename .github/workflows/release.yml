@@ -148,7 +148,7 @@ jobs:
         name: Wait for approval
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: darkskygit,pengx17,L-Sun,EYHN
+          approvers: darkskygit
           minimum-approvals: 1
           fail-on-denial: true
           issue-title: Please confirm to release docker image
