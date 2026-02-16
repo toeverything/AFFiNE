@@ -560,7 +560,7 @@ export class CopilotController implements BeforeApplicationShutdown {
                         status: data.status,
                         id: data.node.id,
                         type: data.node.config.nodeType,
-                      } as any,
+                      },
                     };
                 }
               })

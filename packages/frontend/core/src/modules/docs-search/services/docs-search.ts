@@ -6,6 +6,7 @@ import { isEmpty, omit } from 'lodash-es';
 import { map, type Observable, of, switchMap } from 'rxjs';
 import { z } from 'zod';
 
+import { normalizeSearchText } from '../../../utils/normalize-search-text';
 import type { DocsService } from '../../doc/services/docs';
 import type { WorkspaceService } from '../../workspace';
 
@@ -25,24 +26,6 @@ export class DocsSearchService extends Service {
     indexing: 0,
     errorMessage: null,
   } as IndexerSyncState);
-
-  private normalizeHighlight(value?: string | null) {
-    if (!value) {
-      return value ?? '';
-    }
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.join(' ');
-      }
-      if (typeof parsed === 'string') {
-        return parsed;
-      }
-    } catch {
-      // ignore parse errors, return raw value
-    }
-    return value;
-  }
 
   searchTitle$(query: string) {
     return this.indexer
@@ -144,12 +127,12 @@ export class DocsSearchService extends Service {
             const firstMatchFlavour = bucket.hits.nodes[0]?.fields.flavour;
             if (firstMatchFlavour === 'affine:page') {
               // is title match
-              const blockContent = this.normalizeHighlight(
+              const blockContent = normalizeSearchText(
                 bucket.hits.nodes[1]?.highlights.content[0]
               ); // try to get block content
               result.push({
                 docId: bucket.key,
-                title: this.normalizeHighlight(
+                title: normalizeSearchText(
                   bucket.hits.nodes[0].highlights.content[0]
                 ),
                 score: bucket.score,
@@ -169,7 +152,7 @@ export class DocsSearchService extends Service {
                     ? matchedBlockId
                     : matchedBlockId[0],
                 score: bucket.score,
-                blockContent: this.normalizeHighlight(
+                blockContent: normalizeSearchText(
                   bucket.hits.nodes[0]?.highlights.content[0]
                 ),
               });
