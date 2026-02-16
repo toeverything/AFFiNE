@@ -222,6 +222,11 @@ function isFolderNode(node: unknown): boolean {
   return value?.value === 'folder';
 }
 
+/**
+ * Builds a flat, depth-indented folder option list from the organize tree.
+ * We explicitly filter non-folder nodes to avoid showing links/trashed nodes
+ * in the Google Keep target-folder selector.
+ */
 function flattenFolderOptions(node: unknown, depth = 0): FolderOption[] {
   const children = getFolderChildren(node);
   const result: FolderOption[] = [];
@@ -555,12 +560,15 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         throw new Error('Expected a single zip file for google keep import');
       }
 
+      // Resolve dialog options once so the transformer/import hooks can stay stateless.
       const resolvedOptions: GoogleKeepImportOptions = {
         importFavorites: googleKeepOptions?.importFavorites ?? true,
         importTags: googleKeepOptions?.importTags ?? true,
         targetFolderId: googleKeepOptions?.targetFolderId,
       };
 
+      // We keep baseline tag ids to derive import statistics:
+      // newly created tags vs. existing tags that were reused.
       const initialExistingTagIds = new Set(
         (tagService?.tagList.tagMetas$.value ?? []).map(tag => tag.id)
       );
@@ -568,6 +576,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       const reusedExistingTagIds = new Set<string>();
       let totalDocs = 0;
       let importedDocs = 0;
+      // Single progress sink that keeps UI updates in one place.
       const pushProgress = () => {
         onImportProgress?.({
           type: 'googleKeep',
@@ -592,6 +601,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           ? docId => {
               if (!favoriteService) return;
 
+              // Keep import may run repeatedly; avoid duplicate favorite inserts.
               const alreadyFavorite = favoriteService.favoriteList.isFavorite$(
                 'doc',
                 docId
@@ -605,6 +615,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           ? tagNames => {
               if (!tagService || tagNames.length === 0) return [];
 
+              // Snapshot current tags and resolve by case-insensitive key.
               const tagNameToId = new Map<string, string>();
               for (const tag of tagService.tagList.tagMetas$.value) {
                 const key = tag.name.trim().toLowerCase();
@@ -621,6 +632,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
 
                 let id = tagNameToId.get(key);
                 if (!id) {
+                  // Create missing tags on-demand so imported docs can be linked immediately.
                   const created = tagService.tagList.createTag(
                     name,
                     tagService.randomTagColor()
@@ -637,6 +649,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
                 }
               }
 
+              // Tag stats can change even when document progress is unchanged.
               pushProgress();
               return result;
             }
@@ -644,6 +657,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       });
 
       if (resolvedOptions.targetFolderId && organizeService) {
+        // Optional post-step: link all imported docs to the selected folder.
         const folder = organizeService.folderTree.folderNode$(
           resolvedOptions.targetFolderId
         ).value;
@@ -993,6 +1007,7 @@ export const ImportDialog = ({
   const explorerIconService = useService(ExplorerIconService);
   const favoriteService = useService(FavoriteService);
   const tagService = useService(TagService);
+  // Keep folder options reactive while user opens/closes folders in parallel.
   useLiveData(organizeService.folderTree.rootFolder.sortedChildren$);
   const folderOptions = flattenFolderOptions(
     organizeService.folderTree.rootFolder
@@ -1123,6 +1138,7 @@ export const ImportDialog = ({
   const handleImportSelect = useCallback(
     (type: ImportType) => {
       if (type === 'googleKeep') {
+        // Keep import requires extra options before file selection/import starts.
         setPendingImportType(type);
         setStatus('googleKeepOptions');
         return;

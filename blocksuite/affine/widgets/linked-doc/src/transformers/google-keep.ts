@@ -63,6 +63,14 @@ const KEEP_ATTACHMENTS_MIN_DIMENSION = 48;
 const KEEP_ATTACHMENTS_FRAME_PADDING = 20;
 const KEEP_ATTACHMENTS_PAGE_GAP = 180;
 
+/**
+ * Decodes a blob into text with encoding fallbacks.
+ * This exists because Keep export zips may contain JSON files with BOMs or
+ * non-UTF8 encodings depending on the platform/tool that created the archive.
+ *
+ * @param blob - The blob to decode.
+ * @returns The decoded text content.
+ */
 async function decodeBlobText(blob: Blob): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (!bytes.length) {
@@ -97,6 +105,12 @@ async function decodeBlobText(blob: Blob): Promise<string> {
   return new TextDecoder('utf-8').decode(bytes);
 }
 
+/**
+ * Parses a JSON blob into an object using robust text decoding first.
+ *
+ * @param blob - The JSON blob to parse.
+ * @returns The parsed object, or `null` if decoding/parsing fails.
+ */
 async function parseJsonBlob<T>(blob: Blob): Promise<T | null> {
   const decoded = await decodeBlobText(blob);
   try {
@@ -106,6 +120,12 @@ async function parseJsonBlob<T>(blob: Blob): Promise<T | null> {
   }
 }
 
+/**
+ * Converts a Google Keep microsecond timestamp to milliseconds.
+ *
+ * @param value - Timestamp value from Keep (`*TimestampUsec` fields).
+ * @returns A millisecond timestamp or `undefined` when value is invalid.
+ */
 function toTimestampFromUsec(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
   const num = Number(value);
@@ -113,11 +133,23 @@ function toTimestampFromUsec(value: unknown): number | undefined {
   return Math.round(num / 1000);
 }
 
+/**
+ * Normalizes a candidate title by trimming and removing null characters.
+ *
+ * @param value - Candidate title value.
+ * @returns A cleaned title string or an empty string.
+ */
 function normalizeTitle(value: unknown): string {
   if (typeof value !== 'string') return '';
   return value.replaceAll('\u0000', '').trim();
 }
 
+/**
+ * Tries to repair common mojibake in file names (for example `Ã¼` -> `ü`).
+ *
+ * @param fileName - The file name to normalize.
+ * @returns The repaired name when repair succeeds, otherwise the original.
+ */
 function fixPotentialMojibake(fileName: string): string {
   if (!fileName) return fileName;
   const looksBroken = /Ã.|Â.|â.|�/.test(fileName);
@@ -136,6 +168,12 @@ function fixPotentialMojibake(fileName: string): string {
   return fileName;
 }
 
+/**
+ * Removes HTML tags and reduces whitespace so text can be reused as a title.
+ *
+ * @param text - Rich text or HTML-like input.
+ * @returns Plain-text content suitable for title fallback extraction.
+ */
 function stripHtml(text: string): string {
   return text
     .replace(/<br\s*\/?>/gi, '\n')
@@ -145,6 +183,12 @@ function stripHtml(text: string): string {
     .trim();
 }
 
+/**
+ * Builds a fallback title from note content when no explicit title exists.
+ *
+ * @param note - Parsed Keep note payload.
+ * @returns A short title candidate derived from note text/list content.
+ */
 function getFallbackTitleFromText(note: GoogleKeepNote): string {
   const fromText = normalizeTitle(stripHtml(note.textContent ?? ''));
   if (fromText) return fromText.slice(0, 120);
@@ -157,6 +201,14 @@ function getFallbackTitleFromText(note: GoogleKeepNote): string {
   return '';
 }
 
+/**
+ * Picks the best document title using a deterministic priority:
+ * Keep title -> content-derived title -> sanitized file name.
+ *
+ * @param note - Parsed Keep note payload.
+ * @param fileName - Source JSON file name from the archive.
+ * @returns The selected title used for import metadata and file naming.
+ */
 function pickNoteTitle(note: GoogleKeepNote, fileName: string): string {
   const fromTitle = normalizeTitle(note.title);
   if (fromTitle) return fromTitle;
@@ -168,6 +220,13 @@ function pickNoteTitle(note: GoogleKeepNote, fileName: string): string {
   return normalizeTitle(fixPotentialMojibake(baseName)) || 'Untitled';
 }
 
+/**
+ * Maps Keep note metadata to AFFiNE doc meta fields.
+ *
+ * @param note - Parsed Keep note payload.
+ * @param fallbackTitle - Title fallback if note title is missing/empty.
+ * @returns Partial doc meta patch for title/timestamps/favorite.
+ */
 function toMeta(note: GoogleKeepNote, fallbackTitle: string): GoogleKeepMeta {
   const title = normalizeTitle(note.title) || fallbackTitle;
   const meta: GoogleKeepMeta = { title };
@@ -188,6 +247,12 @@ function toMeta(note: GoogleKeepNote, fallbackTitle: string): GoogleKeepMeta {
   return meta;
 }
 
+/**
+ * Extracts unique tag names from Keep labels.
+ *
+ * @param note - Parsed Keep note payload.
+ * @returns Deduplicated tag name list.
+ */
 function extractTagNames(note: GoogleKeepNote): string[] {
   return [
     ...new Set(
@@ -198,6 +263,12 @@ function extractTagNames(note: GoogleKeepNote): string[] {
   ];
 }
 
+/**
+ * Escapes text for safe embedding into generated HTML.
+ *
+ * @param text - Raw text value.
+ * @returns HTML-escaped text.
+ */
 function escapeHtml(text: string): string {
   return text
     .replaceAll('&', '&amp;')
@@ -207,10 +278,23 @@ function escapeHtml(text: string): string {
     .replaceAll("'", '&#39;');
 }
 
+/**
+ * Checks whether text appears to already contain HTML tags.
+ *
+ * @param text - Candidate text.
+ * @returns `true` when HTML-like tags are detected.
+ */
 function looksLikeHtml(text: string): boolean {
   return /<[^>]+>/.test(text);
 }
 
+/**
+ * Converts plain text to paragraph HTML while preserving line breaks.
+ * Existing HTML is passed through unchanged.
+ *
+ * @param text - Note body content.
+ * @returns HTML fragment for import.
+ */
 function renderTextContent(text: string): string {
   if (looksLikeHtml(text)) {
     return text;
@@ -218,16 +302,36 @@ function renderTextContent(text: string): string {
   return `<p>${escapeHtml(text).replaceAll('\n', '<br/>')}</p>`;
 }
 
+/**
+ * Normalizes archive paths to slash-separated relative form.
+ *
+ * @param path - Raw archive path.
+ * @returns Normalized path.
+ */
 function normalizePath(path: string): string {
   return path.replaceAll('\\', '/').replace(/^\.?\//, '');
 }
 
+/**
+ * Returns the directory segment of a normalized path.
+ *
+ * @param path - File path.
+ * @returns Parent directory path or empty string.
+ */
 function dirname(path: string): string {
   const normalized = normalizePath(path);
   const index = normalized.lastIndexOf('/');
   return index === -1 ? '' : normalized.slice(0, index);
 }
 
+/**
+ * Resolves an attachment blob for a note by trying direct and note-relative paths.
+ *
+ * @param notePath - Path of the source note JSON.
+ * @param filePath - Attachment path from note payload.
+ * @param files - Map of all files in the imported zip.
+ * @returns Matching blob or `undefined`.
+ */
 function resolveAttachmentBlob(
   notePath: string,
   filePath: string,
@@ -248,11 +352,24 @@ function resolveAttachmentBlob(
   return undefined;
 }
 
+/**
+ * Extracts a file name from a full/relative path.
+ *
+ * @param path - Full or relative file path.
+ * @returns Final file name segment.
+ */
 function toFileName(path: string): string {
   const normalized = normalizePath(path);
   return normalized.split('/').pop() || 'attachment';
 }
 
+/**
+ * Returns the first model in the document matching a given flavour.
+ *
+ * @param store - Target document store.
+ * @param flavour - Block flavour to search for.
+ * @returns First matching model or `null`.
+ */
 function getFirstModelByFlavour(
   store: Store,
   flavour: string
@@ -261,6 +378,13 @@ function getFirstModelByFlavour(
   return block?.model ?? null;
 }
 
+/**
+ * Ensures an edgeless surface exists in the document.
+ * Needed to place imported image groups as frame content in edgeless mode.
+ *
+ * @param store - Target document store.
+ * @returns Existing or newly created surface model, otherwise `null`.
+ */
 function ensureSurfaceModel(store: Store): BlockModel | null {
   const existing = getFirstModelByFlavour(store, 'affine:surface');
   if (existing) {
@@ -276,6 +400,12 @@ function ensureSurfaceModel(store: Store): BlockModel | null {
   return store.getModelById(surfaceId) as BlockModel | null;
 }
 
+/**
+ * Parses an `xywh` serialized string into tuple coordinates.
+ *
+ * @param xywh - Serialized `[x,y,w,h]` string.
+ * @returns Parsed tuple or `null` when format is invalid.
+ */
 function parseXywh(xywh: unknown): [number, number, number, number] | null {
   if (typeof xywh !== 'string') {
     return null;
@@ -297,6 +427,13 @@ function parseXywh(xywh: unknown): [number, number, number, number] | null {
   return null;
 }
 
+/**
+ * Computes the top-left anchor for attachment visuals relative to the page note.
+ * The anchor is placed to the right of the note in edgeless view.
+ *
+ * @param noteModel - Primary note model.
+ * @returns Anchor coordinates in edgeless canvas space.
+ */
 function getAttachmentsAnchorFromNote(noteModel: BlockModel): {
   x: number;
   y: number;
@@ -313,6 +450,16 @@ function getAttachmentsAnchorFromNote(noteModel: BlockModel): {
   };
 }
 
+/**
+ * Synchronizes root page title text with document meta title.
+ * This keeps page header rendering and list metadata consistent.
+ *
+ * @param options - Title sync options.
+ * @param options.collection - Workspace collection.
+ * @param options.docId - Target document id.
+ * @param options.title - Final title to apply.
+ * @returns Nothing.
+ */
 function syncRootTitle({
   collection,
   docId,
@@ -349,6 +496,12 @@ function syncRootTitle({
   });
 }
 
+/**
+ * Reads image dimensions from a blob, with browser API fallbacks.
+ *
+ * @param blob - Image blob.
+ * @returns Natural width/height or a safe default size.
+ */
 async function readImageSize(
   blob: Blob
 ): Promise<{ width: number; height: number }> {
@@ -389,6 +542,14 @@ async function readImageSize(
   return { width: KEEP_ATTACHMENTS_COLUMN_WIDTH, height: 180 };
 }
 
+/**
+ * Resolves Keep attachment descriptors into concrete blobs and metadata.
+ *
+ * @param note - Parsed Keep note payload.
+ * @param notePath - Source note JSON path.
+ * @param files - Map of all files from the import zip.
+ * @returns Normalized attachment entries available for insertion.
+ */
 async function resolveKeepAttachments(
   note: GoogleKeepNote,
   notePath: string,
@@ -420,6 +581,17 @@ async function resolveKeepAttachments(
   return result;
 }
 
+/**
+ * Appends resolved attachments into the imported doc.
+ * Images are placed in edgeless as a framed grid and linked in the note.
+ * Other files are appended as attachment blocks inside the note.
+ *
+ * @param options - Attachment insertion options.
+ * @param options.collection - Workspace collection.
+ * @param options.docId - Target document id.
+ * @param options.attachments - Resolved attachment entries.
+ * @returns A Promise that resolves when insertion is complete.
+ */
 async function appendAttachmentBlocksToDoc({
   collection,
   docId,
@@ -615,6 +787,14 @@ async function appendAttachmentBlocksToDoc({
   }
 }
 
+/**
+ * Builds import HTML for the textual part of a Keep note.
+ * Attachments are imported separately as native blocks.
+ *
+ * @param note - Parsed Keep note payload.
+ * @param fallbackTitle - Title fallback for HTML document title.
+ * @returns Standalone HTML document string for transformer import.
+ */
 async function toHtml(
   note: GoogleKeepNote,
   fallbackTitle: string
@@ -658,6 +838,21 @@ async function toHtml(
   return `<!doctype html><html><head><meta charset="utf-8" /><title>${escapeHtml(title)}</title></head><body>${sections.join('')}</body></html>`;
 }
 
+/**
+ * Imports a Google Keep Takeout zip into AFFiNE documents.
+ * Each note JSON is transformed to a doc, then metadata, tags, favorites,
+ * progress, and attachments are applied.
+ *
+ * @param options - Import options.
+ * @param options.collection - Target workspace collection.
+ * @param options.schema - Target schema.
+ * @param options.imported - Keep Takeout zip blob.
+ * @param options.extensions - Store extensions required by transformers.
+ * @param options.onFavoriteImported - Optional callback for pinned notes.
+ * @param options.onResolveTags - Optional callback to resolve/create tag ids.
+ * @param options.onProgress - Optional callback for import progress stats.
+ * @returns A Promise with ids of created docs.
+ */
 async function importGoogleKeepZip({
   collection,
   schema,
