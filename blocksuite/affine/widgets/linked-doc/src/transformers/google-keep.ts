@@ -1,9 +1,9 @@
 import {
-  BlockModel,
+  type BlockModel,
   type DocMeta,
   type ExtensionType,
-  Schema,
-  Store,
+  type Schema,
+  type Store,
   Text,
   type Workspace,
 } from '@blocksuite/store';
@@ -799,10 +799,7 @@ async function appendAttachmentBlocksToDoc({
  * @param fallbackTitle - Title fallback for HTML document title.
  * @returns Standalone HTML document string for transformer import.
  */
-async function toHtml(
-  note: GoogleKeepNote,
-  fallbackTitle: string
-): Promise<string> {
+function toHtml(note: GoogleKeepNote, fallbackTitle: string): string {
   const title = normalizeTitle(note.title) || fallbackTitle;
   const sections: string[] = [];
 
@@ -876,8 +873,10 @@ async function importGoogleKeepZip({
 
   const docIds: string[] = [];
   const candidates: Array<{ path: string; content: Blob }> = [];
+  const allFiles = new Map<string, Blob>();
 
   for (const entry of unzip) {
+    allFiles.set(normalizePath(entry.path), entry.content);
     if (entry.path.toLowerCase().endsWith('.json')) {
       candidates.push({ path: entry.path, content: entry.content });
     }
@@ -888,12 +887,6 @@ async function importGoogleKeepZip({
     fallbackTitle: string;
     notePath: string;
   }> = [];
-  const allFiles = new Map<string, Blob>();
-
-  for (const entry of unzip) {
-    allFiles.set(normalizePath(entry.path), entry.content);
-  }
-
   for (const candidate of candidates) {
     const fileName = candidate.path.split('/').pop() ?? 'keep-note.json';
 
@@ -925,46 +918,54 @@ async function importGoogleKeepZip({
   const shouldImportAttachments = importAttachments ?? true;
 
   for (const { note, fallbackTitle, notePath } of notesToImport) {
-    const html = await toHtml(note, fallbackTitle);
-    const meta = toMeta(note, fallbackTitle);
-    const tagNames = extractTagNames(note);
-    const attachments = shouldImportAttachments
-      ? await resolveKeepAttachments(note, notePath, allFiles)
-      : [];
+    try {
+      const html = toHtml(note, fallbackTitle);
+      const meta = toMeta(note, fallbackTitle);
+      const tagNames = extractTagNames(note);
+      const attachments = shouldImportAttachments
+        ? await resolveKeepAttachments(note, notePath, allFiles)
+        : [];
 
-    const docId = await HtmlTransformer.importHTMLToDoc({
-      collection,
-      schema,
-      html,
-      fileName: fallbackTitle,
-      extensions,
-    });
-    if (docId) {
-      await appendAttachmentBlocksToDoc({
+      const docId = await HtmlTransformer.importHTMLToDoc({
         collection,
-        docId,
-        attachments,
+        schema,
+        html,
+        fileName: fallbackTitle,
+        extensions,
       });
+      if (docId) {
+        await appendAttachmentBlocksToDoc({
+          collection,
+          docId,
+          attachments,
+        });
 
-      const tags =
-        onResolveTags && tagNames.length
-          ? (await onResolveTags(tagNames)).filter(Boolean)
-          : undefined;
-      collection.meta.setDocMeta(docId, {
-        ...meta,
-        ...(tags?.length ? { tags } : {}),
-      });
-      syncRootTitle({
-        collection,
-        docId,
-        title: meta.title ?? fallbackTitle,
-      });
-      if (meta.favorite && onFavoriteImported) {
-        await onFavoriteImported(docId);
+        const tags =
+          onResolveTags && tagNames.length
+            ? (await onResolveTags(tagNames)).filter(Boolean)
+            : undefined;
+        collection.meta.setDocMeta(docId, {
+          ...meta,
+          ...(tags?.length ? { tags } : {}),
+        });
+        syncRootTitle({
+          collection,
+          docId,
+          title: meta.title ?? fallbackTitle,
+        });
+        if (meta.favorite && onFavoriteImported) {
+          await onFavoriteImported(docId);
+        }
+        docIds.push(docId);
+        importedDocs += 1;
+        onProgress?.({ totalDocs: notesToImport.length, importedDocs });
       }
-      docIds.push(docId);
-      importedDocs += 1;
-      onProgress?.({ totalDocs: notesToImport.length, importedDocs });
+    } catch (error) {
+      console.error(
+        '[GoogleKeepTransformer] Failed to import note:',
+        notePath,
+        error
+      );
     }
   }
 
