@@ -7,11 +7,11 @@ import {
   useConfirmModal,
   useDropTarget,
 } from '@affine/component';
+import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { MenuLinkItem } from '@affine/core/modules/app-sidebar/views';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { GuardService } from '@affine/core/modules/permissions';
-import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
@@ -25,7 +25,7 @@ import { useCallback, useState } from 'react';
 export const TrashButton = () => {
   const t = useI18n();
   const docsService = useService(DocsService);
-  const workspace = useService(WorkspaceService).workspace;
+  const { permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const { openConfirmModal } = useConfirmModal();
   const globalContextService = useService(GlobalContextService);
   const trashActive = useLiveData(globalContextService.globalContext.isTrash.$);
@@ -62,12 +62,12 @@ export const TrashButton = () => {
       },
       onConfirm: () => {
         trashDocs.forEach(doc => {
-          workspace.docCollection.removeDoc(doc.id);
+          permanentlyDeletePage(doc.id);
         });
         toast(t['com.affine.toastMessage.permanentlyDeleted']());
       },
     });
-  }, [guardService, openConfirmModal, t, trashDocs, workspace.docCollection]);
+  }, [guardService, openConfirmModal, permanentlyDeletePage, t, trashDocs]);
 
   const { dropTargetRef, draggedOver } = useDropTarget<AffineDNDData>(
     () => ({
