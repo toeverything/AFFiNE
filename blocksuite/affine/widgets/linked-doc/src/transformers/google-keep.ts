@@ -28,6 +28,10 @@ type GoogleKeepNote = {
   title?: string;
   textContent?: string;
   listContent?: GoogleKeepListItem[];
+  attachments?: Array<{
+    filePath?: string;
+    mimetype?: string;
+  }>;
   labels?: Array<{ name?: string }>;
   createdTimestampUsec?: number | string;
   userEditedTimestampUsec?: number | string;
@@ -98,9 +102,122 @@ function renderTextContent(text: string): string {
   return `<p>${escapeHtml(text).replaceAll('\n', '<br/>')}</p>`;
 }
 
-function toHtml(note: GoogleKeepNote, fallbackTitle: string): string {
+function normalizePath(path: string): string {
+  return path.replaceAll('\\', '/').replace(/^\.?\//, '');
+}
+
+function dirname(path: string): string {
+  const normalized = normalizePath(path);
+  const index = normalized.lastIndexOf('/');
+  return index === -1 ? '' : normalized.slice(0, index);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function blobToDataUrl(blob: Blob, mimetype?: string): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const mime = mimetype || blob.type || 'application/octet-stream';
+  return `data:${mime};base64,${toBase64(bytes)}`;
+}
+
+function resolveAttachmentBlob(
+  notePath: string,
+  filePath: string,
+  files: Map<string, Blob>
+): Blob | undefined {
+  const normalizedFilePath = normalizePath(filePath);
+  const baseDir = dirname(notePath);
+  const candidates = [
+    normalizedFilePath,
+    baseDir ? `${baseDir}/${normalizedFilePath}` : normalizedFilePath,
+  ];
+  for (const path of candidates) {
+    const blob = files.get(path);
+    if (blob) {
+      return blob;
+    }
+  }
+  return undefined;
+}
+
+async function renderAttachmentsHtml(
+  note: GoogleKeepNote,
+  notePath: string,
+  files: Map<string, Blob>
+): Promise<string> {
+  if (!note.attachments?.length) return '';
+
+  const imageBlocks: string[] = [];
+  const otherBlocks: string[] = [];
+  for (const attachment of note.attachments) {
+    const filePath = attachment.filePath?.trim();
+    if (!filePath) continue;
+
+    const blob = resolveAttachmentBlob(notePath, filePath, files);
+    if (!blob) continue;
+
+    const dataUrl = await blobToDataUrl(blob, attachment.mimetype);
+    const mime = attachment.mimetype || blob.type || '';
+    const fileName = filePath.split('/').pop() || filePath;
+    const safeName = escapeHtml(fileName);
+
+    if (mime.startsWith('image/')) {
+      imageBlocks.push(
+        `<figure style="margin:0;"><img src="${dataUrl}" alt="${safeName}" style="width:100%;height:auto;display:block;border-radius:8px;" /><figcaption style="font-size:12px;opacity:.75;margin-top:4px;word-break:break-word;">${safeName}</figcaption></figure>`
+      );
+      continue;
+    }
+    if (mime.startsWith('audio/')) {
+      otherBlocks.push(
+        `<figure><audio controls src="${dataUrl}"></audio><figcaption>${safeName}</figcaption></figure>`
+      );
+      continue;
+    }
+    if (mime.startsWith('video/')) {
+      otherBlocks.push(
+        `<figure><video controls src="${dataUrl}"></video><figcaption>${safeName}</figcaption></figure>`
+      );
+      continue;
+    }
+
+    otherBlocks.push(
+      `<p><a href="${dataUrl}" download="${safeName}">${safeName}</a></p>`
+    );
+  }
+
+  const blocks: string[] = [];
+  if (imageBlocks.length) {
+    blocks.push(
+      `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;">${imageBlocks.join('')}</div>`
+    );
+  }
+  blocks.push(...otherBlocks);
+
+  if (!blocks.length) return '';
+  return `<section><p><strong>Attachments</strong></p>${blocks.join('')}</section>`;
+}
+
+async function toHtml(
+  note: GoogleKeepNote,
+  fallbackTitle: string,
+  notePath: string,
+  files: Map<string, Blob>
+): Promise<string> {
   const title = (note.title || '').trim() || fallbackTitle;
   const sections: string[] = [];
+
+  const attachmentsSection = await renderAttachmentsHtml(note, notePath, files);
+  if (attachmentsSection) {
+    sections.push(attachmentsSection);
+  }
 
   const text = (note.textContent || '').trim();
   if (text) {
@@ -162,7 +279,13 @@ async function importGoogleKeepZip({
   const notesToImport: Array<{
     note: GoogleKeepNote;
     fallbackTitle: string;
+    notePath: string;
   }> = [];
+  const allFiles = new Map<string, Blob>();
+
+  for (const entry of unzip) {
+    allFiles.set(normalizePath(entry.path), entry.content);
+  }
 
   for (const candidate of candidates) {
     const fileName = candidate.path.split('/').pop() ?? 'keep-note.json';
@@ -185,14 +308,18 @@ async function importGoogleKeepZip({
       continue;
     }
 
-    notesToImport.push({ note, fallbackTitle });
+    notesToImport.push({
+      note,
+      fallbackTitle,
+      notePath: normalizePath(candidate.path),
+    });
   }
 
   let importedDocs = 0;
   onProgress?.({ totalDocs: notesToImport.length, importedDocs });
 
-  for (const { note, fallbackTitle } of notesToImport) {
-    const html = toHtml(note, fallbackTitle);
+  for (const { note, fallbackTitle, notePath } of notesToImport) {
+    const html = await toHtml(note, fallbackTitle, notePath, allFiles);
     const meta = toMeta(note, fallbackTitle);
     const tagNames = extractTagNames(note);
     const docId = await HtmlTransformer.importHTMLToDoc({
