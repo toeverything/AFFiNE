@@ -31,7 +31,7 @@ jobs:
           cd ${{ env.ARCHIVE_DIR }}/out
           signtool sign /tr http://timestamp.globalsign.com/tsa/r6advanced1 /td sha256 /fd sha256 /a ${{ inputs.files }}
       - name: collect signed file diff
-        shell: powershell
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         run: |
           $OutDir = Join-Path '${{ env.ARCHIVE_DIR }}' 'out'
           $DiffDir = Join-Path '${{ env.ARCHIVE_DIR }}' 'signed-diff'

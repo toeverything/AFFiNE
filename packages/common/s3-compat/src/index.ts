@@ -1,6 +1,6 @@
-import { Buffer } from 'node:buffer';
+import type { Buffer } from 'node:buffer';
 import { stringify as stringifyQuery } from 'node:querystring';
-import { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
 
 import aws4 from 'aws4';
 import { XMLParser } from 'fast-xml-parser';
@@ -180,16 +180,16 @@ export function parseListPartsXml(xml: string): ParsedListParts {
 function buildEndpoint(config: S3CompatConfig) {
   const url = new URL(config.endpoint);
   if (config.forcePathStyle) {
-    const segments = url.pathname.split('/').filter(Boolean);
-    if (segments[0] !== config.bucket) {
+    const firstSegment = url.pathname.split('/').find(Boolean);
+    if (firstSegment !== config.bucket) {
       url.pathname = joinPath(url.pathname, config.bucket);
     }
     return url;
   }
 
-  const pathSegments = url.pathname.split('/').filter(Boolean);
+  const firstSegment = url.pathname.split('/').find(Boolean);
   const hostHasBucket = url.hostname.startsWith(`${config.bucket}.`);
-  const pathHasBucket = pathSegments[0] === config.bucket;
+  const pathHasBucket = firstSegment === config.bucket;
   if (!hostHasBucket && !pathHasBucket) {
     url.hostname = `${config.bucket}.${url.hostname}`;
   }
@@ -297,7 +297,7 @@ export class S3Compat implements S3CompatClient {
     const expiresInSeconds = this.presignConfig.expiresInSeconds;
     const path = this.buildObjectPath(key);
     const queryString = buildQuery({
-      ...(query ?? {}),
+      ...query,
       'X-Amz-Expires': expiresInSeconds,
     });
     const requestPath = queryString ? `${path}?${queryString}` : path;

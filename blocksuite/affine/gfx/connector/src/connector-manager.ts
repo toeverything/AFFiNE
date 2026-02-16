@@ -884,7 +884,7 @@ export class ConnectionOverlay extends Overlay {
   private _setupThemeListener(): void {
     const themeService = this.gfx.std.get(ThemeProvider);
     this._themeDisposer = effect(() => {
-      themeService.theme$;
+      void themeService.theme$.value;
       this._emphasisColor = this._getEmphasisColor();
     });
   }

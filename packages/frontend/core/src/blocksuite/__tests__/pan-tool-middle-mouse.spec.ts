@@ -3,7 +3,7 @@ import { PanTool } from '@blocksuite/affine-gfx-pointer';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
 import {
-  BaseTool,
+  type BaseTool,
   MouseButton,
   type ToolOptionWithType,
   type ToolType,
@@ -21,9 +21,7 @@ const pointerUpHandlers: unknown[] = [];
 const pointerUpDisposers: Array<ReturnType<typeof vi.fn>> = [];
 
 vi.mock('@blocksuite/affine-shared/utils', async () => {
-  const actual = await vi.importActual<
-    typeof import('@blocksuite/affine-shared/utils')
-  >('@blocksuite/affine-shared/utils');
+  const actual = await vi.importActual('@blocksuite/affine-shared/utils');
 
   return {
     ...actual,

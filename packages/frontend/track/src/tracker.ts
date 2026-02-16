@@ -241,7 +241,7 @@ function mergeSessionParams(
   engagementMs: number
 ) {
   const merged: Record<string, unknown> = {
-    ...(params ?? {}),
+    ...params,
   };
   if (Number.isFinite(nextSessionId) && nextSessionId > 0) {
     merged.session_id = nextSessionId;

@@ -35,7 +35,7 @@ export class InitCommand extends Command {
         this.genWorkspaceInfo,
         'typescript',
       ],
-      [this.workspace.join('oxlint.json'), this.genOxlintConfig, 'json'],
+      [this.workspace.join('.oxlintrc.json'), this.genOxlintConfig, 'json'],
       ...this.workspace.packages
         .filter(p => p.isTsProject)
         .map(
@@ -68,7 +68,7 @@ export class InitCommand extends Command {
 
   genOxlintConfig = () => {
     const json = JSON.parse(
-      readFileSync(this.workspace.join('oxlint.json').value, 'utf-8')
+      readFileSync(this.workspace.join('.oxlintrc.json').value, 'utf-8')
     );
 
     const ignoreList = readFileSync(

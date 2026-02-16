@@ -4,8 +4,8 @@ import { z } from 'zod';
 
 import { DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
-import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
+import type { CopilotChatOptions } from './types';
 
 const logger = new Logger('DocWriteTool');
 

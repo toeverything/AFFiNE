@@ -43,7 +43,6 @@ class MockR2Provider extends R2StorageProvider {
 
   destroy() {}
 
-  // @ts-ignore expect override
   override async proxyPutObject(
     key: string,
     body: any,

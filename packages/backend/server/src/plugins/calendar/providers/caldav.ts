@@ -22,8 +22,8 @@ import {
   CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,
   CalendarProviderListEventsResult,
-  CalendarProviderName,
 } from './def';
+import { CalendarProviderName } from './factory';
 import { CalendarSyncTokenInvalid } from './google';
 
 const XML_PARSER = new XMLParser({
@@ -113,7 +113,7 @@ const isRedirectStatus = (status: number) =>
 
 const splitHeaderTokens = (value: string) =>
   value
-    .split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/)
+    .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
     .map(token => token.trim())
     .filter(Boolean);
 

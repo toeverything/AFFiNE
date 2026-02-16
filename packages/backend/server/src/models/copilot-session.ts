@@ -117,7 +117,7 @@ export class CopilotSessionModel extends BaseModel {
     if (typeof value !== 'string') {
       return value;
     }
-    return value.replace(/\u0000/g, '') as T;
+    return value.replaceAll('\0', '') as T;
   }
 
   private sanitizeJsonValue<T>(value: T): T {

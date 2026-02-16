@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
 import type { IndexerService, SearchDoc } from '../../indexer';
-import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
+import type { CopilotChatOptions } from './types';
 
 export const buildDocKeywordSearchGetter = (
   ac: AccessController,
