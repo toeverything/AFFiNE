@@ -39,7 +39,7 @@ export const TrashButton = () => {
     }
     try {
       const canTrashDocs = await Promise.all(
-        trashDocs.map(doc => guardService.can('Doc_Trash', doc.id))
+        trashDocs.map(doc => guardService.can('Doc_Delete', doc.id))
       );
       if (canTrashDocs.some(canTrash => !canTrash)) {
         toast(t['com.affine.no-permission']());
