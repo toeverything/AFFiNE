@@ -61,10 +61,16 @@ export const TrashButton = () => {
         variant: 'error',
       },
       onConfirm: () => {
-        trashDocs.forEach(doc => {
-          permanentlyDeletePage(doc.id);
-        });
-        toast(t['com.affine.toastMessage.permanentlyDeleted']());
+        try {
+          trashDocs.forEach(doc => {
+            permanentlyDeletePage(doc.id);
+          });
+          toast(t['com.affine.toastMessage.permanentlyDeleted']());
+        } catch (error) {
+          console.error(error);
+          const userFriendlyError = UserFriendlyError.fromAny(error);
+          toast(t[`error.${userFriendlyError.name}`](userFriendlyError.data));
+        }
       },
     });
   }, [guardService, openConfirmModal, permanentlyDeletePage, t, trashDocs]);
