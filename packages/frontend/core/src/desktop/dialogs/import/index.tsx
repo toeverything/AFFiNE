@@ -22,6 +22,7 @@ import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
   DocxTransformer,
+  GoogleKeepTransformer,
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
@@ -185,6 +186,7 @@ type ImportType =
   | 'markdown'
   | 'markdownZip'
   | 'notion'
+  | 'googleKeep'
   | 'snapshot'
   | 'html'
   | 'docx'
@@ -263,6 +265,17 @@ const importOptions = [
     suffixTooltip: 'com.affine.import.notion.tooltip',
     testId: 'editor-option-menu-import-notion',
     type: 'notion' as ImportType,
+  },
+  {
+    key: 'googleKeep',
+    label: 'com.affine.import.google-keep',
+    prefixIcon: <FileIcon color={cssVar('black')} width={20} height={20} />,
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.google-keep.tooltip',
+    testId: 'editor-option-menu-import-google-keep',
+    type: 'googleKeep' as ImportType,
   },
   {
     key: 'docx',
@@ -443,6 +456,30 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         isWorkspaceFile,
         rootFolderId,
       };
+    },
+  },
+  googleKeep: {
+    fileOptions: { acceptType: 'Zip', multiple: false },
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      _explorerIconService
+    ) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single zip file for google keep import');
+      }
+
+      const { docIds } = await GoogleKeepTransformer.importGoogleKeepZip({
+        collection: docCollection,
+        schema: getAFFiNEWorkspaceSchema(),
+        imported: file,
+        extensions: getStoreManager().config.init().value.get('store'),
+      });
+
+      return { docIds };
     },
   },
   docx: {
