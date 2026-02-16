@@ -14,6 +14,7 @@ type ImportGoogleKeepZipOptions = {
   imported: Blob;
   extensions: ExtensionType[];
   onFavoriteImported?: (docId: string) => void | Promise<void>;
+  onResolveTags?: (tagNames: string[]) => string[] | Promise<string[]>;
 };
 
 type GoogleKeepListItem = {
@@ -36,7 +37,7 @@ type GoogleKeepNote = {
 };
 
 type GoogleKeepMeta = Partial<
-  Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'tags' | 'favorite'>
+  Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'favorite'>
 >;
 
 function toTimestampFromUsec(value: unknown): number | undefined {
@@ -59,18 +60,21 @@ function toMeta(note: GoogleKeepNote, fallbackTitle: string): GoogleKeepMeta {
     meta.updatedDate = updated;
   }
 
-  const tags = (note.labels ?? [])
-    .map(label => label.name?.trim())
-    .filter((name): name is string => Boolean(name));
-  if (tags.length) {
-    meta.tags = [...new Set(tags)];
-  }
-
   if (note.isPinned) {
     meta.favorite = true;
   }
 
   return meta;
+}
+
+function extractTagNames(note: GoogleKeepNote): string[] {
+  return [
+    ...new Set(
+      (note.labels ?? [])
+        .map(label => label.name?.trim())
+        .filter((name): name is string => Boolean(name))
+    ),
+  ];
 }
 
 function escapeHtml(text: string): string {
@@ -139,6 +143,7 @@ async function importGoogleKeepZip({
   imported,
   extensions,
   onFavoriteImported,
+  onResolveTags,
 }: ImportGoogleKeepZipOptions): Promise<{ docIds: string[] }> {
   const unzip = new Unzip();
   await unzip.load(imported);
@@ -175,6 +180,7 @@ async function importGoogleKeepZip({
 
     const html = toHtml(note, fallbackTitle);
     const meta = toMeta(note, fallbackTitle);
+    const tagNames = extractTagNames(note);
     const docId = await HtmlTransformer.importHTMLToDoc({
       collection,
       schema,
@@ -183,7 +189,14 @@ async function importGoogleKeepZip({
       extensions,
     });
     if (docId) {
-      collection.meta.setDocMeta(docId, meta);
+      const tags =
+        onResolveTags && tagNames.length
+          ? (await onResolveTags(tagNames)).filter(Boolean)
+          : undefined;
+      collection.meta.setDocMeta(docId, {
+        ...meta,
+        ...(tags?.length ? { tags } : {}),
+      });
       if (meta.favorite && onFavoriteImported) {
         await onFavoriteImported(docId);
       }

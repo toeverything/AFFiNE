@@ -10,6 +10,7 @@ import {
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { OrganizeService } from '@affine/core/modules/organize';
+import { TagService } from '@affine/core/modules/tag';
 import { UrlService } from '@affine/core/modules/url';
 import {
   getAFFiNEWorkspaceSchema,
@@ -209,7 +210,8 @@ type ImportConfig = {
     handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>,
     organizeService?: OrganizeService,
     explorerIconService?: ExplorerIconService,
-    favoriteService?: FavoriteService
+    favoriteService?: FavoriteService,
+    tagService?: TagService
   ) => Promise<ImportResult>;
 };
 
@@ -468,7 +470,8 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       _handleImportAffineFile,
       _organizeService,
       _explorerIconService,
-      favoriteService
+      favoriteService,
+      tagService
     ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
@@ -490,6 +493,40 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           if (!alreadyFavorite) {
             favoriteService.favoriteList.add('doc', docId);
           }
+        },
+        onResolveTags: tagNames => {
+          if (!tagService || tagNames.length === 0) return [];
+
+          const tagNameToId = new Map<string, string>();
+          for (const tag of tagService.tagList.tagMetas$.value) {
+            const key = tag.name.trim().toLowerCase();
+            if (key) {
+              tagNameToId.set(key, tag.id);
+            }
+          }
+
+          const result: string[] = [];
+          for (const rawName of tagNames) {
+            const name = rawName.trim();
+            if (!name) continue;
+            const key = name.toLowerCase();
+
+            let id = tagNameToId.get(key);
+            if (!id) {
+              const created = tagService.tagList.createTag(
+                name,
+                tagService.randomTagColor()
+              );
+              id = created.id;
+              tagNameToId.set(key, id);
+            }
+
+            if (!result.includes(id)) {
+              result.push(id);
+            }
+          }
+
+          return result;
         },
       });
 
@@ -730,6 +767,7 @@ export const ImportDialog = ({
   const organizeService = useService(OrganizeService);
   const explorerIconService = useService(ExplorerIconService);
   const favoriteService = useService(FavoriteService);
+  const tagService = useService(TagService);
 
   const globalDialogService = useService(GlobalDialogService);
 
@@ -810,7 +848,8 @@ export const ImportDialog = ({
             handleImportAffineFile,
             organizeService,
             explorerIconService,
-            favoriteService
+            favoriteService,
+            tagService
           );
 
         setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
@@ -844,6 +883,7 @@ export const ImportDialog = ({
       favoriteService,
       handleImportAffineFile,
       organizeService,
+      tagService,
       t,
     ]
   );
