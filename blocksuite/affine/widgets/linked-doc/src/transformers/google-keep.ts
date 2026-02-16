@@ -15,6 +15,7 @@ type ImportGoogleKeepZipOptions = {
   extensions: ExtensionType[];
   onFavoriteImported?: (docId: string) => void | Promise<void>;
   onResolveTags?: (tagNames: string[]) => string[] | Promise<string[]>;
+  onProgress?: (stats: { totalDocs: number; importedDocs: number }) => void;
 };
 
 type GoogleKeepListItem = {
@@ -144,6 +145,7 @@ async function importGoogleKeepZip({
   extensions,
   onFavoriteImported,
   onResolveTags,
+  onProgress,
 }: ImportGoogleKeepZipOptions): Promise<{ docIds: string[] }> {
   const unzip = new Unzip();
   await unzip.load(imported);
@@ -156,6 +158,11 @@ async function importGoogleKeepZip({
       candidates.push({ path: entry.path, content: entry.content });
     }
   }
+
+  const notesToImport: Array<{
+    note: GoogleKeepNote;
+    fallbackTitle: string;
+  }> = [];
 
   for (const candidate of candidates) {
     const fileName = candidate.path.split('/').pop() ?? 'keep-note.json';
@@ -178,6 +185,13 @@ async function importGoogleKeepZip({
       continue;
     }
 
+    notesToImport.push({ note, fallbackTitle });
+  }
+
+  let importedDocs = 0;
+  onProgress?.({ totalDocs: notesToImport.length, importedDocs });
+
+  for (const { note, fallbackTitle } of notesToImport) {
     const html = toHtml(note, fallbackTitle);
     const meta = toMeta(note, fallbackTitle);
     const tagNames = extractTagNames(note);
@@ -201,6 +215,8 @@ async function importGoogleKeepZip({
         await onFavoriteImported(docId);
       }
       docIds.push(docId);
+      importedDocs += 1;
+      onProgress?.({ totalDocs: notesToImport.length, importedDocs });
     }
   }
 
