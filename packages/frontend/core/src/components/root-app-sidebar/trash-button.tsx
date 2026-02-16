@@ -20,7 +20,7 @@ import {
   MoreHorizontalIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 export const TrashButton = () => {
   const t = useI18n();
@@ -31,6 +31,7 @@ export const TrashButton = () => {
   const trashActive = useLiveData(globalContextService.globalContext.isTrash.$);
   const guardService = useService(GuardService);
   const trashDocs = useLiveData(docsService.list.trashDocs$);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleEmptyTrash = useCallback(() => {
     if (!trashDocs.length) {
@@ -113,6 +114,9 @@ export const TrashButton = () => {
       to={'/trash'}
       postfix={
         <Menu
+          rootOptions={{
+            onOpenChange: setMenuOpen,
+          }}
           items={
             <MenuItem
               type="danger"
@@ -129,7 +133,7 @@ export const TrashButton = () => {
           </IconButton>
         </Menu>
       }
-      postfixDisplay="hover"
+      postfixDisplay={menuOpen ? 'always' : 'hover'}
     >
       <span data-testid="trash-page">
         {t['com.affine.workspaceSubPath.trash']()}
