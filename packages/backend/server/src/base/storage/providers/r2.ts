@@ -175,7 +175,7 @@ export class R2StorageProvider extends S3StorageProvider {
     body: Readable | Buffer | Uint8Array | string,
     options: { contentType?: string; contentLength?: number } = {}
   ) {
-    return this.client.putObject(key, body as any, {
+    return this.client.putObject(key, this.normalizeBody(body), {
       contentType: options.contentType,
       contentLength: options.contentLength,
     });
@@ -192,11 +192,22 @@ export class R2StorageProvider extends S3StorageProvider {
       key,
       uploadId,
       partNumber,
-      body as any,
+      this.normalizeBody(body),
       { contentLength: options.contentLength }
     );
 
     return result.etag;
+  }
+
+  private normalizeBody(body: Readable | Buffer | Uint8Array | string) {
+    // s3mini does not accept Node.js Readable directly.
+    // Convert it to Web ReadableStream for compatibility.
+    if (body instanceof Readable) {
+      return Readable.toWeb(body);
+    } else if (typeof body === 'string') {
+      return this.encoder.encode(body);
+    }
+    return body;
   }
 
   override async get(
