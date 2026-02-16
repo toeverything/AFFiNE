@@ -198,7 +198,7 @@ export const TrashPage = () => {
       <ViewHeader>
         <TrashHeader
           onEmptyTrash={onEmptyTrash}
-          disableEmptyTrash={trashDocs.length === 0}
+          disableEmptyTrash={trashDocs.length === 0 || (!isAdmin && !isOwner)}
         />
       </ViewHeader>
       <ViewBody>
