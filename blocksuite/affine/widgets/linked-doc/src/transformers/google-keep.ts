@@ -520,21 +520,24 @@ async function readImageSize(
   if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
     try {
       const objectUrl = URL.createObjectURL(blob);
-      const size = await new Promise<{ width: number; height: number }>(
-        (resolve, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            resolve({
-              width: img.naturalWidth || img.width,
-              height: img.naturalHeight || img.height,
-            });
-          };
-          img.onerror = () => reject(new Error('Failed to decode image'));
-          img.src = objectUrl;
-        }
-      );
-      URL.revokeObjectURL(objectUrl);
-      return size;
+      try {
+        const size = await new Promise<{ width: number; height: number }>(
+          (resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+              resolve({
+                width: img.naturalWidth || img.width,
+                height: img.naturalHeight || img.height,
+              });
+            };
+            img.onerror = () => reject(new Error('Failed to decode image'));
+            img.src = objectUrl;
+          }
+        );
+        return size;
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
     } catch {
       // fallback below
     }
