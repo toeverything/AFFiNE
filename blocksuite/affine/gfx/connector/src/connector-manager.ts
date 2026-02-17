@@ -10,6 +10,7 @@ import {
   ConnectorMode,
   GroupElementModel,
   type LocalConnectorElementModel,
+  ShapeElementModel,
 } from '@blocksuite/affine-model';
 import { ShapeType } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
@@ -625,6 +626,9 @@ export function getAnchors(ele: GfxModel) {
 
   // For each connection location (relative coordinates), calculate the actual point
   locations.forEach(location => {
+    const flipX = 'flipX' in ele && Boolean((ele as { flipX?: boolean }).flipX);
+    const flipY = 'flipY' in ele && Boolean((ele as { flipY?: boolean }).flipY);
+    const coordToStore = location;
     // Convert relative location to absolute position
     const absPoint: IVec = [
       bound.x + location[0] * bound.w,
@@ -636,11 +640,29 @@ export function getAnchors(ele: GfxModel) {
       { ...bound, rotate },
       absPoint
     );
+    const flippedPoint =
+      flipX || flipY
+        ? (() => {
+            const cx = bound.x + bound.w / 2;
+            const cy = bound.y + bound.h / 2;
+            const matrix = new DOMMatrix()
+              .translateSelf(cx, cy)
+              .rotateSelf(rotate ?? 0)
+              .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
+              .rotateSelf(-(rotate ?? 0))
+              .translateSelf(-cx, -cy);
+            const { x, y } = new DOMPoint(
+              rotatedPoint[0],
+              rotatedPoint[1]
+            ).matrixTransform(matrix);
+            return [x, y] as IVec;
+          })()
+        : rotatedPoint;
 
     if (fromStencil) {
       anchors.push({
-        point: PointLocation.fromVec(rotatedPoint),
-        coord: location,
+        point: PointLocation.fromVec(flippedPoint),
+        coord: coordToStore,
       });
       return;
     }
@@ -650,8 +672,8 @@ export function getAnchors(ele: GfxModel) {
     if (!rst) {
       // If no intersection, use the calculated point directly
       anchors.push({
-        point: PointLocation.fromVec(rotatedPoint),
-        coord: location,
+        point: PointLocation.fromVec(flippedPoint),
+        coord: coordToStore,
       });
       return;
     }
@@ -660,9 +682,27 @@ export function getAnchors(ele: GfxModel) {
       { ...bound, rotate: -rotate },
       rst[0]
     );
+    const relativeToStore = bound.toRelative(originPoint);
+    const intersectionPoint =
+      flipX || flipY
+        ? (() => {
+            const cx = bound.x + bound.w / 2;
+            const cy = bound.y + bound.h / 2;
+            const matrix = new DOMMatrix()
+              .translateSelf(cx, cy)
+              .rotateSelf(rotate ?? 0)
+              .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
+              .rotateSelf(-(rotate ?? 0))
+              .translateSelf(-cx, -cy);
+            const { x, y } = new DOMPoint(rst[0][0], rst[0][1]).matrixTransform(
+              matrix
+            );
+            return [x, y] as IVec;
+          })()
+        : rst[0];
     anchors.push({
-      point: PointLocation.fromVec(rst[0]),
-      coord: bound.toRelative(originPoint),
+      point: PointLocation.fromVec(intersectionPoint),
+      coord: relativeToStore,
     });
   });
 
@@ -670,14 +710,24 @@ export function getAnchors(ele: GfxModel) {
 }
 
 function getConnectableRelativePosition(connectable: GfxModel, position: IVec) {
-  const location = connectable.getRelativePointLocation(position);
-  if (isVecZero(Vec.sub(position, [0, 0.5])))
+  const flipX =
+    'flipX' in connectable &&
+    Boolean((connectable as { flipX?: boolean }).flipX);
+  const flipY =
+    'flipY' in connectable &&
+    Boolean((connectable as { flipY?: boolean }).flipY);
+  const flippedPosition: IVec = [
+    flipX ? 1 - position[0] : position[0],
+    flipY ? 1 - position[1] : position[1],
+  ];
+  const location = connectable.getRelativePointLocation(flippedPosition);
+  if (isVecZero(Vec.sub(flippedPosition, [0, 0.5])))
     location.tangent = Vec.rot([0, -1], toRadian(connectable.rotate));
-  else if (isVecZero(Vec.sub(position, [1, 0.5])))
+  else if (isVecZero(Vec.sub(flippedPosition, [1, 0.5])))
     location.tangent = Vec.rot([0, 1], toRadian(connectable.rotate));
-  else if (isVecZero(Vec.sub(position, [0.5, 0])))
+  else if (isVecZero(Vec.sub(flippedPosition, [0.5, 0])))
     location.tangent = Vec.rot([1, 0], toRadian(connectable.rotate));
-  else if (isVecZero(Vec.sub(position, [0.5, 1])))
+  else if (isVecZero(Vec.sub(flippedPosition, [0.5, 1])))
     location.tangent = Vec.rot([-1, 0], toRadian(connectable.rotate));
   return location;
 }

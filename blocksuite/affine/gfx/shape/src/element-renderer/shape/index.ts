@@ -177,7 +177,6 @@ export const shape: ElementRenderer<ShapeElementModel> = (
     true
   );
   const colors = { color, fillColor, strokeColor };
-
   shapeRenderers[model.shapeType](model, ctx, matrix, renderer, rc, colors);
 
   if (model.textDisplay) {

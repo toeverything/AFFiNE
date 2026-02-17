@@ -29,6 +29,7 @@ import {
   isExternalEmbedModel,
   NoteBlockModel,
   ParagraphBlockModel,
+  ShapeElementModel,
 } from '@blocksuite/affine-model';
 import type {
   ToolbarActions,
@@ -62,6 +63,7 @@ import {
 } from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import { GfxBlockElementModel, type GfxModel } from '@blocksuite/std/gfx';
+import { html } from 'lit';
 
 import { EdgelessClipboardController } from '../../clipboard/clipboard';
 import { duplicate } from '../../utils/clipboard-utils';
@@ -155,6 +157,102 @@ export const moreActions = [
         run(ctx) {
           const models = ctx.getSurfaceModels();
           reorderElements(ctx, models, 'back');
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'Z.c.flip',
+    actions: [
+      {
+        id: 'a.flip-horizontal',
+        label: 'Flip Horizontal',
+        icon: html`<svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 10h12" />
+          <path d="M6 7l-3 3 3 3" />
+          <path d="M14 7l3 3-3 3" />
+        </svg>`,
+        when(ctx) {
+          return ctx.getSurfaceModelsByType(ShapeElementModel).length > 0;
+        },
+        run(ctx) {
+          const models = ctx.getSurfaceModelsByType(ShapeElementModel);
+          if (!models.length) return;
+          const selectedIds = new Set(models.map(model => model.id));
+          const crud = ctx.std.get(EdgelessCRUDIdentifier);
+          const connectors = (crud.getElementsByType('connector') ??
+            []) as ConnectorElementModel[];
+          models.forEach(model => {
+            const nextFlipX = !model.flipX;
+            crud.updateElement(model.id, { flipX: nextFlipX });
+          });
+          connectors.forEach(connector => {
+            const sourceAttached =
+              connector.source?.id && selectedIds.has(connector.source.id);
+            const targetAttached =
+              connector.target?.id && selectedIds.has(connector.target.id);
+            if (!sourceAttached && !targetAttached) return;
+            crud.updateElement(connector.id, {
+              source: connector.source,
+              target: connector.target,
+              waypoints: connector.waypoints,
+            });
+          });
+        },
+      },
+      {
+        id: 'b.flip-vertical',
+        label: 'Flip Vertical',
+        icon: html`<svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M10 4v12" />
+          <path d="M7 6l3-3 3 3" />
+          <path d="M7 14l3 3 3-3" />
+        </svg>`,
+        when(ctx) {
+          return ctx.getSurfaceModelsByType(ShapeElementModel).length > 0;
+        },
+        run(ctx) {
+          const models = ctx.getSurfaceModelsByType(ShapeElementModel);
+          if (!models.length) return;
+          const selectedIds = new Set(models.map(model => model.id));
+          const crud = ctx.std.get(EdgelessCRUDIdentifier);
+          const connectors = (crud.getElementsByType('connector') ??
+            []) as ConnectorElementModel[];
+          models.forEach(model => {
+            const nextFlipY = !model.flipY;
+            crud.updateElement(model.id, { flipY: nextFlipY });
+          });
+          connectors.forEach(connector => {
+            const sourceAttached =
+              connector.source?.id && selectedIds.has(connector.source.id);
+            const targetAttached =
+              connector.target?.id && selectedIds.has(connector.target.id);
+            if (!sourceAttached && !targetAttached) return;
+            crud.updateElement(connector.id, {
+              source: connector.source,
+              target: connector.target,
+              waypoints: connector.waypoints,
+            });
+          });
         },
       },
     ],

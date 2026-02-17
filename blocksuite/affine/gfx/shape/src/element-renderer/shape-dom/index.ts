@@ -96,6 +96,19 @@ const cssGradientDirectionMap: Record<
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+const getFlipTransform = (
+  model: ShapeElementModel,
+  width: number,
+  height: number
+) => {
+  if (!model.flipX && !model.flipY) return '';
+  const sx = model.flipX ? -1 : 1;
+  const sy = model.flipY ? -1 : 1;
+  const cx = width / 2;
+  const cy = height / 2;
+  return `translate(${cx} ${cy}) scale(${sx} ${sy}) translate(${-cx} ${-cy})`;
+};
+
 const appendGradientDefs = (
   svg: SVGSVGElement,
   gradientId: string,
@@ -196,9 +209,19 @@ function applyBorderStyles(
 }
 
 function applyTransformStyles(model: ShapeElementModel, element: HTMLElement) {
-  if (model.rotate && model.rotate !== 0) {
+  const rotate = model.rotate ?? 0;
+  const hasFlip = model.flipX || model.flipY;
+  const canFlipWithCss = !SVG_SHAPE_TYPES.has(model.shapeType);
+  if (rotate !== 0 || (hasFlip && canFlipWithCss)) {
+    const transforms: string[] = [];
+    if (rotate !== 0) transforms.push(`rotate(${rotate}deg)`);
+    if (hasFlip && canFlipWithCss) {
+      const flipX = model.flipX ? -1 : 1;
+      const flipY = model.flipY ? -1 : 1;
+      transforms.push(`scale(${flipX}, ${flipY})`);
+    }
     setStyles(element, {
-      transform: `rotate(${model.rotate}deg)`,
+      transform: transforms.join(' '),
       transformOrigin: 'center',
     });
   } else {
@@ -299,6 +322,11 @@ export const shapeDomRenderer = (
           : 'none';
     const finalFillColor = isFilled ? fillColor : 'transparent';
     const gradientId = hasGradient ? `shape-gradient-${model.id}` : '';
+    const flipTransform = getFlipTransform(
+      model,
+      unscaledWidth,
+      unscaledHeight
+    );
     const fillPaint = hasGradient ? `url(#${gradientId})` : finalFillColor;
 
     let svgPath = '';
@@ -335,6 +363,7 @@ export const shapeDomRenderer = (
       const paths = [...fillPaths, ...strokePaths];
 
       const svg = element.firstChild as SVGSVGElement;
+      while (svg.firstChild) svg.firstChild.remove();
       if (hasGradient && gradientFinal) {
         appendGradientDefs(
           svg,
@@ -345,6 +374,10 @@ export const shapeDomRenderer = (
           unscaledWidth,
           unscaledHeight
         );
+      }
+      const pathGroup = document.createElementNS(SVG_NS, 'g');
+      if (flipTransform) {
+        pathGroup.setAttribute('transform', flipTransform);
       }
       paths.forEach((pathData, index) => {
         const path = document.createElementNS(SVG_NS, 'path');
@@ -373,8 +406,9 @@ export const shapeDomRenderer = (
           );
         }
         path.setAttribute('transform', `translate(${left} ${top})`);
-        svg.append(path);
+        pathGroup.append(path);
       });
+      svg.append(pathGroup);
       return;
     }
 
@@ -513,6 +547,11 @@ export const shapeDomRenderer = (
       );
     }
 
+    const pathGroup = document.createElementNS(SVG_NS, 'g');
+    if (flipTransform) {
+      pathGroup.setAttribute('transform', flipTransform);
+    }
+
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', svgPath);
     if (pathTransform) {
@@ -528,7 +567,7 @@ export const shapeDomRenderer = (
         model.strokeStyle === 'dot' ? 'round' : 'butt'
       );
     }
-    svg.append(path);
+    pathGroup.append(path);
 
     if (model.shapeType === 'cube') {
       buildCubeInnerPaths(width, height).forEach(innerPath => {
@@ -547,9 +586,11 @@ export const shapeDomRenderer = (
             model.strokeStyle === 'dot' ? 'round' : 'butt'
           );
         }
-        svg.append(inner);
+        pathGroup.append(inner);
       });
     }
+
+    svg.append(pathGroup);
 
     newChildren.push(svg);
   } else {

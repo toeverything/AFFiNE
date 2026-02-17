@@ -1,10 +1,5 @@
-import type {
-  Bound,
-  IBound,
-  IVec,
-  PointLocation,
-  SerializedXYWH,
-} from '@blocksuite/global/gfx';
+import type { IBound, IVec, SerializedXYWH } from '@blocksuite/global/gfx';
+import { Bound, PointLocation } from '@blocksuite/global/gfx';
 import type { BaseElementProps, PointTestOptions } from '@blocksuite/std/gfx';
 import {
   field,
@@ -39,6 +34,8 @@ export type ShapeProps = BaseElementProps & {
   fillColor: Color;
   gradientFinal?: Color;
   gradientDirection?: 'S' | 'W' | 'N' | 'E' | 'SE' | 'SW' | 'NE' | 'NW';
+  flipX?: boolean;
+  flipY?: boolean;
   strokeWidth: number;
   strokeColor: Color;
   strokeStyle: StrokeStyle;
@@ -118,6 +115,12 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
     | 'NE'
     | 'NW'
     | undefined = undefined;
+
+  @field()
+  accessor flipX: boolean = false;
+
+  @field()
+  accessor flipY: boolean = false;
 
   @field()
   accessor filled: boolean = false;

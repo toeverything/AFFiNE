@@ -49,6 +49,8 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
       roughness,
       rotate,
       shapeStyle,
+      flipX,
+      flipY,
     } = model;
     const isFilled = filled || model.shapeType === ShapeType.DrawioStencil;
     const [, , w, h] = model.deserializedXYWH;
@@ -63,6 +65,7 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
       matrix
         .translateSelf(renderOffset, renderOffset)
         .translateSelf(cx, cy)
+        .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
         .rotateSelf(rotate)
         .translateSelf(-cx, -cy)
     );
