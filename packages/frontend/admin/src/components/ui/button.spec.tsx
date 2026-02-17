@@ -15,7 +15,7 @@ describe('Button', () => {
     render(<Button>Save</Button>);
 
     const button = screen.getByRole('button', { name: 'Save' });
-    expect(button.className).toContain('rounded-md');
+    expect(button.className).toContain('rounded-lg');
     expect(button.className).toContain('bg-primary');
     expect(button.className).toContain('focus-visible:ring-ring/30');
   });

@@ -53,10 +53,10 @@ export const FeatureToggleList = ({
         <div key={feature}>
           <Label
             className={cn(
-              'cursor-pointer',
+              'cursor-pointer transition-colors duration-100',
               controlPosition === 'right'
-                ? 'flex items-center justify-between p-3 text-[15px] gap-2 font-medium leading-6 overflow-hidden'
-                : 'flex items-center gap-2 px-3 py-2 text-sm'
+                ? 'flex items-center justify-between p-3 text-sm gap-2 font-medium leading-6 overflow-hidden hover:bg-muted/40'
+                : 'flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/40'
             )}
           >
             {controlPosition === 'left' ? (

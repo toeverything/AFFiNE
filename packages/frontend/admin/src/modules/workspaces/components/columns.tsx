@@ -26,7 +26,7 @@ export const useColumns = () => {
                   {workspace.name || workspace.id}
                 </span>
                 {workspace.public ? (
-                  <span className="inline-flex items-center gap-1 rounded border border-border bg-chip-white px-2 py-0.5 text-xxs">
+                  <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs">
                     <LinkIcon fontSize={14} />
                     Public
                   </span>
@@ -40,7 +40,7 @@ export const useColumns = () => {
                   workspace.features.map(feature => (
                     <span
                       key={feature}
-                      className="rounded border border-border bg-chip-white px-2 py-0.5"
+                      className="rounded-md border border-border/60 bg-chip-white px-2 py-0.5"
                     >
                       {feature}
                     </span>

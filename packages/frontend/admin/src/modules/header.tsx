@@ -17,7 +17,7 @@ export const Header = ({
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
 
   return (
-    <div>
+    <div className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
       <div className="flex h-14 items-center gap-4 px-6">
         {isSmallScreen ? (
           <div className="h-7 w-7 p-1" />
@@ -32,10 +32,9 @@ export const Header = ({
           </Button>
         )}
         <Separator orientation="vertical" className="h-5" />
-        <div className="text-sm font-semibold">{title}</div>
+        <div className="text-sm font-semibold tracking-tight">{title}</div>
         {endFix && <div className="ml-auto">{endFix}</div>}
       </div>
-      <Separator />
     </div>
   );
 };
@@ -52,30 +51,29 @@ export const RightPanelHeader = ({
   canSave: boolean;
 }) => {
   return (
-    <div>
-      <div className="flex h-14 items-center justify-between px-6">
+    <div className="border-b border-border/60 bg-card/80 backdrop-blur-sm">
+      <div className="flex h-14 items-center justify-between px-4">
         <Button
           type="button"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground"
           variant="ghost"
           onClick={handleClose}
         >
-          <XIcon size={20} />
+          <XIcon size={18} />
         </Button>
-        <span className="text-base font-medium">{title}</span>
+        <span className="text-sm font-semibold tracking-tight">{title}</span>
         <Button
           type="submit"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 text-primary hover:text-primary"
           variant="ghost"
           onClick={handleConfirm}
           disabled={!canSave}
         >
-          <CheckIcon size={20} />
+          <CheckIcon size={18} />
         </Button>
       </div>
-      <Separator />
     </div>
   );
 };

@@ -1,4 +1,3 @@
- 
 import '@queuedash/ui/dist/styles.css';
 import './queue.css';
 

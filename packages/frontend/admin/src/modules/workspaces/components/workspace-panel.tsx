@@ -177,7 +177,7 @@ function WorkspacePanelContent({
         canSave={hasChanges && !isMutating}
       />
       <div className="flex flex-col gap-4 overflow-y-auto p-4">
-        <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+        <div className="space-y-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
           <div className="text-xs text-muted-foreground">Workspace ID</div>
           <div className="text-sm font-mono break-all">{workspace.id}</div>
           <div className="flex flex-col gap-1">
@@ -192,7 +192,7 @@ function WorkspacePanelContent({
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-xl border border-border/60 bg-card shadow-sm">
           <FlagItem
             label="Public"
             description="Allow public access to workspace pages"
@@ -239,7 +239,7 @@ function WorkspacePanelContent({
           />
         </div>
 
-        <div className="space-y-3 rounded-lg border border-border bg-card p-3">
+        <div className="space-y-3 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
           <div className="text-sm font-medium">Features</div>
           <FeatureToggleList
             features={serverConfig.availableWorkspaceFeatures ?? []}
@@ -272,7 +272,7 @@ function WorkspacePanelContent({
           />
         </div>
 
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-xl border border-border/60 bg-card shadow-sm">
           <div className="px-3 py-2 text-sm font-medium">Members</div>
           <Separator />
           <div className="flex flex-col divide-y">
@@ -337,7 +337,7 @@ function FlagItem({
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3">
+    <div className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-sm font-semibold">{value}</div>
     </div>

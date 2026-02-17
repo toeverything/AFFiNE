@@ -196,7 +196,7 @@ export const LeftPanel = ({
         </SheetHeader>
         <SheetContent
           side="left"
-          className="w-64 border-r border-border bg-sidebar-bg p-0"
+          className="w-64 border-r border-border/60 bg-sidebar-bg p-0"
           withoutCloseButton
         >
           <div className="flex flex-col w-full h-full">
@@ -230,7 +230,7 @@ export const LeftPanel = ({
       onCollapse={onCollapse}
       className={cn(
         isCollapsed ? 'min-w-[57px] max-w-[57px]' : 'min-w-56 max-w-56',
-        'h-dvh overflow-visible border-r border-border bg-sidebar-bg'
+        'h-dvh overflow-visible border-r border-border/60 bg-sidebar-bg'
       )}
     >
       <div className="flex h-full max-w-56 flex-col">
@@ -284,7 +284,7 @@ export const RightPanel = ({
         </SheetHeader>
         <SheetContent
           side="right"
-          className="border-l border-border bg-background p-0"
+          className="border-l border-border/60 bg-background p-0"
           withoutCloseButton
         >
           <div className="h-full overflow-y-auto">{panelContent}</div>
@@ -304,7 +304,7 @@ export const RightPanel = ({
       collapsedSize={0}
       onExpand={onExpand}
       onCollapse={onCollapse}
-      className="max-w-96 border-l border-border bg-card"
+      className="max-w-96 border-l border-border/60 bg-background"
     >
       <div className="h-full overflow-y-auto">{panelContent}</div>
     </ResizablePanel>

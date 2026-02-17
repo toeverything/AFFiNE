@@ -330,14 +330,14 @@ function PrimaryMetricCard({
   description: string;
 }) {
   return (
-    <Card className="h-full border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
+    <Card className="h-full border-border/60 bg-card shadow-1">
       <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-2 text-foreground/75">
+        <CardDescription className="flex items-center gap-2 text-sm">
           <UsersIcon className="h-4 w-4" aria-hidden="true" />
           Current Sync Active Users
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-1.5">
         <div className="text-4xl font-bold tracking-tight tabular-nums">
           {value}
         </div>
@@ -359,9 +359,9 @@ function SecondaryMetricCard({
   icon: ReactNode;
 }) {
   return (
-    <Card className="h-full border-border/70 bg-card/95 shadow-sm">
+    <Card className="h-full border-border/60 bg-card shadow-1">
       <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-2">
+        <CardDescription className="flex items-center gap-2 text-sm">
           <span aria-hidden="true">{icon}</span>
           {title}
         </CardDescription>
@@ -370,7 +370,7 @@ function SecondaryMetricCard({
         <div className="text-2xl font-semibold tracking-tight tabular-nums">
           {value}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        <p className="text-xs text-muted-foreground mt-1.5">{description}</p>
       </CardContent>
     </Card>
   );
@@ -431,7 +431,7 @@ function DashboardPageSkeleton() {
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card shadow-sm">
+        <Card className="border-border/60 bg-card shadow-1">
           <CardHeader className="pb-3">
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-4 w-80" />
@@ -462,7 +462,7 @@ function DashboardPageSkeleton() {
 
 function TopSharedLinksCardSkeleton() {
   return (
-    <Card className="border-border/70 bg-card/95 shadow-sm">
+    <Card className="border-border/60 bg-card shadow-1">
       <CardHeader>
         <Skeleton className="h-5 w-36" />
         <Skeleton className="h-4 w-72" />
@@ -515,7 +515,7 @@ function TopSharedLinksSection({
   const topSharedLinksWindow = data.adminDashboard.topSharedLinksWindow;
 
   return (
-    <Card className="border-border/70 bg-card/95 shadow-sm">
+    <Card className="border-border/60 bg-card shadow-1">
       <CardHeader>
         <CardTitle className="text-base">Top Shared Links</CardTitle>
         <CardDescription>
@@ -525,7 +525,7 @@ function TopSharedLinksSection({
       </CardHeader>
       <CardContent className="space-y-4">
         {topSharedLinks.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center bg-muted/20">
+          <div className="rounded-xl border border-dashed border-border/60 p-8 text-center bg-muted/15">
             <div className="text-sm font-medium">
               No shared links in this window
             </div>
@@ -688,7 +688,7 @@ function DashboardPageContent() {
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card shadow-sm">
+        <Card className="border-border/60 bg-card shadow-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Window Controls</CardTitle>
             <CardDescription>
@@ -742,9 +742,9 @@ function DashboardPageContent() {
             />
           </div>
           <div className="h-full min-w-0 lg:col-span-4">
-            <Card className="h-full border-border/70 bg-gradient-to-br from-card via-card to-muted/15 shadow-sm">
+            <Card className="h-full border-border/60 bg-card shadow-1">
               <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
+                <CardDescription className="flex items-center gap-2 text-sm">
                   <DatabaseIcon className="h-4 w-4" aria-hidden="true" />
                   Managed Storage
                 </CardDescription>
@@ -763,7 +763,7 @@ function DashboardPageContent() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <Card className="border-border/70 bg-card/95 shadow-sm lg:col-span-1">
+          <Card className="border-border/60 bg-card shadow-1 lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-base">
                 Sync Active Users Trend
@@ -782,7 +782,7 @@ function DashboardPageContent() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm lg:col-span-2">
+          <Card className="border-border/60 bg-card shadow-1 lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">
                 Storage Trend (Workspace + Blob)

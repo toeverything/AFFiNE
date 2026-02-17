@@ -10,10 +10,11 @@ interface NavItemProps {
 }
 
 const navItemBaseClass =
-  'group inline-flex h-9 items-center gap-2 rounded-lg text-sm font-medium transition-colors duration-150';
+  'group inline-flex h-9 items-center gap-2 rounded-lg text-sm font-medium transition-all duration-150';
 const navItemStateClass =
   'text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground';
-const navItemActiveClass = 'bg-sidebar-active text-sidebar-foreground';
+const navItemActiveClass =
+  'bg-sidebar-active text-sidebar-foreground shadow-sm';
 
 export const NavItem = ({ icon, label, to, isCollapsed }: NavItemProps) => {
   const className = ({ isActive }: { isActive: boolean }) =>

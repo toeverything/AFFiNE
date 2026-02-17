@@ -156,7 +156,7 @@ const AdminPanel = ({
                 key={module}
                 value={module}
                 id={`config-module-${module}`}
-                className="mb-4 rounded-xl border border-border bg-card px-5 shadow-1"
+                className="mb-4 rounded-xl border border-border/60 bg-card px-5 shadow-1"
               >
                 <AccordionTrigger className="hover:no-underline py-4">
                   <div className="flex flex-col items-start text-left gap-1">

@@ -25,7 +25,7 @@ interface UserDropdownProps {
 }
 
 const adminBadgeClass =
-  'inline-flex h-5 items-center rounded border border-border bg-chip-blue px-2 py-0.5 text-xs font-normal text-chip-text';
+  'inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-blue px-2 py-0.5 text-xxs font-medium text-chip-text';
 
 const UserInfo = ({
   name,

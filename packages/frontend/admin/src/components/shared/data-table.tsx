@@ -92,7 +92,7 @@ export function SharedDataTable<TData extends { id: string }, TValue>({
   return (
     <div className="relative flex h-full flex-col gap-4 overflow-auto px-6 py-5">
       {renderToolbar?.(table)}
-      <div className="relative flex h-full flex-col overflow-auto rounded-xl border border-border bg-card shadow-1">
+      <div className="relative flex h-full flex-col overflow-auto rounded-xl border border-border/60 bg-card shadow-1">
         {loading ? (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/75 text-sm text-muted-foreground backdrop-blur-[1px]">
             <svg

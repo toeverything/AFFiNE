@@ -152,12 +152,12 @@ export const useColumns = ({
               <div className="text-sm font-medium max-w-full overflow-hidden gap-[6px]">
                 <span>{row.original.name}</span>
                 {row.original.features.includes(FeatureType.Admin) && (
-                  <span className="ml-2 inline-flex h-5 items-center rounded border border-border bg-chip-blue px-2 py-0.5 text-xs font-normal text-chip-text">
+                  <span className="ml-2 inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-blue px-2 py-0.5 text-xxs font-medium text-chip-text">
                     Admin
                   </span>
                 )}
                 {row.original.disabled && (
-                  <span className="ml-2 inline-flex h-5 items-center rounded border border-border bg-chip-white px-2 py-0.5 text-xs">
+                  <span className="ml-2 inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs font-medium">
                     Disabled
                   </span>
                 )}
@@ -219,7 +219,7 @@ export const useColumns = ({
                   user.features.map(feature => (
                     <span
                       key={feature}
-                      className="inline-flex h-5 items-center rounded border border-border bg-chip-white px-2 py-0.5 text-xs"
+                      className="inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs font-medium"
                     >
                       {feature}
                     </span>

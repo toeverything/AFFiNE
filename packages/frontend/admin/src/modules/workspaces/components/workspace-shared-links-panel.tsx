@@ -62,7 +62,7 @@ export function WorkspaceSharedLinksPanel({
         {sharedLinks.length === 0 ? (
           <div className="text-sm text-muted-foreground">No shared links.</div>
         ) : (
-          <div className="flex flex-col divide-y rounded-lg border border-border bg-card">
+          <div className="flex flex-col divide-y rounded-xl border border-border/60 bg-card shadow-sm">
             {sharedLinks.map(link => (
               <SharedLinkItem key={link.docId} link={link} />
             ))}

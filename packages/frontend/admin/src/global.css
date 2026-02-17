@@ -160,4 +160,26 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--affine-font-family);
   }
+
+  /* Smooth scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
+  /* Text selection */
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
 }

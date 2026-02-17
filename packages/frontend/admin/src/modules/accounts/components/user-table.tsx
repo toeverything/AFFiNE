@@ -9,7 +9,7 @@ interface UserTableProps {
  */
 export const UserTable: React.FC<UserTableProps> = ({ users }) => {
   return (
-    <div className="max-h-[300px] overflow-y-auto rounded-lg border border-border bg-card">
+    <div className="max-h-[300px] overflow-y-auto rounded-xl border border-border/60 bg-card shadow-sm">
       <table className="w-full border-collapse">
         <thead className="sticky top-0 bg-muted/40">
           <tr>
