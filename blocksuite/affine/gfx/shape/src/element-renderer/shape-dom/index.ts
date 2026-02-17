@@ -635,6 +635,13 @@ export const shapeDomRenderer = (
       DefaultTheme.shapeTextColor,
       true
     );
+    const textScaleX = (model.flipX ? -1 : 1) * (model.textFlipX ? -1 : 1);
+    const textScaleY = (model.flipY ? -1 : 1) * (model.textFlipY ? -1 : 1);
+    const textRotate = model.textRotate ?? 0;
+    if (textScaleX !== 1 || textScaleY !== 1 || textRotate !== 0) {
+      textElement.style.transformOrigin = 'center';
+      textElement.style.transform = `scale(${textScaleX}, ${textScaleY}) rotate(${textRotate}deg)`;
+    }
     textElement.textContent = str;
     newChildren.push(textElement);
   }

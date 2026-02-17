@@ -744,6 +744,9 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
       'maxWidth',
       'padding',
       'text',
+      'textRotate',
+      'textFlipX',
+      'textFlipY',
       'shadow',
       'stencilName',
     ]);
@@ -1002,6 +1005,22 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
               label: labelize(TextResizing[value]),
             })),
             value => this._updateProperty('textResizing', Number(value))
+          )}
+          ${this._renderNumberRow(
+            'Text rotate',
+            model.textRotate ?? 0,
+            value => this._updateProperty('textRotate', value),
+            { step: 1 }
+          )}
+          ${this._renderCheckboxRow(
+            'Text flip horizontal',
+            model.textFlipX ?? false,
+            value => this._updateProperty('textFlipX', value)
+          )}
+          ${this._renderCheckboxRow(
+            'Text flip vertical',
+            model.textFlipY ?? false,
+            value => this._updateProperty('textFlipY', value)
           )}
           ${this._renderCheckboxRow(
             'Max width enabled',

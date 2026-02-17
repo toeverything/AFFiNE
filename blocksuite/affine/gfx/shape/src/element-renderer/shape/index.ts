@@ -208,8 +208,17 @@ function renderText(
     h,
     textVerticalAlign,
     padding,
+    flipX,
+    flipY,
+    textRotate,
+    textFlipX,
+    textFlipY,
   } = model;
   if (!text) return;
+
+  const scaleX = (flipX ? -1 : 1) * (textFlipX ? -1 : 1);
+  const scaleY = (flipY ? -1 : 1) * (textFlipY ? -1 : 1);
+  const rotation = textRotate ?? 0;
 
   const [verticalPadding, horPadding] = padding;
   const font = getFontString(model);
@@ -236,6 +245,15 @@ function renderText(
     lineGap / 2;
   let maxLineWidth = 0;
 
+  ctx.save();
+  if (flipX || flipY || textFlipX || textFlipY || rotation) {
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(scaleX, scaleY);
+    if (rotation) {
+      ctx.rotate((rotation * Math.PI) / 180);
+    }
+    ctx.translate(-w / 2, -h / 2);
+  }
   ctx.font = font;
   ctx.fillStyle = color;
   ctx.textAlign = textAlign;
@@ -286,6 +304,7 @@ function renderText(
     lineHeight * lines.length
   ) as IBound;
 
-  bound.rotate = model.rotate ?? 0;
+  bound.rotate = (model.rotate ?? 0) + (model.textRotate ?? 0);
   model.textBound = bound;
+  ctx.restore();
 }
