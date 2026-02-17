@@ -56,6 +56,7 @@ export const resolveGradientFill = (
     fillColor,
     true
   );
+  if (gradientFinal === fillColor) return fillColor;
   const direction = model.gradientDirection ?? 'S';
   const [x0, y0, x1, y1] = gradientDirectionMap[direction];
   const gradient = ctx.createLinearGradient(

@@ -172,6 +172,9 @@ export class EdgelessColorButton extends LitElement {
   accessor gradientDirection: GradientDirection | undefined = undefined;
 
   @property({ attribute: false })
+  accessor activeKey: string | undefined = undefined;
+
+  @property({ attribute: false })
   accessor theme!: ColorScheme;
 }
 
@@ -238,7 +241,9 @@ export class EdgelessColorPanel extends LitElement {
         palette => palette.key,
         palette => {
           const resolvedColor = resolveColor(palette.value, this.theme);
-          const activated = isEqual(resolvedColor, this.resolvedValue);
+          const activated = this.activeKey
+            ? palette.key === this.activeKey
+            : isEqual(resolvedColor, this.resolvedValue);
           const outlinePalette = this.outlinePalettes?.find(
             outline => outline.key === palette.key
           );
@@ -257,6 +262,7 @@ export class EdgelessColorPanel extends LitElement {
             .ringColor=${ringPalette?.value ?? outlinePalette?.value}
             .gradientFinal=${gradientPalette?.value}
             .gradientDirection=${gradientPalette?.direction}
+            .activeKey=${this.activeKey}
             ?active=${activated}
             @click=${() => {
               this.select(palette);
@@ -284,6 +290,9 @@ export class EdgelessColorPanel extends LitElement {
 
   @property({ attribute: false })
   accessor ringPalettes: readonly Palette[] | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor activeKey: string | undefined = undefined;
 
   @property({ attribute: false })
   accessor gradientPalettes:

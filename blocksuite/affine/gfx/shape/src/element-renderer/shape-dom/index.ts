@@ -258,7 +258,8 @@ export const shapeDomRenderer = (
     : undefined;
   const gradientDirection = model.gradientDirection ?? 'S';
   const isFilled = model.filled || model.shapeType === 'drawioStencil';
-  const hasGradient = Boolean(gradientFinal) && isFilled;
+  const hasGradient =
+    Boolean(gradientFinal) && isFilled && gradientFinal !== fillColor;
 
   element.style.width = `${unscaledWidth * zoom}px`;
   element.style.height = `${unscaledHeight * zoom}px`;

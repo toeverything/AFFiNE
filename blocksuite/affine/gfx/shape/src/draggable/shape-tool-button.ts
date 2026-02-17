@@ -58,10 +58,6 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
 
   private readonly _handleWrapperClick = () => {
     if (this.tryDisposePopper()) return;
-
-    this.setEdgelessTool(this.type, {
-      shapeName: ShapeType.Rect,
-    });
     if (!this.popper) this._toggleMenu();
   };
 
@@ -82,6 +78,7 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
         ele.edgeless = this.edgeless;
         ele.browserOpen = this._browserOpen;
         ele.onChange = (shapeName: ShapeName) => {
+          this._syncShapeColors(shapeName);
           this.setEdgelessTool(this.type, {
             shapeName,
           });
@@ -191,23 +188,16 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
   }
 
   private _syncShapeColors(nextShapeName: ShapeName, stencilName?: string) {
-    const gfx = this.edgeless.std.get(GfxControllerIdentifier);
-    const currentTool = gfx.tool.currentToolOption$.peek();
-    const currentShapeName =
-      currentTool && currentTool.toolType === ShapeTool
-        ? ((currentTool as { options?: { shapeName?: ShapeName } }).options
-            ?.shapeName ?? ShapeType.Rect)
-        : ShapeType.Rect;
-    if (currentShapeName === nextShapeName) return;
-
     const propsStore = this.edgeless.std.get(EditPropsStore);
-    const currentProps =
-      propsStore.lastProps$.value[`shape:${currentShapeName}`];
+    const currentProps = propsStore.lastProps$.value['shape:rect'];
     const nextProps = {
       fillColor: currentProps.fillColor,
       strokeColor: currentProps.strokeColor,
       filled: currentProps.filled,
       strokeStyle: currentProps.strokeStyle,
+      strokeWidth: currentProps.strokeWidth,
+      gradientFinal: currentProps.gradientFinal,
+      gradientDirection: currentProps.gradientDirection,
     };
     if (nextShapeName === ShapeType.DrawioStencil && stencilName) {
       nextProps.filled = true;

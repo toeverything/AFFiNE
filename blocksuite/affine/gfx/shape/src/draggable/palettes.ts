@@ -101,157 +101,126 @@ const affineStyles = applyDefaultTail(
   )
 );
 
-const fancyStyles = applyDefaultTail(
+const dio0Styles = applyDefaultTail(
   ensureLength([
-    { fill: '#F8CECC', stroke: '#B85450' },
-    { fill: '#FFCD28', stroke: '#D79B00' },
-    { fill: '#FFF2CC', stroke: '#D6B656' },
-    { fill: '#D5E8D4', stroke: '#82B366' },
-    { fill: '#D5E8D4', stroke: '#6A9153' },
-    { fill: '#DAE8FC', stroke: '#6C8EBF' },
-    { fill: '#E1D5E7', stroke: '#9673A6' },
-    { fill: '#E6D0DE', stroke: '#996185' },
-    { fill: '#E6D0DE', stroke: '#996185' },
-    { fill: '#E6D0DE', stroke: '#996185' },
-    { fill: '#E6D0DE', stroke: '#996185' },
+    { fill: '#f8cecc', stroke: '#b85450' },
+    { fill: '#ffe6cc', stroke: '#d79b00' },
+    { fill: '#fff2cc', stroke: '#d6b656' },
+    { fill: '#d5e8d4', stroke: '#82b366' },
+    { fill: '#dae8fc', stroke: '#6c8ebf' },
+    { fill: '#e1d5e7', stroke: '#9673a6' },
+    { fill: '#e6d0de', stroke: '#996185' },
+    { fill: '#f5f5f5', stroke: '#666666' },
   ])
 );
 
-const gradientStyles = applyDefaultTail(
+const dio1Styles = applyDefaultTail(
+  ensureLength([
+    { fill: '#60a917', stroke: '#2d7600' },
+    { fill: '#008a00', stroke: '#005700' },
+    { fill: '#1ba1e2', stroke: '#006eaf' },
+    { fill: '#0050ef', stroke: '#001dbc' },
+    { fill: '#6a00ff', stroke: '#3700cc' },
+    { fill: '#d80073', stroke: '#a50040' },
+    { fill: '#a20025', stroke: '#6f0000' },
+    { fill: '#aa00ff', stroke: '#7700cc' },
+  ])
+);
+
+const dio2Styles = applyDefaultTail(
+  ensureLength([
+    { fill: '#e51400', stroke: '#b20000' },
+    { fill: '#fa6800', stroke: '#c73500' },
+    { fill: '#f0a30a', stroke: '#bd7000' },
+    { fill: '#e3c800', stroke: '#b09500' },
+    { fill: '#6d8764', stroke: '#3a5431' },
+    { fill: '#647687', stroke: '#314354' },
+    { fill: '#76608a', stroke: '#432d57' },
+    { fill: '#c8a27a', stroke: '#8a5a2b' },
+  ])
+);
+
+const dio3Styles = applyDefaultTail(
+  ensureLength([
+    { fill: '#fad7ac', stroke: '#b46504' },
+    { fill: '#fad9d5', stroke: '#ae4132' },
+    { fill: '#b0e3e6', stroke: '#0e8088' },
+    { fill: '#b1ddf0', stroke: '#10739e' },
+    { fill: '#d0cee2', stroke: '#56517e' },
+    { fill: '#bac8d3', stroke: '#23445d' },
+    { fill: '#d0cee2', stroke: '#56517e' },
+    { fill: '#b1ddf0', stroke: '#10739e' },
+  ])
+);
+
+const dio4Styles = applyDefaultTail(
   ensureLength([
     {
-      fill: '#F8CECC',
-      stroke: '#B85450',
-      gradientFinal: '#EA6B66',
+      fill: '#f8cecc',
+      stroke: '#b85450',
+      gradientFinal: '#ea6b66',
       gradientDirection: 'S',
     },
     {
-      fill: '#FFCD28',
-      stroke: '#D79B00',
-      gradientFinal: '#FFA500',
+      fill: '#ffcd28',
+      stroke: '#d79b00',
+      gradientFinal: '#ffa500',
       gradientDirection: 'S',
     },
     {
-      fill: '#FFF2CC',
-      stroke: '#D6B656',
-      gradientFinal: '#FFD966',
+      fill: '#fff2cc',
+      stroke: '#d6b656',
+      gradientFinal: '#ffd966',
       gradientDirection: 'S',
     },
     {
-      fill: '#D5E8D4',
-      stroke: '#82B366',
-      gradientFinal: '#97D077',
+      fill: '#d5e8d4',
+      stroke: '#82b366',
+      gradientFinal: '#97d077',
       gradientDirection: 'S',
     },
     {
-      fill: '#D5E8D4',
-      stroke: '#6A9153',
-      gradientFinal: '#67AB9F',
+      fill: '#dae8fc',
+      stroke: '#6c8ebf',
+      gradientFinal: '#7ea6e0',
       gradientDirection: 'S',
     },
     {
-      fill: '#DAE8FC',
-      stroke: '#6C8EBF',
-      gradientFinal: '#7EA6E0',
-      gradientDirection: 'S',
-    },
-    {
-      fill: '#E1D5E7',
-      stroke: '#9673A6',
-      gradientFinal: '#8C6C9C',
-      gradientDirection: 'S',
-    },
-    {
-      fill: '#E6D0DE',
+      fill: '#e6d0de',
       stroke: '#996185',
-      gradientFinal: '#B5739D',
+      gradientFinal: '#d5739d',
       gradientDirection: 'S',
     },
     {
-      fill: '#E6D0DE',
-      stroke: '#996185',
-      gradientFinal: '#B5739D',
+      fill: '#e1d5e7',
+      stroke: '#9673a6',
+      gradientFinal: '#b5739d',
       gradientDirection: 'S',
     },
     {
-      fill: '#E6D0DE',
-      stroke: '#996185',
-      gradientFinal: '#B5739D',
-      gradientDirection: 'S',
-    },
-    {
-      fill: '#E6D0DE',
-      stroke: '#996185',
-      gradientFinal: '#B5739D',
+      fill: '#f5f5f5',
+      stroke: '#666666',
+      gradientFinal: '#b3b3b3',
       gradientDirection: 'S',
     },
   ])
 );
 
-const boldStyles = applyDefaultTail(
+const dio5Styles = applyDefaultTail(
   ensureLength([
-    { fill: '#EA6B66', stroke: '#B85450' },
-    { fill: '#FFA500', stroke: '#D79B00' },
-    { fill: '#FFD966', stroke: '#D6B656' },
-    { fill: '#97D077', stroke: '#82B366' },
-    { fill: '#67AB9F', stroke: '#6A9153' },
-    { fill: '#7EA6E0', stroke: '#6C8EBF' },
-    { fill: '#8C6C9C', stroke: '#9673A6' },
-    { fill: '#B5739D', stroke: '#996185' },
-    { fill: '#B5739D', stroke: '#996185' },
-    { fill: '#B5739D', stroke: '#996185' },
-    { fill: '#B5739D', stroke: '#996185' },
+    { fill: '#eeeeee', stroke: '#36393d' },
+    { fill: '#f9f7ed', stroke: '#36393d' },
+    { fill: '#ffcc99', stroke: '#36393d' },
+    { fill: '#cce5ff', stroke: '#36393d' },
+    { fill: '#ffff88', stroke: '#36393d' },
+    { fill: '#cdeb8b', stroke: '#36393d' },
+    { fill: '#ffcccc', stroke: '#36393d' },
+    { fill: '#cce5ff', stroke: '#36393d' },
   ])
 );
 
-const outlineStyles = applyDefaultTail(
-  ensureLength([
-    { fill: '#F8CECC', stroke: '#EA6B66' },
-    { fill: '#FFCD28', stroke: '#FFA500' },
-    { fill: '#FFF2CC', stroke: '#FFD966' },
-    { fill: '#D5E8D4', stroke: '#97D077' },
-    { fill: '#D5E8D4', stroke: '#67AB9F' },
-    { fill: '#DAE8FC', stroke: '#7EA6E0' },
-    { fill: '#E1D5E7', stroke: '#8C6C9C' },
-    { fill: '#E6D0DE', stroke: '#B5739D' },
-    { fill: '#E6D0DE', stroke: '#B5739D' },
-    { fill: '#E6D0DE', stroke: '#B5739D' },
-    { fill: '#E6D0DE', stroke: '#B5739D' },
-  ])
-);
-
-const solidStyles = applyDefaultTail(
-  ensureLength([
-    { fill: '#B85450', stroke: '#B85450' },
-    { fill: '#D79B00', stroke: '#D79B00' },
-    { fill: '#D6B656', stroke: '#D6B656' },
-    { fill: '#82B366', stroke: '#82B366' },
-    { fill: '#6A9153', stroke: '#6A9153' },
-    { fill: '#6C8EBF', stroke: '#6C8EBF' },
-    { fill: '#9673A6', stroke: '#9673A6' },
-    { fill: '#996185', stroke: '#996185' },
-    { fill: '#996185', stroke: '#996185' },
-    { fill: '#996185', stroke: '#996185' },
-    { fill: '#996185', stroke: '#996185' },
-  ])
-);
-
-const softStyles = applyDefaultTail(
-  ensureLength([
-    { fill: '#F8CECC', stroke: '#F8CECC' },
-    { fill: '#FFCD28', stroke: '#FFCD28' },
-    { fill: '#FFF2CC', stroke: '#FFF2CC' },
-    { fill: '#D5E8D4', stroke: '#D5E8D4' },
-    { fill: '#D5E8D4', stroke: '#D5E8D4' },
-    { fill: '#DAE8FC', stroke: '#DAE8FC' },
-    { fill: '#E1D5E7', stroke: '#E1D5E7' },
-    { fill: '#E6D0DE', stroke: '#E6D0DE' },
-    { fill: '#E6D0DE', stroke: '#E6D0DE' },
-    { fill: '#E6D0DE', stroke: '#E6D0DE' },
-    { fill: '#E6D0DE', stroke: '#E6D0DE' },
-  ])
-);
-
+// Line style example
+/**
 const deepStyles = applyDefaultTail(
   ensureLength([
     { fill: '#EA6B66', stroke: '#EA6B66', strokeWidth: 3, strokeStyle: 'dash' },
@@ -267,6 +236,7 @@ const deepStyles = applyDefaultTail(
     { fill: '#B5739D', stroke: '#B5739D', strokeWidth: 3, strokeStyle: 'dash' },
   ])
 );
+**/
 
 export const shapePalettes: ShapePalette[] = [
   {
@@ -274,31 +244,27 @@ export const shapePalettes: ShapePalette[] = [
     styles: affineStyles,
   },
   {
-    id: 'fancy',
-    styles: fancyStyles,
+    id: 'dio0',
+    styles: dio0Styles,
   },
   {
-    id: 'gradient',
-    styles: gradientStyles,
+    id: 'dio4',
+    styles: dio4Styles,
   },
   {
-    id: 'bold',
-    styles: boldStyles,
+    id: 'dio1',
+    styles: dio1Styles,
   },
   {
-    id: 'outline',
-    styles: outlineStyles,
+    id: 'dio2',
+    styles: dio2Styles,
   },
   {
-    id: 'solid',
-    styles: solidStyles,
+    id: 'dio3',
+    styles: dio3Styles,
   },
   {
-    id: 'soft',
-    styles: softStyles,
-  },
-  {
-    id: 'deep',
-    styles: deepStyles,
+    id: 'dio5',
+    styles: dio5Styles,
   },
 ];
