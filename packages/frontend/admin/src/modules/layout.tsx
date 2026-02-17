@@ -7,7 +7,7 @@ import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { PropsWithChildren, ReactNode, RefObject } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
 
@@ -121,30 +121,47 @@ export function Layout({ children }: PropsWithChildren) {
     handleSetRightPanelContent(null);
     closeRightPanel();
   }, [location.pathname, closeRightPanel, handleSetRightPanelContent]);
+  const panelContextValue = useMemo(
+    () => ({
+      leftPanel: {
+        isOpen: leftOpen,
+        panelContent: leftPanelContent,
+        setPanelContent: setLeftPanelContent,
+        togglePanel: toggleLeftPanel,
+        openPanel: openLeftPanel,
+        closePanel: closeLeftPanel,
+      },
+      rightPanel: {
+        isOpen: rightOpen,
+        panelContent: rightPanelContent,
+        setPanelContent: handleSetRightPanelContent,
+        togglePanel: toggleRightPanel,
+        openPanel: openRightPanel,
+        closePanel: closeRightPanel,
+        hasDirtyChanges: rightPanelHasDirtyChanges,
+        setHasDirtyChanges: setRightPanelHasDirtyChanges,
+      },
+    }),
+    [
+      closeLeftPanel,
+      closeRightPanel,
+      handleSetRightPanelContent,
+      leftOpen,
+      leftPanelContent,
+      openLeftPanel,
+      openRightPanel,
+      rightOpen,
+      rightPanelContent,
+      rightPanelHasDirtyChanges,
+      setLeftPanelContent,
+      setRightPanelHasDirtyChanges,
+      toggleLeftPanel,
+      toggleRightPanel,
+    ]
+  );
 
   return (
-    <PanelContext.Provider
-      value={{
-        leftPanel: {
-          isOpen: leftOpen,
-          panelContent: leftPanelContent,
-          setPanelContent: setLeftPanelContent,
-          togglePanel: toggleLeftPanel,
-          openPanel: openLeftPanel,
-          closePanel: closeLeftPanel,
-        },
-        rightPanel: {
-          isOpen: rightOpen,
-          panelContent: rightPanelContent,
-          setPanelContent: handleSetRightPanelContent,
-          togglePanel: toggleRightPanel,
-          openPanel: openRightPanel,
-          closePanel: closeRightPanel,
-          hasDirtyChanges: rightPanelHasDirtyChanges,
-          setHasDirtyChanges: setRightPanelHasDirtyChanges,
-        },
-      }}
-    >
+    <PanelContext.Provider value={panelContextValue}>
       <TooltipProvider delayDuration={0}>
         <div className="flex h-dvh w-full overflow-hidden">
           <ResizablePanelGroup direction="horizontal">
