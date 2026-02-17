@@ -62,7 +62,7 @@ export const useColumns = () => {
             return <div className="text-xs text-muted-foreground">Unknown</div>;
           }
           return (
-            <div className="flex items-center gap-3 min-w-[180px] min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               <Avatar className="w-9 h-9">
                 <AvatarImage src={owner.avatarUrl ?? undefined} />
                 <AvatarFallback>
