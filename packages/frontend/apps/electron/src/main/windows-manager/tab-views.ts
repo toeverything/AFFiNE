@@ -789,12 +789,9 @@ export class WebContentViewsManager {
 
   resizeView = (view: View) => {
     // app view will take full w/h of the main window
-    view.setBounds({
-      x: 0,
-      y: 0,
-      width: this.mainWindow?.getContentBounds().width ?? 0,
-      height: this.mainWindow?.getContentBounds().height ?? 0,
-    });
+    const bounds = this.mainWindow?.getContentBounds();
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
+    view.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
   };
 
   private readonly generateViewId = (type: 'app' | 'shell') => {
@@ -824,7 +821,7 @@ export class WebContentViewsManager {
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
         // serialize exposed meta that to be used in preload
         additionalArguments: additionalArguments,
-        backgroundThrottling: true,
+        backgroundThrottling: type === 'app',
       }),
     });
 
@@ -881,6 +878,15 @@ export class WebContentViewsManager {
 
     // shell process do not need to connect to helper process
     if (type !== 'shell') {
+      view.webContents.on(
+        'did-start-navigation',
+        (_event, _url, isInPlace, isMainFrame) => {
+          // Keep shell fallback lifecycle tied to main-frame navigation only.
+          if (isMainFrame && !isInPlace) {
+            this.setTabUIUnready(viewId);
+          }
+        }
+      );
       view.webContents.on('did-finish-load', () => {
         disconnectHelperProcess?.();
         disconnectHelperProcess = helperProcessManager.connectRenderer(
@@ -935,7 +941,8 @@ export class WebContentViewsManager {
     const mainFocused = this.mainWindow?.isFocused() ?? false;
     const activeId = this.activeWorkbenchId;
     this.webViewsMap$.value.forEach((view, id) => {
-      if (id === 'shell') {
+      // skip active view to avoid windows rendering
+      if (id === 'shell' || id === activeId) {
         return;
       }
       const shouldThrottle = !mainFocused || id !== activeId;
@@ -1156,13 +1163,28 @@ export const showDevTools = (id?: string) => {
 };
 
 export const pingAppLayoutReady = (wc: WebContents, ready: boolean) => {
-  const viewId =
-    WebContentViewsManager.instance.getWorkbenchIdFromWebContentsId(wc.id);
+  const manager = WebContentViewsManager.instance;
+  const viewId = manager.getWorkbenchIdFromWebContentsId(wc.id);
   if (viewId) {
     if (ready) {
-      WebContentViewsManager.instance.setTabUIReady(viewId);
+      manager.setTabUIReady(viewId);
     } else {
-      WebContentViewsManager.instance.setTabUIUnready(viewId);
+      const isActive = manager.activeWorkbenchId === viewId;
+      const view = manager.getViewById(viewId);
+      const isLoadingMainFrame =
+        view?.webContents.isLoadingMainFrame?.() ??
+        view?.webContents.isLoading?.() ??
+        false;
+      // Renderer unload can be noisy on Windows when resizing;
+      // keep active tab visible unless it is truly navigating.
+      if (isActive && !isLoadingMainFrame) {
+        logger.warn('ignore pingAppLayoutReady(false) for active tab', {
+          viewId,
+          senderId: wc.id,
+        });
+        return;
+      }
+      manager.setTabUIUnready(viewId);
     }
   }
 };

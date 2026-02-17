@@ -88,8 +88,6 @@ spec:
               value: "{{ .Values.app.host }}"
             - name: AFFINE_SERVER_HTTPS
               value: "{{ .Values.app.https }}"
-            - name: DOC_SERVICE_ENDPOINT
-              value: "http://{{ .Values.global.docService.name }}:{{ .Values.global.docService.port }}"
           ports:
             - name: http
               containerPort: {{ .Values.app.port }}

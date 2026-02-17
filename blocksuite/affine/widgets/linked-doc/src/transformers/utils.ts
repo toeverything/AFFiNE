@@ -171,9 +171,11 @@ export class Unzip {
       const fileExt =
         fileName.lastIndexOf('.') === -1 ? '' : fileName.split('.').at(-1);
       const mime = extMimeMap.get(fileExt ?? '');
-      const content = new File([this.unzipped![path]], fileName, {
-        type: mime ?? '',
-      }) as Blob;
+      const content = new File(
+        [new Uint8Array(this.unzipped![path]).buffer],
+        fileName,
+        mime ? { type: mime } : undefined
+      ) as Blob;
 
       const fixedPath = this.fixFileNameEncoding(path);
 

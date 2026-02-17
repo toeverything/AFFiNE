@@ -4,7 +4,12 @@ import {
 } from '@blocksuite/affine-block-surface';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
-import { BaseTool, MouseButton, type ToolOptions } from '@blocksuite/std/gfx';
+import {
+  BaseTool,
+  createRafCoalescer,
+  MouseButton,
+  type ToolOptions,
+} from '@blocksuite/std/gfx';
 import { Signal } from '@preact/signals-core';
 
 interface RestorablePresentToolOptions {
@@ -21,13 +26,30 @@ export class PanTool extends BaseTool<PanToolOption> {
 
   private _lastPoint: [number, number] | null = null;
 
+  private _pendingDelta: [number, number] = [0, 0];
+
+  private readonly _deltaFlushCoalescer = createRafCoalescer<void>(() => {
+    this._flushPendingDelta();
+  });
+
   readonly panning$ = new Signal<boolean>(false);
+
+  private _flushPendingDelta() {
+    if (this._pendingDelta[0] === 0 && this._pendingDelta[1] === 0) {
+      return;
+    }
+
+    const [deltaX, deltaY] = this._pendingDelta;
+    this._pendingDelta = [0, 0];
+    this.gfx.viewport.applyDeltaCenter(deltaX, deltaY);
+  }
 
   override get allowDragWithRightButton(): boolean {
     return true;
   }
 
   override dragEnd(_: PointerEventState): void {
+    this._deltaFlushCoalescer.flush();
     this._lastPoint = null;
     this.panning$.value = false;
   }
@@ -43,12 +65,14 @@ export class PanTool extends BaseTool<PanToolOption> {
     const deltaY = lastY - e.y;
 
     this._lastPoint = [e.x, e.y];
-
-    viewport.applyDeltaCenter(deltaX / zoom, deltaY / zoom);
+    this._pendingDelta[0] += deltaX / zoom;
+    this._pendingDelta[1] += deltaY / zoom;
+    this._deltaFlushCoalescer.schedule(undefined);
   }
 
   override dragStart(e: PointerEventState): void {
     this._lastPoint = [e.x, e.y];
+    this._pendingDelta = [0, 0];
     this.panning$.value = true;
   }
 
@@ -119,5 +143,9 @@ export class PanTool extends BaseTool<PanToolOption> {
 
       return false;
     });
+  }
+
+  override unmounted(): void {
+    this._deltaFlushCoalescer.cancel();
   }
 }

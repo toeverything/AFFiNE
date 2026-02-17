@@ -5,6 +5,10 @@
     "correctness": "error",
     "perf": "error"
   },
+  "env": {
+    "builtin": true,
+    "es2026": true
+  },
   "ignorePatterns": [
     "**/node_modules",
     ".yarn",
@@ -44,6 +48,34 @@
     "**/test-blocks.json"
   ],
   "rules": {
+    "no-empty-static-block": "error",
+    "no-misleading-character-class": "error",
+    "no-new-native-nonconstructor": "error",
+    "no-unused-private-class-members": "error",
+    "no-useless-backreference": "error",
+    "react/display-name": "error",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "@typescript-eslint/prefer-for-of": "error",
+    "@typescript-eslint/no-unsafe-function-type": "error",
+    "@typescript-eslint/no-wrapper-object-types": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/dist"],
+            "message": "Don't import from dist",
+            "allowTypeImports": false
+          },
+          {
+            "group": ["**/src"],
+            "message": "Don't import from src",
+            "allowTypeImports": false
+          }
+        ]
+      }
+    ],
     "no-await-in-loop": "allow",
     "no-redeclare": "allow",
     "promise/no-callback-in-promise": "allow",
@@ -70,6 +102,14 @@
     "no-func-assign": "error",
     "no-global-assign": "error",
     "no-unused-vars": "error",
+    "no-unused-expressions": [
+      "error",
+      {
+        "allowShortCircuit": true,
+        "allowTernary": true,
+        "allowTaggedTemplates": true
+      }
+    ],
     "no-ex-assign": "error",
     "no-loss-of-precision": "error",
     "no-fallthrough": "error",
@@ -126,6 +166,7 @@
     "react/no-render-return-value": "error",
     "react/jsx-no-target-blank": "error",
     "react/jsx-no-comment-textnodes": "error",
+    "react/no-array-index-key": "off",
     "typescript/consistent-type-imports": "error",
     "typescript/no-non-null-assertion": "error",
     "typescript/triple-slash-reference": "error",
@@ -240,6 +281,42 @@
         "unicorn/prefer-dom-node-dataset": "off",
         "typescript/consistent-type-imports": "off",
         "import/no-cycle": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/**/*.{ts,tsx}",
+        "tools/**/*.{ts,tsx}",
+        "blocksuite/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "react/exhaustive-deps": [
+          "warn",
+          {
+            "additionalHooks": "(useAsyncCallback|useCatchEventCallback|useDraggable|useDropTarget|useRefEffect)"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/__tests__/**/*",
+        "**/*.stories.tsx",
+        "**/*.spec.ts",
+        "**/tests/**/*",
+        "scripts/**/*",
+        "**/benchmark/**/*",
+        "**/__debug__/**/*",
+        "**/e2e/**/*"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["**/*.{ts,js,mjs}"],
+      "rules": {
+        "react/rules-of-hooks": "off"
       }
     }
   ]

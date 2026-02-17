@@ -170,10 +170,10 @@ export class EditorHost extends SignalWatcher(
         ...Object.values(widgetTags),
       ];
       await Promise.all(
-        elementsTags.map(tag => {
+        elementsTags.map(async tag => {
           const element = this.renderRoot.querySelector(tag._$litStatic$);
           if (element instanceof LitElement) {
-            return element.updateComplete;
+            return await element.updateComplete;
           }
           return null;
         })

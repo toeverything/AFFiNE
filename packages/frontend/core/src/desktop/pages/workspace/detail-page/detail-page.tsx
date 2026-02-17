@@ -347,7 +347,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                 className={clsx(
                   'affine-page-viewport',
                   styles.affineDocViewport,
-                  styles.editorContainer
+                  styles.editorContainer,
+                  { [styles.pageModeViewportContentBox]: mode === 'page' }
                 )}
               >
                 <PageDetailEditor onLoad={onLoad} readonly={readonly} />

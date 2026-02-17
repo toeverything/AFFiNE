@@ -12,14 +12,14 @@ import {
   Embedding,
   EMBEDDING_DIMENSIONS,
 } from '../../../models';
-import { PromptService } from '../prompt';
+import { PromptService } from '../prompt/service';
+import { CopilotProviderFactory } from '../providers/factory';
+import type { CopilotProvider } from '../providers/provider';
 import {
-  type CopilotProvider,
-  CopilotProviderFactory,
   type ModelFullConditions,
   ModelInputType,
   ModelOutputType,
-} from '../providers';
+} from '../providers/types';
 import { EmbeddingClient, type ReRankResult } from './types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';

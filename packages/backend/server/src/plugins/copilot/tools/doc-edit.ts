@@ -3,8 +3,11 @@ import { z } from 'zod';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
-import { type PromptService } from '../prompt';
-import type { CopilotChatOptions, CopilotProviderFactory } from '../providers';
+import type {
+  CopilotChatOptions,
+  CopilotProviderFactory,
+  PromptService,
+} from './types';
 
 const CodeEditSchema = z
   .array(

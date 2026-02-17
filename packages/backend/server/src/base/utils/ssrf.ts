@@ -180,7 +180,7 @@ export async function assertSsrFSafeUrl(
   let addresses: string[];
   try {
     addresses = await resolveHostAddresses(hostname);
-  } catch (error) {
+  } catch {
     throw createSsrfBlockedError('unresolvable_hostname', {
       url: url.toString(),
       hostname,

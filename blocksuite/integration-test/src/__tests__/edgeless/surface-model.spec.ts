@@ -235,6 +235,69 @@ describe('connector', () => {
     expect(model.getConnectors(id2)).toEqual([]);
   });
 
+  test('should update endpoint index when connector retargets', () => {
+    const id = model.addElement({
+      type: 'shape',
+    });
+    const id2 = model.addElement({
+      type: 'shape',
+    });
+    const id3 = model.addElement({
+      type: 'shape',
+    });
+    const connectorId = model.addElement({
+      type: 'connector',
+      source: {
+        id,
+      },
+      target: {
+        id: id2,
+      },
+    });
+    const connector = model.getElementById(connectorId)!;
+
+    expect(model.getConnectors(id).map(c => c.id)).toEqual([connector.id]);
+    expect(model.getConnectors(id2).map(c => c.id)).toEqual([connector.id]);
+
+    model.updateElement(connectorId, {
+      source: {
+        id: id3,
+      },
+      target: {
+        id: id2,
+      },
+    });
+
+    expect(model.getConnectors(id)).toEqual([]);
+    expect(model.getConnectors(id3).map(c => c.id)).toEqual([connector.id]);
+    expect(model.getConnectors(id2).map(c => c.id)).toEqual([connector.id]);
+  });
+
+  test('getConnectors should purge stale connector ids from endpoint cache', () => {
+    const shapeId = model.addElement({
+      type: 'shape',
+    });
+    const surfaceModel = model as any;
+    surfaceModel._connectorIdsByEndpoint.set(
+      shapeId,
+      new Set(['missing-connector-id'])
+    );
+    surfaceModel._connectorEndpoints.set('missing-connector-id', {
+      sourceId: shapeId,
+      targetId: null,
+    });
+
+    expect(model.getConnectors(shapeId)).toEqual([]);
+    expect(
+      surfaceModel._connectorIdsByEndpoint
+        .get(shapeId)
+        ?.has('missing-connector-id') ?? false
+    ).toBe(false);
+    expect(surfaceModel._connectorEndpoints.has('missing-connector-id')).toBe(
+      false
+    );
+  });
+
   test('should return null if connector are deleted', async () => {
     const id = model.addElement({
       type: 'shape',

@@ -49,7 +49,7 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { CopilotEmbeddingJob } from '../embedding';
+import { CopilotEmbeddingJob } from '../embedding/job';
 import { COPILOT_LOCKER, CopilotType } from '../resolver';
 import { ChatSessionService } from '../session';
 import { CopilotStorage } from '../storage';

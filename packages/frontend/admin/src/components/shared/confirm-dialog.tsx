@@ -39,7 +39,7 @@ export const ConfirmDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:w-[460px]">
+      <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
           <DialogTitle className="leading-7">{title}</DialogTitle>
           <DialogDescription className="leading-6">
@@ -48,13 +48,19 @@ export const ConfirmDialog = ({
         </DialogHeader>
         <DialogFooter className="mt-6">
           <div className="flex justify-end gap-2 items-center w-full">
-            <Button type="button" onClick={handleClose} variant="outline">
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="outline"
+              size="sm"
+            >
               <span>{cancelText}</span>
             </Button>
             <Button
               type="button"
               onClick={onConfirm}
               variant={confirmButtonVariant}
+              size="sm"
             >
               <span>{confirmText}</span>
             </Button>

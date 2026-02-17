@@ -14,9 +14,8 @@ export type {
   CalendarProviderWatchParams,
   CalendarProviderWatchResult,
 } from './def';
-export { CalendarProviderName } from './def';
 export { CalendarProvider } from './def';
-export { CalendarProviderFactory } from './factory';
+export { CalendarProviderFactory, CalendarProviderName } from './factory';
 export { CalendarSyncTokenInvalid, GoogleCalendarProvider } from './google';
 
 export const CalendarProviders = [GoogleCalendarProvider, CalDAVProvider];

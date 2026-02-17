@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import { SWRConfig } from 'swr';
 
+import { ThemeProvider } from './components/theme-provider';
 import { TooltipProvider } from './components/ui/tooltip';
 import { isAdmin, useCurrentUser, useServerConfig } from './modules/common';
 import { Layout } from './modules/layout';
@@ -94,58 +95,55 @@ function RootRoutes() {
 
 export const App = () => {
   return (
-    <TooltipProvider>
-      <SWRConfig
-        value={{
-          revalidateOnFocus: false,
-          revalidateOnMount: false,
-        }}
-      >
-        <BrowserRouter basename={environment.subPath}>
-          <Routes>
-            <Route path={ROUTES.admin.index} element={<RootRoutes />}>
-              <Route path={ROUTES.admin.auth} element={<Auth />} />
-              <Route path={ROUTES.admin.setup} element={<Setup />} />
-              <Route element={<AuthenticatedRoutes />}>
-                <Route
-                  path={ROUTES.admin.dashboard}
-                  element={
-                    environment.isSelfHosted ? (
-                      <Navigate to={ROUTES.admin.accounts} replace />
-                    ) : (
-                      <Dashboard />
-                    )
-                  }
-                />
-                <Route path={ROUTES.admin.accounts} element={<Accounts />} />
-                <Route
-                  path={ROUTES.admin.workspaces}
-                  element={
-                    environment.isSelfHosted ? (
-                      <Navigate to={ROUTES.admin.accounts} replace />
-                    ) : (
-                      <Workspaces />
-                    )
-                  }
-                />
-                <Route path={`${ROUTES.admin.queue}/*`} element={<Queue />} />
-                <Route path={ROUTES.admin.ai} element={<AI />} />
-                <Route path={ROUTES.admin.about} element={<About />} />
-                <Route
-                  path={ROUTES.admin.settings.index}
-                  element={<Settings />}
-                >
+    <ThemeProvider>
+      <TooltipProvider>
+        <SWRConfig
+          value={{
+            revalidateOnFocus: false,
+            revalidateOnMount: false,
+          }}
+        >
+          <BrowserRouter basename={environment.subPath}>
+            <Routes>
+              <Route path={ROUTES.admin.index} element={<RootRoutes />}>
+                <Route path={ROUTES.admin.auth} element={<Auth />} />
+                <Route path={ROUTES.admin.setup} element={<Setup />} />
+                <Route element={<AuthenticatedRoutes />}>
                   <Route
-                    path={ROUTES.admin.settings.module}
+                    path={ROUTES.admin.dashboard}
+                    element={
+                      environment.isSelfHosted ? (
+                        <Navigate to={ROUTES.admin.accounts} replace />
+                      ) : (
+                        <Dashboard />
+                      )
+                    }
+                  />
+                  <Route path={ROUTES.admin.accounts} element={<Accounts />} />
+                  <Route
+                    path={ROUTES.admin.workspaces}
+                    element={
+                      environment.isSelfHosted ? (
+                        <Navigate to={ROUTES.admin.accounts} replace />
+                      ) : (
+                        <Workspaces />
+                      )
+                    }
+                  />
+                  <Route path={`${ROUTES.admin.queue}/*`} element={<Queue />} />
+                  <Route path={ROUTES.admin.ai} element={<AI />} />
+                  <Route path={ROUTES.admin.about} element={<About />} />
+                  <Route
+                    path={ROUTES.admin.settings.index}
                     element={<Settings />}
                   />
                 </Route>
               </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </SWRConfig>
-      <Toaster />
-    </TooltipProvider>
+            </Routes>
+          </BrowserRouter>
+        </SWRConfig>
+        <Toaster />
+      </TooltipProvider>
+    </ThemeProvider>
   );
 };

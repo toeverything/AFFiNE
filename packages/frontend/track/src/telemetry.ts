@@ -94,8 +94,8 @@ export function setTelemetryContext(
   const nextUserProps = options.replaceUserProperties
     ? (update.userProperties ?? {})
     : {
-        ...(context.userProperties ?? {}),
-        ...(update.userProperties ?? {}),
+        ...context.userProperties,
+        ...update.userProperties,
       };
 
   context = {

@@ -3,14 +3,11 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { nextTick } from '@blocksuite/global/utils';
 import { Subject } from 'rxjs';
 
-import {
-  BlockModel,
-  type BlockSchemaType,
-  type DraftModel,
-  type Store,
-  toDraftModel,
-} from '../model/index.js';
-import type { Schema } from '../schema/index.js';
+import { BlockModel } from '../model/block/block-model.js';
+import { type DraftModel, toDraftModel } from '../model/block/draft.js';
+import type { BlockSchemaType } from '../model/block/zod.js';
+import type { Store } from '../model/store/store.js';
+import type { Schema } from '../schema/schema.js';
 import { AssetsManager } from './assets.js';
 import { BaseBlockTransformer } from './base.js';
 import type {

@@ -1,4 +1,3 @@
-import { cssVarV2 } from '@toeverything/theme/v2';
 import type { FC, RefObject } from 'react';
 
 import type { ParsedUser } from '../../utils/csv-utils';
@@ -21,7 +20,7 @@ export const ImportPreviewContent: FC<ImportPreviewContentProps> = ({
   return (
     <div className="grid gap-3">
       {!isImported && (
-        <p style={{ color: cssVarV2('text/secondary') }}>
+        <p className="text-sm text-muted-foreground">
           {parsedUsers.length} users detected from the CSV file. Please confirm
           the user list below and import.
         </p>
@@ -50,7 +49,7 @@ export const ImportInitialContent: FC<ImportInitialContentProps> = ({
 }) => {
   return (
     <div className="grid gap-3">
-      <p style={{ color: cssVarV2('text/secondary') }}>
+      <p className="text-sm text-muted-foreground">
         You need to import the accounts by importing a CSV file in the correct
         format. Please download the CSV template.
       </p>

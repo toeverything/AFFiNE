@@ -159,8 +159,11 @@ export function buildAppModule(env: Env) {
     // basic
     .use(...FunctionalityModules)
 
-    // enable indexer module on graphql server and doc service
-    .useIf(() => env.flavors.graphql || env.flavors.doc, IndexerModule)
+    // enable indexer module on graphql, doc and front service
+    .useIf(
+      () => env.flavors.graphql || env.flavors.doc || env.flavors.front,
+      IndexerModule
+    )
 
     // auth
     .use(UserModule, AuthModule, PermissionModule)
@@ -202,8 +205,8 @@ export function buildAppModule(env: Env) {
       AccessTokenModule,
       QueueDashboardModule
     )
-    // doc service only
-    .useIf(() => env.flavors.doc, DocServiceModule)
+    // doc service and front service
+    .useIf(() => env.flavors.doc || env.flavors.front, DocServiceModule)
     // worker for and self-hosted API only for self-host and local development only
     .useIf(() => env.dev || env.selfhosted, WorkerModule, SelfhostModule)
     // static frontend routes for front flavor

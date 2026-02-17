@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
 import { MoreVerticalIcon } from '@blocksuite/icons/rc';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { CircleUser } from 'lucide-react';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
@@ -24,6 +23,9 @@ import { useCurrentUser, useRevalidateCurrentUser } from '../common';
 interface UserDropdownProps {
   isCollapsed: boolean;
 }
+
+const adminBadgeClass =
+  'inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-blue px-2 py-0.5 text-xxs font-medium text-chip-text';
 
 const UserInfo = ({
   name,
@@ -44,18 +46,38 @@ const UserInfo = ({
       </Avatar>
       <div className="flex flex-col font-medium gap-1">
         {name ?? email.split('@')[0]}
-        <span
-          className="w-fit rounded px-2 py-0.5 text-xs h-5 border text-center inline-flex items-center font-normal"
-          style={{
-            borderRadius: '4px',
-            backgroundColor: cssVarV2('chip/label/blue'),
-            borderColor: cssVarV2('layer/insideBorder/border'),
-          }}
-        >
-          Admin
-        </span>
+        <span className={adminBadgeClass}>Admin</span>
       </div>
     </>
+  );
+};
+
+const UserName = ({
+  name,
+  email,
+}: {
+  name?: string | null;
+  email?: string;
+}) => {
+  if (name) {
+    return (
+      <span
+        className="max-w-[120px] overflow-hidden text-ellipsis text-sm whitespace-nowrap"
+        title={name}
+      >
+        {name}
+      </span>
+    );
+  }
+
+  const fallback = email?.split('@')[0] ?? '';
+  return (
+    <span
+      className="max-w-[120px] overflow-hidden text-ellipsis text-sm whitespace-nowrap"
+      title={fallback}
+    >
+      {fallback}
+    </span>
   );
 };
 
@@ -78,8 +100,8 @@ export function UserDropdown({ isCollapsed }: UserDropdownProps) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="w-10 h-10" size="icon">
-            <Avatar className="w-5 h-5">
+          <Button variant="ghost" className="h-9 w-9 rounded-lg" size="icon">
+            <Avatar className="h-5 w-5">
               <AvatarImage src={currentUser?.avatarUrl ?? undefined} />
               <AvatarFallback>
                 <CircleUser size={24} />
@@ -105,43 +127,24 @@ export function UserDropdown({ isCollapsed }: UserDropdownProps) {
   }
 
   return (
-    <div
-      className={`flex flex-none items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-1 py-3 flex-nowrap`}
-    >
-      <div className="flex items-center gap-2 font-medium text-ellipsis break-words overflow-hidden">
-        <Avatar className="w-5 h-5">
+    <div className="flex items-center justify-between px-1 py-3">
+      <div className="flex min-w-0 items-center gap-2 font-medium">
+        <Avatar className="h-5 w-5">
           <AvatarImage src={currentUser?.avatarUrl ?? undefined} />
           <AvatarFallback>
             <CircleUser size={24} />
           </AvatarFallback>
         </Avatar>
-        {currentUser?.name ? (
-          <span
-            className="text-sm text-nowrap text-ellipsis break-words overflow-hidden"
-            title={currentUser?.name}
-          >
-            {currentUser?.name}
-          </span>
-        ) : (
-          // Fallback to email prefix if name is not available
-          <span className="text-sm" title={currentUser?.email.split('@')[0]}>
-            {currentUser?.email.split('@')[0]}
-          </span>
-        )}
-        <span
-          className="ml-2 rounded px-2 py-0.5 text-xs h-5 border text-center inline-flex items-center font-normal"
-          style={{
-            borderRadius: '4px',
-            backgroundColor: cssVarV2('chip/label/blue'),
-            borderColor: cssVarV2('layer/insideBorder/border'),
-          }}
-        >
-          Admin
-        </span>
+        <UserName name={currentUser?.name} email={currentUser?.email} />
+        <span className={adminBadgeClass}>Admin</span>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="ml-2 p-1 h-6">
+          <Button
+            variant="ghost"
+            className="ml-2 h-7 w-7 rounded-lg p-0"
+            size="icon"
+          >
             <MoreVerticalIcon fontSize={20} />
           </Button>
         </DropdownMenuTrigger>

@@ -155,9 +155,22 @@ export class FrameBlockModel
   }
 
   removeChild(element: GfxModel): void {
+    this.removeChildren([element]);
+  }
+
+  removeChildren(elements: GfxModel[]): void {
+    const childIds = [...new Set(elements.map(element => element.id))];
+    if (!this.props.childElementIds || childIds.length === 0) {
+      return;
+    }
+
     this.store.transact(() => {
-      this.props.childElementIds &&
-        delete this.props.childElementIds[element.id];
+      const childElementIds = this.props.childElementIds;
+      if (!childElementIds) return;
+
+      childIds.forEach(childId => {
+        delete childElementIds[childId];
+      });
     });
   }
 }

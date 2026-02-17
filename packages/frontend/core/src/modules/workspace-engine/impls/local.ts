@@ -1,3 +1,4 @@
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
   type BlobStorage,
@@ -46,6 +47,10 @@ import type {
 } from '../../workspace';
 import { WorkspaceImpl } from '../../workspace/impls/workspace';
 import { getWorkspaceProfileWorker } from './out-worker';
+import {
+  dedupeWorkspaceIds,
+  normalizeWorkspaceIds,
+} from './workspace-id-utils';
 
 export const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY = 'affine-local-workspace';
 export const LOCAL_WORKSPACE_GLOBAL_STATE_KEY =
@@ -60,13 +65,6 @@ type GlobalStateStorageLike = {
   get<T>(key: string): T | undefined;
   set<T>(key: string, value: T): void;
 };
-
-function normalizeWorkspaceIds(ids: unknown): string[] {
-  if (!Array.isArray(ids)) {
-    return [];
-  }
-  return ids.filter((id): id is string => typeof id === 'string');
-}
 
 function getElectronGlobalStateStorage(): GlobalStateStorageLike | null {
   if (!BUILD_CONFIG.isElectron) {
@@ -113,7 +111,7 @@ export function setLocalWorkspaceIds(
       ? idsOrUpdater(getLocalWorkspaceIds())
       : idsOrUpdater
   );
-  const deduplicated = [...new Set(next)];
+  const deduplicated = dedupeWorkspaceIds(next);
 
   const globalState = getElectronGlobalStateStorage();
   if (globalState) {
@@ -168,14 +166,12 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       }
 
       setLocalWorkspaceIds(currentIds => {
-        return [
-          ...new Set([
-            ...currentIds,
-            ...persistedIds,
-            ...legacyIds,
-            ...scannedIds,
-          ]),
-        ];
+        return dedupeWorkspaceIds([
+          ...currentIds,
+          ...persistedIds,
+          ...legacyIds,
+          ...scannedIds,
+        ]);
       });
     })()
       .catch(e => {
@@ -271,7 +267,9 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
-          return record ? new Blob([record.data], { type: record.mime }) : null;
+          return record
+            ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
+            : null;
         },
         delete: async () => {
           return;
@@ -399,7 +397,9 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     storage.connection.connect();
     await storage.connection.waitForConnected();
     const blob = await storage.get(blobKey);
-    return blob ? new Blob([blob.data], { type: blob.mime }) : null;
+    return blob
+      ? new Blob([toArrayBuffer(blob.data)], { type: blob.mime })
+      : null;
   }
 
   async listBlobs(id: string): Promise<ListedBlobRecord[]> {

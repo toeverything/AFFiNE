@@ -51,10 +51,10 @@ function parseKey(privateKey: string) {
   let priv: KeyObject;
   try {
     priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'pkcs8' });
-  } catch (e1) {
+  } catch {
     try {
       priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'sec1' });
-    } catch (e2) {
+    } catch {
       // As a last resort rely on auto-detection
       priv = createPrivateKey(keyBuf);
     }

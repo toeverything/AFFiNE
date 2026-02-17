@@ -32,6 +32,9 @@
     "yjs": "^13.6.27",
     "zod": "^3.25.76"
   },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./view": "./src/view.ts"

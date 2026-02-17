@@ -3,7 +3,6 @@ import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { Switch } from '@affine/admin/components/ui/switch';
 import type { FeatureType } from '@affine/graphql';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { useCallback } from 'react';
 
 import { cn } from '../../utils';
@@ -42,10 +41,7 @@ export const FeatureToggleList = ({
 
   if (!features.length) {
     return (
-      <div
-        className={cn(className, 'px-3 py-2 text-xs')}
-        style={{ color: cssVarV2('text/secondary') }}
-      >
+      <div className={cn(className, 'px-3 py-2 text-xs text-muted-foreground')}>
         No configurable features.
       </div>
     );
@@ -57,10 +53,10 @@ export const FeatureToggleList = ({
         <div key={feature}>
           <Label
             className={cn(
-              'cursor-pointer',
+              'cursor-pointer transition-colors duration-100',
               controlPosition === 'right'
-                ? 'flex items-center justify-between p-3 text-[15px] gap-2 font-medium leading-6 overflow-hidden'
-                : 'flex items-center gap-2 px-3 py-2 text-sm'
+                ? 'flex items-center justify-between p-3 text-sm gap-2 font-medium leading-6 overflow-hidden hover:bg-muted/40'
+                : 'flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/40'
             )}
           >
             {controlPosition === 'left' ? (

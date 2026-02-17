@@ -41,6 +41,10 @@ export function requestThrottledConnectedFrame<
   viewport: PropTypes.instanceOf(Viewport),
 })
 export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
+  private static readonly VIEWPORT_REFRESH_PIXEL_THRESHOLD = 18;
+
+  private static readonly VIEWPORT_REFRESH_MAX_INTERVAL = 120;
+
   static override styles = css`
     gfx-viewport {
       position: absolute;
@@ -104,6 +108,14 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
   private _lastVisibleModels?: Set<GfxBlockElementModel>;
 
+  private _lastViewportUpdate?: { zoom: number; center: [number, number] };
+
+  private _lastViewportRefreshTime = 0;
+
+  private _pendingViewportRefreshTimer: ReturnType<
+    typeof globalThis.setTimeout
+  > | null = null;
+
   private readonly _pendingChildrenUpdates: {
     id: string;
     resolve: () => void;
@@ -115,12 +127,65 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
   private _updatingChildrenFlag = false;
 
+  private _clearPendingViewportRefreshTimer() {
+    if (this._pendingViewportRefreshTimer !== null) {
+      clearTimeout(this._pendingViewportRefreshTimer);
+      this._pendingViewportRefreshTimer = null;
+    }
+  }
+
+  private _scheduleTrailingViewportRefresh() {
+    this._clearPendingViewportRefreshTimer();
+    this._pendingViewportRefreshTimer = globalThis.setTimeout(() => {
+      this._pendingViewportRefreshTimer = null;
+      this._lastViewportRefreshTime = performance.now();
+      this._refreshViewport();
+    }, GfxViewportElement.VIEWPORT_REFRESH_MAX_INTERVAL);
+  }
+
+  private _refreshViewportByViewportUpdate(update: {
+    zoom: number;
+    center: [number, number];
+  }) {
+    const now = performance.now();
+    const previous = this._lastViewportUpdate;
+    this._lastViewportUpdate = {
+      zoom: update.zoom,
+      center: [update.center[0], update.center[1]],
+    };
+
+    if (!previous) {
+      this._lastViewportRefreshTime = now;
+      this._refreshViewport();
+      return;
+    }
+
+    const zoomChanged = Math.abs(previous.zoom - update.zoom) > 0.0001;
+    const centerMovedInPixel = Math.hypot(
+      (update.center[0] - previous.center[0]) * update.zoom,
+      (update.center[1] - previous.center[1]) * update.zoom
+    );
+    const timeoutReached =
+      now - this._lastViewportRefreshTime >=
+      GfxViewportElement.VIEWPORT_REFRESH_MAX_INTERVAL;
+
+    if (
+      zoomChanged ||
+      centerMovedInPixel >=
+        GfxViewportElement.VIEWPORT_REFRESH_PIXEL_THRESHOLD ||
+      timeoutReached
+    ) {
+      this._clearPendingViewportRefreshTimer();
+      this._lastViewportRefreshTime = now;
+      this._refreshViewport();
+      return;
+    }
+
+    this._scheduleTrailingViewportRefresh();
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
-
-    const viewportUpdateCallback = () => {
-      this._refreshViewport();
-    };
 
     if (!this.enableChildrenSchedule) {
       delete this.scheduleUpdateChildren;
@@ -128,11 +193,22 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
     this._hideOutsideAndNoSelectedBlock();
     this.disposables.add(
-      this.viewport.viewportUpdated.subscribe(() => viewportUpdateCallback())
+      this.viewport.viewportUpdated.subscribe(update =>
+        this._refreshViewportByViewportUpdate(update)
+      )
     );
     this.disposables.add(
-      this.viewport.sizeUpdated.subscribe(() => viewportUpdateCallback())
+      this.viewport.sizeUpdated.subscribe(() => {
+        this._clearPendingViewportRefreshTimer();
+        this._lastViewportRefreshTime = performance.now();
+        this._refreshViewport();
+      })
     );
+  }
+
+  override disconnectedCallback(): void {
+    this._clearPendingViewportRefreshTimer();
+    super.disconnectedCallback();
   }
 
   override render() {

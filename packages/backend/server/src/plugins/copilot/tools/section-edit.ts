@@ -2,9 +2,8 @@ import { Logger } from '@nestjs/common';
 import { tool } from 'ai';
 import { z } from 'zod';
 
-import type { PromptService } from '../prompt';
-import type { CopilotProviderFactory } from '../providers';
 import { toolError } from './error';
+import type { CopilotProviderFactory, PromptService } from './types';
 
 const logger = new Logger('SectionEditTool');
 
