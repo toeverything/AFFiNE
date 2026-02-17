@@ -66,6 +66,65 @@ const SVG_SHAPE_TYPES = new Set([
   'arrowTwoWayVertical',
 ]);
 
+const gradientDirectionMap: Record<
+  NonNullable<ShapeElementModel['gradientDirection']>,
+  { x1: number; y1: number; x2: number; y2: number }
+> = {
+  S: { x1: 0, y1: 0, x2: 0, y2: 1 },
+  W: { x1: 1, y1: 0, x2: 0, y2: 0 },
+  N: { x1: 0, y1: 1, x2: 0, y2: 0 },
+  E: { x1: 0, y1: 0, x2: 1, y2: 0 },
+  SE: { x1: 0, y1: 0, x2: 1, y2: 1 },
+  SW: { x1: 1, y1: 0, x2: 0, y2: 1 },
+  NE: { x1: 0, y1: 1, x2: 1, y2: 0 },
+  NW: { x1: 1, y1: 1, x2: 0, y2: 0 },
+};
+
+const cssGradientDirectionMap: Record<
+  NonNullable<ShapeElementModel['gradientDirection']>,
+  string
+> = {
+  S: 'to bottom',
+  W: 'to left',
+  N: 'to top',
+  E: 'to right',
+  SE: 'to bottom right',
+  SW: 'to bottom left',
+  NE: 'to top right',
+  NW: 'to top left',
+};
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const appendGradientDefs = (
+  svg: SVGSVGElement,
+  gradientId: string,
+  fillColor: string,
+  gradientFinal: string,
+  gradientDirection: NonNullable<ShapeElementModel['gradientDirection']>,
+  width: number,
+  height: number
+) => {
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  const gradient = document.createElementNS(SVG_NS, 'linearGradient');
+  const coords = gradientDirectionMap[gradientDirection];
+  gradient.setAttribute('id', gradientId);
+  gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+  gradient.setAttribute('x1', String(coords.x1 * width));
+  gradient.setAttribute('y1', String(coords.y1 * height));
+  gradient.setAttribute('x2', String(coords.x2 * width));
+  gradient.setAttribute('y2', String(coords.y2 * height));
+  const start = document.createElementNS(SVG_NS, 'stop');
+  start.setAttribute('offset', '0%');
+  start.setAttribute('stop-color', fillColor);
+  const end = document.createElementNS(SVG_NS, 'stop');
+  end.setAttribute('offset', '100%');
+  end.setAttribute('stop-color', gradientFinal);
+  gradient.append(start, end);
+  defs.append(gradient);
+  svg.append(defs);
+};
+
 const buildPathFromPoints = (points: Array<[number, number]>) => {
   if (!points.length) return '';
   const [first, ...rest] = points;
@@ -194,6 +253,12 @@ export const shapeDomRenderer = (
     DefaultTheme.shapeStrokeColor,
     true
   );
+  const gradientFinal = model.gradientFinal
+    ? renderer.getColorValue(model.gradientFinal, fillColor, true)
+    : undefined;
+  const gradientDirection = model.gradientDirection ?? 'S';
+  const isFilled = model.filled || model.shapeType === 'drawioStencil';
+  const hasGradient = Boolean(gradientFinal) && isFilled;
 
   element.style.width = `${unscaledWidth * zoom}px`;
   element.style.height = `${unscaledHeight * zoom}px`;
@@ -222,6 +287,18 @@ export const shapeDomRenderer = (
     const top = inset;
     const right = inset + width;
     const bottom = inset + height;
+
+    const finalStrokeColor =
+      model.strokeStyle !== 'none' && strokeW > 0 ? strokeColor : 'transparent';
+    const finalStrokeDasharray =
+      model.strokeStyle === 'dash' && finalStrokeColor !== 'transparent'
+        ? '12, 12'
+        : model.strokeStyle === 'dot' && finalStrokeColor !== 'transparent'
+          ? `${Math.max(1, strokeW)}, ${strokeW * 2.5}`
+          : 'none';
+    const finalFillColor = isFilled ? fillColor : 'transparent';
+    const gradientId = hasGradient ? `shape-gradient-${model.id}` : '';
+    const fillPaint = hasGradient ? `url(#${gradientId})` : finalFillColor;
 
     let svgPath = '';
     let pathTransform = '';
@@ -257,6 +334,17 @@ export const shapeDomRenderer = (
       const paths = [...fillPaths, ...strokePaths];
 
       const svg = element.firstChild as SVGSVGElement;
+      if (hasGradient && gradientFinal) {
+        appendGradientDefs(
+          svg,
+          gradientId,
+          fillColor,
+          gradientFinal,
+          gradientDirection,
+          unscaledWidth,
+          unscaledHeight
+        );
+      }
       paths.forEach((pathData, index) => {
         const path = document.createElementNS(SVG_NS, 'path');
         path.setAttribute('d', pathData);
@@ -264,9 +352,9 @@ export const shapeDomRenderer = (
         const fillColor = isLibraryStencil
           ? finalFillColor === 'transparent'
             ? finalStrokeColor
-            : finalFillColor
+            : fillPaint
           : isBackground
-            ? finalFillColor
+            ? fillPaint
             : 'none';
         const strokeColor = isLibraryStencil
           ? isBackground
@@ -405,34 +493,31 @@ export const shapeDomRenderer = (
         break;
     }
 
-    // Determine if stroke should be visible and its color
-    const finalStrokeColor =
-      model.strokeStyle !== 'none' && strokeW > 0 ? strokeColor : 'transparent';
-    // Determine dash array, only if stroke is visible and style is 'dash'
-    const finalStrokeDasharray =
-      model.strokeStyle === 'dash' && finalStrokeColor !== 'transparent'
-        ? '12, 12'
-        : model.strokeStyle === 'dot' && finalStrokeColor !== 'transparent'
-          ? `${Math.max(1, strokeW)}, ${strokeW * 2.5}`
-          : 'none';
-    // Determine fill color
-    const isFilled = model.filled || model.shapeType === 'drawioStencil';
-    const finalFillColor = isFilled ? fillColor : 'transparent';
-
     // Build SVG safely with DOM-API
-    const SVG_NS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', '100%');
     svg.setAttribute('viewBox', `0 0 ${unscaledWidth} ${unscaledHeight}`);
     svg.setAttribute('preserveAspectRatio', 'none');
 
+    if (hasGradient && gradientFinal) {
+      appendGradientDefs(
+        svg,
+        gradientId,
+        fillColor,
+        gradientFinal,
+        gradientDirection,
+        unscaledWidth,
+        unscaledHeight
+      );
+    }
+
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', svgPath);
     if (pathTransform) {
       path.setAttribute('transform', pathTransform);
     }
-    path.setAttribute('fill', finalFillColor);
+    path.setAttribute('fill', fillPaint);
     path.setAttribute('stroke', finalStrokeColor);
     path.setAttribute('stroke-width', String(strokeW));
     if (finalStrokeDasharray !== 'none') {
@@ -469,7 +554,14 @@ export const shapeDomRenderer = (
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     // innerHTML was already cleared by applyShapeSpecificStyles if necessary
-    element.style.backgroundColor = isFilled ? fillColor : 'transparent';
+    if (hasGradient && gradientFinal && isFilled) {
+      const direction = cssGradientDirectionMap[gradientDirection];
+      element.style.backgroundImage = `linear-gradient(${direction}, ${fillColor}, ${gradientFinal})`;
+      element.style.backgroundColor = fillColor;
+    } else {
+      element.style.backgroundImage = '';
+      element.style.backgroundColor = isFilled ? fillColor : 'transparent';
+    }
     applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
   }
 

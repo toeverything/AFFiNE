@@ -116,7 +116,25 @@ export class EdgelessShapeMenu extends SignalWatcher(
     const ringPalettes = shapePaletteKeys
       .map((key, index) => ({ key, value: palette.styles[index].ringColor }))
       .filter(palette => palette.value !== undefined) as Palette[];
-    return { palette, stylesByKey, fillPalettes, strokePalettes, ringPalettes };
+    const gradientPalettes = shapePaletteKeys
+      .map((key, index) => ({
+        key,
+        value: palette.styles[index].gradientFinal,
+        direction: palette.styles[index].gradientDirection,
+      }))
+      .filter(palette => palette.value !== undefined) as {
+      key: string;
+      value: Color;
+      direction?: ShapePaletteStyle['gradientDirection'];
+    }[];
+    return {
+      palette,
+      stylesByKey,
+      fillPalettes,
+      strokePalettes,
+      ringPalettes,
+      gradientPalettes,
+    };
   });
 
   @property({ attribute: false })
@@ -145,6 +163,8 @@ export class EdgelessShapeMenu extends SignalWatcher(
     const strokeColor = style?.stroke ?? DefaultTheme.StrokeColorShortMap.Grey;
     const strokeWidth = style?.strokeWidth;
     const strokeStyle = style?.strokeStyle;
+    const gradientFinal = style?.gradientFinal;
+    const gradientDirection = style?.gradientDirection;
 
     const { shapeName } = this._props$.value;
     const nextProps: {
@@ -153,10 +173,14 @@ export class EdgelessShapeMenu extends SignalWatcher(
       strokeColor: Color;
       strokeWidth?: ShapePaletteStyle['strokeWidth'];
       strokeStyle?: ShapePaletteStyle['strokeStyle'];
+      gradientFinal?: ShapePaletteStyle['gradientFinal'];
+      gradientDirection?: ShapePaletteStyle['gradientDirection'];
     } = {
       filled,
       fillColor,
       strokeColor,
+      gradientFinal,
+      gradientDirection,
     };
     if (strokeWidth) nextProps.strokeWidth = strokeWidth;
     if (strokeStyle) nextProps.strokeStyle = strokeStyle;
@@ -168,7 +192,9 @@ export class EdgelessShapeMenu extends SignalWatcher(
       fillColor,
       strokeColor,
       strokeWidth,
-      strokeStyle
+      strokeStyle,
+      gradientFinal,
+      gradientDirection
     );
     if (!applied) {
       this._refreshShapeOverlay();
@@ -195,7 +221,9 @@ export class EdgelessShapeMenu extends SignalWatcher(
     fillColor: Color,
     strokeColor?: Color,
     strokeWidth?: ShapePaletteStyle['strokeWidth'],
-    strokeStyle?: ShapePaletteStyle['strokeStyle']
+    strokeStyle?: ShapePaletteStyle['strokeStyle'],
+    gradientFinal?: ShapePaletteStyle['gradientFinal'],
+    gradientDirection?: ShapePaletteStyle['gradientDirection']
   ) {
     const selection = this.edgeless.std.get(GfxControllerIdentifier).selection;
     const elements = selection.selectedElements;
@@ -228,6 +256,8 @@ export class EdgelessShapeMenu extends SignalWatcher(
           fillColor,
           strokeColor: appliedStrokeColor,
           filled,
+          gradientFinal,
+          gradientDirection,
         };
         if (strokeWidth) shapeUpdates.strokeWidth = strokeWidth;
         if (strokeStyle) shapeUpdates.strokeStyle = strokeStyle;
@@ -273,7 +303,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   override render() {
     const { fillColor, shapeStyle, shapeName } = this._props$.value;
-    const { fillPalettes, strokePalettes, ringPalettes } =
+    const { fillPalettes, strokePalettes, ringPalettes, gradientPalettes } =
       this._activePalettes$.value;
 
     return html`
@@ -350,6 +380,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
               .palettes=${fillPalettes}
               .outlinePalettes=${strokePalettes}
               .ringPalettes=${ringPalettes}
+              .gradientPalettes=${gradientPalettes}
               .hasTransparent=${!this.edgeless.store
                 .get(FeatureFlagService)
                 .getFlag('enable_color_picker')}

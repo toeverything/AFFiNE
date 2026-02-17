@@ -12,6 +12,8 @@ import isEqual from 'lodash-es/isEqual';
 
 import { AdditionIcon } from './icons';
 
+type GradientDirection = 'S' | 'W' | 'N' | 'E' | 'SE' | 'SW' | 'NE' | 'NW';
+
 export class EdgelessColorButton extends LitElement {
   static override styles = css`
     :host {
@@ -91,7 +93,14 @@ export class EdgelessColorButton extends LitElement {
   }
 
   override render() {
-    const { label, preprocessColor, hollowCircle, ringColor } = this;
+    const {
+      label,
+      preprocessColor,
+      hollowCircle,
+      ringColor,
+      gradientFinal,
+      gradientDirection,
+    } = this;
     const resolvedFillColor = resolveColor(this.color, this.theme);
     const normalizedFill = resolvedFillColor.replace(/\s+/g, '').toLowerCase();
     const isWhite =
@@ -118,7 +127,18 @@ export class EdgelessColorButton extends LitElement {
         normalizedRing === 'rgba(255,255,255,1)')
         ? 'var(--affine-border-color)'
         : ringColorValue;
-    const additionIcon = AdditionIcon(preprocessColor, !!hollowCircle);
+    const resolvedGradientFinal = gradientFinal
+      ? resolveColor(gradientFinal, this.theme)
+      : undefined;
+    const gradientFinalValue = resolvedGradientFinal?.startsWith('--')
+      ? `var(${resolvedGradientFinal})`
+      : resolvedGradientFinal;
+    const additionIcon = AdditionIcon({
+      color: preprocessColor,
+      hollowCircle: !!hollowCircle,
+      gradientFinal: gradientFinalValue,
+      gradientDirection,
+    });
     return html`<div
       class="color-unit"
       aria-label=${ifDefined(label)}
@@ -144,6 +164,12 @@ export class EdgelessColorButton extends LitElement {
 
   @property({ attribute: false })
   accessor ringColor: Color | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor gradientFinal: Color | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor gradientDirection: GradientDirection | undefined = undefined;
 
   @property({ attribute: false })
   accessor theme!: ColorScheme;
@@ -219,6 +245,9 @@ export class EdgelessColorPanel extends LitElement {
           const ringPalette = this.ringPalettes?.find(
             outline => outline.key === palette.key
           );
+          const gradientPalette = this.gradientPalettes?.find(
+            outline => outline.key === palette.key
+          );
           return html`<edgeless-color-button
             class=${classMap({ large: true })}
             .label=${palette.key}
@@ -226,6 +255,8 @@ export class EdgelessColorPanel extends LitElement {
             .theme=${this.theme}
             .hollowCircle=${this.hollowCircle}
             .ringColor=${ringPalette?.value ?? outlinePalette?.value}
+            .gradientFinal=${gradientPalette?.value}
+            .gradientDirection=${gradientPalette?.direction}
             ?active=${activated}
             @click=${() => {
               this.select(palette);
@@ -253,6 +284,11 @@ export class EdgelessColorPanel extends LitElement {
 
   @property({ attribute: false })
   accessor ringPalettes: readonly Palette[] | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor gradientPalettes:
+    | readonly { key: string; value: Color; direction?: GradientDirection }[]
+    | undefined = undefined;
 
   @property({ attribute: false })
   accessor theme!: ColorScheme;

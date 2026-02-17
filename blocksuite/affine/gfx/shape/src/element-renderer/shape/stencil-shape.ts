@@ -12,7 +12,7 @@ import {
   buildPathFromStencil,
   type StencilShapeData,
 } from '../../drawio/stencil-utils.js';
-import { type Colors } from './utils.js';
+import { type Colors, resolveGradientFill } from './utils.js';
 
 const applyLineStyle = (
   ctx: CanvasRenderingContext2D,
@@ -37,7 +37,7 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
     model: ShapeElementModel | LocalShapeElementModel,
     ctx: CanvasRenderingContext2D,
     matrix: DOMMatrix,
-    _renderer: CanvasRenderer,
+    renderer: CanvasRenderer,
     rc: RoughCanvas,
     colors: Colors
   ) {
@@ -94,7 +94,16 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
           ctx.lineWidth = strokeWidth;
           ctx.strokeStyle =
             strokeStyle === 'none' ? 'transparent' : strokeColor;
-          ctx.fillStyle = isFilled ? fillColor : 'transparent';
+          ctx.fillStyle = isFilled
+            ? resolveGradientFill(
+                ctx,
+                renderer,
+                model,
+                fillColor,
+                renderWidth,
+                renderHeight
+              )
+            : 'transparent';
           applyLineStyle(ctx, strokeStyle, strokeWidth);
           if (fill && isFilled) {
             ctx.fill(path2d);

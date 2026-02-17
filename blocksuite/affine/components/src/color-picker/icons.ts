@@ -40,6 +40,47 @@ export function CircleIcon(color: string) {
   `;
 }
 
+type GradientDirection = 'S' | 'W' | 'N' | 'E' | 'SE' | 'SW' | 'NE' | 'NW';
+
+const gradientDirectionMap: Record<GradientDirection, string> = {
+  S: '0 0 0 1',
+  W: '1 0 0 0',
+  N: '0 1 0 0',
+  E: '0 0 1 0',
+  SE: '0 0 1 1',
+  SW: '1 0 0 1',
+  NE: '0 1 1 0',
+  NW: '1 1 0 0',
+};
+
+export function GradientCircleIcon(
+  color: string,
+  gradientFinal: string,
+  gradientDirection: GradientDirection = 'S'
+) {
+  const gradientId = `grad-${`${color}-${gradientFinal}-${gradientDirection}`
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 32)}`;
+  const [x1, y1, x2, y2] = gradientDirectionMap[gradientDirection].split(' ');
+  return html`
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+    >
+      <defs>
+        <linearGradient id=${gradientId} x1=${x1} y1=${y1} x2=${x2} y2=${y2}>
+          <stop offset="0%" stop-color=${color} />
+          <stop offset="35%" stop-color=${color} />
+          <stop offset="100%" stop-color=${gradientFinal} />
+        </linearGradient>
+      </defs>
+      <circle cx="10" cy="10" r="10" fill=${`url(#${gradientId})`} />
+    </svg>
+  `;
+}
+
 export function HollowCircleIcon(color: string) {
   return html`
     <svg
@@ -58,13 +99,23 @@ export function HollowCircleIcon(color: string) {
   `;
 }
 
-export function AdditionIcon(color: string, hollowCircle: boolean) {
+export function AdditionIcon(options: {
+  color: string;
+  hollowCircle: boolean;
+  gradientFinal?: string;
+  gradientDirection?: GradientDirection;
+}) {
+  const { color, hollowCircle, gradientFinal, gradientDirection } = options;
   if (isTransparent(color)) {
     return TransparentIcon(hollowCircle);
   }
 
   if (hollowCircle) {
     return HollowCircleIcon(color);
+  }
+
+  if (gradientFinal) {
+    return GradientCircleIcon(color, gradientFinal, gradientDirection);
   }
 
   return CircleIcon(color);

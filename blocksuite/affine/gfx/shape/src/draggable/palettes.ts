@@ -12,7 +12,7 @@ export type ShapePaletteStyle = {
   strokeStyle?: StrokeStyle;
   ringColor?: Palette['value'];
   gradientFinal?: Palette['value'];
-  gradientDirection?: 'horizontal' | 'vertical';
+  gradientDirection?: 'S' | 'W' | 'N' | 'E' | 'SE' | 'SW' | 'NE' | 'NW';
 };
 
 export type ShapePalette = {
@@ -67,18 +67,24 @@ const applyDefaultTail = (styles: ShapePaletteStyle[]) => {
       ...base[tailStart],
       fill: blackFill ?? base[tailStart].fill,
       stroke: blackStroke ?? base[tailStart].stroke,
+      gradientFinal: undefined,
+      gradientDirection: undefined,
     };
     base[tailStart + 1] = {
       ...base[tailStart + 1],
       fill: whiteFill ?? base[tailStart + 1].fill,
       stroke: whiteStroke ?? base[tailStart + 1].stroke,
       ringColor: DefaultTheme.black,
+      gradientFinal: undefined,
+      gradientDirection: undefined,
     };
     base[tailStart + 2] = {
       ...base[tailStart + 2],
       fill: transparentFill ?? base[tailStart + 2].fill,
       stroke: transparentStroke,
       ringColor: transparentStroke,
+      gradientFinal: undefined,
+      gradientDirection: undefined,
     };
   }
   return base;
@@ -108,6 +114,77 @@ const fancyStyles = applyDefaultTail(
     { fill: '#E6D0DE', stroke: '#996185' },
     { fill: '#E6D0DE', stroke: '#996185' },
     { fill: '#E6D0DE', stroke: '#996185' },
+  ])
+);
+
+const gradientStyles = applyDefaultTail(
+  ensureLength([
+    {
+      fill: '#F8CECC',
+      stroke: '#B85450',
+      gradientFinal: '#EA6B66',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#FFCD28',
+      stroke: '#D79B00',
+      gradientFinal: '#FFA500',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#FFF2CC',
+      stroke: '#D6B656',
+      gradientFinal: '#FFD966',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#D5E8D4',
+      stroke: '#82B366',
+      gradientFinal: '#97D077',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#D5E8D4',
+      stroke: '#6A9153',
+      gradientFinal: '#67AB9F',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#DAE8FC',
+      stroke: '#6C8EBF',
+      gradientFinal: '#7EA6E0',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#E1D5E7',
+      stroke: '#9673A6',
+      gradientFinal: '#8C6C9C',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#E6D0DE',
+      stroke: '#996185',
+      gradientFinal: '#B5739D',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#E6D0DE',
+      stroke: '#996185',
+      gradientFinal: '#B5739D',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#E6D0DE',
+      stroke: '#996185',
+      gradientFinal: '#B5739D',
+      gradientDirection: 'S',
+    },
+    {
+      fill: '#E6D0DE',
+      stroke: '#996185',
+      gradientFinal: '#B5739D',
+      gradientDirection: 'S',
+    },
   ])
 );
 
@@ -199,6 +276,10 @@ export const shapePalettes: ShapePalette[] = [
   {
     id: 'fancy',
     styles: fancyStyles,
+  },
+  {
+    id: 'gradient',
+    styles: gradientStyles,
   },
   {
     id: 'bold',

@@ -84,6 +84,8 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       stencilName,
       filled: shapeName === ShapeType.DrawioStencil ? true : attributes.filled,
       fillColor: attributes.fillColor,
+      gradientFinal: attributes.gradientFinal,
+      gradientDirection: attributes.gradientDirection,
       strokeColor: attributes.strokeColor,
       strokeWidth: attributes.strokeWidth,
       strokeStyle: attributes.strokeStyle,
