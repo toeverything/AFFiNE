@@ -51,6 +51,7 @@ const LocalPropsSchema = z.object({
   // Snap settings
   edgelessSnapToGuides: z.boolean(),
   edgelessSnapToGrid: z.boolean(),
+  edgelessConnectorSnapToGrid: z.boolean(),
 });
 
 type SessionProps = z.infer<typeof SessionPropsSchema>;
@@ -152,6 +153,8 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:edgeless:snapToGuides';
       case 'edgelessSnapToGrid':
         return 'blocksuite:edgeless:snapToGrid';
+      case 'edgelessConnectorSnapToGrid':
+        return 'blocksuite:edgeless:connectorSnapToGrid';
       default:
         return key;
     }

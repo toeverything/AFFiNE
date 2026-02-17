@@ -192,6 +192,9 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
   @state()
   private accessor _snapToGuides = DEFAULT_SNAP_TO_GUIDES;
 
+  @state()
+  private accessor _snapConnectorToGrid = DEFAULT_SNAP_TO_GRID;
+
   @property({ attribute: false })
   accessor std!: BlockStdScope;
 
@@ -274,6 +277,14 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
     );
   };
 
+  private readonly _toggleSnapConnectorToGrid = () => {
+    this._snapConnectorToGrid = !this._snapConnectorToGrid;
+    this._editPropsStore.setStorage(
+      'edgelessConnectorSnapToGrid',
+      this._snapConnectorToGrid
+    );
+  };
+
   private _loadSettings() {
     const store = this._editPropsStore;
     this._showGrid = store.getStorage('edgelessShowGrid') ?? DEFAULT_SHOW_GRID;
@@ -282,6 +293,8 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
       store.getStorage('edgelessSnapToGuides') ?? DEFAULT_SNAP_TO_GUIDES;
     this._snapToGrid =
       store.getStorage('edgelessSnapToGrid') ?? DEFAULT_SNAP_TO_GRID;
+    this._snapConnectorToGrid =
+      store.getStorage('edgelessConnectorSnapToGrid') ?? DEFAULT_SNAP_TO_GRID;
   }
 
   override connectedCallback() {
@@ -368,7 +381,21 @@ export class EdgelessGridMenu extends WithDisposable(LitElement) {
                         @change=${this._toggleSnapToGrid}
                         @click=${stopPropagation}
                       />
-                      Snap to grid
+                      Snap shape to grid
+                    </label>
+                  </div>
+                  <div
+                    class="menu-item"
+                    @click=${this._toggleSnapConnectorToGrid}
+                  >
+                    <label>
+                      <input
+                        type="checkbox"
+                        .checked=${this._snapConnectorToGrid}
+                        @change=${this._toggleSnapConnectorToGrid}
+                        @click=${stopPropagation}
+                      />
+                      Snap connector to grid
                     </label>
                   </div>
                   <div class="menu-item" @click=${this._toggleSnapToGuides}>
