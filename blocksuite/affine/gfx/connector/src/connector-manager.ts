@@ -1772,6 +1772,8 @@ export class ConnectorPathGenerator extends PathGenerator {
       const [cx, cy] = model.getPointByOffsetDistance(
         model.labelOffset.distance
       );
+      const start = model.absolutePath[0];
+      const end = model.absolutePath[model.absolutePath.length - 1];
       const [, , w, h] = model.labelXYWH!;
       model.labelXYWH = [cx - w / 2, cy - h / 2, w, h];
     }
