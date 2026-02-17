@@ -44,6 +44,8 @@ const allStencilShapes = {
   ...drawioLibraryStencilShapes,
 } as unknown as Record<string, StencilShapeData>;
 
+export const STENCIL_SHAPE_NAMES = Object.keys(allStencilShapes).sort();
+
 export const getStencilShapeData = (name: string): StencilShapeData | null =>
   allStencilShapes[name] ?? null;
 

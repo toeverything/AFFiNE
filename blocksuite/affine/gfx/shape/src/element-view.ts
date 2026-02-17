@@ -35,6 +35,16 @@ export const ShapeViewInteraction =
   GfxViewInteractionExtension<ShapeElementView>(ShapeElementView.type, {
     handleResize: () => {
       return {
+        beforeResize({ elements, set }) {
+          const shouldLockRatio = elements.some(element => {
+            if (!(element instanceof ShapeElementView)) return false;
+            return Boolean(element.model.lockAspectRatio);
+          });
+
+          if (shouldLockRatio) {
+            set({ lockRatio: true });
+          }
+        },
         onResizeMove({ newBound, model }) {
           const normalizedBound = normalizeShapeBound(model, newBound);
 

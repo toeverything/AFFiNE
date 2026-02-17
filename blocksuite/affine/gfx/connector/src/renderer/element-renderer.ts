@@ -36,6 +36,7 @@ import {
   renderArrow,
   renderCircle,
   renderDiamond,
+  renderDrawioMarker,
   renderTriangle,
 } from './utils';
 
@@ -50,6 +51,11 @@ export const connector: ElementRenderer<
     rearEndpointStyle,
     strokeWidth,
   } = model;
+  const frontEndpointScale =
+    'frontEndpointScale' in model ? model.frontEndpointScale : 100;
+  const rearEndpointScale =
+    'rearEndpointScale' in model ? model.rearEndpointScale : 100;
+  const endpointScale = Math.max(frontEndpointScale, rearEndpointScale) / 100;
 
   // points might not be build yet in some senarios
   // eg. undo/redo, copy/paste
@@ -69,7 +75,7 @@ export const connector: ElementRenderer<
     const { deserializedXYWH, labelXYWH } = model as ConnectorElementModel;
     const [x, y, w, h] = deserializedXYWH;
     const [lx, ly, lw, lh] = labelXYWH!;
-    const offset = DEFAULT_ARROW_SIZE * strokeWidth;
+    const offset = DEFAULT_ARROW_SIZE * strokeWidth * endpointScale;
 
     dx = lx - x;
     dy = ly - y;
@@ -451,6 +457,8 @@ function renderEndpoint(
   const arrowOptions = getArrowOptions(end, model, stroke);
 
   switch (style) {
+    case 'None':
+      return;
     case 'Arrow':
       renderArrow(location, ctx, rc, arrowOptions);
       break;
@@ -462,6 +470,9 @@ function renderEndpoint(
       break;
     case 'Diamond':
       renderDiamond(location, ctx, rc, arrowOptions);
+      break;
+    default:
+      renderDrawioMarker(location, ctx, arrowOptions, style);
       break;
   }
 }

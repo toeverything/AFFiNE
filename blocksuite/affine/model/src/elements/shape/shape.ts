@@ -36,6 +36,7 @@ export type ShapeProps = BaseElementProps & {
   gradientDirection?: 'S' | 'W' | 'N' | 'E' | 'SE' | 'SW' | 'NE' | 'NW';
   flipX?: boolean;
   flipY?: boolean;
+  lockAspectRatio?: boolean;
   strokeWidth: number;
   strokeColor: Color;
   strokeStyle: StrokeStyle;
@@ -121,6 +122,9 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   @field()
   accessor flipY: boolean = false;
+
+  @field()
+  accessor lockAspectRatio: boolean = false;
 
   @field()
   accessor filled: boolean = false;
@@ -272,6 +276,9 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
 
   @prop()
   accessor strokeWidth: number = 4;
+
+  @prop()
+  accessor lockAspectRatio: boolean = false;
 
   @prop()
   accessor text: string = '';

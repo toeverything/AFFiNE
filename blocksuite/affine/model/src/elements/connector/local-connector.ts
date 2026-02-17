@@ -17,9 +17,13 @@ export class LocalConnectorElementModel extends GfxLocalElementModel {
 
   frontEndpointStyle!: PointStyle;
 
+  frontEndpointScale: number = 100;
+
   mode: ConnectorMode = ConnectorMode.Orthogonal;
 
   rearEndpointStyle!: PointStyle;
+
+  rearEndpointScale: number = 100;
 
   rough?: boolean;
 

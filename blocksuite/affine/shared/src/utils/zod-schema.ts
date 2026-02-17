@@ -49,6 +49,8 @@ export const ConnectorSchema = z
   .object({
     frontEndpointStyle: ConnectorEndpointSchema,
     rearEndpointStyle: ConnectorEndpointSchema,
+    frontEndpointScale: z.number(),
+    rearEndpointScale: z.number(),
     stroke: ColorSchema,
     strokeStyle: StrokeStyleSchema,
     strokeWidth: LineWidthSchema,
@@ -66,6 +68,8 @@ export const ConnectorSchema = z
   .default({
     frontEndpointStyle: DEFAULT_FRONT_ENDPOINT_STYLE,
     rearEndpointStyle: DEFAULT_REAR_ENDPOINT_STYLE,
+    frontEndpointScale: 100,
+    rearEndpointScale: 100,
     stroke: DefaultTheme.connectorColor,
     strokeStyle: StrokeStyle.Solid,
     strokeWidth: LineWidth.Two,
@@ -111,6 +115,7 @@ const DEFAULT_SHAPE = {
   gradientDirection: undefined,
   flipX: false,
   flipY: false,
+  lockAspectRatio: false,
   strokeColor: DefaultTheme.shapeStrokeColor,
   strokeStyle: StrokeStyle.Solid,
   strokeWidth: LineWidth.Two,
@@ -134,6 +139,7 @@ const ShapeObject = {
     .optional(),
   flipX: z.boolean().optional(),
   flipY: z.boolean().optional(),
+  lockAspectRatio: z.boolean().optional(),
   strokeColor: ColorSchema,
   strokeStyle: StrokeStyleSchema,
   strokeWidth: z.number(),

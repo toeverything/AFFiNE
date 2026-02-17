@@ -20,6 +20,68 @@ import {
 type ConnectorEnd = 'Front' | 'Rear';
 
 export const DEFAULT_ARROW_SIZE = 15;
+const DRAWIO_MARKER_BASE = {
+  width: 32,
+  height: 20,
+  tipX: 4,
+  centerY: 10,
+};
+
+const DRAWIO_MARKER_DEFS: Record<
+  string,
+  { path: string; filled?: boolean; strokeOnly?: boolean }
+> = {
+  classic: { path: 'M 0 8 L 10 2 L 5 8 L 10 14 Z', filled: true },
+  classicThin: { path: 'M 0 8 L 8 4 L 5 8 L 8 12 Z', filled: true },
+  open: { path: 'M 8 0 L 0 8 L 8 16', strokeOnly: true },
+  openThin: { path: 'M 8 4 L 0 8 L 8 12', strokeOnly: true },
+  block: { path: 'M 0 8 L 8 2 L 8 14 Z', filled: true },
+  blockThin: { path: 'M 0 8 L 8 4 L 8 12 Z', filled: true },
+  oval: {
+    path: 'M 0 8 A 5 5 0 0 1 5 3 A 5 5 0 0 1 11 8 A 5 5 0 0 1 5 13 A 5 5 0 0 1 0 8 Z',
+    filled: true,
+  },
+  diamond: { path: 'M 0 8 L 6 2 L 12 8 L 6 14 Z', filled: true },
+  diamondThin: { path: 'M 0 8 L 8 3 L 16 8 L 8 13 Z', filled: true },
+  doubleBlock: {
+    path: 'M 0 8 L 8 2 L 8 14 Z M 8 8 L 16 2 L 16 14 Z',
+    filled: true,
+  },
+  box: { path: 'M 0 3 L 10 3 L 10 13 L 0 13 Z', filled: true },
+  halfCircle: {
+    path: 'M 0 3 A 5 5 0 0 1 5 8 A 5 5 0 0 1 0 13',
+    strokeOnly: true,
+  },
+  openAsync: { path: 'M 8 4 L 0 8 L 24 8', strokeOnly: true },
+  async: { path: 'M 6 8 L 6 4 L 0 8 L 24 8', filled: true },
+  dash: { path: 'M 0 2 L 12 14', strokeOnly: true },
+  baseDash: { path: 'M 0 2 L 0 14', strokeOnly: true },
+  cross: { path: 'M 0 2 L 12 14 M 12 2 L 0 14', strokeOnly: true },
+  circle: {
+    path: 'M 0 8 A 6 6 0 0 1 6 2 A 6 6 0 0 1 12 8 A 6 6 0 0 1 6 14 A 6 6 0 0 1 0 8 Z',
+    strokeOnly: true,
+  },
+  circlePlus: {
+    path: 'M 0 8 A 6 6 0 0 1 6 2 A 6 6 0 0 1 12 8 A 6 6 0 0 1 6 14 A 6 6 0 0 1 0 8 Z M 6 2 L 6 14',
+    strokeOnly: true,
+  },
+  ERone: { path: 'M 5 2 L 5 14', strokeOnly: true },
+  ERmandOne: { path: 'M 6 2 L 6 14 M 9 2 L 9 14', strokeOnly: true },
+  ERmany: { path: 'M 0 2 L 12 8 L 0 14', strokeOnly: true },
+  ERoneToMany: { path: 'M 0 2 L 12 8 L 0 14 M 15 2 L 15 14', strokeOnly: true },
+  ERzeroToOne: {
+    path: 'M 8 8 A 5 5 0 0 1 13 3 A 5 5 0 0 1 18 8 A 5 5 0 0 1 13 13 A 5 5 0 0 1 8 8 Z M 4 3 L 4 13',
+    strokeOnly: true,
+  },
+  ERzeroToMany: {
+    path: 'M 8 8 A 5 5 0 0 1 13 3 A 5 5 0 0 1 18 8 A 5 5 0 0 1 13 13 A 5 5 0 0 1 8 8 Z M 0 3 L 8 8 L 0 13',
+    strokeOnly: true,
+  },
+};
+
+export function getDrawioMarkerDef(style: string) {
+  return DRAWIO_MARKER_DEFS[style] ?? null;
+}
 
 /**
  * Create an SVG path string for a connector with jump markers.
@@ -366,6 +428,14 @@ export function getArrowOptions(
   strokeColor: string
 ) {
   const { seed, mode, rough, roughness, strokeWidth, path } = model;
+  const endpointScale =
+    end === 'Front'
+      ? 'frontEndpointScale' in model
+        ? (model.frontEndpointScale as number)
+        : 100
+      : 'rearEndpointScale' in model
+        ? (model.rearEndpointScale as number)
+        : 100;
 
   return {
     end,
@@ -378,6 +448,7 @@ export function getArrowOptions(
     fillColor: strokeColor,
     fillStyle: 'solid',
     bezierParameters: getBezierParameters(path),
+    endpointScale,
   };
 }
 
@@ -431,10 +502,17 @@ export function renderArrow(
   rc: RoughCanvas,
   options: ArrowOptions
 ) {
-  const { mode, end, bezierParameters, rough, strokeColor, strokeWidth } =
-    options;
+  const {
+    mode,
+    end,
+    bezierParameters,
+    rough,
+    strokeColor,
+    strokeWidth,
+    endpointScale,
+  } = options;
   const radians = Math.PI / 4;
-  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * (endpointScale / 100);
   const { points: arrowPoints } = getArrowPoints(
     points,
     size,
@@ -457,10 +535,17 @@ export function renderTriangle(
   rc: RoughCanvas,
   options: ArrowOptions
 ) {
-  const { mode, end, bezierParameters, rough, strokeColor, strokeWidth } =
-    options;
+  const {
+    mode,
+    end,
+    bezierParameters,
+    rough,
+    strokeColor,
+    strokeWidth,
+    endpointScale,
+  } = options;
   const radians = Math.PI / 6;
-  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * (endpointScale / 100);
   const { points: trianglePoints } = getArrowPoints(
     points,
     size,
@@ -490,10 +575,17 @@ export function renderDiamond(
   rc: RoughCanvas,
   options: ArrowOptions
 ) {
-  const { mode, end, rough, bezierParameters, strokeColor, strokeWidth } =
-    options;
+  const {
+    mode,
+    end,
+    rough,
+    bezierParameters,
+    strokeColor,
+    strokeWidth,
+    endpointScale,
+  } = options;
   const anchorPoint = getPointWithTangent(points, mode, end, bezierParameters);
-  const size = 10 * (strokeWidth / 2);
+  const size = 10 * (strokeWidth / 2) * (endpointScale / 100);
   const { points: diamondPoints } = getDiamondPoints(anchorPoint, size, end);
 
   if (rough) {
@@ -525,8 +617,9 @@ export function renderCircle(
     strokeColor,
     strokeWidth,
     rough,
+    endpointScale,
   } = options;
-  const radius = 5 * (strokeWidth / 2);
+  const radius = 5 * (strokeWidth / 2) * (endpointScale / 100);
   const centerPoint = getCircleCenterPoint(
     points,
     radius,
@@ -552,4 +645,48 @@ export function renderCircle(
     ctx.stroke();
     ctx.restore();
   }
+}
+
+export function renderDrawioMarker(
+  points: PointLocation[],
+  ctx: CanvasRenderingContext2D,
+  options: ArrowOptions,
+  style: string
+) {
+  const def = getDrawioMarkerDef(style);
+  if (!def) return;
+  const {
+    end,
+    mode,
+    bezierParameters,
+    strokeColor,
+    strokeWidth,
+    endpointScale,
+  } = options;
+  const anchorPoint = getPointWithTangent(points, mode, end, bezierParameters);
+  const direction = Vec.mul(anchorPoint.tangent, -1);
+  const orient = end === 'Rear' ? direction : Vec.mul(direction, -1);
+  const angle = Math.atan2(orient[1], orient[0]);
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * (endpointScale / 100);
+  const scale = size / DRAWIO_MARKER_BASE.width;
+  const path = new Path2D(def.path);
+
+  ctx.save();
+  ctx.translate(anchorPoint[0], anchorPoint[1]);
+  ctx.rotate(angle);
+  ctx.scale(scale, scale);
+  ctx.translate(-DRAWIO_MARKER_BASE.tipX, -DRAWIO_MARKER_BASE.centerY);
+  ctx.translate(4, 2);
+  ctx.lineWidth = Math.max(1, strokeWidth / 2);
+  ctx.strokeStyle = strokeColor;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (def.strokeOnly) {
+    ctx.stroke(path);
+  } else {
+    ctx.fillStyle = strokeColor;
+    ctx.fill(path);
+    ctx.stroke(path);
+  }
+  ctx.restore();
 }

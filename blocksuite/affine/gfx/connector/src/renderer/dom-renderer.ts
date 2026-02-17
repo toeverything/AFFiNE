@@ -13,7 +13,11 @@ import {
 import { PointLocation, SVGPathBuilder } from '@blocksuite/global/gfx';
 
 import { isConnectorWithLabel } from '../connector-manager';
-import { createConnectorPathWithJumps, DEFAULT_ARROW_SIZE } from './utils';
+import {
+  createConnectorPathWithJumps,
+  DEFAULT_ARROW_SIZE,
+  getDrawioMarkerDef,
+} from './utils';
 
 interface PathBounds {
   minX: number;
@@ -82,13 +86,54 @@ function createArrowMarker(
   style: PointStyle,
   color: string,
   strokeWidth: number,
+  endpointScale: number,
   isStart: boolean = false
 ): SVGMarkerElement {
+  const drawioBase = { width: 32, height: 20, tipX: 4, centerY: 10 };
   const marker = document.createElementNS(
     'http://www.w3.org/2000/svg',
     'marker'
   );
-  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * (endpointScale / 100);
+
+  const drawioMarker = getDrawioMarkerDef(style);
+  if (drawioMarker) {
+    marker.id = id;
+    marker.setAttribute(
+      'viewBox',
+      `0 0 ${drawioBase.width} ${drawioBase.height}`
+    );
+    marker.setAttribute('refX', String(isStart ? 28 : drawioBase.tipX));
+    marker.setAttribute('refY', String(drawioBase.centerY));
+    marker.setAttribute('markerWidth', String(size));
+    marker.setAttribute(
+      'markerHeight',
+      String(size * (drawioBase.height / drawioBase.width))
+    );
+    marker.setAttribute('orient', 'auto');
+    marker.setAttribute('markerUnits', 'strokeWidth');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', drawioMarker.path);
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    if (drawioMarker.strokeOnly) {
+      path.setAttribute('fill', 'none');
+    } else {
+      path.setAttribute('fill', color);
+    }
+    path.setAttribute('transform', 'translate(4,2)');
+    if (isStart) {
+      path.setAttribute(
+        'transform',
+        `translate(4,2) scale(-1,1) translate(-${drawioBase.width},0)`
+      );
+    }
+    marker.append(path);
+    return marker;
+  }
 
   marker.id = id;
   marker.setAttribute('viewBox', '0 0 20 20');
@@ -297,6 +342,7 @@ export const connectorBaseDomRenderer = (
       frontEndpointStyle,
       strokeColor,
       strokeWidth,
+      model.frontEndpointScale ?? 100,
       true
     );
     defs.append(startMarker);
@@ -309,6 +355,7 @@ export const connectorBaseDomRenderer = (
       rearEndpointStyle,
       strokeColor,
       strokeWidth,
+      model.rearEndpointScale ?? 100,
       false
     );
     defs.append(endMarker);
