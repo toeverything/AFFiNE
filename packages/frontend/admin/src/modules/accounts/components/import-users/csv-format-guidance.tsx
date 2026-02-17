@@ -1,6 +1,4 @@
 import { WarningIcon } from '@blocksuite/icons/rc';
-import { cssVar } from '@toeverything/theme';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import type { FC } from 'react';
 
 interface CsvFormatGuidanceProps {
@@ -17,16 +15,9 @@ export const CsvFormatGuidance: FC<CsvFormatGuidanceProps> = ({
   passwordLimits,
 }) => {
   return (
-    <div
-      className="flex p-1.5 gap-1 rounded-[6px]"
-      style={{
-        fontSize: cssVar('fontXs'),
-        color: cssVarV2('text/secondary'),
-        backgroundColor: cssVarV2('layer/background/secondary'),
-      }}
-    >
+    <div className="flex gap-1 rounded-[6px] bg-secondary p-1.5 text-xs text-muted-foreground">
       <div className="flex justify-center py-0.5">
-        <WarningIcon fontSize={16} color={cssVarV2('icon/primary')} />
+        <WarningIcon fontSize={16} className="text-foreground" />
       </div>
       <div>
         <p>CSV file includes username, email, and password.</p>

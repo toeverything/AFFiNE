@@ -42,7 +42,7 @@ export function AccountPage() {
   }, [selectedUserIds, memoUsers]);
 
   return (
-    <div className=" h-screen flex-1 flex-col flex">
+    <div className="h-dvh flex-1 flex-col flex">
       <Header title="Accounts" />
 
       <DataTable

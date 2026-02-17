@@ -18,21 +18,21 @@ export const Header = ({
 
   return (
     <div>
-      <div className="flex items-center px-6 gap-4 h-[56px]">
+      <div className="flex h-14 items-center gap-4 px-6">
         {isSmallScreen ? (
           <div className="h-7 w-7 p-1" />
         ) : (
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 p-1 hover:bg-gray-200 cursor-pointer"
+            className="h-7 w-7 cursor-pointer p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={togglePanel}
           >
             <SidebarIcon width={20} height={20} />
           </Button>
         )}
         <Separator orientation="vertical" className="h-5" />
-        <div className="text-[15px] font-semibold">{title}</div>
+        <div className="text-sm font-semibold">{title}</div>
         {endFix && <div className="ml-auto">{endFix}</div>}
       </div>
       <Separator />
@@ -53,11 +53,11 @@ export const RightPanelHeader = ({
 }) => {
   return (
     <div>
-      <div className=" flex justify-between items-center h-[56px] px-6">
+      <div className="flex h-14 items-center justify-between px-6">
         <Button
           type="button"
           size="icon"
-          className="w-7 h-7"
+          className="h-7 w-7"
           variant="ghost"
           onClick={handleClose}
         >
@@ -67,7 +67,7 @@ export const RightPanelHeader = ({
         <Button
           type="submit"
           size="icon"
-          className="w-7 h-7"
+          className="h-7 w-7"
           variant="ghost"
           onClick={handleConfirm}
           disabled={!canSave}

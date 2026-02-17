@@ -92,14 +92,14 @@ describe('ConfigRow', () => {
     });
 
     expect(screen.queryByText('Invalid JSON format')).not.toBeNull();
-    expect(textarea.className).toContain('border-red-500');
+    expect(textarea.className).toContain('border-destructive');
 
     fireEvent.change(textarea, {
       target: { value: '["localhost"]' },
     });
 
     expect(screen.queryByText('Invalid JSON format')).toBeNull();
-    expect(textarea.className).not.toContain('border-red-500');
+    expect(textarea.className).not.toContain('border-destructive');
     expect(handleChange).toHaveBeenLastCalledWith('server/hosts', [
       'localhost',
     ]);

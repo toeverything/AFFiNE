@@ -9,7 +9,7 @@ function AiPage() {
   const [enableAi, setEnableAi] = useState(false);
 
   return (
-    <div className="h-screen flex-1 flex-col flex">
+    <div className="h-dvh flex-1 flex-col flex">
       <Header title="AI" />
       <ScrollAreaPrimitive.Root
         className={cn('relative overflow-hidden w-full')}

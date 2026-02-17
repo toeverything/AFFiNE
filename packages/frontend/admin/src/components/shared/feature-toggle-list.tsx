@@ -3,7 +3,6 @@ import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { Switch } from '@affine/admin/components/ui/switch';
 import type { FeatureType } from '@affine/graphql';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { useCallback } from 'react';
 
 import { cn } from '../../utils';
@@ -42,10 +41,7 @@ export const FeatureToggleList = ({
 
   if (!features.length) {
     return (
-      <div
-        className={cn(className, 'px-3 py-2 text-xs')}
-        style={{ color: cssVarV2('text/secondary') }}
-      >
+      <div className={cn(className, 'px-3 py-2 text-xs text-muted-foreground')}>
         No configurable features.
       </div>
     );

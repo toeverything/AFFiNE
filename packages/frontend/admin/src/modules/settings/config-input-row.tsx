@@ -120,7 +120,7 @@ const Inputs: Record<
         className={cn(
           'w-full',
           error
-            ? 'border-red-500 hover:border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500'
+            ? 'border-destructive hover:border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
             : undefined
         )}
       />
@@ -182,14 +182,21 @@ export const ConfigRow = ({
 
   return (
     <div
-      className={`flex justify-between flex-grow space-y-[10px]
-         ${type === 'Boolean' ? 'flex-row' : 'flex-col'}`}
+      className={cn(
+        'flex flex-grow gap-3',
+        type === 'Boolean' ? 'items-start justify-between' : 'flex-col'
+      )}
     >
       <div
-        className="text-base font-bold flex-3"
+        className="flex-3 text-sm font-semibold leading-6 text-foreground"
         dangerouslySetInnerHTML={{ __html: desc }}
       />
-      <div className="flex flex-col items-end relative flex-1">
+      <div
+        className={cn(
+          'relative flex flex-1 flex-col',
+          type === 'Boolean' ? 'items-end' : 'items-stretch'
+        )}
+      >
         <Input
           defaultValue={defaultValue}
           onChange={onValueChange}
@@ -198,7 +205,7 @@ export const ConfigRow = ({
           {...props}
         />
         {mergedError && (
-          <div className="mt-1 w-full text-sm break-words text-red-500">
+          <div className="mt-1 w-full break-words text-sm text-destructive">
             {mergedError}
           </div>
         )}

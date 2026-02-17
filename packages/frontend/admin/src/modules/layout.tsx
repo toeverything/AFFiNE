@@ -5,7 +5,6 @@ import {
 import { Separator } from '@affine/admin/components/ui/separator';
 import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { PropsWithChildren, ReactNode, RefObject } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -147,7 +146,7 @@ export function Layout({ children }: PropsWithChildren) {
       }}
     >
       <TooltipProvider delayDuration={0}>
-        <div className="flex h-screen w-full overflow-hidden">
+        <div className="flex h-dvh w-full overflow-hidden">
           <ResizablePanelGroup direction="horizontal">
             <LeftPanel
               panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
@@ -181,7 +180,11 @@ export const LeftPanel = ({
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="ghost" className="fixed  top-5 left-6 p-0 h-5 w-5">
+          <Button
+            variant="ghost"
+            className="fixed left-4 top-4 z-20 h-8 w-8 rounded-lg border border-border bg-background/95 p-0 shadow-1 backdrop-blur"
+            size="icon"
+          >
             <AlignJustifyIcon size={20} />
           </Button>
         </SheetTrigger>
@@ -191,11 +194,15 @@ export const LeftPanel = ({
             Admin panel for managing accounts, AI, config, and settings
           </SheetDescription>
         </SheetHeader>
-        <SheetContent side="left" className="p-0" withoutCloseButton>
+        <SheetContent
+          side="left"
+          className="w-64 border-r border-border bg-sidebar-bg p-0"
+          withoutCloseButton
+        >
           <div className="flex flex-col w-full h-full">
             <div
               className={cn(
-                'flex h-[52px] items-center gap-2 px-4 text-base font-medium'
+                'flex h-14 items-center gap-2 border-b border-border px-4 text-base font-semibold text-sidebar-foreground'
               )}
             >
               <Logo />
@@ -223,21 +230,13 @@ export const LeftPanel = ({
       onCollapse={onCollapse}
       className={cn(
         isCollapsed ? 'min-w-[57px] max-w-[57px]' : 'min-w-56 max-w-56',
-        'border-r  h-dvh'
+        'h-dvh overflow-visible border-r border-border bg-sidebar-bg'
       )}
-      style={{ overflow: 'visible' }}
     >
-      <div
-        className="flex flex-col max-w-56 h-full "
-        style={{
-          backgroundColor: cssVarV2(
-            'selfhost/layer/background/sidebarBg/sidebarBg'
-          ),
-        }}
-      >
+      <div className="flex h-full max-w-56 flex-col">
         <div
           className={cn(
-            'flex h-[56px] items-center px-4 text-base font-medium',
+            'flex h-14 items-center px-4 text-base font-semibold text-sidebar-foreground',
             isCollapsed && 'justify-center px-2'
           )}
         >
@@ -283,7 +282,11 @@ export const RightPanel = ({
             For displaying additional information
           </SheetDescription>
         </SheetHeader>
-        <SheetContent side="right" className="p-0" withoutCloseButton>
+        <SheetContent
+          side="right"
+          className="border-l border-border bg-background p-0"
+          withoutCloseButton
+        >
           <div className="h-full overflow-y-auto">{panelContent}</div>
         </SheetContent>
       </Sheet>
@@ -301,7 +304,7 @@ export const RightPanel = ({
       collapsedSize={0}
       onExpand={onExpand}
       onCollapse={onCollapse}
-      className="border-l max-w-96"
+      className="max-w-96 border-l border-border bg-card"
     >
       <div className="h-full overflow-y-auto">{panelContent}</div>
     </ResizablePanel>

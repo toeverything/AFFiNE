@@ -66,21 +66,21 @@ export function EditPrompt({
           <div className="px-5 py-4 overflow-y-auto space-y-[10px] flex flex-col gap-5">
             <div className="flex flex-col">
               <div className="text-sm font-medium">Name</div>
-              <div className="text-sm font-normal text-zinc-500">
+              <div className="text-sm font-normal text-muted-foreground">
                 {item.name}
               </div>
             </div>
             {item.action ? (
               <div className="flex flex-col">
                 <div className="text-sm font-medium">Action</div>
-                <div className="text-sm font-normal text-zinc-500">
+                <div className="text-sm font-normal text-muted-foreground">
                   {item.action}
                 </div>
               </div>
             ) : null}
             <div className="flex flex-col">
               <div className="text-sm font-medium">Model</div>
-              <div className="text-sm font-normal text-zinc-500">
+              <div className="text-sm font-normal text-muted-foreground">
                 {item.model}
               </div>
             </div>
@@ -91,7 +91,7 @@ export function EditPrompt({
                   <div key={key} className="flex flex-col">
                     {index !== 0 && <Separator />}
                     <span className="text-sm font-normal">{key}</span>
-                    <span className="text-sm font-normal text-zinc-500">
+                    <span className="text-sm font-normal text-muted-foreground">
                       {value?.toString()}
                     </span>
                   </div>
@@ -106,7 +106,7 @@ export function EditPrompt({
                 {index !== 0 && <Separator />}
                 <div>
                   <div className="text-sm font-normal">Role</div>
-                  <div className="text-sm font-normal text-zinc-500">
+                  <div className="text-sm font-normal text-muted-foreground">
                     {message.role}
                   </div>
                 </div>
@@ -120,7 +120,7 @@ export function EditPrompt({
                           {index !== 0 && <Separator />}
                           <span className="text-sm font-normal">{key}</span>
                           <span
-                            className="text-sm font-normal text-zinc-500"
+                            className="text-sm font-normal text-muted-foreground"
                             style={{ overflowWrap: 'break-word' }}
                           >
                             {value.toString()}

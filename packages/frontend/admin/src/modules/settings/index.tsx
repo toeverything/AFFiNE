@@ -32,7 +32,7 @@ export function SettingsPage() {
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
 
   return (
-    <div className="h-screen flex-1 flex-col flex">
+    <div className="flex h-dvh flex-1 flex-col bg-background">
       <Header title="Settings" />
       <AdminPanel
         expandedModules={expandedModules}
@@ -133,7 +133,7 @@ const AdminPanel = ({
 
   return (
     <ScrollArea className="h-full">
-      <div className="flex flex-col gap-4 py-5 px-6 w-full max-w-[900px] mx-auto">
+      <div className="mx-auto flex w-full max-w-[900px] flex-col gap-4 px-6 py-5">
         <Accordion
           type="multiple"
           className="w-full"
@@ -156,12 +156,12 @@ const AdminPanel = ({
                 key={module}
                 value={module}
                 id={`config-module-${module}`}
-                className="border border-border rounded-xl px-5 mb-4"
+                className="mb-4 rounded-xl border border-border bg-card px-5 shadow-1"
               >
                 <AccordionTrigger className="hover:no-underline py-4">
                   <div className="flex flex-col items-start text-left gap-1">
-                    <div className="text-lg font-semibold">{name}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-base font-semibold">{name}</div>
+                    <div className="text-xs text-muted-foreground">
                       Manage {name.toLowerCase()} settings
                     </div>
                   </div>
@@ -223,6 +223,7 @@ const AdminPanel = ({
                         <Button
                           type="button"
                           variant="outline"
+                          className="h-9 min-w-[88px]"
                           onClick={() => {
                             onResetGroup(module);
                             clearModuleErrors(module);
@@ -234,6 +235,7 @@ const AdminPanel = ({
                       ) : null}
                       <Button
                         type="button"
+                        className="h-9 min-w-[88px]"
                         onClick={() => {
                           onSaveGroup(module).catch(err => {
                             console.error(err);

@@ -210,13 +210,13 @@ function TrendChart({
   const config: ChartConfig = {
     primary: {
       label: primaryLabel,
-      color: 'hsl(var(--primary))',
+      color: 'var(--primary)',
     },
     ...(hasSecondary
       ? {
           secondary: {
             label: secondaryLabel,
-            color: 'hsl(var(--foreground) / 0.6)',
+            color: 'var(--muted-foreground)',
           },
         }
       : {}),
@@ -236,7 +236,7 @@ function TrendChart({
         >
           <CartesianGrid
             vertical={false}
-            stroke="hsl(var(--border) / 0.6)"
+            stroke="var(--border)"
             strokeDasharray="3 4"
           />
           <XAxis
@@ -260,7 +260,7 @@ function TrendChart({
           />
           <ChartTooltip
             cursor={{
-              stroke: 'hsl(var(--border))',
+              stroke: 'var(--border)',
               strokeDasharray: '4 4',
               strokeWidth: 1,
             }}
@@ -314,7 +314,7 @@ function TrendChart({
         </LineChart>
       </ChartContainer>
 
-      <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
+      <div className="flex justify-between text-xxs text-muted-foreground tabular-nums">
         <span>{points[0]?.label}</span>
         <span>{points[points.length - 1]?.label}</span>
       </div>
@@ -420,7 +420,7 @@ function WindowSelect({
 
 function DashboardPageSkeleton() {
   return (
-    <div className="h-screen flex-1 flex-col flex overflow-hidden">
+    <div className="h-dvh flex-1 flex-col flex overflow-hidden">
       <Header
         title="Dashboard"
         endFix={
@@ -436,22 +436,22 @@ function DashboardPageSkeleton() {
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-4 w-80" />
           </CardHeader>
-          <CardContent className="grid gap-3 grid-cols-1 min-[1024px]:grid-cols-3 items-end">
+          <CardContent className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-3">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
           </CardContent>
         </Card>
 
-        <div className="grid gap-5 grid-cols-1 min-[1024px]:grid-cols-12">
-          <Skeleton className="h-28 w-full min-[1024px]:col-span-5" />
-          <Skeleton className="h-28 w-full min-[1024px]:col-span-3" />
-          <Skeleton className="h-28 w-full min-[1024px]:col-span-4" />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <Skeleton className="h-28 w-full lg:col-span-5" />
+          <Skeleton className="h-28 w-full lg:col-span-3" />
+          <Skeleton className="h-28 w-full lg:col-span-4" />
         </div>
 
-        <div className="grid gap-5 grid-cols-1 xl:grid-cols-3">
-          <Skeleton className="h-72 w-full xl:col-span-1" />
-          <Skeleton className="h-72 w-full xl:col-span-2" />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <Skeleton className="h-72 w-full lg:col-span-1" />
+          <Skeleton className="h-72 w-full lg:col-span-2" />
         </div>
 
         <Skeleton className="h-64 w-full" />
@@ -661,7 +661,7 @@ function DashboardPageContent() {
     dashboard.workspaceStorageBytes + dashboard.blobStorageBytes;
 
   return (
-    <div className="h-screen flex-1 flex-col flex overflow-hidden">
+    <div className="h-dvh flex-1 flex-col flex overflow-hidden">
       <Header
         title="Dashboard"
         endFix={
@@ -696,7 +696,7 @@ function DashboardPageContent() {
               automatically.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 grid-cols-1 min-[1024px]:grid-cols-3 items-end">
+          <CardContent className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-3">
             <WindowSelect
               id="storage-history-window"
               label="Storage History"
@@ -724,14 +724,14 @@ function DashboardPageContent() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-5 grid-cols-1 min-[1024px]:grid-cols-12">
-          <div className="min-w-0 h-full min-[1024px]:col-span-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <div className="h-full min-w-0 lg:col-span-5">
             <PrimaryMetricCard
               value={intFormatter.format(dashboard.syncActiveUsers)}
               description={`${dashboard.syncWindow.effectiveSize}h active window`}
             />
           </div>
-          <div className="min-w-0 h-full min-[1024px]:col-span-3">
+          <div className="h-full min-w-0 lg:col-span-3">
             <SecondaryMetricCard
               title="Copilot Conversations"
               value={intFormatter.format(dashboard.copilotConversations)}
@@ -741,7 +741,7 @@ function DashboardPageContent() {
               }
             />
           </div>
-          <div className="min-w-0 h-full min-[1024px]:col-span-4">
+          <div className="h-full min-w-0 lg:col-span-4">
             <Card className="h-full border-border/70 bg-gradient-to-br from-card via-card to-muted/15 shadow-sm">
               <CardHeader className="pb-2">
                 <CardDescription className="flex items-center gap-2">
@@ -762,8 +762,8 @@ function DashboardPageContent() {
           </div>
         </div>
 
-        <div className="grid gap-5 grid-cols-1 xl:grid-cols-3">
-          <Card className="xl:col-span-1 border-border/70 bg-card/95 shadow-sm">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <Card className="border-border/70 bg-card/95 shadow-sm lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-base">
                 Sync Active Users Trend
@@ -782,7 +782,7 @@ function DashboardPageContent() {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-2 border-border/70 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
+          <Card className="border-border/70 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">
                 Storage Trend (Workspace + Blob)
