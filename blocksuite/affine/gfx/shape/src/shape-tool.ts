@@ -83,6 +83,12 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       radius: attributes.radius,
       stencilName,
       filled: shapeName === ShapeType.DrawioStencil ? true : attributes.filled,
+      fillColor: attributes.fillColor,
+      strokeColor: attributes.strokeColor,
+      strokeWidth: attributes.strokeWidth,
+      strokeStyle: attributes.strokeStyle,
+      shapeStyle: attributes.shapeStyle,
+      roughness: attributes.roughness,
     });
 
     this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {

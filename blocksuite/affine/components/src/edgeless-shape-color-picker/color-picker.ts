@@ -132,8 +132,12 @@ export class EdgelessShapeColorPicker extends WithDisposable(
     return calcCustomButtonStyle(color, isCustomColor, this);
   }
 
-  #calcCustomButtonState(color: string, theme: ColorScheme) {
-    return !this.palettes
+  #calcCustomButtonState(
+    color: string,
+    theme: ColorScheme,
+    palettes: Palette[]
+  ) {
+    return !palettes
       .map(({ value }) => resolveColor(value, theme))
       .includes(color);
   }
@@ -241,7 +245,8 @@ export class EdgelessShapeColorPicker extends WithDisposable(
                         ${when(enableCustomColor, () => {
                           const isCustomColor = this.#calcCustomButtonState(
                             value,
-                            theme
+                            theme,
+                            palettes
                           );
                           const styleInfo = this.#calcCustomButtonStyle(
                             value,

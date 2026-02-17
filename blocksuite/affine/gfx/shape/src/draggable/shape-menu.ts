@@ -1,7 +1,11 @@
+import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import {
+  type Color,
+  ConnectorElementModel,
   DefaultTheme,
   isTransparent,
   type Palette,
+  ShapeElementModel,
   type ShapeName,
   ShapeStyle,
   ShapeType,
@@ -31,6 +35,11 @@ import { when } from 'lit/directives/when.js';
 
 import { ShapeTool } from '../shape-tool';
 import { ShapeComponentConfig } from '../toolbar';
+import {
+  shapePaletteKeys,
+  shapePalettes,
+  type ShapePaletteStyle,
+} from './palettes';
 
 export class EdgelessShapeMenu extends SignalWatcher(
   WithDisposable(LitElement)
@@ -65,6 +74,21 @@ export class EdgelessShapeMenu extends SignalWatcher(
       fill: none;
       stroke: var(--affine-icon-color);
     }
+    .color-panel-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .palette-toggle-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+    }
+    .palette-toggle-button svg {
+      fill: none;
+      stroke: var(--affine-icon-color);
+    }
     menu-divider {
       height: 24px;
       margin: 0 9px;
@@ -72,6 +96,28 @@ export class EdgelessShapeMenu extends SignalWatcher(
   `;
 
   private readonly _shapeName$: Signal<ShapeName> = signal(ShapeType.Rect);
+
+  private readonly _paletteIndex$ = signal(0);
+
+  private readonly _activePalettes$ = computed(() => {
+    const paletteIndex = this._paletteIndex$.value % shapePalettes.length;
+    const palette = shapePalettes[paletteIndex];
+    const stylesByKey = new Map(
+      shapePaletteKeys.map((key, index) => [key, palette.styles[index]])
+    );
+    const fillPalettes = shapePaletteKeys.map((key, index) => ({
+      key,
+      value: palette.styles[index].fill,
+    }));
+    const strokePalettes = shapePaletteKeys.map((key, index) => ({
+      key,
+      value: palette.styles[index].stroke,
+    }));
+    const ringPalettes = shapePaletteKeys
+      .map((key, index) => ({ key, value: palette.styles[index].ringColor }))
+      .filter(palette => palette.value !== undefined) as Palette[];
+    return { palette, stylesByKey, fillPalettes, strokePalettes, ringPalettes };
+  });
 
   @property({ attribute: false })
   accessor edgeless!: BlockComponent;
@@ -92,23 +138,41 @@ export class EdgelessShapeMenu extends SignalWatcher(
   });
 
   private readonly _setFillColor = ({ key, value }: Palette) => {
-    const filled = !isTransparent(value);
-    const fillColor = value;
-    const strokeColor = filled
-      ? DefaultTheme.StrokeColorShortPalettes.find(
-          palette => palette.key === key
-        )?.value
-      : DefaultTheme.StrokeColorShortMap.Grey;
+    const { stylesByKey } = this._activePalettes$.value;
+    const style = stylesByKey.get(key);
+    const fillColor = style?.fill ?? value;
+    const filled = !isTransparent(fillColor);
+    const strokeColor = style?.stroke ?? DefaultTheme.StrokeColorShortMap.Grey;
+    const strokeWidth = style?.strokeWidth;
+    const strokeStyle = style?.strokeStyle;
 
     const { shapeName } = this._props$.value;
+    const nextProps: {
+      filled: boolean;
+      fillColor: Color;
+      strokeColor: Color;
+      strokeWidth?: ShapePaletteStyle['strokeWidth'];
+      strokeStyle?: ShapePaletteStyle['strokeStyle'];
+    } = {
+      filled,
+      fillColor,
+      strokeColor,
+    };
+    if (strokeWidth) nextProps.strokeWidth = strokeWidth;
+    if (strokeStyle) nextProps.strokeStyle = strokeStyle;
     this.edgeless.std
       .get(EditPropsStore)
-      .recordLastProps(`shape:${shapeName}`, {
-        filled,
-        fillColor,
-        strokeColor,
-      });
-    this.onChange(shapeName);
+      .recordLastProps(`shape:${shapeName}`, nextProps);
+
+    const applied = this._applyColorToSelection(
+      fillColor,
+      strokeColor,
+      strokeWidth,
+      strokeStyle
+    );
+    if (!applied) {
+      this._refreshShapeOverlay();
+    }
   };
 
   private readonly _setShapeStyle = (shapeStyle: ShapeStyle) => {
@@ -120,6 +184,69 @@ export class EdgelessShapeMenu extends SignalWatcher(
       });
     this.onChange(shapeName);
   };
+
+  private readonly _togglePalette = () => {
+    const presetCount = shapePalettes.length;
+    const nextIndex = (this._paletteIndex$.value + 1) % presetCount;
+    this._paletteIndex$.value = nextIndex;
+  };
+
+  private _applyColorToSelection(
+    fillColor: Color,
+    strokeColor?: Color,
+    strokeWidth?: ShapePaletteStyle['strokeWidth'],
+    strokeStyle?: ShapePaletteStyle['strokeStyle']
+  ) {
+    const selection = this.edgeless.std.get(GfxControllerIdentifier).selection;
+    const elements = selection.selectedElements;
+    if (!elements.length) return false;
+
+    const filled = !isTransparent(fillColor);
+    const appliedStrokeColor =
+      strokeColor ?? DefaultTheme.StrokeColorShortMap.Grey;
+    const crud = this.edgeless.std.get(EdgelessCRUDIdentifier);
+    let applied = false;
+
+    for (const element of elements) {
+      if (element instanceof ConnectorElementModel) {
+        if (!applied) this.edgeless.store.captureSync();
+        const connectorUpdates: Record<string, unknown> = {
+          stroke: appliedStrokeColor,
+        };
+        if (strokeWidth) connectorUpdates.strokeWidth = strokeWidth;
+        if (strokeStyle) connectorUpdates.strokeStyle = strokeStyle;
+        crud.updateElement(element.id, connectorUpdates);
+        this.edgeless.std
+          .get(EditPropsStore)
+          .recordLastProps('connector', connectorUpdates);
+        applied = true;
+        continue;
+      }
+      if (element instanceof ShapeElementModel) {
+        if (!applied) this.edgeless.store.captureSync();
+        const shapeUpdates: Record<string, unknown> = {
+          fillColor,
+          strokeColor: appliedStrokeColor,
+          filled,
+        };
+        if (strokeWidth) shapeUpdates.strokeWidth = strokeWidth;
+        if (strokeStyle) shapeUpdates.strokeStyle = strokeStyle;
+        crud.updateElement(element.id, shapeUpdates);
+        applied = true;
+      }
+    }
+
+    return applied;
+  }
+
+  private _refreshShapeOverlay() {
+    const controller = this.edgeless.std
+      .get(GfxControllerIdentifier)
+      .tool.currentTool$.peek();
+    if (controller instanceof ShapeTool) {
+      controller.createOverlay();
+    }
+  }
 
   private readonly _theme$ = computed(() => {
     return this.edgeless.std.get(ThemeProvider).theme$.value;
@@ -146,6 +273,8 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   override render() {
     const { fillColor, shapeStyle, shapeName } = this._props$.value;
+    const { fillPalettes, strokePalettes, ringPalettes } =
+      this._activePalettes$.value;
 
     return html`
       <edgeless-slide-menu>
@@ -213,16 +342,29 @@ export class EdgelessShapeMenu extends SignalWatcher(
             </edgeless-tool-icon-button>
           </div>
           <menu-divider .vertical=${true}></menu-divider>
-          <edgeless-color-panel
-            class="one-way"
-            .value=${fillColor}
-            .theme=${this._theme$.value}
-            .palettes=${DefaultTheme.FillColorShortPalettes}
-            .hasTransparent=${!this.edgeless.store
-              .get(FeatureFlagService)
-              .getFlag('enable_color_picker')}
-            @select=${(e: ColorEvent) => this._setFillColor(e.detail)}
-          ></edgeless-color-panel>
+          <div class="color-panel-container">
+            <edgeless-color-panel
+              class="one-way"
+              .value=${fillColor}
+              .theme=${this._theme$.value}
+              .palettes=${fillPalettes}
+              .outlinePalettes=${strokePalettes}
+              .ringPalettes=${ringPalettes}
+              .hasTransparent=${!this.edgeless.store
+                .get(FeatureFlagService)
+                .getFlag('enable_color_picker')}
+              @select=${(e: ColorEvent) => this._setFillColor(e.detail)}
+            ></edgeless-color-panel>
+            <edgeless-tool-icon-button
+              class="palette-toggle-button"
+              .tooltip=${'Next palette'}
+              .activeMode=${'background'}
+              .iconSize=${'20px'}
+              @click=${this._togglePalette}
+            >
+              ${ArrowUpSmallIcon()}
+            </edgeless-tool-icon-button>
+          </div>
         </div>
       </edgeless-slide-menu>
     `;
