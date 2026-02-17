@@ -112,6 +112,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
       box-shadow: 0px 0px 0px 2px rgba(30, 150, 235, 0.3);
       box-sizing: border-box;
       overflow: visible;
+      touch-action: none;
 
       .inline-editor {
         white-space: pre-wrap !important;
@@ -128,6 +129,33 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
         color: var(--affine-text-disable-color);
         white-space: nowrap;
       }
+    }
+
+    .label-drag-handle {
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--affine-primary-color, #1e96eb);
+      box-shadow: 0 0 0 2px rgba(30, 150, 235, 0.2);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transform: translateY(-50%);
+    }
+
+    .label-drag-handle.left {
+      left: -10px;
+    }
+
+    .label-drag-handle.right {
+      right: -10px;
+    }
+
+    .label-drag-handle:active {
+      cursor: grabbing;
     }
   `;
 
@@ -159,7 +187,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     if (event.button !== 0) return;
     if (!this.connector?.labelXYWH) return;
     const target = event.target as HTMLElement | null;
-    if (target?.closest('rich-text')) {
+    if (!target?.closest('.label-drag-handle')) {
       return;
     }
     event.preventDefault();
@@ -442,6 +470,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           transform: transformOperation.join(' '),
         })}
       >
+        <div class="label-drag-handle left" aria-label="Drag label"></div>
+        <div class="label-drag-handle right" aria-label="Drag label"></div>
         <rich-text
           .yText=${connector.text}
           .enableFormat=${false}
