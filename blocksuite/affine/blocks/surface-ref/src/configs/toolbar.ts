@@ -1,4 +1,11 @@
+import {
+  exportFrameMetadata,
+  exportFramePng,
+  importFrameMetadata,
+  importFramePng,
+} from '@blocksuite/affine-block-frame';
 import { toast } from '@blocksuite/affine-components/toast';
+import { FrameBlockModel } from '@blocksuite/affine-model';
 import {
   copySelectedModelsCommand,
   draftSelectedModelsCommand,
@@ -9,7 +16,13 @@ import {
   type ToolbarModuleConfig,
 } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
-import { CaptionIcon, CopyIcon, DeleteIcon } from '@blocksuite/icons/lit';
+import {
+  CaptionIcon,
+  CopyIcon,
+  DeleteIcon,
+  DownloadIcon,
+  UploadIcon,
+} from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
 import { SurfaceRefSizeIcon } from '../icons';
@@ -266,7 +279,89 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
         return !!surfaceRefBlock.referenceModel;
       },
       actions: [
-        // TODO(@L-Sun): add duplicate action after refactoring root-block/edgeless
+        {
+          id: 'a.export-frame-metadata',
+          label: 'Export Frame Metadata',
+          icon: DownloadIcon(),
+          when: ctx => {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            return surfaceRefBlock?.referenceModel instanceof FrameBlockModel;
+          },
+          async run(ctx) {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            if (!(surfaceRefBlock?.referenceModel instanceof FrameBlockModel))
+              return;
+            await exportFrameMetadata(ctx, surfaceRefBlock.referenceModel);
+          },
+        },
+        {
+          id: 'a.export-frame-png',
+          label: 'Export Frame PNG',
+          icon: DownloadIcon(),
+          when: ctx => {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            return surfaceRefBlock?.referenceModel instanceof FrameBlockModel;
+          },
+          async run(ctx) {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            if (!(surfaceRefBlock?.referenceModel instanceof FrameBlockModel))
+              return;
+            const renderStd = surfaceRefBlock.previewEditor?.std;
+            const caption = surfaceRefBlock.model.props.caption;
+            await exportFramePng(
+              ctx,
+              surfaceRefBlock.referenceModel,
+              renderStd ?? undefined,
+              { caption }
+            );
+          },
+        },
+        {
+          id: 'b.import-frame-metadata',
+          label: 'Import Frame Metadata',
+          icon: UploadIcon(),
+          when: ctx => {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            return surfaceRefBlock?.referenceModel instanceof FrameBlockModel;
+          },
+          async run(ctx) {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            if (!(surfaceRefBlock?.referenceModel instanceof FrameBlockModel))
+              return;
+            await importFrameMetadata(ctx, surfaceRefBlock.referenceModel);
+          },
+        },
+        {
+          id: 'b.import-frame-png',
+          label: 'Import Frame PNG',
+          icon: UploadIcon(),
+          when: ctx => {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            return surfaceRefBlock?.referenceModel instanceof FrameBlockModel;
+          },
+          async run(ctx) {
+            const surfaceRefBlock = ctx.getCurrentBlockByType(
+              SurfaceRefBlockComponent
+            );
+            if (!(surfaceRefBlock?.referenceModel instanceof FrameBlockModel))
+              return;
+            await importFramePng(ctx, surfaceRefBlock.referenceModel);
+          },
+        },
       ],
     },
     {

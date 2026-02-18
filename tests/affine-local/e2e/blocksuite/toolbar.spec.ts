@@ -352,6 +352,71 @@ test('Dropdown menus should be closed automatically when toolbar is displayed', 
   await expect(moreMenu).toBeHidden();
 });
 
+test('surface-ref more menu shows frame metadata actions', async ({ page }) => {
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('/frame');
+  await page.keyboard.press('Enter');
+
+  const toolbar = locateToolbar(page);
+  const surfaceRef = page.locator('affine-surface-ref');
+  await surfaceRef.hover();
+
+  await expect(toolbar).toBeVisible();
+
+  const moreMenuContainer = toolbar.getByLabel('More menu');
+  const moreMenuButton = moreMenuContainer.getByLabel('More');
+  const moreMenu = moreMenuContainer.getByRole('menu');
+
+  await moreMenuButton.click();
+  await expect(moreMenu).toBeVisible();
+  await expect(moreMenu.getByText('Export Frame Metadata')).toBeVisible();
+  await expect(moreMenu.getByText('Import Frame Metadata')).toBeVisible();
+});
+
+test('surface-ref frame metadata export and import', async ({ page }) => {
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('/frame');
+  await page.keyboard.press('Enter');
+
+  const toolbar = locateToolbar(page);
+  const surfaceRef = page.locator('affine-surface-ref');
+  await surfaceRef.hover();
+
+  await expect(toolbar).toBeVisible();
+
+  const moreMenuContainer = toolbar.getByLabel('More menu');
+  const moreMenuButton = moreMenuContainer.getByLabel('More');
+
+  await moreMenuButton.click();
+
+  const downloadPromise = page.waitForEvent('download');
+  await moreMenuContainer.getByText('Export Frame Metadata').click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  expect(downloadPath).toBeTruthy();
+  await expect(
+    page.locator(
+      '[data-testid=affine-toast]:has-text("Frame metadata exported.")'
+    )
+  ).toBeVisible();
+
+  await page.evaluate(() => {
+    window.showOpenFilePicker = undefined;
+  });
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await moreMenuButton.click();
+  await moreMenuContainer.getByText('Import Frame Metadata').click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(downloadPath!);
+
+  await expect(
+    page.locator(
+      '[data-testid=affine-toast]:has-text("Frame metadata imported.")'
+    )
+  ).toBeVisible();
+});
+
 test('should clear selection when switching doc mode', async ({ page }) => {
   await page.keyboard.press('Enter');
 

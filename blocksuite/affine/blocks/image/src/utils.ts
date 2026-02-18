@@ -1,14 +1,24 @@
-import { autoResizeElementsCommand } from '@blocksuite/affine-block-surface';
+import {
+  createFrameFromMetadata,
+  extractFrameMetadataFromImage,
+} from '@blocksuite/affine-block-frame';
+import {
+  autoResizeElementsCommand,
+  EdgelessCRUDIdentifier,
+} from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
 import {
   type AttachmentBlockProps,
+  FrameBlockSchema,
   type ImageBlockModel,
   type ImageBlockProps,
   ImageBlockSchema,
+  SurfaceRefBlockSchema,
 } from '@blocksuite/affine-model';
 import {
   FileSizeLimitProvider,
   NativeClipboardProvider,
+  NotificationProvider,
 } from '@blocksuite/affine-shared/services';
 import {
   convertToPng,
@@ -242,6 +252,62 @@ async function buildPropsWith(std: BlockStdScope, file: File) {
   return { size, sourceId, ...imageSize } satisfies Partial<ImageBlockProps>;
 }
 
+async function offerFrameConversion(
+  std: BlockStdScope,
+  file: File,
+  blockId: string
+) {
+  const metadata = await extractFrameMetadataFromImage(file);
+  if (!metadata) return;
+
+  const notification = std.getOptional(NotificationProvider);
+  const convert = async () => {
+    const imageModel = std.store.getModelById(
+      blockId
+    ) as ImageBlockModel | null;
+    if (!imageModel) return;
+
+    const isPage = isInsidePageEditor(std.host);
+    let bound: Bound | undefined;
+    const xywh = (imageModel as { xywh?: string }).xywh;
+    if (!isPage && typeof xywh === 'string') {
+      bound = Bound.deserialize(xywh);
+    }
+
+    const frame = await createFrameFromMetadata(std, metadata, { bound });
+    if (!frame) return;
+
+    if (isPage) {
+      const converted = transformModel(
+        imageModel,
+        SurfaceRefBlockSchema.model.flavour,
+        {
+          reference: frame.id,
+          refFlavour: FrameBlockSchema.model.flavour,
+        }
+      );
+      if (!converted) return;
+    } else {
+      const crud = std.getOptional(EdgelessCRUDIdentifier);
+      crud?.removeElement(imageModel.id);
+    }
+  };
+
+  if (notification) {
+    const confirmed = await notification.confirm({
+      title: 'Frame metadata detected',
+      message: 'Convert this image to an editable Frame?',
+      confirmText: 'Convert to Frame',
+      cancelText: 'Keep Image',
+    });
+    if (confirmed) {
+      await convert();
+    }
+  } else {
+    toast(std.host, 'Frame metadata detected for this image.');
+  }
+}
+
 export async function addSiblingImageBlocks(
   std: BlockStdScope,
   files: File[],
@@ -263,6 +329,10 @@ export async function addSiblingImageBlocks(
     targetModel,
     propsArray.map(props => ({ ...props, flavour })),
     placement
+  );
+
+  await Promise.all(
+    blockIds.map((id, index) => offerFrameConversion(std, files[index], id))
   );
 
   return blockIds;
@@ -288,6 +358,10 @@ export async function addImageBlocks(
   const blocks = propsArray.map(blockProps => ({ flavour, blockProps }));
 
   const blockIds = std.store.addBlocks(blocks, parent, parentIndex);
+
+  await Promise.all(
+    blockIds.map((id, index) => offerFrameConversion(std, files[index], id))
+  );
 
   return blockIds;
 }
@@ -362,6 +436,10 @@ export async function addImages(
   });
 
   const blockIds = std.store.addBlocks(blocks, gfx.surface);
+
+  await Promise.all(
+    blockIds.map((id, index) => offerFrameConversion(std, files[index], id))
+  );
 
   gfx.selection.set({
     elements: blockIds,

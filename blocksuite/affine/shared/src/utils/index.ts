@@ -16,6 +16,7 @@ export * from './is-abort-error';
 export * from './math';
 export * from './model';
 export * from './number-prefix';
+export * from './png-metadata';
 export * from './popper-position';
 export * from './print-to-pdf';
 export * from './reference';

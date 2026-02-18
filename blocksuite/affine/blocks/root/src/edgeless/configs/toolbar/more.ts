@@ -5,7 +5,13 @@ import {
   notifyDocCreated,
   promptDocTitle,
 } from '@blocksuite/affine-block-embed';
-import { EdgelessFrameManagerIdentifier } from '@blocksuite/affine-block-frame';
+import {
+  EdgelessFrameManagerIdentifier,
+  exportFrameMetadata,
+  exportFramePng,
+  importFrameMetadata,
+  importFramePng,
+} from '@blocksuite/affine-block-frame';
 import { ImageBlockComponent } from '@blocksuite/affine-block-image';
 import {
   EdgelessCRUDIdentifier,
@@ -53,6 +59,7 @@ import {
   BanIcon,
   CopyIcon,
   DeleteIcon,
+  DownloadIcon,
   DuplicateIcon,
   FrameIcon,
   GroupIcon,
@@ -60,6 +67,7 @@ import {
   PlusIcon,
   ResetIcon,
   SettingsIcon,
+  UploadIcon,
 } from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
 import { GfxBlockElementModel, type GfxModel } from '@blocksuite/std/gfx';
@@ -114,6 +122,64 @@ export const moreActions = [
         },
         run(ctx) {
           ctx.command.exec(createGroupFromSelectedCommand);
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'Z.a1.frame-metadata',
+    actions: [
+      {
+        id: 'a.export-frame-metadata',
+        label: 'Export Frame Metadata',
+        icon: DownloadIcon(),
+        when(ctx) {
+          return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
+        },
+        async run(ctx) {
+          const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
+          if (!model) return;
+          await exportFrameMetadata(ctx, model);
+        },
+      },
+      {
+        id: 'a.export-frame-png',
+        label: 'Export Frame PNG',
+        icon: DownloadIcon(),
+        when(ctx) {
+          return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
+        },
+        async run(ctx) {
+          const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
+          if (!model) return;
+          await exportFramePng(ctx, model);
+        },
+      },
+      {
+        id: 'b.import-frame-metadata',
+        label: 'Import Frame Metadata',
+        icon: UploadIcon(),
+        when(ctx) {
+          return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
+        },
+        async run(ctx) {
+          const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
+          if (!model) return;
+          await importFrameMetadata(ctx, model);
+        },
+      },
+      {
+        id: 'b.import-frame-png',
+        label: 'Import Frame PNG',
+        icon: UploadIcon(),
+        when(ctx) {
+          return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
+        },
+        async run(ctx) {
+          const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
+          if (!model) return;
+          await importFramePng(ctx, model);
         },
       },
     ],
