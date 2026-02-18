@@ -8,6 +8,7 @@ import {
   FontStyle,
   FontWeight,
   getConnectorModeName,
+  isTransparent,
   LineWidth,
   ShapeElementModel,
   ShapeStyle,
@@ -424,6 +425,11 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     if (!this.model) return;
 
     const crud = this.host.std.get(EdgelessCRUDIdentifier);
+    if (this.model instanceof ShapeElementModel && key === 'fillColor') {
+      const filled = !isTransparent(value);
+      crud.updateElement(this.model.id, { [key]: value, filled });
+      return;
+    }
     crud.updateElement(this.model.id, { [key]: value });
   };
 

@@ -4,6 +4,7 @@ import {
   surfaceMiddlewareExtension,
 } from '@blocksuite/affine-block-surface';
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
+import { ShapeElementModel } from '@blocksuite/affine-model';
 import type { GfxModel } from '@blocksuite/std/gfx';
 
 import { ConnectorPathGenerator } from './connector-manager';
@@ -101,8 +102,26 @@ export const connectorWatcher: SurfaceMiddleware = (
     surface.elementUpdated.subscribe(({ id, props }) => {
       const element = elementGetter(id);
 
-      if (props['xywh'] || props['rotate']) {
+      if (props['xywh'] || props['rotate'] || props['hidden']) {
         surface.getConnectors(id).forEach(c => addToUpdateList(c));
+      }
+      if (props['collapseProxyId']) {
+        surface.getConnectors(id).forEach(c => addToUpdateList(c));
+      }
+      if (
+        props['xywh'] &&
+        element &&
+        element instanceof ShapeElementModel &&
+        element.collapsed
+      ) {
+        const shapes = surface.getElementsByType(
+          'shape'
+        ) as ShapeElementModel[];
+        shapes
+          .filter(shape => shape.collapseProxyId === element.id)
+          .forEach(shape => {
+            surface.getConnectors(shape.id).forEach(c => addToUpdateList(c));
+          });
       }
 
       if (

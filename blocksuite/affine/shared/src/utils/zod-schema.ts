@@ -131,6 +131,7 @@ const DEFAULT_SHAPE = {
   fontStyle: FontStyle.Normal,
   textAlign: TextAlign.Center,
   roughness: DEFAULT_ROUGHNESS,
+  collapsed: false,
 };
 
 const ShapeObject = {
@@ -161,6 +162,10 @@ const ShapeObject = {
   textVerticalAlign: TextVerticalAlignSchema.optional(),
   roughness: z.number(),
   stencilName: z.string().optional(),
+  collapsed: z.boolean().optional(),
+  collapsedSize: z.tuple([z.number(), z.number()]).optional(),
+  expandedSize: z.tuple([z.number(), z.number()]).optional(),
+  collapseProxyId: z.string().nullable().optional(),
 };
 
 export const ShapeSchema = z.object(ShapeObject).default(DEFAULT_SHAPE);
@@ -271,6 +276,16 @@ export const NodePropsSchema = z.object({
   'shape:arrowCalloutUp': ShapeSchema,
   'shape:arrowCalloutDouble': ShapeSchema,
   'shape:arrowCalloutQuad': ShapeSchema,
+  'shape:container': ShapeSchema,
+  'shape:verticalContainer': ShapeSchema,
+  'shape:horizontalContainer': ShapeSchema,
+  'shape:list': ShapeSchema,
+  'shape:mindmapCentralIdea': ShapeSchema,
+  'shape:mindmapBranch': ShapeSchema,
+  'shape:mindmapSubTopic': ShapeSchema,
+  'shape:mindmapSquare': ShapeSchema,
+  'shape:mindmapOrganization': ShapeSchema,
+  'shape:mindmapDivision': ShapeSchema,
   'shape:drawioStencil': ShapeSchema,
   'shape:roundedRect': RoundedShapeSchema,
 });

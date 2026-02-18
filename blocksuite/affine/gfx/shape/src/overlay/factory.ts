@@ -126,6 +126,18 @@ export class ShapeFactory {
         return new PathShape(xywh, type, options, shapeStyle, buildLogicOrPath);
       case 'roundedRect':
         return new RoundedRectShape(xywh, type, options, shapeStyle);
+      case 'container':
+      case 'verticalContainer':
+      case 'horizontalContainer':
+      case 'list':
+      case 'mindmapBranch':
+      case 'mindmapSubTopic':
+      case 'mindmapSquare':
+      case 'mindmapOrganization':
+      case 'mindmapDivision':
+        return new RectShape(xywh, type, options, shapeStyle);
+      case 'mindmapCentralIdea':
+        return new EllipseShape(xywh, type, options, shapeStyle);
       case 'drawioStencil':
         return new RectShape(xywh, type, options, shapeStyle);
       default:

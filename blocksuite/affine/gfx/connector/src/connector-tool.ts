@@ -7,6 +7,7 @@ import {
   type Connection,
   type ConnectorElementModel,
   ConnectorMode,
+  CONTAINER_TITLE_SIZE,
   GroupElementModel,
   ShapeElementModel,
   ShapeType,
@@ -53,6 +54,48 @@ enum ConnectorToolMode {
 
 export type ConnectorToolOptions = {
   mode: ConnectorMode;
+};
+
+const buildContainerTitleLocations = (
+  bound: Bound,
+  axis: 'vertical' | 'horizontal'
+): IVec[] => {
+  const size = axis === 'vertical' ? bound.h : bound.w;
+  const titleSize = Math.min(CONTAINER_TITLE_SIZE, size);
+  const contentSize = Math.max(size - titleSize, 0);
+  const titleMid = size > 0 ? titleSize / 2 / size : 0.5;
+  const contentMid = size > 0 ? (titleSize + contentSize / 2) / size : 0.5;
+
+  if (axis === 'vertical') {
+    return [
+      [0, titleMid],
+      [1, titleMid],
+      [0, contentMid],
+      [1, contentMid],
+      [0.5, 0],
+      [0.5, 1],
+    ];
+  }
+
+  return [
+    [titleMid, 0],
+    [titleMid, 1],
+    [contentMid, 0],
+    [contentMid, 1],
+    [0, 0.5],
+    [1, 0.5],
+  ];
+};
+
+const mergeLocations = (locations: IVec[], extras: IVec[]): IVec[] => {
+  const merged = [...locations, ...extras];
+  const seen = new Set<string>();
+  return merged.filter(([x, y]) => {
+    const key = `${x.toFixed(4)}:${y.toFixed(4)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };
 
 export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
@@ -229,7 +272,23 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
 
   private _getConnectionLocationsForShape(element: GfxModel): IVec[] {
     if (element instanceof ShapeElementModel) {
+      const bound = Bound.deserialize(element.xywh);
       switch (element.shapeType) {
+        case ShapeType.MindmapBranch:
+          return [
+            [0, 0.5],
+            [1, 0.5],
+          ];
+        case ShapeType.VerticalContainer:
+          return mergeLocations(
+            ConnectorEndpointLocationsOnRectangle,
+            buildContainerTitleLocations(bound, 'vertical')
+          );
+        case ShapeType.HorizontalContainer:
+          return mergeLocations(
+            ConnectorEndpointLocationsOnRectangle,
+            buildContainerTitleLocations(bound, 'horizontal')
+          );
         case ShapeType.Rect:
           return ConnectorEndpointLocationsOnRectangle;
         case ShapeType.Triangle:

@@ -1,5 +1,5 @@
 import type { Options } from '@blocksuite/affine-block-surface';
-import { shapeMethods } from '@blocksuite/affine-model';
+import { CONTAINER_TITLE_SIZE, shapeMethods } from '@blocksuite/affine-model';
 import { Bound, type XYWH } from '@blocksuite/global/gfx';
 
 export const drawGeneralShape = (
@@ -83,6 +83,20 @@ export const drawGeneralShape = (
     case 'roundedRect':
       drawRoundedRect(ctx, xywh);
       break;
+    case 'container':
+    case 'verticalContainer':
+    case 'horizontalContainer':
+    case 'list':
+    case 'mindmapBranch':
+    case 'mindmapSubTopic':
+    case 'mindmapSquare':
+    case 'mindmapOrganization':
+    case 'mindmapDivision':
+      shapeMethods.rect.draw(ctx, bound);
+      break;
+    case 'mindmapCentralIdea':
+      shapeMethods.ellipse.draw(ctx, bound);
+      break;
     default:
       throw new Error(`Unknown shape type: ${type}`);
   }
@@ -91,6 +105,26 @@ export const drawGeneralShape = (
 
   ctx.fill();
   ctx.stroke();
+
+  if (type === 'verticalContainer') {
+    const titleHeight = Math.min(CONTAINER_TITLE_SIZE, bound.h);
+    if (bound.h > titleHeight + 1) {
+      ctx.beginPath();
+      ctx.moveTo(bound.x, bound.y + titleHeight);
+      ctx.lineTo(bound.x + bound.w, bound.y + titleHeight);
+      ctx.stroke();
+    }
+  }
+
+  if (type === 'horizontalContainer') {
+    const titleWidth = Math.min(CONTAINER_TITLE_SIZE, bound.w);
+    if (bound.w > titleWidth + 1) {
+      ctx.beginPath();
+      ctx.moveTo(bound.x + titleWidth, bound.y);
+      ctx.lineTo(bound.x + titleWidth, bound.y + bound.h);
+      ctx.stroke();
+    }
+  }
 };
 
 function drawRoundedRect(ctx: CanvasRenderingContext2D, xywh: XYWH): void {

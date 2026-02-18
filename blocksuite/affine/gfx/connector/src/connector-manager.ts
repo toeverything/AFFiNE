@@ -10,9 +10,8 @@ import {
   ConnectorMode,
   GroupElementModel,
   type LocalConnectorElementModel,
-  ShapeElementModel,
 } from '@blocksuite/affine-model';
-import { ShapeType } from '@blocksuite/affine-model';
+import { CONTAINER_TITLE_SIZE, ShapeType } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import type { IBound, IVec, IVec3 } from '@blocksuite/global/gfx';
@@ -408,6 +407,37 @@ const buildCubeLocations = (bound: Bound): IVec[] => {
 const buildRectangularLocations = (): IVec[] =>
   ConnectorEndpointLocationsOnRectangle;
 
+const buildContainerTitleLocations = (
+  bound: Bound,
+  axis: 'vertical' | 'horizontal'
+): IVec[] => {
+  const size = axis === 'vertical' ? bound.h : bound.w;
+  const titleSize = Math.min(CONTAINER_TITLE_SIZE, size);
+  const contentSize = Math.max(size - titleSize, 0);
+  const titleMid = size > 0 ? titleSize / 2 / size : 0.5;
+  const contentMid = size > 0 ? (titleSize + contentSize / 2) / size : 0.5;
+
+  if (axis === 'vertical') {
+    return [
+      [0, titleMid],
+      [1, titleMid],
+      [0, contentMid],
+      [1, contentMid],
+      [0.5, 0],
+      [0.5, 1],
+    ];
+  }
+
+  return [
+    [titleMid, 0],
+    [titleMid, 1],
+    [contentMid, 0],
+    [contentMid, 1],
+    [0, 0.5],
+    [1, 0.5],
+  ];
+};
+
 const getCustomLocations = (
   ele: GfxModel,
   bound: Bound
@@ -415,12 +445,36 @@ const getCustomLocations = (
   if (!('shapeType' in ele)) return null;
   const shapeType = (ele as any).shapeType as ShapeType;
   switch (shapeType) {
+    case ShapeType.MindmapBranch:
+      return {
+        locations: [
+          [0, 0.5],
+          [1, 0.5],
+        ],
+        fromStencil: false,
+      };
     case ShapeType.Cube:
       return { locations: buildCubeLocations(bound), fromStencil: false };
     case ShapeType.DataStorage:
     case ShapeType.Tape:
     case ShapeType.Document:
       return { locations: buildRectangularLocations(), fromStencil: true };
+    case ShapeType.VerticalContainer:
+      return {
+        locations: mergeLocations(
+          ConnectorEndpointLocationsOnRectangle,
+          buildContainerTitleLocations(bound, 'vertical')
+        ),
+        fromStencil: false,
+      };
+    case ShapeType.HorizontalContainer:
+      return {
+        locations: mergeLocations(
+          ConnectorEndpointLocationsOnRectangle,
+          buildContainerTitleLocations(bound, 'horizontal')
+        ),
+        fromStencil: false,
+      };
     default:
       return null;
   }
@@ -1772,8 +1826,6 @@ export class ConnectorPathGenerator extends PathGenerator {
       const [cx, cy] = model.getPointByOffsetDistance(
         model.labelOffset.distance
       );
-      const start = model.absolutePath[0];
-      const end = model.absolutePath[model.absolutePath.length - 1];
       const [, , w, h] = model.labelXYWH!;
       model.labelXYWH = [cx - w / 2, cy - h / 2, w, h];
     }
@@ -2134,7 +2186,20 @@ export class ConnectorPathGenerator extends PathGenerator {
     const id = connector[type].id;
 
     if (id) {
-      return this.options.getElementById(id) as Connectable;
+      const element = this.options.getElementById(id) as Connectable | null;
+      if (!element) return null;
+      if (
+        'hidden' in element &&
+        element.hidden &&
+        'collapseProxyId' in element &&
+        typeof element.collapseProxyId === 'string'
+      ) {
+        const proxy = this.options.getElementById(
+          element.collapseProxyId
+        ) as Connectable | null;
+        if (proxy) return proxy;
+      }
+      return element;
     }
 
     return null;

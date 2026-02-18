@@ -16,7 +16,13 @@ import type {
   LocalShapeElementModel,
   ShapeElementModel,
 } from '@blocksuite/affine-model';
-import { DefaultTheme, ShapeType, TextAlign } from '@blocksuite/affine-model';
+import {
+  CONTAINER_TITLE_SIZE,
+  DefaultTheme,
+  ShapeType,
+  TextAlign,
+  TextVerticalAlign,
+} from '@blocksuite/affine-model';
 import type { IBound } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
@@ -30,6 +36,7 @@ import { diamond } from './diamond.js';
 import { document as documentShape } from './document.js';
 import { ellipse } from './ellipse.js';
 import { hexagon } from './hexagon.js';
+import { mindmapBranch } from './mindmap-branch';
 import { note } from './note.js';
 import { parallelogram } from './parallelogram.js';
 import { rect } from './rect.js';
@@ -135,6 +142,16 @@ const shapeRenderers: Record<
       arrowCalloutUp: resolveStencil(ShapeType.ArrowCalloutUp),
       arrowCalloutDouble: resolveStencil(ShapeType.ArrowCalloutDouble),
       arrowCalloutQuad: resolveStencil(ShapeType.ArrowCalloutQuad),
+      container: rect,
+      verticalContainer: rect,
+      horizontalContainer: rect,
+      list: rect,
+      mindmapCentralIdea: ellipse,
+      mindmapBranch,
+      mindmapSubTopic: rect,
+      mindmapSquare: rect,
+      mindmapOrganization: rect,
+      mindmapDivision: rect,
       drawioStencil,
     };
   })(),
@@ -208,42 +225,149 @@ function renderText(
     h,
     textVerticalAlign,
     padding,
-    flipX,
-    flipY,
     textRotate,
     textFlipX,
     textFlipY,
   } = model;
   if (!text) return;
 
+  const flipX = 'flipX' in model ? model.flipX : false;
+  const flipY = 'flipY' in model ? model.flipY : false;
+
+  let textAreaWidth = w;
+  let textAreaHeight = h;
+  let textOffsetX = 0;
+  let textOffsetY = 0;
+  let effectiveVerticalAlign = textVerticalAlign;
+
+  if (model.shapeType === ShapeType.VerticalContainer) {
+    textAreaHeight = Math.min(CONTAINER_TITLE_SIZE, h);
+    effectiveVerticalAlign = TextVerticalAlign.Center;
+  }
+
+  if (model.shapeType === ShapeType.Container) {
+    effectiveVerticalAlign = TextVerticalAlign.Top;
+  }
+
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    textAreaHeight = h;
+    effectiveVerticalAlign = TextVerticalAlign.Top;
+  }
+
+  if (model.shapeType === ShapeType.HorizontalContainer) {
+    textAreaWidth = Math.min(CONTAINER_TITLE_SIZE, w);
+    textAreaHeight = h;
+    effectiveVerticalAlign = TextVerticalAlign.Center;
+  }
+
   const scaleX = (flipX ? -1 : 1) * (textFlipX ? -1 : 1);
   const scaleY = (flipY ? -1 : 1) * (textFlipY ? -1 : 1);
   const rotation = textRotate ?? 0;
 
-  const [verticalPadding, horPadding] = padding;
+  let [verticalPadding, horPadding] = padding;
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    verticalPadding = Math.min(verticalPadding, 4);
+    horPadding = Math.min(horPadding, 8);
+  }
   const font = getFontString(model);
   const { lineGap, lineHeight } = measureTextInDOM(
     fontFamily,
     fontSize,
     fontWeight
   );
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    textOffsetY = -Math.min(lineHeight * 0.35, 6);
+    textOffsetX = 6;
+  }
   const metrics = getFontMetrics(fontFamily, fontSize, fontWeight);
   const lines =
     typeof text === 'string'
       ? [text.split('\n').map(line => ({ insert: line }))]
-      : deltaInsertsToChunks(wrapTextDeltas(text, font, w - horPadding * 2));
-  const horOffset = horizontalOffset(model.w, model.textAlign, horPadding);
+      : deltaInsertsToChunks(
+          wrapTextDeltas(text, font, textAreaWidth - horPadding * 2)
+        );
+  const horOffset = horizontalOffset(
+    textAreaWidth,
+    model.textAlign,
+    horPadding
+  );
   const vertOffset =
     verticalOffset(
       lines,
       lineHeight + lineGap,
-      h,
-      textVerticalAlign,
+      textAreaHeight,
+      effectiveVerticalAlign,
       verticalPadding
     ) +
     metrics.fontBoundingBoxAscent +
     lineGap / 2;
   let maxLineWidth = 0;
+
+  if (model.shapeType === ShapeType.HorizontalContainer) {
+    const titleWidth = Math.min(CONTAINER_TITLE_SIZE, w);
+    const rotatedWidth = h;
+    const rotatedHeight = titleWidth;
+    const rotatedHorOffset = horizontalOffset(
+      rotatedWidth,
+      model.textAlign,
+      horPadding
+    );
+    const rotatedVertOffset =
+      verticalOffset(
+        lines,
+        lineHeight + lineGap,
+        rotatedHeight,
+        TextVerticalAlign.Center,
+        verticalPadding
+      ) +
+      metrics.fontBoundingBoxAscent +
+      lineGap / 2;
+    const baseX = -rotatedWidth / 2;
+    const baseY = -rotatedHeight / 2;
+    const centerX = titleWidth / 2;
+    const centerY = h / 2;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = textAlign;
+    ctx.textBaseline = 'alphabetic';
+
+    for (const [lineIndex, line] of lines.entries()) {
+      for (const delta of line) {
+        const str = delta.insert;
+        const rtl = isRTL(str);
+        const shouldTemporarilyAttach = rtl && !ctx.canvas.isConnected;
+        if (shouldTemporarilyAttach) {
+          document.body.append(ctx.canvas);
+        }
+
+        if (ctx.canvas.dir !== (rtl ? 'rtl' : 'ltr')) {
+          ctx.canvas.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+        }
+
+        ctx.fillText(
+          str,
+          baseX + rotatedHorOffset + 0.5,
+          baseY + lineIndex * lineHeight + rotatedVertOffset
+        );
+
+        maxLineWidth = Math.max(maxLineWidth, getLineWidth(str, font));
+
+        if (shouldTemporarilyAttach) {
+          ctx.canvas.remove();
+        }
+      }
+    }
+
+    const bound = new Bound(x, y, titleWidth, h) as IBound;
+    bound.rotate = model.rotate ?? 0;
+    model.textBound = bound;
+    ctx.restore();
+    return;
+  }
 
   ctx.save();
   if (flipX || flipY || textFlipX || textFlipY || rotation) {
@@ -277,8 +401,8 @@ function renderText(
       ctx.fillText(
         str,
         // 0.5 is the dom editor padding to make the text align with the DOM text
-        horOffset + 0.5,
-        lineIndex * lineHeight + vertOffset
+        horOffset + 0.5 + textOffsetX,
+        lineIndex * lineHeight + vertOffset + textOffsetY
       );
 
       maxLineWidth = Math.max(maxLineWidth, getLineWidth(str, font));

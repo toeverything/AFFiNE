@@ -200,6 +200,16 @@ const SHAPE_STYLE_SYNC_KEYS = [
   'shape:roundedRect',
   'shape:ellipse',
   'shape:triangle',
+  'shape:container',
+  'shape:verticalContainer',
+  'shape:horizontalContainer',
+  'shape:list',
+  'shape:mindmapCentralIdea',
+  'shape:mindmapBranch',
+  'shape:mindmapSubTopic',
+  'shape:mindmapSquare',
+  'shape:mindmapOrganization',
+  'shape:mindmapDivision',
 ];
 
 function pickShapeStyleProps(props: Record<string, unknown>) {

@@ -1,7 +1,11 @@
 import type { DomRenderer } from '@blocksuite/affine-block-surface';
 import { isRTL } from '@blocksuite/affine-gfx-text';
 import type { ShapeElementModel } from '@blocksuite/affine-model';
-import { DefaultTheme } from '@blocksuite/affine-model';
+import {
+  CONTAINER_TITLE_SIZE,
+  DefaultTheme,
+  ShapeType,
+} from '@blocksuite/affine-model';
 
 import { DRAWIO_STENCIL_SHAPE_MAP } from '../../drawio/stencil-map.js';
 import {
@@ -26,6 +30,7 @@ import {
 import { manageClassNames, setStyles } from './utils';
 
 const SVG_SHAPE_TYPES = new Set([
+  'mindmapBranch',
   'diamond',
   'triangle',
   'triangleRight',
@@ -95,6 +100,7 @@ const cssGradientDirectionMap: Record<
 };
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const textDebugCache = new Map<string, string>();
 
 const getFlipTransform = (
   model: ShapeElementModel,
@@ -162,7 +168,16 @@ function applyShapeSpecificStyles(
   }
 
   switch (model.shapeType) {
-    case 'rect': {
+    case 'rect':
+    case 'container':
+    case 'verticalContainer':
+    case 'horizontalContainer':
+    case 'list':
+    case 'mindmapBranch':
+    case 'mindmapSubTopic':
+    case 'mindmapSquare':
+    case 'mindmapOrganization':
+    case 'mindmapDivision': {
       const w = model.w * zoom;
       const h = model.h * zoom;
       const r = model.radius ?? 0;
@@ -172,6 +187,7 @@ function applyShapeSpecificStyles(
       break;
     }
     case 'ellipse':
+    case 'mindmapCentralIdea':
       element.style.borderRadius = '50%';
       break;
     case 'diamond':
@@ -413,6 +429,12 @@ export const shapeDomRenderer = (
     }
 
     switch (model.shapeType) {
+      case 'mindmapBranch':
+        svgPath = buildPathFromPoints([
+          [left, top + height / 2],
+          [right, top + height / 2],
+        ]);
+        break;
       case 'diamond':
         svgPath = buildPathFromPoints([
           [left + width / 2, top],
@@ -557,7 +579,8 @@ export const shapeDomRenderer = (
     if (pathTransform) {
       path.setAttribute('transform', pathTransform);
     }
-    path.setAttribute('fill', fillPaint);
+    const finalFill = model.shapeType === 'mindmapBranch' ? 'none' : fillPaint;
+    path.setAttribute('fill', finalFill);
     path.setAttribute('stroke', finalStrokeColor);
     path.setAttribute('stroke-width', String(strokeW));
     if (finalStrokeDasharray !== 'none') {
@@ -607,6 +630,42 @@ export const shapeDomRenderer = (
     applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
   }
 
+  if (
+    model.shapeType === ShapeType.VerticalContainer ||
+    model.shapeType === ShapeType.HorizontalContainer
+  ) {
+    const line = document.createElement('div');
+    const strokeWidth = Math.max(1, model.strokeWidth * zoom);
+    line.style.position = 'absolute';
+    line.style.backgroundColor =
+      model.strokeStyle === 'none' ? 'transparent' : strokeColor;
+    line.style.pointerEvents = 'none';
+
+    if (model.shapeType === ShapeType.VerticalContainer) {
+      const titleHeight = Math.min(CONTAINER_TITLE_SIZE, model.h) * zoom;
+      if (model.h * zoom > titleHeight + 1) {
+        line.style.left = '0';
+        line.style.right = '0';
+        line.style.height = `${strokeWidth}px`;
+        line.style.top = `${titleHeight}px`;
+        line.style.transform = `translateY(${-strokeWidth / 2}px)`;
+        newChildren.push(line);
+      }
+    }
+
+    if (model.shapeType === ShapeType.HorizontalContainer) {
+      const titleWidth = Math.min(CONTAINER_TITLE_SIZE, model.w) * zoom;
+      if (model.w * zoom > titleWidth + 1) {
+        line.style.top = '0';
+        line.style.bottom = '0';
+        line.style.width = `${strokeWidth}px`;
+        line.style.left = `${titleWidth}px`;
+        line.style.transform = `translateX(${-strokeWidth / 2}px)`;
+        newChildren.push(line);
+      }
+    }
+  }
+
   if (model.textDisplay && model.text) {
     const str = model.text.toString();
     const textElement = document.createElement('div');
@@ -635,6 +694,52 @@ export const shapeDomRenderer = (
       DefaultTheme.shapeTextColor,
       true
     );
+    textElement.textContent = str;
+    if (model.shapeType === ShapeType.Container) {
+      textElement.style.justifyContent = 'flex-start';
+    }
+    if (model.shapeType === ShapeType.VerticalContainer) {
+      const titleHeight = Math.min(CONTAINER_TITLE_SIZE, model.h) * zoom;
+      textElement.style.inset = '0 0 auto 0';
+      textElement.style.height = `${titleHeight}px`;
+      textElement.style.justifyContent = 'center';
+      textElement.style.alignItems = 'center';
+    }
+    if (model.shapeType === ShapeType.MindmapBranch) {
+      textElement.style.justifyContent = 'flex-start';
+      textElement.style.alignItems = 'center';
+    }
+    if (model.shapeType === ShapeType.HorizontalContainer) {
+      const titleWidth = Math.min(CONTAINER_TITLE_SIZE, model.w) * zoom;
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '0';
+      wrapper.style.top = '0';
+      wrapper.style.width = `${titleWidth}px`;
+      wrapper.style.height = '100%';
+      wrapper.style.overflow = 'hidden';
+      wrapper.style.display = 'flex';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.justifyContent = 'center';
+
+      textElement.style.position = 'relative';
+      textElement.style.inset = 'auto';
+      textElement.style.width = `${model.h * zoom}px`;
+      textElement.style.height = 'auto';
+      textElement.style.transformOrigin = 'center';
+      textElement.style.transform = 'rotate(-90deg)';
+      textElement.style.justifyContent = 'center';
+      textElement.style.alignItems = 'center';
+      textElement.dataset.role = 'shape-text';
+
+      wrapper.append(textElement);
+      newChildren.push(wrapper);
+      element.replaceChildren(...newChildren);
+      applyTransformStyles(model, element);
+      manageClassNames(model, element);
+      applyShadowStyles(model, element, renderer);
+      return;
+    }
     const textScaleX = (model.flipX ? -1 : 1) * (model.textFlipX ? -1 : 1);
     const textScaleY = (model.flipY ? -1 : 1) * (model.textFlipY ? -1 : 1);
     const textRotate = model.textRotate ?? 0;
@@ -643,11 +748,66 @@ export const shapeDomRenderer = (
       textElement.style.transform = `scale(${textScaleX}, ${textScaleY}) rotate(${textRotate}deg)`;
     }
     textElement.textContent = str;
+    if (model.shapeType === ShapeType.MindmapBranch) {
+      textElement.dataset.role = 'shape-text';
+    }
     newChildren.push(textElement);
   }
 
   // Replace existing children to avoid memory leaks
   element.replaceChildren(...newChildren);
+
+  if (model.shapeType === ShapeType.MindmapBranch) {
+    const signature = JSON.stringify({
+      id: model.id,
+      text: model.text?.toString() ?? '',
+      textDisplay: model.textDisplay,
+      xywh: model.xywh,
+      fontSize: model.fontSize,
+      padding: model.padding,
+      textAlign: model.textAlign,
+      textVerticalAlign: model.textVerticalAlign,
+    });
+    const previous = textDebugCache.get(model.id);
+    if (previous !== signature) {
+      textDebugCache.set(model.id, signature);
+      requestAnimationFrame(() => {
+        const textEl = element.querySelector(
+          '[data-role="shape-text"]'
+        ) as HTMLElement | null;
+        const rect = element.getBoundingClientRect();
+        const textRect = textEl?.getBoundingClientRect() ?? null;
+        const computed = textEl ? getComputedStyle(textEl) : null;
+        console.debug('[shape-text-dom-debug]', {
+          id: model.id,
+          shapeType: model.shapeType,
+          text: model.text?.toString() ?? '',
+          textDisplay: model.textDisplay,
+          elementRect: rect,
+          textRect,
+          elementStyles: {
+            position: element.style.position,
+            overflow: element.style.overflow,
+            zIndex: element.style.zIndex,
+            opacity: element.style.opacity,
+          },
+          textStyles: computed
+            ? {
+                display: computed.display,
+                visibility: computed.visibility,
+                opacity: computed.opacity,
+                color: computed.color,
+                fontSize: computed.fontSize,
+                lineHeight: computed.lineHeight,
+                transform: computed.transform,
+                zIndex: computed.zIndex,
+              }
+            : null,
+          childCount: element.childElementCount,
+        });
+      });
+    }
+  }
 
   applyTransformStyles(model, element);
 

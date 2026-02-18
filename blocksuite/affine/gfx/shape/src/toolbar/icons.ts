@@ -40,6 +40,140 @@ export const RectIcon = html`<svg
   />
 </svg>`;
 
+export const ContainerIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const VerticalContainerIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <line x1="2" y1="7" x2="18" y2="7" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const HorizontalContainerIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <line x1="6" y1="3" x2="6" y2="17" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const MindmapCentralIdeaIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <ellipse
+    cx="10"
+    cy="10"
+    rx="8"
+    ry="3.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const MindmapBranchIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <line
+    x1="2"
+    y1="10"
+    x2="18"
+    y2="10"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <circle cx="2" cy="10" r="1.5" fill="currentColor" />
+  <circle cx="18" cy="10" r="1.5" fill="currentColor" />
+</svg>`;
+
+export const MindmapSubTopicIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="6.8"
+    width="16"
+    height="6.4"
+    rx="3.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const MindmapSquareIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="6.8"
+    width="16"
+    height="6.4"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
 export const RoundedRectangleIcon = () =>
   html`<svg
     width="20"

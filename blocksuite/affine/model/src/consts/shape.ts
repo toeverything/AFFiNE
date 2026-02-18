@@ -32,6 +32,16 @@ export enum ShapeType {
   InternalStorage = 'internalStorage',
   LogicAnd = 'logicAnd',
   LogicOr = 'logicOr',
+  Container = 'container',
+  VerticalContainer = 'verticalContainer',
+  HorizontalContainer = 'horizontalContainer',
+  List = 'list',
+  MindmapCentralIdea = 'mindmapCentralIdea',
+  MindmapBranch = 'mindmapBranch',
+  MindmapSubTopic = 'mindmapSubTopic',
+  MindmapSquare = 'mindmapSquare',
+  MindmapOrganization = 'mindmapOrganization',
+  MindmapDivision = 'mindmapDivision',
   FlowchartProcess = 'flowchartProcess',
   FlowchartDecision = 'flowchartDecision',
   FlowchartData = 'flowchartData',
@@ -77,6 +87,24 @@ export enum ShapeType {
   ArrowCalloutQuad = 'arrowCalloutQuad',
   DrawioStencil = 'drawioStencil',
 }
+
+export const COLLAPSIBLE_CONTAINER_SHAPES = new Set<ShapeType>([
+  ShapeType.Container,
+  ShapeType.VerticalContainer,
+  ShapeType.HorizontalContainer,
+  ShapeType.List,
+]);
+
+export const CONNECTOR_TREE_SHAPES = new Set<ShapeType>([
+  ShapeType.MindmapCentralIdea,
+  ShapeType.MindmapBranch,
+  ShapeType.MindmapSubTopic,
+  ShapeType.MindmapSquare,
+  ShapeType.MindmapOrganization,
+  ShapeType.MindmapDivision,
+]);
+
+export const CONTAINER_TITLE_SIZE = 32;
 
 export type ShapeName = ShapeType | 'roundedRect';
 

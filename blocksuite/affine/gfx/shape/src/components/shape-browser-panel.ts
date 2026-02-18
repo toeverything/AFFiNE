@@ -33,10 +33,18 @@ const BASE_CATEGORY_LABELS: Record<string, string> = {
   basic: 'Basic',
   flowchart: 'Flowchart',
   arrows: 'Arrows',
+  advanced: 'Advanced',
   misc: 'Misc',
 };
 
-const BASE_CATEGORY_ORDER = ['general', 'flowchart', 'arrows', 'basic', 'misc'];
+const BASE_CATEGORY_ORDER = [
+  'general',
+  'flowchart',
+  'arrows',
+  'advanced',
+  'basic',
+  'misc',
+];
 
 // Map shapes to categories
 const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
@@ -105,6 +113,13 @@ const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
   arrowCalloutUp: 'arrows',
   arrowCalloutDouble: 'arrows',
   arrowCalloutQuad: 'arrows',
+  container: 'advanced',
+  verticalContainer: 'advanced',
+  horizontalContainer: 'advanced',
+  mindmapCentralIdea: 'advanced',
+  mindmapBranch: 'advanced',
+  mindmapSubTopic: 'advanced',
+  mindmapSquare: 'advanced',
 };
 
 type ShapeBrowserItem = {
@@ -582,7 +597,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
   override updated() {
     const canvases = this.renderRoot.querySelectorAll(
       'canvas.stencil-icon-canvas'
-    );
+    ) as NodeListOf<HTMLCanvasElement>;
     canvases.forEach(canvas => {
       if (canvas.dataset.drawn === 'true') return;
       const stencilName = canvas.dataset.stencil;

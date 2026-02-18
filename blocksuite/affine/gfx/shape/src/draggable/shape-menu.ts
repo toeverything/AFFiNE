@@ -144,10 +144,11 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   private readonly _props$ = computed(() => {
     const shapeName: ShapeName = this._shapeName$.value;
-    const { shapeStyle, fillColor, strokeColor, radius } =
-      this.edgeless.std.get(EditPropsStore).lastProps$.value[
-        `shape:${shapeName}`
-      ];
+    const propsStore = this.edgeless.std.get(EditPropsStore);
+    const shapeProps =
+      propsStore.lastProps$.value[`shape:${shapeName}`] ??
+      propsStore.lastProps$.value['shape:rect'];
+    const { shapeStyle, fillColor, strokeColor, radius } = shapeProps;
     return {
       shapeStyle,
       shapeName,

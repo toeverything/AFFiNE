@@ -47,6 +47,10 @@ export type ShapeProps = BaseElementProps & {
   // https://github.com/rough-stuff/rough/wiki#roughness
   roughness?: number;
   stencilName?: string;
+  collapsed?: boolean;
+  collapsedSize?: [number, number];
+  expandedSize?: [number, number];
+  collapseProxyId?: string | null;
 
   text?: Y.Text;
   textHorizontalAlign?: TextAlign;
@@ -203,6 +207,15 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   @field()
   accessor strokeWidth: number = 4;
 
+  @field(false)
+  accessor collapsed: boolean = false;
+
+  @field()
+  accessor collapsedSize: [number, number] | undefined = undefined;
+
+  @field()
+  accessor expandedSize: [number, number] | undefined = undefined;
+
   @field()
   accessor text: Y.Text | undefined = undefined;
 
@@ -211,6 +224,9 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   @local()
   accessor textDisplay: boolean = true;
+
+  @field()
+  accessor collapseProxyId: string | null = null;
 
   @field(TextAlign.Center as TextAlign)
   accessor textHorizontalAlign!: TextAlign;
