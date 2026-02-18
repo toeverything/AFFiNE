@@ -73,7 +73,7 @@ const applyDefaultTail = (styles: ShapePaletteStyle[]) => {
     base[tailStart + 1] = {
       ...base[tailStart + 1],
       fill: whiteFill ?? base[tailStart + 1].fill,
-      stroke: whiteStroke ?? base[tailStart + 1].stroke,
+      stroke: blackStroke ?? base[tailStart + 1].stroke,
       ringColor: DefaultTheme.black,
       gradientFinal: undefined,
       gradientDirection: undefined,
