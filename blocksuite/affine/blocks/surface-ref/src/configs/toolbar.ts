@@ -8,9 +8,11 @@ import {
   blockCommentToolbarButton,
   type ToolbarModuleConfig,
 } from '@blocksuite/affine-shared/services';
+import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { CaptionIcon, CopyIcon, DeleteIcon } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
+import { SurfaceRefSizeIcon } from '../icons';
 import { SurfaceRefBlockComponent } from '../surface-ref-block';
 
 export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
@@ -28,6 +30,193 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
         return html`<surface-ref-toolbar-title
           .referenceModel=${surfaceRefBlock.referenceModel}
         ></surface-ref-toolbar-title>`;
+      },
+    },
+    {
+      id: 'b.surface-ref-size',
+      when: ctx => !!ctx.getCurrentBlockByType(SurfaceRefBlockComponent),
+      content: ctx => {
+        const surfaceRefBlock = ctx.getCurrentBlockByType(
+          SurfaceRefBlockComponent
+        );
+        if (!surfaceRefBlock) return null;
+
+        const model = surfaceRefBlock.model;
+        const sizeScale = normalizePositiveNumber(model.props.pageSizeScale, 1);
+        const widthScale = normalizePositiveNumber(
+          model.props.pageWidthScale,
+          1
+        );
+        const widthMode = model.props.pageWidthMode ?? 'page';
+
+        const sizePresets = [1, 2];
+        const widthPresets = [1, 2];
+        const sizeCustomValue =
+          sizeScale !== 1 && !sizePresets.includes(sizeScale)
+            ? sizeScale
+            : null;
+        const widthCustomValue =
+          widthMode === 'scale' && !widthPresets.includes(widthScale)
+            ? widthScale
+            : null;
+
+        const updateProps = (props: Record<string, unknown>) => {
+          ctx.store.captureSync();
+          ctx.store.updateBlock(model, props);
+        };
+
+        const updateSizeScale = (nextScale: number) => {
+          updateProps({
+            pageSizeScale: roundToTwoDecimals(nextScale),
+            pageWidthMode: widthMode,
+            pageWidthScale: widthScale,
+          });
+        };
+
+        const updateWidthScale = (nextScale: number) => {
+          updateProps({
+            pageSizeScale: sizeScale,
+            pageWidthMode: 'scale',
+            pageWidthScale: roundToTwoDecimals(nextScale),
+          });
+        };
+
+        const updateWidthMode = (nextMode: 'page' | 'full' | 'scale') => {
+          updateProps({
+            pageSizeScale: sizeScale,
+            pageWidthMode: nextMode,
+            pageWidthScale: widthScale,
+          });
+        };
+
+        const commitCustomSize = (value: string) => {
+          const next = parsePositiveNumber(value);
+          if (next === null) return;
+          updateSizeScale(next);
+        };
+
+        const commitCustomWidth = (value: string) => {
+          const next = parsePositiveNumber(value);
+          if (next === null) return;
+          updateWidthScale(next);
+        };
+
+        return html`<editor-menu-button
+          aria-label="Frame size"
+          .contentPadding=${'8px'}
+          .button=${html`<editor-icon-button
+            aria-label="Frame size"
+            .tooltip=${'Frame size'}
+            .iconContainerPadding=${4}
+            .iconSize=${'16px'}
+          >
+            ${SurfaceRefSizeIcon()}
+          </editor-icon-button>`}
+        >
+          <div data-orientation="vertical" style="min-width: 152px;">
+            <div
+              class="custom"
+              style="font-size:12px;color:var(--affine-text-secondary-color);padding:2px 8px;font-weight:500;"
+            >
+              Height
+            </div>
+            ${sizePresets.map(
+              preset => html`
+                <editor-menu-action
+                  aria-label="${preset}x"
+                  ?data-selected=${sizeScale === preset}
+                  @click=${() => updateSizeScale(preset)}
+                >
+                  ${preset}x
+                </editor-menu-action>
+              `
+            )}
+            <div
+              class="custom"
+              style="display:flex;align-items:center;gap:8px;padding:2px 8px 6px;"
+            >
+              <span
+                style="font-size:13px;color:var(--affine-text-primary-color);"
+              >
+                Custom
+              </span>
+              <input
+                style="width:64px;min-width:64px;padding:4px 8px;border:1px solid var(--affine-border-color);border-radius:4px;font-size:12px;color:var(--affine-text-primary-color);background:transparent;height:26px;box-sizing:border-box;"
+                type="text"
+                inputmode="decimal"
+                pattern="^\\d+(\\.\\d{0,2})?$"
+                placeholder="3"
+                .value=${sizeCustomValue ? String(sizeCustomValue) : ''}
+                @keydown=${(event: KeyboardEvent) => {
+                  if (event.key !== 'Enter') return;
+                  event.stopPropagation();
+                  commitCustomSize((event.target as HTMLInputElement).value);
+                }}
+                @change=${(event: Event) =>
+                  commitCustomSize((event.target as HTMLInputElement).value)}
+                @click=${stopPropagation}
+                @pointerdown=${stopPropagation}
+              />
+            </div>
+
+            <div
+              class="custom"
+              style="height:1px;margin:6px 4px;background:var(--affine-divider-color);"
+            ></div>
+            <div
+              class="custom"
+              style="font-size:12px;color:var(--affine-text-secondary-color);padding:2px 8px;font-weight:500;"
+            >
+              Width
+            </div>
+            ${widthPresets.map(
+              preset => html`
+                <editor-menu-action
+                  aria-label="${preset}x"
+                  ?data-selected=${widthMode === 'scale' &&
+                  widthScale === preset}
+                  @click=${() => updateWidthScale(preset)}
+                >
+                  ${preset}x
+                </editor-menu-action>
+              `
+            )}
+            <editor-menu-action
+              aria-label="Full"
+              ?data-selected=${widthMode === 'full'}
+              @click=${() => updateWidthMode('full')}
+            >
+              Full
+            </editor-menu-action>
+            <div
+              class="custom"
+              style="display:flex;align-items:center;gap:8px;padding:2px 8px 6px;"
+            >
+              <span
+                style="font-size:13px;color:var(--affine-text-primary-color);"
+              >
+                Custom
+              </span>
+              <input
+                style="width:64px;min-width:64px;padding:4px 8px;border:1px solid var(--affine-border-color);border-radius:4px;font-size:12px;color:var(--affine-text-primary-color);background:transparent;height:26px;box-sizing:border-box;"
+                type="text"
+                inputmode="decimal"
+                pattern="^\\d+(\\.\\d{0,2})?$"
+                placeholder="1"
+                .value=${widthCustomValue ? String(widthCustomValue) : ''}
+                @keydown=${(event: KeyboardEvent) => {
+                  if (event.key !== 'Enter') return;
+                  event.stopPropagation();
+                  commitCustomWidth((event.target as HTMLInputElement).value);
+                }}
+                @change=${(event: Event) =>
+                  commitCustomWidth((event.target as HTMLInputElement).value)}
+                @click=${stopPropagation}
+                @pointerdown=${stopPropagation}
+              />
+            </div>
+          </div>
+        </editor-menu-button>`;
       },
     },
     {
@@ -98,3 +287,23 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
   ],
   placement: 'inner',
 };
+
+function normalizePositiveNumber(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return value;
+}
+
+function parsePositiveNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d+(\.\d{0,2})?$/.test(trimmed)) return null;
+  const numberValue = Number(trimmed);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) return null;
+  return roundToTwoDecimals(numberValue);
+}
+
+function roundToTwoDecimals(value: number) {
+  return Math.round(value * 100) / 100;
+}

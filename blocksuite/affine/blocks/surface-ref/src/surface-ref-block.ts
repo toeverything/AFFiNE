@@ -98,6 +98,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     .ref-viewport {
       max-width: 100%;
+      width: 100%;
       margin: 0 auto;
       position: relative;
       overflow: hidden;
@@ -386,6 +387,12 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     if (!this._referenceXYWH$.value) return nothing;
     const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
     const aspectRatio = h !== 0 ? w / h : 1;
+    const sizeScale = normalizePositiveNumber(
+      this.model.props.pageSizeScale,
+      1
+    );
+    const adjustedAspectRatio =
+      sizeScale === 1 ? aspectRatio : aspectRatio / sizeScale;
     const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
     const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
@@ -393,7 +400,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       <div
         class="ref-viewport"
         style=${styleMap({
-          aspectRatio: `${aspectRatio}`,
+          aspectRatio: `${adjustedAspectRatio}`,
         })}
         data-theme=${edgelessTheme}
       >
@@ -464,6 +471,28 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         ></surface-ref-placeholder>`
       : this._renderRefContent();
 
+    const widthScale = normalizePositiveNumber(
+      this.model.props.pageWidthScale,
+      1
+    );
+    const widthMode = this.model.props.pageWidthMode ?? 'page';
+    const baseWidth =
+      widthMode === 'full'
+        ? 'calc(100vw - (var(--affine-editor-side-padding, 0px) * 2))'
+        : widthMode === 'scale'
+          ? `calc(var(--affine-editor-width) * ${widthScale})`
+          : 'var(--affine-editor-width)';
+    const scaledWidth = baseWidth;
+    const containerStyle = {
+      width: scaledWidth,
+      maxWidth: scaledWidth,
+      marginLeft: widthMode === 'full' ? '0' : 'auto',
+      marginRight: widthMode === 'full' ? '0' : 'auto',
+      position: 'relative',
+      left: '50%',
+      transform: 'translateX(-50%)',
+    };
+
     return html`
       <div
         class=${classMap({
@@ -471,6 +500,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
           focused: this.selected$.value,
           'comment-highlighted': this.isCommentHighlighted,
         })}
+        style=${styleMap(containerStyle)}
         @click=${this._handleClick}
       >
         ${content}
@@ -502,6 +532,13 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   @query('editor-host')
   accessor previewEditor!: EditorHost | null;
+}
+
+function normalizePositiveNumber(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return value;
 }
 
 declare global {

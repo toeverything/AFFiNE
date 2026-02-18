@@ -8,6 +8,9 @@ export type SurfaceRefProps = {
   reference: string;
   caption: string;
   refFlavour: string;
+  pageSizeScale?: number;
+  pageWidthMode?: 'page' | 'full' | 'scale';
+  pageWidthScale?: number;
   comments?: Record<string, boolean>;
 };
 
@@ -17,6 +20,9 @@ export const SurfaceRefBlockSchema = defineBlockSchema({
     reference: '',
     caption: '',
     refFlavour: '',
+    pageSizeScale: undefined,
+    pageWidthMode: undefined,
+    pageWidthScale: undefined,
     comments: undefined,
   }),
   metadata: {
