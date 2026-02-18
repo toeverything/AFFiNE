@@ -6,35 +6,63 @@
 
 @plugin 'tailwindcss-animate';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, [data-theme='dark'] *));
 
 @theme {
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
 
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
 
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  /* Selfhost sidebar tokens */
+  --color-sidebar-bg: var(
+    --affine-v2-selfhost-layer-background-sidebarBg-sidebarBg
+  );
+  --color-sidebar-foreground: var(--affine-v2-selfhost-text-sidebar-primary);
+  --color-sidebar-foreground-secondary: var(
+    --affine-v2-selfhost-text-sidebar-secondary
+  );
+  --color-sidebar-hover: var(
+    --affine-v2-selfhost-button-sidebarButton-bg-hover
+  );
+  --color-sidebar-active: var(
+    --affine-v2-selfhost-button-sidebarButton-bg-select
+  );
+
+  /* Chip / badge tokens */
+  --color-chip-blue: var(--affine-v2-chip-label-blue);
+  --color-chip-white: var(--affine-v2-chip-label-white);
+  --color-chip-text: var(--affine-v2-chip-label-text);
+
+  /* Toggle tokens */
+  --color-toggle-on: var(--affine-v2-selfhost-toggle-backgroundOn);
+  --color-toggle-off: var(--affine-v2-selfhost-toggle-backgroundOff);
+  --color-toggle-thumb: var(--affine-v2-selfhost-toggle-foreground);
+
+  /* Custom font size */
+  --text-xxs: 11px;
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -79,78 +107,47 @@
 
   If we ever want to remove these styles, we need to add an explicit border
   color utility to any element that depends on these defaults.
-*/
+  */
 @layer base {
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--border, currentColor);
   }
 }
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: var(--affine-v2-layer-background-primary);
+    --foreground: var(--affine-v2-text-primary);
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card: var(--affine-v2-layer-background-secondary);
+    --card-foreground: var(--affine-v2-text-primary);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: var(--affine-v2-layer-background-overlayPanel);
+    --popover-foreground: var(--affine-v2-text-primary);
 
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: var(--affine-v2-button-primary);
+    --primary-foreground: var(--affine-v2-button-pureWhiteText);
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: var(--affine-v2-layer-background-secondary);
+    --secondary-foreground: var(--affine-v2-text-primary);
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: var(--affine-v2-layer-background-tertiary);
+    --muted-foreground: var(--affine-v2-text-secondary);
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: var(--affine-v2-layer-background-hoverOverlay);
+    --accent-foreground: var(--affine-v2-text-primary);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: var(--affine-v2-button-error);
+    --destructive-foreground: var(--affine-v2-button-pureWhiteText);
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: var(--affine-v2-layer-insideBorder-border);
+    --input: var(--affine-v2-input-border-default);
+    --ring: var(--affine-v2-input-border-active);
+    --radius: var(--affine-popover-radius);
   }
 }
 
@@ -158,7 +155,31 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--affine-font-family);
+  }
+
+  /* Smooth scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
+  /* Text selection */
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
 }

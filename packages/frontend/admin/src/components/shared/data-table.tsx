@@ -21,6 +21,8 @@ import { type ReactNode, useEffect, useState } from 'react';
 
 import { DataTablePagination } from './data-table-pagination';
 
+const DEFAULT_RESET_FILTERS_DEPS: unknown[] = [];
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -58,7 +60,7 @@ export function SharedDataTable<TData extends { id: string }, TValue>({
   rowSelection,
   onRowSelectionChange,
   renderToolbar,
-  resetFiltersDeps = [],
+  resetFiltersDeps = DEFAULT_RESET_FILTERS_DEPS,
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -88,13 +90,13 @@ export function SharedDataTable<TData extends { id: string }, TValue>({
   });
 
   return (
-    <div className="flex flex-col gap-4 py-5 px-6 h-full overflow-auto relative">
+    <div className="relative flex h-full flex-col gap-4 overflow-auto px-6 py-5">
       {renderToolbar?.(table)}
-      <div className="rounded-md border h-full flex flex-col overflow-auto relative">
+      <div className="relative flex h-full flex-col overflow-auto rounded-xl border border-border/60 bg-card shadow-1">
         {loading ? (
-          <div className="absolute inset-0 z-10 bg-gray-50/70 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 text-sm text-gray-600">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/75 text-sm text-muted-foreground backdrop-blur-[1px]">
             <svg
-              className="h-5 w-5 animate-spin text-gray-500"
+              className="h-5 w-5 animate-spin text-primary"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -119,7 +121,10 @@ export function SharedDataTable<TData extends { id: string }, TValue>({
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id} className="flex items-center">
+              <TableRow
+                key={headerGroup.id}
+                className="flex items-center bg-muted/40"
+              >
                 {headerGroup.headers.map(header => {
                   // Use meta.className if available, otherwise default to flex-1
                   const meta = header.column.columnDef.meta as
@@ -154,7 +159,7 @@ export function SharedDataTable<TData extends { id: string }, TValue>({
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
-                    className="flex items-center"
+                    className="flex items-center bg-card"
                   >
                     {row.getVisibleCells().map(cell => {
                       const meta = cell.column.columnDef.meta as

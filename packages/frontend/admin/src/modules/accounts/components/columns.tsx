@@ -3,6 +3,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@affine/admin/components/ui/avatar';
+import { cn } from '@affine/admin/utils';
 import { FeatureType } from '@affine/graphql';
 import {
   AccountIcon,
@@ -12,7 +13,6 @@ import {
   UnlockIcon,
 } from '@blocksuite/icons/rc';
 import type { ColumnDef } from '@tanstack/react-table';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import {
   type Dispatch,
   type ReactNode,
@@ -39,10 +39,10 @@ const StatusItem = ({
   textFalse: string;
 }) => (
   <div
-    className="flex gap-1 items-center"
-    style={{
-      color: condition ? cssVarV2('text/secondary') : cssVarV2('status/error'),
-    }}
+    className={cn(
+      'flex items-center gap-1',
+      condition ? 'text-muted-foreground' : 'text-destructive'
+    )}
   >
     {condition ? (
       <>
@@ -152,36 +152,17 @@ export const useColumns = ({
               <div className="text-sm font-medium max-w-full overflow-hidden gap-[6px]">
                 <span>{row.original.name}</span>
                 {row.original.features.includes(FeatureType.Admin) && (
-                  <span
-                    className="ml-2 rounded px-2 py-0.5 text-xs h-5 border text-center inline-flex items-center font-normal"
-                    style={{
-                      borderRadius: '4px',
-                      backgroundColor: cssVarV2('chip/label/blue'),
-                      borderColor: cssVarV2('layer/insideBorder/border'),
-                    }}
-                  >
+                  <span className="ml-2 inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-blue px-2 py-0.5 text-xxs font-medium text-chip-text">
                     Admin
                   </span>
                 )}
                 {row.original.disabled && (
-                  <span
-                    className="ml-2 rounded px-2 py-0.5 text-xs h-5 border"
-                    style={{
-                      borderRadius: '4px',
-                      backgroundColor: cssVarV2('chip/label/white'),
-                      borderColor: cssVarV2('layer/insideBorder/border'),
-                    }}
-                  >
+                  <span className="ml-2 inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs font-medium">
                     Disabled
                   </span>
                 )}
               </div>
-              <div
-                className="text-xs font-medium max-w-full overflow-hidden"
-                style={{
-                  color: cssVarV2('text/secondary'),
-                }}
-              >
+              <div className="max-w-full overflow-hidden text-xs font-medium text-muted-foreground">
                 {row.original.email}
               </div>
             </div>
@@ -207,16 +188,10 @@ export const useColumns = ({
                 <StatusItem
                   condition={user.hasPassword}
                   IconTrue={
-                    <LockIcon
-                      fontSize={16}
-                      color={cssVarV2('selfhost/icon/tertiary')}
-                    />
+                    <LockIcon fontSize={16} className="text-muted-foreground" />
                   }
                   IconFalse={
-                    <UnlockIcon
-                      fontSize={16}
-                      color={cssVarV2('toast/iconState/error')}
-                    />
+                    <UnlockIcon fontSize={16} className="text-destructive" />
                   }
                   textTrue="Password Set"
                   textFalse="No Password"
@@ -226,13 +201,13 @@ export const useColumns = ({
                   IconTrue={
                     <EmailIcon
                       fontSize={16}
-                      color={cssVarV2('selfhost/icon/tertiary')}
+                      className="text-muted-foreground"
                     />
                   }
                   IconFalse={
                     <EmailWarningIcon
                       fontSize={16}
-                      color={cssVarV2('toast/iconState/error')}
+                      className="text-destructive"
                     />
                   }
                   textTrue="Email Verified"
@@ -244,24 +219,13 @@ export const useColumns = ({
                   user.features.map(feature => (
                     <span
                       key={feature}
-                      className="rounded px-2 py-0.5 text-xs h-5 border inline-flex items-center"
-                      style={{
-                        borderRadius: '4px',
-                        backgroundColor: cssVarV2('chip/label/white'),
-                        borderColor: cssVarV2('layer/insideBorder/border'),
-                      }}
+                      className="inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs font-medium"
                     >
                       {feature}
                     </span>
                   ))
                 ) : (
-                  <span
-                    style={{
-                      color: cssVarV2('text/secondary'),
-                    }}
-                  >
-                    No features
-                  </span>
+                  <span className="text-muted-foreground">No features</span>
                 )}
               </div>
             </div>

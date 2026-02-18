@@ -116,7 +116,7 @@
     },
     "SMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")",
       "env": "MAILER_SENDER"
     },
     "SMTP.ignoreTLS": {
@@ -150,7 +150,7 @@
     },
     "fallbackSMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")"
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")"
     },
     "fallbackSMTP.ignoreTLS": {
       "type": "Boolean",

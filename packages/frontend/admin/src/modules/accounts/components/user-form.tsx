@@ -3,7 +3,6 @@ import { Input } from '@affine/admin/components/ui/input';
 import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
 import type { FeatureType } from '@affine/graphql';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { ChevronRightIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -114,15 +113,15 @@ function UserForm({
   }, [defaultUser]);
 
   return (
-    <div className="flex flex-col h-full gap-1">
+    <div className="flex h-full flex-col bg-background">
       <RightPanelHeader
         title={title}
         handleClose={handleClose}
         handleConfirm={handleConfirm}
         canSave={canSave}
       />
-      <div className="p-4 flex-grow overflow-y-auto space-y-[8px]">
-        <div className="flex flex-col rounded-md border">
+      <div className="flex-grow space-y-3 overflow-y-auto p-4">
+        <div className="flex flex-col rounded-xl border border-border bg-card shadow-sm">
           <InputItem
             label="User name"
             field="name"
@@ -154,7 +153,7 @@ function UserForm({
         </div>
 
         <FeatureToggleList
-          className="border rounded-md"
+          className="rounded-xl border border-border bg-card shadow-sm"
           features={serverConfig.availableUserFeatures}
           selected={changes.features ?? []}
           onChange={handleFeaturesChange}
@@ -191,24 +190,18 @@ function InputItem({
   );
 
   return (
-    <div className="flex flex-col gap-1.5 p-3">
-      <Label
-        className="text-[15px] font-medium flex-wrap flex"
-        style={{ lineHeight: '1.6rem' }}
-      >
+    <div className="flex flex-col gap-2 p-3">
+      <Label className="flex flex-wrap text-xs font-medium leading-5 text-muted-foreground uppercase tracking-wide">
         {label}
         {optional && (
-          <span
-            className="font-normal ml-1"
-            style={{ color: cssVarV2('text/secondary') }}
-          >
+          <span className="ml-1 font-normal text-muted-foreground">
             (optional)
           </span>
         )}
       </Label>
       <Input
         type="text"
-        className="py-2 px-3 text-[15px] font-normal h-9"
+        className="py-2 px-3 text-sm font-normal h-9"
         value={value}
         onChange={onValueChange}
         placeholder={placeholder}
@@ -316,24 +309,24 @@ export function UpdateUserForm({
       onValidate={validateUpdateUser}
       onDirtyChange={onDirtyChange}
       actions={
-        <>
+        <div className="space-y-2">
           <Button
-            className="w-full flex items-center justify-between text-sm font-medium px-4 py-3"
+            className="h-10 w-full justify-between rounded-xl border-border/60 px-4 text-sm font-medium hover:bg-muted/50"
             variant="outline"
             onClick={onResetPassword}
           >
             <span>Reset Password</span>
-            <ChevronRightIcon size={16} />
+            <ChevronRightIcon size={16} className="text-muted-foreground" />
           </Button>
           <Button
-            className="w-full text-red-500 px-4 py-3 rounded-md flex items-center justify-between text-sm font-medium hover:text-red-500"
+            className="h-10 w-full justify-between rounded-xl border-destructive/30 px-4 text-sm font-medium text-destructive hover:bg-destructive/5 hover:text-destructive"
             variant="outline"
             onClick={onDeleteAccount}
           >
             <span>Delete Account</span>
             <ChevronRightIcon size={16} />
           </Button>
-        </>
+        </div>
       }
     />
   );

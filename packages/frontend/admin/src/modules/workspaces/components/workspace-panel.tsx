@@ -14,7 +14,6 @@ import {
   adminWorkspacesQuery,
 } from '@affine/graphql';
 import { AccountIcon } from '@blocksuite/icons/rc';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -53,10 +52,7 @@ export function WorkspacePanel({
           handleConfirm={onClose}
           canSave={false}
         />
-        <div
-          className="p-6 text-sm"
-          style={{ color: cssVarV2('text/secondary') }}
-        >
+        <div className="p-6 text-sm text-muted-foreground">
           Workspace not found.
         </div>
       </div>
@@ -173,29 +169,19 @@ function WorkspacePanelContent({
   const memberList = workspace.members ?? [];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col bg-background">
       <RightPanelHeader
         title="Update Workspace"
         handleClose={onClose}
         handleConfirm={handleSave}
         canSave={hasChanges && !isMutating}
       />
-      <div className="p-4 flex flex-col gap-4 overflow-y-auto">
-        <div className="border rounded-md p-3 space-y-2">
-          <div
-            className="text-xs"
-            style={{ color: cssVarV2('text/secondary') }}
-          >
-            Workspace ID
-          </div>
+      <div className="flex flex-col gap-4 overflow-y-auto p-4">
+        <div className="space-y-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
+          <div className="text-xs text-muted-foreground">Workspace ID</div>
           <div className="text-sm font-mono break-all">{workspace.id}</div>
           <div className="flex flex-col gap-1">
-            <Label
-              className="text-xs"
-              style={{ color: cssVarV2('text/secondary') }}
-            >
-              Name
-            </Label>
+            <Label className="text-xs text-muted-foreground">Name</Label>
             <Input
               value={flags.name}
               onChange={e =>
@@ -206,7 +192,7 @@ function WorkspacePanelContent({
           </div>
         </div>
 
-        <div className="border rounded-md">
+        <div className="rounded-xl border border-border/60 bg-card shadow-sm">
           <FlagItem
             label="Public"
             description="Allow public access to workspace pages"
@@ -253,7 +239,7 @@ function WorkspacePanelContent({
           />
         </div>
 
-        <div className="border rounded-md p-3 space-y-3">
+        <div className="space-y-3 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
           <div className="text-sm font-medium">Features</div>
           <FeatureToggleList
             features={serverConfig.availableWorkspaceFeatures ?? []}
@@ -286,15 +272,12 @@ function WorkspacePanelContent({
           />
         </div>
 
-        <div className="border rounded-md">
+        <div className="rounded-xl border border-border/60 bg-card shadow-sm">
           <div className="px-3 py-2 text-sm font-medium">Members</div>
           <Separator />
           <div className="flex flex-col divide-y">
             {memberList.length === 0 ? (
-              <div
-                className="px-3 py-3 text-xs"
-                style={{ color: cssVarV2('text/secondary') }}
-              >
+              <div className="px-3 py-3 text-xs text-muted-foreground">
                 No members.
               </div>
             ) : (
@@ -313,10 +296,7 @@ function WorkspacePanelContent({
                     <div className="text-sm font-medium truncate">
                       {member.name || member.email}
                     </div>
-                    <div
-                      className="text-xs truncate"
-                      style={{ color: cssVarV2('text/secondary') }}
-                    >
+                    <div className="truncate text-xs text-muted-foreground">
                       {member.email}
                     </div>
                   </div>
@@ -348,9 +328,7 @@ function FlagItem({
     <div className="flex items-start justify-between gap-2 p-3">
       <div className="flex flex-col">
         <div className="text-sm font-medium">{label}</div>
-        <div className="text-xs" style={{ color: cssVarV2('text/secondary') }}>
-          {description}
-        </div>
+        <div className="text-xs text-muted-foreground">{description}</div>
       </div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>
@@ -359,10 +337,8 @@ function FlagItem({
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border rounded-md p-3 flex flex-col gap-1">
-      <div className="text-xs" style={{ color: cssVarV2('text/secondary') }}>
-        {label}
-      </div>
+    <div className="flex flex-col gap-1 rounded-xl border border-border/60 bg-card p-3 shadow-sm">
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-sm font-semibold">{value}</div>
     </div>
   );
