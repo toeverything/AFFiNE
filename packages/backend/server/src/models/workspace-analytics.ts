@@ -51,6 +51,7 @@ export type AdminDashboardOptions = {
   storageHistoryDays?: number;
   syncHistoryHours?: number;
   sharedLinkWindowDays?: number;
+  includeTopSharedLinks?: boolean;
 };
 
 export type AdminAllSharedLinksOptions = {
@@ -262,6 +263,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       90,
       DEFAULT_SHARED_LINK_WINDOW_DAYS
     );
+    const includeTopSharedLinks = options.includeTopSharedLinks ?? true;
 
     const now = new Date();
 
@@ -273,6 +275,66 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const currentDay = startOfUtcDay(now);
     const storageFrom = addUtcDays(currentDay, -(storageHistoryDays - 1));
     const sharedFrom = addUtcDays(currentDay, -(sharedLinkWindowDays - 1));
+
+    const topSharedLinksPromise = includeTopSharedLinks
+      ? this.db.$queryRaw<
+          {
+            workspaceId: string;
+            docId: string;
+            title: string | null;
+            publishedAt: Date | null;
+            docUpdatedAt: Date | null;
+            workspaceOwnerId: string | null;
+            lastUpdaterId: string | null;
+            views: bigint | number;
+            uniqueViews: bigint | number;
+            guestViews: bigint | number;
+            lastAccessedAt: Date | null;
+          }[]
+        >`
+          WITH view_agg AS (
+            SELECT
+              workspace_id,
+              doc_id,
+              COALESCE(SUM(total_views), 0) AS views,
+              COALESCE(SUM(unique_views), 0) AS unique_views,
+              COALESCE(SUM(guest_views), 0) AS guest_views,
+              MAX(last_accessed_at) AS last_accessed_at
+            FROM workspace_doc_view_daily
+            WHERE date BETWEEN ${sharedFrom}::date AND ${currentDay}::date
+            GROUP BY workspace_id, doc_id
+          )
+          SELECT
+            wp.workspace_id AS "workspaceId",
+            wp.page_id AS "docId",
+            wp.title AS title,
+            wp.published_at AS "publishedAt",
+            sn.updated_at AS "docUpdatedAt",
+            owner.user_id AS "workspaceOwnerId",
+            sn.updated_by AS "lastUpdaterId",
+            COALESCE(v.views, 0) AS views,
+            COALESCE(v.unique_views, 0) AS "uniqueViews",
+            COALESCE(v.guest_views, 0) AS "guestViews",
+            v.last_accessed_at AS "lastAccessedAt"
+          FROM workspace_pages wp
+          LEFT JOIN snapshots sn
+            ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
+          LEFT JOIN view_agg v
+            ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
+          LEFT JOIN LATERAL (
+            SELECT user_id
+            FROM workspace_user_permissions
+            WHERE workspace_id = wp.workspace_id
+            AND type = ${WorkspaceRole.Owner}
+            AND status = 'Accepted'::"WorkspaceMemberStatus"
+            ORDER BY created_at ASC
+            LIMIT 1
+          ) owner ON TRUE
+          WHERE wp.public = TRUE
+          ORDER BY views DESC, "uniqueViews" DESC, "workspaceId" ASC, "docId" ASC
+          LIMIT 10
+        `
+      : Promise.resolve([]);
 
     const [
       syncCurrent,
@@ -350,63 +412,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           AND created_at >= ${sharedFrom}
           AND created_at <= ${now}
         `,
-      this.db.$queryRaw<
-        {
-          workspaceId: string;
-          docId: string;
-          title: string | null;
-          publishedAt: Date | null;
-          docUpdatedAt: Date | null;
-          workspaceOwnerId: string | null;
-          lastUpdaterId: string | null;
-          views: bigint | number;
-          uniqueViews: bigint | number;
-          guestViews: bigint | number;
-          lastAccessedAt: Date | null;
-        }[]
-      >`
-          WITH view_agg AS (
-            SELECT
-              workspace_id,
-              doc_id,
-              COALESCE(SUM(total_views), 0) AS views,
-              COALESCE(SUM(unique_views), 0) AS unique_views,
-              COALESCE(SUM(guest_views), 0) AS guest_views,
-              MAX(last_accessed_at) AS last_accessed_at
-            FROM workspace_doc_view_daily
-            WHERE date BETWEEN ${sharedFrom}::date AND ${currentDay}::date
-            GROUP BY workspace_id, doc_id
-          )
-          SELECT
-            wp.workspace_id AS "workspaceId",
-            wp.page_id AS "docId",
-            wp.title AS title,
-            wp.published_at AS "publishedAt",
-            sn.updated_at AS "docUpdatedAt",
-            owner.user_id AS "workspaceOwnerId",
-            sn.updated_by AS "lastUpdaterId",
-            COALESCE(v.views, 0) AS views,
-            COALESCE(v.unique_views, 0) AS "uniqueViews",
-            COALESCE(v.guest_views, 0) AS "guestViews",
-            v.last_accessed_at AS "lastAccessedAt"
-          FROM workspace_pages wp
-          LEFT JOIN snapshots sn
-            ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
-          LEFT JOIN view_agg v
-            ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
-          LEFT JOIN LATERAL (
-            SELECT user_id
-            FROM workspace_user_permissions
-            WHERE workspace_id = wp.workspace_id
-            AND type = ${WorkspaceRole.Owner}
-            AND status = 'Accepted'::"WorkspaceMemberStatus"
-            ORDER BY created_at ASC
-            LIMIT 1
-          ) owner ON TRUE
-          WHERE wp.public = TRUE
-          ORDER BY views DESC, "uniqueViews" DESC, "workspaceId" ASC, "docId" ASC
-          LIMIT 10
-        `,
+      topSharedLinksPromise,
     ]);
 
     const storageHistorySeries = storageHistory.map(row => ({

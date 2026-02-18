@@ -1,7 +1,12 @@
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import clsx from 'clsx';
-import type { PropsWithChildren } from 'react';
-import { createContext, useCallback, useContext, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 
 import type { ButtonProps } from '../button';
 import { Button } from '../button';
@@ -151,7 +156,7 @@ const ConfirmModalContext = createContext<ConfirmModalContextProps>({
   openConfirmModal: () => {},
   closeConfirmModal: () => {},
 });
-export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
+export const ConfirmModalProvider = ({ children }: React.PropsWithChildren) => {
   const [modalProps, setModalProps] = useState<ConfirmModalProps>({
     open: false,
   });
@@ -200,11 +205,13 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
     },
     [modalProps]
   );
+  const confirmModalContextValue = useMemo(
+    () => ({ openConfirmModal, closeConfirmModal, modalProps }),
+    [closeConfirmModal, modalProps, openConfirmModal]
+  );
 
   return (
-    <ConfirmModalContext.Provider
-      value={{ openConfirmModal, closeConfirmModal, modalProps }}
-    >
+    <ConfirmModalContext.Provider value={confirmModalContextValue}>
       {children}
       {/* TODO(@catsjuice): multi-instance support(unnecessary for now) */}
       <ConfirmModal {...modalProps} onOpenChange={onOpenChange} />

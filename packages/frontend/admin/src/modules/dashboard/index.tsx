@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@affine/admin/components/ui/select';
 import { Separator } from '@affine/admin/components/ui/separator';
+import { Skeleton } from '@affine/admin/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -38,12 +39,81 @@ import {
   RefreshCwIcon,
   UsersIcon,
 } from 'lucide-react';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, Suspense, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Area, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
+import { useMutateQueryResource } from '../../use-mutation';
 import { Header } from '../header';
 import { formatBytes } from '../workspaces/utils';
+
+const adminDashboardOverviewQuery: typeof adminDashboardQuery = {
+  ...adminDashboardQuery,
+  query: `query adminDashboard($input: AdminDashboardInput) {
+  adminDashboard(input: $input) {
+    syncActiveUsers
+    syncActiveUsersTimeline {
+      minute
+      activeUsers
+    }
+    syncWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    copilotConversations
+    workspaceStorageBytes
+    blobStorageBytes
+    workspaceStorageHistory {
+      date
+      value
+    }
+    blobStorageHistory {
+      date
+      value
+    }
+    storageWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    generatedAt
+  }
+}`,
+};
+
+const adminDashboardTopSharedLinksQuery: typeof adminDashboardQuery = {
+  ...adminDashboardQuery,
+  query: `query adminDashboard($input: AdminDashboardInput) {
+  adminDashboard(input: $input) {
+    topSharedLinks {
+      workspaceId
+      docId
+      title
+      shareUrl
+      publishedAt
+      views
+      uniqueViews
+      guestViews
+      lastAccessedAt
+    }
+    topSharedLinksWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+  }
+}`,
+};
 
 const intFormatter = new Intl.NumberFormat('en-US');
 const compactFormatter = new Intl.NumberFormat('en-US', {
@@ -140,13 +210,13 @@ function TrendChart({
   const config: ChartConfig = {
     primary: {
       label: primaryLabel,
-      color: 'hsl(var(--primary))',
+      color: 'var(--primary)',
     },
     ...(hasSecondary
       ? {
           secondary: {
             label: secondaryLabel,
-            color: 'hsl(var(--foreground) / 0.6)',
+            color: 'var(--muted-foreground)',
           },
         }
       : {}),
@@ -166,7 +236,7 @@ function TrendChart({
         >
           <CartesianGrid
             vertical={false}
-            stroke="hsl(var(--border) / 0.6)"
+            stroke="var(--border)"
             strokeDasharray="3 4"
           />
           <XAxis
@@ -190,7 +260,7 @@ function TrendChart({
           />
           <ChartTooltip
             cursor={{
-              stroke: 'hsl(var(--border))',
+              stroke: 'var(--border)',
               strokeDasharray: '4 4',
               strokeWidth: 1,
             }}
@@ -244,7 +314,7 @@ function TrendChart({
         </LineChart>
       </ChartContainer>
 
-      <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
+      <div className="flex justify-between text-xxs text-muted-foreground tabular-nums">
         <span>{points[0]?.label}</span>
         <span>{points[points.length - 1]?.label}</span>
       </div>
@@ -260,14 +330,14 @@ function PrimaryMetricCard({
   description: string;
 }) {
   return (
-    <Card className="lg:col-span-5 border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
+    <Card className="h-full border-border/60 bg-card shadow-1">
       <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-2 text-foreground/75">
+        <CardDescription className="flex items-center gap-2 text-sm">
           <UsersIcon className="h-4 w-4" aria-hidden="true" />
           Current Sync Active Users
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-1.5">
         <div className="text-4xl font-bold tracking-tight tabular-nums">
           {value}
         </div>
@@ -289,9 +359,9 @@ function SecondaryMetricCard({
   icon: ReactNode;
 }) {
   return (
-    <Card className="lg:col-span-3 border-border/70 bg-card/95 shadow-sm">
+    <Card className="h-full border-border/60 bg-card shadow-1">
       <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-2">
+        <CardDescription className="flex items-center gap-2 text-sm">
           <span aria-hidden="true">{icon}</span>
           {title}
         </CardDescription>
@@ -300,7 +370,7 @@ function SecondaryMetricCard({
         <div className="text-2xl font-semibold tracking-tight tabular-nums">
           {value}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        <p className="text-xs text-muted-foreground mt-1.5">{description}</p>
       </CardContent>
     </Card>
   );
@@ -322,7 +392,7 @@ function WindowSelect({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 min-w-40">
+    <div className="flex min-w-0 flex-col gap-2">
       <Label
         htmlFor={id}
         className="text-xs uppercase tracking-wide text-muted-foreground"
@@ -348,10 +418,192 @@ function WindowSelect({
   );
 }
 
-export function DashboardPage() {
+function DashboardPageSkeleton() {
+  return (
+    <div className="h-dvh flex-1 flex-col flex overflow-hidden">
+      <Header
+        title="Dashboard"
+        endFix={
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-3 w-44" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        <Card className="border-border/60 bg-card shadow-1">
+          <CardHeader className="pb-3">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-4 w-80" />
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <Skeleton className="h-28 w-full lg:col-span-5" />
+          <Skeleton className="h-28 w-full lg:col-span-3" />
+          <Skeleton className="h-28 w-full lg:col-span-4" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <Skeleton className="h-72 w-full lg:col-span-1" />
+          <Skeleton className="h-72 w-full lg:col-span-2" />
+        </div>
+
+        <Skeleton className="h-64 w-full" />
+      </div>
+    </div>
+  );
+}
+
+function TopSharedLinksCardSkeleton() {
+  return (
+    <Card className="border-border/60 bg-card shadow-1">
+      <CardHeader>
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="h-4 w-72" />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+        <Separator />
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TopSharedLinksSection({
+  sharedLinkWindowDays,
+}: {
+  sharedLinkWindowDays: number;
+}) {
+  const variables = useMemo(
+    () => ({
+      input: {
+        sharedLinkWindowDays,
+        timezone: 'UTC',
+      },
+    }),
+    [sharedLinkWindowDays]
+  );
+
+  const { data } = useQuery(
+    {
+      query: adminDashboardTopSharedLinksQuery,
+      variables,
+    },
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  const topSharedLinks = data.adminDashboard.topSharedLinks;
+  const topSharedLinksWindow = data.adminDashboard.topSharedLinksWindow;
+
+  return (
+    <Card className="border-border/60 bg-card shadow-1">
+      <CardHeader>
+        <CardTitle className="text-base">Top Shared Links</CardTitle>
+        <CardDescription>
+          Top {topSharedLinks.length} links in the last{' '}
+          {topSharedLinksWindow.effectiveSize} days
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {topSharedLinks.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border/60 p-8 text-center bg-muted/15">
+            <div className="text-sm font-medium">
+              No shared links in this window
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              Publish pages and collect traffic, then this table will rank links
+              by views.
+            </div>
+            <Button asChild variant="outline" size="sm" className="mt-4">
+              <Link to={ROUTES.admin.workspaces}>Go to Workspaces</Link>
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Document</TableHead>
+                <TableHead>Workspace</TableHead>
+                <TableHead className="text-right">Views</TableHead>
+                <TableHead className="text-right">Unique</TableHead>
+                <TableHead className="text-right">Guest</TableHead>
+                <TableHead>Last Accessed</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {topSharedLinks.map(link => (
+                <TableRow
+                  key={`${link.workspaceId}-${link.docId}`}
+                  className="hover:bg-muted/40"
+                >
+                  <TableCell className="max-w-80 min-w-0">
+                    <a
+                      href={link.shareUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium underline-offset-4 hover:underline truncate block"
+                    >
+                      {link.title || link.docId}
+                    </a>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs tabular-nums">
+                    {link.workspaceId}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {compactFormatter.format(link.views)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {compactFormatter.format(link.uniqueViews)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {compactFormatter.format(link.guestViews)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {link.lastAccessedAt
+                      ? formatDateTime(link.lastAccessedAt)
+                      : '-'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+
+        <Separator />
+        <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+          <span>{formatDate(topSharedLinksWindow.from)}</span>
+          <span>{formatDate(topSharedLinksWindow.to)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DashboardPageContent() {
   const [storageHistoryDays, setStorageHistoryDays] = useState<number>(30);
   const [syncHistoryHours, setSyncHistoryHours] = useState<number>(48);
   const [sharedLinkWindowDays, setSharedLinkWindowDays] = useState<number>(28);
+  const shouldShowTopSharedLinks = !environment.isSelfHosted;
+  const revalidateQueryResource = useMutateQueryResource();
 
   const variables = useMemo(
     () => ({
@@ -365,9 +617,9 @@ export function DashboardPage() {
     [sharedLinkWindowDays, storageHistoryDays, syncHistoryHours]
   );
 
-  const { data, isValidating, mutate } = useQuery(
+  const { data, isValidating } = useQuery(
     {
-      query: adminDashboardQuery,
+      query: adminDashboardOverviewQuery,
       variables,
     },
     {
@@ -409,7 +661,7 @@ export function DashboardPage() {
     dashboard.workspaceStorageBytes + dashboard.blobStorageBytes;
 
   return (
-    <div className="h-screen flex-1 flex-col flex overflow-hidden">
+    <div className="h-dvh flex-1 flex-col flex overflow-hidden">
       <Header
         title="Dashboard"
         endFix={
@@ -421,7 +673,7 @@ export function DashboardPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                mutate().catch(() => {});
+                revalidateQueryResource(adminDashboardQuery).catch(() => {});
               }}
               disabled={isValidating}
             >
@@ -436,7 +688,7 @@ export function DashboardPage() {
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card shadow-sm">
+        <Card className="border-border/60 bg-card shadow-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Window Controls</CardTitle>
             <CardDescription>
@@ -444,7 +696,7 @@ export function DashboardPage() {
               automatically.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 grid-cols-1 md:grid-cols-3 items-end">
+          <CardContent className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-3">
             <WindowSelect
               id="storage-history-window"
               label="Storage History"
@@ -472,40 +724,46 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-5 grid-cols-1 lg:grid-cols-12">
-          <PrimaryMetricCard
-            value={intFormatter.format(dashboard.syncActiveUsers)}
-            description={`${dashboard.syncWindow.effectiveSize}h active window`}
-          />
-          <SecondaryMetricCard
-            title="Copilot Conversations"
-            value={intFormatter.format(dashboard.copilotConversations)}
-            description={`${dashboard.topSharedLinksWindow.effectiveSize}d aggregation`}
-            icon={
-              <MessageSquareTextIcon className="h-4 w-4" aria-hidden="true" />
-            }
-          />
-          <Card className="lg:col-span-4 border-border/70 bg-gradient-to-br from-card via-card to-muted/15 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
-                <DatabaseIcon className="h-4 w-4" aria-hidden="true" />
-                Managed Storage
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold tracking-tight tabular-nums">
-                {formatBytes(totalStorageBytes)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Workspace {formatBytes(dashboard.workspaceStorageBytes)} • Blob{' '}
-                {formatBytes(dashboard.blobStorageBytes)}
-              </p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <div className="h-full min-w-0 lg:col-span-5">
+            <PrimaryMetricCard
+              value={intFormatter.format(dashboard.syncActiveUsers)}
+              description={`${dashboard.syncWindow.effectiveSize}h active window`}
+            />
+          </div>
+          <div className="h-full min-w-0 lg:col-span-3">
+            <SecondaryMetricCard
+              title="Copilot Conversations"
+              value={intFormatter.format(dashboard.copilotConversations)}
+              description={`${sharedLinkWindowDays}d aggregation`}
+              icon={
+                <MessageSquareTextIcon className="h-4 w-4" aria-hidden="true" />
+              }
+            />
+          </div>
+          <div className="h-full min-w-0 lg:col-span-4">
+            <Card className="h-full border-border/60 bg-card shadow-1">
+              <CardHeader className="pb-2">
+                <CardDescription className="flex items-center gap-2 text-sm">
+                  <DatabaseIcon className="h-4 w-4" aria-hidden="true" />
+                  Managed Storage
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-semibold tracking-tight tabular-nums">
+                  {formatBytes(totalStorageBytes)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Workspace {formatBytes(dashboard.workspaceStorageBytes)} •
+                  Blob {formatBytes(dashboard.blobStorageBytes)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        <div className="grid gap-5 grid-cols-1 xl:grid-cols-3">
-          <Card className="xl:col-span-1 border-border/70 bg-card/95 shadow-sm">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <Card className="border-border/60 bg-card shadow-1 lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-base">
                 Sync Active Users Trend
@@ -524,7 +782,7 @@ export function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-2 border-border/70 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm">
+          <Card className="border-border/60 bg-card shadow-1 lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">
                 Storage Trend (Workspace + Blob)
@@ -557,88 +815,23 @@ export function DashboardPage() {
           </Card>
         </div>
 
-        <Card className="border-border/70 bg-card/95 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Top Shared Links</CardTitle>
-            <CardDescription>
-              Top {dashboard.topSharedLinks.length} links in the last{' '}
-              {dashboard.topSharedLinksWindow.effectiveSize} days
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {dashboard.topSharedLinks.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-8 text-center bg-muted/20">
-                <div className="text-sm font-medium">
-                  No shared links in this window
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">
-                  Publish pages and collect traffic, then this table will rank
-                  links by views.
-                </div>
-                <Button asChild variant="outline" size="sm" className="mt-4">
-                  <Link to={ROUTES.admin.workspaces}>Go to Workspaces</Link>
-                </Button>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Workspace</TableHead>
-                    <TableHead className="text-right">Views</TableHead>
-                    <TableHead className="text-right">Unique</TableHead>
-                    <TableHead className="text-right">Guest</TableHead>
-                    <TableHead>Last Accessed</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dashboard.topSharedLinks.map(link => (
-                    <TableRow
-                      key={`${link.workspaceId}-${link.docId}`}
-                      className="hover:bg-muted/40"
-                    >
-                      <TableCell className="max-w-80 min-w-0">
-                        <a
-                          href={link.shareUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-medium underline-offset-4 hover:underline truncate block"
-                        >
-                          {link.title || link.docId}
-                        </a>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs tabular-nums">
-                        {link.workspaceId}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {compactFormatter.format(link.views)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {compactFormatter.format(link.uniqueViews)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {compactFormatter.format(link.guestViews)}
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {link.lastAccessedAt
-                          ? formatDateTime(link.lastAccessedAt)
-                          : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            <Separator />
-            <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
-              <span>{formatDate(dashboard.topSharedLinksWindow.from)}</span>
-              <span>{formatDate(dashboard.topSharedLinksWindow.to)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {shouldShowTopSharedLinks ? (
+          <Suspense fallback={<TopSharedLinksCardSkeleton />}>
+            <TopSharedLinksSection
+              sharedLinkWindowDays={sharedLinkWindowDays}
+            />
+          </Suspense>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+export function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
   );
 }
 

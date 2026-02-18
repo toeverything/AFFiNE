@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import pkg from '../package.json' with { type: 'json' };
 
 declare global {
+  // oxlint-disable-next-line no-shadow-restricted-names
   namespace globalThis {
     // oxlint-disable-next-line no-var
     var env: Readonly<Env>;

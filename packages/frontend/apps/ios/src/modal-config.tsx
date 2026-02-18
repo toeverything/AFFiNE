@@ -2,9 +2,9 @@ import { ModalConfigContext } from '@affine/component';
 import { NavigationGestureService } from '@affine/core/mobile/modules/navigation-gesture';
 import { globalVars } from '@affine/core/mobile/styles/variables.css';
 import { useService } from '@toeverything/infra';
-import { type PropsWithChildren, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
-export const ModalConfigProvider = ({ children }: PropsWithChildren) => {
+export const ModalConfigProvider = ({ children }: React.PropsWithChildren) => {
   const navigationGesture = useService(NavigationGestureService);
 
   const onOpen = useCallback(() => {
@@ -17,11 +17,13 @@ export const ModalConfigProvider = ({ children }: PropsWithChildren) => {
     }
     return;
   }, [navigationGesture]);
+  const modalConfigValue = useMemo(
+    () => ({ onOpen, dynamicKeyboardHeight: globalVars.appKeyboardHeight }),
+    [onOpen]
+  );
 
   return (
-    <ModalConfigContext.Provider
-      value={{ onOpen, dynamicKeyboardHeight: globalVars.appKeyboardHeight }}
-    >
+    <ModalConfigContext.Provider value={modalConfigValue}>
       {children}
     </ModalConfigContext.Provider>
   );
