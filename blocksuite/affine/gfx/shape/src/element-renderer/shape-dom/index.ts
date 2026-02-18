@@ -100,7 +100,6 @@ const cssGradientDirectionMap: Record<
 };
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const textDebugCache = new Map<string, string>();
 
 const getFlipTransform = (
   model: ShapeElementModel,
@@ -756,58 +755,6 @@ export const shapeDomRenderer = (
 
   // Replace existing children to avoid memory leaks
   element.replaceChildren(...newChildren);
-
-  if (model.shapeType === ShapeType.MindmapBranch) {
-    const signature = JSON.stringify({
-      id: model.id,
-      text: model.text?.toString() ?? '',
-      textDisplay: model.textDisplay,
-      xywh: model.xywh,
-      fontSize: model.fontSize,
-      padding: model.padding,
-      textAlign: model.textAlign,
-      textVerticalAlign: model.textVerticalAlign,
-    });
-    const previous = textDebugCache.get(model.id);
-    if (previous !== signature) {
-      textDebugCache.set(model.id, signature);
-      requestAnimationFrame(() => {
-        const textEl = element.querySelector(
-          '[data-role="shape-text"]'
-        ) as HTMLElement | null;
-        const rect = element.getBoundingClientRect();
-        const textRect = textEl?.getBoundingClientRect() ?? null;
-        const computed = textEl ? getComputedStyle(textEl) : null;
-        console.debug('[shape-text-dom-debug]', {
-          id: model.id,
-          shapeType: model.shapeType,
-          text: model.text?.toString() ?? '',
-          textDisplay: model.textDisplay,
-          elementRect: rect,
-          textRect,
-          elementStyles: {
-            position: element.style.position,
-            overflow: element.style.overflow,
-            zIndex: element.style.zIndex,
-            opacity: element.style.opacity,
-          },
-          textStyles: computed
-            ? {
-                display: computed.display,
-                visibility: computed.visibility,
-                opacity: computed.opacity,
-                color: computed.color,
-                fontSize: computed.fontSize,
-                lineHeight: computed.lineHeight,
-                transform: computed.transform,
-                zIndex: computed.zIndex,
-              }
-            : null,
-          childCount: element.childElementCount,
-        });
-      });
-    }
-  }
 
   applyTransformStyles(model, element);
 

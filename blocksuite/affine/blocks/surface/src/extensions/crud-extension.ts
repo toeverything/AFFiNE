@@ -230,7 +230,10 @@ function syncShapeStyleProps(
   if (!key.startsWith('shape:')) return;
   const styleProps = pickShapeStyleProps(props);
   if (Object.keys(styleProps).length === 0) return;
-  SHAPE_STYLE_SYNC_KEYS.forEach(shapeKey => {
-    propsStore.recordLastProps(shapeKey as never, styleProps);
-  });
+  propsStore.recordLastPropsBatch(
+    SHAPE_STYLE_SYNC_KEYS.map(shapeKey => ({
+      key: shapeKey as never,
+      props: styleProps,
+    }))
+  );
 }

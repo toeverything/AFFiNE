@@ -614,16 +614,22 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
   private _renderColorRow(
     label: string,
-    value: string,
+    value: string | { normal: string } | { dark: string; light: string },
     onChange: (value: string) => void
   ) {
+    const resolvedValue =
+      typeof value === 'string'
+        ? value
+        : 'normal' in value
+          ? value.normal
+          : value.light;
     return html`
       <div class="property-row">
         <label class="property-label">${label}</label>
         <div class="color-input-wrapper">
           <div
             class="color-preview"
-            style="background-color: ${value}"
+            style="background-color: ${resolvedValue}"
             @click=${(e: Event) => {
               const input = (e.target as HTMLElement)
                 .nextElementSibling as HTMLInputElement;
@@ -633,7 +639,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
           <input
             type="color"
             class="property-input"
-            .value=${value}
+            .value=${resolvedValue}
             @input=${(e: Event) => {
               const target = e.target as HTMLInputElement;
               onChange(target.value);
@@ -671,7 +677,12 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
   }
 
   private _renderAutoProperties(model: GfxModel, ignoreKeys: Set<string>) {
-    const rawProps = model.yMap?.toJSON?.() ?? {};
+    const rawProps =
+      'yMap' in model
+        ? ((
+            model as { yMap?: { toJSON?: () => Record<string, unknown> } }
+          ).yMap?.toJSON?.() ?? {})
+        : {};
     const entries = Object.entries(rawProps).filter(
       ([key]) => !ignoreKeys.has(key)
     );
@@ -1421,7 +1432,14 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
       this._didLogProps = true;
       console.info('[properties-modal] settable props', {
         model: this.model,
-        yMap: this.model.yMap?.toJSON?.(),
+        yMap:
+          'yMap' in this.model
+            ? (
+                this.model as {
+                  yMap?: { toJSON?: () => Record<string, unknown> };
+                }
+              ).yMap?.toJSON?.()
+            : undefined,
       });
     }
 

@@ -133,13 +133,6 @@ export class ShapeElementView extends GfxElementModelView<ShapeElementModel> {
 
     const handlePointerDown = (evt: PointerEventState) => {
       if (!isOnElementBound(evt)) return;
-      console.debug('[collapse] button pointerdown', {
-        id: this.model.id,
-        shapeType: this.model.shapeType,
-        collapsed: this.model.collapsed,
-        x: evt.x,
-        y: evt.y,
-      });
       evt.raw.preventDefault();
       evt.raw.stopPropagation();
       this._toggleCollapse();
