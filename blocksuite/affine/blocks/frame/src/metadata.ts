@@ -371,24 +371,44 @@ export async function exportFramePng(
   renderStd?: BlockStdScope,
   options?: { caption?: string }
 ) {
-  const std = renderStd ?? ctx.std;
-  const frameManager = std.getOptional(EdgelessFrameManagerIdentifier);
-  const renderFrame = resolveFrameInStd(std, frame) ?? frame;
-  if (!frameManager || !renderFrame) {
+  const payload = await buildFramePngPayload(
+    ctx.std,
+    frame,
+    renderStd,
+    options,
+    message => toast(ctx.host, message)
+  );
+  if (!payload) {
     toast(ctx.host, 'Failed to export frame image.');
     return;
   }
+  downloadBlob(payload.blob, payload.fileName);
+  toast(ctx.host, 'Frame PNG exported.');
+}
+
+export async function buildFramePngPayload(
+  std: BlockStdScope,
+  frame: FrameBlockModel,
+  renderStd?: BlockStdScope,
+  options?: { caption?: string },
+  onError?: (message: string) => void
+) {
+  const activeStd = renderStd ?? std;
+  const frameManager = activeStd.getOptional(EdgelessFrameManagerIdentifier);
+  const renderFrame = resolveFrameInStd(activeStd, frame) ?? frame;
+  if (!frameManager || !renderFrame) {
+    return null;
+  }
   const elements = getFrameElements(frameManager, renderFrame);
   const { payload } = await buildMetadataPayload(
-    std,
+    activeStd,
     renderFrame,
     elements,
-    message => toast(ctx.host, message)
+    onError
   );
-  const canvas = await renderFrameToCanvas(std, renderFrame, elements);
+  const canvas = await renderFrameToCanvas(activeStd, renderFrame, elements);
   if (!canvas) {
-    toast(ctx.host, 'Failed to export frame image.');
-    return;
+    return null;
   }
 
   const exportCanvas = cropExportCanvas(
@@ -400,8 +420,7 @@ export async function exportFramePng(
     exportCanvas.toBlob(resolve, 'image/png')
   );
   if (!blob) {
-    toast(ctx.host, 'Failed to export frame image.');
-    return;
+    return null;
   }
 
   const enriched = embedPngMetadata(
@@ -410,8 +429,10 @@ export async function exportFramePng(
     JSON.stringify(payload)
   );
   const fileName = buildFrameFileName(renderFrame, 'png', options?.caption);
-  downloadBlob(new Blob([enriched], { type: 'image/png' }), fileName);
-  toast(ctx.host, 'Frame PNG exported.');
+  return {
+    blob: new Blob([enriched], { type: 'image/png' }),
+    fileName,
+  };
 }
 
 async function parseFrameMetadataFromPng(file: File) {
@@ -474,7 +495,9 @@ export async function importFramePng(
 }
 
 async function applyFrameMetadata(
-  ctx: Pick<ToolbarContext, 'std' | 'store' | 'host'>,
+  ctx: Pick<ToolbarContext, 'std' | 'store'> & {
+    host?: ToolbarContext['host'];
+  },
   frame: FrameBlockModel,
   metadata: FrameMetadataPayload,
   replaceContents: boolean
@@ -573,32 +596,54 @@ export async function createFrameFromMetadata(
   const width = sourceFrameBound?.w ?? 600;
   const height = sourceFrameBound?.h ?? 400;
   const center = options?.center ?? gfx.viewport.center;
-  const bound =
-    options?.bound ??
-    new Bound(center.x - width / 2, center.y - height / 2, width, height);
+  const initialBound = options?.bound
+    ? options.bound
+    : new Bound(center.x - width / 2, center.y - height / 2, width, height);
 
-  const placedBound = findNonOverlappingBound(frameManager, bound);
+  const placedBound = findNonOverlappingBound(
+    frameManager,
+    initialBound,
+    gfx.elementsBound
+  );
 
   const frame = frameManager.createFrameOnBound(placedBound);
-  await applyFrameMetadata(
-    { std, store: std.store, host: std.host },
-    frame,
-    metadata,
-    true
-  );
+  await applyFrameMetadata({ std, store: std.store }, frame, metadata, true);
   return frame;
 }
 
 function findNonOverlappingBound(
   frameManager: EdgelessFrameManager,
-  bound: Bound
+  bound: Bound,
+  existingBound?: Bound
 ) {
+  const gap = 80;
   const frames = frameManager.frames.map(frame =>
     Bound.deserialize(frame.xywh)
   );
-  if (frames.length === 0) return bound;
+  if (frames.length === 0) {
+    if (existingBound) {
+      return new Bound(
+        existingBound.x + existingBound.w + gap,
+        existingBound.y,
+        bound.w,
+        bound.h
+      );
+    }
+    return bound;
+  }
+  const minY = Math.min(...frames.map(frame => frame.y));
+  const maxRight = Math.max(...frames.map(frame => frame.x + frame.w));
+  const fallbackBase = existingBound ?? new Bound(maxRight, minY, 0, 0);
+  const fallback = new Bound(
+    fallbackBase.x + fallbackBase.w + gap,
+    fallbackBase.y,
+    bound.w,
+    bound.h
+  );
+  if (!frames.some(frame => frame.isOverlapWithBound(fallback))) {
+    return fallback;
+  }
 
-  const gap = 80;
   const maxAttempts = 200;
   const start = new Bound(bound.x, bound.y, bound.w, bound.h);
   let candidate = start;
