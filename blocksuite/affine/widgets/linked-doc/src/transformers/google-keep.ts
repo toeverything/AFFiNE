@@ -280,26 +280,12 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Checks whether text appears to already contain HTML tags.
- *
- * @param text - Candidate text.
- * @returns `true` when HTML-like tags are detected.
- */
-function looksLikeHtml(text: string): boolean {
-  return /<[^>]+>/.test(text);
-}
-
-/**
  * Converts plain text to paragraph HTML while preserving line breaks.
- * Existing HTML is passed through unchanged.
  *
  * @param text - Note body content.
  * @returns HTML fragment for import.
  */
 function renderTextContent(text: string): string {
-  if (looksLikeHtml(text)) {
-    return text;
-  }
   return `<p>${escapeHtml(text).replaceAll('\n', '<br/>')}</p>`;
 }
 
@@ -340,10 +326,9 @@ function resolveAttachmentBlob(
 ): Blob | undefined {
   const normalizedFilePath = normalizePath(filePath);
   const baseDir = dirname(notePath);
-  const candidates = [
-    normalizedFilePath,
-    baseDir ? `${baseDir}/${normalizedFilePath}` : normalizedFilePath,
-  ];
+  const candidates = baseDir
+    ? [normalizedFilePath, `${baseDir}/${normalizedFilePath}`]
+    : [normalizedFilePath];
   for (const path of candidates) {
     const blob = files.get(path);
     if (blob) {
@@ -934,12 +919,6 @@ async function importGoogleKeepZip({
         extensions,
       });
       if (docId) {
-        await appendAttachmentBlocksToDoc({
-          collection,
-          docId,
-          attachments,
-        });
-
         const tags =
           onResolveTags && tagNames.length
             ? (await onResolveTags(tagNames)).filter(Boolean)
@@ -956,6 +935,22 @@ async function importGoogleKeepZip({
         if (meta.favorite && onFavoriteImported) {
           await onFavoriteImported(docId);
         }
+
+        try {
+          await appendAttachmentBlocksToDoc({
+            collection,
+            docId,
+            attachments,
+          });
+        } catch (error) {
+          console.error(
+            '[GoogleKeepTransformer] Failed to append attachments:',
+            notePath,
+            docId,
+            error
+          );
+        }
+
         docIds.push(docId);
         importedDocs += 1;
         onProgress?.({ totalDocs: notesToImport.length, importedDocs });
