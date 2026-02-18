@@ -222,7 +222,7 @@
         },
         "SMTP.sender": {
           "type": "string",
-          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")\n@default \"AFFiNE Self Hosted <noreply@example.com>\"\n@environment `MAILER_SENDER`",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")\n@default \"AFFiNE Self Hosted <noreply@example.com>\"\n@environment `MAILER_SENDER`",
           "default": "AFFiNE Self Hosted <noreply@example.com>"
         },
         "SMTP.ignoreTLS": {
@@ -262,7 +262,7 @@
         },
         "fallbackSMTP.sender": {
           "type": "string",
-          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")\n@default \"\"",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")\n@default \"\"",
           "default": ""
         },
         "fallbackSMTP.ignoreTLS": {

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
+  Info,
   InputType,
   Int,
   Mutation,
@@ -14,6 +15,12 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import {
+  type FragmentDefinitionNode,
+  type GraphQLResolveInfo,
+  Kind,
+  type SelectionNode,
+} from 'graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import { PaginationInput, URLHelper } from '../../../base';
@@ -52,6 +59,44 @@ enum AdminSharedLinksOrder {
 registerEnumType(AdminSharedLinksOrder, {
   name: 'AdminSharedLinksOrder',
 });
+
+function hasSelectedField(
+  selections: readonly SelectionNode[],
+  fieldName: string,
+  fragments: Record<string, FragmentDefinitionNode>
+): boolean {
+  for (const selection of selections) {
+    if (selection.kind === Kind.FIELD) {
+      if (selection.name.value === fieldName) {
+        return true;
+      }
+      continue;
+    }
+
+    if (selection.kind === Kind.INLINE_FRAGMENT) {
+      if (
+        hasSelectedField(
+          selection.selectionSet.selections,
+          fieldName,
+          fragments
+        )
+      ) {
+        return true;
+      }
+      continue;
+    }
+
+    const fragment = fragments[selection.name.value];
+    if (
+      fragment &&
+      hasSelectedField(fragment.selectionSet.selections, fieldName, fragments)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 @InputType()
 class ListWorkspaceInput {
@@ -471,22 +516,40 @@ export class AdminWorkspaceResolver {
   })
   async adminDashboard(
     @Args('input', { nullable: true, type: () => AdminDashboardInput })
-    input?: AdminDashboardInput
+    input?: AdminDashboardInput,
+    @Info() info?: GraphQLResolveInfo
   ) {
     this.assertCloudOnly();
+    const includeTopSharedLinks = Boolean(
+      info?.fieldNodes.some(
+        node =>
+          node.selectionSet &&
+          hasSelectedField(
+            node.selectionSet.selections,
+            'topSharedLinks',
+            info.fragments
+          )
+      )
+    );
+
     const dashboard = await this.models.workspaceAnalytics.adminGetDashboard({
       timezone: input?.timezone,
       storageHistoryDays: input?.storageHistoryDays,
       syncHistoryHours: input?.syncHistoryHours,
       sharedLinkWindowDays: input?.sharedLinkWindowDays,
+      includeTopSharedLinks,
     });
 
     return {
       ...dashboard,
-      topSharedLinks: dashboard.topSharedLinks.map(link => ({
-        ...link,
-        shareUrl: this.url.link(`/workspace/${link.workspaceId}/${link.docId}`),
-      })),
+      topSharedLinks: includeTopSharedLinks
+        ? dashboard.topSharedLinks.map(link => ({
+            ...link,
+            shareUrl: this.url.link(
+              `/workspace/${link.workspaceId}/${link.docId}`
+            ),
+          }))
+        : [],
     };
   }
 

@@ -1,5 +1,5 @@
 import { cn } from '@affine/admin/utils';
-import * as React from 'react';
+import { createContext, forwardRef, useContext, useId, useMemo } from 'react';
 import type { TooltipProps } from 'recharts';
 import { ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
@@ -18,10 +18,10 @@ type ChartContextValue = {
   config: ChartConfig;
 };
 
-const ChartContext = React.createContext<ChartContextValue | null>(null);
+const ChartContext = createContext<ChartContextValue | null>(null);
 
 function useChart() {
-  const value = React.useContext(ChartContext);
+  const value = useContext(ChartContext);
   if (!value) {
     throw new Error('useChart must be used within <ChartContainer />');
   }
@@ -75,13 +75,14 @@ type ChartContainerProps = React.ComponentProps<'div'> & {
   children: React.ComponentProps<typeof ResponsiveContainer>['children'];
 };
 
-const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
+const ChartContainer = forwardRef<HTMLDivElement, ChartContainerProps>(
   ({ id, className, children, config, ...props }, ref) => {
-    const uniqueId = React.useId();
+    const uniqueId = useId();
     const chartId = `chart-${id ?? uniqueId.replace(/:/g, '')}`;
+    const chartContextValue = useMemo(() => ({ config }), [config]);
 
     return (
-      <ChartContext.Provider value={{ config }}>
+      <ChartContext.Provider value={chartContextValue}>
         <div
           ref={ref}
           data-chart={chartId}
@@ -113,61 +114,60 @@ type TooltipContentProps = {
   valueFormatter?: (value: number, key: string) => React.ReactNode;
 };
 
-const ChartTooltipContent = React.forwardRef<
-  HTMLDivElement,
-  TooltipContentProps
->(({ active, payload, label, labelFormatter, valueFormatter }, ref) => {
-  const { config } = useChart();
+const ChartTooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
+  ({ active, payload, label, labelFormatter, valueFormatter }, ref) => {
+    const { config } = useChart();
 
-  if (!active || !payload?.length) {
-    return null;
-  }
+    if (!active || !payload?.length) {
+      return null;
+    }
 
-  const title = labelFormatter ? labelFormatter(label ?? '', payload) : label;
+    const title = labelFormatter ? labelFormatter(label ?? '', payload) : label;
 
-  return (
-    <div
-      ref={ref}
-      className="min-w-44 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
-    >
-      {title ? (
-        <div className="mb-2 font-medium text-foreground/90">{title}</div>
-      ) : null}
-      <div className="space-y-1">
-        {payload.map((item, index) => {
-          const dataKey = String(item.dataKey ?? item.name ?? index);
-          const itemConfig = config[dataKey];
-          const labelText = itemConfig?.label ?? item.name ?? dataKey;
-          const numericValue =
-            typeof item.value === 'number'
-              ? item.value
-              : Number(item.value ?? 0);
-          const valueText = valueFormatter
-            ? valueFormatter(numericValue, dataKey)
-            : numericValue;
-          const color = item.color ?? `var(--color-${dataKey})`;
+    return (
+      <div
+        ref={ref}
+        className="min-w-44 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
+      >
+        {title ? (
+          <div className="mb-2 font-medium text-foreground/90">{title}</div>
+        ) : null}
+        <div className="space-y-1">
+          {payload.map((item, index) => {
+            const dataKey = String(item.dataKey ?? item.name ?? index);
+            const itemConfig = config[dataKey];
+            const labelText = itemConfig?.label ?? item.name ?? dataKey;
+            const numericValue =
+              typeof item.value === 'number'
+                ? item.value
+                : Number(item.value ?? 0);
+            const valueText = valueFormatter
+              ? valueFormatter(numericValue, dataKey)
+              : numericValue;
+            const color = item.color ?? `var(--color-${dataKey})`;
 
-          return (
-            <div
-              key={`${dataKey}-${index}`}
-              className="flex items-center gap-2"
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: color }}
-                aria-hidden="true"
-              />
-              <span className="text-muted-foreground">{labelText}</span>
-              <span className="ml-auto font-medium tabular-nums">
-                {valueText}
-              </span>
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={`${dataKey}-${index}`}
+                className="flex items-center gap-2"
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: color }}
+                  aria-hidden="true"
+                />
+                <span className="text-muted-foreground">{labelText}</span>
+                <span className="ml-auto font-medium tabular-nums">
+                  {valueText}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 ChartTooltipContent.displayName = 'ChartTooltipContent';
 
 export { ChartContainer, ChartTooltip, ChartTooltipContent };

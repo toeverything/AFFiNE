@@ -215,6 +215,7 @@ __metadata:
     "@radix-ui/react-tooltip": "npm:^1.1.5"
     "@sentry/react": "npm:^9.47.1"
     "@tanstack/react-table": "npm:^8.20.5"
+    "@testing-library/react": "npm:^16.3.2"
     "@toeverything/infra": "workspace:*"
     "@toeverything/theme": "npm:^1.1.23"
     "@types/lodash-es": "npm:^4.17.12"
@@ -241,6 +242,7 @@ __metadata:
     tailwindcss: "npm:^4.1.17"
     tailwindcss-animate: "npm:^1.0.7"
     vaul: "npm:^1.1.2"
+    vitest: "npm:^3.2.4"
     zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
@@ -16555,9 +16557,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@testing-library/react@npm:^16.1.0":
-  version: 16.3.0
-  resolution: "@testing-library/react@npm:16.3.0"
+"@testing-library/react@npm:^16.1.0, @testing-library/react@npm:^16.3.2":
+  version: 16.3.2
+  resolution: "@testing-library/react@npm:16.3.2"
   dependencies:
     "@babel/runtime": "npm:^7.12.5"
   peerDependencies:
@@ -16571,7 +16573,7 @@ __metadata:
       optional: true
     "@types/react-dom":
       optional: true
-  checksum: 10/0ee9e31dd0d2396a924682d0e61a4ecc6bfab8eaff23dbf8a72c3c2ce22c116fa578148baeb4de75b968ef99d22e6e6aa0a00dba40286f71184918bb6bb5b06a
+  checksum: 10/0ca88c6f672d00c2afd1bdedeff9b5382dd8157038efeb9762dc016731030075624be7106b92d2b5e5c52812faea85263e69272c14b6f8700eb48a4a8af6feef
   languageName: node
   linkType: hard
 

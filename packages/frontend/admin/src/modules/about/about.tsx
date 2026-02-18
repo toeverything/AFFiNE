@@ -74,7 +74,7 @@ export function AboutAFFiNE() {
           ))}
         </div>
       </div>
-      <div className="space-y-3 text-sm font-normal text-gray-500">
+      <div className="space-y-3 text-sm font-normal text-muted-foreground">
         <div>{`App Version: ${appName} ${BUILD_CONFIG.appVersion}`}</div>
         <div>{`Editor Version: ${BUILD_CONFIG.editorVersion}`}</div>
       </div>

@@ -168,13 +168,14 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-accent"
+            size="icon"
           >
             <MoreHorizontalIcon fontSize={20} />
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[214px] p-[5px] gap-2">
+        <DropdownMenuContent align="end" className="w-[214px] p-1.5">
           <DropdownMenuItem
             onSelect={handleEdit}
             className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
@@ -201,7 +202,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
           <DropdownMenuSeparator />
           {!user.disabled && (
             <DropdownMenuItem
-              className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
+              className="cursor-pointer gap-2 px-2 py-[6px] text-sm font-normal text-destructive focus:text-destructive"
               onSelect={openDisableDialog}
             >
               <AccountBanIcon fontSize={20} />
@@ -209,7 +210,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
+            className="cursor-pointer gap-2 px-2 py-[6px] text-sm font-normal text-destructive focus:text-destructive"
             onSelect={openDeleteDialog}
           >
             <DeleteIcon fontSize={20} />
