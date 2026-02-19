@@ -1,6 +1,7 @@
 import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
-import { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import type { FeatureType } from '@affine/graphql';
+import { AdminWorkspaceSort } from '@affine/graphql';
 import type { Table } from '@tanstack/react-table';
 import {
   type ChangeEvent,

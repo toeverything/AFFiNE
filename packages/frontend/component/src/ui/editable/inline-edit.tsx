@@ -93,14 +93,14 @@ export const InlineEdit = ({
   const [editingValue, setEditingValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useImperativeHandle<InlineEditHandle, InlineEditHandle>(handleRef, () => ({
-    triggerEdit,
-  }));
-
   const triggerEdit = useCallback(() => {
     if (!editable) return;
     setEditing(true);
   }, [editable]);
+
+  useImperativeHandle<InlineEditHandle, InlineEditHandle>(handleRef, () => ({
+    triggerEdit,
+  }));
 
   const onDoubleClick = useCallback(() => {
     if (trigger !== 'doubleClick') return;

@@ -4,7 +4,11 @@ import { AiPrompt } from '@prisma/client';
 import Mustache from 'mustache';
 
 import { getTokenEncoder } from '../../../native';
-import { PromptConfig, PromptMessage, PromptParams } from '../providers';
+import type {
+  PromptConfig,
+  PromptMessage,
+  PromptParams,
+} from '../providers/types';
 
 // disable escaping
 Mustache.escape = (text: string) => text;

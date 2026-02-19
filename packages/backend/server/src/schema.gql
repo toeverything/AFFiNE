@@ -30,6 +30,85 @@ input AddContextFileInput {
   contextId: String!
 }
 
+type AdminAllSharedLink {
+  docId: String!
+  docUpdatedAt: DateTime
+  guestViews: SafeInt
+  lastAccessedAt: DateTime
+  lastUpdaterId: String
+  publishedAt: DateTime
+  shareUrl: String!
+  title: String
+  uniqueViews: SafeInt
+  views: SafeInt
+  workspaceId: String!
+  workspaceOwnerId: String
+}
+
+type AdminAllSharedLinkEdge {
+  cursor: String!
+  node: AdminAllSharedLink!
+}
+
+input AdminAllSharedLinksFilterInput {
+  analyticsWindowDays: Int = 28
+  includeTotal: Boolean = false
+  keyword: String
+  orderBy: AdminSharedLinksOrder = UpdatedAtDesc
+  updatedAfter: DateTime
+  workspaceId: String
+}
+
+type AdminDashboard {
+  blobStorageBytes: SafeInt!
+  blobStorageHistory: [AdminDashboardValueDayPoint!]!
+  copilotConversations: SafeInt!
+  generatedAt: DateTime!
+  storageWindow: TimeWindow!
+  syncActiveUsers: Int!
+  syncActiveUsersTimeline: [AdminDashboardMinutePoint!]!
+  syncWindow: TimeWindow!
+  topSharedLinks: [AdminSharedLinkTopItem!]!
+  topSharedLinksWindow: TimeWindow!
+  workspaceStorageBytes: SafeInt!
+  workspaceStorageHistory: [AdminDashboardValueDayPoint!]!
+}
+
+input AdminDashboardInput {
+  sharedLinkWindowDays: Int = 28
+  storageHistoryDays: Int = 30
+  syncHistoryHours: Int = 48
+  timezone: String = "UTC"
+}
+
+type AdminDashboardMinutePoint {
+  activeUsers: Int!
+  minute: DateTime!
+}
+
+type AdminDashboardValueDayPoint {
+  date: DateTime!
+  value: SafeInt!
+}
+
+type AdminSharedLinkTopItem {
+  docId: String!
+  guestViews: SafeInt!
+  lastAccessedAt: DateTime
+  publishedAt: DateTime
+  shareUrl: String!
+  title: String
+  uniqueViews: SafeInt!
+  views: SafeInt!
+  workspaceId: String!
+}
+
+enum AdminSharedLinksOrder {
+  PublishedAtDesc
+  UpdatedAtDesc
+  ViewsDesc
+}
+
 input AdminUpdateWorkspaceInput {
   avatarKey: String
   enableAi: Boolean
@@ -720,6 +799,17 @@ type DocHistoryType {
   workspaceId: String!
 }
 
+type DocMemberLastAccess {
+  lastAccessedAt: DateTime!
+  lastDocId: String
+  user: PublicUserType!
+}
+
+type DocMemberLastAccessEdge {
+  cursor: String!
+  node: DocMemberLastAccess!
+}
+
 """Doc mode"""
 enum DocMode {
   edgeless
@@ -729,6 +819,32 @@ enum DocMode {
 type DocNotFoundDataType {
   docId: String!
   spaceId: String!
+}
+
+type DocPageAnalytics {
+  generatedAt: DateTime!
+  series: [DocPageAnalyticsPoint!]!
+  summary: DocPageAnalyticsSummary!
+  window: TimeWindow!
+}
+
+input DocPageAnalyticsInput {
+  timezone: String = "UTC"
+  windowDays: Int = 28
+}
+
+type DocPageAnalyticsPoint {
+  date: DateTime!
+  guestViews: SafeInt!
+  totalViews: SafeInt!
+  uniqueViews: SafeInt!
+}
+
+type DocPageAnalyticsSummary {
+  guestViews: SafeInt!
+  lastAccessedAt: DateTime
+  totalViews: SafeInt!
+  uniqueViews: SafeInt!
 }
 
 type DocPermissions {
@@ -763,6 +879,8 @@ enum DocRole {
 }
 
 type DocType {
+  """Doc page analytics in a time window"""
+  analytics(input: DocPageAnalyticsInput): DocPageAnalytics!
   createdAt: DateTime
 
   """Doc create user"""
@@ -773,6 +891,9 @@ type DocType {
   """paginated doc granted users list"""
   grantedUsersList(pagination: PaginationInput!): PaginatedGrantedDocUserType!
   id: String!
+
+  """Paginated last accessed members of the current doc"""
+  lastAccessedMembers(includeTotal: Boolean = false, pagination: PaginationInput!, query: String): PaginatedDocMemberLastAccess!
 
   """Doc last updated user"""
   lastUpdatedBy: PublicUserType
@@ -1677,6 +1798,13 @@ type PageInfo {
   startCursor: String
 }
 
+type PaginatedAdminAllSharedLink {
+  analyticsWindow: TimeWindow!
+  edges: [AdminAllSharedLinkEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
 type PaginatedCommentChangeObjectType {
   edges: [CommentChangeObjectTypeEdge!]!
   pageInfo: PageInfo!
@@ -1699,6 +1827,12 @@ type PaginatedCopilotWorkspaceFileType {
   edges: [CopilotWorkspaceFileTypeEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+type PaginatedDocMemberLastAccess {
+  edges: [DocMemberLastAccessEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
 }
 
 type PaginatedDocType {
@@ -1762,6 +1896,12 @@ type PublicUserType {
 }
 
 type Query {
+  """List all shared links across workspaces for admin panel"""
+  adminAllSharedLinks(filter: AdminAllSharedLinksFilterInput, pagination: PaginationInput!): PaginatedAdminAllSharedLink!
+
+  """Get aggregated dashboard metrics for admin panel"""
+  adminDashboard(input: AdminDashboardInput): AdminDashboard!
+
   """Get workspace detail for admin"""
   adminWorkspace(id: String!): AdminWorkspace
 
@@ -2205,6 +2345,20 @@ type SubscriptionType {
 enum SubscriptionVariant {
   EA
   Onetime
+}
+
+enum TimeBucket {
+  Day
+  Minute
+}
+
+type TimeWindow {
+  bucket: TimeBucket!
+  effectiveSize: Int!
+  from: DateTime!
+  requestedSize: Int!
+  timezone: String!
+  to: DateTime!
 }
 
 type TranscriptionItemType {

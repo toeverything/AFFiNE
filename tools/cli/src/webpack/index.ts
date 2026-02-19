@@ -18,7 +18,6 @@ import {
   type CreateHTMLPluginConfig,
   createHTMLPlugins,
 } from './html-plugin.js';
-import { WebpackS3Plugin } from './s3-plugin.js';
 
 const require = createRequire(import.meta.url);
 const cssnano = require('cssnano');
@@ -279,10 +278,6 @@ export function createHTMLTargetConfig(
             },
           ],
         }),
-      !buildConfig.debug &&
-        (buildConfig.isWeb || buildConfig.isMobileWeb || buildConfig.isAdmin) &&
-        process.env.R2_SECRET_ACCESS_KEY &&
-        new WebpackS3Plugin(),
       !buildConfig.debug &&
         process.env.PERFSEE_TOKEN &&
         new PerfseePlugin({ project: 'affine-toeverything' }),

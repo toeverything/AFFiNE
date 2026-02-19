@@ -18,6 +18,10 @@ export const ViewRoot = ({
   routes: RouteObject[];
 }) => {
   const viewRouter = useMemo(() => createMemoryRouter(routes), [routes]);
+  const routeContextValue = useMemo(
+    () => ({ outlet: null, matches: [], isDataRoute: false }),
+    []
+  );
 
   const location = useLiveData(view.location$);
 
@@ -31,13 +35,7 @@ export const ViewRoot = ({
   return (
     <FrameworkScope scope={view.scope}>
       <UNSAFE_LocationContext.Provider value={null as any}>
-        <UNSAFE_RouteContext.Provider
-          value={{
-            outlet: null,
-            matches: [],
-            isDataRoute: false,
-          }}
-        >
+        <UNSAFE_RouteContext.Provider value={routeContextValue}>
           <RouterProvider router={viewRouter} />
         </UNSAFE_RouteContext.Provider>
       </UNSAFE_LocationContext.Provider>

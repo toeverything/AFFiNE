@@ -29,6 +29,36 @@ const SHOULD_MANUAL_REDIRECT =
   BUILD_CONFIG.isAndroid || BUILD_CONFIG.isIOS || BUILD_CONFIG.isElectron;
 const UPLOAD_REQUEST_TIMEOUT = 0;
 
+function toStrictArrayBuffer(
+  data: ArrayBuffer | ArrayBufferLike | ArrayBufferView
+): ArrayBuffer {
+  if (data instanceof ArrayBuffer) {
+    return data;
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    if (data.buffer instanceof ArrayBuffer) {
+      if (data.byteOffset === 0 && data.byteLength === data.buffer.byteLength) {
+        return data.buffer;
+      }
+      return data.buffer.slice(
+        data.byteOffset,
+        data.byteOffset + data.byteLength
+      );
+    }
+
+    const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    return copy.buffer;
+  }
+
+  const bytes = new Uint8Array(data);
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 export class CloudBlobStorage extends BlobStorageBase {
   static readonly identifier = 'CloudBlobStorage';
   override readonly isReadonly = false;
@@ -127,8 +157,11 @@ export class CloudBlobStorage extends BlobStorageBase {
 
       if (upload.method === BlobUploadMethod.PRESIGNED) {
         try {
+          if (!upload.uploadUrl) {
+            throw new Error('Missing upload URL for presigned upload.');
+          }
           await this.uploadViaPresigned(
-            upload.uploadUrl!,
+            upload.uploadUrl,
             upload.headers,
             blob.data,
             signal
@@ -143,15 +176,20 @@ export class CloudBlobStorage extends BlobStorageBase {
 
       if (upload.method === BlobUploadMethod.MULTIPART) {
         try {
+          if (!upload.uploadId || !upload.partSize) {
+            throw new Error(
+              'Missing upload ID or part size for multipart upload.'
+            );
+          }
           const parts = await this.uploadViaMultipart(
             blob.key,
-            upload.uploadId!,
-            upload.partSize!,
+            upload.uploadId,
+            upload.partSize,
             blob.data,
             upload.uploadedParts,
             signal
           );
-          await this.completeUpload(blob.key, upload.uploadId!, parts, signal);
+          await this.completeUpload(blob.key, upload.uploadId, parts, signal);
           return;
         } catch {
           if (upload.uploadId) {
@@ -216,7 +254,9 @@ export class CloudBlobStorage extends BlobStorageBase {
       query: setBlobMutation,
       variables: {
         workspaceId: this.options.id,
-        blob: new File([blob.data], blob.key, { type: blob.mime }),
+        blob: new File([toStrictArrayBuffer(blob.data)], blob.key, {
+          type: blob.mime,
+        }),
       },
       context: { signal },
       timeout: UPLOAD_REQUEST_TIMEOUT,
@@ -232,7 +272,7 @@ export class CloudBlobStorage extends BlobStorageBase {
     const res = await this.fetchWithTimeout(uploadUrl, {
       method: 'PUT',
       headers: headers ?? undefined,
-      body: data,
+      body: toStrictArrayBuffer(data),
       signal,
       timeout: UPLOAD_REQUEST_TIMEOUT,
     });
@@ -275,7 +315,7 @@ export class CloudBlobStorage extends BlobStorageBase {
         {
           method: 'PUT',
           headers: part.workspace.blobUploadPartUrl.headers ?? undefined,
-          body: chunk,
+          body: toStrictArrayBuffer(chunk),
           signal,
           timeout: UPLOAD_REQUEST_TIMEOUT,
         }

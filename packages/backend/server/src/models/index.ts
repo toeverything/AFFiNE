@@ -34,6 +34,7 @@ import { UserFeatureModel } from './user-feature';
 import { UserSettingsModel } from './user-settings';
 import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
+import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
 import { WorkspaceFeatureModel } from './workspace-feature';
 import { WorkspaceUserModel } from './workspace-user';
@@ -68,6 +69,7 @@ const MODELS = {
   calendarEvent: CalendarEventModel,
   calendarEventInstance: CalendarEventInstanceModel,
   workspaceCalendar: WorkspaceCalendarModel,
+  workspaceAnalytics: WorkspaceAnalyticsModel,
 };
 
 type ModelsType = {
@@ -144,6 +146,7 @@ export * from './user-feature';
 export * from './user-settings';
 export * from './verification-token';
 export * from './workspace';
+export * from './workspace-analytics';
 export * from './workspace-calendar';
 export * from './workspace-feature';
 export * from './workspace-user';

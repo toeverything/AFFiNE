@@ -13,8 +13,8 @@ import { DocReader, DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
-import { CopilotContextService } from '../context';
-import { PromptService } from '../prompt';
+import { CopilotContextService } from '../context/service';
+import { PromptService } from '../prompt/service';
 import {
   buildBlobContentGetter,
   buildContentGetter,

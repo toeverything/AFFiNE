@@ -31,8 +31,8 @@ export class JobExecutor implements OnModuleDestroy {
       ? difference(QUEUES, [Queue.DOC, Queue.INDEXER])
       : [];
 
-    // NOTE(@forehalo): only enable doc queue in doc service
-    if (env.flavors.doc) {
+    // Enable doc/indexer queues in both doc and front service.
+    if (env.flavors.doc || env.flavors.front) {
       queues.push(Queue.DOC);
       // NOTE(@fengmk2): Once the index task cannot be processed in time, it needs to be separated from the doc service and deployed independently.
       queues.push(Queue.INDEXER);

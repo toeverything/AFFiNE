@@ -25,31 +25,32 @@ model User {
   registered      Boolean   @default(true)
   disabled        Boolean   @default(false)
 
-  features             UserFeature[]
-  userStripeCustomer   UserStripeCustomer?
-  workspaces           WorkspaceUserRole[]
+  features                    UserFeature[]
+  userStripeCustomer          UserStripeCustomer?
+  workspaces                  WorkspaceUserRole[]
   // Invite others to join the workspace
-  WorkspaceInvitations WorkspaceUserRole[]    @relation("inviter")
-  docPermissions       WorkspaceDocUserRole[]
-  connectedAccounts    ConnectedAccount[]
-  calendarAccounts     CalendarAccount[]
-  sessions             UserSession[]
-  aiSessions           AiSession[]
-  appConfigs           AppConfig[]
-  userSnapshots        UserSnapshot[]
-  createdSnapshot      Snapshot[]             @relation("createdSnapshot")
-  updatedSnapshot      Snapshot[]             @relation("updatedSnapshot")
-  createdUpdate        Update[]               @relation("createdUpdate")
-  createdHistory       SnapshotHistory[]      @relation("createdHistory")
-  createdAiJobs        AiJobs[]               @relation("createdAiJobs")
+  WorkspaceInvitations        WorkspaceUserRole[]         @relation("inviter")
+  docPermissions              WorkspaceDocUserRole[]
+  connectedAccounts           ConnectedAccount[]
+  calendarAccounts            CalendarAccount[]
+  sessions                    UserSession[]
+  aiSessions                  AiSession[]
+  appConfigs                  AppConfig[]
+  userSnapshots               UserSnapshot[]
+  createdSnapshot             Snapshot[]                  @relation("createdSnapshot")
+  updatedSnapshot             Snapshot[]                  @relation("updatedSnapshot")
+  createdUpdate               Update[]                    @relation("createdUpdate")
+  createdHistory              SnapshotHistory[]           @relation("createdHistory")
+  createdAiJobs               AiJobs[]                    @relation("createdAiJobs")
   // receive notifications
-  notifications        Notification[]         @relation("user_notifications")
-  settings             UserSettings?
-  comments             Comment[]
-  replies              Reply[]
-  commentAttachments   CommentAttachment[]    @relation("createdCommentAttachments")
-  AccessToken          AccessToken[]
-  workspaceCalendars   WorkspaceCalendar[]
+  notifications               Notification[]              @relation("user_notifications")
+  settings                    UserSettings?
+  comments                    Comment[]
+  replies                     Reply[]
+  commentAttachments          CommentAttachment[]         @relation("createdCommentAttachments")
+  AccessToken                 AccessToken[]
+  workspaceCalendars          WorkspaceCalendar[]
+  workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
 
   @@index([email])
   @@map("users")
@@ -151,6 +152,9 @@ model Workspace {
   workspaceCalendars         WorkspaceCalendar[]
   workspaceAdminStats        WorkspaceAdminStats[]
   workspaceAdminStatsDirties WorkspaceAdminStatsDirty[]
+  workspaceAdminStatsDaily   WorkspaceAdminStatsDaily[]
+  workspaceDocViewDaily      WorkspaceDocViewDaily[]
+  workspaceMemberLastAccess  WorkspaceMemberLastAccess[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
@@ -180,6 +184,7 @@ model WorkspaceDoc {
 
   @@id([workspaceId, docId])
   @@index([workspaceId, public])
+  @@index([public, publishedAt])
   @@map("workspace_pages")
 }
 
@@ -320,6 +325,62 @@ model WorkspaceAdminStatsDirty {
   @@map("workspace_admin_stats_dirty")
 }
 
+model WorkspaceAdminStatsDaily {
+  workspaceId  String   @map("workspace_id") @db.VarChar
+  date         DateTime @db.Date
+  snapshotSize BigInt   @default(0) @map("snapshot_size") @db.BigInt
+  blobSize     BigInt   @default(0) @map("blob_size") @db.BigInt
+  memberCount  BigInt   @default(0) @map("member_count") @db.BigInt
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, date])
+  @@index([date])
+  @@map("workspace_admin_stats_daily")
+}
+
+model SyncActiveUsersMinutely {
+  minuteTs    DateTime @id @map("minute_ts") @db.Timestamptz(3)
+  activeUsers Int      @default(0) @map("active_users") @db.Integer
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@map("sync_active_users_minutely")
+}
+
+model WorkspaceDocViewDaily {
+  workspaceId    String    @map("workspace_id") @db.VarChar
+  docId          String    @map("doc_id") @db.VarChar
+  date           DateTime  @db.Date
+  totalViews     BigInt    @default(0) @map("total_views") @db.BigInt
+  uniqueViews    BigInt    @default(0) @map("unique_views") @db.BigInt
+  guestViews     BigInt    @default(0) @map("guest_views") @db.BigInt
+  lastAccessedAt DateTime? @map("last_accessed_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, docId, date])
+  @@index([workspaceId, date])
+  @@map("workspace_doc_view_daily")
+}
+
+model WorkspaceMemberLastAccess {
+  workspaceId    String   @map("workspace_id") @db.VarChar
+  userId         String   @map("user_id") @db.VarChar
+  lastAccessedAt DateTime @map("last_accessed_at") @db.Timestamptz(3)
+  lastDocId      String?  @map("last_doc_id") @db.VarChar
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@index([workspaceId, lastAccessedAt(sort: Desc)])
+  @@index([workspaceId, lastDocId])
+  @@map("workspace_member_last_access")
+}
+
 // the latest snapshot of each doc that we've seen
 // Snapshot + Updates are the latest state of the doc
 model Snapshot {
@@ -456,6 +517,7 @@ model AiSessionMessage {
   session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([createdAt, role])
   @@map("ai_sessions_messages")
 }
 

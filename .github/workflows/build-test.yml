@@ -210,18 +210,13 @@ jobs:
   e2e-blocksuite-cross-browser-test:
     name: E2E BlockSuite Cross Browser Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1]
-        browser: ['chromium', 'firefox', 'webkit']
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
-          playwright-platform: ${{ matrix.browser }}
+          playwright-platform: 'chromium,firefox,webkit'
           electron-install: false
           full-cache: true
 
@@ -229,16 +224,62 @@ jobs:
         run: yarn workspace @blocksuite/playground build
 
       - name: Run playwright tests
-        env:
-          BROWSER: ${{ matrix.browser }}
-        run: yarn workspace @affine-test/blocksuite test "cross-platform/" --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: |
+          yarn workspace @blocksuite/integration-test test:unit
+          yarn workspace @affine-test/blocksuite test "cross-platform/" --forbid-only
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-e2e-bs-cross-browser-${{ matrix.browser }}-${{ matrix.shard }}
+          name: test-results-e2e-bs-cross-browser
           path: ./test-results
+          if-no-files-found: ignore
+
+  bundler-matrix:
+    name: Bundler Matrix (${{ matrix.bundler }})
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        bundler: [webpack, rspack]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: false
+          electron-install: false
+          full-cache: true
+
+      - name: Run frontend build matrix
+        env:
+          AFFINE_BUNDLER: ${{ matrix.bundler }}
+        run: |
+          set -euo pipefail
+          packages=(
+            "@affine/web"
+            "@affine/mobile"
+            "@affine/ios"
+            "@affine/android"
+            "@affine/admin"
+            "@affine/electron-renderer"
+          )
+          summary="test-results-bundler-${AFFINE_BUNDLER}.txt"
+          : > "$summary"
+          for pkg in "${packages[@]}"; do
+            start=$(date +%s)
+            yarn affine "$pkg" build
+            end=$(date +%s)
+            echo "${pkg},$((end-start))" >> "$summary"
+          done
+
+      - name: Upload bundler timing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-bundler-${{ matrix.bundler }}
+          path: ./test-results-bundler-${{ matrix.bundler }}.txt
           if-no-files-found: ignore
 
   e2e-test:
@@ -307,7 +348,7 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     needs:
-      - build-native
+      - build-native-linux
     env:
       DISTRIBUTION: web
     strategy:
@@ -321,6 +362,7 @@ jobs:
         with:
           electron-install: true
           playwright-install: true
+          playwright-platform: 'chromium,firefox,webkit'
           full-cache: true
 
       - name: Download affine.linux-x64-gnu.node
@@ -341,7 +383,39 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
-  build-native:
+  build-native-linux:
+    name: Build AFFiNE native (x86_64-unknown-linux-gnu)
+    runs-on: ubuntu-latest
+    env:
+      CARGO_PROFILE_RELEASE_DEBUG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/native
+          electron-install: false
+      - name: Setup filename
+        id: filename
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('x86_64-unknown-linux-gnu').platformArchABI)")
+          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
+      - name: Build AFFiNE native
+        uses: ./.github/actions/build-rust
+        with:
+          target: x86_64-unknown-linux-gnu
+          package: '@affine/native'
+      - name: Upload ${{ steps.filename.outputs.filename }}
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ steps.filename.outputs.filename }}
+          path: ${{ github.workspace }}/packages/frontend/native/${{ steps.filename.outputs.filename }}
+          if-no-files-found: error
+
+  build-native-macos:
     name: Build AFFiNE native (${{ matrix.spec.target }})
     runs-on: ${{ matrix.spec.os }}
     env:
@@ -350,7 +424,6 @@ jobs:
       fail-fast: false
       matrix:
         spec:
-          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
           - { os: macos-latest, target: x86_64-apple-darwin }
           - { os: macos-latest, target: aarch64-apple-darwin }
 
@@ -383,7 +456,7 @@ jobs:
 
   # Split Windows build because it's too slow
   # and other ci jobs required linux native
-  build-windows-native:
+  build-native-windows:
     name: Build AFFiNE native (${{ matrix.spec.target }})
     runs-on: ${{ matrix.spec.os }}
     env:
@@ -483,7 +556,7 @@ jobs:
     name: Native Unit Test
     runs-on: ubuntu-latest
     needs:
-      - build-native
+      - build-native-linux
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -577,8 +650,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-server-native
-    strategy:
-      fail-fast: false
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -819,11 +890,51 @@ jobs:
       - name: Run tests
         run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
 
+  copilot-test-filter:
+    name: Copilot test filter
+    runs-on: ubuntu-latest
+    outputs:
+      run-api: ${{ steps.decision.outputs.run_api }}
+      run-e2e: ${{ steps.decision.outputs.run_e2e }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: copilot-filter
+        with:
+          filters: |
+            api:
+              - 'packages/backend/server/src/plugins/copilot/**'
+              - 'packages/backend/server/tests/copilot.*'
+            e2e:
+              - 'packages/backend/server/src/plugins/copilot/**'
+              - 'packages/backend/server/tests/copilot.*'
+              - 'packages/frontend/core/src/blocksuite/ai/**'
+              - 'packages/frontend/core/src/modules/workspace-indexer-embedding/**'
+              - 'tests/affine-cloud-copilot/**'
+
+      - name: Decide test scope
+        id: decision
+        run: |
+          if [[ "${{ steps.copilot-filter.outputs.api }}" == "true" ]]; then
+            echo "run_api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_api=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ "${{ steps.copilot-filter.outputs.e2e }}" == "true" ]]; then
+            echo "run_e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_e2e=false" >> "$GITHUB_OUTPUT"
+          fi
+
   copilot-api-test:
     name: Server Copilot Api Test
+    if: ${{ needs.copilot-test-filter.outputs.run-api == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - build-server-native
+      - copilot-test-filter
     env:
       NODE_ENV: test
       DISTRIBUTION: web
@@ -857,53 +968,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check blocksuite update
-        id: check-blocksuite-update
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if node ./scripts/detect-blocksuite-update.mjs "$BASE_REF"; then
-            echo "skip=false" >> $GITHUB_OUTPUT
-          else
-            echo "skip=true" >> $GITHUB_OUTPUT
-          fi
-
-      - uses: dorny/paths-filter@v3
-        id: apifilter
-        with:
-          filters: |
-            changed:
-              - 'packages/backend/server/src/plugins/copilot/**'
-              - 'packages/backend/server/tests/copilot.*'
-
       - name: Setup Node.js
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
           full-cache: true
 
       - name: Download server-native.node
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: server-native.node
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         env:
           SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         run: yarn affine @affine/server test:copilot:coverage --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
 
       - name: Upload server test coverage results
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -914,6 +1001,7 @@ jobs:
 
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
+    if: ${{ needs.copilot-test-filter.outputs.run-e2e == 'true' }}
     runs-on: ubuntu-latest
     env:
       DISTRIBUTION: web
@@ -928,6 +1016,7 @@ jobs:
         shardTotal: [5]
     needs:
       - build-server-native
+      - copilot-test-filter
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -951,30 +1040,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check blocksuite update
-        id: check-blocksuite-update
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if node ./scripts/detect-blocksuite-update.mjs "$BASE_REF"; then
-            echo "skip=false" >> $GITHUB_OUTPUT
-          else
-            echo "skip=true" >> $GITHUB_OUTPUT
-          fi
-
-      - uses: dorny/paths-filter@v3
-        id: e2efilter
-        with:
-          filters: |
-            changed:
-              - 'packages/backend/server/src/plugins/copilot/**'
-              - 'packages/backend/server/tests/copilot.*'
-              - 'packages/frontend/core/src/blocksuite/ai/**'
-              - 'packages/frontend/core/src/modules/workspace-indexer-embedding/**'
-              - 'tests/affine-cloud-copilot/**'
-
       - name: Setup Node.js
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
         uses: ./.github/actions/setup-node
         with:
           playwright-install: true
@@ -983,20 +1049,17 @@ jobs:
           hard-link-nm: false
 
       - name: Download server-native.node
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: server-native.node
           path: ./packages/backend/native
 
       - name: Prepare Server Test Environment
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
         env:
           SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
         uses: ./.github/actions/server-test-env
 
       - name: Run Copilot E2E Test ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
         uses: ./.github/actions/copilot-test
         with:
           script: yarn affine @affine-test/affine-cloud-copilot e2e --forbid-only --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
@@ -1006,7 +1069,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-server-native
-      - build-native
+      - build-native-linux
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1099,7 +1162,9 @@ jobs:
     runs-on: ${{ matrix.spec.os }}
     needs:
       - build-electron-renderer
-      - build-native
+      - build-native-linux
+      - build-native-macos
+      - build-native-windows
     strategy:
       fail-fast: false
       matrix:
@@ -1182,84 +1247,6 @@ jobs:
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
         run: yarn affine @affine-test/affine-desktop e2e
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
-          path: ./test-results
-          if-no-files-found: ignore
-
-  desktop-bundle-check:
-    name: Desktop bundle check (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
-    runs-on: ${{ matrix.spec.os }}
-    needs:
-      - build-electron-renderer
-      - build-native
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: x64,
-              target: x86_64-apple-darwin,
-              test: false,
-            }
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: arm64,
-              target: aarch64-apple-darwin,
-              test: true,
-            }
-          - {
-              os: ubuntu-latest,
-              platform: linux,
-              arch: x64,
-              target: x86_64-unknown-linux-gnu,
-              test: true,
-            }
-          - {
-              os: windows-latest,
-              platform: windows,
-              arch: x64,
-              target: x86_64-pc-windows-msvc,
-              test: true,
-            }
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        timeout-minutes: 10
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop @affine/nbstore @toeverything/infra
-          playwright-install: true
-          hard-link-nm: false
-          enableScripts: false
-
-      - name: Setup filename
-        id: filename
-        shell: bash
-        run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
-          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
-
-      - name: Download ${{ steps.filename.outputs.filename }}
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ steps.filename.outputs.filename }}
-          path: ./packages/frontend/native
-
-      - name: Download web artifact
-        uses: ./.github/actions/download-web
-        with:
-          path: packages/frontend/apps/electron/resources/web-static
-
-      - name: Build Desktop Layers
-        run: yarn affine @affine/electron build
-
       - name: Make bundle (macOS)
         if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}
         env:
@@ -1299,6 +1286,14 @@ jobs:
         run: |
           yarn affine @affine/electron node ./scripts/macos-arm64-output-check.ts
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
+          path: ./test-results
+          if-no-files-found: ignore
+
   test-done:
     needs:
       - analyze
@@ -1312,8 +1307,9 @@ jobs:
       - e2e-blocksuite-cross-browser-test
       - e2e-mobile-test
       - unit-test
-      - build-native
-      - build-windows-native
+      - build-native-linux
+      - build-native-macos
+      - build-native-windows
       - build-server-native
       - build-electron-renderer
       - native-unit-test
@@ -1323,10 +1319,10 @@ jobs:
       - server-test
       - server-e2e-test
       - rust-test
+      - copilot-test-filter
       - copilot-api-test
       - copilot-e2e-test
       - desktop-test
-      - desktop-bundle-check
       - cloud-e2e-test
     if: always()
     runs-on: ubuntu-latest

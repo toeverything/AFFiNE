@@ -11,6 +11,25 @@ trap error_help ERR
 # XCode tries to be helpful and overwrites the PATH. Reset that.
 PATH="$(bash -l -c 'echo $PATH')"
 
+# Resolve cargo binary: prefer ~/.cargo/bin, then PATH, then rustup
+CARGO=""
+if [ -x "$HOME/.cargo/bin/cargo" ]; then
+  CARGO="$HOME/.cargo/bin/cargo"
+elif command -v cargo &>/dev/null; then
+  CARGO="$(command -v cargo)"
+elif command -v rustup &>/dev/null; then
+  CARGO="$(rustup which cargo 2>/dev/null)" || true
+fi
+if [ -z "$CARGO" ] || [ ! -x "$CARGO" ]; then
+  echo "error: cargo not found. Install Rust via https://rustup.rs" >&2
+  exit 1
+fi
+# Ensure rustc and other toolchain binaries are on PATH
+export PATH="$(dirname "$CARGO"):$PATH"
+
+# Ensure IPHONEOS_DEPLOYMENT_TARGET is set for Rust/cc crate builds
+export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-16.5}"
+
 # This should be invoked from inside xcode, not manually
 if [[ "${#}" -ne 3 ]]
 then
@@ -47,20 +66,20 @@ for arch in $ARCHS; do
 
       # Intel iOS simulator
       export CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios"
-      $HOME/.cargo/bin/cargo rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target x86_64-apple-ios --features use-as-lib
+      $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target x86_64-apple-ios --features use-as-lib
       ;;
 
     arm64)
       if [ $IS_SIMULATOR -eq 0 ]; then
         # Hardware iOS targets
-        $HOME/.cargo/bin/cargo rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios --features use-as-lib
+        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios --features use-as-lib
         cp $SRC_ROOT/../../../target/aarch64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a $SRCROOT/lib${FFI_TARGET}.a
       else
         # M1 iOS simulator
-        $HOME/.cargo/bin/cargo rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios-sim --features use-as-lib
+        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios-sim --features use-as-lib
         cp $SRC_ROOT/../../../target/aarch64-apple-ios-sim/${RELFLAG}/lib${FFI_TARGET}.a $SRCROOT/lib${FFI_TARGET}.a
       fi
   esac
 done
 
-$HOME/.cargo/bin/cargo run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --library $SRCROOT/lib${FFI_TARGET}.a --language swift --out-dir $SRCROOT/../../ios/App/App/uniffi
+$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --library $SRCROOT/lib${FFI_TARGET}.a --language swift --out-dir $SRCROOT/../../ios/App/App/uniffi

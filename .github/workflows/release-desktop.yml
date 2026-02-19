@@ -201,13 +201,44 @@ jobs:
           nmHoistingLimits: workspaces
         env:
           npm_config_arch: ${{ matrix.spec.arch }}
-      - name: Download and overwrite packaged artifacts
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: packaged-unsigned
+      - name: unzip packaged artifacts
+        run: Expand-Archive -Path packaged-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out
+      - name: Download signed packaged file diff
         uses: actions/download-artifact@v4
         with:
           name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: .
-      - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/apps/electron/out
+          path: signed-packaged-diff
+      - name: Apply signed packaged file diff
+        shell: pwsh
+        run: |
+          $DiffRoot = 'signed-packaged-diff/files'
+          $TargetRoot = 'packages/frontend/apps/electron/out'
+          if (!(Test-Path -LiteralPath $DiffRoot)) {
+            throw "Signed diff directory not found: $DiffRoot"
+          }
+
+          Copy-Item -Path (Join-Path $DiffRoot '*') -Destination $TargetRoot -Recurse -Force
+
+          $ManifestPath = 'signed-packaged-diff/manifest.json'
+          if (Test-Path -LiteralPath $ManifestPath) {
+            $ManifestEntries = @(Get-Content -LiteralPath $ManifestPath | ConvertFrom-Json)
+            foreach ($Entry in $ManifestEntries) {
+              $TargetPath = Join-Path $TargetRoot $Entry.path
+              if (!(Test-Path -LiteralPath $TargetPath -PathType Leaf)) {
+                throw "Applied signed file not found: $($Entry.path)"
+              }
+
+              $TargetHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $TargetPath).Hash
+              if ($TargetHash -ne $Entry.sha256) {
+                throw "Signed file hash mismatch: $($Entry.path)"
+              }
+            }
+          }
 
       - name: Make squirrel.windows installer
         run: yarn affine @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
@@ -267,13 +298,44 @@ jobs:
             arch: arm64
     runs-on: ${{ matrix.spec.runner }}
     steps:
-      - name: Download and overwrite installer artifacts
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
+          path: installer-unsigned
+      - name: unzip installer artifacts
+        run: Expand-Archive -Path installer-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make
+      - name: Download signed installer file diff
         uses: actions/download-artifact@v4
         with:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: .
-      - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make
+          path: signed-installer-diff
+      - name: Apply signed installer file diff
+        shell: pwsh
+        run: |
+          $DiffRoot = 'signed-installer-diff/files'
+          $TargetRoot = 'packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make'
+          if (!(Test-Path -LiteralPath $DiffRoot)) {
+            throw "Signed diff directory not found: $DiffRoot"
+          }
+
+          Copy-Item -Path (Join-Path $DiffRoot '*') -Destination $TargetRoot -Recurse -Force
+
+          $ManifestPath = 'signed-installer-diff/manifest.json'
+          if (Test-Path -LiteralPath $ManifestPath) {
+            $ManifestEntries = @(Get-Content -LiteralPath $ManifestPath | ConvertFrom-Json)
+            foreach ($Entry in $ManifestEntries) {
+              $TargetPath = Join-Path $TargetRoot $Entry.path
+              if (!(Test-Path -LiteralPath $TargetPath -PathType Leaf)) {
+                throw "Applied signed file not found: $($Entry.path)"
+              }
+
+              $TargetHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $TargetPath).Hash
+              if ($TargetHash -ne $Entry.sha256) {
+                throw "Signed file hash mismatch: $($Entry.path)"
+              }
+            }
+          }
 
       - name: Save artifacts
         run: |

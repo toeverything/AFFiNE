@@ -75,6 +75,7 @@ export const CalendarSettingPanel = () => {
         }));
       await calendar.updateWorkspaceCalendars(items);
     } catch (error) {
+      console.error('Failed to save calendar settings', error);
       notify.error({
         title: t['com.affine.integration.calendar.save-error'](),
       });

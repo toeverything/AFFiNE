@@ -6,7 +6,8 @@ textarea
   -webkit-app-region: no-drag;
 }
 
-#webpack-dev-server-client-overlay {
+#webpack-dev-server-client-overlay,
+#rspack-dev-server-client-overlay {
   -webkit-app-region: no-drag;
 }
 

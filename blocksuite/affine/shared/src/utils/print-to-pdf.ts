@@ -115,12 +115,9 @@ export async function printToPdf(
       ) as HTMLDivElement;
 
       // force light theme in print iframe
-      iframe.contentWindow.document.documentElement.setAttribute(
-        'data-theme',
-        'light'
-      );
-      iframe.contentWindow.document.body.setAttribute('data-theme', 'light');
-      importedRoot.setAttribute('data-theme', 'light');
+      iframe.contentWindow.document.documentElement.dataset.theme = 'light';
+      iframe.contentWindow.document.body.dataset.theme = 'light';
+      importedRoot.dataset.theme = 'light';
 
       // draw saved canvas image to canvas
       const allImportedCanvas = importedRoot.getElementsByTagName('canvas');

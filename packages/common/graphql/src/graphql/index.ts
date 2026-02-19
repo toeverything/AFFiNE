@@ -144,6 +144,108 @@ export const revokeUserAccessTokenMutation = {
 }`,
 };
 
+export const adminAllSharedLinksQuery = {
+  id: 'adminAllSharedLinksQuery' as const,
+  op: 'adminAllSharedLinks',
+  query: `query adminAllSharedLinks($pagination: PaginationInput!, $filter: AdminAllSharedLinksFilterInput) {
+  adminAllSharedLinks(pagination: $pagination, filter: $filter) {
+    totalCount
+    analyticsWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        workspaceId
+        docId
+        title
+        publishedAt
+        docUpdatedAt
+        workspaceOwnerId
+        lastUpdaterId
+        shareUrl
+        views
+        uniqueViews
+        guestViews
+        lastAccessedAt
+      }
+    }
+  }
+}`,
+};
+
+export const adminDashboardQuery = {
+  id: 'adminDashboardQuery' as const,
+  op: 'adminDashboard',
+  query: `query adminDashboard($input: AdminDashboardInput) {
+  adminDashboard(input: $input) {
+    syncActiveUsers
+    syncActiveUsersTimeline {
+      minute
+      activeUsers
+    }
+    syncWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    copilotConversations
+    workspaceStorageBytes
+    blobStorageBytes
+    workspaceStorageHistory {
+      date
+      value
+    }
+    blobStorageHistory {
+      date
+      value
+    }
+    storageWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    topSharedLinks {
+      workspaceId
+      docId
+      title
+      shareUrl
+      publishedAt
+      views
+      uniqueViews
+      guestViews
+      lastAccessedAt
+    }
+    topSharedLinksWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    generatedAt
+  }
+}`,
+};
+
 export const adminServerConfigQuery = {
   id: 'adminServerConfigQuery' as const,
   op: 'adminServerConfig',
@@ -1872,6 +1974,76 @@ export const getDocDefaultRoleQuery = {
   workspace(id: $workspaceId) {
     doc(docId: $docId) {
       defaultRole
+    }
+  }
+}`,
+};
+
+export const getDocLastAccessedMembersQuery = {
+  id: 'getDocLastAccessedMembersQuery' as const,
+  op: 'getDocLastAccessedMembers',
+  query: `query getDocLastAccessedMembers($workspaceId: String!, $docId: String!, $pagination: PaginationInput!, $query: String, $includeTotal: Boolean) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      lastAccessedMembers(
+        pagination: $pagination
+        query: $query
+        includeTotal: $includeTotal
+      ) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            user {
+              id
+              name
+              avatarUrl
+            }
+            lastAccessedAt
+            lastDocId
+          }
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getDocPageAnalyticsQuery = {
+  id: 'getDocPageAnalyticsQuery' as const,
+  op: 'getDocPageAnalytics',
+  query: `query getDocPageAnalytics($workspaceId: String!, $docId: String!, $input: DocPageAnalyticsInput) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      analytics(input: $input) {
+        window {
+          from
+          to
+          timezone
+          bucket
+          requestedSize
+          effectiveSize
+        }
+        series {
+          date
+          totalViews
+          uniqueViews
+          guestViews
+        }
+        summary {
+          totalViews
+          uniqueViews
+          guestViews
+          lastAccessedAt
+        }
+        generatedAt
+      }
     }
   }
 }`,

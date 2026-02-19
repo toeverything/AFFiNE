@@ -1,10 +1,11 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import type { Workspace as WorkspaceInterface } from '@blocksuite/affine/store';
 import { Entity, LiveData, yjsGetPath } from '@toeverything/infra';
 import type { Observable } from 'rxjs';
 import { Doc as YDoc, transact } from 'yjs';
 
-import { DocsService } from '../../doc';
+import { DocsService } from '../../doc/services/docs';
 import { WorkspaceImpl } from '../impls/workspace';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
@@ -39,7 +40,7 @@ export class Workspace extends Entity {
           get: async key => {
             const record = await this.engine.blob.get(key);
             return record
-              ? new Blob([record.data], { type: record.mime })
+              ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
               : null;
           },
           delete: async () => {

@@ -447,7 +447,7 @@ export class RpcDocReader extends DatabaseDocReader {
 export const DocReaderProvider: FactoryProvider = {
   provide: DocReader,
   useFactory: (ref: ModuleRef) => {
-    if (env.flavors.doc) {
+    if (env.flavors.doc || env.flavors.front) {
       return ref.create(DatabaseDocReader);
     }
     return ref.create(RpcDocReader);

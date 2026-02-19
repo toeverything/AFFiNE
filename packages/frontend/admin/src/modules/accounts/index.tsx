@@ -1,4 +1,4 @@
-import { FeatureType } from '@affine/graphql';
+import type { FeatureType } from '@affine/graphql';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Header } from '../header';
@@ -42,7 +42,7 @@ export function AccountPage() {
   }, [selectedUserIds, memoUsers]);
 
   return (
-    <div className=" h-screen flex-1 flex-col flex">
+    <div className="h-dvh flex-1 flex-col flex">
       <Header title="Accounts" />
 
       <DataTable

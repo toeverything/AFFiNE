@@ -95,7 +95,7 @@ const docs = resolvedFiles.map(filePath => {
     return readYjsDocFromFile(filePath);
   } catch (error) {
     const details = error instanceof Error ? error.message : String(error);
-    fail(`Failed to read/parse snapshot file "${filePath}": ${details}`);
+    return fail(`Failed to read/parse snapshot file "${filePath}": ${details}`);
   }
 });
 
@@ -137,7 +137,7 @@ switch (mode) {
     break;
   }
   default: {
-    mode satisfies never;
-    fail(`Unknown mode: ${mode}`);
+    const unreachableMode: never = mode;
+    fail(`Unknown mode: ${unreachableMode}`);
   }
 }

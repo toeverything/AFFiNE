@@ -281,7 +281,7 @@ export class S3StorageProvider implements StorageProvider {
 
       this.logger.verbose(`Read object \`${key}\``);
       return {
-        body: Readable.fromWeb(obj.body as any),
+        body: Readable.fromWeb(obj.body),
         metadata: {
           contentType: contentType ?? 'application/octet-stream',
           contentLength: contentLength ?? 0,

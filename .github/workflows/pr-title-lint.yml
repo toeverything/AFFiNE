@@ -16,6 +16,7 @@ jobs:
   check-pull-request-title:
     name: Check pull request title
     runs-on: ubuntu-latest
+    if: ${{ github.event.action != 'edited' || github.event.changes.title != null }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js

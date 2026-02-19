@@ -84,6 +84,8 @@ export const connectorWatcher: SurfaceMiddleware = (
     );
 
   return () => {
+    pendingFlag = false;
+    pendingList.clear();
     disposables.forEach(d => d.unsubscribe());
   };
 };

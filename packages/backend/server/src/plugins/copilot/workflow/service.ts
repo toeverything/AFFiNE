@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { CopilotChatOptions } from '../providers';
+import type { CopilotChatOptions } from '../providers/types';
 import { WorkflowGraphList } from './graph';
 import { WorkflowNode } from './node';
 import type { WorkflowGraph, WorkflowGraphInstances } from './types';

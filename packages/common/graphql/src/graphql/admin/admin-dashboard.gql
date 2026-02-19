@@ -1,0 +1,56 @@
+query adminDashboard($input: AdminDashboardInput) {
+  adminDashboard(input: $input) {
+    syncActiveUsers
+    syncActiveUsersTimeline {
+      minute
+      activeUsers
+    }
+    syncWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    copilotConversations
+    workspaceStorageBytes
+    blobStorageBytes
+    workspaceStorageHistory {
+      date
+      value
+    }
+    blobStorageHistory {
+      date
+      value
+    }
+    storageWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    topSharedLinks {
+      workspaceId
+      docId
+      title
+      shareUrl
+      publishedAt
+      views
+      uniqueViews
+      guestViews
+      lastAccessedAt
+    }
+    topSharedLinksWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    generatedAt
+  }
+}

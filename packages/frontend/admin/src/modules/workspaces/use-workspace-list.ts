@@ -1,9 +1,8 @@
 import { useQuery } from '@affine/admin/use-query';
+import type { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
 import {
   adminWorkspacesCountQuery,
-  AdminWorkspaceSort,
   adminWorkspacesQuery,
-  FeatureType,
 } from '@affine/graphql';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -27,7 +26,7 @@ export const useWorkspaceList = (filter?: {
         .join(',')}-${filter?.orderBy ?? ''}-${JSON.stringify(
         filter?.flags ?? {}
       )}`,
-    [filter?.features, filter?.flags, filter?.keyword, filter?.orderBy]
+    [filter]
   );
 
   useEffect(() => {
@@ -52,18 +51,7 @@ export const useWorkspaceList = (filter?: {
         enableDocEmbedding: filter?.flags?.enableDocEmbedding,
       },
     }),
-    [
-      filter?.features,
-      filter?.flags?.enableAi,
-      filter?.flags?.enableDocEmbedding,
-      filter?.flags?.enableSharing,
-      filter?.flags?.enableUrlPreview,
-      filter?.flags?.public,
-      filter?.keyword,
-      filter?.orderBy,
-      pagination.pageIndex,
-      pagination.pageSize,
-    ]
+    [filter, pagination.pageIndex, pagination.pageSize]
   );
 
   const { data: listData, isValidating: isListValidating } = useQuery(

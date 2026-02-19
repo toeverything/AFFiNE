@@ -5,8 +5,31 @@ import { Path, ProjectRoot } from '@affine-tools/utils/path';
 import { Repository } from '@napi-rs/simple-git';
 import HTMLPlugin from 'html-webpack-plugin';
 import { once } from 'lodash-es';
-import type { Compiler, WebpackPluginInstance } from 'webpack';
-import webpack from 'webpack';
+import type { WebpackPluginInstance } from 'webpack';
+
+type CompilerLike = {
+  webpack?: {
+    sources?: {
+      RawSource?: new (source: string) => unknown;
+    };
+  };
+  hooks: {
+    compilation: {
+      tap: (name: string, callback: (compilation: any) => void) => void;
+    };
+  };
+};
+
+function createRawSource(compiler: CompilerLike, source: string) {
+  const RawSource = compiler.webpack?.sources?.RawSource;
+  if (!RawSource) {
+    throw new Error(
+      'compiler.webpack.sources.RawSource is required for html plugin assets emission'
+    );
+  }
+
+  return new RawSource(source);
+}
 
 export const getPublicPath = (BUILD_CONFIG: BUILD_CONFIG_TYPE) => {
   const { BUILD_TYPE } = process.env;
@@ -86,7 +109,7 @@ function getHTMLPluginOptions(BUILD_CONFIG: BUILD_CONFIG_TYPE) {
 }
 
 const AssetsManifestPlugin = {
-  apply(compiler: Compiler) {
+  apply(compiler: CompilerLike) {
     compiler.hooks.compilation.tap('assets-manifest-plugin', compilation => {
       HTMLPlugin.getHooks(compilation).beforeAssetTagGeneration.tap(
         'assets-manifest-plugin',
@@ -94,7 +117,8 @@ const AssetsManifestPlugin = {
           if (!compilation.getAsset('assets-manifest.json')) {
             compilation.emitAsset(
               `assets-manifest.json`,
-              new webpack.sources.RawSource(
+              createRawSource(
+                compiler,
                 JSON.stringify(
                   {
                     ...arg.assets,
@@ -125,7 +149,7 @@ const AssetsManifestPlugin = {
 };
 
 const GlobalErrorHandlerPlugin = {
-  apply(compiler: Compiler) {
+  apply(compiler: CompilerLike) {
     const globalErrorHandler = [
       'js/global-error-handler.js',
       readFileSync(currentDir.join('./error-handler.js').toString(), 'utf-8'),
@@ -140,7 +164,7 @@ const GlobalErrorHandlerPlugin = {
             if (!compilation.getAsset(globalErrorHandler[0])) {
               compilation.emitAsset(
                 globalErrorHandler[0],
-                new webpack.sources.RawSource(globalErrorHandler[1])
+                createRawSource(compiler, globalErrorHandler[1])
               );
               arg.assets.js.unshift(
                 arg.assets.publicPath + globalErrorHandler[0]
@@ -156,7 +180,7 @@ const GlobalErrorHandlerPlugin = {
 };
 
 const CorsPlugin = {
-  apply(compiler: Compiler) {
+  apply(compiler: CompilerLike) {
     compiler.hooks.compilation.tap('html-js-cors-plugin', compilation => {
       HTMLPlugin.getHooks(compilation).alterAssetTags.tap(
         'html-js-cors-plugin',

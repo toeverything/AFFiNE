@@ -1,7 +1,6 @@
 /**
  * @vitest-environment happy-dom
  */
-import '@blocksuite/affine-shared/test-utils';
 
 import { getInternalStoreExtensions } from '@blocksuite/affine/extensions/store';
 import { StoreExtensionManager } from '@blocksuite/affine-ext-loader';

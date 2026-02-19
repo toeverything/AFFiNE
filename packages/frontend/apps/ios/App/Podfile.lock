@@ -45,13 +45,13 @@ EXTERNAL SOURCES:
     :path: "../../../../../node_modules/capacitor-plugin-app-tracking-transparency"
 
 SPEC CHECKSUMS:
-  Capacitor: a5bf59e09f9dd82694fdcca4d107b4d215ac470f
-  CapacitorApp: 3ddbd30ac18c321531c3da5e707b60873d89dd60
-  CapacitorBrowser: 66aa8ff09cdca2a327ce464b113b470e6f667753
+  Capacitor: 12914e6f1b7835e161a74ebd19cb361efa37a7dd
+  CapacitorApp: 63b237168fc869e758481dba283315a85743ee78
+  CapacitorBrowser: b98aa3db018a2ce4c68242d27e596c344f3b81b3
   CapacitorCordova: 31bbe4466000c6b86d9b7f1181ee286cff0205aa
-  CapacitorHaptics: d17da7dd984cae34111b3f097ccd3e21f9feec62
-  CapacitorKeyboard: 45cae3956a6f4fb1753f9a4df3e884aeaed8fe82
-  CapacitorPluginAppTrackingTransparency: 2a2792623a5a72795f2e8f9ab3f1147573732fd8
+  CapacitorHaptics: ce15be8f287fa2c61c7d2d9e958885b90cf0bebc
+  CapacitorKeyboard: 5660c760113bfa48962817a785879373cf5339c3
+  CapacitorPluginAppTrackingTransparency: 92ae9c1cfb5cf477753db9269689332a686f675a
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
 
 PODFILE CHECKSUM: 2c1e4be82121f2d9724ecf7e31dd14e165aeb082

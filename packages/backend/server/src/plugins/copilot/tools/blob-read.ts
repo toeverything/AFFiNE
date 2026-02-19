@@ -3,9 +3,8 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 import { AccessController } from '../../../core/permission';
-import type { ContextSession } from '../context/session';
-import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
+import type { ContextSession, CopilotChatOptions } from './types';
 
 const logger = new Logger('ContextBlobReadTool');
 

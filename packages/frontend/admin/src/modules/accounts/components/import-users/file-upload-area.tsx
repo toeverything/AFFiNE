@@ -1,6 +1,5 @@
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { UploadIcon } from '@blocksuite/icons/rc';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import {
   type ChangeEvent,
   type DragEvent,
@@ -86,37 +85,28 @@ export const FileUploadArea = forwardRef<
 
   return (
     <div
-      className={`flex justify-center p-8 border-2 border-dashed rounded-[6px] ${
-        isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+      className={`flex justify-center rounded-[6px] border-2 border-dashed p-8 transition-colors ${
+        isDragging
+          ? 'border-ring bg-accent/40'
+          : 'border-border hover:border-ring/50'
       }`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={triggerFileInput}
-      style={{
-        borderColor: isDragging
-          ? cssVarV2('button/primary')
-          : cssVarV2('layer/insideBorder/blackBorder'),
-      }}
     >
       <div className="text-center">
         <UploadIcon
           fontSize={24}
-          className="mx-auto mb-3"
-          style={{
-            color: cssVarV2('selfhost/icon/secondary'),
-          }}
+          className="mx-auto mb-3 text-muted-foreground"
         />
-        <div
-          className="text-xs font-medium"
-          style={{ color: cssVarV2('text/secondary') }}
-        >
+        <div className="text-xs font-medium text-muted-foreground">
           {isDragging
             ? 'Release mouse to upload file'
             : 'Upload your CSV file or drag it here'}
         </div>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           {isDragging ? 'Preparing to upload...' : ''}
         </p>
       </div>

@@ -1,4 +1,5 @@
-import { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import type { FeatureType } from '@affine/graphql';
+import { AdminWorkspaceSort } from '@affine/graphql';
 import { useState } from 'react';
 
 import { Header } from '../header';
@@ -26,7 +27,7 @@ export function WorkspacePage() {
   const columns = useColumns();
 
   return (
-    <div className="h-screen flex-1 flex-col flex">
+    <div className="h-dvh flex-1 flex-col flex">
       <Header title="Workspaces" />
 
       <DataTable

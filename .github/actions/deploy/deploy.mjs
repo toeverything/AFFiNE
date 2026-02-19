@@ -33,24 +33,22 @@ const replicaConfig = {
   stable: {
     front: Number(process.env.PRODUCTION_FRONT_REPLICA) || 2,
     graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 2,
-    doc: Number(process.env.PRODUCTION_DOC_REPLICA) || 2,
   },
   beta: {
     front: Number(process.env.BETA_FRONT_REPLICA) || 1,
     graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 1,
-    doc: Number(process.env.BETA_DOC_REPLICA) || 1,
   },
-  canary: { front: 1, graphql: 1, doc: 1 },
+  canary: { front: 1, graphql: 1 },
 };
 
 const cpuConfig = {
-  beta: { front: '1', graphql: '1', doc: '1' },
-  canary: { front: '500m', graphql: '1', doc: '500m' },
+  beta: { front: '1', graphql: '1' },
+  canary: { front: '500m', graphql: '1' },
 };
 
 const memoryConfig = {
-  beta: { front: '1Gi', graphql: '1Gi', doc: '1Gi' },
-  canary: { front: '512Mi', graphql: '512Mi', doc: '512Mi' },
+  beta: { front: '2Gi', graphql: '1Gi' },
+  canary: { front: '512Mi', graphql: '512Mi' },
 };
 
 const createHelmCommand = ({ isDryRun }) => {
@@ -80,7 +78,6 @@ const createHelmCommand = ({ isDryRun }) => {
   const serviceAnnotations = [
     `--set-json   front.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
     `--set-json   graphql.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
-    `--set-json   doc.serviceAccount.annotations="{ \\"iam.gke.io/gcp-service-account\\": \\"${APP_IAM_ACCOUNT}\\" }"`,
   ].concat(
     isProduction || isBeta || isInternal
       ? [
@@ -98,7 +95,6 @@ const createHelmCommand = ({ isDryRun }) => {
     ? [
         `--set-json   front.nodeSelector="${spotNodeSelector}"`,
         `--set-json   graphql.nodeSelector="${spotNodeSelector}"`,
-        `--set-json   doc.nodeSelector="${spotNodeSelector}"`,
       ]
     : [];
 
@@ -109,14 +105,12 @@ const createHelmCommand = ({ isDryRun }) => {
     resources = resources.concat([
       `--set        front.resources.requests.cpu="${cpu.front}"`,
       `--set        graphql.resources.requests.cpu="${cpu.graphql}"`,
-      `--set        doc.resources.requests.cpu="${cpu.doc}"`,
     ]);
   }
   if (memory) {
     resources = resources.concat([
       `--set        front.resources.requests.memory="${memory.front}"`,
       `--set        graphql.resources.requests.memory="${memory.graphql}"`,
-      `--set        doc.resources.requests.memory="${memory.doc}"`,
     ]);
   }
 
@@ -155,9 +149,6 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set        graphql.replicaCount=${replica.graphql}`,
     `--set-string graphql.image.tag="${imageTag}"`,
     `--set-string graphql.app.host="${primaryHost}"`,
-    `--set-string doc.image.tag="${imageTag}"`,
-    `--set-string doc.app.host="${primaryHost}"`,
-    `--set        doc.replicaCount=${replica.doc}`,
     ...serviceAnnotations,
     ...spotScheduling,
     ...resources,

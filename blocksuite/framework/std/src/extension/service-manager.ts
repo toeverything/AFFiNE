@@ -1,5 +1,5 @@
-import { LifeCycleWatcher } from '../extension/index.js';
 import { BlockServiceIdentifier } from '../identifier.js';
+import { LifeCycleWatcher } from './lifecycle-watcher.js';
 
 export class ServiceManager extends LifeCycleWatcher {
   static override readonly key = 'serviceManager';

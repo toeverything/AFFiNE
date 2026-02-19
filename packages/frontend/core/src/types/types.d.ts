@@ -1,4 +1,5 @@
-/// <reference types="@webpack/env"" />
+/// <reference types="@webpack/env" />
+/// <reference types="@rspack/core/module" />
 
 declare module '*.md' {
   const text: string;

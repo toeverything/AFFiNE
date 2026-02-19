@@ -20,6 +20,9 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
 
   public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
     switch typename {
+    case "AdminWorkspace": return AffineGraphQL.Objects.AdminWorkspace
+    case "AdminWorkspaceMember": return AffineGraphQL.Objects.AdminWorkspaceMember
+    case "AdminWorkspaceSharedLink": return AffineGraphQL.Objects.AdminWorkspaceSharedLink
     case "AggregateBucketHitsObjectType": return AffineGraphQL.Objects.AggregateBucketHitsObjectType
     case "AggregateBucketObjectType": return AffineGraphQL.Objects.AggregateBucketObjectType
     case "AggregateResultObjectType": return AffineGraphQL.Objects.AggregateResultObjectType
@@ -27,6 +30,10 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "BlobUploadInit": return AffineGraphQL.Objects.BlobUploadInit
     case "BlobUploadPart": return AffineGraphQL.Objects.BlobUploadPart
     case "BlobUploadedPart": return AffineGraphQL.Objects.BlobUploadedPart
+    case "CalendarAccountObjectType": return AffineGraphQL.Objects.CalendarAccountObjectType
+    case "CalendarCalDAVProviderPresetObjectType": return AffineGraphQL.Objects.CalendarCalDAVProviderPresetObjectType
+    case "CalendarEventObjectType": return AffineGraphQL.Objects.CalendarEventObjectType
+    case "CalendarSubscriptionObjectType": return AffineGraphQL.Objects.CalendarSubscriptionObjectType
     case "ChatMessage": return AffineGraphQL.Objects.ChatMessage
     case "CommentChangeObjectType": return AffineGraphQL.Objects.CommentChangeObjectType
     case "CommentChangeObjectTypeEdge": return AffineGraphQL.Objects.CommentChangeObjectTypeEdge
@@ -107,6 +114,8 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "UserQuotaUsageType": return AffineGraphQL.Objects.UserQuotaUsageType
     case "UserSettingsType": return AffineGraphQL.Objects.UserSettingsType
     case "UserType": return AffineGraphQL.Objects.UserType
+    case "WorkspaceCalendarItemObjectType": return AffineGraphQL.Objects.WorkspaceCalendarItemObjectType
+    case "WorkspaceCalendarObjectType": return AffineGraphQL.Objects.WorkspaceCalendarObjectType
     case "WorkspaceDocMeta": return AffineGraphQL.Objects.WorkspaceDocMeta
     case "WorkspacePermissions": return AffineGraphQL.Objects.WorkspacePermissions
     case "WorkspaceQuotaHumanReadableType": return AffineGraphQL.Objects.WorkspaceQuotaHumanReadableType

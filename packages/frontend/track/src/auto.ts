@@ -116,6 +116,7 @@ export function enableAutoTrack(root: HTMLElement, trackFn: TrackFn) {
 declare module 'react' {
   //  we have to declare `T` but it's actually not used
 
+  // oxlint-disable-next-line no-unused-vars
   interface HTMLAttributes<T> {
     'data-event-props'?: EventsUnion;
     'data-event-arg'?: string;

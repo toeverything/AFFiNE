@@ -125,8 +125,8 @@ export class TelemetryManager {
 
   private mergeContext(event: TelemetryEvent): TelemetryEvent {
     const mergedUserProps = {
-      ...(this.context.userProperties ?? {}),
-      ...(event.userProperties ?? {}),
+      ...this.context.userProperties,
+      ...event.userProperties,
     };
 
     const mergedContext = {

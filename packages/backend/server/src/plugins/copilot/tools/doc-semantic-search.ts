@@ -8,10 +8,12 @@ import {
   clearEmbeddingChunk,
   type Models,
 } from '../../../models';
-import type { CopilotContextService } from '../context';
-import type { ContextSession } from '../context/session';
-import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
+import type {
+  ContextSession,
+  CopilotChatOptions,
+  CopilotContextService,
+} from './types';
 
 export const buildDocSearchGetter = (
   ac: AccessController,
