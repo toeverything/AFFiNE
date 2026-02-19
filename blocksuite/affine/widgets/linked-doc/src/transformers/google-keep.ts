@@ -901,11 +901,29 @@ async function importGoogleKeepZip({
         fileName: fallbackTitle,
         extensions,
       });
-      if (docId) {
-        const tags =
-          onResolveTags && tagNames.length
-            ? (await onResolveTags(tagNames)).filter(Boolean)
-            : undefined;
+      if (!docId) {
+        continue;
+      }
+
+      docIds.push(docId);
+      importedDocs += 1;
+      onProgress?.({ totalDocs: notesToImport.length, importedDocs });
+
+      let tags: string[] | undefined;
+      if (onResolveTags && tagNames.length) {
+        try {
+          tags = (await onResolveTags(tagNames)).filter(Boolean);
+        } catch (error) {
+          console.error(
+            '[GoogleKeepTransformer] Failed to resolve tags:',
+            notePath,
+            docId,
+            error
+          );
+        }
+      }
+
+      try {
         collection.meta.setDocMeta(docId, {
           ...meta,
           ...(tags?.length ? { tags } : {}),
@@ -915,28 +933,41 @@ async function importGoogleKeepZip({
           docId,
           title: meta.title ?? fallbackTitle,
         });
-        if (meta.favorite && onFavoriteImported) {
-          await onFavoriteImported(docId);
-        }
+      } catch (error) {
+        console.error(
+          '[GoogleKeepTransformer] Failed to update doc metadata:',
+          notePath,
+          docId,
+          error
+        );
+      }
 
+      if (meta.favorite && onFavoriteImported) {
         try {
-          await appendAttachmentBlocksToDoc({
-            collection,
-            docId,
-            attachments,
-          });
+          await onFavoriteImported(docId);
         } catch (error) {
           console.error(
-            '[GoogleKeepTransformer] Failed to append attachments:',
+            '[GoogleKeepTransformer] Failed to mark favorite:',
             notePath,
             docId,
             error
           );
         }
+      }
 
-        docIds.push(docId);
-        importedDocs += 1;
-        onProgress?.({ totalDocs: notesToImport.length, importedDocs });
+      try {
+        await appendAttachmentBlocksToDoc({
+          collection,
+          docId,
+          attachments,
+        });
+      } catch (error) {
+        console.error(
+          '[GoogleKeepTransformer] Failed to append attachments:',
+          notePath,
+          docId,
+          error
+        );
       }
     } catch (error) {
       console.error(
