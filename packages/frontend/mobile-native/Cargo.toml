@@ -43,3 +43,6 @@ lru = { workspace = true }
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
+
+[dev-dependencies]
+lru = { workspace = true }

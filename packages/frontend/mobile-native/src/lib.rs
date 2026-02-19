@@ -1,6 +1,7 @@
 use affine_common::hashcash::Stamp;
 use affine_nbstore::{Data, pool::SqliteDocStoragePool};
-#[cfg(any(target_os = "android", target_os = "ios"))]
+#[cfg(any(target_os = "android", target_os = "ios", test))]
+#[cfg_attr(all(test, not(any(target_os = "android", target_os = "ios"))), allow(dead_code))]
 pub(crate) mod mobile_blob_cache;
 #[cfg(any(target_os = "android", target_os = "ios"))]
 use mobile_blob_cache::{MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache, is_mobile_binary_file_token};
