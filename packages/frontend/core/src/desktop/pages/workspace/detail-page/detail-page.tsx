@@ -118,6 +118,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const enableAdapterPanel = useLiveData(
     featureFlagService.flags.enable_adapter_panel.$
   );
+  const enableViewAnalyticsPanel = useLiveData(
+    featureFlagService.flags.enable_view_analytics_panel.$
+  );
 
   const serverService = useService(ServerService);
   const serverConfig = useLiveData(serverService.server.config$);
@@ -436,7 +439,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </ViewSidebarTab>
       )}
 
-      {workspace.flavour === 'affine-cloud' && (
+      {workspace.flavour === 'affine-cloud' && enableViewAnalyticsPanel && (
         <ViewSidebarTab tabId="analytics" icon={<ChartPanelIcon />}>
           <Scrollable.Root className={styles.sidebarScrollArea}>
             <Scrollable.Viewport>
