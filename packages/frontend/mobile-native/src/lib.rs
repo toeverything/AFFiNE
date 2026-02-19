@@ -1,5 +1,9 @@
 use affine_common::hashcash::Stamp;
 use affine_nbstore::{Data, pool::SqliteDocStoragePool};
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub(crate) mod mobile_blob_cache;
+#[cfg(any(target_os = "android", target_os = "ios"))]
+use mobile_blob_cache::{MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache};
 
 #[derive(uniffi::Error, thiserror::Error, Debug)]
 pub enum UniffiError {
@@ -171,7 +175,8 @@ impl TryFrom<DocClock> for affine_nbstore::DocClock {
 #[derive(uniffi::Record)]
 pub struct Blob {
   pub key: String,
-  // base64 encoded data
+  // base64 encoded data; on mobile large blobs this is a file-path token prefixed
+  // with "__AFFINE_BLOB_FILE__:"
   pub data: String,
   pub mime: String,
   pub size: i64,
@@ -314,12 +319,16 @@ impl From<affine_nbstore::indexer::NativeMatch> for MatchRange {
 #[derive(uniffi::Object)]
 pub struct DocStoragePool {
   inner: SqliteDocStoragePool,
+  #[cfg(any(target_os = "android", target_os = "ios"))]
+  mobile_blob_cache: MobileBlobCache,
 }
 
 #[uniffi::export]
 pub fn new_doc_storage_pool() -> DocStoragePool {
   DocStoragePool {
     inner: Default::default(),
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    mobile_blob_cache: MobileBlobCache::new(),
   }
 }
 
@@ -327,10 +336,18 @@ pub fn new_doc_storage_pool() -> DocStoragePool {
 impl DocStoragePool {
   /// Initialize the database and run migrations.
   pub async fn connect(&self, universal_id: String, path: String) -> Result<()> {
-    Ok(self.inner.connect(universal_id, path).await?)
+    self.inner.connect(universal_id.clone(), path.clone()).await?;
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    self
+      .mobile_blob_cache
+      .register_workspace(&universal_id, &path)
+      .map_err(|err| UniffiError::Err(format!("Failed to initialize mobile blob cache: {err}")))?;
+    Ok(())
   }
 
   pub async fn disconnect(&self, universal_id: String) -> Result<()> {
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    self.mobile_blob_cache.invalidate_workspace(&universal_id);
     self.inner.disconnect(universal_id).await?;
     Ok(())
   }
@@ -454,26 +471,70 @@ impl DocStoragePool {
   }
 
   pub async fn get_blob(&self, universal_id: String, key: String) -> Result<Option<Blob>> {
-    Ok(self.inner.get(universal_id).await?.get_blob(key).await?.map(Into::into))
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+      if let Some(blob) = self.mobile_blob_cache.get_blob(&universal_id, &key) {
+        return Ok(Some(blob));
+      }
+
+      let Some(blob) = self
+        .inner
+        .get(universal_id.clone())
+        .await?
+        .get_blob(key.clone())
+        .await?
+      else {
+        return Ok(None);
+      };
+
+      if blob.data.len() < MOBILE_BLOB_INLINE_THRESHOLD_BYTES {
+        return Ok(Some(blob.into()));
+      }
+
+      return self
+        .mobile_blob_cache
+        .cache_blob(&universal_id, &blob)
+        .map(Some)
+        .map_err(|err| UniffiError::Err(format!("Failed to cache blob file: {err}")));
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+      Ok(self.inner.get(universal_id).await?.get_blob(key).await?.map(Into::into))
+    }
   }
 
   pub async fn set_blob(&self, universal_id: String, blob: SetBlob) -> Result<()> {
-    Ok(self.inner.get(universal_id).await?.set_blob(blob.try_into()?).await?)
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    let key = blob.key.clone();
+    self
+      .inner
+      .get(universal_id.clone())
+      .await?
+      .set_blob(blob.try_into()?)
+      .await?;
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    self.mobile_blob_cache.invalidate_blob(&universal_id, &key);
+    Ok(())
   }
 
   pub async fn delete_blob(&self, universal_id: String, key: String, permanently: bool) -> Result<()> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .delete_blob(key, permanently)
-        .await?,
-    )
+    self
+      .inner
+      .get(universal_id.clone())
+      .await?
+      .delete_blob(key.clone(), permanently)
+      .await?;
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    self.mobile_blob_cache.invalidate_blob(&universal_id, &key);
+    Ok(())
   }
 
   pub async fn release_blobs(&self, universal_id: String) -> Result<()> {
-    Ok(self.inner.get(universal_id).await?.release_blobs().await?)
+    self.inner.get(universal_id.clone()).await?.release_blobs().await?;
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    self.mobile_blob_cache.invalidate_workspace(&universal_id);
+    Ok(())
   }
 
   pub async fn list_blobs(&self, universal_id: String) -> Result<Vec<ListedBlob>> {

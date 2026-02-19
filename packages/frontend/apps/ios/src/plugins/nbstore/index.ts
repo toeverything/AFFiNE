@@ -12,13 +12,14 @@ import {
   parseUniversalId,
 } from '@affine/nbstore';
 import { type NativeDBApis } from '@affine/nbstore/sqlite';
-import { registerPlugin } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
 import type { NbStorePlugin } from './definitions';
 
 export * from './definitions';
 
 export const NbStore = registerPlugin<NbStorePlugin>('NbStoreDocStorage');
+const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:';
 
 export const NbStoreNativeDBApis: NativeDBApis = {
   connect: async function (id: string): Promise<void> {
@@ -132,14 +133,36 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       id,
       key,
     });
-    return record
-      ? {
-          data: base64ToUint8Array(record.data),
-          key: record.key,
-          mime: record.mime,
-          createdAt: new Date(record.createdAt),
-        }
-      : null;
+    if (!record) {
+      return null;
+    }
+
+    if (record.data.startsWith(MOBILE_BLOB_FILE_PREFIX)) {
+      const filePath = record.data.slice(MOBILE_BLOB_FILE_PREFIX.length);
+      const normalizedPath = filePath.startsWith('file://')
+        ? filePath
+        : `file://${filePath}`;
+      const response = await fetch(Capacitor.convertFileSrc(normalizedPath));
+      if (!response.ok) {
+        throw new Error(
+          `Failed to read blob file: ${filePath} (status ${response.status})`
+        );
+      }
+      const buffer = await response.arrayBuffer();
+      return {
+        data: new Uint8Array(buffer),
+        key: record.key,
+        mime: record.mime,
+        createdAt: new Date(record.createdAt),
+      };
+    }
+
+    return {
+      data: base64ToUint8Array(record.data),
+      key: record.key,
+      mime: record.mime,
+      createdAt: new Date(record.createdAt),
+    };
   },
   setBlob: async function (id: string, blob: BlobRecord): Promise<void> {
     await NbStore.setBlob({

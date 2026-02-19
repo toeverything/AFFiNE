@@ -2,7 +2,7 @@ import type { CrawlResult, DocIndexedClock } from '@affine/nbstore';
 
 export interface Blob {
   key: string;
-  // base64 encoded data
+  // base64 encoded data, or "__AFFINE_BLOB_FILE__:<absolutePath>" for large blobs
   data: string;
   mime: string;
   size: number;

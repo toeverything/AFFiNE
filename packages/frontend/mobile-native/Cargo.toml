@@ -38,5 +38,8 @@ objc2-foundation = { workspace = true, features = [
 [target.'cfg(not(any(target_os = "ios", target_os = "macos")))'.dependencies]
 homedir = { workspace = true }
 
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+lru = { workspace = true }
+
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
