@@ -1,3 +1,4 @@
+import { readImageSize } from '@blocksuite/affine-shared/utils';
 import {
   type BlockModel,
   type DocMeta,
@@ -46,7 +47,7 @@ type GoogleKeepNote = {
 };
 
 type GoogleKeepMeta = Partial<
-  Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'favorite'>
+  Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'favorite' | 'trash'>
 >;
 
 type ResolvedKeepAttachment = {
@@ -60,9 +61,37 @@ const KEEP_ATTACHMENTS_COLUMNS = 3;
 const KEEP_ATTACHMENTS_COLUMN_WIDTH = 260;
 const KEEP_ATTACHMENTS_GAP = 24;
 const KEEP_ATTACHMENTS_MAX_HEIGHT = 360;
-const KEEP_ATTACHMENTS_MIN_DIMENSION = 48;
 const KEEP_ATTACHMENTS_FRAME_PADDING = 20;
 const KEEP_ATTACHMENTS_PAGE_GAP = 180;
+
+function fitImageIntoBoundingBox({
+  width,
+  height,
+  maxWidth,
+  maxHeight,
+}: {
+  width: number;
+  height: number;
+  maxWidth: number;
+  maxHeight: number;
+}) {
+  const normalizedWidth = Math.max(1, width);
+  const normalizedHeight = Math.max(1, height);
+  const normalizedMaxWidth = Math.max(1, maxWidth);
+  const normalizedMaxHeight = Math.max(1, maxHeight);
+
+  const scale = Math.min(
+    normalizedMaxWidth / normalizedWidth,
+    normalizedMaxHeight / normalizedHeight
+  );
+  const scaledWidth = Math.max(1, Math.floor(normalizedWidth * scale));
+  const scaledHeight = Math.max(1, Math.floor(normalizedHeight * scale));
+
+  return {
+    width: Math.min(normalizedMaxWidth, scaledWidth),
+    height: Math.min(normalizedMaxHeight, scaledHeight),
+  };
+}
 
 /**
  * Decodes a blob into text with encoding fallbacks.
@@ -243,6 +272,9 @@ function toMeta(note: GoogleKeepNote, fallbackTitle: string): GoogleKeepMeta {
 
   if (note.isPinned) {
     meta.favorite = true;
+  }
+  if (note.isTrashed) {
+    meta.trash = true;
   }
 
   return meta;
@@ -483,55 +515,6 @@ function syncRootTitle({
 }
 
 /**
- * Reads image dimensions from a blob, with browser API fallbacks.
- *
- * @param blob - Image blob.
- * @returns Natural width/height or a safe default size.
- */
-async function readImageSize(
-  blob: Blob
-): Promise<{ width: number; height: number }> {
-  if (typeof createImageBitmap === 'function') {
-    try {
-      const bitmap = await createImageBitmap(blob);
-      const size = { width: bitmap.width, height: bitmap.height };
-      bitmap.close();
-      return size;
-    } catch {
-      // fallback below
-    }
-  }
-
-  if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
-    try {
-      const objectUrl = URL.createObjectURL(blob);
-      try {
-        const size = await new Promise<{ width: number; height: number }>(
-          (resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-              resolve({
-                width: img.naturalWidth || img.width,
-                height: img.naturalHeight || img.height,
-              });
-            };
-            img.onerror = () => reject(new Error('Failed to decode image'));
-            img.src = objectUrl;
-          }
-        );
-        return size;
-      } finally {
-        URL.revokeObjectURL(objectUrl);
-      }
-    } catch {
-      // fallback below
-    }
-  }
-
-  return { width: KEEP_ATTACHMENTS_COLUMN_WIDTH, height: 180 };
-}
-
-/**
  * Resolves Keep attachment descriptors into concrete blobs and metadata.
  *
  * @param note - Parsed Keep note payload.
@@ -539,11 +522,11 @@ async function readImageSize(
  * @param files - Map of all files from the import zip.
  * @returns Normalized attachment entries available for insertion.
  */
-async function resolveKeepAttachments(
+function resolveKeepAttachments(
   note: GoogleKeepNote,
   notePath: string,
   files: Map<string, Blob>
-): Promise<ResolvedKeepAttachment[]> {
+): ResolvedKeepAttachment[] {
   if (!note.attachments?.length) {
     return [];
   }
@@ -624,7 +607,11 @@ async function appendAttachmentBlocksToDoc({
           );
           const [sourceId, naturalSize] = await Promise.all([
             store.blobSync.set(blobWithType),
-            readImageSize(attachment.blob),
+            // Use the typed File for size detection; raw zip blobs can miss MIME type.
+            readImageSize(blobWithType, {
+              width: KEEP_ATTACHMENTS_COLUMN_WIDTH,
+              height: 180,
+            }),
           ]);
 
           return {
@@ -639,19 +626,15 @@ async function appendAttachmentBlocksToDoc({
       const imageLayouts = preparedImages.map((image, index) => {
         const row = Math.floor(index / KEEP_ATTACHMENTS_COLUMNS);
         const col = index % KEEP_ATTACHMENTS_COLUMNS;
-        // Keep aspect ratio: fit each image into column width and max row height.
-        const scale = Math.min(
-          KEEP_ATTACHMENTS_COLUMN_WIDTH / image.naturalWidth,
-          KEEP_ATTACHMENTS_MAX_HEIGHT / image.naturalHeight
-        );
-        const displayWidth = Math.max(
-          KEEP_ATTACHMENTS_MIN_DIMENSION,
-          Math.round(image.naturalWidth * scale)
-        );
-        const displayHeight = Math.max(
-          KEEP_ATTACHMENTS_MIN_DIMENSION,
-          Math.round(image.naturalHeight * scale)
-        );
+        // Keep aspect ratio by fitting each image into the target box.
+        const fittedSize = fitImageIntoBoundingBox({
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+          maxWidth: KEEP_ATTACHMENTS_COLUMN_WIDTH,
+          maxHeight: KEEP_ATTACHMENTS_MAX_HEIGHT,
+        });
+        const displayWidth = fittedSize.width;
+        const displayHeight = fittedSize.height;
         rowHeights[row] = Math.max(rowHeights[row] ?? 0, displayHeight);
 
         return {
@@ -908,7 +891,7 @@ async function importGoogleKeepZip({
       const meta = toMeta(note, fallbackTitle);
       const tagNames = extractTagNames(note);
       const attachments = shouldImportAttachments
-        ? await resolveKeepAttachments(note, notePath, allFiles)
+        ? resolveKeepAttachments(note, notePath, allFiles)
         : [];
 
       const docId = await HtmlTransformer.importHTMLToDoc({
