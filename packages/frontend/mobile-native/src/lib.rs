@@ -3,9 +3,7 @@ use affine_nbstore::{Data, pool::SqliteDocStoragePool};
 #[cfg(any(target_os = "android", target_os = "ios"))]
 pub(crate) mod mobile_blob_cache;
 #[cfg(any(target_os = "android", target_os = "ios"))]
-use mobile_blob_cache::{
-  MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache, is_mobile_binary_file_token, read_mobile_binary_file,
-};
+use mobile_blob_cache::{MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache, is_mobile_binary_file_token};
 
 #[derive(uniffi::Error, thiserror::Error, Debug)]
 pub enum UniffiError {
@@ -27,13 +25,7 @@ type Result<T> = std::result::Result<T, UniffiError>;
 
 uniffi::setup_scaffolding!("affine_mobile_native");
 
-fn decode_mobile_data(data: &str) -> Result<Vec<u8>> {
-  #[cfg(any(target_os = "android", target_os = "ios"))]
-  if is_mobile_binary_file_token(data) {
-    return read_mobile_binary_file(data)
-      .map_err(|err| UniffiError::Err(format!("Failed to read mobile file token: {err}")));
-  }
-
+fn decode_base64_data(data: &str) -> Result<Vec<u8>> {
   base64_simd::STANDARD
     .decode_to_vec(data)
     .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))
@@ -69,7 +61,7 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
   fn try_from(record: DocRecord) -> Result<Self> {
     Ok(Self {
       doc_id: record.doc_id,
-      bin: Into::<Data>::into(decode_mobile_data(&record.bin)?),
+      bin: Into::<Data>::into(decode_base64_data(&record.bin)?),
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(record.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
@@ -105,7 +97,7 @@ impl TryFrom<DocUpdate> for affine_nbstore::DocUpdate {
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(update.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
-      bin: Into::<Data>::into(decode_mobile_data(&update.bin)?),
+      bin: Into::<Data>::into(decode_base64_data(&update.bin)?),
     })
   }
 }
@@ -217,7 +209,7 @@ impl TryFrom<SetBlob> for affine_nbstore::SetBlob {
   fn try_from(blob: SetBlob) -> Result<Self> {
     Ok(Self {
       key: blob.key,
-      data: Into::<Data>::into(decode_mobile_data(&blob.data)?),
+      data: Into::<Data>::into(decode_base64_data(&blob.data)?),
       mime: blob.mime,
     })
   }
@@ -338,6 +330,20 @@ pub fn new_doc_storage_pool() -> DocStoragePool {
 
 #[uniffi::export(async_runtime = "tokio")]
 impl DocStoragePool {
+  fn decode_mobile_data(&self, universal_id: &str, data: &str) -> Result<Vec<u8>> {
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    if is_mobile_binary_file_token(data) {
+      return self
+        .mobile_blob_cache
+        .read_binary_file(universal_id, data)
+        .map_err(|err| UniffiError::Err(format!("Failed to read mobile file token: {err}")));
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let _ = universal_id;
+
+    decode_base64_data(data)
+  }
+
   fn encode_doc_data(&self, universal_id: &str, doc_id: &str, timestamp: i64, data: &[u8]) -> Result<String> {
     #[cfg(any(target_os = "android", target_os = "ios"))]
     if data.len() >= MOBILE_BLOB_INLINE_THRESHOLD_BYTES {
@@ -375,12 +381,13 @@ impl DocStoragePool {
   }
 
   pub async fn push_update(&self, universal_id: String, doc_id: String, update: String) -> Result<i64> {
+    let decoded_update = self.decode_mobile_data(&universal_id, &update)?;
     Ok(
       self
         .inner
         .get(universal_id)
         .await?
-        .push_update(doc_id, decode_mobile_data(&update)?)
+        .push_update(doc_id, decoded_update)
         .await?
         .and_utc()
         .timestamp_millis(),
@@ -408,14 +415,14 @@ impl DocStoragePool {
   }
 
   pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .set_doc_snapshot(snapshot.try_into()?)
-        .await?,
-    )
+    let doc_record = affine_nbstore::DocRecord {
+      doc_id: snapshot.doc_id,
+      bin: Into::<Data>::into(self.decode_mobile_data(&universal_id, &snapshot.bin)?),
+      timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(snapshot.timestamp)
+        .ok_or(UniffiError::TimestampDecodingError)?
+        .naive_utc(),
+    };
+    Ok(self.inner.get(universal_id).await?.set_doc_snapshot(doc_record).await?)
   }
 
   pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
@@ -534,12 +541,12 @@ impl DocStoragePool {
   pub async fn set_blob(&self, universal_id: String, blob: SetBlob) -> Result<()> {
     #[cfg(any(target_os = "android", target_os = "ios"))]
     let key = blob.key.clone();
-    self
-      .inner
-      .get(universal_id.clone())
-      .await?
-      .set_blob(blob.try_into()?)
-      .await?;
+    let blob = affine_nbstore::SetBlob {
+      key: blob.key,
+      data: Into::<Data>::into(self.decode_mobile_data(&universal_id, &blob.data)?),
+      mime: blob.mime,
+    };
+    self.inner.get(universal_id.clone()).await?.set_blob(blob).await?;
     #[cfg(any(target_os = "android", target_os = "ios"))]
     self.mobile_blob_cache.invalidate_blob(&universal_id, &key);
     Ok(())

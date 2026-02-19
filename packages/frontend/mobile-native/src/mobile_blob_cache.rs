@@ -172,11 +172,17 @@ impl MobileBlobCache {
       }
     }
 
-    self
+    if let Some(cache_dir) = self
       .workspace_dirs
       .lock()
       .expect("workspace cache lock poisoned")
-      .remove(universal_id);
+      .remove(universal_id)
+    {
+      let _ = std::fs::remove_dir_all(&cache_dir);
+      if let Some(parent) = cache_dir.parent() {
+        let _ = std::fs::remove_dir(parent);
+      }
+    }
   }
 
   fn cache_key(universal_id: &str, key: &str) -> String {
@@ -284,44 +290,72 @@ pub(crate) fn is_mobile_binary_file_token(value: &str) -> bool {
   value.starts_with(MOBILE_BLOB_FILE_PREFIX) || value.starts_with(MOBILE_DOC_FILE_PREFIX)
 }
 
-pub(crate) fn read_mobile_binary_file(value: &str) -> std::io::Result<Vec<u8>> {
-  let path = value
-    .strip_prefix(MOBILE_BLOB_FILE_PREFIX)
-    .or_else(|| value.strip_prefix(MOBILE_DOC_FILE_PREFIX))
-    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "invalid mobile file token"))?;
+impl MobileBlobCache {
+  pub(crate) fn read_binary_file(&self, universal_id: &str, value: &str) -> std::io::Result<Vec<u8>> {
+    let path = value
+      .strip_prefix(MOBILE_BLOB_FILE_PREFIX)
+      .or_else(|| value.strip_prefix(MOBILE_DOC_FILE_PREFIX))
+      .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "invalid mobile file token"))?;
 
-  let path = path.strip_prefix("file://").unwrap_or(path);
-  let canonical = std::fs::canonicalize(path)?;
-  if !is_valid_mobile_cache_path(&canonical) {
-    return Err(std::io::Error::new(
-      std::io::ErrorKind::PermissionDenied,
-      "mobile file token points outside the nbstore cache directory",
-    ));
-  }
+    let path = path.strip_prefix("file://").unwrap_or(path);
+    let canonical = std::fs::canonicalize(path)?;
+    let workspace_dir = {
+      self
+        .workspace_dirs
+        .lock()
+        .expect("workspace cache lock poisoned")
+        .get(universal_id)
+        .cloned()
+    }
+    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "workspace cache directory not registered"))?;
+    let workspace_dir = std::fs::canonicalize(workspace_dir)?;
 
-  let metadata = std::fs::metadata(&canonical)?;
-  if !metadata.is_file() {
-    return Err(std::io::Error::new(
-      std::io::ErrorKind::InvalidInput,
-      "mobile file token does not resolve to a file",
-    ));
-  }
-  if metadata.len() > MOBILE_BLOB_MAX_READ_BYTES {
-    return Err(std::io::Error::new(
-      std::io::ErrorKind::InvalidData,
-      format!(
-        "mobile file token exceeds max size: {} > {}",
-        metadata.len(),
-        MOBILE_BLOB_MAX_READ_BYTES
-      ),
-    ));
-  }
+    if !is_valid_mobile_cache_path(&canonical, &workspace_dir) {
+      return Err(std::io::Error::new(
+        std::io::ErrorKind::PermissionDenied,
+        "mobile file token points outside the workspace cache directory",
+      ));
+    }
 
-  std::fs::read(canonical)
+    let metadata = std::fs::metadata(&canonical)?;
+    if !metadata.is_file() {
+      return Err(std::io::Error::new(
+        std::io::ErrorKind::InvalidInput,
+        "mobile file token does not resolve to a file",
+      ));
+    }
+    if metadata.len() > MOBILE_BLOB_MAX_READ_BYTES {
+      return Err(std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!(
+          "mobile file token exceeds max size: {} > {}",
+          metadata.len(),
+          MOBILE_BLOB_MAX_READ_BYTES
+        ),
+      ));
+    }
+
+    std::fs::read(canonical)
+  }
 }
 
-fn is_valid_mobile_cache_path(path: &Path) -> bool {
-  let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
+fn is_valid_mobile_cache_path(path: &Path, workspace_dir: &Path) -> bool {
+  if !path.starts_with(workspace_dir) {
+    return false;
+  }
+
+  let Ok(relative) = path.strip_prefix(workspace_dir) else {
+    return false;
+  };
+  let mut components = relative.components();
+  let Some(std::path::Component::Normal(file_name)) = components.next() else {
+    return false;
+  };
+  if components.next().is_some() {
+    return false;
+  }
+
+  let Some(file_name) = file_name.to_str() else {
     return false;
   };
   let Some((stem, extension)) = file_name.rsplit_once('.') else {
@@ -330,21 +364,5 @@ fn is_valid_mobile_cache_path(path: &Path) -> bool {
   if extension != "blob" && extension != "docbin" {
     return false;
   }
-  if stem.len() != 16 || !stem.chars().all(|c| c.is_ascii_hexdigit()) {
-    return false;
-  }
-
-  let Some(workspace_bucket) = path.parent().and_then(Path::file_name).and_then(|name| name.to_str()) else {
-    return false;
-  };
-  if workspace_bucket.len() != 16 || !workspace_bucket.chars().all(|c| c.is_ascii_hexdigit()) {
-    return false;
-  }
-
-  path
-    .parent()
-    .and_then(Path::parent)
-    .and_then(Path::file_name)
-    .and_then(|name| name.to_str())
-    == Some(MOBILE_BLOB_CACHE_DIR)
+  stem.len() == 16 && stem.chars().all(|c| c.is_ascii_hexdigit())
 }
