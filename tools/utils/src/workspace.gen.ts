@@ -269,6 +269,7 @@ export const PackageList = [
     location: 'blocksuite/affine/blocks/image',
     name: '@blocksuite/affine-block-image',
     workspaceDependencies: [
+      'blocksuite/affine/blocks/frame',
       'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
@@ -564,6 +565,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
+      'blocksuite/affine/gfx/shape',
       'blocksuite/affine/gfx/text',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',

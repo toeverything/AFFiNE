@@ -1,4 +1,3 @@
-import { createElementsFromClipboardDataCommand } from '@blocksuite/affine-block-root';
 import {
   CanvasRenderer,
   EdgelessCRUDIdentifier,
@@ -23,6 +22,7 @@ import {
   openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
 import { Bound, getCommonBoundWithRotation } from '@blocksuite/global/gfx';
+import { nextTick } from '@blocksuite/global/utils';
 import type { BlockStdScope } from '@blocksuite/std';
 import {
   getTopElements,
@@ -35,6 +35,7 @@ import {
 } from '@blocksuite/std/gfx';
 import type { BlockSnapshot } from '@blocksuite/store';
 
+import { createElementsFromClipboardData } from './clipboard/create-elements';
 import {
   type EdgelessFrameManager,
   EdgelessFrameManagerIdentifier,
@@ -165,6 +166,7 @@ async function buildMetadataPayload(
   const transformer = std.store.getTransformer();
   const ids = new Set(sortedElements.map(element => element.id));
   const snapshot: (SerializedElement | BlockSnapshot)[] = [];
+  const assetIds = new Set<string>();
 
   for (const element of sortedElements) {
     const data = serializeFrameElement(element, ids, transformer);
@@ -179,15 +181,22 @@ async function buildMetadataPayload(
         | undefined;
       if (sourceId) {
         await transformer.assetsManager.readFromBlob(sourceId);
+        assetIds.add(sourceId);
       }
     }
     snapshot.push(data);
   }
-
-  const blobs = await encodeClipboardBlobs(
-    transformer.assetsManager.getAssets(),
-    onError
-  );
+  const assets = transformer.assetsManager.getAssets();
+  const filteredAssets = new Map<string, Blob>();
+  for (const id of assetIds) {
+    const blob = assets.get(id);
+    if (blob) {
+      filteredAssets.set(id, blob);
+    }
+  }
+  const blobs = filteredAssets.size
+    ? await encodeClipboardBlobs(filteredAssets, onError)
+    : {};
   const frameBound = Bound.deserialize(frame.xywh);
   const elementsBound = getCommonBoundWithRotation(sortedElements);
   const payload = {
@@ -559,15 +568,11 @@ async function applyFrameMetadata(
     sourceElementsBound,
     targetFrameBound
   );
-  const [_, { createdElementsPromise }] = ctx.std.command.exec(
-    createElementsFromClipboardDataCommand,
-    {
-      elementsRawData: metadata.snapshot,
-      pasteCenter,
-    }
+  const { canvasElements, blockModels } = await createElementsFromClipboardData(
+    ctx.std,
+    metadata.snapshot,
+    pasteCenter
   );
-  if (!createdElementsPromise) return;
-  const { canvasElements, blockModels } = await createdElementsPromise;
   const createdElements = [...canvasElements, ...blockModels];
   frameManager.addElementsToFrame(frame, getTopElements(createdElements));
 
