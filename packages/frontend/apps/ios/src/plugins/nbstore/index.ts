@@ -1,7 +1,9 @@
+import { uint8ArrayToBase64 } from '@affine/core/modules/workspace-engine';
 import {
-  base64ToUint8Array,
-  uint8ArrayToBase64,
-} from '@affine/core/modules/workspace-engine';
+  decodePayload,
+  MOBILE_BLOB_FILE_PREFIX,
+  MOBILE_DOC_FILE_PREFIX,
+} from '@affine/mobile-shared/nbstore/payload';
 import {
   type BlobRecord,
   type CrawlResult,
@@ -12,36 +14,13 @@ import {
   parseUniversalId,
 } from '@affine/nbstore';
 import { type NativeDBApis } from '@affine/nbstore/sqlite';
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { registerPlugin } from '@capacitor/core';
 
 import type { NbStorePlugin } from './definitions';
 
 export * from './definitions';
 
 export const NbStore = registerPlugin<NbStorePlugin>('NbStoreDocStorage');
-const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:';
-const MOBILE_DOC_FILE_PREFIX = '__AFFINE_DOC_FILE__:';
-
-async function decodePayload(
-  data: string,
-  prefix: string
-): Promise<Uint8Array> {
-  if (!data.startsWith(prefix)) {
-    return base64ToUint8Array(data);
-  }
-
-  const filePath = data.slice(prefix.length);
-  const normalizedPath = filePath.startsWith('file://')
-    ? filePath
-    : `file://${filePath}`;
-  const response = await fetch(Capacitor.convertFileSrc(normalizedPath));
-  if (!response.ok) {
-    throw new Error(
-      `Failed to read mobile payload file: ${filePath} (status ${response.status})`
-    );
-  }
-  return new Uint8Array(await response.arrayBuffer());
-}
 
 export const NbStoreNativeDBApis: NativeDBApis = {
   connect: async function (id: string): Promise<void> {

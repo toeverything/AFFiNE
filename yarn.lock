@@ -255,6 +255,7 @@ __metadata:
     "@affine/core": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/mobile-shared": "workspace:*"
     "@affine/nbstore": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
@@ -703,6 +704,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/mobile-shared": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/nbstore": "workspace:*"
     "@affine/track": "workspace:*"
@@ -761,6 +763,16 @@ __metadata:
     tailwindcss: "npm:^4.1.17"
     tsx: "npm:^4.19.2"
     vite: "npm:^7.2.7"
+  languageName: unknown
+  linkType: soft
+
+"@affine/mobile-shared@workspace:*, @affine/mobile-shared@workspace:packages/frontend/apps/mobile-shared":
+  version: 0.0.0-use.local
+  resolution: "@affine/mobile-shared@workspace:packages/frontend/apps/mobile-shared"
+  dependencies:
+    "@affine/core": "workspace:*"
+    "@capacitor/core": "npm:^7.0.0"
+    typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
 

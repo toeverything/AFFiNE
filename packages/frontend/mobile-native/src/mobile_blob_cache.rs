@@ -9,6 +9,7 @@ use std::{
 use lru::LruCache;
 
 pub(crate) const MOBILE_BLOB_INLINE_THRESHOLD_BYTES: usize = 1024 * 1024;
+const MOBILE_BLOB_MAX_READ_BYTES: u64 = 64 * 1024 * 1024;
 const MOBILE_BLOB_CACHE_CAPACITY: usize = 32;
 const MOBILE_BLOB_CACHE_DIR: &str = "nbstore-blob-cache";
 pub(crate) const MOBILE_BLOB_FILE_PREFIX: &str = "__AFFINE_BLOB_FILE__:";
@@ -86,8 +87,7 @@ impl MobileBlobCache {
 
   pub(crate) fn cache_blob(&self, universal_id: &str, blob: &affine_nbstore::Blob) -> std::io::Result<crate::Blob> {
     let cache_key = Self::cache_key(universal_id, &blob.key);
-    let cache_dir = self.resolve_cache_dir(universal_id);
-    std::fs::create_dir_all(&cache_dir)?;
+    let cache_dir = self.ensure_cache_dir(universal_id)?;
 
     let file_path = Self::blob_file_path(&cache_dir, &cache_key);
     std::fs::write(&file_path, &blob.data)?;
@@ -118,8 +118,7 @@ impl MobileBlobCache {
     data: &[u8],
   ) -> std::io::Result<String> {
     let cache_key = Self::cache_key(universal_id, &format!("doc\u{1f}{doc_id}\u{1f}{timestamp}"));
-    let cache_dir = self.resolve_cache_dir(universal_id);
-    std::fs::create_dir_all(&cache_dir)?;
+    let cache_dir = self.ensure_cache_dir(universal_id)?;
 
     let file_path = Self::doc_file_path(&cache_dir, &cache_key);
     std::fs::write(&file_path, data)?;
@@ -248,6 +247,12 @@ impl MobileBlobCache {
       .clone()
   }
 
+  fn ensure_cache_dir(&self, universal_id: &str) -> std::io::Result<PathBuf> {
+    let cache_dir = self.resolve_cache_dir(universal_id);
+    std::fs::create_dir_all(&cache_dir)?;
+    Ok(cache_dir)
+  }
+
   fn blob_file_path(cache_dir: &Path, cache_key: &str) -> PathBuf {
     let mut hasher = DefaultHasher::new();
     cache_key.hash(&mut hasher);
@@ -284,5 +289,62 @@ pub(crate) fn read_mobile_binary_file(value: &str) -> std::io::Result<Vec<u8>> {
     .strip_prefix(MOBILE_BLOB_FILE_PREFIX)
     .or_else(|| value.strip_prefix(MOBILE_DOC_FILE_PREFIX))
     .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "invalid mobile file token"))?;
-  std::fs::read(path)
+
+  let path = path.strip_prefix("file://").unwrap_or(path);
+  let canonical = std::fs::canonicalize(path)?;
+  if !is_valid_mobile_cache_path(&canonical) {
+    return Err(std::io::Error::new(
+      std::io::ErrorKind::PermissionDenied,
+      "mobile file token points outside the nbstore cache directory",
+    ));
+  }
+
+  let metadata = std::fs::metadata(&canonical)?;
+  if !metadata.is_file() {
+    return Err(std::io::Error::new(
+      std::io::ErrorKind::InvalidInput,
+      "mobile file token does not resolve to a file",
+    ));
+  }
+  if metadata.len() > MOBILE_BLOB_MAX_READ_BYTES {
+    return Err(std::io::Error::new(
+      std::io::ErrorKind::InvalidData,
+      format!(
+        "mobile file token exceeds max size: {} > {}",
+        metadata.len(),
+        MOBILE_BLOB_MAX_READ_BYTES
+      ),
+    ));
+  }
+
+  std::fs::read(canonical)
+}
+
+fn is_valid_mobile_cache_path(path: &Path) -> bool {
+  let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
+    return false;
+  };
+  let Some((stem, extension)) = file_name.rsplit_once('.') else {
+    return false;
+  };
+  if extension != "blob" && extension != "docbin" {
+    return false;
+  }
+  if stem.len() != 16 || !stem.chars().all(|c| c.is_ascii_hexdigit()) {
+    return false;
+  }
+
+  let Some(workspace_bucket) = path.parent().and_then(Path::file_name).and_then(|name| name.to_str()) else {
+    return false;
+  };
+  if workspace_bucket.len() != 16 || !workspace_bucket.chars().all(|c| c.is_ascii_hexdigit()) {
+    return false;
+  }
+
+  path
+    .parent()
+    .and_then(Path::parent)
+    .and_then(Path::file_name)
+    .and_then(|name| name.to_str())
+    == Some(MOBILE_BLOB_CACHE_DIR)
 }

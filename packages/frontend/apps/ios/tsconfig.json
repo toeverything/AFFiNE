@@ -12,6 +12,7 @@
     { "path": "../../../common/env" },
     { "path": "../../../common/graphql" },
     { "path": "../../i18n" },
+    { "path": "../mobile-shared" },
     { "path": "../../../common/nbstore" },
     { "path": "../../track" },
     { "path": "../../../../blocksuite/affine/all" },

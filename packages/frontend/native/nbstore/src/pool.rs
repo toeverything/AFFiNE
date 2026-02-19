@@ -55,16 +55,20 @@ impl SqliteDocStoragePool {
   pub async fn disconnect(&self, universal_id: String) -> Result<()> {
     let storage = {
       let mut lock = self.inner.write().await;
-      if let Entry::Occupied(entry) = lock.entry(universal_id) {
-        Some(entry.remove())
-      } else {
-        None
-      }
+      lock.remove(&universal_id)
     };
-    if let Some(storage) = storage {
-      storage.close().await;
+    let Some(storage) = storage else {
+      return Ok(());
+    };
+
+    // Prevent shutting down the shared storage while requests still hold refs.
+    if Arc::strong_count(&storage) > 1 {
+      let mut lock = self.inner.write().await;
+      lock.insert(universal_id, storage);
+      return Err(Error::InvalidOperation);
     }
 
+    storage.close().await;
     Ok(())
   }
 }
