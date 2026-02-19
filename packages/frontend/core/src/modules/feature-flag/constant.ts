@@ -255,6 +255,13 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
+  enable_view_analytics_panel: {
+    category: 'affine',
+    displayName: 'Enable View Analytics Panel',
+    description: 'Show the View analytics tab in the right sidebar.',
+    configurable: true,
+    defaultState: false,
+  },
   enable_two_step_journal_confirmation: {
     category: 'affine',
     displayName: 'Enable Two Step Journal Confirmation',
