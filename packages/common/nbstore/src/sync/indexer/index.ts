@@ -207,6 +207,8 @@ export class IndexerSyncImpl implements IndexerSync {
       return;
     }
 
+    await this.indexer.loadIndexSnapshots();
+
     while (true) {
       try {
         await this.retryLoop(signal);
@@ -476,7 +478,7 @@ export class IndexerSyncImpl implements IndexerSync {
         this.status.completeJob();
       }
     } finally {
-      await this.refreshIfNeed();
+      await this.indexer.refreshIfNeed();
       unsubscribe();
     }
   }

@@ -418,6 +418,13 @@ impl DocStoragePool {
   }
 
   #[napi]
+  pub async fn fts_load_index_snapshots(&self, id: String) -> Result<()> {
+    let storage = self.pool.get(id).await?;
+    storage.init_index().await?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn fts_flush_index(&self, id: String) -> Result<()> {
     let storage = self.pool.get(id).await?;
     storage.flush_index().await?;

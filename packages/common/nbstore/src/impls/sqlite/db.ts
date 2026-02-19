@@ -125,6 +125,7 @@ export interface NativeDBApis {
   ) => Promise<{ start: number; end: number }[]>;
   ftsFlushIndex: (id: string) => Promise<void>;
   ftsIndexVersion: () => Promise<number>;
+  ftsLoadIndexSnapshots: (id: string) => Promise<void>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs

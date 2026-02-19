@@ -246,4 +246,8 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
   async indexVersion(): Promise<number> {
     return this.connection.apis.ftsIndexVersion();
   }
+
+  async loadIndexSnapshots(): Promise<void> {
+    await this.connection.apis.ftsLoadIndexSnapshots();
+  }
 }

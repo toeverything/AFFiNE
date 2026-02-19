@@ -224,4 +224,9 @@ export class IndexedDBIndexerStorage extends IndexerStorageBase {
   async indexVersion(): Promise<number> {
     return 1;
   }
+
+  override async loadIndexSnapshots(): Promise<void> {
+    // TODO: implement index snapshots loading for IndexedDB
+    return;
+  }
 }
