@@ -63,6 +63,11 @@ impl SqliteDocStorage {
   }
 
   pub async fn connect(&self) -> Result<()> {
+    // if database is running and there are unpersisted changes in the memory, flush them to the database before reconnecting.
+    if !self.is_closed() && self.index.read().await.has_unpersisted_changes(None) {
+      self.flush_index().await?;
+    }
+
     if !Sqlite::database_exists(&self.path).await? {
       Sqlite::create_database(&self.path).await?;
     };
