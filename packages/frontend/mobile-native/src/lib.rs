@@ -3,7 +3,9 @@ use affine_nbstore::{Data, pool::SqliteDocStoragePool};
 #[cfg(any(target_os = "android", target_os = "ios"))]
 pub(crate) mod mobile_blob_cache;
 #[cfg(any(target_os = "android", target_os = "ios"))]
-use mobile_blob_cache::{MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache};
+use mobile_blob_cache::{
+  MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache, is_mobile_binary_file_token, read_mobile_binary_file,
+};
 
 #[derive(uniffi::Error, thiserror::Error, Debug)]
 pub enum UniffiError {
@@ -25,6 +27,18 @@ type Result<T> = std::result::Result<T, UniffiError>;
 
 uniffi::setup_scaffolding!("affine_mobile_native");
 
+fn decode_mobile_data(data: &str) -> Result<Vec<u8>> {
+  #[cfg(any(target_os = "android", target_os = "ios"))]
+  if is_mobile_binary_file_token(data) {
+    return read_mobile_binary_file(data)
+      .map_err(|err| UniffiError::Err(format!("Failed to read mobile file token: {err}")));
+  }
+
+  base64_simd::STANDARD
+    .decode_to_vec(data)
+    .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))
+}
+
 #[uniffi::export]
 pub fn hashcash_mint(resource: String, bits: u32) -> String {
   Stamp::mint(resource, Some(bits)).format()
@@ -33,7 +47,8 @@ pub fn hashcash_mint(resource: String, bits: u32) -> String {
 #[derive(uniffi::Record)]
 pub struct DocRecord {
   pub doc_id: String,
-  // base64 encoded data
+  // base64 encoded data; on mobile large payloads this can be a file-path token
+  // prefixed with "__AFFINE_DOC_FILE__:"
   pub bin: String,
   pub timestamp: i64,
 }
@@ -54,11 +69,7 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
   fn try_from(record: DocRecord) -> Result<Self> {
     Ok(Self {
       doc_id: record.doc_id,
-      bin: Into::<Data>::into(
-        base64_simd::STANDARD
-          .decode_to_vec(record.bin)
-          .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
-      ),
+      bin: Into::<Data>::into(decode_mobile_data(&record.bin)?),
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(record.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
@@ -70,7 +81,8 @@ impl TryFrom<DocRecord> for affine_nbstore::DocRecord {
 pub struct DocUpdate {
   pub doc_id: String,
   pub timestamp: i64,
-  // base64 encoded data
+  // base64 encoded data; on mobile large payloads this can be a file-path token
+  // prefixed with "__AFFINE_DOC_FILE__:"
   pub bin: String,
 }
 
@@ -93,11 +105,7 @@ impl TryFrom<DocUpdate> for affine_nbstore::DocUpdate {
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(update.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
-      bin: Into::<Data>::into(
-        base64_simd::STANDARD
-          .decode_to_vec(update.bin)
-          .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
-      ),
+      bin: Into::<Data>::into(decode_mobile_data(&update.bin)?),
     })
   }
 }
@@ -198,7 +206,7 @@ impl From<affine_nbstore::Blob> for Blob {
 #[derive(uniffi::Record)]
 pub struct SetBlob {
   pub key: String,
-  // base64 encoded data
+  // base64 encoded data; mobile file-path tokens are also accepted
   pub data: String,
   pub mime: String,
 }
@@ -209,11 +217,7 @@ impl TryFrom<SetBlob> for affine_nbstore::SetBlob {
   fn try_from(blob: SetBlob) -> Result<Self> {
     Ok(Self {
       key: blob.key,
-      data: Into::<Data>::into(
-        base64_simd::STANDARD
-          .decode_to_vec(blob.data)
-          .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
-      ),
+      data: Into::<Data>::into(decode_mobile_data(&blob.data)?),
       mime: blob.mime,
     })
   }
@@ -334,6 +338,20 @@ pub fn new_doc_storage_pool() -> DocStoragePool {
 
 #[uniffi::export(async_runtime = "tokio")]
 impl DocStoragePool {
+  fn encode_doc_data(&self, universal_id: &str, doc_id: &str, timestamp: i64, data: &[u8]) -> Result<String> {
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    if data.len() >= MOBILE_BLOB_INLINE_THRESHOLD_BYTES {
+      return self
+        .mobile_blob_cache
+        .cache_doc_bin(universal_id, doc_id, timestamp, data)
+        .map_err(|err| UniffiError::Err(format!("Failed to cache doc file: {err}")));
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let _ = (universal_id, doc_id, timestamp);
+
+    Ok(base64_simd::STANDARD.encode_to_string(data))
+  }
+
   /// Initialize the database and run migrations.
   pub async fn connect(&self, universal_id: String, path: String) -> Result<()> {
     self.inner.connect(universal_id.clone(), path.clone()).await?;
@@ -362,12 +380,7 @@ impl DocStoragePool {
         .inner
         .get(universal_id)
         .await?
-        .push_update(
-          doc_id,
-          base64_simd::STANDARD
-            .decode_to_vec(update)
-            .map_err(|e| UniffiError::Base64DecodingError(e.to_string()))?,
-        )
+        .push_update(doc_id, decode_mobile_data(&update)?)
         .await?
         .and_utc()
         .timestamp_millis(),
@@ -375,15 +388,23 @@ impl DocStoragePool {
   }
 
   pub async fn get_doc_snapshot(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .get_doc_snapshot(doc_id)
-        .await?
-        .map(Into::into),
-    )
+    let Some(record) = self
+      .inner
+      .get(universal_id.clone())
+      .await?
+      .get_doc_snapshot(doc_id)
+      .await?
+    else {
+      return Ok(None);
+    };
+
+    let timestamp = record.timestamp.and_utc().timestamp_millis();
+    let bin = self.encode_doc_data(&universal_id, &record.doc_id, timestamp, &record.bin)?;
+    Ok(Some(DocRecord {
+      doc_id: record.doc_id,
+      bin,
+      timestamp,
+    }))
   }
 
   pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
@@ -398,17 +419,23 @@ impl DocStoragePool {
   }
 
   pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
-    Ok(
-      self
-        .inner
-        .get(universal_id)
-        .await?
-        .get_doc_updates(doc_id)
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect(),
-    )
+    self
+      .inner
+      .get(universal_id.clone())
+      .await?
+      .get_doc_updates(doc_id)
+      .await?
+      .into_iter()
+      .map(|update| {
+        let timestamp = update.timestamp.and_utc().timestamp_millis();
+        let bin = self.encode_doc_data(&universal_id, &update.doc_id, timestamp, &update.bin)?;
+        Ok(DocUpdate {
+          doc_id: update.doc_id,
+          timestamp,
+          bin,
+        })
+      })
+      .collect()
   }
 
   pub async fn mark_updates_merged(&self, universal_id: String, doc_id: String, updates: Vec<i64>) -> Result<u32> {

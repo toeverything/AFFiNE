@@ -20,6 +20,28 @@ export * from './definitions';
 
 export const NbStore = registerPlugin<NbStorePlugin>('NbStoreDocStorage');
 const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:';
+const MOBILE_DOC_FILE_PREFIX = '__AFFINE_DOC_FILE__:';
+
+async function decodePayload(
+  data: string,
+  prefix: string
+): Promise<Uint8Array> {
+  if (!data.startsWith(prefix)) {
+    return base64ToUint8Array(data);
+  }
+
+  const filePath = data.slice(prefix.length);
+  const normalizedPath = filePath.startsWith('file://')
+    ? filePath
+    : `file://${filePath}`;
+  const response = await fetch(Capacitor.convertFileSrc(normalizedPath));
+  if (!response.ok) {
+    throw new Error(
+      `Failed to read mobile payload file: ${filePath} (status ${response.status})`
+    );
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
 
 export const NbStoreNativeDBApis: NativeDBApis = {
   connect: async function (id: string): Promise<void> {
@@ -46,13 +68,15 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     docId: string
   ): Promise<DocRecord | null> {
     const snapshot = await NbStore.getDocSnapshot({ id, docId });
-    return snapshot
-      ? {
-          bin: base64ToUint8Array(snapshot.bin),
-          docId: snapshot.docId,
-          timestamp: new Date(snapshot.timestamp),
-        }
-      : null;
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      bin: await decodePayload(snapshot.bin, MOBILE_DOC_FILE_PREFIX),
+      docId: snapshot.docId,
+      timestamp: new Date(snapshot.timestamp),
+    };
   },
   setDocSnapshot: async function (
     id: string,
@@ -71,11 +95,13 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     docId: string
   ): Promise<DocRecord[]> {
     const { updates } = await NbStore.getDocUpdates({ id, docId });
-    return updates.map(update => ({
-      bin: base64ToUint8Array(update.bin),
-      docId: update.docId,
-      timestamp: new Date(update.timestamp),
-    }));
+    return Promise.all(
+      updates.map(async update => ({
+        bin: await decodePayload(update.bin, MOBILE_DOC_FILE_PREFIX),
+        docId: update.docId,
+        timestamp: new Date(update.timestamp),
+      }))
+    );
   },
   markUpdatesMerged: async function (
     id: string,
@@ -137,28 +163,8 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       return null;
     }
 
-    if (record.data.startsWith(MOBILE_BLOB_FILE_PREFIX)) {
-      const filePath = record.data.slice(MOBILE_BLOB_FILE_PREFIX.length);
-      const normalizedPath = filePath.startsWith('file://')
-        ? filePath
-        : `file://${filePath}`;
-      const response = await fetch(Capacitor.convertFileSrc(normalizedPath));
-      if (!response.ok) {
-        throw new Error(
-          `Failed to read blob file: ${filePath} (status ${response.status})`
-        );
-      }
-      const buffer = await response.arrayBuffer();
-      return {
-        data: new Uint8Array(buffer),
-        key: record.key,
-        mime: record.mime,
-        createdAt: new Date(record.createdAt),
-      };
-    }
-
     return {
-      data: base64ToUint8Array(record.data),
+      data: await decodePayload(record.data, MOBILE_BLOB_FILE_PREFIX),
       key: record.key,
       mime: record.mime,
       createdAt: new Date(record.createdAt),
