@@ -207,8 +207,6 @@ export class IndexerSyncImpl implements IndexerSync {
       return;
     }
 
-    await this.indexer.loadIndexSnapshots();
-
     while (true) {
       try {
         await this.retryLoop(signal);
@@ -263,6 +261,8 @@ export class IndexerSyncImpl implements IndexerSync {
 
     this.status.errorMessage = null;
     this.status.statusUpdatedSubject$.next(true);
+
+    await this.indexer.loadIndexSnapshots();
 
     const indexVersion = await this.indexer.indexVersion();
     console.log('indexer sync start, version: ', indexVersion);
