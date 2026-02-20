@@ -23,7 +23,7 @@ base64-simd    = { workspace = true }
 chrono         = { workspace = true }
 sqlx           = { workspace = true }
 thiserror      = { workspace = true }
-tokio          = { workspace = true }
+tokio          = { workspace = true, features = ["rt-multi-thread"] }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]

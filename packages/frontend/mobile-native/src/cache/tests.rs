@@ -205,15 +205,17 @@ fn concurrent_cache_and_read_is_consistent() {
     .expect("register workspace");
 
   let workers = 8;
-  let iterations = 24;
+  let iterations = 64;
   let mut handles = Vec::with_capacity(workers);
 
   for worker in 0..workers {
     let cache = Arc::clone(&cache);
     let universal_id = Arc::clone(&universal_id);
     handles.push(thread::spawn(move || {
+      // Keep key cardinality under cache capacity so this test exercises
+      // concurrent read/write consistency rather than LRU eviction behavior.
+      let key = format!("blob-{worker}");
       for i in 0..iterations {
-        let key = format!("blob-{worker}-{i}");
         let data = vec![worker as u8, i as u8, 42];
         let blob = build_blob(&key, data.clone());
         let cached = cache
@@ -231,6 +233,101 @@ fn concurrent_cache_and_read_is_consistent() {
   for handle in handles {
     handle.join().expect("worker thread should succeed");
   }
+
+  cache.invalidate_workspace(universal_id.as_str());
+}
+
+#[test]
+fn concurrent_high_churn_read_tolerates_eviction_not_found() {
+  let cache = Arc::new(MobileBlobCache::new());
+  let universal_id = Arc::new(unique_id("concurrent-high-churn"));
+  cache
+    .register_workspace(universal_id.as_str(), ":memory:")
+    .expect("register workspace");
+
+  let workers = 8;
+  let iterations = 64;
+  let mut handles = Vec::with_capacity(workers);
+
+  for worker in 0..workers {
+    let cache = Arc::clone(&cache);
+    let universal_id = Arc::clone(&universal_id);
+    handles.push(thread::spawn(move || {
+      let mut read_ok = 0usize;
+      let mut read_not_found = 0usize;
+
+      for i in 0..iterations {
+        // Use unique keys to force churn and LRU eviction under contention.
+        let key = format!("blob-{worker}-{i}");
+        let data = vec![worker as u8, i as u8, 77];
+        let blob = build_blob(&key, data.clone());
+        let cached = cache
+          .cache_blob(universal_id.as_str(), &blob)
+          .expect("cache blob in worker");
+
+        match cache.read_binary_file(universal_id.as_str(), &cached.data) {
+          Ok(read_back) => {
+            assert_eq!(read_back, data);
+            read_ok += 1;
+          }
+          Err(err) => {
+            assert_eq!(
+              err.kind(),
+              ErrorKind::NotFound,
+              "unexpected read error during high churn: {err:?}"
+            );
+            // Once the backing file is gone, cache lookup for this unique key
+            // should no longer return an entry.
+            assert!(cache.get_blob(universal_id.as_str(), &key).is_none());
+            read_not_found += 1;
+          }
+        }
+      }
+
+      (read_ok, read_not_found)
+    }));
+  }
+
+  let mut total_read_ok = 0usize;
+  let mut total_read_not_found = 0usize;
+  for handle in handles {
+    let (read_ok, read_not_found) = handle.join().expect("worker thread should succeed");
+    total_read_ok += read_ok;
+    total_read_not_found += read_not_found;
+  }
+
+  assert_eq!(total_read_ok + total_read_not_found, workers * iterations);
+
+  // Deterministically force eviction to validate NotFound behavior.
+  let evicted_key = "evicted-target";
+  let evicted_blob = cache
+    .cache_blob(universal_id.as_str(), &build_blob(evicted_key, vec![9, 9, 9]))
+    .expect("cache target blob for eviction");
+  for i in 0..=MOBILE_BLOB_CACHE_CAPACITY {
+    let pressure_key = format!("pressure-{i}");
+    cache
+      .cache_blob(
+        universal_id.as_str(),
+        &build_blob(&pressure_key, vec![i as u8, 1, 2, 3]),
+      )
+      .expect("cache pressure blob");
+  }
+  let evicted_err = cache
+    .read_binary_file(universal_id.as_str(), &evicted_blob.data)
+    .expect_err("evicted token should not be readable");
+  assert_eq!(evicted_err.kind(), ErrorKind::NotFound);
+  assert!(cache.get_blob(universal_id.as_str(), evicted_key).is_none());
+
+  // Cache remains healthy for subsequent writes and reads.
+  let stable_blob = build_blob("post-churn", vec![1, 2, 3, 4]);
+  let stable_cached = cache
+    .cache_blob(universal_id.as_str(), &stable_blob)
+    .expect("cache stable blob after churn");
+  let stable_read = cache
+    .read_binary_file(universal_id.as_str(), &stable_cached.data)
+    .expect("read stable blob after churn");
+  assert_eq!(stable_read, vec![1, 2, 3, 4]);
+  assert!(cache.get_blob(universal_id.as_str(), "post-churn").is_some());
 
   cache.invalidate_workspace(universal_id.as_str());
 }
