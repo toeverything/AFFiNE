@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 export const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:';
 export const MOBILE_DOC_FILE_PREFIX = '__AFFINE_DOC_FILE__:';
+export const MOBILE_PAYLOAD_INLINE_THRESHOLD_BYTES = 1024 * 1024;
 const MOBILE_PAYLOAD_CACHE_DIR = 'nbstore-blob-cache';
 const MOBILE_PAYLOAD_BUCKET_PATTERN = /^[0-9a-f]{16}$/;
 const MOBILE_PAYLOAD_FILE_PATTERN = /^[0-9a-f]{16}\.(blob|docbin)$/;
@@ -78,9 +79,25 @@ function assertMobileCachePath(fileUrl: string): void {
   }
 }
 
+async function readTokenPayload(filePath: string): Promise<Uint8Array> {
+  const response = await fetch(Capacitor.convertFileSrc(filePath));
+  if (!response.ok) {
+    throw new Error(
+      `Failed to read mobile payload file: ${filePath} (status ${response.status})`
+    );
+  }
+
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+export interface DecodePayloadOptions {
+  onTokenReadFailure?: (error: Error) => Promise<string | null | undefined>;
+}
+
 export async function decodePayload(
   data: string,
-  prefix: string
+  prefix: string,
+  options?: DecodePayloadOptions
 ): Promise<Uint8Array> {
   if (!data.startsWith(prefix)) {
     return base64ToUint8Array(data);
@@ -89,12 +106,21 @@ export async function decodePayload(
   const normalizedPath = normalizeTokenFilePath(data.slice(prefix.length));
   assertMobileCachePath(normalizedPath);
 
-  const response = await fetch(Capacitor.convertFileSrc(normalizedPath));
-  if (!response.ok) {
-    throw new Error(
-      `Failed to read mobile payload file: ${normalizedPath} (status ${response.status})`
-    );
-  }
+  try {
+    return await readTokenPayload(normalizedPath);
+  } catch (error) {
+    const reloadPayload = options?.onTokenReadFailure;
+    if (!reloadPayload) {
+      throw error;
+    }
 
-  return new Uint8Array(await response.arrayBuffer());
+    const refreshedPayload = await reloadPayload(
+      error instanceof Error ? error : new Error(String(error))
+    );
+    if (!refreshedPayload) {
+      throw error;
+    }
+
+    return decodePayload(refreshedPayload, prefix);
+  }
 }

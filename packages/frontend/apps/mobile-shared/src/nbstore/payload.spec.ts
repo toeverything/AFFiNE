@@ -77,4 +77,31 @@ describe('decodePayload', () => {
     ).rejects.toThrow('Refusing to read mobile payload outside cache dir');
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('retries once with refreshed payload when token read fails', async () => {
+    const path =
+      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.docbin';
+    const payload = `${MOBILE_DOC_FILE_PREFIX}${path}`;
+    const expected = Uint8Array.from([9, 8, 7]);
+
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => expected.buffer,
+      } as Response);
+
+    const reloadedPayload = vi.fn(async () => payload);
+    const decoded = await decodePayload(payload, MOBILE_DOC_FILE_PREFIX, {
+      onTokenReadFailure: reloadedPayload,
+    });
+
+    expect(decoded).toEqual(expected);
+    expect(reloadedPayload).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

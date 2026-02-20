@@ -51,8 +51,17 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       return null;
     }
 
+    let refreshedSnapshotPromise:
+      | ReturnType<typeof NbStore.getDocSnapshot>
+      | undefined;
+
     return {
-      bin: await decodePayload(snapshot.bin, MOBILE_DOC_FILE_PREFIX),
+      bin: await decodePayload(snapshot.bin, MOBILE_DOC_FILE_PREFIX, {
+        onTokenReadFailure: async () => {
+          refreshedSnapshotPromise ??= NbStore.getDocSnapshot({ id, docId });
+          return (await refreshedSnapshotPromise)?.bin;
+        },
+      }),
       docId: snapshot.docId,
       timestamp: new Date(snapshot.timestamp),
     };
@@ -74,9 +83,41 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     docId: string
   ): Promise<DocRecord[]> {
     const { updates } = await NbStore.getDocUpdates({ id, docId });
+    let refreshedUpdatesPromise: Promise<typeof updates> | undefined;
+    const getRefreshedUpdatePayload = async (
+      updateDocId: string,
+      updateTimestamp: number,
+      updateIndex: number
+    ) => {
+      refreshedUpdatesPromise ??= NbStore.getDocUpdates({ id, docId }).then(
+        result => result.updates
+      );
+      const refreshedUpdates = await refreshedUpdatesPromise;
+      const updateAtSameIndex = refreshedUpdates.at(updateIndex);
+      if (
+        updateAtSameIndex &&
+        updateAtSameIndex.docId === updateDocId &&
+        updateAtSameIndex.timestamp === updateTimestamp
+      ) {
+        return updateAtSameIndex.bin;
+      }
+
+      return refreshedUpdates.find(
+        update =>
+          update.docId === updateDocId && update.timestamp === updateTimestamp
+      )?.bin;
+    };
+
     return Promise.all(
-      updates.map(async update => ({
-        bin: await decodePayload(update.bin, MOBILE_DOC_FILE_PREFIX),
+      updates.map(async (update, updateIndex) => ({
+        bin: await decodePayload(update.bin, MOBILE_DOC_FILE_PREFIX, {
+          onTokenReadFailure: async () =>
+            getRefreshedUpdatePayload(
+              update.docId,
+              update.timestamp,
+              updateIndex
+            ),
+        }),
         docId: update.docId,
         timestamp: new Date(update.timestamp),
       }))
@@ -142,8 +183,15 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       return null;
     }
 
+    let refreshedBlobPromise: ReturnType<typeof NbStore.getBlob> | undefined;
+
     return {
-      data: await decodePayload(record.data, MOBILE_BLOB_FILE_PREFIX),
+      data: await decodePayload(record.data, MOBILE_BLOB_FILE_PREFIX, {
+        onTokenReadFailure: async () => {
+          refreshedBlobPromise ??= NbStore.getBlob({ id, key });
+          return (await refreshedBlobPromise)?.data;
+        },
+      }),
       key: record.key,
       mime: record.mime,
       createdAt: new Date(record.createdAt),
