@@ -58,31 +58,6 @@ fn doc_update_rejects_invalid_base64() {
 }
 
 #[tokio::test]
-async fn encode_large_doc_payload_returns_file_token_and_decodes_back() {
-  let pool = new_doc_storage_pool();
-  let universal_id = unique_id("mobile-doc-token");
-  pool
-    .connect(universal_id.clone(), ":memory:".to_string())
-    .await
-    .expect("connect should succeed");
-
-  let data = vec![7_u8; cache::MOBILE_PAYLOAD_INLINE_THRESHOLD_BYTES + 16];
-  let encoded = pool
-    .encode_doc_data(&universal_id, "doc", 42, &data)
-    .await
-    .expect("encode should succeed");
-  assert!(encoded.starts_with(cache::MOBILE_DOC_FILE_PREFIX));
-
-  let decoded = pool
-    .decode_mobile_data(&universal_id, &encoded)
-    .await
-    .expect("decode should succeed");
-  assert_eq!(decoded, data);
-
-  pool.disconnect(universal_id).await.expect("disconnect should succeed");
-}
-
-#[tokio::test]
 async fn decode_mobile_data_rejects_out_of_workspace_path() {
   let pool = new_doc_storage_pool();
   let universal_id = unique_id("mobile-doc-outside");

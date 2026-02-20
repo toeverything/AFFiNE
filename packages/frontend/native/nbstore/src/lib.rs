@@ -504,4 +504,11 @@ mod tests {
     assert_eq!(err.status, napi::Status::GenericFailure);
     assert!(err.reason.contains("Invalid operation"));
   }
+
+  #[test]
+  fn napi_error_mapping_connection_in_progress() {
+    let err: napi::Error = error::Error::ConnectionInProgress.into();
+    assert_eq!(err.status, napi::Status::GenericFailure);
+    assert!(err.reason.contains("Connection in progress"));
+  }
 }

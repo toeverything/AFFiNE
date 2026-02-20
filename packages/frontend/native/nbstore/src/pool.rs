@@ -54,7 +54,7 @@ impl SqliteDocStoragePool {
       match lock.entry(universal_id.clone()) {
         Entry::Occupied(entry) => match entry.get() {
           StorageState::Connected(_) => return Ok(()),
-          StorageState::Connecting(_) => return Err(Error::InvalidOperation),
+          StorageState::Connecting(_) => return Err(Error::ConnectionInProgress),
         },
         Entry::Vacant(entry) => {
           let storage = Arc::new(SqliteDocStorage::new(path));
@@ -82,12 +82,20 @@ impl SqliteDocStoragePool {
         lock.get(&universal_id),
         Some(StorageState::Connecting(existing)) if Arc::ptr_eq(existing, &storage)
       ) {
-        lock.insert(universal_id, StorageState::Connected(Arc::clone(&storage)));
+        lock.insert(universal_id.clone(), StorageState::Connected(Arc::clone(&storage)));
         transitioned = true;
       }
     }
 
     if !transitioned {
+      let mut lock = self.inner.write().await;
+      if matches!(
+        lock.get(&universal_id),
+        Some(StorageState::Connecting(existing)) if Arc::ptr_eq(existing, &storage)
+      ) {
+        lock.remove(&universal_id);
+      }
+      drop(lock);
       storage.close().await;
       return Err(Error::InvalidOperation);
     }
@@ -100,7 +108,7 @@ impl SqliteDocStoragePool {
       let mut lock = self.inner.write().await;
       match lock.get(&universal_id) {
         None => return Ok(()),
-        Some(StorageState::Connecting(_)) => return Err(Error::InvalidOperation),
+        Some(StorageState::Connecting(_)) => return Err(Error::ConnectionInProgress),
         Some(StorageState::Connected(storage)) => {
           // Prevent shutting down the shared storage while requests still hold refs.
           if Arc::strong_count(storage) > 1 {

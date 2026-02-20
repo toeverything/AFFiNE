@@ -17,7 +17,7 @@ vi.mock('@capacitor/core', () => ({
   },
 }));
 
-import { decodePayload, MOBILE_DOC_FILE_PREFIX } from './payload';
+import { decodePayload, MOBILE_BLOB_FILE_PREFIX } from './payload';
 
 describe('decodePayload', () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -34,7 +34,7 @@ describe('decodePayload', () => {
   });
 
   it('decodes inline base64 payloads without file IO', async () => {
-    const decoded = await decodePayload('ZGF0YQ==', MOBILE_DOC_FILE_PREFIX);
+    const decoded = await decodePayload('ZGF0YQ==', MOBILE_BLOB_FILE_PREFIX);
     expect(decoded).toEqual(Uint8Array.from([90, 71, 70, 48, 89, 81, 61, 61]));
     expect(mockBase64ToUint8Array).toHaveBeenCalledWith('ZGF0YQ==');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -49,10 +49,30 @@ describe('decodePayload', () => {
     } as Response);
 
     const path =
-      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.docbin';
+      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.blob';
     const decoded = await decodePayload(
-      `${MOBILE_DOC_FILE_PREFIX}${path}`,
-      MOBILE_DOC_FILE_PREFIX
+      `${MOBILE_BLOB_FILE_PREFIX}${path}`,
+      MOBILE_BLOB_FILE_PREFIX
+    );
+
+    expect(decoded).toEqual(expected);
+    expect(mockConvertFileSrc).toHaveBeenCalledWith(`file://${path}`);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads valid android cache file tokens', async () => {
+    const expected = Uint8Array.from([4, 3, 2, 1]);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => expected.buffer,
+    } as Response);
+
+    const path =
+      '/data/user/0/com.affine.app/cache/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.blob';
+    const decoded = await decodePayload(
+      `${MOBILE_BLOB_FILE_PREFIX}${path}`,
+      MOBILE_BLOB_FILE_PREFIX
     );
 
     expect(decoded).toEqual(expected);
@@ -62,26 +82,44 @@ describe('decodePayload', () => {
 
   it('rejects suffix-only paths outside expected cache shape', async () => {
     const path =
-      '/attacker/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.docbin';
+      '/attacker/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.blob';
     await expect(
-      decodePayload(`${MOBILE_DOC_FILE_PREFIX}${path}`, MOBILE_DOC_FILE_PREFIX)
+      decodePayload(
+        `${MOBILE_BLOB_FILE_PREFIX}${path}`,
+        MOBILE_BLOB_FILE_PREFIX
+      )
+    ).rejects.toThrow('Refusing to read mobile payload outside cache dir');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects random cache roots', async () => {
+    const path =
+      '/random/cache/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.blob';
+    await expect(
+      decodePayload(
+        `${MOBILE_BLOB_FILE_PREFIX}${path}`,
+        MOBILE_BLOB_FILE_PREFIX
+      )
     ).rejects.toThrow('Refusing to read mobile payload outside cache dir');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('rejects encoded traversal segments', async () => {
     const path =
-      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/%2E%2E/fedcba9876543210.docbin';
+      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/%2E%2E/fedcba9876543210.blob';
     await expect(
-      decodePayload(`${MOBILE_DOC_FILE_PREFIX}${path}`, MOBILE_DOC_FILE_PREFIX)
+      decodePayload(
+        `${MOBILE_BLOB_FILE_PREFIX}${path}`,
+        MOBILE_BLOB_FILE_PREFIX
+      )
     ).rejects.toThrow('Refusing to read mobile payload outside cache dir');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('retries once with refreshed payload when token read fails', async () => {
     const path =
-      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.docbin';
-    const payload = `${MOBILE_DOC_FILE_PREFIX}${path}`;
+      '/var/mobile/Containers/Data/Application/abc/Library/Caches/nbstore-blob-cache/0123456789abcdef/fedcba9876543210.blob';
+    const payload = `${MOBILE_BLOB_FILE_PREFIX}${path}`;
     const expected = Uint8Array.from([9, 8, 7]);
 
     fetchMock
@@ -96,7 +134,7 @@ describe('decodePayload', () => {
       } as Response);
 
     const reloadedPayload = vi.fn(async () => payload);
-    const decoded = await decodePayload(payload, MOBILE_DOC_FILE_PREFIX, {
+    const decoded = await decodePayload(payload, MOBILE_BLOB_FILE_PREFIX, {
       onTokenReadFailure: reloadedPayload,
     });
 

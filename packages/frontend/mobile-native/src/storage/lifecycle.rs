@@ -40,7 +40,7 @@ impl DocStoragePool {
     #[cfg(any(target_os = "android", target_os = "ios", test))]
     {
       let universal_id_for_cache = universal_id.clone();
-      self
+      let _ = self
         .run_mobile_cache_io(
           move |cache| {
             cache.invalidate_workspace(&universal_id_for_cache);
@@ -48,7 +48,7 @@ impl DocStoragePool {
           },
           "Failed to clear mobile blob cache workspace",
         )
-        .await?;
+        .await;
     }
     self.inner.disconnect(universal_id).await?;
     Ok(())

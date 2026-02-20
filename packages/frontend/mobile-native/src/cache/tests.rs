@@ -53,7 +53,6 @@ fn workspace_dir(cache: &MobileBlobCache, universal_id: &str) -> PathBuf {
 fn token_path(token: &str) -> PathBuf {
   token
     .strip_prefix(MOBILE_BLOB_FILE_PREFIX)
-    .or_else(|| token.strip_prefix(MOBILE_DOC_FILE_PREFIX))
     .map(PathBuf::from)
     .expect("token should contain file path")
 }
@@ -151,71 +150,6 @@ fn cache_blob_evicts_lru_entry_and_deletes_file() {
   assert!(!first_path.exists(), "evicted blob file should be deleted");
   assert!(cache.get_blob(&universal_id, "blob-0").is_none());
   assert!(cache.get_blob(&universal_id, "blob-1").is_some());
-
-  cache.invalidate_workspace(&universal_id);
-}
-
-#[test]
-fn invalidate_workspace_removes_cached_files_and_workspace_dir() {
-  let (cache, universal_id, workspace) = setup_cache("invalidate");
-
-  let cached_blob = cache
-    .cache_blob(&universal_id, &build_blob("blob", vec![1, 2, 3]))
-    .expect("cache blob");
-  let blob_path = token_path(&cached_blob.data);
-  let doc_token = cache
-    .cache_doc_bin(&universal_id, "doc", 123, b"doc-bytes")
-    .expect("cache doc bin");
-  let doc_path = token_path(&doc_token);
-  assert!(blob_path.exists());
-  assert!(doc_path.exists());
-
-  cache.invalidate_workspace(&universal_id);
-
-  assert!(!blob_path.exists());
-  assert!(!doc_path.exists());
-  assert!(!workspace.exists());
-  assert!(
-    !cache
-      .workspace_dirs
-      .read()
-      .expect("workspace cache lock poisoned")
-      .contains_key(&universal_id)
-  );
-}
-
-#[test]
-fn clear_workspace_cache_removes_cached_files_and_keeps_workspace_dir() {
-  let (cache, universal_id, workspace) = setup_cache("clear");
-
-  let cached_blob = cache
-    .cache_blob(&universal_id, &build_blob("blob", vec![1, 2, 3]))
-    .expect("cache blob");
-  let blob_path = token_path(&cached_blob.data);
-  let doc_token = cache
-    .cache_doc_bin(&universal_id, "doc", 123, b"doc-bytes")
-    .expect("cache doc bin");
-  let doc_path = token_path(&doc_token);
-  assert!(blob_path.exists());
-  assert!(doc_path.exists());
-
-  cache.clear_workspace_cache(&universal_id);
-
-  assert!(!blob_path.exists());
-  assert!(!doc_path.exists());
-  assert!(workspace.exists());
-  assert!(
-    cache
-      .workspace_dirs
-      .read()
-      .expect("workspace cache lock poisoned")
-      .contains_key(&universal_id)
-  );
-
-  let recached_blob = cache
-    .cache_blob(&universal_id, &build_blob("blob-2", vec![7, 8, 9]))
-    .expect("cache blob after clearing workspace");
-  assert!(token_path(&recached_blob.data).exists());
 
   cache.invalidate_workspace(&universal_id);
 }

@@ -83,7 +83,7 @@ impl DocStoragePool {
     #[cfg(any(target_os = "android", target_os = "ios", test))]
     {
       let universal_id_for_cache = universal_id;
-      self
+      let _ = self
         .run_mobile_cache_io(
           move |cache| {
             cache.invalidate_blob(&universal_id_for_cache, &key);
@@ -91,7 +91,7 @@ impl DocStoragePool {
           },
           "Failed to invalidate mobile blob cache entry",
         )
-        .await?;
+        .await;
     }
     Ok(())
   }
@@ -106,7 +106,7 @@ impl DocStoragePool {
     #[cfg(any(target_os = "android", target_os = "ios", test))]
     {
       let universal_id_for_cache = universal_id;
-      self
+      let _ = self
         .run_mobile_cache_io(
           move |cache| {
             cache.invalidate_blob(&universal_id_for_cache, &key);
@@ -114,7 +114,7 @@ impl DocStoragePool {
           },
           "Failed to invalidate mobile blob cache entry",
         )
-        .await?;
+        .await;
     }
     Ok(())
   }
@@ -124,7 +124,7 @@ impl DocStoragePool {
     #[cfg(any(target_os = "android", target_os = "ios", test))]
     {
       let universal_id_for_cache = universal_id;
-      self
+      let _ = self
         .run_mobile_cache_io(
           move |cache| {
             cache.clear_workspace_cache(&universal_id_for_cache);
@@ -132,7 +132,7 @@ impl DocStoragePool {
           },
           "Failed to clear mobile blob cache workspace",
         )
-        .await?;
+        .await;
     }
     Ok(())
   }

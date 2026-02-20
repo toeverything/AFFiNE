@@ -167,14 +167,23 @@ afterEvaluate {
         }
         def buildType = "${variant.buildType.name.capitalize()}"
         tasks["generate${productFlavor}${buildType}Assets"].dependsOn(tasks["cargoBuild"])
+        def variantName = "${variant.name.substring(0,1).toUpperCase()}${variant.name.substring(1)}"
+        def mergeNativeLibsTask = tasks.findByName("merge${variantName}NativeLibs")
+        if (mergeNativeLibsTask != null) {
+            mergeNativeLibsTask.dependsOn(tasks["cargoBuild"])
+        }
     }
 }
 
+def localProps = new Properties()
+file("${rootProject.projectDir}/local.properties").withInputStream { localProps.load(it) }
+def cargoPath = localProps.getProperty("rust.cargoCommand") ?: 'cargo'
 android.applicationVariants.configureEach { variant ->
-    def t = tasks.register("generate${variant.name.capitalize()}UniFFIBindings", Exec) {
+    def variantName = "${variant.name.substring(0,1).toUpperCase()}${variant.name.substring(1)}"
+    def t = tasks.register("generate${variantName}UniFFIBindings", Exec) {
         workingDir "${project.projectDir}"
         // Runs the bindings generation, note that you must have uniffi-bindgen installed and in your PATH environment variable
-        commandLine 'cargo', 'run', '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/arm64-v8a/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
+        commandLine "${cargoPath}", 'run', '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/arm64-v8a/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
         dependsOn("cargoBuild")
     }
     variant.javaCompileProvider.get().dependsOn(t)

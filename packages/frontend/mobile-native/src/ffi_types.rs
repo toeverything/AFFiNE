@@ -13,8 +13,7 @@ use crate::{
 #[derive(uniffi::Record)]
 pub struct DocRecord {
   pub doc_id: String,
-  // base64 encoded data; on mobile large payloads this can be a file-path token
-  // prefixed with "__AFFINE_DOC_FILE__:"
+  // base64 encoded data
   pub bin: String,
   pub timestamp: i64,
 }
@@ -47,8 +46,7 @@ impl TryFrom<DocRecord> for NbDocRecord {
 pub struct DocUpdate {
   pub doc_id: String,
   pub timestamp: i64,
-  // base64 encoded data; on mobile large payloads this can be a file-path token
-  // prefixed with "__AFFINE_DOC_FILE__:"
+  // base64 encoded data
   pub bin: String,
 }
 

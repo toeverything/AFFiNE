@@ -1,8 +1,10 @@
-import { uint8ArrayToBase64 } from '@affine/core/modules/workspace-engine';
+import {
+  base64ToUint8Array,
+  uint8ArrayToBase64,
+} from '@affine/core/modules/workspace-engine';
 import {
   decodePayload,
   MOBILE_BLOB_FILE_PREFIX,
-  MOBILE_DOC_FILE_PREFIX,
 } from '@affine/mobile-shared/nbstore/payload';
 import {
   type BlobRecord,
@@ -47,24 +49,13 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     docId: string
   ): Promise<DocRecord | null> {
     const snapshot = await NbStore.getDocSnapshot({ id, docId });
-    if (!snapshot) {
-      return null;
-    }
-
-    let refreshedSnapshotPromise:
-      | ReturnType<typeof NbStore.getDocSnapshot>
-      | undefined;
-
-    return {
-      bin: await decodePayload(snapshot.bin, MOBILE_DOC_FILE_PREFIX, {
-        onTokenReadFailure: async () => {
-          refreshedSnapshotPromise ??= NbStore.getDocSnapshot({ id, docId });
-          return (await refreshedSnapshotPromise)?.bin;
-        },
-      }),
-      docId: snapshot.docId,
-      timestamp: new Date(snapshot.timestamp),
-    };
+    return snapshot
+      ? {
+          bin: base64ToUint8Array(snapshot.bin),
+          docId: snapshot.docId,
+          timestamp: new Date(snapshot.timestamp),
+        }
+      : null;
   },
   setDocSnapshot: async function (
     id: string,
@@ -83,45 +74,11 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     docId: string
   ): Promise<DocRecord[]> {
     const { updates } = await NbStore.getDocUpdates({ id, docId });
-    let refreshedUpdatesPromise: Promise<typeof updates> | undefined;
-    const getRefreshedUpdatePayload = async (
-      updateDocId: string,
-      updateTimestamp: number,
-      updateIndex: number
-    ) => {
-      refreshedUpdatesPromise ??= NbStore.getDocUpdates({ id, docId }).then(
-        result => result.updates
-      );
-      const refreshedUpdates = await refreshedUpdatesPromise;
-      const updateAtSameIndex = refreshedUpdates.at(updateIndex);
-      if (
-        updateAtSameIndex &&
-        updateAtSameIndex.docId === updateDocId &&
-        updateAtSameIndex.timestamp === updateTimestamp
-      ) {
-        return updateAtSameIndex.bin;
-      }
-
-      return refreshedUpdates.find(
-        update =>
-          update.docId === updateDocId && update.timestamp === updateTimestamp
-      )?.bin;
-    };
-
-    return Promise.all(
-      updates.map(async (update, updateIndex) => ({
-        bin: await decodePayload(update.bin, MOBILE_DOC_FILE_PREFIX, {
-          onTokenReadFailure: async () =>
-            getRefreshedUpdatePayload(
-              update.docId,
-              update.timestamp,
-              updateIndex
-            ),
-        }),
-        docId: update.docId,
-        timestamp: new Date(update.timestamp),
-      }))
-    );
+    return updates.map(update => ({
+      bin: base64ToUint8Array(update.bin),
+      docId: update.docId,
+      timestamp: new Date(update.timestamp),
+    }));
   },
   markUpdatesMerged: async function (
     id: string,

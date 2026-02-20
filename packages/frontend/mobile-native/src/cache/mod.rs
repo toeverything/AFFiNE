@@ -14,7 +14,6 @@ const MOBILE_BLOB_MAX_READ_BYTES: u64 = 64 * 1024 * 1024;
 const MOBILE_BLOB_CACHE_CAPACITY: usize = 32;
 const MOBILE_BLOB_CACHE_DIR: &str = "nbstore-blob-cache";
 pub(crate) const MOBILE_BLOB_FILE_PREFIX: &str = "__AFFINE_BLOB_FILE__:";
-pub(crate) const MOBILE_DOC_FILE_PREFIX: &str = "__AFFINE_DOC_FILE__:";
 
 pub(crate) fn should_cache_payload_as_file(payload_len: usize) -> bool {
   payload_len >= MOBILE_PAYLOAD_INLINE_THRESHOLD_BYTES
@@ -44,7 +43,6 @@ impl MobileBlobCacheEntry {
 pub(crate) struct MobileBlobCache {
   workspace_dirs: RwLock<HashMap<String, PathBuf>>,
   blob_entries: Mutex<LruCache<String, MobileBlobCacheEntry>>,
-  doc_entries: Mutex<LruCache<String, String>>,
 }
 
 impl MobileBlobCache {
@@ -52,9 +50,6 @@ impl MobileBlobCache {
     Self {
       workspace_dirs: RwLock::new(HashMap::new()),
       blob_entries: Mutex::new(LruCache::new(
-        NonZeroUsize::new(MOBILE_BLOB_CACHE_CAPACITY).expect("cache capacity is non-zero"),
-      )),
-      doc_entries: Mutex::new(LruCache::new(
         NonZeroUsize::new(MOBILE_BLOB_CACHE_CAPACITY).expect("cache capacity is non-zero"),
       )),
     }
@@ -75,29 +70,19 @@ impl MobileBlobCache {
 
   pub(crate) fn get_blob(&self, universal_id: &str, key: &str) -> Option<crate::Blob> {
     let cache_key = Self::cache_key(universal_id, key);
-    let cached_entry = {
-      self
-        .blob_entries
-        .lock()
-        .expect("blob cache lock poisoned")
-        .get(&cache_key)
-        .cloned()
-    };
-
-    if let Some(entry) = cached_entry {
-      if Path::new(&entry.path).exists() {
-        return Some(entry.to_blob());
+    let mut stale_path = None;
+    {
+      let mut blob_entries = self.blob_entries.lock().expect("blob cache lock poisoned");
+      if let Some(entry) = blob_entries.get(&cache_key).cloned() {
+        if Path::new(&entry.path).exists() {
+          return Some(entry.to_blob());
+        }
+        stale_path = blob_entries.pop(&cache_key).map(|removed| removed.path);
       }
+    }
 
-      let stale_path = self
-        .blob_entries
-        .lock()
-        .expect("blob cache lock poisoned")
-        .pop(&cache_key)
-        .map(|removed| removed.path);
-      if let Some(path) = stale_path {
-        Self::delete_blob_file(&path);
-      }
+    if let Some(path) = stale_path {
+      Self::delete_blob_file(&path);
     }
 
     None
@@ -131,33 +116,6 @@ impl MobileBlobCache {
     }
 
     Ok(entry.to_blob())
-  }
-
-  pub(crate) fn cache_doc_bin(
-    &self,
-    universal_id: &str,
-    doc_id: &str,
-    timestamp: i64,
-    data: &[u8],
-  ) -> std::io::Result<String> {
-    let cache_key = Self::cache_key(universal_id, &format!("doc\u{1f}{doc_id}\u{1f}{timestamp}"));
-    let cache_dir = self.get_or_create_cache_dir(universal_id)?;
-
-    let file_path = Self::hashed_file_path(&cache_dir, &cache_key, "docbin");
-    std::fs::write(&file_path, data)?;
-
-    let path = file_path.to_string_lossy().into_owned();
-    let previous_path = self
-      .doc_entries
-      .lock()
-      .expect("doc cache lock poisoned")
-      .push(cache_key, path.clone())
-      .and_then(|(_previous_key, previous_path)| (previous_path != path).then_some(previous_path));
-    if let Some(previous_path) = previous_path {
-      Self::delete_blob_file(&previous_path);
-    }
-
-    Ok(format!("{MOBILE_DOC_FILE_PREFIX}{path}"))
   }
 
   pub(crate) fn invalidate_blob(&self, universal_id: &str, key: &str) {
@@ -220,19 +178,7 @@ impl MobileBlobCache {
         .collect::<Vec<_>>()
     };
 
-    let removed_doc_paths = {
-      let mut doc_entries = self.doc_entries.lock().expect("doc cache lock poisoned");
-      let keys = doc_entries
-        .iter()
-        .filter_map(|(key, _)| key.starts_with(&prefix).then_some(key.clone()))
-        .collect::<Vec<_>>();
-      keys
-        .into_iter()
-        .filter_map(|key| doc_entries.pop(&key))
-        .collect::<Vec<_>>()
-    };
-
-    for path in removed_blob_paths.into_iter().chain(removed_doc_paths) {
+    for path in removed_blob_paths {
       Self::delete_blob_file(&path);
     }
   }
@@ -331,14 +277,13 @@ impl MobileBlobCache {
 }
 
 pub(crate) fn is_mobile_binary_file_token(value: &str) -> bool {
-  value.starts_with(MOBILE_BLOB_FILE_PREFIX) || value.starts_with(MOBILE_DOC_FILE_PREFIX)
+  value.starts_with(MOBILE_BLOB_FILE_PREFIX)
 }
 
 impl MobileBlobCache {
   pub(crate) fn read_binary_file(&self, universal_id: &str, value: &str) -> std::io::Result<Vec<u8>> {
     let path = value
       .strip_prefix(MOBILE_BLOB_FILE_PREFIX)
-      .or_else(|| value.strip_prefix(MOBILE_DOC_FILE_PREFIX))
       .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "invalid mobile file token"))?;
 
     let path = path.strip_prefix("file://").unwrap_or(path);
@@ -405,7 +350,7 @@ fn is_valid_mobile_cache_path(path: &Path, workspace_dir: &Path) -> bool {
   let Some((stem, extension)) = file_name.rsplit_once('.') else {
     return false;
   };
-  if extension != "blob" && extension != "docbin" {
+  if extension != "blob" {
     return false;
   }
   stem.len() == 16 && stem.chars().all(|c| c.is_ascii_hexdigit())

@@ -2,12 +2,13 @@ import { base64ToUint8Array } from '@affine/core/modules/workspace-engine';
 import { Capacitor } from '@capacitor/core';
 
 export const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:';
-export const MOBILE_DOC_FILE_PREFIX = '__AFFINE_DOC_FILE__:';
 export const MOBILE_PAYLOAD_INLINE_THRESHOLD_BYTES = 1024 * 1024;
 const MOBILE_PAYLOAD_CACHE_DIR = 'nbstore-blob-cache';
 const MOBILE_PAYLOAD_BUCKET_PATTERN = /^[0-9a-f]{16}$/;
-const MOBILE_PAYLOAD_FILE_PATTERN = /^[0-9a-f]{16}\.(blob|docbin)$/;
+const MOBILE_PAYLOAD_FILE_PATTERN = /^[0-9a-f]{16}\.blob$/;
 const MOBILE_PAYLOAD_PARENT_DIRS = new Set(['cache', 'Caches', 'T', 'tmp']);
+const MOBILE_ANDROID_PACKAGE_PATTERN =
+  /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/;
 
 function normalizeTokenFilePath(rawPath: string): string {
   const trimmedPath = rawPath.trim();
@@ -71,12 +72,52 @@ function assertMobileCachePath(fileUrl: string): void {
     !MOBILE_PAYLOAD_BUCKET_PATTERN.test(bucket) ||
     !MOBILE_PAYLOAD_FILE_PATTERN.test(fileName) ||
     !MOBILE_PAYLOAD_PARENT_DIRS.has(parentDir) ||
-    (parentDir === 'Caches' && cacheParent !== 'Library')
+    !isAllowedCacheParent(decodedSegments, parentDir, cacheParent)
   ) {
     throw new Error(
       `Refusing to read mobile payload outside cache dir: ${fileUrl}`
     );
   }
+}
+
+function isAllowedCacheParent(
+  parts: string[],
+  parentDir: string,
+  cacheParent: string | undefined
+): boolean {
+  if (parentDir === 'Caches') {
+    return cacheParent === 'Library' && ['var', 'private'].includes(parts[0]);
+  }
+
+  if (parentDir === 'cache') {
+    if (parts[0] !== 'data' || !cacheParent) {
+      return false;
+    }
+    if (!MOBILE_ANDROID_PACKAGE_PATTERN.test(cacheParent)) {
+      return false;
+    }
+
+    if (parts[1] === 'data') {
+      return true;
+    }
+    if (parts[1] === 'user') {
+      return !!parts[2] && /^[0-9]+$/.test(parts[2]);
+    }
+    return false;
+  }
+
+  if (parentDir === 'tmp') {
+    return (
+      parts[0] === 'tmp' ||
+      (parts[0] === 'private' && parts[1] === 'var' && parts[2] === 'tmp')
+    );
+  }
+
+  if (parentDir === 'T') {
+    return parts[0] === 'var' && parts[1] === 'folders';
+  }
+
+  return false;
 }
 
 async function readTokenPayload(filePath: string): Promise<Uint8Array> {

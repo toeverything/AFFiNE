@@ -41,13 +41,13 @@ export interface NbStorePlugin {
   pushUpdate: (options: {
     id: string;
     docId: string;
-    // base64 encoded data, or "__AFFINE_DOC_FILE__:<absolutePath>" for large doc payloads
+    // base64 encoded data
     data: string;
   }) => Promise<{ timestamp: number }>;
   getDocSnapshot: (options: { id: string; docId: string }) => Promise<
     | {
         docId: string;
-        // base64 encoded data, or "__AFFINE_DOC_FILE__:<absolutePath>" for large doc payloads
+        // base64 encoded data
         bin: string;
         timestamp: number;
       }
@@ -56,7 +56,7 @@ export interface NbStorePlugin {
   setDocSnapshot: (options: {
     id: string;
     docId: string;
-    // base64 encoded data, or "__AFFINE_DOC_FILE__:<absolutePath>" for large doc payloads
+    // base64 encoded data
     bin: string;
     timestamp: number;
   }) => Promise<{ success: boolean }>;
@@ -64,7 +64,7 @@ export interface NbStorePlugin {
     updates: {
       docId: string;
       timestamp: number;
-      // base64 encoded data, or "__AFFINE_DOC_FILE__:<absolutePath>" for large doc payloads
+      // base64 encoded data
       bin: string;
     }[];
   }>;
