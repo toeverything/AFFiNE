@@ -1,6 +1,9 @@
 global:
   app:
     buildType: 'stable'
+    # set to 'dev', 'beta', or 'production'.
+    # if not set, will use the name of the kubernetes namespace.
+    environment: ''
   ingress:
     enabled: false
     className: ''
@@ -16,6 +19,14 @@ global:
     secretName: 'server-private-key'
     privateKey: ''
   database:
+    # if "password" is set, this chart will store that password in a secret
+    # that AFFiNE will use to connect.
+    #
+    # if you want to reuse an existing secret, leave 'password' blank
+    # and change `secretName` (and optionally `secretPasswordField`).
+    secretName: 'pg-postgresql'
+    secretUsernameField: 'postgres-username'
+    secretPasswordField: 'postgres-password'
     user: 'postgres'
     host: 'pg-postgresql'
     port: '5432'
@@ -28,10 +39,10 @@ global:
     password: ''
     database: 0
   indexer:
+    enabled: true
     provider: ''
     endpoint: ''
-    username: ''
-    password: ''
+    apiKey: ''
   docService:
     name: 'affine-doc'
     port: 3020

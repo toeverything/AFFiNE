@@ -1,0 +1,6 @@
+apiVersion: v2
+name: common
+description: templates and helpers common to the affine chart and its sub-charts
+type: application
+version: 0.0.0
+appVersion: "0.26.1"

@@ -1,0 +1,16 @@
+{{/* environment variables required for AFFiNE to connect to Postgres */}}
+{{- define "common.pg-env" }}
+- name: DATABASE_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ quote .Values.global.database.secretName }}
+      key: {{ quote .Values.global.database.secretUsernameField }}
+- name: DATABASE_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ quote .Values.global.database.secretName }}
+      key: {{ quote .Values.global.database.secretPasswordField }}
+- name: DATABASE_URL
+  # TODO: make this more resilient (eg; username/password should be URL-escaped)
+  value: "postgres://$(DATABASE_USERNAME):$(DATABASE_PASSWORD)@{{ .Values.global.database.host }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}?schema=data"
+{{- end }}

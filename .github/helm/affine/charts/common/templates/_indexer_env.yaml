@@ -1,0 +1,16 @@
+{{/* environment variables required for AFFiNE to connect to Indexer */}}
+{{- define "common.indexer-env" }}
+- name: AFFINE_INDEXER_ENABLED
+  value: {{ quote .Values.global.indexer.enabled }}
+- name: AFFINE_INDEXER_SEARCH_PROVIDER
+  value: "{{ .Values.global.indexer.provider }}"
+- name: AFFINE_INDEXER_SEARCH_ENDPOINT
+  value: "{{ .Values.global.indexer.endpoint }}"
+{{- if .Values.global.indexer.apiKey -}}
+- name: AFFINE_INDEXER_SEARCH_API_KEY
+  valueFrom:
+    secretKeyRef:
+    name: indexer
+    key: indexer-apiKey
+{{- end }}
+{{- end }}
