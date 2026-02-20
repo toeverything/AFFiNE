@@ -16,6 +16,10 @@ type MarkdownExtension = ExtensionType & {
   identifier: ServiceIdentifier<InlineMarkdownMatch<AffineTextAttributes>>;
 };
 
+/**
+ * Minimal inline-editor test double for markdown matcher actions.
+ * It tracks plain text, per-character attributes, and caret position.
+ */
 class MockInlineEditor {
   text: string;
   inlineRange: { index: number; length: number } | null = null;
@@ -72,6 +76,12 @@ function getMatcher(extension: MarkdownExtension) {
   return container.provider().get(extension.identifier);
 }
 
+/**
+ * Regression cases for inline markdown triggers that should:
+ * 1) keep the typed trailing space,
+ * 2) place caret after that space,
+ * 3) stop style propagation into subsequent plain text.
+ */
 const markerCases = [
   {
     name: 'bolditalic',
