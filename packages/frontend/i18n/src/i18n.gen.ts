@@ -8498,7 +8498,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.mcp-server.desc"](): string;
     /**
-      * `This token is shown only once. Delete and recreate it to copy the JSON configuration.`
+      * `The MCP token is shown only once. Delete and recreate it to copy the JSON configuration.`
       */
     ["com.affine.integration.mcp-server.copy-json.disabled-hint"](): string;
     /**
