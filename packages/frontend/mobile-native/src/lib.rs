@@ -1,9 +1,12 @@
+#[cfg(any(target_os = "android", target_os = "ios", test))]
+use std::sync::Arc;
+
 use affine_common::hashcash::Stamp;
 use affine_nbstore::{Data, pool::SqliteDocStoragePool};
 #[cfg(any(target_os = "android", target_os = "ios", test))]
 #[cfg_attr(all(test, not(any(target_os = "android", target_os = "ios"))), allow(dead_code))]
 pub(crate) mod mobile_blob_cache;
-#[cfg(any(target_os = "android", target_os = "ios"))]
+#[cfg(any(target_os = "android", target_os = "ios", test))]
 use mobile_blob_cache::{MOBILE_BLOB_INLINE_THRESHOLD_BYTES, MobileBlobCache, is_mobile_binary_file_token};
 
 #[derive(uniffi::Error, thiserror::Error, Debug)]
@@ -100,48 +103,6 @@ impl TryFrom<DocUpdate> for affine_nbstore::DocUpdate {
         .naive_utc(),
       bin: Into::<Data>::into(decode_base64_data(&update.bin)?),
     })
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn doc_update_roundtrip_base64() {
-    let timestamp = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(1_700_000_000_000)
-      .unwrap()
-      .naive_utc();
-    let original = affine_nbstore::DocUpdate {
-      doc_id: "doc-1".to_string(),
-      timestamp,
-      bin: vec![1, 2, 3, 4, 5],
-    };
-
-    let encoded: DocUpdate = original.into();
-    let decoded = affine_nbstore::DocUpdate::try_from(encoded).unwrap();
-
-    assert_eq!(decoded.doc_id, "doc-1");
-    assert_eq!(decoded.timestamp, timestamp);
-    assert_eq!(decoded.bin, vec![1, 2, 3, 4, 5]);
-  }
-
-  #[test]
-  fn doc_update_rejects_invalid_base64() {
-    let update = DocUpdate {
-      doc_id: "doc-2".to_string(),
-      timestamp: 0,
-      bin: "not-base64!!".to_string(),
-    };
-
-    let err = match affine_nbstore::DocUpdate::try_from(update) {
-      Ok(_) => panic!("expected base64 decode error"),
-      Err(err) => err,
-    };
-    match err {
-      UniffiError::Base64DecodingError(_) => {}
-      other => panic!("unexpected error: {other:?}"),
-    }
   }
 }
 
@@ -316,44 +277,68 @@ impl From<affine_nbstore::indexer::NativeMatch> for MatchRange {
 #[derive(uniffi::Object)]
 pub struct DocStoragePool {
   inner: SqliteDocStoragePool,
-  #[cfg(any(target_os = "android", target_os = "ios"))]
-  mobile_blob_cache: MobileBlobCache,
+  #[cfg(any(target_os = "android", target_os = "ios", test))]
+  mobile_blob_cache: Arc<MobileBlobCache>,
 }
 
 #[uniffi::export]
 pub fn new_doc_storage_pool() -> DocStoragePool {
   DocStoragePool {
     inner: Default::default(),
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    mobile_blob_cache: MobileBlobCache::new(),
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
+    mobile_blob_cache: Arc::new(MobileBlobCache::new()),
+  }
+}
+
+impl DocStoragePool {
+  #[cfg(any(target_os = "android", target_os = "ios", test))]
+  async fn run_mobile_cache_io<T, F>(&self, task: F, context: &'static str) -> Result<T>
+  where
+    T: Send + 'static,
+    F: FnOnce(Arc<MobileBlobCache>) -> std::io::Result<T> + Send + 'static,
+  {
+    let cache = Arc::clone(&self.mobile_blob_cache);
+    tokio::task::spawn_blocking(move || task(cache))
+      .await
+      .map_err(|err| UniffiError::Err(format!("{context}: {err}")))?
+      .map_err(|err| UniffiError::Err(format!("{context}: {err}")))
   }
 }
 
 #[uniffi::export(async_runtime = "tokio")]
 impl DocStoragePool {
-  fn decode_mobile_data(&self, universal_id: &str, data: &str) -> Result<Vec<u8>> {
-    #[cfg(any(target_os = "android", target_os = "ios"))]
+  async fn decode_mobile_data(&self, universal_id: &str, data: &str) -> Result<Vec<u8>> {
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
     if is_mobile_binary_file_token(data) {
+      let universal_id = universal_id.to_string();
+      let data = data.to_string();
       return self
-        .mobile_blob_cache
-        .read_binary_file(universal_id, data)
-        .map_err(|err| UniffiError::Err(format!("Failed to read mobile file token: {err}")));
+        .run_mobile_cache_io(
+          move |cache| cache.read_binary_file(&universal_id, &data),
+          "Failed to read mobile file token",
+        )
+        .await;
     }
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", target_os = "ios", test)))]
     let _ = universal_id;
 
     decode_base64_data(data)
   }
 
-  fn encode_doc_data(&self, universal_id: &str, doc_id: &str, timestamp: i64, data: &[u8]) -> Result<String> {
-    #[cfg(any(target_os = "android", target_os = "ios"))]
+  async fn encode_doc_data(&self, universal_id: &str, doc_id: &str, timestamp: i64, data: &[u8]) -> Result<String> {
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
     if data.len() >= MOBILE_BLOB_INLINE_THRESHOLD_BYTES {
+      let universal_id = universal_id.to_string();
+      let doc_id = doc_id.to_string();
+      let data = data.to_vec();
       return self
-        .mobile_blob_cache
-        .cache_doc_bin(universal_id, doc_id, timestamp, data)
-        .map_err(|err| UniffiError::Err(format!("Failed to cache doc file: {err}")));
+        .run_mobile_cache_io(
+          move |cache| cache.cache_doc_bin(&universal_id, &doc_id, timestamp, &data),
+          "Failed to cache doc file",
+        )
+        .await;
     }
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", target_os = "ios", test)))]
     let _ = (universal_id, doc_id, timestamp);
 
     Ok(base64_simd::STANDARD.encode_to_string(data))
@@ -361,18 +346,52 @@ impl DocStoragePool {
 
   /// Initialize the database and run migrations.
   pub async fn connect(&self, universal_id: String, path: String) -> Result<()> {
-    self.inner.connect(universal_id.clone(), path.clone()).await?;
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    self
-      .mobile_blob_cache
-      .register_workspace(&universal_id, &path)
-      .map_err(|err| UniffiError::Err(format!("Failed to initialize mobile blob cache: {err}")))?;
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
+    {
+      let universal_id_for_cache = universal_id.clone();
+      let path_for_cache = path.clone();
+      self
+        .run_mobile_cache_io(
+          move |cache| cache.register_workspace(&universal_id_for_cache, &path_for_cache),
+          "Failed to initialize mobile blob cache",
+        )
+        .await?;
+    }
+
+    if let Err(err) = self.inner.connect(universal_id.clone(), path).await {
+      #[cfg(any(target_os = "android", target_os = "ios", test))]
+      {
+        let universal_id_for_cache = universal_id.clone();
+        let _ = self
+          .run_mobile_cache_io(
+            move |cache| {
+              cache.invalidate_workspace(&universal_id_for_cache);
+              Ok(())
+            },
+            "Failed to rollback mobile blob cache workspace",
+          )
+          .await;
+      }
+      return Err(err.into());
+    }
+
     Ok(())
   }
 
   pub async fn disconnect(&self, universal_id: String) -> Result<()> {
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    self.mobile_blob_cache.invalidate_workspace(&universal_id);
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
+    {
+      let universal_id_for_cache = universal_id.clone();
+      self
+        .run_mobile_cache_io(
+          move |cache| {
+            cache.invalidate_workspace(&universal_id_for_cache);
+            Ok(())
+          },
+          "Failed to clear mobile blob cache workspace",
+        )
+        .await?;
+    }
     self.inner.disconnect(universal_id).await?;
     Ok(())
   }
@@ -382,7 +401,7 @@ impl DocStoragePool {
   }
 
   pub async fn push_update(&self, universal_id: String, doc_id: String, update: String) -> Result<i64> {
-    let decoded_update = self.decode_mobile_data(&universal_id, &update)?;
+    let decoded_update = self.decode_mobile_data(&universal_id, &update).await?;
     Ok(
       self
         .inner
@@ -407,7 +426,9 @@ impl DocStoragePool {
     };
 
     let timestamp = record.timestamp.and_utc().timestamp_millis();
-    let bin = self.encode_doc_data(&universal_id, &record.doc_id, timestamp, &record.bin)?;
+    let bin = self
+      .encode_doc_data(&universal_id, &record.doc_id, timestamp, &record.bin)
+      .await?;
     Ok(Some(DocRecord {
       doc_id: record.doc_id,
       bin,
@@ -418,7 +439,7 @@ impl DocStoragePool {
   pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
     let doc_record = affine_nbstore::DocRecord {
       doc_id: snapshot.doc_id,
-      bin: Into::<Data>::into(self.decode_mobile_data(&universal_id, &snapshot.bin)?),
+      bin: Into::<Data>::into(self.decode_mobile_data(&universal_id, &snapshot.bin).await?),
       timestamp: chrono::DateTime::<chrono::Utc>::from_timestamp_millis(snapshot.timestamp)
         .ok_or(UniffiError::TimestampDecodingError)?
         .naive_utc(),
@@ -427,23 +448,26 @@ impl DocStoragePool {
   }
 
   pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
-    self
+    let updates = self
       .inner
       .get(universal_id.clone())
       .await?
       .get_doc_updates(doc_id)
-      .await?
-      .into_iter()
-      .map(|update| {
-        let timestamp = update.timestamp.and_utc().timestamp_millis();
-        let bin = self.encode_doc_data(&universal_id, &update.doc_id, timestamp, &update.bin)?;
-        Ok(DocUpdate {
-          doc_id: update.doc_id,
-          timestamp,
-          bin,
-        })
-      })
-      .collect()
+      .await?;
+
+    let mut converted = Vec::with_capacity(updates.len());
+    for update in updates {
+      let timestamp = update.timestamp.and_utc().timestamp_millis();
+      let bin = self
+        .encode_doc_data(&universal_id, &update.doc_id, timestamp, &update.bin)
+        .await?;
+      converted.push(DocUpdate {
+        doc_id: update.doc_id,
+        timestamp,
+        bin,
+      });
+    }
+    Ok(converted)
   }
 
   pub async fn mark_updates_merged(&self, universal_id: String, doc_id: String, updates: Vec<i64>) -> Result<u32> {
@@ -506,9 +530,17 @@ impl DocStoragePool {
   }
 
   pub async fn get_blob(&self, universal_id: String, key: String) -> Result<Option<Blob>> {
-    #[cfg(any(target_os = "android", target_os = "ios"))]
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
     {
-      if let Some(blob) = self.mobile_blob_cache.get_blob(&universal_id, &key) {
+      let universal_id_for_cache = universal_id.clone();
+      let key_for_cache = key.clone();
+      if let Some(blob) = self
+        .run_mobile_cache_io(
+          move |cache| Ok(cache.get_blob(&universal_id_for_cache, &key_for_cache)),
+          "Failed to read mobile blob cache",
+        )
+        .await?
+      {
         return Ok(Some(blob));
       }
 
@@ -526,30 +558,43 @@ impl DocStoragePool {
         return Ok(Some(blob.into()));
       }
 
+      let universal_id_for_cache = universal_id.clone();
       return self
-        .mobile_blob_cache
-        .cache_blob(&universal_id, &blob)
-        .map(Some)
-        .map_err(|err| UniffiError::Err(format!("Failed to cache blob file: {err}")));
+        .run_mobile_cache_io(
+          move |cache| cache.cache_blob(&universal_id_for_cache, &blob).map(Some),
+          "Failed to cache blob file",
+        )
+        .await;
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(not(any(target_os = "android", target_os = "ios", test)))]
     {
       Ok(self.inner.get(universal_id).await?.get_blob(key).await?.map(Into::into))
     }
   }
 
   pub async fn set_blob(&self, universal_id: String, blob: SetBlob) -> Result<()> {
-    #[cfg(any(target_os = "android", target_os = "ios"))]
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
     let key = blob.key.clone();
     let blob = affine_nbstore::SetBlob {
       key: blob.key,
-      data: Into::<Data>::into(self.decode_mobile_data(&universal_id, &blob.data)?),
+      data: Into::<Data>::into(self.decode_mobile_data(&universal_id, &blob.data).await?),
       mime: blob.mime,
     };
     self.inner.get(universal_id.clone()).await?.set_blob(blob).await?;
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    self.mobile_blob_cache.invalidate_blob(&universal_id, &key);
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
+    {
+      let universal_id_for_cache = universal_id;
+      self
+        .run_mobile_cache_io(
+          move |cache| {
+            cache.invalidate_blob(&universal_id_for_cache, &key);
+            Ok(())
+          },
+          "Failed to invalidate mobile blob cache entry",
+        )
+        .await?;
+    }
     Ok(())
   }
 
@@ -560,15 +605,37 @@ impl DocStoragePool {
       .await?
       .delete_blob(key.clone(), permanently)
       .await?;
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    self.mobile_blob_cache.invalidate_blob(&universal_id, &key);
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
+    {
+      let universal_id_for_cache = universal_id;
+      self
+        .run_mobile_cache_io(
+          move |cache| {
+            cache.invalidate_blob(&universal_id_for_cache, &key);
+            Ok(())
+          },
+          "Failed to invalidate mobile blob cache entry",
+        )
+        .await?;
+    }
     Ok(())
   }
 
   pub async fn release_blobs(&self, universal_id: String) -> Result<()> {
     self.inner.get(universal_id.clone()).await?.release_blobs().await?;
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    self.mobile_blob_cache.invalidate_workspace(&universal_id);
+    #[cfg(any(target_os = "android", target_os = "ios", test))]
+    {
+      let universal_id_for_cache = universal_id;
+      self
+        .run_mobile_cache_io(
+          move |cache| {
+            cache.clear_workspace_cache(&universal_id_for_cache);
+            Ok(())
+          },
+          "Failed to clear mobile blob cache workspace",
+        )
+        .await?;
+    }
     Ok(())
   }
 
@@ -885,5 +952,121 @@ impl DocStoragePool {
 
   pub async fn fts_index_version(&self) -> Result<u32> {
     Ok(affine_nbstore::storage::SqliteDocStorage::index_version())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::{
+    fs,
+    sync::atomic::{AtomicU64, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
+  };
+
+  use super::*;
+
+  static TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+  fn unique_id(prefix: &str) -> String {
+    let counter = TEST_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let now = SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .expect("system clock before unix epoch")
+      .as_nanos();
+    format!("{prefix}-{now}-{counter}")
+  }
+
+  #[test]
+  fn doc_update_roundtrip_base64() {
+    let timestamp = chrono::DateTime::<chrono::Utc>::from_timestamp_millis(1_700_000_000_000)
+      .unwrap()
+      .naive_utc();
+    let original = affine_nbstore::DocUpdate {
+      doc_id: "doc-1".to_string(),
+      timestamp,
+      bin: vec![1, 2, 3, 4, 5],
+    };
+
+    let encoded: DocUpdate = original.into();
+    let decoded = affine_nbstore::DocUpdate::try_from(encoded).unwrap();
+
+    assert_eq!(decoded.doc_id, "doc-1");
+    assert_eq!(decoded.timestamp, timestamp);
+    assert_eq!(decoded.bin, vec![1, 2, 3, 4, 5]);
+  }
+
+  #[test]
+  fn doc_update_rejects_invalid_base64() {
+    let update = DocUpdate {
+      doc_id: "doc-2".to_string(),
+      timestamp: 0,
+      bin: "not-base64!!".to_string(),
+    };
+
+    let err = match affine_nbstore::DocUpdate::try_from(update) {
+      Ok(_) => panic!("expected base64 decode error"),
+      Err(err) => err,
+    };
+    match err {
+      UniffiError::Base64DecodingError(_) => {}
+      other => panic!("unexpected error: {other:?}"),
+    }
+  }
+
+  #[tokio::test]
+  async fn encode_large_doc_payload_returns_file_token_and_decodes_back() {
+    let pool = new_doc_storage_pool();
+    let universal_id = unique_id("mobile-doc-token");
+    pool
+      .connect(universal_id.clone(), ":memory:".to_string())
+      .await
+      .expect("connect should succeed");
+
+    let data = vec![7_u8; MOBILE_BLOB_INLINE_THRESHOLD_BYTES + 16];
+    let encoded = pool
+      .encode_doc_data(&universal_id, "doc", 42, &data)
+      .await
+      .expect("encode should succeed");
+    assert!(encoded.starts_with(mobile_blob_cache::MOBILE_DOC_FILE_PREFIX));
+
+    let decoded = pool
+      .decode_mobile_data(&universal_id, &encoded)
+      .await
+      .expect("decode should succeed");
+    assert_eq!(decoded, data);
+
+    pool.disconnect(universal_id).await.expect("disconnect should succeed");
+  }
+
+  #[tokio::test]
+  async fn decode_mobile_data_rejects_out_of_workspace_path() {
+    let pool = new_doc_storage_pool();
+    let universal_id = unique_id("mobile-doc-outside");
+    pool
+      .connect(universal_id.clone(), ":memory:".to_string())
+      .await
+      .expect("connect should succeed");
+
+    let outside_dir = std::env::temp_dir().join(unique_id("mobile-doc-outside-dir"));
+    fs::create_dir_all(&outside_dir).expect("create outside dir");
+    let outside_file = outside_dir.join("1234567890abcdef.blob");
+    fs::write(&outside_file, b"outside").expect("write outside file");
+    let token = format!(
+      "{}{}",
+      mobile_blob_cache::MOBILE_BLOB_FILE_PREFIX,
+      outside_file.display()
+    );
+
+    let err = pool
+      .decode_mobile_data(&universal_id, &token)
+      .await
+      .expect_err("decode should reject out-of-workspace token");
+    let UniffiError::Err(message) = err else {
+      panic!("unexpected error kind");
+    };
+    assert!(message.contains("outside the workspace cache directory"));
+
+    pool.disconnect(universal_id).await.expect("disconnect should succeed");
+    let _ = fs::remove_dir_all(outside_dir);
   }
 }

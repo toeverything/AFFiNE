@@ -3,8 +3,10 @@ import { Capacitor } from '@capacitor/core';
 
 export const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:';
 export const MOBILE_DOC_FILE_PREFIX = '__AFFINE_DOC_FILE__:';
-const MOBILE_PAYLOAD_CACHE_PATH_PATTERN =
-  /\/nbstore-blob-cache\/[0-9a-f]{16}\/[0-9a-f]{16}\.(blob|docbin)$/;
+const MOBILE_PAYLOAD_CACHE_DIR = 'nbstore-blob-cache';
+const MOBILE_PAYLOAD_BUCKET_PATTERN = /^[0-9a-f]{16}$/;
+const MOBILE_PAYLOAD_FILE_PATTERN = /^[0-9a-f]{16}\.(blob|docbin)$/;
+const MOBILE_PAYLOAD_PARENT_DIRS = new Set(['cache', 'Caches', 'T', 'tmp']);
 
 function normalizeTokenFilePath(rawPath: string): string {
   const trimmedPath = rawPath.trim();
@@ -20,15 +22,55 @@ function normalizeTokenFilePath(rawPath: string): string {
 function assertMobileCachePath(fileUrl: string): void {
   let pathname: string;
   try {
-    pathname = decodeURIComponent(new URL(fileUrl).pathname);
+    const parsedUrl = new URL(fileUrl);
+    if (parsedUrl.protocol !== 'file:') {
+      throw new Error('unexpected protocol');
+    }
+    pathname = parsedUrl.pathname;
   } catch {
     throw new Error('Invalid mobile payload token: malformed file URL');
   }
 
+  let decodedSegments: string[];
+  try {
+    decodedSegments = pathname
+      .split('/')
+      .filter(Boolean)
+      .map(segment => {
+        const decoded = decodeURIComponent(segment);
+        if (
+          !decoded ||
+          decoded === '.' ||
+          decoded === '..' ||
+          decoded.includes('/') ||
+          decoded.includes('\\')
+        ) {
+          throw new Error('path traversal');
+        }
+        return decoded;
+      });
+  } catch {
+    throw new Error(
+      `Refusing to read mobile payload outside cache dir: ${fileUrl}`
+    );
+  }
+
+  const fileName = decodedSegments.at(-1);
+  const bucket = decodedSegments.at(-2);
+  const cacheDir = decodedSegments.at(-3);
+  const parentDir = decodedSegments.at(-4);
+  const cacheParent = decodedSegments.at(-5);
+
   if (
-    pathname.includes('/../') ||
-    pathname.includes('/./') ||
-    !MOBILE_PAYLOAD_CACHE_PATH_PATTERN.test(pathname)
+    !fileName ||
+    !bucket ||
+    !cacheDir ||
+    !parentDir ||
+    cacheDir !== MOBILE_PAYLOAD_CACHE_DIR ||
+    !MOBILE_PAYLOAD_BUCKET_PATTERN.test(bucket) ||
+    !MOBILE_PAYLOAD_FILE_PATTERN.test(fileName) ||
+    !MOBILE_PAYLOAD_PARENT_DIRS.has(parentDir) ||
+    (parentDir === 'Caches' && cacheParent !== 'Library')
   ) {
     throw new Error(
       `Refusing to read mobile payload outside cache dir: ${fileUrl}`

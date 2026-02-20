@@ -146,7 +146,39 @@ impl MobileBlobCache {
     }
   }
 
+  pub(crate) fn clear_workspace_cache(&self, universal_id: &str) {
+    self.evict_workspace_entries(universal_id);
+
+    let cache_dir = {
+      self
+        .workspace_dirs
+        .lock()
+        .expect("workspace cache lock poisoned")
+        .get(universal_id)
+        .cloned()
+    };
+    if let Some(cache_dir) = cache_dir {
+      let _ = Self::cleanup_cache_dir(&cache_dir);
+    }
+  }
+
   pub(crate) fn invalidate_workspace(&self, universal_id: &str) {
+    self.evict_workspace_entries(universal_id);
+
+    if let Some(cache_dir) = self
+      .workspace_dirs
+      .lock()
+      .expect("workspace cache lock poisoned")
+      .remove(universal_id)
+    {
+      let _ = std::fs::remove_dir_all(&cache_dir);
+      if let Some(parent) = cache_dir.parent() {
+        let _ = std::fs::remove_dir(parent);
+      }
+    }
+  }
+
+  fn evict_workspace_entries(&self, universal_id: &str) {
     let prefix = format!("{universal_id}\u{1f}");
 
     let mut blob_entries = self.blob_entries.lock().expect("blob cache lock poisoned");
@@ -169,18 +201,6 @@ impl MobileBlobCache {
     for key in doc_keys {
       if let Some(path) = doc_entries.pop(&key) {
         Self::delete_blob_file(&path);
-      }
-    }
-
-    if let Some(cache_dir) = self
-      .workspace_dirs
-      .lock()
-      .expect("workspace cache lock poisoned")
-      .remove(universal_id)
-    {
-      let _ = std::fs::remove_dir_all(&cache_dir);
-      if let Some(parent) = cache_dir.parent() {
-        let _ = std::fs::remove_dir(parent);
       }
     }
   }
@@ -550,6 +570,42 @@ mod tests {
         .expect("workspace cache lock poisoned")
         .contains_key(&universal_id)
     );
+  }
+
+  #[test]
+  fn clear_workspace_cache_removes_cached_files_and_keeps_workspace_dir() {
+    let (cache, universal_id, workspace) = setup_cache("clear");
+
+    let cached_blob = cache
+      .cache_blob(&universal_id, &build_blob("blob", vec![1, 2, 3]))
+      .expect("cache blob");
+    let blob_path = token_path(&cached_blob.data);
+    let doc_token = cache
+      .cache_doc_bin(&universal_id, "doc", 123, b"doc-bytes")
+      .expect("cache doc bin");
+    let doc_path = token_path(&doc_token);
+    assert!(blob_path.exists());
+    assert!(doc_path.exists());
+
+    cache.clear_workspace_cache(&universal_id);
+
+    assert!(!blob_path.exists());
+    assert!(!doc_path.exists());
+    assert!(workspace.exists());
+    assert!(
+      cache
+        .workspace_dirs
+        .lock()
+        .expect("workspace cache lock poisoned")
+        .contains_key(&universal_id)
+    );
+
+    let recached_blob = cache
+      .cache_blob(&universal_id, &build_blob("blob-2", vec![7, 8, 9]))
+      .expect("cache blob after clearing workspace");
+    assert!(token_path(&recached_blob.data).exists());
+
+    cache.invalidate_workspace(&universal_id);
   }
 
   #[test]

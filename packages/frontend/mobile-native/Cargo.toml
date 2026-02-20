@@ -23,6 +23,7 @@ base64-simd    = { workspace = true }
 chrono         = { workspace = true }
 sqlx           = { workspace = true }
 thiserror      = { workspace = true }
+tokio          = { workspace = true }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
@@ -45,4 +46,5 @@ lru = { workspace = true }
 uniffi = { workspace = true, features = ["build"] }
 
 [dev-dependencies]
-lru = { workspace = true }
+lru   = { workspace = true }
+tokio = { workspace = true, features = ["full"] }

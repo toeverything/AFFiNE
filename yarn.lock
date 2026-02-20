@@ -773,6 +773,7 @@ __metadata:
     "@affine/core": "workspace:*"
     "@capacitor/core": "npm:^7.0.0"
     typescript: "npm:^5.7.2"
+    vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
 
