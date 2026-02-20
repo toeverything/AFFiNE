@@ -59,7 +59,7 @@ impl DocStoragePool {
   }
 
   pub async fn push_update(&self, universal_id: String, doc_id: String, update: String) -> Result<i64> {
-    let decoded_update = self.decode_mobile_data(&universal_id, &update).await?;
+    let decoded_update = self.decode_base64_payload(&update)?;
     Ok(
       self
         .inner

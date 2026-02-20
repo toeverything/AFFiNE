@@ -58,7 +58,7 @@ fn doc_update_rejects_invalid_base64() {
 }
 
 #[tokio::test]
-async fn decode_mobile_data_rejects_out_of_workspace_path() {
+async fn decode_blob_data_rejects_out_of_workspace_path() {
   let pool = new_doc_storage_pool();
   let universal_id = unique_id("mobile-doc-outside");
   pool
@@ -73,7 +73,7 @@ async fn decode_mobile_data_rejects_out_of_workspace_path() {
   let token = format!("{}{}", cache::MOBILE_BLOB_FILE_PREFIX, outside_file.display());
 
   let err = pool
-    .decode_mobile_data(&universal_id, &token)
+    .decode_blob_data(&universal_id, &token)
     .await
     .expect_err("decode should reject out-of-workspace token");
   let UniffiError::Err(message) = err else {

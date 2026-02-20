@@ -55,7 +55,11 @@ impl DocStoragePool {
       .map_err(|err| UniffiError::Err(format!("{context}: {err}")))
   }
 
-  pub(crate) async fn decode_mobile_data(&self, universal_id: &str, data: &str) -> Result<Vec<u8>> {
+  pub(crate) fn decode_base64_payload(&self, data: &str) -> Result<Vec<u8>> {
+    decode_base64_data(data)
+  }
+
+  pub(crate) async fn decode_blob_data(&self, universal_id: &str, data: &str) -> Result<Vec<u8>> {
     #[cfg(any(target_os = "android", target_os = "ios", test))]
     if is_mobile_binary_file_token(data) {
       let universal_id = universal_id.to_string();
@@ -70,7 +74,7 @@ impl DocStoragePool {
     #[cfg(not(any(target_os = "android", target_os = "ios", test)))]
     let _ = universal_id;
 
-    decode_base64_data(data)
+    self.decode_base64_payload(data)
   }
 
   pub(crate) async fn encode_doc_data(

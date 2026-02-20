@@ -76,7 +76,7 @@ impl DocStoragePool {
     let key = blob.key.clone();
     let blob = NbSetBlob {
       key: blob.key,
-      data: Into::<Data>::into(self.decode_mobile_data(&universal_id, &blob.data).await?),
+      data: Into::<Data>::into(self.decode_blob_data(&universal_id, &blob.data).await?),
       mime: blob.mime,
     };
     self.inner.get(universal_id.clone()).await?.set_blob(blob).await?;

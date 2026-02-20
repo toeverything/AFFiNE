@@ -27,7 +27,7 @@ impl DocStoragePool {
   pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
     let doc_record = NbDocRecord {
       doc_id: snapshot.doc_id,
-      bin: Into::<Data>::into(self.decode_mobile_data(&universal_id, &snapshot.bin).await?),
+      bin: Into::<Data>::into(self.decode_base64_payload(&snapshot.bin)?),
       timestamp: millis_to_naive_utc(snapshot.timestamp)?,
     };
     Ok(self.inner.get(universal_id).await?.set_doc_snapshot(doc_record).await?)
