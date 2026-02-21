@@ -74,7 +74,7 @@
   "scripts": {
     "build": "affine bundle",
     "dev": "affine bundle --dev",
-    "update-shadcn": "shadcn-ui add -p src/components/ui"
+    "update-shadcn": "yarn dlx shadcn@latest add -p src/components/ui"
   },
   "exports": {
     "./*": "./src/*.ts",
