@@ -1,7 +1,7 @@
 import { Point } from '@blocksuite/global/gfx';
-
-import { GfxCompatibleBlockModel } from "../../../../../framework/std/src/gfx/model/gfx-block-model";
 import { SnapOverlay } from "../snap/snap-overlay";
+import { GfxCompatibleBlockModel } from "../../../../../framework/std/src/gfx/model/gfx-block-model";
+
 describe('SnapOverlay', () => {
   let snapOverlay: SnapOverlay;
   let mockGfxController: GfxController;
