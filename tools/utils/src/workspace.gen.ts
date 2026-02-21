@@ -1248,6 +1248,7 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/common/env',
       'packages/frontend/i18n',
+      'packages/frontend/apps/mobile-shared',
       'packages/common/nbstore',
       'packages/frontend/track',
       'blocksuite/affine/all',
@@ -1290,6 +1291,7 @@ export const PackageList = [
       'packages/common/env',
       'packages/common/graphql',
       'packages/frontend/i18n',
+      'packages/frontend/apps/mobile-shared',
       'packages/common/nbstore',
       'packages/frontend/track',
       'blocksuite/affine/all',
@@ -1312,6 +1314,11 @@ export const PackageList = [
       'blocksuite/affine/all',
       'packages/common/infra',
     ],
+  },
+  {
+    location: 'packages/frontend/apps/mobile-shared',
+    name: '@affine/mobile-shared',
+    workspaceDependencies: ['packages/frontend/core'],
   },
   {
     location: 'packages/frontend/apps/web',
@@ -1593,6 +1600,7 @@ export type PackageName =
   | '@affine/electron-renderer'
   | '@affine/ios'
   | '@affine/mobile'
+  | '@affine/mobile-shared'
   | '@affine/web'
   | '@affine/component'
   | '@affine/core'

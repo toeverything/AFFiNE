@@ -139,6 +139,7 @@
     { "path": "./packages/frontend/apps/electron-renderer" },
     { "path": "./packages/frontend/apps/ios" },
     { "path": "./packages/frontend/apps/mobile" },
+    { "path": "./packages/frontend/apps/mobile-shared" },
     { "path": "./packages/frontend/apps/web" },
     { "path": "./packages/frontend/component" },
     { "path": "./packages/frontend/core" },

@@ -13,6 +13,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 
+import { queuedashScopePostcssPlugin } from '../postcss/queuedash-scope.js';
 import { productionCacheGroups } from './cache-group.js';
 import {
   type CreateHTMLPluginConfig,
@@ -230,6 +231,9 @@ export function createHTMLTargetConfig(
                               require(pkg.join('tailwind.config.js').value),
                             ],
                             ['autoprefixer'],
+                            ...(buildConfig.isAdmin
+                              ? [queuedashScopePostcssPlugin()]
+                              : []),
                           ]
                         : [
                             cssnano({

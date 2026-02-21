@@ -19,6 +19,7 @@
     "@affine/env": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
+    "@affine/mobile-shared": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@affine/track": "workspace:*",
     "@blocksuite/affine": "workspace:*",

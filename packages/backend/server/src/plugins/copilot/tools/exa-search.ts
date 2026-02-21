@@ -18,10 +18,12 @@ export const createExaSearchTool = (config: Config) => {
       try {
         const { key } = config.copilot.exa;
         const exa = new Exa(key);
-        const result = await exa.searchAndContents(query, {
+        const result = await exa.search(query, {
+          contents: {
+            summary: true,
+            livecrawl: mode === 'MUST' ? 'always' : undefined,
+          },
           numResults: 10,
-          summary: true,
-          livecrawl: mode === 'MUST' ? 'always' : undefined,
         });
         return result.results.map(data => ({
           title: data.title,

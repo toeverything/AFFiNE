@@ -1,5 +1,0 @@
-/* Scoped queuedash modal alignment */
-
-.react-aria-ModalOverlay section[role='dialog'] {
-  transform: unset;
-}
