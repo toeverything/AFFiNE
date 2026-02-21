@@ -28,6 +28,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const DEFAULT_ELECTRON_LOCALES_KEEP = new Set([
   'en',
+  'en_US',
   'en_GB',
   'zh_CN',
   'zh_TW',
