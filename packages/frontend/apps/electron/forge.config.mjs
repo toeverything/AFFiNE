@@ -344,9 +344,10 @@ export default {
     executableName: productName,
     ignore: [
       /\.map$/,
-      /\/src($|\/)/,
       /\/test($|\/)/,
       /\/scripts($|\/)/,
+      /\/examples($|\/)/,
+      /\/docs($|\/)/,
       /\/README\.md$/,
       /\/forge\.config\.mjs$/,
       /\/dev-app-update\.yml$/,
