@@ -1,4 +1,4 @@
-import '@queuedash/ui/dist/styles.css';
+import './queuedash.css';
 import './queue.css';
 
 import { QueueDashApp } from '@queuedash/ui';
