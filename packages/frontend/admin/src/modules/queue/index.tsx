@@ -10,10 +10,12 @@ export function QueuePage() {
     <div className="h-dvh flex-1 flex-col flex overflow-hidden">
       <Header title="Queue" />
       <div className="flex-1 overflow-hidden">
-        <QueueDashApp
-          apiUrl={`${environment.subPath}/api/queue/trpc`}
-          basename="/admin/queue"
-        />
+        <div className="affine-queuedash h-full">
+          <QueueDashApp
+            apiUrl={`${environment.subPath}/api/queue/trpc`}
+            basename="/admin/queue"
+          />
+        </div>
       </div>
     </div>
   );

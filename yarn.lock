@@ -143,6 +143,7 @@ __metadata:
     node-loader: "npm:^2.1.0"
     postcss: "npm:^8.4.49"
     postcss-loader: "npm:^8.1.1"
+    postcss-selector-parser: "npm:^7.1.0"
     prettier: "npm:^3.7.4"
     react-refresh: "npm:^0.17.0"
     source-map-loader: "npm:^5.0.0"
