@@ -1,7 +1,7 @@
 import { Point } from '@blocksuite/global/gfx';
 import { SnapOverlay } from '../snap-overlay';
 import { GfxController } from '@blocksuite/std/gfx';
-
+import { SnapOverlay } from "../snap/snap-overlay";
 describe('SnapOverlay', () => {
   let snapOverlay: SnapOverlay;
   let mockGfxController: GfxController;
