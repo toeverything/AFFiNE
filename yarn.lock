@@ -186,7 +186,7 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/routes": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.17"
-    "@queuedash/ui": "npm:^3.14.0"
+    "@queuedash/ui": "npm:^3.16.0"
     "@radix-ui/react-accordion": "npm:^1.2.2"
     "@radix-ui/react-alert-dialog": "npm:^1.1.3"
     "@radix-ui/react-aspect-ratio": "npm:^1.1.1"
@@ -1023,7 +1023,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:^1.38.0"
     "@prisma/client": "npm:^6.6.0"
     "@prisma/instrumentation": "npm:^6.7.0"
-    "@queuedash/api": "npm:^3.14.0"
+    "@queuedash/api": "npm:^3.16.0"
     "@react-email/components": "npm:0.0.38"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@types/cookie-parser": "npm:^1.4.8"
@@ -11668,11 +11668,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@queuedash/api@npm:3.14.0, @queuedash/api@npm:^3.14.0":
-  version: 3.14.0
-  resolution: "@queuedash/api@npm:3.14.0"
+"@queuedash/api@npm:3.16.0, @queuedash/api@npm:^3.16.0":
+  version: 3.16.0
+  resolution: "@queuedash/api@npm:3.16.0"
   dependencies:
-    "@trpc/server": "npm:^11.6.0"
+    "@trpc/server": "npm:^11.8.1"
     redis: "npm:^4.7.0"
     redis-info: "npm:^3.1.0"
     zod: "npm:^3.24.2"
@@ -11705,23 +11705,23 @@ __metadata:
       optional: true
     hono:
       optional: true
-  checksum: 10/d0117ab10c4a59ea0b3d29bc783b273b7b2b08290e122ed1b05bbf185f44ba87b5229ae8e98ce41692de334548c02bf8f7980f7b42a623352d0a048b74966a36
+  checksum: 10/84c3b552450a72a76245930caab2371aabe85168a2accaa9bc3aefa7e4ea22e99a0e77005f528995e66f39adb63a109721ff89cb556565292d7429c22c5254ec
   languageName: node
   linkType: hard
 
-"@queuedash/ui@npm:^3.14.0":
-  version: 3.14.0
-  resolution: "@queuedash/ui@npm:3.14.0"
+"@queuedash/ui@npm:^3.16.0":
+  version: 3.16.0
+  resolution: "@queuedash/ui@npm:3.16.0"
   dependencies:
     "@monaco-editor/react": "npm:^4.7.0"
-    "@queuedash/api": "npm:3.14.0"
+    "@queuedash/api": "npm:3.16.0"
     "@radix-ui/react-checkbox": "npm:^1.3.3"
     "@radix-ui/react-icons": "npm:^1.3.2"
     "@tanstack/react-query": "npm:^5.90.5"
     "@tanstack/react-table": "npm:^8.21.3"
-    "@trpc/client": "npm:^11.6.0"
-    "@trpc/react-query": "npm:^11.6.0"
-    "@trpc/server": "npm:^11.6.0"
+    "@trpc/client": "npm:^11.8.1"
+    "@trpc/react-query": "npm:^11.8.1"
+    "@trpc/server": "npm:^11.8.1"
     clsx: "npm:^2.1.1"
     cronstrue: "npm:^2.61.0"
     date-fns: "npm:^4.1.0"
@@ -11736,7 +11736,7 @@ __metadata:
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10/d35dd553bc5a8896d93b1ef6bbd1c7801e5a6ac8e91f392b107d4c4681aa0d46e933ae9c258f2ef0611bd7a1bbc8279506168461ec390afbe3c5a90931c71579
+  checksum: 10/a3be3e738e281cde533ccadefadaeae1a324fec7658ed38d5e942bd965a4866f5a335f6b4b9a6701386a9cf74a8b931faac45662f8e895df467a2cff75584dd0
   languageName: node
   linkType: hard
 
@@ -16704,36 +16704,35 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trpc/client@npm:^11.6.0":
-  version: 11.8.1
-  resolution: "@trpc/client@npm:11.8.1"
+"@trpc/client@npm:^11.8.1":
+  version: 11.10.0
+  resolution: "@trpc/client@npm:11.10.0"
   peerDependencies:
-    "@trpc/server": 11.8.1
+    "@trpc/server": 11.10.0
     typescript: ">=5.7.2"
-  checksum: 10/1411acb66ad8c94cb5cf90386fcca2cf0f67a7d6a7ca90e42b23e737f39d1e8079e8c9088d9b46d3643a57e6eefbf721f83b372624cb0062b371e4c362d2bd98
+  checksum: 10/91c6c7bf8ac471e4e15042097eace3cfbed10e9af986bef57dfa320c55802aeabe45fbc0bed785bd42b18e8158dd5d8b89709d6bc41c595d4cab70f72f0c3dc9
   languageName: node
   linkType: hard
 
-"@trpc/react-query@npm:^11.6.0":
-  version: 11.8.1
-  resolution: "@trpc/react-query@npm:11.8.1"
+"@trpc/react-query@npm:^11.8.1":
+  version: 11.10.0
+  resolution: "@trpc/react-query@npm:11.10.0"
   peerDependencies:
     "@tanstack/react-query": ^5.80.3
-    "@trpc/client": 11.8.1
-    "@trpc/server": 11.8.1
+    "@trpc/client": 11.10.0
+    "@trpc/server": 11.10.0
     react: ">=18.2.0"
-    react-dom: ">=18.2.0"
     typescript: ">=5.7.2"
-  checksum: 10/6244083404ff0f9e218a6239af43f84941cf20fe30ea6a8b02655649ea627161294360228c54070b0bde6332252c26545b53c7e2148c67afe691863a976422b2
+  checksum: 10/80b76ad84915a693504545cde5d8d8d9c0f26beefea7809c852d44779e27d01e6af95d0154546887ecdc22f2f747dec7d26a609527a627f7eea198990867f0af
   languageName: node
   linkType: hard
 
-"@trpc/server@npm:^11.6.0":
-  version: 11.8.1
-  resolution: "@trpc/server@npm:11.8.1"
+"@trpc/server@npm:^11.8.1":
+  version: 11.10.0
+  resolution: "@trpc/server@npm:11.10.0"
   peerDependencies:
     typescript: ">=5.7.2"
-  checksum: 10/074b7bd564d0821cbd0711486fb51ee5733d13afe894e5f3e4b0b5ff5c1b71b156d820322e068763b47e076e5cd22a81f8c1df085834cc4ff93c4a1e0005e1de
+  checksum: 10/e50d2aaefa7b40ef1a270d209ea7b37f37d3990dd15008fc5069c73cf2f108fe3a8777c7c498a1950a984f34f7a26e3922f03a2e87a8ba05d8bc5f2c82f04ff3
   languageName: node
   linkType: hard
 

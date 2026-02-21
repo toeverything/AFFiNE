@@ -4,8 +4,7 @@ use affine_schema::get_migrator;
 use memory_indexer::InMemoryIndex;
 use sqlx::{
   Pool, Row,
-  migrate::MigrateDatabase,
-  migrate::{Migration, Migrator},
+  migrate::{MigrateDatabase, Migration, Migrator},
   sqlite::{Sqlite, SqliteConnectOptions, SqlitePoolOptions},
 };
 use tokio::sync::RwLock;
@@ -77,9 +76,10 @@ impl SqliteDocStorage {
   async fn migrate(&self) -> Result<()> {
     let migrator = get_migrator();
     if let Err(err) = migrator.run(&self.pool).await {
-      // Compatibility: migration 3 (`add_idx_snapshots`) had a whitespace-only SQL change
-      // (trailing space) between releases, which causes sqlx to reject existing DBs with:
-      // `VersionMismatch(3)`. It's safe to fix by updating the stored checksum.
+      // Compatibility: migration 3 (`add_idx_snapshots`) had a whitespace-only SQL
+      // change (trailing space) between releases, which causes sqlx to reject
+      // existing DBs with: `VersionMismatch(3)`. It's safe to fix by updating
+      // the stored checksum.
       if matches!(err, sqlx::migrate::MigrateError::VersionMismatch(3))
         && self.try_repair_migration_3_checksum(&migrator).await?
       {
@@ -97,7 +97,8 @@ impl SqliteDocStorage {
       return Ok(false);
     };
 
-    // We're only prepared to repair the known `add_idx_snapshots` whitespace-only mismatch.
+    // We're only prepared to repair the known `add_idx_snapshots` whitespace-only
+    // mismatch.
     if migration.description.as_ref() != "add_idx_snapshots" {
       return Ok(false);
     }
@@ -118,8 +119,9 @@ impl SqliteDocStorage {
     let applied_checksum: Vec<u8> = row.try_get("checksum")?;
     let expected_checksum = migration.checksum.as_ref();
 
-    // sqlx computes the checksum as SHA-384 of the raw SQL bytes. The legacy variant had an
-    // extra trailing space at the end of the SQL string (after the final newline).
+    // sqlx computes the checksum as SHA-384 of the raw SQL bytes. The legacy
+    // variant had an extra trailing space at the end of the SQL string (after
+    // the final newline).
     let legacy_sql = format!("{} ", migration.sql);
     let legacy_migration = Migration::new(
       migration.version,
@@ -163,9 +165,10 @@ impl SqliteDocStorage {
 mod tests {
   use std::borrow::Cow;
 
-  use super::*;
   use affine_schema::get_migrator;
   use sqlx::migrate::{Migration, Migrator};
+
+  use super::*;
 
   async fn get_storage() -> SqliteDocStorage {
     let storage = SqliteDocStorage::new(":memory:".to_string());
@@ -203,7 +206,8 @@ mod tests {
 
   #[tokio::test]
   async fn connect_repairs_whitespace_only_migration_checksum_mismatch() {
-    // Simulate a DB migrated with an older `add_idx_snapshots` SQL that had a trailing space.
+    // Simulate a DB migrated with an older `add_idx_snapshots` SQL that had a
+    // trailing space.
     let storage = SqliteDocStorage::new(":memory:".to_string());
 
     let new_migrator = get_migrator();
@@ -232,7 +236,8 @@ mod tests {
 
     legacy_migrator.run(&storage.pool).await.unwrap();
 
-    // Now connecting with the current code should auto-repair the checksum and succeed.
+    // Now connecting with the current code should auto-repair the checksum and
+    // succeed.
     storage.connect().await.unwrap();
 
     let expected_checksum = get_migrator()
