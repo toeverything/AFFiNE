@@ -1,1 +1,6 @@
 @import '@queuedash/ui/dist/styles.css' layer(queuedash);
+
+/* Scoped queuedash modal alignment */
+:where(.affine-queuedash) .react-aria-ModalOverlay section[role='dialog'] {
+  transform: unset;
+}

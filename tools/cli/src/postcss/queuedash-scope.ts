@@ -1,4 +1,4 @@
-import type { AtRule, Container, Node,PluginCreator, Rule } from 'postcss';
+import type { AtRule, Container, Node, PluginCreator, Rule } from 'postcss';
 import selectorParser from 'postcss-selector-parser';
 
 export interface QueuedashScopeOptions {
