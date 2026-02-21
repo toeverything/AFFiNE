@@ -1,6 +1,6 @@
 import { Point } from '@blocksuite/global/gfx';
 
-import { GfxCompatibleBlockModel } from "../../../../../../std/src/gfx/model/gfx-block-model";
+import { GfxCompatibleBlockModel } from "../../../../../framework/std/src/gfx/model/gfx-block-model";
 import { SnapOverlay } from "../snap/snap-overlay";
 describe('SnapOverlay', () => {
   let snapOverlay: SnapOverlay;
