@@ -3430,7 +3430,7 @@ dependencies = [
 [[package]]
 name = "mermaid-rs-renderer"
 version = "0.2.0"
-source = "git+https://github.com/toeverything/mermaid-rs-renderer?rev=d294dbf#d294dbf8fc14fc53ce5086dd68a0d1bbcf6fae4f"
+source = "git+https://github.com/toeverything/mermaid-rs-renderer?rev=887bd78#887bd7823ea828fcbd2beafaf6c92c9005260e92"
 dependencies = [
  "anyhow",
  "fontdb 0.16.2",

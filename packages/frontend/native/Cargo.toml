@@ -11,7 +11,6 @@ affine_common = { workspace = true, features = ["hashcash"] }
 affine_media_capture = { path = "./media_capture" }
 affine_nbstore = { workspace = true, features = ["napi"] }
 affine_sqlite_v1 = { path = "./sqlite_v1" }
-mermaid-rs-renderer = { git = "https://github.com/toeverything/mermaid-rs-renderer", rev = "d294dbf", default-features = false }
 napi = { workspace = true }
 napi-derive = { workspace = true }
 once_cell = { workspace = true }
@@ -25,6 +24,9 @@ sqlx = { workspace = true, default-features = false, features = [
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+mermaid-rs-renderer = { git = "https://github.com/toeverything/mermaid-rs-renderer", rev = "887bd78", default-features = false }
 typst = "0.14.2"
 typst-as-lib = { version = "0.15.4", default-features = false, features = [
   "packages",

@@ -64,12 +64,24 @@ function getDesktopPreviewHandlers() {
   return previewApis.preview ?? null;
 }
 
+function getRequiredDesktopHandler<Name extends keyof DesktopPreviewHandlers>(
+  name: Name
+): NonNullable<DesktopPreviewHandlers[Name]> {
+  const handlers = getDesktopPreviewHandlers();
+  const handler = handlers?.[name];
+  if (!handler) {
+    throw new Error(
+      `Electron preview handler "${String(name)}" is unavailable.`
+    );
+  }
+  return handler as NonNullable<DesktopPreviewHandlers[Name]>;
+}
+
 export async function renderMermaidSvg(
   request: MermaidRenderRequest
 ): Promise<MermaidRenderResult> {
-  const desktopPreviewHandlers = getDesktopPreviewHandlers();
-  const rendered = desktopPreviewHandlers?.renderMermaidSvg
-    ? await desktopPreviewHandlers.renderMermaidSvg(request)
+  const rendered = BUILD_CONFIG.isElectron
+    ? await getRequiredDesktopHandler('renderMermaidSvg')(request)
     : await getMermaidRenderer().render(request);
 
   const sanitizedSvg = sanitizeSvg(rendered.svg);
@@ -82,9 +94,8 @@ export async function renderMermaidSvg(
 export async function renderTypstSvg(
   request: TypstRenderRequest
 ): Promise<TypstRenderResult> {
-  const desktopPreviewHandlers = getDesktopPreviewHandlers();
-  const rendered = desktopPreviewHandlers?.renderTypstSvg
-    ? await desktopPreviewHandlers.renderTypstSvg(request)
+  const rendered = BUILD_CONFIG.isElectron
+    ? await getRequiredDesktopHandler('renderTypstSvg')(request)
     : await getTypstRenderer().render(request);
 
   return { svg: rendered.svg };

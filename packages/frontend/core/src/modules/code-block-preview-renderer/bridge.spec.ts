@@ -122,6 +122,26 @@ describe('preview render bridge', () => {
     );
   });
 
+  test('throws on electron when native handlers are missing', async () => {
+    globalThis.BUILD_CONFIG = {
+      ...initialBuildConfig,
+      isElectron: true,
+    };
+    desktopPreviewApis.preview = {};
+
+    await expect(
+      renderMermaidSvg({ code: 'flowchart TD;A-->B' })
+    ).rejects.toThrow(
+      'Electron preview handler "renderMermaidSvg" is unavailable.'
+    );
+    await expect(renderTypstSvg({ code: '= Title' })).rejects.toThrow(
+      'Electron preview handler "renderTypstSvg" is unavailable.'
+    );
+
+    expect(mermaidRender).not.toHaveBeenCalled();
+    expect(typstRender).not.toHaveBeenCalled();
+  });
+
   test('throws when sanitized svg is empty', async () => {
     mermaidRender.mockResolvedValue({
       svg: '<div><text>invalid</text></div>',

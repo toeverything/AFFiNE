@@ -38,6 +38,9 @@ import {
 
 type WorkerConfig = { name: string };
 type CreateWorkerTargetConfig = (pkg: Package, entry: string) => WorkerConfig;
+type BaseWorkerOptions = {
+  includeMermaidAndTypst?: boolean;
+};
 
 function assertRspackSupportedPackage(pkg: Package) {
   assertRspackSupportedPackageName(pkg.name);
@@ -60,11 +63,13 @@ async function uploadAssetsForPackage(pkg: Package, logger: Logger) {
 
 function getBaseWorkerConfigs(
   pkg: Package,
-  createWorkerTargetConfig: CreateWorkerTargetConfig
+  createWorkerTargetConfig: CreateWorkerTargetConfig,
+  options: BaseWorkerOptions = {}
 ) {
   const core = new Package('@affine/core');
+  const includeMermaidAndTypst = options.includeMermaidAndTypst ?? true;
 
-  return [
+  const workerConfigs = [
     createWorkerTargetConfig(
       pkg,
       core.srcPath.join(
@@ -77,19 +82,26 @@ function getBaseWorkerConfigs(
     ),
     createWorkerTargetConfig(
       pkg,
-      core.srcPath.join('modules/mermaid/renderer/mermaid.worker.ts').value
-    ),
-    createWorkerTargetConfig(
-      pkg,
-      core.srcPath.join('modules/typst/renderer/typst.worker.ts').value
-    ),
-    createWorkerTargetConfig(
-      pkg,
       core.srcPath.join(
         'blocksuite/view-extensions/turbo-renderer/turbo-painter.worker.ts'
       ).value
     ),
   ];
+
+  if (includeMermaidAndTypst) {
+    workerConfigs.push(
+      createWorkerTargetConfig(
+        pkg,
+        core.srcPath.join('modules/mermaid/renderer/mermaid.worker.ts').value
+      ),
+      createWorkerTargetConfig(
+        pkg,
+        core.srcPath.join('modules/typst/renderer/typst.worker.ts').value
+      )
+    );
+  }
+
+  return workerConfigs;
 }
 
 function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
@@ -131,7 +143,8 @@ function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
     case '@affine/electron-renderer': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
-        createWebpackWorkerTargetConfig
+        createWebpackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
       );
 
       return [
@@ -203,7 +216,8 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
     case '@affine/electron-renderer': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
-        createRspackWorkerTargetConfig
+        createRspackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
       );
 
       return [
