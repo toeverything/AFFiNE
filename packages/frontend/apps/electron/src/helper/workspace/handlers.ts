@@ -106,9 +106,17 @@ export async function listLocalWorkspaceIds(): Promise<string[]> {
     return [];
   }
 
+  const deletedWorkspaceBasePath = await getDeletedWorkspacesBasePath();
+  const deletedWorkspaceIds = new Set<string>(
+    (await fs.readdir(deletedWorkspaceBasePath).catch(() => [])).filter(Boolean)
+  );
+
   const entries = await fs.readdir(localWorkspaceBasePath);
   const ids = await Promise.all(
     entries.map(async entry => {
+      if (deletedWorkspaceIds.has(entry)) {
+        return null;
+      }
       const workspacePath = path.join(localWorkspaceBasePath, entry);
       const stat = await fs.stat(workspacePath).catch(() => null);
       if (!stat?.isDirectory()) {
