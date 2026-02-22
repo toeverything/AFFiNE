@@ -8,10 +8,9 @@ export default defineConfig({
     browser: {
       enabled: true,
       headless: true,
-      name: 'chromium',
+      instances: [{ browser: 'chromium' }],
       provider: 'playwright',
       isolate: false,
-      providerOptions: {},
     },
     include: ['src/__tests__/**/*.unit.spec.ts'],
     testTimeout: 500,

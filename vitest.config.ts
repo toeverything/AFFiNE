@@ -46,6 +46,11 @@ export default defineConfig({
     },
   },
   test: {
+    workspace: [
+      '.',
+      './packages/frontend/apps/electron',
+      './blocksuite/**/*/vitest.config.ts',
+    ],
     setupFiles: [
       resolve(rootDir, './scripts/setup/polyfill.ts'),
       resolve(rootDir, './scripts/setup/lit.ts'),

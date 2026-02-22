@@ -77,6 +77,14 @@ function getBaseWorkerConfigs(
     ),
     createWorkerTargetConfig(
       pkg,
+      core.srcPath.join('modules/mermaid/renderer/mermaid.worker.ts').value
+    ),
+    createWorkerTargetConfig(
+      pkg,
+      core.srcPath.join('modules/typst/renderer/typst.worker.ts').value
+    ),
+    createWorkerTargetConfig(
+      pkg,
       core.srcPath.join(
         'blocksuite/view-extensions/turbo-renderer/turbo-painter.worker.ts'
       ).value

@@ -1,4 +1,5 @@
 pub mod hashcash;
+pub mod preview;
 
 #[cfg(not(target_arch = "arm"))]
 #[global_allocator]

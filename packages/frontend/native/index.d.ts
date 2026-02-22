@@ -40,7 +40,50 @@ export declare function decodeAudio(buf: Uint8Array, destSampleRate?: number | u
 
 /** Decode audio file into a Float32Array */
 export declare function decodeAudioSync(buf: Uint8Array, destSampleRate?: number | undefined | null, filename?: string | undefined | null): Float32Array
+export interface MermaidRenderOptions {
+  fastText?: boolean
+  svgOnly?: boolean
+  textMetrics?: MermaidTextMetrics
+  theme?: string
+  fontFamily?: string
+  fontSize?: number
+}
+
+export interface MermaidRenderRequest {
+  code: string
+  options?: MermaidRenderOptions
+}
+
+export interface MermaidRenderResult {
+  svg: string
+}
+
+export interface MermaidTextMetrics {
+  ascii: number
+  cjk: number
+  space: number
+}
+
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
+
+export declare function renderMermaidSvg(request: MermaidRenderRequest): MermaidRenderResult
+
+export declare function renderTypstSvg(request: TypstRenderRequest): TypstRenderResult
+
+export interface TypstRenderOptions {
+  fontUrls?: Array<string>
+  theme?: string
+  fontDirs?: Array<string>
+}
+
+export interface TypstRenderRequest {
+  code: string
+  options?: TypstRenderOptions
+}
+
+export interface TypstRenderResult {
+  svg: string
+}
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>
 export declare class DocStorage {

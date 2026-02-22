@@ -40,18 +40,14 @@ describe('op consumer', () => {
   it('should throw if no handler registered', async ctx => {
     ctx.handlers.call({ type: 'call', id: 'add:1', name: 'add', payload: {} });
     await vi.advanceTimersToNextTimerAsync();
-    expect(ctx.postMessage.mock.lastCall).toMatchInlineSnapshot(`
-      [
-        {
-          "error": {
-            "message": "Handler for operation [add] is not registered.",
-            "name": "Error",
-          },
-          "id": "add:1",
-          "type": "return",
-        },
-      ]
-    `);
+    expect(ctx.postMessage.mock.lastCall?.[0]).toMatchObject({
+      type: 'return',
+      id: 'add:1',
+      error: {
+        message: 'Handler for operation [add] is not registered.',
+        name: 'Error',
+      },
+    });
   });
 
   it('should handle call message', async ctx => {
@@ -71,6 +67,38 @@ describe('op consumer', () => {
         "type": "return",
       }
     `);
+  });
+
+  it('should serialize string errors with message', async ctx => {
+    ctx.consumer.register('any', () => {
+      throw 'worker panic';
+    });
+
+    ctx.handlers.call({ type: 'call', id: 'any:1', name: 'any', payload: {} });
+    await vi.advanceTimersToNextTimerAsync();
+
+    expect(ctx.postMessage.mock.calls[0][0]).toMatchObject({
+      type: 'return',
+      id: 'any:1',
+      error: {
+        name: 'Error',
+        message: 'worker panic',
+      },
+    });
+  });
+
+  it('should serialize plain object errors with fallback message', async ctx => {
+    ctx.consumer.register('any', () => {
+      throw { reason: 'panic', code: 'E_PANIC' };
+    });
+
+    ctx.handlers.call({ type: 'call', id: 'any:1', name: 'any', payload: {} });
+    await vi.advanceTimersToNextTimerAsync();
+
+    const message = ctx.postMessage.mock.calls[0][0]?.error?.message;
+    expect(typeof message).toBe('string');
+    expect(message).toContain('"reason":"panic"');
+    expect(message).toContain('"code":"E_PANIC"');
   });
 
   it('should handle cancel message', async ctx => {
