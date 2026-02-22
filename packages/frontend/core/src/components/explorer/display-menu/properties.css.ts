@@ -25,7 +25,7 @@ export const property = style({
   selectors: {
     '&[data-show="false"]': {
       backgroundColor: cssVarV2.button.emptyIconBackground,
-      color: cssVarV2.icon.disable,
+      color: cssVarV2.text.secondary,
     },
   },
 });
