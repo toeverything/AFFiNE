@@ -27,10 +27,14 @@ export const codeBlockStyles = css`
 
   ${scrollbarStyle('.affine-code-block-container rich-text')}
 
-  .affine-code-block-container rich-text {
-    scrollbar-width: thin;
-    scrollbar-color: ${unsafeCSSVarV2('icon/secondary', '#b1b1b1')} transparent;
-    scrollbar-gutter: stable both-edges;
+  /* In Chromium 121+, non-auto scrollbar-width/color override ::-webkit-scrollbar styles. */
+  @supports not selector(::-webkit-scrollbar) {
+    .affine-code-block-container rich-text {
+      scrollbar-width: thin;
+      scrollbar-color: ${unsafeCSSVarV2('icon/secondary', '#b1b1b1')}
+        transparent;
+      scrollbar-gutter: stable both-edges;
+    }
   }
 
   .affine-code-block-container .inline-editor {
