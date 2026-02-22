@@ -80,6 +80,17 @@ describe('table column materialization', () => {
 
     expect(next).toBe(columns);
   });
+
+  test('supports type-aware default width when materializing missing columns', () => {
+    const next = materializeTableColumns([], ['title', 'status'], id =>
+      id === 'title' ? 260 : DEFAULT_COLUMN_WIDTH
+    );
+
+    expect(next).toEqual([
+      { id: 'title', width: 260 },
+      { id: 'status', width: DEFAULT_COLUMN_WIDTH },
+    ]);
+  });
 });
 
 describe('number formatter', () => {

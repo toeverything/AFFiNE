@@ -28,7 +28,8 @@ import type { TableViewData } from './define.js';
 
 export const materializeColumnsByPropertyIds = (
   columns: TableColumnData[],
-  propertyIds: string[]
+  propertyIds: string[],
+  getDefaultWidth: (id: string) => number = () => DEFAULT_COLUMN_WIDTH
 ) => {
   const needShow = new Set(propertyIds);
   const orderedColumns: TableColumnData[] = [];
@@ -41,7 +42,7 @@ export const materializeColumnsByPropertyIds = (
   }
 
   for (const id of needShow) {
-    orderedColumns.push({ id, width: DEFAULT_COLUMN_WIDTH, hide: undefined });
+    orderedColumns.push({ id, width: getDefaultWidth(id), hide: undefined });
   }
 
   return orderedColumns;
@@ -49,9 +50,14 @@ export const materializeColumnsByPropertyIds = (
 
 export const materializeTableColumns = (
   columns: TableColumnData[],
-  propertyIds: string[]
+  propertyIds: string[],
+  getDefaultWidth?: (id: string) => number
 ) => {
-  const nextColumns = materializeColumnsByPropertyIds(columns, propertyIds);
+  const nextColumns = materializeColumnsByPropertyIds(
+    columns,
+    propertyIds,
+    getDefaultWidth
+  );
   const unchanged =
     columns.length === nextColumns.length &&
     columns.every((column, index) => {
@@ -335,7 +341,8 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
 
     const nextColumns = materializeTableColumns(
       data.columns,
-      this.dataSource.properties$.value
+      this.dataSource.properties$.value,
+      id => this.propertyGetOrCreate(id).width$.value
     );
     if (nextColumns === data.columns) {
       return;
