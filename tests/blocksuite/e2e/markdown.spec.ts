@@ -286,6 +286,9 @@ test.describe('markdown inline-text', () => {
           italic: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -361,6 +364,9 @@ test.describe('markdown inline-text', () => {
           bold: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -434,6 +440,9 @@ test.describe('markdown inline-text', () => {
         attributes: {
           italic: true,
         },
+      },
+      {
+        insert: ' ',
       },
     ]);
     await undoByKeyboard(page);
@@ -510,6 +519,9 @@ test.describe('markdown inline-text', () => {
           strike: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -583,6 +595,9 @@ test.describe('markdown inline-text', () => {
         attributes: {
           underline: true,
         },
+      },
+      {
+        insert: ' ',
       },
     ]);
     await undoByKeyboard(page);
@@ -660,6 +675,9 @@ test.describe('markdown inline-text', () => {
       },
       {
         insert: 'cc',
+      },
+      {
+        insert: ' ',
       },
     ]);
     await undoByKeyboard(page);
