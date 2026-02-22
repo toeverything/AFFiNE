@@ -27,6 +27,12 @@ export const codeBlockStyles = css`
 
   ${scrollbarStyle('.affine-code-block-container rich-text')}
 
+  .affine-code-block-container rich-text {
+    scrollbar-width: thin;
+    scrollbar-color: ${unsafeCSSVarV2('icon/secondary', '#b1b1b1')} transparent;
+    scrollbar-gutter: stable both-edges;
+  }
+
   .affine-code-block-container .inline-editor {
     font-family: var(--affine-font-code-family);
     font-variant-ligatures: none;

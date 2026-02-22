@@ -26,6 +26,46 @@ import type { ViewManager } from '../../core/view-manager/view-manager.js';
 import { DEFAULT_COLUMN_MIN_WIDTH, DEFAULT_COLUMN_WIDTH } from './consts.js';
 import type { TableViewData } from './define.js';
 
+export const materializeColumnsByPropertyIds = (
+  columns: TableColumnData[],
+  propertyIds: string[]
+) => {
+  const needShow = new Set(propertyIds);
+  const orderedColumns: TableColumnData[] = [];
+
+  for (const column of columns) {
+    if (needShow.has(column.id)) {
+      orderedColumns.push(column);
+      needShow.delete(column.id);
+    }
+  }
+
+  for (const id of needShow) {
+    orderedColumns.push({ id, width: DEFAULT_COLUMN_WIDTH, hide: undefined });
+  }
+
+  return orderedColumns;
+};
+
+export const materializeTableColumns = (
+  columns: TableColumnData[],
+  propertyIds: string[]
+) => {
+  const nextColumns = materializeColumnsByPropertyIds(columns, propertyIds);
+  const unchanged =
+    columns.length === nextColumns.length &&
+    columns.every((column, index) => {
+      const nextColumn = nextColumns[index];
+      return (
+        nextColumn != null &&
+        column.id === nextColumn.id &&
+        column.hide === nextColumn.hide
+      );
+    });
+
+  return unchanged ? columns : nextColumns;
+};
+
 export class TableSingleView extends SingleViewBase<TableViewData> {
   propertiesRaw$ = computed(() => {
     const needShow = new Set(this.dataSource.properties$.value);
@@ -220,10 +260,6 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
     return this.data$.value?.mode ?? 'table';
   }
 
-  constructor(viewManager: ViewManager, viewId: string) {
-    super(viewManager, viewId);
-  }
-
   isShow(rowId: string): boolean {
     if (this.filter$.value?.conditions.length) {
       const rowMap = Object.fromEntries(
@@ -290,6 +326,32 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
       });
     }
   );
+
+  private materializeColumns() {
+    const data = this.data$.value;
+    if (!data) {
+      return;
+    }
+
+    const nextColumns = materializeTableColumns(
+      data.columns,
+      this.dataSource.properties$.value
+    );
+    if (nextColumns === data.columns) {
+      return;
+    }
+
+    this.dataUpdate(() => ({ columns: nextColumns }));
+  }
+
+  constructor(viewManager: ViewManager, viewId: string) {
+    super(viewManager, viewId);
+    // Materialize view columns on view activation so newly added properties
+    // can participate in hide/order operations in table.
+    queueMicrotask(() => {
+      this.materializeColumns();
+    });
+  }
 }
 
 type TableColumnData = TableViewData['columns'][number];
