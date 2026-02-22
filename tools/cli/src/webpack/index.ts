@@ -24,6 +24,9 @@ const require = createRequire(import.meta.url);
 const cssnano = require('cssnano');
 
 const IN_CI = !!process.env.CI;
+const LIT_CSS_MINIFY_LOADER = Path.dir(import.meta.url).join(
+  'lit-css-minify-loader.cjs'
+).value;
 
 const availableChannels = ['canary', 'beta', 'stable', 'internal'];
 function getBuildConfigFromEnv(pkg: Package) {
@@ -147,55 +150,69 @@ export function createHTMLTargetConfig(
             {
               test: /\.ts$/,
               exclude: /node_modules/,
-              loader: 'swc-loader',
-              options: {
-                // https://swc.rs/docs/configuring-swc/
-                jsc: {
-                  preserveAllComments: true,
-                  parser: {
-                    syntax: 'typescript',
-                    dynamicImport: true,
-                    topLevelAwait: false,
-                    tsx: false,
-                    decorators: true,
-                  },
-                  target: 'es2022',
-                  externalHelpers: false,
-                  transform: {
-                    useDefineForClassFields: false,
-                    decoratorVersion: '2022-03',
+              use: compact([
+                !buildConfig.debug && {
+                  loader: LIT_CSS_MINIFY_LOADER,
+                },
+                {
+                  loader: 'swc-loader',
+                  options: {
+                    // https://swc.rs/docs/configuring-swc/
+                    jsc: {
+                      preserveAllComments: true,
+                      parser: {
+                        syntax: 'typescript',
+                        dynamicImport: true,
+                        topLevelAwait: false,
+                        tsx: false,
+                        decorators: true,
+                      },
+                      target: 'es2022',
+                      externalHelpers: false,
+                      transform: {
+                        useDefineForClassFields: false,
+                        decoratorVersion: '2022-03',
+                      },
+                    },
+                    sourceMaps: true,
+                    inlineSourcesContent: true,
                   },
                 },
-                sourceMaps: true,
-                inlineSourcesContent: true,
-              },
+              ]),
             },
             {
               test: /\.tsx$/,
               exclude: /node_modules/,
-              loader: 'swc-loader',
-              options: {
-                // https://swc.rs/docs/configuring-swc/
-                jsc: {
-                  preserveAllComments: true,
-                  parser: {
-                    syntax: 'typescript',
-                    dynamicImport: true,
-                    topLevelAwait: false,
-                    tsx: true,
-                    decorators: true,
-                  },
-                  target: 'es2022',
-                  externalHelpers: false,
-                  transform: {
-                    react: { runtime: 'automatic' },
-                    useDefineForClassFields: false,
-                    decoratorVersion: '2022-03',
+              use: compact([
+                !buildConfig.debug && {
+                  loader: LIT_CSS_MINIFY_LOADER,
+                },
+                {
+                  loader: 'swc-loader',
+                  options: {
+                    // https://swc.rs/docs/configuring-swc/
+                    jsc: {
+                      preserveAllComments: true,
+                      parser: {
+                        syntax: 'typescript',
+                        dynamicImport: true,
+                        topLevelAwait: false,
+                        tsx: true,
+                        decorators: true,
+                      },
+                      target: 'es2022',
+                      externalHelpers: false,
+                      transform: {
+                        react: { runtime: 'automatic' },
+                        useDefineForClassFields: false,
+                        decoratorVersion: '2022-03',
+                      },
+                    },
+                    sourceMaps: true,
+                    inlineSourcesContent: true,
                   },
                 },
-                sourceMaps: true,
-                inlineSourcesContent: true,
-              },
+              ]),
             },
             {
               test: /\.(png|jpg|gif|svg|webp|mp4|zip)$/,
