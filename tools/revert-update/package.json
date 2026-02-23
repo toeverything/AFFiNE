@@ -1,6 +1,6 @@
 {
   "name": "@affine/revert-update",
-  "version": "0.26.1",
+  "version": "0.26.3",
   "private": true,
   "type": "module",
   "description": "Generate a revert update from two Yjs snapshot binaries",

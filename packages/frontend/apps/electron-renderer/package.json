@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron-renderer",
   "private": true,
-  "version": "0.26.1",
+  "version": "0.26.3",
   "type": "module",
   "scripts": {
     "build": "affine bundle",
