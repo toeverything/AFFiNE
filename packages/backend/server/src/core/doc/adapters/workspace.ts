@@ -276,22 +276,16 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         return false;
       }
 
-      try {
-        await this.models.history.create(
-          {
-            spaceId: snapshot.spaceId,
-            docId: snapshot.docId,
-            timestamp: snapshot.timestamp,
-            blob: Buffer.from(snapshot.bin),
-            editorId: snapshot.editor,
-          },
-          historyMaxAge
-        );
-      } catch (e) {
-        // safe to ignore
-        // only happens when duplicated history record created in multi processes
-        this.logger.error('Failed to create history record', e);
-      }
+      await this.models.history.create(
+        {
+          spaceId: snapshot.spaceId,
+          docId: snapshot.docId,
+          timestamp: snapshot.timestamp,
+          blob: Buffer.from(snapshot.bin),
+          editorId: snapshot.editor,
+        },
+        historyMaxAge
+      );
 
       metrics.doc
         .counter('history_created_counter', {

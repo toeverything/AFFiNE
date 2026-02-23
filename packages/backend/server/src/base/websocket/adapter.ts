@@ -4,7 +4,15 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { Server, Socket } from 'socket.io';
 
 import { Config } from '../config';
+import {
+  buildCorsAllowedOrigins,
+  CORS_ALLOWED_HEADERS,
+  CORS_ALLOWED_METHODS,
+  corsOriginCallback,
+} from '../cors';
 import { AuthenticationRequired } from '../error';
+import { URLHelper } from '../helpers';
+import { AFFiNELogger } from '../logger';
 import { SocketIoRedis } from '../redis';
 import { WEBSOCKET_OPTIONS } from './options';
 
@@ -14,17 +22,34 @@ export class SocketIoAdapter extends IoAdapter {
   }
 
   override createIOServer(port: number, options?: any): Server {
+    const logger = this.app.get(AFFiNELogger);
     const config = this.app.get(WEBSOCKET_OPTIONS) as Config['websocket'] & {
       canActivate: (socket: Socket) => Promise<boolean>;
     };
+    const url = this.app.get(URLHelper);
+    const allowedOrigins = buildCorsAllowedOrigins(url);
+
     const server: Server = super.createIOServer(port, {
       ...config,
       ...options,
-      // Enable CORS for Socket.IO
       cors: {
-        origin: true, // Allow all origins
-        credentials: true, // Allow credentials (cookies, auth headers)
-        methods: ['GET', 'POST'],
+        origin: (
+          origin: string | undefined,
+          callback: (error: Error | null, allow?: boolean) => void
+        ) => {
+          corsOriginCallback(
+            origin,
+            allowedOrigins,
+            blockedOrigin =>
+              logger.warn(
+                `Blocked WebSocket CORS request from origin: ${blockedOrigin}`
+              ),
+            callback
+          );
+        },
+        credentials: true,
+        methods: CORS_ALLOWED_METHODS,
+        allowedHeaders: CORS_ALLOWED_HEADERS,
       },
     });
 

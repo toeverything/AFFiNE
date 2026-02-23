@@ -1,0 +1,19 @@
+{
+  "name": "@affine/mobile-shared",
+  "version": "0.26.1",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./nbstore/payload": "./src/nbstore/payload.ts"
+  },
+  "dependencies": {
+    "@affine/core": "workspace:*",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -68,9 +68,26 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Go (for actionlint)
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Install actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.11
+      - name: Run actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$(go env GOPATH)/bin/actionlint"
       - name: Run oxlint
         # oxlint is fast, so wrong code will fail quickly
-        run: yarn dlx $(node -e "console.log(require('./package.json').scripts['lint:ox'].replace('oxlint', 'oxlint@' + require('./package.json').devDependencies.oxlint))")
+        run: |
+          set -euo pipefail
+          oxlint_version="$(node -e "console.log(require('./package.json').devDependencies.oxlint)")"
+          yarn dlx "oxlint@${oxlint_version}" --deny-warnings
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -108,20 +125,45 @@ jobs:
         run: |
           yarn affine bs-docs build
           git checkout packages/frontend/i18n/src/i18n-completenesses.json
-          git status --porcelain | grep . && {
+          if git status --porcelain | grep -q .; then
             echo "Run 'yarn typecheck && yarn affine bs-docs build' and make sure all changes are submitted"
             exit 1
-          } || {
+          else
             echo "All changes are submitted"
-          }
+          fi
+
+  rust-test-filter:
+    name: Rust test filter
+    runs-on: ubuntu-latest
+    outputs:
+      run-rust: ${{ steps.rust-filter.outputs.rust }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: rust-filter
+        with:
+          filters: |
+            rust:
+              - '**/*.rs'
+              - '**/Cargo.toml'
+              - '**/Cargo.lock'
+              - '.cargo/**'
+              - 'rust-toolchain*'
+              - '.github/actions/build-rust/**'
 
   lint-rust:
     name: Lint Rust
+    if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    needs:
+      - rust-test-filter
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-rust
         with:
+          target: x86_64-unknown-linux-gnu
+          package: 'affine'
           no-build: 'true'
       - name: fmt check
         run: |
@@ -159,12 +201,12 @@ jobs:
           yarn affine i18n build
           yarn affine server genconfig
           git checkout packages/frontend/i18n/src/i18n-completenesses.json
-          git status --porcelain | grep . && {
+          if git status --porcelain | grep -q .; then
             echo "Run 'yarn affine init && yarn affine gql build && yarn affine i18n build && yarn affine server genconfig' and make sure all changes are submitted"
             exit 1
-          } || {
+          else
             echo "All changes are submitted"
-          }
+          fi
 
   check-yarn-binary:
     name: Check yarn binary
@@ -173,7 +215,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run check
         run: |
-          yarn set version $(node -e "console.log(require('./package.json').packageManager.split('@')[1])")
+          set -euo pipefail
+          yarn_version="$(node -e "console.log(require('./package.json').packageManager.split('@')[1])")"
+          yarn set version "$yarn_version"
           git diff --exit-code
 
   e2e-blocksuite-test:
@@ -188,6 +232,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine-test/blocksuite @blocksuite/playground @blocksuite/integration-test
           playwright-install: true
           playwright-platform: 'chromium'
           electron-install: false
@@ -215,6 +260,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine-test/blocksuite @blocksuite/playground @blocksuite/integration-test
           playwright-install: true
           playwright-platform: 'chromium,firefox,webkit'
           electron-install: false
@@ -298,6 +344,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine-test/affine-local @affine/web @affine/server
           playwright-install: true
           playwright-platform: 'chromium'
           electron-install: false
@@ -329,6 +376,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine-test/affine-mobile @affine/mobile
           playwright-install: true
           electron-install: false
           full-cache: true
@@ -400,7 +448,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('x86_64-unknown-linux-gnu').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('x86_64-unknown-linux-gnu').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -439,7 +487,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -488,7 +536,7 @@ jobs:
         working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -536,6 +584,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine/electron-renderer @affine/nbstore @toeverything/infra
           electron-install: false
           full-cache: true
       - name: Build Electron renderer
@@ -617,6 +666,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
           electron-install: false
           full-cache: true
 
@@ -697,6 +747,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
           electron-install: false
           full-cache: true
 
@@ -713,8 +764,6 @@ jobs:
         run: yarn affine @affine/server test:coverage "**/*/*elasticsearch.spec.ts" --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
-          CI_NODE_INDEX: ${{ matrix.node_index }}
-          CI_NODE_TOTAL: ${{ matrix.total_nodes }}
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v5
@@ -761,6 +810,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
           electron-install: false
           full-cache: true
 
@@ -787,7 +837,10 @@ jobs:
 
   miri:
     name: miri code check
+    if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    needs:
+      - rust-test-filter
     env:
       RUST_BACKTRACE: full
       CARGO_TERM_COLOR: always
@@ -812,7 +865,10 @@ jobs:
 
   loom:
     name: loom thread test
+    if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    needs:
+      - rust-test-filter
     env:
       RUSTFLAGS: --cfg loom
       RUST_BACKTRACE: full
@@ -835,7 +891,10 @@ jobs:
 
   fuzzing:
     name: fuzzing
+    if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    needs:
+      - rust-test-filter
     env:
       CARGO_TERM_COLOR: always
     steps:
@@ -871,7 +930,10 @@ jobs:
 
   rust-test:
     name: Run native tests
+    if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    needs:
+      - rust-test-filter
     env:
       CARGO_TERM_COLOR: always
     steps:
@@ -879,6 +941,7 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/build-rust
         with:
+          target: x86_64-unknown-linux-gnu
           package: 'affine'
           no-build: 'true'
 
@@ -971,6 +1034,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine/server
           electron-install: false
           full-cache: true
 
@@ -1043,6 +1107,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine-test/affine-cloud-copilot @affine/web @affine/server
           playwright-install: true
           playwright-platform: 'chromium'
           electron-install: false
@@ -1125,7 +1190,10 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          extra-flags: workspaces focus @affine/monorepo @affine-test/affine-cloud @affine-test/affine-desktop-cloud @affine/web @affine/server @affine/electron @affine/electron-renderer @affine/nbstore @toeverything/infra
           playwright-install: true
+          playwright-platform: 'chromium'
+          electron-install: ${{ matrix.tests.shard == 'desktop' && 'true' || 'false' }}
           hard-link-nm: false
 
       - name: Download server-native.node
@@ -1204,7 +1272,8 @@ jobs:
         timeout-minutes: 10
         with:
           extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop @affine/nbstore @toeverything/infra
-          playwright-install: true
+          playwright-install: ${{ matrix.spec.test && 'true' || 'false' }}
+          playwright-platform: 'chromium'
           hard-link-nm: false
           enableScripts: false
 
@@ -1212,7 +1281,7 @@ jobs:
         id: filename
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
 
       - name: Download ${{ steps.filename.outputs.filename }}
@@ -1319,6 +1388,7 @@ jobs:
       - server-test
       - server-e2e-test
       - rust-test
+      - rust-test-filter
       - copilot-test-filter
       - copilot-api-test
       - copilot-e2e-test

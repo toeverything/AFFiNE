@@ -106,7 +106,7 @@ impl DocStoragePool {
     })
   }
 
-  async fn get(&self, universal_id: String) -> Result<Ref<'_, SqliteDocStorage>> {
+  async fn get(&self, universal_id: String) -> Result<Ref<SqliteDocStorage>> {
     Ok(self.pool.get(universal_id).await?)
   }
 
@@ -503,5 +503,12 @@ mod tests {
     let err: napi::Error = error::Error::InvalidOperation.into();
     assert_eq!(err.status, napi::Status::GenericFailure);
     assert!(err.reason.contains("Invalid operation"));
+  }
+
+  #[test]
+  fn napi_error_mapping_connection_in_progress() {
+    let err: napi::Error = error::Error::ConnectionInProgress.into();
+    assert_eq!(err.status, napi::Status::GenericFailure);
+    assert!(err.reason.contains("Connection in progress"));
   }
 }

@@ -111,10 +111,12 @@ dependencies = [
  "base64-simd",
  "chrono",
  "homedir",
+ "lru",
  "objc2",
  "objc2-foundation",
  "sqlx",
  "thiserror 2.0.17",
+ "tokio",
  "uniffi",
 ]
 
@@ -2570,6 +2572,15 @@ dependencies = [
  "stringprep",
  "thiserror 2.0.17",
  "weezl",
+]
+
+[[package]]
+name = "lru"
+version = "0.16.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1dc47f592c06f33f8e3aea9591776ec7c9f9e4124778ff8a3c3b87159f7e593"
+dependencies = [
+ "hashbrown 0.16.1",
 ]
 
 [[package]]
