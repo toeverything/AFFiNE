@@ -60,10 +60,9 @@ export const useEmptyTrash = () => {
 
       openConfirmModal({
         title: `${t['com.affine.workspaceSubPath.trash.empty']()}?`,
-        description: t['com.affine.trashOperation.emptyDescription']().replace(
-          '{{count}}',
-          String(ids.length)
-        ),
+        description: t['com.affine.trashOperation.emptyDescription']({
+          count: String(ids.length),
+        }),
         cancelText: t['Cancel'](),
         confirmText: t['com.affine.trashOperation.delete'](),
         confirmButtonOptions: {
