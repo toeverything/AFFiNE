@@ -5,9 +5,14 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
   AFFiNELogger,
+  buildCorsAllowedOrigins,
   CacheInterceptor,
   CloudThrottlerGuard,
   Config,
+  CORS_ALLOWED_HEADERS,
+  CORS_ALLOWED_METHODS,
+  CORS_EXPOSED_HEADERS,
+  corsOriginCallback,
   GlobalExceptionFilter,
   URLHelper,
 } from './base';
@@ -16,12 +21,11 @@ import { AuthGuard } from './core/auth';
 import { serverTimingAndCache } from './middleware/timing';
 
 const OneMB = 1024 * 1024;
-
 export async function run() {
   const { AppModule } = await import('./app.module');
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true,
+    cors: false,
     rawBody: true,
     bodyParser: true,
     bufferLogs: true,
@@ -32,6 +36,27 @@ export async function run() {
   const logger = app.get(AFFiNELogger);
   app.useLogger(logger);
   const config = app.get(Config);
+  const url = app.get(URLHelper);
+
+  const allowedOrigins = buildCorsAllowedOrigins(url);
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      corsOriginCallback(
+        origin,
+        allowedOrigins,
+        blockedOrigin =>
+          logger.warn(`Blocked CORS request from origin: ${blockedOrigin}`),
+        callback
+      );
+    },
+    credentials: true,
+    methods: CORS_ALLOWED_METHODS,
+    allowedHeaders: CORS_ALLOWED_HEADERS,
+    exposedHeaders: CORS_EXPOSED_HEADERS,
+    maxAge: 86400,
+    optionsSuccessStatus: 204,
+  });
 
   if (config.server.path) {
     app.setGlobalPrefix(config.server.path);
@@ -73,8 +98,6 @@ export async function run() {
       swaggerOptions: { persistAuthorization: true },
     });
   }
-
-  const url = app.get(URLHelper);
 
   await app.listen(config.server.port, config.server.listenAddr);
 
