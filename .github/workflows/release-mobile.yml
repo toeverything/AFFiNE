@@ -128,7 +128,7 @@ jobs:
       - name: Testflight
         working-directory: packages/frontend/apps/ios/App
         run: |
-          printf '%s' "${{ env.BUILD_PROVISION_PROFILE }}" | base64 --decode -o "$PP_PATH"
+          printf '%s' "$BUILD_PROVISION_PROFILE" | base64 --decode -o "$PP_PATH"
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles"
           fastlane beta
