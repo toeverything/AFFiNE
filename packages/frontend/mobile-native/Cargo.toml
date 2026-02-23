@@ -23,6 +23,7 @@ base64-simd    = { workspace = true }
 chrono         = { workspace = true }
 sqlx           = { workspace = true }
 thiserror      = { workspace = true }
+tokio          = { workspace = true, features = ["rt-multi-thread"] }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
@@ -38,5 +39,12 @@ objc2-foundation = { workspace = true, features = [
 [target.'cfg(not(any(target_os = "ios", target_os = "macos")))'.dependencies]
 homedir = { workspace = true }
 
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+lru = { workspace = true }
+
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }
+
+[dev-dependencies]
+lru   = { workspace = true }
+tokio = { workspace = true, features = ["full"] }

@@ -54,7 +54,9 @@ export class DatabaseCellContainer extends SignalWatcher(
     const selectionView = this.selectionView;
     if (selectionView) {
       const selection = selectionView.selection;
-      if (selection && this.isSelected(selection) && editing) {
+      const shouldEnterEditMode =
+        editing && this.cell?.beforeEnterEditMode() !== false;
+      if (selection && this.isSelected(selection) && shouldEnterEditMode) {
         selectionView.selection = TableViewAreaSelection.create({
           groupKey: this.groupKey,
           focus: {

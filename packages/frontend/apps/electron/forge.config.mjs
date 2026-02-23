@@ -1,5 +1,5 @@
 import cp from 'node:child_process';
-import { rm, symlink } from 'node:fs/promises';
+import { readdir, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,6 +25,144 @@ const fromBuildIdentifier = utils.fromBuildIdentifier;
 const linuxMimeTypes = [`x-scheme-handler/${productName.toLowerCase()}`];
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+const DEFAULT_ELECTRON_LOCALES_KEEP = new Set([
+  'en',
+  'en_US',
+  'en_GB',
+  'zh_CN',
+  'zh_TW',
+  'fr',
+  'es',
+  'es_419',
+  'pl',
+  'de',
+  'ru',
+  'ja',
+  'it',
+  'ca',
+  'da',
+  'hi',
+  'sv',
+  'ur',
+  'ar',
+  'uk',
+  'ko',
+  'pt_BR',
+  'fa',
+  'nb',
+]);
+
+const getElectronLocalesKeep = () => {
+  const raw = process.env.ELECTRON_LOCALES_KEEP?.trim();
+  if (!raw) return DEFAULT_ELECTRON_LOCALES_KEEP;
+
+  const normalized = raw.toLowerCase();
+  if (normalized === 'all' || normalized === '*') return null;
+
+  const keep = new Set(
+    raw
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+  );
+
+  // Always keep English as a safe fallback.
+  keep.add('en');
+  keep.add('en_US');
+  keep.add('en_GB');
+  return keep;
+};
+
+const getElectronPakLocalesKeep = keep => {
+  const pakKeep = new Set();
+  for (const locale of keep) {
+    if (locale === 'en') {
+      pakKeep.add('en-US');
+      continue;
+    }
+    pakKeep.add(locale.replaceAll('_', '-'));
+  }
+
+  // Always keep English (US) as a safe fallback for Chromium/Electron locales.
+  pakKeep.add('en');
+  pakKeep.add('en-US');
+  pakKeep.add('en-GB');
+  return pakKeep;
+};
+
+const trimElectronFrameworkLocales = async (
+  resourcesAppDir,
+  targetPlatform
+) => {
+  if (process.env.TRIM_ELECTRON_LOCALES === '0') return;
+  if (targetPlatform !== 'darwin' && targetPlatform !== 'mas') return;
+
+  const keep = getElectronLocalesKeep();
+  if (!keep) return;
+
+  const contentsDir = path.resolve(resourcesAppDir, '..', '..');
+  const frameworkResourcesDir = path.join(
+    contentsDir,
+    'Frameworks',
+    'Electron Framework.framework',
+    'Versions',
+    'A',
+    'Resources'
+  );
+
+  let entries;
+  try {
+    entries = await readdir(frameworkResourcesDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  const localeDirs = entries
+    .filter(entry => entry.isDirectory() && entry.name.endsWith('.lproj'))
+    .map(entry => entry.name);
+
+  await Promise.all(
+    localeDirs.map(async dirName => {
+      const locale = dirName.slice(0, -'.lproj'.length);
+      if (keep.has(locale)) return;
+      await rm(path.join(frameworkResourcesDir, dirName), {
+        recursive: true,
+        force: true,
+      });
+    })
+  );
+};
+
+const trimElectronPakLocales = async (resourcesAppDir, targetPlatform) => {
+  if (process.env.TRIM_ELECTRON_LOCALES === '0') return;
+  if (targetPlatform !== 'win32' && targetPlatform !== 'linux') return;
+
+  const keep = getElectronLocalesKeep();
+  if (!keep) return;
+
+  const rootDir = path.resolve(resourcesAppDir, '..', '..');
+  const localesDir = path.join(rootDir, 'locales');
+
+  let entries;
+  try {
+    entries = await readdir(localesDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  const pakKeep = getElectronPakLocalesKeep(keep);
+
+  await Promise.all(
+    entries
+      .filter(entry => entry.isFile() && entry.name.endsWith('.pak'))
+      .map(async entry => {
+        const locale = entry.name.slice(0, -'.pak'.length);
+        if (pakKeep.has(locale)) return;
+        await rm(path.join(localesDir, entry.name), { force: true });
+      })
+  );
+};
+
 const makers = [
   !process.env.SKIP_BUNDLE &&
     platform === 'darwin' && {
@@ -204,7 +342,27 @@ export default {
       },
     ],
     executableName: productName,
-    ignore: [/\.map$/],
+    ignore: [
+      /\.map$/,
+      /\/test($|\/)/,
+      /\/scripts($|\/)/,
+      /\/examples($|\/)/,
+      /\/docs($|\/)/,
+      /\/README\.md$/,
+      /\/forge\.config\.mjs$/,
+      /\/dev-app-update\.yml$/,
+      /\/resources\/app-update\.yml$/,
+    ],
+    afterCopy: [
+      (buildPath, _electronVersion, targetPlatform, _arch, done) => {
+        Promise.all([
+          trimElectronFrameworkLocales(buildPath, targetPlatform),
+          trimElectronPakLocales(buildPath, targetPlatform),
+        ])
+          .then(() => done())
+          .catch(done);
+      },
+    ],
     asar: true,
     extendInfo: {
       NSAudioCaptureUsageDescription:

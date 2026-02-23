@@ -24,7 +24,7 @@ export class AccessTokenService extends Service {
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any>(null);
 
-  async generateUserAccessToken(name: string) {
+  async generateUserAccessToken(name: string): Promise<AccessToken> {
     const accessToken =
       await this.accessTokenStore.generateUserAccessToken(name);
     this.accessTokens$.value = [
@@ -33,6 +33,8 @@ export class AccessTokenService extends Service {
     ];
 
     await this.waitForRevalidation();
+
+    return accessToken as AccessToken;
   }
 
   async revokeUserAccessToken(id: string) {

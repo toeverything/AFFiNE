@@ -7,7 +7,6 @@ inputs:
   ios-app-version:
     description: 'iOS App Store Version (Optional, use App version if empty)'
     required: false
-    type: string
 runs:
   using: 'composite'
   steps:
