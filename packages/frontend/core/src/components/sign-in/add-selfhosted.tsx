@@ -36,17 +36,14 @@ export const AddSelfhostedStep = ({
   state: SignInState;
   changeState: Dispatch<SetStateAction<SignInState>>;
 }) => {
+  const t = useI18n();
   const serversService = useService(ServersService);
   const [baseURL, setBaseURL] = useState(state.initialServerBaseUrl ?? '');
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<boolean>(false);
-  const [errorHint, setErrorHint] = useState('');
-
-  const t = useI18n();
-
-  useEffect(() => {
-    setErrorHint(t['com.affine.auth.sign.add-selfhosted.error']());
-  }, [t]);
+  const [errorHint, setErrorHint] = useState(
+    t['com.affine.auth.sign.add-selfhosted.error']()
+  );
 
   const urlValid = useMemo(() => {
     try {
