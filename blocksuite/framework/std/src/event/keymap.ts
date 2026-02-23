@@ -90,9 +90,21 @@ export function bindKeymap(
     // Do NOT fallback when the key produces a non-ASCII character (e.g., Cyrillic 'х' on Russian keyboard),
     // because the user intends to type that character, not trigger a shortcut bound to the physical key.
     // See: https://github.com/toeverything/AFFiNE/issues/14059
-    const hasModifier = event.shiftKey || event.altKey || event.metaKey;
+    const hasModifier =
+      event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
     const baseName = base[event.keyCode];
-    if (hasModifier && baseName && baseName !== name) {
+    const isSingleAscii = name.length === 1 && name.charCodeAt(0) <= 0x7e;
+    const isAltInputChar = event.altKey && !event.ctrlKey && !isSingleAscii;
+    // Keep supporting existing Alt+digit shortcuts (e.g. Alt-0/1/2 in edgeless)
+    // while preventing Alt-based locale input characters from triggering letter shortcuts.
+    const isDigitBaseKey =
+      baseName != null && baseName.length === 1 && /[0-9]/.test(baseName);
+    if (
+      hasModifier &&
+      baseName &&
+      baseName !== name &&
+      !(isAltInputChar && !isDigitBaseKey)
+    ) {
       const fromCode = map[modifiers(baseName, event)];
       if (fromCode && fromCode(ctx)) {
         return true;

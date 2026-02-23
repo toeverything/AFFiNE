@@ -20,6 +20,7 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { matchModels } from '@blocksuite/affine-shared/utils';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import {
   Bound,
   getCommonBound,
@@ -107,6 +108,17 @@ export class AffineToolbarWidget extends WidgetComponent {
       editor-menu-button > div {
         gap: 4px;
       }
+    }
+
+    editor-toolbar[data-mobile='true'] {
+      position: fixed;
+      top: auto;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      max-width: calc(100vw - 32px);
+      overflow-x: auto;
+      touch-action: pan-x;
     }
 
     ${unsafeCSS(darkToolbarStyles('editor-toolbar'))}
@@ -268,9 +280,110 @@ export class AffineToolbarWidget extends WidgetComponent {
     const { flags, flavour$, message$, placement$ } = toolbarRegistry;
     const context = new ToolbarContext(std);
 
-    // TODO(@fundon): fix toolbar position shaking when the wheel scrolls
-    // document.body.append(toolbar);
-    this.shadowRoot!.append(toolbar);
+    const isNativeTextSelection = () => {
+      const dbSel = std.selection.find(DatabaseSelection);
+      const dbViewSel = dbSel?.viewSelection;
+      if (
+        dbViewSel &&
+        ((dbViewSel.selectionType === 'area' && dbViewSel.isEditing) ||
+          (dbViewSel.selectionType === 'cell' && dbViewSel.isEditing))
+      ) {
+        return true;
+      }
+
+      const tableViewSelection = std.selection.find(TableSelection)?.data;
+      return tableViewSelection?.type === 'area';
+    };
+
+    let updateMobilePosition: (() => void) | null = null;
+
+    if (IS_MOBILE) {
+      toolbar.dataset.mobile = 'true';
+      this.shadowRoot!.append(toolbar);
+
+      // Position toolbar above virtual keyboard using Visual Viewport API
+      updateMobilePosition = () => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+        toolbar.style.bottom = `${Math.max(16, keyboardHeight + 16)}px`;
+      };
+      if (window.visualViewport) {
+        disposables.addFromEvent(
+          window.visualViewport,
+          'resize',
+          updateMobilePosition
+        );
+        disposables.addFromEvent(
+          window.visualViewport,
+          'scroll',
+          updateMobilePosition
+        );
+      }
+
+      // Keep mobile selection in sync with toolbar flags. On some mobile browsers,
+      // long-press selection may skip the std selection stream intermittently.
+      const syncMobileTextSelection = () => {
+        if (!context.activated) {
+          flags.toggle(Flag.Text, false);
+          return;
+        }
+        if (isNativeTextSelection()) {
+          flags.toggle(Flag.Text, false);
+          return;
+        }
+
+        const selection = window.getSelection();
+        const hasSelection =
+          selection &&
+          selection.rangeCount > 0 &&
+          !selection.isCollapsed &&
+          selection.toString().length > 0;
+        const range = hasSelection ? selection.getRangeAt(0) : null;
+        const inEditor = Boolean(
+          range && host.contains(range.commonAncestorContainer)
+        );
+
+        batch(() => {
+          flags.toggle(Flag.Text, inEditor);
+
+          if (!inEditor || !range) return;
+
+          this.setReferenceElementWithRange(range);
+
+          sideOptions$.value = null;
+          flavour$.value = 'affine:note';
+          placement$.value = toolbarRegistry.getModulePlacement('affine:note');
+          flags.refresh(Flag.Text);
+        });
+      };
+
+      let selectionTimeout: ReturnType<typeof setTimeout> | null = null;
+      let touchTimeout: ReturnType<typeof setTimeout> | null = null;
+      const scheduleSyncMobileTextSelection = (delay: number) => {
+        if (selectionTimeout) clearTimeout(selectionTimeout);
+        selectionTimeout = setTimeout(syncMobileTextSelection, delay);
+      };
+      const scheduleTouchSync = (delay: number) => {
+        if (touchTimeout) clearTimeout(touchTimeout);
+        touchTimeout = setTimeout(syncMobileTextSelection, delay);
+      };
+      disposables.addFromEvent(document, 'selectionchange', () => {
+        scheduleSyncMobileTextSelection(50);
+      });
+      disposables.addFromEvent(host, 'touchend', () => {
+        scheduleTouchSync(100);
+      });
+      disposables.add(() => {
+        if (selectionTimeout) clearTimeout(selectionTimeout);
+        if (touchTimeout) clearTimeout(touchTimeout);
+      });
+
+      // Ensures a stable initial offset before the first viewport event arrives.
+      updateMobilePosition?.();
+    } else {
+      this.shadowRoot!.append(toolbar);
+    }
 
     // Formatting
     // Selects text in note.
@@ -305,30 +418,12 @@ export class AffineToolbarWidget extends WidgetComponent {
     disposables.addFromEvent(document, 'selectionchange', () => {
       const range = std.range.value ?? null;
       let activated = context.activated && Boolean(range && !range.collapsed);
-      let isNative = false;
 
       if (activated) {
-        const result = std.selection.find(DatabaseSelection);
-        const viewSelection = result?.viewSelection;
-        if (viewSelection) {
-          isNative =
-            (viewSelection.selectionType === 'area' &&
-              viewSelection.isEditing) ||
-            (viewSelection.selectionType === 'cell' && viewSelection.isEditing);
-        }
-
-        if (!isNative) {
-          const result = std.selection.find(TableSelection);
-          const viewSelection = result?.data;
-          if (viewSelection) {
-            isNative = viewSelection.type === 'area';
-          }
-        }
+        activated = isNativeTextSelection();
       }
 
       batch(() => {
-        activated &&= isNative;
-
         // Focues outside: `doc-title`
         if (
           flags.check(Flag.Text) &&
@@ -662,6 +757,14 @@ export class AffineToolbarWidget extends WidgetComponent {
 
     disposables.add(
       effect(() => {
+        if (IS_MOBILE) {
+          const value = flags.value$.value;
+          if (!context.activated) return;
+          if (Flag.None === value || flags.contains(Flag.Hiding, value)) return;
+          updateMobilePosition?.();
+          return;
+        }
+
         if (!abortController.signal.aborted) {
           abortController.abort();
         }
