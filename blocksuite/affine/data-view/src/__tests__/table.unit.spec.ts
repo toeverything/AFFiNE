@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import type { FilterGroup } from '../core/filter/types.js';
 import { numberFormats } from '../property-presets/number/utils/formats.js';
 import {
   formatNumber,
@@ -11,7 +12,10 @@ import { mobileEffects } from '../view-presets/table/mobile/effect.js';
 import type { MobileTableGroup } from '../view-presets/table/mobile/group.js';
 import { pcEffects } from '../view-presets/table/pc/effect.js';
 import type { TableGroup } from '../view-presets/table/pc/group.js';
-import { materializeTableColumns } from '../view-presets/table/table-view-manager.js';
+import {
+  materializeTableColumns,
+  TableSingleView,
+} from '../view-presets/table/table-view-manager.js';
 
 /** @vitest-environment happy-dom */
 
@@ -90,6 +94,96 @@ describe('table column materialization', () => {
       { id: 'title', width: 260 },
       { id: 'status', width: DEFAULT_COLUMN_WIDTH },
     ]);
+  });
+});
+
+describe('table filtering', () => {
+  test('evaluates filters with hidden columns', () => {
+    const filter: FilterGroup = {
+      type: 'group',
+      op: 'and',
+      conditions: [
+        {
+          type: 'filter',
+          left: {
+            type: 'ref',
+            name: 'status',
+          },
+          function: 'is',
+          args: [{ type: 'literal', value: 'Done' }],
+        },
+      ],
+    };
+
+    const titleProperty = {
+      id: 'title',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Task 1',
+        },
+      }),
+    };
+    const statusProperty = {
+      id: 'status',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Done',
+        },
+      }),
+    };
+
+    const view = {
+      filter$: { value: filter },
+      // Simulate status being hidden in current view.
+      properties$: { value: [titleProperty] },
+      propertiesRaw$: { value: [titleProperty, statusProperty] },
+    } as unknown as TableSingleView;
+
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
+  });
+
+  test('returns false when hidden filtered column does not match', () => {
+    const filter: FilterGroup = {
+      type: 'group',
+      op: 'and',
+      conditions: [
+        {
+          type: 'filter',
+          left: {
+            type: 'ref',
+            name: 'status',
+          },
+          function: 'is',
+          args: [{ type: 'literal', value: 'Done' }],
+        },
+      ],
+    };
+
+    const titleProperty = {
+      id: 'title',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Task 1',
+        },
+      }),
+    };
+    const statusProperty = {
+      id: 'status',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'In Progress',
+        },
+      }),
+    };
+
+    const view = {
+      filter$: { value: filter },
+      // Simulate status being hidden in current view.
+      properties$: { value: [titleProperty] },
+      propertiesRaw$: { value: [titleProperty, statusProperty] },
+    } as unknown as TableSingleView;
+
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(false);
   });
 });
 

@@ -269,7 +269,7 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
   isShow(rowId: string): boolean {
     if (this.filter$.value?.conditions.length) {
       const rowMap = Object.fromEntries(
-        this.properties$.value.map(column => [
+        this.propertiesRaw$.value.map(column => [
           column.id,
           column.cellGetOrCreate(rowId).jsonValue$.value,
         ])
