@@ -72,7 +72,7 @@
     "@prisma/client": "^6.6.0",
     "@prisma/instrumentation": "^6.7.0",
     "@queuedash/api": "^3.16.0",
-    "@react-email/components": "^1.0.8",
+    "@react-email/components": "^0.5.7",
     "@socket.io/redis-adapter": "^8.3.0",
     "ai": "^5.0.118",
     "bullmq": "^5.40.2",
