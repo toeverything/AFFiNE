@@ -280,14 +280,14 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           bold: true,
           italic: true,
         },
       },
       {
-        insert: ' ',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -359,13 +359,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           bold: true,
         },
       },
       {
-        insert: ' ',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -436,13 +436,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           italic: true,
         },
       },
       {
-        insert: ' ',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -514,13 +514,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           strike: true,
         },
       },
       {
-        insert: ' ',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -591,13 +591,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           underline: true,
         },
       },
       {
-        insert: ' ',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -674,10 +674,7 @@ test.describe('markdown inline-text', () => {
         },
       },
       {
-        insert: 'cc',
-      },
-      {
-        insert: ' ',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
