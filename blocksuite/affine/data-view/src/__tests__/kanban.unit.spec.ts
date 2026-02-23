@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { GroupBy } from '../core/common/types.js';
 import type { DataSource } from '../core/data-source/base.js';
 import { DetailSelection } from '../core/detail/selection.js';
+import type { FilterGroup } from '../core/filter/types.js';
 import { groupByMatchers } from '../core/group-by/define.js';
 import { t } from '../core/logical/type-presets.js';
 import type { DataViewCellLifeCycle } from '../core/property/index.js';
@@ -17,7 +18,10 @@ import {
   pickKanbanGroupColumn,
   resolveKanbanGroupBy,
 } from '../view-presets/kanban/group-by-utils.js';
-import { materializeKanbanColumns } from '../view-presets/kanban/kanban-view-manager.js';
+import {
+  KanbanSingleView,
+  materializeKanbanColumns,
+} from '../view-presets/kanban/kanban-view-manager.js';
 import type { KanbanCard } from '../view-presets/kanban/pc/card.js';
 import { KanbanDragController } from '../view-presets/kanban/pc/controller/drag.js';
 import type { KanbanGroup } from '../view-presets/kanban/pc/group.js';
@@ -267,6 +271,52 @@ describe('kanban', () => {
       const next = materializeKanbanColumns(columns, ['title', 'status']);
 
       expect(next).toBe(columns);
+    });
+  });
+
+  describe('filtering', () => {
+    it('evaluates filters with hidden columns', () => {
+      const filter: FilterGroup = {
+        type: 'group',
+        op: 'and',
+        conditions: [
+          {
+            type: 'filter',
+            left: {
+              type: 'ref',
+              name: 'status',
+            },
+            function: 'is',
+            args: [{ type: 'literal', value: 'Done' }],
+          },
+        ],
+      };
+
+      const titleProperty = {
+        id: 'title',
+        cellGetOrCreate: () => ({
+          jsonValue$: {
+            value: 'Task 1',
+          },
+        }),
+      };
+      const statusProperty = {
+        id: 'status',
+        cellGetOrCreate: () => ({
+          jsonValue$: {
+            value: 'Done',
+          },
+        }),
+      };
+
+      const view = {
+        filter$: { value: filter },
+        // Simulate status being hidden in current view.
+        properties$: { value: [titleProperty] },
+        propertiesRaw$: { value: [titleProperty, statusProperty] },
+      } as unknown as KanbanSingleView;
+
+      expect(KanbanSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
     });
   });
 
