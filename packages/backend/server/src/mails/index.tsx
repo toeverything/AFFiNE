@@ -41,9 +41,7 @@ type EmailContent = {
 };
 
 function render(component: React.ReactElement) {
-  return rawRender(component, {
-    pretty: env.testing,
-  });
+  return rawRender(component, { pretty: env.testing });
 }
 
 type Props<T> = T extends React.ComponentType<infer P> ? P : never;

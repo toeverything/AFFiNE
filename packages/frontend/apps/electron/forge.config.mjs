@@ -220,7 +220,7 @@ const makers = [
     },
   },
   !process.env.SKIP_BUNDLE && {
-    name: '@pengx17/electron-forge-maker-appimage',
+    name: 'electron-forge-maker-appimage',
     platforms: ['linux'],
     config: {
       icons: [
