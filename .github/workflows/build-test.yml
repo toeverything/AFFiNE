@@ -84,7 +84,10 @@ jobs:
           "$(go env GOPATH)/bin/actionlint"
       - name: Run oxlint
         # oxlint is fast, so wrong code will fail quickly
-        run: yarn dlx $(node -e "console.log(require('./package.json').scripts['lint:ox'].replace('oxlint', 'oxlint@' + require('./package.json').devDependencies.oxlint))")
+        run: |
+          set -euo pipefail
+          oxlint_version="$(node -e "console.log(require('./package.json').devDependencies.oxlint)")"
+          yarn dlx "oxlint@${oxlint_version}" --deny-warnings
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -122,12 +125,12 @@ jobs:
         run: |
           yarn affine bs-docs build
           git checkout packages/frontend/i18n/src/i18n-completenesses.json
-          git status --porcelain | grep . && {
+          if git status --porcelain | grep -q .; then
             echo "Run 'yarn typecheck && yarn affine bs-docs build' and make sure all changes are submitted"
             exit 1
-          } || {
+          else
             echo "All changes are submitted"
-          }
+          fi
 
   rust-test-filter:
     name: Rust test filter
@@ -198,12 +201,12 @@ jobs:
           yarn affine i18n build
           yarn affine server genconfig
           git checkout packages/frontend/i18n/src/i18n-completenesses.json
-          git status --porcelain | grep . && {
+          if git status --porcelain | grep -q .; then
             echo "Run 'yarn affine init && yarn affine gql build && yarn affine i18n build && yarn affine server genconfig' and make sure all changes are submitted"
             exit 1
-          } || {
+          else
             echo "All changes are submitted"
-          }
+          fi
 
   check-yarn-binary:
     name: Check yarn binary
@@ -212,7 +215,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run check
         run: |
-          yarn set version $(node -e "console.log(require('./package.json').packageManager.split('@')[1])")
+          set -euo pipefail
+          yarn_version="$(node -e "console.log(require('./package.json').packageManager.split('@')[1])")"
+          yarn set version "$yarn_version"
           git diff --exit-code
 
   e2e-blocksuite-test:
@@ -227,7 +232,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          extra-flags: workspaces focus @affine-test/blocksuite @blocksuite/playground @blocksuite/integration-test
+          extra-flags: workspaces focus @affine/monorepo @affine-test/blocksuite @blocksuite/playground @blocksuite/integration-test
           playwright-install: true
           playwright-platform: 'chromium'
           electron-install: false
@@ -255,7 +260,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
-          extra-flags: workspaces focus @affine-test/blocksuite @blocksuite/playground @blocksuite/integration-test
+          extra-flags: workspaces focus @affine/monorepo @affine-test/blocksuite @blocksuite/playground @blocksuite/integration-test
           playwright-install: true
           playwright-platform: 'chromium,firefox,webkit'
           electron-install: false
@@ -443,7 +448,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('x86_64-unknown-linux-gnu').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('x86_64-unknown-linux-gnu').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -482,7 +487,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -531,7 +536,7 @@ jobs:
         working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
       - name: Build AFFiNE native
         uses: ./.github/actions/build-rust
@@ -1276,7 +1281,7 @@ jobs:
         id: filename
         shell: bash
         run: |
-          export PLATFORM_ARCH_ABI=$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")
+          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
 
       - name: Download ${{ steps.filename.outputs.filename }}
