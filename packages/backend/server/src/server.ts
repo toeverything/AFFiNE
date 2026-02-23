@@ -60,10 +60,14 @@ export async function run() {
         corsOriginCallback(
           origin,
           finalAllowedOrigins,
-          blockedOrigin =>
-            logger.warn(`Blocked CORS request from origin: ${blockedOrigin}`, {
-              requestPath,
-            }),
+          blockedOrigin => {
+            if (!appendedOrigins.length) {
+              logger.warn(
+                `Blocked CORS request from origin: ${blockedOrigin}`,
+                { requestPath }
+              );
+            }
+          },
           originCallback
         );
       },
