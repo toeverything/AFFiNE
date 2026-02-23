@@ -318,6 +318,50 @@ describe('kanban', () => {
 
       expect(KanbanSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
     });
+
+    it('returns false when hidden filtered column does not match', () => {
+      const filter: FilterGroup = {
+        type: 'group',
+        op: 'and',
+        conditions: [
+          {
+            type: 'filter',
+            left: {
+              type: 'ref',
+              name: 'status',
+            },
+            function: 'is',
+            args: [{ type: 'literal', value: 'Done' }],
+          },
+        ],
+      };
+
+      const titleProperty = {
+        id: 'title',
+        cellGetOrCreate: () => ({
+          jsonValue$: {
+            value: 'Task 1',
+          },
+        }),
+      };
+      const statusProperty = {
+        id: 'status',
+        cellGetOrCreate: () => ({
+          jsonValue$: {
+            value: 'In Progress',
+          },
+        }),
+      };
+
+      const view = {
+        filter$: { value: filter },
+        // Simulate status being hidden in current view.
+        properties$: { value: [titleProperty] },
+        propertiesRaw$: { value: [titleProperty, statusProperty] },
+      } as unknown as KanbanSingleView;
+
+      expect(KanbanSingleView.prototype.isShow.call(view, 'row-1')).toBe(false);
+    });
   });
 
   describe('drag indicator', () => {
