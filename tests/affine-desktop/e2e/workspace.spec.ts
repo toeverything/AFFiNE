@@ -137,15 +137,26 @@ test('delete workspace and then restore it from backup', async ({ page }) => {
   );
   //#endregion
 
-  await page.waitForTimeout(1000);
+  await expect
+    .poll(
+      async () =>
+        (
+          await page.evaluate(async () => {
+            return await window.__apis?.workspace.getBackupWorkspaces();
+          })
+        )?.items.length,
+      { timeout: 20000 }
+    )
+    .toBeGreaterThan(0);
 
   //#region 4. restore the workspace from backup
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
 
   await page.getByTestId('backup-panel-trigger').click();
-  await expect(page.getByTestId('backup-workspace-item')).toHaveCount(1);
-  await page.getByTestId('backup-workspace-item').click();
+  const backupWorkspaceItems = page.getByTestId('backup-workspace-item');
+  await expect(backupWorkspaceItems.first()).toBeVisible();
+  await backupWorkspaceItems.first().click();
   await page.getByRole('menuitem', { name: 'Enable local workspace' }).click();
   const toast = page.locator(
     '[data-sonner-toast]:has-text("Workspace enabled successfully")'

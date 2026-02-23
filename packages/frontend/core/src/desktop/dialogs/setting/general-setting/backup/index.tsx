@@ -194,13 +194,27 @@ const PAGE_SIZE = 6;
 export const BackupSettingPanel = () => {
   const t = useI18n();
   const backupService = useService(BackupService);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    setRetryCount(0);
     backupService.revalidate();
   }, [backupService]);
 
   const isLoading = useLiveData(backupService.isLoading$);
   const backupWorkspaces = useLiveData(backupService.pageBackupWorkspaces$);
+  const backupCount = backupWorkspaces?.items.length ?? 0;
+
+  useEffect(() => {
+    // Workspace deletion may complete slightly after panel mount.
+    // Retry a few times to avoid showing stale empty state.
+    if (isLoading || backupCount > 0 || retryCount >= 4) return;
+    const timer = setTimeout(() => {
+      setRetryCount(current => current + 1);
+      backupService.revalidate();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [backupCount, backupService, isLoading, retryCount]);
 
   const [pageNum, setPageNum] = useState(0);
 
