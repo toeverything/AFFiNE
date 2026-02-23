@@ -110,6 +110,17 @@ export class AffineToolbarWidget extends WidgetComponent {
       }
     }
 
+    editor-toolbar[data-mobile='true'] {
+      position: fixed;
+      top: auto;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      max-width: calc(100vw - 32px);
+      overflow-x: auto;
+      touch-action: pan-x;
+    }
+
     ${unsafeCSS(darkToolbarStyles('editor-toolbar'))}
     ${unsafeCSS(lightToolbarStyles('editor-toolbar'))}
   `;
@@ -269,27 +280,29 @@ export class AffineToolbarWidget extends WidgetComponent {
     const { flags, flavour$, message$, placement$ } = toolbarRegistry;
     const context = new ToolbarContext(std);
 
+    const isNativeTextSelection = () => {
+      const dbSel = std.selection.find(DatabaseSelection);
+      const dbViewSel = dbSel?.viewSelection;
+      if (
+        dbViewSel &&
+        ((dbViewSel.selectionType === 'area' && dbViewSel.isEditing) ||
+          (dbViewSel.selectionType === 'cell' && dbViewSel.isEditing))
+      ) {
+        return true;
+      }
+
+      const tableViewSelection = std.selection.find(TableSelection)?.data;
+      return tableViewSelection?.type === 'area';
+    };
+
+    let updateMobilePosition: (() => void) | null = null;
+
     if (IS_MOBILE) {
-      // On mobile, use fixed positioning and handle toolbar visibility directly
-      // via selectionchange to avoid rendering issues with the flag system.
-      // Toolbar stays in shadowRoot so theme styles naturally apply.
-      Object.assign(toolbar.style, {
-        position: 'fixed',
-        top: 'auto',
-        left: '50%',
-        bottom: '16px',
-        transform: 'translateX(-50%)',
-        zIndex: 'var(--affine-z-index-popover, 1000)',
-        display: 'none',
-        opacity: '0',
-        maxWidth: 'calc(100vw - 32px)',
-        overflowX: 'auto',
-        touchAction: 'pan-x',
-      });
+      toolbar.dataset.mobile = 'true';
       this.shadowRoot!.append(toolbar);
 
       // Position toolbar above virtual keyboard using Visual Viewport API
-      const updatePosition = () => {
+      updateMobilePosition = () => {
         const vv = window.visualViewport;
         if (!vv) return;
         const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
@@ -299,50 +312,75 @@ export class AffineToolbarWidget extends WidgetComponent {
         disposables.addFromEvent(
           window.visualViewport,
           'resize',
-          updatePosition
+          updateMobilePosition
         );
         disposables.addFromEvent(
           window.visualViewport,
           'scroll',
-          updatePosition
+          updateMobilePosition
         );
       }
 
-      // Show/hide toolbar based on text selection
-      const updateToolbar = () => {
-        const sel = window.getSelection();
-        const hasSelection =
-          sel &&
-          sel.rangeCount > 0 &&
-          !sel.isCollapsed &&
-          sel.toString().length > 0;
-        const range = hasSelection ? sel.getRangeAt(0) : null;
-        const inEditor = range && host.contains(range.commonAncestorContainer);
-
-        if (hasSelection && inEditor) {
-          toolbar.style.display = 'flex';
-          toolbar.style.opacity = '1';
-          renderToolbar(toolbar, context, 'affine:note');
-        } else {
-          toolbar.style.display = 'none';
-          toolbar.style.opacity = '0';
+      // Keep mobile selection in sync with toolbar flags. On some mobile browsers,
+      // long-press selection may skip the std selection stream intermittently.
+      const syncMobileTextSelection = () => {
+        if (!context.activated) {
+          flags.toggle(Flag.Text, false);
+          return;
         }
+        if (isNativeTextSelection()) {
+          flags.toggle(Flag.Text, false);
+          return;
+        }
+
+        const selection = window.getSelection();
+        const hasSelection =
+          selection &&
+          selection.rangeCount > 0 &&
+          !selection.isCollapsed &&
+          selection.toString().length > 0;
+        const range = hasSelection ? selection.getRangeAt(0) : null;
+        const inEditor = Boolean(
+          range && host.contains(range.commonAncestorContainer)
+        );
+
+        batch(() => {
+          flags.toggle(Flag.Text, inEditor);
+
+          if (!inEditor || !range) return;
+
+          this.setReferenceElementWithRange(range);
+
+          sideOptions$.value = null;
+          flavour$.value = 'affine:note';
+          placement$.value = toolbarRegistry.getModulePlacement('affine:note');
+          flags.refresh(Flag.Text);
+        });
       };
 
-      let timeout: ReturnType<typeof setTimeout> | null = null;
+      let selectionTimeout: ReturnType<typeof setTimeout> | null = null;
       let touchTimeout: ReturnType<typeof setTimeout> | null = null;
+      const scheduleSyncMobileTextSelection = (delay: number) => {
+        if (selectionTimeout) clearTimeout(selectionTimeout);
+        selectionTimeout = setTimeout(syncMobileTextSelection, delay);
+      };
+      const scheduleTouchSync = (delay: number) => {
+        if (touchTimeout) clearTimeout(touchTimeout);
+        touchTimeout = setTimeout(syncMobileTextSelection, delay);
+      };
       disposables.addFromEvent(document, 'selectionchange', () => {
-        if (timeout) clearTimeout(timeout);
-        timeout = setTimeout(updateToolbar, 50);
+        scheduleSyncMobileTextSelection(50);
       });
       disposables.addFromEvent(host, 'touchend', () => {
-        if (touchTimeout) clearTimeout(touchTimeout);
-        touchTimeout = setTimeout(updateToolbar, 100);
+        scheduleTouchSync(100);
       });
       disposables.add(() => {
-        if (timeout) clearTimeout(timeout);
+        if (selectionTimeout) clearTimeout(selectionTimeout);
         if (touchTimeout) clearTimeout(touchTimeout);
       });
+
+      // Ensures a stable initial offset before the first viewport event arrives.
+      updateMobilePosition?.();
     } else {
       this.shadowRoot!.append(toolbar);
     }
@@ -380,30 +418,12 @@ export class AffineToolbarWidget extends WidgetComponent {
     disposables.addFromEvent(document, 'selectionchange', () => {
       const range = std.range.value ?? null;
       let activated = context.activated && Boolean(range && !range.collapsed);
-      let isNative = false;
 
       if (activated) {
-        const result = std.selection.find(DatabaseSelection);
-        const viewSelection = result?.viewSelection;
-        if (viewSelection) {
-          isNative =
-            (viewSelection.selectionType === 'area' &&
-              viewSelection.isEditing) ||
-            (viewSelection.selectionType === 'cell' && viewSelection.isEditing);
-        }
-
-        if (!isNative) {
-          const result = std.selection.find(TableSelection);
-          const viewSelection = result?.data;
-          if (viewSelection) {
-            isNative = viewSelection.type === 'area';
-          }
-        }
+        activated = isNativeTextSelection();
       }
 
       batch(() => {
-        activated &&= isNative;
-
         // Focues outside: `doc-title`
         if (
           flags.check(Flag.Text) &&
@@ -708,9 +728,6 @@ export class AffineToolbarWidget extends WidgetComponent {
 
     disposables.add(
       effect(() => {
-        // On mobile, toolbar visibility is handled directly via selectionchange
-        if (IS_MOBILE) return;
-
         const value = flags.value$.value;
 
         // Hides toolbar
@@ -740,8 +757,13 @@ export class AffineToolbarWidget extends WidgetComponent {
 
     disposables.add(
       effect(() => {
-        // On mobile, toolbar visibility and positioning is handled directly via selectionchange
-        if (IS_MOBILE) return;
+        if (IS_MOBILE) {
+          const value = flags.value$.value;
+          if (!context.activated) return;
+          if (Flag.None === value || flags.contains(Flag.Hiding, value)) return;
+          updateMobilePosition?.();
+          return;
+        }
 
         if (!abortController.signal.aborted) {
           abortController.abort();
