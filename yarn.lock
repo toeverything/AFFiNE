@@ -84,6 +84,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine-test/blocksuite@workspace:tests/blocksuite"
   dependencies:
+    "@affine-test/kit": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/integration-test": "workspace:*"
     "@playwright/test": "npm:=1.52.0"
