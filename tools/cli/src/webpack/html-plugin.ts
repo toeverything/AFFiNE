@@ -79,6 +79,7 @@ const currentDir = Path.dir(import.meta.url);
 export interface CreateHTMLPluginConfig {
   filename?: string;
   additionalEntryForSelfhost?: boolean;
+  selfhostPublicPath?: string;
   injectGlobalErrorHandler?: boolean;
   emitAssetsManifest?: boolean;
 }
@@ -206,6 +207,7 @@ export function createHTMLPlugins(
 ): WebpackPluginInstance[] {
   const publicPath = getPublicPath(BUILD_CONFIG);
   const htmlPluginOptions = getHTMLPluginOptions(BUILD_CONFIG);
+  const selfhostPublicPath = config.selfhostPublicPath ?? '/';
 
   const plugins: WebpackPluginInstance[] = [];
   plugins.push(
@@ -269,9 +271,10 @@ export function createHTMLPlugins(
       new HTMLPlugin({
         ...htmlPluginOptions,
         chunks: ['index'],
+        publicPath: selfhostPublicPath,
         meta: {
           'env:isSelfHosted': 'true',
-          'env:publicPath': '/',
+          'env:publicPath': selfhostPublicPath,
         },
         filename: 'selfhost.html',
         templateParameters: {

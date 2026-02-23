@@ -33,22 +33,33 @@ export class HistoryModel extends BaseModel {
    * Create a doc history with a max age.
    */
   async create(snapshot: Doc, maxAge: number): Promise<DocHistorySimple> {
-    const row = await this.db.snapshotHistory.create({
-      select: {
-        timestamp: true,
-        createdByUser: { select: publicUserSelect },
+    const timestamp = new Date(snapshot.timestamp);
+    const expiredAt = new Date(Date.now() + maxAge);
+
+    // This method may be called concurrently by multiple processes for the same
+    // (workspaceId, docId, timestamp). Using upsert avoids duplicate key errors
+    // that would otherwise abort the surrounding transaction.
+    const row = await this.db.snapshotHistory.upsert({
+      where: {
+        workspaceId_id_timestamp: {
+          workspaceId: snapshot.spaceId,
+          id: snapshot.docId,
+          timestamp,
+        },
       },
-      data: {
+      select: { timestamp: true, createdByUser: { select: publicUserSelect } },
+      create: {
         workspaceId: snapshot.spaceId,
         id: snapshot.docId,
-        timestamp: new Date(snapshot.timestamp),
+        timestamp,
         blob: snapshot.blob,
         createdBy: snapshot.editorId,
-        expiredAt: new Date(Date.now() + maxAge),
+        expiredAt,
       },
+      update: { expiredAt },
     });
     this.logger.debug(
-      `Created history ${row.timestamp} for ${snapshot.docId} in ${snapshot.spaceId}`
+      `Upserted history ${row.timestamp} for ${snapshot.docId} in ${snapshot.spaceId}`
     );
     return {
       timestamp: row.timestamp.getTime(),

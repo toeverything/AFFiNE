@@ -12,6 +12,7 @@ import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import cssnano from 'cssnano';
 import { compact, merge } from 'lodash-es';
 
+import { queuedashScopePostcssPlugin } from '../postcss/queuedash-scope.js';
 import { productionCacheGroups } from '../webpack/cache-group.js';
 import {
   type CreateHTMLPluginConfig,
@@ -228,6 +229,9 @@ export function createHTMLTargetConfig(
                               require(pkg.join('tailwind.config.js').value),
                             ],
                             ['autoprefixer'],
+                            ...(buildConfig.isAdmin
+                              ? [queuedashScopePostcssPlugin()]
+                              : []),
                           ]
                         : [
                             cssnano({

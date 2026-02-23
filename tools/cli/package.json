@@ -39,6 +39,7 @@
     "node-loader": "^2.1.0",
     "postcss": "^8.4.49",
     "postcss-loader": "^8.1.1",
+    "postcss-selector-parser": "^7.1.0",
     "prettier": "^3.7.4",
     "react-refresh": "^0.17.0",
     "source-map-loader": "^5.0.0",

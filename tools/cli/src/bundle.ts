@@ -88,7 +88,11 @@ function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
   switch (pkg.name) {
     case '@affine/admin': {
       return [
-        createWebpackHTMLTargetConfig(pkg, pkg.srcPath.join('index.tsx').value),
+        createWebpackHTMLTargetConfig(
+          pkg,
+          pkg.srcPath.join('index.tsx').value,
+          { selfhostPublicPath: '/admin/' }
+        ),
       ] as webpack.MultiConfiguration;
     }
     case '@affine/web':
@@ -158,7 +162,9 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
   switch (pkg.name) {
     case '@affine/admin': {
       return [
-        createRspackHTMLTargetConfig(pkg, pkg.srcPath.join('index.tsx').value),
+        createRspackHTMLTargetConfig(pkg, pkg.srcPath.join('index.tsx').value, {
+          selfhostPublicPath: '/admin/',
+        }),
       ] as MultiRspackOptions;
     }
     case '@affine/web':

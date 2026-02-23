@@ -1,6 +1,7 @@
 import { Button, ErrorMessage, notify, Skeleton } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AccessTokenService, ServerService } from '@affine/core/modules/cloud';
+import type { AccessToken } from '@affine/core/modules/cloud/stores/access-token';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
@@ -37,23 +38,30 @@ const McpServerSetting = () => {
   const isRevalidating = useLiveData(accessTokenService.isRevalidating$);
   const error = useLiveData(accessTokenService.error$);
   const [mutating, setMutating] = useState(false);
+  const [revealedAccessToken, setRevealedAccessToken] =
+    useState<AccessToken | null>(null);
   const t = useI18n();
 
   const mcpAccessToken = useMemo(() => {
     return accessTokens?.find(token => token.name === 'mcp');
   }, [accessTokens]);
 
+  const displayedToken = revealedAccessToken ?? mcpAccessToken;
+  const hasMcpToken = Boolean(revealedAccessToken || mcpAccessToken);
+  const hasCopyableToken = Boolean(revealedAccessToken);
+  const isRedactedDisplay = hasMcpToken && !hasCopyableToken;
+
   const code = useMemo(() => {
-    return mcpAccessToken
+    return displayedToken
       ? JSON.stringify(
           {
             mcpServers: {
-              [`${workspaceName} - AFFiNE`]: {
+              [`affine_workspace_${workspaceService.workspace.id}`]: {
                 type: 'streamable-http',
                 url: `${serverService.server.baseUrl}/api/workspaces/${workspaceService.workspace.id}/mcp`,
-                note: 'Read docs from AFFiNE workspace',
+                note: `Read docs from AFFiNE workspace "${workspaceName}"`,
                 headers: {
-                  Authorization: `Bearer ${mcpAccessToken.token}`,
+                  Authorization: `Bearer ${displayedToken.token}`,
                 },
               },
             },
@@ -62,7 +70,12 @@ const McpServerSetting = () => {
           2
         )
       : null;
-  }, [mcpAccessToken, workspaceName, workspaceService, serverService]);
+  }, [displayedToken, workspaceName, workspaceService, serverService]);
+
+  const copyJsonDisabled = !code || mutating || isRedactedDisplay;
+  const copyJsonTooltip = isRedactedDisplay
+    ? t['com.affine.integration.mcp-server.copy-json.disabled-hint']()
+    : undefined;
 
   const showLoading = accessTokens === null && isRevalidating;
   const showError = accessTokens === null && error !== null;
@@ -77,7 +90,9 @@ const McpServerSetting = () => {
       if (mcpAccessToken) {
         await accessTokenService.revokeUserAccessToken(mcpAccessToken.id);
       }
-      await accessTokenService.generateUserAccessToken('mcp');
+      const createdToken =
+        await accessTokenService.generateUserAccessToken('mcp');
+      setRevealedAccessToken(createdToken);
     } catch (err) {
       notify.error({
         error: UserFriendlyError.fromAny(err),
@@ -93,6 +108,7 @@ const McpServerSetting = () => {
       if (mcpAccessToken) {
         await accessTokenService.revokeUserAccessToken(mcpAccessToken.id);
       }
+      setRevealedAccessToken(null);
     } catch (err) {
       notify.error({
         error: UserFriendlyError.fromAny(err),
@@ -127,7 +143,7 @@ const McpServerSetting = () => {
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitle}>Personal access token</div>
-          {!mcpAccessToken ? (
+          {!hasMcpToken ? (
             <Button
               variant="primary"
               onClick={handleGenerateAccessToken}
@@ -164,7 +180,8 @@ const McpServerSetting = () => {
                 title: t['Copied to clipboard'](),
               });
             }}
-            disabled={!code || mutating}
+            disabled={copyJsonDisabled}
+            tooltip={copyJsonTooltip}
           >
             Copy json
           </Button>

@@ -6,6 +6,7 @@
     "test": "yarn playwright test"
   },
   "dependencies": {
+    "@affine-test/kit": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/integration-test": "workspace:*",
     "@playwright/test": "=1.52.0",
