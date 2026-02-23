@@ -1,12 +1,28 @@
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
+import { isImageProxyURL } from '@blocksuite/affine-shared/adapters';
 import { DEFAULT_IMAGE_PROXY_ENDPOINT } from '@blocksuite/affine-shared/consts';
 import { ToggleDownIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
+
+const resolveImageProxyURL = () => {
+  if (BUILD_CONFIG.isNative) {
+    return DEFAULT_IMAGE_PROXY_ENDPOINT;
+  }
+
+  try {
+    return new URL(
+      BUILD_CONFIG.imageProxyUrl,
+      globalThis.location.origin
+    ).toString();
+  } catch {
+    return DEFAULT_IMAGE_PROXY_ENDPOINT;
+  }
+};
 
 export interface ToolResult {
   title: string | TemplateResult<1>;
@@ -250,7 +266,7 @@ export class ToolResultCard extends SignalWatcher(
   @state()
   private accessor isCollapsed = true;
 
-  private readonly imageProxyURL = DEFAULT_IMAGE_PROXY_ENDPOINT;
+  private readonly imageProxyURL = resolveImageProxyURL();
 
   protected override render() {
     return html`
@@ -323,7 +339,7 @@ export class ToolResultCard extends SignalWatcher(
   }
 
   buildUrl(imageUrl: string) {
-    if (imageUrl.startsWith(this.imageProxyURL)) {
+    if (imageUrl.startsWith(this.imageProxyURL) || isImageProxyURL(imageUrl)) {
       return imageUrl;
     }
     return `${this.imageProxyURL}?url=${encodeURIComponent(imageUrl)}`;
