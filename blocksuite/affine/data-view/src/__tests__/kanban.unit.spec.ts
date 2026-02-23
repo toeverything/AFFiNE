@@ -275,31 +275,32 @@ describe('kanban', () => {
   });
 
   describe('filtering', () => {
-    it('evaluates filters with hidden columns', () => {
-      const filter: FilterGroup = {
-        type: 'group',
-        op: 'and',
-        conditions: [
-          {
-            type: 'filter',
-            left: {
-              type: 'ref',
-              name: 'status',
-            },
-            function: 'is',
-            args: [{ type: 'literal', value: 'Done' }],
+    const sharedFilter: FilterGroup = {
+      type: 'group',
+      op: 'and',
+      conditions: [
+        {
+          type: 'filter',
+          left: {
+            type: 'ref',
+            name: 'status',
           },
-        ],
-      };
+          function: 'is',
+          args: [{ type: 'literal', value: 'Done' }],
+        },
+      ],
+    };
 
-      const titleProperty = {
-        id: 'title',
-        cellGetOrCreate: () => ({
-          jsonValue$: {
-            value: 'Task 1',
-          },
-        }),
-      };
+    const sharedTitleProperty = {
+      id: 'title',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Task 1',
+        },
+      }),
+    };
+
+    it('evaluates filters with hidden columns', () => {
       const statusProperty = {
         id: 'status',
         cellGetOrCreate: () => ({
@@ -310,40 +311,16 @@ describe('kanban', () => {
       };
 
       const view = {
-        filter$: { value: filter },
+        filter$: { value: sharedFilter },
         // Simulate status being hidden in current view.
-        properties$: { value: [titleProperty] },
-        propertiesRaw$: { value: [titleProperty, statusProperty] },
+        properties$: { value: [sharedTitleProperty] },
+        propertiesRaw$: { value: [sharedTitleProperty, statusProperty] },
       } as unknown as KanbanSingleView;
 
       expect(KanbanSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
     });
 
     it('returns false when hidden filtered column does not match', () => {
-      const filter: FilterGroup = {
-        type: 'group',
-        op: 'and',
-        conditions: [
-          {
-            type: 'filter',
-            left: {
-              type: 'ref',
-              name: 'status',
-            },
-            function: 'is',
-            args: [{ type: 'literal', value: 'Done' }],
-          },
-        ],
-      };
-
-      const titleProperty = {
-        id: 'title',
-        cellGetOrCreate: () => ({
-          jsonValue$: {
-            value: 'Task 1',
-          },
-        }),
-      };
       const statusProperty = {
         id: 'status',
         cellGetOrCreate: () => ({
@@ -354,10 +331,10 @@ describe('kanban', () => {
       };
 
       const view = {
-        filter$: { value: filter },
+        filter$: { value: sharedFilter },
         // Simulate status being hidden in current view.
-        properties$: { value: [titleProperty] },
-        propertiesRaw$: { value: [titleProperty, statusProperty] },
+        properties$: { value: [sharedTitleProperty] },
+        propertiesRaw$: { value: [sharedTitleProperty, statusProperty] },
       } as unknown as KanbanSingleView;
 
       expect(KanbanSingleView.prototype.isShow.call(view, 'row-1')).toBe(false);
