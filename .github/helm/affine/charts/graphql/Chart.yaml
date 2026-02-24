@@ -5,6 +5,9 @@ type: application
 version: 0.0.0
 appVersion: "0.26.3"
 dependencies:
+  - name: common
+    version: 0.0.0
+    repository: "file://../common"
   - name: gcloud-sql-proxy
     version: 0.0.0
     repository: "file://../gcloud-sql-proxy"

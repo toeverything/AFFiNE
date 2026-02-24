@@ -14,4 +14,3 @@
       key: indexer-apiKey
 {{- end }}
 {{- end }}
-{{- end }}
