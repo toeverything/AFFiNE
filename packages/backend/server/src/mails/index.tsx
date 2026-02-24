@@ -1,4 +1,5 @@
 import { render as rawRender } from '@react-email/components';
+import { type ComponentType, createElement, type ReactElement } from 'react';
 
 import { Comment, CommentMention, Mention } from './docs';
 import {
@@ -40,14 +41,14 @@ type EmailContent = {
   html: string;
 };
 
-function render(component: React.ReactElement) {
+function render(component: ReactElement) {
   return rawRender(component, { pretty: env.testing });
 }
 
-type Props<T> = T extends React.ComponentType<infer P> ? P : never;
+type Props<T> = T extends ComponentType<infer P> ? P : never;
 export type EmailRenderer<Props> = (props: Props) => Promise<EmailContent>;
 
-function make<T extends React.ComponentType<any>>(
+function make<T extends ComponentType<any>>(
   Component: T,
   subject: string | ((props: Props<T>) => string)
 ): EmailRenderer<Props<T>> {
@@ -58,7 +59,7 @@ function make<T extends React.ComponentType<any>>(
     }
     return {
       subject: typeof subject === 'function' ? subject(props) : subject,
-      html: await render(<Component {...props} />),
+      html: await render(createElement(Component, props)),
     };
   };
 }

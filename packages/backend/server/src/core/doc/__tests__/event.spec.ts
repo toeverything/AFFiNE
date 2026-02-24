@@ -10,8 +10,8 @@ import {
   type TestingModule,
 } from '../../../__tests__/utils';
 import { Models, User, Workspace } from '../../../models';
-import { DocReader, PgWorkspaceDocStorageAdapter as Adapter } from '..';
 import { DocEventsListener } from '../event';
+import { DocReader, PgWorkspaceDocStorageAdapter as Adapter } from '../index';
 
 interface Context {
   module: TestingModule;

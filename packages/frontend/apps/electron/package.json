@@ -72,7 +72,7 @@
     "rxjs": "^7.8.2",
     "semver": "^7.7.3",
     "tree-kill": "^1.2.2",
-    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
     "uuid": "^13.0.0",
     "vitest": "^3.2.4",
     "zod": "^3.25.76"
@@ -94,8 +94,5 @@
         ]
       }
     ]
-  },
-  "peerDependencies": {
-    "ts-node": "*"
   }
 }

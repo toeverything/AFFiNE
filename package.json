@@ -86,7 +86,7 @@
     "oxlint": "^1.47.0",
     "prettier": "^3.7.4",
     "semver": "^7.7.3",
-    "typescript": "^5.7.2",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.55.0",
     "unplugin-swc": "^1.5.9",
     "vite": "^7.2.7",

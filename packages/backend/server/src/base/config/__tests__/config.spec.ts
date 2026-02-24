@@ -2,8 +2,8 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { InvalidAppConfig } from '../../error';
-import { ConfigFactory, ConfigModule } from '..';
 import { Config } from '../config';
+import { ConfigFactory, ConfigModule } from '../index';
 import { override } from '../register';
 
 const module = await createModule();
