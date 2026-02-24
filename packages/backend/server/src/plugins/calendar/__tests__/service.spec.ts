@@ -468,6 +468,41 @@ test('syncSubscription applies exponential backoff for repeated failures', async
   t.is(listEventsMock.mock.callCount(), 2);
 });
 
+test('syncSubscription skips token refresh while in backoff window', async t => {
+  let now = new Date('2026-01-01T00:00:00.000Z').getTime();
+  mock.method(Date, 'now', () => now);
+
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id, {
+    accessToken: 'expired-access-token',
+    expiresAt: new Date(now - 5 * 60 * 1000),
+  });
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  const provider = new MockCalendarProvider();
+  const refreshMock = mock.method(provider, 'refreshTokens', async () => ({
+    accessToken: `refreshed-${randomUUID()}`,
+  }));
+  const listEventsMock = mock.method(provider, 'listEvents', async () => {
+    throw new Error('upstream timeout');
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  const baseDelayMs = 5 * 60 * 1000;
+
+  await calendarService.syncSubscription(subscription.id);
+  await calendarService.syncSubscription(subscription.id);
+  t.is(refreshMock.mock.callCount(), 1);
+  t.is(listEventsMock.mock.callCount(), 1);
+
+  now += baseDelayMs + 1000;
+  await calendarService.syncSubscription(subscription.id);
+  t.is(refreshMock.mock.callCount(), 2);
+  t.is(listEventsMock.mock.callCount(), 2);
+});
+
 test('syncSubscription renews webhook channel when expiring', async t => {
   const user = await module.create(Mockers.User);
   const account = await createAccount(user.id);

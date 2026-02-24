@@ -313,10 +313,22 @@ export class CalendarService {
       return;
     }
 
+    const now = Date.now();
+    const backoff = await this.getSyncFailureBackoff(subscription.id);
+    if (backoff && now < backoff.nextRetryAt.getTime()) {
+      return;
+    }
+
     await using lock = await this.mutex.acquire(
       `calendar:subscription:${subscriptionId}`
     );
     if (!lock) {
+      return;
+    }
+
+    const lockedNow = Date.now();
+    const lockedBackoff = await this.getSyncFailureBackoff(subscription.id);
+    if (lockedBackoff && lockedNow < lockedBackoff.nextRetryAt.getTime()) {
       return;
     }
 
@@ -346,11 +358,6 @@ export class CalendarService {
     const shouldUseSyncToken =
       !!subscription.syncToken && options?.forceFull !== true;
     let synced = false;
-    const now = Date.now();
-    const backoff = await this.getSyncFailureBackoff(subscription.id);
-    if (backoff && now < backoff.nextRetryAt.getTime()) {
-      return;
-    }
 
     try {
       await this.syncWithProvider({
