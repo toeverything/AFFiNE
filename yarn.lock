@@ -154,7 +154,7 @@ __metadata:
     terser-webpack-plugin: "npm:^5.3.10"
     ts-node: "npm:^10.9.2"
     typanion: "npm:^3.14.0"
-    typescript: "npm:^5.5.4"
+    typescript: "npm:^5.9.3"
     webpack: "npm:^5.102.1"
     webpack-dev-server: "npm:^5.2.0"
     webpack-merge: "npm:^6.0.1"
@@ -173,7 +173,7 @@ __metadata:
     chalk: "npm:^5.3.0"
     lodash-es: "npm:^4.17.23"
     prettier: "npm:^3.7.4"
-    typescript: "npm:^5.5.4"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -280,7 +280,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.3"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -371,7 +371,7 @@ __metadata:
     sonner: "npm:^2.0.7"
     storybook: "npm:^10.1.5"
     swr: "npm:^2.3.7"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     unplugin-swc: "npm:^1.5.9"
     vite: "npm:^7.2.7"
     vitest: "npm:^3.2.4"
@@ -520,7 +520,7 @@ __metadata:
   dependencies:
     "@affine-tools/cli": "workspace:*"
     "@types/node": "npm:^22.0.0"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
@@ -570,7 +570,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.3"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     uuid: "npm:^13.0.0"
     webm-muxer: "npm:^5.0.3"
   languageName: unknown
@@ -626,6 +626,7 @@ __metadata:
     set-cookie-parser: "npm:^2.7.1"
     tree-kill: "npm:^1.2.2"
     ts-node: "npm:^10.9.2"
+    typescript: "npm:^5.9.3"
     uuid: "npm:^13.0.0"
     vitest: "npm:^3.2.4"
     yjs: "npm:^13.6.27"
@@ -731,7 +732,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.3"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
@@ -774,7 +775,7 @@ __metadata:
   dependencies:
     "@affine/core": "workspace:*"
     "@capacitor/core": "npm:^7.0.0"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
@@ -799,7 +800,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.3"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -843,7 +844,7 @@ __metadata:
     oxlint: "npm:^1.47.0"
     prettier: "npm:^3.7.4"
     semver: "npm:^7.7.3"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     typescript-eslint: "npm:^8.55.0"
     unplugin-swc: "npm:^1.5.9"
     vite: "npm:^7.2.7"
@@ -861,7 +862,7 @@ __metadata:
     ava: "npm:^6.4.1"
     rxjs: "npm:^7.8.2"
     ts-node: "npm:^10.9.2"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -904,7 +905,7 @@ __metadata:
     "@affine-tools/utils": "workspace:*"
     "@googleapis/androidpublisher": "npm:^35.0.0"
     "@types/node": "npm:^22.0.0"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -927,7 +928,7 @@ __metadata:
   dependencies:
     "@affine-tools/cli": "workspace:*"
     "@types/node": "npm:^22.0.0"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
@@ -1095,7 +1096,7 @@ __metadata:
     supertest: "npm:^7.1.4"
     tldts: "npm:^7.0.19"
     ts-node: "npm:^10.9.2"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
     why-is-node-running: "npm:^3.2.2"
     winston: "npm:^3.17.0"
     yjs: "npm:^13.6.27"
@@ -1145,7 +1146,7 @@ __metadata:
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
     react-router-dom: "npm:^6.30.3"
-    typescript: "npm:^5.7.2"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
 
@@ -37531,7 +37532,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:>=5, typescript@npm:^5.5.4, typescript@npm:^5.7.2":
+"typescript@npm:>=5, typescript@npm:^5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -37551,7 +37552,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A>=5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.5.4#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A>=5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:

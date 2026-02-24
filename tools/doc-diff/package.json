@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@affine-tools/cli": "workspace:*",
-    "typescript": "^5.7.2",
+    "typescript": "^5.9.3",
     "yjs": "^13.6.27"
   },
   "devDependencies": {
