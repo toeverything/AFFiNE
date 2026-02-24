@@ -222,7 +222,9 @@ const makers = [
   !process.env.SKIP_BUNDLE && {
     name: '@reforged/maker-appimage',
     platforms: ['linux'],
+    /** @type {import('@reforged/maker-appimage').MakerAppImageConfig} */
     config: {
+      bin: productName,
       mimeType: linuxMimeTypes,
       productName,
       genericName: productName,
@@ -236,7 +238,6 @@ const makers = [
         'Chat',
       ],
       compressor: 'zstd',
-
       icon: { '64x64': iconX64PngPath, '512x512': iconX512PngPath },
     },
   },
