@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarAccount, Prisma } from '@prisma/client';
 
 import { CryptoHelper } from '../base';
@@ -172,6 +173,18 @@ export class CalendarAccountModel extends BaseModel {
       where: { id },
       data: { refreshIntervalMinutes },
     });
+  }
+
+  @Transactional()
+  async invalidateAndPurge(id: string, lastError?: string | null) {
+    await this.updateStatus(id, 'invalid', lastError ?? null);
+    const subscriptions =
+      await this.models.calendarSubscription.listByAccount(id);
+    const subscriptionIds = subscriptions.map(subscription => subscription.id);
+    if (subscriptionIds.length > 0) {
+      await this.models.calendarEvent.deleteBySubscriptionIds(subscriptionIds);
+    }
+    await this.models.calendarSubscription.clearSyncTokensByAccount(id);
   }
 
   async delete(id: string) {

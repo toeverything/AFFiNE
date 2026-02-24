@@ -1,6 +1,7 @@
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
+import { buildCorsAllowedOrigins, isCorsOriginAllowed } from '../../cors';
 import { ActionForbidden } from '../../error';
 import { URLHelper } from '../url';
 
@@ -192,4 +193,20 @@ test('can get request base url with multiple hosts', t => {
   cls.set(CLS_REQUEST_HOST, 'app.affine.local2');
   t.is(url.requestOrigin, 'https://app.affine.local2');
   t.is(url.requestBaseUrl, 'https://app.affine.local2');
+});
+
+test('should allow websocket secure origin by normalizing wss to https', t => {
+  const allowedOrigins = buildCorsAllowedOrigins({
+    allowedOrigins: ['https://app.affine.pro'],
+  } as any);
+
+  t.true(isCorsOriginAllowed('wss://app.affine.pro', allowedOrigins));
+});
+
+test('should allow desktop file origin', t => {
+  const allowedOrigins = buildCorsAllowedOrigins({
+    allowedOrigins: [],
+  } as any);
+
+  t.true(isCorsOriginAllowed('file://', allowedOrigins));
 });

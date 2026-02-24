@@ -12,8 +12,8 @@ import {
 import { Mockers } from '../../../../__tests__/mocks';
 import { ConfigModule } from '../../../../base/config';
 import { User, Workspace } from '../../../../models';
-import { IndexerModule } from '../../';
 import { SearchProviderType } from '../../config';
+import { IndexerModule } from '../../index';
 import { AggregateQueryDSL, ElasticsearchProvider } from '../../providers';
 import { blockMapping, docMapping, SearchTable } from '../../tables';
 

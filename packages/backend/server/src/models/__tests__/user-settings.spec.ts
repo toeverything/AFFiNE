@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 
 import { createModule } from '../../__tests__/create-module';
 import { Mockers } from '../../__tests__/mocks';
-import { Models } from '..';
+import { Models } from '../index';
 
 const module = await createModule();
 const models = module.get(Models);

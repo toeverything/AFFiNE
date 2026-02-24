@@ -1,6 +1,6 @@
 {
   "name": "@affine/routes",
-  "version": "0.26.1",
+  "version": "0.26.3",
   "private": true,
   "type": "module",
   "exports": {

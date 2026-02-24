@@ -220,15 +220,27 @@ const makers = [
     },
   },
   !process.env.SKIP_BUNDLE && {
-    name: '@pengx17/electron-forge-maker-appimage',
+    name: '@reforged/maker-appimage',
     platforms: ['linux'],
+    /** @type {import('@reforged/maker-appimage').MakerAppImageConfig} */
     config: {
-      icons: [
-        {
-          file: iconX512PngPath,
-          size: 512,
-        },
-      ],
+      options: {
+        bin: productName,
+        mimeType: linuxMimeTypes,
+        productName,
+        genericName: productName,
+        categories: [
+          'Office',
+          'WordProcessor',
+          'Presentation',
+          'ContactManagement',
+          'ProjectManagement',
+          'VectorGraphics',
+          'Chat',
+        ],
+        compressor: 'zstd',
+        icon: { '64x64': iconX64PngPath, '512x512': iconX512PngPath },
+      },
     },
   },
   !process.env.SKIP_BUNDLE && {
@@ -259,10 +271,7 @@ const makers = [
         productName,
         bin: productName,
         id: fromBuildIdentifier(appIdMap),
-        icon: {
-          '64x64': iconX64PngPath,
-          '512x512': iconX512PngPath,
-        },
+        icon: { '64x64': iconX64PngPath, '512x512': iconX512PngPath },
         branch: buildType,
         runtime: 'org.freedesktop.Platform',
         runtimeVersion: '25.08',
@@ -307,6 +316,8 @@ const makers = [
     },
   },
 ].filter(Boolean);
+
+console.log('makers', makers);
 
 /**
  * @type {import('@electron-forge/shared-types').ForgeConfig}

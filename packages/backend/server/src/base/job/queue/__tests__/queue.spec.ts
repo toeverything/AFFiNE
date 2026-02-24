@@ -8,8 +8,8 @@ import Sinon from 'sinon';
 import { createTestingModule } from '../../../../__tests__/utils';
 import { ConfigModule } from '../../../config';
 import { metrics } from '../../../metrics';
-import { JobModule, JobQueue, OnJob } from '..';
 import { JobExecutor } from '../executor';
+import { JobModule, JobQueue, OnJob } from '../index';
 import { JobHandlerScanner } from '../scanner';
 
 let module: TestingModule;

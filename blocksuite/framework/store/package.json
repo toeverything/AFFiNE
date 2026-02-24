@@ -19,7 +19,7 @@
     "lodash.clonedeep": "^4.5.0",
     "lodash.ismatch": "^4.4.0",
     "lodash.merge": "^4.6.2",
-    "minimatch": "^10.1.1",
+    "minimatch": "^10.2.2",
     "nanoid": "^5.1.6",
     "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6",
@@ -42,5 +42,5 @@
     "!dist/__tests__",
     "shim.d.ts"
   ],
-  "version": "0.26.1"
+  "version": "0.26.3"
 }

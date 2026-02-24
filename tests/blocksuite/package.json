@@ -14,5 +14,5 @@
     "json-stable-stringify": "^1.2.1",
     "rxjs": "^7.8.2"
   },
-  "version": "0.26.1"
+  "version": "0.26.3"
 }
