@@ -224,21 +224,23 @@ const makers = [
     platforms: ['linux'],
     /** @type {import('@reforged/maker-appimage').MakerAppImageConfig} */
     config: {
-      bin: productName,
-      mimeType: linuxMimeTypes,
-      productName,
-      genericName: productName,
-      categories: [
-        'Office',
-        'WordProcessor',
-        'Presentation',
-        'ContactManagement',
-        'ProjectManagement',
-        'VectorGraphics',
-        'Chat',
-      ],
-      compressor: 'zstd',
-      icon: { '64x64': iconX64PngPath, '512x512': iconX512PngPath },
+      options: {
+        bin: productName,
+        mimeType: linuxMimeTypes,
+        productName,
+        genericName: productName,
+        categories: [
+          'Office',
+          'WordProcessor',
+          'Presentation',
+          'ContactManagement',
+          'ProjectManagement',
+          'VectorGraphics',
+          'Chat',
+        ],
+        compressor: 'zstd',
+        icon: { '64x64': iconX64PngPath, '512x512': iconX512PngPath },
+      },
     },
   },
   !process.env.SKIP_BUNDLE && {
