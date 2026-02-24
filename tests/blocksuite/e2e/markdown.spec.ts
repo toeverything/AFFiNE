@@ -711,7 +711,7 @@ test.describe('markdown inline-text', () => {
         insert: ' ',
       },
     ]);
-    await pressArrowLeft(page, 8);
+    await pressArrowLeft(page, 9);
     await type(page, '`');
     await pressArrowRight(page, 8);
     await type(page, '` ');
