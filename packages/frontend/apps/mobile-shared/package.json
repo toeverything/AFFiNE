@@ -1,6 +1,6 @@
 {
   "name": "@affine/mobile-shared",
-  "version": "0.26.1",
+  "version": "0.26.3",
   "type": "module",
   "private": true,
   "sideEffects": false,

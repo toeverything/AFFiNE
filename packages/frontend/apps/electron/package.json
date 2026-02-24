@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.26.1",
+  "version": "0.26.3",
   "main": "./dist/main.js",
   "author": "toeverything",
   "repository": {
@@ -47,7 +47,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/shared-types": "^7.10.2",
-    "@pengx17/electron-forge-maker-appimage": "^1.2.1",
+    "@reforged/maker-appimage": "^5.2.0",
     "@sentry/electron": "^7.0.0",
     "@sentry/esbuild-plugin": "^4.0.0",
     "@sentry/react": "^9.47.1",

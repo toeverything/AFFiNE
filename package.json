@@ -1,6 +1,6 @@
 {
   "name": "@affine/monorepo",
-  "version": "0.26.1",
+  "version": "0.26.3",
   "private": true,
   "author": "toeverything",
   "license": "MIT",
@@ -86,7 +86,6 @@
     "oxlint": "^1.47.0",
     "prettier": "^3.7.4",
     "semver": "^7.7.3",
-    "serve": "^14.2.4",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.55.0",
     "unplugin-swc": "^1.5.9",

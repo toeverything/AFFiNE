@@ -46,5 +46,5 @@
     "vite-plugin-wasm": "^3.5.0",
     "vitest": "^3.2.4"
   },
-  "version": "0.26.1"
+  "version": "0.26.3"
 }

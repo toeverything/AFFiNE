@@ -3,7 +3,7 @@ name: front
 description: AFFiNE front server
 type: application
 version: 0.0.0
-appVersion: "0.26.1"
+appVersion: "0.26.3"
 dependencies:
   - name: gcloud-sql-proxy
     version: 0.0.0
