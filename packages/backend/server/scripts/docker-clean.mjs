@@ -342,7 +342,6 @@ await prunePrismaEngines(APP_ROOT, targetKey);
 
 await Promise.all([
   rmrf(path.join(APP_ROOT, 'node_modules', 'typescript')).catch(() => {}),
-  rmrf(path.join(APP_ROOT, 'node_modules', 'ts-node')).catch(() => {}),
   rmrf(path.join(APP_ROOT, 'node_modules', '@types')).catch(() => {}),
   rmrf(path.join(APP_ROOT, 'src')).catch(() => {}),
   rmrf(path.join(APP_ROOT, '.gitignore')).catch(() => {}),

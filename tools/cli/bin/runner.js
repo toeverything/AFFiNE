@@ -7,7 +7,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const scriptsFolder = join(fileURLToPath(import.meta.url), '..', '..');
 const scriptsSrcFolder = join(scriptsFolder, 'src');
 const projectRoot = join(scriptsFolder, '..', '..');
-const loader = join(scriptsFolder, 'register.js');
+const serverRoot = join(projectRoot, 'packages', 'backend', 'server');
+const tsRuntimeRegister = join(scriptsFolder, 'register.js');
 
 const [node, _self, file, ...options] = process.argv;
 
@@ -60,7 +61,11 @@ if (
   scriptLocation.endsWith('.ts') ||
   scriptLocation.startsWith(scriptsFolder)
 ) {
-  nodeOptions.unshift(`--import=${pathToFileURL(loader)}`);
+  if (scriptLocation.startsWith(serverRoot)) {
+    nodeOptions.unshift(`--import=${pathToFileURL(tsRuntimeRegister)}`);
+  } else {
+    nodeOptions.unshift('--import=tsx');
+  }
 } else {
   nodeOptions.unshift('--experimental-specifier-resolution=node');
 }

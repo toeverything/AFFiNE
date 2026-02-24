@@ -5,7 +5,7 @@
   "version": "0.26.3",
   "scripts": {
     "dev:web": "vite",
-    "dev:server": "tsx --env-file=.env --watch server/main.ts"
+    "dev:server": "node --env-file-if-exists=.env --watch server/main.ts"
   },
   "dependencies": {
     "@affine/native": "workspace:*",
@@ -30,7 +30,6 @@
     "socket.io-client": "^4.8.3",
     "swr": "^2.3.7",
     "tailwindcss": "^4.1.17",
-    "tsx": "^4.19.2",
     "vite": "^7.2.7"
   },
   "devDependencies": {

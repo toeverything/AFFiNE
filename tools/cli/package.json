@@ -47,7 +47,7 @@
     "swc-loader": "^0.2.6",
     "tailwindcss": "^4.1.17",
     "terser-webpack-plugin": "^5.3.10",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typanion": "^3.14.0",
     "typescript": "^5.9.3",
     "webpack": "^5.102.1",
