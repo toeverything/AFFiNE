@@ -7,7 +7,12 @@ const MOBILE_CLIENT_ORIGINS = new Set([
   'capacitor://localhost',
   'ionic://localhost',
 ]);
-const DESKTOP_CLIENT_ORIGINS = new Set(['assets://.', 'assets://another-host']);
+const DESKTOP_CLIENT_ORIGINS = new Set([
+  'assets://.',
+  'assets://another-host',
+  // for old versions of client, which use file:// as origin
+  'file://',
+]);
 
 export const CORS_ALLOWED_METHODS = [
   'GET',
@@ -55,6 +60,19 @@ function isDevLoopbackOrigin(origin: string) {
   }
 }
 
+function normalizeCorsOrigin(origin: string) {
+  try {
+    const parsed = new URL(origin);
+    // Some websocket clients send ws:// or wss:// as Origin.
+    if (parsed.protocol === 'ws:' || parsed.protocol === 'wss:') {
+      parsed.protocol = parsed.protocol === 'wss:' ? 'https:' : 'http:';
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
 export function buildCorsAllowedOrigins(url: URLHelper) {
   return new Set<string>([
     ...url.allowedOrigins,
@@ -72,6 +90,11 @@ export function isCorsOriginAllowed(
   }
 
   if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  const normalizedOrigin = normalizeCorsOrigin(origin);
+  if (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) {
     return true;
   }
 

@@ -17,5 +17,5 @@
   "dependencies": {
     "@blocksuite/affine": "workspace:*"
   },
-  "version": "0.26.1"
+  "version": "0.26.3"
 }

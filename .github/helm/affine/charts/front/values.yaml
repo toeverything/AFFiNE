@@ -31,13 +31,21 @@ podSecurityContext:
 resources:
   limits:
     cpu: '1'
-    memory: 2Gi
+    memory: 4Gi
   requests:
     cpu: '1'
     memory: 2Gi
 
 probe:
   initialDelaySeconds: 20
+  timeoutSeconds: 5
+  periodSeconds: 10
+  failureThreshold: 6
+  successThreshold: 1
+  liveness:
+    initialDelaySeconds: 60
+    failureThreshold: 12
+  readiness: {}
 
 services:
   sync:

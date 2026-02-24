@@ -28,7 +28,6 @@
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
     "lit": "^3.2.0",
-    "minimatch": "^10.1.1",
     "rxjs": "^7.8.2",
     "zod": "^3.25.76"
   },
@@ -43,5 +42,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.1"
+  "version": "0.26.3"
 }

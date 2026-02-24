@@ -8,8 +8,8 @@ import {
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from '../../../models';
-import { PermissionModule } from '..';
 import { DocAccessController } from '../doc';
+import { PermissionModule } from '../index';
 import { DocRole, mapDocRoleToPermissions } from '../types';
 
 let module: TestingModule;

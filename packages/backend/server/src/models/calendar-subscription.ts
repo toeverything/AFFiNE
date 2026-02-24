@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarSubscription, Prisma } from '@prisma/client';
 
 import { BaseModel } from './base';
@@ -190,5 +191,21 @@ export class CalendarSubscriptionModel extends BaseModel {
       where: { id: { in: ids } },
       data,
     });
+  }
+
+  @Transactional()
+  async disableAndPurge(subscriptionId: string) {
+    await this.db.calendarSubscription.update({
+      where: { id: subscriptionId },
+      data: {
+        enabled: false,
+        syncToken: null,
+        customChannelId: null,
+        customResourceId: null,
+        channelExpiration: null,
+      },
+    });
+
+    await this.models.calendarEvent.deleteBySubscriptionIds([subscriptionId]);
   }
 }
