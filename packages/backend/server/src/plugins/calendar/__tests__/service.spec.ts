@@ -5,7 +5,7 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { CryptoHelper } from '../../../base';
+import { CalendarProviderRequestError, CryptoHelper } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import type {
@@ -317,6 +317,155 @@ test('syncSubscription invalidates account on invalid grant', async t => {
     new Date('2024-01-03T00:00:00.000Z')
   );
   t.is(events.length, 0);
+});
+
+test('syncSubscription invalidates account when refresh token is invalid', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id, {
+    accessToken: 'expired-access-token',
+    expiresAt: new Date(Date.now() - 5 * 60 * 1000),
+  });
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  await models.calendarEvent.upsert({
+    subscriptionId: subscription.id,
+    externalEventId: randomUUID(),
+    recurrenceId: null,
+    etag: null,
+    status: 'confirmed',
+    title: 'existing',
+    description: null,
+    location: null,
+    startAtUtc: new Date('2024-01-02T00:00:00.000Z'),
+    endAtUtc: new Date('2024-01-02T01:00:00.000Z'),
+    originalTimezone: 'UTC',
+    allDay: false,
+    providerUpdatedAt: null,
+    raw: {},
+  });
+
+  const provider = new MockCalendarProvider();
+  const refreshMock = mock.method(provider, 'refreshTokens', async () => {
+    throw new Error('invalid_grant');
+  });
+  const listEventsMock = mock.method(provider, 'listEvents', async () => ({
+    events: [],
+  }));
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  t.is(refreshMock.mock.callCount(), 1);
+  t.is(listEventsMock.mock.callCount(), 0);
+
+  const updatedAccount = await models.calendarAccount.get(account.id);
+  t.is(updatedAccount?.status, 'invalid');
+  t.truthy(updatedAccount?.lastError);
+
+  const updatedSubscription = await models.calendarSubscription.get(
+    subscription.id
+  );
+  t.is(updatedSubscription?.syncToken, null);
+
+  const events = await models.calendarEvent.listBySubscriptionsInRange(
+    [subscription.id],
+    new Date('2024-01-01T00:00:00.000Z'),
+    new Date('2024-01-03T00:00:00.000Z')
+  );
+  t.is(events.length, 0);
+});
+
+test('syncSubscription disables subscription on provider 404', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  await models.calendarEvent.upsert({
+    subscriptionId: subscription.id,
+    externalEventId: randomUUID(),
+    recurrenceId: null,
+    etag: null,
+    status: 'confirmed',
+    title: 'to remove',
+    description: null,
+    location: null,
+    startAtUtc: new Date('2026-01-02T00:00:00.000Z'),
+    endAtUtc: new Date('2026-01-02T01:00:00.000Z'),
+    originalTimezone: 'UTC',
+    allDay: false,
+    providerUpdatedAt: null,
+    raw: {},
+  });
+
+  const provider = new MockCalendarProvider();
+  const listEventsMock = mock.method(provider, 'listEvents', async () => {
+    throw new CalendarProviderRequestError({
+      status: 404,
+      message: JSON.stringify({
+        error: {
+          code: 404,
+          message: 'Not Found',
+          errors: [{ reason: 'notFound' }],
+        },
+      }),
+    });
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+  await calendarService.syncSubscription(subscription.id);
+
+  t.is(listEventsMock.mock.callCount(), 1);
+
+  const updatedSubscription = await models.calendarSubscription.get(
+    subscription.id
+  );
+  t.truthy(updatedSubscription);
+  t.is(updatedSubscription?.enabled, false);
+  t.is(updatedSubscription?.syncToken, null);
+
+  const events = await models.calendarEvent.listBySubscriptionsInRange(
+    [subscription.id],
+    new Date('2024-01-01T00:00:00.000Z'),
+    new Date('2026-12-31T00:00:00.000Z')
+  );
+  t.is(events.length, 0);
+});
+
+test('syncSubscription applies exponential backoff for repeated failures', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id, {
+    refreshIntervalMinutes: 1,
+  });
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  const provider = new MockCalendarProvider();
+  const listEventsMock = mock.method(provider, 'listEvents', async () => {
+    throw new Error('upstream timeout');
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  const baseDelayMs = 5 * 60 * 1000;
+  let now = new Date('2026-01-01T00:00:00.000Z').getTime();
+  mock.method(Date, 'now', () => now);
+
+  await calendarService.syncSubscription(subscription.id);
+  await calendarService.syncSubscription(subscription.id);
+  t.is(listEventsMock.mock.callCount(), 1);
+
+  now += baseDelayMs + 1000;
+  await calendarService.syncSubscription(subscription.id);
+  t.is(listEventsMock.mock.callCount(), 2);
+
+  now += baseDelayMs + 1000;
+  await calendarService.syncSubscription(subscription.id);
+  t.is(listEventsMock.mock.callCount(), 2);
 });
 
 test('syncSubscription renews webhook channel when expiring', async t => {
