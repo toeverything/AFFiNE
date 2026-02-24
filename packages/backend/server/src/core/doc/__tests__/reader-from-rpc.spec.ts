@@ -16,7 +16,7 @@ import {
   DocReader,
   DocStorageModule,
   PgWorkspaceDocStorageAdapter,
-} from '..';
+} from '../index';
 import { RpcDocReader } from '../reader';
 
 const module = await createModule({

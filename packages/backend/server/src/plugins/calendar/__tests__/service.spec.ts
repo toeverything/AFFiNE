@@ -13,7 +13,7 @@ import type {
   UpsertCalendarSubscriptionInput,
 } from '../../../models';
 import { Models } from '../../../models';
-import { CalendarModule } from '..';
+import { CalendarModule } from '../index';
 import {
   CalendarProvider,
   CalendarProviderFactory,

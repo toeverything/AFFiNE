@@ -142,6 +142,9 @@ export async function load(url, context, nextLoad) {
           legacyDecorator: true,
           decoratorMetadata: true,
           useDefineForClassFields: false,
+          react: tsx
+            ? { runtime: 'automatic', importSource: 'react' }
+            : undefined,
         },
       },
     });
