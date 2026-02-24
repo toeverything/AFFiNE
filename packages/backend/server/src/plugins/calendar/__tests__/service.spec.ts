@@ -436,6 +436,43 @@ test('syncSubscription disables subscription on provider 404', async t => {
   t.is(events.length, 0);
 });
 
+test('syncSubscription rolls back disable when event cleanup fails', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'listEvents', async () => {
+    throw new CalendarProviderRequestError({
+      status: 404,
+      message: JSON.stringify({
+        error: {
+          code: 404,
+          message: 'Not Found',
+          errors: [{ reason: 'notFound' }],
+        },
+      }),
+    });
+  });
+  mock.method(providerFactory, 'get', () => provider);
+  mock.method(models.calendarEvent, 'deleteBySubscriptionIds', async () => {
+    throw new Error('delete events failed');
+  });
+
+  await t.throwsAsync(calendarService.syncSubscription(subscription.id), {
+    message: 'delete events failed',
+  });
+
+  const updatedSubscription = await models.calendarSubscription.get(
+    subscription.id
+  );
+  t.truthy(updatedSubscription);
+  t.is(updatedSubscription?.enabled, true);
+  t.is(updatedSubscription?.syncToken, 'sync-token');
+});
+
 test('syncSubscription applies exponential backoff for repeated failures', async t => {
   const user = await module.create(Mockers.User);
   const account = await createAccount(user.id, {

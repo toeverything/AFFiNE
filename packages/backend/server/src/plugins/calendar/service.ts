@@ -803,19 +803,6 @@ export class CalendarService {
     return false;
   }
 
-  private async invalidateAccount(accountId: string, lastError?: string) {
-    await this.models.calendarAccount.updateStatus(
-      accountId,
-      'invalid',
-      lastError ?? null
-    );
-    const subscriptions =
-      await this.models.calendarSubscription.listByAccount(accountId);
-    const subscriptionIds = subscriptions.map(s => s.id);
-    await this.models.calendarEvent.deleteBySubscriptionIds(subscriptionIds);
-    await this.models.calendarSubscription.clearSyncTokensByAccount(accountId);
-  }
-
   private requireProvider(name: CalendarProviderName) {
     const provider = this.providerFactory.get(name);
     if (!provider) {
@@ -909,7 +896,7 @@ export class CalendarService {
 
     if (this.isTokenInvalidError(params.error)) {
       await this.clearSyncFailureBackoff(params.subscription.id);
-      await this.invalidateAccount(
+      await this.models.calendarAccount.invalidateAndPurge(
         params.account.id,
         this.formatSyncError(params.error)
       );
@@ -976,25 +963,10 @@ export class CalendarService {
       }
     }
 
-    await this.models.calendarSubscription.updateEnabled(
-      params.subscriptionId,
-      false
-    );
-    await this.models.calendarSubscription.updateSync(params.subscriptionId, {
-      syncToken: null,
-    });
-    await this.models.calendarSubscription.updateChannel(
-      params.subscriptionId,
-      {
-        customChannelId: null,
-        customResourceId: null,
-        channelExpiration: null,
-      }
+    await this.models.calendarSubscription.disableAndPurge(
+      params.subscriptionId
     );
     await this.clearSyncFailureBackoff(params.subscriptionId);
-    await this.models.calendarEvent.deleteBySubscriptionIds([
-      params.subscriptionId,
-    ]);
   }
 
   private getSyncFailureBackoffKey(subscriptionId: string) {
