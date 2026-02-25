@@ -88,12 +88,21 @@ export class EventBus
   emit<T extends EventName>(event: T, payload: Events[T]) {
     this.logger.debug(`Dispatch event: ${event}`);
 
-    // NOTE(@forehalo):
-    //   Because all event handlers are wrapped in promisified metrics and cls context, they will always run in standalone tick.
-    //   In which way, if handler throws, an unhandled rejection will be triggered and end up with process exiting.
-    //   So we catch it here with `emitAsync`
-    this.emitter.emitAsync(event, payload).catch(e => {
-      this.emitter.emit('error', { event, payload, error: e });
+    this.dispatchAsync(event, payload);
+
+    return true;
+  }
+
+  /**
+   * Emit event in detached cls context to avoid inheriting current transaction.
+   */
+  emitDetached<T extends EventName>(event: T, payload: Events[T]) {
+    this.logger.debug(`Dispatch event: ${event} (detached)`);
+
+    const requestId = this.cls.getId();
+    this.cls.run({ ifNested: 'override' }, () => {
+      this.cls.set(CLS_ID, requestId ?? genRequestId('event'));
+      this.dispatchAsync(event, payload);
     });
 
     return true;
@@ -164,6 +173,16 @@ export class EventBus
 
   waitFor<T extends EventName>(name: T, timeout?: number) {
     return this.emitter.waitFor(name, timeout);
+  }
+
+  private dispatchAsync<T extends EventName>(event: T, payload: Events[T]) {
+    // NOTE:
+    //   Because all event handlers are wrapped in promisified metrics and cls context, they will always run in standalone tick.
+    //   In which way, if handler throws, an unhandled rejection will be triggered and end up with process exiting.
+    //   So we catch it here with `emitAsync`
+    this.emitter.emitAsync(event, payload).catch(e => {
+      this.emitter.emit('error', { event, payload, error: e });
+    });
   }
 
   private readonly bindEventHandlers = once(() => {
