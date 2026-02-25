@@ -10,6 +10,16 @@ import { isMobileRequest } from '../utils/user-agent';
 
 const staticPathRegex = /^\/(_plugin|assets|imgs|js|plugins|static)\//;
 
+function isMissingStaticAssetError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const err = error as { code?: string; status?: number; statusCode?: number };
+
+  return err.code === 'ENOENT' || err.status === 404 || err.statusCode === 404;
+}
+
 @Injectable()
 export class StaticFilesResolver implements OnModuleInit {
   constructor(
@@ -86,7 +96,18 @@ export class StaticFilesResolver implements OnModuleInit {
         next();
         return;
       }
-      routeByUA(req, res, next, true);
+      routeByUA(
+        req,
+        res,
+        error => {
+          if (isMissingStaticAssetError(error)) {
+            res.status(404).end();
+            return;
+          }
+          next(error);
+        },
+        true
+      );
     });
 
     // /
