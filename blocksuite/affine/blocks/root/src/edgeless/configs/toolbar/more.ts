@@ -714,41 +714,14 @@ export const moreActions = [
 
       const model = models[0];
 
-      // Try multiple selectors to find the toolbar element
-      const toolbarElement =
-        document.querySelector('editor-toolbar') ||
-        document.querySelector('affine-toolbar-widget') ||
-        document.querySelector('[aria-label="More menu"]') ||
-        document.querySelector('editor-menu-button');
-
-      let referenceElement: Element;
-      // If still no element, use a virtual reference at the center of viewport
-      if (!toolbarElement) {
-        const virtualElement = {
-          getBoundingClientRect: () => ({
-            x: window.innerWidth / 2,
-            y: 100,
-            width: 0,
-            height: 0,
-            top: 100,
-            left: window.innerWidth / 2,
-            right: window.innerWidth / 2,
-            bottom: 100,
-          }),
-        };
-        referenceElement = virtualElement as Element;
-      } else {
-        referenceElement = toolbarElement as Element;
-      }
-
       // Create and show the properties modal
       const modal = new PropertiesModal();
       modal.host = ctx.host;
       modal.model = model;
-      modal.referenceElement = referenceElement;
+      modal.referenceElement = getPropertiesReferenceElement(ctx, model);
       modal.abortController = new AbortController();
 
-      document.body.appendChild(modal);
+      getPropertiesMountRoot(ctx).appendChild(modal);
     },
   },
 
@@ -813,5 +786,40 @@ function isRefreshableBlock(block: BlockComponent | null) {
       block instanceof BookmarkBlockComponent ||
       block instanceof ImageBlockComponent ||
       isExternalEmbedBlockComponent(block))
+  );
+}
+
+function getPropertiesReferenceElement(ctx: ToolbarContext, model: GfxModel) {
+  const toolbarWidget = ctx.host.querySelector('affine-toolbar-widget');
+  const toolbar =
+    toolbarWidget?.shadowRoot?.querySelector('editor-toolbar[data-open]') ??
+    toolbarWidget?.shadowRoot?.querySelector('editor-toolbar');
+
+  if (toolbar) {
+    return toolbar;
+  }
+
+  const getBoundingClientRect = () => {
+    const hostRect = ctx.host.getBoundingClientRect();
+    const [x, y, w, h] = ctx.gfx.viewport
+      .toViewBound(getCommonBoundWithRotation([model]))
+      .toXYWH();
+
+    return new DOMRect(x + hostRect.x, y + hostRect.y, w, h);
+  };
+
+  return {
+    getBoundingClientRect,
+    getClientRects: () => [getBoundingClientRect()],
+    contextElement: ctx.host,
+  };
+}
+
+function getPropertiesMountRoot(ctx: ToolbarContext) {
+  return (
+    ctx.host.closest('[role="dialog"]') ??
+    ctx.host.closest('[data-peek-view-wrapper]') ??
+    ctx.host ??
+    document.body
   );
 }

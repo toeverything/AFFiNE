@@ -25,7 +25,7 @@ import { deserializeXYWH, serializeXYWH } from '@blocksuite/global/gfx';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import type { EditorHost } from '@blocksuite/std';
 import type { GfxModel } from '@blocksuite/std/gfx';
-import { autoUpdate, computePosition, flip, offset } from '@floating-ui/dom';
+import { type ReferenceElement } from '@floating-ui/dom';
 import { css, html, LitElement, svg } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -195,11 +195,23 @@ function isColorString(value: unknown): value is string {
 export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
   static override styles = css`
     :host {
-      position: absolute;
-      top: 0;
-      left: 0;
+      position: fixed;
+      inset: 0;
       z-index: var(--affine-z-index-popover);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0 16px;
+      overflow: auto;
+      box-sizing: border-box;
+      pointer-events: auto;
+      background: rgba(0, 0, 0, 0.08);
       animation: affine-popover-fade-in 0.2s ease;
+    }
+
+    :host([data-in-peek='true']) {
+      position: absolute;
+      z-index: 9999;
     }
 
     @keyframes affine-popover-fade-in {
@@ -215,27 +227,40 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
     .properties-modal-wrapper {
       display: flex;
-      padding: 12px;
       flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-start;
-      gap: 8px;
-      min-width: 320px;
-      max-width: 400px;
-      max-height: 600px;
-      overflow-y: auto;
+      align-self: flex-start;
+      margin-top: 120px;
+      padding: 20px 0;
+      width: min(480px, 100%);
+      min-width: min(360px, 100%);
+      max-width: 480px;
+      max-height: calc(100dvh - 240px);
+      overflow: auto;
+      box-sizing: border-box;
 
       color: var(--affine-icon-color);
       box-shadow: var(--affine-overlay-shadow);
       background: ${unsafeCSSVarV2('layer/background/overlayPanel')};
       border-radius: 8px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+      pointer-events: auto;
+    }
+
+    .properties-modal-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      gap: 8px;
+      width: 100%;
+      padding: 0 24px;
+      box-sizing: border-box;
     }
 
     .header {
       width: 100%;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       padding-bottom: 8px;
       border-bottom: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
@@ -246,20 +271,6 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
       color: var(--affine-text-primary-color);
     }
     ${fontSMStyle('.title')}
-
-    .close-button {
-      display: flex;
-      padding: 4px;
-      cursor: pointer;
-      border-radius: 4px;
-      background: transparent;
-      border: none;
-      color: var(--affine-icon-color);
-    }
-
-    .close-button:hover {
-      background: var(--affine-hover-color);
-    }
 
     .property-row {
       width: 100%;
@@ -413,8 +424,6 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
       cursor: pointer;
     }
   `;
-
-  private _didLogProps = false;
 
   private readonly _hide = () => {
     this.remove();
@@ -1380,18 +1389,30 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
   override connectedCallback() {
     super.connectedCallback();
 
+    const inPeek = Boolean(
+      this.parentElement?.closest('[data-peek-view-wrapper]')
+    );
+    this.toggleAttribute('data-in-peek', inPeek);
+
+    this.tabIndex = -1;
+    this.disposables.addFromEvent(this, 'click', (e: Event) => {
+      if (e.target === this) {
+        this._hide();
+      }
+    });
+
+    this.disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        this._hide();
+      }
+    });
+
     // Delay attaching click-outside listener to avoid immediate closure
     // from the same click event that opened the modal
     setTimeout(() => {
-      // Use both click and touchend for better touch device support
-      this.disposables.addFromEvent(document, 'click', (e: Event) => {
-        if (!this.contains(e.target as Node)) {
-          this._hide();
-        }
-      });
-
       this.disposables.addFromEvent(document, 'touchend', (e: Event) => {
-        if (!this.contains(e.target as Node)) {
+        if (e.target === this) {
           this._hide();
         }
       });
@@ -1399,49 +1420,27 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
   }
 
   override firstUpdated() {
-    if (!this.referenceElement) return;
+    this.focus();
 
-    this.disposables.add(
-      autoUpdate(this.referenceElement, this, () => {
-        if (!this.referenceElement) return;
-        computePosition(this.referenceElement, this, {
-          placement: 'right-start',
-          middleware: [flip(), offset(8)],
-        })
-          .then(({ x, y }) => {
-            this.style.left = `${x}px`;
-            this.style.top = `${y}px`;
-          })
-          .catch(console.error);
-      })
-    );
-
-    this.disposables.addFromEvent(this, 'pointerdown', stopPropagation);
-    this.disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
-      e.stopPropagation();
-      if (e.key === 'Escape') {
-        this._hide();
-      }
-    });
+    const panel = this.renderRoot.querySelector('.properties-modal-wrapper');
+    if (panel) {
+      this.disposables.addFromEvent(panel, 'click', stopPropagation);
+      this.disposables.addFromEvent(panel, 'pointerdown', stopPropagation);
+      this.disposables.addFromEvent(
+        panel,
+        'wheel',
+        (event: WheelEvent) => {
+          event.preventDefault();
+          event.stopPropagation();
+          (panel as HTMLElement).scrollTop += event.deltaY;
+        },
+        { passive: false }
+      );
+    }
   }
 
   override render() {
     if (!this.model) return null;
-
-    if (!this._didLogProps) {
-      this._didLogProps = true;
-      console.info('[properties-modal] settable props', {
-        model: this.model,
-        yMap:
-          'yMap' in this.model
-            ? (
-                this.model as {
-                  yMap?: { toJSON?: () => Record<string, unknown> };
-                }
-              ).yMap?.toJSON?.()
-            : undefined,
-      });
-    }
 
     const isShape = this.model instanceof ShapeElementModel;
     const isConnector = this.model instanceof ConnectorElementModel;
@@ -1453,17 +1452,20 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
     return html`
       <div class="properties-modal-wrapper" @click=${stopPropagation}>
-        <div class="header">
-          <span class="title">${elementType} Properties</span>
-          <button class="close-button" @click=${this._hide}>✕</button>
-        </div>
+        <div class="properties-modal-content">
+          <div class="header">
+            <span class="title">${elementType} Properties</span>
+          </div>
 
-        ${isShape
-          ? this._renderShapeProperties(this.model as ShapeElementModel)
-          : null}
-        ${isConnector
-          ? this._renderConnectorProperties(this.model as ConnectorElementModel)
-          : null}
+          ${isShape
+            ? this._renderShapeProperties(this.model as ShapeElementModel)
+            : null}
+          ${isConnector
+            ? this._renderConnectorProperties(
+                this.model as ConnectorElementModel
+              )
+            : null}
+        </div>
       </div>
     `;
   }
@@ -1475,7 +1477,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
   accessor model!: GfxModel;
 
   @property({ attribute: false })
-  accessor referenceElement!: Element;
+  accessor referenceElement!: ReferenceElement;
 
   @property({ attribute: false })
   accessor abortController: AbortController | null = null;
