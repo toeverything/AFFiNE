@@ -4,8 +4,8 @@ import Sinon from 'sinon';
 import { createModule } from '../../../__tests__/create-module';
 import { Config } from '../../../base';
 import { ConfigModule } from '../../../base/config';
-import { IndexerModule } from '..';
 import { IndexerEvent } from '../event';
+import { IndexerModule } from '../index';
 
 const module = await createModule({
   imports: [

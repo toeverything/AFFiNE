@@ -31,7 +31,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate {
   private func showAIConsentAlert() {
     let alert = UIAlertController(
       title: "AI Feature Data Usage",
-      message: "To provide AI-powered features, your input (such as document content and conversation messages) will be sent to a third-party AI service for processing. This data is used solely to generate responses and is not used for any other purpose.\n\nBy continuing, you agree to share this data with the AI service.",
+      message: "To provide AI-powered features, your input (such as document content and conversation messages) will be sent to our third-party AI service providers (Google Gemini, Anthropic Claude, or OpenAI) for processing. This data is used solely to generate responses and is not used for any other purpose.\n\nBy continuing, you agree to share this data with these AI services.",
       preferredStyle: .alert
     )
     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))

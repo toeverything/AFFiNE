@@ -8,6 +8,7 @@ export class MockEventBus {
 
   emit = this.stub.emitAsync;
   emitAsync = this.stub.emitAsync;
+  emitDetached = this.stub.emitAsync;
   broadcast = this.stub.broadcast;
 
   last<Event extends EventName>(

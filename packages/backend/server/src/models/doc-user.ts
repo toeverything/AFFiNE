@@ -2,6 +2,7 @@ import assert from 'node:assert';
 
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
+import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { WorkspaceDocUserRole } from '@prisma/client';
 
 import { CanNotBatchGrantDocOwnerPermissions, PaginationInput } from '../base';
@@ -14,30 +15,19 @@ export class DocUserModel extends BaseModel {
    * Set or update the [Owner] of a doc.
    * The old [Owner] will be changed to [Manager] if there is already an [Owner].
    */
-  @Transactional()
+  @Transactional<TransactionalAdapterPrisma>({ timeout: 15000 })
   async setOwner(workspaceId: string, docId: string, userId: string) {
-    const oldOwner = await this.db.workspaceDocUserRole.findFirst({
+    await this.db.workspaceDocUserRole.updateMany({
       where: {
         workspaceId,
         docId,
         type: DocRole.Owner,
+        userId: { not: userId },
+      },
+      data: {
+        type: DocRole.Manager,
       },
     });
-
-    if (oldOwner) {
-      await this.db.workspaceDocUserRole.update({
-        where: {
-          workspaceId_docId_userId: {
-            workspaceId,
-            docId,
-            userId: oldOwner.userId,
-          },
-        },
-        data: {
-          type: DocRole.Manager,
-        },
-      });
-    }
 
     await this.db.workspaceDocUserRole.upsert({
       where: {
@@ -57,16 +47,9 @@ export class DocUserModel extends BaseModel {
         type: DocRole.Owner,
       },
     });
-
-    if (oldOwner) {
-      this.logger.log(
-        `Transfer doc owner of [${workspaceId}/${docId}] from [${oldOwner.userId}] to [${userId}]`
-      );
-    } else {
-      this.logger.log(
-        `Set doc owner of [${workspaceId}/${docId}] to [${userId}]`
-      );
-    }
+    this.logger.log(
+      `Set doc owner of [${workspaceId}/${docId}] to [${userId}]`
+    );
   }
 
   /**
