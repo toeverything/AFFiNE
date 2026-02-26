@@ -1407,16 +1407,6 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
         this._hide();
       }
     });
-
-    // Delay attaching click-outside listener to avoid immediate closure
-    // from the same click event that opened the modal
-    setTimeout(() => {
-      this.disposables.addFromEvent(document, 'touchend', (e: Event) => {
-        if (e.target === this) {
-          this._hide();
-        }
-      });
-    }, 100);
   }
 
   override firstUpdated() {
