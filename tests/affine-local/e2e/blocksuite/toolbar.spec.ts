@@ -15,7 +15,7 @@ import {
   clickNewPageButton,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
-import { expect } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 
 function hexToRGB(hex: string) {
   hex = hex.replace(/^#/, '');
@@ -415,6 +415,61 @@ test('surface-ref frame metadata export and import', async ({ page }) => {
       '[data-testid=affine-toast]:has-text("Frame metadata imported.")'
     )
   ).toBeVisible();
+});
+
+test('surface-ref width 1x keeps legacy frame layout behavior', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('/frame');
+  await page.keyboard.press('Enter');
+
+  const toolbar = locateToolbar(page);
+  const surfaceRef = page.locator('affine-surface-ref');
+  await surfaceRef.hover();
+  await expect(toolbar).toBeVisible();
+
+  const frameSizeButton = toolbar.getByLabel('Frame size').first();
+  const container = surfaceRef.locator('.affine-surface-ref');
+  const viewport = surfaceRef.locator('.ref-viewport');
+
+  const getStyle = async (locator: Locator) =>
+    (await locator.getAttribute('style')) ?? '';
+
+  const baselineContainerStyle = await getStyle(container);
+  const baselineViewportStyle = await getStyle(viewport);
+  const baselineViewportBox = await viewport.boundingBox();
+
+  expect(baselineContainerStyle).not.toContain('translateX(-50%)');
+  expect(baselineViewportStyle).not.toContain('width: 100%');
+  expect(baselineViewportBox).toBeTruthy();
+
+  await frameSizeButton.click();
+  await page.locator('editor-menu-action[aria-label="2x"]').nth(1).click();
+
+  const width2xContainerStyle = await getStyle(container);
+  const width2xViewportStyle = await getStyle(viewport);
+  const width2xViewportBox = await viewport.boundingBox();
+
+  expect(width2xContainerStyle).toContain('translateX(-50%)');
+  expect(width2xContainerStyle).toContain('var(--affine-editor-width) * 2');
+  expect(width2xViewportStyle).toContain('width: 100%');
+  expect(width2xViewportBox).toBeTruthy();
+  expect(width2xViewportBox!.width).toBeGreaterThan(baselineViewportBox!.width);
+
+  await frameSizeButton.click();
+  await page.locator('editor-menu-action[aria-label="1x"]').nth(1).click();
+
+  const width1xContainerStyle = await getStyle(container);
+  const width1xViewportStyle = await getStyle(viewport);
+  const width1xViewportBox = await viewport.boundingBox();
+
+  expect(width1xContainerStyle).toBe(baselineContainerStyle);
+  expect(width1xViewportStyle).not.toContain('width: 100%');
+  expect(width1xViewportBox).toBeTruthy();
+  expect(
+    Math.abs(width1xViewportBox!.width - baselineViewportBox!.width)
+  ).toBeLessThan(0.5);
 });
 
 test('should clear selection when switching doc mode', async ({ page }) => {

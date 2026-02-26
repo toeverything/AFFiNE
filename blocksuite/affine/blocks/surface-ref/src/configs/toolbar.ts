@@ -87,6 +87,15 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
         };
 
         const updateWidthScale = (nextScale: number) => {
+          if (nextScale === 1) {
+            updateProps({
+              pageSizeScale: sizeScale,
+              pageWidthMode: 'page',
+              pageWidthScale: 1,
+            });
+            return;
+          }
+
           updateProps({
             pageSizeScale: sizeScale,
             pageWidthMode: 'scale',
@@ -186,8 +195,10 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
               preset => html`
                 <editor-menu-action
                   aria-label="${preset}x"
-                  ?data-selected=${widthMode === 'scale' &&
-                  widthScale === preset}
+                  ?data-selected=${preset === 1
+                    ? widthMode === 'page' ||
+                      (widthMode === 'scale' && widthScale === 1)
+                    : widthMode === 'scale' && widthScale === preset}
                   @click=${() => updateWidthScale(preset)}
                 >
                   ${preset}x
