@@ -68,7 +68,7 @@ test('should update doc content to database when doc is updated', async t => {
 
   const docId = randomUUID();
   await adapter.pushDocUpdates(workspace.id, docId, updates);
-  await adapter.getDoc(workspace.id, docId);
+  await adapter.getDocBinNative(workspace.id, docId);
 
   mock.method(docReader, 'parseDocContent', () => {
     return {
@@ -180,4 +180,23 @@ test('should ignore update workspace content to database when parse workspace co
   t.truthy(content);
   t.is(content!.name, null);
   t.is(content!.avatarKey, null);
+});
+
+test('should ignore stale workspace when updating doc meta from snapshot event', async t => {
+  const { docReader, listener, models } = t.context;
+  const docId = randomUUID();
+  mock.method(docReader, 'parseDocContent', () => ({
+    title: 'test title',
+    summary: 'test summary',
+  }));
+
+  await models.workspace.delete(workspace.id);
+
+  await t.notThrowsAsync(async () => {
+    await listener.markDocContentCacheStale({
+      workspaceId: workspace.id,
+      docId,
+      blob: Buffer.from([0x01]),
+    });
+  });
 });
