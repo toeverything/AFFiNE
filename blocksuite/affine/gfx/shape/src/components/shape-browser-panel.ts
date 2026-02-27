@@ -18,6 +18,7 @@ import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import { drawioLibraryCatalog } from '../drawio/library-catalog';
 import {
@@ -51,6 +52,7 @@ const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
   rect: 'general',
   roundedRect: 'general',
   ellipse: 'general',
+  cylinder: 'general',
   diamond: 'general',
   triangle: 'general',
   triangleRight: 'general',
@@ -58,7 +60,6 @@ const SHAPE_CATEGORY_MAP: Record<string, ShapeCategory> = {
   parallelogram: 'general',
   trapezoid: 'general',
   step: 'general',
-  cylinder: 'general',
   cloud: 'general',
   document: 'general',
   note: 'general',
@@ -160,18 +161,18 @@ const SHAPE_BROWSER_ITEMS: ShapeBrowserItem[] = [
     ...SHAPE_CONFIG_BY_NAME.roundedRect,
   },
   {
-    id: 'ellipse',
-    category: 'general',
-    categoryLabel: BASE_CATEGORY_LABELS.general,
-    ...SHAPE_CONFIG_BY_NAME.ellipse,
-    tooltip: 'Ellipse',
-  },
-  {
     id: 'square',
     category: 'general',
     categoryLabel: BASE_CATEGORY_LABELS.general,
     ...SHAPE_CONFIG_BY_NAME.rect,
     tooltip: 'Square',
+  },
+  {
+    id: 'ellipse',
+    category: 'general',
+    categoryLabel: BASE_CATEGORY_LABELS.general,
+    ...SHAPE_CONFIG_BY_NAME.ellipse,
+    tooltip: 'Ellipse',
   },
   {
     id: 'circle',
@@ -180,8 +181,15 @@ const SHAPE_BROWSER_ITEMS: ShapeBrowserItem[] = [
     ...SHAPE_CONFIG_BY_NAME.ellipse,
     tooltip: 'Circle',
   },
+  {
+    id: 'cylinder',
+    category: 'general',
+    categoryLabel: BASE_CATEGORY_LABELS.general,
+    ...SHAPE_CONFIG_BY_NAME.cylinder,
+    tooltip: 'Circle',
+  },
   ...AllShapeConfig.filter(
-    item => !['rect', 'roundedRect', 'ellipse'].includes(item.name)
+    item => !['rect', 'roundedRect', 'ellipse', 'cylinder'].includes(item.name)
   ).map(item => ({
     ...item,
     id: item.name,
@@ -213,6 +221,37 @@ const Triangle = html`<svg
 </svg>`;
 
 const ICON_SIZE = 32;
+const SHAPE_CARD_WIDTH = 100;
+const SHAPE_CARD_GAP_X = 20;
+const SHAPE_CARD_GAP_Y = 10;
+const SHAPE_LIST_PADDING = 10;
+
+function getPreferredRows(viewportWidth: number) {
+  if (viewportWidth >= 2200) return 1;
+  if (viewportWidth >= 1700) return 2;
+  if (viewportWidth >= 1300) return 3;
+  return 4;
+}
+
+function getShapeBrowserLayout(viewportWidth: number, itemCount: number) {
+  const maxPanelWidth = Math.max(280, Math.min(1100, viewportWidth - 64));
+  const maxColumnsFit = Math.max(
+    1,
+    Math.floor(
+      (maxPanelWidth - SHAPE_LIST_PADDING * 2 + SHAPE_CARD_GAP_X) /
+        (SHAPE_CARD_WIDTH + SHAPE_CARD_GAP_X)
+    )
+  );
+  const preferredRows = getPreferredRows(viewportWidth);
+  const wantedColumns = Math.max(1, Math.ceil(itemCount / preferredRows));
+  const columns = Math.max(1, Math.min(wantedColumns, maxColumnsFit, 4));
+  const panelWidth =
+    SHAPE_LIST_PADDING * 2 +
+    columns * SHAPE_CARD_WIDTH +
+    (columns - 1) * SHAPE_CARD_GAP_X;
+
+  return { columns, panelWidth };
+}
 
 const renderStencilIcon = (stencilName?: string) => {
   if (!stencilName) return html``;
@@ -298,7 +337,7 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     }
 
     .edgeless-shapes-panel {
-      width: 467px;
+      width: var(--shape-browser-panel-width, 467px);
       height: 400px;
       border-radius: 12px;
       background-color: var(--affine-background-overlay-panel-color);
@@ -385,12 +424,15 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     }
 
     .shapes-list {
-      padding: 10px;
-      display: flex;
-      align-items: flex-start;
+      padding: ${SHAPE_LIST_PADDING}px;
+      display: grid;
+      grid-template-columns: repeat(
+        var(--shape-browser-columns, 4),
+        ${SHAPE_CARD_WIDTH}px
+      );
+      justify-content: center;
       align-content: flex-start;
-      gap: 10px 20px;
-      flex-wrap: wrap;
+      gap: ${SHAPE_CARD_GAP_Y}px ${SHAPE_CARD_GAP_X}px;
     }
 
     .shape-item {
@@ -466,6 +508,10 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
 
   @state()
   private accessor _searchKeyword = '';
+
+  @state()
+  private accessor _viewportWidth =
+    typeof window === 'undefined' ? 1440 : window.innerWidth;
 
   @property({ attribute: false })
   accessor edgeless!: BlockComponent;
@@ -564,6 +610,9 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     this.addEventListener('keydown', stopPropagation, false);
     this._disposables.addFromEvent(this, 'click', stopPropagation);
     this._disposables.addFromEvent(this, 'pointerdown', stopPropagation);
+    this._disposables.addFromEvent(window, 'resize', () => {
+      this._viewportWidth = window.innerWidth;
+    });
   }
 
   override firstUpdated() {
@@ -637,10 +686,21 @@ export class EdgelessShapeBrowserPanel extends WithDisposable(LitElement) {
     const effectiveCategory =
       selectedCategory ?? availableCategories[0]?.id ?? 'general';
     const shapesInCategory = this._getShapesForCategory(effectiveCategory);
+    const layout = getShapeBrowserLayout(
+      this._viewportWidth,
+      Math.max(1, shapesInCategory.length)
+    );
     const appTheme = this.edgeless?.std?.get(ThemeProvider)?.app$?.value;
 
     return html`
-      <div class="edgeless-shapes-panel" data-app-theme=${appTheme ?? 'light'}>
+      <div
+        class="edgeless-shapes-panel"
+        style=${styleMap({
+          '--shape-browser-columns': String(layout.columns),
+          '--shape-browser-panel-width': `${layout.panelWidth}px`,
+        })}
+        data-app-theme=${appTheme ?? 'light'}
+      >
         <div class="search-bar">
           <input
             class="search-input"
