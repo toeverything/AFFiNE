@@ -176,13 +176,16 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     const containerHeight = this.richText.offsetHeight;
     const containerWidth = this.richText.offsetWidth;
     const textResizing = this.element.textResizing;
+    const autoHeight =
+      textResizing === TextResizing.AUTO_HEIGHT ||
+      textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
+    const autoWidth =
+      textResizing === TextResizing.AUTO_WIDTH ||
+      textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
 
     if (
-      (containerHeight !== this.element.h &&
-        textResizing === TextResizing.AUTO_HEIGHT) ||
-      (textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT &&
-        (containerWidth !== this.element.w ||
-          containerHeight !== this.element.h))
+      (autoHeight && containerHeight !== this.element.h) ||
+      (autoWidth && containerWidth !== this.element.w)
     ) {
       const [leftTopX, leftTopY] = Vec.rotWith(
         [this.richText.offsetLeft, this.richText.offsetTop],
@@ -199,10 +202,8 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
         xywh: new Bound(
           modelLeftTopX,
           modelLeftTopY,
-          textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT
-            ? containerWidth
-            : this.element.w,
-          containerHeight
+          autoWidth ? containerWidth : this.element.w,
+          autoHeight ? containerHeight : this.element.h
         ).serialize(),
       });
 
@@ -324,7 +325,12 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       toRadian(rotate)
     );
     const [x, y] = this.gfx.viewport.toViewCoord(leftTopX, leftTopY);
-    const autoWidth = textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
+    const autoWidth =
+      textResizing === TextResizing.AUTO_WIDTH ||
+      textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
+    const autoHeight =
+      textResizing === TextResizing.AUTO_HEIGHT ||
+      textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
     const color = this.std
       .get(ThemeProvider)
       .generateColorProperty(this.element.color, '#000000');
@@ -333,22 +339,16 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       position: 'absolute',
       left: x + 'px',
       top: y + 'px',
-      width:
-        textResizing === TextResizing.AUTO_HEIGHT
-          ? rect.width + 'px'
-          : 'fit-content',
+      width: autoWidth ? 'fit-content' : rect.width + 'px',
       // override rich-text style (height: 100%)
-      height: 'initial',
-      minHeight:
-        textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT
-          ? '1em'
-          : `${rect.height}px`,
-      maxWidth:
-        textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT
-          ? this.element.maxWidth
-            ? `${this.element.maxWidth}px`
-            : undefined
-          : undefined,
+      height: autoHeight ? 'initial' : `${rect.height}px`,
+      minHeight: autoHeight && autoWidth ? '1em' : `${rect.height}px`,
+      maxWidth: autoWidth
+        ? this.element.maxWidth
+          ? `${this.element.maxWidth}px`
+          : undefined
+        : undefined,
+      overflow: autoHeight ? 'visible' : 'hidden',
       boxSizing: 'border-box',
       fontSize: this.element.fontSize + 'px',
       fontFamily: TextUtils.wrapFontFamily(this.element.fontFamily),

@@ -231,8 +231,8 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   @field(TextAlign.Center as TextAlign)
   accessor textHorizontalAlign!: TextAlign;
 
-  @field(TextResizing.AUTO_HEIGHT as TextResizing)
-  accessor textResizing: TextResizing = TextResizing.AUTO_HEIGHT;
+  @field(TextResizing.NONE as TextResizing)
+  accessor textResizing: TextResizing = TextResizing.NONE;
 
   @field(TextVerticalAlign.Center as TextVerticalAlign)
   accessor textVerticalAlign!: TextVerticalAlign;

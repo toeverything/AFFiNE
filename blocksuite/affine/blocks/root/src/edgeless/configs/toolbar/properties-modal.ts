@@ -49,9 +49,15 @@ const TEXT_ALIGN_OPTIONS = Object.values(TextAlign);
 const TEXT_VERTICAL_ALIGN_OPTIONS = Object.values(TextVerticalAlign);
 const FONT_STYLE_OPTIONS = Object.values(FontStyle);
 const FONT_WEIGHT_OPTIONS = Object.values(FontWeight);
-const TEXT_RESIZING_OPTIONS = Object.values(TextResizing).filter(
-  value => typeof value === 'number'
-) as TextResizing[];
+const TEXT_RESIZING_OPTIONS: { value: TextResizing; label: string }[] = [
+  { value: TextResizing.NONE, label: 'None' },
+  { value: TextResizing.AUTO_WIDTH, label: 'Auto width' },
+  { value: TextResizing.AUTO_HEIGHT, label: 'Auto height' },
+  {
+    value: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+    label: 'Auto width and height',
+  },
+];
 const CONNECTOR_MODE_OPTIONS = [
   ConnectorMode.Straight,
   ConnectorMode.Orthogonal,
@@ -434,6 +440,19 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     if (!this.model) return;
 
     const crud = this.host.std.get(EdgelessCRUDIdentifier);
+    if (this.model instanceof ShapeElementModel && key === 'textResizing') {
+      const nextValue = Number(value) as TextResizing;
+      if (!Number.isFinite(nextValue)) return;
+      const shapeModel = this.model as ShapeElementModel & {
+        yMap?: { set?: (key: string, value: unknown) => void };
+      };
+      shapeModel.yMap?.set?.('textResizing', nextValue);
+      this.model.textResizing = nextValue;
+      crud.updateElement(this.model.id, { textResizing: nextValue });
+      this.requestUpdate();
+      return;
+    }
+
     if (this.model instanceof ShapeElementModel && key === 'fillColor') {
       const filled = !isTransparent(value);
       crud.updateElement(this.model.id, { [key]: value, filled });
@@ -1026,10 +1045,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
           ${this._renderSelectRow(
             'Text resizing',
             model.textResizing,
-            TEXT_RESIZING_OPTIONS.map(value => ({
-              value,
-              label: labelize(TextResizing[value]),
-            })),
+            TEXT_RESIZING_OPTIONS,
             value => this._updateProperty('textResizing', Number(value))
           )}
           ${this._renderNumberRow(
