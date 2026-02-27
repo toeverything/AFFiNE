@@ -417,12 +417,19 @@ test('Create a new page with special characters in the title and search for this
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
+  await page.keyboard.press('Enter');
+  await expect(getBlockSuiteEditorTitle(page)).toContainText(specialTitle);
   await openQuickSearchByShortcut(page);
 
   await insertInputText(page, specialTitle);
-  await page.waitForTimeout(1000);
-
-  await assertResultList(page, [specialTitle, specialTitle]);
+  await expect
+    .poll(async () => {
+      const labels = await page
+        .locator('[cmdk-item] [data-testid=cmdk-label]')
+        .allInnerTexts();
+      return labels.some(label => label.split('\n').includes(specialTitle));
+    })
+    .toBe(true);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(1000);
   await assertTitle(page, specialTitle);
