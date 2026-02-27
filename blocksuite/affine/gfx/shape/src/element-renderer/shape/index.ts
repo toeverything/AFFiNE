@@ -208,6 +208,28 @@ export const ShapeElementRendererExtension = ElementRendererExtension(
 
 export * from './utils';
 
+const TEXT_NON_FLIPPED_RENDERER_SHAPES = new Set([
+  'rect',
+  'roundedRect',
+  'ellipse',
+  'diamond',
+  'triangle',
+  'triangleRight',
+  'hexagon',
+  'parallelogram',
+  'trapezoid',
+  'container',
+  'verticalContainer',
+  'horizontalContainer',
+  'list',
+  'mindmapCentralIdea',
+  'mindmapBranch',
+  'mindmapSubTopic',
+  'mindmapSquare',
+  'mindmapOrganization',
+  'mindmapDivision',
+]);
+
 function renderText(
   model: ShapeElementModel | LocalShapeElementModel,
   ctx: CanvasRenderingContext2D,
@@ -260,8 +282,13 @@ function renderText(
     effectiveVerticalAlign = TextVerticalAlign.Center;
   }
 
-  const scaleX = (flipX ? -1 : 1) * (textFlipX ? -1 : 1);
-  const scaleY = (flipY ? -1 : 1) * (textFlipY ? -1 : 1);
+  const compensateShapeFlip = !TEXT_NON_FLIPPED_RENDERER_SHAPES.has(
+    model.shapeType
+  );
+  const inheritedFlipX = compensateShapeFlip && flipX ? -1 : 1;
+  const inheritedFlipY = compensateShapeFlip && flipY ? -1 : 1;
+  const scaleX = inheritedFlipX * (textFlipX ? -1 : 1);
+  const scaleY = inheritedFlipY * (textFlipY ? -1 : 1);
   const rotation = textRotate ?? 0;
 
   let [verticalPadding, horPadding] = padding;
@@ -370,7 +397,7 @@ function renderText(
   }
 
   ctx.save();
-  if (flipX || flipY || textFlipX || textFlipY || rotation) {
+  if (scaleX !== 1 || scaleY !== 1 || rotation) {
     ctx.translate(w / 2, h / 2);
     ctx.scale(scaleX, scaleY);
     if (rotation) {

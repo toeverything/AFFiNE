@@ -739,8 +739,10 @@ export const shapeDomRenderer = (
       applyShadowStyles(model, element, renderer);
       return;
     }
-    const textScaleX = (model.flipX ? -1 : 1) * (model.textFlipX ? -1 : 1);
-    const textScaleY = (model.flipY ? -1 : 1) * (model.textFlipY ? -1 : 1);
+    const inheritedFlipX = !SVG_SHAPE_TYPES.has(model.shapeType) && model.flipX;
+    const inheritedFlipY = !SVG_SHAPE_TYPES.has(model.shapeType) && model.flipY;
+    const textScaleX = (inheritedFlipX ? -1 : 1) * (model.textFlipX ? -1 : 1);
+    const textScaleY = (inheritedFlipY ? -1 : 1) * (model.textFlipY ? -1 : 1);
     const textRotate = model.textRotate ?? 0;
     if (textScaleX !== 1 || textScaleY !== 1 || textRotate !== 0) {
       textElement.style.transformOrigin = 'center';

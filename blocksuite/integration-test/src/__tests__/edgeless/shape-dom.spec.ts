@@ -1,9 +1,78 @@
 import { DomRenderer } from '@blocksuite/affine-block-surface';
 import { beforeEach, describe, expect, test } from 'vitest';
 
+import { drawioLibraryCatalog } from '../../../../affine/gfx/shape/src/drawio/library-catalog.js';
+import {
+  ExtendedShapeConfig,
+  ShapeComponentConfig,
+} from '../../../../affine/gfx/shape/src/toolbar/shape-menu-config.js';
 import { wait } from '../utils/common.js';
 import { getSurface } from '../utils/edgeless.js';
 import { setupEditor } from '../utils/setup.js';
+
+type ShapeSpec = {
+  subType: string;
+  stencilName?: string;
+  label: string;
+};
+
+function getAllKnownShapeSpecs(): ShapeSpec[] {
+  const configShapes = [...ShapeComponentConfig, ...ExtendedShapeConfig].map(
+    (item): ShapeSpec => ({
+      subType: item.name,
+      label: item.tooltip,
+    })
+  );
+
+  const drawioShapes = drawioLibraryCatalog.map(item => ({
+    subType: 'drawioStencil',
+    stencilName: item.stencilName,
+    label: item.label,
+  }));
+
+  const deduped = new Map<string, ShapeSpec>();
+  [...configShapes, ...drawioShapes].forEach(item => {
+    const key = `${item.subType}:${item.stencilName ?? ''}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, item);
+    }
+  });
+
+  return [...deduped.values()];
+}
+
+function getShapeTextElement(root: ParentNode, id: string) {
+  const shapeRoot = root.querySelector(`[data-element-id="${id}"]`);
+  if (!shapeRoot) {
+    return null;
+  }
+
+  const roleText = shapeRoot.querySelector<HTMLElement>(
+    '[data-role="shape-text"]'
+  );
+  if (roleText) {
+    return roleText;
+  }
+
+  return [...shapeRoot.querySelectorAll<HTMLElement>('div')].find(
+    element => element.style.whiteSpace === 'pre-wrap'
+  );
+}
+
+function expectTextNotMirrored(
+  root: ParentNode,
+  ids: string[],
+  axis: 'X' | 'Y'
+) {
+  const mirroredPattern = axis === 'X' ? /scale\(\s*-1\s*,/ : /,\s*-1\s*\)/;
+
+  for (const id of ids) {
+    const textElement = getShapeTextElement(root, id);
+    expect(textElement, `Missing text element for shape ${id}`).not.toBeNull();
+    const transform = textElement?.style.transform ?? '';
+    expect(transform).not.toMatch(mirroredPattern);
+  }
+}
 
 describe('Shape rendering with DOM renderer', () => {
   beforeEach(async () => {
@@ -134,5 +203,77 @@ describe('Shape rendering with DOM renderer', () => {
     expect(shapeElement).not.toBeNull();
     expect(shapeElement?.style.width).toBe('80px');
     expect(shapeElement?.style.height).toBe('60px');
+  });
+
+  test('horizontal flip keeps text direction for all known shapes', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+    const specs = getAllKnownShapeSpecs();
+    const ids: string[] = [];
+
+    specs.forEach((spec, index) => {
+      const col = index % 12;
+      const row = Math.floor(index / 12);
+      const x = 80 + col * 120;
+      const y = 80 + row * 100;
+
+      ids.push(
+        surfaceModel.addElement({
+          type: 'shape',
+          subType: spec.subType,
+          stencilName: spec.stencilName,
+          xywh: `[${x}, ${y}, 100, 72]`,
+          text: `H${index}`,
+          textDisplay: true,
+        })
+      );
+    });
+
+    await wait(120);
+
+    ids.forEach(id => {
+      surfaceModel.updateElement(id, {
+        flipX: true,
+      });
+    });
+
+    await wait(120);
+    expectTextNotMirrored(surfaceView.renderRoot, ids, 'X');
+  });
+
+  test('vertical flip keeps text direction for all known shapes', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+    const specs = getAllKnownShapeSpecs();
+    const ids: string[] = [];
+
+    specs.forEach((spec, index) => {
+      const col = index % 12;
+      const row = Math.floor(index / 12);
+      const x = 80 + col * 120;
+      const y = 80 + row * 100;
+
+      ids.push(
+        surfaceModel.addElement({
+          type: 'shape',
+          subType: spec.subType,
+          stencilName: spec.stencilName,
+          xywh: `[${x}, ${y}, 100, 72]`,
+          text: `V${index}`,
+          textDisplay: true,
+        })
+      );
+    });
+
+    await wait(120);
+
+    ids.forEach(id => {
+      surfaceModel.updateElement(id, {
+        flipY: true,
+      });
+    });
+
+    await wait(120);
+    expectTextNotMirrored(surfaceView.renderRoot, ids, 'Y');
   });
 });
