@@ -36,6 +36,8 @@ import type { Pen, PenMap } from './types';
 export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
   SignalWatcher(LitElement)
 ) {
+  private readonly _paletteCount = Math.max(1, shapePalettes.length - 1);
+
   private readonly _memoryKey = 'pen';
 
   private _paletteIndex = 0;
@@ -133,7 +135,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
   }
 
   private readonly _togglePalette = () => {
-    this._paletteIndex = (this._paletteIndex + 1) % shapePalettes.length;
+    this._paletteIndex = (this._paletteIndex + 1) % this._paletteCount;
     this._activeColorKey = undefined;
     setToolPaletteMemory(this._memoryKey, {
       index: this._paletteIndex,
@@ -144,7 +146,9 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
 
   private _resolveActiveKey(color: Color) {
     if (typeof color !== 'string') return undefined;
-    const { strokePalettes } = getShapePaletteData(this._paletteIndex);
+    const { strokePalettes } = getShapePaletteData(
+      this._paletteIndex % this._paletteCount
+    );
     const index = strokePalettes.findIndex(p => p.value === color);
     return index >= 0 ? shapePaletteKeys[index] : undefined;
   }
@@ -183,7 +187,9 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
         value: { type, color, lineWidth },
       },
     } = this;
-    const { strokePalettes } = getShapePaletteData(this._paletteIndex);
+    const { strokePalettes } = getShapePaletteData(
+      this._paletteIndex % this._paletteCount
+    );
     const activeKey = this._activeColorKey ?? this._resolveActiveKey(color);
 
     const lineWidths =
