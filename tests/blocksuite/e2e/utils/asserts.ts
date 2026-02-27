@@ -159,17 +159,20 @@ export async function assertTextContain(page: Page, text: string, i = 0) {
 }
 
 export async function assertRichTexts(page: Page, texts: string[]) {
-  const actualTexts = await page.evaluate(() => {
-    const editorHost = document.querySelector('editor-host');
-    const richTexts = Array.from(
-      editorHost?.querySelectorAll<RichText>('rich-text') ?? []
-    );
-    return richTexts.map(richText => {
-      const editor = richText.inlineEditor as AffineInlineEditor;
-      return editor.yText.toString();
-    });
-  });
-  expect(actualTexts).toEqual(texts);
+  await expect
+    .poll(async () => {
+      return page.evaluate(() => {
+        const editorHost = document.querySelector('editor-host');
+        const richTexts = Array.from(
+          editorHost?.querySelectorAll<RichText>('rich-text') ?? []
+        );
+        return richTexts.map(richText => {
+          const editor = richText.inlineEditor as AffineInlineEditor;
+          return editor.yText.toString();
+        });
+      });
+    })
+    .toEqual(texts);
 }
 
 export async function assertEdgelessCanvasText(page: Page, text: string) {
@@ -274,16 +277,20 @@ export async function assertRichTextInlineRange(
   rangeIndex: number,
   rangeLength = 0
 ) {
-  const actual = await page.evaluate(
-    ([richTextIndex]) => {
-      const editorHost = document.querySelector('editor-host');
-      const richText = editorHost?.querySelectorAll('rich-text')[richTextIndex];
-      const inlineEditor = richText?.inlineEditor;
-      return inlineEditor?.getInlineRange();
-    },
-    [richTextIndex]
-  );
-  expect(actual).toEqual({ index: rangeIndex, length: rangeLength });
+  await expect
+    .poll(async () => {
+      return page.evaluate(
+        ([richTextIndex]) => {
+          const editorHost = document.querySelector('editor-host');
+          const richText =
+            editorHost?.querySelectorAll('rich-text')[richTextIndex];
+          const inlineEditor = richText?.inlineEditor;
+          return inlineEditor?.getInlineRange();
+        },
+        [richTextIndex]
+      );
+    })
+    .toEqual({ index: rangeIndex, length: rangeLength });
 }
 
 export async function assertNativeSelectionRangeCount(
@@ -1137,15 +1144,18 @@ export async function assertNoteSequence(page: Page, expected: string) {
 }
 
 export async function assertBlockSelections(page: Page, paths: string[]) {
-  const selections = await page.evaluate(() => {
-    const host = document.querySelector<EditorHost>('editor-host');
-    if (!host) {
-      throw new Error('editor-host host not found');
-    }
-    return host.selection.value.filter(b => b.type === 'block');
-  });
-  const actualPaths = selections.map(selection => selection.blockId);
-  expect(actualPaths).toEqual(paths);
+  await expect
+    .poll(async () => {
+      const selections = await page.evaluate(() => {
+        const host = document.querySelector<EditorHost>('editor-host');
+        if (!host) {
+          throw new Error('editor-host host not found');
+        }
+        return host.selection.value.filter(b => b.type === 'block');
+      });
+      return selections.map(selection => selection.blockId);
+    })
+    .toEqual(paths);
 }
 
 export async function assertTextSelection(

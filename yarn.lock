@@ -24,7 +24,7 @@ __metadata:
   resolution: "@affine-test/affine-cloud-copilot@workspace:tests/affine-cloud-copilot"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
   languageName: unknown
   linkType: soft
 
@@ -33,7 +33,7 @@ __metadata:
   resolution: "@affine-test/affine-cloud@workspace:tests/affine-cloud"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
   languageName: unknown
   linkType: soft
 
@@ -42,7 +42,7 @@ __metadata:
   resolution: "@affine-test/affine-desktop-cloud@workspace:tests/affine-desktop-cloud"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
   languageName: unknown
   linkType: soft
 
@@ -52,10 +52,10 @@ __metadata:
   dependencies:
     "@affine-test/kit": "workspace:*"
     "@affine/electron-api": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
     "@types/fs-extra": "npm:^11.0.4"
     fs-extra: "npm:^11.2.0"
-    playwright: "npm:=1.55.1"
+    playwright: "npm:=1.58.2"
   languageName: unknown
   linkType: soft
 
@@ -66,7 +66,7 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@affine-tools/cli": "workspace:*"
     "@affine-tools/utils": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
     webpack: "npm:^5.102.1"
   languageName: unknown
   linkType: soft
@@ -76,7 +76,7 @@ __metadata:
   resolution: "@affine-test/affine-mobile@workspace:tests/affine-mobile"
   dependencies:
     "@affine-test/kit": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
   languageName: unknown
   linkType: soft
 
@@ -87,7 +87,7 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/integration-test": "workspace:*"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
     "@toeverything/theme": "npm:^1.1.23"
     json-stable-stringify: "npm:^1.2.1"
     rxjs: "npm:^7.8.2"
@@ -101,7 +101,7 @@ __metadata:
     "@affine-tools/utils": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@node-rs/argon2": "npm:^2.0.2"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
     "@toeverything/infra": "workspace:*"
     express: "npm:^5.0.0"
     http-proxy-middleware: "npm:^3.0.3"
@@ -809,7 +809,7 @@ __metadata:
     "@faker-js/faker": "npm:^10.1.0"
     "@istanbuljs/schema": "npm:^0.1.3"
     "@magic-works/i18n-codegen": "npm:^0.6.1"
-    "@playwright/test": "npm:=1.55.1"
+    "@playwright/test": "npm:=1.58.2"
     "@smarttools/eslint-plugin-rxjs": "npm:^1.0.8"
     "@taplo/cli": "npm:^0.7.0"
     "@toeverything/infra": "workspace:*"
@@ -10900,14 +10900,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:=1.55.1":
-  version: 1.55.1
-  resolution: "@playwright/test@npm:1.55.1"
+"@playwright/test@npm:=1.58.2":
+  version: 1.58.2
+  resolution: "@playwright/test@npm:1.58.2"
   dependencies:
-    playwright: "npm:1.55.1"
+    playwright: "npm:1.58.2"
   bin:
     playwright: cli.js
-  checksum: 10/c67a46353c58aaeac551bce2654cdef0e9a0ad76b1667514832d34acd4b26ec72f35ea7595cd3fad4c4e1e039d5bb876b8d62c89af4525d455285f6fff9f0642
+  checksum: 10/58bf90139280a0235eeeb6049e9fb4db6425e98be1bf0cc17913b068eef616cf67be57bfb36dc4cb56bcf116f498ffd0225c4916e85db404b343ea6c5efdae13
   languageName: node
   linkType: hard
 
@@ -31101,27 +31101,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.55.1":
-  version: 1.55.1
-  resolution: "playwright-core@npm:1.55.1"
+"playwright-core@npm:1.58.2":
+  version: 1.58.2
+  resolution: "playwright-core@npm:1.58.2"
   bin:
     playwright-core: cli.js
-  checksum: 10/953a43039dbcca04513bd3138a9dee249a136d5377da00d49402ffcd24d33ca84dc1dc04636d1b76e9f8c9fd28a302b89cda1ae544d72b5d829c28e623bfcb0b
+  checksum: 10/8a98fcf122167e8703d525db2252de0e3da4ab9110ab6ea9951247e52d846310eb25ea2c805e1b7ccb54b4010c44e5adc3a76aae6da02f34324ccc3e76683bb1
   languageName: node
   linkType: hard
 
-"playwright@npm:1.55.1, playwright@npm:=1.55.1":
-  version: 1.55.1
-  resolution: "playwright@npm:1.55.1"
+"playwright@npm:1.58.2, playwright@npm:=1.58.2":
+  version: 1.58.2
+  resolution: "playwright@npm:1.58.2"
   dependencies:
     fsevents: "npm:2.3.2"
-    playwright-core: "npm:1.55.1"
+    playwright-core: "npm:1.58.2"
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: 10/5dcf9ce564cacf6c06ebc864bb2b1f709c641792560d49889ed4c98e230be54a963ec8aaafff11269735d8d22da4900bd2d4ef9f1748d132326ffda8fb1f3f20
+  checksum: 10/d89d6c8a32388911b9aff9ee0f1a90076219f15c804f2b287db048b9e9cde182aea3131fac1959051d25189ed4218ec4272b137c83cd7f9cd24781cbc77edd86
   languageName: node
   linkType: hard
 
