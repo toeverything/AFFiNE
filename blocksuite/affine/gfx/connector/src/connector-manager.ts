@@ -196,12 +196,16 @@ export const ConnectorEndpointLocationsOnCylinder: IVec[] = buildEdgeLocations([
 ]);
 
 export const ConnectorEndpointLocationsOnCloud: IVec[] = [
+  // six lobe meeting points
   [0.25, 0.25],
   [0.16, 0.5],
   [0.31, 0.8],
   [0.8, 0.8],
   [0.875, 0.5],
   [0.625, 0.2],
+  // extra side-center anchors
+  [0, 0.5],
+  [1, 0.5],
 ];
 
 export const ConnectorEndpointLocationsOnDocument: IVec[] = buildEdgeLocations([
@@ -775,6 +779,21 @@ function getConnectableRelativePosition(connectable: GfxModel, position: IVec) {
     flipY ? 1 - position[1] : position[1],
   ];
   const location = connectable.getRelativePointLocation(flippedPosition);
+
+  if ('shapeType' in connectable && connectable.shapeType === ShapeType.Cloud) {
+    const topOrBottomBand =
+      almostEqual(flippedPosition[1], 0.2) ||
+      almostEqual(flippedPosition[1], 0.25) ||
+      almostEqual(flippedPosition[1], 0.8);
+    // In connector routing slope calculation, a horizontal tangent means
+    // vertical expansion and a vertical tangent means horizontal expansion.
+    location.tangent = Vec.rot(
+      topOrBottomBand ? [1, 0] : [0, -1],
+      toRadian(connectable.rotate)
+    );
+    return location;
+  }
+
   if (isVecZero(Vec.sub(flippedPosition, [0, 0.5])))
     location.tangent = Vec.rot([0, -1], toRadian(connectable.rotate));
   else if (isVecZero(Vec.sub(flippedPosition, [1, 0.5])))
