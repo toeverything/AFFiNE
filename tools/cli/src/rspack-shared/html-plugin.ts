@@ -5,7 +5,10 @@ import { Path, ProjectRoot } from '@affine-tools/utils/path';
 import { Repository } from '@napi-rs/simple-git';
 import HTMLPlugin from 'html-webpack-plugin';
 import { once } from 'lodash-es';
-import type { WebpackPluginInstance } from 'webpack';
+
+type PluginLike = {
+  apply: (compiler: CompilerLike) => void;
+};
 
 type CompilerLike = {
   webpack?: {
@@ -204,12 +207,12 @@ const CorsPlugin = {
 export function createHTMLPlugins(
   BUILD_CONFIG: BUILD_CONFIG_TYPE,
   config: CreateHTMLPluginConfig
-): WebpackPluginInstance[] {
+): (HTMLPlugin | PluginLike)[] {
   const publicPath = getPublicPath(BUILD_CONFIG);
   const htmlPluginOptions = getHTMLPluginOptions(BUILD_CONFIG);
   const selfhostPublicPath = config.selfhostPublicPath ?? '/';
 
-  const plugins: WebpackPluginInstance[] = [];
+  const plugins: (HTMLPlugin | PluginLike)[] = [];
   plugins.push(
     new HTMLPlugin({
       ...htmlPluginOptions,

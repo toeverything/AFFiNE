@@ -13,11 +13,11 @@ import cssnano from 'cssnano';
 import { compact, merge } from 'lodash-es';
 
 import { queuedashScopePostcssPlugin } from '../postcss/queuedash-scope.js';
-import { productionCacheGroups } from '../webpack/cache-group.js';
+import { productionCacheGroups } from '../rspack-shared/cache-group.js';
 import {
   type CreateHTMLPluginConfig,
-  createHTMLPlugins as createWebpackCompatibleHTMLPlugins,
-} from '../webpack/html-plugin.js';
+  createHTMLPlugins,
+} from '../rspack-shared/html-plugin.js';
 
 const require = createRequire(import.meta.url);
 
@@ -73,7 +73,7 @@ export function createHTMLTargetConfig(
   console.log(`Config: ${JSON.stringify(buildConfig, null, 2)}`);
 
   const config: RspackConfiguration = {
-    //#region basic webpack config
+    //#region basic bundler config
     name: entry['index'],
     dependencies: deps,
     context: ProjectRoot.value,
@@ -253,7 +253,7 @@ export function createHTMLTargetConfig(
     //#region plugins
     plugins: compact([
       !IN_CI && new rspack.ProgressPlugin(),
-      ...createWebpackCompatibleHTMLPlugins(buildConfig, htmlConfig),
+      ...createHTMLPlugins(buildConfig, htmlConfig),
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
         ...Object.entries(buildConfig).reduce(
@@ -561,8 +561,9 @@ export function createNodeTargetConfig(
         },
         {
           test: /\.node$/,
-          loader: Path.dir(import.meta.url).join('../webpack/node-loader.js')
-            .value,
+          loader: Path.dir(import.meta.url).join(
+            '../rspack-shared/node-loader.js'
+          ).value,
         },
         {
           test: /\.tsx?$/,

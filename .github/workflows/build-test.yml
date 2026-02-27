@@ -282,52 +282,6 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  bundler-matrix:
-    name: Bundler Matrix (${{ matrix.bundler }})
-    runs-on: ubuntu-24.04-arm
-    strategy:
-      fail-fast: false
-      matrix:
-        bundler: [webpack, rspack]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          playwright-install: false
-          electron-install: false
-          full-cache: true
-
-      - name: Run frontend build matrix
-        env:
-          AFFINE_BUNDLER: ${{ matrix.bundler }}
-        run: |
-          set -euo pipefail
-          packages=(
-            "@affine/web"
-            "@affine/mobile"
-            "@affine/ios"
-            "@affine/android"
-            "@affine/admin"
-            "@affine/electron-renderer"
-          )
-          summary="test-results-bundler-${AFFINE_BUNDLER}.txt"
-          : > "$summary"
-          for pkg in "${packages[@]}"; do
-            start=$(date +%s)
-            yarn affine "$pkg" build
-            end=$(date +%s)
-            echo "${pkg},$((end-start))" >> "$summary"
-          done
-
-      - name: Upload bundler timing
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-bundler-${{ matrix.bundler }}
-          path: ./test-results-bundler-${{ matrix.bundler }}.txt
-          if-no-files-found: ignore
-
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-24.04-arm

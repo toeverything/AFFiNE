@@ -9,8 +9,7 @@
     "@affine-test/kit": "workspace:*",
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
-    "@playwright/test": "=1.58.2",
-    "webpack": "^5.102.1"
+    "@playwright/test": "=1.58.2"
   },
   "version": "0.26.3"
 }
