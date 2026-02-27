@@ -30,7 +30,12 @@ import {
   createEdgelessElement,
   Direction,
   getPosition,
+  getShapeMenuLayout,
   nextBound,
+  SHAPE_MENU_ITEM_GAP,
+  SHAPE_MENU_ITEM_HEIGHT,
+  SHAPE_MENU_ITEM_WIDTH,
+  SHAPE_MENU_PANEL_PADDING,
 } from './utils.js';
 
 const MINDMAP_SHAPES: Array<{
@@ -70,8 +75,6 @@ const getMindmapDefaultSize = (type: ShapeType): [number, number] => {
   }
 };
 
-const PANEL_WIDTH = 220;
-const PANEL_HEIGHT = 180;
 const PANEL_MARGIN = 12;
 
 export class EdgelessMindmapShapePanel extends WithDisposable(LitElement) {
@@ -79,11 +82,9 @@ export class EdgelessMindmapShapePanel extends WithDisposable(LitElement) {
     .mindmap-panel {
       position: absolute;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      width: ${PANEL_WIDTH}px;
-      height: ${PANEL_HEIGHT}px;
-      padding: 8px;
+      gap: ${SHAPE_MENU_ITEM_GAP}px;
+      padding: ${SHAPE_MENU_PANEL_PADDING}px;
+      justify-content: center;
       border-radius: 10px;
       background: var(--affine-background-overlay-panel-color);
       box-shadow: var(--affine-shadow-2);
@@ -94,8 +95,8 @@ export class EdgelessMindmapShapePanel extends WithDisposable(LitElement) {
     }
 
     .mindmap-item {
-      width: 36px;
-      height: 28px;
+      width: ${SHAPE_MENU_ITEM_WIDTH}px;
+      height: ${SHAPE_MENU_ITEM_HEIGHT}px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -225,6 +226,10 @@ export class EdgelessMindmapShapePanel extends WithDisposable(LitElement) {
   private _getPanelPosition() {
     const { viewport } = this.gfx;
     const { boundingClientRect } = viewport;
+    const layout = getShapeMenuLayout(
+      MINDMAP_SHAPES.length,
+      boundingClientRect.width
+    );
     const bound = this.current.elementBound;
     const [left, top] = viewport.toViewCoord(bound.x, bound.y);
     const [right, bottom] = viewport.toViewCoord(
@@ -235,32 +240,32 @@ export class EdgelessMindmapShapePanel extends WithDisposable(LitElement) {
     const width = right - left;
     const height = bottom - top;
 
-    let x = left + width / 2 - PANEL_WIDTH / 2;
-    let y = top - PANEL_HEIGHT - PANEL_MARGIN;
+    let x = left + width / 2 - layout.width / 2;
+    let y = top - layout.height - PANEL_MARGIN;
 
     switch (this.direction) {
       case Direction.Right:
         x = right + PANEL_MARGIN;
-        y = top + height / 2 - PANEL_HEIGHT / 2;
+        y = top + height / 2 - layout.height / 2;
         break;
       case Direction.Bottom:
-        x = left + width / 2 - PANEL_WIDTH / 2;
+        x = left + width / 2 - layout.width / 2;
         y = bottom + PANEL_MARGIN;
         break;
       case Direction.Left:
-        x = left - PANEL_MARGIN - PANEL_WIDTH;
-        y = top + height / 2 - PANEL_HEIGHT / 2;
+        x = left - PANEL_MARGIN - layout.width;
+        y = top + height / 2 - layout.height / 2;
         break;
       case Direction.Top:
-        x = left + width / 2 - PANEL_WIDTH / 2;
-        y = top - PANEL_HEIGHT - PANEL_MARGIN;
+        x = left + width / 2 - layout.width / 2;
+        y = top - layout.height - PANEL_MARGIN;
         break;
     }
 
-    x = clamp(x, 20, boundingClientRect.width - 20 - PANEL_WIDTH);
-    y = clamp(y, 20, boundingClientRect.height - 20 - PANEL_HEIGHT);
+    x = clamp(x, 20, boundingClientRect.width - 20 - layout.width);
+    y = clamp(y, 20, boundingClientRect.height - 20 - layout.height);
 
-    return [x, y];
+    return [x, y, layout] as const;
   }
 
   override connectedCallback() {
@@ -282,12 +287,16 @@ export class EdgelessMindmapShapePanel extends WithDisposable(LitElement) {
   override render() {
     const position = this._getPanelPosition();
     if (!position) return nothing;
+    const [x, y, layout] = position;
 
     return html`<div
       class="mindmap-panel"
       style=${styleMap({
-        left: `${position[0]}px`,
-        top: `${position[1]}px`,
+        left: `${x}px`,
+        top: `${y}px`,
+        width: `${layout.width}px`,
+        height: `${layout.height}px`,
+        gridTemplateColumns: `repeat(${layout.columns}, ${SHAPE_MENU_ITEM_WIDTH}px)`,
       })}
       @wheel=${stopPropagation}
       @pointerdown=${stopPropagation}
