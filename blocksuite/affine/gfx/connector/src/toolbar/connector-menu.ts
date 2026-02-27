@@ -1,18 +1,26 @@
 import {
+  getShapePaletteData,
+  getToolPaletteMemory,
+  setToolPaletteMemory,
+  shapePaletteKeys,
+  shapePalettes,
+} from '@blocksuite/affine-gfx-shape';
+import {
+  type Color,
   ConnectorMode,
-  DefaultTheme,
   type JumpStyle,
-  type LineWidth,
+  LineWidth,
 } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
   FeatureFlagService,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
-import type { ColorEvent } from '@blocksuite/affine-shared/utils';
+import { type ColorEvent } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
+  ArrowUpSmallIcon,
   ConnectorCIcon,
   ConnectorEIcon,
   ConnectorLIcon,
@@ -101,6 +109,12 @@ function JumpStyleSelector(
 export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
   SignalWatcher(LitElement)
 ) {
+  private readonly _memoryKey = 'connector';
+
+  private _paletteIndex = 0;
+
+  private _activeColorKey: string | undefined;
+
   static override styles = css`
     :host {
       position: absolute;
@@ -154,6 +168,24 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
       font-size: 12px;
       cursor: pointer;
     }
+
+    .color-panel-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .palette-toggle-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+    }
+
+    .palette-toggle-button svg {
+      fill: none;
+      stroke: var(--affine-icon-color);
+    }
   `;
 
   private readonly _props$ = computed(() => {
@@ -172,10 +204,45 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
     return this.edgeless.std.get(ThemeProvider).theme$.value;
   });
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    const memory = getToolPaletteMemory(this._memoryKey);
+    this._paletteIndex = memory.index;
+    this._activeColorKey = memory.activeKey;
+  }
+
+  private readonly _togglePalette = () => {
+    this._paletteIndex = (this._paletteIndex + 1) % shapePalettes.length;
+    this._activeColorKey = undefined;
+    setToolPaletteMemory(this._memoryKey, {
+      index: this._paletteIndex,
+      activeKey: undefined,
+    });
+    this.requestUpdate();
+  };
+
+  private _resolveActiveKey(stroke: Color) {
+    if (typeof stroke !== 'string') return undefined;
+    const { strokePalettes } = getShapePaletteData(this._paletteIndex);
+    const index = strokePalettes.findIndex(p => p.value === stroke);
+    return index >= 0 ? shapePaletteKeys[index] : undefined;
+  }
+
+  private readonly _onPickColor = (e: ColorEvent) => {
+    this._activeColorKey = e.detail.key;
+    setToolPaletteMemory(this._memoryKey, {
+      index: this._paletteIndex,
+      activeKey: this._activeColorKey,
+    });
+    this.onChange({ stroke: e.detail.value as string });
+  };
+
   override type = ConnectorTool;
 
   override render() {
     const { stroke, strokeWidth, mode, jumpStyle } = this._props$.value;
+    const { strokePalettes } = getShapePaletteData(this._paletteIndex);
+    const activeKey = this._activeColorKey ?? this._resolveActiveKey(stroke);
     const connectorModeButtonGroup = ConnectorModeButtonGroup(
       mode,
       this.onChange
@@ -194,17 +261,28 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
           >
           </edgeless-line-width-panel>
           <div class="submenu-divider"></div>
-          <edgeless-color-panel
-            class="one-way"
-            .value=${stroke}
-            .theme=${this._theme$.value}
-            .palettes=${DefaultTheme.StrokeColorShortPalettes}
-            .hasTransparent=${!this.edgeless.store
-              .get(FeatureFlagService)
-              .getFlag('enable_color_picker')}
-            @select=${(e: ColorEvent) =>
-              this.onChange({ stroke: e.detail.value })}
-          ></edgeless-color-panel>
+          <div class="color-panel-container">
+            <edgeless-color-panel
+              class="one-way"
+              .value=${stroke}
+              .theme=${this._theme$.value}
+              .palettes=${strokePalettes}
+              .activeKey=${activeKey}
+              .hasTransparent=${!this.edgeless.store
+                .get(FeatureFlagService)
+                .getFlag('enable_color_picker')}
+              @select=${this._onPickColor}
+            ></edgeless-color-panel>
+            <edgeless-tool-icon-button
+              class="palette-toggle-button"
+              .tooltip=${'Next palette'}
+              .activeMode=${'background'}
+              .iconSize=${'20px'}
+              @click=${this._togglePalette}
+            >
+              ${ArrowUpSmallIcon()}
+            </edgeless-tool-icon-button>
+          </div>
           <div class="submenu-divider"></div>
           ${jumpStyleSelector}
         </div>

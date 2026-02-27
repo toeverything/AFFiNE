@@ -230,6 +230,9 @@ const TEXT_NON_FLIPPED_RENDERER_SHAPES = new Set([
   'mindmapDivision',
 ]);
 
+export const shouldCompensateShapeFlipForText = (shapeType: string) =>
+  !TEXT_NON_FLIPPED_RENDERER_SHAPES.has(shapeType);
+
 function renderText(
   model: ShapeElementModel | LocalShapeElementModel,
   ctx: CanvasRenderingContext2D,
@@ -282,9 +285,7 @@ function renderText(
     effectiveVerticalAlign = TextVerticalAlign.Center;
   }
 
-  const compensateShapeFlip = !TEXT_NON_FLIPPED_RENDERER_SHAPES.has(
-    model.shapeType
-  );
+  const compensateShapeFlip = shouldCompensateShapeFlipForText(model.shapeType);
   const inheritedFlipX = compensateShapeFlip && flipX ? -1 : 1;
   const inheritedFlipY = compensateShapeFlip && flipY ? -1 : 1;
   const scaleX = inheritedFlipX * (textFlipX ? -1 : 1);

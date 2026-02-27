@@ -35,7 +35,9 @@ import { when } from 'lit/directives/when.js';
 
 import { ShapeTool } from '../shape-tool';
 import { ShapeComponentConfig } from '../toolbar';
+import { getToolPaletteMemory, setToolPaletteMemory } from './palette-memory';
 import {
+  getShapePaletteData,
   shapePaletteKeys,
   shapePalettes,
   type ShapePaletteStyle,
@@ -44,6 +46,8 @@ import {
 export class EdgelessShapeMenu extends SignalWatcher(
   WithDisposable(LitElement)
 ) {
+  private readonly _memoryKey = 'shape';
+
   static override styles = css`
     :host {
       display: flex;
@@ -102,41 +106,7 @@ export class EdgelessShapeMenu extends SignalWatcher(
   private readonly _activeColorKey$ = signal<string | undefined>(undefined);
 
   private readonly _activePalettes$ = computed(() => {
-    const paletteIndex = this._paletteIndex$.value % shapePalettes.length;
-    const palette = shapePalettes[paletteIndex];
-    const stylesByKey = new Map(
-      shapePaletteKeys.map((key, index) => [key, palette.styles[index]])
-    );
-    const fillPalettes = shapePaletteKeys.map((key, index) => ({
-      key,
-      value: palette.styles[index].fill,
-    }));
-    const strokePalettes = shapePaletteKeys.map((key, index) => ({
-      key,
-      value: palette.styles[index].stroke,
-    }));
-    const ringPalettes = shapePaletteKeys
-      .map((key, index) => ({ key, value: palette.styles[index].ringColor }))
-      .filter(palette => palette.value !== undefined) as Palette[];
-    const gradientPalettes = shapePaletteKeys
-      .map((key, index) => ({
-        key,
-        value: palette.styles[index].gradientFinal,
-        direction: palette.styles[index].gradientDirection,
-      }))
-      .filter(palette => palette.value !== undefined) as {
-      key: string;
-      value: Color;
-      direction?: ShapePaletteStyle['gradientDirection'];
-    }[];
-    return {
-      palette,
-      stylesByKey,
-      fillPalettes,
-      strokePalettes,
-      ringPalettes,
-      gradientPalettes,
-    };
+    return getShapePaletteData(this._paletteIndex$.value);
   });
 
   @property({ attribute: false })
@@ -169,6 +139,10 @@ export class EdgelessShapeMenu extends SignalWatcher(
     const gradientFinal = style?.gradientFinal ?? fillColor;
     const gradientDirection = style?.gradientDirection ?? 'S';
     this._activeColorKey$.value = key;
+    setToolPaletteMemory(this._memoryKey, {
+      index: this._paletteIndex$.value,
+      activeKey: key,
+    });
 
     const { shapeName } = this._props$.value;
     const nextProps: {
@@ -229,6 +203,10 @@ export class EdgelessShapeMenu extends SignalWatcher(
     const nextIndex = (this._paletteIndex$.value + 1) % presetCount;
     this._paletteIndex$.value = nextIndex;
     this._activeColorKey$.value = undefined;
+    setToolPaletteMemory(this._memoryKey, {
+      index: nextIndex,
+      activeKey: undefined,
+    });
   };
 
   private _applyColorToSelection(
@@ -311,6 +289,10 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   override connectedCallback(): void {
     super.connectedCallback();
+
+    const memory = getToolPaletteMemory(this._memoryKey);
+    this._paletteIndex$.value = memory.index;
+    this._activeColorKey$.value = memory.activeKey;
 
     const gfx = this.edgeless.std.get(GfxControllerIdentifier);
     this._disposables.add(

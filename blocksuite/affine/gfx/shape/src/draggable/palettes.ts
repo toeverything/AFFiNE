@@ -54,10 +54,6 @@ const applyDefaultTail = (styles: ShapePaletteStyle[]) => {
     DefaultTheme.StrokeColorShortPalettes,
     'Black'
   );
-  const whiteStroke = getPaletteValueByKey(
-    DefaultTheme.StrokeColorShortPalettes,
-    'White'
-  );
   const transparentStroke = DefaultTheme.StrokeColorShortMap.Grey;
 
   const base = styles.slice();
@@ -268,3 +264,44 @@ export const shapePalettes: ShapePalette[] = [
     styles: dio5Styles,
   },
 ];
+
+export function getShapePaletteData(index: number) {
+  const palette = shapePalettes[index % shapePalettes.length];
+  const stylesByKey = new Map(
+    shapePaletteKeys.map((key, styleIndex) => [key, palette.styles[styleIndex]])
+  );
+  const fillPalettes = shapePaletteKeys.map((key, styleIndex) => ({
+    key,
+    value: palette.styles[styleIndex].fill,
+  }));
+  const strokePalettes = shapePaletteKeys.map((key, styleIndex) => ({
+    key,
+    value: palette.styles[styleIndex].stroke,
+  }));
+  const ringPalettes = shapePaletteKeys
+    .map((key, styleIndex) => ({
+      key,
+      value: palette.styles[styleIndex].ringColor,
+    }))
+    .filter(item => item.value !== undefined) as Palette[];
+  const gradientPalettes = shapePaletteKeys
+    .map((key, styleIndex) => ({
+      key,
+      value: palette.styles[styleIndex].gradientFinal,
+      direction: palette.styles[styleIndex].gradientDirection,
+    }))
+    .filter(item => item.value !== undefined) as {
+    key: string;
+    value: Palette['value'];
+    direction?: ShapePaletteStyle['gradientDirection'];
+  }[];
+
+  return {
+    palette,
+    stylesByKey,
+    fillPalettes,
+    strokePalettes,
+    ringPalettes,
+    gradientPalettes,
+  };
+}

@@ -318,9 +318,6 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     const zoom = viewport.zoom;
     const rect = getSelectedRect([this.element]);
     const rotate = this.element.rotate;
-    const textRotate = this.element.textRotate ?? 0;
-    const textScaleX = this.element.textFlipX ? -1 : 1;
-    const textScaleY = this.element.textFlipY ? -1 : 1;
     const [leftTopX, leftTopY] = Vec.rotWith(
       [rect.left, rect.top],
       [rect.left + rect.width / 2, rect.top + rect.height / 2],
@@ -358,7 +355,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       fontWeight: this.element.fontWeight,
       lineHeight: 'normal',
       outline: 'none',
-      transform: `translate(${rect.width / 2}px, ${rect.height / 2}px) scale(${zoom * textScaleX}, ${zoom * textScaleY}) rotate(${rotate + textRotate}deg) translate(${-rect.width / 2}px, ${-rect.height / 2}px)`,
+      transform: `scale(${zoom}, ${zoom}) rotate(${rotate}deg)`,
       transformOrigin: 'top left',
       color,
       padding: `${verticalPadding}px ${horiPadding}px`,
