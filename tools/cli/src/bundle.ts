@@ -140,6 +140,17 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
         createRspackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value),
       ] as MultiRspackOptions;
     }
+    case '@affine/reader': {
+      return [
+        createRspackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value, {
+          outputFilename: 'index.js',
+          decoratorVersion: '2022-03',
+          libraryType: 'module',
+          bundleAllDependencies: true,
+          forceExternal: ['yjs'],
+        }),
+      ] as MultiRspackOptions;
+    }
   }
 
   throw new Error(`Unsupported package: ${pkg.name}`);

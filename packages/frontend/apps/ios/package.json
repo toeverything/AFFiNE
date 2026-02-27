@@ -30,7 +30,7 @@
     "@capacitor/haptics": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
-    "@sentry/react": "^9.47.1",
+    "@sentry/react": "^10.40.0",
     "@toeverything/infra": "workspace:^",
     "async-call-rpc": "^6.4.2",
     "capacitor-plugin-app-tracking-transparency": "^2.0.5",

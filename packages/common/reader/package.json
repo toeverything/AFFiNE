@@ -10,8 +10,8 @@
     "./dist": "./dist/index.js"
   },
   "scripts": {
-    "build": "yarn bundle",
-    "bundle": "node esbuild.config.js"
+    "build": "affine bundle -p @affine/reader",
+    "bundle": "affine bundle -p @affine/reader"
   },
   "dependencies": {
     "lodash-es": "^4.17.23",
