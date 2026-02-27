@@ -126,7 +126,6 @@
     "@faker-js/faker": "^10.1.0",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/testing": "patch:@nestjs/testing@npm%3A10.4.15#~/.yarn/patches/@nestjs-testing-npm-10.4.15-d591a1705a.patch",
-    "@react-email/preview-server": "^4.3.2",
     "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.1",
     "@types/express-serve-static-core": "^5.0.6",
