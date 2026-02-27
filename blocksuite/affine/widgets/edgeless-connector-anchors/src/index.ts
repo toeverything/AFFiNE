@@ -38,7 +38,43 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
   private _pendingPointer: IVec | null = null;
   private _hoverRafId: number | null = null;
 
+  private _touchAnchorsVisible = false;
+
+  private _touchLongPressTimer: number | null = null;
+
+  private _touchLongPressStart: IVec | null = null;
+
+  private _cancelTouchLongPress() {
+    if (this._touchLongPressTimer !== null) {
+      clearTimeout(this._touchLongPressTimer);
+      this._touchLongPressTimer = null;
+    }
+    this._touchLongPressStart = null;
+  }
+
+  private _updateHoverFromViewPoint(viewPoint: IVec) {
+    const gfx = this._gfx;
+    const [x, y] = gfx.viewport.toModelCoord(viewPoint[0], viewPoint[1]);
+    const result = this._overlay?.renderConnector([x, y]);
+    if (!result?.id) {
+      this._clearOverlay();
+      return false;
+    }
+
+    const element = gfx.getElementById(result.id) as GfxModel | null;
+    if (!element || ('type' in element && element.type === 'connector')) {
+      this._clearOverlay();
+      return false;
+    }
+
+    this._hoveredElement = element;
+    this._hoverHighlight = this._overlay?.highlightPoint ?? null;
+    this._hoverConnection = result ?? null;
+    return Boolean(this._hoverHighlight);
+  }
+
   private _clearOverlay() {
+    this._touchAnchorsVisible = false;
     this._hoveredElement = null;
     this._hoverHighlight = null;
     this._hoverConnection = null;
@@ -80,13 +116,29 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
       edgeless.host.event.add('pointerMove', ctx => {
         if (this._dragging) return;
 
+        const state = ctx.get('pointerState');
+        const isTouch = state.raw.pointerType === 'touch';
+
+        if (isTouch) {
+          const start = this._touchLongPressStart;
+          if (start) {
+            const dist = Vec.dist([state.x, state.y], start);
+            if (dist > 8) {
+              this._cancelTouchLongPress();
+            }
+          }
+
+          if (!this._touchAnchorsVisible) {
+            return;
+          }
+        }
+
         const tool = gfx.tool.currentTool$.peek();
         if (tool && !['default', 'connector'].includes(tool.toolName)) {
           this._clearOverlay();
           return;
         }
 
-        const state = ctx.get('pointerState');
         const [x, y] = gfx.viewport.toModelCoord(state.x, state.y);
         this._pendingPointer = [x, y];
         if (this._hoverRafId) return;
@@ -120,6 +172,28 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
         if (this._dragging) {
           return;
         }
+        const state = ctx.get('pointerState');
+        const isTouch = state.raw.pointerType === 'touch';
+
+        if (isTouch) {
+          if (!this._touchAnchorsVisible) {
+            this._cancelTouchLongPress();
+            this._touchLongPressStart = [state.x, state.y];
+            this._touchLongPressTimer = window.setTimeout(() => {
+              this._touchLongPressTimer = null;
+              const start = this._touchLongPressStart;
+              if (!start || this._dragging) return;
+              this._touchAnchorsVisible = this._updateHoverFromViewPoint(start);
+            }, 420);
+            return;
+          }
+
+          if (!this._updateHoverFromViewPoint([state.x, state.y])) {
+            this._clearOverlay();
+            return;
+          }
+        }
+
         if (gfx.tool.currentToolName$.peek() === 'connector') {
           const connectorTool = gfx.tool.get(ConnectorTool) as unknown as {
             _connector?: unknown;
@@ -130,13 +204,15 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
         }
         if (!this._hoveredElement || !this._hoverHighlight) return;
 
-        const state = ctx.get('pointerState');
         const highlightView = gfx.viewport.toViewCoord(
           this._hoverHighlight[0],
           this._hoverHighlight[1]
         );
         const dist = Vec.dist([state.x, state.y], highlightView);
-        if (dist > 8) {
+        if (dist > (isTouch ? 14 : 8)) {
+          if (isTouch) {
+            this._clearOverlay();
+          }
           return;
         }
 
@@ -155,6 +231,10 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
             anchor.position as IVec
           );
         } else {
+          if (isTouch) {
+            this._clearOverlay();
+            return;
+          }
           tool.quickConnect([state.x, state.y], this._hoveredElement);
         }
         this._dragging = true;
@@ -163,9 +243,15 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
 
     _disposables.add(
       edgeless.host.event.add('pointerUp', () => {
+        this._cancelTouchLongPress();
         this._dragging = false;
       })
     );
+  }
+
+  override disconnectedCallback() {
+    this._cancelTouchLongPress();
+    super.disconnectedCallback();
   }
 
   override render() {
