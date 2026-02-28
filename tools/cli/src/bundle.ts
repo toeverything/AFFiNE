@@ -9,17 +9,11 @@ import {
   RspackDevServer,
 } from '@rspack/dev-server';
 import { merge } from 'lodash-es';
-import webpack from 'webpack';
-import WebpackDevServer, {
-  type Configuration as WebpackDevServerConfiguration,
-} from 'webpack-dev-server';
 
 import {
   assertRspackSupportedPackageName,
   DEFAULT_DEV_SERVER_CONFIG,
-  isRspackSupportedPackageName,
 } from './bundle-shared';
-import { type Bundler, getBundler } from './bundler';
 import { Option, PackageCommand } from './command';
 import {
   createHTMLTargetConfig as createRspackHTMLTargetConfig,
@@ -27,14 +21,9 @@ import {
   createWorkerTargetConfig as createRspackWorkerTargetConfig,
 } from './rspack';
 import {
-  createHTMLTargetConfig as createWebpackHTMLTargetConfig,
-  createNodeTargetConfig as createWebpackNodeTargetConfig,
-  createWorkerTargetConfig as createWebpackWorkerTargetConfig,
-} from './webpack';
-import {
   shouldUploadReleaseAssets,
   uploadDistAssetsToS3,
-} from './webpack/s3-plugin.js';
+} from './rspack-shared/s3-plugin.js';
 
 type WorkerConfig = { name: string };
 type CreateWorkerTargetConfig = (pkg: Package, entry: string) => WorkerConfig;
@@ -82,78 +71,6 @@ function getBaseWorkerConfigs(
       ).value
     ),
   ];
-}
-
-function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
-  switch (pkg.name) {
-    case '@affine/admin': {
-      return [
-        createWebpackHTMLTargetConfig(
-          pkg,
-          pkg.srcPath.join('index.tsx').value,
-          { selfhostPublicPath: '/admin/' }
-        ),
-      ] as webpack.MultiConfiguration;
-    }
-    case '@affine/web':
-    case '@affine/mobile':
-    case '@affine/ios':
-    case '@affine/android': {
-      const workerConfigs = getBaseWorkerConfigs(
-        pkg,
-        createWebpackWorkerTargetConfig
-      );
-      workerConfigs.push(
-        createWebpackWorkerTargetConfig(
-          pkg,
-          pkg.srcPath.join('nbstore.worker.ts').value
-        )
-      );
-
-      return [
-        createWebpackHTMLTargetConfig(
-          pkg,
-          pkg.srcPath.join('index.tsx').value,
-          {},
-          workerConfigs.map(config => config.name)
-        ),
-        ...workerConfigs,
-      ] as webpack.MultiConfiguration;
-    }
-    case '@affine/electron-renderer': {
-      const workerConfigs = getBaseWorkerConfigs(
-        pkg,
-        createWebpackWorkerTargetConfig
-      );
-
-      return [
-        createWebpackHTMLTargetConfig(
-          pkg,
-          {
-            index: pkg.srcPath.join('app/index.tsx').value,
-            shell: pkg.srcPath.join('shell/index.tsx').value,
-            popup: pkg.srcPath.join('popup/index.tsx').value,
-            backgroundWorker: pkg.srcPath.join('background-worker/index.ts')
-              .value,
-          },
-          {
-            additionalEntryForSelfhost: false,
-            injectGlobalErrorHandler: false,
-            emitAssetsManifest: false,
-          },
-          workerConfigs.map(config => config.name)
-        ),
-        ...workerConfigs,
-      ] as webpack.MultiConfiguration;
-    }
-    case '@affine/server': {
-      return [
-        createWebpackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value),
-      ] as webpack.MultiConfiguration;
-    }
-  }
-
-  throw new Error(`Unsupported package: ${pkg.name}`);
 }
 
 function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
@@ -223,13 +140,24 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
         createRspackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value),
       ] as MultiRspackOptions;
     }
+    case '@affine/reader': {
+      return [
+        createRspackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value, {
+          outputFilename: 'index.js',
+          decoratorVersion: '2022-03',
+          libraryType: 'module',
+          bundleAllDependencies: true,
+          forceExternal: ['yjs'],
+        }),
+      ] as MultiRspackOptions;
+    }
   }
 
   throw new Error(`Unsupported package: ${pkg.name}`);
 }
 
 export class BundleCommand extends PackageCommand {
-  static override paths = [['bundle'], ['webpack'], ['pack'], ['bun']];
+  static override paths = [['bundle'], ['pack'], ['bun']];
 
   // bundle is not able to run with deps
   override _deps = false;
@@ -241,123 +169,23 @@ export class BundleCommand extends PackageCommand {
 
   async execute() {
     const pkg = this.workspace.getPackage(this.package);
-    const bundler = getBundler();
 
     if (this.dev) {
-      await BundleCommand.dev(pkg, bundler);
+      await BundleCommand.dev(pkg);
     } else {
-      await BundleCommand.build(pkg, bundler);
+      await BundleCommand.build(pkg);
     }
   }
 
-  static async build(pkg: Package, bundler: Bundler = getBundler()) {
-    if (bundler === 'rspack' && !isRspackSupportedPackageName(pkg.name)) {
-      return BundleCommand.buildWithWebpack(pkg);
-    }
-
-    switch (bundler) {
-      case 'webpack':
-        return BundleCommand.buildWithWebpack(pkg);
-      case 'rspack':
-        return BundleCommand.buildWithRspack(pkg);
-    }
-  }
-
-  static async buildWithWebpack(pkg: Package) {
-    process.env.NODE_ENV = 'production';
-    const logger = new Logger('bundle');
-    logger.info(`Packing package ${pkg.name} with webpack...`);
-    logger.info('Cleaning old output...');
-    rmSync(pkg.distPath.value, { recursive: true, force: true });
-
-    const config = getWebpackBundleConfigs(pkg);
-    config.parallelism = cpus().length;
-
-    const compiler = webpack(config);
-    if (!compiler) {
-      throw new Error('Failed to create webpack compiler');
-    }
-
-    try {
-      const stats = await new Promise<webpack.Stats | webpack.MultiStats>(
-        (resolve, reject) => {
-          compiler.run((error, stats) => {
-            if (error) {
-              reject(error);
-              return;
-            }
-            if (!stats) {
-              reject(new Error('Failed to get webpack stats'));
-              return;
-            }
-            resolve(stats);
-          });
-        }
-      );
-      if (stats.hasErrors()) {
-        console.error(stats.toString('errors-only'));
-        process.exit(1);
-        return;
-      }
-      console.log(stats.toString('minimal'));
-      await uploadAssetsForPackage(pkg, logger);
-    } catch (error) {
-      console.error(error);
-      process.exit(1);
-      return;
-    }
+  static async build(pkg: Package) {
+    return BundleCommand.buildWithRspack(pkg);
   }
 
   static async dev(
     pkg: Package,
-    bundler: Bundler = getBundler(),
-    devServerConfig?:
-      | WebpackDevServerConfiguration
-      | RspackDevServerConfiguration
+    devServerConfig?: RspackDevServerConfiguration
   ) {
-    if (bundler === 'rspack' && !isRspackSupportedPackageName(pkg.name)) {
-      return BundleCommand.devWithWebpack(
-        pkg,
-        devServerConfig as WebpackDevServerConfiguration | undefined
-      );
-    }
-
-    switch (bundler) {
-      case 'webpack':
-        return BundleCommand.devWithWebpack(
-          pkg,
-          devServerConfig as WebpackDevServerConfiguration | undefined
-        );
-      case 'rspack':
-        return BundleCommand.devWithRspack(
-          pkg,
-          devServerConfig as RspackDevServerConfiguration | undefined
-        );
-    }
-  }
-
-  static async devWithWebpack(
-    pkg: Package,
-    devServerConfig?: WebpackDevServerConfiguration
-  ) {
-    process.env.NODE_ENV = 'development';
-    const logger = new Logger('bundle');
-    logger.info(`Starting webpack dev server for ${pkg.name}...`);
-
-    const config = getWebpackBundleConfigs(pkg);
-    config.parallelism = cpus().length;
-
-    const compiler = webpack(config);
-    if (!compiler) {
-      throw new Error('Failed to create webpack compiler');
-    }
-
-    const devServer = new WebpackDevServer(
-      merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig),
-      compiler
-    );
-
-    await devServer.start();
+    return BundleCommand.devWithRspack(pkg, devServerConfig);
   }
 
   static async buildWithRspack(pkg: Package) {

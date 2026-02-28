@@ -42,7 +42,7 @@ export class RunCommand extends PackageCommand {
 
       \`affine init\`            Generate the required files if there are any package added or removed
 
-      \`affine clean\`           Clean the output files of ts, cargo, webpack, etc.
+      \`affine clean\`           Clean the output files of ts, cargo, bundler outputs, etc.
 
       \`affine bundle\`          Bundle the packages
 
