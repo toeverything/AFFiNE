@@ -1,5 +1,5 @@
 (function () {
-  var errorEl = null;
+  let errorEl = null;
   function showGlobalErrorPage() {
     if (errorEl) {
       return;
@@ -37,7 +37,7 @@
    * @param event {PromiseRejectionEvent|ErrorEvent}
    */
   function handler(event) {
-    var error;
+    let error;
 
     if ('error' in event) {
       error =
@@ -51,7 +51,7 @@
 
     console.error('unhandled unrecoverable error', error);
 
-    var shouldCache =
+    const shouldCache =
       // syntax error
       error && error instanceof SyntaxError;
 
@@ -79,9 +79,9 @@
 
   function unregisterRegisterGlobalErrorHandler(fn) {
     if (typeof fn === 'function') {
-      var app = document.getElementById('app');
+      const app = document.getElementById('app');
       if (app) {
-        var ob = new MutationObserver(function () {
+        let ob = new MutationObserver(function () {
           fn();
           ob.disconnect();
           ob = null;
@@ -93,7 +93,7 @@
   }
 
   function ensureBasicEnvironment() {
-    var globals = [
+    const globals = [
       'Promise',
       'Map',
       'fetch',
@@ -102,7 +102,7 @@
     ];
 
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    for (var i = 0; i < globals.length; i++) {
+    for (let i = 0; i < globals.length; i++) {
       if (!(globals[i] in globalThis)) {
         showGlobalErrorPage();
         return;
@@ -111,6 +111,6 @@
   }
 
   ensureBasicEnvironment();
-  var goodtogo = registerGlobalErrorHandler();
+  const goodtogo = registerGlobalErrorHandler();
   unregisterRegisterGlobalErrorHandler(goodtogo);
 })();

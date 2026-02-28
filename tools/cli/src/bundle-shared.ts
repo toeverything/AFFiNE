@@ -1,4 +1,4 @@
-import type { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server';
+import type { Configuration as RspackDevServerConfiguration } from '@rspack/dev-server';
 
 export const RSPACK_SUPPORTED_PACKAGES = [
   '@affine/admin',
@@ -8,6 +8,7 @@ export const RSPACK_SUPPORTED_PACKAGES = [
   '@affine/android',
   '@affine/electron-renderer',
   '@affine/server',
+  '@affine/reader',
 ] as const;
 
 const rspackSupportedPackageSet = new Set<string>(RSPACK_SUPPORTED_PACKAGES);
@@ -22,14 +23,14 @@ export function assertRspackSupportedPackageName(name: string) {
   }
 
   throw new Error(
-    `AFFINE_BUNDLER=rspack currently supports: ${Array.from(RSPACK_SUPPORTED_PACKAGES).join(', ')}. Use AFFINE_BUNDLER=webpack for ${name}.`
+    `Rspack bundling currently supports: ${Array.from(RSPACK_SUPPORTED_PACKAGES).join(', ')}. Unsupported package: ${name}.`
   );
 }
 
 const IN_CI = !!process.env.CI;
 const httpProxyMiddlewareLogLevel = IN_CI ? 'silent' : 'error';
 
-export const DEFAULT_DEV_SERVER_CONFIG: WebpackDevServerConfiguration = {
+export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
   host: '0.0.0.0',
   allowedHosts: 'all',
   hot: false,
