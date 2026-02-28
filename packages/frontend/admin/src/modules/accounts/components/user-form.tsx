@@ -2,13 +2,14 @@ import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
 import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
+import { Switch } from '@affine/admin/components/ui/switch';
 import type { FeatureType } from '@affine/graphql';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { ChevronRightIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { FeatureToggleList } from '../../../components/shared/feature-toggle-list';
 import { useServerConfig } from '../../common';
 import { RightPanelHeader } from '../../header';
 import type { UserInput, UserType } from '../schema';
@@ -23,7 +24,6 @@ type UserFormProps = {
   onValidate: (user: Partial<UserInput>) => boolean;
   actions?: React.ReactNode;
   showOption?: boolean;
-  onDirtyChange?: (dirty: boolean) => void;
 };
 
 function UserForm({
@@ -34,7 +34,6 @@ function UserForm({
   onValidate,
   actions,
   showOption,
-  onDirtyChange,
 }: UserFormProps) {
   const serverConfig = useServerConfig();
 
@@ -68,24 +67,6 @@ function UserForm({
     return onValidate(changes);
   }, [onValidate, changes]);
 
-  useEffect(() => {
-    const normalize = (value: Partial<UserInput>) => ({
-      name: value.name ?? '',
-      email: value.email ?? '',
-      password: value.password ?? '',
-      features: [...(value.features ?? [])].sort(),
-    });
-    const current = normalize(changes);
-    const baseline = normalize(defaultUser);
-    const dirty =
-      (current.name !== baseline.name ||
-        current.email !== baseline.email ||
-        current.password !== baseline.password ||
-        current.features.join(',') !== baseline.features.join(',')) &&
-      !!onDirtyChange;
-    onDirtyChange?.(dirty);
-  }, [changes, defaultUser, onDirtyChange]);
-
   const handleConfirm = useCallback(() => {
     if (!canSave) {
       return;
@@ -96,9 +77,14 @@ function UserForm({
     setChanges(defaultUser);
   }, [canSave, changes, defaultUser, onConfirm]);
 
-  const handleFeaturesChange = useCallback(
-    (features: FeatureType[]) => {
-      setField('features', features);
+  const onFeatureChanged = useCallback(
+    (feature: FeatureType, checked: boolean) => {
+      setField('features', (features = []) => {
+        if (checked) {
+          return [...features, feature];
+        }
+        return features.filter(f => f !== feature);
+      });
     },
     [setField]
   );
@@ -113,15 +99,15 @@ function UserForm({
   }, [defaultUser]);
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex flex-col h-full gap-1">
       <RightPanelHeader
         title={title}
         handleClose={handleClose}
         handleConfirm={handleConfirm}
         canSave={canSave}
       />
-      <div className="flex-grow space-y-3 overflow-y-auto p-4">
-        <div className="flex flex-col rounded-xl border border-border bg-card shadow-sm">
+      <div className="p-4 flex-grow overflow-y-auto space-y-[8px]">
+        <div className="flex flex-col rounded-md border">
           <InputItem
             label="User name"
             field="name"
@@ -152,18 +138,49 @@ function UserForm({
           )}
         </div>
 
-        <FeatureToggleList
-          className="rounded-xl border border-border bg-card shadow-sm"
-          features={serverConfig.availableUserFeatures}
-          selected={changes.features ?? []}
-          onChange={handleFeaturesChange}
-          control="switch"
-          controlPosition="right"
-          showSeparators={true}
-        />
+        <div className="border rounded-md">
+          {serverConfig.availableUserFeatures.map((feature, i) => (
+            <div key={feature}>
+              <ToggleItem
+                name={feature}
+                checked={changes.features?.includes(feature) ?? false}
+                onChange={onFeatureChanged}
+              />
+              {i < serverConfig.availableUserFeatures.length - 1 && (
+                <Separator />
+              )}
+            </div>
+          ))}
+        </div>
         {actions}
       </div>
     </div>
+  );
+}
+
+function ToggleItem({
+  name,
+  checked,
+  onChange,
+}: {
+  name: FeatureType;
+  checked: boolean;
+  onChange: (name: FeatureType, value: boolean) => void;
+}) {
+  const onToggle = useCallback(
+    (checked: boolean) => {
+      onChange(name, checked);
+    },
+    [name, onChange]
+  );
+
+  return (
+    <Label className="flex items-center justify-between p-3 text-[15px] gap-2 font-medium leading-6 overflow-hidden">
+      <span className="overflow-hidden text-ellipsis" title={name}>
+        {name}
+      </span>
+      <Switch checked={checked} onCheckedChange={onToggle} />
+    </Label>
   );
 }
 
@@ -190,18 +207,24 @@ function InputItem({
   );
 
   return (
-    <div className="flex flex-col gap-2 p-3">
-      <Label className="flex flex-wrap text-xs font-medium leading-5 text-muted-foreground uppercase tracking-wide">
+    <div className="flex flex-col gap-1.5 p-3">
+      <Label
+        className="text-[15px] font-medium flex-wrap flex"
+        style={{ lineHeight: '1.6rem' }}
+      >
         {label}
         {optional && (
-          <span className="ml-1 font-normal text-muted-foreground">
+          <span
+            className="font-normal ml-1"
+            style={{ color: cssVarV2('text/secondary') }}
+          >
             (optional)
           </span>
         )}
       </Label>
       <Input
         type="text"
-        className="py-2 px-3 text-sm font-normal h-9"
+        className="py-2 px-3 text-[15px] font-normal h-9"
         value={value}
         onChange={onValueChange}
         placeholder={placeholder}
@@ -218,13 +241,7 @@ const validateUpdateUser = (user: Partial<UserInput>) => {
   return !!user.name || !!user.email;
 };
 
-export function CreateUserForm({
-  onComplete,
-  onDirtyChange,
-}: {
-  onComplete: () => void;
-  onDirtyChange?: (dirty: boolean) => void;
-}) {
+export function CreateUserForm({ onComplete }: { onComplete: () => void }) {
   const { create, creating } = useCreateUser();
   const serverConfig = useServerConfig();
   const passwordLimits = serverConfig.credentialsRequirement.password;
@@ -261,7 +278,6 @@ export function CreateUserForm({
       onConfirm={handleCreateUser}
       onValidate={validateCreateUser}
       showOption={true}
-      onDirtyChange={onDirtyChange}
     />
   );
 }
@@ -271,13 +287,11 @@ export function UpdateUserForm({
   onResetPassword,
   onDeleteAccount,
   onComplete,
-  onDirtyChange,
 }: {
   user: UserType;
   onResetPassword: () => void;
   onDeleteAccount: () => void;
   onComplete: () => void;
-  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { update, updating } = useUpdateUser();
 
@@ -307,26 +321,25 @@ export function UpdateUserForm({
       onClose={onComplete}
       onConfirm={onUpdateUser}
       onValidate={validateUpdateUser}
-      onDirtyChange={onDirtyChange}
       actions={
-        <div className="space-y-2">
+        <>
           <Button
-            className="h-10 w-full justify-between rounded-xl border-border/60 px-4 text-sm font-medium hover:bg-muted/50"
+            className="w-full flex items-center justify-between text-sm font-medium px-4 py-3"
             variant="outline"
             onClick={onResetPassword}
           >
             <span>Reset Password</span>
-            <ChevronRightIcon size={16} className="text-muted-foreground" />
+            <ChevronRightIcon size={16} />
           </Button>
           <Button
-            className="h-10 w-full justify-between rounded-xl border-destructive/30 px-4 text-sm font-medium text-destructive hover:bg-destructive/5 hover:text-destructive"
+            className="w-full text-red-500 px-4 py-3 rounded-md flex items-center justify-between text-sm font-medium hover:text-red-500"
             variant="outline"
             onClick={onDeleteAccount}
           >
             <span>Delete Account</span>
             <ChevronRightIcon size={16} />
           </Button>
-        </div>
+        </>
       }
     />
   );

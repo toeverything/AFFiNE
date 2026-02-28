@@ -2,9 +2,6 @@ import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 
-import { isLink } from '../modules/navigation/utils';
-import { toArrayBuffer } from './array-buffer';
-
 interface AudioEncodingConfig {
   sampleRate: number;
   numberOfChannels: number;
@@ -17,7 +14,6 @@ interface AudioEncodingResult {
 }
 
 const logger = new DebugLogger('opus-encoding');
-const LOCAL_FILE_ASSET_URL = 'assets://local-file';
 
 // Constants
 const DEFAULT_BITRATE = 64000;
@@ -34,51 +30,12 @@ async function blobToArrayBuffer(
   if (blob instanceof Blob) {
     return await blob.arrayBuffer();
   } else if (blob instanceof Uint8Array) {
-    return toArrayBuffer(blob);
+    return blob.buffer instanceof ArrayBuffer
+      ? blob.buffer
+      : blob.slice().buffer;
+  } else {
+    return blob;
   }
-  return toArrayBuffer(blob);
-}
-
-function getRecordingFileUrl(filepath: string): URL {
-  const base =
-    typeof location !== 'undefined' && location.protocol === 'assets:'
-      ? LOCAL_FILE_ASSET_URL
-      : typeof location !== 'undefined'
-        ? location.origin
-        : LOCAL_FILE_ASSET_URL;
-
-  // If filepath already contains a protocol, use it directly
-  const fileUrl = isLink(filepath)
-    ? new URL(filepath)
-    : new URL(filepath, base);
-
-  if (fileUrl.protocol === 'assets:') {
-    // Force requests to go through the local-file host so the protocol handler
-    // can validate paths correctly.
-    fileUrl.hostname = 'local-file';
-  }
-
-  return fileUrl;
-}
-
-async function readRecordingFileBuffer(filepath: string): Promise<ArrayBuffer> {
-  if (apis?.recording?.readRecordingFile) {
-    try {
-      const buffer = await apis.recording.readRecordingFile(filepath);
-      return toArrayBuffer(buffer);
-    } catch (error) {
-      logger.error('Failed to read recording file via IPC', error);
-    }
-  }
-
-  const response = await fetch(getRecordingFileUrl(filepath));
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch recording file: ${response.status} ${response.statusText}`
-    );
-  }
-
-  return await response.arrayBuffer();
 }
 
 /**
@@ -114,10 +71,6 @@ export function createOpusEncoder(config: AudioEncodingConfig): {
   encoder: AudioEncoder;
   encodedChunks: EncodedAudioChunk[];
 } {
-  if (typeof AudioEncoder === 'undefined') {
-    throw new Error('AudioEncoder is not available in this environment');
-  }
-
   const encodedChunks: EncodedAudioChunk[] = [];
   const encoder = new AudioEncoder({
     output: chunk => {
@@ -166,7 +119,7 @@ async function encodeAudioFrames({
         numberOfFrames: chunk.length / numberOfChannels,
         numberOfChannels,
         timestamp: (offset * 1000000) / sampleRate,
-        data: toArrayBuffer(chunk),
+        data: chunk,
       });
 
       encoder.encode(frame);
@@ -245,14 +198,38 @@ export async function encodeRawBufferToOpus({
   numberOfChannels: number;
 }): Promise<Uint8Array> {
   logger.debug('Encoding raw buffer to Opus');
+  const response = await fetch(new URL(filepath, location.origin));
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
 
   const { encoder, encodedChunks } = createOpusEncoder({
     sampleRate,
     numberOfChannels,
   });
 
-  const rawBuffer = await readRecordingFileBuffer(filepath);
-  const audioData = new Float32Array(rawBuffer);
+  // Process the stream
+  const reader = response.body.getReader();
+  const chunks: Float32Array[] = [];
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(new Float32Array(value.buffer));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  // Combine all chunks into a single Float32Array
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const audioData = new Float32Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    audioData.set(chunk, offset);
+    offset += chunk.length;
+  }
 
   await encodeAudioFrames({
     audioData,
@@ -439,7 +416,7 @@ export const createStreamEncoder = (
       numberOfFrames:
         buffer.length / BYTES_PER_SAMPLE / codecs.numberOfChannels,
       timestamp: 0,
-      data: toArrayBuffer(buffer),
+      data: buffer,
     });
   };
 

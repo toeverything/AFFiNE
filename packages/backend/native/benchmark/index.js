@@ -31,7 +31,7 @@ assert.strictEqual(
 bench
   .add('tiktoken', () => {
     const encoder = encoding_for_model('gpt-4o');
-    void encoder.encode_ordinary(FIXTURE).length;
+    encoder.encode_ordinary(FIXTURE).length;
   })
   .add('native', () => {
     fromModelName('gpt-4o').count(FIXTURE);

@@ -7,9 +7,7 @@ import {
   BlobQuotaExceeded,
   CallMetric,
   Config,
-  fetchBuffer,
   type FileUpload,
-  OneMB,
   OnEvent,
   readBuffer,
   type StorageProvider,
@@ -17,8 +15,6 @@ import {
   URLHelper,
 } from '../../base';
 import { QuotaService } from '../../core/quota';
-
-const REMOTE_BLOB_MAX_BYTES = 20 * OneMB;
 
 @Injectable()
 export class CopilotStorage {
@@ -92,8 +88,9 @@ export class CopilotStorage {
 
   @CallMetric('ai', 'blob_proxy_remote_url')
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
-    const { buffer } = await fetchBuffer(link, REMOTE_BLOB_MAX_BYTES, 'image/');
+    const response = await fetch(link);
+    const buffer = new Uint8Array(await response.arrayBuffer());
     const filename = createHash('sha256').update(buffer).digest('base64url');
-    return this.put(userId, workspaceId, filename, buffer);
+    return this.put(userId, workspaceId, filename, Buffer.from(buffer));
   }
 }

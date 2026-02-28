@@ -922,6 +922,7 @@ test('should be able to manage context', async t => {
     const { id: fileId } = await addContextFile(
       app,
       contextId,
+      'fileId1',
       'sample.pdf',
       buffer
     );

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use super::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Value {
   Any(Any),
   Doc(Doc),
@@ -45,7 +45,9 @@ impl Value {
   }
 
   pub fn from_vec<T: Into<Any>>(el: Vec<T>) -> Self {
-    Value::Any(Any::Array(el.into_iter().map(|item| item.into()).collect::<Vec<_>>()))
+    Value::Any(Any::Array(
+      el.into_iter().map(|item| item.into()).collect::<Vec<_>>(),
+    ))
   }
 }
 
@@ -129,8 +131,8 @@ impl From<Doc> for Value {
 impl Display for Value {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Value::Any(any) => write!(f, "{any}"),
-      Value::Text(text) => write!(f, "{text}"),
+      Value::Any(any) => write!(f, "{}", any),
+      Value::Text(text) => write!(f, "{}", text),
       _ => write!(f, ""),
     }
   }

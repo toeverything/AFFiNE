@@ -8,10 +8,6 @@ import {
 } from 'react-router-dom';
 
 import { AuthService } from '../../../modules/cloud';
-import {
-  buildAuthenticationDeepLink,
-  buildOpenAppUrlRoute,
-} from '../../../modules/open-in-app';
 import { supportedClient } from './common';
 
 interface LoaderData {
@@ -49,14 +45,14 @@ export const loader: LoaderFunction = async ({ request }) => {
       return redirect('/sign-in?error=Invalid oauth callback parameters');
     }
 
-    const urlToOpen = buildAuthenticationDeepLink({
-      scheme: clientCheckResult.data,
-      method: 'oauth',
-      payload,
-      server: location.origin,
-    });
+    const authParams = new URLSearchParams();
+    authParams.set('method', 'oauth');
+    authParams.set('payload', JSON.stringify(payload));
+    authParams.set('server', location.origin);
 
-    return redirect(buildOpenAppUrlRoute(urlToOpen));
+    return redirect(
+      `/open-app/url?url=${encodeURIComponent(`${client}://authentication?${authParams.toString()}`)}`
+    );
   } catch {
     return redirect('/sign-in?error=Invalid oauth callback parameters');
   }

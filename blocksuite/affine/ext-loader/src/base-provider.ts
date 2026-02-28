@@ -60,9 +60,10 @@ export class BaseExtensionProvider<
    * @param context - The context object containing scope and registration function
    * @param option - Optional configuration options for the provider
    */
-  setup(_context: Context<Scope>, option?: Options) {
+  setup(context: Context<Scope>, option?: Options) {
     if (option) {
       this.schema.parse(option);
     }
+    context;
   }
 }

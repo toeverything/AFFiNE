@@ -1,6 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import type { AIChatParams } from '@affine/core/blocksuite/ai';
+import type { AIChatParams, ChatPanel } from '@affine/core/blocksuite/ai';
 import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
@@ -22,7 +22,6 @@ import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
-import { JournalService } from '@affine/core/modules/journal';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import {
@@ -39,11 +38,8 @@ import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
-import { focusBlockEnd } from '@blocksuite/affine/shared/commands';
-import { getLastNoteBlock } from '@blocksuite/affine/shared/utils';
 import {
   AiIcon,
-  ChartPanelIcon,
   CommentIcon,
   ExportIcon,
   FrameIcon,
@@ -68,7 +64,6 @@ import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 import { DetailPageWrapper } from './detail-page-wrapper';
 import { EditorAdapterPanel } from './tabs/adapter';
-import { EditorAnalyticsPanel } from './tabs/analytics';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
@@ -105,6 +100,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
+  const chatPanelRef = useRef<ChatPanel | null>(null);
 
   const peekView = useService(PeekViewService).peekView;
 
@@ -117,9 +113,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const featureFlagService = useService(FeatureFlagService);
   const enableAdapterPanel = useLiveData(
     featureFlagService.flags.enable_adapter_panel.$
-  );
-  const enableViewAnalyticsPanel = useLiveData(
-    featureFlagService.flags.enable_view_analytics_panel.$
   );
 
   const serverService = useService(ServerService);
@@ -191,37 +184,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useRegisterBlocksuiteEditorCommands(editor, isActiveView);
 
-  const journalService = useService(JournalService);
-  const isJournal = !!useLiveData(journalService.journalDate$(doc.id));
-
   const onLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
       const std = editorContainer.std;
       const disposable = new DisposableGroup();
-
-      // Check if journal and handle accordingly to set focus on input block.
-      if (isJournal) {
-        const rafId = requestAnimationFrame(() => {
-          try {
-            if (!editorContainer.isConnected) return;
-            const page = editorContainer.page;
-            const note = getLastNoteBlock(page);
-            const std = editorContainer.std;
-            if (note) {
-              const lastBlock = note.lastChild();
-              if (lastBlock) {
-                const focusBlock = std.view.getBlock(lastBlock.id) ?? undefined;
-                std.command.exec(focusBlockEnd, { focusBlock, force: true });
-                return;
-              }
-            }
-            std.command.exec(focusBlockEnd, { force: true });
-          } catch (error) {
-            console.error('Failed to focus journal body', error);
-          }
-        });
-        disposable.add(() => cancelAnimationFrame(rafId));
-      }
       if (std) {
         const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
         if (refNodeSlots) {
@@ -299,7 +265,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         disposable.dispose();
       };
     },
-    [editor, workbench, peekView, isJournal]
+    [editor, workbench, peekView]
   );
 
   const [hasScrollTop, setHasScrollTop] = useState(false);
@@ -350,8 +316,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                 className={clsx(
                   'affine-page-viewport',
                   styles.affineDocViewport,
-                  styles.editorContainer,
-                  { [styles.pageModeViewportContentBox]: mode === 'page' }
+                  styles.editorContainer
                 )}
               >
                 <PageDetailEditor onLoad={onLoad} readonly={readonly} />
@@ -378,7 +343,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           icon={<AiIcon />}
           unmountOnInactive={false}
         >
-          <EditorChatPanel editor={editorContainer} />
+          <EditorChatPanel editor={editorContainer} ref={chatPanelRef} />
         </ViewSidebarTab>
       )}
 
@@ -433,17 +398,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           <Scrollable.Root className={styles.sidebarScrollArea}>
             <Scrollable.Viewport>
               <CommentSidebar />
-            </Scrollable.Viewport>
-            <Scrollable.Scrollbar />
-          </Scrollable.Root>
-        </ViewSidebarTab>
-      )}
-
-      {workspace.flavour === 'affine-cloud' && enableViewAnalyticsPanel && (
-        <ViewSidebarTab tabId="analytics" icon={<ChartPanelIcon />}>
-          <Scrollable.Root className={styles.sidebarScrollArea}>
-            <Scrollable.Viewport>
-              <EditorAnalyticsPanel workspaceId={workspace.id} docId={doc.id} />
             </Scrollable.Viewport>
             <Scrollable.Scrollbar />
           </Scrollable.Root>

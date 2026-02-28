@@ -1,6 +1,6 @@
 import {
-  type GetCurrentUserProfileQuery,
-  getCurrentUserProfileQuery,
+  type GetUserSettingsQuery,
+  getUserSettingsQuery,
   type UpdateUserSettingsInput,
   updateUserSettingsMutation,
 } from '@affine/graphql';
@@ -9,7 +9,7 @@ import { Store } from '@toeverything/infra';
 import type { GraphQLService } from '../services/graphql';
 
 export type UserSettings = NonNullable<
-  GetCurrentUserProfileQuery['currentUser']
+  GetUserSettingsQuery['currentUser']
 >['settings'];
 
 export type { UpdateUserSettingsInput };
@@ -21,7 +21,7 @@ export class UserSettingsStore extends Store {
 
   async getUserSettings(): Promise<UserSettings | undefined> {
     const result = await this.gqlService.gql({
-      query: getCurrentUserProfileQuery,
+      query: getUserSettingsQuery,
     });
     return result.currentUser?.settings;
   }

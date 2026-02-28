@@ -69,23 +69,9 @@ export function parseCookies(
       const [key, val] = cookie.split('=');
 
       if (key) {
-        const rawKey = key.trim();
-        const rawVal = val ? val.trim() : val;
-
-        let safeKey = rawKey;
-        let safeVal = rawVal;
-
-        try {
-          safeKey = decodeURIComponent(rawKey);
-        } catch {}
-
-        if (rawVal) {
-          try {
-            safeVal = decodeURIComponent(rawVal);
-          } catch {}
-        }
-
-        cookies[safeKey] = safeVal;
+        cookies[decodeURIComponent(key.trim())] = val
+          ? decodeURIComponent(val.trim())
+          : val;
       }
 
       return cookies;

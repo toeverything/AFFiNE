@@ -10,10 +10,6 @@ export const multiSelectPropertyType = propertyType('multi-select');
 export const multiSelectPropertyModelConfig =
   multiSelectPropertyType.modelConfig({
     name: 'Multi-select',
-    kanbanGroup: {
-      enabled: true,
-      mutable: true,
-    },
     propertyData: {
       schema: SelectPropertySchema,
       default: () => ({

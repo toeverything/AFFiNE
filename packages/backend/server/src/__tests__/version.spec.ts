@@ -3,11 +3,7 @@ import test from 'ava';
 import Sinon from 'sinon';
 
 import { AppModule } from '../app.module';
-import {
-  CANARY_CLIENT_VERSION_MAX_AGE_DAYS,
-  ConfigFactory,
-  UseNamedGuard,
-} from '../base';
+import { ConfigFactory, UseNamedGuard } from '../base';
 import { Public } from '../core/auth/guard';
 import { VersionService } from '../core/version/service';
 import { createTestingApp, TestingApp } from './utils';
@@ -31,14 +27,10 @@ function checkVersion(enabled = true) {
     client: {
       versionControl: {
         enabled,
-        requiredVersion: '>=0.25.0',
+        requiredVersion: '>=0.20.0',
       },
     },
   });
-}
-
-function makeCanaryDateVersion(date: Date, build = '015') {
-  return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
 }
 
 test.before(async () => {
@@ -81,7 +73,7 @@ test('should passthrough if version check is not enabled', async t => {
   spy.restore();
 });
 
-test('should enforce hard required version when version range is invalid', async t => {
+test('should passthrough is version range is invalid', async t => {
   config.override({
     client: {
       versionControl: {
@@ -90,37 +82,29 @@ test('should enforce hard required version when version range is invalid', async
     },
   });
 
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', 'invalid');
 
   t.is(res.status, 200);
-
-  res = await app.GET('/guarded/test').set('x-affine-version', 'invalid');
-
-  t.is(res.status, 403);
-  t.is(
-    res.body.message,
-    'Unsupported client with version [invalid], required version is [>=0.25.0].'
-  );
 });
 
 test('should pass if client version is allowed', async t => {
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.20.0');
 
   t.is(res.status, 200);
 
-  res = await app.GET('/guarded/test').set('x-affine-version', '0.26.0');
+  res = await app.GET('/guarded/test').set('x-affine-version', '0.21.0');
 
   t.is(res.status, 200);
 
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.25.0',
+        requiredVersion: '>=0.19.0',
       },
     },
   });
 
-  res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
+  res = await app.GET('/guarded/test').set('x-affine-version', '0.19.0');
 
   t.is(res.status, 200);
 });
@@ -131,7 +115,7 @@ test('should fail if client version is not set or invalid', async t => {
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [unset_or_invalid], required version is [>=0.25.0].'
+    'Unsupported client with version [unset_or_invalid], required version is [>=0.20.0].'
   );
 
   res = await app.GET('/guarded/test').set('x-affine-version', 'invalid');
@@ -139,7 +123,7 @@ test('should fail if client version is not set or invalid', async t => {
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [invalid], required version is [>=0.25.0].'
+    'Unsupported client with version [invalid], required version is [>=0.20.0].'
   );
 });
 
@@ -147,17 +131,17 @@ test('should tell upgrade if client version is lower than allowed', async t => {
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.26.0 <=0.27.0',
+        requiredVersion: '>=0.21.0 <=0.22.0',
       },
     },
   });
 
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.25.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.20.0');
 
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [0.25.0], required version is [>=0.26.0 <=0.27.0].'
+    'Unsupported client with version [0.20.0], required version is [>=0.21.0 <=0.22.0].'
   );
 });
 
@@ -165,17 +149,17 @@ test('should tell downgrade if client version is higher than allowed', async t =
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.25.0 <=0.26.0',
+        requiredVersion: '>=0.20.0 <=0.22.0',
       },
     },
   });
 
-  let res = await app.GET('/guarded/test').set('x-affine-version', '0.27.0');
+  let res = await app.GET('/guarded/test').set('x-affine-version', '0.23.0');
 
   t.is(res.status, 403);
   t.is(
     res.body.message,
-    'Unsupported client with version [0.27.0], required version is [>=0.25.0 <=0.26.0].'
+    'Unsupported client with version [0.23.0], required version is [>=0.20.0 <=0.22.0].'
   );
 });
 
@@ -183,69 +167,25 @@ test('should test prerelease version', async t => {
   config.override({
     client: {
       versionControl: {
-        requiredVersion: '>=0.25.0',
+        requiredVersion: '>=0.19.0',
       },
     },
   });
 
   let res = await app
     .GET('/guarded/test')
-    .set('x-affine-version', '0.25.0-canary.1');
+    .set('x-affine-version', '0.19.0-canary.1');
 
-  // 0.25.0-canary.1 is lower than 0.25.0 obviously
+  // 0.19.0-canary.1 is lower than 0.19.0 obviously
   t.is(res.status, 403);
 
   res = await app
     .GET('/guarded/test')
-    .set('x-affine-version', '0.26.0-canary.1');
+    .set('x-affine-version', '0.20.0-canary.1');
 
   t.is(res.status, 200);
 
-  res = await app.GET('/guarded/test').set('x-affine-version', '0.26.0-beta.2');
+  res = await app.GET('/guarded/test').set('x-affine-version', '0.20.0-beta.2');
 
   t.is(res.status, 200);
-});
-
-test('should allow recent canary date version in canary namespace', async t => {
-  const prevNamespace = env.NAMESPACE;
-  // @ts-expect-error test
-  env.NAMESPACE = 'dev';
-
-  try {
-    const res = await app
-      .GET('/guarded/test')
-      .set('x-affine-version', makeCanaryDateVersion(new Date(), '015'));
-
-    t.is(res.status, 200);
-  } finally {
-    // @ts-expect-error test
-    env.NAMESPACE = prevNamespace;
-  }
-});
-
-test('should reject old canary date version in canary namespace', async t => {
-  const prevNamespace = env.NAMESPACE;
-  // @ts-expect-error test
-  env.NAMESPACE = 'dev';
-
-  try {
-    const old = new Date(
-      Date.now() -
-        (CANARY_CLIENT_VERSION_MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000
-    );
-    const oldVersion = makeCanaryDateVersion(old, '015');
-
-    const res = await app
-      .GET('/guarded/test')
-      .set('x-affine-version', oldVersion);
-
-    t.is(res.status, 403);
-    t.is(
-      res.body.message,
-      `Unsupported client with version [${oldVersion}], required version is [canary (within 2 months)].`
-    );
-  } finally {
-    // @ts-expect-error test
-    env.NAMESPACE = prevNamespace;
-  }
 });

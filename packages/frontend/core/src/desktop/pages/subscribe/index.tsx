@@ -104,7 +104,7 @@ export const Component = () => {
   const [searchParams] = useSearchParams();
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [retryCount, setRetryCount] = useState(0);
+  const [retryKey, setRetryKey] = useState(0);
   const { jumpToSignIn, jumpToIndex } = useNavigateHelper();
   const idempotencyKey = useMemo(() => nanoid(), []);
 
@@ -115,10 +115,9 @@ export const Component = () => {
     const call = effect(
       switchMap(() => {
         return fromPromise(async signal => {
+          retryKey;
           // TODO(@eyhn): i18n
-          setMessage(
-            `Checking account status...${retryCount > 0 ? ` (retry ${retryCount})` : ''}`
-          );
+          setMessage('Checking account status...');
           setError('');
           await authService.session.waitForRevalidation(signal);
           const loggedIn =
@@ -180,7 +179,7 @@ export const Component = () => {
     plan,
     jumpToIndex,
     recurring,
-    retryCount,
+    retryKey,
     variant,
     coupon,
     urlService,
@@ -198,7 +197,7 @@ export const Component = () => {
         <>
           {error}
           <br />
-          <Button variant="primary" onClick={() => setRetryCount(i => i + 1)}>
+          <Button variant="primary" onClick={() => setRetryKey(i => i + 1)}>
             Retry
           </Button>
         </>

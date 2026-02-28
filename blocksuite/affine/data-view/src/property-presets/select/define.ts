@@ -11,10 +11,6 @@ export const SelectPropertySchema = zod.object({
 export type SelectPropertyData = zod.infer<typeof SelectPropertySchema>;
 export const selectPropertyModelConfig = selectPropertyType.modelConfig({
   name: 'Select',
-  kanbanGroup: {
-    enabled: true,
-    mutable: true,
-  },
   propertyData: {
     schema: SelectPropertySchema,
     default: () => ({

@@ -28,14 +28,13 @@ import {
 import { SubscriptionService } from '../payment/service';
 import { SubscriptionPlan, SubscriptionStatus } from '../payment/types';
 import { ChatMessageCache } from './message';
-import { ChatPrompt } from './prompt/chat-prompt';
-import { PromptService } from './prompt/service';
-import { CopilotProviderFactory } from './providers/factory';
+import { ChatPrompt, PromptService } from './prompt';
 import {
+  CopilotProviderFactory,
   ModelOutputType,
-  type PromptMessage,
-  type PromptParams,
-} from './providers/types';
+  PromptMessage,
+  PromptParams,
+} from './providers';
 import {
   type ChatHistory,
   type ChatMessage,
@@ -319,20 +318,6 @@ export class ChatSessionService {
       return [];
     }
     return messages.data;
-  }
-
-  private stripNullBytes(value?: string | null): string {
-    if (!value) return '';
-    return value.replaceAll('\0', '');
-  }
-
-  private isNullByteError(error: unknown): boolean {
-    return (
-      error instanceof Error &&
-      (error.message.includes('\\u0000') ||
-        error.message.includes('unsupported Unicode escape sequence') ||
-        error.message.includes('22P05'))
-    );
   }
 
   private async getHistory(session: Session): Promise<SessionHistory> {
@@ -670,13 +655,7 @@ export class ChatSessionService {
         );
         return;
       }
-      const { userId, title } = session;
-      const messages =
-        session.messages?.map(m => ({
-          ...m,
-          content: this.stripNullBytes(m.content),
-        })) ?? [];
-
+      const { userId, title, messages } = session;
       if (
         title ||
         !messages.length ||
@@ -686,41 +665,18 @@ export class ChatSessionService {
         return;
       }
 
-      const promptContent = messages
-        .map(m => `[${m.role}]: ${m.content}`)
-        .join('\n');
-      const generatedTitle = this.stripNullBytes(
-        await this.chatWithPrompt('Summary as title', {
-          content: promptContent,
-        })
-      ).trim();
-
-      if (!generatedTitle) {
-        this.logger.warn(
-          `Generated empty title for session ${sessionId}, skip updating`
-        );
-        return;
+      {
+        const title = await this.chatWithPrompt('Summary as title', {
+          content: session.messages
+            .map(m => `[${m.role}]: ${m.content}`)
+            .join('\n'),
+        });
+        await this.models.copilotSession.update({ userId, sessionId, title });
       }
-      await this.models.copilotSession.update({
-        userId,
-        sessionId,
-        title: generatedTitle,
-      });
     } catch (error) {
-      const context = {
-        sessionId,
-        cause: error instanceof Error ? error.cause : error,
-      };
-      if (this.isNullByteError(error)) {
-        this.logger.warn(
-          `Skip title generation for session ${sessionId} due to invalid null bytes in stored data`,
-          context
-        );
-        return;
-      }
-      this.logger.error(
+      console.error(
         `Failed to generate title for session ${sessionId}:`,
-        context
+        error
       );
       throw error;
     }

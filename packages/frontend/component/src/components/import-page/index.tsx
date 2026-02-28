@@ -48,7 +48,7 @@ export const ImportPage = ({
       <span>
         AFFiNE will gradually support more and more file types for import.&nbsp;
         <a
-          href="https://affine.pro/redirect/discord"
+          href="https://community.affine.pro/c/feature-requests/import-export"
           target="_blank"
           rel="noreferrer"
         >

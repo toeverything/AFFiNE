@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 use rand::{Rng, SeedableRng};
 
 fn operations(c: &mut Criterion) {

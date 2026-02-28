@@ -101,8 +101,6 @@ export class LayerManager extends GfxExtension {
 
   layers: Layer[] = [];
 
-  private readonly _groupChildSnapshot = new Map<string, string[]>();
-
   slots = {
     layerUpdated: new Subject<{
       type: 'delete' | 'add' | 'update';
@@ -148,43 +146,6 @@ export class LayerManager extends GfxExtension {
       element instanceof GfxPrimitiveElementModel
       ? 'canvas'
       : 'block';
-  }
-
-  private _getModelById(id: string): GfxModel | null {
-    if (!this._surface) return null;
-
-    return (
-      this._surface.getElementById(id) ??
-      (this._doc.getModelById(id) as GfxModel | undefined) ??
-      null
-    );
-  }
-
-  private _getRelatedGroupElements(
-    group: GfxModel & GfxGroupCompatibleInterface,
-    oldChildIds?: string[]
-  ) {
-    const elements = new Set<GfxModel>([group, ...group.descendantElements]);
-
-    oldChildIds?.forEach(id => {
-      const model = this._getModelById(id);
-      if (!model) return;
-
-      elements.add(model);
-      if (isGfxGroupCompatibleModel(model)) {
-        model.descendantElements.forEach(descendant => {
-          elements.add(descendant);
-        });
-      }
-    });
-
-    return [...elements];
-  }
-
-  private _syncGroupChildSnapshot(
-    group: GfxModel & GfxGroupCompatibleInterface
-  ) {
-    this._groupChildSnapshot.set(group.id, [...group.childIds]);
   }
 
   private _initLayers() {
@@ -526,29 +487,6 @@ export class LayerManager extends GfxExtension {
     updateLayersZIndex(layers, index);
   }
 
-  private _refreshElementsInLayer(elements: GfxModel[]) {
-    const uniqueElements = [...new Set(elements)];
-
-    uniqueElements.forEach(element => {
-      const modelType = this._getModelType(element);
-      if (modelType === 'canvas') {
-        removeFromOrderedArray(this.canvasElements, element);
-        insertToOrderedArray(this.canvasElements, element);
-      } else {
-        removeFromOrderedArray(this.blocks, element);
-        insertToOrderedArray(this.blocks, element);
-      }
-    });
-
-    uniqueElements.forEach(element => {
-      this._removeFromLayer(element, this._getModelType(element));
-    });
-
-    uniqueElements.sort(compare).forEach(element => {
-      this._insertIntoLayer(element, this._getModelType(element));
-    });
-  }
-
   private _reset() {
     const elements = (
       this._doc
@@ -574,17 +512,6 @@ export class LayerManager extends GfxExtension {
 
     this.canvasElements.sort(compare);
     this.blocks.sort(compare);
-    this._groupChildSnapshot.clear();
-    this.canvasElements.forEach(element => {
-      if (isGfxGroupCompatibleModel(element)) {
-        this._syncGroupChildSnapshot(element);
-      }
-    });
-    this.blocks.forEach(element => {
-      if (isGfxGroupCompatibleModel(element)) {
-        this._syncGroupChildSnapshot(element);
-      }
-    });
 
     this._initLayers();
     this._buildCanvasLayers();
@@ -595,8 +522,7 @@ export class LayerManager extends GfxExtension {
    */
   private _updateLayer(
     element: GfxModel | GfxLocalElementModel,
-    props?: Record<string, unknown>,
-    oldValues?: Record<string, unknown>
+    props?: Record<string, unknown>
   ) {
     const modelType = this._getModelType(element);
     const isLocalElem = element instanceof GfxLocalElementModel;
@@ -613,16 +539,7 @@ export class LayerManager extends GfxExtension {
     };
 
     if (shouldUpdateGroupChildren) {
-      const group = element as GfxModel & GfxGroupCompatibleInterface;
-      const oldChildIds = childIdsChanged
-        ? Array.isArray(oldValues?.['childIds'])
-          ? (oldValues['childIds'] as string[])
-          : this._groupChildSnapshot.get(group.id)
-        : undefined;
-
-      const relatedElements = this._getRelatedGroupElements(group, oldChildIds);
-      this._refreshElementsInLayer(relatedElements);
-      this._syncGroupChildSnapshot(group);
+      this._reset();
       return true;
     }
 
@@ -664,13 +581,6 @@ export class LayerManager extends GfxExtension {
         element
       );
     }
-
-    if (isContainer) {
-      this._syncGroupChildSnapshot(
-        element as GfxModel & GfxGroupCompatibleInterface
-      );
-    }
-
     this._insertIntoLayer(element as GfxModel, modelType);
 
     if (isContainer) {
@@ -738,26 +648,7 @@ export class LayerManager extends GfxExtension {
     const isLocalElem = element instanceof GfxLocalElementModel;
 
     if (isGroup) {
-      const groupElements = this._getRelatedGroupElements(
-        element as GfxModel & GfxGroupCompatibleInterface
-      );
-      const descendants = groupElements.filter(model => model !== element);
-
-      if (!isLocalElem) {
-        const groupType = this._getModelType(element);
-        if (groupType === 'canvas') {
-          removeFromOrderedArray(this.canvasElements, element);
-        } else {
-          removeFromOrderedArray(this.blocks, element);
-        }
-
-        this._removeFromLayer(element, groupType);
-      }
-
-      this._groupChildSnapshot.delete(element.id);
-
-      this._refreshElementsInLayer(descendants);
-      this._buildCanvasLayers();
+      this._reset();
       this.slots.layerUpdated.next({
         type: 'delete',
         initiatingElement: element as GfxModel,
@@ -789,7 +680,6 @@ export class LayerManager extends GfxExtension {
 
   override unmounted() {
     this.slots.layerUpdated.complete();
-    this._groupChildSnapshot.clear();
     this._disposable.dispose();
   }
 
@@ -887,10 +777,9 @@ export class LayerManager extends GfxExtension {
 
   update(
     element: GfxModel | GfxLocalElementModel,
-    props?: Record<string, unknown>,
-    oldValues?: Record<string, unknown>
+    props?: Record<string, unknown>
   ) {
-    if (this._updateLayer(element, props, oldValues)) {
+    if (this._updateLayer(element, props)) {
       this._buildCanvasLayers();
       this.slots.layerUpdated.next({
         type: 'update',
@@ -978,11 +867,7 @@ export class LayerManager extends GfxExtension {
       this._disposable.add(
         surface.elementUpdated.subscribe(payload => {
           if (payload.props['index'] || payload.props['childIds']) {
-            this.update(
-              surface.getElementById(payload.id)!,
-              payload.props,
-              payload.oldValues
-            );
+            this.update(surface.getElementById(payload.id)!, payload.props);
           }
         })
       );

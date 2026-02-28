@@ -20,10 +20,10 @@
     "@blocksuite/std": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.23",
+    "@toeverything/theme": "^1.1.16",
     "@types/lodash-es": "^4.17.12",
     "lit": "^3.2.0",
-    "lodash-es": "^4.17.23",
+    "lodash-es": "^4.17.21",
     "rxjs": "^7.8.2"
   },
   "exports": {
@@ -36,5 +36,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3"
+  "version": "0.25.7"
 }

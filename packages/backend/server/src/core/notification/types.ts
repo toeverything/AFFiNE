@@ -100,6 +100,14 @@ export class MentionNotificationBodyType extends BaseNotificationBodyType {
 }
 
 @ObjectType()
+export class SystemNotificationBodyType extends BaseNotificationBodyType {
+  @Field(() => String, {
+    description: 'The message of the system notification',
+  })
+  message!: string;
+}
+
+@ObjectType()
 export abstract class InvitationBaseNotificationBodyType extends BaseNotificationBodyType {
   @Field(() => ID)
   inviteId!: string;
@@ -144,6 +152,7 @@ export const UnionNotificationBodyType = createUnionType({
       InvitationReviewRequestNotificationBodyType,
       InvitationReviewApprovedNotificationBodyType,
       InvitationReviewDeclinedNotificationBodyType,
+      SystemNotificationBodyType,
     ] as const,
 });
 

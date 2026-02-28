@@ -34,10 +34,7 @@ impl DocPublisher {
       observing: Arc::new(AtomicBool::new(false)),
     };
 
-    if cfg!(all(
-      feature = "subscribe",
-      not(any(feature = "bench", fuzzing, loom, miri))
-    )) {
+    if cfg!(not(any(feature = "bench", fuzzing, loom, miri))) {
       publisher.start();
     }
 
@@ -99,13 +96,13 @@ impl DocPublisher {
 
                 let mut encoder = RawEncoder::default();
                 if let Err(e) = update.write(&mut encoder) {
-                  warn!("Failed to encode document: {e}");
+                  warn!("Failed to encode document: {}", e);
                   continue;
                 }
                 (encoder.into_inner(), history)
               }
               Err(e) => {
-                warn!("Failed to diff document: {e}");
+                warn!("Failed to diff document: {}", e);
                 continue;
               }
             };
@@ -114,13 +111,13 @@ impl DocPublisher {
             last_deletes = deletes;
 
             for cb in subscribers.iter() {
-              use std::panic::{AssertUnwindSafe, catch_unwind};
+              use std::panic::{catch_unwind, AssertUnwindSafe};
               // catch panic if callback throw
               catch_unwind(AssertUnwindSafe(|| {
                 cb(&binary, &history);
               }))
               .unwrap_or_else(|e| {
-                warn!("Failed to call subscriber: {e:?}");
+                warn!("Failed to call subscriber: {:?}", e);
               });
             }
           } else {
@@ -180,7 +177,10 @@ mod tests {
 
       let ret = [
         vec![vec!["(1, 0)", "test.key1", "val1"]],
-        vec![vec!["(1, 1)", "test.key2", "val2"], vec!["(1, 2)", "test.key3", "val3"]],
+        vec![
+          vec!["(1, 1)", "test.key2", "val2"],
+          vec!["(1, 2)", "test.key3", "val3"],
+        ],
         vec![
           vec!["(1, 3)", "array.0", "val1"],
           vec!["(1, 4)", "array.1", "val2"],
@@ -205,7 +205,12 @@ mod tests {
 
         let ret = ret[cycle].clone();
         for (i, h) in history.iter().enumerate() {
-          println!("history change by {} at {}: {}", h.id, h.parent.join("."), h.content);
+          println!(
+            "history change by {} at {}: {}",
+            h.id,
+            h.parent.join("."),
+            h.content
+          );
           // lost first update by unknown reason in asan test, skip it if asan enabled
           if option_env!("ASAN_OPTIONS").is_none() {
             let ret = &ret[i];

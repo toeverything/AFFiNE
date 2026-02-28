@@ -142,6 +142,7 @@ declare global {
     interface ChatOptions extends AITextActionOptions {
       sessionId?: string;
       isRootSession?: boolean;
+      webSearch?: boolean;
       reasoning?: boolean;
       modelId?: string;
       toolsConfig?: AIToolsConfig | undefined;

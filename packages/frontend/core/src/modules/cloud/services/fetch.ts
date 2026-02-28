@@ -63,22 +63,13 @@ export class FetchService extends Service {
         }
       );
     } catch (err: any) {
-      const isAbort =
-        err?.name === 'AbortError' ||
-        err?.code === 'ABORT_ERR' ||
-        err?.type === 'aborted' ||
-        abortController.signal.aborted;
-
-      const message =
-        err?.message || (isAbort ? 'Request aborted' : 'Unknown network error');
-
       throw new UserFriendlyError({
-        status: isAbort ? 499 : 504,
-        code: isAbort ? 'REQUEST_ABORTED' : 'NETWORK_ERROR',
-        type: isAbort ? 'REQUEST_ABORTED' : 'NETWORK_ERROR',
-        name: isAbort ? 'REQUEST_ABORTED' : 'NETWORK_ERROR',
-        message: `Network error: ${message}`,
-        stacktrace: err?.stack,
+        status: 504,
+        code: 'NETWORK_ERROR',
+        type: 'NETWORK_ERROR',
+        name: 'NETWORK_ERROR',
+        message: `Network error: ${err.message}`,
+        stacktrace: err.stack,
       });
     } finally {
       clearTimeout(timeoutId);

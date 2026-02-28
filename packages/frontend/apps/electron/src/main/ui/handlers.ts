@@ -6,7 +6,6 @@ import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
 import { openExternalSafely } from '../security/open-external';
-import { resolveAndValidateUrlForPreview } from '../security/url-safety';
 import type { WorkbenchViewMeta } from '../shared-state-schema';
 import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
@@ -37,13 +36,6 @@ import { showTabContextMenu } from '../windows-manager/context-menu';
 import { getOrCreateCustomThemeWindow } from '../windows-manager/custom-theme-window';
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
-
-const EMPTY_OBJECT = Object.freeze({
-  title: undefined,
-  description: undefined,
-  icon: undefined,
-  image: undefined,
-});
 
 const TraySettingsState = {
   $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
@@ -135,13 +127,6 @@ export const uiHandlers = {
     }
   },
   getBookmarkDataByLink: async (_, link: string) => {
-    try {
-      // Basic validation up-front to prevent SSRF (including redirects).
-      await resolveAndValidateUrlForPreview(link);
-    } catch {
-      return EMPTY_OBJECT;
-    }
-
     if (
       (link.startsWith('https://x.com/') ||
         link.startsWith('https://www.x.com/') ||
@@ -150,9 +135,8 @@ export const uiHandlers = {
       link.includes('/status/')
     ) {
       // use api.fxtwitter.com
-      const statusId = /\/status\/(\d+)/.exec(link)?.[1];
-      if (!statusId) return EMPTY_OBJECT;
-      link = `https://api.fxtwitter.com/status/${statusId}`;
+      link =
+        'https://api.fxtwitter.com/status/' + /\/status\/(.*)/.exec(link)?.[1];
       try {
         const { tweet } = (await fetch(link).then(res => res.json())) as any;
         return {
@@ -177,20 +161,7 @@ export const uiHandlers = {
           'User-Agent':
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
         },
-        followRedirects: 'manual',
-        handleRedirects: (_baseUrl: string, forwardedUrl: string) => {
-          try {
-            // Only allow http(s) redirects and re-validate before following.
-            const u = new URL(forwardedUrl);
-            return u.protocol === 'http:' || u.protocol === 'https:';
-          } catch {
-            return false;
-          }
-        },
-        resolveDNSHost: async (url: string) => {
-          const { address } = await resolveAndValidateUrlForPreview(url);
-          return address;
-        },
+        followRedirects: 'follow',
       }).catch(() => {
         return {
           title: '',

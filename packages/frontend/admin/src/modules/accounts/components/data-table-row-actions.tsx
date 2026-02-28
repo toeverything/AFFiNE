@@ -16,11 +16,11 @@ import {
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-import { DiscardChanges } from '../../../components/shared/discard-changes';
 import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
 import { DeleteAccountDialog } from './delete-account';
 import { DisableAccountDialog } from './disable-account';
+import { DiscardChanges } from './discard-changes';
 import { EnableAccountDialog } from './enable-account';
 import { ResetPasswordDialog } from './reset-password';
 import {
@@ -41,14 +41,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [enableDialogOpen, setEnableDialogOpen] = useState(false);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  const {
-    openPanel,
-    isOpen,
-    closePanel,
-    setPanelContent,
-    hasDirtyChanges,
-    setHasDirtyChanges,
-  } = useRightPanel();
+  const { openPanel, isOpen, closePanel, setPanelContent } = useRightPanel();
 
   const deleteUser = useDeleteUser();
   const disableUser = useDisableUser();
@@ -125,42 +118,44 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
     setEnableDialogOpen(false);
   }, []);
 
+  const handleDiscardChangesCancel = useCallback(() => {
+    setDiscardDialogOpen(false);
+  }, []);
+
   const handleConfirm = useCallback(() => {
-    setHasDirtyChanges(false);
     setPanelContent(
       <UpdateUserForm
         user={user}
         onComplete={closePanel}
         onResetPassword={openResetPasswordDialog}
         onDeleteAccount={openDeleteDialog}
-        onDirtyChange={setHasDirtyChanges}
       />
     );
-    openPanel();
+    if (discardDialogOpen) {
+      handleDiscardChangesCancel();
+    }
+    if (!isOpen) {
+      openPanel();
+    }
   }, [
     closePanel,
+    discardDialogOpen,
+    handleDiscardChangesCancel,
+    isOpen,
     openDeleteDialog,
     openPanel,
     openResetPasswordDialog,
     setPanelContent,
     user,
-    setHasDirtyChanges,
   ]);
 
   const handleEdit = useCallback(() => {
-    if (hasDirtyChanges) {
+    if (isOpen) {
       setDiscardDialogOpen(true);
-      return;
+    } else {
+      handleConfirm();
     }
-    setHasDirtyChanges(false);
-    handleConfirm();
-  }, [handleConfirm, hasDirtyChanges, setHasDirtyChanges]);
-
-  const handleDiscardConfirm = useCallback(() => {
-    setDiscardDialogOpen(false);
-    setHasDirtyChanges(false);
-    handleConfirm();
-  }, [handleConfirm, setHasDirtyChanges]);
+  }, [handleConfirm, isOpen]);
 
   return (
     <div className="flex justify-end items-center">
@@ -168,14 +163,13 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-accent"
-            size="icon"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
           >
             <MoreHorizontalIcon fontSize={20} />
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[214px] p-1.5">
+        <DropdownMenuContent align="end" className="w-[214px] p-[5px] gap-2">
           <DropdownMenuItem
             onSelect={handleEdit}
             className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
@@ -202,7 +196,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
           <DropdownMenuSeparator />
           {!user.disabled && (
             <DropdownMenuItem
-              className="cursor-pointer gap-2 px-2 py-[6px] text-sm font-normal text-destructive focus:text-destructive"
+              className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
               onSelect={openDisableDialog}
             >
               <AccountBanIcon fontSize={20} />
@@ -210,7 +204,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            className="cursor-pointer gap-2 px-2 py-[6px] text-sm font-normal text-destructive focus:text-destructive"
+            className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
             onSelect={openDeleteDialog}
           >
             <DeleteIcon fontSize={20} />
@@ -248,8 +242,8 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
       <DiscardChanges
         open={discardDialogOpen}
         onOpenChange={setDiscardDialogOpen}
-        onClose={() => setDiscardDialogOpen(false)}
-        onConfirm={handleDiscardConfirm}
+        onClose={handleDiscardChangesCancel}
+        onConfirm={handleConfirm}
       />
     </div>
   );

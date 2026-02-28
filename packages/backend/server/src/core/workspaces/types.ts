@@ -75,12 +75,30 @@ export class WorkspaceFeatureType {
 }
 
 @ObjectType()
+export class CurriculumDocumentType {
+  @Field(() => String)
+  filename!: string;
+
+  @Field(() => String)
+  key!: string;
+
+  @Field(() => Number)
+  size!: number;
+
+  @Field(() => String)
+  mime!: string;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => String)
+  downloadUrl!: string;
+}
+
+@ObjectType()
 export class WorkspaceType extends WorkspaceFeatureType {
   @Field({ description: 'Enable AI' })
   enableAi!: boolean;
-
-  @Field({ description: 'Enable workspace sharing' })
-  enableSharing!: boolean;
 
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
@@ -92,6 +110,11 @@ export class WorkspaceType extends WorkspaceFeatureType {
     description: 'Members of workspace',
   })
   members!: InviteUserType[];
+
+  @Field(() => [CurriculumDocumentType], {
+    description: 'Uploaded curriculum documents',
+  })
+  curriculumDocuments!: CurriculumDocumentType[];
 }
 
 @ObjectType()
@@ -133,13 +156,7 @@ export class InvitationType {
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  [
-    'public',
-    'enableAi',
-    'enableSharing',
-    'enableUrlPreview',
-    'enableDocEmbedding',
-  ],
+  ['public', 'enableAi', 'enableUrlPreview', 'enableDocEmbedding'],
   InputType
 ) {
   @Field(() => ID)

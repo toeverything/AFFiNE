@@ -66,9 +66,6 @@ export const PromptToolsSchema = z
     'docEdit',
     // work with indexer
     'docRead',
-    'docCreate',
-    'docUpdate',
-    'docUpdateMeta',
     'docKeywordSearch',
     // work with embeddings
     'docSemanticSearch',

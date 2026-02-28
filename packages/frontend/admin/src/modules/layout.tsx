@@ -5,11 +5,11 @@ import {
 import { Separator } from '@affine/admin/components/ui/separator';
 import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { PropsWithChildren, ReactNode, RefObject } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
-import { useLocation } from 'react-router-dom';
 
 import { Button } from '../components/ui/button';
 import {
@@ -22,6 +22,7 @@ import {
 } from '../components/ui/sheet';
 import { Logo } from './accounts/components/logo';
 import { useMediaQuery } from './common';
+import { NavContext } from './nav/context';
 import { Nav } from './nav/nav';
 import {
   PanelContext,
@@ -30,16 +31,16 @@ import {
 } from './panel/context';
 
 export function Layout({ children }: PropsWithChildren) {
-  const [rightPanelContent, setRightPanelContentState] =
-    useState<ReactNode>(null);
+  const [rightPanelContent, setRightPanelContent] = useState<ReactNode>(null);
   const [leftPanelContent, setLeftPanelContent] = useState<ReactNode>(null);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
-  const [rightPanelHasDirtyChanges, setRightPanelHasDirtyChanges] =
-    useState(false);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
-  const location = useLocation();
+
+  const [activeTab, setActiveTab] = useState('');
+  const [activeSubTab, setActiveSubTab] = useState('server');
+  const [currentModule, setCurrentModule] = useState('server');
 
   const handleLeftExpand = useCallback(() => {
     if (leftPanelRef.current?.getSize() === 0) {
@@ -87,14 +88,6 @@ export function Layout({ children }: PropsWithChildren) {
     setRightOpen(false);
   }, [rightPanelRef]);
 
-  const handleSetRightPanelContent = useCallback(
-    (content: ReactNode) => {
-      setRightPanelHasDirtyChanges(false);
-      setRightPanelContentState(content);
-    },
-    [setRightPanelContentState, setRightPanelHasDirtyChanges]
-  );
-
   const openRightPanel = useCallback(() => {
     handleRightExpand();
     rightPanelRef.current?.expand();
@@ -105,8 +98,7 @@ export function Layout({ children }: PropsWithChildren) {
     handleRightCollapse();
     rightPanelRef.current?.collapse();
     setRightOpen(false);
-    setRightPanelHasDirtyChanges(false);
-  }, [handleRightCollapse, setRightPanelHasDirtyChanges]);
+  }, [handleRightCollapse]);
 
   const toggleRightPanel = useCallback(
     () =>
@@ -116,71 +108,57 @@ export function Layout({ children }: PropsWithChildren) {
     [closeRightPanel, openRightPanel]
   );
 
-  // auto close right panel when route changes
-  useEffect(() => {
-    handleSetRightPanelContent(null);
-    closeRightPanel();
-  }, [location.pathname, closeRightPanel, handleSetRightPanelContent]);
-  const panelContextValue = useMemo(
-    () => ({
-      leftPanel: {
-        isOpen: leftOpen,
-        panelContent: leftPanelContent,
-        setPanelContent: setLeftPanelContent,
-        togglePanel: toggleLeftPanel,
-        openPanel: openLeftPanel,
-        closePanel: closeLeftPanel,
-      },
-      rightPanel: {
-        isOpen: rightOpen,
-        panelContent: rightPanelContent,
-        setPanelContent: handleSetRightPanelContent,
-        togglePanel: toggleRightPanel,
-        openPanel: openRightPanel,
-        closePanel: closeRightPanel,
-        hasDirtyChanges: rightPanelHasDirtyChanges,
-        setHasDirtyChanges: setRightPanelHasDirtyChanges,
-      },
-    }),
-    [
-      closeLeftPanel,
-      closeRightPanel,
-      handleSetRightPanelContent,
-      leftOpen,
-      leftPanelContent,
-      openLeftPanel,
-      openRightPanel,
-      rightOpen,
-      rightPanelContent,
-      rightPanelHasDirtyChanges,
-      setLeftPanelContent,
-      setRightPanelHasDirtyChanges,
-      toggleLeftPanel,
-      toggleRightPanel,
-    ]
-  );
-
   return (
-    <PanelContext.Provider value={panelContextValue}>
-      <TooltipProvider delayDuration={0}>
-        <div className="flex h-dvh w-full overflow-hidden">
-          <ResizablePanelGroup direction="horizontal">
-            <LeftPanel
-              panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
-              onExpand={handleLeftExpand}
-              onCollapse={handleLeftCollapse}
-            />
-            <ResizablePanel id="1" order={1} minSize={50} defaultSize={50}>
-              {children}
-            </ResizablePanel>
-            <RightPanel
-              panelRef={rightPanelRef as RefObject<ImperativePanelHandle>}
-              onExpand={handleRightExpand}
-              onCollapse={handleRightCollapse}
-            />
-          </ResizablePanelGroup>
-        </div>
-      </TooltipProvider>
+    <PanelContext.Provider
+      value={{
+        leftPanel: {
+          isOpen: leftOpen,
+          panelContent: leftPanelContent,
+          setPanelContent: setLeftPanelContent,
+          togglePanel: toggleLeftPanel,
+          openPanel: openLeftPanel,
+          closePanel: closeLeftPanel,
+        },
+        rightPanel: {
+          isOpen: rightOpen,
+          panelContent: rightPanelContent,
+          setPanelContent: setRightPanelContent,
+          togglePanel: toggleRightPanel,
+          openPanel: openRightPanel,
+          closePanel: closeRightPanel,
+        },
+      }}
+    >
+      <NavContext.Provider
+        value={{
+          activeTab,
+          activeSubTab,
+          currentModule,
+          setActiveTab,
+          setActiveSubTab,
+          setCurrentModule,
+        }}
+      >
+        <TooltipProvider delayDuration={0}>
+          <div className="flex">
+            <ResizablePanelGroup direction="horizontal">
+              <LeftPanel
+                panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
+                onExpand={handleLeftExpand}
+                onCollapse={handleLeftCollapse}
+              />
+              <ResizablePanel id="1" order={1} minSize={50} defaultSize={50}>
+                {children}
+              </ResizablePanel>
+              <RightPanel
+                panelRef={rightPanelRef as RefObject<ImperativePanelHandle>}
+                onExpand={handleRightExpand}
+                onCollapse={handleRightCollapse}
+              />
+            </ResizablePanelGroup>
+          </div>
+        </TooltipProvider>
+      </NavContext.Provider>
     </PanelContext.Provider>
   );
 }
@@ -197,11 +175,7 @@ export const LeftPanel = ({
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            className="fixed left-4 top-4 z-20 h-8 w-8 rounded-lg border border-border bg-background/95 p-0 shadow-1 backdrop-blur"
-            size="icon"
-          >
+          <Button variant="ghost" className="fixed  top-5 left-6 p-0 h-5 w-5">
             <AlignJustifyIcon size={20} />
           </Button>
         </SheetTrigger>
@@ -211,15 +185,11 @@ export const LeftPanel = ({
             Admin panel for managing accounts, AI, config, and settings
           </SheetDescription>
         </SheetHeader>
-        <SheetContent
-          side="left"
-          className="w-64 border-r border-border/60 bg-sidebar-bg p-0"
-          withoutCloseButton
-        >
+        <SheetContent side="left" className="p-0" withoutCloseButton>
           <div className="flex flex-col w-full h-full">
             <div
               className={cn(
-                'flex h-14 items-center gap-2 border-b border-border px-4 text-base font-semibold text-sidebar-foreground'
+                'flex h-[52px] items-center gap-2 px-4 text-base font-medium'
               )}
             >
               <Logo />
@@ -247,13 +217,21 @@ export const LeftPanel = ({
       onCollapse={onCollapse}
       className={cn(
         isCollapsed ? 'min-w-[57px] max-w-[57px]' : 'min-w-56 max-w-56',
-        'h-dvh overflow-visible border-r border-border/60 bg-sidebar-bg'
+        'border-r  h-dvh'
       )}
+      style={{ overflow: 'visible' }}
     >
-      <div className="flex h-full max-w-56 flex-col">
+      <div
+        className="flex flex-col max-w-56 h-full "
+        style={{
+          backgroundColor: cssVarV2(
+            'selfhost/layer/background/sidebarBg/sidebarBg'
+          ),
+        }}
+      >
         <div
           className={cn(
-            'flex h-14 items-center px-4 text-base font-semibold text-sidebar-foreground',
+            'flex h-[56px] items-center px-4 text-base font-medium',
             isCollapsed && 'justify-center px-2'
           )}
         >
@@ -299,12 +277,8 @@ export const RightPanel = ({
             For displaying additional information
           </SheetDescription>
         </SheetHeader>
-        <SheetContent
-          side="right"
-          className="border-l border-border/60 bg-background p-0"
-          withoutCloseButton
-        >
-          <div className="h-full overflow-y-auto">{panelContent}</div>
+        <SheetContent side="right" className="p-0" withoutCloseButton>
+          {panelContent}
         </SheetContent>
       </Sheet>
     );
@@ -321,9 +295,9 @@ export const RightPanel = ({
       collapsedSize={0}
       onExpand={onExpand}
       onCollapse={onCollapse}
-      className="max-w-96 border-l border-border/60 bg-background"
+      className="border-l max-w-96"
     >
-      <div className="h-full overflow-y-auto">{panelContent}</div>
+      {panelContent}
     </ResizablePanel>
   );
 };

@@ -17,52 +17,7 @@ import {
 import { fromJson } from '../../core/property/utils';
 import { PropertyBase } from '../../core/view-manager/property.js';
 import { SingleViewBase } from '../../core/view-manager/single-view.js';
-import type { ViewManager } from '../../core/view-manager/view-manager.js';
-import type { KanbanViewColumn, KanbanViewData } from './define.js';
-import {
-  getKanbanDefaultHideEmpty,
-  resolveKanbanGroupBy,
-} from './group-by-utils.js';
-
-const materializeColumnsByPropertyIds = (
-  columns: KanbanViewColumn[],
-  propertyIds: string[]
-) => {
-  const needShow = new Set(propertyIds);
-  const orderedColumns: KanbanViewColumn[] = [];
-
-  for (const column of columns) {
-    if (needShow.has(column.id)) {
-      orderedColumns.push(column);
-      needShow.delete(column.id);
-    }
-  }
-
-  for (const id of needShow) {
-    orderedColumns.push({ id });
-  }
-
-  return orderedColumns;
-};
-
-export const materializeKanbanColumns = (
-  columns: KanbanViewColumn[],
-  propertyIds: string[]
-) => {
-  const nextColumns = materializeColumnsByPropertyIds(columns, propertyIds);
-  const unchanged =
-    columns.length === nextColumns.length &&
-    columns.every((column, index) => {
-      const nextColumn = nextColumns[index];
-      return (
-        nextColumn != null &&
-        column.id === nextColumn.id &&
-        column.hide === nextColumn.hide
-      );
-    });
-
-  return unchanged ? columns : nextColumns;
-};
+import type { KanbanViewData } from './define.js';
 
 export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   propertiesRaw$ = computed(() => {
@@ -106,27 +61,16 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   );
 
   groupBy$ = computed(() => {
-    const groupBy = this.data$.value?.groupBy;
-    if (!groupBy || groupBy.hideEmpty != null) {
-      return groupBy;
-    }
-    return {
-      ...groupBy,
-      hideEmpty: getKanbanDefaultHideEmpty(groupBy.name),
-    };
+    return this.data$.value?.groupBy;
   });
 
   groupTrait = this.traitSet(
     groupTraitKey,
     new GroupTrait(this.groupBy$, this, {
       groupBySet: groupBy => {
-        const nextGroupBy = resolveKanbanGroupBy(
-          this.manager.dataSource,
-          groupBy
-        );
         this.dataUpdate(() => {
           return {
-            groupBy: nextGroupBy,
+            groupBy: groupBy,
           };
         });
       },
@@ -256,23 +200,6 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     return this.view?.mode ?? 'kanban';
   }
 
-  private materializeColumns() {
-    const view = this.view;
-    if (!view) {
-      return;
-    }
-
-    const nextColumns = materializeKanbanColumns(
-      view.columns,
-      this.dataSource.properties$.value
-    );
-    if (nextColumns === view.columns) {
-      return;
-    }
-
-    this.dataUpdate(() => ({ columns: nextColumns }));
-  }
-
   get view() {
     return this.data$.value;
   }
@@ -349,7 +276,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   isShow(rowId: string): boolean {
     if (this.filter$.value?.conditions.length) {
       const rowMap = Object.fromEntries(
-        this.propertiesRaw$.value.map(column => [
+        this.properties$.value.map(column => [
           column.id,
           column.cellGetOrCreate(rowId).jsonValue$.value,
         ])
@@ -361,13 +288,6 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
 
   propertyGetOrCreate(columnId: string): KanbanColumn {
     return new KanbanColumn(this, columnId);
-  }
-
-  constructor(viewManager: ViewManager, viewId: string) {
-    super(viewManager, viewId);
-    // Materialize view columns on view activation so newly added properties
-    // can participate in hide/order operations in kanban.
-    this.materializeColumns();
   }
 }
 

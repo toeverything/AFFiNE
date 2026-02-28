@@ -216,13 +216,9 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
   override renderBlock() {
     const icon = this.model.props.icon$.value;
     const backgroundColorName = this.model.props.backgroundColorName$.value;
-    const normalizedBackgroundName =
-      backgroundColorName === 'default' || backgroundColorName === ''
-        ? 'grey'
-        : backgroundColorName;
     const backgroundColor = (
       cssVarV2.block.callout.background as Record<string, string>
-    )[normalizedBackgroundName ?? 'grey'];
+    )[backgroundColorName ?? ''];
 
     const iconContent = getIcon(icon);
 

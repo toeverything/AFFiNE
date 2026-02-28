@@ -1,5 +1,4 @@
 mod awareness;
-mod batch;
 mod codec;
 mod common;
 mod document;
@@ -13,7 +12,6 @@ mod utils;
 
 pub use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 pub use awareness::{Awareness, AwarenessEvent};
-pub use batch::{Batch, batch_commit};
 pub use codec::*;
 pub use common::*;
 pub use document::{Doc, DocOptions};

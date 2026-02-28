@@ -22,6 +22,7 @@ import { html } from 'lit/static-html.js';
 import { dataViewCommonStyle } from './common/css-variable.js';
 import type { DataSource } from './data-source/index.js';
 import type { DataViewSelection } from './types.js';
+import { cacheComputed } from './utils/cache.js';
 import { renderUniLit } from './utils/uni-component/index.js';
 import type { DataViewUILogicBase } from './view/data-view-base.js';
 import type { SingleView } from './view-manager/single-view.js';
@@ -74,38 +75,12 @@ export class DataViewRootUILogic {
 
     return new (logic(view))(this, view);
   }
-  private readonly _viewsCache = new Map<
-    string,
-    { mode: string; logic: DataViewUILogicBase }
-  >();
-
-  private readonly views$ = computed(() => {
-    const viewDataList = this.dataSource.viewDataList$.value;
-    const validIds = new Set(viewDataList.map(viewData => viewData.id));
-
-    for (const cachedId of this._viewsCache.keys()) {
-      if (!validIds.has(cachedId)) {
-        this._viewsCache.delete(cachedId);
-      }
-    }
-
-    return viewDataList.map(viewData => {
-      const cached = this._viewsCache.get(viewData.id);
-      if (cached && cached.mode === viewData.mode) {
-        return cached.logic;
-      }
-      const logic = this.createDataViewUILogic(viewData.id);
-      this._viewsCache.set(viewData.id, {
-        mode: viewData.mode,
-        logic,
-      });
-      return logic;
-    });
-  });
-
+  private readonly views$ = cacheComputed(this.viewManager.views$, viewId =>
+    this.createDataViewUILogic(viewId)
+  );
   private readonly viewsMap$ = computed(() => {
     return Object.fromEntries(
-      this.views$.value.map(logic => [logic.view.id, logic])
+      this.views$.list.value.map(logic => [logic.view.id, logic])
     );
   });
   private readonly _uiRef = signal<DataViewRootUI>();

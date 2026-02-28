@@ -124,8 +124,7 @@ export class EmbedLoomBlockComponent extends EmbedBlockComponent<
                     <iframe
                       src=${`https://www.loom.com/embed/${videoId}?hide_title=true`}
                       frameborder="0"
-                      allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      sandbox="allow-scripts allow-same-origin allow-presentation"
+                      allow="fullscreen; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                       loading="lazy"
                       credentialless
                     ></iframe>

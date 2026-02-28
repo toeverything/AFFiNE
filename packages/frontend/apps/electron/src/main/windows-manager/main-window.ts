@@ -13,7 +13,6 @@ import { logger } from '../logger';
 import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
 import { uiSubjects } from '../ui/subject';
-import { buildWebPreferences } from '../web-preferences';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
@@ -57,7 +56,6 @@ export class MainWindowManager {
         show: false,
         width: 100,
         height: 100,
-        webPreferences: buildWebPreferences(),
       });
       this.hiddenMacWindow.on('close', () => {
         this.cleanupWindows();
@@ -97,9 +95,11 @@ export class MainWindowManager {
       // backgroundMaterial: 'mica',
       height: mainWindowState.height,
       show: false, // Use 'ready-to-show' event to show window
-      webPreferences: buildWebPreferences({
+      webPreferences: {
         webgl: true,
-      }),
+        contextIsolation: true,
+        sandbox: false,
+      },
     });
     const helper = await ensureHelperProcess();
     helper.connectMain(browserWindow);
@@ -283,10 +283,10 @@ export async function openUrlInHiddenWindow(urlObj: URL) {
   const win = new BrowserWindow({
     width: 1200,
     height: 600,
-    webPreferences: buildWebPreferences({
+    webPreferences: {
       preload: join(__dirname, './preload.js'),
       additionalArguments: await getWindowAdditionalArguments(),
-    }),
+    },
     show: BUILD_CONFIG.debug,
   });
 

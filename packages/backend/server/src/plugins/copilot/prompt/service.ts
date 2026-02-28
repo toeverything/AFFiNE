@@ -8,7 +8,7 @@ import {
   PromptConfigSchema,
   PromptMessage,
   PromptMessageSchema,
-} from '../providers/types';
+} from '../providers';
 import { ChatPrompt } from './chat-prompt';
 import {
   CopilotPromptScenario,

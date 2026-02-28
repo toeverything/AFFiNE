@@ -7,23 +7,10 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import type {
-  Request as ExpressRequest,
-  Response as ExpressResponse,
-} from 'express';
+import type { Request, Response } from 'express';
 import { HTMLRewriter } from 'htmlrewriter';
 
-import {
-  BadRequest,
-  Cache,
-  readResponseBufferWithLimit,
-  ResponseTooLargeError,
-  safeFetch,
-  SsrfBlockedError,
-  type SSRFBlockReason,
-  URLHelper,
-  UseNamedGuard,
-} from '../../base';
+import { BadRequest, Cache, URLHelper, UseNamedGuard } from '../../base';
 import { Public } from '../../core/auth';
 import { WorkerService } from './service';
 import type { LinkPreviewRequest, LinkPreviewResponse } from './types';
@@ -41,25 +28,6 @@ import { decodeWithCharset } from './utils/encoding';
 
 // cache for 30 minutes
 const CACHE_TTL = 1000 * 60 * 30;
-const MAX_REDIRECTS = 3;
-const FETCH_TIMEOUT_MS = 10_000;
-const IMAGE_PROXY_MAX_BYTES = 10 * 1024 * 1024;
-const LINK_PREVIEW_MAX_BYTES = 2 * 1024 * 1024;
-
-function toBadRequestReason(reason: SSRFBlockReason) {
-  switch (reason) {
-    case 'disallowed_protocol':
-    case 'url_has_credentials':
-    case 'blocked_hostname':
-    case 'blocked_ip':
-    case 'invalid_url':
-      return 'Invalid URL';
-    case 'unresolvable_hostname':
-      return 'Failed to resolve hostname';
-    case 'too_many_redirects':
-      return 'Too many redirects';
-  }
-}
 
 @Public()
 @UseNamedGuard('selfhost')
@@ -77,33 +45,14 @@ export class WorkerController {
     return this.service.allowedOrigins;
   }
 
-  @Options('/image-proxy')
-  imageProxyOption(
-    @Req() request: ExpressRequest,
-    @Res() resp: ExpressResponse
-  ) {
-    const origin = request.headers.origin;
-    return resp
-      .status(204)
-      .header({
-        ...getCorsHeaders(origin),
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      })
-      .send();
-  }
-
   @Get('/image-proxy')
-  async imageProxy(@Req() req: ExpressRequest, @Res() resp: ExpressResponse) {
-    const origin = req.headers.origin;
+  async imageProxy(@Req() req: Request, @Res() resp: Response) {
+    const origin = req.headers.origin ?? '';
     const referer = req.headers.referer;
-    const originAllowed = origin
-      ? isOriginAllowed(origin, this.allowedOrigin)
-      : false;
-    const refererAllowed = referer
-      ? isRefererAllowed(referer, this.allowedOrigin)
-      : false;
-    if (!originAllowed && !refererAllowed) {
+    if (
+      (origin && !isOriginAllowed(origin, this.allowedOrigin)) ||
+      (referer && !isRefererAllowed(referer, this.allowedOrigin))
+    ) {
       this.logger.error('Invalid Origin', 'ERROR', { origin, referer });
       throw new BadRequest('Invalid header');
     }
@@ -130,66 +79,24 @@ export class WorkerController {
       return resp
         .status(200)
         .header({
-          ...getCorsHeaders(origin),
-          ...(origin ? { Vary: 'Origin' } : {}),
+          'Access-Control-Allow-Origin': origin,
+          Vary: 'Origin',
           'Access-Control-Allow-Methods': 'GET',
           'Content-Type': 'image/*',
         })
         .send(buffer);
     }
 
-    let response: Response;
-    try {
-      response = await safeFetch(
-        targetURL.toString(),
-        { method: 'GET', headers: cloneHeader(req.headers) },
-        { timeoutMs: FETCH_TIMEOUT_MS, maxRedirects: MAX_REDIRECTS }
-      );
-    } catch (error) {
-      if (error instanceof SsrfBlockedError) {
-        const reason = error.data?.reason as SSRFBlockReason | undefined;
-        this.logger.warn('Blocked image proxy target', {
-          url: imageURL,
-          reason,
-          context: (error as any).context,
-        });
-        throw new BadRequest(toBadRequestReason(reason ?? 'invalid_url'));
-      }
-      if (error instanceof ResponseTooLargeError) {
-        this.logger.warn('Image proxy response too large', {
-          url: imageURL,
-          limitBytes: error.data?.limitBytes,
-          receivedBytes: error.data?.receivedBytes,
-        });
-        throw new BadRequest('Response too large');
-      }
-      this.logger.error('Failed to fetch image', {
-        origin,
-        url: imageURL,
-        error,
-      });
-      throw new BadRequest('Failed to fetch image');
-    }
+    const response = await fetch(
+      new Request(targetURL.toString(), {
+        method: 'GET',
+        headers: cloneHeader(req.headers),
+      })
+    );
     if (response.ok) {
       const contentType = response.headers.get('Content-Type');
       if (contentType?.startsWith('image/')) {
-        let buffer: Buffer;
-        try {
-          buffer = await readResponseBufferWithLimit(
-            response,
-            IMAGE_PROXY_MAX_BYTES
-          );
-        } catch (error) {
-          if (error instanceof ResponseTooLargeError) {
-            this.logger.warn('Image proxy response too large', {
-              url: imageURL,
-              limitBytes: error.data?.limitBytes,
-              receivedBytes: error.data?.receivedBytes,
-            });
-            throw new BadRequest('Response too large');
-          }
-          throw error;
-        }
+        const buffer = Buffer.from(await response.arrayBuffer());
         await this.cache.set(cachedUrl, buffer.toString('base64'), {
           ttl: CACHE_TTL,
         });
@@ -197,8 +104,8 @@ export class WorkerController {
         return resp
           .status(200)
           .header({
-            ...getCorsHeaders(origin),
-            ...(origin ? { Vary: 'Origin' } : {}),
+            'Access-Control-Allow-Origin': origin ?? 'null',
+            Vary: 'Origin',
             'Access-Control-Allow-Methods': 'GET',
             'Content-Type': contentType,
             'Content-Disposition': contentDisposition,
@@ -217,20 +124,17 @@ export class WorkerController {
       this.logger.error('Failed to fetch image', {
         origin,
         url: imageURL,
-        status: response.status,
+        status: resp.status,
       });
       throw new BadRequest('Failed to fetch image');
     }
   }
 
   @Options('/link-preview')
-  linkPreviewOption(
-    @Req() request: ExpressRequest,
-    @Res() resp: ExpressResponse
-  ) {
+  linkPreviewOption(@Req() request: Request, @Res() resp: Response) {
     const origin = request.headers.origin;
     return resp
-      .status(204)
+      .status(200)
       .header({
         ...getCorsHeaders(origin),
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -241,18 +145,15 @@ export class WorkerController {
 
   @Post('/link-preview')
   async linkPreview(
-    @Req() request: ExpressRequest,
-    @Res() resp: ExpressResponse
-  ): Promise<ExpressResponse> {
+    @Req() request: Request,
+    @Res() resp: Response
+  ): Promise<Response> {
     const origin = request.headers.origin;
     const referer = request.headers.referer;
-    const originAllowed = origin
-      ? isOriginAllowed(origin, this.allowedOrigin)
-      : false;
-    const refererAllowed = referer
-      ? isRefererAllowed(referer, this.allowedOrigin)
-      : false;
-    if (!originAllowed && !refererAllowed) {
+    if (
+      (origin && !isOriginAllowed(origin, this.allowedOrigin)) ||
+      (referer && !isRefererAllowed(referer, this.allowedOrigin))
+    ) {
       this.logger.error('Invalid Origin', { origin, referer });
       throw new BadRequest('Invalid header');
     }
@@ -282,13 +183,9 @@ export class WorkerController {
           .send(cachedResponse);
       }
 
-      const method: 'GET' | 'HEAD' = requestBody?.head ? 'HEAD' : 'GET';
-
-      const response = await safeFetch(
-        targetURL.toString(),
-        { method, headers: cloneHeader(request.headers) },
-        { timeoutMs: FETCH_TIMEOUT_MS, maxRedirects: MAX_REDIRECTS }
-      );
+      const response = await fetch(targetURL, {
+        headers: cloneHeader(request.headers),
+      });
       this.logger.debug('Fetched URL', {
         origin,
         url: targetURL,
@@ -314,12 +211,7 @@ export class WorkerController {
       };
 
       if (response.body) {
-        const body = await readResponseBufferWithLimit(
-          response,
-          LINK_PREVIEW_MAX_BYTES
-        );
-        const limitedResponse = new Response(body, response);
-        const resp = await decodeWithCharset(limitedResponse, res);
+        const resp = await decodeWithCharset(response, res);
 
         const rewriter = new HTMLRewriter()
           .on('meta', {
@@ -395,11 +287,7 @@ export class WorkerController {
       {
         // head default path of favicon
         const faviconUrl = new URL('/favicon.ico?v=2', response.url);
-        const faviconResponse = await safeFetch(
-          faviconUrl.toString(),
-          { method: 'HEAD' },
-          { timeoutMs: FETCH_TIMEOUT_MS, maxRedirects: MAX_REDIRECTS }
-        );
+        const faviconResponse = await fetch(faviconUrl, { method: 'HEAD' });
         if (faviconResponse.ok) {
           appendUrl(faviconUrl.toString(), res.favicons);
         }
@@ -423,25 +311,6 @@ export class WorkerController {
         })
         .send(json);
     } catch (error) {
-      if (error instanceof SsrfBlockedError) {
-        const reason = error.data?.reason as SSRFBlockReason | undefined;
-        this.logger.warn('Blocked link preview target', {
-          origin,
-          url: requestBody?.url,
-          reason,
-          context: (error as any).context,
-        });
-        throw new BadRequest(toBadRequestReason(reason ?? 'invalid_url'));
-      }
-      if (error instanceof ResponseTooLargeError) {
-        this.logger.warn('Link preview response too large', {
-          origin,
-          url: requestBody?.url,
-          limitBytes: error.data?.limitBytes,
-          receivedBytes: error.data?.receivedBytes,
-        });
-        throw new BadRequest('Response too large');
-      }
       this.logger.error('Error fetching URL', {
         origin,
         url: targetURL,

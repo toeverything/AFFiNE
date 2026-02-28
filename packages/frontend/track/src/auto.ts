@@ -74,7 +74,7 @@ export function enableAutoTrack(root: HTMLElement, trackFn: TrackFn) {
     if (dataset['eventProps']) {
       const args: Record<string, any> = {};
       if (dataset['eventArg'] !== undefined) {
-        args['arg'] = dataset['eventArg'];
+        args['arg'] = dataset['event-arg'];
       } else {
         for (const argName of Object.keys(dataset)) {
           if (argName.startsWith('eventArgs')) {
@@ -115,8 +115,7 @@ export function enableAutoTrack(root: HTMLElement, trackFn: TrackFn) {
 
 declare module 'react' {
   //  we have to declare `T` but it's actually not used
-
-  // oxlint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLAttributes<T> {
     'data-event-props'?: EventsUnion;
     'data-event-arg'?: string;

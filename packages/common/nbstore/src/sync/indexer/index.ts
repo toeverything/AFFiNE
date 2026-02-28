@@ -106,6 +106,10 @@ export interface IndexerSync {
 }
 
 export class IndexerSyncImpl implements IndexerSync {
+  /**
+   * increase this number to re-index all docs
+   */
+  readonly INDEXER_VERSION = 2;
   private abort: AbortController | null = null;
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
@@ -262,8 +266,7 @@ export class IndexerSyncImpl implements IndexerSync {
     this.status.errorMessage = null;
     this.status.statusUpdatedSubject$.next(true);
 
-    const indexVersion = await this.indexer.indexVersion();
-    console.log('indexer sync start, version: ', indexVersion);
+    console.log('indexer sync start');
 
     const unsubscribe = this.doc.subscribeDocUpdate(update => {
       if (!this.status.rootDocReady) {
@@ -399,7 +402,7 @@ export class IndexerSyncImpl implements IndexerSync {
             docIndexedClock &&
             docIndexedClock.timestamp.getTime() ===
               docClock.timestamp.getTime() &&
-            docIndexedClock.indexerVersion === indexVersion
+            docIndexedClock.indexerVersion === this.INDEXER_VERSION
           ) {
             // doc is already indexed, just skip
             continue;
@@ -465,7 +468,7 @@ export class IndexerSyncImpl implements IndexerSync {
           await this.indexerSync.setDocIndexedClock({
             docId,
             timestamp: docClock.timestamp,
-            indexerVersion: indexVersion,
+            indexerVersion: this.INDEXER_VERSION,
           });
           // #endregion
         }

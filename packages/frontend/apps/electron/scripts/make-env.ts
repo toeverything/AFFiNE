@@ -63,8 +63,6 @@ const {
       default: process.platform,
     },
   },
-  allowPositionals: true,
-  strict: false,
 });
 
 log(`parsed args: arch=${arch}, platform=${platform}`);

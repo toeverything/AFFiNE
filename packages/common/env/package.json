@@ -10,6 +10,7 @@
     "./global": "./src/global.ts",
     "./constant": "./src/constant.ts",
     "./workspace": "./src/workspace.ts",
+    "./workspace/legacy-cloud": "./src/workspace/legacy-cloud/index.ts",
     "./filter": "./src/filter.ts",
     "./blocksuite": "./src/blocksuite/index.ts",
     "./worker": "./src/worker.ts"
@@ -21,5 +22,5 @@
   "dependencies": {
     "zod": "^3.25.76"
   },
-  "version": "0.26.3"
+  "version": "0.25.7"
 }

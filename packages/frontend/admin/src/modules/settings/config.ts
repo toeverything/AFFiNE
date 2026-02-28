@@ -37,13 +37,7 @@ type ConfigGroup<T extends AppConfigModule> = {
 const IGNORED_MODULES: (keyof AppConfig)[] = [];
 
 if (environment.isSelfHosted) {
-  IGNORED_MODULES.push(
-    'payment',
-    'customerIo',
-    'captcha',
-    'telemetry',
-    'metrics'
-  );
+  IGNORED_MODULES.push('payment');
 }
 
 const ALL_CONFIGURABLE_MODULES = Object.keys(CONFIG_DESCRIPTORS).filter(
@@ -112,7 +106,7 @@ export const KNOWN_CONFIG_GROUPS = [
         key: 'blob.storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
+        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
       },
       {
         key: 'avatar.storage',
@@ -131,7 +125,7 @@ export const KNOWN_CONFIG_GROUPS = [
         key: 'avatar.storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
+        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
       },
       {
         key: 'avatar.publicPath',
@@ -175,7 +169,7 @@ export const KNOWN_CONFIG_GROUPS = [
         key: 'storage',
         sub: 'config',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
+        desc: 'The config passed directly to the storage provider(e.g. aws-sdk)',
       },
     ],
   } as ConfigGroup<'copilot'>,

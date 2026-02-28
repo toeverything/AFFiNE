@@ -14,17 +14,6 @@ import {
 } from '../config.js';
 import type { AffineDragHandleWidget } from '../drag-handle.js';
 
-type HoveredElemArea = {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-  width: number;
-  height: number;
-  padding: number;
-  containerWidth: number;
-};
-
 /**
  * Used to control the drag handle visibility in edgeless mode
  *
@@ -32,52 +21,6 @@ type HoveredElemArea = {
  * 2. Multiple selection is not supported
  */
 export class EdgelessWatcher {
-  private _pendingHoveredElemArea: HoveredElemArea | null = null;
-
-  private _lastAppliedHoveredElemArea: HoveredElemArea | null = null;
-
-  private _showDragHandleRafId: number | null = null;
-
-  private _surfaceElementUpdatedRafId: number | null = null;
-
-  private readonly _cloneArea = (area: HoveredElemArea): HoveredElemArea => ({
-    left: area.left,
-    top: area.top,
-    right: area.right,
-    bottom: area.bottom,
-    width: area.width,
-    height: area.height,
-    padding: area.padding,
-    containerWidth: area.containerWidth,
-  });
-
-  private readonly _isAreaEqual = (
-    left: HoveredElemArea | null,
-    right: HoveredElemArea | null
-  ) => {
-    if (!left || !right) return false;
-    return (
-      left.left === right.left &&
-      left.top === right.top &&
-      left.right === right.right &&
-      left.bottom === right.bottom &&
-      left.width === right.width &&
-      left.height === right.height &&
-      left.padding === right.padding &&
-      left.containerWidth === right.containerWidth
-    );
-  };
-
-  private readonly _scheduleShowDragHandleFromSurfaceUpdate = () => {
-    if (this._surfaceElementUpdatedRafId !== null) return;
-
-    this._surfaceElementUpdatedRafId = requestAnimationFrame(() => {
-      this._surfaceElementUpdatedRafId = null;
-      if (!this.widget.isGfxDragHandleVisible) return;
-      this._showDragHandle();
-    });
-  };
-
   private readonly _handleEdgelessToolUpdated = (
     newTool: ToolOptionWithType
   ) => {
@@ -100,123 +43,46 @@ export class EdgelessWatcher {
     }
 
     if (
-      this.widget.center[0] !== center[0] ||
+      this.widget.center[0] !== center[0] &&
       this.widget.center[1] !== center[1]
     ) {
       this.widget.center = [...center];
     }
 
     if (this.widget.isGfxDragHandleVisible) {
-      const area = this.hoveredElemArea;
-      this._showDragHandle(area);
-      this._updateDragHoverRectTopLevelBlock(area);
+      this._showDragHandle();
+      this._updateDragHoverRectTopLevelBlock();
     } else if (this.widget.activeDragHandle) {
       this.widget.hide();
     }
   };
 
-  private readonly _flushShowDragHandle = () => {
-    this._showDragHandleRafId = null;
-
-    if (!this.widget.anchorBlockId.peek()) return;
+  private readonly _showDragHandle = () => {
+    if (!this.widget.anchorBlockId) return;
 
     const container = this.widget.dragHandleContainer;
     const grabber = this.widget.dragHandleGrabber;
     if (!container || !grabber) return;
 
-    const area = this._pendingHoveredElemArea ?? this.hoveredElemArea;
-    this._pendingHoveredElemArea = null;
+    const area = this.hoveredElemArea;
     if (!area) return;
 
-    if (
-      this.widget.isGfxDragHandleVisible &&
-      this._isAreaEqual(this._lastAppliedHoveredElemArea, area)
-    ) {
-      return;
-    }
-
-    if (container.style.transition !== 'none') {
-      container.style.transition = 'none';
-    }
-    const nextPaddingTop = '0px';
-    if (container.style.paddingTop !== nextPaddingTop) {
-      container.style.paddingTop = nextPaddingTop;
-    }
-    const nextPaddingBottom = '0px';
-    if (container.style.paddingBottom !== nextPaddingBottom) {
-      container.style.paddingBottom = nextPaddingBottom;
-    }
-    const nextLeft = `${area.left}px`;
-    if (container.style.left !== nextLeft) {
-      container.style.left = nextLeft;
-    }
-    const nextTop = `${area.top}px`;
-    if (container.style.top !== nextTop) {
-      container.style.top = nextTop;
-    }
-    if (container.style.display !== 'flex') {
-      container.style.display = 'flex';
-    }
+    container.style.transition = 'none';
+    container.style.paddingTop = `0px`;
+    container.style.paddingBottom = `0px`;
+    container.style.left = `${area.left}px`;
+    container.style.top = `${area.top}px`;
+    container.style.display = 'flex';
 
     this.widget.handleAnchorModelDisposables();
 
     this.widget.activeDragHandle = 'gfx';
-    this._lastAppliedHoveredElemArea = this._cloneArea(area);
   };
 
-  private readonly _showDragHandle = (area?: HoveredElemArea | null) => {
-    const nextArea = area ?? this.hoveredElemArea;
-    this._pendingHoveredElemArea = nextArea;
-    if (!this._pendingHoveredElemArea) {
-      return;
-    }
-    if (
-      this.widget.isGfxDragHandleVisible &&
-      this._showDragHandleRafId === null &&
-      this._isAreaEqual(
-        this._lastAppliedHoveredElemArea,
-        this._pendingHoveredElemArea
-      )
-    ) {
-      return;
-    }
-    if (this._showDragHandleRafId !== null) {
-      return;
-    }
-    this._showDragHandleRafId = requestAnimationFrame(
-      this._flushShowDragHandle
-    );
-  };
-
-  private readonly _updateDragHoverRectTopLevelBlock = (
-    area?: HoveredElemArea | null
-  ) => {
+  private readonly _updateDragHoverRectTopLevelBlock = () => {
     if (!this.widget.dragHoverRect) return;
 
-    const nextArea = area ?? this.hoveredElemArea;
-    if (!nextArea) {
-      this.widget.dragHoverRect = null;
-      return;
-    }
-
-    const nextRect = new Rect(
-      nextArea.left,
-      nextArea.top,
-      nextArea.right,
-      nextArea.bottom
-    );
-    const prevRect = this.widget.dragHoverRect;
-    if (
-      prevRect &&
-      prevRect.left === nextRect.left &&
-      prevRect.top === nextRect.top &&
-      prevRect.width === nextRect.width &&
-      prevRect.height === nextRect.height
-    ) {
-      return;
-    }
-
-    this.widget.dragHoverRect = nextRect;
+    this.widget.dragHoverRect = this.hoveredElemAreaRect;
   };
 
   get gfx() {
@@ -257,7 +123,7 @@ export class EdgelessWatcher {
     return new Rect(area.left, area.top, area.right, area.bottom);
   }
 
-  get hoveredElemArea(): HoveredElemArea | null {
+  get hoveredElemArea() {
     const edgelessElement = this.widget.anchorEdgelessElement.peek();
 
     if (!edgelessElement) return null;
@@ -308,19 +174,6 @@ export class EdgelessWatcher {
       viewport.viewportUpdated.subscribe(this._handleEdgelessViewPortUpdated)
     );
 
-    disposables.add(() => {
-      if (this._showDragHandleRafId !== null) {
-        cancelAnimationFrame(this._showDragHandleRafId);
-        this._showDragHandleRafId = null;
-      }
-      if (this._surfaceElementUpdatedRafId !== null) {
-        cancelAnimationFrame(this._surfaceElementUpdatedRafId);
-        this._surfaceElementUpdatedRafId = null;
-      }
-      this._pendingHoveredElemArea = null;
-      this._lastAppliedHoveredElemArea = null;
-    });
-
     disposables.add(
       selection.slots.updated.subscribe(() => {
         this.updateAnchorElement();
@@ -363,7 +216,7 @@ export class EdgelessWatcher {
             this.widget.hide();
           }
           if (payload.type === 'update') {
-            this._scheduleShowDragHandleFromSurfaceUpdate();
+            this._showDragHandle();
           }
         }
       })
@@ -371,10 +224,9 @@ export class EdgelessWatcher {
 
     if (surface) {
       disposables.add(
-        surface.elementUpdated.subscribe(({ id }) => {
+        surface.elementUpdated.subscribe(() => {
           if (this.widget.isGfxDragHandleVisible) {
-            if (id !== this.widget.anchorBlockId.peek()) return;
-            this._scheduleShowDragHandleFromSurfaceUpdate();
+            this._showDragHandle();
           }
         })
       );

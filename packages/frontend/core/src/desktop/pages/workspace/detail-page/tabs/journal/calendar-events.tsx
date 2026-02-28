@@ -16,14 +16,21 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import type { Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
+import type ICAL from 'ical.js';
+import { useEffect, useMemo, useState } from 'react';
 
 import * as styles from './calendar-events.css';
 
-function formatTime(start?: Dayjs, end?: Dayjs) {
+const pad = (val?: number) => (val ?? 0).toString().padStart(2, '0');
+
+function formatTime(start?: ICAL.Time, end?: ICAL.Time) {
   if (!start || !end) return '';
-  const from = start.format('HH:mm');
-  const to = end.format('HH:mm');
+  // Use toJSDate which handles timezone conversion for us
+  const startDate = start.toJSDate();
+  const endDate = end.toJSDate();
+
+  const from = `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}`;
+  const to = `${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
   return from === to ? from : `${from} - ${to}`;
 }
 
@@ -32,6 +39,15 @@ export const CalendarEvents = ({ date }: { date: Dayjs }) => {
   const events = useLiveData(
     useMemo(() => calendar.eventsByDate$(date), [calendar, date])
   );
+
+  useEffect(() => {
+    const update = () => {
+      calendar.subscriptions$.value.forEach(sub => sub.update());
+    };
+    update();
+    const interval = setInterval(update, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [calendar]);
 
   return (
     <ul className={styles.list}>
@@ -44,9 +60,9 @@ export const CalendarEvents = ({ date }: { date: Dayjs }) => {
 
 const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
   const t = useI18n();
-  const { title, startAt, endAt, allDay, date, calendarName, calendarColor } =
-    event;
+  const { url, title, startAt, endAt, allDay, date } = event;
   const [loading, setLoading] = useState(false);
+  const calendar = useService(IntegrationService).calendar;
   const docsService = useService(DocsService);
   const guardService = useService(GuardService);
   const journalService = useService(JournalService);
@@ -54,23 +70,21 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
   const { createPage } = usePageHelper(
     workspaceService.workspace.docCollection
   );
-  const name = calendarName || t['Untitled']();
-  const color = calendarColor || cssVarV2.button.primary;
-  const eventTitle = title || t['Untitled']();
+  const subscription = useLiveData(
+    useMemo(() => calendar.subscription$(url), [calendar, url])
+  );
+  const config = useLiveData(
+    useMemo(() => subscription?.config$, [subscription?.config$])
+  );
+  const name = useLiveData(subscription?.name$) || t['Untitled']();
+  const color = config?.color || cssVarV2.button.primary;
 
   const handleClick = useAsyncCallback(async () => {
-    if (loading) return;
+    if (!date || loading) return;
     const docs = journalService.journalsByDate$(
       date.format('YYYY-MM-DD')
     ).value;
-    if (docs.length === 0) {
-      toast(
-        t['com.affine.integration.calendar.no-journal']({
-          date: date.format('YYYY-MM-DD'),
-        })
-      );
-      return;
-    }
+    if (docs.length === 0) return;
 
     setLoading(true);
 
@@ -83,7 +97,7 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
         }
 
         const newDoc = createPage();
-        await docsService.changeDocTitle(newDoc.id, eventTitle);
+        await docsService.changeDocTitle(newDoc.id, title);
         await docsService.addLinkedDoc(doc.id, newDoc.id);
       }
       track.doc.sidepanel.journal.createCalendarDocEvent();
@@ -98,7 +112,7 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
     journalService,
     loading,
     t,
-    eventTitle,
+    title,
   ]);
 
   return (
@@ -129,7 +143,7 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
           {allDay ? <FullDayIcon /> : <PeriodIcon />}
         </div>
       </Tooltip>
-      <div className={styles.eventTitle}>{eventTitle}</div>
+      <div className={styles.eventTitle}>{title}</div>
       {loading ? (
         <Loading />
       ) : (

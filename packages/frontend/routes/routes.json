@@ -7,10 +7,7 @@
       "children": {
         "auth": "auth",
         "setup": "setup",
-        "dashboard": "dashboard",
         "accounts": "accounts",
-        "workspaces": "workspaces",
-        "queue": "queue",
         "ai": "ai",
         "settings": {
           "route": "settings",

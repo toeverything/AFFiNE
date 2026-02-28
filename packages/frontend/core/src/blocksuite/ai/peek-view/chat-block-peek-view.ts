@@ -40,7 +40,10 @@ import {
 import { type AIChatBlockModel } from '../blocks';
 import type { SearchMenuConfig } from '../components/ai-chat-add-context';
 import type { DocDisplayConfig } from '../components/ai-chat-chips';
-import type { AIReasoningConfig } from '../components/ai-chat-input';
+import type {
+  AINetworkSearchConfig,
+  AIReasoningConfig,
+} from '../components/ai-chat-input';
 import type { ChatMessage } from '../components/ai-chat-messages';
 import {
   ChatMessagesSchema,
@@ -83,6 +86,13 @@ export class AIChatBlockPeekView extends LitElement {
 
   private get rootWorkspaceId() {
     return this.blockModel.props.rootWorkspaceId;
+  }
+
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
   }
 
   private get _isReasoningActive() {
@@ -391,6 +401,7 @@ export class AIChatBlockPeekView extends LitElement {
         where: 'ai-chat-block',
         control: 'chat-send',
         reasoning: this._isReasoningActive,
+        webSearch: this._isNetworkActive,
         toolsConfig: this.aiToolsConfigService.config.value,
       });
 
@@ -562,7 +573,12 @@ export class AIChatBlockPeekView extends LitElement {
 
     const latestHistoryMessage = _historyMessages[_historyMessages.length - 1];
     const latestMessageCreatedAt = latestHistoryMessage.createdAt;
-    const { chatContext, updateContext, _textRendererOptions } = this;
+    const {
+      chatContext,
+      updateContext,
+      networkSearchConfig,
+      _textRendererOptions,
+    } = this;
 
     const { messages: currentChatMessages } = chatContext;
     const notificationService = this.host.std.get(NotificationProvider);
@@ -597,6 +613,7 @@ export class AIChatBlockPeekView extends LitElement {
         .chatContextValue=${chatContext}
         .updateContext=${updateContext}
         .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
+        .networkSearchConfig=${networkSearchConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
@@ -626,6 +643,9 @@ export class AIChatBlockPeekView extends LitElement {
 
   @property({ attribute: false })
   accessor host!: EditorHost;
+
+  @property({ attribute: false })
+  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
@@ -693,6 +713,7 @@ export const AIChatBlockPeekViewTemplate = (
   host: EditorHost,
   docDisplayConfig: DocDisplayConfig,
   searchMenuConfig: SearchMenuConfig,
+  networkSearchConfig: AINetworkSearchConfig,
   reasoningConfig: AIReasoningConfig,
   serverService: ServerService,
   affineFeatureFlagService: FeatureFlagService,
@@ -706,6 +727,7 @@ export const AIChatBlockPeekViewTemplate = (
   return html`<ai-chat-block-peek-view
     .blockModel=${blockModel}
     .host=${host}
+    .networkSearchConfig=${networkSearchConfig}
     .docDisplayConfig=${docDisplayConfig}
     .searchMenuConfig=${searchMenuConfig}
     .reasoningConfig=${reasoningConfig}

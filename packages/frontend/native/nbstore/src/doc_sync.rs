@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use super::{DocClock, error::Result, storage::SqliteDocStorage};
+use super::{error::Result, storage::SqliteDocStorage, DocClock};
 
 impl SqliteDocStorage {
   pub async fn get_peer_remote_clocks(&self, peer: String) -> Result<Vec<DocClock>> {
@@ -15,7 +15,11 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn get_peer_remote_clock(&self, peer: String, doc_id: String) -> Result<Option<DocClock>> {
+  pub async fn get_peer_remote_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+  ) -> Result<Option<DocClock>> {
     let result = sqlx::query_as!(
       DocClock,
       "SELECT doc_id, remote_clock as timestamp FROM peer_clocks WHERE peer = ? AND doc_id = ?",
@@ -28,7 +32,12 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn set_peer_remote_clock(&self, peer: String, doc_id: String, clock: NaiveDateTime) -> Result<()> {
+  pub async fn set_peer_remote_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+    clock: NaiveDateTime,
+  ) -> Result<()> {
     sqlx::query(
       r#"
       INSERT INTO peer_clocks (peer, doc_id, remote_clock)
@@ -57,7 +66,11 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn get_peer_pulled_remote_clock(&self, peer: String, doc_id: String) -> Result<Option<DocClock>> {
+  pub async fn get_peer_pulled_remote_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+  ) -> Result<Option<DocClock>> {
     let result = sqlx::query_as!(
       DocClock,
       r#"SELECT doc_id, pulled_remote_clock as timestamp FROM peer_clocks WHERE peer = ? AND doc_id = ?"#,
@@ -70,7 +83,12 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn set_peer_pulled_remote_clock(&self, peer: String, doc_id: String, clock: NaiveDateTime) -> Result<()> {
+  pub async fn set_peer_pulled_remote_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+    clock: NaiveDateTime,
+  ) -> Result<()> {
     sqlx::query(
       r#"
       INSERT INTO peer_clocks (peer, doc_id, pulled_remote_clock)
@@ -99,7 +117,11 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn get_peer_pushed_clock(&self, peer: String, doc_id: String) -> Result<Option<DocClock>> {
+  pub async fn get_peer_pushed_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+  ) -> Result<Option<DocClock>> {
     let result = sqlx::query_as!(
       DocClock,
       "SELECT doc_id, pushed_clock as timestamp FROM peer_clocks WHERE peer = ? AND doc_id = ?",
@@ -112,7 +134,12 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn set_peer_pushed_clock(&self, peer: String, doc_id: String, clock: NaiveDateTime) -> Result<()> {
+  pub async fn set_peer_pushed_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+    clock: NaiveDateTime,
+  ) -> Result<()> {
     sqlx::query(
       r#"
       INSERT INTO peer_clocks (peer, doc_id, pushed_clock)
@@ -130,7 +157,9 @@ impl SqliteDocStorage {
   }
 
   pub async fn clear_clocks(&self) -> Result<()> {
-    sqlx::query("DELETE FROM peer_clocks;").execute(&self.pool).await?;
+    sqlx::query("DELETE FROM peer_clocks;")
+      .execute(&self.pool)
+      .await?;
 
     Ok(())
   }

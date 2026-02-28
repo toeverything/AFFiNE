@@ -10,7 +10,9 @@ pub struct TextLoader {
 
 impl TextLoader {
   pub fn new<T: Into<String>>(input: T) -> Self {
-    Self { content: input.into() }
+    Self {
+      content: input.into(),
+    }
   }
 }
 

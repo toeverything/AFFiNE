@@ -27,10 +27,10 @@ async function exportDocs(
       titleMiddleware(collection.meta.docMetas),
     ],
   });
+  const snapshots = await Promise.all(docs.map(job.docToSnapshot));
 
   await Promise.all(
-    docs
-      .map(job.docToSnapshot)
+    snapshots
       .filter((snapshot): snapshot is DocSnapshot => !!snapshot)
       .map(async snapshot => {
         // Use the title and id as the snapshot file name

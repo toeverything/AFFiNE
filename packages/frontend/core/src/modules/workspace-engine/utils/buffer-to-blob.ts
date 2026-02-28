@@ -1,4 +1,3 @@
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import isSvg from 'is-svg';
 
 function fastCheckIsNotSvg(buffer: Uint8Array) {
@@ -50,10 +49,11 @@ export function isSvgBuffer(buffer: Uint8Array) {
 }
 
 export function bufferToBlob(buffer: Uint8Array | ArrayBuffer) {
-  const arrayBuffer = toArrayBuffer(buffer);
-  const isSVG = isSvgBuffer(new Uint8Array(arrayBuffer));
+  const isSVG = isSvgBuffer(
+    buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer
+  );
   // for svg blob, we need to explicitly set the type to image/svg+xml
   return isSVG
-    ? new Blob([arrayBuffer], { type: 'image/svg+xml' })
-    : new Blob([arrayBuffer]);
+    ? new Blob([buffer], { type: 'image/svg+xml' })
+    : new Blob([buffer]);
 }

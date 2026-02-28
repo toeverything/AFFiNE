@@ -1,5 +1,5 @@
 [package]
-edition = "2024"
+edition = "2021"
 name    = "y-octo-fuzz"
 publish = false
 version = "0.0.0"

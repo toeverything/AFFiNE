@@ -94,7 +94,3 @@ export function sniffMime(
 }
 
 export const SIGNED_URL_EXPIRED = 60 * 60; // 1 hour
-
-export const STORAGE_PROXY_ROOT = '/api/storage';
-export const PROXY_UPLOAD_PATH = `${STORAGE_PROXY_ROOT}/upload`;
-export const PROXY_MULTIPART_PATH = `${STORAGE_PROXY_ROOT}/multipart`;

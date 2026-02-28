@@ -63,11 +63,7 @@ export class AuthService extends Service {
     redirectUrl?: string // url to redirect to after signed-in
   ) {
     track.$.$.auth.signIn({ method: 'magic-link' });
-    // Only native clients use `client_nonce` for magic-link/otp sign-in.
-    // Web needs to keep cross-device magic-link compatibility.
-    const magicLinkClientNonce = BUILD_CONFIG.isNative
-      ? this.setClientNonce()
-      : undefined;
+    this.setClientNonce();
     try {
       const scheme = this.urlService.getClientScheme();
       const magicLinkUrlParams = new URLSearchParams();
@@ -84,7 +80,7 @@ export class AuthService extends Service {
           // we call it [callbackUrl] instead of [redirect_uri]
           // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
           callbackUrl: `/magic-link?${magicLinkUrlParams.toString()}`,
-          client_nonce: magicLinkClientNonce,
+          client_nonce: this.store.getClientNonce(),
         }),
         headers: {
           'content-type': 'application/json',
@@ -121,8 +117,7 @@ export class AuthService extends Service {
     client: string,
     /** @deprecated*/ redirectUrl?: string
   ): Promise<Record<string, string>> {
-    // OAuth callback requires `client_nonce` for all clients (including web).
-    const clientNonce = this.setClientNonce();
+    this.setClientNonce();
     try {
       const res = await this.fetchService.fetch('/api/oauth/preflight', {
         method: 'POST',
@@ -130,7 +125,7 @@ export class AuthService extends Service {
           provider,
           client,
           redirect_uri: redirectUrl,
-          client_nonce: clientNonce,
+          client_nonce: this.store.getClientNonce(),
         }),
         headers: {
           'content-type': 'application/json',
@@ -168,32 +163,6 @@ export class AuthService extends Service {
       });
       throw e;
     }
-  }
-
-  async createOpenAppSignInCode() {
-    const res = await this.fetchService.fetch(
-      '/api/auth/open-app/sign-in-code',
-      {
-        method: 'POST',
-      }
-    );
-    const body = (await res.json()) as { code?: string };
-
-    if (!body.code) {
-      throw new Error('Missing open-app sign-in code');
-    }
-
-    return body.code;
-  }
-
-  async signInOpenAppSignInCode(code: string) {
-    await this.fetchService.fetch('/api/auth/open-app/sign-in', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-      headers: { 'content-type': 'application/json' },
-    });
-
-    this.session.revalidate();
   }
 
   async signInPassword(credential: {
@@ -246,9 +215,10 @@ export class AuthService extends Service {
     return headers;
   }
 
-  private setClientNonce(): string {
-    const nonce = nanoid();
-    this.store.setClientNonce(nonce);
-    return nonce;
+  private setClientNonce() {
+    if (BUILD_CONFIG.isNative) {
+      // send random client nonce on native app
+      this.store.setClientNonce(nanoid());
+    }
   }
 }

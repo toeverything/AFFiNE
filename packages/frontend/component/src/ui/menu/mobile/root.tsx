@@ -7,7 +7,6 @@ import {
   useContext,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useState,
 } from 'react';
 
@@ -45,14 +44,11 @@ export const MobileMenu = ({
 }: MenuProps) => {
   const [subMenus, setSubMenus] = useState<SubMenuContent[]>([]);
   const [open, setOpen] = useState(false);
-  const mobileContextValue = useMemo(
-    () => ({
-      subMenus,
-      setSubMenus,
-      setOpen,
-    }),
-    [subMenus]
-  );
+  const mobileContextValue = {
+    subMenus,
+    setSubMenus,
+    setOpen,
+  };
 
   const { removeSubMenu, removeAllSubMenus } =
     useMobileSubMenuHelper(mobileContextValue);
@@ -99,10 +95,6 @@ export const MobileMenu = ({
     },
     [onInteractOutside, onPointerDownOutside, removeAllSubMenus, rootOptions]
   );
-  const mobileMenuContextValue = useMemo(
-    () => ({ subMenus, setSubMenus, setOpen: onOpenChange }),
-    [onOpenChange, subMenus]
-  );
 
   useImperativeHandle(
     ref,
@@ -147,7 +139,9 @@ export const MobileMenu = ({
   return (
     <>
       <Slot onClick={onItemClick}>{children}</Slot>
-      <MobileMenuContext.Provider value={mobileMenuContextValue}>
+      <MobileMenuContext.Provider
+        value={{ subMenus, setSubMenus, setOpen: onOpenChange }}
+      >
         <Modal
           open={finalOpen}
           onOpenChange={onOpenChange}

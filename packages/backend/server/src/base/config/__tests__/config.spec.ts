@@ -2,8 +2,8 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { InvalidAppConfig } from '../../error';
+import { ConfigFactory, ConfigModule } from '..';
 import { Config } from '../config';
-import { ConfigFactory, ConfigModule } from '../index';
 import { override } from '../register';
 
 const module = await createModule();
@@ -141,7 +141,7 @@ test('should override correctly', t => {
           config: {
             credentials: {
               accessKeyId: '1',
-              secretAccessKey: '1',
+              accessKeySecret: '1',
             },
           },
         },
@@ -169,7 +169,7 @@ test('should override correctly', t => {
     config: {
       credentials: {
         accessKeyId: '1',
-        secretAccessKey: '1',
+        accessKeySecret: '1',
       },
     },
   });

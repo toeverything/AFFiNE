@@ -14,7 +14,6 @@ export enum TokenType {
   ChangeEmail,
   ChangePassword,
   Challenge,
-  OpenAppSignIn,
 }
 
 @Injectable()

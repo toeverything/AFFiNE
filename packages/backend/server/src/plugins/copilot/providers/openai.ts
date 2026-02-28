@@ -24,9 +24,7 @@ import {
   CopilotPromptInvalid,
   CopilotProviderNotSupported,
   CopilotProviderSideError,
-  fetchBuffer,
   metrics,
-  OneMB,
   UserFriendlyError,
 } from '../../../base';
 import { CopilotProvider } from './provider';
@@ -396,7 +394,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       'responses' in this.#instance &&
       !this.isReasoningModel(model)
     ) {
-      return ['web_search_preview', openai.tools.webSearch({})];
+      return ['web_search_preview', openai.tools.webSearchPreview({})];
     } else if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
     }
@@ -675,12 +673,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     for (const [idx, entry] of attachments.entries()) {
       const url = typeof entry === 'string' ? entry : entry.attachment;
-      try {
-        const { buffer, type } = await fetchBuffer(url, 10 * OneMB, 'image/');
-        const file = new File([buffer], `${idx}.png`, { type });
-        form.append('image[]', file);
-      } catch {
-        continue;
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const type = resp.headers.get('content-type');
+        if (type && type.startsWith('image/')) {
+          const buffer = new Uint8Array(await resp.arrayBuffer());
+          const file = new File([buffer], `${idx}.png`, { type });
+          form.append('image[]', file);
+        }
       }
     }
 

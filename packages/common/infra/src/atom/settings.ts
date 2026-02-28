@@ -17,7 +17,6 @@ export type AppSetting = {
   autoDownloadUpdate: boolean;
   enableTelemetry: boolean;
   showLinkedDocInSidebar: boolean;
-  disableImageAntialiasing: boolean;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'frameless',
@@ -30,13 +29,12 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>(
   {
     clientBorder: BUILD_CONFIG.isElectron && !environment.isWindows,
     windowFrameStyle: 'frameless',
-    enableBlurBackground: BUILD_CONFIG.isElectron && environment.isMacOs,
+    enableBlurBackground: false,
     enableNoisyBackground: true,
     autoCheckUpdate: true,
     autoDownloadUpdate: true,
     enableTelemetry: true,
     showLinkedDocInSidebar: true,
-    disableImageAntialiasing: false,
   },
   undefined,
   {

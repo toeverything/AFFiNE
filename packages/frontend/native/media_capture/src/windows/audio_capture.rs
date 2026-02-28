@@ -2,21 +2,21 @@ use std::{
   cell::RefCell,
   collections::HashMap,
   sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
   },
   thread::JoinHandle,
 };
 
 use cpal::{
-  SampleRate,
   traits::{DeviceTrait, HostTrait, StreamTrait},
+  SampleRate,
 };
 use crossbeam_channel::unbounded;
 use napi::{
-  Error, Status,
   bindgen_prelude::{Float32Array, Result},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+  Error, Status,
 };
 use napi_derive::napi;
 use rubato::{FastFixedIn, PolynomialDegree, Resampler};
@@ -95,7 +95,11 @@ thread_local! {
     static RESAMPLER_CACHE: RefCell<HashMap<(u32, u32, usize), BufferedResampler>> = RefCell::new(HashMap::new());
 }
 
-fn process_audio_with_resampler(samples: Vec<f32>, from_sample_rate: u32, to_sample_rate: u32) -> Vec<f32> {
+fn process_audio_with_resampler(
+  samples: Vec<f32>,
+  from_sample_rate: u32,
+  to_sample_rate: u32,
+) -> Vec<f32> {
   if from_sample_rate == to_sample_rate {
     return samples;
   }
@@ -216,13 +220,16 @@ impl Drop for AudioCaptureSession {
   }
 }
 
-pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, ()>) -> Result<AudioCaptureSession> {
+pub fn start_recording(
+  audio_buffer_callback: ThreadsafeFunction<Float32Array, ()>,
+) -> Result<AudioCaptureSession> {
   let available_hosts = cpal::available_hosts();
   let host_id = available_hosts
     .first()
     .ok_or_else(|| Error::new(Status::GenericFailure, "No CPAL hosts available"))?;
 
-  let host = cpal::host_from_id(*host_id).map_err(|e| Error::new(Status::GenericFailure, format!("{e}")))?;
+  let host =
+    cpal::host_from_id(*host_id).map_err(|e| Error::new(Status::GenericFailure, format!("{e}")))?;
 
   let mic = host
     .default_input_device()
@@ -260,7 +267,9 @@ pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, (
     .build_input_stream(
       &mic_stream_config,
       move |data: &[f32], _| {
-        let _ = tx_mic.send(AudioBuffer { data: data.to_vec() });
+        let _ = tx_mic.send(AudioBuffer {
+          data: data.to_vec(),
+        });
       },
       |err| eprintln!("CPAL mic stream error: {err}"),
       None,
@@ -273,7 +282,9 @@ pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, (
     .build_input_stream(
       &lb_stream_config,
       move |data: &[f32], _| {
-        let _ = tx_lb.send(AudioBuffer { data: data.to_vec() });
+        let _ = tx_lb.send(AudioBuffer {
+          data: data.to_vec(),
+        });
       },
       |err| eprintln!("CPAL loopback stream error: {err}"),
       None,
@@ -295,7 +306,11 @@ pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, (
         let mono_samples: Vec<f32> = if mic_channels == 1 {
           buf.data
         } else {
-          buf.data.chunks(mic_channels as usize).map(to_mono).collect()
+          buf
+            .data
+            .chunks(mic_channels as usize)
+            .map(to_mono)
+            .collect()
         };
         pre_mic.extend_from_slice(&mono_samples);
       }
@@ -332,7 +347,10 @@ pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, (
         let lb_chunk: Vec<f32> = post_lb.drain(..TARGET_FRAME_SIZE).collect();
         let mixed = mix(&mic_chunk, &lb_chunk);
         if !mixed.is_empty() {
-          let _ = audio_buffer_callback.call(Ok(mixed.clone().into()), ThreadsafeFunctionCallMode::NonBlocking);
+          let _ = audio_buffer_callback.call(
+            Ok(mixed.clone().into()),
+            ThreadsafeFunctionCallMode::NonBlocking,
+          );
         }
       }
 

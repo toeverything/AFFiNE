@@ -1,5 +1,6 @@
 import type { I18nString } from '@affine/i18n';
 import type { Dayjs } from 'dayjs';
+import type ICAL from 'ical.js';
 import type { ComponentType, SVGProps } from 'react';
 
 import type { DocIntegrationRef } from '../db/schema/schema';
@@ -102,12 +103,12 @@ export interface ReadwiseConfig {
 // ===============================
 export type CalendarEvent = {
   id: string;
-  subscriptionId: string;
+  url: string;
   title: string;
-  startAt: Dayjs;
-  endAt: Dayjs;
-  allDay: boolean;
-  date: Dayjs;
-  calendarName?: string;
-  calendarColor?: string;
+  startAt?: ICAL.Time;
+  endAt?: ICAL.Time;
+  allDay?: boolean;
+  date?: Dayjs;
 };
+
+export type EventsByDateMap = Map<string, CalendarEvent[]>;

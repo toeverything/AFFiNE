@@ -4,7 +4,7 @@ import test from 'ava';
 
 import { createModule } from '../../__tests__/create-module';
 import { Mockers } from '../../__tests__/mocks';
-import { Models } from '../index';
+import { Models } from '..';
 
 const module = await createModule({});
 

@@ -132,11 +132,10 @@ export class AppleOAuthProvider extends OAuthProvider {
       { method: 'GET' },
       { treatServerErrorAsInvalid: true }
     );
-    const idToken = tokens.idToken;
 
     const payload = await new Promise<JwtPayload>((resolve, reject) => {
       jwt.verify(
-        idToken,
+        tokens.idToken!,
         (header, callback) => {
           const key = keys.find(key => key.kid === header.kid);
           if (!key) {

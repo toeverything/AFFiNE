@@ -5,20 +5,14 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
   AFFiNELogger,
-  buildCorsAllowedOrigins,
   CacheInterceptor,
   CloudThrottlerGuard,
   Config,
-  CORS_ALLOWED_HEADERS,
-  CORS_ALLOWED_METHODS,
-  CORS_EXPOSED_HEADERS,
-  corsOriginCallback,
   GlobalExceptionFilter,
   URLHelper,
 } from './base';
 import { SocketIoAdapter } from './base/websocket';
 import { AuthGuard } from './core/auth';
-import { TelemetryService } from './core/telemetry/service';
 import { serverTimingAndCache } from './middleware/timing';
 
 const OneMB = 1024 * 1024;
@@ -27,7 +21,7 @@ export async function run() {
   const { AppModule } = await import('./app.module');
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: false,
+    cors: true,
     rawBody: true,
     bodyParser: true,
     bufferLogs: true,
@@ -38,47 +32,6 @@ export async function run() {
   const logger = app.get(AFFiNELogger);
   app.useLogger(logger);
   const config = app.get(Config);
-  const url = app.get(URLHelper);
-  let telemetry: TelemetryService | null = null;
-  try {
-    telemetry = app.get(TelemetryService, { strict: false });
-  } catch {
-    telemetry = null;
-  }
-
-  const defaultAllowedOrigins = buildCorsAllowedOrigins(url);
-
-  app.enableCors((req, callback) => {
-    const requestPath = req.path ?? req.url ?? '';
-    const appendedOrigins = telemetry?.getAllowedOrigins(requestPath) ?? [];
-    const finalAllowedOrigins = appendedOrigins.length
-      ? new Set([...defaultAllowedOrigins, ...appendedOrigins])
-      : defaultAllowedOrigins;
-
-    callback(null, {
-      origin: (origin, originCallback) => {
-        corsOriginCallback(
-          origin,
-          finalAllowedOrigins,
-          blockedOrigin => {
-            if (!appendedOrigins.length) {
-              logger.warn(
-                `Blocked CORS request from origin: ${blockedOrigin}`,
-                { requestPath }
-              );
-            }
-          },
-          originCallback
-        );
-      },
-      credentials: true,
-      methods: CORS_ALLOWED_METHODS,
-      allowedHeaders: CORS_ALLOWED_HEADERS,
-      exposedHeaders: CORS_EXPOSED_HEADERS,
-      maxAge: 86400,
-      optionsSuccessStatus: 204,
-    });
-  });
 
   if (config.server.path) {
     app.setGlobalPrefix(config.server.path);
@@ -121,13 +74,12 @@ export async function run() {
     });
   }
 
-  await app.listen(config.server.port, config.server.listenAddr);
+  const url = app.get(URLHelper);
+  const listeningHost = '0.0.0.0';
 
-  const formattedAddr = config.server.listenAddr.includes(':')
-    ? `[${config.server.listenAddr}]`
-    : config.server.listenAddr;
+  await app.listen(config.server.port, listeningHost);
 
   logger.log(`AFFiNE Server is running in [${env.DEPLOYMENT_TYPE}] mode`);
-  logger.log(`Listening on http://${formattedAddr}:${config.server.port}`);
+  logger.log(`Listening on http://${listeningHost}:${config.server.port}`);
   logger.log(`And the public server should be recognized as ${url.baseUrl}`);
 }

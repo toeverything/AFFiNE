@@ -1,6 +1,7 @@
 use objc2::{
-  Encode, Encoding, RefEncode, msg_send,
+  msg_send,
   runtime::{AnyClass, AnyObject},
+  Encode, Encoding, RefEncode,
 };
 
 use crate::{audio_stream_basic_desc::AudioStreamDescription, error::CoreAudioError};
@@ -36,7 +37,11 @@ unsafe impl Encode for AVAudioFormatRef {
                 1,
                 &Encoding::Struct(
                   "AudioChannelDescription",
-                  &[Encoding::UInt, Encoding::UInt, Encoding::Array(3, &Encoding::Float)],
+                  &[
+                    Encoding::UInt,
+                    Encoding::UInt,
+                    Encoding::Array(3, &Encoding::Float),
+                  ],
                 ),
               ),
               Encoding::UInt,
@@ -57,13 +62,16 @@ unsafe impl RefEncode for AVAudioFormatRef {
 
 #[allow(unused)]
 impl AVAudioFormat {
-  pub fn new(audio_stream_basic_description: AudioStreamDescription) -> Result<Self, CoreAudioError> {
+  pub fn new(
+    audio_stream_basic_description: AudioStreamDescription,
+  ) -> Result<Self, CoreAudioError> {
     let cls = AnyClass::get(c"AVAudioFormat").ok_or(CoreAudioError::AVAudioFormatClassNotFound)?;
     let obj: *mut AnyObject = unsafe { msg_send![cls, alloc] };
     if obj.is_null() {
       return Err(CoreAudioError::AllocAVAudioFormatFailed);
     }
-    let obj: *mut AnyObject = unsafe { msg_send![obj, initWithStreamDescription: &audio_stream_basic_description.0] };
+    let obj: *mut AnyObject =
+      unsafe { msg_send![obj, initWithStreamDescription: &audio_stream_basic_description.0] };
     if obj.is_null() {
       return Err(CoreAudioError::InitAVAudioFormatFailed);
     }

@@ -1,6 +1,11 @@
 import { FactoryProvider, Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
+import {
+  applyUpdate,
+  diffUpdate,
+  Doc as YDoc,
+  encodeStateVectorFromUpdate,
+} from 'yjs';
 
 import {
   Cache,
@@ -43,14 +48,16 @@ export abstract class DocReader {
     protected readonly blobStorage: WorkspaceBlobStorage
   ) {}
 
-  // keep methods to allow test mocking
   parseDocContent(bin: Uint8Array, maxSummaryLength = 150) {
-    return parsePageDoc(bin, { maxSummaryLength });
+    const doc = new YDoc();
+    applyUpdate(doc, bin);
+    return parsePageDoc(doc, { maxSummaryLength });
   }
 
-  // keep methods to allow test mocking
   parseWorkspaceContent(bin: Uint8Array) {
-    return parseWorkspaceDoc(bin);
+    const doc = new YDoc();
+    applyUpdate(doc, bin);
+    return parseWorkspaceDoc(doc);
   }
 
   abstract getDoc(
@@ -185,12 +192,7 @@ export class DatabaseDocReader extends DocReader {
     if (!doc) {
       return null;
     }
-    return parseDocToMarkdownFromDocSnapshot(
-      workspaceId,
-      docId,
-      doc.bin,
-      aiEditable
-    );
+    return parseDocToMarkdownFromDocSnapshot(docId, doc.bin, aiEditable);
   }
 
   async getDocDiff(
@@ -213,9 +215,11 @@ export class DatabaseDocReader extends DocReader {
     guid: string,
     fullContent?: boolean
   ): Promise<PageDocContent | null> {
-    const docBinary = await this.workspace.getDocBinNative(workspaceId, guid);
-    if (!docBinary) return null;
-    return this.parseDocContent(docBinary, fullContent ? -1 : 150);
+    const docRecord = await this.workspace.getDoc(workspaceId, guid);
+    if (!docRecord) {
+      return null;
+    }
+    return this.parseDocContent(docRecord.bin, fullContent ? -1 : 150);
   }
 
   protected override async getWorkspaceContentWithoutCache(
@@ -257,13 +261,12 @@ export class RpcDocReader extends DatabaseDocReader {
     super(cache, models, blobStorage, workspace);
   }
 
-  private async fetch(url: string, method: 'GET' | 'POST', body?: Uint8Array) {
-    const { pathname } = new URL(url);
-    const accessToken = this.crypto.signInternalAccessToken({
-      method,
-      path: pathname,
-    });
-
+  private async fetch(
+    accessToken: string,
+    url: string,
+    method: 'GET' | 'POST',
+    body?: Uint8Array
+  ) {
     const headers: Record<string, string> = {
       'x-access-token': accessToken,
       'x-cloud-trace-context': getOrGenRequestId('rpc'),
@@ -294,8 +297,9 @@ export class RpcDocReader extends DatabaseDocReader {
     docId: string
   ): Promise<DocRecord | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}`;
+    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(url, 'GET');
+      const res = await this.fetch(accessToken, url, 'GET');
       if (!res) {
         return null;
       }
@@ -330,8 +334,9 @@ export class RpcDocReader extends DatabaseDocReader {
     aiEditable: boolean
   ): Promise<DocMarkdown | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown?aiEditable=${aiEditable}`;
+    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(url, 'GET');
+      const res = await this.fetch(accessToken, url, 'GET');
       if (!res) {
         return null;
       }
@@ -357,8 +362,9 @@ export class RpcDocReader extends DatabaseDocReader {
     stateVector?: Uint8Array
   ): Promise<DocDiff | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
+    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(url, 'POST', stateVector);
+      const res = await this.fetch(accessToken, url, 'POST', stateVector);
       if (!res) {
         return null;
       }
@@ -397,8 +403,9 @@ export class RpcDocReader extends DatabaseDocReader {
     fullContent = false
   ): Promise<PageDocContent | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content?full=${fullContent}`;
+    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(url, 'GET');
+      const res = await this.fetch(accessToken, url, 'GET');
       if (!res) {
         return null;
       }
@@ -424,8 +431,9 @@ export class RpcDocReader extends DatabaseDocReader {
     workspaceId: string
   ): Promise<WorkspaceDocInfo | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/content`;
+    const accessToken = this.crypto.sign(workspaceId);
     try {
-      const res = await this.fetch(url, 'GET');
+      const res = await this.fetch(accessToken, url, 'GET');
       if (!res) {
         return null;
       }
@@ -447,7 +455,7 @@ export class RpcDocReader extends DatabaseDocReader {
 export const DocReaderProvider: FactoryProvider = {
   provide: DocReader,
   useFactory: (ref: ModuleRef) => {
-    if (env.flavors.doc || env.flavors.front) {
+    if (env.flavors.doc) {
       return ref.create(DatabaseDocReader);
     }
     return ref.create(RpcDocReader);

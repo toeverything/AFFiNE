@@ -5,7 +5,7 @@ import test from 'ava';
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { Comment, CommentChangeAction } from '../../../models';
-import { CommentModule } from '../index';
+import { CommentModule } from '..';
 import { CommentService } from '../service';
 
 const module = await createModule({

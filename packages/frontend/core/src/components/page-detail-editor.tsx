@@ -25,10 +25,6 @@ export interface PageDetailEditorProps {
   readonly?: boolean;
 }
 
-type DocMetaWithHeaderImage = {
-  headerImage?: string;
-};
-
 export const PageDetailEditor = ({
   onLoad,
   readonly,
@@ -38,7 +34,6 @@ export const PageDetailEditor = ({
   const defaultOpenProperty = useLiveData(editor.defaultOpenProperty$);
 
   const doc = useService(DocService).doc;
-  const docMeta = useLiveData(doc.meta$) as DocMetaWithHeaderImage | null;
   const pageWidth = useLiveData(doc.properties$.selector(p => p.pageWidth));
 
   const isSharedMode = editor.isSharedMode;
@@ -59,33 +54,17 @@ export const PageDetailEditor = ({
   }, [editor, readonly]);
 
   return (
-    <>
-      {docMeta?.headerImage && (
-        <img
-          src={docMeta.headerImage}
-          alt="Document header"
-          style={{
-            width: '100%',
-            maxHeight: 240,
-            objectFit: 'cover',
-            borderRadius: 8,
-            marginBottom: 12,
-          }}
-        />
-      )}
-
-      <BlockSuiteEditor
-        className={clsx(styles.editor, {
-          'full-screen': !isSharedMode && fullWidthLayout,
-          'is-public': isSharedMode,
-        })}
-        mode={mode}
-        defaultOpenProperty={defaultOpenProperty}
-        page={editor.doc.blockSuiteDoc}
-        shared={isSharedMode}
-        readonly={readonly}
-        onEditorReady={onLoad}
-      />
-    </>
+    <BlockSuiteEditor
+      className={clsx(styles.editor, {
+        'full-screen': !isSharedMode && fullWidthLayout,
+        'is-public': isSharedMode,
+      })}
+      mode={mode}
+      defaultOpenProperty={defaultOpenProperty}
+      page={editor.doc.blockSuiteDoc}
+      shared={isSharedMode}
+      readonly={readonly}
+      onEditorReady={onLoad}
+    />
   );
 };

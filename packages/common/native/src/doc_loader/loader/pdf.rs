@@ -1,4 +1,4 @@
-use pdf_extract::{PlainTextOutput, output_doc, output_doc_encrypted};
+use pdf_extract::{output_doc, output_doc_encrypted, PlainTextOutput};
 
 /**
  * modified from https://github.com/Abraxas-365/langchain-rust/tree/v4.6.0/src/document_loaders
@@ -72,7 +72,8 @@ mod tests {
     assert_eq!(docs.len(), 1);
     assert_eq!(
       &docs[0].page_content[..100],
-      "\n\nSample PDF\nThis is a simple PDF ﬁle. Fun fun fun.\n\nLorem ipsum dolor  sit amet,  consectetuer  a"
+      "\n\nSample PDF\nThis is a simple PDF ﬁle. Fun fun fun.\n\nLorem ipsum dolor  sit amet,  \
+       consectetuer  a"
     );
   }
 

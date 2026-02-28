@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use coreaudio::sys::{AudioObjectID, kAudioTapPropertyFormat};
+use coreaudio::sys::{kAudioTapPropertyFormat, AudioObjectID};
 use objc2::{Encode, Encoding, RefEncode};
 
 use crate::{error::CoreAudioError, utils::get_global_main_property};
@@ -171,7 +171,7 @@ impl std::fmt::Display for AudioFormatFlags {
 
 impl std::fmt::Debug for AudioFormatFlags {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "AudioFormatFlags({self})")
+    write!(f, "AudioFormatFlags({})", self)
   }
 }
 
@@ -226,8 +226,9 @@ impl Display for AudioStreamDescription {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "AudioStreamBasicDescription {{ mSampleRate: {}, mFormatID: {:?}, mFormatFlags: {}, mBytesPerPacket: {}, \
-       mFramesPerPacket: {}, mBytesPerFrame: {}, mChannelsPerFrame: {}, mBitsPerChannel: {}, mReserved: {} }}",
+      "AudioStreamBasicDescription {{ mSampleRate: {}, mFormatID: {:?}, mFormatFlags: {}, \
+       mBytesPerPacket: {}, mFramesPerPacket: {}, mBytesPerFrame: {}, mChannelsPerFrame: {}, \
+       mBitsPerChannel: {}, mReserved: {} }}",
       self.0.mSampleRate,
       AudioFormatID::from(self.0.mFormatID),
       AudioFormatFlags(self.0.mFormatFlags),

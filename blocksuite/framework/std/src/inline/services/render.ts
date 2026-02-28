@@ -10,15 +10,25 @@ import type { InlineRange } from '../types.js';
 import { deltaInsertsToChunks } from '../utils/delta-convert.js';
 
 export class RenderService<TextAttributes extends BaseTextAttributes> {
-  private _pendingRemoteInlineRangeSync = false;
+  private readonly _onYTextChange = (
+    _: Y.YTextEvent,
+    transaction: Y.Transaction
+  ) => {
+    this.editor.slots.textChange.next();
 
-  private _carriageReturnValidationCounter = 0;
+    const yText = this.editor.yText;
 
-  private _renderVersion = 0;
+    if (yText.toString().includes('\r')) {
+      throw new BlockSuiteError(
+        ErrorCode.InlineEditorError,
+        'yText must not contain "\\r" because it will break the range synchronization'
+      );
+    }
 
-  private readonly _syncRemoteInlineRange = () => {
+    this.render();
+
     const inlineRange = this.editor.inlineRange$.peek();
-    if (!inlineRange) return;
+    if (!inlineRange || transaction.local) return;
 
     const lastStartRelativePosition = this.editor.lastStartRelativePosition;
     const lastEndRelativePosition = this.editor.lastEndRelativePosition;
@@ -40,7 +50,7 @@ export class RenderService<TextAttributes extends BaseTextAttributes> {
 
     const startIndex = absoluteStart?.index;
     const endIndex = absoluteEnd?.index;
-    if (startIndex == null || endIndex == null) return;
+    if (!startIndex || !endIndex) return;
 
     const newInlineRange: InlineRange = {
       index: startIndex,
@@ -49,31 +59,7 @@ export class RenderService<TextAttributes extends BaseTextAttributes> {
     if (!this.editor.isValidInlineRange(newInlineRange)) return;
 
     this.editor.setInlineRange(newInlineRange);
-  };
-
-  private readonly _onYTextChange = (
-    _: Y.YTextEvent,
-    transaction: Y.Transaction
-  ) => {
-    this.editor.slots.textChange.next();
-
-    const yText = this.editor.yText;
-
-    if (
-      (this._carriageReturnValidationCounter++ & 0x3f) === 0 &&
-      yText.toString().includes('\r')
-    ) {
-      throw new BlockSuiteError(
-        ErrorCode.InlineEditorError,
-        'yText must not contain "\\r" because it will break the range synchronization'
-      );
-    }
-
-    if (!transaction.local) {
-      this._pendingRemoteInlineRangeSync = true;
-    }
-
-    this.render();
+    this.editor.syncInlineRange();
   };
 
   mount = () => {
@@ -84,7 +70,6 @@ export class RenderService<TextAttributes extends BaseTextAttributes> {
     editor.disposables.add({
       dispose: () => {
         yText.unobserve(this._onYTextChange);
-        this._pendingRemoteInlineRangeSync = false;
       },
     });
   };
@@ -97,7 +82,6 @@ export class RenderService<TextAttributes extends BaseTextAttributes> {
   render = () => {
     if (!this.editor.rootElement) return;
 
-    const renderVersion = ++this._renderVersion;
     this._rendering = true;
 
     const rootElement = this.editor.rootElement;
@@ -168,21 +152,11 @@ export class RenderService<TextAttributes extends BaseTextAttributes> {
     this.editor
       .waitForUpdate()
       .then(() => {
-        if (renderVersion !== this._renderVersion) return;
-        if (this._pendingRemoteInlineRangeSync) {
-          this._pendingRemoteInlineRangeSync = false;
-          this._syncRemoteInlineRange();
-        }
         this._rendering = false;
         this.editor.slots.renderComplete.next();
         this.editor.syncInlineRange();
       })
-      .catch(error => {
-        if (renderVersion === this._renderVersion) {
-          this._rendering = false;
-        }
-        console.error(error);
-      });
+      .catch(console.error);
   };
 
   rerenderWholeEditor = () => {

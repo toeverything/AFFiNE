@@ -112,7 +112,7 @@ const DatabaseBacklinkRow = ({
     useMemo(
       () =>
         row?.docId ? templateDocService.list.isTemplate$(row.docId) : undefined,
-      [row, templateDocService.list]
+      [row?.docId, templateDocService.list]
     )
   );
 

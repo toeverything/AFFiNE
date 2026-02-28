@@ -42,9 +42,9 @@ import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { CopilotCronJobs } from './cron';
-import { PromptService } from './prompt/service';
+import { PromptService } from './prompt';
+import { PromptMessage, StreamObject } from './providers';
 import { CopilotProviderFactory } from './providers/factory';
-import type { PromptMessage, StreamObject } from './providers/types';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
@@ -825,7 +825,6 @@ export class CopilotResolver {
   @Query(() => String, {
     description:
       'Apply updates to a doc using LLM and return the merged markdown.',
-    deprecationReason: 'use Mutation.applyDocUpdates',
   })
   async applyDocUpdates(
     @CurrentUser() user: CurrentUser,
@@ -836,35 +835,6 @@ export class CopilotResolver {
     @Args({ name: 'op', type: () => String })
     op: string,
     @Args({ name: 'updates', type: () => String })
-    updates: string
-  ): Promise<string> {
-    return this.applyDocUpdatesInternal(user, workspaceId, docId, op, updates);
-  }
-
-  @Mutation(() => String, {
-    description:
-      'Apply updates to a doc using LLM and return the merged markdown.',
-    name: 'applyDocUpdates',
-  })
-  async applyDocUpdatesMutation(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'workspaceId', type: () => String })
-    workspaceId: string,
-    @Args({ name: 'docId', type: () => String })
-    docId: string,
-    @Args({ name: 'op', type: () => String })
-    op: string,
-    @Args({ name: 'updates', type: () => String })
-    updates: string
-  ): Promise<string> {
-    return this.applyDocUpdatesInternal(user, workspaceId, docId, op, updates);
-  }
-
-  private async applyDocUpdatesInternal(
-    user: CurrentUser,
-    workspaceId: string,
-    docId: string,
-    op: string,
     updates: string
   ): Promise<string> {
     await this.assertPermission(user, { workspaceId, docId });

@@ -20,7 +20,7 @@ import { FeatureModule } from '../../features';
 import { MailModule } from '../../mail';
 import { PermissionModule } from '../../permission';
 import { StorageModule } from '../../storage';
-import { NotificationModule } from '../index';
+import { NotificationModule } from '..';
 import { NotificationService } from '../service';
 
 const module = await createModule({

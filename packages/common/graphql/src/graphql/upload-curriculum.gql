@@ -1,0 +1,3 @@
+mutation uploadCurriculum($workspaceId: String!, $curriculum: Upload!) {
+  uploadCurriculum(workspaceId: $workspaceId, curriculum: $curriculum)
+}

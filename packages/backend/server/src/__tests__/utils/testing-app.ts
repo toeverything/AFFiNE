@@ -14,7 +14,6 @@ import {
   GlobalExceptionFilter,
   JobQueue,
 } from '../../base';
-import { SocketIoAdapter } from '../../base/websocket';
 import { AuthService } from '../../core/auth';
 import { Mailer } from '../../core/mail';
 import { UserModel } from '../../models';
@@ -62,7 +61,6 @@ export async function createTestingApp(
   );
 
   app.use(cookieParser());
-  app.useWebSocketAdapter(new SocketIoAdapter(app));
 
   if (moduleDef.tapApp) {
     moduleDef.tapApp(app);
@@ -91,7 +89,6 @@ export function parseCookies(res: supertest.Response) {
 export class TestingApp extends ApplyType<INestApplication>() {
   private sessionCookie: string | null = null;
   private currentUserCookie: string | null = null;
-  private csrfCookie: string | null = null;
   private readonly userCookies: Set<string> = new Set();
 
   readonly create!: ReturnType<typeof createFactory>;
@@ -106,7 +103,6 @@ export class TestingApp extends ApplyType<INestApplication>() {
     await initTestingDB(this);
     this.sessionCookie = null;
     this.currentUserCookie = null;
-    this.csrfCookie = null;
     this.userCookies.clear();
   }
 
@@ -122,23 +118,12 @@ export class TestingApp extends ApplyType<INestApplication>() {
     method: 'options' | 'get' | 'post' | 'put' | 'delete' | 'patch',
     path: string
   ): supertest.Test {
-    const cookies = [
-      `${AuthService.sessionCookieName}=${this.sessionCookie ?? ''}`,
-      `${AuthService.userCookieName}=${this.currentUserCookie ?? ''}`,
-    ];
-    if (this.csrfCookie) {
-      cookies.push(`${AuthService.csrfCookieName}=${this.csrfCookie}`);
-    }
-
-    const req = supertest(this.getHttpServer())
+    return supertest(this.getHttpServer())
       [method](path)
-      .set('Cookie', cookies);
-
-    if (this.csrfCookie) {
-      req.set('x-affine-csrf-token', this.csrfCookie);
-    }
-
-    return req;
+      .set('Cookie', [
+        `${AuthService.sessionCookieName}=${this.sessionCookie ?? ''}`,
+        `${AuthService.userCookieName}=${this.currentUserCookie ?? ''}`,
+      ]);
   }
 
   OPTIONS(path: string): supertest.Test {
@@ -162,9 +147,6 @@ export class TestingApp extends ApplyType<INestApplication>() {
 
           this.sessionCookie = cookies[AuthService.sessionCookieName];
           this.currentUserCookie = cookies[AuthService.userCookieName];
-          if (AuthService.csrfCookieName in cookies) {
-            this.csrfCookie = cookies[AuthService.csrfCookieName] || null;
-          }
           if (this.currentUserCookie) {
             this.userCookies.add(this.currentUserCookie);
           }
@@ -288,17 +270,13 @@ export class TestingApp extends ApplyType<INestApplication>() {
   }
 
   async logout(userId?: string) {
-    const res = await this.POST(
+    const res = await this.GET(
       '/api/auth/sign-out' + (userId ? `?user_id=${userId}` : '')
     ).expect(200);
     const cookies = parseCookies(res);
     this.sessionCookie = cookies[AuthService.sessionCookieName];
-    if (AuthService.csrfCookieName in cookies) {
-      this.csrfCookie = cookies[AuthService.csrfCookieName] || null;
-    }
     if (!this.sessionCookie) {
       this.currentUserCookie = null;
-      this.csrfCookie = null;
       this.userCookies.clear();
     } else {
       this.currentUserCookie = cookies[AuthService.userCookieName];

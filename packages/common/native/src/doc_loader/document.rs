@@ -1,6 +1,6 @@
 use std::{
   io::Cursor,
-  panic::{AssertUnwindSafe, catch_unwind},
+  panic::{catch_unwind, AssertUnwindSafe},
   path::PathBuf,
 };
 
@@ -22,7 +22,9 @@ pub struct DocOptions {
 
 impl Default for DocOptions {
   fn default() -> Self {
-    Self { code_threshold: 1000 }
+    Self {
+      code_threshold: 1000,
+    }
   }
 }
 
@@ -37,7 +39,9 @@ impl Doc {
   }
 
   pub fn with_options(file_path: &str, doc: &[u8], options: DocOptions) -> LoaderResult<Self> {
-    if let Some(kind) = infer::get(&doc[..4096.min(doc.len())]).or(infer::get_from_path(file_path).ok().flatten()) {
+    if let Some(kind) =
+      infer::get(&doc[..4096.min(doc.len())]).or(infer::get_from_path(file_path).ok().flatten())
+    {
       if kind.extension() == "pdf" {
         return Self::load_pdf(file_path, doc);
       } else if kind.extension() == "docx" {
@@ -62,10 +66,11 @@ impl Doc {
         }
         "rs" | "c" | "cpp" | "h" | "hpp" | "js" | "ts" | "tsx" | "go" | "py" => {
           let name = path.full_str().to_string();
-          let loader = SourceCodeLoader::from_string(string).with_parser_option(LanguageParserOptions {
-            language: get_language_by_filename(&name)?,
-            parser_threshold: options.code_threshold,
-          });
+          let loader =
+            SourceCodeLoader::from_string(string).with_parser_option(LanguageParserOptions {
+              language: get_language_by_filename(&name)?,
+              parser_threshold: options.code_threshold,
+            });
           let splitter = TokenSplitter::default();
           return Self::from_loader(file_path, loader, splitter);
         }
@@ -84,7 +89,10 @@ impl Doc {
     splitter: impl TextSplitter + 'static,
   ) -> Result<Doc, LoaderError> {
     let name = file_path.to_string();
-    let chunks = catch_unwind(AssertUnwindSafe(|| Self::get_chunks_from_loader(loader, splitter))).map_err(|e| {
+    let chunks = catch_unwind(AssertUnwindSafe(|| {
+      Self::get_chunks_from_loader(loader, splitter)
+    }))
+    .map_err(|e| {
       LoaderError::Other(match e.downcast::<String>() {
         Ok(v) => *v,
         Err(e) => match e.downcast::<&str>() {
@@ -116,7 +124,8 @@ impl Doc {
   }
 
   fn load_docx(file_path: &str, doc: &[u8]) -> LoaderResult<Self> {
-    let loader = DocxLoader::new(Cursor::new(doc)).ok_or(LoaderError::Other("Failed to parse docx document".into()))?;
+    let loader = DocxLoader::new(Cursor::new(doc))
+      .ok_or(LoaderError::Other("Failed to parse docx document".into()))?;
     let splitter = TokenSplitter::default();
     Self::from_loader(file_path, loader, splitter)
   }
@@ -166,7 +175,8 @@ mod tests {
       let buffer = read(fixtures.join(fixture)).unwrap();
       let doc = Doc::with_options(fixture, &buffer, DocOptions { code_threshold: 0 }).unwrap();
       for chunk in doc.chunks.iter() {
-        let output = read_to_string(fixtures.join(format!("{}.{}.md", fixture, chunk.index))).unwrap();
+        let output =
+          read_to_string(fixtures.join(format!("{}.{}.md", fixture, chunk.index))).unwrap();
         assert_eq!(chunk.content, output);
       }
     }

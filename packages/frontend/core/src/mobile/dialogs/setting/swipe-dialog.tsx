@@ -9,10 +9,11 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { animate } from 'animejs';
 import {
   createContext,
+  type PropsWithChildren,
+  type RefObject,
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -20,7 +21,7 @@ import { createPortal } from 'react-dom';
 import { SwipeHelper } from '../../utils';
 import * as styles from './swipe-dialog.css';
 
-export interface SwipeDialogProps extends React.PropsWithChildren {
+export interface SwipeDialogProps extends PropsWithChildren {
   triggerSize?: number;
   title?: string;
   open?: boolean;
@@ -141,7 +142,7 @@ const close = (
 };
 
 const SwipeDialogContext = createContext<{
-  stack: Array<React.RefObject<HTMLElement | null>>;
+  stack: Array<RefObject<HTMLElement | null>>;
 }>({
   stack: [],
 });
@@ -161,10 +162,6 @@ export const SwipeDialog = ({
 
   const { stack } = useContext(SwipeDialogContext);
   const prev = stack[stack.length - 1]?.current;
-  const swipeDialogContextValue = useMemo(
-    () => ({ stack: [...stack, dialogRef] }),
-    [stack]
-  );
 
   const handleClose = useCallback(() => {
     onOpenChange?.(false);
@@ -225,7 +222,7 @@ export const SwipeDialog = ({
   if (!open) return null;
 
   return (
-    <SwipeDialogContext.Provider value={swipeDialogContextValue}>
+    <SwipeDialogContext.Provider value={{ stack: [...stack, dialogRef] }}>
       <InsideModalContext.Provider value={insideModal + 1}>
         {createPortal(
           <div className={styles.root}>

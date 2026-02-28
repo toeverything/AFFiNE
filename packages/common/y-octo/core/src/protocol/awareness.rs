@@ -1,4 +1,4 @@
-use nom::{Parser, multi::count};
+use nom::{multi::count, Parser};
 
 use super::*;
 
@@ -65,7 +65,11 @@ fn read_awareness_state(input: &[u8]) -> IResult<&[u8], (u64, AwarenessState)> {
   Ok((tail, (client_id, AwarenessState { clock, content })))
 }
 
-fn write_awareness_state<W: Write>(buffer: &mut W, client_id: u64, state: &AwarenessState) -> Result<(), IoError> {
+fn write_awareness_state<W: Write>(
+  buffer: &mut W,
+  client_id: u64,
+  state: &AwarenessState,
+) -> Result<(), IoError> {
   write_var_u64(buffer, client_id)?;
   write_var_u64(buffer, state.clock)?;
   write_var_string(buffer, state.content.clone())?;
@@ -114,8 +118,14 @@ mod tests {
     ];
 
     let expected = HashMap::from([
-      (1, AwarenessState::new(5, String::from_utf8(vec![1]).unwrap())),
-      (2, AwarenessState::new(10, String::from_utf8(vec![2, 3]).unwrap())),
+      (
+        1,
+        AwarenessState::new(5, String::from_utf8(vec![1]).unwrap()),
+      ),
+      (
+        2,
+        AwarenessState::new(10, String::from_utf8(vec![2, 3]).unwrap()),
+      ),
       (
         5,
         AwarenessState::new(5, String::from_utf8(vec![1, 2, 3, 4, 5]).unwrap()),

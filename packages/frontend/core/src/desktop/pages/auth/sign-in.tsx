@@ -64,7 +64,7 @@ export const SignIn = ({
 
   return (
     <SignInPageContainer>
-      <div style={{ maxWidth: '400px', width: '100%', zIndex: 1 }}>
+      <div style={{ maxWidth: '400px', width: '100%' }}>
         <SignInPanel
           onSkip={handleClose}
           onAuthenticated={handleAuthenticated}

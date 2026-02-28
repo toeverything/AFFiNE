@@ -1,15 +1,11 @@
-import { LiveData, Service } from '@toeverything/infra';
+import { Service } from '@toeverything/infra';
 
 import type { Server } from '../entities/server';
 
 export class WorkspaceServerService extends Service {
-  readonly server$ = new LiveData<Server | null>(null);
-
-  get server() {
-    return this.server$.value;
-  }
+  server: Server | null = null;
 
   bindServer(server: Server) {
-    this.server$.setValue(server);
+    this.server = server;
   }
 }

@@ -13,14 +13,8 @@ import {
 } from 'yjs';
 
 import { CallMetric } from '../../../base';
-import { mergeUpdatesInApplyWay } from '../../../native';
 import { Connection } from './connection';
 import { SingletonLocker } from './lock';
-
-async function nativeMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
-  // use native module to merge updates
-  return mergeUpdatesInApplyWay(updates.map(u => Buffer.from(u)));
-}
 
 export interface DocRecord {
   spaceId: string;
@@ -101,27 +95,6 @@ export abstract class DocStorageAdapter extends Connection {
     return snapshot;
   }
 
-  /// get final binary only but not updating the snapshot in database
-  async getDocBinNative(
-    spaceId: string,
-    docId: string
-  ): Promise<Uint8Array | undefined> {
-    await using _lock = await this.lockDocForUpdate(spaceId, docId);
-
-    const snapshot = await this.getDocSnapshot(spaceId, docId);
-    const updates = await this.getDocUpdates(spaceId, docId);
-
-    if (updates.length) {
-      const docUpdate = await this.squash(
-        snapshot ? [snapshot, ...updates] : updates,
-        nativeMergeUpdates
-      );
-      return docUpdate.bin;
-    }
-
-    return snapshot?.bin;
-  }
-
   @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
   private async squashUpdatesToSnapshot(
     spaceId: string,
@@ -130,7 +103,7 @@ export abstract class DocStorageAdapter extends Connection {
     snapshot: DocRecord | null,
     finalUpdate: DocUpdate
   ) {
-    this.logger.verbose(
+    this.logger.log(
       `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
     );
 
@@ -152,7 +125,7 @@ export abstract class DocStorageAdapter extends Connection {
 
     // always mark updates as merged unless throws
     const count = await this.markUpdatesMerged(spaceId, docId, updates);
-    this.logger.verbose(
+    this.logger.log(
       `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
     );
 
@@ -250,11 +223,8 @@ export abstract class DocStorageAdapter extends Connection {
   ): Promise<boolean>;
 
   @CallMetric('doc', 'squash')
-  protected async squash(
-    updates: DocUpdate[],
-    merge?: (updates: Uint8Array[]) => Promise<Uint8Array>
-  ): Promise<DocUpdate> {
-    const mergeFn = merge ?? this.options?.mergeUpdates ?? mergeUpdates;
+  protected async squash(updates: DocUpdate[]): Promise<DocUpdate> {
+    const merge = this.options?.mergeUpdates ?? mergeUpdates;
     const lastUpdate = updates.at(-1);
     if (!lastUpdate) {
       throw new Error('No updates to be squashed.');
@@ -265,7 +235,7 @@ export abstract class DocStorageAdapter extends Connection {
       return lastUpdate;
     }
 
-    const finalUpdate = await mergeFn(updates.map(u => u.bin));
+    const finalUpdate = await merge(updates.map(u => u.bin));
 
     return {
       bin: finalUpdate,

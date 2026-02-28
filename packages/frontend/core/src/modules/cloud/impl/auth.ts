@@ -4,24 +4,6 @@ import { AuthProvider } from '../provider/auth';
 import { ServerScope } from '../scopes/server';
 import { FetchService } from '../services/fetch';
 
-const CSRF_COOKIE_NAME = 'affine_csrf_token';
-
-function getCookieValue(name: string) {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const cookies = document.cookie ? document.cookie.split('; ') : [];
-  for (const cookie of cookies) {
-    const idx = cookie.indexOf('=');
-    const key = idx === -1 ? cookie : cookie.slice(0, idx);
-    if (key === name) {
-      return idx === -1 ? '' : cookie.slice(idx + 1);
-    }
-  }
-  return null;
-}
-
 export function configureDefaultAuthProvider(framework: Framework) {
   framework.scope(ServerScope).override(AuthProvider, resolver => {
     const fetchService = resolver.get(FetchService);
@@ -80,11 +62,7 @@ export function configureDefaultAuthProvider(framework: Framework) {
         });
       },
       async signOut() {
-        const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
-        await fetchService.fetch('/api/auth/sign-out', {
-          method: 'POST',
-          headers: csrfToken ? { 'x-affine-csrf-token': csrfToken } : undefined,
-        });
+        await fetchService.fetch('/api/auth/sign-out');
       },
     };
   });

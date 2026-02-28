@@ -19,7 +19,9 @@ export const createExaCrawlTool = (config: Config) => {
         const exa = new Exa(key);
         const result = await exa.getContents([url], {
           livecrawl: 'always',
-          text: { maxCharacters: 100000 },
+          text: {
+            maxCharacters: 100000,
+          },
         });
         return result.results.map(data => ({
           title: data.title,

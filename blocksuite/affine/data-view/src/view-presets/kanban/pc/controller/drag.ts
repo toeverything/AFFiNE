@@ -190,7 +190,7 @@ const createDragPreview = (card: KanbanCard, x: number, y: number) => {
   div.className = 'with-data-view-css-variable';
   div.style.width = `${card.getBoundingClientRect().width}px`;
   div.style.position = 'fixed';
-  div.style.pointerEvents = 'none';
+  // div.style.pointerEvents = 'none';
   div.style.transform = 'rotate(-3deg)';
   div.style.left = `${x}px`;
   div.style.top = `${y}px`;
@@ -209,12 +209,8 @@ const createDragPreview = (card: KanbanCard, x: number, y: number) => {
 };
 const createDropPreview = () => {
   const div = document.createElement('div');
-  div.dataset.isDropPreview = 'true';
-  div.style.pointerEvents = 'none';
-  div.style.position = 'fixed';
-  div.style.zIndex = '9999';
-  div.style.height = '3px';
-  div.style.borderRadius = '2px';
+  div.style.height = '2px';
+  div.style.borderRadius = '1px';
   div.style.backgroundColor = 'var(--affine-primary-color)';
   div.style.boxShadow = '0px 0px 8px 0px rgba(30, 150, 235, 0.35)';
   return {
@@ -223,50 +219,19 @@ const createDropPreview = () => {
       self: KanbanCard | undefined,
       card?: KanbanCard
     ) {
-      if (card === self) {
+      const target = card ?? group.querySelector('.add-card');
+      if (!target) {
+        console.error('`target` is not found');
+        return;
+      }
+      if (target.previousElementSibling === self || target === self) {
         div.remove();
         return;
       }
-
-      if (!card) {
-        const cards = Array.from(
-          group.querySelectorAll('affine-data-view-kanban-card')
-        );
-        const lastCard = cards[cards.length - 1];
-        if (lastCard === self) {
-          div.remove();
-          return;
-        }
-      }
-
-      let rect: DOMRect | undefined;
-      let y = 0;
-      if (card) {
-        rect = card.getBoundingClientRect();
-        y = rect.top;
-      } else {
-        const addCard = group.querySelector('.add-card');
-        if (addCard instanceof HTMLElement) {
-          rect = addCard.getBoundingClientRect();
-          y = rect.top;
-        }
-      }
-      if (!rect) {
-        const body = group.querySelector('.group-body');
-        if (body instanceof HTMLElement) {
-          rect = body.getBoundingClientRect();
-          y = rect.bottom;
-        }
-      }
-      if (!rect) {
-        div.remove();
+      if (target.previousElementSibling === div) {
         return;
       }
-
-      document.body.append(div);
-      div.style.left = `${Math.round(rect.left)}px`;
-      div.style.top = `${Math.round(y - 2)}px`;
-      div.style.width = `${Math.round(rect.width)}px`;
+      target.insertAdjacentElement('beforebegin', div);
     },
     remove() {
       div.remove();

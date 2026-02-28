@@ -19,12 +19,15 @@ import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
 import { AffineIcon } from '../../_common/icons';
+import { AIPreloadConfig } from '../../chat-panel/preload-config';
 import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
 import { mergeStreamObjects } from '../../utils/stream-objects';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 import { type ChatContextValue } from '../ai-chat-content/type';
-import type { AIReasoningConfig } from '../ai-chat-input';
-import { AIPreloadConfig } from './preload-config';
+import type {
+  AINetworkSearchConfig,
+  AIReasoningConfig,
+} from '../ai-chat-input';
 import {
   type HistoryMessage,
   isChatAction,
@@ -194,6 +197,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
+  accessor networkSearchConfig!: AINetworkSearchConfig;
+
+  @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
@@ -217,6 +223,13 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     reflect: true,
   })
   accessor testId = 'chat-panel-messages';
+
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
+  }
 
   private get _isReasoningActive() {
     return !!this.reasoningConfig.enabled.value;
@@ -457,6 +470,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         control: 'chat-send',
         isRootSession: true,
         reasoning: this._isReasoningActive,
+        webSearch: this._isNetworkActive,
         toolsConfig: this.aiToolsConfigService.config.value,
       });
 

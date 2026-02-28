@@ -523,6 +523,7 @@ export class AffineAIPanelWidget extends WidgetComponent {
             .onBlur=${this._discardWithConfirmation}
             .onFinish=${this._inputFinish}
             .onInput=${this.onInput}
+            .networkSearchConfig=${config.networkSearchConfig}
             .theme=${theme}
           ></ai-panel-input>`,
       ],

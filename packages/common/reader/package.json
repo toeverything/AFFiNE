@@ -1,7 +1,7 @@
 {
   "name": "@affine/reader",
   "type": "module",
-  "version": "0.26.3",
+  "version": "0.25.7",
   "private": true,
   "sideEffects": false,
   "module": "./src/index.ts",
@@ -10,11 +10,11 @@
     "./dist": "./dist/index.js"
   },
   "scripts": {
-    "build": "affine bundle -p @affine/reader",
-    "bundle": "affine bundle -p @affine/reader"
+    "build": "yarn bundle",
+    "bundle": "node esbuild.config.js"
   },
   "dependencies": {
-    "lodash-es": "^4.17.23",
+    "lodash-es": "^4.17.21",
     "yjs": "^13.6.27"
   },
   "devDependencies": {

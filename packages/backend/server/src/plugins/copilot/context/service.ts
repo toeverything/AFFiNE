@@ -15,8 +15,7 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { getEmbeddingClient } from '../embedding/client';
-import type { EmbeddingClient } from '../embedding/types';
+import { type EmbeddingClient, getEmbeddingClient } from '../embedding';
 import { ContextSession } from './session';
 
 const CONTEXT_SESSION_KEY = 'context-session';

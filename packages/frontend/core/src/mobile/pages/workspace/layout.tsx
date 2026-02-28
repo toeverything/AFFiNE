@@ -109,19 +109,21 @@ export const WorkspaceLayout = ({
     workspaceServer,
   ]);
 
-  const rootDocReady$ = useMemo(
-    () =>
-      workspace
-        ? LiveData.from(
-            workspace.engine.doc
-              .docState$(workspace.id)
-              .pipe(map(v => v.ready)),
-            false
-          )
-        : null,
-    [workspace]
-  );
-  const isRootDocReady = useLiveData(rootDocReady$) ?? false;
+  const isRootDocReady =
+    useLiveData(
+      useMemo(
+        () =>
+          workspace
+            ? LiveData.from(
+                workspace.engine.doc
+                  .docState$(workspace.id)
+                  .pipe(map(v => v.ready)),
+                false
+              )
+            : null,
+        [workspace]
+      )
+    ) ?? false;
 
   if (!workspace) {
     return null; // skip this, workspace will be set in layout effect

@@ -1,5 +1,5 @@
 import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
-// @ts-expect-error -- mammoth.browser has no compatible type declaration for this subpath.
+// @ts-ignore
 import { convertToHtml } from 'mammoth/mammoth.browser';
 
 import { HtmlTransformer } from './html';

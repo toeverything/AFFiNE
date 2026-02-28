@@ -13,7 +13,6 @@ export interface OAuthState {
   redirectUri?: string;
   client?: string;
   clientNonce?: string;
-  clientVersion?: string;
   provider: OAuthProviderName;
   pkce?: OAuthPkceState;
   token?: string;

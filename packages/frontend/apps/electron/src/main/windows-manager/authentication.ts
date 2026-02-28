@@ -1,5 +1,5 @@
 export interface AuthenticationRequest {
-  method: 'magic-link' | 'oauth' | 'open-app-signin';
+  method: 'magic-link' | 'oauth';
   payload: Record<string, any>;
   server?: string;
 }

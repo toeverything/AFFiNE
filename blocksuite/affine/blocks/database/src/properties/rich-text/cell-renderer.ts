@@ -8,7 +8,10 @@ import type {
   AffineInlineEditor,
   AffineTextAttributes,
 } from '@blocksuite/affine-shared/types';
-import { getViewportElement } from '@blocksuite/affine-shared/utils';
+import {
+  getViewportElement,
+  isValidUrl,
+} from '@blocksuite/affine-shared/utils';
 import {
   BaseCellRenderer,
   createFromBaseCellRenderer,
@@ -23,7 +26,6 @@ import { html } from 'lit/static-html.js';
 
 import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
-import { analyzeTextForUrlPaste, insertUrlTextSegments } from '../paste-url.js';
 import {
   richTextCellStyle,
   richTextContainerStyle,
@@ -269,13 +271,10 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
       ?.getData('text/plain')
       ?.replace(/\r?\n|\r/g, '\n');
     if (!text) return;
-    const { segments, singleUrl } = analyzeTextForUrlPaste(text);
 
-    if (singleUrl) {
+    if (isValidUrl(text)) {
       const std = this.std;
-      const result = std
-        ?.getOptional(ParseDocUrlProvider)
-        ?.parseDocUrl(singleUrl);
+      const result = std?.getOptional(ParseDocUrlProvider)?.parseDocUrl(text);
       if (result) {
         const text = ' ';
         inlineEditor.insertText(inlineRange, text, {
@@ -301,10 +300,22 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
           segment: 'database',
           parentFlavour: 'affine:database',
         });
-        return;
+      } else {
+        inlineEditor.insertText(inlineRange, text, {
+          link: text,
+        });
+        inlineEditor.setInlineRange({
+          index: inlineRange.index + text.length,
+          length: 0,
+        });
       }
+    } else {
+      inlineEditor.insertText(inlineRange, text);
+      inlineEditor.setInlineRange({
+        index: inlineRange.index + text.length,
+        length: 0,
+      });
     }
-    insertUrlTextSegments(inlineEditor, inlineRange, segments);
   };
 
   override connectedCallback() {

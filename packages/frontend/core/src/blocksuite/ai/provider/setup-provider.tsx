@@ -83,7 +83,7 @@ export function setupAIProvider(
 
   //#region actions
   AIProvider.provide('chat', async options => {
-    const { input, contexts } = options;
+    const { input, contexts, webSearch } = options;
 
     const sessionId = await createSession({
       promptName: 'Chat With AFFiNE AI',
@@ -102,7 +102,7 @@ export function setupAIProvider(
         selectedSnapshot: contexts?.selectedSnapshot,
         selectedMarkdown: contexts?.selectedMarkdown,
         html: contexts?.html,
-        ...(options.docId ? { currentDocId: options.docId } : {}),
+        searchMode: webSearch ? 'MUST' : 'AUTO',
       },
       endpoint: Endpoint.StreamObject,
     });

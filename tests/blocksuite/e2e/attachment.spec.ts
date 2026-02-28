@@ -15,6 +15,7 @@ import {
   pressShiftTab,
   pressTab,
   redoByKeyboard,
+  SHORT_KEY,
   type,
   undoByKeyboard,
 } from './utils/actions/keyboard.js';
@@ -112,13 +113,11 @@ function getAttachment(page: Page) {
       await attachment.click();
       await expect(toolbar).toBeVisible();
       await renameBtn.click();
-      await expect(renameInput).toBeVisible();
-      await renameInput.fill(newName);
+      await page.keyboard.press(`${SHORT_KEY}+a`, { delay: 50 });
+      await pressBackspace(page);
+      await type(page, newName);
       await pressEnter(page);
-      await expect(renameInput).not.toBeVisible();
-      if (newName.length > 0) {
-        await expect.poll(getName).toContain(newName);
-      }
+      expect(await getName()).toContain(newName);
     },
 
     // external
@@ -216,11 +215,11 @@ test('should rename attachment works', async ({ page }) => {
   await expect(renameInput).not.toBeVisible();
 
   await rename('new-name');
-  await expect.poll(getName).toBe('new-name.png');
+  expect(await getName()).toBe('new-name.png');
   await rename('');
-  await expect.poll(getName).toBe('.png');
+  expect(await getName()).toBe('.png');
   await rename('abc');
-  await expect.poll(getName).toBe('abc');
+  expect(await getName()).toBe('abc');
 });
 
 test('should turn attachment to image works', async ({ page }, testInfo) => {

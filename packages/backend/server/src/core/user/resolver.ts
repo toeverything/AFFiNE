@@ -22,12 +22,7 @@ import {
   Throttle,
   UserNotFound,
 } from '../../base';
-import {
-  Feature,
-  Models,
-  UserFeatureName,
-  UserSettingsSchema,
-} from '../../models';
+import { Models, UserSettingsSchema } from '../../models';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
 import { CurrentUser } from '../auth/session';
@@ -66,27 +61,21 @@ export class UserResolver {
   ): Promise<typeof UserOrLimitedUser | null> {
     validators.assertValidEmail(email);
 
-    // NOTE: prevent user enumeration. Only allow querying users within the same workspace scope.
-    if (!currentUser) {
-      return null;
-    }
-
+    // TODO(@forehalo): need to limit a user can only get another user witch is in the same workspace
     const user = await this.models.user.getUserByEmail(email);
 
     // return empty response when user not exists
     if (!user) return null;
 
-    if (user.id === currentUser.id) {
+    if (currentUser) {
       return sessionUser(user);
     }
 
-    const allowed = await this.models.workspaceUser.hasSharedWorkspace(
-      currentUser.id,
-      user.id
-    );
-    if (!allowed) return null;
-
-    return sessionUser(user);
+    // only return limited info when not logged in
+    return {
+      email: user.email,
+      hasPassword: !!user.password,
+    };
   }
 
   @Throttle('strict')
@@ -205,12 +194,6 @@ class ListUserInput {
 
   @Field(() => Int, { nullable: true, defaultValue: 20 })
   first!: number;
-
-  @Field(() => String, { nullable: true })
-  keyword?: string;
-
-  @Field(() => [Feature], { nullable: true })
-  features?: Feature[];
 }
 
 @InputType()
@@ -259,14 +242,8 @@ export class UserManagementResolver {
   @Query(() => Int, {
     description: 'Get users count',
   })
-  async usersCount(
-    @Args({ name: 'filter', type: () => ListUserInput, nullable: true })
-    input?: ListUserInput
-  ): Promise<number> {
-    return this.models.user.count({
-      keyword: input?.keyword ?? null,
-      features: (input?.features as UserFeatureName[]) ?? null,
-    });
+  async usersCount(): Promise<number> {
+    return this.db.user.count();
   }
 
   @Query(() => [UserType], {
@@ -275,12 +252,7 @@ export class UserManagementResolver {
   async users(
     @Args({ name: 'filter', type: () => ListUserInput }) input: ListUserInput
   ): Promise<UserType[]> {
-    const users = await this.models.user.list({
-      skip: input.skip,
-      take: input.first,
-      keyword: input.keyword,
-      features: input.features as UserFeatureName[],
-    });
+    const users = await this.models.user.pagination(input.skip, input.first);
 
     return users.map(sessionUser);
   }

@@ -15,7 +15,6 @@ import { Avatar } from '@affine/component/ui/avatar';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { BackupService } from '@affine/core/modules/backup/services';
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { i18nTime, useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import {
@@ -48,7 +47,7 @@ const BlobAvatar = ({
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!blob) return;
-    const url = URL.createObjectURL(new Blob([toArrayBuffer(blob)]));
+    const url = URL.createObjectURL(new Blob([blob]));
     setUrl(url);
     return () => {
       URL.revokeObjectURL(url);

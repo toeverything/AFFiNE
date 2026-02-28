@@ -4,8 +4,9 @@ use core_foundation::{
 };
 use coreaudio::sys::AudioObjectID;
 use objc2::{
-  AllocAnyThread, msg_send,
+  msg_send,
   runtime::{AnyClass, AnyObject},
+  AllocAnyThread,
 };
 use objc2_foundation::{NSArray, NSNumber, NSString, NSUUID};
 
@@ -16,14 +17,19 @@ pub(crate) struct CATapDescription {
 }
 
 impl CATapDescription {
-  pub fn init_stereo_mixdown_of_processes(process: AudioObjectID) -> std::result::Result<Self, CoreAudioError> {
-    let cls = AnyClass::get(c"CATapDescription").ok_or(CoreAudioError::CATapDescriptionClassNotFound)?;
+  pub fn init_stereo_mixdown_of_processes(
+    process: AudioObjectID,
+  ) -> std::result::Result<Self, CoreAudioError> {
+    let cls =
+      AnyClass::get(c"CATapDescription").ok_or(CoreAudioError::CATapDescriptionClassNotFound)?;
     let obj: *mut AnyObject = unsafe { msg_send![cls, alloc] };
     if obj.is_null() {
       return Err(CoreAudioError::AllocCATapDescriptionFailed);
     }
-    let processes_array = NSArray::from_retained_slice(&[NSNumber::initWithUnsignedInt(NSNumber::alloc(), process)]);
-    let obj: *mut AnyObject = unsafe { msg_send![obj, initStereoMixdownOfProcesses: &*processes_array] };
+    let processes_array =
+      NSArray::from_retained_slice(&[NSNumber::initWithUnsignedInt(NSNumber::alloc(), process)]);
+    let obj: *mut AnyObject =
+      unsafe { msg_send![obj, initStereoMixdownOfProcesses: &*processes_array] };
     if obj.is_null() {
       return Err(CoreAudioError::InitStereoMixdownOfProcessesFailed);
     }
@@ -38,7 +44,8 @@ impl CATapDescription {
   pub fn init_stereo_global_tap_but_exclude_processes(
     processes: &[AudioObjectID],
   ) -> std::result::Result<Self, CoreAudioError> {
-    let cls = AnyClass::get(c"CATapDescription").ok_or(CoreAudioError::CATapDescriptionClassNotFound)?;
+    let cls =
+      AnyClass::get(c"CATapDescription").ok_or(CoreAudioError::CATapDescriptionClassNotFound)?;
     let obj: *mut AnyObject = unsafe { msg_send![cls, alloc] };
     if obj.is_null() {
       return Err(CoreAudioError::AllocCATapDescriptionFailed);
@@ -50,7 +57,8 @@ impl CATapDescription {
         .collect::<Vec<_>>()
         .as_slice(),
     );
-    let obj: *mut AnyObject = unsafe { msg_send![obj, initStereoGlobalTapButExcludeProcesses: &*processes_array] };
+    let obj: *mut AnyObject =
+      unsafe { msg_send![obj, initStereoGlobalTapButExcludeProcesses: &*processes_array] };
     if obj.is_null() {
       return Err(CoreAudioError::InitStereoGlobalTapButExcludeProcessesFailed);
     }

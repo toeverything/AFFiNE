@@ -1,13 +1,7 @@
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import clsx from 'clsx';
 import type { PropsWithChildren } from 'react';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useContext, useState } from 'react';
 
 import type { ButtonProps } from '../button';
 import { Button } from '../button';
@@ -211,17 +205,15 @@ export const PromptModalProvider = ({ children }: PropsWithChildren) => {
     },
     [modalProps]
   );
-  const promptModalContextValue = useMemo(
-    () => ({
-      openPromptModal,
-      closePromptModal,
-      modalProps,
-    }),
-    [closePromptModal, modalProps, openPromptModal]
-  );
 
   return (
-    <PromptModalContext.Provider value={promptModalContextValue}>
+    <PromptModalContext.Provider
+      value={{
+        openPromptModal: openPromptModal,
+        closePromptModal: closePromptModal,
+        modalProps,
+      }}
+    >
       {children}
       {/* TODO(@catsjuice): multi-instance support(unnecessary for now) */}
       <PromptModal {...modalProps} onOpenChange={onOpenChange} />

@@ -1,99 +1,126 @@
 import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
-import type { FeatureType } from '@affine/graphql';
+import { useQuery } from '@affine/admin/use-query';
+import { getUserByEmailQuery } from '@affine/graphql';
 import { ExportIcon, ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 import type { Table } from '@tanstack/react-table';
+import type { Dispatch, SetStateAction } from 'react';
 import {
-  type ChangeEvent,
-  type Dispatch,
-  type SetStateAction,
+  startTransition,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
-import { DiscardChanges } from '../../../components/shared/discard-changes';
-import { FeatureFilterPopover } from '../../../components/shared/feature-filter-popover';
-import { useDebouncedValue } from '../../../hooks/use-debounced-value';
-import { useServerConfig } from '../../common';
 import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
+import { DiscardChanges } from './discard-changes';
 import { ExportUsersDialog } from './export-users-dialog';
 import { ImportUsersDialog } from './import-users';
 import { CreateUserForm } from './user-form';
 
 interface DataTableToolbarProps<TData> {
+  data: TData[];
+  usersCount: number;
   selectedUsers: UserType[];
+  setDataTable: (data: TData[]) => void;
+  setRowCount: (rowCount: number) => void;
+  setMemoUsers: Dispatch<SetStateAction<UserType[]>>;
   table?: Table<TData>;
-  keyword: string;
-  onKeywordChange: Dispatch<SetStateAction<string>>;
-  selectedFeatures: FeatureType[];
-  onFeaturesChange: Dispatch<SetStateAction<FeatureType[]>>;
+}
+
+const useSearch = () => {
+  const [value, setValue] = useState('');
+  const { data } = useQuery({
+    query: getUserByEmailQuery,
+    variables: { email: value },
+  });
+
+  const result = useMemo(() => data?.userByEmail, [data]);
+
+  return {
+    result,
+    query: setValue,
+  };
+};
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
 
 export function DataTableToolbar<TData>({
+  data,
+  usersCount,
   selectedUsers,
+  setDataTable,
+  setRowCount,
+  setMemoUsers,
   table,
-  keyword,
-  onKeywordChange,
-  selectedFeatures,
-  onFeaturesChange,
 }: DataTableToolbarProps<TData>) {
-  const [value, setValue] = useState(keyword);
+  const [value, setValue] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const debouncedValue = useDebouncedValue(value, 500);
-  const {
-    setPanelContent,
-    openPanel,
-    closePanel,
-    isOpen,
-    hasDirtyChanges,
-    setHasDirtyChanges,
-  } = useRightPanel();
-  const serverConfig = useServerConfig();
-  const availableFeatures = serverConfig.availableUserFeatures ?? [];
+  const debouncedValue = useDebouncedValue(value, 1000);
+  const { setPanelContent, openPanel, closePanel, isOpen } = useRightPanel();
+  const { result, query } = useSearch();
 
   const handleConfirm = useCallback(() => {
-    setPanelContent(
-      <CreateUserForm
-        onComplete={closePanel}
-        onDirtyChange={setHasDirtyChanges}
-      />
-    );
+    setPanelContent(<CreateUserForm onComplete={closePanel} />);
     if (dialogOpen) {
       setDialogOpen(false);
     }
     if (!isOpen) {
       openPanel();
     }
+  }, [setPanelContent, closePanel, dialogOpen, isOpen, openPanel]);
+
+  useEffect(() => {
+    query(debouncedValue);
+  }, [debouncedValue, query]);
+
+  useEffect(() => {
+    startTransition(() => {
+      if (!debouncedValue) {
+        setDataTable(data);
+        setRowCount(usersCount);
+      } else if (result) {
+        setMemoUsers(prev => [...new Set([...prev, result])]);
+        setDataTable([result as TData]);
+        setRowCount(1);
+      } else {
+        setDataTable([]);
+        setRowCount(0);
+      }
+    });
   }, [
-    setPanelContent,
-    closePanel,
-    dialogOpen,
-    isOpen,
-    openPanel,
-    setHasDirtyChanges,
+    data,
+    debouncedValue,
+    result,
+    setDataTable,
+    setMemoUsers,
+    setRowCount,
+    usersCount,
   ]);
 
-  useEffect(() => {
-    setValue(keyword);
-  }, [keyword]);
-
-  useEffect(() => {
-    onKeywordChange(debouncedValue.trim());
-  }, [debouncedValue, onKeywordChange]);
-
-  const onValueChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    setValue(e.currentTarget.value);
-  }, []);
-
-  const handleFeatureToggle = useCallback(
-    (features: FeatureType[]) => {
-      onFeaturesChange(features);
+  const onValueChange = useCallback(
+    (e: { currentTarget: { value: SetStateAction<string> } }) => {
+      setValue(e.currentTarget.value);
     },
-    [onFeaturesChange]
+    []
   );
 
   const handleCancel = useCallback(() => {
@@ -101,11 +128,11 @@ export function DataTableToolbar<TData>({
   }, []);
 
   const handleOpenConfirm = useCallback(() => {
-    if (hasDirtyChanges) {
+    if (isOpen) {
       return setDialogOpen(true);
     }
     return handleConfirm();
-  }, [handleConfirm, hasDirtyChanges]);
+  }, [handleConfirm, isOpen]);
 
   const handleExportUsers = useCallback(() => {
     if (!table) return;
@@ -165,15 +192,9 @@ export function DataTableToolbar<TData>({
       </div>
 
       <div className="flex items-center gap-y-2 flex-wrap justify-end gap-2">
-        <FeatureFilterPopover
-          selectedFeatures={selectedFeatures}
-          availableFeatures={availableFeatures}
-          onChange={handleFeatureToggle}
-          align="end"
-        />
         <div className="flex">
           <Input
-            placeholder="Search Email / UUID"
+            placeholder="Search Email"
             value={value}
             onChange={onValueChange}
             className="h-8 w-[150px] lg:w-[250px]"

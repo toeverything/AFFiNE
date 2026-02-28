@@ -1,10 +1,4 @@
-import {
-  type HTMLAttributes,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type HTMLAttributes, useCallback, useEffect, useState } from 'react';
 
 import { JournalDatePickerContext } from './context';
 import { ResizeViewport } from './viewport';
@@ -37,21 +31,18 @@ export const JournalDatePicker = ({
     },
     [onChange]
   );
-  const width = window.innerWidth;
-  const journalDatePickerContextValue = useMemo(
-    () => ({
-      selected,
-      onSelect,
-      cursor,
-      setCursor,
-      width,
-      withDotDates,
-    }),
-    [cursor, onSelect, selected, width, withDotDates]
-  );
 
   return (
-    <JournalDatePickerContext.Provider value={journalDatePickerContextValue}>
+    <JournalDatePickerContext.Provider
+      value={{
+        selected,
+        onSelect,
+        cursor,
+        setCursor,
+        width: window.innerWidth,
+        withDotDates,
+      }}
+    >
       <ResizeViewport {...attrs} />
     </JournalDatePickerContext.Provider>
   );

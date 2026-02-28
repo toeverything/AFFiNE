@@ -218,10 +218,4 @@ export class IndexedDBIndexerStorage extends IndexerStorageBase {
     this.tableUpdate$.next(table);
     this.channel.postMessage({ type: 'indexer-updated', table });
   }
-
-  // Get the current indexer version
-  // increase this number to re-index all docs
-  async indexVersion(): Promise<number> {
-    return 1;
-  }
 }

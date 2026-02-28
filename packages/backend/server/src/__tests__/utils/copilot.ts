@@ -250,6 +250,7 @@ export async function listContext(
 export async function addContextFile(
   app: TestingApp,
   contextId: string,
+  blobId: string,
   fileName: string,
   content: Buffer
 ): Promise<{ id: string }> {
@@ -268,7 +269,7 @@ export async function addContextFile(
         `,
         variables: {
           content: null,
-          options: { contextId },
+          options: { contextId, blobId },
         },
       })
     )

@@ -7,8 +7,7 @@ import {
   SelectValue,
 } from '@affine/admin/components/ui/select';
 import { Switch } from '@affine/admin/components/ui/switch';
-import { cn } from '@affine/admin/utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 
 import { Textarea } from '../../components/ui/textarea';
 
@@ -18,7 +17,6 @@ export type ConfigInputProps = {
   defaultValue: any;
   onChange: (field: string, value: any) => void;
   error?: string;
-  onErrorChange?: (field: string, error?: string) => void;
 } & (
   | {
       type: 'String' | 'Number' | 'Boolean' | 'JSON';
@@ -36,7 +34,6 @@ const Inputs: Record<
     onChange: (value?: any) => void;
     options?: string[];
     error?: string;
-    onValidationChange?: (error?: string) => void;
   }>
 > = {
   Boolean: function SwitchInput({ defaultValue, onChange }) {
@@ -46,7 +43,7 @@ const Inputs: Record<
 
     return (
       <Switch
-        checked={Boolean(defaultValue)}
+        defaultChecked={defaultValue}
         onCheckedChange={handleSwitchChange}
       />
     );
@@ -60,78 +57,43 @@ const Inputs: Record<
       <Input
         type="text"
         minLength={1}
-        value={defaultValue ?? ''}
+        defaultValue={defaultValue}
         onChange={handleInputChange}
       />
     );
   },
   Number: function NumberInput({ defaultValue, onChange }) {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.value;
-      onChange(next === '' ? undefined : parseInt(next, 10));
+      onChange(parseInt(e.target.value));
     };
 
     return (
       <Input
         type="number"
-        value={defaultValue ?? ''}
+        defaultValue={defaultValue}
         onChange={handleInputChange}
       />
     );
   },
-  JSON: function ObjectInput({
-    defaultValue,
-    onChange,
-    error,
-    onValidationChange,
-  }) {
-    const fallbackText = useMemo(
-      () =>
-        typeof defaultValue === 'string'
-          ? defaultValue
-          : JSON.stringify(defaultValue ?? null),
-      [defaultValue]
-    );
-    const [text, setText] = useState(fallbackText);
-
-    useEffect(() => {
-      setText(fallbackText);
-    }, [fallbackText]);
-
+  JSON: function ObjectInput({ defaultValue, onChange }) {
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const nextText = e.target.value;
-      setText(nextText);
       try {
-        const value = JSON.parse(nextText);
-        onValidationChange?.(undefined);
+        const value = JSON.parse(e.target.value);
         onChange(value);
-      } catch {
-        onValidationChange?.('Invalid JSON format');
-        // Keep the draft "dirty" even when JSON is temporarily invalid
-        // so Save/Cancel state can reflect real editing progress.
-        onChange(nextText);
-      }
+      } catch {}
     };
 
     return (
       <Textarea
-        value={text}
+        defaultValue={JSON.stringify(defaultValue)}
         onChange={handleInputChange}
-        className={cn(
-          'w-full',
-          error
-            ? 'border-destructive hover:border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
-            : undefined
-        )}
+        className="w-full"
       />
     );
   },
   Enum: function EnumInput({ defaultValue, onChange, options }) {
     return (
-      <Select
-        value={typeof defaultValue === 'string' ? defaultValue : undefined}
-        onValueChange={onChange}
-      >
+      <Select defaultValue={defaultValue} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue placeholder="Select an option" />
         </SelectTrigger>
@@ -154,11 +116,9 @@ export const ConfigRow = ({
   defaultValue,
   onChange,
   error,
-  onErrorChange,
   ...props
 }: ConfigInputProps) => {
   const Input = Inputs[type] ?? Inputs.JSON;
-  const [validationError, setValidationError] = useState<string>();
 
   const onValueChange = useCallback(
     (value?: any) => {
@@ -167,46 +127,25 @@ export const ConfigRow = ({
     [field, onChange]
   );
 
-  const onValidationChange = useCallback((nextError?: string) => {
-    setValidationError(nextError);
-  }, []);
-
-  const mergedError = error ?? validationError;
-
-  useEffect(() => {
-    onErrorChange?.(field, mergedError);
-    return () => {
-      onErrorChange?.(field, undefined);
-    };
-  }, [field, mergedError, onErrorChange]);
-
   return (
     <div
-      className={cn(
-        'flex flex-grow gap-3',
-        type === 'Boolean' ? 'items-start justify-between' : 'flex-col'
-      )}
+      className={`flex justify-between flex-grow space-y-[10px]
+         ${type === 'Boolean' ? 'flex-row' : 'flex-col'}`}
     >
       <div
-        className="flex-3 text-sm font-semibold leading-6 text-foreground"
+        className="text-base font-bold flex-3"
         dangerouslySetInnerHTML={{ __html: desc }}
       />
-      <div
-        className={cn(
-          'relative flex flex-1 flex-col',
-          type === 'Boolean' ? 'items-end' : 'items-stretch'
-        )}
-      >
+      <div className="flex flex-col items-end relative flex-1">
         <Input
           defaultValue={defaultValue}
           onChange={onValueChange}
-          error={mergedError}
-          onValidationChange={onValidationChange}
+          error={error}
           {...props}
         />
-        {mergedError && (
-          <div className="mt-1 w-full break-words text-sm text-destructive">
-            {mergedError}
+        {error && (
+          <div className="absolute bottom-[-25px] text-sm right-0 break-words text-red-500">
+            {error}
           </div>
         )}
       </div>

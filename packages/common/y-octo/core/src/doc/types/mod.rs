@@ -5,11 +5,7 @@ mod text;
 mod value;
 mod xml;
 
-use std::{
-  collections::hash_map::Entry,
-  hash::{Hash, Hasher},
-  sync::Weak,
-};
+use std::{collections::hash_map::Entry, sync::Weak};
 
 pub use array::*;
 use list::*;
@@ -23,8 +19,8 @@ use super::{
   *,
 };
 use crate::{
-  Item, JwstCodecError, JwstCodecResult,
   sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+  Item, JwstCodecError, JwstCodecResult,
 };
 
 #[derive(Debug, Default)]
@@ -49,23 +45,20 @@ pub(crate) struct YTypeRef {
 
 impl PartialEq for YType {
   fn eq(&self, other: &Self) -> bool {
-    self.root_name == other.root_name || (self.start.is_some() && self.start == other.start) || self.map == other.map
+    self.root_name == other.root_name
+      || (self.start.is_some() && self.start == other.start)
+      || self.map == other.map
   }
 }
 
 impl PartialEq for YTypeRef {
   fn eq(&self, other: &Self) -> bool {
-    // only check pointer equality
-    // currently no scenarios that involve cross document ytype comparisons
     self.inner.ptr_eq(&other.inner)
-  }
-}
-
-impl Eq for YTypeRef {}
-
-impl Hash for YTypeRef {
-  fn hash<H: Hasher>(&self, state: &mut H) {
-    self.inner.ptr().hash(state);
+      || match (self.ty(), other.ty()) {
+        (Some(l), Some(r)) => *l == *r,
+        (None, None) => true,
+        _ => false,
+      }
   }
 }
 
@@ -136,11 +129,15 @@ impl YTypeRef {
 
   #[allow(dead_code)]
   pub fn read(&self) -> Option<(RwLockReadGuard<'_, DocStore>, RwLockReadGuard<'_, YType>)> {
-    self.store().and_then(|store| self.ty().map(|ty| (store, ty)))
+    self
+      .store()
+      .and_then(|store| self.ty().map(|ty| (store, ty)))
   }
 
   pub fn write(&self) -> Option<(RwLockWriteGuard<'_, DocStore>, RwLockWriteGuard<'_, YType>)> {
-    self.store_mut().and_then(|store| self.ty_mut().map(|ty| (store, ty)))
+    self
+      .store_mut()
+      .and_then(|store| self.ty_mut().map(|ty| (store, ty)))
   }
 }
 
@@ -241,7 +238,9 @@ impl YTypeBuilder {
 
       let ty_ref = ty.clone();
 
-      store.dangling_types.insert(ty.inner.ptr().as_ptr() as usize, ty);
+      store
+        .dangling_types
+        .insert(ty.inner.ptr().as_ptr() as usize, ty);
 
       ty_ref
     };
@@ -339,10 +338,14 @@ macro_rules! impl_type {
               inner.set_kind(super::YTypeKind::$name)?;
               Ok($name::new(value.clone()))
             }
-            _ => Err($crate::JwstCodecError::TypeCastError(std::stringify!($name))),
+            _ => Err($crate::JwstCodecError::TypeCastError(std::stringify!(
+              $name
+            ))),
           }
         } else {
-          Err($crate::JwstCodecError::TypeCastError(std::stringify!($name)))
+          Err($crate::JwstCodecError::TypeCastError(std::stringify!(
+            $name
+          )))
         }
       }
     }

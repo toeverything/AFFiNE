@@ -1,8 +1,8 @@
 use std::{io::Cursor, path::Path};
 
 use napi::{
-  Task,
   bindgen_prelude::{AbortSignal, AsyncTask, Float32Array, Result, Status, Uint8Array},
+  Task,
 };
 use napi_derive::napi;
 use rubato::{Resampler, SincFixedIn, SincInterpolationParameters, SincInterpolationType};
@@ -26,7 +26,9 @@ fn decode<B: AsRef<[u8]> + Send + Sync + 'static>(
 
   // Create a probe hint using the file extension
   let mut hint = Hint::new();
-  if let Some(ext) = filename.and_then(|filename| Path::new(filename).extension().and_then(|ext| ext.to_str())) {
+  if let Some(ext) =
+    filename.and_then(|filename| Path::new(filename).extension().and_then(|ext| ext.to_str()))
+  {
     hint.with_extension(ext);
   }
 
@@ -104,7 +106,9 @@ fn decode<B: AsRef<[u8]> + Send + Sync + 'static>(
     let mut waves_out = resampler
       .process(&waves_in, None)
       .map_err(|_| Error::Unsupported("Failed to run resampler"))?;
-    output = waves_out.pop().ok_or(Error::Unsupported("No resampled output found"))?;
+    output = waves_out
+      .pop()
+      .ok_or(Error::Unsupported("No resampled output found"))?;
   }
 
   Ok(output)

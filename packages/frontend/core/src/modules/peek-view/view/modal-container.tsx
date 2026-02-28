@@ -153,6 +153,7 @@ export const PeekViewModalContainer = forwardRef<
         !target.getBoundingClientRect().width &&
         iteration < 10
       ) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         target = target.parentElement || undefined;
         iteration++;
       }

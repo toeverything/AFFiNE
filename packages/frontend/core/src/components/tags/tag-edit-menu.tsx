@@ -68,7 +68,9 @@ const DesktopTagEditMenu = ({
           <MenuItem
             prefixIcon={<DeleteIcon />}
             type="danger"
-            onClick={() => onTagDelete(tag.id)}
+            onClick={() => {
+              tag?.id ? onTagDelete(tag.id) : null;
+            }}
           >
             {t['Delete']()}
           </MenuItem>
@@ -201,7 +203,9 @@ const MobileTagEditMenu = ({
         <ConfigModal.RowGroup>
           <ConfigModal.Row
             className={styles.mobileTagEditDeleteRow}
-            onClick={() => onTagDelete(tag.id)}
+            onClick={() => {
+              onTagDelete(tag.id);
+            }}
           >
             <DeleteIcon />
             {t['Delete']()}

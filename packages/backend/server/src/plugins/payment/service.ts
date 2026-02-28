@@ -55,7 +55,6 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
-  SubscriptionVariant,
 } from './types';
 
 export const CheckoutExtraArgs = z.union([
@@ -75,7 +74,7 @@ export { CheckoutParams };
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
-  private readonly scheduleManager: ScheduleManager;
+  private readonly scheduleManager = new ScheduleManager(this.stripeProvider);
 
   constructor(
     private readonly stripeProvider: StripeFactory,
@@ -85,9 +84,7 @@ export class SubscriptionService {
     private readonly userManager: UserSubscriptionManager,
     private readonly workspaceManager: WorkspaceSubscriptionManager,
     private readonly selfhostManager: SelfhostTeamSubscriptionManager
-  ) {
-    this.scheduleManager = new ScheduleManager(this.stripeProvider);
-  }
+  ) {}
 
   get stripe() {
     return this.stripeProvider.stripe;
@@ -512,128 +509,6 @@ export class SubscriptionService {
     await manager.deleteStripeSubscription(knownSubscription);
   }
 
-  async handleRefundedInvoice(
-    invoiceId: string,
-    reason: 'refund' | 'dispute_open' | 'dispute_lost' | 'dispute_won'
-  ) {
-    try {
-      const invoice = await this.stripe.invoices.retrieve(invoiceId, {
-        expand: ['subscription', 'customer', 'lines.data.price'],
-      });
-
-      const knownInvoice = await this.parseStripeInvoice(invoice);
-
-      if (!knownInvoice) {
-        this.logger.warn(
-          `Skip handling ${reason}: unable to parse invoice ${invoiceId}`
-        );
-        return;
-      }
-
-      const cancelOnStripe = reason === 'refund' || reason === 'dispute_lost';
-      const revokeLocal =
-        reason === 'refund' ||
-        reason === 'dispute_open' ||
-        reason === 'dispute_lost';
-      const restore = reason === 'dispute_won';
-      const isOneTimeOrLifetime =
-        knownInvoice.lookupKey.recurring === SubscriptionRecurring.Lifetime ||
-        knownInvoice.lookupKey.variant === SubscriptionVariant.Onetime;
-
-      if (restore) {
-        if (invoice.subscription) {
-          const subscription =
-            typeof invoice.subscription === 'string'
-              ? await this.stripe.subscriptions.retrieve(invoice.subscription, {
-                  expand: ['customer'],
-                })
-              : invoice.subscription;
-
-          const knownSubscription =
-            await this.parseStripeSubscription(subscription);
-
-          if (!knownSubscription) {
-            this.logger.warn(
-              `Skip restore: unable to parse subscription ${invoice.subscription} from invoice ${invoiceId}`
-            );
-            return;
-          }
-
-          await this.saveStripeSubscription(subscription);
-          return;
-        }
-
-        if (
-          isOneTimeOrLifetime &&
-          (knownInvoice.lookupKey.plan === SubscriptionPlan.Pro ||
-            knownInvoice.lookupKey.plan === SubscriptionPlan.AI)
-        ) {
-          await this.userManager.restoreOnetimeOrLifetime(knownInvoice);
-        }
-
-        return;
-      }
-
-      if (!revokeLocal) {
-        return;
-      }
-
-      if (invoice.subscription) {
-        const subscription =
-          typeof invoice.subscription === 'string'
-            ? await this.stripe.subscriptions.retrieve(invoice.subscription, {
-                expand: ['customer'],
-              })
-            : invoice.subscription;
-
-        const knownSubscription =
-          await this.parseStripeSubscription(subscription);
-
-        if (!knownSubscription) {
-          this.logger.warn(
-            `Skip handling ${reason}: unable to parse subscription ${invoice.subscription} from invoice ${invoiceId}`
-          );
-          return;
-        }
-
-        if (cancelOnStripe) {
-          try {
-            await this.stripe.subscriptions.cancel(
-              knownSubscription.stripeSubscription.id
-            );
-          } catch (e) {
-            this.logger.warn(
-              `Failed to cancel refunded subscription on Stripe ${knownSubscription.stripeSubscription.id}`,
-              e
-            );
-          }
-        }
-
-        const manager = this.select(knownSubscription.lookupKey.plan);
-        await manager.deleteStripeSubscription(knownSubscription);
-        return;
-      }
-
-      if (
-        isOneTimeOrLifetime &&
-        (knownInvoice.lookupKey.plan === SubscriptionPlan.Pro ||
-          knownInvoice.lookupKey.plan === SubscriptionPlan.AI)
-      ) {
-        await this.userManager.revokeOnetimeOrLifetime(knownInvoice);
-        return;
-      }
-
-      this.logger.warn(
-        `Handled ${reason} for invoice ${invoiceId}, but no local subscription to cancel`
-      );
-    } catch (e) {
-      this.logger.error(
-        `Failed to handle ${reason} for invoice ${invoiceId}`,
-        e
-      );
-    }
-  }
-
   async getOrCreateCustomer({
     userId,
     userEmail,
@@ -743,16 +618,8 @@ export class SubscriptionService {
   private async parseStripeInvoice(
     invoice: Stripe.Invoice
   ): Promise<KnownStripeInvoice | null> {
-    const customerEmail =
-      invoice.customer_email ??
-      (typeof invoice.customer !== 'string' &&
-      invoice.customer &&
-      !invoice.customer.deleted
-        ? (invoice.customer.email ?? null)
-        : null);
-
     // we can't do anything if we can't recognize the customer
-    if (!customerEmail) {
+    if (!invoice.customer_email) {
       return null;
     }
 
@@ -771,11 +638,11 @@ export class SubscriptionService {
       return null;
     }
 
-    const user = await this.models.user.getUserByEmail(customerEmail);
+    const user = await this.models.user.getUserByEmail(invoice.customer_email);
 
     return {
       userId: user?.id,
-      userEmail: customerEmail,
+      userEmail: invoice.customer_email,
       stripeInvoice: invoice,
       lookupKey,
       metadata: invoice.subscription_details?.metadata ?? {},

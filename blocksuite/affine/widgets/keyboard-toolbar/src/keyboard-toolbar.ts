@@ -289,7 +289,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     this.disposables.add(
       effect(() => {
         const std = this.rootComponent.std;
-        void std.selection.value;
+        std.selection.value;
         // wait cursor updated
         requestAnimationFrame(() => {
           this._scrollCurrentBlockIntoView();

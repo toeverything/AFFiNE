@@ -1,13 +1,9 @@
-import { ipcMain, powerMonitor, webContents } from 'electron';
+import { BrowserWindow, WebContentsView } from 'electron';
 
-import {
-  AFFINE_EVENT_CHANNEL_NAME,
-  AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME,
-} from '../shared/type';
+import { AFFINE_EVENT_CHANNEL_NAME } from '../shared/type';
 import { applicationMenuEvents } from './application-menu';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
-import { powerEvents } from './power';
 import { recordingEvents } from './recording';
 import { sharedStorageEvents } from './shared-storage';
 import { uiEvents } from './ui/events';
@@ -21,74 +17,14 @@ export const allEvents = {
   sharedStorage: sharedStorageEvents,
   recording: recordingEvents,
   popup: popupEvents,
-  power: powerEvents,
 };
 
-const subscriptions = new Map<number, Set<string>>();
-
-function getTargetContents(channel: string) {
-  const targets: Electron.WebContents[] = [];
-  subscriptions.forEach((channels, id) => {
-    if (!channels.has(channel)) return;
-    const wc = webContents.fromId(id);
-    if (wc && !wc.isDestroyed()) {
-      targets.push(wc);
-    }
-  });
-  return targets;
-}
-
-function addSubscription(sender: Electron.WebContents, channel: string) {
-  const id = sender.id;
-  const set = subscriptions.get(id) ?? new Set<string>();
-  set.add(channel);
-  if (!subscriptions.has(id)) {
-    sender.once('destroyed', () => {
-      subscriptions.delete(id);
-    });
-  }
-  subscriptions.set(id, set);
-}
-
-function removeSubscription(sender: Electron.WebContents, channel: string) {
-  const id = sender.id;
-  const set = subscriptions.get(id);
-  if (!set) return;
-  set.delete(channel);
-  if (set.size === 0) {
-    subscriptions.delete(id);
-  } else {
-    subscriptions.set(id, set);
-  }
+function getActiveWindows() {
+  return BrowserWindow.getAllWindows().filter(win => !win.isDestroyed());
 }
 
 export function registerEvents() {
   const unsubs: (() => void)[] = [];
-
-  const onSubscribe = (
-    event: Electron.IpcMainEvent,
-    action: 'subscribe' | 'unsubscribe',
-    channel: string
-  ) => {
-    if (typeof channel !== 'string') return;
-    if (action === 'subscribe') {
-      addSubscription(event.sender, channel);
-      if (channel === 'power:power-source') {
-        event.sender.send(
-          AFFINE_EVENT_CHANNEL_NAME,
-          channel,
-          powerMonitor.isOnBatteryPower()
-        );
-      }
-    } else {
-      removeSubscription(event.sender, channel);
-    }
-  };
-
-  ipcMain.on(AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME, onSubscribe);
-  unsubs.push(() =>
-    ipcMain.removeListener(AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME, onSubscribe)
-  );
   // register events
   for (const [namespace, namespaceEvents] of Object.entries(allEvents)) {
     for (const [key, eventRegister] of Object.entries(namespaceEvents)) {
@@ -104,10 +40,22 @@ export function registerEvents() {
               typeof a !== 'object'
           )
         );
-        getTargetContents(chan).forEach(wc => {
-          if (!wc.isDestroyed()) {
-            wc.send(AFFINE_EVENT_CHANNEL_NAME, chan, ...args);
+        // is this efficient?
+        getActiveWindows().forEach(win => {
+          if (win.isDestroyed()) {
+            return;
           }
+          // .webContents could be undefined if the window is destroyed
+          win.webContents?.send(AFFINE_EVENT_CHANNEL_NAME, chan, ...args);
+          win.contentView.children.forEach(child => {
+            if (
+              child instanceof WebContentsView &&
+              child.webContents &&
+              !child.webContents.isDestroyed()
+            ) {
+              child.webContents?.send(AFFINE_EVENT_CHANNEL_NAME, chan, ...args);
+            }
+          });
         });
       });
       unsubs.push(unsubscribe);

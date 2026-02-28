@@ -1,12 +1,12 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
-import { UserFriendlyError } from '@affine/error';
+import type { UserFriendlyError } from '@affine/error';
 import {
   addContextBlobMutation,
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
-  applyDocUpdatesMutation,
+  applyDocUpdatesQuery,
   cleanupCopilotSessionMutation,
   createCopilotContextMutation,
   createCopilotMessageMutation,
@@ -50,20 +50,6 @@ export enum Endpoint {
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
 
-function toUserFriendlyError(err: any): UserFriendlyError {
-  return err instanceof UserFriendlyError
-    ? err
-    : UserFriendlyError.fromAny(err);
-}
-
-function isAbortError(error: UserFriendlyError) {
-  return (
-    error.name === 'REQUEST_ABORTED' ||
-    error.code === 'REQUEST_ABORTED' ||
-    error.message?.toLowerCase().includes('aborted') === true
-  );
-}
-
 function codeToError(error: UserFriendlyError) {
   switch (error.status) {
     case 401:
@@ -80,7 +66,7 @@ function codeToError(error: UserFriendlyError) {
 }
 
 export function resolveError(err: any) {
-  return codeToError(toUserFriendlyError(err));
+  return codeToError(err);
 }
 
 export function handleError(src: any) {
@@ -199,11 +185,7 @@ export class CopilotClient {
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      const parsed = toUserFriendlyError(err);
-      if (isAbortError(parsed)) {
-        return [];
-      }
-      throw resolveError(parsed);
+      throw resolveError(err);
     }
   }
 
@@ -223,11 +205,7 @@ export class CopilotClient {
       });
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      const parsed = toUserFriendlyError(err);
-      if (isAbortError(parsed)) {
-        return [];
-      }
-      throw resolveError(parsed);
+      throw resolveError(err);
     }
   }
 
@@ -252,11 +230,7 @@ export class CopilotClient {
 
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      const parsed = toUserFriendlyError(err);
-      if (isAbortError(parsed)) {
-        return [];
-      }
-      throw resolveError(parsed);
+      throw resolveError(err);
     }
   }
 
@@ -281,11 +255,7 @@ export class CopilotClient {
 
       return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
-      const parsed = toUserFriendlyError(err);
-      if (isAbortError(parsed)) {
-        return [];
-      }
-      throw resolveError(parsed);
+      throw resolveError(err);
     }
   }
 
@@ -446,6 +416,7 @@ export class CopilotClient {
     sessionId,
     messageId,
     reasoning,
+    webSearch,
     modelId,
     toolsConfig,
     signal,
@@ -453,6 +424,7 @@ export class CopilotClient {
     sessionId: string;
     messageId?: string;
     reasoning?: boolean;
+    webSearch?: boolean;
     modelId?: string;
     toolsConfig?: AIToolsConfig;
     signal?: AbortSignal;
@@ -461,6 +433,7 @@ export class CopilotClient {
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
+      webSearch,
       modelId,
       toolsConfig,
     });
@@ -477,12 +450,14 @@ export class CopilotClient {
       sessionId,
       messageId,
       reasoning,
+      webSearch,
       modelId,
       toolsConfig,
     }: {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
+      webSearch?: boolean;
       modelId?: string;
       toolsConfig?: AIToolsConfig;
     },
@@ -492,6 +467,7 @@ export class CopilotClient {
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
+      webSearch,
       modelId,
       toolsConfig,
     });
@@ -551,7 +527,7 @@ export class CopilotClient {
     updates: string
   ) {
     return this.gql({
-      query: applyDocUpdatesMutation,
+      query: applyDocUpdatesQuery,
       variables: {
         workspaceId,
         docId,

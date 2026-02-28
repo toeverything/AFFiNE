@@ -11,13 +11,9 @@ import {
   OnJob,
   sleep,
 } from '../../../base';
-import {
-  SubscriptionPlan,
-  SubscriptionRecurring,
-  SubscriptionStatus,
-} from '../types';
+import { SubscriptionStatus } from '../types';
 import { RcEvent } from './controller';
-import { ProductMapping, resolveProductMapping } from './map';
+import { resolveProductMapping } from './map';
 import { RevenueCatService, Subscription } from './service';
 
 const REFRESH_INTERVAL = 5 * 1000; // 5 seconds
@@ -112,24 +108,7 @@ export class RevenueCatWebhookHandler {
     externalRef?: string,
     overrideExpirationDate?: Date
   ): Promise<boolean> {
-    const cond = { targetId: appUserId, provider: Provider.revenuecat };
-    const toBeCleanup = await this.db.subscription.findMany({
-      where: cond,
-    });
     const productOverride = this.config.payment.revenuecat?.productMap;
-    const removeExists = (mapping: ProductMapping, sub: Subscription) => {
-      // Remove from cleanup list
-      const index = toBeCleanup.findIndex(s => {
-        return (
-          s.targetId === appUserId &&
-          s.rcProductId === sub.productId &&
-          s.plan === mapping.plan
-        );
-      });
-      if (index >= 0) {
-        toBeCleanup.splice(index, 1);
-      }
-    };
 
     let success = 0;
     for (const sub of subscriptions) {
@@ -203,7 +182,6 @@ export class RevenueCatWebhookHandler {
             recurring: mapping.recurring,
           });
         }
-        removeExists(mapping, sub);
         continue;
       }
 
@@ -271,32 +249,7 @@ export class RevenueCatWebhookHandler {
           recurring: mapping.recurring,
         });
       }
-
-      removeExists(mapping, sub);
     }
-
-    if (toBeCleanup.length) {
-      for (const sub of toBeCleanup) {
-        await this.db.subscription.deleteMany({ where: { id: sub.id } });
-        this.event.emit('user.subscription.canceled', {
-          userId: appUserId,
-          plan: sub.plan as SubscriptionPlan,
-          recurring: sub.recurring as SubscriptionRecurring,
-        });
-      }
-      this.logger.log(
-        `Cleanup ${toBeCleanup.length} subscriptions for ${appUserId}`,
-        {
-          appUserId,
-          subscriptions: toBeCleanup.map(s => ({
-            plan: s.plan,
-            recurring: s.recurring,
-            end: s.end,
-          })),
-        }
-      );
-    }
-
     return success > 0;
   }
 

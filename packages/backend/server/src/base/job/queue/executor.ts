@@ -31,8 +31,8 @@ export class JobExecutor implements OnModuleDestroy {
       ? difference(QUEUES, [Queue.DOC, Queue.INDEXER])
       : [];
 
-    // Enable doc/indexer queues in both doc and front service.
-    if (env.flavors.doc || env.flavors.front) {
+    // NOTE(@forehalo): only enable doc queue in doc service
+    if (env.flavors.doc) {
       queues.push(Queue.DOC);
       // NOTE(@fengmk2): Once the index task cannot be processed in time, it needs to be separated from the doc service and deployed independently.
       queues.push(Queue.INDEXER);
@@ -73,14 +73,9 @@ export class JobExecutor implements OnModuleDestroy {
       async () => {
         const signature = `[${name}] (${handler.name}, id=${jobId})`;
         try {
-          const ts = Date.now();
-          this.logger.verbose(`Job started: ${signature}`, payload);
+          this.logger.log(`Job started: ${signature}`);
           const ret = await handler.fn(payload);
-          this.logger.verbose(`Job finished: ${signature}`, {
-            signature,
-            signal: ret,
-            cost: Date.now() - ts,
-          });
+          this.logger.log(`Job finished: ${signature}, signal=${ret}`);
           return ret;
         } catch (e) {
           this.logger.error(`Job failed: ${signature}`, e);

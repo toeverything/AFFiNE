@@ -61,8 +61,7 @@ export type KnownMetricScopes =
   | 'event'
   | 'queue'
   | 'storage'
-  | 'process'
-  | 'workspace';
+  | 'process';
 
 const metricCreators: MetricCreators = {
   counter(meter: Meter, name: string, opts?: MetricOptions) {

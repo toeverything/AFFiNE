@@ -9,32 +9,26 @@ import {
   CopilotProviderNotSupported,
   OnEvent,
 } from '../../../base';
-import { DocReader, DocWriter } from '../../../core/doc';
+import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
-import { CopilotContextService } from '../context/service';
-import { PromptService } from '../prompt/service';
+import { CopilotContextService } from '../context';
+import { PromptService } from '../prompt';
 import {
   buildBlobContentGetter,
   buildContentGetter,
   buildDocContentGetter,
-  buildDocCreateHandler,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
-  buildDocUpdateHandler,
-  buildDocUpdateMetaHandler,
   createBlobReadTool,
   createCodeArtifactTool,
   createConversationSummaryTool,
   createDocComposeTool,
-  createDocCreateTool,
   createDocEditTool,
   createDocKeywordSearchTool,
   createDocReadTool,
   createDocSemanticSearchTool,
-  createDocUpdateMetaTool,
-  createDocUpdateTool,
   createExaCrawlTool,
   createExaSearchTool,
   createSectionEditTool,
@@ -169,7 +163,6 @@ export abstract class CopilotProvider<C = any> {
         strict: false,
       });
       const docReader = this.moduleRef.get(DocReader, { strict: false });
-      const docWriter = this.moduleRef.get(DocWriter, { strict: false });
       const models = this.moduleRef.get(Models, { strict: false });
       const prompt = this.moduleRef.get(PromptService, {
         strict: false,
@@ -182,12 +175,6 @@ export abstract class CopilotProvider<C = any> {
           if (toolDef[1]) {
             tools[toolDef[0]] = toolDef[1];
           }
-          continue;
-        }
-        if (
-          !(env.dev || env.namespaces.canary) &&
-          ['docCreate', 'docUpdate', 'docUpdateMeta'].includes(tool)
-        ) {
           continue;
         }
         switch (tool) {
@@ -255,27 +242,6 @@ export abstract class CopilotProvider<C = any> {
           case 'docRead': {
             const getDoc = buildDocContentGetter(ac, docReader, models);
             tools.doc_read = createDocReadTool(getDoc.bind(null, options));
-            break;
-          }
-          case 'docCreate': {
-            const createDoc = buildDocCreateHandler(ac, docWriter);
-            tools.doc_create = createDocCreateTool(
-              createDoc.bind(null, options)
-            );
-            break;
-          }
-          case 'docUpdate': {
-            const updateDoc = buildDocUpdateHandler(ac, docWriter);
-            tools.doc_update = createDocUpdateTool(
-              updateDoc.bind(null, options)
-            );
-            break;
-          }
-          case 'docUpdateMeta': {
-            const updateDocMeta = buildDocUpdateMetaHandler(ac, docWriter);
-            tools.doc_update_meta = createDocUpdateMetaTool(
-              updateDocMeta.bind(null, options)
-            );
             break;
           }
           case 'webSearch': {

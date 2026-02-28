@@ -40,19 +40,15 @@ import { MailModule } from './core/mail';
 import { MonitorModule } from './core/monitor';
 import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
-import { QueueDashboardModule } from './core/queue-dashboard';
 import { QuotaModule } from './core/quota';
 import { SelfhostModule } from './core/selfhost';
-import { StaticFileModule } from './core/static-files';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
-import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
 import { VersionModule } from './core/version';
 import { WorkspaceModule } from './core/workspaces';
 import { Env } from './env';
 import { ModelsModule } from './models';
-import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { CustomerIoModule } from './plugins/customerio';
@@ -159,11 +155,8 @@ export function buildAppModule(env: Env) {
     // basic
     .use(...FunctionalityModules)
 
-    // enable indexer module on graphql, doc and front service
-    .useIf(
-      () => env.flavors.graphql || env.flavors.doc || env.flavors.front,
-      IndexerModule
-    )
+    // enable indexer module on graphql server and doc service
+    .useIf(() => env.flavors.graphql || env.flavors.doc, IndexerModule)
 
     // auth
     .use(UserModule, AuthModule, PermissionModule)
@@ -177,14 +170,10 @@ export function buildAppModule(env: Env) {
       NotificationModule,
       MailModule
     )
-    // renderer server and front server
-    .useIf(() => env.flavors.renderer || env.flavors.front, DocRendererModule)
-    // sync server and front server
-    .useIf(
-      () => env.flavors.sync || env.flavors.front,
-      SyncModule,
-      TelemetryModule
-    )
+    // renderer server only
+    .useIf(() => env.flavors.renderer, DocRendererModule)
+    // sync server only
+    .useIf(() => env.flavors.sync, SyncModule)
     // graphql server only
     .useIf(
       () => env.flavors.graphql,
@@ -198,19 +187,14 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
-      CalendarModule,
       CustomerIoModule,
-      TelemetryModule,
       CommentModule,
-      AccessTokenModule,
-      QueueDashboardModule
+      AccessTokenModule
     )
-    // doc service and front service
-    .useIf(() => env.flavors.doc || env.flavors.front, DocServiceModule)
-    // worker for and self-hosted API only for self-host and local development only
+    // doc service only
+    .useIf(() => env.flavors.doc, DocServiceModule)
+    // self hosted server only
     .useIf(() => env.dev || env.selfhosted, WorkerModule, SelfhostModule)
-    // static frontend routes for front flavor
-    .useIf(() => env.flavors.front, StaticFileModule)
 
     // gcloud
     .useIf(() => env.gcp, GCloudModule);

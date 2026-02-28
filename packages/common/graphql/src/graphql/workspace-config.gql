@@ -1,7 +1,6 @@
 query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
     enableAi
-    enableSharing
     enableUrlPreview
     enableDocEmbedding
     inviteLink {

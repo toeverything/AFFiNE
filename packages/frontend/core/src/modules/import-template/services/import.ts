@@ -1,4 +1,3 @@
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import type { DocMode } from '@blocksuite/affine/model';
 import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
@@ -28,7 +27,7 @@ export class ImportTemplateService extends Service {
     const [importedDoc] = await ZipTransformer.importDocs(
       workspace.docCollection,
       getAFFiNEWorkspaceSchema(),
-      new Blob([toArrayBuffer(docBinary)], {
+      new Blob([docBinary], {
         type: 'application/zip',
       })
     );

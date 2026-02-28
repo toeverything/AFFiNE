@@ -1,5 +1,5 @@
 [package]
-edition      = "2024"
+edition      = "2021"
 license-file = "LICENSE"
 name         = "affine_server_native"
 version      = "1.0.0"
@@ -11,7 +11,6 @@ crate-type = ["cdylib"]
 affine_common = { workspace = true, features = [
   "doc-loader",
   "hashcash",
-  "napi",
   "ydoc-loader",
 ] }
 chrono = { workspace = true }

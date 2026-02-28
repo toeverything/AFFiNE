@@ -11,7 +11,6 @@ import { GfxExtension, GfxExtensionIdentifier } from '../extension.js';
 import { GfxBlockElementModel } from '../model/gfx-block-model.js';
 import type { GfxModel } from '../model/model.js';
 import { GfxPrimitiveElementModel } from '../model/surface/element-model.js';
-import { createRafCoalescer } from '../raf-coalescer.js';
 import type { GfxElementModelView } from '../view/view.js';
 import { createInteractionContext, type SupportedEvents } from './event.js';
 import {
@@ -55,20 +54,6 @@ type ExtensionPointerHandler = Exclude<
 export const InteractivityIdentifier = GfxExtensionIdentifier(
   'interactivity-manager'
 ) as ServiceIdentifier<InteractivityManager>;
-
-const DRAG_MOVE_RAF_THRESHOLD = 100;
-const DRAG_MOVE_HEAVY_COST_MS = 4;
-
-const shouldAllowDragMoveCoalescing = (
-  elements: { model: GfxModel }[]
-): boolean => {
-  return elements.every(({ model }) => {
-    const isConnector = 'type' in model && model.type === 'connector';
-    const isContainer = 'childIds' in model;
-
-    return !isConnector && !isContainer;
-  });
-};
 
 export class InteractivityManager extends GfxExtension {
   static override key = 'interactivity-manager';
@@ -396,18 +381,11 @@ export class InteractivityManager extends GfxExtension {
     };
     let dragLastPos = internal.dragStartPos;
     let lastEvent = event;
-    let lastMoveDelta: [number, number] | null = null;
-    const canCoalesceDragMove = shouldAllowDragMoveCoalescing(
-      internal.elements
-    );
-    let shouldCoalesceDragMove =
-      canCoalesceDragMove &&
-      internal.elements.length >= DRAG_MOVE_RAF_THRESHOLD;
 
-    const applyDragMove = (event: PointerEvent) => {
-      const moveStart = performance.now();
-      lastEvent = event;
-
+    const viewportWatcher = this.gfx.viewport.viewportMoved.subscribe(() => {
+      onDragMove(lastEvent as PointerEvent);
+    });
+    const onDragMove = (event: PointerEvent) => {
       dragLastPos = Point.from(
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])
       );
@@ -429,16 +407,6 @@ export class InteractivityManager extends GfxExtension {
         moveContext[direction] = 0;
       }
 
-      if (
-        lastMoveDelta &&
-        lastMoveDelta[0] === moveContext.dx &&
-        lastMoveDelta[1] === moveContext.dy
-      ) {
-        return;
-      }
-
-      lastMoveDelta = [moveContext.dx, moveContext.dy];
-
       this._safeExecute(() => {
         activeExtensionHandlers.forEach(handler =>
           handler?.onDragMove?.(moveContext)
@@ -455,39 +423,13 @@ export class InteractivityManager extends GfxExtension {
           elements: internal.elements,
         });
       });
-
-      if (
-        canCoalesceDragMove &&
-        !shouldCoalesceDragMove &&
-        performance.now() - moveStart > DRAG_MOVE_HEAVY_COST_MS
-      ) {
-        shouldCoalesceDragMove = true;
-      }
     };
-
-    const dragMoveCoalescer = createRafCoalescer<PointerEvent>(applyDragMove);
-
-    const flushPendingDragMove = () => {
-      dragMoveCoalescer.flush();
-    };
-    const onDragMove = (event: PointerEvent) => {
-      if (!shouldCoalesceDragMove) {
-        applyDragMove(event);
-        return;
-      }
-
-      dragMoveCoalescer.schedule(event);
-    };
-    const viewportWatcher = this.gfx.viewport.viewportMoved.subscribe(() => {
-      onDragMove(lastEvent as PointerEvent);
-    });
     const onDragEnd = (event: PointerEvent) => {
       this.activeInteraction$.value = null;
 
       host.removeEventListener('pointermove', onDragMove, false);
       host.removeEventListener('pointerup', onDragEnd, false);
       viewportWatcher.unsubscribe();
-      flushPendingDragMove();
 
       dragLastPos = Point.from(
         this.gfx.viewport.toModelCoordFromClientCoord([event.x, event.y])

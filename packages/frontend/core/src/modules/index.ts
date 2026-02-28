@@ -5,6 +5,7 @@ import {
   configureAIButtonModule,
   configureAIDraftModule,
   configureAIModelModule,
+  configureAINetworkSearchModule,
   configureAIPlaygroundModule,
   configureAIReasoningModule,
   configureAIToolsConfigModule,
@@ -113,6 +114,7 @@ export function configureCommonModules(framework: Framework) {
   configSearchMenuModule(framework);
   configureDndModule(framework);
   configureCommonGlobalStorageImpls(framework);
+  configureAINetworkSearchModule(framework);
   configureAIReasoningModule(framework);
   configureAIPlaygroundModule(framework);
   configureAIButtonModule(framework);

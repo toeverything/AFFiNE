@@ -1,3 +1,0 @@
-mutation unlinkCalendarAccount($accountId: String!) {
-  unlinkCalendarAccount(accountId: $accountId)
-}

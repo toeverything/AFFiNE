@@ -3,7 +3,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@affine/admin/components/ui/avatar';
-import { cn } from '@affine/admin/utils';
 import { FeatureType } from '@affine/graphql';
 import {
   AccountIcon,
@@ -13,6 +12,7 @@ import {
   UnlockIcon,
 } from '@blocksuite/icons/rc';
 import type { ColumnDef } from '@tanstack/react-table';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import {
   type Dispatch,
   type ReactNode,
@@ -39,10 +39,10 @@ const StatusItem = ({
   textFalse: string;
 }) => (
   <div
-    className={cn(
-      'flex items-center gap-1',
-      condition ? 'text-muted-foreground' : 'text-destructive'
-    )}
+    className="flex gap-1 items-center"
+    style={{
+      color: condition ? cssVarV2('text/secondary') : cssVarV2('status/error'),
+    }}
   >
     {condition ? (
       <>
@@ -66,9 +66,6 @@ export const useColumns = ({
     return [
       {
         id: 'select',
-        meta: {
-          className: 'w-[40px] flex-shrink-0',
-        },
         header: ({ table }) => (
           <Checkbox
             checked={
@@ -130,9 +127,6 @@ export const useColumns = ({
       },
       {
         accessorKey: 'info',
-        meta: {
-          className: 'w-[250px] flex-shrink-0',
-        },
         header: ({ column }) => (
           <DataTableColumnHeader
             className="text-xs"
@@ -152,17 +146,36 @@ export const useColumns = ({
               <div className="text-sm font-medium max-w-full overflow-hidden gap-[6px]">
                 <span>{row.original.name}</span>
                 {row.original.features.includes(FeatureType.Admin) && (
-                  <span className="ml-2 inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-blue px-2 py-0.5 text-xxs font-medium text-chip-text">
+                  <span
+                    className="ml-2 rounded px-2 py-0.5 text-xs h-5 border text-center inline-flex items-center font-normal"
+                    style={{
+                      borderRadius: '4px',
+                      backgroundColor: cssVarV2('chip/label/blue'),
+                      borderColor: cssVarV2('layer/insideBorder/border'),
+                    }}
+                  >
                     Admin
                   </span>
                 )}
                 {row.original.disabled && (
-                  <span className="ml-2 inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs font-medium">
+                  <span
+                    className="ml-2 rounded px-2 py-0.5 text-xs h-5 border"
+                    style={{
+                      borderRadius: '4px',
+                      backgroundColor: cssVarV2('chip/label/white'),
+                      borderColor: cssVarV2('layer/insideBorder/border'),
+                    }}
+                  >
                     Disabled
                   </span>
                 )}
               </div>
-              <div className="max-w-full overflow-hidden text-xs font-medium text-muted-foreground">
+              <div
+                className="text-xs font-medium max-w-full overflow-hidden"
+                style={{
+                  color: cssVarV2('text/secondary'),
+                }}
+              >
                 {row.original.email}
               </div>
             </div>
@@ -177,7 +190,7 @@ export const useColumns = ({
           <DataTableColumnHeader
             className="text-xs max-md:hidden"
             column={column}
-            title="User Detail"
+            title="UUID"
           />
         ),
         cell: ({ row: { original: user } }) => (
@@ -188,10 +201,16 @@ export const useColumns = ({
                 <StatusItem
                   condition={user.hasPassword}
                   IconTrue={
-                    <LockIcon fontSize={16} className="text-muted-foreground" />
+                    <LockIcon
+                      fontSize={16}
+                      color={cssVarV2('selfhost/icon/tertiary')}
+                    />
                   }
                   IconFalse={
-                    <UnlockIcon fontSize={16} className="text-destructive" />
+                    <UnlockIcon
+                      fontSize={16}
+                      color={cssVarV2('toast/iconState/error')}
+                    />
                   }
                   textTrue="Password Set"
                   textFalse="No Password"
@@ -201,32 +220,18 @@ export const useColumns = ({
                   IconTrue={
                     <EmailIcon
                       fontSize={16}
-                      className="text-muted-foreground"
+                      color={cssVarV2('selfhost/icon/tertiary')}
                     />
                   }
                   IconFalse={
                     <EmailWarningIcon
                       fontSize={16}
-                      className="text-destructive"
+                      color={cssVarV2('toast/iconState/error')}
                     />
                   }
                   textTrue="Email Verified"
                   textFalse="Email Not Verified"
                 />
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                {user.features.length ? (
-                  user.features.map(feature => (
-                    <span
-                      key={feature}
-                      className="inline-flex h-5 items-center rounded-md border border-border/60 bg-chip-white px-2 py-0.5 text-xxs font-medium"
-                    >
-                      {feature}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-muted-foreground">No features</span>
-                )}
               </div>
             </div>
           </div>
@@ -234,9 +239,6 @@ export const useColumns = ({
       },
       {
         id: 'actions',
-        meta: {
-          className: 'w-[80px]',
-        },
         header: ({ column }) => (
           <DataTableColumnHeader
             className="text-xs"

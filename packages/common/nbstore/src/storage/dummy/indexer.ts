@@ -86,9 +86,6 @@ export class DummyIndexerStorage extends IndexerStorageBase {
     return Promise.resolve();
   }
   override async refreshIfNeed(): Promise<void> {
-    return;
-  }
-  override async indexVersion(): Promise<number> {
-    return 0;
+    return Promise.resolve();
   }
 }

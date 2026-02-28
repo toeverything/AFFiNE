@@ -35,8 +35,6 @@ export interface ShareMenuProps extends PropsWithChildren {
   onOpenShareModal?: (open: boolean) => void;
   openPaywallModal?: () => void;
   hittingPaywall?: boolean;
-  disabled?: boolean;
-  disabledReason?: string;
 }
 
 export enum ShareMenuTab {
@@ -205,7 +203,7 @@ export const ShareMenuContent = (props: ShareMenuProps) => {
 };
 
 const DefaultShareButton = forwardRef(function DefaultShareButton(
-  props: { disabled?: boolean; tooltip?: string },
+  _,
   ref: Ref<HTMLButtonElement>
 ) {
   const t = useI18n();
@@ -213,26 +211,18 @@ const DefaultShareButton = forwardRef(function DefaultShareButton(
   const shared = useLiveData(shareInfoService.shareInfo.isShared$);
 
   useEffect(() => {
-    if (props.disabled) {
-      return;
-    }
     shareInfoService.shareInfo.revalidate();
-  }, [props.disabled, shareInfoService]);
-
-  const tooltip =
-    props.tooltip ??
-    (shared
-      ? t['com.affine.share-menu.option.link.readonly.description']()
-      : t['com.affine.share-menu.option.link.no-access.description']());
+  }, [shareInfoService]);
 
   return (
-    <Tooltip content={tooltip}>
-      <Button
-        ref={ref}
-        className={styles.button}
-        variant="primary"
-        disabled={props.disabled}
-      >
+    <Tooltip
+      content={
+        shared
+          ? t['com.affine.share-menu.option.link.readonly.description']()
+          : t['com.affine.share-menu.option.link.no-access.description']()
+      }
+    >
+      <Button ref={ref} className={styles.button} variant="primary">
         <div className={styles.buttonContainer}>
           {shared ? <PublishIcon fontSize={16} /> : <LockIcon fontSize={16} />}
           {t['com.affine.share-menu.shareButton']()}
@@ -243,13 +233,6 @@ const DefaultShareButton = forwardRef(function DefaultShareButton(
 });
 
 const LocalShareMenu = (props: ShareMenuProps) => {
-  if (props.disabled) {
-    return (
-      <div data-testid="local-share-menu-button">
-        <DefaultShareButton disabled tooltip={props.disabledReason} />
-      </div>
-    );
-  }
   return (
     <Menu
       items={<ShareMenuContent {...props} />}
@@ -271,13 +254,6 @@ const LocalShareMenu = (props: ShareMenuProps) => {
 };
 
 const CloudShareMenu = (props: ShareMenuProps) => {
-  if (props.disabled) {
-    return (
-      <div data-testid="cloud-share-menu-button">
-        <DefaultShareButton disabled tooltip={props.disabledReason} />
-      </div>
-    );
-  }
   return (
     <Menu
       items={<ShareMenuContent {...props} />}

@@ -1,4 +1,3 @@
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { Entity, LiveData, ObjectPool } from '@toeverything/infra';
 import { catchError, from, map, of, startWith, switchMap } from 'rxjs';
 
@@ -42,7 +41,7 @@ export class PDF extends Entity<{ blobId: string }> {
         .then(blobRecord => {
           if (blobRecord) {
             const { data, mime: type } = blobRecord;
-            const blob = new Blob([toArrayBuffer(data)], { type });
+            const blob = new Blob([data], { type });
             return blob.arrayBuffer();
           }
 

@@ -13,9 +13,12 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import type { FileUpload } from '../../../base';
 import {
   AFFiNELogger,
+  BlobQuotaExceeded,
+  readBuffer,
   registerObjectType,
   SpaceAccessDenied,
   SpaceNotFound,
+  StorageQuotaExceeded,
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
@@ -26,6 +29,8 @@ import {
   WorkspaceRole,
 } from '../../permission';
 import { QuotaService, WorkspaceQuotaType } from '../../quota';
+import { NotificationService } from '../../notification/service';
+import { WorkspaceBlobStorage } from '../../storage';
 import { WorkspaceService } from '../service';
 import { UpdateWorkspaceInput, WorkspaceType } from '../types';
 
@@ -83,6 +88,8 @@ export class WorkspaceResolver {
     private readonly quota: QuotaService,
     private readonly models: Models,
     private readonly workspaceService: WorkspaceService,
+    private readonly notificationService: NotificationService,
+    private readonly storage: WorkspaceBlobStorage,
     private readonly logger: AFFiNELogger
   ) {
     logger.setContext(WorkspaceResolver.name);
@@ -154,6 +161,64 @@ export class WorkspaceResolver {
       ...quota,
       humanReadable: this.quota.formatWorkspaceQuota(quota),
     };
+  }
+
+  @ResolveField(() => [CurriculumDocumentType], {
+    description: 'Uploaded curriculum documents',
+    complexity: 2,
+  })
+  async curriculumDocuments(
+    @Parent() workspace: WorkspaceType
+  ): Promise<CurriculumDocumentType[]> {
+    const blobs = await this.storage.list(workspace.id);
+    
+    // Filter blobs that start with "curriculum-" prefix
+    const curriculumBlobs = blobs.filter(blob => 
+      blob.key.startsWith('curriculum-')
+    );
+
+    return curriculumBlobs.map(blob => ({
+      filename: blob.key.replace('curriculum-', ''),
+      key: blob.key,
+      size: blob.size,
+      mime: blob.mime,
+      createdAt: blob.createdAt,
+      downloadUrl: `/api/workspaces/${workspace.id}/curriculum/${blob.key}`,
+    }));
+  }
+
+  @Query(() => Boolean, {
+    description: 'Get is owner of workspace',
+    complexity: 2,
+    deprecationReason: 'use WorkspaceType[role] instead',
+  })
+  async isOwner(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    const role = await this.models.workspaceUser.getActive(
+      workspaceId,
+      user.id
+    );
+
+    return role?.type === WorkspaceRole.Owner;
+  }
+
+  @Query(() => Boolean, {
+    description: 'Get is admin of workspace',
+    complexity: 2,
+    deprecationReason: 'use WorkspaceType[role] instead',
+  })
+  async isAdmin(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string
+  ) {
+    const role = await this.models.workspaceUser.getActive(
+      workspaceId,
+      user.id
+    );
+
+    return role?.type === WorkspaceRole.Admin;
   }
 
   @Query(() => [WorkspaceType], {
@@ -268,6 +333,58 @@ export class WorkspaceResolver {
       .workspace(id)
       .assert('Workspace.Settings.Update');
     return this.models.workspace.update(id, updates);
+  }
+
+  @Mutation(() => String, {
+    description: 'Upload curriculum document and notify all users',
+  })
+  async uploadCurriculum(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args({ name: 'curriculum', type: () => GraphQLUpload })
+    curriculum: FileUpload
+  ) {
+    // Check if user is owner
+    const role = await this.models.workspaceUser.getActive(workspaceId, user.id);
+    if (!role || role.type !== WorkspaceRole.Owner) {
+      throw new SpaceAccessDenied({ spaceId: workspaceId });
+    }
+
+    // Check quota
+    const checkExceeded =
+      await this.quota.getWorkspaceQuotaCalculator(workspaceId);
+
+    let result = checkExceeded(0);
+    if (result?.blobQuotaExceeded) {
+      throw new BlobQuotaExceeded();
+    } else if (result?.storageQuotaExceeded) {
+      throw new StorageQuotaExceeded();
+    }
+
+    // Upload the file with curriculum prefix
+    const key = `curriculum-${curriculum.filename}`;
+    const buffer = await readBuffer(curriculum.createReadStream(), checkExceeded);
+    await this.storage.put(workspaceId, key, buffer);
+
+    // Get all members of the workspace
+    const workspaceUsers = await this.models.workspaceUser.paginate(workspaceId, { first: 1000, offset: 0 });
+    const members = workspaceUsers[0].map(wu => ({ userId: wu.userId }));
+
+    // Send notification to all members
+    const notifications = members.map(member =>
+      this.notificationService.createSystem({
+        userId: member.userId,
+        body: {
+          workspaceId,
+          createdByUserId: user.id,
+          message: 'A new curriculum has been uploaded.',
+        },
+      })
+    );
+
+    await Promise.all(notifications);
+
+    return curriculum.filename;
   }
 
   @Mutation(() => Boolean)

@@ -68,14 +68,12 @@ test('should read DEPLOYMENT_TYPE', t => {
 
 test('should read FLAVOR', t => {
   t.deepEqual(
-    ['allinone', 'graphql', 'sync', 'renderer', 'front', 'doc', 'script'].map(
-      envVal => {
-        process.env.SERVER_FLAVOR = envVal;
-        const env = new Env();
-        return env.FLAVOR;
-      }
-    ),
-    ['allinone', 'graphql', 'sync', 'renderer', 'front', 'doc', 'script']
+    ['allinone', 'graphql', 'sync', 'renderer', 'doc', 'script'].map(envVal => {
+      process.env.SERVER_FLAVOR = envVal;
+      const env = new Env();
+      return env.FLAVOR;
+    }),
+    ['allinone', 'graphql', 'sync', 'renderer', 'doc', 'script']
   );
 
   t.throws(
@@ -85,7 +83,7 @@ test('should read FLAVOR', t => {
     },
     {
       message:
-        'Invalid value "unknown" for environment variable SERVER_FLAVOR, expected one of ["allinone","graphql","sync","renderer","front","doc","script"]',
+        'Invalid value "unknown" for environment variable SERVER_FLAVOR, expected one of ["allinone","graphql","sync","renderer","doc","script"]',
     }
   );
 });
@@ -112,7 +110,6 @@ test('should tell flavors correctly', t => {
     graphql: true,
     sync: true,
     renderer: true,
-    front: false,
     doc: true,
     script: false,
   });
@@ -122,17 +119,6 @@ test('should tell flavors correctly', t => {
     graphql: true,
     sync: false,
     renderer: false,
-    front: false,
-    doc: false,
-    script: false,
-  });
-
-  process.env.SERVER_FLAVOR = 'front';
-  t.deepEqual(new Env().flavors, {
-    graphql: false,
-    sync: false,
-    renderer: false,
-    front: true,
     doc: false,
     script: false,
   });
@@ -142,7 +128,6 @@ test('should tell flavors correctly', t => {
     graphql: false,
     sync: false,
     renderer: false,
-    front: false,
     doc: false,
     script: true,
   });

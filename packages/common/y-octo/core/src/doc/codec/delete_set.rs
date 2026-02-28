@@ -1,5 +1,5 @@
 use std::{
-  collections::{VecDeque, hash_map::Entry},
+  collections::{hash_map::Entry, VecDeque},
   ops::{Deref, DerefMut, Range},
 };
 
@@ -188,7 +188,10 @@ mod tests {
     {
       let mut delete_set = delete_set;
       delete_set.add(1, 5, 10);
-      assert_eq!(delete_set.get(&1), Some(&OrderRange::from(vec![0..15, 20..30])));
+      assert_eq!(
+        delete_set.get(&1),
+        Some(&OrderRange::from(vec![0..15, 20..30]))
+      );
     }
   }
 
@@ -210,7 +213,10 @@ mod tests {
     {
       let mut delete_set = delete_set;
       delete_set.batch_add_ranges(1, vec![40..50, 10..20]);
-      assert_eq!(delete_set.get(&1), Some(&OrderRange::from(vec![0..30, 40..50])));
+      assert_eq!(
+        delete_set.get(&1),
+        Some(&OrderRange::from(vec![0..30, 40..50]))
+      );
     }
   }
 

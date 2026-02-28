@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 
-import { AccessTokenResolver, UserAccessTokenResolver } from './resolver';
+import { AccessTokenResolver } from './resolver';
 
 @Module({
-  providers: [AccessTokenResolver, UserAccessTokenResolver],
+  providers: [AccessTokenResolver],
 })
 export class AccessTokenModule {}

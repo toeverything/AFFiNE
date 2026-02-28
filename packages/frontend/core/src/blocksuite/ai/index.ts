@@ -1,5 +1,6 @@
 export * from './_common/config';
 export * from './actions';
+export { ChatPanel } from './chat-panel';
 export * from './entries';
 export * from './entries/edgeless/actions-config';
 export * from './messages';

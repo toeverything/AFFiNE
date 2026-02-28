@@ -4,7 +4,6 @@ import {
 } from 'socket.io-client';
 
 import { AutoReconnectConnection } from '../../connection';
-import type { TelemetryAck, TelemetryBatch } from '../../telemetry/types';
 import { throwIfAborted } from '../../utils/throw-if-aborted';
 
 // TODO(@forehalo): use [UserFriendlyError]
@@ -29,15 +28,6 @@ interface ServerEvents {
     update: string;
     timestamp: number;
     editor: string;
-  };
-  'space:broadcast-doc-updates': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-    updates: string[];
-    timestamp: number;
-    editor?: string;
-    compressed?: boolean;
   };
 
   'space:collect-awareness': {
@@ -114,8 +104,6 @@ interface ClientEvents {
     },
   ];
   'space:delete-doc': { spaceType: string; spaceId: string; docId: string };
-
-  'telemetry:batch': [TelemetryBatch, TelemetryAck];
 }
 
 export type ServerEventsMap = {
@@ -133,42 +121,33 @@ export type ClientEventsMap = {
 
 export type Socket = SocketIO<ServerEventsMap, ClientEventsMap>;
 
-type BufferConstructorLike = {
-  from(
-    data: Uint8Array | string,
-    encoding?: string
-  ): Uint8Array & {
-    toString(encoding: string): string;
-  };
-};
+export function uint8ArrayToBase64(array: Uint8Array): Promise<string> {
+  return new Promise<string>(resolve => {
+    // Create a blob from the Uint8Array
+    const blob = new Blob([array]);
 
-const BufferCtor = (globalThis as { Buffer?: BufferConstructorLike }).Buffer;
-const CHUNK_SIZE = 0x8000;
+    const reader = new FileReader();
+    reader.onload = function () {
+      const dataUrl = reader.result as string | null;
+      if (!dataUrl) {
+        resolve('');
+        return;
+      }
+      // The result includes the `data:` URL prefix and the MIME type. We only want the Base64 data
+      const base64 = dataUrl.split(',')[1];
+      resolve(base64);
+    };
 
-export async function uint8ArrayToBase64(array: Uint8Array): Promise<string> {
-  if (BufferCtor) {
-    return BufferCtor.from(array).toString('base64');
-  }
-
-  let binary = '';
-  for (let i = 0; i < array.length; i += CHUNK_SIZE) {
-    const chunk = array.subarray(i, i + CHUNK_SIZE);
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
+    reader.readAsDataURL(blob);
+  });
 }
 
 export function base64ToUint8Array(base64: string) {
-  if (BufferCtor) {
-    return new Uint8Array(BufferCtor.from(base64, 'base64'));
-  }
-
   const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
+  const binaryArray = [...binaryString].map(function (char) {
+    return char.charCodeAt(0);
+  });
+  return new Uint8Array(binaryArray);
 }
 
 let authMethod:

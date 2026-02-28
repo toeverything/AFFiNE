@@ -105,46 +105,11 @@ export class DocsQuickSearchSession
     switchMap((query: string) => {
       let out;
       if (!query) {
-        out = of({ items: [], useLocalLabel: false });
+        out = of([] as QuickSearchItem<'docs', DocsPayload>[]);
       } else {
-        const preferRemote =
-          !this.searchLocally && this.isSupportServerIndexer();
-        const preferMode =
-          this.searchLocally || !this.isSupportServerIndexer()
-            ? 'local'
-            : 'remote';
-        const search$ = preferRemote
-          ? this.docsSearchService.search$(query, 'remote').pipe(
-              switchMap(docs => {
-                if (docs.length > 0) {
-                  return of({ docs, useLocalLabel: false });
-                }
-                return this.docsSearchService.search$(query, 'local').pipe(
-                  map(localDocs => ({
-                    docs: localDocs,
-                    useLocalLabel: true,
-                  }))
-                );
-              }),
-              catchError(() =>
-                this.docsSearchService.search$(query, 'local').pipe(
-                  map(localDocs => ({
-                    docs: localDocs,
-                    useLocalLabel: true,
-                  }))
-                )
-              )
-            )
-          : this.docsSearchService.search$(query, preferMode).pipe(
-              map(docs => ({
-                docs,
-                useLocalLabel: preferMode === 'local',
-              }))
-            );
-
-        out = search$.pipe(
-          map(({ docs, useLocalLabel }) => {
-            const items = docs
+        out = this.docsSearchService.search$(query).pipe(
+          map(docs =>
+            docs
               .map(doc => {
                 const docRecord = this.docsService.list.doc$(doc.docId).value;
                 return [doc, docRecord] as const;
@@ -161,7 +126,7 @@ export class DocsQuickSearchSession
                   group: {
                     id: 'docs',
                     label: {
-                      i18nKey: useLocalLabel
+                      i18nKey: this.searchLocally
                         ? 'com.affine.quicksearch.group.searchfor-locally'
                         : 'com.affine.quicksearch.group.searchfor',
                       options: { query: truncate(query) },
@@ -177,18 +142,16 @@ export class DocsQuickSearchSession
                   timestamp: updatedDate,
                   payload: doc,
                 } as QuickSearchItem<'docs', DocsPayload>;
-              });
-            return { items, useLocalLabel };
-          })
+              })
+          )
         );
       }
       return out.pipe(
-        tap(({ items, useLocalLabel }) => {
+        tap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
           this.items$.next(
             this.isSupportServerIndexer() &&
               !this.searchLocally &&
-              !this.isEnableBatterySaveMode() &&
-              !useLocalLabel
+              !this.isEnableBatterySaveMode()
               ? [...items, this.searchLocallyItem]
               : items
           );

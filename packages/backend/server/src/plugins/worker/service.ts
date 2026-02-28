@@ -5,14 +5,12 @@ import { fixUrl, OriginRules } from './utils';
 
 @Injectable()
 export class WorkerService {
-  allowedOrigins: OriginRules;
+  allowedOrigins: OriginRules = [...this.url.allowedOrigins];
 
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper
-  ) {
-    this.allowedOrigins = [...this.url.allowedOrigins];
-  }
+  ) {}
 
   @OnEvent('config.init')
   onConfigInit() {

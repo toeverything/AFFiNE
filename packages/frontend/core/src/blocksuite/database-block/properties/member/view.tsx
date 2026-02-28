@@ -69,10 +69,8 @@ const MemberCellComponent: ForwardRefRenderFunction<
   DataViewCellLifeCycle,
   CellRenderProps<{}, MemberCellRawValueType, MemberCellJsonValueType>
 > = (props, ref): ReactNode => {
-  const manager = useMemo(
-    () => new MemberManager(props), // eslint-disable-line react-hooks/preserve-manual-memoization
-    [] // oxlint-disable-line react/exhaustive-deps
-  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const manager = useMemo(() => new MemberManager(props), []);
 
   useImperativeHandle(
     ref,

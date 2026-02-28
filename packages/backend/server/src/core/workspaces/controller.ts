@@ -1,15 +1,5 @@
-import { createHash } from 'node:crypto';
-
-import {
-  Controller,
-  Get,
-  Logger,
-  Param,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
-import type { Request, Response } from 'express';
+import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 
 import {
   applyAttachHeaders,
@@ -18,7 +8,6 @@ import {
   CommentAttachmentNotFound,
   DocHistoryNotFound,
   DocNotFound,
-  getRequestTrackerId,
   InvalidHistoryTimestamp,
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
@@ -40,13 +29,6 @@ export class WorkspacesController {
     private readonly docReader: DocReader,
     private readonly models: Models
   ) {}
-
-  private buildVisitorId(req: Request, workspaceId: string, docId: string) {
-    const tracker = getRequestTrackerId(req);
-    return createHash('sha256')
-      .update(`${workspaceId}:${docId}:${tracker}`)
-      .digest('hex');
-  }
 
   // get workspace blob
   //
@@ -91,11 +73,12 @@ export class WorkspacesController {
 
     // metadata should always exists if body is not null
     if (metadata) {
+      const contentType = metadata.contentType ?? 'application/octet-stream';
       res.setHeader(
         'content-type',
-        metadata.contentType.startsWith('application/json') // application/json is reserved for redirect url
+        contentType.startsWith('application/json') // application/json is reserved for redirect url
           ? 'text/json'
-          : metadata.contentType
+          : contentType
       );
       res.setHeader('last-modified', metadata.lastModified.toUTCString());
       res.setHeader('content-length', metadata.contentLength);
@@ -117,7 +100,6 @@ export class WorkspacesController {
   @CallMetric('controllers', 'workspace_get_doc')
   async doc(
     @CurrentUser() user: CurrentUser | undefined,
-    @Req() req: Request,
     @Param('id') ws: string,
     @Param('guid') guid: string,
     @Res() res: Response
@@ -144,23 +126,6 @@ export class WorkspacesController {
         spaceId: docId.workspace,
         docId: docId.guid,
       });
-    }
-
-    if (!docId.isWorkspace) {
-      void this.models.workspaceAnalytics
-        .recordDocView({
-          workspaceId: docId.workspace,
-          docId: docId.guid,
-          userId: user?.id,
-          visitorId: this.buildVisitorId(req, docId.workspace, docId.guid),
-          isGuest: !user,
-        })
-        .catch(error => {
-          this.logger.warn(
-            `Failed to record doc view: ${docId.workspace}/${docId.guid}`,
-            error as Error
-          );
-        });
     }
 
     if (!docId.isWorkspace) {
@@ -259,6 +224,72 @@ export class WorkspacesController {
     applyAttachHeaders(res, {
       contentType: metadata?.contentType,
       filename: key,
+    });
+
+    res.setHeader('cache-control', 'private, max-age=2592000, immutable');
+    body.pipe(res);
+  }
+
+  // get curriculum document
+  @Get('/:id/curriculum/:name')
+  @CallMetric('controllers', 'workspace_get_curriculum')
+  async curriculum(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Param('name') name: string,
+    @Res() res: Response
+  ) {
+    // Check if user has access to workspace
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Read');
+
+    // Ensure the file is a curriculum document
+    if (!name.startsWith('curriculum-')) {
+      throw new BlobNotFound({
+        spaceId: workspaceId,
+        blobId: name,
+      });
+    }
+
+    const { body, metadata, redirectUrl } = await this.storage.get(
+      workspaceId,
+      name,
+      true
+    );
+
+    if (redirectUrl) {
+      return res.redirect(redirectUrl);
+    }
+
+    if (!body) {
+      throw new BlobNotFound({
+        spaceId: workspaceId,
+        blobId: name,
+      });
+    }
+
+    // metadata should always exists if body is not null
+    if (metadata) {
+      const contentType = metadata.contentType ?? 'application/octet-stream';
+      res.setHeader(
+        'content-type',
+        contentType.startsWith('application/json')
+          ? 'text/json'
+          : contentType
+      );
+      res.setHeader('last-modified', metadata.lastModified.toUTCString());
+      res.setHeader('content-length', metadata.contentLength);
+    } else {
+      this.logger.warn(`Curriculum ${workspaceId}/${name} has no metadata`);
+    }
+
+    // Extract original filename from key
+    const filename = name.replace('curriculum-', '');
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: filename,
     });
 
     res.setHeader('cache-control', 'private, max-age=2592000, immutable');

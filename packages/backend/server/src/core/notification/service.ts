@@ -12,6 +12,7 @@ import {
   MentionNotificationCreate,
   Models,
   NotificationType,
+  SystemNotificationCreate,
   UnionNotificationBody,
   Workspace,
 } from '../../models';
@@ -44,6 +45,10 @@ export class NotificationService {
       : await this.models.notification.createComment(input);
     await this.sendCommentEmail(input, isMention);
     return notification;
+  }
+
+  async createSystem(input: SystemNotificationCreate) {
+    return await this.models.notification.createSystem(input);
   }
 
   private async sendCommentEmail(

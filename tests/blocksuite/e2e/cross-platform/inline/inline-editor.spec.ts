@@ -143,20 +143,17 @@ async function assertSelection(
   rangeIndex: number,
   rangeLength = 0
 ) {
-  await expect
-    .poll(async () => {
-      return page.evaluate(
-        ([richTextIndex]) => {
-          const richText =
-            document?.querySelectorAll('test-rich-text')[richTextIndex];
-          // @ts-expect-error getInlineRange
-          const inlineEditor = richText.inlineEditor;
-          return inlineEditor?.getInlineRange();
-        },
-        [richTextIndex]
-      );
-    })
-    .toEqual({ index: rangeIndex, length: rangeLength });
+  const actual = await page.evaluate(
+    ([richTextIndex]) => {
+      const richText =
+        document?.querySelectorAll('test-rich-text')[richTextIndex];
+      // @ts-expect-error getInlineRange
+      const inlineEditor = richText.inlineEditor;
+      return inlineEditor?.getInlineRange();
+    },
+    [richTextIndex]
+  );
+  expect(actual).toEqual({ index: rangeIndex, length: rangeLength });
 }
 
 test('basic input', async ({ page, browserName }) => {
@@ -1116,14 +1113,16 @@ test('embed', async ({ page }) => {
   await assertSelection(page, 0, 3, 1);
 
   // try to update cursor position and select embed element by clicking embed element
-  const embeds = page.locator('[data-v-embed="true"]');
-  await embeds.nth(0).click();
+  let rect = await getInlineRangeIndexRect(page, [0, 1]);
+  await page.mouse.click(rect.x + 3, rect.y);
   await assertSelection(page, 0, 1, 1);
 
-  await embeds.nth(1).click();
+  rect = await getInlineRangeIndexRect(page, [0, 2]);
+  await page.mouse.click(rect.x + 3, rect.y);
   await assertSelection(page, 0, 2, 1);
 
-  await embeds.nth(2).click();
+  rect = await getInlineRangeIndexRect(page, [0, 3]);
+  await page.mouse.click(rect.x + 3, rect.y);
   await assertSelection(page, 0, 3, 1);
 });
 

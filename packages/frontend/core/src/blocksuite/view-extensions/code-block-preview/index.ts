@@ -13,10 +13,6 @@ import {
   CodeBlockMermaidPreview,
   effects as mermaidPreviewEffects,
 } from './mermaid-preview';
-import {
-  CodeBlockTypstPreview,
-  effects as typstPreviewEffects,
-} from './typst-preview';
 
 const optionsSchema = z.object({
   framework: z.instanceof(FrameworkProvider).optional(),
@@ -32,7 +28,6 @@ export class CodeBlockPreviewViewExtension extends ViewExtensionProvider {
 
     htmlPreviewEffects();
     mermaidPreviewEffects();
-    typstPreviewEffects();
   }
 
   override setup(
@@ -42,6 +37,5 @@ export class CodeBlockPreviewViewExtension extends ViewExtensionProvider {
     super.setup(context, options);
     context.register(CodeBlockHtmlPreview);
     context.register(CodeBlockMermaidPreview);
-    context.register(CodeBlockTypstPreview);
   }
 }

@@ -16,7 +16,7 @@ import {
   DocReader,
   DocStorageModule,
   PgWorkspaceDocStorageAdapter,
-} from '../index';
+} from '..';
 import { RpcDocReader } from '../reader';
 
 const module = await createModule({
@@ -98,9 +98,6 @@ test('should throw error when doc service internal error', async t => {
   const { docReader, adapter } = t.context;
   const docId = randomUUID();
   mock.method(adapter, 'getDoc', async () => {
-    throw new Error('mock doc service internal error');
-  });
-  mock.method(adapter, 'getDocBinNative', async () => {
     throw new Error('mock doc service internal error');
   });
   let err = await t.throwsAsync(docReader.getDoc(workspace.id, docId), {

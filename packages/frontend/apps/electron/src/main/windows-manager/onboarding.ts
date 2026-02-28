@@ -6,7 +6,6 @@ import { isDev } from '../config';
 import { onboardingViewUrl } from '../constants';
 // import { getExposedMeta } from './exposed';
 import { logger } from '../logger';
-import { buildWebPreferences } from '../web-preferences';
 import { fullscreenAndCenter, getScreenSize } from './utils';
 
 // todo: not all window need all of the exposed meta
@@ -41,11 +40,11 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     transparent: true,
     hasShadow: false,
     roundedCorners: false,
-    webPreferences: buildWebPreferences({
+    webPreferences: {
       webgl: true,
       preload: join(__dirname, './preload.js'),
       additionalArguments: additionalArguments,
-    }),
+    },
   });
 
   // workaround for the phantom title bar on windows when losing focus

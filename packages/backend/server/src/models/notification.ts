@@ -122,11 +122,31 @@ export const CommentMentionNotificationCreateSchema =
     body: CommentNotificationBodySchema,
   });
 
+const SystemNotificationBodySchema = z.object({
+  workspaceId: IdSchema,
+  createdByUserId: IdSchema,
+  message: z.string().trim().min(1).max(255),
+});
+
+export type SystemNotificationBody = z.infer<
+  typeof SystemNotificationBodySchema
+>;
+
+export const SystemNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: SystemNotificationBodySchema,
+  });
+
+export type SystemNotificationCreate = z.input<
+  typeof SystemNotificationCreateSchema
+>;
+
 export type UnionNotificationBody =
   | MentionNotificationBody
   | InvitationNotificationBody
   | InvitationReviewDeclinedNotificationBody
-  | CommentNotificationBody;
+  | CommentNotificationBody
+  | SystemNotificationBody;
 
 // #endregion
 
@@ -144,11 +164,15 @@ export type InvitationReviewDeclinedNotification = Notification &
 export type CommentNotification = Notification &
   z.infer<typeof CommentNotificationCreateSchema>;
 
+export type SystemNotification = Notification &
+  z.infer<typeof SystemNotificationCreateSchema>;
+
 export type UnionNotification =
   | MentionNotification
   | InvitationNotification
   | InvitationReviewDeclinedNotification
-  | CommentNotification;
+  | CommentNotification
+  | SystemNotification;
 
 // #endregion
 
@@ -240,6 +264,24 @@ export class NotificationModel extends BaseModel {
       `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
     );
     return row as CommentNotification;
+  }
+
+  // #endregion
+
+  // #region system
+
+  async createSystem(input: SystemNotificationCreate) {
+    const data = SystemNotificationCreateSchema.parse(input);
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type: NotificationType.Mention, // Temporarily use Mention instead of System
+      body: data.body,
+    });
+    this.logger.debug(
+      `Created system notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as SystemNotification;
   }
 
   // #endregion

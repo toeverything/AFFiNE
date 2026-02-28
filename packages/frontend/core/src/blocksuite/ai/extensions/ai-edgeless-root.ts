@@ -1,4 +1,5 @@
 import { LifeCycleWatcher } from '@blocksuite/affine/std';
+import type { FrameworkProvider } from '@toeverything/infra';
 
 import { buildAIPanelConfig } from '../ai-panel';
 import { setupEdgelessCopilot } from '../entries/edgeless/index';
@@ -6,7 +7,7 @@ import { setupSpaceAIEntry } from '../entries/space/setup-space';
 import { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
 import { EdgelessCopilotWidget } from '../widgets/edgeless-copilot';
 
-export function getAIEdgelessRootWatcher() {
+export function getAIEdgelessRootWatcher(framework: FrameworkProvider) {
   class AIEdgelessRootWatcher extends LifeCycleWatcher {
     static override key = 'ai-edgeless-root-watcher';
 
@@ -20,7 +21,7 @@ export function getAIEdgelessRootWatcher() {
         const component = payload.view;
         if (component instanceof AffineAIPanelWidget) {
           component.style.width = '430px';
-          component.config = buildAIPanelConfig(component);
+          component.config = buildAIPanelConfig(component, framework);
           setupSpaceAIEntry(component);
         }
 

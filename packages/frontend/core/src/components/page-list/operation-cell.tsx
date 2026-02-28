@@ -89,7 +89,7 @@ const PageOperationCellMenuItem = ({
       track.$.docInfoPanel.$.open();
       workspaceDialogService.open('doc-info', { docId: blocksuiteDoc.id });
     }
-  }, [blocksuiteDoc, workspaceDialogService]);
+  }, [blocksuiteDoc?.id, workspaceDialogService]);
 
   const onDisablePublicSharing = useCallback(() => {
     // TODO(@EYHN): implement disable public sharing

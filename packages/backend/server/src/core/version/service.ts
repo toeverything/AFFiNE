@@ -1,65 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
 import semver from 'semver';
 
-import {
-  checkCanaryDateClientVersion,
-  Config,
-  UnsupportedClientVersion,
-} from '../../base';
+import { Config, UnsupportedClientVersion } from '../../base';
 
 @Injectable()
 export class VersionService {
   private readonly logger = new Logger(VersionService.name);
-  private static readonly HARD_REQUIRED_VERSION = '>=0.25.0';
-  private static readonly CANARY_REQUIRED_VERSION = 'canary (within 2 months)';
 
   constructor(private readonly config: Config) {}
 
   async checkVersion(clientVersion?: string) {
     const requiredVersion = this.config.client.versionControl.requiredVersion;
 
-    if (clientVersion && env.namespaces.canary) {
-      const canaryCheck = checkCanaryDateClientVersion(clientVersion);
-      if (canaryCheck.matched) {
-        if (canaryCheck.allowed) {
-          return true;
-        }
-
-        throw new UnsupportedClientVersion({
-          clientVersion,
-          requiredVersion: VersionService.CANARY_REQUIRED_VERSION,
-        });
-      }
+    const range = await this.getVersionRange(requiredVersion);
+    if (!range) {
+      // ignore invalid allowed version config
+      return true;
     }
 
-    const hardRange = await this.getVersionRange(
-      VersionService.HARD_REQUIRED_VERSION
-    );
-    const configRange = await this.getVersionRange(requiredVersion);
-
     if (
-      configRange &&
-      (!clientVersion ||
-        !semver.satisfies(clientVersion, configRange, {
-          includePrerelease: true,
-        }))
+      !clientVersion ||
+      !semver.satisfies(clientVersion, range, {
+        includePrerelease: true,
+      })
     ) {
       throw new UnsupportedClientVersion({
         clientVersion: clientVersion ?? 'unset_or_invalid',
         requiredVersion,
-      });
-    }
-
-    if (
-      hardRange &&
-      (!clientVersion ||
-        !semver.satisfies(clientVersion, hardRange, {
-          includePrerelease: true,
-        }))
-    ) {
-      throw new UnsupportedClientVersion({
-        clientVersion: clientVersion ?? 'unset_or_invalid',
-        requiredVersion: VersionService.HARD_REQUIRED_VERSION,
       });
     }
 

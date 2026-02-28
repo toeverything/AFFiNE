@@ -139,11 +139,11 @@ export async function revokeUser(
 ): Promise<boolean> {
   const res = await app.gql(`
     mutation {
-      revokeMember(workspaceId: "${workspaceId}", userId: "${userId}")
+      revoke(workspaceId: "${workspaceId}", userId: "${userId}")
     }
   `);
 
-  return res.revokeMember;
+  return res.revoke;
 }
 
 export async function getInviteInfo(

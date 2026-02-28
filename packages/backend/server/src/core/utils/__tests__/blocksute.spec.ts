@@ -79,7 +79,6 @@ test('can read all blocks from doc snapshot without workspace snapshot', async t
 
 test('can parse doc to markdown from doc snapshot', async t => {
   const result = parseDocToMarkdownFromDocSnapshot(
-    workspace.id,
     docSnapshot.id,
     docSnapshot.blob
   );
@@ -89,7 +88,6 @@ test('can parse doc to markdown from doc snapshot', async t => {
 
 test('can parse doc to markdown from doc snapshot with ai editable', async t => {
   const result = parseDocToMarkdownFromDocSnapshot(
-    workspace.id,
     docSnapshot.id,
     docSnapshot.blob,
     true

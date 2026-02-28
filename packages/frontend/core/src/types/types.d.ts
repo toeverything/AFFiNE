@@ -1,4 +1,4 @@
-/// <reference types="@rspack/core/module" />
+/// <reference types="@webpack/env"" />
 
 declare module '*.md' {
   const text: string;
@@ -28,14 +28,4 @@ declare module '*.jpg' {
 declare module '*.inline.svg' {
   const src: string;
   export default src;
-}
-
-declare module '*.wasm' {
-  const url: string;
-  export default url;
-}
-
-declare module '*.wasm?url' {
-  const url: string;
-  export default url;
 }

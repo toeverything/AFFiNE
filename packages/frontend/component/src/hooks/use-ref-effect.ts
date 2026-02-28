@@ -3,6 +3,9 @@
  */
 import { useDebugValue, useEffect, useState } from 'react';
 
+// internalRef is used as a reference and therefore save to be used inside an effect
+/* eslint-disable react-hooks/exhaustive-deps */
+
 // the `process.env.NODE_ENV !== 'production'` condition is resolved by the build tool
 
 const noop: (...args: any[]) => any = () => {};
@@ -81,7 +84,6 @@ export const useRefEffect = <T>(
         }
       };
     }, // Keep a ref to the latest dependencies
-    // oxlint-disable-next-line react/exhaustive-deps
     (internalRef.dependencies_ = dependencies)
   );
 

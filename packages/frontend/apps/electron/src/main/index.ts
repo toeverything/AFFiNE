@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import * as Sentry from '@sentry/electron/main';
 import { IPCMode } from '@sentry/electron/main';
-import { app, protocol } from 'electron';
+import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, isDev, overrideSession } from './config';
@@ -22,40 +22,26 @@ import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
 
+app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
 if (isDev) {
   // In electron the dev server will be resolved to 0.0.0.0, but it
   // might be blocked by electron.
   // See https://github.com/webpack/webpack-dev-server/pull/384
-  app.commandLine.appendSwitch('host-resolver-rules', 'MAP 0.0.0.0 127.0.0.1');
+  app.commandLine.appendSwitch('host-rules', 'MAP 0.0.0.0 127.0.0.1');
 }
 // https://github.com/electron/electron/issues/43556
 // // `CalculateNativeWinOcclusion` - Disable native window occlusion tracker (https://groups.google.com/a/chromium.org/g/embedder-dev/c/ZF3uHHyWLKw/m/VDN2hDXMAAAJ)
-const disabledFeatures = [
-  'PlzDedicatedWorker',
-  'CalculateNativeWinOcclusion',
-  // Disable Chrome autofill and password save prompts
-  'AutofillServerCommunication',
-  'AutofillProfileCleanup',
-  'AutofillAddressProfileSavePrompt',
-  'AutofillPaymentCards',
-  'AutofillEnableAccountWalletStorage',
-  'SavePasswordBubble',
-].join(',');
-app.commandLine.appendSwitch('disable-features', disabledFeatures);
-app.commandLine.appendSwitch('disable-blink-features', 'Autofill');
+app.commandLine.appendSwitch(
+  'disable-features',
+  'PlzDedicatedWorker,CalculateNativeWinOcclusion'
+);
 
 // Following features are enabled from the runtime:
 // `DocumentPolicyIncludeJSCallStacksInCrashReports` - https://www.electronjs.org/docs/latest/api/web-frame-main#framecollectjavascriptcallstack-experimental
 // `EarlyEstablishGpuChannel` - Refs https://issues.chromium.org/issues/40208065
 // `EstablishGpuChannelAsync` - Refs https://issues.chromium.org/issues/40208065
-const enabledFeatures = [
-  'DocumentPolicyIncludeJSCallStacksInCrashReports',
-  'EarlyEstablishGpuChannel',
-  'EstablishGpuChannelAsync',
-].join(',');
-app.commandLine.appendSwitch('enable-features', enabledFeatures);
-const enabledBlinkFeatures = ['CSSTextAutoSpace', 'WebCodecs'].join(',');
-app.commandLine.appendSwitch('enable-blink-features', enabledBlinkFeatures);
+const featuresToEnable = `DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync`;
+app.commandLine.appendSwitch('enable-features', featuresToEnable);
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 // use the same data for internal & beta for testing
@@ -137,16 +123,3 @@ if (process.env.SENTRY_RELEASE) {
     appVersion: app.getVersion(),
   });
 }
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'assets',
-    privileges: {
-      secure: true,
-      corsEnabled: true,
-      supportFetchAPI: true,
-      standard: true,
-      stream: true,
-    },
-  },
-]);

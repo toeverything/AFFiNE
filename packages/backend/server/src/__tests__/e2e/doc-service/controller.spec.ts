@@ -16,13 +16,9 @@ e2e('should get doc markdown success', async t => {
     user: owner,
   });
 
-  const path = `/rpc/workspaces/${workspace.id}/docs/${docSnapshot.id}/markdown`;
   const res = await app
-    .GET(path)
-    .set(
-      'x-access-token',
-      crypto.signInternalAccessToken({ method: 'GET', path })
-    )
+    .GET(`/rpc/workspaces/${workspace.id}/docs/${docSnapshot.id}/markdown`)
+    .set('x-access-token', crypto.sign(docSnapshot.id))
     .expect(200)
     .expect('Content-Type', 'application/json; charset=utf-8');
 
@@ -36,13 +32,9 @@ e2e('should get doc markdown return null when doc not exists', async t => {
   });
 
   const docId = randomUUID();
-  const path = `/rpc/workspaces/${workspace.id}/docs/${docId}/markdown`;
   const res = await app
-    .GET(path)
-    .set(
-      'x-access-token',
-      crypto.signInternalAccessToken({ method: 'GET', path })
-    )
+    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/markdown`)
+    .set('x-access-token', crypto.sign(docId))
     .expect(404)
     .expect('Content-Type', 'application/json; charset=utf-8');
 

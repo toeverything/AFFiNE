@@ -13,12 +13,7 @@ import {
   WrongSignInMethod,
 } from '../base';
 import { BaseModel } from './base';
-import {
-  publicUserSelect,
-  type UserFeatureName,
-  WorkspaceRole,
-  workspaceUserSelect,
-} from './common';
+import { publicUserSelect, WorkspaceRole, workspaceUserSelect } from './common';
 import type { Workspace } from './workspace';
 
 type CreateUserInput = Omit<Prisma.UserCreateInput, 'name'> & { name?: string };
@@ -318,78 +313,23 @@ export class UserModel extends BaseModel {
     });
   }
 
-  private buildListWhere(options: {
-    keyword?: string | null;
-    features?: UserFeatureName[] | null;
-    after?: Date;
-  }): Prisma.UserWhereInput {
-    const where: Prisma.UserWhereInput = {};
-
-    if (options.after) {
-      where.createdAt = {
-        gt: options.after,
-      };
-    }
-
-    const keyword = options.keyword?.trim();
-    if (keyword) {
-      where.OR = [
-        {
-          email: {
-            contains: keyword,
-            mode: 'insensitive',
-          },
-        },
-        {
-          id: {
-            contains: keyword,
-          },
-        },
-      ];
-    }
-
-    if (options.features?.length) {
-      where.features = {
-        some: {
-          name: {
-            in: options.features,
-          },
-          activated: true,
-        },
-      };
-    }
-
-    return where;
-  }
-
-  async list(options: {
-    skip?: number;
-    take?: number;
-    keyword?: string | null;
-    features?: UserFeatureName[] | null;
-    after?: Date;
-  }) {
-    const where = this.buildListWhere(options);
-
+  async pagination(skip: number = 0, take: number = 20, after?: Date) {
     return this.db.user.findMany({
-      where,
+      where: {
+        createdAt: {
+          gt: after,
+        },
+      },
       orderBy: {
         createdAt: 'asc',
       },
-      skip: options.skip,
-      take: options.take,
+      skip,
+      take,
     });
   }
 
-  async count(
-    options: {
-      keyword?: string | null;
-      features?: UserFeatureName[] | null;
-      after?: Date;
-    } = {}
-  ) {
-    const where = this.buildListWhere(options);
-    return this.db.user.count({ where });
+  async count() {
+    return this.db.user.count();
   }
 
   // #region ConnectedAccount

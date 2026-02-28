@@ -106,7 +106,6 @@ export class EmbedIframeService
       }
 
       const oEmbedUrl = config.buildOEmbedUrl(url);
-
       if (!oEmbedUrl) {
         return null;
       }

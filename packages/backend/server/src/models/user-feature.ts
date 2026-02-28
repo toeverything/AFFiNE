@@ -77,8 +77,7 @@ export class UserFeatureModel extends BaseModel {
   }
 
   async add(userId: string, name: UserFeatureName, reason: string) {
-    // ensure feature exists
-    await this.models.feature.get_unchecked(name);
+    const feature = await this.models.feature.get_unchecked(name);
     const existing = await this.db.userFeature.findFirst({
       where: {
         userId,
@@ -94,6 +93,7 @@ export class UserFeatureModel extends BaseModel {
     const userFeature = await this.db.userFeature.create({
       data: {
         userId,
+        featureId: feature.id,
         name,
         type: this.models.feature.getFeatureType(name),
         activated: true,

@@ -25,7 +25,10 @@ async fn main() -> Result<(), std::io::Error> {
     .await
     .unwrap();
 
-  sqlx::query(affine_schema::v1::SCHEMA).execute(&pool).await.unwrap();
+  sqlx::query(affine_schema::v1::SCHEMA)
+    .execute(&pool)
+    .await
+    .unwrap();
 
   println!("cargo::rustc-env=DATABASE_URL=sqlite://{db_path}");
 

@@ -1,5 +1,4 @@
-import type { Observable } from 'rxjs';
-import { merge, of, Subject } from 'rxjs';
+import { merge, Observable, of, Subject } from 'rxjs';
 import { filter, throttleTime } from 'rxjs/operators';
 
 import { share } from '../../../connection';
@@ -195,9 +194,9 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
     const schema = IndexerSchema[table];
     for (const [field, values] of document.fields) {
       const fieldSchema = schema[field];
-      // @ts-expect-error -- IndexerSchema uses runtime-keyed fields from each table schema.
+      // @ts-expect-error
       const shouldIndex = fieldSchema.index !== false;
-      // @ts-expect-error -- IndexerSchema uses runtime-keyed fields from each table schema.
+      // @ts-expect-error
       const shouldStore = fieldSchema.store !== false;
 
       if (!shouldStore && !shouldIndex) continue;
@@ -241,9 +240,5 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
 
   async refreshIfNeed(): Promise<void> {
     await this.connection.apis.ftsFlushIndex();
-  }
-
-  async indexVersion(): Promise<number> {
-    return this.connection.apis.ftsIndexVersion();
   }
 }

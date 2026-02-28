@@ -1,3 +1,4 @@
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { useCallback } from 'react';
 
 import { Button } from '../../components/ui/button';
@@ -18,7 +19,7 @@ export const ServerVersion = () => {
     return (
       <Button
         variant="outline"
-        className="flex w-full items-center justify-center gap-1 overflow-hidden px-2 py-1.5 text-xs font-medium"
+        className="flex items-center justify-center gap-1 text-xs p-2 font-medium w-full overflow-hidden"
         onClick={handleClick}
         title={`New Version ${availableUpgrade.version} Available`}
       >
@@ -31,7 +32,12 @@ export const ServerVersion = () => {
     );
   }
   return (
-    <div className="inline-flex flex-nowrap items-center justify-between gap-1 border-t border-border px-2 pt-2 text-xs text-muted-foreground">
+    <div
+      className="inline-flex items-center justify-between pt-2 border-t px-2 text-xs flex-nowrap gap-1"
+      style={{
+        color: cssVarV2('text/tertiary'),
+      }}
+    >
       <span>ServerVersion</span>
       <span
         className="overflow-hidden text-ellipsis whitespace-nowrap"

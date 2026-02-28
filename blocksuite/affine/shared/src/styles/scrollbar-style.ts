@@ -1,7 +1,5 @@
 import { css, unsafeCSS } from 'lit';
 
-import { unsafeCSSVarV2 } from '../theme/css-variables';
-
 /**
  * You should add a container before the scrollbar style to prevent the style pollution of the whole doc.
  */
@@ -30,7 +28,7 @@ export const scrollbarStyle = (container: string) => {
     }
     ${unsafeCSS(container)}::-webkit-scrollbar-thumb {
       border-radius: 2px;
-      background-color: ${unsafeCSSVarV2('icon/secondary', '#b1b1b1')};
+      background-color: #b1b1b1;
     }
     ${unsafeCSS(container)}::-webkit-scrollbar-corner {
       display: none;

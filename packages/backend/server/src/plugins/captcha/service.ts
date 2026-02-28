@@ -5,12 +5,7 @@ import type { Request } from 'express';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
-import {
-  CaptchaVerificationFailed,
-  Config,
-  getRequestClientIp,
-  OnEvent,
-} from '../../base';
+import { CaptchaVerificationFailed, Config, OnEvent } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
 import { Models, TokenType } from '../../models';
 import { verifyChallengeResponse } from '../../native';
@@ -138,7 +133,7 @@ export class CaptchaService {
     } else {
       const isTokenVerified = await this.verifyCaptchaToken(
         credential.token,
-        getRequestClientIp(req)
+        req.headers['CF-Connecting-IP'] as string
       );
 
       if (!isTokenVerified) {

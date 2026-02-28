@@ -159,7 +159,7 @@ export class AuthResolver {
       user.id
     );
 
-    const url = this.url.safeLink(callbackUrl, { userId: user.id, token });
+    const url = this.url.link(callbackUrl, { userId: user.id, token });
 
     return await this.auth.sendChangePasswordEmail(user.email, url);
   }
@@ -200,7 +200,7 @@ export class AuthResolver {
       user.id
     );
 
-    const url = this.url.safeLink(callbackUrl, { token });
+    const url = this.url.link(callbackUrl, { token });
 
     return await this.auth.sendChangeEmail(user.email, url);
   }
@@ -244,10 +244,7 @@ export class AuthResolver {
       user.id
     );
 
-    const url = this.url.safeLink(callbackUrl, {
-      token: verifyEmailToken,
-      email,
-    });
+    const url = this.url.link(callbackUrl, { token: verifyEmailToken, email });
     return await this.auth.sendVerifyChangeEmail(email, url);
   }
 
@@ -261,7 +258,7 @@ export class AuthResolver {
       user.id
     );
 
-    const url = this.url.safeLink(callbackUrl, { token });
+    const url = this.url.link(callbackUrl, { token });
 
     return await this.auth.sendVerifyEmail(user.email, url);
   }
@@ -305,6 +302,6 @@ export class AuthResolver {
       userId
     );
 
-    return this.url.safeLink(callbackUrl, { userId, token });
+    return this.url.link(callbackUrl, { userId, token });
   }
 }

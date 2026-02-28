@@ -1,7 +1,7 @@
 import { useI18n } from '@affine/i18n';
 import type { ReactNode } from 'react';
 
-import { CollapsibleWrapper } from '../../../layout';
+import { PricingCollapsible } from '../layout';
 import * as styles from './ai-plan.css';
 import { AIBenefits } from './benefits';
 
@@ -19,7 +19,7 @@ export const AIPlanLayout = ({
   const title = t['com.affine.payment.ai.pricing-plan.title']();
 
   return (
-    <CollapsibleWrapper title={title} caption={caption}>
+    <PricingCollapsible title={title} caption={caption}>
       <div className={styles.card}>
         <div className={styles.titleBlock}>
           <section className={styles.titleCaption1}>
@@ -42,6 +42,6 @@ export const AIPlanLayout = ({
 
         <AIBenefits />
       </div>
-    </CollapsibleWrapper>
+    </PricingCollapsible>
   );
 };

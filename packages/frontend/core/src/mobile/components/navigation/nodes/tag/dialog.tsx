@@ -105,13 +105,11 @@ const TagRenameContent = ({
     },
     [color, onConfirm]
   );
-  const tagColorContextValue = useMemo(
-    () => ({ colors, color, setColor, show, setShow, enableAnimation }),
-    [color, colors, enableAnimation, show]
-  );
 
   return (
-    <TagColorContext.Provider value={tagColorContextValue}>
+    <TagColorContext.Provider
+      value={{ colors, color, setColor, show, setShow, enableAnimation }}
+    >
       <RenameContent
         inputPrefixRenderer={ColorPickerTrigger}
         inputBelowRenderer={ColorPickerSelect}

@@ -24,10 +24,6 @@ export type MemberCellJsonValueType = zod.TypeOf<
 >;
 export const memberPropertyModelConfig = memberColumnType.modelConfig({
   name: 'Member',
-  kanbanGroup: {
-    enabled: true,
-    mutable: true,
-  },
   propertyData: {
     schema: zod.object({}),
     default: () => ({}),

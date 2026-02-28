@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 fn operations(c: &mut Criterion) {
   let mut group = c.benchmark_group("ops/map");

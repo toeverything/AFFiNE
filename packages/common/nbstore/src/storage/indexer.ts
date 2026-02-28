@@ -64,7 +64,6 @@ export interface IndexerStorage extends Storage {
 
   refresh<T extends keyof IndexerSchema>(table: T): Promise<void>;
   refreshIfNeed(): Promise<void>;
-  indexVersion(): Promise<number>;
 }
 
 type ResultPagination = {
@@ -179,6 +178,4 @@ export abstract class IndexerStorageBase implements IndexerStorage {
   abstract refresh<T extends keyof IndexerSchema>(table: T): Promise<void>;
 
   abstract refreshIfNeed(): Promise<void>;
-
-  abstract indexVersion(): Promise<number>;
 }

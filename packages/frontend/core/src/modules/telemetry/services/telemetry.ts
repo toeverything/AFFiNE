@@ -1,15 +1,11 @@
 import { shallowEqual } from '@affine/component';
-import { DebugLogger } from '@affine/debug';
 import { ServerDeploymentType } from '@affine/graphql';
-import { flushTelemetry, setTelemetryContext, tracker } from '@affine/track';
+import { mixpanel } from '@affine/track';
 import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
 import type { AuthAccountInfo, Server, ServersService } from '../../cloud';
-import { getOfficialTelemetryEndpoint } from '../../cloud/constant';
 import type { GlobalContextService } from '../../global-context';
 import { ApplicationStarted } from '../../lifecycle';
-
-const logger = new DebugLogger('telemetry-service');
 
 @OnEvent(ApplicationStarted, e => e.onApplicationStart)
 export class TelemetryService extends Service {
@@ -50,45 +46,23 @@ export class TelemetryService extends Service {
     let prevSelfHosted: boolean | undefined = undefined;
     const unsubscribe = this.currentAccount$.subscribe(
       ({ account, selfHosted }) => {
-        const channel =
-          BUILD_CONFIG.appBuildType === 'beta' ||
-          BUILD_CONFIG.appBuildType === 'internal' ||
-          BUILD_CONFIG.appBuildType === 'canary' ||
-          BUILD_CONFIG.appBuildType === 'stable'
-            ? BUILD_CONFIG.appBuildType
-            : 'stable';
-
-        setTelemetryContext({
-          isAuthed: !!account,
-          isSelfHosted: !!selfHosted,
-          channel,
-          officialEndpoint: getOfficialTelemetryEndpoint(channel),
-        });
-
         if (prevAccount) {
-          tracker.reset();
+          mixpanel.reset();
         }
         // the isSelfHosted property from environment is not reliable
         if (selfHosted !== prevSelfHosted) {
-          tracker.register({
+          mixpanel.register({
             isSelfHosted: selfHosted,
           });
         }
         prevSelfHosted = selfHosted;
         prevAccount = account ?? null;
         if (account) {
-          tracker.identify(account.id);
-          tracker.people.set({
+          mixpanel.identify(account.id);
+          mixpanel.people.set({
             $email: account.email,
             $name: account.label,
             $avatar: account.avatar,
-          });
-          void flushTelemetry().catch(error => {
-            logger.error('failed to flush telemetry after login', error);
-          });
-        } else if (prevAccount) {
-          void flushTelemetry().catch(error => {
-            logger.error('failed to flush telemetry after logout', error);
           });
         }
       }
@@ -104,7 +78,7 @@ export class TelemetryService extends Service {
 
   registerMiddlewares() {
     this.disposables.push(
-      tracker.middleware((_event, parameters) => {
+      mixpanel.middleware((_event, parameters) => {
         const extraContext = this.extractGlobalContext();
         return {
           ...extraContext,

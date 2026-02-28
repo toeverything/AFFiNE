@@ -275,26 +275,6 @@ export const USER_FRIENDLY_ERRORS = {
     args: { message: 'string' },
     message: ({ message }) => `HTTP request error, message: ${message}`,
   },
-  ssrf_blocked_error: {
-    type: 'invalid_input',
-    args: { reason: 'string' },
-    message: ({ reason }) => {
-      switch (reason) {
-        case 'unresolvable_hostname':
-          return 'Failed to resolve hostname';
-        case 'too_many_redirects':
-          return 'Too many redirects';
-        default:
-          return 'Invalid URL';
-      }
-    },
-  },
-  response_too_large_error: {
-    type: 'invalid_input',
-    args: { limitBytes: 'number', receivedBytes: 'number' },
-    message: ({ limitBytes, receivedBytes }) =>
-      `Response too large (${receivedBytes} bytes), limit is ${limitBytes} bytes`,
-  },
   email_service_not_configured: {
     type: 'internal_server_error',
     message: 'Email service is not configured.',
@@ -394,6 +374,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message:
       'You are trying to sign in by a different method than you signed up with.',
+  },
+  early_access_required: {
+    type: 'action_forbidden',
+    message: `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`,
   },
   sign_up_forbidden: {
     type: 'action_forbidden',
@@ -521,10 +505,6 @@ export const USER_FRIENDLY_ERRORS = {
     args: { spaceId: 'string', blobId: 'string' },
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
-  },
-  blob_invalid: {
-    type: 'invalid_input',
-    message: 'Blob is invalid.',
   },
   expect_to_publish_doc: {
     type: 'invalid_input',
@@ -661,14 +641,6 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message:
       'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
-  },
-
-  // Calendar errors
-  calendar_provider_request_error: {
-    type: 'internal_server_error',
-    args: { status: 'number', message: 'string' },
-    message: ({ status, message }) =>
-      `Calendar provider request error, status: ${status}, message: ${message}`,
   },
 
   // Copilot errors

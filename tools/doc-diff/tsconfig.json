@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.node.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
-  "include": ["./src"],
-  "references": [{ "path": "../cli" }]
-}

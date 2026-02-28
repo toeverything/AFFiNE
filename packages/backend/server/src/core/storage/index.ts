@@ -2,8 +2,6 @@ import './config';
 
 import { Module } from '@nestjs/common';
 
-import { BlobUploadCleanupJob } from './job';
-import { R2UploadController } from './r2-proxy';
 import {
   AvatarStorage,
   CommentAttachmentStorage,
@@ -11,13 +9,7 @@ import {
 } from './wrappers';
 
 @Module({
-  controllers: [R2UploadController],
-  providers: [
-    WorkspaceBlobStorage,
-    AvatarStorage,
-    CommentAttachmentStorage,
-    BlobUploadCleanupJob,
-  ],
+  providers: [WorkspaceBlobStorage, AvatarStorage, CommentAttachmentStorage],
   exports: [WorkspaceBlobStorage, AvatarStorage, CommentAttachmentStorage],
 })
 export class StorageModule {}

@@ -110,7 +110,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (isNewDoc) {
-        this.event.emitDetached('doc.created', {
+        this.event.emit('doc.created', {
           workspaceId,
           docId,
           editor: editorId,
@@ -276,16 +276,22 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         return false;
       }
 
-      await this.models.history.create(
-        {
-          spaceId: snapshot.spaceId,
-          docId: snapshot.docId,
-          timestamp: snapshot.timestamp,
-          blob: Buffer.from(snapshot.bin),
-          editorId: snapshot.editor,
-        },
-        historyMaxAge
-      );
+      try {
+        await this.models.history.create(
+          {
+            spaceId: snapshot.spaceId,
+            docId: snapshot.docId,
+            timestamp: snapshot.timestamp,
+            blob: Buffer.from(snapshot.bin),
+            editorId: snapshot.editor,
+          },
+          historyMaxAge
+        );
+      } catch (e) {
+        // safe to ignore
+        // only happens when duplicated history record created in multi processes
+        this.logger.error('Failed to create history record', e);
+      }
 
       metrics.doc
         .counter('history_created_counter', {
@@ -334,7 +340,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (updatedSnapshot) {
-        this.event.emitDetached('doc.snapshot.updated', {
+        this.event.emit('doc.snapshot.updated', {
           workspaceId: snapshot.spaceId,
           docId: snapshot.docId,
           blob,

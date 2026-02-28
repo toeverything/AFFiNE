@@ -11,7 +11,7 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { EmbeddingClient } from '../embedding/types';
+import { EmbeddingClient } from '../embedding';
 
 export class ContextSession implements AsyncDisposable {
   constructor(

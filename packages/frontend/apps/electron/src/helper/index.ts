@@ -25,9 +25,6 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
             return result;
           } catch (error) {
             logger.error('[async-api]', `${namespace}.${name}`, error);
-            // Propagate errors to the renderer so callers don't receive `undefined`
-            // and fail with confusing TypeErrors.
-            throw error instanceof Error ? error : new Error(String(error));
           }
         };
         return [`${namespace}:${name}`, handlerWithLog];

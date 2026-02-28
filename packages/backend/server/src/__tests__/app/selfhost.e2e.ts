@@ -97,7 +97,7 @@ test('should always return static asset files', async t => {
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
-    .get('/admin/main.b.js')
+    .get('/main.b.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
 
@@ -119,7 +119,7 @@ test('should always return static asset files', async t => {
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
-    .get('/admin/main.b.js')
+    .get('/main.b.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
 

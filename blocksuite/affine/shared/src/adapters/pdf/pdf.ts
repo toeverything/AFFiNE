@@ -873,7 +873,7 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
     return {
       table: {
         headerRows: 0,
-        widths: Array.from({ length: sortedColumns.length }, () => '*'),
+        widths: Array(sortedColumns.length).fill('*'),
         body: tableBody,
       },
       margin: [0, 5, 0, 5],

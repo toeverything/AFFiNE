@@ -16,7 +16,6 @@ import { html } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { catchError, map, of } from 'rxjs';
 
-import { normalizeSearchText } from '../../../utils/normalize-search-text';
 import type { CollectionMeta, CollectionService } from '../../collection';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
@@ -186,16 +185,14 @@ export class SearchMenuService extends Service {
               typeof node.fields.docId === 'string'
                 ? node.fields.docId
                 : node.fields.docId[0];
-            const title = normalizeSearchText(
+            const title =
               typeof node.fields.title === 'string'
                 ? node.fields.title
-                : node.fields.title[0]
-            );
-            const highlights = normalizeSearchText(node.highlights?.title?.[0]);
+                : node.fields.title[0];
             return {
               id,
               title,
-              highlights: highlights || undefined,
+              highlights: node.highlights?.title?.[0],
             };
           })
         )

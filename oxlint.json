@@ -1,0 +1,246 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "react", "typescript", "unicorn", "promise"],
+  "categories": {
+    "correctness": "error",
+    "perf": "error"
+  },
+  "ignorePatterns": [
+    "**/node_modules",
+    ".yarn",
+    ".github/helm",
+    ".git",
+    ".vscode",
+    ".yarnrc.yml",
+    ".docker",
+    "**/.storybook",
+    ".coverage",
+    ".nx/**",
+    "target",
+    "test-results",
+    "**/dist",
+    "**/lib",
+    "**/storybook-static",
+    "**/web-static",
+    "**/public",
+    "**/e2e-dist-*",
+    "**/static",
+    "**/*.gen.ts",
+    "**/*.gql",
+    "**/*.d.ts",
+    "tools/cli/src/webpack/error-handler.js",
+    "packages/backend/native/index.d.ts",
+    "packages/backend/server/src/__tests__/__snapshots__",
+    "packages/common/native/fixtures/**",
+    "packages/common/graphql/src/graphql/index.ts",
+    "packages/frontend/native/index.d.ts",
+    "packages/frontend/native/index.js",
+    "packages/frontend/apps/android/App/**",
+    "packages/frontend/apps/ios/App/**",
+    "tests/blocksuite/snapshots",
+    "blocksuite/docs/api/**",
+    "packages/frontend/admin/src/config.json",
+    "**/test-docs.json",
+    "**/test-blocks.json"
+  ],
+  "rules": {
+    "no-await-in-loop": "allow",
+    "no-redeclare": "allow",
+    "promise/no-callback-in-promise": "allow",
+    "typescript/ban-types": "allow",
+    "array-callback-return": "error",
+    "constructor-super": "error",
+    "eqeqeq": ["error", "smart"],
+    "getter-return": "error",
+    "import/named": "error",
+    "for-direction": "error",
+    "require-yield": "error",
+    "use-isnan": "error",
+    "valid-typeof": "error",
+    "no-empty-character-class": "error",
+    "no-self-compare": "error",
+    "no-empty": [
+      "error",
+      {
+        "allowEmptyCatch": true
+      }
+    ],
+    "no-constant-binary-expression": "error",
+    "no-constructor-return": "error",
+    "no-func-assign": "error",
+    "no-global-assign": "error",
+    "no-unused-vars": "error",
+    "no-ex-assign": "error",
+    "no-loss-of-precision": "error",
+    "no-fallthrough": "error",
+    "no-nonoctal-decimal-escape": "error",
+    "no-irregular-whitespace": "error",
+    "no-control-regex": "error",
+    "no-with": "error",
+    "no-debugger": "error",
+    "no-const-assign": "error",
+    "no-setter-return": "error",
+    "no-obj-calls": "error",
+    "no-unsafe-negation": "error",
+    "no-dupe-class-members": "error",
+    "no-dupe-keys": "error",
+    "no-this-before-super": "error",
+    "no-useless-catch": "error",
+    "no-async-promise-executor": "error",
+    "no-unreachable": "error",
+    "no-duplicate-case": "error",
+    "no-empty-pattern": "error",
+    "no-unused-labels": "error",
+    "no-sparse-arrays": "error",
+    "no-delete-var": "error",
+    "no-compare-neg-zero": "error",
+    "no-case-declarations": "error",
+    "no-class-assign": "error",
+    "no-var": "error",
+    "no-self-assign": "error",
+    "no-inner-declarations": "error",
+    "no-dupe-else-if": "error",
+    "no-invalid-regexp": "error",
+    "no-unsafe-finally": "error",
+    "no-prototype-builtins": "error",
+    "no-array-constructor": "error",
+    "no-shadow-restricted-names": "error",
+    "no-constant-condition": "error",
+    "no-useless-escape": "error",
+    "no-unsafe-optional-chaining": "error",
+    "no-extra-boolean-cast": "error",
+    "no-regex-spaces": "error",
+    "react/jsx-no-useless-fragment": "error",
+    "react/jsx-no-undef": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/no-string-refs": "error",
+    "react/no-unknown-property": "error",
+    "react/no-danger-with-children": "error",
+    "react/no-unescaped-entities": "error",
+    "react/require-render-return": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-key": "error",
+    "react/no-is-mounted": "error",
+    "react/no-find-dom-node": "error",
+    "react/no-children-prop": "error",
+    "react/no-render-return-value": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/jsx-no-comment-textnodes": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/triple-slash-reference": "error",
+    "typescript/no-non-null-asserted-optional-chain": "error",
+    "typescript/no-duplicate-enum-values": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "typescript/no-misused-new": "error",
+    "typescript/prefer-for-of": "error",
+    "typescript/no-unsafe-declaration-merging": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-this-alias": [
+      "error",
+      {
+        "allowDestructuring": true
+      }
+    ],
+    "typescript/prefer-as-const": "error",
+    "typescript/no-var-requires": "error",
+    "typescript/no-namespace": [
+      "error",
+      {
+        "allowDeclarations": true
+      }
+    ],
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": "allow-with-description",
+        "ts-ignore": true,
+        "ts-nocheck": true,
+        "ts-check": false
+      }
+    ],
+    "unicorn/prefer-array-some": "error",
+    "unicorn/prefer-array-flat-map": "off",
+    "unicorn/no-useless-promise-resolve-reject": "error",
+    "unicorn/no-unnecessary-await": "error",
+    "unicorn/no-useless-fallback-in-spread": "error",
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ],
+    "unicorn/prefer-dom-node-dataset": "error",
+    "unicorn/prefer-dom-node-append": "error",
+    "unicorn/prefer-dom-node-remove": "error",
+    "unicorn/prefer-date-now": "error",
+    "unicorn/prefer-blob-reading-methods": "error",
+    "unicorn/no-typeof-undefined": "error",
+    "unicorn/no-new-array": "error",
+    "unicorn/new-for-builtins": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "import/no-cycle": [
+      "error",
+      {
+        "ignoreTypes": true
+      }
+    ],
+    "import/sort-imports": "error",
+    "import/namespace": "off",
+    "import/no-webpack-loader-syntax": "error",
+    "import/no-duplicates": "error",
+    "import/no-import-assign": "error",
+    "import/no-self-import": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.stories.tsx"],
+      "rules": {
+        "react/no-array-index-key": "off"
+      }
+    },
+    {
+      "files": ["packages/backend/**/*.ts"],
+      "rules": {
+        "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": [
+        "*.{spec,test,e2e,stories}.{ts,tsx}",
+        "tests/**/*",
+        "**/__tests__/**/*",
+        "tools/**/*"
+      ],
+      "rules": {
+        "typescript/no-non-null-assertion": "off",
+        "typescript/ban-ts-comment": [
+          "error",
+          {
+            "ts-expect-error": false,
+            "ts-ignore": true,
+            "ts-nocheck": true,
+            "ts-check": false
+          }
+        ]
+      }
+    },
+    {
+      "files": ["blocksuite/**/*.ts"],
+      "rules": {
+        "eslint/eqeqeq": "off",
+        "typescript/no-non-null-assertion": "off",
+        "unicorn/prefer-array-some": "off"
+      }
+    },
+    {
+      "files": ["tests/blocksuite/**/*.ts"],
+      "rules": {
+        "typescript/ban-ts-comment": "off",
+        "unicorn/prefer-dom-node-dataset": "off",
+        "typescript/consistent-type-imports": "off",
+        "import/no-cycle": "off"
+      }
+    }
+  ]
+}

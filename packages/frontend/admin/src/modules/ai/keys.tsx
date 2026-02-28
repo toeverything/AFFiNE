@@ -58,7 +58,7 @@ export function Keys() {
             </div>
           </div>
           <Separator />
-          <div className="px-5 space-y-3 text-sm font-normal text-muted-foreground">
+          <div className="px-5 space-y-3 text-sm font-normal text-gray-500">
             Custom API keys may not perform as expected. AFFiNE does not
             guarantee results when using custom API keys.
           </div>

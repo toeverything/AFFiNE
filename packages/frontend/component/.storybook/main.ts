@@ -8,7 +8,9 @@ import { mergeConfig } from 'vite';
 export default {
   stories: ['../src/ui/**/*.@(mdx|stories.@(js|jsx|ts|tsx))'],
 
-  addons: [],
+  addons: [
+    '@chromatic-com/storybook',
+  ],
 
   framework: {
     name: getAbsolutePath('@storybook/react-vite'),

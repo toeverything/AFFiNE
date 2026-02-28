@@ -14,23 +14,6 @@ import { z } from 'zod';
 import { supportedClient } from './common';
 
 const supportedProvider = z.nativeEnum(OAuthProviderType);
-const CSRF_COOKIE_NAME = 'affine_csrf_token';
-
-function getCookieValue(name: string) {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const cookies = document.cookie ? document.cookie.split('; ') : [];
-  for (const cookie of cookies) {
-    const idx = cookie.indexOf('=');
-    const key = idx === -1 ? cookie : cookie.slice(0, idx);
-    if (key === name) {
-      return idx === -1 ? '' : cookie.slice(idx + 1);
-    }
-  }
-  return null;
-}
 
 const oauthParameters = z.object({
   provider: supportedProvider,
@@ -53,11 +36,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   // sign out first, web only
   if (client === 'web') {
-    const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
-    await fetch('/api/auth/sign-out', {
-      method: 'POST',
-      headers: csrfToken ? { 'x-affine-csrf-token': csrfToken } : undefined,
-    });
+    await fetch('/api/auth/sign-out');
   }
 
   const paramsParseResult = oauthParameters.safeParse({

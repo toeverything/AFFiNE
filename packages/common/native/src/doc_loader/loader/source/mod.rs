@@ -3,7 +3,7 @@
  */
 mod parser;
 
-pub use parser::{LanguageParser, LanguageParserOptions, get_language_by_filename};
+pub use parser::{get_language_by_filename, LanguageParser, LanguageParserOptions};
 
 use super::*;
 

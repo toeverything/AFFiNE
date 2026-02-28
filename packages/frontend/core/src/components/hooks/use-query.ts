@@ -12,15 +12,6 @@ import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import useSWRInfinite from 'swr/infinite';
 
-export type UseQueryConfig<Query extends GraphQLQuery = GraphQLQuery> = Omit<
-  SWRConfiguration<
-    QueryResponse<Query>,
-    GraphQLError,
-    (options: QueryOptions<Query>) => Promise<QueryResponse<Query>>
-  >,
-  'fetcher'
->;
-
 /**
  * A `useSWR` wrapper for sending graphql queries
  *
@@ -41,7 +32,14 @@ export type UseQueryConfig<Query extends GraphQLQuery = GraphQLQuery> = Omit<
  */
 type useQueryFn = <Query extends GraphQLQuery>(
   options?: QueryOptions<Query>,
-  config?: UseQueryConfig<Query>
+  config?: Omit<
+    SWRConfiguration<
+      QueryResponse<Query>,
+      GraphQLError,
+      (options: QueryOptions<Query>) => Promise<QueryResponse<Query>>
+    >,
+    'fetcher'
+  >
 ) => SWRResponse<
   QueryResponse<Query>,
   GraphQLError,

@@ -90,9 +90,16 @@ impl std::fmt::Debug for Content {
         .field("key", key)
         .field("value", value)
         .finish(),
-      Self::Type(arg0) => f.debug_tuple("Type").field(&arg0.ty().unwrap().kind()).finish(),
+      Self::Type(arg0) => f
+        .debug_tuple("Type")
+        .field(&arg0.ty().unwrap().kind())
+        .finish(),
       Self::Any(arg0) => f.debug_tuple("Any").field(arg0).finish(),
-      Self::Doc { guid, opts } => f.debug_struct("Doc").field("guid", guid).field("opts", opts).finish(),
+      Self::Doc { guid, opts } => f
+        .debug_struct("Doc")
+        .field("guid", guid)
+        .field("opts", opts)
+        .finish(),
     }
   }
 }
@@ -104,7 +111,11 @@ impl Content {
       2 => {
         let len = decoder.read_var_u64()?;
         let strings = (0..len)
-          .map(|_| decoder.read_var_string().map(|s| (s != "undefined").then_some(s)))
+          .map(|_| {
+            decoder
+              .read_var_string()
+              .map(|s| (s != "undefined").then_some(s))
+          })
           .collect::<Result<Vec<_>, _>>()?;
 
         Ok(Self::Json(strings))
@@ -113,14 +124,16 @@ impl Content {
       4 => Ok(Self::String(decoder.read_var_string()?)), // String
       5 => {
         let string = decoder.read_var_string()?;
-        let json = serde_json::from_str(&string).map_err(|_| JwstCodecError::DamagedDocumentJson)?;
+        let json =
+          serde_json::from_str(&string).map_err(|_| JwstCodecError::DamagedDocumentJson)?;
 
         Ok(Self::Embed(json))
       } // Embed
       6 => {
         let key = decoder.read_var_string()?;
         let value = decoder.read_var_string()?;
-        let value = serde_json::from_str(&value).map_err(|_| JwstCodecError::DamagedDocumentJson)?;
+        let value =
+          serde_json::from_str(&value).map_err(|_| JwstCodecError::DamagedDocumentJson)?;
 
         Ok(Self::Format { key, value })
       } // Format
@@ -186,11 +199,15 @@ impl Content {
         encoder.write_var_string(string)?;
       }
       Self::Embed(val) => {
-        encoder.write_var_string(serde_json::to_string(val).map_err(|_| JwstCodecError::DamagedDocumentJson)?)?;
+        encoder.write_var_string(
+          serde_json::to_string(val).map_err(|_| JwstCodecError::DamagedDocumentJson)?,
+        )?;
       }
       Self::Format { key, value } => {
         encoder.write_var_string(key)?;
-        encoder.write_var_string(serde_json::to_string(value).map_err(|_| JwstCodecError::DamagedDocumentJson)?)?;
+        encoder.write_var_string(
+          serde_json::to_string(value).map_err(|_| JwstCodecError::DamagedDocumentJson)?,
+        )?;
       }
       Self::Type(ty) => {
         if let Some(ty) = ty.ty() {
@@ -220,7 +237,9 @@ impl Content {
       // TODO: need a custom wrapper with length cached, this cost too much
       Self::String(string) => string.chars().map(|c| c.len_utf16()).sum::<usize>() as u64,
       Self::Any(any) => any.len() as u64,
-      Self::Binary(_) | Self::Embed(_) | Self::Format { .. } | Self::Type(_) | Self::Doc { .. } => 1,
+      Self::Binary(_) | Self::Embed(_) | Self::Format { .. } | Self::Type(_) | Self::Doc { .. } => {
+        1
+      }
     }
   }
 
@@ -230,14 +249,20 @@ impl Content {
 
   #[allow(dead_code)]
   pub fn splittable(&self) -> bool {
-    matches!(self, Self::String { .. } | Self::Any { .. } | Self::Json { .. })
+    matches!(
+      self,
+      Self::String { .. } | Self::Any { .. } | Self::Json { .. }
+    )
   }
 
   pub fn split(&self, diff: u64) -> JwstCodecResult<(Self, Self)> {
     match self {
       Self::String(str) => {
         let (left, right) = Self::split_as_utf16_str(str.as_str(), diff);
-        Ok((Self::String(left.to_string()), Self::String(right.to_string())))
+        Ok((
+          Self::String(left.to_string()),
+          Self::String(right.to_string()),
+        ))
       }
       Self::Json(vec) => {
         let (left, right) = vec.split_at(diff as usize);
@@ -286,16 +311,7 @@ mod tests {
 
     let mut reader = RawDecoder::new(&update);
     let tag_type = reader.read_u8()?;
-    let decoded = Content::read(&mut reader, tag_type)?;
-    match (&decoded, content) {
-      (Content::Type(decoded_ty), Content::Type(original_ty)) => {
-        let decoded_ty = decoded_ty.ty().expect("decoded ytype must exist");
-        let original_ty = original_ty.ty().expect("original ytype must exist");
-        assert_eq!(decoded_ty.kind(), original_ty.kind());
-        assert_eq!(decoded_ty.name.as_deref(), original_ty.name.as_deref());
-      }
-      _ => assert_eq!(decoded, *content),
-    }
+    assert_eq!(Content::read(&mut reader, tag_type)?, *content);
 
     Ok(())
   }
@@ -305,7 +321,11 @@ mod tests {
     loom_model!({
       let contents = [
         Content::Deleted(42),
-        Content::Json(vec![None, Some("test_1".to_string()), Some("test_2".to_string())]),
+        Content::Json(vec![
+          None,
+          Some("test_1".to_string()),
+          Some("test_2".to_string()),
+        ]),
         Content::Binary(vec![1, 2, 3]),
         Content::String("hello".to_string()),
         Content::Embed(Any::True),
@@ -316,7 +336,10 @@ mod tests {
         Content::Type(YTypeRef::new(YTypeKind::Array, None)),
         Content::Type(YTypeRef::new(YTypeKind::Map, None)),
         Content::Type(YTypeRef::new(YTypeKind::Text, None)),
-        Content::Type(YTypeRef::new(YTypeKind::XMLElement, Some("test".to_string()))),
+        Content::Type(YTypeRef::new(
+          YTypeKind::XMLElement,
+          Some("test".to_string()),
+        )),
         Content::Type(YTypeRef::new(YTypeKind::XMLFragment, None)),
         Content::Type(YTypeRef::new(YTypeKind::XMLHook, Some("test".to_string()))),
         Content::Type(YTypeRef::new(YTypeKind::XMLText, None)),
@@ -337,7 +360,11 @@ mod tests {
   fn test_content_split() {
     let contents = [
       Content::String("hello".to_string()),
-      Content::Json(vec![None, Some("test_1".to_string()), Some("test_2".to_string())]),
+      Content::Json(vec![
+        None,
+        Some("test_1".to_string()),
+        Some("test_2".to_string()),
+      ]),
       Content::Any(vec![Any::BigInt64(42), Any::String("Test Any".to_string())]),
       Content::Binary(vec![]),
     ];
@@ -363,12 +390,18 @@ mod tests {
       let (left, right) = contents[2].split(1).unwrap();
       assert!(contents[2].splittable());
       assert_eq!(left, Content::Any(vec![Any::BigInt64(42)]));
-      assert_eq!(right, Content::Any(vec![Any::String("Test Any".to_string())]));
+      assert_eq!(
+        right,
+        Content::Any(vec![Any::String("Test Any".to_string())])
+      );
     }
 
     {
       assert!(!contents[3].splittable());
-      assert_eq!(contents[3].split(2), Err(JwstCodecError::ContentSplitNotSupport(2)));
+      assert_eq!(
+        contents[3].split(2),
+        Err(JwstCodecError::ContentSplitNotSupport(2))
+      );
     }
   }
 

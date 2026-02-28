@@ -1,7 +1,4 @@
-import {
-  ViewBody,
-  ViewHeader,
-} from '@affine/core/modules/workbench/view/view-islands';
+import { ViewBody, ViewHeader } from '@affine/core/modules/workbench';
 
 import { AttachmentFallback, AttachmentPreviewErrorBoundary } from './error';
 import { PDFViewer } from './pdf/pdf-viewer';

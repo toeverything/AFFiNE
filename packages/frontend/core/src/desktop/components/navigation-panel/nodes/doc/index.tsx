@@ -271,7 +271,7 @@ export const NavigationPanelDocNode = ({
   return (
     <NavigationPanelTreeNode
       icon={Icon}
-      name={docTitle}
+      name={t.t(docTitle)}
       dndData={dndData}
       onDrop={handleDropOnDoc}
       renameable

@@ -7,7 +7,7 @@ public class ServerConfigQuery: GraphQLQuery {
   public static let operationName: String = "serverConfig"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query serverConfig { serverConfig { __typename version baseUrl name features type initialized calendarProviders credentialsRequirement { __typename ...CredentialsRequirements } } }"#,
+      #"query serverConfig { serverConfig { __typename version baseUrl name features type initialized credentialsRequirement { __typename ...CredentialsRequirements } } }"#,
       fragments: [CredentialsRequirements.self, PasswordLimits.self]
     ))
 
@@ -41,7 +41,6 @@ public class ServerConfigQuery: GraphQLQuery {
         .field("features", [GraphQLEnum<AffineGraphQL.ServerFeature>].self),
         .field("type", GraphQLEnum<AffineGraphQL.ServerDeploymentType>.self),
         .field("initialized", Bool.self),
-        .field("calendarProviders", [GraphQLEnum<AffineGraphQL.CalendarProviderType>].self),
         .field("credentialsRequirement", CredentialsRequirement.self),
       ] }
 
@@ -57,7 +56,6 @@ public class ServerConfigQuery: GraphQLQuery {
       public var type: GraphQLEnum<AffineGraphQL.ServerDeploymentType> { __data["type"] }
       /// whether server has been initialized
       public var initialized: Bool { __data["initialized"] }
-      public var calendarProviders: [GraphQLEnum<AffineGraphQL.CalendarProviderType>] { __data["calendarProviders"] }
       /// credentials requirement
       public var credentialsRequirement: CredentialsRequirement { __data["credentialsRequirement"] }
 

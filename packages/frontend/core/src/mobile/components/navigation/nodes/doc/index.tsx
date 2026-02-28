@@ -152,7 +152,7 @@ export const NavigationPanelDocNode = ({
   return (
     <NavigationPanelTreeNode
       icon={Icon}
-      name={docTitle}
+      name={t.t(docTitle)}
       extractEmojiAsIcon={enableEmojiIcon}
       collapsed={collapsed}
       setCollapsed={setCollapsed}

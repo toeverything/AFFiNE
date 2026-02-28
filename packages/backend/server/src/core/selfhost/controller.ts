@@ -15,7 +15,6 @@ import { ServerService } from '../config';
 import { validators } from '../utils/validators';
 
 interface CreateUserInput {
-  name?: string;
   email: string;
   password: string;
 }
@@ -59,7 +58,6 @@ export class CustomSetupController {
       throw new InternalServerError();
     }
     const user = await this.models.user.create({
-      name: input.name || undefined,
       email: input.email,
       password: input.password,
       registered: true,

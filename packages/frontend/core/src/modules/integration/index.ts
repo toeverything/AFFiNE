@@ -3,10 +3,11 @@ import type { Framework } from '@toeverything/infra';
 import { WorkspaceServerService } from '../cloud';
 import { WorkspaceDBService } from '../db';
 import { DocScope, DocService, DocsService } from '../doc';
-import { GlobalState } from '../storage';
+import { CacheStorage, GlobalState } from '../storage';
 import { TagService } from '../tag';
 import { WorkspaceScope, WorkspaceService } from '../workspace';
 import { CalendarIntegration } from './entities/calendar';
+import { CalendarSubscription } from './entities/calendar-subscription';
 import { ReadwiseIntegration } from './entities/readwise';
 import { ReadwiseCrawler } from './entities/readwise-crawler';
 import { IntegrationWriter } from './entities/writer';
@@ -18,6 +19,7 @@ import { ReadwiseStore } from './store/readwise';
 
 export { IntegrationService };
 export { CalendarIntegration } from './entities/calendar';
+export { CalendarSubscription } from './entities/calendar-subscription';
 export type { CalendarEvent } from './type';
 export { IntegrationTypeIcon } from './views/icon';
 export { DocIntegrationPropertiesTable } from './views/properties-table';
@@ -39,8 +41,14 @@ export function configureIntegrationModule(framework: Framework) {
       ReadwiseStore,
       DocsService,
     ])
-    .store(CalendarStore, [WorkspaceService, WorkspaceServerService])
+    .store(CalendarStore, [
+      GlobalState,
+      CacheStorage,
+      WorkspaceService,
+      WorkspaceServerService,
+    ])
     .entity(CalendarIntegration, [CalendarStore])
+    .entity(CalendarSubscription, [CalendarStore])
     .scope(DocScope)
     .service(IntegrationPropertyService, [DocService]);
 }

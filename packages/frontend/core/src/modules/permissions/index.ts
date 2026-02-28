@@ -14,7 +14,7 @@ export {
 
 import { type Framework } from '@toeverything/infra';
 
-import { WorkspaceServerService } from '../cloud/services/workspace-server';
+import { WorkspaceServerService } from '../cloud';
 import { DocScope, DocService } from '../doc';
 import {
   WorkspaceLocalState,

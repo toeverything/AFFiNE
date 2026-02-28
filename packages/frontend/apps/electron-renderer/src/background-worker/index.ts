@@ -3,6 +3,7 @@ import '@affine/core/bootstrap/electron';
 import { apis } from '@affine/electron-api';
 import { broadcastChannelStorages } from '@affine/nbstore/broadcast-channel';
 import { cloudStorages } from '@affine/nbstore/cloud';
+import { idbStoragesIndexerOnly } from '@affine/nbstore/idb';
 import { bindNativeDBApis, sqliteStorages } from '@affine/nbstore/sqlite';
 import {
   bindNativeDBV1Apis,
@@ -20,6 +21,7 @@ bindNativeDBApis(apis!.nbstore);
 bindNativeDBV1Apis(apis!.db);
 
 const storeManager = new StoreManagerConsumer([
+  ...idbStoragesIndexerOnly,
   ...sqliteStorages,
   ...sqliteV1Storages,
   ...broadcastChannelStorages,

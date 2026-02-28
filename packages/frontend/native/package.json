@@ -30,7 +30,8 @@
     "@types/node": "^22.0.0",
     "ava": "^6.4.1",
     "rxjs": "^7.8.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">= 10"
@@ -40,8 +41,8 @@
     "build": "napi build -p affine_native --platform --release",
     "build:debug": "napi build -p affine_native --platform",
     "universal": "napi universal",
-    "test": "ava --no-worker-threads --concurrency=2",
+    "test": "ava",
     "version": "napi version"
   },
-  "version": "0.26.3"
+  "version": "0.25.7"
 }

@@ -1,0 +1,13 @@
+query getCurriculumDocuments($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    id
+    curriculumDocuments {
+      filename
+      key
+      size
+      mime
+      createdAt
+      downloadUrl
+    }
+  }
+}

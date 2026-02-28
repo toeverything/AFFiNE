@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 
-import type { CopilotChatOptions } from '../providers/types';
+import { CopilotChatOptions } from '../providers';
 import { NodeExecuteState } from './executor';
 import { WorkflowNode } from './node';
 import type { WorkflowGraphInstances, WorkflowNodeState } from './types';

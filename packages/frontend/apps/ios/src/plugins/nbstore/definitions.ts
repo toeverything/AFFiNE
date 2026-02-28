@@ -1,8 +1,8 @@
-import type { CrawlResult, DocIndexedClock } from '@affine/nbstore';
+import type { CrawlResult } from '@affine/nbstore';
 
 export interface Blob {
   key: string;
-  // base64 encoded data, or "__AFFINE_BLOB_FILE__:<absolutePath>" for large blobs
+  // base64 encoded data
   data: string;
   mime: string;
   size: number;
@@ -41,7 +41,6 @@ export interface NbStorePlugin {
   pushUpdate: (options: {
     id: string;
     docId: string;
-    // base64 encoded data
     data: string;
   }) => Promise<{ timestamp: number }>;
   getDocSnapshot: (options: { id: string; docId: string }) => Promise<
@@ -56,7 +55,6 @@ export interface NbStorePlugin {
   setDocSnapshot: (options: {
     id: string;
     docId: string;
-    // base64 encoded data
     bin: string;
     timestamp: number;
   }) => Promise<{ success: boolean }>;
@@ -173,9 +171,7 @@ export interface NbStorePlugin {
     id: string;
     indexName: string;
     query: string;
-  }) => Promise<{
-    results: { id: string; score: number; terms: Array<string> }[];
-  }>;
+  }) => Promise<{ id: string; score: number }[]>;
   ftsGetDocument: (options: {
     id: string;
     indexName: string;
@@ -186,21 +182,6 @@ export interface NbStorePlugin {
     indexName: string;
     docId: string;
     query: string;
-  }) => Promise<{ matches: { start: number; end: number }[] }>;
+  }) => Promise<Array<{ start: number; end: number }>>;
   ftsFlushIndex: (options: { id: string }) => Promise<void>;
-  ftsIndexVersion: () => Promise<{ indexVersion: number }>;
-  getDocIndexedClock: (options: {
-    id: string;
-    docId: string;
-  }) => Promise<DocIndexedClock | null>;
-  setDocIndexedClock: (options: {
-    id: string;
-    docId: string;
-    indexedClock: number;
-    indexerVersion: number;
-  }) => Promise<void>;
-  clearDocIndexedClock: (options: {
-    id: string;
-    docId: string;
-  }) => Promise<void>;
 }
