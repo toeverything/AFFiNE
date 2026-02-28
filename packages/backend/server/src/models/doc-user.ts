@@ -1,15 +1,26 @@
-import assert from 'node:assert';
 
+import assert from 'node:assert';
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { WorkspaceDocUserRole } from '@prisma/client';
-
 import { CanNotBatchGrantDocOwnerPermissions, PaginationInput } from '../base';
 import { BaseModel } from './base';
 import { DocRole } from './common';
 
 @Injectable()
 export class DocUserModel extends BaseModel {
+  /**
+   * Подсчитать количество файлов, созданных пользователем (где он владелец).
+   * Возвращает количество документов, где userId является владельцем (Owner).
+   */
+  async countOwnedDocsByUser(userId: string): Promise<number> {
+    return this.db.workspaceDocUserRole.count({
+      where: {
+        userId,
+        type: DocRole.Owner,
+      },
+    });
+  }
   /**
    * Set or update the [Owner] of a doc.
    * The old [Owner] will be changed to [Manager] if there is already an [Owner].
