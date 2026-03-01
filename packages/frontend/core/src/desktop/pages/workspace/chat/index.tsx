@@ -23,7 +23,6 @@ import {
 import { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import {
   EventSourceService,
-  FetchService,
   GraphQLService,
   ServerService,
   SubscriptionService,
@@ -58,16 +57,10 @@ type CopilotSession = Awaited<ReturnType<CopilotClient['getSession']>>;
 function useCopilotClient() {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
-  const fetchService = useService(FetchService);
 
   return useMemo(
-    () =>
-      new CopilotClient(
-        graphqlService.gql,
-        fetchService.fetch,
-        eventSourceService.eventSource
-      ),
-    [graphqlService, eventSourceService, fetchService]
+    () => new CopilotClient(graphqlService.gql, eventSourceService.eventSource),
+    [graphqlService, eventSourceService]
   );
 }
 

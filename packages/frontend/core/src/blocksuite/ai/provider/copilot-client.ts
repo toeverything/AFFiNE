@@ -42,7 +42,6 @@ import {
 } from './error';
 
 export enum Endpoint {
-  Stream = 'stream',
   StreamObject = 'stream-object',
   Workflow = 'workflow',
   Images = 'images',
@@ -97,7 +96,6 @@ export class CopilotClient {
     readonly gql: <Query extends GraphQLQuery>(
       options: QueryOptions<Query>
     ) => Promise<QueryResponse<Query>>,
-    readonly fetcher: (input: string, init?: RequestInit) => Promise<Response>,
     readonly eventSource: (
       url: string,
       eventSourceInitDict?: EventSourceInit
@@ -457,35 +455,6 @@ export class CopilotClient {
     return { files, docs };
   }
 
-  async chatText({
-    sessionId,
-    messageId,
-    reasoning,
-    modelId,
-    toolsConfig,
-    signal,
-  }: {
-    sessionId: string;
-    messageId?: string;
-    reasoning?: boolean;
-    modelId?: string;
-    toolsConfig?: AIToolsConfig;
-    signal?: AbortSignal;
-  }) {
-    let url = `/api/copilot/chat/${sessionId}`;
-    const queryString = this.paramsToQueryString({
-      messageId,
-      reasoning,
-      modelId,
-      toolsConfig,
-    });
-    if (queryString) {
-      url += `?${queryString}`;
-    }
-    const response = await this.fetcher(url.toString(), { signal });
-    return response.text();
-  }
-
   // Text or image to text
   chatTextStream(
     {
@@ -501,7 +470,7 @@ export class CopilotClient {
       modelId?: string;
       toolsConfig?: AIToolsConfig;
     },
-    endpoint = Endpoint.Stream
+    endpoint = Endpoint.StreamObject
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({

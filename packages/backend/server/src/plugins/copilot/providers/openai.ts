@@ -4,7 +4,6 @@ import { z } from 'zod';
 import {
   CopilotPromptInvalid,
   CopilotProviderSideError,
-  fetchBuffer,
   metrics,
   OneMB,
   UserFriendlyError,
@@ -44,7 +43,12 @@ const ModelListSchema = z.object({
 
 const ImageResponseSchema = z.union([
   z.object({
-    data: z.array(z.object({ b64_json: z.string() })),
+    data: z.array(
+      z.object({
+        b64_json: z.string().optional(),
+        url: z.string().optional(),
+      })
+    ),
   }),
   z.object({
     error: z.object({
@@ -67,6 +71,19 @@ const LogProbsSchema = z.array(
     ),
   })
 );
+
+function normalizeImageResponseData(
+  data: { b64_json?: string; url?: string }[]
+) {
+  return data
+    .map(image => {
+      if (image.b64_json) {
+        return `data:image/png;base64,${image.b64_json}`;
+      }
+      return image.url;
+    })
+    .filter((value): value is string => typeof value === 'string');
+}
 
 export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   readonly type = CopilotProviderType.OpenAI;
@@ -603,7 +620,16 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     for (const [idx, entry] of attachments.entries()) {
       const url = typeof entry === 'string' ? entry : entry.attachment;
       try {
-        const { buffer, type } = await fetchBuffer(url, 10 * OneMB, 'image/');
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        const type =
+          response.headers.get('content-type') || 'application/octet-stream';
+        if (!type.startsWith('image/')) continue;
+        const contentLength = Number(response.headers.get('content-length'));
+        if (Number.isFinite(contentLength) && contentLength > 10 * OneMB)
+          continue;
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.byteLength > 10 * OneMB) continue;
         const file = new File([buffer], `${idx}.png`, { type });
         form.append('image[]', file);
       } catch {
@@ -630,17 +656,20 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     const json = await res.json();
     const imageResponse = ImageResponseSchema.safeParse(json);
-    if (imageResponse.success) {
-      const data = imageResponse.data;
-      if ('error' in data) {
-        throw new Error(data.error.message);
-      } else {
-        for (const image of data.data) {
-          yield `data:image/webp;base64,${image.b64_json}`;
-        }
-      }
-    } else {
+    if (!imageResponse.success) {
       throw new Error(imageResponse.error.message);
+    }
+    const data = imageResponse.data;
+    if ('error' in data) {
+      throw new Error(data.error.message);
+    }
+
+    const images = normalizeImageResponseData(data.data);
+    if (!images.length) {
+      throw new Error('No images returned from OpenAI');
+    }
+    for (const image of images) {
+      yield image;
     }
   }
 
@@ -667,7 +696,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         const response = await this.requestOpenAIJson('/images/generations', {
           model: model.id,
           prompt,
-          response_format: 'b64_json',
           ...(options.quality ? { quality: options.quality } : {}),
         });
         const imageResponse = ImageResponseSchema.parse(response);
@@ -675,9 +703,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
           throw new Error(imageResponse.error.message);
         }
 
-        const imageUrls = imageResponse.data.map(
-          image => `data:image/png;base64,${image.b64_json}`
-        );
+        const imageUrls = normalizeImageResponseData(imageResponse.data);
+        if (!imageUrls.length) {
+          throw new Error('No images returned from OpenAI');
+        }
 
         for (const imageUrl of imageUrls) {
           yield imageUrl;

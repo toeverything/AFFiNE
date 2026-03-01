@@ -3,7 +3,7 @@ import { partition } from 'lodash-es';
 
 import { AIProvider } from './ai-provider';
 import { type CopilotClient, Endpoint } from './copilot-client';
-import { delay, toTextStream } from './event-source';
+import { toTextStream } from './event-source';
 
 const TIMEOUT = 50000;
 
@@ -115,7 +115,7 @@ export function textToText({
   signal,
   timeout = TIMEOUT,
   retry = false,
-  endpoint = Endpoint.Stream,
+  endpoint = Endpoint.StreamObject,
   postfix,
   reasoning,
   modelId,
@@ -180,32 +180,51 @@ export function textToText({
       },
     };
   } else {
-    return Promise.race([
-      timeout
-        ? delay(timeout).then(() => {
-            throw new Error('Timeout');
-          })
-        : null,
-      (async function () {
-        if (!retry) {
-          messageId = await createMessage({
-            client,
-            sessionId,
-            content,
-            attachments,
-            params,
-          });
-        }
-        AIProvider.LAST_ACTION_SESSIONID = sessionId;
-
-        return client.chatText({
+    return (async function () {
+      if (!retry) {
+        messageId = await createMessage({
+          client,
+          sessionId,
+          content,
+          attachments,
+          params,
+        });
+      }
+      const eventSource = client.chatTextStream(
+        {
           sessionId,
           messageId,
           reasoning,
           modelId,
-        });
-      })(),
-    ]);
+          toolsConfig,
+        },
+        endpoint
+      );
+      AIProvider.LAST_ACTION_SESSIONID = sessionId;
+
+      if (signal) {
+        if (signal.aborted) {
+          eventSource.close();
+          return '';
+        }
+        signal.onabort = () => {
+          eventSource.close();
+        };
+      }
+
+      const messages: string[] = [];
+      for await (const event of toTextStream(eventSource, {
+        timeout,
+        signal,
+      })) {
+        if (event.type === 'message') {
+          messages.push(event.data);
+        }
+      }
+
+      const result = messages.join('');
+      return postfix ? postfix(result) : result;
+    })();
   }
 }
 

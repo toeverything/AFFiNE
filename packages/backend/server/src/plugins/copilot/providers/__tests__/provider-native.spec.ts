@@ -61,12 +61,11 @@ function createProvider(profileMiddleware?: ProviderMiddlewareConfig) {
   return provider;
 }
 
-test('metricLabels should always mark adapter as native', t => {
+test('metricLabels should include active provider id', t => {
   const provider = createProvider();
   const labels = provider.runWithProfile('openai-main', () =>
     provider.exposeMetricLabels()
   );
-  t.is(labels.adapter, 'native');
   t.is(labels.providerId, 'openai-main');
 });
 

@@ -2689,9 +2689,9 @@ checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 
 [[package]]
 name = "llm_adapter"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9000e51a584b2fbfeeb5639fe9e384df8a243f6db6cb1a5ce3833b350fe190d7"
+checksum = "8dd9a548766bccf8b636695e8d514edee672d180e96a16ab932c971783b4e353"
 dependencies = [
  "base64",
  "reqwest",

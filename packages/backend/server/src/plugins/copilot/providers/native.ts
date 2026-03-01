@@ -1,12 +1,6 @@
 import type { ToolSet } from 'ai';
 import { ZodType } from 'zod';
 
-import {
-  bufferToArrayBuffer,
-  fetchBuffer,
-  ResponseTooLargeError,
-  SsrfBlockedError,
-} from '../../../base';
 import type {
   NativeLlmCoreContent,
   NativeLlmCoreMessage,
@@ -22,7 +16,6 @@ import {
   TextStreamParser,
 } from './utils';
 
-const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
 const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
 
 type BuildNativeRequestOptions = {
@@ -58,11 +51,6 @@ type NativeProviderAdapterOptions = {
   nodeTextMiddleware?: NodeTextMiddleware[];
 };
 
-async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
-  const { buffer } = await fetchBuffer(url, ATTACHMENT_MAX_BYTES);
-  return bufferToArrayBuffer(buffer);
-}
-
 function roleToCore(role: PromptMessage['role']) {
   switch (role) {
     case 'assistant':
@@ -72,11 +60,6 @@ function roleToCore(role: PromptMessage['role']) {
     default:
       return 'user';
   }
-}
-
-function toDataUrl(mediaType: string, bytes: ArrayBuffer) {
-  const base64 = Buffer.from(bytes).toString('base64');
-  return `data:${mediaType};base64,${base64}`;
 }
 
 async function toCoreContents(
@@ -109,23 +92,7 @@ async function toCoreContents(
     if (!SIMPLE_IMAGE_URL_REGEX.test(attachmentUrl)) continue;
     if (!mediaType.startsWith('image/')) continue;
 
-    let sourceUrl = attachmentUrl;
-    if (!attachmentUrl.startsWith('data:')) {
-      try {
-        const bytes = await fetchArrayBuffer(attachmentUrl);
-        sourceUrl = toDataUrl(mediaType, bytes);
-      } catch (error) {
-        if (
-          error instanceof SsrfBlockedError ||
-          error instanceof ResponseTooLargeError
-        ) {
-          throw new Error('Attachment URL is not allowed');
-        }
-        throw error;
-      }
-    }
-
-    contents.push({ type: 'image', source: { url: sourceUrl } });
+    contents.push({ type: 'image', source: { url: attachmentUrl } });
   }
 
   return contents;

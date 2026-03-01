@@ -629,14 +629,22 @@ export async function chatWithText(
   prefix = '',
   retry?: boolean
 ): Promise<string> {
+  const endpoint = prefix || '/stream';
   const query = messageId
     ? `?messageId=${messageId}` + (retry ? '&retry=true' : '')
     : '';
   const res = await app
-    .GET(`/api/copilot/chat/${sessionId}${prefix}${query}`)
+    .GET(`/api/copilot/chat/${sessionId}${endpoint}${query}`)
     .expect(200);
 
-  return res.text;
+  if (prefix) {
+    return res.text;
+  }
+
+  return sse2array(res.text)
+    .filter(event => event.event === 'message')
+    .map(event => event.data ?? '')
+    .join('');
 }
 
 export async function chatWithTextStream(
