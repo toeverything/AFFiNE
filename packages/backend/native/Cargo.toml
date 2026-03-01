@@ -17,10 +17,13 @@ affine_common = { workspace = true, features = [
 chrono = { workspace = true }
 file-format = { workspace = true }
 infer = { workspace = true }
+llm_adapter = { workspace = true }
 mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async"] }
 napi-derive = { workspace = true }
 rand = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 sha3 = { workspace = true }
 tiktoken-rs = { workspace = true }
 v_htmlescape = { workspace = true }

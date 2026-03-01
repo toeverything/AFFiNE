@@ -364,6 +364,21 @@ test('should be able to manage chat session', async t => {
     });
     t.is(newSessionId, sessionId, 'should get same session id');
   }
+
+  // should create a fresh session when reuseLatestChat is explicitly disabled
+  {
+    const newSessionId = await session.create({
+      userId,
+      promptName,
+      ...commonParams,
+      reuseLatestChat: false,
+    });
+    t.not(
+      newSessionId,
+      sessionId,
+      'should create new session id when reuseLatestChat is false'
+    );
+  }
 });
 
 test('should be able to update chat session prompt', async t => {
@@ -879,6 +894,26 @@ test('should be able to get provider', async t => {
     });
     t.falsy(p, 'should not get provider');
   }
+});
+
+test('should resolve provider by prefixed model id', async t => {
+  const { factory } = t.context;
+
+  const provider = await factory.getProviderByModel('openai-default/test');
+  t.truthy(provider, 'should resolve prefixed model id');
+  t.is(provider?.type, CopilotProviderType.OpenAI);
+
+  const result = await provider?.text({ modelId: 'openai-default/test' }, [
+    { role: 'user', content: 'hello' },
+  ]);
+  t.is(result, 'generate text to text');
+});
+
+test('should fallback to null when prefixed provider id does not exist', async t => {
+  const { factory } = t.context;
+
+  const provider = await factory.getProviderByModel('unknown/test');
+  t.is(provider, null);
 });
 
 // ==================== workflow ====================
@@ -2106,6 +2141,16 @@ test('should resolve model correctly based on subscription status and prompt con
     const model1 = await s.resolveModel(false, 'gemini-2.5-pro');
     t.snapshot(model1, 'should honor requested pro model');
 
+    const model1WithPrefix = await s.resolveModel(
+      false,
+      'openai-default/gemini-2.5-pro'
+    );
+    t.is(
+      model1WithPrefix,
+      'openai-default/gemini-2.5-pro',
+      'should honor requested prefixed pro model'
+    );
+
     const model2 = await s.resolveModel(false, 'not-in-optional');
     t.snapshot(model2, 'should fallback to default model');
   }
@@ -2117,6 +2162,16 @@ test('should resolve model correctly based on subscription status and prompt con
     t.snapshot(
       model3,
       'should fallback to default model when requesting pro model during trialing'
+    );
+
+    const model3WithPrefix = await s.resolveModel(
+      true,
+      'openai-default/gemini-2.5-pro'
+    );
+    t.is(
+      model3WithPrefix,
+      'gemini-2.5-flash',
+      'should fallback to default model when requesting prefixed pro model during trialing'
     );
 
     const model4 = await s.resolveModel(true, 'gemini-2.5-flash');
@@ -2140,6 +2195,16 @@ test('should resolve model correctly based on subscription status and prompt con
 
     const model7 = await s.resolveModel(true, 'claude-sonnet-4-5@20250929');
     t.snapshot(model7, 'should honor requested pro model during active');
+
+    const model7WithPrefix = await s.resolveModel(
+      true,
+      'openai-default/claude-sonnet-4-5@20250929'
+    );
+    t.is(
+      model7WithPrefix,
+      'openai-default/claude-sonnet-4-5@20250929',
+      'should honor requested prefixed pro model during active'
+    );
 
     const model8 = await s.resolveModel(true, 'not-in-optional');
     t.snapshot(

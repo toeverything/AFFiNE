@@ -6,21 +6,6 @@ export interface GraphQLQuery {
   file?: boolean;
   deprecations?: string[];
 }
-export const copilotChatMessageFragment = `fragment CopilotChatMessage on ChatMessage {
-  id
-  role
-  content
-  attachments
-  streamObjects {
-    type
-    textDelta
-    toolCallId
-    toolName
-    args
-    result
-  }
-  createdAt
-}`;
 export const copilotChatHistoryFragment = `fragment CopilotChatHistory on CopilotHistories {
   sessionId
   workspaceId
@@ -34,24 +19,22 @@ export const copilotChatHistoryFragment = `fragment CopilotChatHistory on Copilo
   title
   tokens
   messages {
-    ...CopilotChatMessage
+    id
+    role
+    content
+    attachments
+    streamObjects {
+      type
+      textDelta
+      toolCallId
+      toolName
+      args
+      result
+    }
+    createdAt
   }
   createdAt
   updatedAt
-}`;
-export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
-  pageInfo {
-    hasNextPage
-    hasPreviousPage
-    startCursor
-    endCursor
-  }
-  edges {
-    cursor
-    node {
-      ...CopilotChatHistory
-    }
-  }
 }`;
 export const credentialsRequirementsFragment = `fragment CredentialsRequirements on CredentialsRequirementType {
   password {
@@ -94,6 +77,20 @@ export const currentUserProfileFragment = `fragment CurrentUserProfile on UserTy
     }
   }
 }`;
+export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
+  pageInfo {
+    hasNextPage
+    hasPreviousPage
+    startCursor
+    endCursor
+  }
+  edges {
+    cursor
+    node {
+      ...CopilotChatHistory
+    }
+  }
+}${copilotChatHistoryFragment}`;
 export const passwordLimitsFragment = `fragment PasswordLimits on PasswordLimitsType {
   minLength
   maxLength
@@ -401,52 +398,6 @@ export const appConfigQuery = {
   op: 'appConfig',
   query: `query appConfig {
   appConfig
-}`,
-};
-
-export const getPromptsQuery = {
-  id: 'getPromptsQuery' as const,
-  op: 'getPrompts',
-  query: `query getPrompts {
-  listCopilotPrompts {
-    name
-    model
-    action
-    config {
-      frequencyPenalty
-      presencePenalty
-      temperature
-      topP
-    }
-    messages {
-      role
-      content
-      params
-    }
-  }
-}`,
-};
-
-export const updatePromptMutation = {
-  id: 'updatePromptMutation' as const,
-  op: 'updatePrompt',
-  query: `mutation updatePrompt($name: String!, $messages: [CopilotPromptMessageInput!]!) {
-  updateCopilotPrompt(name: $name, messages: $messages) {
-    name
-    model
-    action
-    config {
-      frequencyPenalty
-      presencePenalty
-      temperature
-      topP
-    }
-    messages {
-      role
-      content
-      params
-    }
-  }
 }`,
 };
 
@@ -1411,8 +1362,6 @@ export const getCopilotDocSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1432,8 +1381,6 @@ export const getCopilotPinnedSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1449,8 +1396,6 @@ export const getCopilotWorkspaceSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1466,8 +1411,6 @@ export const getCopilotHistoriesQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1596,12 +1539,24 @@ export const cleanupCopilotSessionMutation = {
 }`,
 };
 
+export const createCopilotSessionWithHistoryMutation = {
+  id: 'createCopilotSessionWithHistoryMutation' as const,
+  op: 'createCopilotSessionWithHistory',
+  query: `mutation createCopilotSessionWithHistory($options: CreateChatSessionInput!) {
+  createCopilotSessionWithHistory(options: $options) {
+    ...CopilotChatHistory
+  }
+}
+${copilotChatHistoryFragment}`,
+};
+
 export const createCopilotSessionMutation = {
   id: 'createCopilotSessionMutation' as const,
   op: 'createCopilotSession',
   query: `mutation createCopilotSession($options: CreateChatSessionInput!) {
   createCopilotSession(options: $options)
 }`,
+  deprecations: ["'createCopilotSession' is deprecated: use `createCopilotSessionWithHistory` instead"],
 };
 
 export const forkCopilotSessionMutation = {
@@ -1628,8 +1583,6 @@ export const getCopilotLatestDocSessionQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1645,8 +1598,6 @@ export const getCopilotSessionQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1665,8 +1616,6 @@ export const getCopilotRecentSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1690,8 +1639,6 @@ export const getCopilotSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 

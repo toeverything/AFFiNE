@@ -49,7 +49,11 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
   protected instance!: GoogleVertexAnthropicProvider;
 
   override configured(): boolean {
-    return !!this.config.location && !!this.config.googleAuthOptions;
+    return (
+      !!this.config.location &&
+      !!this.config.project &&
+      !!this.config.googleAuthOptions
+    );
   }
 
   override setup() {

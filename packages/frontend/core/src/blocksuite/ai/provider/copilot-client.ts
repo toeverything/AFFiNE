@@ -11,6 +11,7 @@ import {
   createCopilotContextMutation,
   createCopilotMessageMutation,
   createCopilotSessionMutation,
+  createCopilotSessionWithHistoryMutation,
   forkCopilotSessionMutation,
   getCopilotHistoriesQuery,
   getCopilotHistoryIdsQuery,
@@ -114,6 +115,20 @@ export class CopilotClient {
         },
       });
       return res.createCopilotSession;
+    } catch (err) {
+      throw resolveError(err);
+    }
+  }
+
+  async createSessionWithHistory(
+    options: OptionsField<typeof createCopilotSessionWithHistoryMutation>
+  ) {
+    try {
+      const res = await this.gql({
+        query: createCopilotSessionWithHistoryMutation,
+        variables: { options },
+      });
+      return res.createCopilotSessionWithHistory;
     } catch (err) {
       throw resolveError(err);
     }

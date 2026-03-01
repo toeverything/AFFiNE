@@ -962,12 +962,8 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/s3-compat": "workspace:*"
     "@affine/server-native": "workspace:*"
-    "@ai-sdk/anthropic": "npm:^2.0.54"
     "@ai-sdk/google": "npm:^2.0.45"
     "@ai-sdk/google-vertex": "npm:^3.0.88"
-    "@ai-sdk/openai": "npm:^2.0.80"
-    "@ai-sdk/openai-compatible": "npm:^1.0.28"
-    "@ai-sdk/perplexity": "npm:^2.0.21"
     "@apollo/server": "npm:^4.13.0"
     "@faker-js/faker": "npm:^10.1.0"
     "@fal-ai/serverless-client": "npm:^0.15.0"
@@ -1129,7 +1125,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.57, @ai-sdk/anthropic@npm:^2.0.54":
+"@ai-sdk/anthropic@npm:2.0.57":
   version: 2.0.57
   resolution: "@ai-sdk/anthropic@npm:2.0.57"
   dependencies:
@@ -1178,42 +1174,6 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10/0057bb8307392a693a586b028bb69a0d06673f91685e39bc0f02c2493efd2240321967358cff55ddbdbb05b4d86faa06fcaba7a8d00e70a1825ec63cfc834baf
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/openai-compatible@npm:^1.0.28":
-  version: 1.0.30
-  resolution: "@ai-sdk/openai-compatible@npm:1.0.30"
-  dependencies:
-    "@ai-sdk/provider": "npm:2.0.1"
-    "@ai-sdk/provider-utils": "npm:3.0.20"
-  peerDependencies:
-    zod: ^3.25.76 || ^4.1.8
-  checksum: 10/5a925424b52c8dbc912b0beeceac6de406bc3bcac289f3065780108631736789b1bae78613b204515dac711f1bc50b410a9bbe5bbd60d503d9d654fc2ba0406e
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/openai@npm:^2.0.80":
-  version: 2.0.89
-  resolution: "@ai-sdk/openai@npm:2.0.89"
-  dependencies:
-    "@ai-sdk/provider": "npm:2.0.1"
-    "@ai-sdk/provider-utils": "npm:3.0.20"
-  peerDependencies:
-    zod: ^3.25.76 || ^4.1.8
-  checksum: 10/96b6037491365043e6f08f0e9bdf4a9e5d902ca62aac748c2fa610d0ec1422a7d252ec2e6ab1271d10d2804ab487e33837ee8bf2d0f74acbdfec5547bbfca09f
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/perplexity@npm:^2.0.21":
-  version: 2.0.23
-  resolution: "@ai-sdk/perplexity@npm:2.0.23"
-  dependencies:
-    "@ai-sdk/provider": "npm:2.0.1"
-    "@ai-sdk/provider-utils": "npm:3.0.20"
-  peerDependencies:
-    zod: ^3.25.76 || ^4.1.8
-  checksum: 10/b7d5ba8618bde044b88e69be17e2fc03127e15de1e23f5e64c4db799d83e536f8551bae6b7f484eef3bec1c064ee7848e6c4a18d06ffc3fc18129d25110e7f9e
   languageName: node
   linkType: hard
 

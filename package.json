@@ -22,7 +22,7 @@
     "af": "r affine.ts",
     "dev": "yarn affine dev",
     "build": "yarn affine build",
-    "lint:eslint": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" eslint --report-unused-disable-directives-severity=off . --cache",
+    "lint:eslint": "cross-env NODE_OPTIONS=\"--max-old-space-size=16384\" eslint --report-unused-disable-directives-severity=off . --cache",
     "lint:eslint:fix": "yarn lint:eslint --fix --fix-type problem,suggestion,layout",
     "lint:prettier": "prettier --ignore-unknown --cache --check .",
     "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",

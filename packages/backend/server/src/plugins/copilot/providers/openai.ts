@@ -1,53 +1,34 @@
-import {
-  createOpenAI,
-  openai,
-  type OpenAIProvider as VercelOpenAIProvider,
-  OpenAIResponsesProviderOptions,
-} from '@ai-sdk/openai';
-import {
-  createOpenAICompatible,
-  type OpenAICompatibleProvider as VercelOpenAICompatibleProvider,
-} from '@ai-sdk/openai-compatible';
-import {
-  AISDKError,
-  embedMany,
-  experimental_generateImage as generateImage,
-  generateObject,
-  generateText,
-  stepCountIs,
-  streamText,
-  Tool,
-} from 'ai';
+import type { Tool, ToolSet } from 'ai';
 import { z } from 'zod';
 
 import {
   CopilotPromptInvalid,
-  CopilotProviderNotSupported,
   CopilotProviderSideError,
   fetchBuffer,
   metrics,
   OneMB,
   UserFriendlyError,
 } from '../../../base';
+import {
+  llmDispatchStream,
+  type NativeLlmBackendConfig,
+  type NativeLlmRequest,
+} from '../../../native';
+import type { NodeTextMiddleware } from '../config';
+import { buildNativeRequest, NativeProviderAdapter } from './native';
 import { CopilotProvider } from './provider';
 import type {
   CopilotChatOptions,
   CopilotChatTools,
   CopilotEmbeddingOptions,
   CopilotImageOptions,
-  CopilotProviderModel,
   CopilotStructuredOptions,
   ModelConditions,
   PromptMessage,
   StreamObject,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
-import {
-  chatToGPTMessage,
-  CitationParser,
-  StreamObjectParser,
-  TextStreamParser,
-} from './utils';
+import { chatToGPTMessage } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
@@ -319,53 +300,23 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
   ];
 
-  #instance!: VercelOpenAIProvider | VercelOpenAICompatibleProvider;
-
   override configured(): boolean {
     return !!this.config.apiKey;
   }
 
   protected override setup() {
     super.setup();
-    this.#instance =
-      this.config.oldApiStyle && this.config.baseURL
-        ? createOpenAICompatible({
-            name: 'openai-compatible-old-style',
-            apiKey: this.config.apiKey,
-            baseURL: this.config.baseURL,
-          })
-        : createOpenAI({
-            apiKey: this.config.apiKey,
-            baseURL: this.config.baseURL,
-          });
   }
 
-  private handleError(
-    e: any,
-    model: string,
-    options: CopilotImageOptions = {}
-  ) {
+  private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof AISDKError) {
-      if (e.message.includes('safety') || e.message.includes('risk')) {
-        metrics.ai
-          .counter('chat_text_risk_errors')
-          .add(1, { model, user: options.user || undefined });
-      }
-
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: e.name || 'unknown',
-        message: e.message,
-      });
-    } else {
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: 'unexpected_response',
-        message: e?.message || 'Unexpected openai response',
-      });
     }
+    return new CopilotProviderSideError({
+      provider: this.type,
+      kind: 'unexpected_response',
+      message: e?.message || 'Unexpected openai response',
+    });
   }
 
   override async refreshOnlineModels() {
@@ -389,18 +340,48 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
   override getProviderSpecificTools(
     toolName: CopilotChatTools,
-    model: string
+    _model: string
   ): [string, Tool?] | undefined {
-    if (
-      toolName === 'webSearch' &&
-      'responses' in this.#instance &&
-      !this.isReasoningModel(model)
-    ) {
-      return ['web_search_preview', openai.tools.webSearch({})];
-    } else if (toolName === 'docEdit') {
+    if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
     }
     return;
+  }
+
+  private createNativeConfig(): NativeLlmBackendConfig {
+    const baseUrl = this.config.baseURL || 'https://api.openai.com/v1';
+    return {
+      base_url: baseUrl.replace(/\/v1\/?$/, ''),
+      auth_token: this.config.apiKey,
+    };
+  }
+
+  private createNativeAdapter(
+    tools: ToolSet,
+    nodeTextMiddleware?: NodeTextMiddleware[]
+  ) {
+    return new NativeProviderAdapter(
+      (request: NativeLlmRequest, signal?: AbortSignal) =>
+        llmDispatchStream(
+          this.config.oldApiStyle ? 'openai_chat' : 'openai_responses',
+          this.createNativeConfig(),
+          request,
+          signal
+        ),
+      tools,
+      this.MAX_STEPS,
+      { nodeTextMiddleware }
+    );
+  }
+
+  private getReasoning(
+    options: NonNullable<CopilotChatOptions>,
+    model: string
+  ): Record<string, unknown> | undefined {
+    if (options.reasoning && this.isReasoningModel(model)) {
+      return { effort: 'medium' };
+    }
+    return undefined;
   }
 
   async text(
@@ -413,33 +394,25 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const model = this.selectModel(fullCond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance =
-        'responses' in this.#instance
-          ? this.#instance.responses(model.id)
-          : this.#instance(model.id);
-
-      const { text } = await generateText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        temperature: options.temperature ?? 0,
-        maxOutputTokens: options.maxTokens ?? 4096,
-        providerOptions: {
-          openai: this.getOpenAIOptions(options, model.id),
-        },
-        tools: await this.getTools(options, model.id),
-        stopWhen: stepCountIs(this.MAX_STEPS),
-        abortSignal: options.signal,
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        include: options.webSearch ? ['citations'] : undefined,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
       });
-
-      return text.trim();
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      return await adapter.text(request, options.signal);
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
@@ -456,38 +429,29 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const model = this.selectModel(fullCond);
 
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const citationParser = new CitationParser();
-      const textParser = new TextStreamParser();
-      for await (const chunk of fullStream) {
-        switch (chunk.type) {
-          case 'text-delta': {
-            let result = textParser.parse(chunk);
-            result = citationParser.parse(result);
-            yield result;
-            break;
-          }
-          case 'finish': {
-            const footnotes = textParser.end();
-            const result =
-              citationParser.end() + (footnotes.length ? '\n' + footnotes : '');
-            yield result;
-            break;
-          }
-          default: {
-            yield textParser.parse(chunk);
-            break;
-          }
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+      metrics.ai
+        .counter('chat_text_stream_calls')
+        .add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        include: options.webSearch ? ['citations'] : undefined,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      for await (const chunk of adapter.streamText(request, options.signal)) {
+        yield chunk;
       }
     } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      metrics.ai
+        .counter('chat_text_stream_errors')
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
@@ -503,24 +467,27 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     try {
       metrics.ai
         .counter('chat_object_stream_calls')
-        .add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new StreamObjectParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        if (result) {
-          yield result;
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+        .add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        include: options.webSearch ? ['citations'] : undefined,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      for await (const chunk of adapter.streamObject(request, options.signal)) {
+        yield chunk;
       }
     } catch (e: any) {
       metrics.ai
         .counter('chat_object_stream_errors')
-        .add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
@@ -535,35 +502,27 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs, schema] = await chatToGPTMessage(messages);
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request, schema } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
       if (!schema) {
         throw new CopilotPromptInvalid('Schema is required');
       }
-
-      const modelInstance =
-        'responses' in this.#instance
-          ? this.#instance.responses(model.id)
-          : this.#instance(model.id);
-
-      const { object } = await generateObject({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        temperature: options.temperature ?? 0,
-        maxOutputTokens: options.maxTokens ?? 4096,
-        maxRetries: options.maxRetries ?? 3,
-        schema,
-        providerOptions: {
-          openai: options.user ? { user: options.user } : {},
-        },
-        abortSignal: options.signal,
-      });
-
-      return JSON.stringify(object);
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      const text = await adapter.text(request, options.signal);
+      const parsed = JSON.parse(text);
+      const validated = schema.parse(parsed);
+      return JSON.stringify(validated);
     } catch (e: any) {
       metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      throw this.handleError(e);
     }
   }
 
@@ -575,36 +534,32 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
     await this.checkParams({ messages: [], cond: fullCond, options });
     const model = this.selectModel(fullCond);
-    // get the log probability of "yes"/"no"
-    const instance =
-      'chat' in this.#instance
-        ? this.#instance.chat(model.id)
-        : this.#instance(model.id);
 
     const scores = await Promise.all(
       chunkMessages.map(async messages => {
         const [system, msgs] = await chatToGPTMessage(messages);
-
-        const result = await generateText({
-          model: instance,
-          system,
-          messages: msgs,
-          temperature: 0,
-          maxOutputTokens: 16,
-          providerOptions: {
-            openai: {
-              ...this.getOpenAIOptions(options, model.id),
-              logprobs: 16,
-            },
+        const response = await this.requestOpenAIJson(
+          '/chat/completions',
+          {
+            model: model.id,
+            messages: this.toOpenAIChatMessages(system, msgs),
+            temperature: 0,
+            max_tokens: 16,
+            logprobs: true,
+            top_logprobs: 16,
           },
-          abortSignal: options.signal,
-        });
+          options.signal
+        );
 
-        const topMap: Record<string, number> = LogProbsSchema.parse(
-          result.providerMetadata?.openai?.logprobs
-        )[0].top_logprobs.reduce<Record<string, number>>(
+        const logprobs = response?.choices?.[0]?.logprobs?.content;
+        if (!Array.isArray(logprobs) || logprobs.length === 0) {
+          return 0;
+        }
+
+        const parsedLogprobs = LogProbsSchema.parse(logprobs);
+        const topMap = parsedLogprobs[0].top_logprobs.reduce(
           (acc, { token, logprob }) => ({ ...acc, [token]: logprob }),
-          {}
+          {} as Record<string, number>
         );
 
         const findLogProb = (token: string): number => {
@@ -632,34 +587,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     );
 
     return scores;
-  }
-
-  private async getFullStream(
-    model: CopilotProviderModel,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ) {
-    const [system, msgs] = await chatToGPTMessage(messages);
-    const modelInstance =
-      'responses' in this.#instance
-        ? this.#instance.responses(model.id)
-        : this.#instance(model.id);
-    const { fullStream } = streamText({
-      model: modelInstance,
-      system,
-      messages: msgs,
-      frequencyPenalty: options.frequencyPenalty ?? 0,
-      presencePenalty: options.presencePenalty ?? 0,
-      temperature: options.temperature ?? 0,
-      maxOutputTokens: options.maxTokens ?? 4096,
-      providerOptions: {
-        openai: this.getOpenAIOptions(options, model.id),
-      },
-      tools: await this.getTools(options, model.id),
-      stopWhen: stepCountIs(this.MAX_STEPS),
-      abortSignal: options.signal,
-    });
-    return fullStream;
   }
 
   // ====== text to image ======
@@ -726,13 +653,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     await this.checkParams({ messages, cond: fullCond, options });
     const model = this.selectModel(fullCond);
 
-    if (!('image' in this.#instance)) {
-      throw new CopilotProviderNotSupported({
-        provider: this.type,
-        kind: 'image',
-      });
-    }
-
     metrics.ai
       .counter('generate_images_stream_calls')
       .add(1, { model: model.id });
@@ -744,19 +664,19 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       if (attachments && attachments.length > 0) {
         yield* this.generateImageWithAttachments(model.id, prompt, attachments);
       } else {
-        const modelInstance = this.#instance.image(model.id);
-        const result = await generateImage({
-          model: modelInstance,
+        const response = await this.requestOpenAIJson('/images/generations', {
+          model: model.id,
           prompt,
-          providerOptions: {
-            openai: {
-              quality: options.quality || null,
-            },
-          },
+          response_format: 'b64_json',
+          ...(options.quality ? { quality: options.quality } : {}),
         });
+        const imageResponse = ImageResponseSchema.parse(response);
+        if ('error' in imageResponse) {
+          throw new Error(imageResponse.error.message);
+        }
 
-        const imageUrls = result.images.map(
-          image => `data:image/png;base64,${image.base64}`
+        const imageUrls = imageResponse.data.map(
+          image => `data:image/png;base64,${image.b64_json}`
         );
 
         for (const imageUrl of imageUrls) {
@@ -769,7 +689,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       return;
     } catch (e: any) {
       metrics.ai.counter('generate_images_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      throw this.handleError(e);
     }
   }
 
@@ -783,49 +703,83 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     await this.checkParams({ embeddings: messages, cond: fullCond, options });
     const model = this.selectModel(fullCond);
 
-    if (!('embedding' in this.#instance)) {
-      throw new CopilotProviderNotSupported({
-        provider: this.type,
-        kind: 'embedding',
-      });
-    }
-
     try {
       metrics.ai
         .counter('generate_embedding_calls')
         .add(1, { model: model.id });
-
-      const modelInstance = this.#instance.embedding(model.id);
-
-      const { embeddings } = await embedMany({
-        model: modelInstance,
-        values: messages,
-        providerOptions: {
-          openai: {
-            dimensions: options.dimensions || DEFAULT_DIMENSIONS,
-          },
-        },
+      const response = await this.requestOpenAIJson('/embeddings', {
+        model: model.id,
+        input: messages,
+        dimensions: options.dimensions || DEFAULT_DIMENSIONS,
       });
-
-      return embeddings.filter(v => v && Array.isArray(v));
+      const data = Array.isArray(response?.data) ? response.data : [];
+      return data
+        .map((item: any) => item?.embedding)
+        .filter((embedding: unknown) => Array.isArray(embedding)) as number[][];
     } catch (e: any) {
       metrics.ai
         .counter('generate_embedding_errors')
         .add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      throw this.handleError(e);
     }
   }
 
-  private getOpenAIOptions(options: CopilotChatOptions, model: string) {
-    const result: OpenAIResponsesProviderOptions = {};
-    if (options?.reasoning && this.isReasoningModel(model)) {
-      result.reasoningEffort = 'medium';
-      result.reasoningSummary = 'detailed';
+  private toOpenAIChatMessages(
+    system: string | undefined,
+    messages: Awaited<ReturnType<typeof chatToGPTMessage>>[1]
+  ) {
+    const result: Array<{ role: string; content: string }> = [];
+    if (system) {
+      result.push({ role: 'system', content: system });
     }
-    if (options?.user) {
-      result.user = options.user;
+
+    for (const message of messages) {
+      if (typeof message.content === 'string') {
+        result.push({ role: message.role, content: message.content });
+        continue;
+      }
+
+      const text = message.content
+        .filter(
+          part =>
+            part &&
+            typeof part === 'object' &&
+            'type' in part &&
+            part.type === 'text' &&
+            'text' in part
+        )
+        .map(part => String((part as { text: string }).text))
+        .join('\n');
+
+      result.push({ role: message.role, content: text || '[no content]' });
     }
+
     return result;
+  }
+
+  private async requestOpenAIJson(
+    path: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<any> {
+    const baseUrl = this.config.baseURL || 'https://api.openai.com/v1';
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `OpenAI API error ${response.status}: ${await response.text()}`
+      );
+    }
+
+    return await response.json();
   }
 
   private isReasoningModel(model: string) {
