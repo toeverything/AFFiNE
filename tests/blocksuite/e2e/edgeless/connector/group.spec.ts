@@ -3,10 +3,8 @@ import type { Page } from '@playwright/test';
 import {
   clickView,
   createShapeElement,
-  dragBetweenViewCoords,
   edgelessCommonSetup as commonSetup,
   moveView,
-  selectAllByKeyboard,
   Shape,
   triggerComponentToolbarAction,
   waitNextFrame,
@@ -15,20 +13,56 @@ import { assertConnectorPath } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
 
 test.describe('groups connections', () => {
+  async function createGroupForElements(page: Page, elementIds: string[]) {
+    await page.evaluate(ids => {
+      const container = document.querySelector('affine-edgeless-root');
+      if (!container) throw new Error('container not found');
+      const children = ids.reduce(
+        (acc, id) => {
+          acc[id] = true;
+          return acc;
+        },
+        {} as Record<string, true>
+      );
+      container.service.crud.addElement('group', {
+        children,
+        title: 'Group',
+      });
+    }, elementIds);
+  }
+
   async function groupsSetup(page: Page) {
     await commonSetup(page);
 
     // group 1
-    await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
-    await createShapeElement(page, [100, 100], [200, 200], Shape.Square);
-    await selectAllByKeyboard(page);
-    await triggerComponentToolbarAction(page, 'addGroup');
+    const group1Shape1 = await createShapeElement(
+      page,
+      [0, 0],
+      [100, 100],
+      Shape.Square
+    );
+    const group1Shape2 = await createShapeElement(
+      page,
+      [100, 100],
+      [200, 200],
+      Shape.Square
+    );
+    await createGroupForElements(page, [group1Shape1, group1Shape2]);
 
     // group 2
-    await createShapeElement(page, [500, 0], [600, 100], Shape.Square);
-    await createShapeElement(page, [600, 100], [700, 200], Shape.Square);
-    await dragBetweenViewCoords(page, [550, -50], [650, 250]);
-    await triggerComponentToolbarAction(page, 'addGroup');
+    const group2Shape1 = await createShapeElement(
+      page,
+      [500, 0],
+      [600, 100],
+      Shape.Square
+    );
+    const group2Shape2 = await createShapeElement(
+      page,
+      [600, 100],
+      [700, 200],
+      Shape.Square
+    );
+    await createGroupForElements(page, [group2Shape1, group2Shape2]);
 
     await waitNextFrame(page);
   }
