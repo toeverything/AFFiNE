@@ -125,8 +125,8 @@ export abstract class OAuthProvider {
         method: 'POST',
         body,
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
           ...options?.headers,
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       },
       options
