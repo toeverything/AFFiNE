@@ -86,4 +86,12 @@ defineModuleConfig('job', {
     },
     schema,
   },
+
+  'queues.agent': {
+    desc: 'The config for agent job queue',
+    default: {
+      concurrency: 3,
+    },
+    schema,
+  },
 });

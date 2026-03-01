@@ -378,6 +378,28 @@ export class CommentResolver {
     const mentionUserIds = new Set(mentions);
     const notifyUserIds = new Set<string>();
 
+    // ─── AION Agent mention detection ──────────────────────────────────
+    // If any mention matches the agent user ID, queue an agent job
+    const agentUserId = process.env.AGENT_USER_ID ?? '__aion_agent__';
+    if (mentionUserIds.has(agentUserId)) {
+      // Extract text content from the comment/reply for the agent
+      const content = reply?.content ?? comment.content;
+      const mentionText = this.extractCommentText(content);
+
+      await this.queue.add('agent.commentMention', {
+        commentId: comment.id,
+        replyId: reply?.id,
+        workspaceId: comment.workspaceId,
+        docId: comment.docId,
+        senderUserId: sender.id,
+        mentionContent: mentionText || `[Comment in document: ${docTitle}]`,
+      });
+
+      // Remove agent from normal notification flow
+      mentionUserIds.delete(agentUserId);
+    }
+    // ─── End AION Agent mention detection ──────────────────────────────
+
     // send comment mention notification to mentioned users
     for (const mentionUserId of mentionUserIds) {
       // skip if the mention user is the sender
@@ -454,6 +476,31 @@ export class CommentResolver {
         });
       }
     }
+  }
+
+  /**
+   * Extract plain text from a BlockSuite comment snapshot (for agent processing).
+   */
+  private extractCommentText(content: Record<string, any>): string {
+    const parts: string[] = [];
+    const walk = (node: any) => {
+      if (node?.text?.delta) {
+        for (const d of node.text.delta) {
+          if (typeof d.insert === 'string') parts.push(d.insert);
+        }
+      }
+      if (node?.props?.text?.delta) {
+        for (const d of node.props.text.delta) {
+          if (typeof d.insert === 'string') parts.push(d.insert);
+        }
+      }
+      if (Array.isArray(node?.children)) {
+        for (const c of node.children) walk(c);
+      }
+    };
+    if (content?.snapshot) walk(content.snapshot);
+    else walk(content);
+    return parts.join('').trim();
   }
 
   private async assertPermission(

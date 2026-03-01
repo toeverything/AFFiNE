@@ -102,13 +102,24 @@ export const createCommentLinkedWidgetConfig = (
 
     memberSearchService.search(query);
 
+    // AION Agent — synthetic member for @agent mentions
+    const AGENT_USER_ID = '__aion_agent__';
+    const agentMenuItem = getMenuItem(AGENT_USER_ID, 'AION Agent', null);
+
     const items = computed<LinkedMenuItem[]>(() => {
       const members = memberSearchService.result$.signal.value;
 
+      // Check if "AION Agent" matches the query (case-insensitive)
+      const agentMatches =
+        query.length === 0 ||
+        'aion agent'.includes(query.toLowerCase()) ||
+        'agent'.startsWith(query.toLowerCase());
+
       if (query.length === 0) {
-        return members
-          .slice(0, 3)
+        const memberItems = members
+          .slice(0, 2)
           .map(member => getMenuItem(member.id, member.name, member.avatarUrl));
+        return agentMatches ? [agentMenuItem, ...memberItems] : memberItems;
       }
 
       // Create a single Fuse instance for all members
@@ -121,7 +132,7 @@ export const createCommentLinkedWidgetConfig = (
       });
       const searchResults = fuse.search(query);
 
-      return searchResults.map(result => {
+      const memberResults = searchResults.map(result => {
         const member = result.item;
         const displayName = highlightFuseTitle(
           result.matches,
@@ -133,6 +144,8 @@ export const createCommentLinkedWidgetConfig = (
           name: html`${unsafeHTML(displayName)}`,
         };
       });
+
+      return agentMatches ? [agentMenuItem, ...memberResults] : memberResults;
     });
 
     return {
@@ -140,8 +153,9 @@ export const createCommentLinkedWidgetConfig = (
       items,
       loading: memberSearchService.isLoading$.signal,
       hidden: computed(() => {
+        // Never hide if the agent matches (always show AION Agent option)
         return (
-          memberSearchService.result$.signal.value.length === 0 &&
+          items.value.length === 0 &&
           !memberSearchService.isLoading$.signal.value
         );
       }),

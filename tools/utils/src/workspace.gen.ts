@@ -1168,10 +1168,16 @@ export const PackageList = [
     workspaceDependencies: [
       'packages/common/s3-compat',
       'packages/backend/native',
+      'packages/common/agent-contracts',
       'tools/cli',
       'tools/utils',
       'packages/common/graphql',
     ],
+  },
+  {
+    location: 'packages/common/agent-contracts',
+    name: '@aion/agent-contracts',
+    workspaceDependencies: [],
   },
   {
     location: 'packages/common/debug',
@@ -1361,6 +1367,7 @@ export const PackageList = [
       'packages/common/reader',
       'packages/frontend/templates',
       'packages/frontend/track',
+      'packages/common/agent-contracts',
       'blocksuite/affine/all',
       'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
@@ -1587,6 +1594,7 @@ export type PackageName =
   | '@affine/docs'
   | '@affine/server-native'
   | '@affine/server'
+  | '@aion/agent-contracts'
   | '@affine/debug'
   | '@affine/env'
   | '@affine/error'

@@ -73,6 +73,7 @@ import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
 import { EditorOutlinePanel } from './tabs/outline';
+import { AgentPanel } from '@affine/core/modules/agent-platform';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
   const {
@@ -449,6 +450,15 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           </Scrollable.Root>
         </ViewSidebarTab>
       )}
+
+      <ViewSidebarTab tabId="agent" icon={<AiIcon />}>
+        <Scrollable.Root className={styles.sidebarScrollArea}>
+          <Scrollable.Viewport>
+            <AgentPanel />
+          </Scrollable.Viewport>
+          <Scrollable.Scrollbar />
+        </Scrollable.Root>
+      </ViewSidebarTab>
 
       <GlobalPageHistoryModal />
       {/* FIXME: wait for better ai, <PageAIOnboarding /> */}

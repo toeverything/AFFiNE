@@ -1,0 +1,134 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# AION — Full System Docker Compose
+#
+# Usage:
+#   cp .env.docker .env          # configure environment
+#   docker compose up -d         # start everything
+#   docker compose logs -f aion  # watch server logs
+#
+# Services:
+#   - postgres   : PostgreSQL 16 + pgvector
+#   - redis      : Redis cache/sessions
+#   - mailpit    : Dev email server (SMTP + web UI)
+#   - aion_migrate : DB migration job (runs once)
+#   - aion       : Main AION server (AFFiNE + Agent Platform)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: aion_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-affine}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-affine}
+      POSTGRES_DB: ${DB_DATABASE:-affine}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      POSTGRES_HOST_AUTH_METHOD: ${DB_AUTH_METHOD:-trust}
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', '${DB_USERNAME:-affine}', '-d', '${DB_DATABASE:-affine}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    restart: unless-stopped
+
+  # ─── Redis ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: aion_redis
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    restart: unless-stopped
+
+  # ─── Mailpit (dev email) ────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: aion_mailpit
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025'
+      - '${MAILPIT_WEB_PORT:-8025}:8025'
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit_data:/data
+    restart: unless-stopped
+
+  # ─── Database Migration ─────────────────────────────────────────────────
+  aion_migration:
+    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-canary}
+    container_name: aion_migration
+    command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
+    environment:
+      REDIS_SERVER_HOST: redis
+      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
+      AFFINE_INDEXER_ENABLED: 'false'
+    volumes:
+      - upload_data:/root/.affine/storage
+      - config_data:/root/.affine/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ─── AION Server (AFFiNE + Agent Platform) ──────────────────────────────
+  aion:
+    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-canary}
+    container_name: aion_server
+    ports:
+      - '${PORT:-3010}:3010'
+    environment:
+      # ── Core AFFiNE ──
+      REDIS_SERVER_HOST: redis
+      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
+      AFFINE_INDEXER_ENABLED: 'false'
+      MAILER_HOST: mailpit
+      MAILER_PORT: '1025'
+      MAILER_SENDER: 'noreply@aion.local'
+      MAILER_USER: 'noreply@aion.local'
+      MAILER_PASSWORD: 'aion'
+      MAILER_SECURE: 'false'
+
+      # ── Agent Platform ──
+      AGENT_DB_PATH: /data/agent-platform
+      AGENT_MODEL: ${AGENT_MODEL:-}
+      ALLOWED_REPOS: ${ALLOWED_REPOS:-}
+      ALLOWED_PATHS: ${ALLOWED_PATHS:-}
+      FORBIDDEN_PATHS: ${FORBIDDEN_PATHS:-}
+      MAX_PATCH_BYTES: ${MAX_PATCH_BYTES:-1000000}
+
+      # ── Claude Code auth (mount your API key or session) ──
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - upload_data:/root/.affine/storage
+      - config_data:/root/.affine/config
+      - agent_data:/data/agent-platform
+      # Mount local repos so Agent Platform can access them
+      - ${REPOS_PATH:-./repos}:/repos:rw
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      aion_migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mailpit_data:
+  upload_data:
+  config_data:
+  agent_data:

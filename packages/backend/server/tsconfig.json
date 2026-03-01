@@ -14,6 +14,7 @@
   "references": [
     { "path": "../../common/s3-compat" },
     { "path": "../native" },
+    { "path": "../../common/agent-contracts" },
     { "path": "../../../tools/cli" },
     { "path": "../../../tools/utils" },
     { "path": "../../common/graphql" }

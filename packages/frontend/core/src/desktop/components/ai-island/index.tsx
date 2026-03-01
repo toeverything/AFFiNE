@@ -49,6 +49,7 @@ export const AIIsland = () => {
     }
   }, [activeView, haveChatTab, hide, workbench]);
 
+  return null;
   return (
     <IslandContainer className={clsx(toolStyle, { hide })}>
       <div className={aiIslandWrapper} data-hide={hide}>

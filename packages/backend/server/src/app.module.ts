@@ -61,6 +61,7 @@ import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
+import { AgentPlatformModule } from './plugins/agent-platform';
 import { WorkerModule } from './plugins/worker';
 
 export const FunctionalityModules = [
@@ -211,6 +212,9 @@ export function buildAppModule(env: Env) {
     .useIf(() => env.dev || env.selfhosted, WorkerModule, SelfhostModule)
     // static frontend routes for front flavor
     .useIf(() => env.flavors.front, StaticFileModule)
+
+    // AION Agent Platform (always available — self-contained with own SQLite)
+    .use(AgentPlatformModule)
 
     // gcloud
     .useIf(() => env.gcp, GCloudModule);

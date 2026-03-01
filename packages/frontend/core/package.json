@@ -19,6 +19,7 @@
     "@affine/reader": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/track": "workspace:*",
+    "@aion/agent-contracts": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/affine-block-root": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",

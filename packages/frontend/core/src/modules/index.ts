@@ -67,6 +67,7 @@ import { configureUserspaceModule } from './userspace';
 import { configureWorkspaceModule } from './workspace';
 import { configureIndexerEmbeddingModule } from './workspace-indexer-embedding';
 import { configureWorkspacePropertyModule } from './workspace-property';
+import { configureAgentPlatformModule } from './agent-platform';
 
 export function configureCommonModules(framework: Framework) {
   configureI18nModule(framework);
@@ -132,4 +133,5 @@ export function configureCommonModules(framework: Framework) {
   configureDocSummaryModule(framework);
   configurePaywallModule(framework);
   configureIconPickerModule(framework);
+  configureAgentPlatformModule(framework);
 }

@@ -54,8 +54,10 @@ tsconfig.tsbuildinfo
 Thumbs.db
 
 # env
+.env
 *.env.local
 *.local.env
+.env.docker.local
 .history
 
 .next
@@ -89,6 +91,14 @@ packages/frontend/core/public/static/templates
 af
 af.cmd
 *.resolved
+
+# Agent Platform
+*.db
+*.db-shm
+*.db-wal
+.agent-repos/
+repos/
+backups/
 
 # playwright
 storageState.json

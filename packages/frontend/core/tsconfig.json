@@ -17,6 +17,7 @@
     { "path": "../../common/nbstore" },
     { "path": "../../common/reader" },
     { "path": "../track" },
+    { "path": "../../common/agent-contracts" },
     { "path": "../../../blocksuite/affine/all" },
     { "path": "../../../blocksuite/affine/blocks/root" },
     { "path": "../../../blocksuite/affine/components" },
