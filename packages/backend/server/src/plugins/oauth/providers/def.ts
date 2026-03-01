@@ -85,7 +85,7 @@ export abstract class OAuthProvider {
   ) {
     const response = await fetch(url, {
       ...init,
-      headers: { ...init?.headers, Accept: 'application/json', 'Accept-Encoding': 'none-compressions' },
+      headers: { ...init?.headers, Accept: 'application/json', 'Accept-Encoding': 'identity' },
     });
 
     const body = await response.text();
