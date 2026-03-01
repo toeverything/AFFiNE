@@ -140,7 +140,8 @@ export class PromptService implements OnApplicationBootstrap {
     name: string,
     model: string,
     messages: PromptMessage[],
-    config?: PromptConfig | null
+    config?: PromptConfig | null,
+    extraConfig?: { optionalModels: string[] }
   ) {
     this.ensureInMemoryPrompts();
 
@@ -150,8 +151,8 @@ export class PromptService implements OnApplicationBootstrap {
       model,
       action: existing?.action,
       optionalModels: existing?.optionalModels
-        ? [...existing.optionalModels]
-        : undefined,
+        ? [...existing.optionalModels, ...(extraConfig?.optionalModels || [])]
+        : extraConfig?.optionalModels,
       config: config ? structuredClone(config) : undefined,
       messages: this.cloneMessages(messages),
     });

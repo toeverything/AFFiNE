@@ -513,7 +513,11 @@ test('should be able to chat with api', async t => {
     );
     const messageId = await createCopilotMessage(app, sessionId);
     const ret = await chatWithText(app, sessionId, messageId);
-    t.is(ret, 'generate text to text', 'should be able to chat with text');
+    t.is(
+      ret,
+      'generate text to text stream',
+      'should be able to chat with text'
+    );
 
     const ret2 = await chatWithTextStream(app, sessionId, messageId);
     t.is(
@@ -657,7 +661,7 @@ test('should be able to retry with api', async t => {
     const histories = await getHistories(app, { workspaceId: id, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text', 'generate text to text']],
+      [['generate text to text stream', 'generate text to text stream']],
       'should be able to list history'
     );
   }
@@ -794,7 +798,7 @@ test('should be able to list history', async t => {
     const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['hello', 'generate text to text']],
+      [['hello', 'generate text to text stream']],
       'should be able to list history'
     );
   }
@@ -807,7 +811,7 @@ test('should be able to list history', async t => {
     });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text', 'hello']],
+      [['generate text to text stream', 'hello']],
       'should be able to list history'
     );
   }
@@ -858,7 +862,7 @@ test('should reject request that user have not permission', async t => {
     const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text']],
+      [['generate text to text stream']],
       'should able to list history'
     );
 

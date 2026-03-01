@@ -2098,25 +2098,23 @@ test('should handle copilot cron jobs correctly', async t => {
 });
 
 test('should resolve model correctly based on subscription status and prompt config', async t => {
-  const { db, session, subscription } = t.context;
+  const { prompt, session, subscription } = t.context;
 
   // 1) Seed a prompt that has optionalModels and proModels in config
   const promptName = 'resolve-model-test';
-  await db.aiPrompt.create({
-    data: {
-      name: promptName,
-      model: 'gemini-2.5-flash',
-      messages: {
-        create: [{ idx: 0, role: 'system', content: 'test' }],
-      },
-      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+  await prompt.set(
+    promptName,
+    'gemini-2.5-flash',
+    [{ role: 'system', content: 'test' }],
+    { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+    {
       optionalModels: [
         'gemini-2.5-flash',
         'gemini-2.5-pro',
         'claude-sonnet-4-5@20250929',
       ],
-    },
-  });
+    }
+  );
 
   // 2) Create a chat session with this prompt
   const sessionId = await session.create({

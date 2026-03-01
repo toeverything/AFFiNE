@@ -313,6 +313,14 @@
       "type": "Object",
       "desc": "Use custom models in scenarios and override default settings."
     },
+    "providers.profiles": {
+      "type": "Array",
+      "desc": "The profile list for copilot providers."
+    },
+    "providers.defaults": {
+      "type": "Object",
+      "desc": "The default provider ids for model output types and global fallback."
+    },
     "providers.openai": {
       "type": "Object",
       "desc": "The config for the openai provider.",

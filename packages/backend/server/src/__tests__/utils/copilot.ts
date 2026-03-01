@@ -641,7 +641,20 @@ export async function chatWithText(
     return res.text;
   }
 
-  return sse2array(res.text)
+  const events = sse2array(res.text);
+  const errorEvent = events.find(event => event.event === 'error');
+  if (errorEvent?.data) {
+    let message = errorEvent.data;
+    try {
+      const parsed = JSON.parse(errorEvent.data);
+      message = parsed.message || message;
+    } catch {
+      // noop: keep raw error data
+    }
+    throw new Error(message);
+  }
+
+  return events
     .filter(event => event.event === 'message')
     .map(event => event.data ?? '')
     .join('');
