@@ -179,8 +179,8 @@ export abstract class CalendarProvider {
       method: 'POST',
       body,
       headers: {
-        ...options?.headers,
         'Content-Type': 'application/x-www-form-urlencoded',
+        ...options?.headers,
       },
     });
   }
