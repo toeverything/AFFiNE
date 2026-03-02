@@ -93,7 +93,7 @@ runs:
       run: node -e "const p = $(yarn config cacheFolder --json).effective; console.log('yarn_global_cache=' + p)" >> $GITHUB_OUTPUT
 
     - name: Cache non-full yarn cache on Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       if: ${{ inputs.full-cache != 'true' && runner.os == 'Linux' }}
       with:
         path: |
@@ -105,7 +105,7 @@ runs:
     # and the decompression performance on Windows is very terrible
     # so we reduce the number of cached files on non-Linux systems by remove node_modules from cache path.
     - name: Cache non-full yarn cache on non-Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       if: ${{ inputs.full-cache != 'true' && runner.os != 'Linux' }}
       with:
         path: |
@@ -113,7 +113,7 @@ runs:
         key: node_modules-cache-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.name }}-${{ steps.system-info.outputs.release }}-${{ steps.system-info.outputs.version }}
 
     - name: Cache full yarn cache on Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       if: ${{ inputs.full-cache == 'true' && runner.os == 'Linux' }}
       with:
         path: |
@@ -122,7 +122,7 @@ runs:
         key: node_modules-cache-full-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.name }}-${{ steps.system-info.outputs.release }}-${{ steps.system-info.outputs.version }}
 
     - name: Cache full yarn cache on non-Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       if: ${{ inputs.full-cache == 'true' && runner.os != 'Linux' }}
       with:
         path: |
@@ -154,7 +154,7 @@ runs:
       # Note: Playwright's cache directory is hard coded because that's what it
       # says to do in the docs. There doesn't appear to be a command that prints
       # it out for us.
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       id: playwright-cache
       if: ${{ inputs.playwright-install == 'true' }}
       with:
@@ -189,7 +189,7 @@ runs:
       run: |
         echo "version=$(yarn why --json electron | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://' | head -n 1)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       id: electron-cache
       if: ${{ inputs.electron-install == 'true' }}
       with:
