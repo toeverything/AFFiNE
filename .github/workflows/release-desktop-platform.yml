@@ -178,14 +178,14 @@ jobs:
           mv packages/frontend/apps/electron/out/*/make/deb/${{ inputs.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.deb
           mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.flatpak
 
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         if: ${{ inputs.platform == 'darwin' }}
         with:
           subject-path: |
             ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.zip
             ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.dmg
 
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         if: ${{ inputs.platform == 'linux' }}
         with:
           subject-path: |

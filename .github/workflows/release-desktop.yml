@@ -344,7 +344,7 @@ jobs:
           mv packages/frontend/apps/electron/out/*/make/squirrel.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
           mv packages/frontend/apps/electron/out/*/make/nsis.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
 
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
