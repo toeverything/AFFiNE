@@ -97,11 +97,8 @@ COPY --from=build /app/packages/backend/server /app
 COPY --from=build /app/packages/frontend/apps/web/dist /app/static
 COPY --from=build /app/packages/frontend/admin/dist /app/static/admin
 
-# Copy node_modules + yarn for migrations (self-host-predeploy.js needs yarn/prisma)
+# Copy node_modules for prisma CLI and runtime dependencies
 COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /app/package.json /app/package.json
-COPY --from=build /app/.yarnrc.yml /app/.yarnrc.yml
-COPY --from=build /app/.yarn /app/.yarn
 
 EXPOSE 3010
 
