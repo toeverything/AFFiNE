@@ -21,6 +21,9 @@
 # OS noise
 .DS_Store
 
+# Agent Platform cloned repos (not needed in image)
+**/.agent-repos
+
 # Sourcemaps (keep server sourcemap for backend stacktraces)
 **/*.map
 !packages/backend/server/dist/main.js.map

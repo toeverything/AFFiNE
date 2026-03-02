@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { DocStorageModule } from '../../core/doc';
 import { AgentPlatformController } from './agent.controller';
 import { AgentPlatformService } from './agent.service';
-import { AgentStorageService } from './storage/sqlite.adapter';
+import { AgentStorageService } from './storage/prisma.adapter';
 import { ClaudeCodeAdapter } from './llm/claude-code.adapter';
 import { RepoAdapter } from './repo/repo.adapter';
 import { RepoSecurityService } from './repo/security';

@@ -40,7 +40,7 @@ import { Public, CurrentUser } from '../../core/auth';
 import type { CurrentUser as CurrentUserType } from '../../core/auth';
 import { AgentPlatformService } from './agent.service';
 import { ClaudeCodeAdapter } from './llm/claude-code.adapter';
-import { AgentStorageService } from './storage/sqlite.adapter';
+import { AgentStorageService } from './storage/prisma.adapter';
 
 interface SseMessage {
   data: string;
@@ -68,16 +68,14 @@ export class AgentPlatformController {
 
   @Post('runs')
   @HttpCode(HttpStatus.CREATED)
-  async createRun(
-    @CurrentUser() user: CurrentUserType,
-    @Body() body: unknown
-  ) {
+  async createRun(@CurrentUser() user: CurrentUserType, @Body() body: unknown) {
     const parsed = CreateRunRequest.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
     }
 
-    const { workspaceId, docId, briefContent, repoTarget, docTitle } = parsed.data;
+    const { workspaceId, docId, briefContent, repoTarget, docTitle } =
+      parsed.data;
     return this.agentService.createRun(
       workspaceId,
       docId,
@@ -90,8 +88,8 @@ export class AgentPlatformController {
   // ─── GET /api/agent/v1/runs/:runId ────────────────────────────────────
 
   @Get('runs/:runId')
-  getRun(@Param('runId') runId: string) {
-    const run = this.agentService.getRunDetails(runId);
+  async getRun(@Param('runId') runId: string) {
+    const run = await this.agentService.getRunDetails(runId);
     if (!run) throw new NotFoundException(`Run ${runId} not found`);
     return run;
   }
@@ -99,10 +97,7 @@ export class AgentPlatformController {
   // ─── POST /api/agent/v1/runs/:runId/ambiguity ────────────────────────
 
   @Post('runs/:runId/ambiguity')
-  async analyzeAmbiguity(
-    @Param('runId') runId: string,
-    @Body() body: unknown
-  ) {
+  async analyzeAmbiguity(@Param('runId') runId: string, @Body() body: unknown) {
     const parsed = AnalyzeAmbiguityRequest.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
@@ -114,10 +109,7 @@ export class AgentPlatformController {
   // ─── POST /api/agent/v1/runs/:runId/plan ──────────────────────────────
 
   @Post('runs/:runId/plan')
-  async generatePlan(
-    @Param('runId') runId: string,
-    @Body() body: unknown
-  ) {
+  async generatePlan(@Param('runId') runId: string, @Body() body: unknown) {
     const parsed = GeneratePlanRequest.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
@@ -133,10 +125,7 @@ export class AgentPlatformController {
   // ─── POST /api/agent/v1/runs/:runId/proposals ────────────────────────
 
   @Post('runs/:runId/proposals')
-  async proposeChanges(
-    @Param('runId') runId: string,
-    @Body() body: unknown
-  ) {
+  async proposeChanges(@Param('runId') runId: string, @Body() body: unknown) {
     const parsed = ProposeChangesRequest.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
@@ -184,10 +173,7 @@ export class AgentPlatformController {
   // ─── POST /api/agent/v1/runs/:runId/apply ────────────────────────────
 
   @Post('runs/:runId/apply')
-  async apply(
-    @Param('runId') runId: string,
-    @Body() body: unknown
-  ) {
+  async apply(@Param('runId') runId: string, @Body() body: unknown) {
     const parsed = ApplyRequest.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
@@ -199,10 +185,7 @@ export class AgentPlatformController {
   // ─── POST /api/agent/v1/runs/:runId/pr ────────────────────────────────
 
   @Post('runs/:runId/pr')
-  async createPR(
-    @Param('runId') runId: string,
-    @Body() body: unknown
-  ) {
+  async createPR(@Param('runId') runId: string, @Body() body: unknown) {
     const parsed = CreatePRRequest.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
@@ -226,7 +209,9 @@ export class AgentPlatformController {
   ) {
     const stepParsed = AgentStep.safeParse(step);
     if (!stepParsed.success) {
-      throw new BadRequestException(`Invalid step "${step}". Valid steps: ${AgentStep.options.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid step "${step}". Valid steps: ${AgentStep.options.join(', ')}`
+      );
     }
 
     const bodyParsed = ExecuteStepRequest.safeParse(body);
@@ -245,7 +230,7 @@ export class AgentPlatformController {
   // ─── GET /api/agent/v1/runs/:runId/steps — Get all step results ───────
 
   @Get('runs/:runId/steps')
-  getStepResults(@Param('runId') runId: string) {
+  async getStepResults(@Param('runId') runId: string) {
     return this.agentService.getStepResults(runId);
   }
 
@@ -263,7 +248,7 @@ export class AgentPlatformController {
   }
 
   @Get('workspaces/:wsId/repos')
-  getWorkspaceRepos(@Param('wsId') wsId: string) {
+  async getWorkspaceRepos(@Param('wsId') wsId: string) {
     return this.agentService.getWorkspaceRepos(wsId);
   }
 
@@ -291,49 +276,48 @@ export class AgentPlatformController {
   }
 
   @Delete('workspaces/:wsId/repos/:id')
-  disconnectRepo(
-    @Param('wsId') wsId: string,
-    @Param('id') id: string
-  ) {
-    const deleted = this.agentService.disconnectRepo(wsId, id);
-    if (!deleted) throw new NotFoundException(`Repo connection ${id} not found`);
+  async disconnectRepo(@Param('wsId') wsId: string, @Param('id') id: string) {
+    const deleted = await this.agentService.disconnectRepo(wsId, id);
+    if (!deleted)
+      throw new NotFoundException(`Repo connection ${id} not found`);
     return { ok: true };
   }
 
   @Patch('workspaces/:wsId/repos/:id/default')
-  setDefaultRepo(
-    @Param('wsId') wsId: string,
-    @Param('id') id: string
-  ) {
-    this.agentService.setDefaultRepo(wsId, id);
+  async setDefaultRepo(@Param('wsId') wsId: string, @Param('id') id: string) {
+    await this.agentService.setDefaultRepo(wsId, id);
     return { ok: true };
   }
 
   // ─── Workspace Rules ────────────────────────────────────────────────────
 
   @Get('workspaces/:wsId/rules')
-  getWorkspaceRules(@Param('wsId') wsId: string) {
+  async getWorkspaceRules(@Param('wsId') wsId: string) {
     return this.agentService.getWorkspaceRules(wsId);
   }
 
   @Post('workspaces/:wsId/rules')
   @HttpCode(HttpStatus.CREATED)
-  addRule(
+  async addRule(
     @Param('wsId') wsId: string,
     @Body() body: { docId: string; docTitle?: string }
   ) {
     if (!body.docId?.trim()) {
       throw new BadRequestException('docId is required');
     }
-    return this.agentService.addRule(wsId, body.docId.trim(), body.docTitle?.trim());
+    return this.agentService.addRule(
+      wsId,
+      body.docId.trim(),
+      body.docTitle?.trim()
+    );
   }
 
   @Delete('workspaces/:wsId/rules/:ruleId')
-  removeRule(
+  async removeRule(
     @Param('wsId') wsId: string,
     @Param('ruleId') ruleId: string
   ) {
-    const deleted = this.agentService.removeRule(wsId, ruleId);
+    const deleted = await this.agentService.removeRule(wsId, ruleId);
     if (!deleted) throw new NotFoundException(`Rule ${ruleId} not found`);
     return { ok: true };
   }
@@ -358,7 +342,10 @@ export class AgentPlatformController {
     if (!body.message?.trim()) {
       throw new BadRequestException('message is required');
     }
-    return this.agentService.commitRepoChanges(workspaceId, body.message.trim());
+    return this.agentService.commitRepoChanges(
+      workspaceId,
+      body.message.trim()
+    );
   }
 
   // ─── POST /api/agent/v1/chat — Interactive chat with persistence ─────
@@ -366,7 +353,8 @@ export class AgentPlatformController {
   @Post('chat')
   async chat(
     @CurrentUser() user: CurrentUserType,
-    @Body() body: {
+    @Body()
+    body: {
       message: string;
       workspaceId?: string;
       docId?: string;
@@ -386,23 +374,32 @@ export class AgentPlatformController {
       let chatSessionId: string | undefined;
 
       if (body.workspaceId && body.docId) {
-        const chatSession = this.storage.getOrCreateChatSession(body.workspaceId, body.docId);
+        const chatSession = await this.storage.getOrCreateChatSession(
+          body.workspaceId,
+          body.docId
+        );
         chatSessionId = chatSession.id;
-        claudeSessionId = claudeSessionId ?? chatSession.claudeSessionId ?? undefined;
+        claudeSessionId =
+          claudeSessionId ?? chatSession.claudeSessionId ?? undefined;
 
         // Persist user message
-        this.storage.addChatMessage(chatSession.id, 'user', body.message);
+        await this.storage.addChatMessage(chatSession.id, 'user', body.message);
       }
 
       // Resolve repo cwd: explicit cwd > workspace default repo > process.cwd()
       let repoCwd = body.cwd;
       if (!repoCwd && body.workspaceId) {
-        const repoTarget = await this.agentService.getWorkspaceRepoTarget(body.workspaceId);
+        const repoTarget = await this.agentService.getWorkspaceRepoTarget(
+          body.workspaceId
+        );
         if (repoTarget?.localPath) {
           repoCwd = repoTarget.localPath;
           // Ensure we're on the correct branch for this doc
           if (body.docId) {
-            const branch = await this.agentService.ensureDocBranch(body.workspaceId, body.docId);
+            const branch = await this.agentService.ensureDocBranch(
+              body.workspaceId,
+              body.docId
+            );
             this.logger.log(`Chat on branch ${branch}, cwd: ${repoCwd}`);
           }
         }
@@ -414,25 +411,41 @@ export class AgentPlatformController {
         : null;
 
       if (projectRules) {
-        this.logger.log(`[chat] Loaded project rules (${projectRules.length} chars) for workspace ${body.workspaceId}`);
-        this.logger.debug(`[chat] Rules content:\n${projectRules.substring(0, 500)}${projectRules.length > 500 ? '...' : ''}`);
+        this.logger.log(
+          `[chat] Loaded project rules (${projectRules.length} chars) for workspace ${body.workspaceId}`
+        );
+        this.logger.debug(
+          `[chat] Rules content:\n${projectRules.substring(0, 500)}${projectRules.length > 500 ? '...' : ''}`
+        );
       } else {
-        this.logger.log(`[chat] No project rules found for workspace ${body.workspaceId ?? 'none'}`);
+        this.logger.log(
+          `[chat] No project rules found for workspace ${body.workspaceId ?? 'none'}`
+        );
       }
 
       const result = await this.claudeCode.chat(body.message, {
         sessionId: claudeSessionId,
         cwd: repoCwd,
-        systemPrompt: await this.buildSystemPrompt(body.documentContent, projectRules),
+        systemPrompt: await this.buildSystemPrompt(
+          body.documentContent,
+          projectRules
+        ),
         allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash(git:*)'],
         timeoutMs: 10 * 60 * 1000, // 10 min — chat with tools needs more time
       });
 
       // Persist assistant reply and Claude session ID
       if (chatSessionId) {
-        this.storage.addChatMessage(chatSessionId, 'assistant', result.text);
+        await this.storage.addChatMessage(
+          chatSessionId,
+          'assistant',
+          result.text
+        );
         if (result.sessionId) {
-          this.storage.updateChatSessionClaudeId(chatSessionId, result.sessionId);
+          await this.storage.updateChatSessionClaudeId(
+            chatSessionId,
+            result.sessionId
+          );
         }
       }
 
@@ -447,12 +460,15 @@ export class AgentPlatformController {
   // ─── GET /api/agent/v1/chat/history/:workspaceId/:docId ───────────────
 
   @Get('chat/history/:workspaceId/:docId')
-  getChatHistory(
+  async getChatHistory(
     @Param('workspaceId') workspaceId: string,
     @Param('docId') docId: string
   ) {
-    const session = this.storage.getOrCreateChatSession(workspaceId, docId);
-    const messages = this.storage.getChatMessages(session.id);
+    const session = await this.storage.getOrCreateChatSession(
+      workspaceId,
+      docId
+    );
+    const messages = await this.storage.getChatMessages(session.id);
     return {
       sessionId: session.claudeSessionId,
       messages,
@@ -462,11 +478,11 @@ export class AgentPlatformController {
   // ─── DELETE /api/agent/v1/chat/history/:workspaceId/:docId ─────────────
 
   @Delete('chat/history/:workspaceId/:docId')
-  clearChatHistory(
+  async clearChatHistory(
     @Param('workspaceId') workspaceId: string,
     @Param('docId') docId: string
   ) {
-    this.storage.deleteChatSession(workspaceId, docId);
+    await this.storage.deleteChatSession(workspaceId, docId);
     return { ok: true };
   }
 
@@ -474,7 +490,8 @@ export class AgentPlatformController {
 
   @Post('chat/apply-edit')
   async applyEdit(
-    @Body() body: {
+    @Body()
+    body: {
       workspaceId: string;
       docId: string;
       original: string;
@@ -482,8 +499,15 @@ export class AgentPlatformController {
       documentContent?: string;
     }
   ) {
-    if (!body.workspaceId || !body.docId || !body.original || body.replacement == null) {
-      throw new BadRequestException('workspaceId, docId, original, and replacement are required');
+    if (
+      !body.workspaceId ||
+      !body.docId ||
+      !body.original ||
+      body.replacement == null
+    ) {
+      throw new BadRequestException(
+        'workspaceId, docId, original, and replacement are required'
+      );
     }
 
     try {
@@ -498,7 +522,10 @@ export class AgentPlatformController {
       return result;
     } catch (err) {
       const msg = (err as Error).message ?? String(err);
-      this.logger.error(`POST /chat/apply-edit error: ${msg}`, (err as Error).stack);
+      this.logger.error(
+        `POST /chat/apply-edit error: ${msg}`,
+        (err as Error).stack
+      );
       return { ok: false, error: `Apply edit failed: ${msg}` };
     }
   }
@@ -508,7 +535,8 @@ export class AgentPlatformController {
   @Post('chat/stream')
   @Sse()
   chatStream(
-    @Body() body: {
+    @Body()
+    body: {
       message: string;
       workspaceId?: string;
       docId?: string;
@@ -521,85 +549,125 @@ export class AgentPlatformController {
       throw new BadRequestException('message is required');
     }
 
-    // Resolve Claude session ID from persisted chat session
-    let claudeSessionId = body.sessionId;
-    let chatSessionId: string | undefined;
-
-    if (body.workspaceId && body.docId) {
-      const chatSession = this.storage.getOrCreateChatSession(body.workspaceId, body.docId);
-      chatSessionId = chatSession.id;
-      claudeSessionId = claudeSessionId ?? chatSession.claudeSessionId ?? undefined;
-
-      // Persist user message
-      this.storage.addChatMessage(chatSession.id, 'user', body.message);
-    }
-
-    // Resolve repo cwd (sync — getWorkspaceRepoTarget is fast with cached data)
-    const repoCwd = body.cwd;
-
     const subject$ = new Subject<SseMessage>();
 
-    // Resolve repo cwd async, then start streaming
+    // Resolve session + repo cwd async, then start streaming
     const startStream = async () => {
-      let cwd = repoCwd;
+      let claudeSessionId = body.sessionId;
+      let chatSessionId: string | undefined;
+
+      if (body.workspaceId && body.docId) {
+        const chatSession = await this.storage.getOrCreateChatSession(
+          body.workspaceId,
+          body.docId
+        );
+        chatSessionId = chatSession.id;
+        claudeSessionId =
+          claudeSessionId ?? chatSession.claudeSessionId ?? undefined;
+
+        // Persist user message
+        await this.storage.addChatMessage(chatSession.id, 'user', body.message);
+      }
+
+      let cwd = body.cwd;
       if (!cwd && body.workspaceId) {
-        const repoTarget = await this.agentService.getWorkspaceRepoTarget(body.workspaceId);
+        const repoTarget = await this.agentService.getWorkspaceRepoTarget(
+          body.workspaceId
+        );
         if (repoTarget?.localPath) cwd = repoTarget.localPath;
       }
-      return cwd;
+      return { cwd, claudeSessionId, chatSessionId };
     };
 
-    startStream().then(async (cwd) => {
-    const projectRules = body.workspaceId
-      ? await this.agentService.loadProjectRules(body.workspaceId)
-      : null;
+    startStream()
+      .then(async ({ cwd, claudeSessionId, chatSessionId }) => {
+        const projectRules = body.workspaceId
+          ? await this.agentService.loadProjectRules(body.workspaceId)
+          : null;
 
-    if (projectRules) {
-      this.logger.log(`[stream] Loaded project rules (${projectRules.length} chars) for workspace ${body.workspaceId}`);
-      this.logger.debug(`[stream] Rules content:\n${projectRules.substring(0, 500)}${projectRules.length > 500 ? '...' : ''}`);
-    } else {
-      this.logger.log(`[stream] No project rules found for workspace ${body.workspaceId ?? 'none'}`);
-    }
-
-    this.claudeCode
-      .chatStream(body.message, {
-        sessionId: claudeSessionId,
-        cwd,
-        systemPrompt: await this.buildSystemPrompt(body.documentContent, projectRules),
-        allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash(git:*)'],
-      }, (chunk) => {
-        subject$.next({ data: JSON.stringify(chunk) });
-      })
-      .then((final) => {
-        // Persist assistant reply and Claude session ID
-        if (chatSessionId) {
-          this.storage.addChatMessage(chatSessionId, 'assistant', final.text);
-          if (final.sessionId) {
-            this.storage.updateChatSessionClaudeId(chatSessionId, final.sessionId);
-          }
+        if (projectRules) {
+          this.logger.log(
+            `[stream] Loaded project rules (${projectRules.length} chars) for workspace ${body.workspaceId}`
+          );
+          this.logger.debug(
+            `[stream] Rules content:\n${projectRules.substring(0, 500)}${projectRules.length > 500 ? '...' : ''}`
+          );
+        } else {
+          this.logger.log(
+            `[stream] No project rules found for workspace ${body.workspaceId ?? 'none'}`
+          );
         }
-        subject$.next({ data: JSON.stringify({ type: 'done', ...final }) });
-        subject$.complete();
+
+        this.claudeCode
+          .chatStream(
+            body.message,
+            {
+              sessionId: claudeSessionId,
+              cwd,
+              systemPrompt: await this.buildSystemPrompt(
+                body.documentContent,
+                projectRules
+              ),
+              allowedTools: [
+                'Read',
+                'Glob',
+                'Grep',
+                'Edit',
+                'Write',
+                'Bash(git:*)',
+              ],
+            },
+            chunk => {
+              subject$.next({ data: JSON.stringify(chunk) });
+            }
+          )
+          .then(async final => {
+            // Persist assistant reply and Claude session ID
+            if (chatSessionId) {
+              await this.storage.addChatMessage(
+                chatSessionId,
+                'assistant',
+                final.text
+              );
+              if (final.sessionId) {
+                await this.storage.updateChatSessionClaudeId(
+                  chatSessionId,
+                  final.sessionId
+                );
+              }
+            }
+            subject$.next({ data: JSON.stringify({ type: 'done', ...final }) });
+            subject$.complete();
+          })
+          .catch(err => {
+            subject$.next({
+              data: JSON.stringify({
+                type: 'error',
+                message: (err as Error).message,
+              }),
+            });
+            subject$.complete();
+          });
       })
-      .catch((err) => {
+      .catch(err => {
         subject$.next({
-          data: JSON.stringify({ type: 'error', message: (err as Error).message }),
+          data: JSON.stringify({
+            type: 'error',
+            message: (err as Error).message,
+          }),
         });
         subject$.complete();
       });
-    }).catch((err) => {
-      subject$.next({
-        data: JSON.stringify({ type: 'error', message: (err as Error).message }),
-      });
-      subject$.complete();
-    });
 
     return subject$.asObservable();
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────
 
-  private async buildSystemPrompt(documentContent?: string, projectRules?: string | null): Promise<string> {
+  private async buildSystemPrompt(
+    documentContent?: string,
+    projectRules?: string | null
+  ): Promise<string> {
     const editInstructions = [
       'EDICIONES AL DOCUMENTO:',
       'Cuando el usuario te pida mejorar, reescribir, editar o llenar secciones del documento, ' +

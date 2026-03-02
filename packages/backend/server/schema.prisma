@@ -1136,3 +1136,143 @@ model CalendarEventInstance {
   @@index([calendarEventId, startAtUtc])
   @@map("calendar_event_instances")
 }
+
+// ─── Agent Platform ──────────────────────────────────────────────────────────
+
+model AgentRun {
+  runId            String   @id @default(uuid()) @map("run_id") @db.VarChar
+  status           String   @default("created") @db.VarChar
+  workspaceId      String   @map("workspace_id") @db.VarChar
+  docId            String   @map("doc_id") @db.VarChar
+  fingerprint      String   @db.VarChar
+  repoId           String?  @map("repo_id") @db.VarChar
+  repoLocalPath    String?  @map("repo_local_path") @db.VarChar
+  repoRemoteUrl    String?  @map("repo_remote_url") @db.VarChar
+  repoDefaultBranch String? @default("main") @map("repo_default_branch") @db.VarChar
+  claudeSessionId  String?  @map("claude_session_id") @db.VarChar
+  branchName       String?  @map("branch_name") @db.VarChar
+  error            String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  proposals   AgentProposal[]
+  approvals   AgentApproval[]
+  auditEvents AgentAuditEvent[]
+  stepResults AgentStepResult[]
+
+  @@index([workspaceId, docId])
+  @@map("agent_runs")
+}
+
+model AgentProposal {
+  proposalId    String   @id @default(uuid()) @map("proposal_id") @db.VarChar
+  runId         String   @map("run_id") @db.VarChar
+  ambiguities   Json     @default("[]") @db.Json
+  plan          Json?    @db.Json
+  briefEdits    Json     @default("[]") @map("brief_edits") @db.Json
+  repoPatches   Json     @default("[]") @map("repo_patches") @db.Json
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  run       AgentRun        @relation(fields: [runId], references: [runId], onDelete: Cascade)
+  approvals AgentApproval[]
+
+  @@index([runId])
+  @@map("agent_proposals")
+}
+
+model AgentApproval {
+  approvalId String   @id @default(uuid()) @map("approval_id") @db.VarChar
+  runId      String   @map("run_id") @db.VarChar
+  proposalId String   @map("proposal_id") @db.VarChar
+  actor      String   @db.VarChar
+  approvedAt DateTime @default(now()) @map("approved_at") @db.Timestamptz(3)
+
+  run      AgentRun      @relation(fields: [runId], references: [runId], onDelete: Cascade)
+  proposal AgentProposal @relation(fields: [proposalId], references: [proposalId], onDelete: Cascade)
+
+  @@index([runId])
+  @@map("agent_approvals")
+}
+
+model AgentAuditEvent {
+  id      String   @id @default(uuid()) @db.VarChar
+  runId   String   @map("run_id") @db.VarChar
+  type    String   @db.VarChar
+  payload Json     @default("{}") @db.Json
+  at      DateTime @default(now()) @db.Timestamptz(3)
+
+  run AgentRun @relation(fields: [runId], references: [runId], onDelete: Cascade)
+
+  @@index([runId])
+  @@map("agent_audit_events")
+}
+
+model AgentStepResult {
+  id        String   @id @default(uuid()) @db.VarChar
+  runId     String   @map("run_id") @db.VarChar
+  step      String   @db.VarChar
+  result    Json     @db.Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  run AgentRun @relation(fields: [runId], references: [runId], onDelete: Cascade)
+
+  @@index([runId])
+  @@map("agent_step_results")
+}
+
+model AgentWorkspaceRepo {
+  id             String   @id @default(uuid()) @db.VarChar
+  workspaceId    String   @map("workspace_id") @db.VarChar
+  githubRepoId   Int      @map("github_repo_id") @db.Integer
+  fullName       String   @map("full_name") @db.VarChar
+  defaultBranch  String   @default("main") @map("default_branch") @db.VarChar
+  localPath      String   @map("local_path") @db.VarChar
+  isDefault      Boolean  @default(false) @map("is_default")
+  connectedAt    DateTime @default(now()) @map("connected_at") @db.Timestamptz(3)
+  connectedBy    String   @map("connected_by") @db.VarChar
+
+  @@unique([workspaceId, githubRepoId])
+  @@index([workspaceId])
+  @@map("agent_workspace_repos")
+}
+
+model AgentWorkspaceRule {
+  id          String   @id @default(uuid()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  docId       String   @map("doc_id") @db.VarChar
+  docTitle    String?  @map("doc_title") @db.VarChar
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([workspaceId, docId])
+  @@index([workspaceId])
+  @@map("agent_workspace_rules")
+}
+
+model AgentChatSession {
+  id              String   @id @default(uuid()) @db.VarChar
+  workspaceId     String   @map("workspace_id") @db.VarChar
+  docId           String   @map("doc_id") @db.VarChar
+  claudeSessionId String?  @map("claude_session_id") @db.VarChar
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  messages AgentChatMessage[]
+
+  @@unique([workspaceId, docId])
+  @@map("agent_chat_sessions")
+}
+
+model AgentChatMessage {
+  id        String   @id @default(uuid()) @db.VarChar
+  sessionId String   @map("session_id") @db.VarChar
+  role      String   @db.VarChar
+  content   String   @db.Text
+  timestamp DateTime @default(now()) @db.Timestamptz(3)
+
+  session AgentChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("agent_chat_messages")
+}

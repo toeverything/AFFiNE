@@ -1,51 +1,54 @@
 #!/bin/bash
-# Backup Agent Platform SQLite data
+# Backup Agent Platform data from PostgreSQL
 # Usage: ./scripts/backup-agent-data.sh [backup_dir]
 
 set -euo pipefail
 
-DB_PATH="${AGENT_DB_PATH:-packages/backend/server}/agent-platform.db"
+DATABASE_URL="${DATABASE_URL:-}"
 BACKUP_DIR="${1:-backups}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/agent-platform_${TIMESTAMP}.db"
 DUMP_FILE="${BACKUP_DIR}/agent-platform_${TIMESTAMP}.sql"
 
-if [ ! -f "$DB_PATH" ]; then
-  echo "ERROR: Database not found at $DB_PATH"
+if [ -z "$DATABASE_URL" ]; then
+  echo "ERROR: DATABASE_URL environment variable is not set"
   exit 1
 fi
 
 mkdir -p "$BACKUP_DIR"
 
-# 1. Binary copy (checkpoint WAL first for consistency)
-echo "Checkpointing WAL..."
-sqlite3 "$DB_PATH" "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null || true
+# Agent Platform tables
+TABLES=(
+  agent_runs
+  agent_proposals
+  agent_approvals
+  agent_audit_events
+  agent_step_results
+  agent_workspace_repos
+  agent_workspace_rules
+  agent_chat_sessions
+  agent_chat_messages
+)
 
-echo "Copying database to $BACKUP_FILE..."
-cp "$DB_PATH" "$BACKUP_FILE"
+# Build pg_dump table flags
+TABLE_FLAGS=""
+for t in "${TABLES[@]}"; do
+  TABLE_FLAGS="${TABLE_FLAGS} -t ${t}"
+done
 
-# 2. SQL dump (portable, can restore on any SQLite version)
-echo "Dumping SQL to $DUMP_FILE..."
-sqlite3 "$DB_PATH" ".dump" > "$DUMP_FILE"
+echo "Dumping Agent Platform tables to $DUMP_FILE..."
+# shellcheck disable=SC2086
+pg_dump "$DATABASE_URL" ${TABLE_FLAGS} --data-only --inserts > "$DUMP_FILE"
 
-# 3. Show summary
+# Show summary
 echo ""
 echo "=== Backup Summary ==="
-echo "Binary: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
-echo "SQL:    $DUMP_FILE ($(du -h "$DUMP_FILE" | cut -f1))"
+echo "SQL: $DUMP_FILE ($(du -h "$DUMP_FILE" | cut -f1))"
 echo ""
 echo "Data counts:"
-sqlite3 "$DB_PATH" "
-  SELECT 'workspace_rules: ' || COUNT(*) FROM workspace_rules;
-  SELECT 'workspace_repos: ' || COUNT(*) FROM workspace_repos;
-  SELECT 'chat_sessions:   ' || COUNT(*) FROM chat_sessions;
-  SELECT 'chat_messages:   ' || COUNT(*) FROM chat_messages;
-  SELECT 'runs:            ' || COUNT(*) FROM runs;
-"
+for t in "${TABLES[@]}"; do
+  COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM ${t};" 2>/dev/null | tr -d ' ' || echo "?")
+  printf "  %-25s %s\n" "${t}:" "${COUNT}"
+done
 echo ""
-echo "To restore on server:"
-echo "  # Option A: copy binary"
-echo "  cp $BACKUP_FILE /path/to/server/agent-platform.db"
-echo ""
-echo "  # Option B: restore from SQL dump"
-echo "  sqlite3 /path/to/server/agent-platform.db < $DUMP_FILE"
+echo "To restore:"
+echo "  psql \$DATABASE_URL < $DUMP_FILE"

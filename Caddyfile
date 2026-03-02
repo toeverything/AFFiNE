@@ -1,0 +1,3 @@
+{$DOMAIN} {
+    reverse_proxy aion:3010
+}

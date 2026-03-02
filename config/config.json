@@ -1,0 +1,10 @@
+{
+  "oauth": {
+    "providers": {
+      "google": {
+        "clientId": "",
+        "clientSecret": ""
+      }
+    }
+  }
+}

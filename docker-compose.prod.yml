@@ -1,17 +1,17 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# AION — Full System Docker Compose
+# AION — Production Docker Compose
 #
 # Usage:
-#   cp .env.docker .env          # configure environment
-#   docker compose up -d         # start everything
-#   docker compose logs -f aion  # watch server logs
+#   cp .env.prod.example .env       # configure environment
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml logs -f aion
 #
 # Services:
-#   - postgres   : PostgreSQL 16 + pgvector
-#   - redis      : Redis cache/sessions
-#   - mailpit    : Dev email server (SMTP + web UI)
-#   - aion_migrate : DB migration job (runs once)
-#   - aion       : Main AION server (AFFiNE + Agent Platform)
+#   - postgres      : PostgreSQL 16 + pgvector
+#   - redis         : Redis cache/sessions
+#   - aion_migration: DB migration job (runs once)
+#   - aion          : Main AION server (AFFiNE + Agent Platform)
+#   - caddy         : Reverse proxy with automatic HTTPS (Let's Encrypt)
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -23,10 +23,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_USERNAME:-affine}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-affine}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: ${DB_DATABASE:-affine}
       POSTGRES_INITDB_ARGS: '--data-checksums'
-      POSTGRES_HOST_AUTH_METHOD: ${DB_AUTH_METHOD:-trust}
     healthcheck:
       test:
         [
@@ -40,8 +39,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - '${DB_PORT:-5432}:5432'
     restart: unless-stopped
 
   # ─── Redis ───────────────────────────────────────────────────────────────
@@ -53,38 +50,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - '${REDIS_PORT:-6379}:6379'
-    restart: unless-stopped
-
-  # ─── Mailpit (dev email) ────────────────────────────────────────────────
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: aion_mailpit
-    ports:
-      - '${MAILPIT_SMTP_PORT:-1025}:1025'
-      - '${MAILPIT_WEB_PORT:-8025}:8025'
-    environment:
-      MP_MAX_MESSAGES: 5000
-      MP_DATABASE: /data/mailpit.db
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-    volumes:
-      - mailpit_data:/data
     restart: unless-stopped
 
   # ─── Database Migration ─────────────────────────────────────────────────
   aion_migration:
-    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-canary}
+    build: .
     container_name: aion_migration
     command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
     environment:
       REDIS_SERVER_HOST: redis
-      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
+      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:?}@postgres:5432/${DB_DATABASE:-affine}
       AFFINE_INDEXER_ENABLED: 'false'
     volumes:
       - upload_data:/root/.affine/storage
-      - config_data:/root/.affine/config
+      - ./config:/root/.affine/config
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,21 +72,23 @@ services:
 
   # ─── AION Server (AFFiNE + Agent Platform) ──────────────────────────────
   aion:
-    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-canary}
+    build: .
     container_name: aion_server
-    ports:
-      - '${PORT:-3010}:3010'
     environment:
       # ── Core AFFiNE ──
       REDIS_SERVER_HOST: redis
-      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:-affine}@postgres:5432/${DB_DATABASE:-affine}
+      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:?}@postgres:5432/${DB_DATABASE:-affine}
+      AFFINE_SERVER_EXTERNAL_URL: https://${DOMAIN:?DOMAIN is required}
+      AFFINE_SERVER_HTTPS: 'true'
       AFFINE_INDEXER_ENABLED: 'false'
-      MAILER_HOST: mailpit
-      MAILER_PORT: '1025'
-      MAILER_SENDER: 'noreply@aion.local'
-      MAILER_USER: 'noreply@aion.local'
-      MAILER_PASSWORD: 'aion'
-      MAILER_SECURE: 'false'
+
+      # ── Mail (optional — configure for invite emails) ──
+      MAILER_HOST: ${MAILER_HOST:-}
+      MAILER_PORT: ${MAILER_PORT:-587}
+      MAILER_SENDER: ${MAILER_SENDER:-}
+      MAILER_USER: ${MAILER_USER:-}
+      MAILER_PASSWORD: ${MAILER_PASSWORD:-}
+      MAILER_SECURE: ${MAILER_SECURE:-true}
 
       # ── Agent Platform ──
       AGENT_MODEL: ${AGENT_MODEL:-}
@@ -116,12 +97,13 @@ services:
       FORBIDDEN_PATHS: ${FORBIDDEN_PATHS:-}
       MAX_PATCH_BYTES: ${MAX_PATCH_BYTES:-1000000}
 
-      # ── Claude Code auth (mount your API key or session) ──
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # ── Claude Code auth ──
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required}
+
+      # ── Google OAuth (configured in config/config.json) ──
     volumes:
       - upload_data:/root/.affine/storage
-      - config_data:/root/.affine/config
-      # Mount local repos so Agent Platform can access them
+      - ./config:/root/.affine/config
       - ${REPOS_PATH:-./repos}:/repos:rw
     depends_on:
       redis:
@@ -132,8 +114,26 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # ─── Caddy (HTTPS reverse proxy) ────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: aion_caddy
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN is required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - aion
+    restart: unless-stopped
+
 volumes:
   postgres_data:
-  mailpit_data:
   upload_data:
-  config_data:
+  caddy_data:
+  caddy_config:

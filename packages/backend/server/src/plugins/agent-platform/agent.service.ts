@@ -27,8 +27,11 @@ import type {
 } from '@aion/agent-contracts';
 import { AGENT_STEP_LABELS } from '@aion/agent-contracts';
 import { join } from 'node:path';
-import type { WorkspaceRepoConnection, WorkspaceRule } from '@aion/agent-contracts';
-import { AgentStorageService } from './storage/sqlite.adapter';
+import type {
+  WorkspaceRepoConnection,
+  WorkspaceRule,
+} from '@aion/agent-contracts';
+import { AgentStorageService } from './storage/prisma.adapter';
 import { ClaudeCodeAdapter } from './llm/claude-code.adapter';
 import { RepoAdapter, slugify } from './repo/repo.adapter';
 import { RepoSecurityService } from './repo/security';
@@ -36,7 +39,8 @@ import { GitHubAppService } from './github/github-app.service';
 import { DocWriter } from '../../core/doc/writer';
 import { DocReader } from '../../core/doc/reader';
 
-const REPOS_BASE_PATH = process.env.AGENT_REPOS_PATH || join(process.cwd(), '.agent-repos');
+const REPOS_BASE_PATH =
+  process.env.AGENT_REPOS_PATH || join(process.cwd(), '.agent-repos');
 
 /** Maps AgentStep → [ingStatus, edStatus] */
 const STEP_STATUS_MAP: Record<string, [RunStatus, RunStatus]> = {
@@ -73,15 +77,14 @@ export class AgentPlatformService {
     repoTarget?: RepoTarget,
     docTitle?: string
   ): Promise<Run> {
-    const fingerprint = createHash('sha256')
-      .update(briefContent)
-      .digest('hex');
+    const fingerprint = createHash('sha256').update(briefContent).digest('hex');
 
     const briefRef = { workspaceId, docId, fingerprint };
 
     // Auto-resolve repo from workspace if not explicitly provided
     if (!repoTarget) {
-      repoTarget = await this.getWorkspaceRepoTarget(workspaceId) ?? undefined;
+      repoTarget =
+        (await this.getWorkspaceRepoTarget(workspaceId)) ?? undefined;
     }
 
     let branchName: string | undefined;
@@ -100,32 +103,33 @@ export class AgentPlatformService {
       );
     }
 
-    return this.storage.createRun(briefRef, repoTarget ?? undefined, branchName);
+    return this.storage.createRun(
+      briefRef,
+      repoTarget ?? undefined,
+      branchName
+    );
   }
 
-  getRun(runId: string): Run | null {
+  async getRun(runId: string): Promise<Run | null> {
     return this.storage.getRun(runId);
   }
 
-  getRunDetails(runId: string) {
-    const run = this.storage.getRun(runId);
+  async getRunDetails(runId: string) {
+    const run = await this.storage.getRun(runId);
     if (!run) return null;
     return {
       ...run,
-      proposals: this.storage.getProposalsByRun(runId),
-      approvals: this.storage.getApprovalsByRun(runId),
-      auditLog: this.storage.getAuditLog(runId),
+      proposals: await this.storage.getProposalsByRun(runId),
+      approvals: await this.storage.getApprovalsByRun(runId),
+      auditLog: await this.storage.getAuditLog(runId),
     };
   }
 
   // ─── Ambiguity analysis ─────────────────────────────────────────────────
 
-  async analyzeAmbiguity(
-    runId: string,
-    briefContent: string
-  ) {
-    const run = this.requireRun(runId);
-    this.storage.updateRunStatus(runId, 'analyzing');
+  async analyzeAmbiguity(runId: string, briefContent: string) {
+    const run = await this.requireRun(runId);
+    await this.storage.updateRunStatus(runId, 'analyzing');
 
     try {
       const result = await this.claudeCode.analyzeAmbiguity(briefContent, {
@@ -135,18 +139,22 @@ export class AgentPlatformService {
       });
 
       if (result.sessionId) {
-        this.storage.updateClaudeSession(runId, result.sessionId);
+        await this.storage.updateClaudeSession(runId, result.sessionId);
       }
 
-      this.storage.updateRunStatus(runId, 'analyzed');
-      this.storage.addAuditEvent(runId, 'ambiguity.analyzed', {
+      await this.storage.updateRunStatus(runId, 'analyzed');
+      await this.storage.addAuditEvent(runId, 'ambiguity.analyzed', {
         count: result.ambiguities.length,
         ambiguities: result.ambiguities,
       });
 
       return { runId, ambiguities: result.ambiguities };
     } catch (err) {
-      this.storage.updateRunStatus(runId, 'failed', (err as Error).message);
+      await this.storage.updateRunStatus(
+        runId,
+        'failed',
+        (err as Error).message
+      );
       throw err;
     }
   }
@@ -158,8 +166,8 @@ export class AgentPlatformService {
     briefContent: string,
     resolvedAmbiguities?: Array<{ id: string; answer: string }>
   ) {
-    const run = this.requireRun(runId);
-    this.storage.updateRunStatus(runId, 'planning');
+    const run = await this.requireRun(runId);
+    await this.storage.updateRunStatus(runId, 'planning');
 
     try {
       const result = await this.claudeCode.generatePlan(
@@ -173,18 +181,22 @@ export class AgentPlatformService {
       );
 
       if (result.sessionId) {
-        this.storage.updateClaudeSession(runId, result.sessionId);
+        await this.storage.updateClaudeSession(runId, result.sessionId);
       }
 
-      this.storage.updateRunStatus(runId, 'planned');
-      this.storage.addAuditEvent(runId, 'plan.generated', {
+      await this.storage.updateRunStatus(runId, 'planned');
+      await this.storage.addAuditEvent(runId, 'plan.generated', {
         epicCount: result.plan.epics.length,
         taskCount: result.plan.tasks.length,
       });
 
       return { runId, plan: result.plan };
     } catch (err) {
-      this.storage.updateRunStatus(runId, 'failed', (err as Error).message);
+      await this.storage.updateRunStatus(
+        runId,
+        'failed',
+        (err as Error).message
+      );
       throw err;
     }
   }
@@ -196,22 +208,18 @@ export class AgentPlatformService {
     briefContent: string,
     plan?: Plan
   ): Promise<Proposal> {
-    const run = this.requireRun(runId);
-    this.storage.updateRunStatus(runId, 'proposing');
+    const run = await this.requireRun(runId);
+    await this.storage.updateRunStatus(runId, 'proposing');
 
     try {
-      const result = await this.claudeCode.proposeChanges(
-        briefContent,
-        plan,
-        {
-          cwd: run.repoTarget?.localPath,
-          sessionId: run.claudeSessionId ?? undefined,
-          model: process.env.AGENT_MODEL,
-        }
-      );
+      const result = await this.claudeCode.proposeChanges(briefContent, plan, {
+        cwd: run.repoTarget?.localPath,
+        sessionId: run.claudeSessionId ?? undefined,
+        model: process.env.AGENT_MODEL,
+      });
 
       if (result.sessionId) {
-        this.storage.updateClaudeSession(runId, result.sessionId);
+        await this.storage.updateClaudeSession(runId, result.sessionId);
       }
 
       // Validate patches security before persisting
@@ -222,7 +230,7 @@ export class AgentPlatformService {
         );
       }
 
-      const proposal = this.storage.createProposal(runId, {
+      const proposal = await this.storage.createProposal(runId, {
         ambiguities: result.ambiguities,
         plan: result.plan,
         briefEdits: result.briefEdits,
@@ -230,26 +238,26 @@ export class AgentPlatformService {
         notes: result.notes,
       });
 
-      this.storage.updateRunStatus(runId, 'proposed');
+      await this.storage.updateRunStatus(runId, 'proposed');
       return proposal;
     } catch (err) {
-      this.storage.updateRunStatus(runId, 'failed', (err as Error).message);
+      await this.storage.updateRunStatus(
+        runId,
+        'failed',
+        (err as Error).message
+      );
       throw err;
     }
   }
 
   // ─── Preview diffs ─────────────────────────────────────────────────────
 
-  async preview(
-    runId: string,
-    proposalId: string,
-    briefContent: string
-  ) {
-    const run = this.requireRun(runId);
-    const proposal = this.storage.getProposal(proposalId);
+  async preview(runId: string, proposalId: string, briefContent: string) {
+    const run = await this.requireRun(runId);
+    const proposal = await this.storage.getProposal(proposalId);
     if (!proposal) throw new Error(`Proposal ${proposalId} not found`);
 
-    this.storage.updateRunStatus(runId, 'previewing');
+    await this.storage.updateRunStatus(runId, 'previewing');
 
     let briefDiff: string | null = null;
     let repoDiff: string | null = null;
@@ -267,8 +275,8 @@ export class AgentPlatformService {
       );
     }
 
-    this.storage.updateRunStatus(runId, 'previewed');
-    this.storage.addAuditEvent(runId, 'preview.generated', {
+    await this.storage.updateRunStatus(runId, 'previewed');
+    await this.storage.addAuditEvent(runId, 'preview.generated', {
       proposalId,
       hasBriefDiff: !!briefDiff,
       hasRepoDiff: !!repoDiff,
@@ -279,30 +287,30 @@ export class AgentPlatformService {
 
   // ─── Approve ───────────────────────────────────────────────────────────
 
-  approve(
+  async approve(
     runId: string,
     proposalId: string,
     actor: string
-  ): Approval {
-    this.requireRun(runId);
-    const proposal = this.storage.getProposal(proposalId);
+  ): Promise<Approval> {
+    await this.requireRun(runId);
+    const proposal = await this.storage.getProposal(proposalId);
     if (!proposal) throw new Error(`Proposal ${proposalId} not found`);
 
-    this.storage.updateRunStatus(runId, 'approved');
+    await this.storage.updateRunStatus(runId, 'approved');
     return this.storage.createApproval(runId, proposalId, actor);
   }
 
   // ─── Apply ─────────────────────────────────────────────────────────────
 
   async apply(runId: string, approvalId: string) {
-    const run = this.requireRun(runId);
-    const approval = this.storage.getApproval(approvalId);
+    const run = await this.requireRun(runId);
+    const approval = await this.storage.getApproval(approvalId);
     if (!approval) throw new Error(`Approval ${approvalId} not found`);
 
-    const proposal = this.storage.getProposal(approval.proposalId);
+    const proposal = await this.storage.getProposal(approval.proposalId);
     if (!proposal) throw new Error(`Proposal ${approval.proposalId} not found`);
 
-    this.storage.updateRunStatus(runId, 'applying');
+    await this.storage.updateRunStatus(runId, 'applying');
 
     try {
       const appliedFiles: string[] = [];
@@ -322,8 +330,8 @@ export class AgentPlatformService {
         briefUpdated = true;
       }
 
-      this.storage.updateRunStatus(runId, 'applied');
-      this.storage.addAuditEvent(runId, 'changes.applied', {
+      await this.storage.updateRunStatus(runId, 'applied');
+      await this.storage.addAuditEvent(runId, 'changes.applied', {
         approvalId,
         appliedFiles,
         briefUpdated,
@@ -336,7 +344,11 @@ export class AgentPlatformService {
         error: null,
       };
     } catch (err) {
-      this.storage.updateRunStatus(runId, 'failed', (err as Error).message);
+      await this.storage.updateRunStatus(
+        runId,
+        'failed',
+        (err as Error).message
+      );
       throw err;
     }
   }
@@ -349,15 +361,15 @@ export class AgentPlatformService {
     title?: string,
     body?: string
   ) {
-    const run = this.requireRun(runId);
+    const run = await this.requireRun(runId);
     if (!run.repoTarget) {
       return { runId, prUrl: null, error: 'No repo target configured' };
     }
 
-    const approval = this.storage.getApproval(approvalId);
+    const approval = await this.storage.getApproval(approvalId);
     if (!approval) throw new Error(`Approval ${approvalId} not found`);
 
-    this.storage.updateRunStatus(runId, 'creating_pr');
+    await this.storage.updateRunStatus(runId, 'creating_pr');
 
     try {
       const branchName = run.branchName ?? `feature/${runId.slice(0, 8)}-agent`;
@@ -377,14 +389,21 @@ export class AgentPlatformService {
         run.repoTarget.defaultBranch
       );
 
-      this.storage.updateRunStatus(runId, prUrl ? 'pr_created' : 'applied');
+      await this.storage.updateRunStatus(
+        runId,
+        prUrl ? 'pr_created' : 'applied'
+      );
       if (prUrl) {
-        this.storage.addAuditEvent(runId, 'pr.created', { prUrl });
+        await this.storage.addAuditEvent(runId, 'pr.created', { prUrl });
       }
 
       return { runId, prUrl, error: prUrl ? null : 'gh CLI not available' };
     } catch (err) {
-      this.storage.updateRunStatus(runId, 'failed', (err as Error).message);
+      await this.storage.updateRunStatus(
+        runId,
+        'failed',
+        (err as Error).message
+      );
       return { runId, prUrl: null, error: (err as Error).message };
     }
   }
@@ -419,24 +438,34 @@ export class AgentPlatformService {
     );
   }
 
-  getWorkspaceRepos(workspaceId: string): WorkspaceRepoConnection[] {
+  async getWorkspaceRepos(
+    workspaceId: string
+  ): Promise<WorkspaceRepoConnection[]> {
     return this.storage.getWorkspaceRepos(workspaceId);
   }
 
-  disconnectRepo(workspaceId: string, repoConnectionId: string): boolean {
+  async disconnectRepo(
+    workspaceId: string,
+    repoConnectionId: string
+  ): Promise<boolean> {
     return this.storage.disconnectRepo(workspaceId, repoConnectionId);
   }
 
-  setDefaultRepo(workspaceId: string, repoConnectionId: string): void {
-    this.storage.setDefaultRepo(workspaceId, repoConnectionId);
+  async setDefaultRepo(
+    workspaceId: string,
+    repoConnectionId: string
+  ): Promise<void> {
+    await this.storage.setDefaultRepo(workspaceId, repoConnectionId);
   }
 
   /**
    * Resolve the default workspace repo into a RepoTarget with an
    * authenticated clone URL (token refreshed on every call).
    */
-  async getWorkspaceRepoTarget(workspaceId: string): Promise<RepoTarget | null> {
-    const conn = this.storage.getDefaultRepo(workspaceId);
+  async getWorkspaceRepoTarget(
+    workspaceId: string
+  ): Promise<RepoTarget | null> {
+    const conn = await this.storage.getDefaultRepo(workspaceId);
     if (!conn) return null;
 
     let remoteUrl: string | undefined;
@@ -459,20 +488,28 @@ export class AgentPlatformService {
    * Auto-commits pending changes on the previous branch before switching.
    * Creates the branch if it doesn't exist.
    */
-  async ensureDocBranch(workspaceId: string, docId: string, docTitle?: string): Promise<string | null> {
+  async ensureDocBranch(
+    workspaceId: string,
+    docId: string,
+    docTitle?: string
+  ): Promise<string | null> {
     const target = await this.getWorkspaceRepoTarget(workspaceId);
     if (!target) return null;
     await this.repo.ensureRepo(target);
 
     // Look up existing branch for this doc first
-    let branchName = this.storage.getDocBranch(docId);
+    let branchName = await this.storage.getDocBranch(docId);
     if (!branchName) {
       const slug = slugify(docTitle || docId);
       branchName = `feature/${docId}-${slug}`;
-      this.storage.setDocBranch(docId, workspaceId, branchName);
+      await this.storage.setDocBranch(docId, workspaceId, branchName);
     }
 
-    await this.repo.switchBranch(target.localPath, branchName, target.defaultBranch);
+    await this.repo.switchBranch(
+      target.localPath,
+      branchName,
+      target.defaultBranch
+    );
     return branchName;
   }
 
@@ -481,20 +518,34 @@ export class AgentPlatformService {
     const parts: string[] = [];
 
     // 1. Load AFFiNE doc-based rules
-    const rules = this.storage.getWorkspaceRules(workspaceId);
-    this.logger.log(`Found ${rules.length} workspace rule(s) for ${workspaceId}`);
+    const rules = await this.storage.getWorkspaceRules(workspaceId);
+    this.logger.log(
+      `Found ${rules.length} workspace rule(s) for ${workspaceId}`
+    );
     for (const rule of rules) {
       try {
         this.logger.log(`Reading rule doc ${rule.docId} (${rule.docTitle})...`);
-        const doc = await this.docReader.getDocMarkdown(workspaceId, rule.docId, false);
+        const doc = await this.docReader.getDocMarkdown(
+          workspaceId,
+          rule.docId,
+          false
+        );
         const markdown = doc?.markdown;
-        this.logger.log(`Rule doc ${rule.docId} returned: ${markdown ? `${markdown.length} chars` : 'null/empty'}`);
+        this.logger.log(
+          `Rule doc ${rule.docId} returned: ${markdown ? `${markdown.length} chars` : 'null/empty'}`
+        );
         if (markdown?.trim()) {
-          const title = rule.docTitle || doc?.title ? `## ${rule.docTitle || doc?.title}` : `## Rule: ${rule.docId}`;
+          const title =
+            rule.docTitle || doc?.title
+              ? `## ${rule.docTitle || doc?.title}`
+              : `## Rule: ${rule.docId}`;
           parts.push(`${title}\n${markdown}`);
         }
       } catch (err) {
-        this.logger.error(`Failed to read rule doc ${rule.docId}: ${(err as Error).message}`, (err as Error).stack);
+        this.logger.error(
+          `Failed to read rule doc ${rule.docId}: ${(err as Error).message}`,
+          (err as Error).stack
+        );
       }
     }
 
@@ -508,7 +559,9 @@ export class AgentPlatformService {
           parts.push(fileRules);
         }
       } catch (err) {
-        this.logger.warn(`Failed to load repo rules: ${(err as Error).message}`);
+        this.logger.warn(
+          `Failed to load repo rules: ${(err as Error).message}`
+        );
       }
     }
 
@@ -517,15 +570,19 @@ export class AgentPlatformService {
 
   // ─── Workspace Rules CRUD ─────────────────────────────────────────────
 
-  addRule(workspaceId: string, docId: string, docTitle?: string): WorkspaceRule {
+  async addRule(
+    workspaceId: string,
+    docId: string,
+    docTitle?: string
+  ): Promise<WorkspaceRule> {
     return this.storage.addRule(workspaceId, docId, docTitle);
   }
 
-  removeRule(workspaceId: string, ruleId: string): boolean {
+  async removeRule(workspaceId: string, ruleId: string): Promise<boolean> {
     return this.storage.removeRule(workspaceId, ruleId);
   }
 
-  getWorkspaceRules(workspaceId: string): WorkspaceRule[] {
+  async getWorkspaceRules(workspaceId: string): Promise<WorkspaceRule[]> {
     return this.storage.getWorkspaceRules(workspaceId);
   }
 
@@ -583,70 +640,104 @@ export class AgentPlatformService {
     briefContent: string,
     context?: Record<string, unknown>
   ): Promise<{ runId: string; step: AgentStep; result: StepResult }> {
-    const run = this.requireRun(runId);
-    const [ingStatus, edStatus] = STEP_STATUS_MAP[step] ?? ['analyzing', 'analyzed'];
+    const run = await this.requireRun(runId);
+    const [ingStatus, edStatus] = STEP_STATUS_MAP[step] ?? [
+      'analyzing',
+      'analyzed',
+    ];
 
-    this.storage.updateRunStatus(runId, ingStatus);
-    this.storage.addAuditEvent(runId, 'step.started', { step });
+    await this.storage.updateRunStatus(runId, ingStatus);
+    await this.storage.addAuditEvent(runId, 'step.started', { step });
 
     try {
       // Build the prompt with context from previous steps
-      const prompt = this.buildStepPrompt(step, briefContent, runId, context);
+      const prompt = await this.buildStepPrompt(
+        step,
+        briefContent,
+        runId,
+        context
+      );
 
       // Each step is self-contained — all context (brief + prior results) is
       // injected into the prompt, so we do NOT resume a previous session.
       // Using --resume with --no-session-persistence causes "No conversation
       // found" errors because the session was never persisted.
-      const result = await this.claudeCode.executeStep<StepResult>(step, prompt, {
-        cwd: run.repoTarget?.localPath,
-        model: process.env.AGENT_MODEL,
-      });
+      const result = await this.claudeCode.executeStep<StepResult>(
+        step,
+        prompt,
+        {
+          cwd: run.repoTarget?.localPath,
+          model: process.env.AGENT_MODEL,
+        }
+      );
 
       // Validate the result has meaningful content (not just { _rawText } or {})
       const resultObj = result.result as Record<string, unknown>;
       const hasRawText = resultObj && '_rawText' in resultObj;
-      const resultKeys = resultObj ? Object.keys(resultObj).filter(k => k !== '_rawText') : [];
+      const resultKeys = resultObj
+        ? Object.keys(resultObj).filter(k => k !== '_rawText')
+        : [];
       const isEmptyResult = !resultObj || resultKeys.length === 0;
 
       if (hasRawText) {
         this.logger.warn(
           `Step ${step} returned raw text instead of structured JSON. ` +
-          `Preview: ${String((resultObj as any)._rawText).slice(0, 200)}`
+            `Preview: ${String((resultObj as any)._rawText).slice(0, 200)}`
         );
       }
       if (isEmptyResult) {
-        this.logger.warn(`Step ${step} returned empty result object. Keys: [${Object.keys(resultObj || {}).join(', ')}]`);
+        this.logger.warn(
+          `Step ${step} returned empty result object. Keys: [${Object.keys(resultObj || {}).join(', ')}]`
+        );
       }
 
-      this.logger.log(`Step ${step} result: ${JSON.stringify(result.result).slice(0, 500)}`);
+      this.logger.log(
+        `Step ${step} result: ${JSON.stringify(result.result).slice(0, 500)}`
+      );
 
       // Persist
-      this.storage.updateRunStatus(runId, edStatus);
-      this.storage.saveStepResult(runId, step, result.result);
-      this.storage.addAuditEvent(runId, 'step.completed', { step, resultSummary: this.summarizeResult(step, result.result) });
+      await this.storage.updateRunStatus(runId, edStatus);
+      await this.storage.saveStepResult(runId, step, result.result);
+      await this.storage.addAuditEvent(runId, 'step.completed', {
+        step,
+        resultSummary: this.summarizeResult(step, result.result),
+      });
 
       // Write back to document — skip if result is empty or raw text
       if (!isEmptyResult && !hasRawText) {
         await this.writeBackToDoc(run, step, result.result);
       } else {
-        this.logger.warn(`Skipping write-back for ${step}: result is ${hasRawText ? 'raw text' : 'empty'}`);
+        this.logger.warn(
+          `Skipping write-back for ${step}: result is ${hasRawText ? 'raw text' : 'empty'}`
+        );
       }
 
       return { runId, step, result: result.result };
     } catch (err) {
-      this.storage.updateRunStatus(runId, 'failed', (err as Error).message);
-      this.storage.addAuditEvent(runId, 'step.failed', { step, error: (err as Error).message });
+      await this.storage.updateRunStatus(
+        runId,
+        'failed',
+        (err as Error).message
+      );
+      await this.storage.addAuditEvent(runId, 'step.failed', {
+        step,
+        error: (err as Error).message,
+      });
       throw err;
     }
   }
 
-  getStepResults(runId: string) {
+  async getStepResults(runId: string) {
     return this.storage.getStepResults(runId);
   }
 
   // ─── Write-back to document ────────────────────────────────────────────
 
-  private async writeBackToDoc(run: Run, step: AgentStep, result: StepResult): Promise<void> {
+  private async writeBackToDoc(
+    run: Run,
+    step: AgentStep,
+    result: StepResult
+  ): Promise<void> {
     const { workspaceId, docId } = run.briefRef;
     const stepLabel = AGENT_STEP_LABELS[step] ?? step;
     const section = this.formatResultAsMarkdown(step, result);
@@ -657,13 +748,15 @@ export class AgentPlatformService {
     // to the synthetic default, pass undefined so created_by is NULL.
     const rawEditorId = process.env.AGENT_USER_ID;
     const editorId =
-      rawEditorId && rawEditorId !== '__aion_agent__'
-        ? rawEditorId
-        : undefined;
+      rawEditorId && rawEditorId !== '__aion_agent__' ? rawEditorId : undefined;
 
     // Strategy 1: Try inline update (append to the brief doc directly)
     try {
-      const current = await this.docReader.getDocMarkdown(workspaceId, docId, false);
+      const current = await this.docReader.getDocMarkdown(
+        workspaceId,
+        docId,
+        false
+      );
       if (!current) {
         this.logger.warn(`Cannot write back: doc ${docId} not found`);
         return;
@@ -672,8 +765,17 @@ export class AgentPlatformService {
       const existingMarkdown = current.markdown ?? '';
       const updatedMarkdown = existingMarkdown + '\n\n' + section;
 
-      await this.docWriter.updateDoc(workspaceId, docId, updatedMarkdown, editorId);
-      this.storage.addAuditEvent(run.runId, 'step.writeback', { step, docId, mode: 'inline' });
+      await this.docWriter.updateDoc(
+        workspaceId,
+        docId,
+        updatedMarkdown,
+        editorId
+      );
+      await this.storage.addAuditEvent(run.runId, 'step.writeback', {
+        step,
+        docId,
+        mode: 'inline',
+      });
       this.logger.log(`Wrote back ${step} results inline to doc ${docId}`);
       return;
     } catch (inlineErr) {
@@ -684,7 +786,9 @@ export class AgentPlatformService {
         this.logger.error(`Failed to write back to doc (inline): ${msg}`);
         // For unknown errors, try the fallback anyway
       }
-      this.logger.warn(`Inline write-back failed for doc ${docId}, falling back to companion doc`);
+      this.logger.warn(
+        `Inline write-back failed for doc ${docId}, falling back to companion doc`
+      );
     }
 
     // Strategy 2: Create a companion sub-document with the step result
@@ -697,16 +801,20 @@ export class AgentPlatformService {
         editorId
       );
 
-      this.storage.addAuditEvent(run.runId, 'step.writeback', {
+      await this.storage.addAuditEvent(run.runId, 'step.writeback', {
         step,
         docId,
         mode: 'companion',
         companionDocId,
       });
-      this.logger.log(`Wrote back ${step} results to companion doc ${companionDocId}`);
+      this.logger.log(
+        `Wrote back ${step} results to companion doc ${companionDocId}`
+      );
     } catch (companionErr) {
-      this.logger.error(`Failed to write back to doc (companion): ${(companionErr as Error).message}`);
-      // Non-fatal: step result is still saved in SQLite, just write-back failed
+      this.logger.error(
+        `Failed to write back to doc (companion): ${(companionErr as Error).message}`
+      );
+      // Non-fatal: step result is still saved in PostgreSQL, just write-back failed
     }
   }
 
@@ -715,13 +823,16 @@ export class AgentPlatformService {
     const lines: string[] = [`## AION: ${label}`, ''];
 
     // Helper: safely get array from result (Claude may omit fields despite schema)
-    const arr = (val: unknown): unknown[] => Array.isArray(val) ? val : [];
-    const str = (val: unknown, fallback = ''): string => typeof val === 'string' ? val : fallback;
+    const arr = (val: unknown): unknown[] => (Array.isArray(val) ? val : []);
+    const str = (val: unknown, fallback = ''): string =>
+      typeof val === 'string' ? val : fallback;
 
     switch (step) {
       case 'validate_brief': {
         const r = result as Partial<ValidateBriefResponse>;
-        lines.push(`**Ejecutable:** ${r.isExecutable ? 'Sí' : 'No'} | **Nivel de Ambigüedad:** ${str(r.ambiguityLevel, 'N/A')}`);
+        lines.push(
+          `**Ejecutable:** ${r.isExecutable ? 'Sí' : 'No'} | **Nivel de Ambigüedad:** ${str(r.ambiguityLevel, 'N/A')}`
+        );
         const missing = arr(r.missingElements) as string[];
         if (missing.length) {
           lines.push('', '**Elementos Faltantes:**');
@@ -754,12 +865,16 @@ export class AgentPlatformService {
           operational.forEach(a => lines.push(`- ${a}`));
           lines.push('');
         }
-        lines.push(`**Riesgo si se ejecuta tal cual:** ${str(r.riskIfExecutedAsIs, 'N/A')}`);
+        lines.push(
+          `**Riesgo si se ejecuta tal cual:** ${str(r.riskIfExecutedAsIs, 'N/A')}`
+        );
         break;
       }
       case 'technical_plan': {
         const r = result as Partial<TechnicalPlanResponse>;
-        lines.push(`**Impacto en Arquitectura:** ${str(r.architectureImpact, 'N/A')}`);
+        lines.push(
+          `**Impacto en Arquitectura:** ${str(r.architectureImpact, 'N/A')}`
+        );
         lines.push(`**Costo de Rollback:** ${str(r.rollbackCost, 'N/A')}`);
         const dataModel = arr(r.dataModelChanges) as string[];
         if (dataModel.length) {
@@ -788,7 +903,9 @@ export class AgentPlatformService {
         const epics = arr(r.epics) as BriefEpicsResponse['epics'];
         lines.push('| Épica | Área | Descripción |');
         lines.push('|-------|------|-------------|');
-        epics.forEach(e => lines.push(`| **${e.title}** | ${e.area} | ${e.description} |`));
+        epics.forEach(e =>
+          lines.push(`| **${e.title}** | ${e.area} | ${e.description} |`)
+        );
         break;
       }
       case 'generate_tasks': {
@@ -796,12 +913,16 @@ export class AgentPlatformService {
         const tasks = arr(r.tasks) as GenerateTasksResponse['tasks'];
         lines.push('| Tarea | Tipo | Descripción |');
         lines.push('|-------|------|-------------|');
-        tasks.forEach(t => lines.push(`| **${t.title}** | \`${t.type}\` | ${t.description} |`));
+        tasks.forEach(t =>
+          lines.push(`| **${t.title}** | \`${t.type}\` | ${t.description} |`)
+        );
         break;
       }
       case 'generate_checkpoints': {
         const r = result as Partial<GenerateCheckpointsResponse>;
-        const checkpoints = arr(r.checkpoints) as GenerateCheckpointsResponse['checkpoints'];
+        const checkpoints = arr(
+          r.checkpoints
+        ) as GenerateCheckpointsResponse['checkpoints'];
         checkpoints.forEach((cp, i) => {
           lines.push(`### Checkpoint ${i + 1}: ${cp.checkpoint}`);
           lines.push(`- **Resultado Visible:** ${cp.visibleOutcome}`);
@@ -828,7 +949,9 @@ export class AgentPlatformService {
       case 'check_alignment': {
         const r = result as Partial<CheckAlignmentResponse>;
         lines.push(`**Alineado:** ${r.aligned ? 'Sí' : 'No'}`);
-        lines.push(`**Evaluación General:** ${str(r.overallAssessment, 'N/A')}`);
+        lines.push(
+          `**Evaluación General:** ${str(r.overallAssessment, 'N/A')}`
+        );
         const deviations = arr(r.deviations) as string[];
         if (deviations.length) {
           lines.push('', '**Desviaciones:**');
@@ -851,24 +974,32 @@ export class AgentPlatformService {
     return lines.join('\n');
   }
 
-  private buildStepPrompt(
+  private async buildStepPrompt(
     step: AgentStep,
     briefContent: string,
     runId: string,
     context?: Record<string, unknown>
-  ): string {
+  ): Promise<string> {
     const stepLabel = AGENT_STEP_LABELS[step] ?? step;
 
     // Instrucciones específicas por paso que refuerzan lo que pide el system prompt
     const stepInstructions: Record<string, string> = {
-      validate_brief: 'Valida este brief. Determina si es ejecutable, evalúa el nivel de ambigüedad, lista elementos faltantes y genera preguntas de clarificación. Responde en español. Devuelve TODOS los campos requeridos: isExecutable (boolean), ambiguityLevel (LOW/MEDIUM/HIGH), missingElements (array de strings en español), clarificationQuestions (array de strings en español).',
-      detect_ambiguity: 'Detecta ambigüedades en este brief. Categorízalas en conceptualAmbiguities, technicalAmbiguities y operationalAmbiguities (cada una un array de strings en español). También proporciona riskIfExecutedAsIs (un string en español). Devuelve TODOS los campos requeridos.',
-      technical_plan: 'Genera un plan técnico. Responde en español. Devuelve architectureImpact (string), dataModelChanges (array), apiChanges (array), uiChanges (array), performanceConsiderations (array), risks (array), rollbackCost (LOW/MEDIUM/HIGH). Devuelve TODOS los campos requeridos.',
-      brief_epics: 'Descompón este brief en épicas. Responde en español. Devuelve un array epics donde cada épica tiene epicId, title, area y description. Devuelve TODOS los campos requeridos.',
-      generate_tasks: 'Genera tareas de implementación. Responde en español. Devuelve un array tasks donde cada tarea tiene taskId, title, type (feature/bug/chore/refactor/test/docs), description y acceptanceCriteria (array de strings). Devuelve TODOS los campos requeridos.',
-      generate_checkpoints: 'Genera checkpoints/hitos del proyecto. Responde en español. Devuelve un array checkpoints donde cada uno tiene checkpoint (nombre), visibleOutcome y howToValidate. Devuelve TODOS los campos requeridos.',
-      code_generation: 'Genera código para la tarea especificada. Responde en español (los comentarios en código pueden ser en inglés). Devuelve assumptions (array de strings) y files (array de {path, content}). Devuelve TODOS los campos requeridos.',
-      check_alignment: 'Verifica la alineación entre el brief y la implementación. Responde en español. Devuelve aligned (boolean), deviations (array), missingFromImplementation (array), unexpectedAdditions (array), overallAssessment (string). Devuelve TODOS los campos requeridos.',
+      validate_brief:
+        'Valida este brief. Determina si es ejecutable, evalúa el nivel de ambigüedad, lista elementos faltantes y genera preguntas de clarificación. Responde en español. Devuelve TODOS los campos requeridos: isExecutable (boolean), ambiguityLevel (LOW/MEDIUM/HIGH), missingElements (array de strings en español), clarificationQuestions (array de strings en español).',
+      detect_ambiguity:
+        'Detecta ambigüedades en este brief. Categorízalas en conceptualAmbiguities, technicalAmbiguities y operationalAmbiguities (cada una un array de strings en español). También proporciona riskIfExecutedAsIs (un string en español). Devuelve TODOS los campos requeridos.',
+      technical_plan:
+        'Genera un plan técnico. Responde en español. Devuelve architectureImpact (string), dataModelChanges (array), apiChanges (array), uiChanges (array), performanceConsiderations (array), risks (array), rollbackCost (LOW/MEDIUM/HIGH). Devuelve TODOS los campos requeridos.',
+      brief_epics:
+        'Descompón este brief en épicas. Responde en español. Devuelve un array epics donde cada épica tiene epicId, title, area y description. Devuelve TODOS los campos requeridos.',
+      generate_tasks:
+        'Genera tareas de implementación. Responde en español. Devuelve un array tasks donde cada tarea tiene taskId, title, type (feature/bug/chore/refactor/test/docs), description y acceptanceCriteria (array de strings). Devuelve TODOS los campos requeridos.',
+      generate_checkpoints:
+        'Genera checkpoints/hitos del proyecto. Responde en español. Devuelve un array checkpoints donde cada uno tiene checkpoint (nombre), visibleOutcome y howToValidate. Devuelve TODOS los campos requeridos.',
+      code_generation:
+        'Genera código para la tarea especificada. Responde en español (los comentarios en código pueden ser en inglés). Devuelve assumptions (array de strings) y files (array de {path, content}). Devuelve TODOS los campos requeridos.',
+      check_alignment:
+        'Verifica la alineación entre el brief y la implementación. Responde en español. Devuelve aligned (boolean), deviations (array), missingFromImplementation (array), unexpectedAdditions (array), overallAssessment (string). Devuelve TODOS los campos requeridos.',
     };
 
     let prompt = `# Task: ${stepLabel}\n\n`;
@@ -876,7 +1007,7 @@ export class AgentPlatformService {
     prompt += `## Brief Document\n\n${briefContent}`;
 
     // Add context from previous step results
-    const previousResults = this.storage.getStepResults(runId);
+    const previousResults = await this.storage.getStepResults(runId);
     if (previousResults.length > 0) {
       prompt += '\n\n## Previous Step Results\n';
       for (const prev of previousResults) {
@@ -892,13 +1023,19 @@ export class AgentPlatformService {
     return prompt;
   }
 
-  private summarizeResult(step: AgentStep, result: StepResult): Record<string, unknown> {
-    const arr = (val: unknown): unknown[] => Array.isArray(val) ? val : [];
+  private summarizeResult(
+    step: AgentStep,
+    result: StepResult
+  ): Record<string, unknown> {
+    const arr = (val: unknown): unknown[] => (Array.isArray(val) ? val : []);
     const r = result as Record<string, unknown>;
 
     switch (step) {
       case 'validate_brief':
-        return { isExecutable: r.isExecutable, ambiguityLevel: r.ambiguityLevel };
+        return {
+          isExecutable: r.isExecutable,
+          ambiguityLevel: r.ambiguityLevel,
+        };
       case 'detect_ambiguity':
         return {
           conceptual: arr(r.conceptualAmbiguities).length,
@@ -934,7 +1071,9 @@ export class AgentPlatformService {
     // The storage markdown may differ from the live editor state.
     if (documentContent && documentContent.includes(original)) {
       const updatedContent = documentContent.replace(original, replacement);
-      this.logger.log(`applyChatEdit: matched via frontend documentContent (exact match)`);
+      this.logger.log(
+        `applyChatEdit: matched via frontend documentContent (exact match)`
+      );
 
       const rawEditorId = process.env.AGENT_USER_ID;
       const editorId =
@@ -943,14 +1082,23 @@ export class AgentPlatformService {
           : undefined;
 
       try {
-        await this.docWriter.updateDoc(workspaceId, docId, updatedContent, editorId);
+        await this.docWriter.updateDoc(
+          workspaceId,
+          docId,
+          updatedContent,
+          editorId
+        );
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
-        this.logger.error(`applyChatEdit: failed to write doc via documentContent: ${msg}`);
+        this.logger.error(
+          `applyChatEdit: failed to write doc via documentContent: ${msg}`
+        );
         return { ok: false, error: `Failed to write document: ${msg}` };
       }
 
-      this.logger.log(`Applied chat edit to doc ${docId} via documentContent path`);
+      this.logger.log(
+        `Applied chat edit to doc ${docId} via documentContent path`
+      );
       return { ok: true };
     }
 
@@ -980,31 +1128,31 @@ export class AgentPlatformService {
     /** Normalize smart/curly quotes to straight ASCII equivalents */
     const normalizeQuotes = (s: string) =>
       s
-        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')   // double curly → straight "
-        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")   // single curly → straight '
-        .replace(/[\u00AB\u00BB]/g, '"')                             // guillemets → "
-        .replace(/[\u2014]/g, '--')                                  // em-dash → --
-        .replace(/[\u2013]/g, '-')                                   // en-dash → -
-        .replace(/[\u2026]/g, '...');                                // ellipsis → ...
+        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // double curly → straight "
+        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'") // single curly → straight '
+        .replace(/[\u00AB\u00BB]/g, '"') // guillemets → "
+        .replace(/[\u2014]/g, '--') // em-dash → --
+        .replace(/[\u2013]/g, '-') // en-dash → -
+        .replace(/[\u2026]/g, '...'); // ellipsis → ...
 
     /** Strip markdown syntax to plain text */
     const stripMd = (s: string) =>
       normalizeQuotes(unescapeMd(s))
-        .replace(/^>\s?/gm, '')                  // blockquotes
-        .replace(/^#{1,6}\s+/gm, '')             // headings
-        .replace(/\*\*(.+?)\*\*/g, '$1')          // bold
-        .replace(/\*(.+?)\*/g, '$1')              // italic
-        .replace(/_(.+?)_/g, '$1')                // italic alt
-        .replace(/~~(.+?)~~/g, '$1')              // strikethrough
-        .replace(/`(.+?)`/g, '$1')                // inline code
-        .replace(/^\s*[-*+]\s+/gm, '')            // unordered list markers
-        .replace(/^\s*\d+\.\s+/gm, '')            // ordered list markers
-        .replace(/^\s*\[[ x]\]\s*/gm, '')         // checkbox markers
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // links
+        .replace(/^>\s?/gm, '') // blockquotes
+        .replace(/^#{1,6}\s+/gm, '') // headings
+        .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+        .replace(/\*(.+?)\*/g, '$1') // italic
+        .replace(/_(.+?)_/g, '$1') // italic alt
+        .replace(/~~(.+?)~~/g, '$1') // strikethrough
+        .replace(/`(.+?)`/g, '$1') // inline code
+        .replace(/^\s*[-*+]\s+/gm, '') // unordered list markers
+        .replace(/^\s*\d+\.\s+/gm, '') // ordered list markers
+        .replace(/^\s*\[[ x]\]\s*/gm, '') // checkbox markers
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
         .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1') // images
-        .replace(/<[^>]+>/g, '')                   // HTML tags
-        .replace(/\|/g, ' ')                       // table pipes
-        .replace(/^---+$/gm, '');                  // horizontal rules
+        .replace(/<[^>]+>/g, '') // HTML tags
+        .replace(/\|/g, ' ') // table pipes
+        .replace(/^---+$/gm, ''); // horizontal rules
 
     /** Collapse all whitespace into single spaces, lowercase, strip md */
     const toWords = (s: string) =>
@@ -1023,7 +1171,11 @@ export class AgentPlatformService {
     // ── Strategy 1b: Unescaped exact match ───────────────────────────
     // Claude often escapes underscores/brackets: \_\_\_ → ___
 
-    if (!updatedMarkdown && unescapedOriginal !== original && markdown.includes(unescapedOriginal)) {
+    if (
+      !updatedMarkdown &&
+      unescapedOriginal !== original &&
+      markdown.includes(unescapedOriginal)
+    ) {
       updatedMarkdown = markdown.replace(unescapedOriginal, replacement);
       this.logger.log('Applied edit via unescaped exact match');
     }
@@ -1033,7 +1185,10 @@ export class AgentPlatformService {
     // Also strip blockquote prefixes since doc storage uses `> ` for callouts
     if (!updatedMarkdown) {
       const normalizedDoc = normalizeQuotes(markdown).replace(/^>\s?/gm, '');
-      const normalizedOrig = normalizeQuotes(unescapedOriginal).replace(/^>\s?/gm, '');
+      const normalizedOrig = normalizeQuotes(unescapedOriginal).replace(
+        /^>\s?/gm,
+        ''
+      );
       if (normalizedDoc.includes(normalizedOrig)) {
         updatedMarkdown = normalizedDoc.replace(normalizedOrig, replacement);
         this.logger.log('Applied edit via quote-normalized match');
@@ -1043,12 +1198,20 @@ export class AgentPlatformService {
     // ── Strategy 2: Normalized whitespace match ──────────────────────
 
     if (!updatedMarkdown) {
-      const normalize = (s: string) => normalizeQuotes(unescapeMd(s)).replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
+      const normalize = (s: string) =>
+        normalizeQuotes(unescapeMd(s))
+          .replace(/\r\n/g, '\n')
+          .replace(/[ \t]+/g, ' ')
+          .trim();
       const normalizedOriginal = normalize(original);
 
       const lines = markdown.split('\n');
       for (let start = 0; start < lines.length; start++) {
-        for (let end = start + 1; end <= Math.min(start + 50, lines.length); end++) {
+        for (
+          let end = start + 1;
+          end <= Math.min(start + 50, lines.length);
+          end++
+        ) {
           const candidate = lines.slice(start, end).join('\n');
           if (normalize(candidate) === normalizedOriginal) {
             updatedMarkdown = markdown.replace(candidate, replacement);
@@ -1064,7 +1227,10 @@ export class AgentPlatformService {
     // Also try with stripped markdown (blockquotes, headings, bold, etc.)
 
     if (!updatedMarkdown) {
-      const originalLines = unescapedOriginal.split('\n').map(l => l.trim()).filter(Boolean);
+      const originalLines = unescapedOriginal
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
       if (originalLines.length >= 1) {
         const firstLine = originalLines[0];
         const lastLine = originalLines[originalLines.length - 1];
@@ -1079,7 +1245,9 @@ export class AgentPlatformService {
             for (let i = 0; i < docLines.length; i++) {
               if (stripMd(docLines[i]).trim().includes(strippedFirst)) {
                 // Find the char offset of this doc line
-                startIdx = markdown.split('\n').slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
+                startIdx =
+                  markdown.split('\n').slice(0, i).join('\n').length +
+                  (i > 0 ? 1 : 0);
                 break;
               }
             }
@@ -1092,7 +1260,10 @@ export class AgentPlatformService {
             // Single line: end = after this line
             const lineEnd = markdown.indexOf('\n', startIdx);
             lastIdx = lineEnd >= 0 ? lineEnd : markdown.length;
-            updatedMarkdown = markdown.substring(0, startIdx) + replacement + markdown.substring(lastIdx);
+            updatedMarkdown =
+              markdown.substring(0, startIdx) +
+              replacement +
+              markdown.substring(lastIdx);
             this.logger.log('Applied edit via single-line anchoring');
           } else {
             lastIdx = markdown.indexOf(lastLine, startIdx);
@@ -1116,7 +1287,10 @@ export class AgentPlatformService {
             if (lastIdx >= 0) {
               const lineEnd = markdown.indexOf('\n', lastIdx);
               const endIdx = lineEnd >= 0 ? lineEnd : markdown.length;
-              updatedMarkdown = markdown.substring(0, startIdx) + replacement + markdown.substring(endIdx);
+              updatedMarkdown =
+                markdown.substring(0, startIdx) +
+                replacement +
+                markdown.substring(endIdx);
               this.logger.log('Applied edit via first/last line anchoring');
             }
           }
@@ -1127,9 +1301,16 @@ export class AgentPlatformService {
     // ── Strategy 4: Plain-text fuzzy match ───────────────────────────
 
     if (!updatedMarkdown) {
-      const normalize = (s: string) => stripMd(s).replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+      const normalize = (s: string) =>
+        stripMd(s)
+          .replace(/[ \t]+/g, ' ')
+          .replace(/\n{2,}/g, '\n')
+          .trim();
       const normalizedOriginal = normalize(original);
-      const originalLines = normalizedOriginal.split('\n').map(l => l.trim()).filter(Boolean);
+      const originalLines = normalizedOriginal
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
       const docLines = markdown.split('\n');
 
       if (originalLines.length > 0) {
@@ -1145,7 +1326,11 @@ export class AgentPlatformService {
         if (startDocLine >= 0) {
           let endDocLine = startDocLine;
           const lastOrigLine = originalLines[originalLines.length - 1];
-          for (let i = startDocLine; i < Math.min(startDocLine + 100, docLines.length); i++) {
+          for (
+            let i = startDocLine;
+            i < Math.min(startDocLine + 100, docLines.length);
+            i++
+          ) {
             const docPlain = stripMd(docLines[i]).trim();
             if (docPlain && docPlain.includes(lastOrigLine)) {
               endDocLine = i;
@@ -1155,8 +1340,12 @@ export class AgentPlatformService {
 
           const before = docLines.slice(0, startDocLine).join('\n');
           const after = docLines.slice(endDocLine + 1).join('\n');
-          updatedMarkdown = [before, replacement, after].filter(Boolean).join('\n');
-          this.logger.log(`Applied edit via plain-text fuzzy match (lines ${startDocLine}-${endDocLine})`);
+          updatedMarkdown = [before, replacement, after]
+            .filter(Boolean)
+            .join('\n');
+          this.logger.log(
+            `Applied edit via plain-text fuzzy match (lines ${startDocLine}-${endDocLine})`
+          );
         }
       }
     }
@@ -1173,21 +1362,30 @@ export class AgentPlatformService {
         const origLineCount = original.split('\n').filter(Boolean).length;
         // Allow a generous window: ±50 % of the original line count
         const minWin = Math.max(1, Math.floor(origLineCount * 0.5));
-        const maxWin = Math.min(docLines.length, Math.ceil(origLineCount * 1.5));
+        const maxWin = Math.min(
+          docLines.length,
+          Math.ceil(origLineCount * 1.5)
+        );
 
         let bestScore = 0;
         let bestStart = -1;
         let bestEnd = -1;
 
         for (let start = 0; start < docLines.length; start++) {
-          for (let win = minWin; win <= maxWin && start + win <= docLines.length; win++) {
+          for (
+            let win = minWin;
+            win <= maxWin && start + win <= docLines.length;
+            win++
+          ) {
             const candidate = docLines.slice(start, start + win).join('\n');
             const candWords = toWords(candidate);
             if (!candWords) continue;
 
             // Compute similarity: ratio of shared content length
-            const shorter = origWords.length < candWords.length ? origWords : candWords;
-            const longer = origWords.length >= candWords.length ? origWords : candWords;
+            const shorter =
+              origWords.length < candWords.length ? origWords : candWords;
+            const longer =
+              origWords.length >= candWords.length ? origWords : candWords;
             if (longer.includes(shorter)) {
               // Substring match — very high confidence
               const score = shorter.length / longer.length;
@@ -1204,8 +1402,12 @@ export class AgentPlatformService {
         if (bestScore >= 0.7 && bestStart >= 0) {
           const before = docLines.slice(0, bestStart).join('\n');
           const after = docLines.slice(bestEnd).join('\n');
-          updatedMarkdown = [before, replacement, after].filter(Boolean).join('\n');
-          this.logger.log(`Applied edit via word-bag sliding window (score=${bestScore.toFixed(2)}, lines ${bestStart}-${bestEnd})`);
+          updatedMarkdown = [before, replacement, after]
+            .filter(Boolean)
+            .join('\n');
+          this.logger.log(
+            `Applied edit via word-bag sliding window (score=${bestScore.toFixed(2)}, lines ${bestStart}-${bestEnd})`
+          );
         }
       }
     }
@@ -1215,7 +1417,10 @@ export class AgentPlatformService {
     // the doc, and replace the surrounding block.
 
     if (!updatedMarkdown) {
-      const origLines = original.split('\n').map(l => l.trim()).filter(l => l.length > 15);
+      const origLines = original
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 15);
       // Sort by length descending — longest lines are most unique
       origLines.sort((a, b) => b.length - a.length);
 
@@ -1237,8 +1442,12 @@ export class AgentPlatformService {
 
             const before = docLines.slice(0, blockStart).join('\n');
             const after = docLines.slice(blockEnd).join('\n');
-            updatedMarkdown = [before, replacement, after].filter(Boolean).join('\n');
-            this.logger.log(`Applied edit via longest-phrase anchor "${stripped.substring(0, 40)}..." (lines ${blockStart}-${blockEnd})`);
+            updatedMarkdown = [before, replacement, after]
+              .filter(Boolean)
+              .join('\n');
+            this.logger.log(
+              `Applied edit via longest-phrase anchor "${stripped.substring(0, 40)}..." (lines ${blockStart}-${blockEnd})`
+            );
             break;
           }
         }
@@ -1298,7 +1507,8 @@ export class AgentPlatformService {
         // Find the end of this section (next heading of same or higher level, or end)
         let sectionEnd = docLines.length;
         const startLine = docLines[sectionStart];
-        const startLevel = (startLine.match(/^(#{1,6})\s/) || [])[1]?.length || 99;
+        const startLevel =
+          (startLine.match(/^(#{1,6})\s/) || [])[1]?.length || 99;
 
         for (let i = sectionStart + 1; i < docLines.length; i++) {
           const lineLevel = (docLines[i].match(/^(#{1,6})\s/) || [])[1]?.length;
@@ -1307,7 +1517,10 @@ export class AgentPlatformService {
             break;
           }
           // Also break on bold section headers like "**Restricciones clave:**"
-          if (/^\*\*[^*]+[:：]\*\*/.test(docLines[i].trim()) && i > sectionStart + 1) {
+          if (
+            /^\*\*[^*]+[:：]\*\*/.test(docLines[i].trim()) &&
+            i > sectionStart + 1
+          ) {
             sectionEnd = i;
             break;
           }
@@ -1315,8 +1528,12 @@ export class AgentPlatformService {
 
         const before = docLines.slice(0, sectionStart).join('\n');
         const after = docLines.slice(sectionEnd).join('\n');
-        updatedMarkdown = [before, replacement, after].filter(Boolean).join('\n');
-        this.logger.log(`Applied edit via section heading match "${heading}" (lines ${sectionStart}-${sectionEnd})`);
+        updatedMarkdown = [before, replacement, after]
+          .filter(Boolean)
+          .join('\n');
+        this.logger.log(
+          `Applied edit via section heading match "${heading}" (lines ${sectionStart}-${sectionEnd})`
+        );
         break;
       }
     }
@@ -1325,7 +1542,8 @@ export class AgentPlatformService {
       // Diagnostic: check if stripped text exists anywhere in stripped doc
       const strippedOriginal = toWords(original);
       const strippedDoc = toWords(markdown);
-      const existsInStripped = strippedOriginal.length > 10 && strippedDoc.includes(strippedOriginal);
+      const existsInStripped =
+        strippedOriginal.length > 10 && strippedDoc.includes(strippedOriginal);
       const unescapedInDoc = markdown.includes(unescapedOriginal);
 
       const quoteNormDoc = normalizeQuotes(markdown).replace(/^>\s?/gm, '');
@@ -1334,25 +1552,32 @@ export class AgentPlatformService {
 
       this.logger.warn(
         `Could not match original text in doc ${docId}.\n` +
-        `Original: ${JSON.stringify(original)}\n` +
-        `Unescaped: ${JSON.stringify(unescapedOriginal)}\n` +
-        `Unescaped in doc: ${unescapedInDoc}\n` +
-        `Stripped in stripped doc: ${existsInStripped}\n` +
-        `Quote-normalized in doc: ${existsInQuoteNorm}\n` +
-        `Doc markdown (FULL):\n${markdown}\n` +
-        `=== END DOC ===`
+          `Original: ${JSON.stringify(original)}\n` +
+          `Unescaped: ${JSON.stringify(unescapedOriginal)}\n` +
+          `Unescaped in doc: ${unescapedInDoc}\n` +
+          `Stripped in stripped doc: ${existsInStripped}\n` +
+          `Quote-normalized in doc: ${existsInQuoteNorm}\n` +
+          `Doc markdown (FULL):\n${markdown}\n` +
+          `=== END DOC ===`
       );
-      return { ok: false, error: 'No se encontró el texto original en el documento. Puede que haya cambiado desde que se sugirió la edición.' };
+      return {
+        ok: false,
+        error:
+          'No se encontró el texto original en el documento. Puede que haya cambiado desde que se sugirió la edición.',
+      };
     }
 
     const rawEditorId = process.env.AGENT_USER_ID;
     const editorId =
-      rawEditorId && rawEditorId !== '__aion_agent__'
-        ? rawEditorId
-        : undefined;
+      rawEditorId && rawEditorId !== '__aion_agent__' ? rawEditorId : undefined;
 
     try {
-      await this.docWriter.updateDoc(workspaceId, docId, updatedMarkdown, editorId);
+      await this.docWriter.updateDoc(
+        workspaceId,
+        docId,
+        updatedMarkdown,
+        editorId
+      );
     } catch (err) {
       const msg = (err as Error).message ?? String(err);
       this.logger.error(`applyChatEdit: failed to write doc ${docId}: ${msg}`);
@@ -1360,21 +1585,25 @@ export class AgentPlatformService {
       // If the native parser can't handle a block flavour (e.g. affine:database),
       // tell the frontend to retry the edit client-side using BlockSuite Y.Text API
       if (msg.includes('unsupported block flavour')) {
-        this.logger.warn('Doc contains unsupported block flavour — requesting client-side edit');
+        this.logger.warn(
+          'Doc contains unsupported block flavour — requesting client-side edit'
+        );
         return { ok: false, clientSide: true, original, replacement };
       }
 
       return { ok: false, error: `Failed to write document: ${msg}` };
     }
 
-    this.logger.log(`Applied chat edit to doc ${docId} in workspace ${workspaceId}`);
+    this.logger.log(
+      `Applied chat edit to doc ${docId} in workspace ${workspaceId}`
+    );
     return { ok: true };
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────
 
-  private requireRun(runId: string): Run {
-    const run = this.storage.getRun(runId);
+  private async requireRun(runId: string): Promise<Run> {
+    const run = await this.storage.getRun(runId);
     if (!run) throw new Error(`Run ${runId} not found`);
     return run;
   }
