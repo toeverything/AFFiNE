@@ -256,32 +256,21 @@ test('nested list blocks', async ({ page }, testInfo) => {
   await focusRichText(page, 0);
   await type(page, '123');
 
-  await page.locator('[data-block-id="3"] .inline-editor').click({
-    force: true,
-  });
+  await focusRichText(page, 1);
   await pressTab(page);
-  await waitNextFrame(page);
   await type(page, '456');
 
-  await page.locator('[data-block-id="4"] .inline-editor').click({
-    force: true,
-  });
+  await focusRichText(page, 2);
   await pressTab(page);
-  await waitNextFrame(page);
   await pressTab(page);
-  await waitNextFrame(page);
   await type(page, '789');
-  await waitNextFrame(page);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
   );
 
-  await page.locator('[data-block-id="3"] .inline-editor').click({
-    force: true,
-  });
+  await focusRichText(page, 1);
   await pressShiftTab(page);
-  await waitNextFrame(page);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_finial.json`
