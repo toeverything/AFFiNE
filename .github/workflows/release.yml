@@ -72,7 +72,7 @@ jobs:
     steps:
       - name: Decide whether to release
         id: decide
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const buildType = '${{ needs.prepare.outputs.BUILD_TYPE }}'
