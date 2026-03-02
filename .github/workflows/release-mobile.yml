@@ -114,7 +114,7 @@ jobs:
       - name: Cap sync
         run: yarn workspace @affine/ios sync
       - name: Signing By Apple Developer ID
-        uses: apple-actions/import-codesign-certs@v5
+        uses: apple-actions/import-codesign-certs@v6
         id: import-codesign-certs
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12_MOBILE }}
