@@ -192,7 +192,7 @@ jobs:
           token_format: 'access_token'
           project_id: '${{ secrets.GCP_PROJECT_ID }}'
           access_token_scopes: 'https://www.googleapis.com/auth/androidpublisher'
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
