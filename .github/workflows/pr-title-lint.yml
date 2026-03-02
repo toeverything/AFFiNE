@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.action != 'edited' || github.event.changes.title != null }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

@@ -10,7 +10,7 @@ jobs:
     env:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -64,7 +64,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -134,7 +134,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Post test result message
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Setup Node.js

@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -54,7 +54,7 @@ jobs:
   build-android-web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -83,7 +83,7 @@ jobs:
     needs:
       - build-ios-web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -147,7 +147,7 @@ jobs:
     needs:
       - build-android-web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:

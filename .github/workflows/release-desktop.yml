@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -187,7 +187,7 @@ jobs:
       FILES_TO_BE_SIGNED_x64: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED_x64 }}
       FILES_TO_BE_SIGNED_arm64: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED_arm64 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -369,7 +369,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download Artifacts (macos-x64)
         uses: actions/download-artifact@v4
         with:

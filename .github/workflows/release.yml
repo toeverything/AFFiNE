@@ -55,7 +55,7 @@ jobs:
       GIT_SHORT_HASH: ${{ steps.prepare.outputs.GIT_SHORT_HASH }}
       BUILD_TYPE: ${{ steps.prepare.outputs.BUILD_TYPE }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Prepare Release
         id: prepare
         uses: ./.github/actions/prepare-release
