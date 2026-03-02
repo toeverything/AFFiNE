@@ -55,6 +55,13 @@ RUN yarn install || true
 RUN yarn affine @affine/server-native build || true
 RUN yarn affine @affine/native build || true
 
+# Webpack resolves all require() variants statically, so all arch-specific
+# .node files must exist even though only one is used at runtime.
+RUN cd packages/backend/native && \
+    for arch in x64 arm64 armv7; do \
+      [ ! -f "server-native.${arch}.node" ] && cp server-native.node "server-native.${arch}.node" || true; \
+    done
+
 # Initialize TypeScript project references
 RUN yarn affine init || true
 
