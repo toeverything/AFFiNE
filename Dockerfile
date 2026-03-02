@@ -107,6 +107,13 @@ COPY --from=build /app/packages/frontend/admin/dist /app/static/admin
 # Copy node_modules for prisma CLI and runtime dependencies
 COPY --from=build /app/node_modules /app/node_modules
 
+# Create empty asset manifests for apps we don't build (mobile, admin)
+# The server reads these at startup and crashes if they're missing.
+RUN for dir in /app/static /app/static/mobile /app/static/admin; do \
+      mkdir -p "$dir" && \
+      echo '{"js":[],"css":[]}' > "$dir/assets-manifest.json"; \
+    done
+
 EXPOSE 3010
 
 CMD ["node", "./dist/main.js"]
