@@ -4,6 +4,7 @@ import type { FootNote } from '@blocksuite/affine-model';
 import { CitationProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { isValidUrl, normalizeUrl } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import {
   BlockSelection,
@@ -152,7 +153,9 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly _handleUrlReference = (url: string) => {
-    window.open(url, '_blank');
+    const normalizedUrl = normalizeUrl(url);
+    if (!normalizedUrl || !isValidUrl(normalizedUrl)) return;
+    window.open(normalizedUrl, '_blank', 'noopener,noreferrer');
   };
 
   private readonly _updateFootnoteAttributes = (footnote: FootNote) => {

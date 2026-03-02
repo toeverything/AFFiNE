@@ -6,7 +6,7 @@ import {
   CitationFootnoteFormatter,
   CitationParser,
   StreamPatternParser,
-} from '../utils';
+} from '../../plugins/copilot/providers/utils';
 
 test('CitationFootnoteFormatter should format sorted footnotes from citation events', t => {
   const formatter = new CitationFootnoteFormatter();

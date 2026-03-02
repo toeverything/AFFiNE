@@ -116,6 +116,9 @@ export class ToolSchemaExtractor {
 
   private static toJsonSchema(schema: unknown): Record<string, unknown> {
     if (!(schema instanceof z.ZodType)) {
+      if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
+        return schema as Record<string, unknown>;
+      }
       return { type: 'object', properties: {} };
     }
 
@@ -151,20 +154,26 @@ export class ToolSchemaExtractor {
       return { type: 'boolean' };
     }
     if (schema instanceof z.ZodArray) {
-      return {
-        type: 'array',
-        items: this.toJsonSchema(schema.element),
-      };
+      return { type: 'array', items: this.toJsonSchema(schema.element) };
     }
     if (schema instanceof z.ZodEnum) {
       return { type: 'string', enum: schema.options };
     }
     if (schema instanceof z.ZodLiteral) {
       const literal = schema.value;
-      return {
-        const: literal,
-        type: typeof literal,
-      };
+      if (literal === null) {
+        return { const: null, type: 'null' };
+      }
+      if (typeof literal === 'string') {
+        return { const: literal, type: 'string' };
+      }
+      if (typeof literal === 'number') {
+        return { const: literal, type: 'number' };
+      }
+      if (typeof literal === 'boolean') {
+        return { const: literal, type: 'boolean' };
+      }
+      return { const: literal };
     }
     if (schema instanceof z.ZodUnion) {
       return {
@@ -180,11 +189,12 @@ export class ToolSchemaExtractor {
       };
     }
 
-    if (
-      schema instanceof z.ZodOptional ||
-      schema instanceof z.ZodNullable ||
-      schema instanceof z.ZodDefault
-    ) {
+    if (schema instanceof z.ZodNullable) {
+      const inner = (schema._def as { innerType?: z.ZodTypeAny }).innerType;
+      return { anyOf: [this.toJsonSchema(inner), { type: 'null' }] };
+    }
+
+    if (schema instanceof z.ZodOptional || schema instanceof z.ZodDefault) {
       return this.toJsonSchema(
         (schema._def as { innerType?: z.ZodTypeAny }).innerType
       );
@@ -352,13 +362,18 @@ export class ToolCallLoop {
         output: output ?? null,
       };
     } catch (error) {
+      console.error('Tool execution failed', {
+        callId: call.id,
+        toolName: call.name,
+        error,
+      });
       return {
         callId: call.id,
         name: call.name,
         args: call.args,
         isError: true,
         output: {
-          message: error instanceof Error ? error.message : String(error),
+          message: 'Tool execution failed',
         },
       };
     }

@@ -108,6 +108,10 @@ export const Component = () => {
 
   const workspaceId = useService(WorkspaceService).workspace.id;
 
+  useEffect(() => {
+    hasRestoredPinnedSessionRef.current = false;
+  }, [workspaceId]);
+
   const { docDisplayConfig, searchMenuConfig, reasoningConfig } =
     useAIChatConfig();
 
@@ -162,7 +166,7 @@ export const Component = () => {
   }, []);
 
   const createFreshSession = useCallback(async () => {
-    if (isOpeningSession || !currentSession) {
+    if (isOpeningSession) {
       return;
     }
     setIsOpeningSession(true);
@@ -180,13 +184,7 @@ export const Component = () => {
     } finally {
       setIsOpeningSession(false);
     }
-  }, [
-    client,
-    currentSession,
-    isOpeningSession,
-    reMountChatContent,
-    workspaceId,
-  ]);
+  }, [client, isOpeningSession, reMountChatContent, workspaceId]);
 
   const onOpenSession = useCallback(
     async (sessionId: string) => {

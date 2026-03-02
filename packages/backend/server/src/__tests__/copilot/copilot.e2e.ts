@@ -6,25 +6,25 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 
-import { AppModule } from '../app.module';
-import { JobQueue } from '../base';
-import { ConfigModule } from '../base/config';
-import { AuthService } from '../core/auth';
-import { DocReader } from '../core/doc';
-import { CopilotContextService } from '../plugins/copilot/context';
+import { AppModule } from '../../app.module';
+import { JobQueue } from '../../base';
+import { ConfigModule } from '../../base/config';
+import { AuthService } from '../../core/auth';
+import { DocReader } from '../../core/doc';
+import { CopilotContextService } from '../../plugins/copilot/context';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
-} from '../plugins/copilot/embedding';
-import { prompts, PromptService } from '../plugins/copilot/prompt';
+} from '../../plugins/copilot/embedding';
+import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   GeminiGenerativeProvider,
   OpenAIProvider,
-} from '../plugins/copilot/providers';
-import { CopilotStorage } from '../plugins/copilot/storage';
-import { MockCopilotProvider } from './mocks';
+} from '../../plugins/copilot/providers';
+import { CopilotStorage } from '../../plugins/copilot/storage';
+import { MockCopilotProvider } from '../mocks';
 import {
   acceptInviteById,
   createTestingApp,
@@ -33,7 +33,7 @@ import {
   smallestPng,
   TestingApp,
   TestUser,
-} from './utils';
+} from '../utils';
 import {
   addContextDoc,
   addContextFile,
@@ -67,7 +67,7 @@ import {
   textToEventStream,
   unsplashSearch,
   updateCopilotSession,
-} from './utils/copilot';
+} from '../utils/copilot';
 
 const test = ava as TestFn<{
   auth: AuthService;

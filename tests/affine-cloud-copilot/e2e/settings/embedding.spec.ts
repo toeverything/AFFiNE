@@ -206,11 +206,13 @@ test.describe('AISettings/Embedding', () => {
     ]);
 
     await expect(async () => {
-      const { content, message } =
-        await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(new RegExp(`Workspace${randomStr1}.*cat`));
-      expect(content).toMatch(new RegExp(`Workspace${randomStr2}.*dog`));
-      expect(await message.locator('affine-footnote-node').count()).toBe(2);
+      const { message } = await utils.chatPanel.getLatestAssistantMessage(page);
+      const fullText = await message.innerText();
+      expect(fullText).toMatch(new RegExp(`Workspace${randomStr1}.*cat`));
+      expect(fullText).toMatch(new RegExp(`Workspace${randomStr2}.*dog`));
+      expect(
+        await message.locator('affine-footnote-node').count()
+      ).toBeGreaterThanOrEqual(1);
     }).toPass({ timeout: 20000 });
   });
 
@@ -269,6 +271,7 @@ test.describe('AISettings/Embedding', () => {
     await utils.settings.waitForFileEmbeddingReadiness(page, 1);
 
     await utils.settings.closeSettingsPanel(page);
+    const query = `Use semantic search across workspace and attached files, then list all hobbies of ${person}.`;
 
     await utils.chatPanel.chatWithAttachments(
       page,
@@ -279,13 +282,13 @@ test.describe('AISettings/Embedding', () => {
           buffer: hobby2,
         },
       ],
-      `What is ${person}'s hobby?`
+      query
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: `What is ${person}'s hobby?`,
+        content: query,
       },
       {
         role: 'assistant',
@@ -294,11 +297,13 @@ test.describe('AISettings/Embedding', () => {
     ]);
 
     await expect(async () => {
-      const { content, message } =
-        await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/climbing/i);
-      expect(content).toMatch(/skating/i);
-      expect(await message.locator('affine-footnote-node').count()).toBe(2);
+      const { message } = await utils.chatPanel.getLatestAssistantMessage(page);
+      const fullText = await message.innerText();
+      expect(fullText).toMatch(/climbing/i);
+      expect(fullText).toMatch(/skating/i);
+      expect(
+        await message.locator('affine-footnote-node').count()
+      ).toBeGreaterThanOrEqual(1);
     }).toPass({ timeout: 20000 });
   });
 

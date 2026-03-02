@@ -1,15 +1,12 @@
 import test from 'ava';
 import { z } from 'zod';
 
-import type {
-  NativeLlmRequest,
-  NativeLlmStreamEvent,
-} from '../../../../native';
+import { NativeLlmRequest, NativeLlmStreamEvent } from '../../native';
 import {
   ToolCallAccumulator,
   ToolCallLoop,
   ToolSchemaExtractor,
-} from '../loop';
+} from '../../plugins/copilot/providers/loop';
 
 test('ToolCallAccumulator should merge deltas and complete tool call', t => {
   const accumulator = new ToolCallAccumulator();

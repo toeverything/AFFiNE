@@ -4,7 +4,9 @@ use std::sync::{
 };
 
 use llm_adapter::{
-  backend::{BackendConfig, BackendProtocol, ReqwestHttpClient, dispatch_request, dispatch_stream_events_with},
+  backend::{
+    BackendConfig, BackendError, BackendProtocol, ReqwestHttpClient, dispatch_request, dispatch_stream_events_with,
+  },
   core::{CoreRequest, StreamEvent},
   middleware::{
     MiddlewareConfig, PipelineContext, RequestMiddleware, StreamMiddleware, citation_indexing, clamp_max_tokens,
@@ -18,8 +20,9 @@ use napi::{
 };
 use serde::Deserialize;
 
-pub const LLM_STREAM_END_MARKER: &str = "__AFFINE_LLM_STREAM_END__";
-const LLM_STREAM_ABORTED_REASON: &str = "__AFFINE_LLM_STREAM_ABORTED__";
+pub const STREAM_END_MARKER: &str = "__AFFINE_LLM_STREAM_END__";
+const STREAM_ABORTED_REASON: &str = "__AFFINE_LLM_STREAM_ABORTED__";
+const STREAM_CALLBACK_DISPATCH_FAILED_REASON: &str = "__AFFINE_LLM_STREAM_CALLBACK_DISPATCH_FAILED__";
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
@@ -85,7 +88,7 @@ pub fn llm_dispatch_stream(
       Err(error) => {
         emit_error_event(&callback, error.reason.clone(), "middleware_error");
         let _ = callback.call(
-          Ok(LLM_STREAM_END_MARKER.to_string()),
+          Ok(STREAM_END_MARKER.to_string()),
           ThreadsafeFunctionCallMode::NonBlocking,
         );
         return;
@@ -93,17 +96,22 @@ pub fn llm_dispatch_stream(
     };
     let mut pipeline = StreamPipeline::new(chain, middleware.config.clone());
     let mut aborted_by_user = false;
+    let mut callback_dispatch_failed = false;
 
     let result = dispatch_stream_events_with(&ReqwestHttpClient::default(), &config, protocol, &request, |event| {
       if aborted_in_worker.load(Ordering::Relaxed) {
         aborted_by_user = true;
-        return Err(llm_adapter::backend::BackendError::Http(
-          LLM_STREAM_ABORTED_REASON.to_string(),
-        ));
+        return Err(BackendError::Http(STREAM_ABORTED_REASON.to_string()));
       }
 
       for event in pipeline.process(event) {
-        emit_stream_event(&callback, &event);
+        let status = emit_stream_event(&callback, &event);
+        if status != Status::Ok {
+          callback_dispatch_failed = true;
+          return Err(BackendError::Http(format!(
+            "{STREAM_CALLBACK_DISPATCH_FAILED_REASON}:{status}"
+          )));
+        }
       }
 
       Ok(())
@@ -115,21 +123,28 @@ pub fn llm_dispatch_stream(
           aborted_by_user = true;
           break;
         }
-        emit_stream_event(&callback, &event);
+        if emit_stream_event(&callback, &event) != Status::Ok {
+          callback_dispatch_failed = true;
+          break;
+        }
       }
     }
 
     if let Err(error) = result
       && !aborted_by_user
+      && !callback_dispatch_failed
       && !is_abort_error(&error)
+      && !is_callback_dispatch_failed_error(&error)
     {
       emit_error_event(&callback, error.to_string(), "dispatch_error");
     }
 
-    let _ = callback.call(
-      Ok(LLM_STREAM_END_MARKER.to_string()),
-      ThreadsafeFunctionCallMode::NonBlocking,
-    );
+    if !callback_dispatch_failed {
+      let _ = callback.call(
+        Ok(STREAM_END_MARKER.to_string()),
+        ThreadsafeFunctionCallMode::NonBlocking,
+      );
+    }
   });
 
   Ok(LlmStreamHandle { aborted })
@@ -166,7 +181,7 @@ impl StreamPipeline {
   }
 }
 
-fn emit_stream_event(callback: &ThreadsafeFunction<String, ()>, event: &StreamEvent) {
+fn emit_stream_event(callback: &ThreadsafeFunction<String, ()>, event: &StreamEvent) -> Status {
   let value = serde_json::to_string(event).unwrap_or_else(|error| {
     serde_json::json!({
       "type": "error",
@@ -175,7 +190,7 @@ fn emit_stream_event(callback: &ThreadsafeFunction<String, ()>, event: &StreamEv
     .to_string()
   });
 
-  let _ = callback.call(Ok(value), ThreadsafeFunctionCallMode::NonBlocking);
+  callback.call(Ok(value), ThreadsafeFunctionCallMode::NonBlocking)
 }
 
 fn emit_error_event(callback: &ThreadsafeFunction<String, ()>, message: String, code: &str) {
@@ -195,10 +210,17 @@ fn emit_error_event(callback: &ThreadsafeFunction<String, ()>, message: String, 
   let _ = callback.call(Ok(error_event), ThreadsafeFunctionCallMode::NonBlocking);
 }
 
-fn is_abort_error(error: &llm_adapter::backend::BackendError) -> bool {
+fn is_abort_error(error: &BackendError) -> bool {
   matches!(
     error,
-    llm_adapter::backend::BackendError::Http(reason) if reason == LLM_STREAM_ABORTED_REASON
+    BackendError::Http(reason) if reason == STREAM_ABORTED_REASON
+  )
+}
+
+fn is_callback_dispatch_failed_error(error: &BackendError) -> bool {
+  matches!(
+    error,
+    BackendError::Http(reason) if reason.starts_with(STREAM_CALLBACK_DISPATCH_FAILED_REASON)
   )
 }
 
@@ -257,7 +279,7 @@ fn map_json_error(error: serde_json::Error) -> Error {
   Error::new(Status::InvalidArg, format!("Invalid JSON payload: {error}"))
 }
 
-fn map_backend_error(error: llm_adapter::backend::BackendError) -> Error {
+fn map_backend_error(error: BackendError) -> Error {
   Error::new(Status::GenericFailure, error.to_string())
 }
 

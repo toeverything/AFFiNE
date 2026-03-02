@@ -6,6 +6,8 @@ import {
   CopilotProviderSideError,
   metrics,
   OneMB,
+  readResponseBufferWithLimit,
+  safeFetch,
   UserFriendlyError,
 } from '../../../base';
 import {
@@ -72,13 +74,32 @@ const LogProbsSchema = z.array(
   })
 );
 
+const TRUSTED_ATTACHMENT_HOST_SUFFIXES = ['cdn.affine.pro'];
+
+function normalizeImageFormatToMime(format?: string) {
+  switch (format?.toLowerCase()) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'webp':
+      return 'image/webp';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'image/png';
+  }
+}
+
 function normalizeImageResponseData(
-  data: { b64_json?: string; url?: string }[]
+  data: { b64_json?: string; url?: string }[],
+  mimeType: string = 'image/png'
 ) {
   return data
     .map(image => {
       if (image.b64_json) {
-        return `data:image/png;base64,${image.b64_json}`;
+        return `data:${mimeType};base64,${image.b64_json}`;
       }
       return image.url;
     })
@@ -607,30 +628,211 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   }
 
   // ====== text to image ======
+  private buildImageFetchOptions(url: URL) {
+    const baseOptions = { timeoutMs: 15_000, maxRedirects: 3 } as const;
+    const trustedOrigins = new Set<string>();
+    const protocol = this.AFFiNEConfig.server.https ? 'https:' : 'http:';
+    const port = this.AFFiNEConfig.server.port;
+    const isDefaultPort =
+      (protocol === 'https:' && port === 443) ||
+      (protocol === 'http:' && port === 80);
+
+    const addHostOrigin = (host: string) => {
+      if (!host) return;
+      try {
+        const parsed = new URL(`${protocol}//${host}`);
+        if (!parsed.port && !isDefaultPort) {
+          parsed.port = String(port);
+        }
+        trustedOrigins.add(parsed.origin);
+      } catch {
+        // ignore invalid host config entries
+      }
+    };
+
+    if (this.AFFiNEConfig.server.externalUrl) {
+      try {
+        trustedOrigins.add(
+          new URL(this.AFFiNEConfig.server.externalUrl).origin
+        );
+      } catch {
+        // ignore invalid external URL
+      }
+    }
+
+    addHostOrigin(this.AFFiNEConfig.server.host);
+    for (const host of this.AFFiNEConfig.server.hosts) {
+      addHostOrigin(host);
+    }
+
+    const hostname = url.hostname.toLowerCase();
+    const trustedByHost = TRUSTED_ATTACHMENT_HOST_SUFFIXES.some(
+      suffix => hostname === suffix || hostname.endsWith(`.${suffix}`)
+    );
+    if (trustedOrigins.has(url.origin) || trustedByHost) {
+      return { ...baseOptions, allowPrivateOrigins: new Set([url.origin]) };
+    }
+
+    return baseOptions;
+  }
+
+  private redactUrl(raw: string | URL): string {
+    try {
+      const parsed = raw instanceof URL ? raw : new URL(raw);
+      if (parsed.protocol === 'data:') return 'data:[redacted]';
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const redactedPath =
+        segments.length <= 2
+          ? parsed.pathname || '/'
+          : `/${segments[0]}/${segments[1]}/...`;
+      return `${parsed.origin}${redactedPath}`;
+    } catch {
+      return '[invalid-url]';
+    }
+  }
+
+  private async fetchImage(
+    url: string,
+    maxBytes: number,
+    signal?: AbortSignal
+  ): Promise<{ buffer: Buffer; type: string } | null> {
+    if (url.startsWith('data:')) {
+      let response: Response;
+      try {
+        response = await fetch(url, { signal });
+      } catch (error) {
+        this.logger.warn(
+          `Skip image attachment data URL due to read failure: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        return null;
+      }
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Skip image attachment data URL due to invalid response: ${response.status}`
+        );
+        return null;
+      }
+
+      const type =
+        response.headers.get('content-type') || 'application/octet-stream';
+      if (!type.startsWith('image/')) {
+        await response.body?.cancel().catch(() => undefined);
+        this.logger.warn(
+          `Skip non-image attachment data URL with content-type ${type}`
+        );
+        return null;
+      }
+
+      try {
+        const buffer = await readResponseBufferWithLimit(response, maxBytes);
+        return { buffer, type };
+      } catch (error) {
+        this.logger.warn(
+          `Skip image attachment data URL due to read failure/size limit: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        return null;
+      }
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      this.logger.warn(
+        `Skip image attachment with invalid URL: ${this.redactUrl(url)}`
+      );
+      return null;
+    }
+    const redactedUrl = this.redactUrl(parsed);
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      this.logger.warn(
+        `Skip image attachment with unsupported protocol: ${redactedUrl}`
+      );
+      return null;
+    }
+
+    let response: Response;
+    try {
+      response = await safeFetch(
+        parsed,
+        { method: 'GET', signal },
+        this.buildImageFetchOptions(parsed)
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Skip image attachment due to blocked/unreachable URL: ${redactedUrl}, reason: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+
+    if (!response.ok) {
+      this.logger.warn(
+        `Skip image attachment fetch failure ${response.status}: ${redactedUrl}`
+      );
+      return null;
+    }
+
+    const type =
+      response.headers.get('content-type') || 'application/octet-stream';
+    if (!type.startsWith('image/')) {
+      await response.body?.cancel().catch(() => undefined);
+      this.logger.warn(
+        `Skip non-image attachment with content-type ${type}: ${redactedUrl}`
+      );
+      return null;
+    }
+
+    const contentLength = Number(response.headers.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      await response.body?.cancel().catch(() => undefined);
+      this.logger.warn(
+        `Skip oversized image attachment by content-length (${contentLength}): ${redactedUrl}`
+      );
+      return null;
+    }
+
+    try {
+      const buffer = await readResponseBufferWithLimit(response, maxBytes);
+      return { buffer, type };
+    } catch (error) {
+      this.logger.warn(
+        `Skip image attachment due to read failure/size limit: ${redactedUrl}, reason: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
   private async *generateImageWithAttachments(
     model: string,
     prompt: string,
-    attachments: NonNullable<PromptMessage['attachments']>
+    attachments: NonNullable<PromptMessage['attachments']>,
+    signal?: AbortSignal
   ): AsyncGenerator<string> {
     const form = new FormData();
+    const outputFormat = 'webp';
+    const maxBytes = 10 * OneMB;
     form.set('model', model);
     form.set('prompt', prompt);
-    form.set('output_format', 'webp');
+    form.set('output_format', outputFormat);
 
     for (const [idx, entry] of attachments.entries()) {
       const url = typeof entry === 'string' ? entry : entry.attachment;
       try {
-        const response = await fetch(url);
-        if (!response.ok) continue;
-        const type =
-          response.headers.get('content-type') || 'application/octet-stream';
-        if (!type.startsWith('image/')) continue;
-        const contentLength = Number(response.headers.get('content-length'));
-        if (Number.isFinite(contentLength) && contentLength > 10 * OneMB)
-          continue;
-        const buffer = Buffer.from(await response.arrayBuffer());
-        if (buffer.byteLength > 10 * OneMB) continue;
-        const file = new File([buffer], `${idx}.png`, { type });
+        const attachment = await this.fetchImage(url, maxBytes, signal);
+        if (!attachment) continue;
+        const { buffer, type } = attachment;
+        const extension = type.split(';')[0].split('/')[1] || 'png';
+        const file = new File([buffer], `${idx}.${extension}`, { type });
         form.append('image[]', file);
       } catch {
         continue;
@@ -664,7 +866,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       throw new Error(data.error.message);
     }
 
-    const images = normalizeImageResponseData(data.data);
+    const images = normalizeImageResponseData(
+      data.data,
+      normalizeImageFormatToMime(outputFormat)
+    );
     if (!images.length) {
       throw new Error('No images returned from OpenAI');
     }
@@ -691,7 +896,12 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     try {
       if (attachments && attachments.length > 0) {
-        yield* this.generateImageWithAttachments(model.id, prompt, attachments);
+        yield* this.generateImageWithAttachments(
+          model.id,
+          prompt,
+          attachments,
+          options.signal
+        );
       } else {
         const response = await this.requestOpenAIJson('/images/generations', {
           model: model.id,

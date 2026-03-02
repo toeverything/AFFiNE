@@ -97,6 +97,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const chatToolbarContainerRef = useRef<HTMLDivElement | null>(null);
   const contentKeyRef = useRef<string | null>(null);
+  const prevSessionIdRef = useRef<string | null>(null);
   const lastDocIdRef = useRef<string | null>(null);
   const sessionLoadSeqRef = useRef(0);
 
@@ -128,6 +129,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   }, [appSidebarConfig]);
 
   const resetPanel = useCallback(() => {
+    sessionLoadSeqRef.current += 1;
     setSession(undefined);
     setEmbeddingProgress([0, 0]);
     setHasPinned(false);
@@ -167,10 +169,9 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         reuseLatestChat: false,
         ...options,
       });
-      if (requestSeq === sessionLoadSeqRef.current) {
-        setSession(nextSession ?? null);
-        setHasPinned(!!nextSession?.pinned);
-      }
+      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
+      setSession(nextSession ?? null);
+      setHasPinned(!!nextSession?.pinned);
       return nextSession ?? undefined;
     },
     [doc, session]
@@ -187,18 +188,17 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         doc.workspace.id,
         options.sessionId
       );
-      if (requestSeq === sessionLoadSeqRef.current) {
-        setSession(nextSession ?? null);
-        setHasPinned(!!nextSession?.pinned);
-      }
+      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
+      setSession(nextSession ?? null);
+      setHasPinned(!!nextSession?.pinned);
       return nextSession ?? undefined;
     },
     [doc]
   );
 
   const newSession = useCallback(async () => {
-    const requestSeq = ++sessionLoadSeqRef.current;
     resetPanel();
+    const requestSeq = sessionLoadSeqRef.current;
     setSession(null);
 
     if (!AIProvider.session || !doc) {
@@ -383,10 +383,22 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     return () => subscription.unsubscribe();
   }, [doc, initPanel, session]);
 
+  const hasSessionHistory = !!session?.messages?.length;
+  const sessionSwitched = !!(
+    session?.sessionId &&
+    prevSessionIdRef.current &&
+    prevSessionIdRef.current !== session.sessionId
+  );
   const contentKey =
-    hasPinned || session?.sessionId
+    hasPinned || (session?.sessionId && (hasSessionHistory || sessionSwitched))
       ? (session?.sessionId ?? doc?.id ?? 'chat-panel')
       : (doc?.id ?? 'chat-panel');
+
+  useEffect(() => {
+    if (session?.sessionId) {
+      prevSessionIdRef.current = session.sessionId;
+    }
+  }, [session?.sessionId]);
 
   useEffect(() => {
     if (!chatContent) {

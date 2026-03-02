@@ -421,7 +421,7 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
   await type(page, '# bbb\nddd');
   await page.keyboard.press('ArrowUp');
   await pressTab(page);
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('End');
   await pressEnter(page);
   await type(page, 'ccc');
 
@@ -433,23 +433,38 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
    */
 
   const paragraph = page.locator('affine-note affine-paragraph');
-  expect(await paragraph.nth(2).isVisible()).toBeTruthy();
-  expect(
-    await paragraph
-      .nth(2)
-      .evaluate(
-        (block: ParagraphBlockComponent) =>
-          block.model.props.type === 'text' &&
-          block.model.props.text.toString() === 'ccc'
-      )
-  ).toBeTruthy();
-  await paragraph.locator('blocksuite-toggle-button .toggle-icon').click();
-  expect(await paragraph.nth(2).isVisible()).toBeFalsy();
+  const findParagraphIndex = async (text: string, type: 'text' | 'h1') => {
+    return await paragraph.evaluateAll(
+      (blocks, payload) =>
+        blocks.findIndex(
+          block =>
+            (block as ParagraphBlockComponent).model.props.type ===
+              payload.type &&
+            (block as ParagraphBlockComponent).model.props.text.toString() ===
+              payload.text
+        ),
+      { text, type }
+    );
+  };
+  const cccVisible = async () => {
+    const idx = await findParagraphIndex('ccc', 'text');
+    if (idx < 0) return false;
+    return await paragraph.nth(idx).isVisible();
+  };
 
-  await paragraph.nth(3).click(); // ddd
-  expect(await paragraph.nth(2).isVisible()).toBeFalsy();
+  await expect
+    .poll(() => findParagraphIndex('ccc', 'text'))
+    .toBeGreaterThan(-1);
+  expect(await cccVisible()).toBeTruthy();
+  await paragraph.locator('blocksuite-toggle-button .toggle-icon').click();
+  await expect.poll(cccVisible).toBeFalsy();
+
+  const dddIdx = await findParagraphIndex('ddd', 'text');
+  expect(dddIdx).toBeGreaterThan(-1);
+  await paragraph.nth(dddIdx).click();
+  expect(await cccVisible()).toBeFalsy();
   expect(await paragraph.nth(0).locator('affine-paragraph').count()).toBe(2);
   await pressTab(page);
   expect(await paragraph.nth(0).locator('affine-paragraph').count()).toBe(3);
-  expect(await paragraph.nth(2).isVisible()).toBeTruthy();
+  await expect.poll(cccVisible).toBeTruthy();
 });

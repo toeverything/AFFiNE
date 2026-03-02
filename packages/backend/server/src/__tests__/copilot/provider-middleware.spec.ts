@@ -1,8 +1,8 @@
 import test from 'ava';
 
-import { resolveProviderMiddleware } from '../provider-middleware';
-import { buildProviderRegistry } from '../provider-registry';
-import { CopilotProviderType } from '../types';
+import { resolveProviderMiddleware } from '../../plugins/copilot/providers/provider-middleware';
+import { buildProviderRegistry } from '../../plugins/copilot/providers/provider-registry';
+import { CopilotProviderType } from '../../plugins/copilot/providers/types';
 
 test('resolveProviderMiddleware should include anthropic defaults', t => {
   const middleware = resolveProviderMiddleware(CopilotProviderType.Anthropic);

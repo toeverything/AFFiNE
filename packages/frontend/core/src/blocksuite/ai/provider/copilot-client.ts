@@ -163,7 +163,11 @@ export class CopilotClient {
   }
 
   async createMessage(
-    options: OptionsField<typeof createCopilotMessageMutation>
+    options: OptionsField<typeof createCopilotMessageMutation>,
+    requestOptions?: Pick<
+      RequestOptions<typeof createCopilotMessageMutation>,
+      'timeout' | 'signal'
+    >
   ) {
     try {
       const res = await this.gql({
@@ -171,6 +175,8 @@ export class CopilotClient {
         variables: {
           options,
         },
+        timeout: requestOptions?.timeout,
+        signal: requestOptions?.signal,
       });
       return res.createCopilotMessage;
     } catch (err) {

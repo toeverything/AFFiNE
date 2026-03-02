@@ -67,6 +67,8 @@ interface CreateMessageOptions {
   content?: string;
   attachments?: (string | Blob | File)[];
   params?: Record<string, any>;
+  timeout?: number;
+  signal?: AbortSignal;
 }
 
 async function createMessage({
@@ -75,6 +77,8 @@ async function createMessage({
   content,
   attachments,
   params,
+  timeout,
+  signal,
 }: CreateMessageOptions): Promise<string> {
   const hasAttachments = attachments && attachments.length > 0;
   const options: Parameters<CopilotClient['createMessage']>[0] = {
@@ -102,7 +106,7 @@ async function createMessage({
     ).filter(Boolean) as File[];
   }
 
-  return await client.createMessage(options);
+  return await client.createMessage(options, { timeout, signal });
 }
 
 export function textToText({
@@ -133,6 +137,8 @@ export function textToText({
             content,
             attachments,
             params,
+            timeout,
+            signal,
           });
         }
         const eventSource = client.chatTextStream(
@@ -147,34 +153,44 @@ export function textToText({
         );
         AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
-        if (signal) {
-          if (signal.aborted) {
-            eventSource.close();
-            return;
+        let onAbort: (() => void) | undefined;
+        try {
+          if (signal) {
+            if (signal.aborted) {
+              eventSource.close();
+              return;
+            }
+            onAbort = () => {
+              eventSource.close();
+            };
+            signal.addEventListener('abort', onAbort, { once: true });
           }
-          signal.onabort = () => {
-            eventSource.close();
-          };
-        }
-        if (postfix) {
-          const messages: string[] = [];
-          for await (const event of toTextStream(eventSource, {
-            timeout,
-            signal,
-          })) {
-            if (event.type === 'message') {
-              messages.push(event.data);
+
+          if (postfix) {
+            const messages: string[] = [];
+            for await (const event of toTextStream(eventSource, {
+              timeout,
+              signal,
+            })) {
+              if (event.type === 'message') {
+                messages.push(event.data);
+              }
+            }
+            yield postfix(messages.join(''));
+          } else {
+            for await (const event of toTextStream(eventSource, {
+              timeout,
+              signal,
+            })) {
+              if (event.type === 'message') {
+                yield event.data;
+              }
             }
           }
-          yield postfix(messages.join(''));
-        } else {
-          for await (const event of toTextStream(eventSource, {
-            timeout,
-            signal,
-          })) {
-            if (event.type === 'message') {
-              yield event.data;
-            }
+        } finally {
+          eventSource.close();
+          if (signal && onAbort) {
+            signal.removeEventListener('abort', onAbort);
           }
         }
       },
@@ -188,6 +204,8 @@ export function textToText({
           content,
           attachments,
           params,
+          timeout,
+          signal,
         });
       }
       const eventSource = client.chatTextStream(
@@ -202,28 +220,37 @@ export function textToText({
       );
       AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
-      if (signal) {
-        if (signal.aborted) {
-          eventSource.close();
-          return '';
+      let onAbort: (() => void) | undefined;
+      try {
+        if (signal) {
+          if (signal.aborted) {
+            eventSource.close();
+            return '';
+          }
+          onAbort = () => {
+            eventSource.close();
+          };
+          signal.addEventListener('abort', onAbort, { once: true });
         }
-        signal.onabort = () => {
-          eventSource.close();
-        };
-      }
 
-      const messages: string[] = [];
-      for await (const event of toTextStream(eventSource, {
-        timeout,
-        signal,
-      })) {
-        if (event.type === 'message') {
-          messages.push(event.data);
+        const messages: string[] = [];
+        for await (const event of toTextStream(eventSource, {
+          timeout,
+          signal,
+        })) {
+          if (event.type === 'message') {
+            messages.push(event.data);
+          }
+        }
+
+        const result = messages.join('');
+        return postfix ? postfix(result) : result;
+      } finally {
+        eventSource.close();
+        if (signal && onAbort) {
+          signal.removeEventListener('abort', onAbort);
         }
       }
-
-      const result = messages.join('');
-      return postfix ? postfix(result) : result;
     })();
   }
 }
@@ -251,6 +278,8 @@ export function toImage({
           content,
           attachments,
           params,
+          timeout,
+          signal,
         });
       }
       const eventSource = client.imagesStream(

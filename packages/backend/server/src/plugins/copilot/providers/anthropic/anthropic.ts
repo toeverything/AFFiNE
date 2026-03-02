@@ -20,7 +20,7 @@ import type {
   StreamObject,
 } from '../types';
 import { CopilotProviderType, ModelOutputType } from '../types';
-import { getGoogleAuth, getVertexAnthropicInferenceBaseUrl } from '../utils';
+import { getGoogleAuth, getVertexAnthropicBaseUrl } from '../utils';
 
 export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
   private handleError(e: any) {
@@ -46,7 +46,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
           ? authorization.replace(/^Bearer\s+/i, '')
           : '';
       const baseUrl =
-        getVertexAnthropicInferenceBaseUrl(this.config as any) || auth.baseUrl;
+        getVertexAnthropicBaseUrl(this.config as any) || auth.baseUrl;
       return {
         base_url: baseUrl || '',
         auth_token: token,

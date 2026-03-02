@@ -146,14 +146,17 @@ export class PromptService implements OnApplicationBootstrap {
     this.ensureInMemoryPrompts();
 
     const existing = this.inMemoryPrompts.get(name);
+    const mergedOptionalModels = existing?.optionalModels
+      ? [...existing.optionalModels, ...(extraConfig?.optionalModels ?? [])]
+      : extraConfig?.optionalModels;
+    const inMemoryConfig = (!!config && structuredClone(config)) || undefined;
+    const dbConfig = this.toDbConfig(config);
     this.inMemoryPrompts.set(name, {
       name,
       model,
       action: existing?.action,
-      optionalModels: existing?.optionalModels
-        ? [...existing.optionalModels, ...(extraConfig?.optionalModels || [])]
-        : extraConfig?.optionalModels,
-      config: config ? structuredClone(config) : undefined,
+      optionalModels: mergedOptionalModels,
+      config: inMemoryConfig,
       messages: this.cloneMessages(messages),
     });
     this.cache.delete(name);
@@ -166,8 +169,8 @@ export class PromptService implements OnApplicationBootstrap {
             name,
             action: existing?.action,
             model,
-            optionalModels: existing?.optionalModels,
-            config: config || undefined,
+            optionalModels: mergedOptionalModels,
+            config: dbConfig,
             messages: {
               create: messages.map((m, idx) => ({
                 idx,
@@ -179,7 +182,8 @@ export class PromptService implements OnApplicationBootstrap {
           },
           update: {
             model,
-            config: config || undefined,
+            optionalModels: mergedOptionalModels,
+            config: dbConfig,
             updatedAt: new Date(),
             messages: {
               deleteMany: {},
@@ -208,7 +212,7 @@ export class PromptService implements OnApplicationBootstrap {
       messages?: PromptMessage[];
       model?: string;
       modified?: boolean;
-      config?: PromptConfig;
+      config?: PromptConfig | null;
     },
     where?: Prisma.AiPromptWhereInput
   ) {
@@ -221,7 +225,9 @@ export class PromptService implements OnApplicationBootstrap {
       if (model !== undefined) {
         next.model = model;
       }
-      if (config) {
+      if (config === null) {
+        next.config = undefined;
+      } else if (config !== undefined) {
         next.config = structuredClone(config);
       }
       if (messages) {
@@ -240,7 +246,7 @@ export class PromptService implements OnApplicationBootstrap {
         await this.db.aiPrompt.update({
           where: { name },
           data: {
-            config: config || undefined,
+            config: this.toDbConfig(config),
             updatedAt: new Date(),
             modified,
             model,
@@ -293,6 +299,14 @@ export class PromptService implements OnApplicationBootstrap {
     if (!this.inMemoryPrompts.size) {
       this.resetInMemoryPrompts();
     }
+  }
+
+  private toDbConfig(
+    config: PromptConfig | null | undefined
+  ): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined {
+    if (config === null) return Prisma.DbNull;
+    if (config === undefined) return undefined;
+    return config as Prisma.InputJsonValue;
   }
 
   private cloneMessages(messages: PromptMessage[]) {

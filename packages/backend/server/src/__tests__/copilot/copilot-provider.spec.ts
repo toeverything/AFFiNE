@@ -4,31 +4,31 @@ import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import { z } from 'zod';
 
-import { ServerFeature, ServerService } from '../core';
-import { AuthService } from '../core/auth';
-import { QuotaModule } from '../core/quota';
-import { Models } from '../models';
-import { CopilotModule } from '../plugins/copilot';
-import { prompts, PromptService } from '../plugins/copilot/prompt';
+import { ServerFeature, ServerService } from '../../core';
+import { AuthService } from '../../core/auth';
+import { QuotaModule } from '../../core/quota';
+import { Models } from '../../models';
+import { CopilotModule } from '../../plugins/copilot';
+import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   StreamObject,
   StreamObjectSchema,
-} from '../plugins/copilot/providers';
-import { TranscriptionResponseSchema } from '../plugins/copilot/transcript/types';
+} from '../../plugins/copilot/providers';
+import { TranscriptionResponseSchema } from '../../plugins/copilot/transcript/types';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
   GraphExecutorState,
-} from '../plugins/copilot/workflow';
+} from '../../plugins/copilot/workflow';
 import {
   CopilotChatImageExecutor,
   CopilotCheckHtmlExecutor,
   CopilotCheckJsonExecutor,
-} from '../plugins/copilot/workflow/executor';
-import { createTestingModule, TestingModule } from './utils';
-import { TestAssets } from './utils/copilot';
+} from '../../plugins/copilot/workflow/executor';
+import { createTestingModule, TestingModule } from '../utils';
+import { TestAssets } from '../utils/copilot';
 
 type Tester = {
   auth: AuthService;

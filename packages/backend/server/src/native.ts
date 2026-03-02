@@ -329,24 +329,28 @@ export function llmDispatchStream(
     throw new Error('native llm stream dispatch is not available');
   }
 
-  let adapter!: NativeStreamAdapter<NativeLlmStreamEvent>;
+  let adapter: NativeStreamAdapter<NativeLlmStreamEvent> | undefined;
+  const buffer: (NativeLlmStreamEvent | null)[] = [];
+  let pushFn = (event: NativeLlmStreamEvent | null) => {
+    buffer.push(event);
+  };
   const handle = nativeLlmModule.llmDispatchStream(
     protocol,
     JSON.stringify(backendConfig),
     JSON.stringify(request),
     (error, eventJson) => {
       if (error) {
-        adapter.push({ type: 'error', message: error.message, raw: eventJson });
+        pushFn({ type: 'error', message: error.message, raw: eventJson });
         return;
       }
       if (eventJson === LLM_STREAM_END_MARKER) {
-        adapter.push(null);
+        pushFn(null);
         return;
       }
       try {
-        adapter.push(JSON.parse(eventJson) as NativeLlmStreamEvent);
+        pushFn(JSON.parse(eventJson) as NativeLlmStreamEvent);
       } catch (error) {
-        adapter.push({
+        pushFn({
           type: 'error',
           message:
             error instanceof Error
@@ -358,5 +362,11 @@ export function llmDispatchStream(
     }
   );
   adapter = new NativeStreamAdapter(handle, signal);
+  pushFn = event => {
+    adapter.push(event);
+  };
+  for (const event of buffer) {
+    adapter.push(event);
+  }
   return adapter;
 }

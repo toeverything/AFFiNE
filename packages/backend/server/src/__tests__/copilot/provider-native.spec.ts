@@ -1,8 +1,12 @@
 import test from 'ava';
 
-import type { ProviderMiddlewareConfig } from '../../config';
-import { CopilotProvider } from '../provider';
-import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
+import { ProviderMiddlewareConfig } from '../../plugins/copilot/config';
+import { CopilotProvider } from '../../plugins/copilot/providers/provider';
+import {
+  CopilotProviderType,
+  ModelInputType,
+  ModelOutputType,
+} from '../../plugins/copilot/providers/types';
 
 class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
   readonly type = CopilotProviderType.OpenAI;

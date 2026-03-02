@@ -119,7 +119,7 @@ function toLegacyProfiles(
       type,
       priority: LEGACY_PROVIDER_PRIORITY[type],
       config: legacyConfig,
-    });
+    } as CopilotProviderProfile);
   }
   return legacyProfiles;
 }

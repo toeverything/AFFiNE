@@ -61,16 +61,24 @@ export type ProviderMiddlewareConfig = {
   node?: { text?: NodeTextMiddleware[] };
 };
 
-export type CopilotProviderProfile = {
+type CopilotProviderProfileCommon = {
   id: string;
-  type: CopilotProviderType;
   displayName?: string;
   priority?: number;
   enabled?: boolean;
   models?: string[];
-  config: ProviderSpecificConfig;
   middleware?: ProviderMiddlewareConfig;
 };
+
+type CopilotProviderProfileVariant<T extends CopilotProviderType> = {
+  type: T;
+  config: CopilotProviderConfigMap[T];
+};
+
+export type CopilotProviderProfile = CopilotProviderProfileCommon &
+  {
+    [Type in CopilotProviderType]: CopilotProviderProfileVariant<Type>;
+  }[CopilotProviderType];
 
 export type CopilotProviderDefaults = Partial<
   Record<ModelOutputType, string>
@@ -78,14 +86,12 @@ export type CopilotProviderDefaults = Partial<
   fallback?: string;
 };
 
-const CopilotProviderProfileShape = z.object({
+const CopilotProviderProfileBaseShape = z.object({
   id: z.string().regex(/^[a-zA-Z0-9-_]+$/),
-  type: z.nativeEnum(CopilotProviderType),
   displayName: z.string().optional(),
   priority: z.number().optional(),
   enabled: z.boolean().optional(),
   models: z.array(z.string()).optional(),
-  config: z.record(z.any()),
   middleware: z
     .object({
       rust: z
@@ -100,6 +106,78 @@ const CopilotProviderProfileShape = z.object({
     })
     .optional(),
 });
+
+const OpenAIConfigShape = z.object({
+  apiKey: z.string(),
+  baseURL: z.string().optional(),
+  oldApiStyle: z.boolean().optional(),
+});
+
+const FalConfigShape = z.object({
+  apiKey: z.string(),
+});
+
+const GeminiGenerativeConfigShape = z.object({
+  apiKey: z.string(),
+  baseURL: z.string().optional(),
+});
+
+const VertexProviderConfigShape = z.object({
+  location: z.string().optional(),
+  project: z.string().optional(),
+  baseURL: z.string().optional(),
+  googleAuthOptions: z.any().optional(),
+  fetch: z.any().optional(),
+});
+
+const PerplexityConfigShape = z.object({
+  apiKey: z.string(),
+  endpoint: z.string().optional(),
+});
+
+const AnthropicOfficialConfigShape = z.object({
+  apiKey: z.string(),
+  baseURL: z.string().optional(),
+});
+
+const MorphConfigShape = z.object({
+  apiKey: z.string().optional(),
+});
+
+const CopilotProviderProfileShape = z.discriminatedUnion('type', [
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.OpenAI),
+    config: OpenAIConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.FAL),
+    config: FalConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Gemini),
+    config: GeminiGenerativeConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.GeminiVertex),
+    config: VertexProviderConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Perplexity),
+    config: PerplexityConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Anthropic),
+    config: AnthropicOfficialConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.AnthropicVertex),
+    config: VertexProviderConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Morph),
+    config: MorphConfigShape,
+  }),
+]);
 
 const CopilotProviderDefaultsShape = z.object({
   [ModelOutputType.Text]: z.string().optional(),

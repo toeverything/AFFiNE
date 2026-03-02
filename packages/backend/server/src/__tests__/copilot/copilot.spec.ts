@@ -8,38 +8,38 @@ import ava from 'ava';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
-import { EventBus, JobQueue } from '../base';
-import { ConfigModule } from '../base/config';
-import { AuthService } from '../core/auth';
-import { QuotaModule } from '../core/quota';
-import { StorageModule, WorkspaceBlobStorage } from '../core/storage';
+import { EventBus, JobQueue } from '../../base';
+import { ConfigModule } from '../../base/config';
+import { AuthService } from '../../core/auth';
+import { QuotaModule } from '../../core/quota';
+import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import {
   ContextCategories,
   CopilotSessionModel,
   WorkspaceModel,
-} from '../models';
-import { CopilotModule } from '../plugins/copilot';
-import { CopilotContextService } from '../plugins/copilot/context';
-import { CopilotCronJobs } from '../plugins/copilot/cron';
+} from '../../models';
+import { CopilotModule } from '../../plugins/copilot';
+import { CopilotContextService } from '../../plugins/copilot/context';
+import { CopilotCronJobs } from '../../plugins/copilot/cron';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
-} from '../plugins/copilot/embedding';
-import { prompts, PromptService } from '../plugins/copilot/prompt';
+} from '../../plugins/copilot/embedding';
+import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   ModelInputType,
   ModelOutputType,
   OpenAIProvider,
-} from '../plugins/copilot/providers';
+} from '../../plugins/copilot/providers';
 import {
   CitationParser,
   TextStreamParser,
-} from '../plugins/copilot/providers/utils';
-import { ChatSessionService } from '../plugins/copilot/session';
-import { CopilotStorage } from '../plugins/copilot/storage';
-import { CopilotTranscriptionService } from '../plugins/copilot/transcript';
+} from '../../plugins/copilot/providers/utils';
+import { ChatSessionService } from '../../plugins/copilot/session';
+import { CopilotStorage } from '../../plugins/copilot/storage';
+import { CopilotTranscriptionService } from '../../plugins/copilot/transcript';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -48,7 +48,7 @@ import {
   WorkflowGraphExecutor,
   type WorkflowNodeData,
   WorkflowNodeType,
-} from '../plugins/copilot/workflow';
+} from '../../plugins/copilot/workflow';
 import {
   CopilotChatImageExecutor,
   CopilotCheckHtmlExecutor,
@@ -56,16 +56,16 @@ import {
   getWorkflowExecutor,
   NodeExecuteState,
   NodeExecutorType,
-} from '../plugins/copilot/workflow/executor';
-import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
-import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
-import { CopilotWorkspaceService } from '../plugins/copilot/workspace';
-import { PaymentModule } from '../plugins/payment';
-import { SubscriptionService } from '../plugins/payment/service';
-import { SubscriptionStatus } from '../plugins/payment/types';
-import { MockCopilotProvider } from './mocks';
-import { createTestingModule, TestingModule } from './utils';
-import { WorkflowTestCases } from './utils/copilot';
+} from '../../plugins/copilot/workflow/executor';
+import { AutoRegisteredWorkflowExecutor } from '../../plugins/copilot/workflow/executor/utils';
+import { WorkflowGraphList } from '../../plugins/copilot/workflow/graph';
+import { CopilotWorkspaceService } from '../../plugins/copilot/workspace';
+import { PaymentModule } from '../../plugins/payment';
+import { SubscriptionService } from '../../plugins/payment/service';
+import { SubscriptionStatus } from '../../plugins/payment/types';
+import { MockCopilotProvider } from '../mocks';
+import { createTestingModule, TestingModule } from '../utils';
+import { WorkflowTestCases } from '../utils/copilot';
 
 type Context = {
   auth: AuthService;

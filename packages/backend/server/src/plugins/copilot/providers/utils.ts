@@ -739,16 +739,15 @@ function normalizeUrl(baseURL?: string) {
   }
   try {
     const url = new URL(baseURL);
-    if (url.pathname.endsWith('/')) {
-      url.pathname = url.pathname.slice(0, -1);
-    }
-    return url.toString();
+    const serialized = url.toString();
+    if (serialized.endsWith('/')) return serialized.slice(0, -1);
+    return serialized;
   } catch {
     return undefined;
   }
 }
 
-export function getVertexAnthropicInferenceBaseUrl(
+export function getVertexAnthropicBaseUrl(
   options: GoogleVertexAnthropicProviderSettings
 ) {
   const normalizedBaseUrl = normalizeUrl(options.baseURL);

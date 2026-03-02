@@ -4,8 +4,11 @@ import {
   buildProviderRegistry,
   resolveModel,
   stripProviderPrefix,
-} from '../provider-registry';
-import { CopilotProviderType, ModelOutputType } from '../types';
+} from '../../plugins/copilot/providers/provider-registry';
+import {
+  CopilotProviderType,
+  ModelOutputType,
+} from '../../plugins/copilot/providers/types';
 
 test('buildProviderRegistry should keep explicit profile over legacy compatibility profile', t => {
   const registry = buildProviderRegistry({
