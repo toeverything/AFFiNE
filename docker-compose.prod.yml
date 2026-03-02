@@ -7,40 +7,15 @@
 #   docker compose -f docker-compose.prod.yml logs -f aion
 #
 # Services:
-#   - postgres      : PostgreSQL 16 + pgvector
 #   - redis         : Redis cache/sessions
 #   - aion_migration: DB migration job (runs once)
 #   - aion          : Main AION server (AFFiNE + Agent Platform)
 #   - caddy         : Reverse proxy with automatic HTTPS (Let's Encrypt)
+#
+# Database: external (DigitalOcean Managed PostgreSQL)
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
-  # ─── PostgreSQL ──────────────────────────────────────────────────────────
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: aion_postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: ${DB_USERNAME:-affine}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      POSTGRES_DB: ${DB_DATABASE:-affine}
-      POSTGRES_INITDB_ARGS: '--data-checksums'
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'pg_isready',
-          '-U',
-          '${DB_USERNAME:-affine}',
-          '-d',
-          '${DB_DATABASE:-affine}',
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
   # ─── Redis ───────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
@@ -59,14 +34,12 @@ services:
     command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
     environment:
       REDIS_SERVER_HOST: redis
-      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:?}@postgres:5432/${DB_DATABASE:-affine}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       AFFINE_INDEXER_ENABLED: 'false'
     volumes:
       - upload_data:/root/.affine/storage
       - ./config:/root/.affine/config
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -77,7 +50,7 @@ services:
     environment:
       # ── Core AFFiNE ──
       REDIS_SERVER_HOST: redis
-      DATABASE_URL: postgresql://${DB_USERNAME:-affine}:${DB_PASSWORD:?}@postgres:5432/${DB_DATABASE:-affine}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       AFFINE_SERVER_EXTERNAL_URL: https://${DOMAIN:?DOMAIN is required}
       AFFINE_SERVER_HTTPS: 'true'
       AFFINE_INDEXER_ENABLED: 'false'
@@ -108,8 +81,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      postgres:
-        condition: service_healthy
       aion_migration:
         condition: service_completed_successfully
     restart: unless-stopped
@@ -133,7 +104,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   upload_data:
   caddy_data:
   caddy_config:
