@@ -1026,7 +1026,7 @@ __metadata:
     "@types/react-dom": "npm:^19.0.2"
     "@types/semver": "npm:^7.5.8"
     "@types/sinon": "npm:^21.0.0"
-    "@types/supertest": "npm:^6.0.2"
+    "@types/supertest": "npm:^7.0.0"
     ai: "npm:^5.0.118"
     ava: "npm:^6.4.0"
     bullmq: "npm:^5.40.2"
@@ -17288,13 +17288,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/supertest@npm:^6.0.2":
-  version: 6.0.3
-  resolution: "@types/supertest@npm:6.0.3"
+"@types/supertest@npm:^7.0.0":
+  version: 7.2.0
+  resolution: "@types/supertest@npm:7.2.0"
   dependencies:
     "@types/methods": "npm:^1.1.4"
     "@types/superagent": "npm:^8.1.0"
-  checksum: 10/6ec05eb591c97bc856b0e78c12f5bec10545f3a749688f34232d189797a506d971bc95931718eb57b378d8513f6d2d12462383e6d68455fa72df35c19de6e89e
+  checksum: 10/5a322e29b81033e90ac50ab315d49559b21809ee39b5681ab7386819463e30d68e29c63c946023a1c353e7f13fb3f20d64dcb89d3d8a0fff569450501aff786c
   languageName: node
   linkType: hard
 
