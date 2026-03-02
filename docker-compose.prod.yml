@@ -31,12 +31,7 @@ services:
   aion_migration:
     build: .
     container_name: aion_migration
-    command: >
-      sh -c '
-        mkdir -p ~/.affine/config &&
-        npx prisma migrate deploy &&
-        SERVER_FLAVOR=script node ./dist/main.js
-      '
+    command: ['sh', '-c', 'mkdir -p ~/.affine/config && npx prisma migrate deploy']
     environment:
       REDIS_SERVER_HOST: redis
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
