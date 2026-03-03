@@ -3,7 +3,6 @@ import {
   EdgelessLegacySlotIdentifier,
   OverlayIdentifier,
 } from '@blocksuite/affine-block-surface';
-import { getAnchors } from '@blocksuite/affine-gfx-connector';
 import {
   ConnectorElementModel,
   type RootBlockModel,
@@ -780,59 +779,6 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
       .rotateSelf(_selectedRect.rotate)
       .translateSelf(-centerX, -centerY);
     const transformValue = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`;
-    console.debug('[selected-rect] render', {
-      selectedRect: _selectedRect,
-      scaleX,
-      scaleY,
-      matrix: {
-        a: matrix.a,
-        b: matrix.b,
-        c: matrix.c,
-        d: matrix.d,
-        e: matrix.e,
-        f: matrix.f,
-      },
-      transform: transformValue,
-    });
-    requestAnimationFrame(() => {
-      const rect = this.renderRoot.querySelector(
-        '.affine-edgeless-selected-rect'
-      ) as HTMLElement | null;
-      if (!rect) return;
-      const rectBox = rect.getBoundingClientRect();
-      const hostBox = this.getBoundingClientRect();
-      const handlePositions: Record<string, { x: number; y: number } | null> =
-        {};
-      ['left', 'right', 'top', 'bottom'].forEach(label => {
-        const handle = rect.querySelector(
-          `.handle[aria-label="${label}"]`
-        ) as HTMLElement | null;
-        if (!handle) {
-          handlePositions[label] = null;
-          return;
-        }
-        const box = handle.getBoundingClientRect();
-        handlePositions[label] = {
-          x: box.left + box.width / 2,
-          y: box.top + box.height / 2,
-        };
-      });
-      console.debug('[selected-rect] dom', {
-        host: {
-          left: hostBox.left,
-          top: hostBox.top,
-          right: hostBox.right,
-          bottom: hostBox.bottom,
-        },
-        rect: {
-          left: rectBox.left,
-          top: rectBox.top,
-          right: rectBox.right,
-          bottom: rectBox.bottom,
-        },
-        handles: handlePositions,
-      });
-    });
     const hasElementLocked = elements.some(element => element.isLocked());
     const handlers = this._renderHandles();
 

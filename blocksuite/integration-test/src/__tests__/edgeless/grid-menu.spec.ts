@@ -95,6 +95,26 @@ describe('edgeless grid menu', () => {
     menu.remove();
   });
 
+  test('updates grid size from preset option', async () => {
+    const menu = await mountMenu();
+    const trigger = menu.renderRoot.querySelector(
+      'button.grid-menu-trigger'
+    ) as HTMLButtonElement;
+    trigger.click();
+    await menu.updateComplete;
+
+    const options = Array.from(
+      menu.renderRoot.querySelectorAll<HTMLButtonElement>('.grid-size-option')
+    );
+    const target = options.find(option => option.textContent?.includes('50px'));
+    expect(target).toBeTruthy();
+    target?.click();
+
+    expect(store.getStorage('edgelessGridSize')).toBe(50);
+
+    menu.remove();
+  });
+
   test('toggles snap settings and emits events', async () => {
     store.setStorage('edgelessSnapToGrid', false);
     store.setStorage('edgelessSnapToGuides', true);

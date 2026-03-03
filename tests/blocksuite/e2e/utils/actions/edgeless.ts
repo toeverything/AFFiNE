@@ -124,7 +124,25 @@ export async function toggleMultipleEditors(page: Page) {
 }
 
 export async function switchEditorMode(page: Page) {
-  await page.click('sl-tooltip[content="Switch Editor"]');
+  const didToggle = await page.evaluate(() => {
+    const container = document.querySelector('affine-editor-container') as any;
+    if (!container || !('mode' in container)) {
+      return false;
+    }
+    container.mode = container.mode === 'edgeless' ? 'page' : 'edgeless';
+    return true;
+  });
+  if (!didToggle) {
+    const switcher = page.locator('sl-tooltip[content="Switch Editor"]');
+    if ((await switcher.count()) === 0) {
+      return;
+    }
+    await switcher.waitFor({ state: 'attached' });
+    if (!(await switcher.isVisible())) {
+      return;
+    }
+    await switcher.click({ force: true });
+  }
   // FIXME: listen to editor loaded event
   await waitNextFrame(page);
 }

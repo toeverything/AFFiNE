@@ -1,4 +1,5 @@
 import { DomRenderer } from '@blocksuite/affine-block-surface';
+import { Bound } from '@blocksuite/global/gfx';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { drawioLibraryCatalog } from '../../../../affine/gfx/shape/src/drawio/library-catalog.js';
@@ -59,16 +60,41 @@ function getShapeTextElement(root: ParentNode, id: string) {
   );
 }
 
-function expectTextNotMirrored(
+async function expectTextNotMirrored(
+  surfaceView: ReturnType<typeof getSurface>,
+  surfaceModel: ReturnType<typeof getSurface>['model'],
   root: ParentNode,
   ids: string[],
-  axis: 'X' | 'Y'
+  axis: 'X' | 'Y',
+  idToSpec?: Map<string, ShapeSpec>
 ) {
   const mirroredPattern = axis === 'X' ? /scale\(\s*-1\s*,/ : /,\s*-1\s*\)/;
 
   for (const id of ids) {
+    const model = surfaceModel.getElementById(id);
+    if (model) {
+      surfaceView.fitToViewport(Bound.from(model));
+      await wait(60);
+    }
+    let shapeRoot = root.querySelector(`[data-element-id="${id}"]`);
+    for (let i = 0; i < 3 && !shapeRoot; i += 1) {
+      await wait(60);
+      shapeRoot = root.querySelector(`[data-element-id="${id}"]`);
+    }
+    const spec = idToSpec?.get(id);
+    const specLabel = spec
+      ? `${spec.label} (${spec.subType}${spec.stencilName ? `:${spec.stencilName}` : ''})`
+      : id;
     const textElement = getShapeTextElement(root, id);
-    expect(textElement, `Missing text element for shape ${id}`).not.toBeNull();
+    if (!textElement) {
+      const snippet = shapeRoot
+        ? shapeRoot.outerHTML.slice(0, 200)
+        : 'shape root not found';
+      expect(
+        textElement,
+        `Missing text element for shape ${specLabel}. Root: ${snippet}`
+      ).not.toBeNull();
+    }
     const transform = textElement?.style.transform ?? '';
     expect(transform).not.toMatch(mirroredPattern);
   }
@@ -210,6 +236,11 @@ describe('Shape rendering with DOM renderer', () => {
     const surfaceModel = surfaceView.model;
     const specs = getAllKnownShapeSpecs();
     const ids: string[] = [];
+    const idToSpec = new Map<string, ShapeSpec>();
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
 
     specs.forEach((spec, index) => {
       const col = index % 12;
@@ -217,17 +248,23 @@ describe('Shape rendering with DOM renderer', () => {
       const x = 80 + col * 120;
       const y = 80 + row * 100;
 
-      ids.push(
-        surfaceModel.addElement({
-          type: 'shape',
-          subType: spec.subType,
-          stencilName: spec.stencilName,
-          xywh: `[${x}, ${y}, 100, 72]`,
-          text: `H${index}`,
-          textDisplay: true,
-        })
-      );
+      const id = surfaceModel.addElement({
+        type: 'shape',
+        subType: spec.subType,
+        stencilName: spec.stencilName,
+        xywh: `[${x}, ${y}, 100, 72]`,
+        text: `H${index}`,
+        textDisplay: true,
+      });
+      ids.push(id);
+      idToSpec.set(id, spec);
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + 100);
+      maxY = Math.max(maxY, y + 72);
     });
+
+    surfaceView.fitToViewport(new Bound(minX, minY, maxX - minX, maxY - minY));
 
     await wait(120);
 
@@ -238,7 +275,14 @@ describe('Shape rendering with DOM renderer', () => {
     });
 
     await wait(120);
-    expectTextNotMirrored(surfaceView.renderRoot, ids, 'X');
+    await expectTextNotMirrored(
+      surfaceView,
+      surfaceModel,
+      surfaceView.renderRoot,
+      ids,
+      'X',
+      idToSpec
+    );
   });
 
   test('vertical flip keeps text direction for all known shapes', async () => {
@@ -246,6 +290,11 @@ describe('Shape rendering with DOM renderer', () => {
     const surfaceModel = surfaceView.model;
     const specs = getAllKnownShapeSpecs();
     const ids: string[] = [];
+    const idToSpec = new Map<string, ShapeSpec>();
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
 
     specs.forEach((spec, index) => {
       const col = index % 12;
@@ -253,17 +302,23 @@ describe('Shape rendering with DOM renderer', () => {
       const x = 80 + col * 120;
       const y = 80 + row * 100;
 
-      ids.push(
-        surfaceModel.addElement({
-          type: 'shape',
-          subType: spec.subType,
-          stencilName: spec.stencilName,
-          xywh: `[${x}, ${y}, 100, 72]`,
-          text: `V${index}`,
-          textDisplay: true,
-        })
-      );
+      const id = surfaceModel.addElement({
+        type: 'shape',
+        subType: spec.subType,
+        stencilName: spec.stencilName,
+        xywh: `[${x}, ${y}, 100, 72]`,
+        text: `V${index}`,
+        textDisplay: true,
+      });
+      ids.push(id);
+      idToSpec.set(id, spec);
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + 100);
+      maxY = Math.max(maxY, y + 72);
     });
+
+    surfaceView.fitToViewport(new Bound(minX, minY, maxX - minX, maxY - minY));
 
     await wait(120);
 
@@ -274,6 +329,13 @@ describe('Shape rendering with DOM renderer', () => {
     });
 
     await wait(120);
-    expectTextNotMirrored(surfaceView.renderRoot, ids, 'Y');
+    await expectTextNotMirrored(
+      surfaceView,
+      surfaceModel,
+      surfaceView.renderRoot,
+      ids,
+      'Y',
+      idToSpec
+    );
   });
 });

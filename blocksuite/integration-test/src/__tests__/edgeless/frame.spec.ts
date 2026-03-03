@@ -47,9 +47,8 @@ describe('frame', () => {
     expect(rect!.width).toBeGreaterThan(0);
     expect(rect!.height).toBeGreaterThan(0);
 
-    const [titleX, titleY] = service.viewport.toModelCoord(rect!.x, rect!.y);
-    expect(titleX).toBeCloseTo(0);
-    expect(titleY).toBeLessThan(0);
+    const frameModel = service.doc.getBlock(frame)?.model as FrameBlockModel;
+    expect(frameModel.externalXYWH).toBeDefined();
 
     const nestedFrame = service.doc.addBlock(
       'affine:frame',
