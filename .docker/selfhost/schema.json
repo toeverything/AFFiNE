@@ -197,8 +197,8 @@
       "properties": {
         "SMTP.name": {
           "type": "string",
-          "description": "Name of the email server (e.g. your domain name)\n@default \"AFFiNE Server\"\n@environment `MAILER_SERVERNAME`",
-          "default": "AFFiNE Server"
+          "description": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.\n@default \"\"\n@environment `MAILER_SERVERNAME`",
+          "default": ""
         },
         "SMTP.host": {
           "type": "string",
@@ -237,8 +237,8 @@
         },
         "fallbackSMTP.name": {
           "type": "string",
-          "description": "Name of the fallback email server (e.g. your domain name)\n@default \"AFFiNE Server\"",
-          "default": "AFFiNE Server"
+          "description": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.\n@default \"\"",
+          "default": ""
         },
         "fallbackSMTP.host": {
           "type": "string",

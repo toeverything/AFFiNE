@@ -91,7 +91,7 @@
   "mailer": {
     "SMTP.name": {
       "type": "String",
-      "desc": "Name of the email server (e.g. your domain name)",
+      "desc": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.",
       "env": "MAILER_SERVERNAME"
     },
     "SMTP.host": {
@@ -130,7 +130,7 @@
     },
     "fallbackSMTP.name": {
       "type": "String",
-      "desc": "Name of the fallback email server (e.g. your domain name)"
+      "desc": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname."
     },
     "fallbackSMTP.host": {
       "type": "String",
