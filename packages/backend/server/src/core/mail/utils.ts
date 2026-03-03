@@ -32,12 +32,8 @@ function readSystemHostname() {
   }
 }
 
-export function resolveSMTPHeloHostname(
-  configuredName: string,
-  systemHostname?: string
-) {
+export function resolveSMTPHeloHostname(configuredName: string) {
   const normalizedConfiguredName = normalizeSMTPHeloHostname(configuredName);
   if (normalizedConfiguredName) return normalizedConfiguredName;
-  if (configuredName.trim()) return undefined;
-  return normalizeSMTPHeloHostname(systemHostname ?? readSystemHostname());
+  return normalizeSMTPHeloHostname(readSystemHostname());
 }
