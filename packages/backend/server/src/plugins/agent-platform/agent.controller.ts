@@ -423,13 +423,18 @@ export class AgentPlatformController {
         );
       }
 
+      // Optimization: only send full doc/rules on first message (no session yet).
+      // On resumed sessions, Claude already has the context.
+      const systemPrompt = claudeSessionId
+        ? undefined // session has context, skip resending doc/rules
+        : await this.buildSystemPrompt(body.documentContent, projectRules);
+
       const result = await this.claudeCode.chat(body.message, {
         sessionId: claudeSessionId,
         cwd: repoCwd,
-        systemPrompt: await this.buildSystemPrompt(
-          body.documentContent,
-          projectRules
-        ),
+        systemPrompt,
+        model: process.env.AGENT_MODEL || 'sonnet',
+        maxBudget: 0.5,
         allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash(git:*)'],
         timeoutMs: 10 * 60 * 1000, // 10 min — chat with tools needs more time
       });
@@ -598,16 +603,20 @@ export class AgentPlatformController {
           );
         }
 
+        // Optimization: only send full doc/rules on first message
+        const streamSystemPrompt = claudeSessionId
+          ? undefined
+          : await this.buildSystemPrompt(body.documentContent, projectRules);
+
         this.claudeCode
           .chatStream(
             body.message,
             {
               sessionId: claudeSessionId,
               cwd,
-              systemPrompt: await this.buildSystemPrompt(
-                body.documentContent,
-                projectRules
-              ),
+              systemPrompt: streamSystemPrompt,
+              model: process.env.AGENT_MODEL || 'sonnet',
+              maxBudget: 0.5,
               allowedTools: [
                 'Read',
                 'Glob',

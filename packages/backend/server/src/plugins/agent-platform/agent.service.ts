@@ -42,6 +42,56 @@ import { DocReader } from '../../core/doc/reader';
 const REPOS_BASE_PATH =
   process.env.AGENT_REPOS_PATH || join(process.cwd(), '.agent-repos');
 
+// ─── Token optimization: model tiers ─────────────────────────────────────
+// Use cheaper models for simple tasks, full model only for code generation.
+// Override with AGENT_MODEL env var to force a single model for all steps.
+type ModelTier = 'haiku' | 'sonnet' | 'opus';
+
+const STEP_MODEL_TIER: Record<string, ModelTier> = {
+  validate_brief: 'haiku',
+  detect_ambiguity: 'haiku',
+  brief_epics: 'sonnet',
+  generate_tasks: 'sonnet',
+  generate_checkpoints: 'sonnet',
+  technical_plan: 'opus',
+  code_generation: 'opus',
+  check_alignment: 'opus',
+};
+
+const OPERATION_MODEL_TIER: Record<string, ModelTier> = {
+  analyze_ambiguity: 'haiku',
+  generate_plan: 'sonnet',
+  propose_changes: 'opus',
+  chat: 'sonnet',
+};
+
+// Budget caps per operation (USD) to prevent runaway costs
+const OPERATION_BUDGET: Record<string, number> = {
+  validate_brief: 0.1,
+  detect_ambiguity: 0.1,
+  brief_epics: 0.2,
+  generate_tasks: 0.25,
+  generate_checkpoints: 0.15,
+  technical_plan: 0.3,
+  code_generation: 2.0,
+  check_alignment: 0.25,
+  analyze_ambiguity: 0.1,
+  generate_plan: 0.3,
+  propose_changes: 2.0,
+  chat: 0.5,
+};
+
+function selectModel(operation: string): string | undefined {
+  // If AGENT_MODEL is set, always use that (user override)
+  if (process.env.AGENT_MODEL) return process.env.AGENT_MODEL;
+  const tier = STEP_MODEL_TIER[operation] ?? OPERATION_MODEL_TIER[operation];
+  return tier; // Claude Code CLI accepts 'haiku', 'sonnet', 'opus'
+}
+
+function selectBudget(operation: string): number | undefined {
+  return OPERATION_BUDGET[operation];
+}
+
 /** Maps AgentStep → [ingStatus, edStatus] */
 const STEP_STATUS_MAP: Record<string, [RunStatus, RunStatus]> = {
   validate_brief: ['validating_brief', 'validated_brief'],
@@ -53,6 +103,35 @@ const STEP_STATUS_MAP: Record<string, [RunStatus, RunStatus]> = {
   code_generation: ['generating_code', 'generated_code'],
   check_alignment: ['checking_alignment', 'checked_alignment'],
 };
+
+// ─── Token optimization: response cache ──────────────────────────────────
+// Cache analysis results by content hash to avoid duplicate Claude calls.
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const responseCache = new Map<
+  string,
+  { data: unknown; timestamp: number }
+>();
+
+function getCached<T>(key: string): T | undefined {
+  const entry = responseCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    responseCache.delete(key);
+    return undefined;
+  }
+  return entry.data as T;
+}
+
+function setCache(key: string, data: unknown): void {
+  responseCache.set(key, { data, timestamp: Date.now() });
+  // Evict old entries if cache grows too large
+  if (responseCache.size > 100) {
+    const oldest = [...responseCache.entries()].sort(
+      (a, b) => a[1].timestamp - b[1].timestamp
+    );
+    for (let i = 0; i < 20; i++) responseCache.delete(oldest[i][0]);
+  }
+}
 
 @Injectable()
 export class AgentPlatformService {
@@ -132,11 +211,23 @@ export class AgentPlatformService {
     await this.storage.updateRunStatus(runId, 'analyzing');
 
     try {
-      const result = await this.claudeCode.analyzeAmbiguity(briefContent, {
-        cwd: run.repoTarget?.localPath,
-        sessionId: run.claudeSessionId ?? undefined,
-        model: process.env.AGENT_MODEL,
-      });
+      // Check cache first — same brief content = same ambiguities
+      const cacheKey = `ambiguity:${createHash('sha256').update(briefContent).digest('hex')}`;
+      const cached = getCached<{ ambiguities: Array<{ id: string; text: string; severity: string }> }>(cacheKey);
+
+      let result;
+      if (cached) {
+        this.logger.log(`[cache hit] analyzeAmbiguity — skipping Claude call`);
+        result = cached;
+      } else {
+        result = await this.claudeCode.analyzeAmbiguity(briefContent, {
+          cwd: run.repoTarget?.localPath,
+          sessionId: run.claudeSessionId ?? undefined,
+          model: selectModel('analyze_ambiguity'),
+          maxBudget: selectBudget('analyze_ambiguity'),
+        });
+        setCache(cacheKey, result);
+      }
 
       if (result.sessionId) {
         await this.storage.updateClaudeSession(runId, result.sessionId);
@@ -176,7 +267,8 @@ export class AgentPlatformService {
         {
           cwd: run.repoTarget?.localPath,
           sessionId: run.claudeSessionId ?? undefined,
-          model: process.env.AGENT_MODEL,
+          model: selectModel('generate_plan'),
+          maxBudget: selectBudget('generate_plan'),
         }
       );
 
@@ -215,7 +307,8 @@ export class AgentPlatformService {
       const result = await this.claudeCode.proposeChanges(briefContent, plan, {
         cwd: run.repoTarget?.localPath,
         sessionId: run.claudeSessionId ?? undefined,
-        model: process.env.AGENT_MODEL,
+        model: selectModel('propose_changes'),
+        maxBudget: selectBudget('propose_changes'),
       });
 
       if (result.sessionId) {
@@ -667,7 +760,9 @@ export class AgentPlatformService {
         prompt,
         {
           cwd: run.repoTarget?.localPath,
-          model: process.env.AGENT_MODEL,
+          model: selectModel(step),
+          maxBudget: selectBudget(step),
+          allowedTools: [],
         }
       );
 
