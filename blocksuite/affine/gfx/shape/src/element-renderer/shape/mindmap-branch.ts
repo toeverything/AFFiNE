@@ -17,7 +17,7 @@ export function mindmapBranch(
   rc: RoughCanvas,
   colors: Colors
 ) {
-  const { strokeStyle, strokeWidth, shapeStyle, rotate } = model;
+  const { strokeStyle, strokeWidth, shapeStyle, rotate, flipX, flipY } = model;
   const [, , w, h] = model.deserializedXYWH;
   const renderOffset = Math.max(strokeWidth, 0) / 2;
   const renderWidth = Math.max(w - renderOffset * 2, 0);
@@ -30,6 +30,7 @@ export function mindmapBranch(
     matrix
       .translateSelf(renderOffset, renderOffset)
       .translateSelf(cx, cy)
+      .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
       .rotateSelf(rotate)
       .translateSelf(-cx, -cy)
   );

@@ -39,13 +39,17 @@ export function getPointsFromBoundWithRotation(
     h: bounds.h + resPadding[0] * 2,
   });
 
-  if (rotate) {
+  const hasFlip = 'flipX' in bounds || 'flipY' in bounds;
+  const flipX = hasFlip && (bounds as { flipX?: boolean }).flipX ? -1 : 1;
+  const flipY = hasFlip && (bounds as { flipY?: boolean }).flipY ? -1 : 1;
+  if (rotate || hasFlip) {
     const { x, y, w, h } = bounds;
     const cx = x + w / 2;
     const cy = y + h / 2;
 
     const m = new DOMMatrix()
       .translateSelf(cx, cy)
+      .scaleSelf(flipX, flipY)
       .rotateSelf(rotate)
       .translateSelf(-cx, -cy);
 

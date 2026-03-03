@@ -12,6 +12,7 @@ import {
   buildPathFromStencil,
   getStencilShapeData,
 } from '../../drawio/stencil-utils.js';
+import { getTextFlipCompensation } from '../shape/index.js';
 import {
   buildActorPath,
   buildCalloutPath,
@@ -693,7 +694,10 @@ export const shapeDomRenderer = (
       DefaultTheme.shapeTextColor,
       true
     );
-    textElement.textContent = str;
+    textElement.dataset.role = 'shape-text';
+    const textContent = document.createElement('span');
+    textContent.textContent = str;
+    textContent.style.display = 'inline-block';
     if (model.shapeType === ShapeType.Container) {
       textElement.style.justifyContent = 'flex-start';
     }
@@ -739,19 +743,20 @@ export const shapeDomRenderer = (
       applyShadowStyles(model, element, renderer);
       return;
     }
-    const inheritedFlipX = !SVG_SHAPE_TYPES.has(model.shapeType) && model.flipX;
-    const inheritedFlipY = !SVG_SHAPE_TYPES.has(model.shapeType) && model.flipY;
-    const textScaleX = (inheritedFlipX ? -1 : 1) * (model.textFlipX ? -1 : 1);
-    const textScaleY = (inheritedFlipY ? -1 : 1) * (model.textFlipY ? -1 : 1);
-    const textRotate = model.textRotate ?? 0;
+    const inherited = getTextFlipCompensation(
+      model.shapeType,
+      !SVG_SHAPE_TYPES.has(model.shapeType) && model.flipX,
+      !SVG_SHAPE_TYPES.has(model.shapeType) && model.flipY
+    );
+    const textScaleX = inherited.x * (model.textFlipX ? -1 : 1);
+    const textScaleY = inherited.y * (model.textFlipY ? -1 : 1);
+    const textRotate = (model.textRotate ?? 0) + inherited.rotate;
     if (textScaleX !== 1 || textScaleY !== 1 || textRotate !== 0) {
-      textElement.style.transformOrigin = 'center';
-      textElement.style.transform = `scale(${textScaleX}, ${textScaleY}) rotate(${textRotate}deg)`;
+      textContent.style.transformOrigin = 'center';
+      textContent.style.transform = `scale(${textScaleX}, ${textScaleY}) rotate(${textRotate}deg)`;
     }
+    textElement.append(textContent);
     textElement.textContent = str;
-    if (model.shapeType === ShapeType.MindmapBranch) {
-      textElement.dataset.role = 'shape-text';
-    }
     newChildren.push(textElement);
   }
 

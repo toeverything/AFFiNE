@@ -208,30 +208,27 @@ export const ShapeElementRendererExtension = ElementRendererExtension(
 
 export * from './utils';
 
-const TEXT_NON_FLIPPED_RENDERER_SHAPES = new Set([
-  'rect',
-  'roundedRect',
-  'ellipse',
-  'diamond',
-  'triangle',
-  'triangleRight',
-  'hexagon',
-  'parallelogram',
-  'trapezoid',
-  'container',
-  'verticalContainer',
-  'horizontalContainer',
-  'list',
-  'mindmapCentralIdea',
-  'mindmapBranch',
-  'mindmapSubTopic',
-  'mindmapSquare',
-  'mindmapOrganization',
-  'mindmapDivision',
-]);
+export const shouldCompensateShapeFlipForText = (_shapeType: string) => true;
 
-export const shouldCompensateShapeFlipForText = (shapeType: string) =>
-  !TEXT_NON_FLIPPED_RENDERER_SHAPES.has(shapeType);
+export const getTextFlipCompensation = (
+  shapeType: string,
+  flipX: boolean,
+  flipY: boolean
+) => {
+  if (!shouldCompensateShapeFlipForText(shapeType)) {
+    return { x: 1, y: 1, rotate: 0 };
+  }
+  const inheritedX = flipX ? -1 : 1;
+  const inheritedY = flipY ? -1 : 1;
+  if (shapeType === ShapeType.HorizontalContainer) {
+    return {
+      x: flipX ? -1 : 1,
+      y: flipX ? -1 : 1,
+      rotate: 0,
+    };
+  }
+  return { x: inheritedX, y: inheritedY, rotate: 0 };
+};
 
 function renderText(
   model: ShapeElementModel | LocalShapeElementModel,
@@ -285,12 +282,10 @@ function renderText(
     effectiveVerticalAlign = TextVerticalAlign.Center;
   }
 
-  const compensateShapeFlip = shouldCompensateShapeFlipForText(model.shapeType);
-  const inheritedFlipX = compensateShapeFlip && flipX ? -1 : 1;
-  const inheritedFlipY = compensateShapeFlip && flipY ? -1 : 1;
-  const scaleX = inheritedFlipX * (textFlipX ? -1 : 1);
-  const scaleY = inheritedFlipY * (textFlipY ? -1 : 1);
-  const rotation = textRotate ?? 0;
+  const inherited = getTextFlipCompensation(model.shapeType, flipX, flipY);
+  const scaleX = inherited.x * (textFlipX ? -1 : 1);
+  const scaleY = inherited.y * (textFlipY ? -1 : 1);
+  const rotation = (textRotate ?? 0) + inherited.rotate;
 
   let [verticalPadding, horPadding] = padding;
   if (model.shapeType === ShapeType.MindmapBranch) {
@@ -357,7 +352,20 @@ function renderText(
 
     ctx.save();
     ctx.translate(centerX, centerY);
+    ctx.scale(scaleX, scaleY);
+    if (rotation) {
+      ctx.rotate((rotation * Math.PI) / 180);
+    }
     ctx.rotate(-Math.PI / 2);
+    // Text flip tweak helpers (uncomment to experiment):
+    if (flipX) {
+      ctx.scale(-1, 1); // horizontal flip
+      ctx.rotate(Math.PI);
+    }
+    if (flipY) {
+      ctx.scale(1, -1); // vertical flip
+      ctx.rotate(Math.PI); // 180deg rotation
+    }
     ctx.font = font;
     ctx.fillStyle = color;
     ctx.textAlign = textAlign;

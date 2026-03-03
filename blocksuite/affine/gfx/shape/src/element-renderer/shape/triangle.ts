@@ -25,6 +25,8 @@ export function triangle(
     roughness,
     rotate,
     shapeStyle,
+    flipX,
+    flipY,
   } = model;
   const [, , w, h] = model.deserializedXYWH;
   const renderOffset = Math.max(strokeWidth, 0) / 2;
@@ -39,6 +41,7 @@ export function triangle(
     matrix
       .translateSelf(renderOffset, renderOffset)
       .translateSelf(cx, cy)
+      .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
       .rotateSelf(rotate)
       .translateSelf(-cx, -cy)
   );

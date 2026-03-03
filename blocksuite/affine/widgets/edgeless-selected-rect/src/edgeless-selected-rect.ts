@@ -3,6 +3,7 @@ import {
   EdgelessLegacySlotIdentifier,
   OverlayIdentifier,
 } from '@blocksuite/affine-block-surface';
+import { getAnchors } from '@blocksuite/affine-gfx-connector';
 import {
   ConnectorElementModel,
   type RootBlockModel,
@@ -481,8 +482,14 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     const [width, height] = [rect.width * zoom, rect.height * zoom];
 
     let rotate = 0;
+    let flipX = false;
+    let flipY = false;
     if (elements.length === 1 && elements[0].rotate) {
       rotate = elements[0].rotate;
+    }
+    if (elements.length === 1) {
+      flipX = 'flipX' in elements[0] && Boolean(elements[0].flipX);
+      flipY = 'flipY' in elements[0] && Boolean(elements[0].flipY);
     }
 
     this._selectedRect = {
@@ -491,6 +498,8 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
       left,
       top,
       rotate,
+      flipX,
+      flipY,
       borderStyle: 'solid',
       borderWidth: 2,
     };
@@ -760,6 +769,70 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     if (!this._shouldRenderSelection(elements)) return nothing;
 
     const { _selectedRect } = this;
+    const scaleX = _selectedRect.flipX ? -1 : 1;
+    const scaleY = _selectedRect.flipY ? -1 : 1;
+    const centerX = _selectedRect.width / 2;
+    const centerY = _selectedRect.height / 2;
+    const matrix = new DOMMatrix()
+      .translateSelf(_selectedRect.left, _selectedRect.top)
+      .translateSelf(centerX, centerY)
+      .scaleSelf(scaleX, scaleY)
+      .rotateSelf(_selectedRect.rotate)
+      .translateSelf(-centerX, -centerY);
+    const transformValue = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`;
+    console.debug('[selected-rect] render', {
+      selectedRect: _selectedRect,
+      scaleX,
+      scaleY,
+      matrix: {
+        a: matrix.a,
+        b: matrix.b,
+        c: matrix.c,
+        d: matrix.d,
+        e: matrix.e,
+        f: matrix.f,
+      },
+      transform: transformValue,
+    });
+    requestAnimationFrame(() => {
+      const rect = this.renderRoot.querySelector(
+        '.affine-edgeless-selected-rect'
+      ) as HTMLElement | null;
+      if (!rect) return;
+      const rectBox = rect.getBoundingClientRect();
+      const hostBox = this.getBoundingClientRect();
+      const handlePositions: Record<string, { x: number; y: number } | null> =
+        {};
+      ['left', 'right', 'top', 'bottom'].forEach(label => {
+        const handle = rect.querySelector(
+          `.handle[aria-label="${label}"]`
+        ) as HTMLElement | null;
+        if (!handle) {
+          handlePositions[label] = null;
+          return;
+        }
+        const box = handle.getBoundingClientRect();
+        handlePositions[label] = {
+          x: box.left + box.width / 2,
+          y: box.top + box.height / 2,
+        };
+      });
+      console.debug('[selected-rect] dom', {
+        host: {
+          left: hostBox.left,
+          top: hostBox.top,
+          right: hostBox.right,
+          bottom: hostBox.bottom,
+        },
+        rect: {
+          left: rectBox.left,
+          top: rectBox.top,
+          right: rectBox.right,
+          bottom: rectBox.bottom,
+        },
+        handles: handlePositions,
+      });
+    });
     const hasElementLocked = elements.some(element => element.isLocked());
     const handlers = this._renderHandles();
 
@@ -802,7 +875,8 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
           height: `${_selectedRect.height}px`,
           borderWidth: `${_selectedRect.borderWidth}px`,
           borderStyle: isConnector ? 'none' : _selectedRect.borderStyle,
-          transform: `translate(${_selectedRect.left}px, ${_selectedRect.top}px) rotate(${_selectedRect.rotate}deg)`,
+          transform: transformValue,
+          transformOrigin: '0 0',
         })}
         disabled="true"
         data-mode=${this._mode}
