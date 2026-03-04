@@ -1,4 +1,4 @@
-import { mixpanel } from '@affine/track';
+import { tracker } from '@affine/track';
 import { createEvent, Service } from '@toeverything/infra';
 import { combineLatest, distinctUntilChanged, map, skip } from 'rxjs';
 
@@ -19,7 +19,7 @@ export class WorkbenchService extends Service {
       )
       .subscribe(newLocation => {
         this.eventBus.root.emit(WorkbenchLocationChanged, newLocation);
-        mixpanel.track_pageview({
+        tracker.track_pageview({
           location: newLocation,
         });
       });

@@ -3,6 +3,7 @@ import zod from 'zod';
 import { t } from '../../core/logical/type-presets.js';
 import { propertyType } from '../../core/property/property-config.js';
 import { NumberPropertySchema } from './types.js';
+import { parseNumber } from './utils/formatter.js';
 export const numberPropertyType = propertyType('number');
 
 export const numberPropertyModelConfig = numberPropertyType.modelConfig({
@@ -21,7 +22,7 @@ export const numberPropertyModelConfig = numberPropertyType.modelConfig({
     default: () => null,
     toString: ({ value }) => value?.toString() ?? '',
     fromString: ({ value }) => {
-      const num = value ? Number(value) : NaN;
+      const num = value ? parseNumber(value) : NaN;
       return { value: isNaN(num) ? null : num };
     },
     toJson: ({ value }) => value ?? null,

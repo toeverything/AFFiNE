@@ -190,7 +190,7 @@ export class Clipboard extends LifeCycleWatcher {
         );
       }
       return slice;
-    } catch (error) {
+    } catch {
       const getDataByType = this._getDataByType(data);
       const slice = await this._getSnapshotByPriority(
         type => getDataByType(type),

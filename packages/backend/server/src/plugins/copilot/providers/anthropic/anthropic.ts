@@ -1,52 +1,90 @@
-import {
-  type AnthropicProvider as AnthropicSDKProvider,
-  type AnthropicProviderOptions,
-} from '@ai-sdk/anthropic';
-import { type GoogleVertexAnthropicProvider } from '@ai-sdk/google-vertex/anthropic';
-import { AISDKError, generateText, stepCountIs, streamText } from 'ai';
+import type { ToolSet } from 'ai';
 
 import {
   CopilotProviderSideError,
   metrics,
   UserFriendlyError,
 } from '../../../../base';
+import {
+  llmDispatchStream,
+  type NativeLlmBackendConfig,
+  type NativeLlmRequest,
+} from '../../../../native';
+import type { NodeTextMiddleware } from '../../config';
+import { buildNativeRequest, NativeProviderAdapter } from '../native';
 import { CopilotProvider } from '../provider';
 import type {
   CopilotChatOptions,
-  CopilotProviderModel,
   ModelConditions,
   PromptMessage,
   StreamObject,
 } from '../types';
-import { ModelOutputType } from '../types';
-import {
-  chatToGPTMessage,
-  StreamObjectParser,
-  TextStreamParser,
-} from '../utils';
+import { CopilotProviderType, ModelOutputType } from '../types';
+import { getGoogleAuth, getVertexAnthropicBaseUrl } from '../utils';
 
 export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
-  protected abstract instance:
-    | AnthropicSDKProvider
-    | GoogleVertexAnthropicProvider;
-
   private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof AISDKError) {
-      this.logger.error('Throw error from ai sdk:', e);
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: e.name || 'unknown',
-        message: e.message,
-      });
-    } else {
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: 'unexpected_response',
-        message: e?.message || 'Unexpected anthropic response',
-      });
     }
+    return new CopilotProviderSideError({
+      provider: this.type,
+      kind: 'unexpected_response',
+      message: e?.message || 'Unexpected anthropic response',
+    });
+  }
+
+  private async createNativeConfig(): Promise<NativeLlmBackendConfig> {
+    if (this.type === CopilotProviderType.AnthropicVertex) {
+      const auth = await getGoogleAuth(this.config as any, 'anthropic');
+      const headers = auth.headers();
+      const authorization =
+        headers.Authorization ||
+        (headers as Record<string, string | undefined>).authorization;
+      const token =
+        typeof authorization === 'string'
+          ? authorization.replace(/^Bearer\s+/i, '')
+          : '';
+      const baseUrl =
+        getVertexAnthropicBaseUrl(this.config as any) || auth.baseUrl;
+      return {
+        base_url: baseUrl || '',
+        auth_token: token,
+        request_layer: 'vertex',
+        headers,
+      };
+    }
+
+    const config = this.config as { apiKey: string; baseURL?: string };
+    const baseUrl = config.baseURL || 'https://api.anthropic.com/v1';
+    return {
+      base_url: baseUrl.replace(/\/v1\/?$/, ''),
+      auth_token: config.apiKey,
+    };
+  }
+
+  private createAdapter(
+    backendConfig: NativeLlmBackendConfig,
+    tools: ToolSet,
+    nodeTextMiddleware?: NodeTextMiddleware[]
+  ) {
+    return new NativeProviderAdapter(
+      (request: NativeLlmRequest, signal?: AbortSignal) =>
+        llmDispatchStream('anthropic', backendConfig, request, signal),
+      tools,
+      this.MAX_STEPS,
+      { nodeTextMiddleware }
+    );
+  }
+
+  private getReasoning(
+    options: NonNullable<CopilotChatOptions>,
+    model: string
+  ): Record<string, unknown> | undefined {
+    if (options.reasoning && this.isReasoningModel(model)) {
+      return { budget_tokens: 12000, include_thought: true };
+    }
+    return undefined;
   }
 
   async text(
@@ -59,28 +97,29 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
     const model = this.selectModel(fullCond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs] = await chatToGPTMessage(messages, true, true);
-
-      const modelInstance = this.instance(model.id);
-      const { text, reasoning } = await generateText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        abortSignal: options.signal,
-        providerOptions: {
-          anthropic: this.getAnthropicOptions(options, model.id),
-        },
-        tools: await this.getTools(options, model.id),
-        stopWhen: stepCountIs(this.MAX_STEPS),
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const reasoning = this.getReasoning(options, model.id);
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        reasoning,
+        middleware,
       });
-
-      if (!text) throw new Error('Failed to generate text');
-
-      return reasoning ? `${reasoning}\n${text}` : text;
+      const adapter = this.createAdapter(
+        backendConfig,
+        tools,
+        middleware.node?.text
+      );
+      return await adapter.text(request, options.signal);
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -95,25 +134,32 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
     const model = this.selectModel(fullCond);
 
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new TextStreamParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        yield result;
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
-      }
-      if (!options.signal?.aborted) {
-        const footnotes = parser.end();
-        if (footnotes.length) {
-          yield `\n\n${footnotes}`;
-        }
+      metrics.ai
+        .counter('chat_text_stream_calls')
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createAdapter(
+        backendConfig,
+        tools,
+        middleware.node?.text
+      );
+      for await (const chunk of adapter.streamText(request, options.signal)) {
+        yield chunk;
       }
     } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_stream_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -130,56 +176,32 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
     try {
       metrics.ai
         .counter('chat_object_stream_calls')
-        .add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new StreamObjectParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        if (result) {
-          yield result;
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createAdapter(
+        backendConfig,
+        tools,
+        middleware.node?.text
+      );
+      for await (const chunk of adapter.streamObject(request, options.signal)) {
+        yield chunk;
       }
     } catch (e: any) {
       metrics.ai
         .counter('chat_object_stream_errors')
-        .add(1, { model: model.id });
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
-  }
-
-  private async getFullStream(
-    model: CopilotProviderModel,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ) {
-    const [system, msgs] = await chatToGPTMessage(messages, true, true);
-    const { fullStream } = streamText({
-      model: this.instance(model.id),
-      system,
-      messages: msgs,
-      abortSignal: options.signal,
-      providerOptions: {
-        anthropic: this.getAnthropicOptions(options, model.id),
-      },
-      tools: await this.getTools(options, model.id),
-      stopWhen: stepCountIs(this.MAX_STEPS),
-    });
-    return fullStream;
-  }
-
-  private getAnthropicOptions(options: CopilotChatOptions, model: string) {
-    const result: AnthropicProviderOptions = {};
-    if (options?.reasoning && this.isReasoningModel(model)) {
-      result.thinking = {
-        type: 'enabled',
-        budgetTokens: 12000,
-      };
-    }
-    return result;
   }
 
   private isReasoningModel(model: string) {

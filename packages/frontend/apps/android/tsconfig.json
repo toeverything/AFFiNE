@@ -11,7 +11,9 @@
     { "path": "../../core" },
     { "path": "../../../common/env" },
     { "path": "../../i18n" },
+    { "path": "../mobile-shared" },
     { "path": "../../../common/nbstore" },
+    { "path": "../../track" },
     { "path": "../../../../blocksuite/affine/all" },
     { "path": "../../../common/infra" }
   ]

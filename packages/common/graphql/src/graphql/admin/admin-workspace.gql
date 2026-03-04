@@ -1,0 +1,44 @@
+query adminWorkspace(
+  $id: String!
+  $memberSkip: Int
+  $memberTake: Int
+  $memberQuery: String
+) {
+  adminWorkspace(id: $id) {
+    id
+    public
+    createdAt
+    name
+    avatarKey
+    enableAi
+    enableSharing
+    enableUrlPreview
+    enableDocEmbedding
+    features
+    owner {
+      id
+      name
+      email
+      avatarUrl
+    }
+    memberCount
+    publicPageCount
+    snapshotCount
+    snapshotSize
+    blobCount
+    blobSize
+    sharedLinks {
+      docId
+      title
+      publishedAt
+    }
+    members(skip: $memberSkip, take: $memberTake, query: $memberQuery) {
+      id
+      name
+      email
+      avatarUrl
+      role
+      status
+    }
+  }
+}

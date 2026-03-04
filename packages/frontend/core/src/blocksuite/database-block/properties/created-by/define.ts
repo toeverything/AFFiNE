@@ -12,6 +12,10 @@ import zod from 'zod';
 export const createdByColumnType = propertyType('created-by');
 export const createdByPropertyModelConfig = createdByColumnType.modelConfig({
   name: 'Created By',
+  kanbanGroup: {
+    enabled: true,
+    mutable: false,
+  },
   propertyData: {
     schema: zod.object({}),
     default: () => ({}),

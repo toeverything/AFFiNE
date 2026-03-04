@@ -36,10 +36,7 @@ import {
   BlobNotFound,
   CallMetric,
   Config,
-  CopilotFailedToGenerateText,
   CopilotSessionNotFound,
-  InternalServerError,
-  mapAnyError,
   mapSseError,
   metrics,
   NoCopilotProviderAvailable,
@@ -47,14 +44,14 @@ import {
 } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
 import { CurrentUser, Public } from '../../core/auth';
-import { CopilotContextService } from './context';
+import { CopilotContextService } from './context/service';
+import { CopilotProviderFactory } from './providers/factory';
+import type { CopilotProvider } from './providers/provider';
 import {
-  CopilotProvider,
-  CopilotProviderFactory,
   ModelInputType,
   ModelOutputType,
-  StreamObject,
-} from './providers';
+  type StreamObject,
+} from './providers/types';
 import { StreamObjectParser } from './providers/utils';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
@@ -240,61 +237,6 @@ export class CopilotController implements BeforeApplicationShutdown {
       session,
       finalMessage,
     };
-  }
-
-  @Get('/chat/:sessionId')
-  @CallMetric('ai', 'chat', { timer: true })
-  async chat(
-    @CurrentUser() user: CurrentUser,
-    @Req() req: Request,
-    @Param('sessionId') sessionId: string,
-    @Query() query: Record<string, string | string[]>
-  ): Promise<string> {
-    const info: any = { sessionId, params: query };
-
-    try {
-      const { provider, model, session, finalMessage } =
-        await this.prepareChatSession(
-          user,
-          sessionId,
-          query,
-          ModelOutputType.Text
-        );
-
-      info.model = model;
-      info.finalMessage = finalMessage.filter(m => m.role !== 'system');
-      metrics.ai.counter('chat_calls').add(1, { model });
-
-      const { reasoning, webSearch, toolsConfig } =
-        ChatQuerySchema.parse(query);
-      const content = await provider.text({ modelId: model }, finalMessage, {
-        ...session.config.promptConfig,
-        signal: getSignal(req).signal,
-        user: user.id,
-        session: session.config.sessionId,
-        workspace: session.config.workspaceId,
-        reasoning,
-        webSearch,
-        tools: getTools(session.config.promptConfig?.tools, toolsConfig),
-      });
-
-      session.push({
-        role: 'assistant',
-        content,
-        createdAt: new Date(),
-      });
-      await session.save();
-
-      return content;
-    } catch (e: any) {
-      metrics.ai.counter('chat_errors').add(1);
-      let error = mapAnyError(e);
-      if (error instanceof InternalServerError) {
-        error = new CopilotFailedToGenerateText(e.message);
-      }
-      error.log('CopilotChat', info);
-      throw error;
-    }
   }
 
   @Sse('/chat/:sessionId/stream')
@@ -560,7 +502,7 @@ export class CopilotController implements BeforeApplicationShutdown {
                         status: data.status,
                         id: data.node.id,
                         type: data.node.config.nodeType,
-                      } as any,
+                      },
                     };
                 }
               })

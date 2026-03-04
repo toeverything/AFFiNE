@@ -1,0 +1,9 @@
+query getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+  workspace(id: $workspaceId) {
+    blobUploadPartUrl(key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+      uploadUrl
+      headers
+      expiresAt
+    }
+  }
+}

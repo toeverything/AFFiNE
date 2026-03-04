@@ -1,0 +1,17 @@
+mutation updateWorkspaceCalendars($input: UpdateWorkspaceCalendarsInput!) {
+  updateWorkspaceCalendars(input: $input) {
+    id
+    workspaceId
+    createdByUserId
+    displayNameOverride
+    colorOverride
+    enabled
+    items {
+      id
+      subscriptionId
+      sortOrder
+      colorOverride
+      enabled
+    }
+  }
+}

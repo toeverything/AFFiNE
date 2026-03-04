@@ -132,13 +132,14 @@
     { "path": "./packages/common/infra" },
     { "path": "./packages/common/nbstore" },
     { "path": "./packages/common/reader" },
-    { "path": "./packages/common/y-octo/node" },
+    { "path": "./packages/common/s3-compat" },
     { "path": "./packages/frontend/admin" },
     { "path": "./packages/frontend/apps/android" },
     { "path": "./packages/frontend/apps/electron" },
     { "path": "./packages/frontend/apps/electron-renderer" },
     { "path": "./packages/frontend/apps/ios" },
     { "path": "./packages/frontend/apps/mobile" },
+    { "path": "./packages/frontend/apps/mobile-shared" },
     { "path": "./packages/frontend/apps/web" },
     { "path": "./packages/frontend/component" },
     { "path": "./packages/frontend/core" },
@@ -157,7 +158,9 @@
     { "path": "./tests/blocksuite" },
     { "path": "./tests/kit" },
     { "path": "./tools/cli" },
+    { "path": "./tools/doc-diff" },
     { "path": "./tools/playstore-auto-bump" },
+    { "path": "./tools/revert-update" },
     { "path": "./tools/utils" }
   ]
 }

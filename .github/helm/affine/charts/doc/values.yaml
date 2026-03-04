@@ -30,9 +30,12 @@ podSecurityContext:
   fsGroup: 2000
 
 resources:
-  requests:
+  limits:
     cpu: '1'
     memory: 4Gi
+  requests:
+    cpu: '1'
+    memory: 2Gi
 
 probe:
   initialDelaySeconds: 20

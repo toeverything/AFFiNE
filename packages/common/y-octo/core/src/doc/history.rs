@@ -69,11 +69,7 @@ impl StoreHistory {
     self.parse_items(store_items)
   }
 
-  pub fn parse_delete_sets(
-    &self,
-    old_sets: &ClientMap<OrderRange>,
-    new_sets: &ClientMap<OrderRange>,
-  ) -> Vec<History> {
+  pub fn parse_delete_sets(&self, old_sets: &ClientMap<OrderRange>, new_sets: &ClientMap<OrderRange>) -> Vec<History> {
     let store = self.store.read().unwrap();
     let deleted_items = new_sets
       .iter()
@@ -109,11 +105,7 @@ impl StoreHistory {
       let store = self.store.read().unwrap();
       let mut sort_iter: Box<dyn Iterator<Item = Item>> = Box::new(
         SortedNodes::new(if let Some(client) = client {
-          store
-            .items
-            .get(client)
-            .map(|i| vec![(client, i)])
-            .unwrap_or_default()
+          store.items.get(client).map(|i| vec![(client, i)]).unwrap_or_default()
         } else {
           store.items.iter().collect::<Vec<_>>()
         })
@@ -273,10 +265,10 @@ impl Iterator for SortedNodes<'_> {
   type Item = Node;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if let Some(current) = self.current.as_mut() {
-      if let Some(node) = current.pop_back() {
-        return Some(node);
-      }
+    if let Some(current) = self.current.as_mut()
+      && let Some(node) = current.pop_back()
+    {
+      return Some(node);
     }
 
     if let Some((_, nodes)) = self.nodes.pop() {
@@ -318,10 +310,7 @@ mod test {
 
       let update = doc.encode_update().unwrap();
 
-      assert_eq!(
-        history.parse_store(Default::default()),
-        history.parse_update(&update,)
-      );
+      assert_eq!(history.parse_store(Default::default()), history.parse_update(&update,));
     });
   }
 }

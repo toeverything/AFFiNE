@@ -783,6 +783,20 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is 
 // rather `InterfaceTooLargeException`, caused by too many methods 
@@ -813,6 +827,20 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_blob(
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_delete_doc(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_add_document(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_delete_document(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_flush_index(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_get_document(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_get_matches(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_index_version(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_search(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob(
 ): Short
@@ -924,6 +952,20 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_delete_blob(`ptr`: Poin
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_delete_doc(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_disconnect(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_add_document(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`indexName`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,`index`: Byte,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_delete_document(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`indexName`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_flush_index(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_get_document(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`indexName`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_get_matches(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`indexName`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`query`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_index_version(`ptr`: Pointer,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_fts_search(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`indexName`: RustBuffer.ByValue,`query`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
 ): Long
@@ -1123,6 +1165,27 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_disconnect() != 20410.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_add_document() != 37651.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_delete_document() != 47292.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_flush_index() != 9921.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_get_document() != 45953.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_get_matches() != 35972.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_index_version() != 44498.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_fts_search() != 28341.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob() != 56927.toShort()) {
@@ -1426,6 +1489,29 @@ public object FfiConverterLong: FfiConverter<Long, Long> {
 /**
  * @suppress
  */
+public object FfiConverterDouble: FfiConverter<Double, Double> {
+    override fun lift(value: Double): Double {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Double {
+        return buf.getDouble()
+    }
+
+    override fun lower(value: Double): Double {
+        return value
+    }
+
+    override fun allocationSize(value: Double) = 8UL
+
+    override fun write(value: Double, buf: ByteBuffer) {
+        buf.putDouble(value)
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean {
         return value.toInt() != 0
@@ -1618,6 +1704,20 @@ public interface DocStoragePoolInterface {
     suspend fun `deleteDoc`(`universalId`: kotlin.String, `docId`: kotlin.String)
     
     suspend fun `disconnect`(`universalId`: kotlin.String)
+    
+    suspend fun `ftsAddDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String, `text`: kotlin.String, `index`: kotlin.Boolean)
+    
+    suspend fun `ftsDeleteDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String)
+    
+    suspend fun `ftsFlushIndex`(`universalId`: kotlin.String)
+    
+    suspend fun `ftsGetDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String): kotlin.String?
+    
+    suspend fun `ftsGetMatches`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String, `query`: kotlin.String): List<MatchRange>
+    
+    suspend fun `ftsIndexVersion`(): kotlin.UInt
+    
+    suspend fun `ftsSearch`(`universalId`: kotlin.String, `indexName`: kotlin.String, `query`: kotlin.String): List<SearchHit>
     
     suspend fun `getBlob`(`universalId`: kotlin.String, `key`: kotlin.String): Blob?
     
@@ -1879,6 +1979,156 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsAddDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String, `text`: kotlin.String, `index`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_add_document(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`indexName`),FfiConverterString.lower(`docId`),FfiConverterString.lower(`text`),FfiConverterBoolean.lower(`index`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsDeleteDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_delete_document(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`indexName`),FfiConverterString.lower(`docId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsFlushIndex`(`universalId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_flush_index(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsGetDocument`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_get_document(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`indexName`),FfiConverterString.lower(`docId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsGetMatches`(`universalId`: kotlin.String, `indexName`: kotlin.String, `docId`: kotlin.String, `query`: kotlin.String) : List<MatchRange> {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_get_matches(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`indexName`),FfiConverterString.lower(`docId`),FfiConverterString.lower(`query`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeMatchRange.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsIndexVersion`() : kotlin.UInt {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_index_version(
+                thisPtr,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_u32(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_u32(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_u32(future) },
+        // lift function
+        { FfiConverterUInt.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ftsSearch`(`universalId`: kotlin.String, `indexName`: kotlin.String, `query`: kotlin.String) : List<SearchHit> {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_fts_search(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`indexName`),FfiConverterString.lower(`query`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeSearchHit.lift(it) },
         // Error FFI converter
         UniffiException.ErrorHandler,
     )
@@ -2696,6 +2946,74 @@ public object FfiConverterTypeListedBlob: FfiConverterRustBuffer<ListedBlob> {
 
 
 
+data class MatchRange (
+    var `start`: kotlin.UInt, 
+    var `end`: kotlin.UInt
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMatchRange: FfiConverterRustBuffer<MatchRange> {
+    override fun read(buf: ByteBuffer): MatchRange {
+        return MatchRange(
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: MatchRange) = (
+            FfiConverterUInt.allocationSize(value.`start`) +
+            FfiConverterUInt.allocationSize(value.`end`)
+    )
+
+    override fun write(value: MatchRange, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`start`, buf)
+            FfiConverterUInt.write(value.`end`, buf)
+    }
+}
+
+
+
+data class SearchHit (
+    var `id`: kotlin.String, 
+    var `score`: kotlin.Double, 
+    var `terms`: List<kotlin.String>
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSearchHit: FfiConverterRustBuffer<SearchHit> {
+    override fun read(buf: ByteBuffer): SearchHit {
+        return SearchHit(
+            FfiConverterString.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterSequenceString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SearchHit) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterDouble.allocationSize(value.`score`) +
+            FfiConverterSequenceString.allocationSize(value.`terms`)
+    )
+
+    override fun write(value: SearchHit, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterDouble.write(value.`score`, buf)
+            FfiConverterSequenceString.write(value.`terms`, buf)
+    }
+}
+
+
+
 data class SetBlob (
     var `key`: kotlin.String, 
     var `data`: kotlin.String, 
@@ -3181,6 +3499,62 @@ public object FfiConverterSequenceTypeListedBlob: FfiConverterRustBuffer<List<Li
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeListedBlob.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeMatchRange: FfiConverterRustBuffer<List<MatchRange>> {
+    override fun read(buf: ByteBuffer): List<MatchRange> {
+        val len = buf.getInt()
+        return List<MatchRange>(len) {
+            FfiConverterTypeMatchRange.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<MatchRange>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeMatchRange.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<MatchRange>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeMatchRange.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSearchHit: FfiConverterRustBuffer<List<SearchHit>> {
+    override fun read(buf: ByteBuffer): List<SearchHit> {
+        val len = buf.getInt()
+        return List<SearchHit>(len) {
+            FfiConverterTypeSearchHit.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SearchHit>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSearchHit.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SearchHit>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSearchHit.write(it, buf)
         }
     }
 }

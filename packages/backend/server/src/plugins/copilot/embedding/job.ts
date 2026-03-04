@@ -533,7 +533,15 @@ export class CopilotEmbeddingJob {
       workspaceId
     );
     if (!snapshot) {
-      this.logger.warn(`workspace snapshot ${workspaceId} not found`);
+      // maybe local workspace or empty workspace
+      this.logger.verbose(`workspace root snapshot ${workspaceId} not found`);
+      // mark last check time to avoid repeated checking
+      await this.models.workspace.update(
+        workspaceId,
+        { lastCheckEmbeddings: new Date() },
+        false
+      );
+
       return;
     } else if (
       // always check if never cleared

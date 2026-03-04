@@ -4,7 +4,6 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
-  Float,
   ID,
   InputType,
   Mutation,
@@ -15,7 +14,6 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { AiPromptRole } from '@prisma/client';
 import { GraphQLJSON, SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
@@ -42,9 +40,9 @@ import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { CopilotCronJobs } from './cron';
-import { PromptService } from './prompt';
-import { PromptMessage, StreamObject } from './providers';
+import { PromptService } from './prompt/service';
 import { CopilotProviderFactory } from './providers/factory';
+import type { PromptMessage, StreamObject } from './providers/types';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
@@ -311,57 +309,6 @@ class CopilotQuotaType {
 
   @Field(() => SafeIntResolver)
   used!: number;
-}
-
-registerEnumType(AiPromptRole, {
-  name: 'CopilotPromptMessageRole',
-});
-
-@InputType('CopilotPromptConfigInput')
-@ObjectType()
-class CopilotPromptConfigType {
-  @Field(() => Float, { nullable: true })
-  frequencyPenalty!: number | null;
-
-  @Field(() => Float, { nullable: true })
-  presencePenalty!: number | null;
-
-  @Field(() => Float, { nullable: true })
-  temperature!: number | null;
-
-  @Field(() => Float, { nullable: true })
-  topP!: number | null;
-}
-
-@InputType('CopilotPromptMessageInput')
-@ObjectType()
-class CopilotPromptMessageType {
-  @Field(() => AiPromptRole)
-  role!: AiPromptRole;
-
-  @Field(() => String)
-  content!: string;
-
-  @Field(() => GraphQLJSON, { nullable: true })
-  params!: Record<string, string> | null;
-}
-
-@ObjectType()
-class CopilotPromptType {
-  @Field(() => String)
-  name!: string;
-
-  @Field(() => String)
-  model!: string;
-
-  @Field(() => String, { nullable: true })
-  action!: string | null;
-
-  @Field(() => CopilotPromptConfigType, { nullable: true })
-  config!: CopilotPromptConfigType | null;
-
-  @Field(() => [CopilotPromptMessageType])
-  messages!: CopilotPromptMessageType[];
 }
 
 @ObjectType()
@@ -638,13 +585,8 @@ export class CopilotResolver {
     );
   }
 
-  @Mutation(() => String, {
-    description: 'Create a chat session',
-  })
-  @CallMetric('ai', 'chat_session_create')
-  async createCopilotSession(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'options', type: () => CreateChatSessionInput })
+  private async createCopilotSessionInternal(
+    user: CurrentUser,
     options: CreateChatSessionInput
   ): Promise<string> {
     // permission check based on session type
@@ -664,6 +606,42 @@ export class CopilotResolver {
       docId: options.docId ?? null,
       userId: user.id,
     });
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a chat session',
+    deprecationReason: 'use `createCopilotSessionWithHistory` instead',
+  })
+  @CallMetric('ai', 'chat_session_create')
+  async createCopilotSession(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => CreateChatSessionInput })
+    options: CreateChatSessionInput
+  ): Promise<string> {
+    return await this.createCopilotSessionInternal(user, options);
+  }
+
+  @Mutation(() => CopilotHistoriesType, {
+    description: 'Create a chat session and return full session payload',
+  })
+  @CallMetric('ai', 'chat_session_create_with_history')
+  async createCopilotSessionWithHistory(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => CreateChatSessionInput })
+    options: CreateChatSessionInput
+  ): Promise<CopilotHistoriesType> {
+    const sessionId = await this.createCopilotSessionInternal(user, options);
+    const session = await this.chatSession.getSessionInfo(sessionId);
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+    return {
+      ...session,
+      messages: session.messages.map(message => ({
+        ...message,
+        id: message.id,
+      })) as ChatMessageType[],
+    };
   }
 
   @Mutation(() => String, {
@@ -825,6 +803,7 @@ export class CopilotResolver {
   @Query(() => String, {
     description:
       'Apply updates to a doc using LLM and return the merged markdown.',
+    deprecationReason: 'use Mutation.applyDocUpdates',
   })
   async applyDocUpdates(
     @CurrentUser() user: CurrentUser,
@@ -835,6 +814,35 @@ export class CopilotResolver {
     @Args({ name: 'op', type: () => String })
     op: string,
     @Args({ name: 'updates', type: () => String })
+    updates: string
+  ): Promise<string> {
+    return this.applyDocUpdatesInternal(user, workspaceId, docId, op, updates);
+  }
+
+  @Mutation(() => String, {
+    description:
+      'Apply updates to a doc using LLM and return the merged markdown.',
+    name: 'applyDocUpdates',
+  })
+  async applyDocUpdatesMutation(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'workspaceId', type: () => String })
+    workspaceId: string,
+    @Args({ name: 'docId', type: () => String })
+    docId: string,
+    @Args({ name: 'op', type: () => String })
+    op: string,
+    @Args({ name: 'updates', type: () => String })
+    updates: string
+  ): Promise<string> {
+    return this.applyDocUpdatesInternal(user, workspaceId, docId, op, updates);
+  }
+
+  private async applyDocUpdatesInternal(
+    user: CurrentUser,
+    workspaceId: string,
+    docId: string,
+    op: string,
     updates: string
   ): Promise<string> {
     await this.assertPermission(user, { workspaceId, docId });
@@ -909,31 +917,10 @@ export class UserCopilotResolver {
   }
 }
 
-@InputType()
-class CreateCopilotPromptInput {
-  @Field(() => String)
-  name!: string;
-
-  @Field(() => String)
-  model!: string;
-
-  @Field(() => String, { nullable: true })
-  action!: string | null;
-
-  @Field(() => CopilotPromptConfigType, { nullable: true })
-  config!: CopilotPromptConfigType | null;
-
-  @Field(() => [CopilotPromptMessageType])
-  messages!: CopilotPromptMessageType[];
-}
-
 @Admin()
 @Resolver(() => String)
 export class PromptsManagementResolver {
-  constructor(
-    private readonly cron: CopilotCronJobs,
-    private readonly promptService: PromptService
-  ) {}
+  constructor(private readonly cron: CopilotCronJobs) {}
 
   @Mutation(() => Boolean, {
     description: 'Trigger generate missing titles cron job',
@@ -949,49 +936,5 @@ export class PromptsManagementResolver {
   async triggerCleanupTrashedDocEmbeddings() {
     await this.cron.triggerCleanupTrashedDocEmbeddings();
     return true;
-  }
-
-  @Query(() => [CopilotPromptType], {
-    description: 'List all copilot prompts',
-  })
-  async listCopilotPrompts() {
-    const prompts = await this.promptService.list();
-    return prompts.filter(
-      p =>
-        p.messages.length > 0 &&
-        // ignore internal prompts
-        !p.name.startsWith('workflow:') &&
-        !p.name.startsWith('debug:') &&
-        !p.name.startsWith('chat:') &&
-        !p.name.startsWith('action:')
-    );
-  }
-
-  @Mutation(() => CopilotPromptType, {
-    description: 'Create a copilot prompt',
-  })
-  async createCopilotPrompt(
-    @Args({ type: () => CreateCopilotPromptInput, name: 'input' })
-    input: CreateCopilotPromptInput
-  ) {
-    await this.promptService.set(
-      input.name,
-      input.model,
-      input.messages,
-      input.config
-    );
-    return this.promptService.get(input.name);
-  }
-
-  @Mutation(() => CopilotPromptType, {
-    description: 'Update a copilot prompt',
-  })
-  async updateCopilotPrompt(
-    @Args('name') name: string,
-    @Args('messages', { type: () => [CopilotPromptMessageType] })
-    messages: CopilotPromptMessageType[]
-  ) {
-    await this.promptService.update(name, { messages, modified: true });
-    return this.promptService.get(name);
   }
 }

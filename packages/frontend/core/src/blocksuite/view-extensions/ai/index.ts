@@ -72,7 +72,7 @@ export class AIViewExtension extends ViewExtensionProvider<AIViewOptions> {
       context.register([
         CopilotTool,
         edgelessCopilotWidget,
-        getAIEdgelessRootWatcher(framework),
+        getAIEdgelessRootWatcher(),
         // In note
         ToolbarModuleExtension({
           id: BlockFlavourIdentifier('custom:affine:surface:*'),
@@ -84,7 +84,7 @@ export class AIViewExtension extends ViewExtensionProvider<AIViewOptions> {
       context.register([
         blockDiffWidgetForPage,
         blockDiffWidgetForBlock,
-        getAIPageRootWatcher(framework),
+        getAIPageRootWatcher(),
         BlockDiffService,
         BlockDiffWatcher,
       ]);

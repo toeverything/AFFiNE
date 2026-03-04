@@ -61,9 +61,7 @@ mod tests {
       for (idx, doc) in documents.into_iter().enumerate() {
         assert_eq!(
           doc.page_content,
-          String::from_utf8_lossy(
-            &read(get_fixtures_path().join(format!("demo.docx.{}.md", idx))).unwrap()
-          )
+          String::from_utf8_lossy(&read(get_fixtures_path().join(format!("demo.docx.{}.md", idx))).unwrap())
         );
       }
     }

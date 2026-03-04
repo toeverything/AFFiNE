@@ -13,7 +13,12 @@ import {
   WrongSignInMethod,
 } from '../base';
 import { BaseModel } from './base';
-import { publicUserSelect, WorkspaceRole, workspaceUserSelect } from './common';
+import {
+  publicUserSelect,
+  type UserFeatureName,
+  WorkspaceRole,
+  workspaceUserSelect,
+} from './common';
 import type { Workspace } from './workspace';
 
 type CreateUserInput = Omit<Prisma.UserCreateInput, 'name'> & { name?: string };
@@ -313,23 +318,78 @@ export class UserModel extends BaseModel {
     });
   }
 
-  async pagination(skip: number = 0, take: number = 20, after?: Date) {
-    return this.db.user.findMany({
-      where: {
-        createdAt: {
-          gt: after,
+  private buildListWhere(options: {
+    keyword?: string | null;
+    features?: UserFeatureName[] | null;
+    after?: Date;
+  }): Prisma.UserWhereInput {
+    const where: Prisma.UserWhereInput = {};
+
+    if (options.after) {
+      where.createdAt = {
+        gt: options.after,
+      };
+    }
+
+    const keyword = options.keyword?.trim();
+    if (keyword) {
+      where.OR = [
+        {
+          email: {
+            contains: keyword,
+            mode: 'insensitive',
+          },
         },
-      },
+        {
+          id: {
+            contains: keyword,
+          },
+        },
+      ];
+    }
+
+    if (options.features?.length) {
+      where.features = {
+        some: {
+          name: {
+            in: options.features,
+          },
+          activated: true,
+        },
+      };
+    }
+
+    return where;
+  }
+
+  async list(options: {
+    skip?: number;
+    take?: number;
+    keyword?: string | null;
+    features?: UserFeatureName[] | null;
+    after?: Date;
+  }) {
+    const where = this.buildListWhere(options);
+
+    return this.db.user.findMany({
+      where,
       orderBy: {
         createdAt: 'asc',
       },
-      skip,
-      take,
+      skip: options.skip,
+      take: options.take,
     });
   }
 
-  async count() {
-    return this.db.user.count();
+  async count(
+    options: {
+      keyword?: string | null;
+      features?: UserFeatureName[] | null;
+      after?: Date;
+    } = {}
+  ) {
+    const where = this.buildListWhere(options);
+    return this.db.user.count({ where });
   }
 
   // #region ConnectedAccount

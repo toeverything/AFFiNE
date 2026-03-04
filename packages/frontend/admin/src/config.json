@@ -91,7 +91,7 @@
   "mailer": {
     "SMTP.name": {
       "type": "String",
-      "desc": "Name of the email server (e.g. your domain name)",
+      "desc": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.",
       "env": "MAILER_SERVERNAME"
     },
     "SMTP.host": {
@@ -116,7 +116,7 @@
     },
     "SMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")",
       "env": "MAILER_SENDER"
     },
     "SMTP.ignoreTLS": {
@@ -130,7 +130,7 @@
     },
     "fallbackSMTP.name": {
       "type": "String",
-      "desc": "Name of the fallback email server (e.g. your domain name)"
+      "desc": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname."
     },
     "fallbackSMTP.host": {
       "type": "String",
@@ -150,7 +150,7 @@
     },
     "fallbackSMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted <noreply@example.com>\")"
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")"
     },
     "fallbackSMTP.ignoreTLS": {
       "type": "Boolean",
@@ -216,6 +216,11 @@
       "type": "Array",
       "desc": "Multiple hosts the server will accept requests from."
     },
+    "listenAddr": {
+      "type": "String",
+      "desc": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).",
+      "env": "LISTEN_ADDR"
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",
@@ -228,10 +233,6 @@
     }
   },
   "flags": {
-    "earlyAccessControl": {
-      "type": "Boolean",
-      "desc": "Only allow users with early access features to access the app"
-    },
     "allowGuestDemoWorkspace": {
       "type": "Boolean",
       "desc": "Whether allow guest users to create demo workspaces."
@@ -244,6 +245,34 @@
       "env": "DOC_SERVICE_ENDPOINT"
     }
   },
+  "telemetry": {
+    "allowedOrigin": {
+      "type": "Array",
+      "desc": "Allowed origins for telemetry collection."
+    },
+    "ga4.measurementId": {
+      "type": "String",
+      "desc": "GA4 Measurement ID for Measurement Protocol.",
+      "env": "GA4_MEASUREMENT_ID"
+    },
+    "ga4.apiSecret": {
+      "type": "String",
+      "desc": "GA4 API secret for Measurement Protocol.",
+      "env": "GA4_API_SECRET"
+    },
+    "dedupe.ttlHours": {
+      "type": "Number",
+      "desc": "Telemetry dedupe TTL in hours."
+    },
+    "dedupe.maxEntries": {
+      "type": "Number",
+      "desc": "Telemetry dedupe max entries."
+    },
+    "batch.maxEvents": {
+      "type": "Number",
+      "desc": "Max events per telemetry batch."
+    }
+  },
   "client": {
     "versionControl.enabled": {
       "type": "Boolean",
@@ -252,6 +281,17 @@
     "versionControl.requiredVersion": {
       "type": "String",
       "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
+    }
+  },
+  "calendar": {
+    "google": {
+      "type": "Object",
+      "desc": "Google Calendar integration config",
+      "link": "https://developers.google.com/calendar/api/guides/push"
+    },
+    "caldav": {
+      "type": "Object",
+      "desc": "CalDAV integration config"
     }
   },
   "captcha": {
@@ -272,6 +312,14 @@
     "scenarios": {
       "type": "Object",
       "desc": "Use custom models in scenarios and override default settings."
+    },
+    "providers.profiles": {
+      "type": "Array",
+      "desc": "The profile list for copilot providers."
+    },
+    "providers.defaults": {
+      "type": "Object",
+      "desc": "The default provider ids for model output types and global fallback."
     },
     "providers.openai": {
       "type": "Object",

@@ -205,47 +205,39 @@ export class DatabaseHeaderColumn extends SignalWatcher(
   }
 
   private popMenu(ele?: HTMLElement) {
-    const enableNumberFormatting =
-      this.tableViewManager.featureFlags$.value.enable_number_formatting;
-
     popMenu(popupTargetFromElement(ele ?? this), {
       options: {
         items: [
           inputConfig(this.column),
           typeConfig(this.column),
           // Number format begin
-          ...(enableNumberFormatting
-            ? [
-                menu.subMenu({
-                  name: 'Number Format',
-                  hide: () =>
-                    !this.column.dataUpdate ||
-                    this.column.type$.value !== 'number',
-                  options: {
-                    items: [
-                      numberFormatConfig(this.column),
-                      ...numberFormats.map(format => {
-                        const data = this.column.data$.value;
-                        return menu.action({
-                          isSelected: data.format === format.type,
-                          prefix: html`<span
-                            style="font-size: var(--affine-font-base); scale: 1.2;"
-                            >${format.symbol}</span
-                          >`,
-                          name: format.label,
-                          select: () => {
-                            if (data.format === format.type) return;
-                            this.column.dataUpdate(() => ({
-                              format: format.type,
-                            }));
-                          },
-                        });
-                      }),
-                    ],
-                  },
+          menu.subMenu({
+            name: 'Number Format',
+            hide: () =>
+              !this.column.dataUpdate || this.column.type$.value !== 'number',
+            options: {
+              items: [
+                numberFormatConfig(this.column),
+                ...numberFormats.map(format => {
+                  const data = this.column.data$.value;
+                  return menu.action({
+                    isSelected: data.format === format.type,
+                    prefix: html`<span
+                      style="font-size: var(--affine-font-base); scale: 1.2;"
+                      >${format.symbol}</span
+                    >`,
+                    name: format.label,
+                    select: () => {
+                      if (data.format === format.type) return;
+                      this.column.dataUpdate(() => ({
+                        format: format.type,
+                      }));
+                    },
+                  });
                 }),
-              ]
-            : []),
+              ],
+            },
+          }),
           // Number format end
           menu.group({
             items: [

@@ -1,11 +1,12 @@
 import { toDocSearchParams } from '@affine/core/modules/navigation';
-import type { IndexerSyncState } from '@affine/nbstore';
+import type { IndexerPreferOptions, IndexerSyncState } from '@affine/nbstore';
 import type { ReferenceParams } from '@blocksuite/affine/model';
 import { fromPromise, LiveData, Service } from '@toeverything/infra';
 import { isEmpty, omit } from 'lodash-es';
 import { map, type Observable, of, switchMap } from 'rxjs';
 import { z } from 'zod';
 
+import { normalizeSearchText } from '../../../utils/normalize-search-text';
 import type { DocsService } from '../../doc/services/docs';
 import type { WorkspaceService } from '../../workspace';
 
@@ -49,7 +50,10 @@ export class DocsSearchService extends Service {
       );
   }
 
-  search$(query: string): Observable<
+  search$(
+    query: string,
+    prefer: IndexerPreferOptions = 'remote'
+  ): Observable<
     {
       docId: string;
       title: string;
@@ -112,7 +116,7 @@ export class DocsSearchService extends Service {
               },
             ],
           },
-          prefer: 'remote',
+          prefer,
         }
       )
       .pipe(
@@ -123,10 +127,14 @@ export class DocsSearchService extends Service {
             const firstMatchFlavour = bucket.hits.nodes[0]?.fields.flavour;
             if (firstMatchFlavour === 'affine:page') {
               // is title match
-              const blockContent = bucket.hits.nodes[1]?.highlights.content[0]; // try to get block content
+              const blockContent = normalizeSearchText(
+                bucket.hits.nodes[1]?.highlights.content[0]
+              ); // try to get block content
               result.push({
                 docId: bucket.key,
-                title: bucket.hits.nodes[0].highlights.content[0],
+                title: normalizeSearchText(
+                  bucket.hits.nodes[0].highlights.content[0]
+                ),
                 score: bucket.score,
                 blockContent,
               });
@@ -144,7 +152,9 @@ export class DocsSearchService extends Service {
                     ? matchedBlockId
                     : matchedBlockId[0],
                 score: bucket.score,
-                blockContent: bucket.hits.nodes[0]?.highlights.content[0],
+                blockContent: normalizeSearchText(
+                  bucket.hits.nodes[0]?.highlights.content[0]
+                ),
               });
             }
           }

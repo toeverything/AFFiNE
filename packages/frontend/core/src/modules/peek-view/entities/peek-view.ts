@@ -16,7 +16,7 @@ import { firstValueFrom, map, race } from 'rxjs';
 
 import type { AIChatBlockModel } from '../../../blocksuite/ai/blocks';
 import { resolveLinkToDoc } from '../../navigation';
-import type { WorkbenchService } from '../../workbench';
+import type { WorkbenchService } from '../../workbench/services/workbench';
 import type { ImagePreviewData } from '../view/image-preview';
 
 export type DocReferenceInfo = {

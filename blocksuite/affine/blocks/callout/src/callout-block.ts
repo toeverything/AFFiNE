@@ -6,7 +6,7 @@ import {
 import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import {
   type CalloutBlockModel,
-  ParagraphBlockModel,
+  type ParagraphBlockModel,
 } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
@@ -216,9 +216,13 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
   override renderBlock() {
     const icon = this.model.props.icon$.value;
     const backgroundColorName = this.model.props.backgroundColorName$.value;
+    const normalizedBackgroundName =
+      backgroundColorName === 'default' || backgroundColorName === ''
+        ? 'grey'
+        : backgroundColorName;
     const backgroundColor = (
       cssVarV2.block.callout.background as Record<string, string>
-    )[backgroundColorName ?? ''];
+    )[normalizedBackgroundName ?? 'grey'];
 
     const iconContent = getIcon(icon);
 

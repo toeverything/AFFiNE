@@ -1,10 +1,15 @@
+import { randomUUID } from 'node:crypto';
+
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, SignUpForbidden } from '../../base';
+import {
+  Config,
+  getClientVersionFromRequest,
+  SignUpForbidden,
+} from '../../base';
 import { Models, type User, type UserSession } from '../../models';
-import { FeatureService } from '../features';
 import { Mailer } from '../mail/mailer';
 import { createDevUsers } from './dev';
 import type { CurrentUser } from './session';
@@ -32,21 +37,23 @@ function extractTokenFromHeader(authorization: string) {
 
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
-  readonly cookieOptions: CookieOptions = {
-    sameSite: 'lax',
-    httpOnly: true,
-    path: '/',
-    secure: this.config.server.https,
-  };
+  readonly cookieOptions: CookieOptions;
   static readonly sessionCookieName = 'affine_session';
   static readonly userCookieName = 'affine_user_id';
+  static readonly csrfCookieName = 'affine_csrf_token';
 
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer,
-    private readonly feature: FeatureService
-  ) {}
+    private readonly mailer: Mailer
+  ) {
+    this.cookieOptions = {
+      sameSite: 'lax',
+      httpOnly: true,
+      path: '/',
+      secure: this.config.server.https,
+    };
+  }
 
   async onApplicationBootstrap() {
     if (env.dev) {
@@ -54,8 +61,9 @@ export class AuthService implements OnApplicationBootstrap {
     }
   }
 
-  async canSignIn(email: string) {
-    return await this.feature.canEarlyAccess(email);
+  async canSignIn(_email: string) {
+    // may add more sign-in check later
+    return true;
   }
 
   /**
@@ -128,11 +136,17 @@ export class AuthService implements OnApplicationBootstrap {
     return await this.models.session.findUserSessionsBySessionId(sessionId);
   }
 
-  async createUserSession(userId: string, sessionId?: string, ttl?: number) {
+  async createUserSession(
+    userId: string,
+    sessionId?: string,
+    ttl?: number,
+    signInClientVersion?: string
+  ) {
     return await this.models.session.createOrRefreshUserSession(
       userId,
       sessionId,
-      ttl
+      ttl,
+      signInClientVersion
     );
   }
 
@@ -157,11 +171,13 @@ export class AuthService implements OnApplicationBootstrap {
   async refreshUserSessionIfNeeded(
     res: Response,
     userSession: UserSession,
-    ttr?: number
+    ttr?: number,
+    refreshClientVersion?: string
   ): Promise<boolean> {
     const newExpiresAt = await this.models.session.refreshUserSessionIfNeeded(
       userSession,
-      ttr
+      ttr,
+      refreshClientVersion
     );
     if (!newExpiresAt) {
       // no need to refresh
@@ -171,6 +187,11 @@ export class AuthService implements OnApplicationBootstrap {
     res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
       expires: newExpiresAt,
       ...this.cookieOptions,
+    });
+    res.cookie(AuthService.csrfCookieName, randomUUID(), {
+      expires: newExpiresAt,
+      ...this.cookieOptions,
+      httpOnly: false,
     });
 
     return true;
@@ -198,13 +219,31 @@ export class AuthService implements OnApplicationBootstrap {
     };
   }
 
-  async setCookies(req: Request, res: Response, userId: string) {
+  async setCookies(
+    req: Request,
+    res: Response,
+    userId: string,
+    clientVersion?: string
+  ) {
     const { sessionId } = this.getSessionOptionsFromRequest(req);
 
-    const userSession = await this.createUserSession(userId, sessionId);
+    const signInClientVersion =
+      clientVersion ?? getClientVersionFromRequest(req);
+    const userSession = await this.createUserSession(
+      userId,
+      sessionId,
+      undefined,
+      signInClientVersion
+    );
 
     res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
       ...this.cookieOptions,
+      expires: userSession.expiresAt ?? void 0,
+    });
+
+    res.cookie(AuthService.csrfCookieName, randomUUID(), {
+      ...this.cookieOptions,
+      httpOnly: false,
       expires: userSession.expiresAt ?? void 0,
     });
 
@@ -228,6 +267,7 @@ export class AuthService implements OnApplicationBootstrap {
   private clearCookies(res: Response<any, Record<string, any>>) {
     res.clearCookie(AuthService.sessionCookieName);
     res.clearCookie(AuthService.userCookieName);
+    res.clearCookie(AuthService.csrfCookieName);
   }
 
   setUserCookie(res: Response, userId: string) {

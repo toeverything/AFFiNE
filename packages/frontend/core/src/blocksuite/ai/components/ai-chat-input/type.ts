@@ -4,12 +4,6 @@ import type { AIError } from '../../provider';
 import type { ChatContextValue } from '../ai-chat-content';
 import type { ChatStatus, HistoryMessage } from '../ai-chat-messages';
 
-export interface AINetworkSearchConfig {
-  visible: Signal<boolean | undefined>;
-  enabled: Signal<boolean | undefined>;
-  setEnabled: (state: boolean) => void;
-}
-
 export interface AIReasoningConfig {
   enabled: Signal<boolean | undefined>;
   setEnabled: (state: boolean) => void;

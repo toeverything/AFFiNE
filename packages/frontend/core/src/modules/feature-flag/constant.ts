@@ -255,6 +255,13 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
+  enable_view_analytics_panel: {
+    category: 'affine',
+    displayName: 'Enable View Analytics Panel',
+    description: 'Show the View analytics tab in the right sidebar.',
+    configurable: true,
+    defaultState: false,
+  },
   enable_two_step_journal_confirmation: {
     category: 'affine',
     displayName: 'Enable Two Step Journal Confirmation',
@@ -286,6 +293,15 @@ export const AFFINE_FLAGS = {
     displayName: 'Enable Mobile Database Editing',
     description: 'Enable mobile database editing',
     configurable: isMobile,
+    defaultState: false,
+  },
+  enable_pdfmake_export: {
+    category: 'blocksuite',
+    bsFlag: 'enable_pdfmake_export',
+    displayName: 'Enable PDF Export',
+    description:
+      'Experimental export PDFs support, it may contain the wrong style.',
+    configurable: true,
     defaultState: false,
   },
 } satisfies { [key in string]: FlagInfo };

@@ -1,7 +1,7 @@
 import { Popover, uniReactRoot } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem } from '@affine/component/ui/menu';
-import { PeekViewService } from '@affine/core/modules/peek-view';
+import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
 import {
   type Cell,
   type CellRenderProps,
@@ -361,8 +361,10 @@ const FileCellComponent: ForwardRefRenderFunction<
   CellRenderProps<{}, FileCellRawValueType, FileCellJsonValueType>
 > = (props, ref): ReactNode => {
   const peekView = useService(PeekViewService);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const manager = useMemo(() => new FileCellManager(props, peekView), []);
+  const manager = useMemo(
+    () => new FileCellManager(props, peekView), // eslint-disable-line react-hooks/preserve-manual-memoization
+    [] // oxlint-disable-line react/exhaustive-deps
+  );
 
   useEffect(() => {
     return () => {

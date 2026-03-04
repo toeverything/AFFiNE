@@ -3,7 +3,7 @@ use std::ops::Deref;
 use chrono::{DateTime, NaiveDateTime};
 use sqlx::{QueryBuilder, Row};
 
-use super::{error::Result, storage::SqliteDocStorage, DocClock, DocRecord, DocUpdate};
+use super::{DocClock, DocRecord, DocUpdate, error::Result, storage::SqliteDocStorage};
 
 struct Meta {
   space_id: String,
@@ -41,6 +41,11 @@ impl SqliteDocStorage {
             .bind(&meta.space_id)
             .execute(&self.pool)
             .await?;
+          sqlx::query("UPDATE indexer_sync SET doc_id = $1 WHERE doc_id = $2;")
+            .bind(&space_id)
+            .bind(&meta.space_id)
+            .execute(&self.pool)
+            .await?;
 
           sqlx::query("UPDATE peer_clocks SET doc_id = $1 WHERE doc_id = $2;")
             .bind(&space_id)
@@ -60,11 +65,7 @@ impl SqliteDocStorage {
     Ok(())
   }
 
-  pub async fn push_update<Update: AsRef<[u8]>>(
-    &self,
-    doc_id: String,
-    update: Update,
-  ) -> Result<NaiveDateTime> {
+  pub async fn push_update<Update: AsRef<[u8]>>(&self, doc_id: String, update: Update) -> Result<NaiveDateTime> {
     let mut timestamp = DateTime::from_timestamp_millis(chrono::Utc::now().timestamp_millis())
       .unwrap()
       .naive_utc();
@@ -166,11 +167,7 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn mark_updates_merged(
-    &self,
-    doc_id: String,
-    updates: Vec<NaiveDateTime>,
-  ) -> Result<u32> {
+  pub async fn mark_updates_merged(&self, doc_id: String, updates: Vec<NaiveDateTime>) -> Result<u32> {
     let mut qb = QueryBuilder::new("DELETE FROM updates");
 
     qb.push(" WHERE doc_id = ");
@@ -203,6 +200,11 @@ impl SqliteDocStorage {
       .await?;
 
     sqlx::query("DELETE FROM clocks WHERE doc_id = ?;")
+      .bind(&doc_id)
+      .execute(&mut *tx)
+      .await?;
+
+    sqlx::query("DELETE FROM indexer_sync WHERE doc_id = ?;")
       .bind(&doc_id)
       .execute(&mut *tx)
       .await?;
@@ -250,6 +252,7 @@ mod tests {
   use chrono::{DateTime, Utc};
 
   use super::*;
+  use crate::Data;
 
   async fn get_storage() -> SqliteDocStorage {
     let storage = SqliteDocStorage::new(":memory:".to_string());
@@ -286,25 +289,18 @@ mod tests {
     let storage = get_storage().await;
 
     storage.set_space_id("test".to_string()).await.unwrap();
-    storage
-      .push_update("test".to_string(), vec![0, 0])
-      .await
-      .unwrap();
+    storage.push_update("test".to_string(), vec![0, 0]).await.unwrap();
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        bin: vec![0, 0],
+        bin: Into::<Data>::into(vec![0, 0]),
         timestamp: Utc::now().naive_utc(),
       })
       .await
       .unwrap();
 
     storage
-      .set_peer_pulled_remote_clock(
-        "remote".to_string(),
-        "test".to_string(),
-        Utc::now().naive_utc(),
-      )
+      .set_peer_pulled_remote_clock("remote".to_string(), "test".to_string(), Utc::now().naive_utc())
       .await
       .unwrap();
 
@@ -333,10 +329,7 @@ mod tests {
 
     assert_eq!(updates.len(), 1);
 
-    let snapshot = storage
-      .get_doc_snapshot("new_id".to_string())
-      .await
-      .unwrap();
+    let snapshot = storage.get_doc_snapshot("new_id".to_string()).await.unwrap();
 
     assert!(snapshot.is_some());
   }
@@ -348,19 +341,13 @@ mod tests {
     let updates = vec![vec![0, 0], vec![0, 1], vec![1, 0], vec![1, 1]];
 
     for update in updates.iter() {
-      storage
-        .push_update("test".to_string(), update)
-        .await
-        .unwrap();
+      storage.push_update("test".to_string(), update).await.unwrap();
     }
 
     let result = storage.get_doc_updates("test".to_string()).await.unwrap();
 
     assert_eq!(result.len(), 4);
-    assert_eq!(
-      result.iter().map(|u| u.bin.to_vec()).collect::<Vec<_>>(),
-      updates
-    );
+    assert_eq!(result.iter().map(|u| u.bin.to_vec()).collect::<Vec<_>>(), updates);
   }
 
   #[tokio::test]
@@ -373,7 +360,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: Into::<Data>::into(vec![0, 0]),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -391,7 +378,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: Into::<Data>::into(vec![0, 0]),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -404,7 +391,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 1],
+      bin: Into::<Data>::into(vec![0, 1]),
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),
@@ -428,10 +415,7 @@ mod tests {
     assert_eq!(clocks.len(), 0);
 
     for i in 1..5u32 {
-      storage
-        .push_update(format!("test_{i}"), vec![0, 0])
-        .await
-        .unwrap();
+      storage.push_update(format!("test_{i}"), vec![0, 0]).await.unwrap();
     }
 
     let clocks = storage.get_doc_clocks(None).await.unwrap();
@@ -442,10 +426,7 @@ mod tests {
       vec!["test_1", "test_2", "test_3", "test_4"]
     );
 
-    let clocks = storage
-      .get_doc_clocks(Some(Utc::now().naive_utc()))
-      .await
-      .unwrap();
+    let clocks = storage.get_doc_clocks(Some(Utc::now().naive_utc())).await.unwrap();
 
     assert_eq!(clocks.len(), 0);
 
@@ -462,10 +443,7 @@ mod tests {
     let updates = [vec![0, 0], vec![0, 1], vec![1, 0], vec![1, 1]];
 
     for update in updates.iter() {
-      storage
-        .push_update("test".to_string(), update)
-        .await
-        .unwrap();
+      storage.push_update("test".to_string(), update).await.unwrap();
     }
 
     let updates = storage.get_doc_updates("test".to_string()).await.unwrap();
@@ -473,11 +451,7 @@ mod tests {
     let result = storage
       .mark_updates_merged(
         "test".to_string(),
-        updates
-          .iter()
-          .skip(1)
-          .map(|u| u.timestamp)
-          .collect::<Vec<_>>(),
+        updates.iter().skip(1).map(|u| u.timestamp).collect::<Vec<_>>(),
       )
       .await
       .unwrap();

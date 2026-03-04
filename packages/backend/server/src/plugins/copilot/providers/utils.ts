@@ -12,10 +12,21 @@ import {
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import z, { ZodType } from 'zod';
 
+import {
+  bufferToArrayBuffer,
+  fetchBuffer,
+  OneMinute,
+  ResponseTooLargeError,
+  safeFetch,
+  SsrfBlockedError,
+} from '../../../base';
 import { CustomAITools } from '../tools';
 import { PromptMessage, StreamObject } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
+
+const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
+const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };
 
 const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
 const FORMAT_INFER_MAP: Record<string, string> = {
@@ -42,6 +53,11 @@ const FORMAT_INFER_MAP: Record<string, string> = {
   flv: 'video/flv',
 };
 
+async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
+  const { buffer } = await fetchBuffer(url, ATTACHMENT_MAX_BYTES);
+  return bufferToArrayBuffer(buffer);
+}
+
 export async function inferMimeType(url: string) {
   if (url.startsWith('data:')) {
     return url.split(';')[0].split(':')[1];
@@ -53,12 +69,15 @@ export async function inferMimeType(url: string) {
     if (ext) {
       return ext;
     }
-    const mimeType = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-    }).then(res => res.headers.get('Content-Type'));
-    if (mimeType) {
-      return mimeType;
+    try {
+      const mimeType = await safeFetch(
+        url,
+        { method: 'HEAD' },
+        ATTACH_HEAD_PARAMS
+      ).then(res => res.headers.get('content-type'));
+      if (mimeType) return mimeType;
+    } catch {
+      // ignore and fallback to default
     }
   }
   return 'application/octet-stream';
@@ -72,7 +91,9 @@ export async function chatToGPTMessage(
   //       so we need to use base64 encoded attachments instead
   useBase64Attachment: boolean = false
 ): Promise<[string | undefined, ChatMessage[], ZodType?]> {
-  const system = messages[0]?.role === 'system' ? messages.shift() : undefined;
+  const hasSystem = messages[0]?.role === 'system';
+  const system = hasSystem ? messages[0] : undefined;
+  const normalizedMessages = hasSystem ? messages.slice(1) : messages;
   const schema =
     system?.params?.schema && system.params.schema instanceof ZodType
       ? system.params.schema
@@ -80,7 +101,7 @@ export async function chatToGPTMessage(
 
   // filter redundant fields
   const msgs: ChatMessage[] = [];
-  for (let { role, content, attachments, params } of messages.filter(
+  for (let { role, content, attachments, params } of normalizedMessages.filter(
     m => m.role !== 'system'
   )) {
     content = content.trim();
@@ -106,7 +127,16 @@ export async function chatToGPTMessage(
           if (SIMPLE_IMAGE_URL_REGEX.test(attachment)) {
             const data =
               attachment.startsWith('data:') || useBase64Attachment
-                ? await fetch(attachment).then(r => r.arrayBuffer())
+                ? await fetchArrayBuffer(attachment).catch(error => {
+                    // Avoid leaking internal details for blocked URLs.
+                    if (
+                      error instanceof SsrfBlockedError ||
+                      error instanceof ResponseTooLargeError
+                    ) {
+                      throw new Error('Attachment URL is not allowed');
+                    }
+                    throw error;
+                  })
                 : new URL(attachment);
             if (mediaType.startsWith('image/')) {
               contents.push({ type: 'image', image: data, mediaType });
@@ -374,6 +404,34 @@ export class CitationParser {
         citation
       )}"}`;
     });
+    return footnotes.join('\n');
+  }
+}
+
+export type CitationIndexedEvent = {
+  type: 'citation';
+  index: number;
+  url: string;
+};
+
+export class CitationFootnoteFormatter {
+  private readonly citations = new Map<number, string>();
+
+  public consume(event: CitationIndexedEvent) {
+    if (event.type !== 'citation') {
+      return '';
+    }
+    this.citations.set(event.index, event.url);
+    return '';
+  }
+
+  public end() {
+    const footnotes = Array.from(this.citations.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(
+        ([index, citation]) =>
+          `[^${index}]: {"type":"url","url":"${encodeURIComponent(citation)}"}`
+      );
     return footnotes.join('\n');
   }
 }
@@ -675,21 +733,39 @@ export const VertexModelListSchema = z.object({
   ),
 });
 
+function normalizeUrl(baseURL?: string) {
+  if (!baseURL?.trim()) {
+    return undefined;
+  }
+  try {
+    const url = new URL(baseURL);
+    const serialized = url.toString();
+    if (serialized.endsWith('/')) return serialized.slice(0, -1);
+    return serialized;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getVertexAnthropicBaseUrl(
+  options: GoogleVertexAnthropicProviderSettings
+) {
+  const normalizedBaseUrl = normalizeUrl(options.baseURL);
+  if (normalizedBaseUrl) return normalizedBaseUrl;
+  const { location, project } = options;
+  if (!location || !project) return undefined;
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/anthropic`;
+}
+
 export async function getGoogleAuth(
   options: GoogleVertexAnthropicProviderSettings | GoogleVertexProviderSettings,
   publisher: 'anthropic' | 'google'
 ) {
   function getBaseUrl() {
-    const { baseURL, location } = options;
-    if (baseURL?.trim()) {
-      try {
-        const url = new URL(baseURL);
-        if (url.pathname.endsWith('/')) {
-          url.pathname = url.pathname.slice(0, -1);
-        }
-        return url.toString();
-      } catch {}
-    } else if (location) {
+    const normalizedBaseUrl = normalizeUrl(options.baseURL);
+    if (normalizedBaseUrl) return normalizedBaseUrl;
+    const { location } = options;
+    if (location) {
       return `https://${location}-aiplatform.googleapis.com/v1beta1/publishers/${publisher}`;
     }
     return undefined;

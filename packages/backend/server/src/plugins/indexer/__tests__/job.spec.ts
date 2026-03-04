@@ -10,8 +10,8 @@ import { JOB_SIGNAL } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { Models } from '../../../models';
-import { IndexerModule, IndexerService } from '..';
 import { SearchProviderFactory } from '../factory';
+import { IndexerModule, IndexerService } from '../index';
 import { IndexerJob } from '../job';
 import { ManticoresearchProvider } from '../providers';
 

@@ -65,6 +65,9 @@ export declare class DocStoragePool {
   deleteDoc(universalId: string, docId: string): Promise<void>
   getDocClocks(universalId: string, after?: Date | undefined | null): Promise<Array<DocClock>>
   getDocClock(universalId: string, docId: string): Promise<DocClock | null>
+  getDocIndexedClock(universalId: string, docId: string): Promise<DocIndexedClock | null>
+  setDocIndexedClock(universalId: string, docId: string, indexedClock: Date, indexerVersion: number): Promise<void>
+  clearDocIndexedClock(universalId: string, docId: string): Promise<void>
   getBlob(universalId: string, key: string): Promise<Blob | null>
   setBlob(universalId: string, blob: SetBlob): Promise<void>
   deleteBlob(universalId: string, key: string, permanently: boolean): Promise<void>
@@ -84,6 +87,7 @@ export declare class DocStoragePool {
   getBlobUploadedAt(universalId: string, peer: string, blobId: string): Promise<Date | null>
   ftsAddDocument(id: string, indexName: string, docId: string, text: string, index: boolean): Promise<void>
   ftsFlushIndex(id: string): Promise<void>
+  ftsIndexVersion(): Promise<number>
   ftsDeleteDocument(id: string, indexName: string, docId: string): Promise<void>
   ftsGetDocument(id: string, indexName: string, docId: string): Promise<string | null>
   ftsSearch(id: string, indexName: string, query: string): Promise<Array<NativeSearchHit>>
@@ -101,6 +105,12 @@ export interface Blob {
 export interface DocClock {
   docId: string
   timestamp: Date
+}
+
+export interface DocIndexedClock {
+  docId: string
+  timestamp: Date
+  indexerVersion: number
 }
 
 export interface DocRecord {
@@ -148,6 +158,7 @@ export interface NativeMatch {
 export interface NativeSearchHit {
   id: string
   score: number
+  terms: Array<string>
 }
 
 export interface SetBlob {

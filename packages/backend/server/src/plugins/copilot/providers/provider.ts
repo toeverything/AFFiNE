@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { Tool, ToolSet } from 'ai';
@@ -9,31 +11,40 @@ import {
   CopilotProviderNotSupported,
   OnEvent,
 } from '../../../base';
-import { DocReader } from '../../../core/doc';
+import { DocReader, DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
-import { CopilotContextService } from '../context';
-import { PromptService } from '../prompt';
+import type { ProviderMiddlewareConfig } from '../config';
+import { CopilotContextService } from '../context/service';
+import { PromptService } from '../prompt/service';
 import {
   buildBlobContentGetter,
   buildContentGetter,
   buildDocContentGetter,
+  buildDocCreateHandler,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  buildDocUpdateHandler,
+  buildDocUpdateMetaHandler,
   createBlobReadTool,
   createCodeArtifactTool,
   createConversationSummaryTool,
   createDocComposeTool,
+  createDocCreateTool,
   createDocEditTool,
   createDocKeywordSearchTool,
   createDocReadTool,
   createDocSemanticSearchTool,
+  createDocUpdateMetaTool,
+  createDocUpdateTool,
   createExaCrawlTool,
   createExaSearchTool,
   createSectionEditTool,
 } from '../tools';
 import { CopilotProviderFactory } from './factory';
+import { resolveProviderMiddleware } from './provider-middleware';
+import { buildProviderRegistry } from './provider-registry';
 import {
   type CopilotChatOptions,
   CopilotChatTools,
@@ -52,11 +63,14 @@ import {
   StreamObject,
 } from './types';
 
+const providerProfileContext = new AsyncLocalStorage<string>();
+
 @Injectable()
 export abstract class CopilotProvider<C = any> {
   protected readonly logger = new Logger(this.constructor.name);
   protected readonly MAX_STEPS = 20;
   protected onlineModelList: string[] = [];
+
   abstract readonly type: CopilotProviderType;
   abstract readonly models: CopilotProviderModel[];
   abstract configured(): boolean;
@@ -64,8 +78,39 @@ export abstract class CopilotProvider<C = any> {
   @Inject() protected readonly AFFiNEConfig!: Config;
   @Inject() protected readonly factory!: CopilotProviderFactory;
   @Inject() protected readonly moduleRef!: ModuleRef;
+  readonly #registeredProviderIds = new Set<string>();
+
+  runWithProfile<T>(providerId: string, callback: () => T): T {
+    return providerProfileContext.run(providerId, callback);
+  }
+
+  protected getActiveProviderId() {
+    return providerProfileContext.getStore() ?? `${this.type}-default`;
+  }
+
+  protected getActiveProviderMiddleware(): ProviderMiddlewareConfig {
+    const providerId = this.getActiveProviderId();
+    const registry = buildProviderRegistry(this.AFFiNEConfig.copilot.providers);
+    const profile = registry.profiles.get(providerId);
+    return profile?.middleware ?? resolveProviderMiddleware(this.type);
+  }
+
+  protected metricLabels(
+    model: string,
+    labels: Record<string, string | number | boolean | undefined> = {}
+  ) {
+    const providerId = this.getActiveProviderId();
+    return { model, providerId, ...labels };
+  }
 
   get config(): C {
+    const profileId = providerProfileContext.getStore();
+    if (profileId) {
+      const profile = this.AFFiNEConfig.copilot.providers.profiles?.find(
+        profile => profile.id === profileId && profile.type === this.type
+      );
+      if (profile) return profile.config as C;
+    }
     return this.AFFiNEConfig.copilot.providers[this.type] as C;
   }
 
@@ -82,15 +127,37 @@ export abstract class CopilotProvider<C = any> {
   }
 
   protected setup() {
-    if (this.configured()) {
-      this.factory.register(this);
-      if (env.selfhosted) {
+    const registry = buildProviderRegistry(this.AFFiNEConfig.copilot.providers);
+    const providerIds = registry.byType.get(this.type) ?? [];
+    const nextProviderIds = new Set<string>();
+
+    for (const id of providerIds) {
+      const configured = this.runWithProfile(id, () => this.configured());
+      if (configured) {
+        nextProviderIds.add(id);
+        this.factory.register(id, this);
+      } else {
+        this.factory.unregister(id, this);
+      }
+    }
+
+    for (const providerId of this.#registeredProviderIds) {
+      if (!nextProviderIds.has(providerId)) {
+        this.factory.unregister(providerId, this);
+      }
+    }
+    this.#registeredProviderIds.clear();
+    for (const providerId of nextProviderIds) {
+      this.#registeredProviderIds.add(providerId);
+    }
+
+    if (env.selfhosted && nextProviderIds.size > 0) {
+      const [providerId] = Array.from(nextProviderIds);
+      this.runWithProfile(providerId, () => {
         this.refreshOnlineModels().catch(e =>
           this.logger.error('Failed to refresh online models', e)
         );
-      }
-    } else {
-      this.factory.unregister(this);
+      });
     }
   }
 
@@ -163,6 +230,7 @@ export abstract class CopilotProvider<C = any> {
         strict: false,
       });
       const docReader = this.moduleRef.get(DocReader, { strict: false });
+      const docWriter = this.moduleRef.get(DocWriter, { strict: false });
       const models = this.moduleRef.get(Models, { strict: false });
       const prompt = this.moduleRef.get(PromptService, {
         strict: false,
@@ -175,6 +243,12 @@ export abstract class CopilotProvider<C = any> {
           if (toolDef[1]) {
             tools[toolDef[0]] = toolDef[1];
           }
+          continue;
+        }
+        if (
+          !(env.dev || env.namespaces.canary) &&
+          ['docCreate', 'docUpdate', 'docUpdateMeta'].includes(tool)
+        ) {
           continue;
         }
         switch (tool) {
@@ -242,6 +316,27 @@ export abstract class CopilotProvider<C = any> {
           case 'docRead': {
             const getDoc = buildDocContentGetter(ac, docReader, models);
             tools.doc_read = createDocReadTool(getDoc.bind(null, options));
+            break;
+          }
+          case 'docCreate': {
+            const createDoc = buildDocCreateHandler(ac, docWriter);
+            tools.doc_create = createDocCreateTool(
+              createDoc.bind(null, options)
+            );
+            break;
+          }
+          case 'docUpdate': {
+            const updateDoc = buildDocUpdateHandler(ac, docWriter);
+            tools.doc_update = createDocUpdateTool(
+              updateDoc.bind(null, options)
+            );
+            break;
+          }
+          case 'docUpdateMeta': {
+            const updateDocMeta = buildDocUpdateMetaHandler(ac, docWriter);
+            tools.doc_update_meta = createDocUpdateMetaTool(
+              updateDocMeta.bind(null, options)
+            );
             break;
           }
           case 'webSearch': {

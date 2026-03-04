@@ -1,6 +1,8 @@
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
+import { buildCorsAllowedOrigins, isCorsOriginAllowed } from '../../cors';
+import { ActionForbidden } from '../../error';
 import { URLHelper } from '../url';
 
 const test = ava as TestFn<{
@@ -85,6 +87,53 @@ test('can create link', t => {
   );
 });
 
+test('addSimpleQuery should not double encode', t => {
+  t.is(
+    t.context.url.addSimpleQuery(
+      'https://app.affine.local/path',
+      'redirect_uri',
+      '/path'
+    ),
+    'https://app.affine.local/path?redirect_uri=%2Fpath'
+  );
+});
+
+test('addSimpleQuery should allow unescaped value when escape=false', t => {
+  t.is(
+    t.context.url.addSimpleQuery(
+      'https://app.affine.local/path',
+      'session_id',
+      '{CHECKOUT_SESSION_ID}',
+      false
+    ),
+    'https://app.affine.local/path?session_id={CHECKOUT_SESSION_ID}'
+  );
+});
+
+test('can validate callbackUrl allowlist', t => {
+  t.true(t.context.url.isAllowedCallbackUrl('/magic-link'));
+  t.true(
+    t.context.url.isAllowedCallbackUrl('https://app.affine.local/magic-link')
+  );
+  t.false(
+    t.context.url.isAllowedCallbackUrl('https://evil.example/magic-link')
+  );
+});
+
+test('can validate redirect_uri allowlist', t => {
+  t.true(t.context.url.isAllowedRedirectUri('/redirect-proxy'));
+  t.true(t.context.url.isAllowedRedirectUri('https://github.com'));
+  t.false(t.context.url.isAllowedRedirectUri('javascript:alert(1)'));
+  t.false(t.context.url.isAllowedRedirectUri('https://evilgithub.com'));
+});
+
+test('can create safe link', t => {
+  t.is(t.context.url.safeLink('/path'), 'https://app.affine.local/path');
+  t.throws(() => t.context.url.safeLink('https://evil.example/magic-link'), {
+    instanceOf: ActionForbidden,
+  });
+});
+
 test('can safe redirect', t => {
   const res = {
     redirect: (to: string) => to,
@@ -144,4 +193,20 @@ test('can get request base url with multiple hosts', t => {
   cls.set(CLS_REQUEST_HOST, 'app.affine.local2');
   t.is(url.requestOrigin, 'https://app.affine.local2');
   t.is(url.requestBaseUrl, 'https://app.affine.local2');
+});
+
+test('should allow websocket secure origin by normalizing wss to https', t => {
+  const allowedOrigins = buildCorsAllowedOrigins({
+    allowedOrigins: ['https://app.affine.pro'],
+  } as any);
+
+  t.true(isCorsOriginAllowed('wss://app.affine.pro', allowedOrigins));
+});
+
+test('should allow desktop file origin', t => {
+  const allowedOrigins = buildCorsAllowedOrigins({
+    allowedOrigins: [],
+  } as any);
+
+  t.true(isCorsOriginAllowed('file://', allowedOrigins));
 });

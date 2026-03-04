@@ -142,7 +142,6 @@ declare global {
     interface ChatOptions extends AITextActionOptions {
       sessionId?: string;
       isRootSession?: boolean;
-      webSearch?: boolean;
       reasoning?: boolean;
       modelId?: string;
       toolsConfig?: AIToolsConfig | undefined;
@@ -412,6 +411,9 @@ declare global {
 
     interface AISessionService {
       createSession: (options: AICreateSessionOptions) => Promise<string>;
+      createSessionWithHistory: (
+        options: AICreateSessionOptions
+      ) => Promise<CopilotChatHistoryFragment | undefined>;
       getSession: (
         workspaceId: string,
         sessionId: string

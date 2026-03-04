@@ -1,6 +1,6 @@
 use std::io::{Error, Write};
 
-use nom::{combinator::map_res, Parser};
+use nom::{Parser, combinator::map_res};
 
 use super::*;
 
@@ -17,8 +17,8 @@ pub fn write_var_string<W: Write, S: AsRef<str>>(buffer: &mut W, input: S) -> Re
 #[cfg(test)]
 mod tests {
   use nom::{
-    error::{Error, ErrorKind},
     AsBytes, Err,
+    error::{Error, ErrorKind},
   };
 
   use super::*;
@@ -34,42 +34,27 @@ mod tests {
     // Test case 2: missing string length
     let input = [0x68, 0x65, 0x6C, 0x6C, 0x6F];
     let result = read_var_string(&input);
-    assert_eq!(
-      result,
-      Err(Err::Error(Error::new(&input[1..], ErrorKind::Eof)))
-    );
+    assert_eq!(result, Err(Err::Error(Error::new(&input[1..], ErrorKind::Eof))));
 
     // Test case 3: truncated input
     let input = [0x05, 0x68, 0x65, 0x6C, 0x6C];
     let result = read_var_string(&input);
-    assert_eq!(
-      result,
-      Err(Err::Error(Error::new(&input[1..], ErrorKind::Eof)))
-    );
+    assert_eq!(result, Err(Err::Error(Error::new(&input[1..], ErrorKind::Eof))));
 
     // Test case 4: invalid input
     let input = [0xFF, 0x01, 0x02, 0x03, 0x04];
     let result = read_var_string(&input);
-    assert_eq!(
-      result,
-      Err(Err::Error(Error::new(&input[2..], ErrorKind::Eof)))
-    );
+    assert_eq!(result, Err(Err::Error(Error::new(&input[2..], ErrorKind::Eof))));
 
     // Test case 5: invalid var int encoding
     let input = [0xFF, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01];
     let result = read_var_string(&input);
-    assert_eq!(
-      result,
-      Err(Err::Error(Error::new(&input[7..], ErrorKind::Eof)))
-    );
+    assert_eq!(result, Err(Err::Error(Error::new(&input[7..], ErrorKind::Eof))));
 
     // Test case 6: invalid input, invalid UTF-8 encoding
     let input = [0x05, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
     let result = read_var_string(&input);
-    assert_eq!(
-      result,
-      Err(Err::Error(Error::new(&input[..], ErrorKind::MapRes)))
-    );
+    assert_eq!(result, Err(Err::Error(Error::new(&input[..], ErrorKind::MapRes))));
   }
 
   #[test]

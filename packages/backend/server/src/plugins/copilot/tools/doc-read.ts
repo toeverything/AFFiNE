@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { Models, publicUserSelect } from '../../../models';
-import type { CopilotChatOptions } from '../providers';
 import { toolError } from './error';
+import type { CopilotChatOptions } from './types';
 
 const logger = new Logger('DocReadTool');
 

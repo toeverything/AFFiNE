@@ -133,7 +133,8 @@ export class WorkspaceFeatureModel extends BaseModel {
     reason: string,
     overrides?: Partial<FeatureConfig<T>>
   ) {
-    const feature = await this.models.feature.get_unchecked(name);
+    // ensure feature exists
+    await this.models.feature.get_unchecked(name);
 
     const existing = await this.db.workspaceFeature.findFirst({
       where: {
@@ -178,7 +179,6 @@ export class WorkspaceFeatureModel extends BaseModel {
       workspaceFeature = await this.db.workspaceFeature.create({
         data: {
           workspaceId,
-          featureId: feature.id,
           name,
           type: this.models.feature.getFeatureType(name),
           activated: true,

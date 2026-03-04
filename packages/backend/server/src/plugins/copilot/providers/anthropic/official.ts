@@ -1,7 +1,3 @@
-import {
-  type AnthropicProvider as AnthropicSDKProvider,
-  createAnthropic,
-} from '@ai-sdk/anthropic';
 import z from 'zod';
 
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
@@ -52,18 +48,12 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
     },
   ];
 
-  protected instance!: AnthropicSDKProvider;
-
   override configured(): boolean {
     return !!this.config.apiKey;
   }
 
   override setup() {
     super.setup();
-    this.instance = createAnthropic({
-      apiKey: this.config.apiKey,
-      baseURL: this.config.baseURL,
-    });
   }
 
   override async refreshOnlineModels() {

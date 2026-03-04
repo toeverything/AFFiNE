@@ -47,6 +47,8 @@ testem.log
 .pnpm-debug.log
 /typings
 tsconfig.tsbuildinfo
+.context
+/*.md
 
 # System Files
 .DS_Store

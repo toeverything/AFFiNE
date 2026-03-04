@@ -39,6 +39,7 @@ import {
   type WorkbenchViewMeta,
 } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
+import { buildWebPreferences } from '../web-preferences';
 import { getMainWindow, MainWindowManager } from './main-window';
 
 async function getAdditionalArguments() {
@@ -511,6 +512,7 @@ export class WebContentViewsManager {
     if (view) {
       this.resizeView(view);
     }
+    this.updateBackgroundThrottling();
     return view;
   };
 
@@ -759,6 +761,10 @@ export class WebContentViewsManager {
 
     this.mainWindow?.on('focus', () => {
       focusActiveView();
+      this.updateBackgroundThrottling();
+    });
+    this.mainWindow?.on('blur', () => {
+      this.updateBackgroundThrottling();
     });
 
     combineLatest([
@@ -768,6 +774,7 @@ export class WebContentViewsManager {
       // makes sure the active view is always focused
       if (window?.isFocused()) {
         focusActiveView();
+        this.updateBackgroundThrottling();
       }
     });
   };
@@ -782,12 +789,9 @@ export class WebContentViewsManager {
 
   resizeView = (view: View) => {
     // app view will take full w/h of the main window
-    view.setBounds({
-      x: 0,
-      y: 0,
-      width: this.mainWindow?.getContentBounds().width ?? 0,
-      height: this.mainWindow?.getContentBounds().height ?? 0,
-    });
+    const bounds = this.mainWindow?.getContentBounds();
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
+    view.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
   };
 
   private readonly generateViewId = (type: 'app' | 'shell') => {
@@ -810,17 +814,15 @@ export class WebContentViewsManager {
     additionalArguments.push(`--view-id=${viewId}`);
 
     const view = new WebContentsView({
-      webPreferences: {
+      webPreferences: buildWebPreferences({
         webgl: true,
         transparent: true,
-        contextIsolation: true,
-        sandbox: false,
         spellcheck: spellCheckSettings.enabled,
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
         // serialize exposed meta that to be used in preload
         additionalArguments: additionalArguments,
-        backgroundThrottling: false,
-      },
+        backgroundThrottling: type === 'app',
+      }),
     });
 
     view.webContents.on('context-menu', (_event, params) => {
@@ -872,13 +874,25 @@ export class WebContentViewsManager {
     });
 
     this.webViewsMap$.next(this.tabViewsMap.set(viewId, view));
-    let unsub = () => {};
+    let disconnectHelperProcess: (() => void) | null = null;
 
     // shell process do not need to connect to helper process
     if (type !== 'shell') {
+      view.webContents.on(
+        'did-start-navigation',
+        (_event, _url, isInPlace, isMainFrame) => {
+          // Keep shell fallback lifecycle tied to main-frame navigation only.
+          if (isMainFrame && !isInPlace) {
+            this.setTabUIUnready(viewId);
+          }
+        }
+      );
       view.webContents.on('did-finish-load', () => {
-        unsub();
-        unsub = helperProcessManager.connectRenderer(view.webContents);
+        disconnectHelperProcess?.();
+        disconnectHelperProcess = helperProcessManager.connectRenderer(
+          view.webContents
+        );
+        this.updateBackgroundThrottling();
       });
     } else {
       view.webContents.on('focus', () => {
@@ -892,6 +906,8 @@ export class WebContentViewsManager {
     }
 
     view.webContents.on('destroyed', () => {
+      disconnectHelperProcess?.();
+      disconnectHelperProcess = null;
       this.webViewsMap$.next(
         new Map(
           [...this.tabViewsMap.entries()].filter(([key]) => key !== viewId)
@@ -902,6 +918,7 @@ export class WebContentViewsManager {
       if (this.tabViewsMap.size === 0) {
         app.quit();
       }
+      this.updateBackgroundThrottling();
     });
 
     this.resizeView(view);
@@ -918,6 +935,31 @@ export class WebContentViewsManager {
 
     logger.info(`view ${viewId} created in ${performance.now() - start}ms`);
     return view;
+  };
+
+  private readonly updateBackgroundThrottling = () => {
+    const mainFocused = this.mainWindow?.isFocused() ?? false;
+    const activeId = this.activeWorkbenchId;
+    this.webViewsMap$.value.forEach((view, id) => {
+      // skip active view to avoid windows rendering
+      if (id === 'shell' || id === activeId) {
+        return;
+      }
+      const shouldThrottle = !mainFocused || id !== activeId;
+      try {
+        view.webContents.setBackgroundThrottling(shouldThrottle);
+      } catch (err) {
+        logger.warn('failed to set backgroundThrottling', err);
+      }
+    });
+    if (this.shellView) {
+      const shellThrottle = !mainFocused;
+      try {
+        this.shellView.webContents.setBackgroundThrottling(shellThrottle);
+      } catch (err) {
+        logger.warn('failed to set shell backgroundThrottling', err);
+      }
+    }
   };
 
   private async skipOnboarding(view: WebContentsView) {
@@ -1121,13 +1163,28 @@ export const showDevTools = (id?: string) => {
 };
 
 export const pingAppLayoutReady = (wc: WebContents, ready: boolean) => {
-  const viewId =
-    WebContentViewsManager.instance.getWorkbenchIdFromWebContentsId(wc.id);
+  const manager = WebContentViewsManager.instance;
+  const viewId = manager.getWorkbenchIdFromWebContentsId(wc.id);
   if (viewId) {
     if (ready) {
-      WebContentViewsManager.instance.setTabUIReady(viewId);
+      manager.setTabUIReady(viewId);
     } else {
-      WebContentViewsManager.instance.setTabUIUnready(viewId);
+      const isActive = manager.activeWorkbenchId === viewId;
+      const view = manager.getViewById(viewId);
+      const isLoadingMainFrame =
+        view?.webContents.isLoadingMainFrame?.() ??
+        view?.webContents.isLoading?.() ??
+        false;
+      // Renderer unload can be noisy on Windows when resizing;
+      // keep active tab visible unless it is truly navigating.
+      if (isActive && !isLoadingMainFrame) {
+        logger.warn('ignore pingAppLayoutReady(false) for active tab', {
+          viewId,
+          senderId: wc.id,
+        });
+        return;
+      }
+      manager.setTabUIUnready(viewId);
     }
   }
 };

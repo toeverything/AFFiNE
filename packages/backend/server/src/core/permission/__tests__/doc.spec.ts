@@ -8,8 +8,8 @@ import {
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from '../../../models';
-import { PermissionModule } from '..';
 import { DocAccessController } from '../doc';
+import { PermissionModule } from '../index';
 import { DocRole, mapDocRoleToPermissions } from '../types';
 
 let module: TestingModule;
@@ -21,7 +21,7 @@ let ws: Workspace;
 test.before(async () => {
   module = await createTestingModule({ imports: [PermissionModule] });
   models = module.get<Models>(Models);
-  ac = new DocAccessController();
+  ac = module.get(DocAccessController);
 });
 
 test.beforeEach(async () => {

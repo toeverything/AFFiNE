@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -45,7 +45,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
@@ -58,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -78,7 +77,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
       - name: Upload admin artifact
         uses: actions/upload-artifact@v4
         with:
@@ -91,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -111,7 +109,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
       - name: Upload mobile artifact
         uses: actions/upload-artifact@v4
         with:
@@ -121,7 +118,7 @@ jobs:
 
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
@@ -135,7 +132,7 @@ jobs:
             file: server-native.armv7.node
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -169,7 +166,7 @@ jobs:
     needs:
       - build-server-native
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -187,8 +184,6 @@ jobs:
           path: ./packages/backend/native
       - name: List server-native files
         run: ls -alh ./packages/backend/native
-      - name: Build @affine/reader
-        run: yarn workspace @affine/reader build
       - name: Build Server
         run: yarn workspace @affine/server build
       - name: Upload server dist
@@ -207,7 +202,7 @@ jobs:
       - build-mobile
       - build-admin
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download server dist
         uses: actions/download-artifact@v4
         with:
@@ -227,7 +222,7 @@ jobs:
       # setup node without cache configuration
       # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
           registry-url: https://npm.pkg.github.com
@@ -268,18 +263,7 @@ jobs:
         with:
           app-version: ${{ inputs.app-version }}
 
-      - name: Build front Dockerfile
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          pull: true
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          file: .github/deployment/front/Dockerfile
-          tags: ghcr.io/toeverything/affine-front:${{inputs.build-type}}-${{ inputs.git-short-hash }}
-
-      - name: Build graphql Dockerfile
+      - name: Build backend Dockerfile
         uses: docker/build-push-action@v6
         with:
           context: .

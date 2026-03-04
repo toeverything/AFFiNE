@@ -48,11 +48,7 @@ impl<'b> RawDecoder<'b> {
     let pos = self.buffer.position() as usize;
     let buf = self.buffer.into_inner();
 
-    if pos == 0 {
-      buf
-    } else {
-      &buf[pos..]
-    }
+    if pos == 0 { buf } else { &buf[pos..] }
   }
 }
 
@@ -88,24 +84,15 @@ impl CrdtReader for RawDecoder<'_> {
   }
 
   fn read_f32_be(&mut self) -> JwstCodecResult<f32> {
-    self
-      .buffer
-      .read_f32::<BigEndian>()
-      .map_err(reader::map_read_error)
+    self.buffer.read_f32::<BigEndian>().map_err(reader::map_read_error)
   }
 
   fn read_f64_be(&mut self) -> JwstCodecResult<f64> {
-    self
-      .buffer
-      .read_f64::<BigEndian>()
-      .map_err(reader::map_read_error)
+    self.buffer.read_f64::<BigEndian>().map_err(reader::map_read_error)
   }
 
   fn read_i64_be(&mut self) -> JwstCodecResult<i64> {
-    self
-      .buffer
-      .read_i64::<BigEndian>()
-      .map_err(reader::map_read_error)
+    self.buffer.read_i64::<BigEndian>().map_err(reader::map_read_error)
   }
 
   #[inline(always)]
@@ -151,22 +138,13 @@ impl CrdtWriter for RawEncoder {
     Ok(())
   }
   fn write_f32_be(&mut self, num: f32) -> JwstCodecResult {
-    self
-      .buffer
-      .write_f32::<BigEndian>(num)
-      .map_err(writer::map_write_error)
+    self.buffer.write_f32::<BigEndian>(num).map_err(writer::map_write_error)
   }
   fn write_f64_be(&mut self, num: f64) -> JwstCodecResult {
-    self
-      .buffer
-      .write_f64::<BigEndian>(num)
-      .map_err(writer::map_write_error)
+    self.buffer.write_f64::<BigEndian>(num).map_err(writer::map_write_error)
   }
   fn write_i64_be(&mut self, num: i64) -> JwstCodecResult {
-    self
-      .buffer
-      .write_i64::<BigEndian>(num)
-      .map_err(writer::map_write_error)
+    self.buffer.write_i64::<BigEndian>(num).map_err(writer::map_write_error)
   }
 
   #[inline(always)]
@@ -197,10 +175,7 @@ mod tests {
       let mut reader = RawDecoder::new(&[0x5, b'h', b'e', b'l', b'l', b'o']);
 
       assert_eq!(reader.clone().read_var_string().unwrap(), "hello");
-      assert_eq!(
-        reader.clone().read_var_buffer().unwrap().as_slice(),
-        b"hello"
-      );
+      assert_eq!(reader.clone().read_var_buffer().unwrap().as_slice(), b"hello");
 
       assert_eq!(reader.read_u8().unwrap(), 5);
       assert_eq!(reader.read_u8().unwrap(), b'h');

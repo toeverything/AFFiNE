@@ -8,6 +8,11 @@ export class SetupMiddleware implements NestMiddleware {
   constructor(private readonly server: ServerService) {}
 
   use = (req: Request, res: Response, next: (error?: Error | any) => void) => {
+    if (!env.selfhosted) {
+      next();
+      return;
+    }
+
     // never throw
     this.server
       .initialized()

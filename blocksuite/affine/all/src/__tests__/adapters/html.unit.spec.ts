@@ -2101,6 +2101,157 @@ describe('html to snapshot', () => {
     expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
 
+  test('paragraph with br should split into multiple blocks', async () => {
+    const html = template(`<p>aaa<br>bbb<br>ccc</p>`);
+
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [{ insert: 'aaa' }],
+            },
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[2]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [{ insert: 'bbb' }],
+            },
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[3]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [{ insert: 'ccc' }],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
+  test('paragraph with br should keep inline styles in each split line', async () => {
+    const html = template(
+      `<p><strong>aaa</strong><br><a href="https://www.google.com/">bbb</a><br><em>ccc</em></p>`
+    );
+
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'aaa',
+                  attributes: {
+                    bold: true,
+                  },
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[2]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'bbb',
+                  attributes: {
+                    link: 'https://www.google.com/',
+                  },
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[3]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'ccc',
+                  attributes: {
+                    italic: true,
+                  },
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
   test('nested list', async () => {
     const html = template(`<ul><li>111<ul><li>222</li></ul></li></ul>`);
 
@@ -2214,7 +2365,7 @@ describe('html to snapshot', () => {
 
   test('iframe', async () => {
     const html = template(
-      `<iframe width="560" height="315" src="https://www.youtube.com/embed/QDsd0nyzwz0?start=&amp;end=" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
+      `<iframe width="560" height="315" src="https://www.youtube.com/embed/QDsd0nyzwz0?start=&amp;end=" title="YouTube video player" frameborder="0" allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin"></iframe>`
     );
 
     const blockSnapshot: BlockSnapshot = {

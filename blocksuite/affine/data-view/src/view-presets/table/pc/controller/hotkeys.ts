@@ -18,60 +18,62 @@ export class TableHotkeysController implements ReactiveController {
     return this.logic.ui$.value;
   }
 
+  private _handleDeleteOrBackspace() {
+    const selection = this.selectionController.selection;
+    if (!selection) {
+      return;
+    }
+    if (TableViewRowSelection.is(selection)) {
+      const rows = TableViewRowSelection.rowsIds(selection);
+      this.selectionController.selection = undefined;
+      this.logic.view.rowsDelete(rows);
+      this.logic.ui$.value?.requestUpdate();
+      return;
+    }
+    const { focus, rowsSelection, columnsSelection, isEditing, groupKey } =
+      selection;
+    if (focus && !isEditing) {
+      if (rowsSelection && columnsSelection) {
+        // multi cell
+        for (let i = rowsSelection.start; i <= rowsSelection.end; i++) {
+          const { start, end } = columnsSelection;
+          for (let j = start; j <= end; j++) {
+            const container = this.selectionController.getCellContainer(
+              groupKey,
+              i,
+              j
+            );
+            const rowId = container?.dataset.rowId;
+            const columnId = container?.dataset.columnId;
+            if (rowId && columnId) {
+              container?.column.valueSetFromString(rowId, '');
+            }
+          }
+        }
+      } else {
+        // single cell
+        const container = this.selectionController.getCellContainer(
+          groupKey,
+          focus.rowIndex,
+          focus.columnIndex
+        );
+        const rowId = container?.dataset.rowId;
+        const columnId = container?.dataset.columnId;
+        if (rowId && columnId) {
+          container?.column.valueSetFromString(rowId, '');
+        }
+      }
+    }
+  }
+
   hostConnected() {
     this.host?.disposables.add(
       this.logic.bindHotkey({
         Backspace: () => {
-          const selection = this.selectionController.selection;
-          if (!selection) {
-            return;
-          }
-          if (TableViewRowSelection.is(selection)) {
-            const rows = TableViewRowSelection.rowsIds(selection);
-            this.selectionController.selection = undefined;
-            this.logic.view.rowsDelete(rows);
-            this.logic.ui$.value?.requestUpdate();
-            return;
-          }
-          const {
-            focus,
-            rowsSelection,
-            columnsSelection,
-            isEditing,
-            groupKey,
-          } = selection;
-          if (focus && !isEditing) {
-            if (rowsSelection && columnsSelection) {
-              // multi cell
-              for (let i = rowsSelection.start; i <= rowsSelection.end; i++) {
-                const { start, end } = columnsSelection;
-                for (let j = start; j <= end; j++) {
-                  const container = this.selectionController.getCellContainer(
-                    groupKey,
-                    i,
-                    j
-                  );
-                  const rowId = container?.dataset.rowId;
-                  const columnId = container?.dataset.columnId;
-                  if (rowId && columnId) {
-                    container?.column.valueSetFromString(rowId, '');
-                  }
-                }
-              }
-            } else {
-              // single cell
-              const container = this.selectionController.getCellContainer(
-                groupKey,
-                focus.rowIndex,
-                focus.columnIndex
-              );
-              const rowId = container?.dataset.rowId;
-              const columnId = container?.dataset.columnId;
-              if (rowId && columnId) {
-                container?.column.valueSetFromString(rowId, '');
-              }
-            }
-          }
+          this._handleDeleteOrBackspace();
+        },
+        Delete: () => {
+          this._handleDeleteOrBackspace();
         },
         Escape: () => {
           const selection = this.selectionController.selection;

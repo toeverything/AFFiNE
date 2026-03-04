@@ -54,12 +54,21 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
   }
 
   override addChild(element: GfxModel) {
-    if (!canSafeAddToContainer(this, element)) {
+    this.addChildren([element]);
+  }
+
+  addChildren(elements: GfxModel[]) {
+    elements = [...new Set(elements)].filter(element =>
+      canSafeAddToContainer(this, element)
+    );
+    if (elements.length === 0) {
       return;
     }
 
     this.surface.store.transact(() => {
-      this.children.set(element.id, true);
+      elements.forEach(element => {
+        this.children.set(element.id, true);
+      });
     });
   }
 
@@ -76,11 +85,22 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
   }
 
   removeChild(element: GfxModel) {
+    this.removeChildren([element]);
+  }
+
+  removeChildren(elements: GfxModel[]) {
     if (!this.children) {
       return;
     }
+    const childIds = [...new Set(elements.map(element => element.id))];
+    if (childIds.length === 0) {
+      return;
+    }
+
     this.surface.store.transact(() => {
-      this.children.delete(element.id);
+      childIds.forEach(childId => {
+        this.children.delete(childId);
+      });
     });
   }
 

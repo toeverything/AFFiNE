@@ -17,7 +17,52 @@ import {
 import { fromJson } from '../../core/property/utils';
 import { PropertyBase } from '../../core/view-manager/property.js';
 import { SingleViewBase } from '../../core/view-manager/single-view.js';
-import type { KanbanViewData } from './define.js';
+import type { ViewManager } from '../../core/view-manager/view-manager.js';
+import type { KanbanViewColumn, KanbanViewData } from './define.js';
+import {
+  getKanbanDefaultHideEmpty,
+  resolveKanbanGroupBy,
+} from './group-by-utils.js';
+
+const materializeColumnsByPropertyIds = (
+  columns: KanbanViewColumn[],
+  propertyIds: string[]
+) => {
+  const needShow = new Set(propertyIds);
+  const orderedColumns: KanbanViewColumn[] = [];
+
+  for (const column of columns) {
+    if (needShow.has(column.id)) {
+      orderedColumns.push(column);
+      needShow.delete(column.id);
+    }
+  }
+
+  for (const id of needShow) {
+    orderedColumns.push({ id });
+  }
+
+  return orderedColumns;
+};
+
+export const materializeKanbanColumns = (
+  columns: KanbanViewColumn[],
+  propertyIds: string[]
+) => {
+  const nextColumns = materializeColumnsByPropertyIds(columns, propertyIds);
+  const unchanged =
+    columns.length === nextColumns.length &&
+    columns.every((column, index) => {
+      const nextColumn = nextColumns[index];
+      return (
+        nextColumn != null &&
+        column.id === nextColumn.id &&
+        column.hide === nextColumn.hide
+      );
+    });
+
+  return unchanged ? columns : nextColumns;
+};
 
 export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   propertiesRaw$ = computed(() => {
@@ -61,25 +106,39 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   );
 
   groupBy$ = computed(() => {
-    return this.data$.value?.groupBy;
+    const groupBy = this.data$.value?.groupBy;
+    if (!groupBy || groupBy.hideEmpty != null) {
+      return groupBy;
+    }
+    return {
+      ...groupBy,
+      hideEmpty: getKanbanDefaultHideEmpty(groupBy.name),
+    };
   });
 
   groupTrait = this.traitSet(
     groupTraitKey,
     new GroupTrait(this.groupBy$, this, {
       groupBySet: groupBy => {
+        const nextGroupBy = resolveKanbanGroupBy(
+          this.manager.dataSource,
+          groupBy
+        );
         this.dataUpdate(() => {
           return {
-            groupBy: groupBy,
+            groupBy: nextGroupBy,
           };
         });
       },
-      sortGroup: ids =>
-        sortByManually(
+      sortGroup: (ids, asc) => {
+        const sorted = sortByManually(
           ids,
           v => v,
           this.view?.groupProperties.map(v => v.key) ?? []
-        ),
+        );
+        // If descending order is requested, reverse the sorted array
+        return asc === false ? sorted.reverse() : sorted;
+      },
       sortRow: (key, rows) => {
         const property = this.view?.groupProperties.find(v => v.key === key);
         return sortByManually(
@@ -136,6 +195,33 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
           };
         });
       },
+      changeGroupHide: (key, hide) => {
+        this.dataUpdate(() => {
+          const list = [...(this.view?.groupProperties ?? [])];
+          const idx = list.findIndex(g => g.key === key);
+          if (idx >= 0) {
+            const target = list[idx];
+            if (!target) {
+              return { groupProperties: list };
+            }
+            list[idx] = { ...target, hide };
+          } else {
+            // maintain existing order when inserting a new entry
+            const order = (this.groupTrait.groupsDataListAll$.value ?? [])
+              .map(g => g?.key)
+              .filter((k): k is string => typeof k === 'string');
+            let insertPos = 0;
+            for (const k of order) {
+              if (k === key) break;
+              if (list.findIndex(g => g.key === k) !== -1) {
+                insertPos++;
+              }
+            }
+            list.splice(insertPos, 0, { key, hide, manuallyCardSort: [] });
+          }
+          return { groupProperties: list };
+        });
+      },
     })
   );
 
@@ -168,6 +254,23 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
 
   get type(): string {
     return this.view?.mode ?? 'kanban';
+  }
+
+  private materializeColumns() {
+    const view = this.view;
+    if (!view) {
+      return;
+    }
+
+    const nextColumns = materializeKanbanColumns(
+      view.columns,
+      this.dataSource.properties$.value
+    );
+    if (nextColumns === view.columns) {
+      return;
+    }
+
+    this.dataUpdate(() => ({ columns: nextColumns }));
   }
 
   get view() {
@@ -246,7 +349,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
   isShow(rowId: string): boolean {
     if (this.filter$.value?.conditions.length) {
       const rowMap = Object.fromEntries(
-        this.properties$.value.map(column => [
+        this.propertiesRaw$.value.map(column => [
           column.id,
           column.cellGetOrCreate(rowId).jsonValue$.value,
         ])
@@ -258,6 +361,13 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
 
   propertyGetOrCreate(columnId: string): KanbanColumn {
     return new KanbanColumn(this, columnId);
+  }
+
+  constructor(viewManager: ViewManager, viewId: string) {
+    super(viewManager, viewId);
+    // Materialize view columns on view activation so newly added properties
+    // can participate in hide/order operations in kanban.
+    this.materializeColumns();
   }
 }
 

@@ -47,7 +47,10 @@ describe('frame', () => {
     expect(rect!.width).toBeGreaterThan(0);
     expect(rect!.height).toBeGreaterThan(0);
 
-    const [titleX, titleY] = service.viewport.toModelCoord(rect!.x, rect!.y);
+    const [titleX, titleY] = service.viewport.toModelCoordFromClientCoord([
+      rect!.x,
+      rect!.y,
+    ]);
     expect(titleX).toBeCloseTo(0);
     expect(titleY).toBeLessThan(0);
 
@@ -66,10 +69,11 @@ describe('frame', () => {
     if (!nestedTitle) return;
 
     const nestedTitleRect = nestedTitle.getBoundingClientRect()!;
-    const [nestedTitleX, nestedTitleY] = service.viewport.toModelCoord(
-      nestedTitleRect.x,
-      nestedTitleRect.y
-    );
+    const [nestedTitleX, nestedTitleY] =
+      service.viewport.toModelCoordFromClientCoord([
+        nestedTitleRect.x,
+        nestedTitleRect.y,
+      ]);
 
     expect(nestedTitleX).toBeGreaterThan(20);
     expect(nestedTitleY).toBeGreaterThan(20);

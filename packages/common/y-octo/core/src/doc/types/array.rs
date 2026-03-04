@@ -4,25 +4,59 @@ impl_type!(Array);
 
 impl ListType for Array {}
 
-pub struct ArrayIter<'a>(ListIterator<'a>);
+pub struct ArrayIter<'a> {
+  iter: ListIterator<'a>,
+  pending: Option<PendingArrayValues>,
+}
+
+enum PendingArrayValues {
+  Any { values: Vec<Any>, index: usize },
+}
 
 impl Iterator for ArrayIter<'_> {
   type Item = Value;
 
   fn next(&mut self) -> Option<Self::Item> {
-    for item in self.0.by_ref() {
+    loop {
+      if let Some(PendingArrayValues::Any { values, index }) = &mut self.pending {
+        if *index < values.len() {
+          let value = values[*index].clone();
+          *index += 1;
+          return Some(Value::Any(value));
+        }
+        self.pending = None;
+      }
+
+      let item = self.iter.next()?;
       if let Some(item) = item.get() {
-        if item.countable() {
-          return Some(Value::from(&item.content));
+        if !item.countable() {
+          continue;
+        }
+
+        match &item.content {
+          Content::Any(values) if !values.is_empty() => {
+            if values.len() > 1 {
+              self.pending = Some(PendingArrayValues::Any {
+                values: values.clone(),
+                index: 1,
+              });
+            }
+
+            return Some(Value::Any(values[0].clone()));
+          }
+          _ => return Some(Value::from(&item.content)),
         }
       }
     }
-
-    None
   }
 }
 
 impl Array {
+  #[inline(always)]
+  pub fn id(&self) -> Option<Id> {
+    self._id()
+  }
+
   #[inline]
   pub fn len(&self) -> u64 {
     self.content_len()
@@ -46,7 +80,10 @@ impl Array {
   }
 
   pub fn iter(&self) -> ArrayIter<'_> {
-    ArrayIter(self.iter_item())
+    ArrayIter {
+      iter: self.iter_item(),
+      pending: None,
+    }
   }
 
   pub fn push<V: Into<Value>>(&mut self, val: V) -> JwstCodecResult {
@@ -94,15 +131,26 @@ mod tests {
       array.insert(0, "Hello").unwrap();
       array.insert(2, "World").unwrap();
 
-      assert_eq!(
-        array.get(0).unwrap(),
-        Value::Any(Any::String("Hello".into()))
-      );
+      assert_eq!(array.get(0).unwrap(), Value::Any(Any::String("Hello".into())));
       assert_eq!(array.get(1).unwrap(), Value::Any(Any::String(" ".into())));
-      assert_eq!(
-        array.get(2).unwrap(),
-        Value::Any(Any::String("World".into()))
-      );
+      assert_eq!(array.get(2).unwrap(), Value::Any(Any::String("World".into())));
+    });
+  }
+
+  #[test]
+  fn test_yarray_delete() {
+    let options = DocOptions::default();
+
+    loom_model!({
+      let doc = Doc::with_options(options.clone());
+      let mut array = doc.get_or_create_array("abc").unwrap();
+
+      array.insert(0, " ").unwrap();
+      array.insert(0, "Hello").unwrap();
+      array.insert(2, "World").unwrap();
+      array.remove(0, 2).unwrap();
+
+      assert_eq!(array.get(0).unwrap(), Value::Any(Any::String("World".into())));
     });
   }
 
@@ -131,15 +179,9 @@ mod tests {
       doc.apply_update(update).unwrap();
       let array = doc.get_or_create_array("abc").unwrap();
 
-      assert_eq!(
-        array.get(0).unwrap(),
-        Value::Any(Any::String("Hello".into()))
-      );
+      assert_eq!(array.get(0).unwrap(), Value::Any(Any::String("Hello".into())));
       assert_eq!(array.get(5).unwrap(), Value::Any(Any::String(" ".into())));
-      assert_eq!(
-        array.get(6).unwrap(),
-        Value::Any(Any::String("World".into()))
-      );
+      assert_eq!(array.get(6).unwrap(), Value::Any(Any::String("World".into())));
       assert_eq!(array.get(11).unwrap(), Value::Any(Any::String("!".into())));
     });
 
@@ -164,15 +206,9 @@ mod tests {
       doc.apply_update(update).unwrap();
       let array = doc.get_or_create_array("abc").unwrap();
 
-      assert_eq!(
-        array.get(0).unwrap(),
-        Value::Any(Any::String("Hello".into()))
-      );
+      assert_eq!(array.get(0).unwrap(), Value::Any(Any::String("Hello".into())));
       assert_eq!(array.get(5).unwrap(), Value::Any(Any::String(" ".into())));
-      assert_eq!(
-        array.get(6).unwrap(),
-        Value::Any(Any::String("World".into()))
-      );
+      assert_eq!(array.get(6).unwrap(), Value::Any(Any::String("World".into())));
       assert_eq!(array.get(11).unwrap(), Value::Any(Any::String("!".into())));
     });
   }
@@ -205,10 +241,7 @@ mod tests {
       .unwrap();
       let arr = doc.get_or_create_array("abc").unwrap();
 
-      assert_eq!(
-        arr.get(2).unwrap(),
-        Value::Any(Any::String("world".to_string()))
-      )
+      assert_eq!(arr.get(2).unwrap(), Value::Any(Any::String("world".to_string())))
     });
   }
 }

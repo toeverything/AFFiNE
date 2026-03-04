@@ -3,9 +3,14 @@ import {
   uint8ArrayToBase64,
 } from '@affine/core/modules/workspace-engine';
 import {
+  decodePayload,
+  MOBILE_BLOB_FILE_PREFIX,
+} from '@affine/mobile-shared/nbstore/payload';
+import {
   type BlobRecord,
   type CrawlResult,
   type DocClock,
+  type DocIndexedClock,
   type DocRecord,
   type ListedBlobRecord,
   parseUniversalId,
@@ -131,14 +136,23 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       id,
       key,
     });
-    return record
-      ? {
-          data: base64ToUint8Array(record.data),
-          key: record.key,
-          mime: record.mime,
-          createdAt: new Date(record.createdAt),
-        }
-      : null;
+    if (!record) {
+      return null;
+    }
+
+    let refreshedBlobPromise: ReturnType<typeof NbStore.getBlob> | undefined;
+
+    return {
+      data: await decodePayload(record.data, MOBILE_BLOB_FILE_PREFIX, {
+        onTokenReadFailure: async () => {
+          refreshedBlobPromise ??= NbStore.getBlob({ id, key });
+          return (await refreshedBlobPromise)?.data;
+        },
+      }),
+      key: record.key,
+      mime: record.mime,
+      createdAt: new Date(record.createdAt),
+    };
   },
   setBlob: async function (id: string, blob: BlobRecord): Promise<void> {
     await NbStore.setBlob({
@@ -373,12 +387,13 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     id: string,
     indexName: string,
     query: string
-  ): Promise<{ id: string; score: number }[]> {
-    return await NbStore.ftsSearch({
+  ): Promise<{ id: string; score: number; terms: Array<string> }[]> {
+    const { results } = await NbStore.ftsSearch({
       id,
       indexName,
       query,
     });
+    return results ?? [];
   },
   ftsGetDocument: async function (
     id: string,
@@ -398,16 +413,45 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     docId: string,
     query: string
   ): Promise<{ start: number; end: number }[]> {
-    return await NbStore.ftsGetMatches({
+    const { matches } = await NbStore.ftsGetMatches({
       id,
       indexName,
       docId,
       query,
     });
+    return matches ?? [];
   },
   ftsFlushIndex: async function (id: string): Promise<void> {
     await NbStore.ftsFlushIndex({
       id,
+    });
+  },
+  ftsIndexVersion: function (): Promise<number> {
+    return NbStore.ftsIndexVersion().then(res => res.indexVersion);
+  },
+  getDocIndexedClock: function (
+    id: string,
+    docId: string
+  ): Promise<DocIndexedClock | null> {
+    return NbStore.getDocIndexedClock({ id, docId });
+  },
+  setDocIndexedClock: function (
+    id: string,
+    docId: string,
+    indexedClock: Date,
+    indexerVersion: number
+  ): Promise<void> {
+    return NbStore.setDocIndexedClock({
+      id,
+      docId,
+      indexedClock: indexedClock.getTime(),
+      indexerVersion,
+    });
+  },
+  clearDocIndexedClock: function (id: string, docId: string): Promise<void> {
+    return NbStore.clearDocIndexedClock({
+      id,
+      docId,
     });
   },
 };

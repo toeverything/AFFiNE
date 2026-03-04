@@ -36,6 +36,14 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "clearClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getBlobUploadedAt", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setBlobUploadedAt", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "crawlDocData", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsAddDocument", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsDeleteDocument", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsSearch", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsGetDocument", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsGetMatches", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsFlushIndex", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "ftsIndexVersion", returnType: CAPPluginReturnPromise),
   ]
 
   @objc func connect(_ call: CAPPluginCall) {
@@ -543,6 +551,171 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
       } catch {
         call.reject("Failed to clear clocks, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func crawlDocData(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let docId = try call.getStringEnsure("docId")
+        let result = try await docStoragePool.crawlDocData(universalId: id, docId: docId)
+        let blocks = result.blocks.map {
+          [
+            "blockId": $0.blockId,
+            "flavour": $0.flavour,
+            "content": $0.content as Any,
+            "blob": $0.blob as Any,
+            "refDocId": $0.refDocId as Any,
+            "refInfo": $0.refInfo as Any,
+            "parentFlavour": $0.parentFlavour as Any,
+            "parentBlockId": $0.parentBlockId as Any,
+            "additional": $0.additional as Any,
+          ]
+        }
+        call.resolve([
+          "title": result.title,
+          "summary": result.summary,
+          "blocks": blocks,
+        ])
+      } catch {
+        call.reject("Failed to crawl doc data, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsAddDocument(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let indexName = try call.getStringEnsure("indexName")
+        let docId = try call.getStringEnsure("docId")
+        let text = try call.getStringEnsure("text")
+        guard let index = call.getBool("index") else {
+          call.reject("index is required", nil, nil)
+          return
+        }
+        try await docStoragePool.ftsAddDocument(
+          universalId: id,
+          indexName: indexName,
+          docId: docId,
+          text: text,
+          index: index
+        )
+        call.resolve()
+      } catch {
+        call.reject("Failed to add document to fts, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsDeleteDocument(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let indexName = try call.getStringEnsure("indexName")
+        let docId = try call.getStringEnsure("docId")
+        try await docStoragePool.ftsDeleteDocument(
+          universalId: id,
+          indexName: indexName,
+          docId: docId
+        )
+        call.resolve()
+      } catch {
+        call.reject("Failed to delete document from fts, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsSearch(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let indexName = try call.getStringEnsure("indexName")
+        let query = try call.getStringEnsure("query")
+        let results = try await docStoragePool.ftsSearch(
+          universalId: id,
+          indexName: indexName,
+          query: query
+        )
+        let mapped = results.map {
+          [
+            "id": $0.id,
+            "score": $0.score,
+            "terms": $0.terms,
+          ] as [String: Any]
+        }
+        call.resolve(["results": mapped])
+      } catch {
+        call.reject("Failed to search fts, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsGetDocument(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let indexName = try call.getStringEnsure("indexName")
+        let docId = try call.getStringEnsure("docId")
+        let text = try await docStoragePool.ftsGetDocument(
+          universalId: id,
+          indexName: indexName,
+          docId: docId
+        )
+        call.resolve(["text": text as Any])
+      } catch {
+        call.reject("Failed to get fts document, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsGetMatches(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let indexName = try call.getStringEnsure("indexName")
+        let docId = try call.getStringEnsure("docId")
+        let query = try call.getStringEnsure("query")
+        let matches = try await docStoragePool.ftsGetMatches(
+          universalId: id,
+          indexName: indexName,
+          docId: docId,
+          query: query
+        )
+        let mapped = matches.map {
+          [
+            "start": $0.start,
+            "end": $0.end,
+          ]
+        }
+        call.resolve(["matches": mapped])
+      } catch {
+        call.reject("Failed to get fts matches, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsFlushIndex(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        try await docStoragePool.ftsFlushIndex(universalId: id)
+        call.resolve()
+      } catch {
+        call.reject("Failed to flush fts index, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func ftsIndexVersion(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let version = try await docStoragePool.ftsIndexVersion()
+        call.resolve(["indexVersion": version])
+      } catch {
+        call.reject("Failed to get fts index version, \(error)", nil, error)
       }
     }
   }

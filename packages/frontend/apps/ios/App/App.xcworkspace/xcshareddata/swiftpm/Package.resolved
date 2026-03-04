@@ -19,12 +19,30 @@
       }
     },
     {
+      "identity" : "highlightr",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/raspu/Highlightr",
+      "state" : {
+        "revision" : "05e7fcc63b33925cd0c1faaa205cdd5681e7bbef",
+        "version" : "2.3.0"
+      }
+    },
+    {
       "identity" : "listviewkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/ListViewKit",
       "state" : {
-        "revision" : "a4372d7f90c846d834c1f1575d1af0050d70fa0f",
-        "version" : "1.1.6"
+        "revision" : "5dea05a52a6c2c7bb013a5925c517d6e32940605",
+        "version" : "1.1.8"
+      }
+    },
+    {
+      "identity" : "litext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/Litext",
+      "state" : {
+        "revision" : "c7e83f2f580ce34a102ca9ba9d2bb24e507dccd9",
+        "version" : "0.5.6"
       }
     },
     {
@@ -32,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nicklockwood/LRUCache",
       "state" : {
-        "revision" : "542f0449556327415409ededc9c43a4bd0a397dc",
-        "version" : "1.0.7"
+        "revision" : "cb5b2bd0da83ad29c0bec762d39f41c8ad0eaf3e",
+        "version" : "1.2.1"
       }
     },
     {
@@ -41,8 +59,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/MarkdownView",
       "state" : {
-        "revision" : "c052f57768436212c91e4369d76181c38eaa3ba3",
-        "version" : "3.4.2"
+        "revision" : "8b8c1eecd251051c5ec2bdd5f31a2243efd9be6c",
+        "version" : "3.6.2"
+      }
+    },
+    {
+      "identity" : "msdisplaylink",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/MSDisplayLink",
+      "state" : {
+        "revision" : "ebf5823cb5fc1326639d9a05bc06d16bbe82989f",
+        "version" : "2.0.8"
       }
     },
     {
@@ -50,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/RevenueCat/purchases-ios-spm.git",
       "state" : {
-        "revision" : "249432af6b37a3665e26ea6f4ffc869dcd445f01",
-        "version" : "5.43.0"
+        "revision" : "8f5df97653eb361a2097119479332afccf0aa816",
+        "version" : "5.58.0"
       }
     },
     {
@@ -64,21 +91,12 @@
       }
     },
     {
-      "identity" : "splash",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/Splash",
-      "state" : {
-        "revision" : "de9cde249fdb7a173a6e6b950ab18b11f6c2a557",
-        "version" : "0.18.0"
-      }
-    },
-    {
       "identity" : "springinterpolation",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/SpringInterpolation",
       "state" : {
-        "revision" : "f9ae95ece5d6b7cdceafd4381f1d5f0f9494e5d2",
-        "version" : "1.3.1"
+        "revision" : "cdb556516daa9b43c16aae9436dd39e19ff930fd",
+        "version" : "1.4.0"
       }
     },
     {
@@ -86,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
-        "version" : "0.6.0"
+        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
+        "version" : "0.7.1"
       }
     },
     {
@@ -95,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
-        "version" : "1.2.1"
+        "revision" : "7b847a3b7008b2dc2f47ca3110d8c782fb2e5c7e",
+        "version" : "1.3.0"
       }
     },
     {
@@ -111,10 +129,10 @@
     {
       "identity" : "swiftmath",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/SwiftMath",
+      "location" : "https://github.com/mgriebling/SwiftMath",
       "state" : {
-        "revision" : "cfd646dcac0c5553e21ebf1ee05f9078277518bc",
-        "version" : "1.7.2"
+        "revision" : "fa8244ed032f4a1ade4cb0571bf87d2f1a9fd2d7",
+        "version" : "1.7.3"
       }
     }
   ],

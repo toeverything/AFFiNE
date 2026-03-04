@@ -79,10 +79,10 @@ impl Node {
       _ => {
         let item = Somr::new(Item::read(decoder, id, info, first_5_bit)?);
 
-        if let Content::Type(ty) = &item.get().unwrap().content {
-          if let Some(mut ty) = ty.ty_mut() {
-            ty.item = item.clone();
-          }
+        if let Content::Type(ty) = &item.get().unwrap().content
+          && let Some(mut ty) = ty.ty_mut()
+        {
+          ty.item = item.clone();
         }
 
         Ok(Node::Item(item))
@@ -254,6 +254,11 @@ impl Node {
         let mut ritem = unsafe { rref.get_mut_unchecked() };
         let llen = litem.len();
 
+        let parent_kind = match &litem.parent {
+          Some(Parent::Type(ty)) => ty.ty().map(|ty| ty.kind()),
+          _ => None,
+        };
+
         if litem.id.client != ritem.id.client
                     // not same delete status
                     || litem.deleted() != ritem.deleted()
@@ -277,6 +282,12 @@ impl Node {
             l.extend(r.drain(0..));
           }
           (Content::String(l), Content::String(r)) => {
+            let allow_merge_string = matches!(parent_kind, Some(YTypeKind::Text | YTypeKind::XMLText));
+
+            if !allow_merge_string {
+              return false;
+            }
+
             *l += r;
           }
           (Content::Any(l), Content::Any(r)) => {
@@ -287,12 +298,11 @@ impl Node {
           }
         }
 
-        if let Some(Parent::Type(p)) = &litem.parent {
-          if let Some(parent) = p.ty_mut() {
-            if let Some(markers) = &parent.markers {
-              markers.replace_marker(rref.clone(), lref.clone(), -(llen as i64));
-            }
-          }
+        if let Some(Parent::Type(p)) = &litem.parent
+          && let Some(parent) = p.ty_mut()
+          && let Some(markers) = &parent.markers
+        {
+          markers.replace_marker(rref.clone(), lref.clone(), -(llen as i64));
         }
 
         if ritem.keep() {
@@ -443,15 +453,15 @@ mod tests {
 
   #[cfg(not(loom))]
   fn struct_info_round_trip(info: &mut Node) -> JwstCodecResult {
-    if let Node::Item(item) = info {
-      if let Some(item) = item.get_mut() {
-        if !item.is_valid() {
-          return Ok(());
-        }
+    if let Node::Item(item) = info
+      && let Some(item) = item.get_mut()
+    {
+      if !item.is_valid() {
+        return Ok(());
+      }
 
-        if item.content.countable() {
-          item.flags.set_countable();
-        }
+      if item.content.countable() {
+        item.flags.set_countable();
       }
     }
     let mut encoder = RawEncoder::default();

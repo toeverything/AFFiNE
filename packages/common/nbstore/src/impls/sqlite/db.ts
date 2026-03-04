@@ -3,6 +3,7 @@ import type {
   BlobRecord,
   CrawlResult,
   DocClock,
+  DocIndexedClock,
   DocRecord,
   ListedBlobRecord,
 } from '../../storage';
@@ -29,6 +30,17 @@ export interface NativeDBApis {
   deleteDoc: (id: string, docId: string) => Promise<void>;
   getDocClocks: (id: string, after?: Date | null) => Promise<DocClock[]>;
   getDocClock: (id: string, docId: string) => Promise<DocClock | null>;
+  getDocIndexedClock: (
+    id: string,
+    docId: string
+  ) => Promise<DocIndexedClock | null>;
+  setDocIndexedClock: (
+    id: string,
+    docId: string,
+    indexedClock: Date,
+    indexerVersion: number
+  ) => Promise<void>;
+  clearDocIndexedClock: (id: string, docId: string) => Promise<void>;
   getBlob: (id: string, key: string) => Promise<BlobRecord | null>;
   setBlob: (id: string, blob: BlobRecord) => Promise<void>;
   deleteBlob: (id: string, key: string, permanently: boolean) => Promise<void>;
@@ -99,7 +111,7 @@ export interface NativeDBApis {
     id: string,
     indexName: string,
     query: string
-  ) => Promise<{ id: string; score: number }[]>;
+  ) => Promise<{ id: string; score: number; terms: Array<string> }[]>;
   ftsGetDocument: (
     id: string,
     indexName: string,
@@ -112,6 +124,7 @@ export interface NativeDBApis {
     query: string
   ) => Promise<{ start: number; end: number }[]>;
   ftsFlushIndex: (id: string) => Promise<void>;
+  ftsIndexVersion: () => Promise<number>;
 }
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs
@@ -119,7 +132,7 @@ type NativeDBApisWrapper = NativeDBApis extends infer APIs
       [K in keyof APIs]: APIs[K] extends (...args: any[]) => any
         ? Parameters<APIs[K]> extends [string, ...infer Rest]
           ? (...args: Rest) => ReturnType<APIs[K]>
-          : never
+          : (...args: Parameters<APIs[K]>) => ReturnType<APIs[K]>
         : never;
     }
   : never;

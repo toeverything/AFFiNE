@@ -868,6 +868,37 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.ai.template-insert.failed"](): string;
     /**
+      * `AFFiNE AI`
+      */
+    ["com.affine.ai.chat-panel.title"](): string;
+    /**
+      * `AFFiNE AI is loading history...`
+      */
+    ["com.affine.ai.chat-panel.loading-history"](): string;
+    /**
+      * `Embedding {{done}}/{{total}}`
+      */
+    ["com.affine.ai.chat-panel.embedding-progress"](options: Readonly<{
+        done: string;
+        total: string;
+    }>): string;
+    /**
+      * `Delete this history?`
+      */
+    ["com.affine.ai.chat-panel.session.delete.confirm.title"](): string;
+    /**
+      * `Do you want to delete this AI conversation history? Once deleted, it cannot be recovered.`
+      */
+    ["com.affine.ai.chat-panel.session.delete.confirm.message"](): string;
+    /**
+      * `History deleted`
+      */
+    ["com.affine.ai.chat-panel.session.delete.toast.success"](): string;
+    /**
+      * `Failed to delete history`
+      */
+    ["com.affine.ai.chat-panel.session.delete.toast.failed"](): string;
+    /**
       * `All docs`
       */
     ["com.affine.all-pages.header"](): string;
@@ -927,6 +958,18 @@ export function useAFFiNEI18N(): {
       * `Customize Theme`
       */
     ["com.affine.appearanceSettings.customize-theme.title"](): string;
+    /**
+      * `Images`
+      */
+    ["com.affine.appearanceSettings.images.title"](): string;
+    /**
+      * `Smooth image rendering`
+      */
+    ["com.affine.appearanceSettings.images.antialiasing.title"](): string;
+    /**
+      * `When disabled, images are rendered using nearest-neighbor scaling for crisp pixels.`
+      */
+    ["com.affine.appearanceSettings.images.antialiasing.description"](): string;
     /**
       * `Reset all`
       */
@@ -4532,6 +4575,74 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.license-success.copy"](): string;
     /**
+      * `View analytics`
+      */
+    ["com.affine.doc.analytics.title"](): string;
+    /**
+      * `({{count}} total)`
+      */
+    ["com.affine.doc.analytics.summary.total"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Last {{days}} days`
+      */
+    ["com.affine.doc.analytics.window.last-days"](options: {
+        readonly days: string;
+    }): string;
+    /**
+      * `Total`
+      */
+    ["com.affine.doc.analytics.metric.total"](): string;
+    /**
+      * `Unique`
+      */
+    ["com.affine.doc.analytics.metric.unique"](): string;
+    /**
+      * `Guest`
+      */
+    ["com.affine.doc.analytics.metric.guest"](): string;
+    /**
+      * `Total views`
+      */
+    ["com.affine.doc.analytics.chart.total-views"](): string;
+    /**
+      * `Unique views`
+      */
+    ["com.affine.doc.analytics.chart.unique-views"](): string;
+    /**
+      * `Unable to load analytics.`
+      */
+    ["com.affine.doc.analytics.error.load-analytics"](): string;
+    /**
+      * `Unable to load viewers.`
+      */
+    ["com.affine.doc.analytics.error.load-viewers"](): string;
+    /**
+      * `No page views in this window.`
+      */
+    ["com.affine.doc.analytics.empty.no-page-views"](): string;
+    /**
+      * `No viewers in this window.`
+      */
+    ["com.affine.doc.analytics.empty.no-viewers"](): string;
+    /**
+      * `Viewers`
+      */
+    ["com.affine.doc.analytics.viewers.title"](): string;
+    /**
+      * `Show all viewers`
+      */
+    ["com.affine.doc.analytics.viewers.show-all"](): string;
+    /**
+      * `Open pricing plans`
+      */
+    ["com.affine.doc.analytics.paywall.open-pricing"](): string;
+    /**
+      * `Doc analytics over 7 days require an AFFiNE Team subscription.`
+      */
+    ["com.affine.doc.analytics.paywall.toast"](): string;
+    /**
       * `Close`
       */
     ["com.affine.peek-view-controls.close"](): string;
@@ -6347,6 +6458,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.sharing.url-preview.title"](): string;
     /**
+      * `Control whether pages in this workspace can be shared publicly. Turn off to block new shares and external access for existing shares.`
+      */
+    ["com.affine.settings.workspace.sharing.workspace-sharing.description"](): string;
+    /**
+      * `Allow workspace page sharing`
+      */
+    ["com.affine.settings.workspace.sharing.workspace-sharing.title"](): string;
+    /**
       * `AFFiNE AI`
       */
     ["com.affine.settings.workspace.affine-ai.title"](): string;
@@ -6605,6 +6724,10 @@ export function useAFFiNEI18N(): {
       * `Anyone can access this link`
       */
     ["com.affine.share-menu.option.link.readonly.description"](): string;
+    /**
+      * `Sharing for this workspace is turned off. Please contact an admin to enable it.`
+      */
+    ["com.affine.share-menu.workspace-sharing.disabled.tooltip"](): string;
     /**
       * `Can manage`
       */
@@ -7234,6 +7357,10 @@ export function useAFFiNEI18N(): {
       * `All docs`
       */
     ["com.affine.workspaceSubPath.all"](): string;
+    /**
+      * `Intelligence`
+      */
+    ["com.affine.workspaceSubPath.chat"](): string;
     /**
       * `Trash`
       */
@@ -8215,21 +8342,121 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.calendar.new-url-label"](): string;
     /**
-      * `This is a duplicate calendar`
+      * `An error occurred while saving the calendar settings`
       */
-    ["com.affine.integration.calendar.new-duplicate-error-title"](): string;
-    /**
-      * `This subscription calendar already exists in the account of subscribed calendars.`
-      */
-    ["com.affine.integration.calendar.new-duplicate-error-content"](): string;
-    /**
-      * `An error occurred while adding the calendar`
-      */
-    ["com.affine.integration.calendar.new-error"](): string;
+    ["com.affine.integration.calendar.save-error"](): string;
     /**
       * `All day`
       */
     ["com.affine.integration.calendar.all-day"](): string;
+    /**
+      * `Failed to load calendar accounts`
+      */
+    ["com.affine.integration.calendar.account.load-error"](): string;
+    /**
+      * `Failed to load calendar providers`
+      */
+    ["com.affine.integration.calendar.provider.load-error"](): string;
+    /**
+      * `Failed to start calendar authorization`
+      */
+    ["com.affine.integration.calendar.auth.start-error"](): string;
+    /**
+      * `Failed to unlink calendar account`
+      */
+    ["com.affine.integration.calendar.account.unlink-error"](): string;
+    /**
+      * `Unlink`
+      */
+    ["com.affine.integration.calendar.account.unlink"](): string;
+    /**
+      * `Link`
+      */
+    ["com.affine.integration.calendar.account.link"](): string;
+    /**
+      * `No calendar accounts linked yet.`
+      */
+    ["com.affine.integration.calendar.account.linked-empty"](): string;
+    /**
+      * `Authorization failed: {{error}}`
+      */
+    ["com.affine.integration.calendar.account.status.failed"](options: {
+        readonly error: string;
+    }): string;
+    /**
+      * `Authorization failed. Please reconnect your account.`
+      */
+    ["com.affine.integration.calendar.account.status.failed-reconnect"](): string;
+    /**
+      * `{{count}} calendar`
+      */
+    ["com.affine.integration.calendar.account.count"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Link CalDAV account`
+      */
+    ["com.affine.integration.calendar.caldav.link.title"](): string;
+    /**
+      * `Failed to link CalDAV account`
+      */
+    ["com.affine.integration.calendar.caldav.link.failed"](): string;
+    /**
+      * `Provider`
+      */
+    ["com.affine.integration.calendar.caldav.field.provider"](): string;
+    /**
+      * `Select provider`
+      */
+    ["com.affine.integration.calendar.caldav.field.provider.placeholder"](): string;
+    /**
+      * `Please select a provider.`
+      */
+    ["com.affine.integration.calendar.caldav.field.provider.error"](): string;
+    /**
+      * `Username`
+      */
+    ["com.affine.integration.calendar.caldav.field.username"](): string;
+    /**
+      * `email@example.com`
+      */
+    ["com.affine.integration.calendar.caldav.field.username.placeholder"](): string;
+    /**
+      * `Username is required.`
+      */
+    ["com.affine.integration.calendar.caldav.field.username.error"](): string;
+    /**
+      * `Password`
+      */
+    ["com.affine.integration.calendar.caldav.field.password"](): string;
+    /**
+      * `Password or app-specific password`
+      */
+    ["com.affine.integration.calendar.caldav.field.password.placeholder"](): string;
+    /**
+      * `Password is required.`
+      */
+    ["com.affine.integration.calendar.caldav.field.password.error"](): string;
+    /**
+      * `Display name (optional)`
+      */
+    ["com.affine.integration.calendar.caldav.field.displayName"](): string;
+    /**
+      * `My CalDAV`
+      */
+    ["com.affine.integration.calendar.caldav.field.displayName.placeholder"](): string;
+    /**
+      * `App-specific password required.`
+      */
+    ["com.affine.integration.calendar.caldav.hint.app-password"](): string;
+    /**
+      * `Learn more`
+      */
+    ["com.affine.integration.calendar.caldav.hint.learn-more"](): string;
+    /**
+      * `Provider setup guide`
+      */
+    ["com.affine.integration.calendar.caldav.hint.guide"](): string;
     /**
       * `New doc`
       */
@@ -8253,6 +8480,16 @@ export function useAFFiNEI18N(): {
         readonly name: string;
     }): string;
     /**
+      * `No journal page found for {{date}}. Please create a journal page first.`
+      */
+    ["com.affine.integration.calendar.no-journal"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `No subscribed calendars yet.`
+      */
+    ["com.affine.integration.calendar.no-calendar"](): string;
+    /**
       * `MCP Server`
       */
     ["com.affine.integration.mcp-server.name"](): string;
@@ -8260,6 +8497,10 @@ export function useAFFiNEI18N(): {
       * `Enable other MCP Client to search and read the doc of AFFiNE.`
       */
     ["com.affine.integration.mcp-server.desc"](): string;
+    /**
+      * `The MCP token is shown only once. Delete and recreate it to copy the JSON configuration.`
+      */
+    ["com.affine.integration.mcp-server.copy-json.disabled-hint"](): string;
     /**
       * `Notes`
       */
@@ -8444,6 +8685,17 @@ export function useAFFiNEI18N(): {
         readonly message: string;
     }): string;
     /**
+      * `Invalid URL`
+      */
+    ["error.SSRF_BLOCKED_ERROR"](): string;
+    /**
+      * `Response too large ({{receivedBytes}} bytes), limit is {{limitBytes}} bytes`
+      */
+    ["error.RESPONSE_TOO_LARGE_ERROR"](options: Readonly<{
+        receivedBytes: string;
+        limitBytes: string;
+    }>): string;
+    /**
       * `Email service is not configured.`
       */
     ["error.EMAIL_SERVICE_NOT_CONFIGURED"](): string;
@@ -8543,10 +8795,6 @@ export function useAFFiNEI18N(): {
       * `You are trying to sign in by a different method than you signed up with.`
       */
     ["error.WRONG_SIGN_IN_METHOD"](): string;
-    /**
-      * `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`
-      */
-    ["error.EARLY_ACCESS_REQUIRED"](): string;
     /**
       * `You are not allowed to sign up.`
       */
@@ -8680,6 +8928,10 @@ export function useAFFiNEI18N(): {
         blobId: string;
         spaceId: string;
     }>): string;
+    /**
+      * `Blob is invalid.`
+      */
+    ["error.BLOB_INVALID"](): string;
     /**
       * `Expected to publish a doc, not a Space.`
       */
@@ -8819,6 +9071,13 @@ export function useAFFiNEI18N(): {
       * `This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.`
       */
     ["error.MANAGED_BY_APP_STORE_OR_PLAY"](): string;
+    /**
+      * `Calendar provider request error, status: {{status}}, message: {{message}}`
+      */
+    ["error.CALENDAR_PROVIDER_REQUEST_ERROR"](options: Readonly<{
+        status: string;
+        message: string;
+    }>): string;
     /**
       * `Copilot session not found.`
       */

@@ -30,6 +30,9 @@ export const nbstoreHandlers: NativeDBApis = {
   deleteDoc: POOL.deleteDoc.bind(POOL),
   getDocClocks: POOL.getDocClocks.bind(POOL),
   getDocClock: POOL.getDocClock.bind(POOL),
+  getDocIndexedClock: POOL.getDocIndexedClock.bind(POOL),
+  setDocIndexedClock: POOL.setDocIndexedClock.bind(POOL),
+  clearDocIndexedClock: POOL.clearDocIndexedClock.bind(POOL),
   getBlob: POOL.getBlob.bind(POOL),
   setBlob: POOL.setBlob.bind(POOL),
   deleteBlob: POOL.deleteBlob.bind(POOL),
@@ -54,4 +57,5 @@ export const nbstoreHandlers: NativeDBApis = {
   ftsGetDocument: POOL.ftsGetDocument.bind(POOL),
   ftsGetMatches: POOL.ftsGetMatches.bind(POOL),
   ftsFlushIndex: POOL.ftsFlushIndex.bind(POOL),
+  ftsIndexVersion: POOL.ftsIndexVersion.bind(POOL),
 };

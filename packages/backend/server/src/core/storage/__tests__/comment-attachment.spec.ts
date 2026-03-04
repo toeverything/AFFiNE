@@ -6,7 +6,7 @@ import test from 'ava';
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { Models } from '../../../models';
-import { CommentAttachmentStorage, StorageModule } from '..';
+import { CommentAttachmentStorage, StorageModule } from '../index';
 
 const module = await createModule({
   imports: [StorageModule],

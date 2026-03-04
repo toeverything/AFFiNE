@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
+use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
 use lib0::{
   decoding::{Cursor, Read},
   encoding::Write,

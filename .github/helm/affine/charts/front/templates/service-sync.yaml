@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.services.sync.name }}
+  labels:
+    {{- include "front.labels" . | nindent 4 }}
+  {{- with .Values.services.sync.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.services.sync.type }}
+  ports:
+    - port: {{ .Values.services.sync.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "front.selectorLabels" . | nindent 4 }}

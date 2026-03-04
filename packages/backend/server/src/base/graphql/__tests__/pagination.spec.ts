@@ -82,7 +82,7 @@ test('should decode pagination input', async t => {
   await app.gql(query, {
     input: {
       first: 5,
-      offset: 1,
+      offset: 0,
       after: Buffer.from('4').toString('base64'),
     },
   });
@@ -90,10 +90,32 @@ test('should decode pagination input', async t => {
   t.true(
     paginationStub.calledOnceWithExactly({
       first: 5,
-      offset: 1,
+      offset: 0,
       after: '4',
     })
   );
+});
+
+test('should reject mixed pagination cursor and offset', async t => {
+  const res = await app.POST('/graphql').send({
+    query,
+    variables: {
+      input: {
+        first: 5,
+        offset: 1,
+        after: Buffer.from('4').toString('base64'),
+      },
+    },
+  });
+
+  t.is(res.status, 200);
+  t.truthy(res.body.errors?.length);
+  t.is(
+    res.body.errors[0].message,
+    'pagination.after and pagination.offset cannot be used together'
+  );
+  t.is(res.body.errors[0].extensions.status, 400);
+  t.is(res.body.errors[0].extensions.name, 'BAD_REQUEST');
 });
 
 test('should return encode pageInfo', async t => {

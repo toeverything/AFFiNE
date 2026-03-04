@@ -156,40 +156,6 @@ export class WorkspaceResolver {
     };
   }
 
-  @Query(() => Boolean, {
-    description: 'Get is owner of workspace',
-    complexity: 2,
-    deprecationReason: 'use WorkspaceType[role] instead',
-  })
-  async isOwner(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    const role = await this.models.workspaceUser.getActive(
-      workspaceId,
-      user.id
-    );
-
-    return role?.type === WorkspaceRole.Owner;
-  }
-
-  @Query(() => Boolean, {
-    description: 'Get is admin of workspace',
-    complexity: 2,
-    deprecationReason: 'use WorkspaceType[role] instead',
-  })
-  async isAdmin(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    const role = await this.models.workspaceUser.getActive(
-      workspaceId,
-      user.id
-    );
-
-    return role?.type === WorkspaceRole.Admin;
-  }
-
   @Query(() => [WorkspaceType], {
     description: 'Get all accessible workspaces for current user',
     complexity: 2,

@@ -1,3 +1,4 @@
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
@@ -19,6 +20,8 @@ import {
   IndexedDBBlobSyncStorage,
   IndexedDBDocStorage,
   IndexedDBDocSyncStorage,
+  IndexedDBIndexerStorage,
+  IndexedDBIndexerSyncStorage,
 } from '@affine/nbstore/idb';
 import {
   IndexedDBV1BlobStorage,
@@ -29,6 +32,8 @@ import {
   SqliteBlobSyncStorage,
   SqliteDocStorage,
   SqliteDocSyncStorage,
+  SqliteIndexerStorage,
+  SqliteIndexerSyncStorage,
 } from '@affine/nbstore/sqlite';
 import {
   SqliteV1BlobStorage,
@@ -130,6 +135,13 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteBlobSyncStorage
       : IndexedDBBlobSyncStorage;
+  IndexerStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteIndexerStorage
+      : IndexedDBIndexerStorage;
+  IndexerSyncStorageType = BUILD_CONFIG.isElectron
+    ? SqliteIndexerSyncStorage
+    : IndexedDBIndexerSyncStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     await this.graphqlService.gql({
@@ -181,7 +193,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
-          return record ? new Blob([record.data], { type: record.mime }) : null;
+          return record
+            ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
+            : null;
         },
         delete: async () => {
           return;
@@ -380,7 +394,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     storage.connection.disconnect();
 
     if (localBlob) {
-      return new Blob([localBlob.data], { type: localBlob.mime });
+      return new Blob([toArrayBuffer(localBlob.data)], {
+        type: localBlob.mime,
+      });
     }
 
     const cloudBlob = await new CloudBlobStorage({
@@ -390,7 +406,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     if (!cloudBlob) {
       return null;
     }
-    return new Blob([cloudBlob.data], { type: cloudBlob.mime });
+    return new Blob([toArrayBuffer(cloudBlob.data)], { type: cloudBlob.mime });
   }
 
   async listBlobs(id: string): Promise<ListedBlobRecord[]> {
@@ -481,7 +497,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         indexer: {
-          name: 'IndexedDBIndexerStorage',
+          name: this.IndexerStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',
@@ -489,7 +505,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         indexerSync: {
-          name: 'IndexedDBIndexerSyncStorage',
+          name: this.IndexerSyncStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',

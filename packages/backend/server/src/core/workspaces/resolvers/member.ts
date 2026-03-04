@@ -234,25 +234,6 @@ export class WorkspaceMemberResolver {
     return results;
   }
 
-  /**
-   * @deprecated
-   */
-  @Mutation(() => [InviteResult], {
-    deprecationReason: 'use [inviteMembers] instead',
-  })
-  async inviteBatch(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args({ name: 'emails', type: () => [String] }) emails: string[],
-    @Args('sendInviteMail', {
-      nullable: true,
-      deprecationReason: 'never used',
-    })
-    _sendInviteMail: boolean = false
-  ) {
-    return this.inviteMembers(user, workspaceId, emails);
-  }
-
   @ResolveField(() => InviteLink, {
     description: 'invite link for workspace',
     nullable: true,
@@ -454,20 +435,6 @@ export class WorkspaceMemberResolver {
     }
 
     return { workspace, user: owner, invitee, status };
-  }
-
-  /**
-   * @deprecated
-   */
-  @Mutation(() => Boolean, {
-    deprecationReason: 'use [revokeMember] instead',
-  })
-  async revoke(
-    @CurrentUser() me: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('userId') userId: string
-  ) {
-    return this.revokeMember(me, workspaceId, userId);
   }
 
   @Mutation(() => Boolean)

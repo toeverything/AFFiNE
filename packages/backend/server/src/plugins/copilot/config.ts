@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   defineModuleConfig,
   StorageJSONSchema,
@@ -13,7 +15,179 @@ import { GeminiGenerativeConfig, GeminiVertexConfig } from './providers/gemini';
 import { MorphConfig } from './providers/morph';
 import { OpenAIConfig } from './providers/openai';
 import { PerplexityConfig } from './providers/perplexity';
-import { VertexSchema } from './providers/types';
+import {
+  CopilotProviderType,
+  ModelOutputType,
+  VertexSchema,
+} from './providers/types';
+
+export type CopilotProviderConfigMap = {
+  [CopilotProviderType.OpenAI]: OpenAIConfig;
+  [CopilotProviderType.FAL]: FalConfig;
+  [CopilotProviderType.Gemini]: GeminiGenerativeConfig;
+  [CopilotProviderType.GeminiVertex]: GeminiVertexConfig;
+  [CopilotProviderType.Perplexity]: PerplexityConfig;
+  [CopilotProviderType.Anthropic]: AnthropicOfficialConfig;
+  [CopilotProviderType.AnthropicVertex]: AnthropicVertexConfig;
+  [CopilotProviderType.Morph]: MorphConfig;
+};
+
+export type ProviderSpecificConfig =
+  CopilotProviderConfigMap[keyof CopilotProviderConfigMap];
+
+export const RustRequestMiddlewareValues = [
+  'normalize_messages',
+  'clamp_max_tokens',
+  'tool_schema_rewrite',
+] as const;
+export type RustRequestMiddleware =
+  (typeof RustRequestMiddlewareValues)[number];
+
+export const RustStreamMiddlewareValues = [
+  'stream_event_normalize',
+  'citation_indexing',
+] as const;
+export type RustStreamMiddleware = (typeof RustStreamMiddlewareValues)[number];
+
+export const NodeTextMiddlewareValues = [
+  'citation_footnote',
+  'callout',
+  'thinking_format',
+] as const;
+export type NodeTextMiddleware = (typeof NodeTextMiddlewareValues)[number];
+
+export type ProviderMiddlewareConfig = {
+  rust?: { request?: RustRequestMiddleware[]; stream?: RustStreamMiddleware[] };
+  node?: { text?: NodeTextMiddleware[] };
+};
+
+type CopilotProviderProfileCommon = {
+  id: string;
+  displayName?: string;
+  priority?: number;
+  enabled?: boolean;
+  models?: string[];
+  middleware?: ProviderMiddlewareConfig;
+};
+
+type CopilotProviderProfileVariant<T extends CopilotProviderType> = {
+  type: T;
+  config: CopilotProviderConfigMap[T];
+};
+
+export type CopilotProviderProfile = CopilotProviderProfileCommon &
+  {
+    [Type in CopilotProviderType]: CopilotProviderProfileVariant<Type>;
+  }[CopilotProviderType];
+
+export type CopilotProviderDefaults = Partial<
+  Record<ModelOutputType, string>
+> & {
+  fallback?: string;
+};
+
+const CopilotProviderProfileBaseShape = z.object({
+  id: z.string().regex(/^[a-zA-Z0-9-_]+$/),
+  displayName: z.string().optional(),
+  priority: z.number().optional(),
+  enabled: z.boolean().optional(),
+  models: z.array(z.string()).optional(),
+  middleware: z
+    .object({
+      rust: z
+        .object({
+          request: z.array(z.enum(RustRequestMiddlewareValues)).optional(),
+          stream: z.array(z.enum(RustStreamMiddlewareValues)).optional(),
+        })
+        .optional(),
+      node: z
+        .object({ text: z.array(z.enum(NodeTextMiddlewareValues)).optional() })
+        .optional(),
+    })
+    .optional(),
+});
+
+const OpenAIConfigShape = z.object({
+  apiKey: z.string(),
+  baseURL: z.string().optional(),
+  oldApiStyle: z.boolean().optional(),
+});
+
+const FalConfigShape = z.object({
+  apiKey: z.string(),
+});
+
+const GeminiGenerativeConfigShape = z.object({
+  apiKey: z.string(),
+  baseURL: z.string().optional(),
+});
+
+const VertexProviderConfigShape = z.object({
+  location: z.string().optional(),
+  project: z.string().optional(),
+  baseURL: z.string().optional(),
+  googleAuthOptions: z.any().optional(),
+  fetch: z.any().optional(),
+});
+
+const PerplexityConfigShape = z.object({
+  apiKey: z.string(),
+  endpoint: z.string().optional(),
+});
+
+const AnthropicOfficialConfigShape = z.object({
+  apiKey: z.string(),
+  baseURL: z.string().optional(),
+});
+
+const MorphConfigShape = z.object({
+  apiKey: z.string().optional(),
+});
+
+const CopilotProviderProfileShape = z.discriminatedUnion('type', [
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.OpenAI),
+    config: OpenAIConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.FAL),
+    config: FalConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Gemini),
+    config: GeminiGenerativeConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.GeminiVertex),
+    config: VertexProviderConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Perplexity),
+    config: PerplexityConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Anthropic),
+    config: AnthropicOfficialConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.AnthropicVertex),
+    config: VertexProviderConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.Morph),
+    config: MorphConfigShape,
+  }),
+]);
+
+const CopilotProviderDefaultsShape = z.object({
+  [ModelOutputType.Text]: z.string().optional(),
+  [ModelOutputType.Object]: z.string().optional(),
+  [ModelOutputType.Embedding]: z.string().optional(),
+  [ModelOutputType.Image]: z.string().optional(),
+  [ModelOutputType.Structured]: z.string().optional(),
+  fallback: z.string().optional(),
+});
+
 declare global {
   interface AppConfigSchema {
     copilot: {
@@ -27,6 +201,8 @@ declare global {
       storage: ConfigItem<StorageProviderConfig>;
       scenarios: ConfigItem<CopilotPromptScenario>;
       providers: {
+        profiles: ConfigItem<CopilotProviderProfile[]>;
+        defaults: ConfigItem<CopilotProviderDefaults>;
         openai: ConfigItem<OpenAIConfig>;
         fal: ConfigItem<FalConfig>;
         gemini: ConfigItem<GeminiGenerativeConfig>;
@@ -62,6 +238,16 @@ defineModuleConfig('copilot', {
         polish_and_summarize: 'gemini-2.5-flash',
       },
     },
+  },
+  'providers.profiles': {
+    desc: 'The profile list for copilot providers.',
+    default: [],
+    shape: z.array(CopilotProviderProfileShape),
+  },
+  'providers.defaults': {
+    desc: 'The default provider ids for model output types and global fallback.',
+    default: {},
+    shape: CopilotProviderDefaultsShape,
   },
   'providers.openai': {
     desc: 'The config for the openai provider.',

@@ -4,9 +4,12 @@ pub mod doc;
 pub mod doc_sync;
 pub mod error;
 pub mod indexer;
+pub mod indexer_sync;
 pub mod pool;
 pub mod storage;
 
+#[cfg(not(feature = "use-as-lib"))]
+use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -22,7 +25,7 @@ type Result<T> = napi::Result<T>;
 #[cfg(not(feature = "use-as-lib"))]
 impl From<error::Error> for napi::Error {
   fn from(err: error::Error) -> Self {
-    napi::Error::new(napi::Status::GenericFailure, err.to_string())
+    to_napi_error(err, napi::Status::GenericFailure)
   }
 }
 
@@ -53,6 +56,14 @@ pub struct DocRecord {
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
+}
+
+#[derive(Debug)]
+#[napi(object)]
+pub struct DocIndexedClock {
+  pub doc_id: String,
+  pub timestamp: NaiveDateTime,
+  pub indexer_version: i64,
 }
 
 #[napi(object)]
@@ -95,7 +106,7 @@ impl DocStoragePool {
     })
   }
 
-  async fn get(&self, universal_id: String) -> Result<Ref<'_, SqliteDocStorage>> {
+  async fn get(&self, universal_id: String) -> Result<Ref<SqliteDocStorage>> {
     Ok(self.pool.get(universal_id).await?)
   }
 
@@ -119,16 +130,8 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn crawl_doc_data(
-    &self,
-    universal_id: String,
-    doc_id: String,
-  ) -> Result<indexer::NativeCrawlResult> {
-    let result = self
-      .get(universal_id)
-      .await?
-      .crawl_doc_data(&doc_id)
-      .await?;
+  pub async fn crawl_doc_data(&self, universal_id: String, doc_id: String) -> Result<indexer::NativeCrawlResult> {
+    let result = self.get(universal_id).await?.crawl_doc_data(&doc_id).await?;
     Ok(result)
   }
 
@@ -139,60 +142,23 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn push_update(
-    &self,
-    universal_id: String,
-    doc_id: String,
-    update: Uint8Array,
-  ) -> Result<NaiveDateTime> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .push_update(doc_id, update)
-        .await?,
-    )
+  pub async fn push_update(&self, universal_id: String, doc_id: String, update: Uint8Array) -> Result<NaiveDateTime> {
+    Ok(self.get(universal_id).await?.push_update(doc_id, update).await?)
   }
 
   #[napi]
-  pub async fn get_doc_snapshot(
-    &self,
-    universal_id: String,
-    doc_id: String,
-  ) -> Result<Option<DocRecord>> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .get_doc_snapshot(doc_id)
-        .await?,
-    )
+  pub async fn get_doc_snapshot(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
+    Ok(self.get(universal_id).await?.get_doc_snapshot(doc_id).await?)
   }
 
   #[napi]
   pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .set_doc_snapshot(snapshot)
-        .await?,
-    )
+    Ok(self.get(universal_id).await?.set_doc_snapshot(snapshot).await?)
   }
 
   #[napi]
-  pub async fn get_doc_updates(
-    &self,
-    universal_id: String,
-    doc_id: String,
-  ) -> Result<Vec<DocUpdate>> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .get_doc_updates(doc_id)
-        .await?,
-    )
+  pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
+    Ok(self.get(universal_id).await?.get_doc_updates(doc_id).await?)
   }
 
   #[napi]
@@ -218,21 +184,40 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn get_doc_clocks(
-    &self,
-    universal_id: String,
-    after: Option<NaiveDateTime>,
-  ) -> Result<Vec<DocClock>> {
+  pub async fn get_doc_clocks(&self, universal_id: String, after: Option<NaiveDateTime>) -> Result<Vec<DocClock>> {
     Ok(self.get(universal_id).await?.get_doc_clocks(after).await?)
   }
 
   #[napi]
-  pub async fn get_doc_clock(
+  pub async fn get_doc_clock(&self, universal_id: String, doc_id: String) -> Result<Option<DocClock>> {
+    Ok(self.get(universal_id).await?.get_doc_clock(doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn get_doc_indexed_clock(&self, universal_id: String, doc_id: String) -> Result<Option<DocIndexedClock>> {
+    Ok(self.get(universal_id).await?.get_doc_indexed_clock(doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn set_doc_indexed_clock(
     &self,
     universal_id: String,
     doc_id: String,
-  ) -> Result<Option<DocClock>> {
-    Ok(self.get(universal_id).await?.get_doc_clock(doc_id).await?)
+    indexed_clock: NaiveDateTime,
+    indexer_version: i64,
+  ) -> Result<()> {
+    self
+      .get(universal_id)
+      .await?
+      .set_doc_indexed_clock(doc_id, indexed_clock, indexer_version)
+      .await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn clear_doc_indexed_clock(&self, universal_id: String, doc_id: String) -> Result<()> {
+    self.get(universal_id).await?.clear_doc_indexed_clock(doc_id).await?;
+    Ok(())
   }
 
   #[napi(async_runtime)]
@@ -247,17 +232,8 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn delete_blob(
-    &self,
-    universal_id: String,
-    key: String,
-    permanently: bool,
-  ) -> Result<()> {
-    self
-      .get(universal_id)
-      .await?
-      .delete_blob(key, permanently)
-      .await?;
+  pub async fn delete_blob(&self, universal_id: String, key: String, permanently: bool) -> Result<()> {
+    self.get(universal_id).await?.delete_blob(key, permanently).await?;
     Ok(())
   }
 
@@ -273,18 +249,8 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn get_peer_remote_clocks(
-    &self,
-    universal_id: String,
-    peer: String,
-  ) -> Result<Vec<DocClock>> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .get_peer_remote_clocks(peer)
-        .await?,
-    )
+  pub async fn get_peer_remote_clocks(&self, universal_id: String, peer: String) -> Result<Vec<DocClock>> {
+    Ok(self.get(universal_id).await?.get_peer_remote_clocks(peer).await?)
   }
 
   #[napi]
@@ -320,11 +286,7 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn get_peer_pulled_remote_clocks(
-    &self,
-    universal_id: String,
-    peer: String,
-  ) -> Result<Vec<DocClock>> {
+  pub async fn get_peer_pulled_remote_clocks(&self, universal_id: String, peer: String) -> Result<Vec<DocClock>> {
     Ok(
       self
         .get(universal_id)
@@ -367,18 +329,8 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn get_peer_pushed_clocks(
-    &self,
-    universal_id: String,
-    peer: String,
-  ) -> Result<Vec<DocClock>> {
-    Ok(
-      self
-        .get(universal_id)
-        .await?
-        .get_peer_pushed_clocks(peer)
-        .await?,
-    )
+  pub async fn get_peer_pushed_clocks(&self, universal_id: String, peer: String) -> Result<Vec<DocClock>> {
+    Ok(self.get(universal_id).await?.get_peer_pushed_clocks(peer).await?)
   }
 
   #[napi]
@@ -473,24 +425,19 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn fts_delete_document(
-    &self,
-    id: String,
-    index_name: String,
-    doc_id: String,
-  ) -> Result<()> {
+  pub async fn fts_index_version(&self) -> Result<u32> {
+    Ok(SqliteDocStorage::index_version())
+  }
+
+  #[napi]
+  pub async fn fts_delete_document(&self, id: String, index_name: String, doc_id: String) -> Result<()> {
     let storage = self.pool.get(id).await?;
     storage.fts_delete(&index_name, &doc_id).await?;
     Ok(())
   }
 
   #[napi]
-  pub async fn fts_get_document(
-    &self,
-    id: String,
-    index_name: String,
-    doc_id: String,
-  ) -> Result<Option<String>> {
+  pub async fn fts_get_document(&self, id: String, index_name: String, doc_id: String) -> Result<Option<String>> {
     let storage = self.pool.get(id).await?;
     Ok(storage.fts_get(&index_name, &doc_id).await?)
   }
@@ -515,11 +462,7 @@ impl DocStoragePool {
     query: String,
   ) -> Result<Vec<indexer::NativeMatch>> {
     let storage = self.pool.get(id).await?;
-    Ok(
-      storage
-        .fts_get_matches(&index_name, &doc_id, &query)
-        .await?,
-    )
+    Ok(storage.fts_get_matches(&index_name, &doc_id, &query).await?)
   }
 }
 
@@ -548,5 +491,24 @@ impl DocStorage {
     self.storage.set_space_id(space_id).await?;
     self.storage.close().await;
     Ok(())
+  }
+}
+
+#[cfg(all(test, not(feature = "use-as-lib")))]
+mod tests {
+  use super::error;
+
+  #[test]
+  fn napi_error_mapping_preserves_reason() {
+    let err: napi::Error = error::Error::InvalidOperation.into();
+    assert_eq!(err.status, napi::Status::GenericFailure);
+    assert!(err.reason.contains("Invalid operation"));
+  }
+
+  #[test]
+  fn napi_error_mapping_connection_in_progress() {
+    let err: napi::Error = error::Error::ConnectionInProgress.into();
+    assert_eq!(err.status, napi::Status::GenericFailure);
+    assert!(err.reason.contains("Connection in progress"));
   }
 }

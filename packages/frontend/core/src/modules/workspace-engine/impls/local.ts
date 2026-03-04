@@ -1,3 +1,4 @@
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
   type BlobStorage,
@@ -11,6 +12,7 @@ import {
   IndexedDBDocStorage,
   IndexedDBDocSyncStorage,
   IndexedDBIndexerStorage,
+  IndexedDBIndexerSyncStorage,
 } from '@affine/nbstore/idb';
 import {
   IndexedDBV1BlobStorage,
@@ -22,6 +24,7 @@ import {
   SqliteDocStorage,
   SqliteDocSyncStorage,
   SqliteIndexerStorage,
+  SqliteIndexerSyncStorage,
 } from '@affine/nbstore/sqlite';
 import {
   SqliteV1BlobStorage,
@@ -44,17 +47,43 @@ import type {
 } from '../../workspace';
 import { WorkspaceImpl } from '../../workspace/impls/workspace';
 import { getWorkspaceProfileWorker } from './out-worker';
+import {
+  dedupeWorkspaceIds,
+  normalizeWorkspaceIds,
+} from './workspace-id-utils';
 
 export const LOCAL_WORKSPACE_LOCAL_STORAGE_KEY = 'affine-local-workspace';
+export const LOCAL_WORKSPACE_GLOBAL_STATE_KEY =
+  'workspace-engine:local-workspace-ids:v1';
 const LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY =
   'affine-local-workspace-changed';
 
 const logger = new DebugLogger('local-workspace');
 
-export function getLocalWorkspaceIds(): string[] {
+type GlobalStateStorageLike = {
+  ready: Promise<void>;
+  get<T>(key: string): T | undefined;
+  set<T>(key: string, value: T): void;
+};
+
+function getElectronGlobalStateStorage(): GlobalStateStorageLike | null {
+  if (!BUILD_CONFIG.isElectron) {
+    return null;
+  }
+  const sharedStorage = (
+    globalThis as {
+      __sharedStorage?: { globalState?: GlobalStateStorageLike };
+    }
+  ).__sharedStorage;
+  return sharedStorage?.globalState ?? null;
+}
+
+function getLegacyLocalWorkspaceIds(): string[] {
   try {
-    return JSON.parse(
-      localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+    return normalizeWorkspaceIds(
+      JSON.parse(
+        localStorage.getItem(LOCAL_WORKSPACE_LOCAL_STORAGE_KEY) ?? '[]'
+      )
     );
   } catch (e) {
     logger.error('Failed to get local workspace ids', e);
@@ -62,21 +91,96 @@ export function getLocalWorkspaceIds(): string[] {
   }
 }
 
+export function getLocalWorkspaceIds(): string[] {
+  const globalState = getElectronGlobalStateStorage();
+  if (globalState) {
+    const value = globalState.get(LOCAL_WORKSPACE_GLOBAL_STATE_KEY);
+    if (value !== undefined) {
+      return normalizeWorkspaceIds(value);
+    }
+  }
+
+  return getLegacyLocalWorkspaceIds();
+}
+
 export function setLocalWorkspaceIds(
   idsOrUpdater: string[] | ((ids: string[]) => string[])
 ) {
-  localStorage.setItem(
-    LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
-    JSON.stringify(
-      typeof idsOrUpdater === 'function'
-        ? idsOrUpdater(getLocalWorkspaceIds())
-        : idsOrUpdater
-    )
+  const next = normalizeWorkspaceIds(
+    typeof idsOrUpdater === 'function'
+      ? idsOrUpdater(getLocalWorkspaceIds())
+      : idsOrUpdater
   );
+  const deduplicated = dedupeWorkspaceIds(next);
+
+  const globalState = getElectronGlobalStateStorage();
+  if (globalState) {
+    globalState.set(LOCAL_WORKSPACE_GLOBAL_STATE_KEY, deduplicated);
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      LOCAL_WORKSPACE_LOCAL_STORAGE_KEY,
+      JSON.stringify(deduplicated)
+    );
+  } catch (e) {
+    logger.error('Failed to set local workspace ids', e);
+  }
 }
 
 class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
-  constructor(private readonly framework: FrameworkProvider) {}
+  constructor(private readonly framework: FrameworkProvider) {
+    if (BUILD_CONFIG.isElectron) {
+      void this.ensureWorkspaceIdsMigrated();
+    }
+  }
+
+  private migration: Promise<void> | null = null;
+
+  private ensureWorkspaceIdsMigrated() {
+    if (!BUILD_CONFIG.isElectron) {
+      return;
+    }
+    if (this.migration) {
+      return;
+    }
+
+    this.migration = (async () => {
+      const electronApi = this.framework.get(DesktopApiService);
+      await electronApi.sharedStorage.globalState.ready;
+
+      const persistedIds = normalizeWorkspaceIds(
+        electronApi.sharedStorage.globalState.get(
+          LOCAL_WORKSPACE_GLOBAL_STATE_KEY
+        )
+      );
+      const legacyIds = getLegacyLocalWorkspaceIds();
+
+      let scannedIds: string[] = [];
+      try {
+        scannedIds =
+          await electronApi.handler.workspace.listLocalWorkspaceIds();
+      } catch (e) {
+        logger.error('Failed to scan local workspace ids', e);
+      }
+
+      setLocalWorkspaceIds(currentIds => {
+        return dedupeWorkspaceIds([
+          ...currentIds,
+          ...persistedIds,
+          ...legacyIds,
+          ...scannedIds,
+        ]);
+      });
+    })()
+      .catch(e => {
+        logger.error('Failed to migrate local workspace ids', e);
+      })
+      .finally(() => {
+        this.notifyChannel.postMessage(null);
+      });
+  }
 
   readonly flavour = 'local';
   readonly notifyChannel = new BroadcastChannel(
@@ -109,9 +213,13 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteBlobSyncStorage
       : IndexedDBBlobSyncStorage;
-  IndexerStorageType = BUILD_CONFIG.isElectron
-    ? SqliteIndexerStorage
-    : IndexedDBIndexerStorage;
+  IndexerStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteIndexerStorage
+      : IndexedDBIndexerStorage;
+  IndexerSyncStorageType = BUILD_CONFIG.isElectron
+    ? SqliteIndexerSyncStorage
+    : IndexedDBIndexerSyncStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     setLocalWorkspaceIds(ids => ids.filter(x => x !== id));
@@ -159,7 +267,9 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
-          return record ? new Blob([record.data], { type: record.mime }) : null;
+          return record
+            ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
+            : null;
         },
         delete: async () => {
           return;
@@ -236,6 +346,9 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   );
   isRevalidating$ = new LiveData(false);
   revalidate(): void {
+    if (BUILD_CONFIG.isElectron) {
+      void this.ensureWorkspaceIdsMigrated();
+    }
     // notify livedata to re-scan workspaces
     this.notifyChannel.postMessage(null);
   }
@@ -284,7 +397,9 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     storage.connection.connect();
     await storage.connection.waitForConnected();
     const blob = await storage.get(blobKey);
-    return blob ? new Blob([blob.data], { type: blob.mime }) : null;
+    return blob
+      ? new Blob([toArrayBuffer(blob.data)], { type: blob.mime })
+      : null;
   }
 
   async listBlobs(id: string): Promise<ListedBlobRecord[]> {
@@ -364,7 +479,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           },
         },
         indexerSync: {
-          name: 'IndexedDBIndexerSyncStorage',
+          name: this.IndexerSyncStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',

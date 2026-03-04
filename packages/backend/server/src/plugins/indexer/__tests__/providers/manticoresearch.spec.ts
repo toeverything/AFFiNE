@@ -8,8 +8,8 @@ import { omit } from 'lodash-es';
 import { createModule } from '../../../../__tests__/create-module';
 import { Mockers } from '../../../../__tests__/mocks';
 import { ConfigModule } from '../../../../base/config';
-import { IndexerModule } from '../../';
 import { SearchProviderType } from '../../config';
+import { IndexerModule } from '../../index';
 import { ManticoresearchProvider } from '../../providers';
 import { blockSQL, docSQL, SearchTable } from '../../tables';
 

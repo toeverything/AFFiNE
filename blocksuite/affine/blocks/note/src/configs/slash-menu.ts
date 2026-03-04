@@ -82,12 +82,13 @@ function createConversionItem(
   config: TextConversionConfig,
   group?: SlashMenuItem['group']
 ): SlashMenuActionItem {
-  const { name, description, icon, flavour, type } = config;
+  const { name, description, icon, flavour, type, searchAlias = [] } = config;
   return {
     name,
     group,
     description,
     icon,
+    searchAlias,
     tooltip: tooltips[name],
     when: ({ model }) => model.store.schema.flavourSchemaMap.has(flavour),
     action: ({ std }) => {

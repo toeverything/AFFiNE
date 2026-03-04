@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { AiPrompt, PrismaClient } from '@prisma/client';
 
-import { PromptConfig, PromptMessage } from '../providers';
+import type { PromptConfig, PromptMessage } from '../providers/types';
 
-type Prompt = Omit<
+export type Prompt = Omit<
   AiPrompt,
   | 'id'
   | 'createdAt'
@@ -1672,41 +1672,11 @@ const imageActions: Prompt[] = [
       },
     ],
   },
-  // TODO(@darkskygit): deprecated, remove it after <0.22 version is outdated
-  {
-    name: 'debug:action:fal-remove-bg',
-    action: 'Remove background',
-    model: 'imageutils/rembg',
-    messages: [],
-  },
-  {
-    name: 'debug:action:fal-face-to-sticker',
-    action: 'Convert to sticker',
-    model: 'face-to-sticker',
-    messages: [],
-  },
   {
     name: 'debug:action:fal-teed',
     action: 'fal-teed',
     model: 'workflowutils/teed',
     messages: [{ role: 'user', content: '{{content}}' }],
-  },
-  {
-    name: 'debug:action:fal-sd15',
-    action: 'image',
-    model: 'lcm-sd15-i2i',
-    messages: [],
-  },
-  {
-    name: 'debug:action:fal-upscaler',
-    action: 'Clearer',
-    model: 'clarity-upscaler',
-    messages: [
-      {
-        role: 'user',
-        content: 'best quality, 8K resolution, highres, clarity, {{content}}',
-      },
-    ],
   },
 ];
 
@@ -1950,6 +1920,13 @@ User's preferred language is {{affine::language}}.
 User's timezone is {{affine::timezone}}.
 </real_world_info>
 
+{{#affine::hasCurrentDoc}}
+<current_document_context>
+The user is chatting within the current document: {{currentDocId}}.
+If the user's request relates to this document, call the doc_read tool with docId {{currentDocId}} to read it before answering.
+</current_document_context>
+{{/affine::hasCurrentDoc}}
+
 <content_analysis>
 - If documents are provided, analyze all documents based on the user's query
 - Identify key information relevant to the user's specific request
@@ -2086,7 +2063,10 @@ Below is the user's query. Please respond in the user's preferred language witho
   config: {
     tools: [
       'docRead',
-      'sectionEdit',
+      'docCreate',
+      'docUpdate',
+      'docUpdateMeta',
+      // 'sectionEdit',
       'docKeywordSearch',
       'docSemanticSearch',
       'webSearch',
@@ -2115,17 +2095,14 @@ export const prompts: Prompt[] = [
 
 export async function refreshPrompts(db: PrismaClient) {
   const needToSkip = await db.aiPrompt
-    .findMany({
-      where: { modified: true },
-      select: { name: true },
-    })
+    .findMany({ where: { modified: true }, select: { name: true } })
     .then(p => p.map(p => p.name));
 
   for (const prompt of prompts) {
     // skip prompt update if already modified by admin panel
     if (needToSkip.includes(prompt.name)) {
       new Logger('CopilotPrompt').warn(`Skip modified prompt: ${prompt.name}`);
-      return;
+      continue;
     }
 
     await db.aiPrompt.upsert({
