@@ -31,8 +31,8 @@ declare global {
 
 defineModuleConfig('mailer', {
   'SMTP.name': {
-    desc: 'Name of the email server (e.g. your domain name)',
-    default: 'AFFiNE Server',
+    desc: 'Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.',
+    default: '',
     env: 'MAILER_SERVERNAME',
   },
   'SMTP.host': {
@@ -72,8 +72,8 @@ defineModuleConfig('mailer', {
     shape: z.array(z.string()),
   },
   'fallbackSMTP.name': {
-    desc: 'Name of the fallback email server (e.g. your domain name)',
-    default: 'AFFiNE Server',
+    desc: 'Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.',
+    default: '',
   },
   'fallbackSMTP.host': {
     desc: 'Host of the email server (e.g. smtp.gmail.com)',

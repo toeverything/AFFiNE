@@ -42,8 +42,18 @@ export class Ga4Client {
             timestamp_micros: event.timestampMicros,
           })),
         };
-
-        await this.post(payload);
+        try {
+          await this.post(payload);
+        } catch {
+          if (env.DEPLOYMENT_TYPE === 'affine') {
+            // In production, we want to be resilient to GA4 failures, so we catch and ignore errors.
+            // In non-production environments, we rethrow to surface issues during development and testing.
+            console.info(
+              'Failed to send telemetry event to GA4:',
+              chunk.map(e => e.eventName).join(', ')
+            );
+          }
+        }
       }
     }
   }

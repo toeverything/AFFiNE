@@ -7,6 +7,7 @@ pub mod doc_loader;
 pub mod file_type;
 pub mod hashcash;
 pub mod html_sanitize;
+pub mod llm;
 pub mod tiktoken;
 
 use affine_common::napi_utils::map_napi_err;

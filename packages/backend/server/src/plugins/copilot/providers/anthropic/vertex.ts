@@ -5,7 +5,11 @@ import {
 } from '@ai-sdk/google-vertex/anthropic';
 
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
-import { getGoogleAuth, VertexModelListSchema } from '../utils';
+import {
+  getGoogleAuth,
+  getVertexAnthropicBaseUrl,
+  VertexModelListSchema,
+} from '../utils';
 import { AnthropicProvider } from './anthropic';
 
 export type AnthropicVertexConfig = GoogleVertexAnthropicProviderSettings;
@@ -49,7 +53,8 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
   protected instance!: GoogleVertexAnthropicProvider;
 
   override configured(): boolean {
-    return !!this.config.location && !!this.config.googleAuthOptions;
+    if (!this.config.location || !this.config.googleAuthOptions) return false;
+    return !!this.config.project || !!getVertexAnthropicBaseUrl(this.config);
   }
 
   override setup() {

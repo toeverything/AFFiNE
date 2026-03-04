@@ -8,38 +8,38 @@ import ava from 'ava';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
-import { EventBus, JobQueue } from '../base';
-import { ConfigModule } from '../base/config';
-import { AuthService } from '../core/auth';
-import { QuotaModule } from '../core/quota';
-import { StorageModule, WorkspaceBlobStorage } from '../core/storage';
+import { EventBus, JobQueue } from '../../base';
+import { ConfigModule } from '../../base/config';
+import { AuthService } from '../../core/auth';
+import { QuotaModule } from '../../core/quota';
+import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import {
   ContextCategories,
   CopilotSessionModel,
   WorkspaceModel,
-} from '../models';
-import { CopilotModule } from '../plugins/copilot';
-import { CopilotContextService } from '../plugins/copilot/context';
-import { CopilotCronJobs } from '../plugins/copilot/cron';
+} from '../../models';
+import { CopilotModule } from '../../plugins/copilot';
+import { CopilotContextService } from '../../plugins/copilot/context';
+import { CopilotCronJobs } from '../../plugins/copilot/cron';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
-} from '../plugins/copilot/embedding';
-import { prompts, PromptService } from '../plugins/copilot/prompt';
+} from '../../plugins/copilot/embedding';
+import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   ModelInputType,
   ModelOutputType,
   OpenAIProvider,
-} from '../plugins/copilot/providers';
+} from '../../plugins/copilot/providers';
 import {
   CitationParser,
   TextStreamParser,
-} from '../plugins/copilot/providers/utils';
-import { ChatSessionService } from '../plugins/copilot/session';
-import { CopilotStorage } from '../plugins/copilot/storage';
-import { CopilotTranscriptionService } from '../plugins/copilot/transcript';
+} from '../../plugins/copilot/providers/utils';
+import { ChatSessionService } from '../../plugins/copilot/session';
+import { CopilotStorage } from '../../plugins/copilot/storage';
+import { CopilotTranscriptionService } from '../../plugins/copilot/transcript';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -48,7 +48,7 @@ import {
   WorkflowGraphExecutor,
   type WorkflowNodeData,
   WorkflowNodeType,
-} from '../plugins/copilot/workflow';
+} from '../../plugins/copilot/workflow';
 import {
   CopilotChatImageExecutor,
   CopilotCheckHtmlExecutor,
@@ -56,16 +56,16 @@ import {
   getWorkflowExecutor,
   NodeExecuteState,
   NodeExecutorType,
-} from '../plugins/copilot/workflow/executor';
-import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
-import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
-import { CopilotWorkspaceService } from '../plugins/copilot/workspace';
-import { PaymentModule } from '../plugins/payment';
-import { SubscriptionService } from '../plugins/payment/service';
-import { SubscriptionStatus } from '../plugins/payment/types';
-import { MockCopilotProvider } from './mocks';
-import { createTestingModule, TestingModule } from './utils';
-import { WorkflowTestCases } from './utils/copilot';
+} from '../../plugins/copilot/workflow/executor';
+import { AutoRegisteredWorkflowExecutor } from '../../plugins/copilot/workflow/executor/utils';
+import { WorkflowGraphList } from '../../plugins/copilot/workflow/graph';
+import { CopilotWorkspaceService } from '../../plugins/copilot/workspace';
+import { PaymentModule } from '../../plugins/payment';
+import { SubscriptionService } from '../../plugins/payment/service';
+import { SubscriptionStatus } from '../../plugins/payment/types';
+import { MockCopilotProvider } from '../mocks';
+import { createTestingModule, TestingModule } from '../utils';
+import { WorkflowTestCases } from '../utils/copilot';
 
 type Context = {
   auth: AuthService;
@@ -363,6 +363,21 @@ test('should be able to manage chat session', async t => {
       ...commonParams,
     });
     t.is(newSessionId, sessionId, 'should get same session id');
+  }
+
+  // should create a fresh session when reuseLatestChat is explicitly disabled
+  {
+    const newSessionId = await session.create({
+      userId,
+      promptName,
+      ...commonParams,
+      reuseLatestChat: false,
+    });
+    t.not(
+      newSessionId,
+      sessionId,
+      'should create new session id when reuseLatestChat is false'
+    );
   }
 });
 
@@ -879,6 +894,26 @@ test('should be able to get provider', async t => {
     });
     t.falsy(p, 'should not get provider');
   }
+});
+
+test('should resolve provider by prefixed model id', async t => {
+  const { factory } = t.context;
+
+  const provider = await factory.getProviderByModel('openai-default/test');
+  t.truthy(provider, 'should resolve prefixed model id');
+  t.is(provider?.type, CopilotProviderType.OpenAI);
+
+  const result = await provider?.text({ modelId: 'openai-default/test' }, [
+    { role: 'user', content: 'hello' },
+  ]);
+  t.is(result, 'generate text to text');
+});
+
+test('should fallback to null when prefixed provider id does not exist', async t => {
+  const { factory } = t.context;
+
+  const provider = await factory.getProviderByModel('unknown/test');
+  t.is(provider, null);
 });
 
 // ==================== workflow ====================
@@ -2063,25 +2098,23 @@ test('should handle copilot cron jobs correctly', async t => {
 });
 
 test('should resolve model correctly based on subscription status and prompt config', async t => {
-  const { db, session, subscription } = t.context;
+  const { prompt, session, subscription } = t.context;
 
   // 1) Seed a prompt that has optionalModels and proModels in config
   const promptName = 'resolve-model-test';
-  await db.aiPrompt.create({
-    data: {
-      name: promptName,
-      model: 'gemini-2.5-flash',
-      messages: {
-        create: [{ idx: 0, role: 'system', content: 'test' }],
-      },
-      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+  await prompt.set(
+    promptName,
+    'gemini-2.5-flash',
+    [{ role: 'system', content: 'test' }],
+    { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+    {
       optionalModels: [
         'gemini-2.5-flash',
         'gemini-2.5-pro',
         'claude-sonnet-4-5@20250929',
       ],
-    },
-  });
+    }
+  );
 
   // 2) Create a chat session with this prompt
   const sessionId = await session.create({
@@ -2106,6 +2139,16 @@ test('should resolve model correctly based on subscription status and prompt con
     const model1 = await s.resolveModel(false, 'gemini-2.5-pro');
     t.snapshot(model1, 'should honor requested pro model');
 
+    const model1WithPrefix = await s.resolveModel(
+      false,
+      'openai-default/gemini-2.5-pro'
+    );
+    t.is(
+      model1WithPrefix,
+      'openai-default/gemini-2.5-pro',
+      'should honor requested prefixed pro model'
+    );
+
     const model2 = await s.resolveModel(false, 'not-in-optional');
     t.snapshot(model2, 'should fallback to default model');
   }
@@ -2117,6 +2160,16 @@ test('should resolve model correctly based on subscription status and prompt con
     t.snapshot(
       model3,
       'should fallback to default model when requesting pro model during trialing'
+    );
+
+    const model3WithPrefix = await s.resolveModel(
+      true,
+      'openai-default/gemini-2.5-pro'
+    );
+    t.is(
+      model3WithPrefix,
+      'gemini-2.5-flash',
+      'should fallback to default model when requesting prefixed pro model during trialing'
     );
 
     const model4 = await s.resolveModel(true, 'gemini-2.5-flash');
@@ -2140,6 +2193,16 @@ test('should resolve model correctly based on subscription status and prompt con
 
     const model7 = await s.resolveModel(true, 'claude-sonnet-4-5@20250929');
     t.snapshot(model7, 'should honor requested pro model during active');
+
+    const model7WithPrefix = await s.resolveModel(
+      true,
+      'openai-default/claude-sonnet-4-5@20250929'
+    );
+    t.is(
+      model7WithPrefix,
+      'openai-default/claude-sonnet-4-5@20250929',
+      'should honor requested prefixed pro model during active'
+    );
 
     const model8 = await s.resolveModel(true, 'not-in-optional');
     t.snapshot(

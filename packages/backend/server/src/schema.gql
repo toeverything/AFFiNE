@@ -607,47 +607,7 @@ type CopilotModelsType {
   proModels: [CopilotModelType!]!
 }
 
-input CopilotPromptConfigInput {
-  frequencyPenalty: Float
-  presencePenalty: Float
-  temperature: Float
-  topP: Float
-}
-
-type CopilotPromptConfigType {
-  frequencyPenalty: Float
-  presencePenalty: Float
-  temperature: Float
-  topP: Float
-}
-
-input CopilotPromptMessageInput {
-  content: String!
-  params: JSON
-  role: CopilotPromptMessageRole!
-}
-
-enum CopilotPromptMessageRole {
-  assistant
-  system
-  user
-}
-
-type CopilotPromptMessageType {
-  content: String!
-  params: JSON
-  role: CopilotPromptMessageRole!
-}
-
 type CopilotPromptNotFoundDataType {
-  name: String!
-}
-
-type CopilotPromptType {
-  action: String
-  config: CopilotPromptConfigType
-  messages: [CopilotPromptMessageType!]!
-  model: String!
   name: String!
 }
 
@@ -745,14 +705,6 @@ input CreateCheckoutSessionInput {
   recurring: SubscriptionRecurring = Yearly
   successCallbackLink: String!
   variant: SubscriptionVariant
-}
-
-input CreateCopilotPromptInput {
-  action: String
-  config: CopilotPromptConfigInput
-  messages: [CopilotPromptMessageInput!]!
-  model: String!
-  name: String!
 }
 
 input CreateUserInput {
@@ -1551,11 +1503,11 @@ type Mutation {
   """Create a chat message"""
   createCopilotMessage(options: CreateChatMessageInput!): String!
 
-  """Create a copilot prompt"""
-  createCopilotPrompt(input: CreateCopilotPromptInput!): CopilotPromptType!
-
   """Create a chat session"""
-  createCopilotSession(options: CreateChatSessionInput!): String!
+  createCopilotSession(options: CreateChatSessionInput!): String! @deprecated(reason: "use `createCopilotSessionWithHistory` instead")
+
+  """Create a chat session and return full session payload"""
+  createCopilotSessionWithHistory(options: CreateChatSessionInput!): CopilotHistories!
 
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
@@ -1671,9 +1623,6 @@ type Mutation {
 
   """Update a comment content"""
   updateComment(input: CommentUpdateInput!): Boolean!
-
-  """Update a copilot prompt"""
-  updateCopilotPrompt(messages: [CopilotPromptMessageInput!]!, name: String!): CopilotPromptType!
 
   """Update a chat session"""
   updateCopilotSession(options: UpdateChatSessionInput!): String!
@@ -1923,9 +1872,6 @@ type Query {
 
   """get workspace invitation info"""
   getInviteInfo(inviteId: String!): InvitationType!
-
-  """List all copilot prompts"""
-  listCopilotPrompts: [CopilotPromptType!]!
   prices: [SubscriptionPrice!]!
 
   """Get public user by id"""

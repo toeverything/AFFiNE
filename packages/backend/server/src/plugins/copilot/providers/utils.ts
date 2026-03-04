@@ -91,7 +91,9 @@ export async function chatToGPTMessage(
   //       so we need to use base64 encoded attachments instead
   useBase64Attachment: boolean = false
 ): Promise<[string | undefined, ChatMessage[], ZodType?]> {
-  const system = messages[0]?.role === 'system' ? messages.shift() : undefined;
+  const hasSystem = messages[0]?.role === 'system';
+  const system = hasSystem ? messages[0] : undefined;
+  const normalizedMessages = hasSystem ? messages.slice(1) : messages;
   const schema =
     system?.params?.schema && system.params.schema instanceof ZodType
       ? system.params.schema
@@ -99,7 +101,7 @@ export async function chatToGPTMessage(
 
   // filter redundant fields
   const msgs: ChatMessage[] = [];
-  for (let { role, content, attachments, params } of messages.filter(
+  for (let { role, content, attachments, params } of normalizedMessages.filter(
     m => m.role !== 'system'
   )) {
     content = content.trim();
@@ -406,6 +408,34 @@ export class CitationParser {
   }
 }
 
+export type CitationIndexedEvent = {
+  type: 'citation';
+  index: number;
+  url: string;
+};
+
+export class CitationFootnoteFormatter {
+  private readonly citations = new Map<number, string>();
+
+  public consume(event: CitationIndexedEvent) {
+    if (event.type !== 'citation') {
+      return '';
+    }
+    this.citations.set(event.index, event.url);
+    return '';
+  }
+
+  public end() {
+    const footnotes = Array.from(this.citations.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(
+        ([index, citation]) =>
+          `[^${index}]: {"type":"url","url":"${encodeURIComponent(citation)}"}`
+      );
+    return footnotes.join('\n');
+  }
+}
+
 type ChunkType = TextStreamPart<CustomAITools>['type'];
 
 export function toError(error: unknown): Error {
@@ -703,21 +733,39 @@ export const VertexModelListSchema = z.object({
   ),
 });
 
+function normalizeUrl(baseURL?: string) {
+  if (!baseURL?.trim()) {
+    return undefined;
+  }
+  try {
+    const url = new URL(baseURL);
+    const serialized = url.toString();
+    if (serialized.endsWith('/')) return serialized.slice(0, -1);
+    return serialized;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getVertexAnthropicBaseUrl(
+  options: GoogleVertexAnthropicProviderSettings
+) {
+  const normalizedBaseUrl = normalizeUrl(options.baseURL);
+  if (normalizedBaseUrl) return normalizedBaseUrl;
+  const { location, project } = options;
+  if (!location || !project) return undefined;
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/anthropic`;
+}
+
 export async function getGoogleAuth(
   options: GoogleVertexAnthropicProviderSettings | GoogleVertexProviderSettings,
   publisher: 'anthropic' | 'google'
 ) {
   function getBaseUrl() {
-    const { baseURL, location } = options;
-    if (baseURL?.trim()) {
-      try {
-        const url = new URL(baseURL);
-        if (url.pathname.endsWith('/')) {
-          url.pathname = url.pathname.slice(0, -1);
-        }
-        return url.toString();
-      } catch {}
-    } else if (location) {
+    const normalizedBaseUrl = normalizeUrl(options.baseURL);
+    if (normalizedBaseUrl) return normalizedBaseUrl;
+    const { location } = options;
+    if (location) {
       return `https://${location}-aiplatform.googleapis.com/v1beta1/publishers/${publisher}`;
     }
     return undefined;

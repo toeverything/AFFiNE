@@ -44,6 +44,7 @@ resolver = "3"
   lasso = { version = "0.7", features = ["multi-threaded"] }
   lib0 = { version = "0.16", features = ["lib0-serde"] }
   libc = "0.2"
+  llm_adapter = "0.1.1"
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"

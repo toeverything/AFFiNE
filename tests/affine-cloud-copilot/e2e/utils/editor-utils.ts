@@ -82,7 +82,7 @@ export class EditorUtils {
   }
 
   public static async waitForAiAnswer(page: Page) {
-    const answer = await page.getByTestId('ai-penel-answer');
+    const answer = page.getByTestId('ai-penel-answer').last();
     await answer.waitFor({
       state: 'visible',
       timeout: 2 * 60000,

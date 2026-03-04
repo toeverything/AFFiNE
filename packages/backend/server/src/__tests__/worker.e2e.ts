@@ -38,8 +38,11 @@ test.before(async t => {
   t.context.app = app;
 });
 
-test.after.always(async t => {
+test.afterEach.always(() => {
   Sinon.restore();
+});
+
+test.after.always(async t => {
   __resetDnsLookupForTests();
   await t.context.app.close();
 });
@@ -80,6 +83,7 @@ const assertAndSnapshotRaw = async (
 
 test('should proxy image', async t => {
   const assertAndSnapshot = assertAndSnapshotRaw.bind(null, t);
+  const imageUrl = `http://example.com/image-${Date.now()}.png`;
 
   await assertAndSnapshot(
     '/api/worker/image-proxy',
@@ -105,7 +109,7 @@ test('should proxy image', async t => {
 
   {
     await assertAndSnapshot(
-      '/api/worker/image-proxy?url=http://example.com/image.png',
+      `/api/worker/image-proxy?url=${imageUrl}`,
       'should return 400 if origin and referer are missing',
       { status: 400, origin: null, referer: null }
     );
@@ -113,14 +117,17 @@ test('should proxy image', async t => {
 
   {
     await assertAndSnapshot(
-      '/api/worker/image-proxy?url=http://example.com/image.png',
+      `/api/worker/image-proxy?url=${imageUrl}`,
       'should return 400 for invalid origin header',
       { status: 400, origin: 'http://invalid.com' }
     );
   }
 
   {
-    const fakeBuffer = Buffer.from('fake image');
+    const fakeBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
+      'base64'
+    );
     const fakeResponse = new Response(fakeBuffer, {
       status: 200,
       headers: {
@@ -130,13 +137,14 @@ test('should proxy image', async t => {
     });
 
     const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeResponse);
-
-    await assertAndSnapshot(
-      '/api/worker/image-proxy?url=http://example.com/image.png',
-      'should return image buffer'
-    );
-
-    fetchSpy.restore();
+    try {
+      await assertAndSnapshot(
+        `/api/worker/image-proxy?url=${imageUrl}`,
+        'should return image buffer'
+      );
+    } finally {
+      fetchSpy.restore();
+    }
   }
 });
 
@@ -200,18 +208,19 @@ test('should preview link', async t => {
     });
 
     const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeHTML);
-
-    await assertAndSnapshot(
-      '/api/worker/link-preview',
-      'should process a valid external URL and return link preview data',
-      {
-        status: 200,
-        method: 'POST',
-        body: { url: 'http://external.com/page' },
-      }
-    );
-
-    fetchSpy.restore();
+    try {
+      await assertAndSnapshot(
+        '/api/worker/link-preview',
+        'should process a valid external URL and return link preview data',
+        {
+          status: 200,
+          method: 'POST',
+          body: { url: 'http://external.com/page' },
+        }
+      );
+    } finally {
+      fetchSpy.restore();
+    }
   }
 
   {
@@ -251,18 +260,19 @@ test('should preview link', async t => {
       });
 
       const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeHTML);
-
-      await assertAndSnapshot(
-        '/api/worker/link-preview',
-        'should decode HTML content with charset',
-        {
-          status: 200,
-          method: 'POST',
-          body: { url: `http://example.com/${charset}` },
-        }
-      );
-
-      fetchSpy.restore();
+      try {
+        await assertAndSnapshot(
+          '/api/worker/link-preview',
+          'should decode HTML content with charset',
+          {
+            status: 200,
+            method: 'POST',
+            body: { url: `http://example.com/${charset}` },
+          }
+        );
+      } finally {
+        fetchSpy.restore();
+      }
     }
   }
 });

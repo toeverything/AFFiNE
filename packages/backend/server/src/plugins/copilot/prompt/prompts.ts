@@ -3,7 +3,7 @@ import { AiPrompt, PrismaClient } from '@prisma/client';
 
 import type { PromptConfig, PromptMessage } from '../providers/types';
 
-type Prompt = Omit<
+export type Prompt = Omit<
   AiPrompt,
   | 'id'
   | 'createdAt'
@@ -2095,17 +2095,14 @@ export const prompts: Prompt[] = [
 
 export async function refreshPrompts(db: PrismaClient) {
   const needToSkip = await db.aiPrompt
-    .findMany({
-      where: { modified: true },
-      select: { name: true },
-    })
+    .findMany({ where: { modified: true }, select: { name: true } })
     .then(p => p.map(p => p.name));
 
   for (const prompt of prompts) {
     // skip prompt update if already modified by admin panel
     if (needToSkip.includes(prompt.name)) {
       new Logger('CopilotPrompt').warn(`Skip modified prompt: ${prompt.name}`);
-      return;
+      continue;
     }
 
     await db.aiPrompt.upsert({

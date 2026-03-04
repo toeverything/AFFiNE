@@ -6,6 +6,8 @@ import type { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph
 import type { BlockComponent } from '@blocksuite/std';
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { dblclickLocatorByRatio } from './utils';
+
 const EDGELESS_TOOLBAR_WIDGET = 'edgeless-toolbar-widget';
 export const ZERO_WIDTH_FOR_EMPTY_LINE =
   process.env.BROWSER === 'webkit' ? '\u200C' : '\u200B';
@@ -63,6 +65,11 @@ export async function getPageMode(page: Page): Promise<'page' | 'edgeless'> {
 
 export function locateEditorContainer(page: Page, editorIndex = 0) {
   return page.locator('[data-affine-editor-container]').nth(editorIndex);
+}
+
+export async function dblclickNoteBody(page: Page) {
+  const note = page.locator('affine-edgeless-note');
+  await dblclickLocatorByRatio(page, note, { yRatio: 0.7 });
 }
 
 export function locateDocTitle(page: Page, editorIndex = 0) {

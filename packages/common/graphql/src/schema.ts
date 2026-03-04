@@ -725,51 +725,8 @@ export interface CopilotModelsType {
   proModels: Array<CopilotModelType>;
 }
 
-export interface CopilotPromptConfigInput {
-  frequencyPenalty?: InputMaybe<Scalars['Float']['input']>;
-  presencePenalty?: InputMaybe<Scalars['Float']['input']>;
-  temperature?: InputMaybe<Scalars['Float']['input']>;
-  topP?: InputMaybe<Scalars['Float']['input']>;
-}
-
-export interface CopilotPromptConfigType {
-  __typename?: 'CopilotPromptConfigType';
-  frequencyPenalty: Maybe<Scalars['Float']['output']>;
-  presencePenalty: Maybe<Scalars['Float']['output']>;
-  temperature: Maybe<Scalars['Float']['output']>;
-  topP: Maybe<Scalars['Float']['output']>;
-}
-
-export interface CopilotPromptMessageInput {
-  content: Scalars['String']['input'];
-  params?: InputMaybe<Scalars['JSON']['input']>;
-  role: CopilotPromptMessageRole;
-}
-
-export enum CopilotPromptMessageRole {
-  assistant = 'assistant',
-  system = 'system',
-  user = 'user',
-}
-
-export interface CopilotPromptMessageType {
-  __typename?: 'CopilotPromptMessageType';
-  content: Scalars['String']['output'];
-  params: Maybe<Scalars['JSON']['output']>;
-  role: CopilotPromptMessageRole;
-}
-
 export interface CopilotPromptNotFoundDataType {
   __typename?: 'CopilotPromptNotFoundDataType';
-  name: Scalars['String']['output'];
-}
-
-export interface CopilotPromptType {
-  __typename?: 'CopilotPromptType';
-  action: Maybe<Scalars['String']['output']>;
-  config: Maybe<CopilotPromptConfigType>;
-  messages: Array<CopilotPromptMessageType>;
-  model: Scalars['String']['output'];
   name: Scalars['String']['output'];
 }
 
@@ -882,14 +839,6 @@ export interface CreateCheckoutSessionInput {
   recurring?: InputMaybe<SubscriptionRecurring>;
   successCallbackLink: Scalars['String']['input'];
   variant?: InputMaybe<SubscriptionVariant>;
-}
-
-export interface CreateCopilotPromptInput {
-  action?: InputMaybe<Scalars['String']['input']>;
-  config?: InputMaybe<CopilotPromptConfigInput>;
-  messages: Array<CopilotPromptMessageInput>;
-  model: Scalars['String']['input'];
-  name: Scalars['String']['input'];
 }
 
 export interface CreateUserInput {
@@ -1752,10 +1701,13 @@ export interface Mutation {
   createCopilotContext: Scalars['String']['output'];
   /** Create a chat message */
   createCopilotMessage: Scalars['String']['output'];
-  /** Create a copilot prompt */
-  createCopilotPrompt: CopilotPromptType;
-  /** Create a chat session */
+  /**
+   * Create a chat session
+   * @deprecated use `createCopilotSessionWithHistory` instead
+   */
   createCopilotSession: Scalars['String']['output'];
+  /** Create a chat session and return full session payload */
+  createCopilotSessionWithHistory: CopilotHistories;
   /** Create a stripe customer portal to manage payment methods */
   createCustomerPortal: Scalars['String']['output'];
   createInviteLink: InviteLink;
@@ -1845,8 +1797,6 @@ export interface Mutation {
   updateCalendarAccount: Maybe<CalendarAccountObjectType>;
   /** Update a comment content */
   updateComment: Scalars['Boolean']['output'];
-  /** Update a copilot prompt */
-  updateCopilotPrompt: CopilotPromptType;
   /** Update a chat session */
   updateCopilotSession: Scalars['String']['output'];
   updateDocDefaultRole: Scalars['Boolean']['output'];
@@ -1998,11 +1948,11 @@ export interface MutationCreateCopilotMessageArgs {
   options: CreateChatMessageInput;
 }
 
-export interface MutationCreateCopilotPromptArgs {
-  input: CreateCopilotPromptInput;
+export interface MutationCreateCopilotSessionArgs {
+  options: CreateChatSessionInput;
 }
 
-export interface MutationCreateCopilotSessionArgs {
+export interface MutationCreateCopilotSessionWithHistoryArgs {
   options: CreateChatSessionInput;
 }
 
@@ -2260,11 +2210,6 @@ export interface MutationUpdateCalendarAccountArgs {
 
 export interface MutationUpdateCommentArgs {
   input: CommentUpdateInput;
-}
-
-export interface MutationUpdateCopilotPromptArgs {
-  messages: Array<CopilotPromptMessageInput>;
-  name: Scalars['String']['input'];
 }
 
 export interface MutationUpdateCopilotSessionArgs {
@@ -2554,8 +2499,6 @@ export interface Query {
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
-  /** List all copilot prompts */
-  listCopilotPrompts: Array<CopilotPromptType>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
@@ -3885,59 +3828,6 @@ export type CreateChangePasswordUrlMutation = {
 export type AppConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AppConfigQuery = { __typename?: 'Query'; appConfig: any };
-
-export type GetPromptsQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetPromptsQuery = {
-  __typename?: 'Query';
-  listCopilotPrompts: Array<{
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  }>;
-};
-
-export type UpdatePromptMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
-}>;
-
-export type UpdatePromptMutation = {
-  __typename?: 'Mutation';
-  updateCopilotPrompt: {
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  };
-};
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInput;
@@ -5425,6 +5315,47 @@ export type CleanupCopilotSessionMutation = {
   cleanupCopilotSession: Array<string>;
 };
 
+export type CreateCopilotSessionWithHistoryMutationVariables = Exact<{
+  options: CreateChatSessionInput;
+}>;
+
+export type CreateCopilotSessionWithHistoryMutation = {
+  __typename?: 'Mutation';
+  createCopilotSessionWithHistory: {
+    __typename?: 'CopilotHistories';
+    sessionId: string;
+    workspaceId: string;
+    docId: string | null;
+    parentSessionId: string | null;
+    promptName: string;
+    model: string;
+    optionalModels: Array<string>;
+    action: string | null;
+    pinned: boolean;
+    title: string | null;
+    tokens: number;
+    createdAt: string;
+    updatedAt: string;
+    messages: Array<{
+      __typename?: 'ChatMessage';
+      id: string | null;
+      role: string;
+      content: string;
+      attachments: Array<string> | null;
+      createdAt: string;
+      streamObjects: Array<{
+        __typename?: 'StreamObject';
+        type: string;
+        textDelta: string | null;
+        toolCallId: string | null;
+        toolName: string | null;
+        args: Record<string, string> | null;
+        result: Record<string, string> | null;
+      }> | null;
+    }>;
+  };
+};
+
 export type CreateCopilotSessionMutationVariables = Exact<{
   options: CreateChatSessionInput;
 }>;
@@ -5934,24 +5865,6 @@ export type GetDocRolePermissionsQuery = {
   };
 };
 
-export type CopilotChatMessageFragment = {
-  __typename?: 'ChatMessage';
-  id: string | null;
-  role: string;
-  content: string;
-  attachments: Array<string> | null;
-  createdAt: string;
-  streamObjects: Array<{
-    __typename?: 'StreamObject';
-    type: string;
-    textDelta: string | null;
-    toolCallId: string | null;
-    toolName: string | null;
-    args: Record<string, string> | null;
-    result: Record<string, string> | null;
-  }> | null;
-};
-
 export type CopilotChatHistoryFragment = {
   __typename?: 'CopilotHistories';
   sessionId: string;
@@ -5984,6 +5897,52 @@ export type CopilotChatHistoryFragment = {
       result: Record<string, string> | null;
     }> | null;
   }>;
+};
+
+export type CredentialsRequirementsFragment = {
+  __typename?: 'CredentialsRequirementType';
+  password: {
+    __typename?: 'PasswordLimitsType';
+    minLength: number;
+    maxLength: number;
+  };
+};
+
+export type CurrentUserProfileFragment = {
+  __typename?: 'UserType';
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+  features: Array<FeatureType>;
+  settings: {
+    __typename?: 'UserSettingsType';
+    receiveInvitationEmail: boolean;
+    receiveMentionEmail: boolean;
+    receiveCommentEmail: boolean;
+  };
+  quota: {
+    __typename?: 'UserQuotaType';
+    name: string;
+    blobLimit: number;
+    storageQuota: number;
+    historyPeriod: number;
+    memberLimit: number;
+    humanReadable: {
+      __typename?: 'UserQuotaHumanReadableType';
+      name: string;
+      blobLimit: string;
+      storageQuota: string;
+      historyPeriod: string;
+      memberLimit: string;
+    };
+  };
+  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
+  copilot: {
+    __typename?: 'Copilot';
+    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
+  };
 };
 
 export type PaginatedCopilotChatsFragment = {
@@ -6032,52 +5991,6 @@ export type PaginatedCopilotChatsFragment = {
       }>;
     };
   }>;
-};
-
-export type CredentialsRequirementsFragment = {
-  __typename?: 'CredentialsRequirementType';
-  password: {
-    __typename?: 'PasswordLimitsType';
-    minLength: number;
-    maxLength: number;
-  };
-};
-
-export type CurrentUserProfileFragment = {
-  __typename?: 'UserType';
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  features: Array<FeatureType>;
-  settings: {
-    __typename?: 'UserSettingsType';
-    receiveInvitationEmail: boolean;
-    receiveMentionEmail: boolean;
-    receiveCommentEmail: boolean;
-  };
-  quota: {
-    __typename?: 'UserQuotaType';
-    name: string;
-    blobLimit: number;
-    storageQuota: number;
-    historyPeriod: number;
-    memberLimit: number;
-    humanReadable: {
-      __typename?: 'UserQuotaHumanReadableType';
-      name: string;
-      blobLimit: string;
-      storageQuota: string;
-      historyPeriod: string;
-      memberLimit: string;
-    };
-  };
-  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-  copilot: {
-    __typename?: 'Copilot';
-    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
-  };
 };
 
 export type PasswordLimitsFragment = {
@@ -7624,11 +7537,6 @@ export type Queries =
       response: AppConfigQuery;
     }
   | {
-      name: 'getPromptsQuery';
-      variables: GetPromptsQueryVariables;
-      response: GetPromptsQuery;
-    }
-  | {
       name: 'getUserByEmailQuery';
       variables: GetUserByEmailQueryVariables;
       response: GetUserByEmailQuery;
@@ -8036,11 +7944,6 @@ export type Mutations =
       response: CreateChangePasswordUrlMutation;
     }
   | {
-      name: 'updatePromptMutation';
-      variables: UpdatePromptMutationVariables;
-      response: UpdatePromptMutation;
-    }
-  | {
       name: 'createUserMutation';
       variables: CreateUserMutationVariables;
       response: CreateUserMutation;
@@ -8274,6 +8177,11 @@ export type Mutations =
       name: 'cleanupCopilotSessionMutation';
       variables: CleanupCopilotSessionMutationVariables;
       response: CleanupCopilotSessionMutation;
+    }
+  | {
+      name: 'createCopilotSessionWithHistoryMutation';
+      variables: CreateCopilotSessionWithHistoryMutationVariables;
+      response: CreateCopilotSessionWithHistoryMutation;
     }
   | {
       name: 'createCopilotSessionMutation';
