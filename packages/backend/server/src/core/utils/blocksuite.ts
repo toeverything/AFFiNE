@@ -16,6 +16,13 @@ export interface WorkspaceDocContent {
   avatarKey: string;
 }
 
+export interface DocMarkdownContent {
+  title: string;
+  markdown: string;
+  knownUnsupportedBlocks: string[];
+  unknownBlocks: string[];
+}
+
 export interface ParsePageOptions {
   maxSummaryLength?: number;
 }
@@ -74,7 +81,7 @@ export function parseDocToMarkdownFromDocSnapshot(
   docId: string,
   docSnapshot: Uint8Array,
   aiEditable = false
-) {
+): DocMarkdownContent {
   const docUrlPrefix = workspaceId ? `/workspace/${workspaceId}` : undefined;
   const parsed = parseYDocToMarkdown(
     Buffer.from(docSnapshot),
@@ -86,5 +93,7 @@ export function parseDocToMarkdownFromDocSnapshot(
   return {
     title: parsed.title,
     markdown: parsed.markdown,
+    knownUnsupportedBlocks: parsed.knownUnsupportedBlocks ?? [],
+    unknownBlocks: parsed.unknownBlocks ?? [],
   };
 }

@@ -83,6 +83,8 @@ export interface NativeCrawlResult {
 export interface NativeMarkdownResult {
   title: string
   markdown: string
+  knownUnsupportedBlocks: Array<string>
+  unknownBlocks: Array<string>
 }
 
 export interface NativePageDocContent {
