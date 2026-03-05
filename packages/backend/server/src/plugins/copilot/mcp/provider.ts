@@ -70,6 +70,13 @@ function toInputError(error: z.ZodError) {
   return toolError(`Invalid arguments: ${details || 'Invalid input'}`);
 }
 
+function abortIfNeeded(
+  signal: AbortSignal
+): WorkspaceMcpToolResult | undefined {
+  if (signal.aborted) return toolError('Request aborted.');
+  return;
+}
+
 function defineTool<T extends z.ZodTypeAny>(
   config: ToolExecutorInput<T>
 ): WorkspaceMcpToolDefinition {
@@ -79,10 +86,11 @@ function defineTool<T extends z.ZodTypeAny>(
     description: config.description,
     inputSchema: config.inputSchema,
     execute: async (args, options) => {
+      const aborted = abortIfNeeded(options.signal);
+      if (aborted) return aborted;
+
       const parsed = config.parser.safeParse(args ?? {});
-      if (!parsed.success) {
-        return toInputError(parsed.error);
-      }
+      if (!parsed.success) return toInputError(parsed.error);
       return await config.execute(parsed.data, options);
     },
   };
@@ -114,7 +122,7 @@ export class WorkspaceMcpProvider {
         required: ['docId'],
         additionalProperties: false,
       },
-      execute: async ({ docId }) => {
+      execute: async ({ docId }, options) => {
         const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
         const accessible = await this.ac
@@ -122,19 +130,20 @@ export class WorkspaceMcpProvider {
           .workspace(workspaceId)
           .doc(docId)
           .can('Doc.Read');
+        if (!accessible) return notFoundError;
 
-        if (!accessible) {
-          return notFoundError;
-        }
+        const abortedAfterPermission = abortIfNeeded(options.signal);
+        if (abortedAfterPermission) return abortedAfterPermission;
 
         const content = await this.reader.getDocMarkdown(
           workspaceId,
           docId,
           false
         );
-        if (!content) {
-          return notFoundError;
-        }
+        if (!content) return notFoundError;
+
+        const abortedAfterRead = abortIfNeeded(options.signal);
+        if (abortedAfterRead) return abortedAfterRead;
 
         return toolText(content.markdown);
       },
@@ -166,6 +175,10 @@ export class WorkspaceMcpProvider {
           5,
           options.signal
         );
+
+        const abortedAfterMatch = abortIfNeeded(options.signal);
+        if (abortedAfterMatch) return abortedAfterMatch;
+
         const docs = await this.ac
           .user(userId)
           .workspace(workspaceId)
@@ -173,6 +186,9 @@ export class WorkspaceMcpProvider {
             chunks.filter(chunk => 'docId' in chunk),
             'Doc.Read'
           );
+
+        const abortedAfterDocs = abortIfNeeded(options.signal);
+        if (abortedAfterDocs) return abortedAfterDocs;
 
         return {
           content: docs.map(doc => ({
@@ -197,17 +213,22 @@ export class WorkspaceMcpProvider {
         required: ['query'],
         additionalProperties: false,
       },
-      execute: async ({ query }) => {
+      execute: async ({ query }, options) => {
         const trimmed = query.trim();
-        if (!trimmed) {
-          return toolError('Query is required for keyword search.');
-        }
+        if (!trimmed) return toolError('Query is required for keyword search.');
 
         let docs = await this.indexer.searchDocsByKeyword(workspaceId, trimmed);
+
+        const abortedAfterSearch = abortIfNeeded(options.signal);
+        if (abortedAfterSearch) return abortedAfterSearch;
+
         docs = await this.ac
           .user(userId)
           .workspace(workspaceId)
           .docs(docs, 'Doc.Read');
+
+        const abortedAfterDocs = abortIfNeeded(options.signal);
+        if (abortedAfterDocs) return abortedAfterDocs;
 
         return {
           content: docs.map(doc => ({
@@ -245,23 +266,22 @@ export class WorkspaceMcpProvider {
           required: ['title', 'content'],
           additionalProperties: false,
         },
-        execute: async ({ title, content }) => {
+        execute: async ({ title, content }, options) => {
           try {
             await this.ac
               .user(userId)
               .workspace(workspaceId)
               .assert('Workspace.CreateDoc');
 
-            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-            if (!sanitizedTitle) {
-              throw new Error('Title cannot be empty');
-            }
+            const abortedAfterPermission = abortIfNeeded(options.signal);
+            if (abortedAfterPermission) return abortedAfterPermission;
 
+            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+            if (!sanitizedTitle) throw new Error('Title cannot be empty');
             const strippedContent = content.replace(
               /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
               ''
             );
-
             const result = await this.writer.createDoc(
               workspaceId,
               sanitizedTitle,
@@ -309,7 +329,7 @@ export class WorkspaceMcpProvider {
           required: ['docId', 'content'],
           additionalProperties: false,
         },
-        execute: async ({ docId, content }) => {
+        execute: async ({ docId, content }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
           const accessible = await this.ac
@@ -317,9 +337,10 @@ export class WorkspaceMcpProvider {
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) {
-            return notFoundError;
-          }
+          if (!accessible) return notFoundError;
+
+          const abortedBeforeWrite = abortIfNeeded(options.signal);
+          if (abortedBeforeWrite) return abortedBeforeWrite;
 
           try {
             await this.writer.updateDoc(workspaceId, docId, content, userId);
@@ -361,7 +382,7 @@ export class WorkspaceMcpProvider {
           required: ['docId', 'title'],
           additionalProperties: false,
         },
-        execute: async ({ docId, title }) => {
+        execute: async ({ docId, title }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
           const accessible = await this.ac
@@ -369,15 +390,14 @@ export class WorkspaceMcpProvider {
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) {
-            return notFoundError;
-          }
+          if (!accessible) return notFoundError;
+
+          const abortedAfterPermission = abortIfNeeded(options.signal);
+          if (abortedAfterPermission) return abortedAfterPermission;
 
           try {
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-            if (!sanitizedTitle) {
-              throw new Error('Title cannot be empty');
-            }
+            if (!sanitizedTitle) throw new Error('Title cannot be empty');
 
             await this.writer.updateDocMeta(
               workspaceId,

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+import { Throttle } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
 import { WorkspaceMcpProvider, type WorkspaceMcpServer } from './provider';
 
@@ -32,6 +33,7 @@ type JsonRpcSuccessResponse = {
 type JsonRpcResponse = JsonRpcErrorResponse | JsonRpcSuccessResponse;
 
 const JSON_RPC_VERSION = '2.0';
+const MAX_BATCH_SIZE = 20;
 const DEFAULT_PROTOCOL_VERSION = '2025-03-26';
 const SUPPORTED_PROTOCOL_VERSIONS = new Set([
   '2025-11-25',
@@ -54,6 +56,7 @@ export class WorkspaceMcpController {
     return this.errorResponse(null, -32000, 'Method not allowed.');
   }
 
+  @Throttle('default')
   @Post('/')
   async mcp(
     @Req() req: Request,
@@ -74,6 +77,18 @@ export class WorkspaceMcpController {
         res
           .status(HttpStatus.BAD_REQUEST)
           .json(this.errorResponse(null, -32600, 'Invalid Request'));
+        return;
+      }
+      if (messages.length > MAX_BATCH_SIZE) {
+        res
+          .status(HttpStatus.BAD_REQUEST)
+          .json(
+            this.errorResponse(
+              null,
+              -32600,
+              `Batch size exceeds limit (${MAX_BATCH_SIZE}).`
+            )
+          );
         return;
       }
 
