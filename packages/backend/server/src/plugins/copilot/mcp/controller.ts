@@ -201,14 +201,25 @@ export class WorkspaceMcpController {
         }
 
         const args = this.asObject(params.arguments) ?? {};
-        const result = await tool.execute(args, { signal });
-        if (isNotification) {
-          return null;
+        try {
+          const result = await tool.execute(args, { signal });
+          if (isNotification) return null;
+
+          return this.successResponse(
+            responseId,
+            result as Record<string, unknown>
+          );
+        } catch (error) {
+          this.logger.error(
+            `Error executing tool in mcp ${tool.name}`,
+            error instanceof Error ? error.stack : String(error)
+          );
+          return this.errorResponse(
+            responseId,
+            -32001,
+            `Error executing tool: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
-        return this.successResponse(
-          responseId,
-          result as Record<string, unknown>
-        );
       }
 
       default: {
