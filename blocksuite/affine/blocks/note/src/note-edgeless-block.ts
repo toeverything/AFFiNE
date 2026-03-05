@@ -221,6 +221,12 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     }
   }
 
+  override getCSSScaleVal(): number {
+    const baseScale = super.getCSSScaleVal();
+    const extraScale = this.model.props.edgeless?.scale ?? 1;
+    return baseScale * extraScale;
+  }
+
   override getRenderingRect() {
     const { xywh, edgeless } = this.model.props;
     const { collapse, scale = 1 } = edgeless;
@@ -255,7 +261,6 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
 
     const style = {
       borderRadius: borderRadius + 'px',
-      transform: `scale(${scale})`,
     };
 
     const extra = this._editing ? ACTIVE_NOTE_EXTRA_PADDING : 0;

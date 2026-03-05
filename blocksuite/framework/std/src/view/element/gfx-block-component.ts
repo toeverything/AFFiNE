@@ -105,6 +105,12 @@ export abstract class GfxBlockComponent<
 
   onBoxSelected(_: BoxSelectionContext) {}
 
+  getCSSScaleVal(): number {
+    const viewport = this.gfx.viewport;
+    const { zoom, viewScale } = viewport;
+    return zoom / viewScale;
+  }
+
   getCSSTransform() {
     const viewport = this.gfx.viewport;
     const { translateX, translateY, zoom, viewScale } = viewport;
@@ -115,7 +121,7 @@ export abstract class GfxBlockComponent<
     const deltaX = scaledX - bound.x;
     const deltaY = scaledY - bound.y;
 
-    return `translate(${translateX / viewScale + deltaX}px, ${translateY / viewScale + deltaY}px) scale(${zoom / viewScale})`;
+    return `translate(${translateX / viewScale + deltaX}px, ${translateY / viewScale + deltaY}px) scale(${this.getCSSScaleVal()})`;
   }
 
   getRenderingRect() {
@@ -217,6 +223,10 @@ export function toGfxBlockComponent<
     override connectedCallback(): void {
       super.connectedCallback();
       handleGfxConnection(this);
+    }
+
+    getCSSScaleVal(): number {
+      return GfxBlockComponent.prototype.getCSSScaleVal.call(this);
     }
 
     getCSSTransform() {
