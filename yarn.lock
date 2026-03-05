@@ -969,7 +969,7 @@ __metadata:
     "@fal-ai/serverless-client": "npm:^0.15.0"
     "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^3.0.0"
     "@google-cloud/opentelemetry-resource-util": "npm:^3.0.0"
-    "@nestjs-cls/transactional": "npm:^2.7.0"
+    "@nestjs-cls/transactional": "npm:^3.0.0"
     "@nestjs-cls/transactional-adapter-prisma": "npm:^1.2.24"
     "@nestjs/apollo": "npm:^13.0.4"
     "@nestjs/bullmq": "npm:^11.0.4"
@@ -8858,16 +8858,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs-cls/transactional@npm:^2.7.0":
-  version: 2.7.0
-  resolution: "@nestjs-cls/transactional@npm:2.7.0"
+"@nestjs-cls/transactional@npm:^3.0.0":
+  version: 3.2.0
+  resolution: "@nestjs-cls/transactional@npm:3.2.0"
   peerDependencies:
     "@nestjs/common": ">= 10 < 12"
     "@nestjs/core": ">= 10 < 12"
-    nestjs-cls: ^5.4.3
+    nestjs-cls: ^6.2.0
     reflect-metadata: "*"
     rxjs: ">= 7"
-  checksum: 10/172f121c279507ec46250197b70fd194d68efd4e0c4baf0c4d38d105cbdda46ee9c42b9123df7e35f55d1a276b4b117bcab66f40772a44f083eb997e83e67ac4
+  checksum: 10/cb9768a86e868ef6f71ce5c2746ca44aea457accc6c2754e146bd6d6de92546fced25fc1f13be8ce3f8fbf7230e8cd0cbba9616bfb8e3788c7ef36f2545b2549
   languageName: node
   linkType: hard
 
