@@ -34,7 +34,6 @@
     "@fal-ai/serverless-client": "^0.15.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^3.0.0",
     "@google-cloud/opentelemetry-resource-util": "^3.0.0",
-    "@modelcontextprotocol/sdk": "^1.26.0",
     "@nestjs-cls/transactional": "^2.7.0",
     "@nestjs-cls/transactional-adapter-prisma": "^1.2.24",
     "@nestjs/apollo": "^13.0.4",
