@@ -19,6 +19,57 @@ import { extMimeMap, Transformer } from '@blocksuite/store';
 import { applyMetaPatch, getProvider, parseFrontmatter } from './markdown.js';
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 
+const OBSIDIAN_CALLOUT_TYPE_TO_EMOJI: Record<string, string> = {
+  note: '💡',
+  info: 'ℹ️',
+  tip: '🔥',
+  hint: '✅',
+  important: '‼️',
+  warning: '⚠️',
+  caution: '⚠️',
+  attention: '⚠️',
+  danger: '⚠️',
+  error: '🚨',
+  bug: '🐛',
+  example: '📌',
+  quote: '💬',
+  cite: '💬',
+  abstract: '📋',
+  summary: '📋',
+  todo: '☑️',
+  success: '✅',
+  check: '✅',
+  done: '✅',
+  failure: '❌',
+  fail: '❌',
+  missing: '❌',
+  question: '❓',
+  help: '❓',
+  faq: '❓',
+};
+
+// Converts Obsidian callout syntax `> [!TYPE] optional title` to AFFiNE's `> [!emoji]` format.
+function preprocessObsidianCallouts(markdown: string): string {
+  return markdown.replace(
+    /^(> *)\[!([^\]\n]+)\]([^\n]*)/gm,
+    (_, prefix, type, rest) => {
+      const emoji =
+        OBSIDIAN_CALLOUT_TYPE_TO_EMOJI[type.trim().toLowerCase()] ?? '💡';
+      const title = rest.trim();
+      return title ? `${prefix}${emoji} **${title}**` : `${prefix}${emoji}`;
+    }
+  );
+}
+
+// AFFiNE has no quote block — plain `> - item` / `> > nested` blockquotes outside callouts
+// lose their list/link children during import. Unwrap them to top-level content instead.
+function preprocessBlockquoteLists(markdown: string): string {
+  return markdown.replace(
+    /^(> +)([-*+]|\d+\.) +(.+)$/gm,
+    (_, prefix, _bullet, content) => `${prefix}${content}`
+  );
+}
+
 export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
   name: 'obsidian-wikilink',
   match: (ast: any) => ast.type === 'text',
@@ -105,6 +156,9 @@ export async function importObsidianVault({
 
       const newPageId = collection.idGenerator();
       titleToPageIdMap.set(preferredTitle, newPageId);
+      if (preferredTitle !== fileNameWithoutExt) {
+        titleToPageIdMap.set(fileNameWithoutExt, newPageId);
+      }
 
       markdownBlobs.push({
         filename: fileName,
@@ -171,7 +225,7 @@ export async function importObsidianVault({
 
       const mdAdapter = new MarkdownAdapter(job, provider);
       const snapshot = await mdAdapter.toDocSnapshot({
-        file: content,
+        file: preprocessBlockquoteLists(preprocessObsidianCallouts(content)),
         assets: job.assetsManager,
       });
 
