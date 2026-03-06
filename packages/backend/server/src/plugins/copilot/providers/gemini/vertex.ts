@@ -4,6 +4,7 @@ import {
   type GoogleVertexProviderSettings,
 } from '@ai-sdk/google-vertex';
 
+import type { ModelCapability } from '../types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import { getGoogleAuth, VertexModelListSchema } from '../utils';
 import { GeminiProvider } from './gemini';
@@ -65,6 +66,15 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
 
   protected instance!: GoogleVertexProvider;
 
+  protected override get defaultOnlineModelCapabilities(): ModelCapability[] {
+    return [
+      {
+        input: [ModelInputType.Text, ModelInputType.Image],
+        output: [ModelOutputType.Text, ModelOutputType.Object],
+      },
+    ];
+  }
+
   override configured(): boolean {
     return !!this.config.location && !!this.config.googleAuthOptions;
   }
@@ -83,9 +93,10 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
         })
           .then(r => r.json())
           .then(r => VertexModelListSchema.parse(r));
-        this.onlineModelList = publisherModels.map(model =>
-          model.name.replace('publishers/google/models/', '')
-        );
+        this.onlineModelList = publisherModels.map(model => ({
+          id: model.name.replace('publishers/google/models/', ''),
+          capabilities: this.defaultOnlineModelCapabilities,
+        }));
       }
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);

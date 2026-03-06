@@ -24,6 +24,7 @@ import type {
   CopilotEmbeddingOptions,
   CopilotImageOptions,
   CopilotStructuredOptions,
+  ModelCapability,
   ModelConditions,
   PromptMessage,
   StreamObject,
@@ -338,6 +339,15 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     },
   ];
 
+  protected override get defaultOnlineModelCapabilities(): ModelCapability[] {
+    return [
+      {
+        input: [ModelInputType.Text],
+        output: [ModelOutputType.Text, ModelOutputType.Object],
+      },
+    ];
+  }
+
   override configured(): boolean {
     return !!this.config.apiKey;
   }
@@ -369,7 +379,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         })
           .then(r => r.json())
           .then(r => ModelListSchema.parse(r));
-        this.onlineModelList = data.map(model => model.id);
+        this.onlineModelList = data.map(model => ({
+          id: model.id,
+          capabilities: this.defaultOnlineModelCapabilities,
+        }));
       }
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);

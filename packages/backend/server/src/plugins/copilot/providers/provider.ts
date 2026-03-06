@@ -1,6 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+} from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { Tool, ToolSet } from 'ai';
 import { z } from 'zod';
@@ -65,14 +70,35 @@ import {
 
 const providerProfileContext = new AsyncLocalStorage<string>();
 
+const MODEL_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 @Injectable()
-export abstract class CopilotProvider<C = any> {
+export abstract class CopilotProvider<C = any> implements OnModuleDestroy {
   protected readonly logger = new Logger(this.constructor.name);
   protected readonly MAX_STEPS = 20;
-  protected onlineModelList: string[] = [];
+  private readonly onlineModelsByProfile = new Map<
+    string,
+    CopilotProviderModel[]
+  >();
+  private refreshInterval: ReturnType<typeof setInterval> | null = null;
+  private refreshing = false;
 
   abstract readonly type: CopilotProviderType;
   abstract readonly models: CopilotProviderModel[];
+
+  protected get defaultOnlineModelCapabilities(): ModelCapability[] {
+    return [];
+  }
+
+  protected get onlineModelList(): CopilotProviderModel[] {
+    const profileId = this.getActiveProviderId();
+    return this.onlineModelsByProfile.get(profileId) ?? [];
+  }
+
+  protected set onlineModelList(models: CopilotProviderModel[]) {
+    const profileId = this.getActiveProviderId();
+    this.onlineModelsByProfile.set(profileId, models);
+  }
   abstract configured(): boolean;
 
   @Inject() protected readonly AFFiNEConfig!: Config;
@@ -93,6 +119,13 @@ export abstract class CopilotProvider<C = any> {
     const registry = buildProviderRegistry(this.AFFiNEConfig.copilot.providers);
     const profile = registry.profiles.get(providerId);
     return profile?.middleware ?? resolveProviderMiddleware(this.type);
+  }
+
+  protected getProfileModels(): CopilotProviderModel[] {
+    const providerId = this.getActiveProviderId();
+    const registry = buildProviderRegistry(this.AFFiNEConfig.copilot.providers);
+    const profile = registry.profiles.get(providerId);
+    return profile?.modelDeclarations ?? [];
   }
 
   protected metricLabels(
@@ -151,13 +184,51 @@ export abstract class CopilotProvider<C = any> {
       this.#registeredProviderIds.add(providerId);
     }
 
-    if (env.selfhosted && nextProviderIds.size > 0) {
-      const [providerId] = Array.from(nextProviderIds);
+    if (env.selfhosted) {
+      this.refreshAllProfiles(nextProviderIds);
+      this.startPeriodicRefresh(nextProviderIds);
+    }
+  }
+
+  private refreshAllProfiles(providerIds: Set<string>) {
+    for (const providerId of providerIds) {
       this.runWithProfile(providerId, () => {
         this.refreshOnlineModels().catch(e =>
-          this.logger.error('Failed to refresh online models', e)
+          this.logger.error(
+            `Failed to refresh online models for ${providerId}`,
+            e
+          )
         );
       });
+    }
+  }
+
+  private startPeriodicRefresh(providerIds: Set<string>) {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+
+    if (providerIds.size === 0) return;
+
+    this.refreshInterval = setInterval(() => {
+      if (this.refreshing) return;
+      this.refreshing = true;
+
+      // Clear cached online models so they are re-fetched
+      for (const providerId of providerIds) {
+        this.onlineModelsByProfile.delete(providerId);
+      }
+
+      this.refreshAllProfiles(providerIds);
+      this.refreshing = false;
+    }, MODEL_REFRESH_INTERVAL_MS);
+  }
+
+  onModuleDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
     }
   }
 
@@ -172,22 +243,41 @@ export abstract class CopilotProvider<C = any> {
       (!inputTypes?.length ||
         inputTypes.every(type => cap.input.includes(type)));
 
-    if (modelId) {
-      const hasOnlineModel = this.onlineModelList.includes(modelId);
+    // Profile-declared models take precedence, then hardcoded, then online
+    const profileModels = this.getProfileModels();
+    const allModels = [...profileModels, ...this.models];
 
-      const model = this.models.find(
+    if (modelId) {
+      // Search profile + hardcoded models with capability matching
+      const model = allModels.find(
         m => m.id === modelId && m.capabilities.some(matcher)
       );
-
       if (model) return model;
-      // allow online model without capabilities check
-      if (hasOnlineModel) return { id: modelId, capabilities: [] };
+
+      // Profile-declared model without matching capabilities still wins
+      const profileModel = profileModels.find(m => m.id === modelId);
+      if (profileModel) return profileModel;
+
+      // Online model with capability matching
+      const onlineModel = this.onlineModelList.find(m => m.id === modelId);
+      if (onlineModel) {
+        if (onlineModel.capabilities.some(matcher)) return onlineModel;
+        // Fallback: online model exists but capabilities don't match
+        return onlineModel;
+      }
+
       return undefined;
     }
     if (!outputType) return undefined;
 
-    return this.models.find(m =>
-      m.capabilities.some(c => matcher(c) && c.defaultForOutputType)
+    // For default model selection, search all sources
+    return (
+      allModels.find(m =>
+        m.capabilities.some(c => matcher(c) && c.defaultForOutputType)
+      ) ??
+      this.onlineModelList.find(m =>
+        m.capabilities.some(c => matcher(c) && c.defaultForOutputType)
+      )
     );
   }
 

@@ -17,6 +17,7 @@ import { OpenAIConfig } from './providers/openai';
 import { PerplexityConfig } from './providers/perplexity';
 import {
   CopilotProviderType,
+  ModelInputType,
   ModelOutputType,
   VertexSchema,
 } from './providers/types';
@@ -61,12 +62,22 @@ export type ProviderMiddlewareConfig = {
   node?: { text?: NodeTextMiddleware[] };
 };
 
+export type ProfileModelDeclaration = {
+  id: string;
+  name?: string;
+  capabilities: {
+    input: ModelInputType[];
+    output: ModelOutputType[];
+    defaultForOutputType?: boolean;
+  }[];
+};
+
 type CopilotProviderProfileCommon = {
   id: string;
   displayName?: string;
   priority?: number;
   enabled?: boolean;
-  models?: string[];
+  models?: ProfileModelDeclaration[];
   middleware?: ProviderMiddlewareConfig;
 };
 
@@ -86,12 +97,24 @@ export type CopilotProviderDefaults = Partial<
   fallback?: string;
 };
 
+const ProfileModelCapabilityShape = z.object({
+  input: z.array(z.nativeEnum(ModelInputType)),
+  output: z.array(z.nativeEnum(ModelOutputType)),
+  defaultForOutputType: z.boolean().optional(),
+});
+
+const ProfileModelDeclarationShape = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  capabilities: z.array(ProfileModelCapabilityShape).min(1),
+});
+
 const CopilotProviderProfileBaseShape = z.object({
   id: z.string().regex(/^[a-zA-Z0-9-_]+$/),
   displayName: z.string().optional(),
   priority: z.number().optional(),
   enabled: z.boolean().optional(),
-  models: z.array(z.string()).optional(),
+  models: z.array(ProfileModelDeclarationShape).optional(),
   middleware: z
     .object({
       rust: z

@@ -163,8 +163,8 @@ export class CopilotProviderFactory {
       const normalizedCond = this.normalizeCond(providerId, cond);
       if (
         normalizedCond.modelId &&
-        profile?.models?.length &&
-        !profile.models.includes(normalizedCond.modelId)
+        profile?.modelFilter?.length &&
+        !profile.modelFilter.includes(normalizedCond.modelId)
       ) {
         continue;
       }

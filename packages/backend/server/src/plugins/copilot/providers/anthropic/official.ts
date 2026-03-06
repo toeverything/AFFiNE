@@ -1,5 +1,6 @@
 import z from 'zod';
 
+import type { ModelCapability } from '../types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import { AnthropicProvider } from './anthropic';
 
@@ -48,6 +49,15 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
     },
   ];
 
+  protected override get defaultOnlineModelCapabilities(): ModelCapability[] {
+    return [
+      {
+        input: [ModelInputType.Text, ModelInputType.Image],
+        output: [ModelOutputType.Text, ModelOutputType.Object],
+      },
+    ];
+  }
+
   override configured(): boolean {
     return !!this.config.apiKey;
   }
@@ -69,7 +79,10 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
         })
           .then(r => r.json())
           .then(r => ModelListSchema.parse(r));
-        this.onlineModelList = data.map(model => model.id);
+        this.onlineModelList = data.map(model => ({
+          id: model.id,
+          capabilities: this.defaultOnlineModelCapabilities,
+        }));
       }
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);

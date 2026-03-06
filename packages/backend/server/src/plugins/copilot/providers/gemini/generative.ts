@@ -4,6 +4,7 @@ import {
 } from '@ai-sdk/google';
 import z from 'zod';
 
+import type { ModelCapability } from '../types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import { GeminiProvider } from './gemini';
 
@@ -90,6 +91,15 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
 
   protected instance!: GoogleGenerativeAIProvider;
 
+  protected override get defaultOnlineModelCapabilities(): ModelCapability[] {
+    return [
+      {
+        input: [ModelInputType.Text, ModelInputType.Image],
+        output: [ModelOutputType.Text, ModelOutputType.Object],
+      },
+    ];
+  }
+
   override configured(): boolean {
     return !!this.config.apiKey;
   }
@@ -113,9 +123,10 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
         )
           .then(r => r.json())
           .then(r => ModelListSchema.parse(r));
-        this.onlineModelList = models.map(model =>
-          model.name.replace('models/', '')
-        );
+        this.onlineModelList = models.map(model => ({
+          id: model.name.replace('models/', ''),
+          capabilities: this.defaultOnlineModelCapabilities,
+        }));
       }
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);

@@ -5,7 +5,16 @@ import type {
   ProviderMiddlewareConfig,
 } from '../config';
 import { resolveProviderMiddleware } from './provider-middleware';
-import { CopilotProviderType, type ModelOutputType } from './types';
+import {
+  type CopilotProviderModel,
+  CopilotProviderType,
+  type ModelOutputType,
+} from './types';
+
+export const CURRENT_PROVIDER_CONFIG_VERSION = 2;
+export type CopilotProviderConfigVersion =
+  | 1
+  | typeof CURRENT_PROVIDER_CONFIG_VERSION;
 
 const PROVIDER_ID_PATTERN = /^[a-zA-Z0-9-_]+$/;
 
@@ -33,17 +42,20 @@ type LegacyProvidersConfig = Partial<
 >;
 
 export type CopilotProvidersConfigInput = LegacyProvidersConfig & {
+  version?: CopilotProviderConfigVersion;
   profiles?: CopilotProviderProfile[] | null;
   defaults?: CopilotProviderDefaults | null;
 };
 
 export type NormalizedCopilotProviderProfile = Omit<
   CopilotProviderProfile,
-  'enabled' | 'priority' | 'middleware'
+  'enabled' | 'priority' | 'middleware' | 'models'
 > & {
   enabled: boolean;
   priority: number;
   middleware: ProviderMiddlewareConfig;
+  modelFilter: string[];
+  modelDeclarations: CopilotProviderModel[];
 };
 
 export type CopilotProviderRegistry = {
@@ -94,14 +106,38 @@ function parseModelPrefix(
   return { providerId, modelId: model || undefined };
 }
 
+function normalizeProfileModels(models?: CopilotProviderProfile['models']): {
+  modelFilter: string[];
+  modelDeclarations: CopilotProviderModel[];
+} {
+  const modelFilter: string[] = [];
+  const modelDeclarations: CopilotProviderModel[] = [];
+
+  for (const entry of models ?? []) {
+    modelDeclarations.push({
+      id: entry.id,
+      name: entry.name,
+      capabilities: entry.capabilities,
+    });
+    modelFilter.push(entry.id);
+  }
+
+  return { modelFilter, modelDeclarations };
+}
+
 function normalizeProfile(
   profile: CopilotProviderProfile
 ): NormalizedCopilotProviderProfile {
+  const { models, ...rest } = profile;
+  const { modelFilter, modelDeclarations } = normalizeProfileModels(models);
+
   return {
-    ...profile,
+    ...rest,
     enabled: profile.enabled !== false,
     priority: profile.priority ?? 0,
     middleware: resolveProviderMiddleware(profile.type, profile.middleware),
+    modelFilter,
+    modelDeclarations,
   };
 }
 
@@ -174,11 +210,42 @@ function assertDefaults(
   }
 }
 
+export function migrateProvidersConfig(
+  config: CopilotProvidersConfigInput
+): CopilotProvidersConfigInput {
+  if (config.version === CURRENT_PROVIDER_CONFIG_VERSION) {
+    return config;
+  }
+
+  // v1 (or unversioned): models entries may be bare strings
+  const migratedProfiles = config.profiles?.map(profile => {
+    if (!profile.models?.length) {
+      return profile;
+    }
+
+    const migratedModels = profile.models.map(entry => {
+      if (typeof entry === 'string') {
+        return { id: entry, capabilities: [] };
+      }
+      return entry;
+    });
+
+    return { ...profile, models: migratedModels };
+  });
+
+  return {
+    ...config,
+    version: CURRENT_PROVIDER_CONFIG_VERSION,
+    profiles: migratedProfiles,
+  };
+}
+
 export function buildProviderRegistry(
   config: CopilotProvidersConfigInput
 ): CopilotProviderRegistry {
-  const explicitProfiles = config.profiles ?? [];
-  const legacyProfiles = toLegacyProfiles(config);
+  const migrated = migrateProvidersConfig(config);
+  const explicitProfiles = migrated.profiles ?? [];
+  const legacyProfiles = toLegacyProfiles(migrated);
   const mergedProfiles = mergeProfiles(explicitProfiles, legacyProfiles)
     .map(normalizeProfile)
     .filter(profile => profile.enabled);
@@ -187,7 +254,7 @@ export function buildProviderRegistry(
   const profiles = new Map(
     sortedProfiles.map(profile => [profile.id, profile] as const)
   );
-  const defaults = config.defaults ?? {};
+  const defaults = migrated.defaults ?? {};
   assertDefaults(defaults, profiles);
 
   const order = sortedProfiles.map(profile => profile.id);
