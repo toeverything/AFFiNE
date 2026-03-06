@@ -1,0 +1,96 @@
+# syntax=docker/dockerfile:1.7
+
+# Self-contained multi-stage build for AFFiNE self-hosted deployment.
+# Builds Rust native bindings, frontend assets, and server in Docker.
+
+# ---------------------------------------------------------------------------
+# Stage 1: Install dependencies and build everything
+# ---------------------------------------------------------------------------
+FROM node:22-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential clang pkg-config libssl-dev jq && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust toolchain
+WORKDIR /app
+COPY rust-toolchain.toml /app/rust-toolchain.toml
+RUN RUST_TOOLCHAIN_VERSION=$(grep 'channel' rust-toolchain.toml | head -1 | awk -F '"' '{print $2}') && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    --default-toolchain "${RUST_TOOLCHAIN_VERSION}" \
+    --target x86_64-unknown-linux-gnu
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV CC="clang -D_BSD_SOURCE"
+ENV TARGET_CC="clang -D_BSD_SOURCE"
+
+COPY . /app
+
+ENV HUSKY=0
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
+ENV SENTRYCLI_SKIP_DOWNLOAD=1
+
+# Install all dependencies
+RUN yarn --immutable --inline-builds
+
+# Build Rust native binding
+RUN yarn workspace @affine/server-native build --target x86_64-unknown-linux-gnu
+
+# Build frontend assets
+RUN yarn affine @affine/web build
+RUN yarn affine @affine/admin build
+RUN yarn affine @affine/mobile build
+
+# Build server
+RUN yarn workspace @affine/server build
+
+# Re-install production-only deps for the final server package
+RUN yarn config set --json supportedArchitectures.cpu '["x64"]' && \
+    yarn config set --json supportedArchitectures.libc '["glibc"]' && \
+    yarn workspaces focus @affine/server --production
+
+# Generate Prisma client
+RUN yarn workspace @affine/server prisma generate
+
+# Move node_modules into server package for the final image
+RUN mv ./node_modules ./packages/backend/server/
+
+# ---------------------------------------------------------------------------
+# Stage 2: Clean up artifacts
+# ---------------------------------------------------------------------------
+FROM node:22-bookworm-slim AS assets
+WORKDIR /app
+
+COPY --from=builder /app/packages/backend/server /app
+COPY --from=builder /app/packages/frontend/apps/web/dist /app/static
+COPY --from=builder /app/packages/frontend/admin/dist /app/static/admin
+COPY --from=builder /app/packages/frontend/apps/mobile/dist /app/static/mobile
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN AFFINE_DOCKER_CLEAN=1 node ./scripts/docker-clean.mjs
+
+# ---------------------------------------------------------------------------
+# Stage 3: Final image
+# ---------------------------------------------------------------------------
+FROM node:22-bookworm-slim
+WORKDIR /app
+
+COPY --from=assets /app /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl libjemalloc2 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /home/node/.affine/config /home/node/.affine/storage && \
+    chown -R node:node /home/node/.affine
+
+ENV LD_PRELOAD=libjemalloc.so.2
+
+USER node
+
+EXPOSE 3010
+
+CMD ["node", "./dist/main.js"]
