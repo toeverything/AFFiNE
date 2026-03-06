@@ -1,14 +1,23 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const newE2E = process.env.TEST_MODE === 'e2e';
 const newE2ETests = './src/__tests__/e2e/**/*.spec.ts';
+const projectRoot = dirname(fileURLToPath(import.meta.url));
+const serverRuntimeRegister = resolve(
+  projectRoot,
+  '../../../tools/cli/register.js'
+);
 
-const preludes = ['./src/prelude.ts'];
+const preludes = [resolve(projectRoot, 'src/prelude.ts')];
 
 if (newE2E) {
-  preludes.push('./src/__tests__/e2e/prelude.ts');
+  preludes.push(resolve(projectRoot, 'src/__tests__/e2e/prelude.ts'));
 }
 
 export default {
   timeout: '1m',
+  nodeArguments: [`--import=${serverRuntimeRegister}`],
   extensions: {
     ts: 'module',
   },

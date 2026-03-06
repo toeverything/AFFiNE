@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { config } from 'dotenv';
 
-import { createGlobalEnv } from './env';
+import { createGlobalEnv, NodeEnv } from './env';
 
 function loadPrivateKey() {
   const file = join(CUSTOM_CONFIG_PATH, 'private.key');
@@ -17,12 +17,18 @@ function loadPrivateKey() {
 
 function load() {
   let isPrivateKeyFromEnv = !!process.env.AFFINE_PRIVATE_KEY;
+  const isTesting = process.env.NODE_ENV === NodeEnv.Test;
+
   // load `.env` under pwd
   config();
   // load `.env` under user config folder
-  config({
-    path: join(CUSTOM_CONFIG_PATH, '.env'),
-  });
+  // NOTE: do not load machine-local user config in tests, because it can
+  // poison deterministic test envs with per-developer values.
+  if (!isTesting) {
+    config({
+      path: join(CUSTOM_CONFIG_PATH, '.env'),
+    });
+  }
 
   // The old AFFINE_PRIVATE_KEY in old .env is somehow not working,
   // we should ignore it
