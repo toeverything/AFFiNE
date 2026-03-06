@@ -27,8 +27,15 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends openssl libjemalloc2 && \
   rm -rf /var/lib/apt/lists/*
 
+# The base image provides a 'node' user (uid=1000, gid=1000).
+# The app uses os.homedir() to resolve ~/.affine/ for config and storage paths.
+RUN mkdir -p /home/node/.affine/config /home/node/.affine/storage && \
+  chown -R node:node /home/node/.affine
+
 # Enable jemalloc by preloading the library
 ENV LD_PRELOAD=libjemalloc.so.2
+
+USER node
 
 EXPOSE 3010
 
