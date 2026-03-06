@@ -7,6 +7,35 @@ export const smallestPng =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
 export const smallestGif = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 
+export function createBmp(width: number, height: number) {
+  const rowSize = Math.ceil((width * 3) / 4) * 4;
+  const pixelDataSize = rowSize * height;
+  const fileSize = 54 + pixelDataSize;
+  const buffer = Buffer.alloc(fileSize);
+
+  buffer.write('BM', 0, 'ascii');
+  buffer.writeUInt32LE(fileSize, 2);
+  buffer.writeUInt32LE(54, 10);
+  buffer.writeUInt32LE(40, 14);
+  buffer.writeInt32LE(width, 18);
+  buffer.writeInt32LE(height, 22);
+  buffer.writeUInt16LE(1, 26);
+  buffer.writeUInt16LE(24, 28);
+  buffer.writeUInt32LE(pixelDataSize, 34);
+
+  for (let y = 0; y < height; y++) {
+    const rowOffset = 54 + y * rowSize;
+    for (let x = 0; x < width; x++) {
+      const pixelOffset = rowOffset + x * 3;
+      buffer[pixelOffset] = 0x33;
+      buffer[pixelOffset + 1] = 0x66;
+      buffer[pixelOffset + 2] = 0x99;
+    }
+  }
+
+  return buffer;
+}
+
 export async function listBlobs(
   app: TestingApp,
   workspaceId: string
