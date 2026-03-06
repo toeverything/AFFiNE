@@ -34,7 +34,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "vitest": "^3.2.4"
+    "@vitest/browser-playwright": "^4.0.18",
+    "vitest": "^4.0.18"
   },
   "exports": {
     ".": "./src/index.ts",
