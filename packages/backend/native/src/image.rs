@@ -2,8 +2,10 @@ use std::io::Cursor;
 
 use anyhow::{Context, Result as AnyResult, bail};
 use image::{
-  AnimationDecoder, DynamicImage, ImageDecoder, ImageFormat, ImageReader, codecs::gif::GifDecoder,
-  codecs::png::PngDecoder, codecs::webp::WebPDecoder, imageops::FilterType, metadata::Orientation,
+  AnimationDecoder, DynamicImage, ImageDecoder, ImageFormat, ImageReader,
+  codecs::{gif::GifDecoder, png::PngDecoder, webp::WebPDecoder},
+  imageops::FilterType,
+  metadata::Orientation,
 };
 use libwebp_sys::{
   WEBP_MUX_ABI_VERSION, WebPData, WebPDataClear, WebPDataInit, WebPEncodeRGBA, WebPFree, WebPMuxAssemble,
@@ -14,6 +16,9 @@ use napi::{Error, Result, Status, bindgen_prelude::Buffer};
 use napi_derive::napi;
 
 const WEBP_QUALITY: f32 = 80.0;
+const MAX_IMAGE_DIMENSION: u32 = 16_384;
+const MAX_IMAGE_PIXELS: u64 = 40_000_000;
+
 #[napi]
 pub fn process_image(input: Buffer, max_edge: u32, keep_exif: bool) -> Result<Buffer> {
   process_image_inner(input.as_ref(), max_edge, keep_exif)
@@ -27,6 +32,8 @@ fn process_image_inner(input: &[u8], max_edge: u32, keep_exif: bool) -> AnyResul
   }
 
   let format = image::guess_format(input).context("unsupported image format")?;
+  let (width, height) = read_dimensions(input, format)?;
+  validate_dimensions(width, height)?;
   let mut image = decode_image(input, format)?;
   let orientation = read_orientation(input, format)?;
   image.apply_orientation(orientation);
@@ -42,6 +49,28 @@ fn process_image_inner(input: &[u8], max_edge: u32, keep_exif: bool) -> AnyResul
   }
 
   Ok(output)
+}
+
+fn read_dimensions(input: &[u8], format: ImageFormat) -> AnyResult<(u32, u32)> {
+  ImageReader::with_format(Cursor::new(input), format)
+    .into_dimensions()
+    .context("failed to decode image")
+}
+
+fn validate_dimensions(width: u32, height: u32) -> AnyResult<()> {
+  if width == 0 || height == 0 {
+    bail!("failed to decode image");
+  }
+
+  if width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION {
+    bail!("image dimensions exceed limit");
+  }
+
+  if u64::from(width) * u64::from(height) > MAX_IMAGE_PIXELS {
+    bail!("image pixel count exceeds limit");
+  }
+
+  Ok(())
 }
 
 fn decode_image(input: &[u8], format: ImageFormat) -> AnyResult<DynamicImage> {
@@ -212,6 +241,27 @@ mod tests {
     encoded
   }
 
+  fn encode_bmp_header(width: u32, height: u32) -> Vec<u8> {
+    let mut encoded = Vec::with_capacity(54);
+    encoded.extend_from_slice(b"BM");
+    encoded.extend_from_slice(&(54u32).to_le_bytes());
+    encoded.extend_from_slice(&0u16.to_le_bytes());
+    encoded.extend_from_slice(&0u16.to_le_bytes());
+    encoded.extend_from_slice(&(54u32).to_le_bytes());
+    encoded.extend_from_slice(&(40u32).to_le_bytes());
+    encoded.extend_from_slice(&(width as i32).to_le_bytes());
+    encoded.extend_from_slice(&(height as i32).to_le_bytes());
+    encoded.extend_from_slice(&1u16.to_le_bytes());
+    encoded.extend_from_slice(&24u16.to_le_bytes());
+    encoded.extend_from_slice(&0u32.to_le_bytes());
+    encoded.extend_from_slice(&0u32.to_le_bytes());
+    encoded.extend_from_slice(&0u32.to_le_bytes());
+    encoded.extend_from_slice(&0u32.to_le_bytes());
+    encoded.extend_from_slice(&0u32.to_le_bytes());
+    encoded.extend_from_slice(&0u32.to_le_bytes());
+    encoded
+  }
+
   #[test]
   fn process_image_keeps_small_dimensions() {
     let png = encode_png(8, 6);
@@ -265,5 +315,13 @@ mod tests {
   fn process_image_rejects_invalid_input() {
     let error = process_image_inner(b"not-an-image", 512, false).unwrap_err();
     assert_eq!(error.to_string(), "unsupported image format");
+  }
+
+  #[test]
+  fn process_image_rejects_images_over_dimension_limit_before_decode() {
+    let bmp = encode_bmp_header(MAX_IMAGE_DIMENSION + 1, 1);
+    let error = process_image_inner(&bmp, 512, false).unwrap_err();
+
+    assert_eq!(error.to_string(), "image dimensions exceed limit");
   }
 }

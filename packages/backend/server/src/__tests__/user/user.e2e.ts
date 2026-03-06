@@ -106,7 +106,7 @@ test('should reject unsupported vector avatars', async t => {
   });
 
   t.is(res.status, 200);
-  t.is(res.body.errors[0].message, 'Unsupported image format');
+  t.is(res.body.errors[0].message, 'Image format not supported: image/svg+xml');
 });
 
 test('should be able to get public user by id', async t => {
