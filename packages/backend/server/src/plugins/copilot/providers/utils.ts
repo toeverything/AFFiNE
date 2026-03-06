@@ -2,12 +2,12 @@ import { GoogleVertexProviderSettings } from '@ai-sdk/google-vertex';
 import { GoogleVertexAnthropicProviderSettings } from '@ai-sdk/google-vertex/anthropic';
 import { Logger } from '@nestjs/common';
 import {
-  CoreAssistantMessage,
-  CoreUserMessage,
+  AssistantModelMessage,
   FilePart,
   ImagePart,
   TextPart,
   TextStreamPart,
+  UserModelMessage,
 } from 'ai';
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import z, { ZodType } from 'zod';
@@ -23,7 +23,7 @@ import {
 import { CustomAITools } from '../tools';
 import { PromptMessage, StreamObject } from './types';
 
-type ChatMessage = CoreUserMessage | CoreAssistantMessage;
+type ChatMessage = UserModelMessage | AssistantModelMessage;
 
 const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
 const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };

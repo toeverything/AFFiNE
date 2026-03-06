@@ -381,7 +381,11 @@ const textActions: Prompt[] = [
     name: 'Transcript audio',
     action: 'Transcript audio',
     model: 'gemini-2.5-flash',
-    optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+    optionalModels: [
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-3.1-pro-preview',
+    ],
     messages: [
       {
         role: 'system',
@@ -1904,6 +1908,7 @@ const CHAT_PROMPT: Omit<Prompt, 'name'> = {
   optionalModels: [
     'gemini-2.5-flash',
     'gemini-2.5-pro',
+    'gemini-3.1-pro-preview',
     'claude-sonnet-4-5@20250929',
   ],
   messages: [
@@ -2074,7 +2079,11 @@ Below is the user's query. Please respond in the user's preferred language witho
       'codeArtifact',
       'blobRead',
     ],
-    proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+    proModels: [
+      'gemini-2.5-pro',
+      'gemini-3.1-pro-preview',
+      'claude-sonnet-4-5@20250929',
+    ],
   },
 };
 
