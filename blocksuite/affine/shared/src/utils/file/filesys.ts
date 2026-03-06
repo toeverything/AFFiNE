@@ -260,14 +260,12 @@ export async function openDirectory(): Promise<File[] | null> {
     }
   }
 
-  // Fallback if the File System Access API is not supported.
   return new Promise(resolve => {
     const input = document.createElement('input');
     input.classList.add('affine-upload-input');
     input.style.display = 'none';
     input.type = 'file';
 
-    // WebKit specific attribute for directory selection
     input.setAttribute('webkitdirectory', '');
     input.setAttribute('directory', '');
 

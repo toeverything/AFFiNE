@@ -268,14 +268,14 @@ const importOptions = [
   },
   {
     key: 'obsidian',
-    label: 'Obsidian' as any, // Missing i18n
+    label: 'com.affine.import.obsidian',
     prefixIcon: (
       <ExportToMarkdownIcon color={cssVar('black')} width={20} height={20} />
     ),
     suffixIcon: (
       <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
     ),
-    suffixTooltip: 'Import an Obsidian vault directory directly' as any, // Missing i18n
+    suffixTooltip: 'com.affine.import.obsidian.tooltip',
     testId: 'editor-option-menu-import-obsidian',
     type: 'obsidian' as ImportType,
   },

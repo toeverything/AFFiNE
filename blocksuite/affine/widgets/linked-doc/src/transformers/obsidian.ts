@@ -75,16 +75,12 @@ export type ImportObsidianVaultOptions = {
   extensions: ExtensionType[];
 };
 
-/**
- * Imports a folder/vault containing Markdown files and assets into a collection.
- */
 export async function importObsidianVault({
   collection,
   schema,
   importedFiles,
   extensions,
 }: ImportObsidianVaultOptions) {
-  // We prepend our custom matcher so it intercepts text nodes before the default UI matcher
   const provider = getProvider([obsidianWikilinkToDeltaMatcher, ...extensions]);
 
   const docIds: string[] = [];
@@ -93,7 +89,6 @@ export async function importObsidianVault({
   const markdownBlobs: (ImportedFileEntry & { pageId: string })[] = [];
   const titleToPageIdMap = new Map<string, string>();
 
-  // 1st Pass: Gather all files and pre-assign/resolve IDs for Obsidian files
   for (const file of importedFiles) {
     const path = file.webkitRelativePath || file.name;
 
@@ -126,23 +121,24 @@ export async function importObsidianVault({
     }
   }
 
-  // Inject existing workspace titles into the map as well
   for (const meta of collection.meta.docMetas) {
     if (meta.title) {
       titleToPageIdMap.set(meta.title, meta.id);
     }
   }
 
-  // 2nd Pass: Process the markdown files
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
-      const { filename, contentBlob, fullPath, pageId } = markdownFile;
+      const {
+        filename,
+        contentBlob,
+        fullPath,
+        pageId: predefinedId,
+      } = markdownFile;
       const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
       const markdown = await contentBlob.text();
       const { content, meta } = parseFrontmatter(markdown);
       const preferredTitle = meta.title ?? fileNameWithoutExt;
-
-      const predefinedId = pageId;
 
       const job = new Transformer({
         schema,
@@ -160,8 +156,6 @@ export async function importObsidianVault({
         ],
       });
 
-      // Directly inject page ID map into the job's adapterConfigs
-      // so the wikilink matcher can resolve [[Title]] -> pageId
       for (const [title, id] of titleToPageIdMap.entries()) {
         job.adapterConfigs.set('obsidian:pageId:' + title, id);
       }
@@ -176,7 +170,6 @@ export async function importObsidianVault({
       }
 
       const mdAdapter = new MarkdownAdapter(job, provider);
-      // We explicitly create the doc by modifying the generated snapshot ID before inserting the snapshot!
       const snapshot = await mdAdapter.toDocSnapshot({
         file: content,
         assets: job.assetsManager,
