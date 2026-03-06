@@ -20,7 +20,28 @@ declare global {
     showOpenFilePicker?: (
       options?: OpenFilePickerOptions
     ) => Promise<FileSystemFileHandle[]>;
+    // Window API: showDirectoryPicker
+    showDirectoryPicker?: (options?: {
+      id?: string;
+      mode?: 'read' | 'readwrite';
+      startIn?: FileSystemHandle | string;
+    }) => Promise<FileSystemDirectoryHandle>;
   }
+}
+
+// Minimal polyfill for FileSystemDirectoryHandle to iterate over files
+interface FileSystemDirectoryHandle {
+  kind: 'directory';
+  name: string;
+  values(): AsyncIterableIterator<
+    FileSystemFileHandle | FileSystemDirectoryHandle
+  >;
+}
+
+interface FileSystemFileHandle {
+  kind: 'file';
+  name: string;
+  getFile(): Promise<File>;
 }
 
 // See [Common MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types)
@@ -186,6 +207,79 @@ export async function openFilesWith(
     // The `cancel` event fires when the user cancels the dialog.
     input.addEventListener('cancel', () => resolve(null));
     // Show the picker.
+    if ('showPicker' in HTMLInputElement.prototype) {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  });
+}
+
+export async function openDirectory(): Promise<File[] | null> {
+  const supportsFileSystemAccess =
+    'showDirectoryPicker' in window &&
+    (() => {
+      try {
+        return window.self === window.top;
+      } catch {
+        return false;
+      }
+    })();
+
+  if (supportsFileSystemAccess && window.showDirectoryPicker) {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      const files: File[] = [];
+
+      const readDirectory = async (
+        directoryHandle: FileSystemDirectoryHandle,
+        path: string
+      ) => {
+        for await (const handle of directoryHandle.values()) {
+          const relativePath = path ? `${path}/${handle.name}` : handle.name;
+          if (handle.kind === 'file') {
+            const fileHandle = handle as FileSystemFileHandle;
+            if (fileHandle.getFile) {
+              const file = await fileHandle.getFile();
+              files.push(file);
+            }
+          } else if (handle.kind === 'directory') {
+            await readDirectory(
+              handle as FileSystemDirectoryHandle,
+              relativePath
+            );
+          }
+        }
+      };
+
+      await readDirectory(dirHandle, '');
+      return files;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  }
+
+  // Fallback if the File System Access API is not supported.
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.classList.add('affine-upload-input');
+    input.style.display = 'none';
+    input.type = 'file';
+
+    // WebKit specific attribute for directory selection
+    input.setAttribute('webkitdirectory', '');
+    input.setAttribute('directory', '');
+
+    document.body.append(input);
+
+    input.addEventListener('change', () => {
+      input.remove();
+      resolve(input.files ? Array.from(input.files) : null);
+    });
+
+    input.addEventListener('cancel', () => resolve(null));
+
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
     } else {

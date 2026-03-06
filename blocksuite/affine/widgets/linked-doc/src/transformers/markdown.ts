@@ -21,7 +21,7 @@ import { extMimeMap, Transformer } from '@blocksuite/store';
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 import { createAssetsArchive, download, parseMatter, Unzip } from './utils.js';
 
-type ParsedFrontmatterMeta = Partial<
+export type ParsedFrontmatterMeta = Partial<
   Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'tags' | 'favorite'>
 >;
 
@@ -154,7 +154,7 @@ function buildMetaFromFrontmatter(
   return meta;
 }
 
-function parseFrontmatter(markdown: string): {
+export function parseFrontmatter(markdown: string): {
   content: string;
   meta: ParsedFrontmatterMeta;
 } {
@@ -176,7 +176,7 @@ function parseFrontmatter(markdown: string): {
   }
 }
 
-function applyMetaPatch(
+export function applyMetaPatch(
   collection: Workspace,
   docId: string,
   meta: ParsedFrontmatterMeta
@@ -193,7 +193,7 @@ function applyMetaPatch(
   }
 }
 
-function getProvider(extensions: ExtensionType[]) {
+export function getProvider(extensions: ExtensionType[]) {
   const container = new Container();
   extensions.forEach(ext => {
     ext.setup(container);

@@ -3,10 +3,10 @@ import {
   ExportToHTMLIcon,
   ExportToMarkdownIcon,
   HelpIcon,
-  NewIcon,
   NotionIcon,
 } from '@blocksuite/affine-components/icons';
 import {
+  openDirectory,
   openFilesWith,
   openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
@@ -18,6 +18,7 @@ import { query, state } from 'lit/decorators.js';
 import { HtmlTransformer } from '../transformers/html.js';
 import { MarkdownTransformer } from '../transformers/markdown.js';
 import { NotionHtmlTransformer } from '../transformers/notion-html.js';
+import { ObsidianTransformer } from '../transformers/obsidian.js';
 import { styles } from './styles.js';
 
 export type OnSuccessHandler = (
@@ -140,6 +141,27 @@ export class ImportDoc extends WithDisposable(LitElement) {
     });
   }
 
+  private async _importObsidian() {
+    const files = await openDirectory();
+    if (!files || files.length === 0) return;
+    const needLoading =
+      files.reduce((acc, f) => acc + f.size, 0) > SHOW_LOADING_SIZE;
+    if (needLoading) {
+      this.hidden = false;
+      this._loading = true;
+    } else {
+      this.abortController.abort();
+    }
+    const pageIds = await ObsidianTransformer.importObsidianVault({
+      collection: this.collection,
+      schema: this.schema,
+      importedFiles: files,
+      extensions: this.extensions,
+    });
+    needLoading && this.abortController.abort();
+    this._onImportSuccess(pageIds);
+  }
+
   private _onCloseClick(event: MouseEvent) {
     event.stopPropagation();
     this.abortController.abort();
@@ -258,8 +280,12 @@ export class ImportDoc extends WithDisposable(LitElement) {
               </affine-tooltip>
             </div>
           </icon-button>
-          <icon-button class="button-item" text="Coming soon..." disabled>
-            ${NewIcon}
+          <icon-button
+            class="button-item"
+            text="Obsidian"
+            @click="${this._importObsidian}"
+          >
+            ${ExportToMarkdownIcon}
           </icon-button>
         </div>
         <!-- <div class="footer">
