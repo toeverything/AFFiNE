@@ -788,7 +788,7 @@ export class CopilotResolver {
 
         if (detectedMime.startsWith('image/')) {
           try {
-            attachmentBuffer = processImage(
+            attachmentBuffer = await processImage(
               uploaded.buffer,
               COPILOT_IMAGE_MAX_EDGE,
               true

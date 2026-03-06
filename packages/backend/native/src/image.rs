@@ -12,18 +12,44 @@ use libwebp_sys::{
   WebPMuxCreateInternal, WebPMuxDelete, WebPMuxError, WebPMuxSetChunk,
 };
 use little_exif::{exif_tag::ExifTag, filetype::FileExtension, metadata::Metadata};
-use napi::{Error, Result, Status, bindgen_prelude::Buffer};
+use napi::{
+  Env, Error, Result, Status, Task,
+  bindgen_prelude::{AsyncTask, Buffer},
+};
 use napi_derive::napi;
 
 const WEBP_QUALITY: f32 = 80.0;
 const MAX_IMAGE_DIMENSION: u32 = 16_384;
 const MAX_IMAGE_PIXELS: u64 = 40_000_000;
 
+pub struct AsyncProcessImageTask {
+  input: Vec<u8>,
+  max_edge: u32,
+  keep_exif: bool,
+}
+
 #[napi]
-pub fn process_image(input: Buffer, max_edge: u32, keep_exif: bool) -> Result<Buffer> {
-  process_image_inner(input.as_ref(), max_edge, keep_exif)
-    .map(Buffer::from)
-    .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))
+impl Task for AsyncProcessImageTask {
+  type Output = Vec<u8>;
+  type JsValue = Buffer;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    process_image_inner(&self.input, self.max_edge, self.keep_exif)
+      .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))
+  }
+
+  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output.into())
+  }
+}
+
+#[napi]
+pub fn process_image(input: Buffer, max_edge: u32, keep_exif: bool) -> AsyncTask<AsyncProcessImageTask> {
+  AsyncTask::new(AsyncProcessImageTask {
+    input: input.to_vec(),
+    max_edge,
+    keep_exif,
+  })
 }
 
 fn process_image_inner(input: &[u8], max_edge: u32, keep_exif: bool) -> AnyResult<Vec<u8>> {

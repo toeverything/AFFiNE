@@ -129,7 +129,7 @@ export class UserResolver {
 
     let processedAvatarBuffer: Buffer;
     try {
-      processedAvatarBuffer = processImage(avatarBuffer, 512, false);
+      processedAvatarBuffer = await processImage(avatarBuffer, 512, false);
     } catch {
       throw new ImageFormatNotSupported({ format: contentType });
     }
