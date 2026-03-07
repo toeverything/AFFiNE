@@ -181,26 +181,6 @@ export class LayerManager extends GfxExtension {
     return [...elements];
   }
 
-  private _getRelatedLocalElements(
-    relatedElements: GfxModel[],
-    group: GfxModel & GfxGroupCompatibleInterface
-  ) {
-    const relatedElementSet = new Set(relatedElements);
-    const localElements: GfxLocalElementModel[] = [];
-
-    this._surface?.localElementModels.forEach(localElement => {
-      if (
-        (localElement.creator && relatedElementSet.has(localElement.creator)) ||
-        localElement.group === group ||
-        localElement.groups.some(candidate => candidate === group)
-      ) {
-        localElements.push(localElement);
-      }
-    });
-
-    return localElements;
-  }
-
   private _syncGroupChildSnapshot(
     group: GfxModel & GfxGroupCompatibleInterface
   ) {
@@ -569,18 +549,6 @@ export class LayerManager extends GfxExtension {
     });
   }
 
-  private _refreshLocalElementsInLayer(elements: GfxLocalElementModel[]) {
-    const uniqueElements = [...new Set(elements)];
-
-    uniqueElements.forEach(element => {
-      this._removeFromLayer(element, 'canvas');
-    });
-
-    uniqueElements.sort(compare).forEach(element => {
-      this._insertIntoLayer(element as unknown as GfxModel, 'canvas');
-    });
-  }
-
   private _reset() {
     const elements = (
       this._doc
@@ -628,7 +596,7 @@ export class LayerManager extends GfxExtension {
   private _updateLayer(
     element: GfxModel | GfxLocalElementModel,
     props?: Record<string, unknown>,
-    oldValues?: Record<string, unknown>
+    _oldValues?: Record<string, unknown>
   ) {
     const modelType = this._getModelType(element);
     const isLocalElem = element instanceof GfxLocalElementModel;
@@ -645,21 +613,7 @@ export class LayerManager extends GfxExtension {
     };
 
     if (shouldUpdateGroupChildren) {
-      const group = element as GfxModel & GfxGroupCompatibleInterface;
-      const oldChildIds = childIdsChanged
-        ? Array.isArray(oldValues?.['childIds'])
-          ? (oldValues['childIds'] as string[])
-          : this._groupChildSnapshot.get(group.id)
-        : undefined;
-
-      const relatedElements = this._getRelatedGroupElements(group, oldChildIds);
-      const relatedLocalElements = this._getRelatedLocalElements(
-        relatedElements,
-        group
-      );
-      this._refreshElementsInLayer(relatedElements);
-      this._refreshLocalElementsInLayer(relatedLocalElements);
-      this._syncGroupChildSnapshot(group);
+      this._reset();
       return true;
     }
 

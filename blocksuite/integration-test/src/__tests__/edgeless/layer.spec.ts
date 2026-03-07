@@ -463,14 +463,17 @@ describe('group related functionality', () => {
     const elements = [
       service.crud.addElement('shape', {
         shapeType: 'rect',
+        xywh: '[0,0,100,100]',
       })!,
       addNote(doc),
       service.crud.addElement('shape', {
         shapeType: 'rect',
+        xywh: '[120,0,100,100]',
       })!,
       addNote(doc),
       service.crud.addElement('shape', {
         shapeType: 'rect',
+        xywh: '[240,0,100,100]',
       })!,
     ];
 
@@ -833,6 +836,7 @@ test('indexed canvas should be inserted into edgeless portal when switch to edge
 
   service.crud.addElement('shape', {
     shapeType: 'rect',
+    xywh: '[0,0,100,100]',
   })!;
 
   addNote(doc);
@@ -841,6 +845,7 @@ test('indexed canvas should be inserted into edgeless portal when switch to edge
 
   service.crud.addElement('shape', {
     shapeType: 'rect',
+    xywh: '[120,0,100,100]',
   })!;
 
   editor.mode = 'page';
