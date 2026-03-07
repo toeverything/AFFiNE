@@ -97,12 +97,12 @@ export class MigrateCopilotProvidersToV21751970000000 {
       where: { id: 'copilot.providers.profiles' },
       update: {
         value: profiles as any,
-        lastUpdatedBy: 'system-migration',
+        lastUpdatedBy: null,
       },
       create: {
         id: 'copilot.providers.profiles',
         value: profiles as any,
-        lastUpdatedBy: 'system-migration',
+        lastUpdatedBy: null,
       },
     });
 
@@ -142,12 +142,12 @@ export class MigrateCopilotProvidersToV21751970000000 {
         where: { id: legacyKey },
         update: {
           value: profile.config as any,
-          lastUpdatedBy: 'system-migration-revert',
+          lastUpdatedBy: null,
         },
         create: {
           id: legacyKey,
           value: profile.config as any,
-          lastUpdatedBy: 'system-migration-revert',
+          lastUpdatedBy: null,
         },
       });
     }
