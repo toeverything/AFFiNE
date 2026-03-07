@@ -69,6 +69,27 @@ export const listBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
       const text = (o.node.props.text ?? { delta: [] }) as {
         delta: DeltaInsert[];
       };
+
+      // Toggle list → <details><summary>Title</summary>\nBody\n</details> (FR-042)
+      if (o.node.props.type === 'toggle') {
+        const summaryText = deltaConverter
+          .deltaToAST(text.delta)
+          .map(n => ('value' in n ? n.value : ''))
+          .join('');
+        const openAttr = o.node.props.collapsed ? '' : ' open';
+        walkerContext.openNode(
+          {
+            type: 'html',
+            value: `<details${openAttr}><summary>${summaryText}</summary>`,
+          } as MarkdownAST,
+          'children'
+        );
+        walkerContext.setNodeContext('affine:list:toggle', true);
+        return;
+      }
+
+      walkerContext.setNodeContext('affine:list:toggle', false);
+
       const currentTNode = walkerContext.currentNode();
       // check if the list is of the same type
       if (
@@ -121,6 +142,22 @@ export const listBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
     },
     leave: (o, context) => {
       const { walkerContext } = context;
+
+      // Close toggle <details> wrapper
+      if (o.node.props.type === 'toggle') {
+        walkerContext
+          .openNode(
+            {
+              type: 'html',
+              value: '</details>',
+            } as MarkdownAST,
+            'children'
+          )
+          .closeNode()
+          .closeNode();
+        return;
+      }
+
       const currentTNode = walkerContext.currentNode();
       const previousTNode = walkerContext.previousNode();
       if (

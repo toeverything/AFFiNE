@@ -4,6 +4,7 @@ import type {
   TableColumn,
   TableRow,
 } from '@blocksuite/affine-model';
+import { TextAlign } from '@blocksuite/affine-model';
 import {
   type HtmlAST,
   type MarkdownAST,
@@ -120,7 +121,23 @@ const getAllTag = (node: Element | undefined, tagName: string): Element[] => {
   return [];
 };
 
-export const createTableProps = (deltasLists: RichTextType[][]) => {
+/**
+ * Maps a GFM alignment string (from remark `Table.align`) to `TextAlign`.
+ * `null` means unspecified (treated as left-aligned by convention).
+ */
+function gfmAlignToTextAlign(
+  align: 'left' | 'right' | 'center' | null | undefined
+): TextAlign | undefined {
+  if (align === 'center') return TextAlign.Center;
+  if (align === 'right') return TextAlign.Right;
+  if (align === 'left') return TextAlign.Left;
+  return undefined;
+}
+
+export const createTableProps = (
+  deltasLists: RichTextType[][],
+  columnAligns?: (TextAlign | undefined)[]
+) => {
   const createIdAndOrder = (count: number) => {
     const result: { id: string; order: string }[] = Array.from({
       length: count,
@@ -135,12 +152,20 @@ export const createTableProps = (deltasLists: RichTextType[][]) => {
     }
     return result;
   };
-  const columnCount = Math.max(...deltasLists.map(row => row.length));
+  // Defensive: malformed / empty tables must not crash (T032 / FR-022 assumption).
+  const columnCount =
+    deltasLists.length > 0
+      ? Math.max(...deltasLists.map(row => row.length))
+      : 0;
+  if (columnCount <= 0) {
+    return { columns: {}, rows: {}, cells: {} };
+  }
   const rowCount = deltasLists.length;
 
-  const columns: TableColumn[] = createIdAndOrder(columnCount).map(v => ({
+  const columns: TableColumn[] = createIdAndOrder(columnCount).map((v, i) => ({
     columnId: v.id,
     order: v.order,
+    ...(columnAligns?.[i] != null ? { align: columnAligns[i] } : {}),
   }));
   const rows: TableRow[] = createIdAndOrder(rowCount).map(v => ({
     rowId: v.id,
@@ -208,5 +233,10 @@ export const parseTableFromMarkdown = (
     });
     rowTextLists.push(rowText);
   });
-  return createTableProps(rowTextLists);
+
+  // Preserve GFM column alignment (FR-021): remark provides `node.align` as an
+  // array of 'left' | 'center' | 'right' | null, one entry per column.
+  const columnAligns = (node.align ?? []).map(a => gfmAlignToTextAlign(a));
+
+  return createTableProps(rowTextLists, columnAligns);
 };

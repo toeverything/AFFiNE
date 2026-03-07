@@ -58,6 +58,25 @@ export type AffineTextAttributes = AffineTextStyleAttributes & {
     member: string;
     notification?: string;
   } | null;
+  /**
+   * Obsidian ==highlight== attribute.
+   * Value is a CSS colour value or design token (e.g. 'var(--affine-highlight-yellow)').
+   * null | undefined = not highlighted.
+   * CRDT merge: last-write-wins, same as `color` and `background`.
+   */
+  highlight?: string | null;
+  /**
+   * Obsidian %% comment %% attribute.
+   * true = hidden in live preview, visible with delimiters in source mode.
+   * null | undefined = normal visible text.
+   * CRDT merge: last-write-wins, same as `bold` and `italic`.
+   */
+  obsidianComment?: true | null;
+  /**
+   * Obsidian-style inline tag (#tag-name).
+   * name is canonical lowercase tag name without the # prefix.
+   */
+  tag?: { name: string } | null;
   [key: `comment-${string}`]: boolean | null;
 };
 

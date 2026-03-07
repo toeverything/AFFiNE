@@ -52,6 +52,7 @@
     { "path": "../inlines/mention" },
     { "path": "../inlines/preset" },
     { "path": "../inlines/reference" },
+    { "path": "../inlines/tag" },
     { "path": "../model" },
     { "path": "../rich-text" },
     { "path": "../shared" },

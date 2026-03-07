@@ -10,6 +10,11 @@ export const calloutBlockContainerStyles = css({
   alignItems: 'flex-start',
   padding: '5px 10px',
   borderRadius: '8px',
+  /* T079: In forced-colors mode the background is overridden by the system.
+   * Add a border so the callout boundary remains perceivable (WCAG SC 1.4.11). */
+  '@media (forced-colors: active)': {
+    border: '1px solid ButtonText',
+  },
 });
 
 export const calloutEmojiContainerStyles = css({
@@ -40,6 +45,31 @@ export const calloutChildrenStyles = css({
   flex: 1,
   minWidth: 0,
   paddingLeft: '10px',
+});
+
+/**
+ * Fold/expand toggle button (T036, FR-050a, T080).
+ * Respects prefers-reduced-motion per FR-053.
+ * Touch target: min 24×24px floor per FR-055.
+ */
+export const calloutFoldButtonStyles = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'none',
+  border: 'none',
+  padding: '4px',
+  minWidth: 24 /* T080: touch target floor */,
+  minHeight: 24 /* T080: touch target floor */,
+  fontSize: '0.7em',
+  cursor: 'pointer',
+  color: 'inherit',
+  opacity: 0.6,
+  flexShrink: 0,
+  userSelect: 'none',
+  ':hover': {
+    opacity: 1,
+  },
 });
 
 export const iconPickerContainerStyles = css({

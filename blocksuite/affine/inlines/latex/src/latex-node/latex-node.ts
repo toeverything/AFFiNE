@@ -50,20 +50,39 @@ export class AffineLatexNode extends SignalWatcher(
     }
 
     affine-latex-node .error-placeholder {
-      display: flex;
+      display: inline-flex;
       padding: 2px 4px;
       justify-content: center;
       align-items: flex-start;
-      gap: 10px;
+      gap: 4px;
 
       border-radius: 4px;
       background: ${unsafeCSSVarV2('chip/label/red')};
+      border: 1px solid ${unsafeCSSVarV2('text/highlight/fg/red')};
 
       color: ${unsafeCSSVarV2('text/highlight/fg/red')};
       font-family: Inter;
       font-size: 12px;
       font-weight: 500;
       line-height: normal;
+      cursor: pointer;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    affine-latex-node .error-placeholder__icon {
+      flex-shrink: 0;
+      font-style: normal;
+    }
+
+    affine-latex-node .error-placeholder__source {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
     }
 
     affine-latex-node .placeholder {
@@ -141,12 +160,29 @@ export class AffineLatexNode extends SignalWatcher(
                 katex.render(latex, latexContainer, {
                   displayMode: false,
                 });
-              } catch {
+              } catch (err) {
                 latexContainer.replaceChildren();
                 // @ts-expect-error lit hack won't fix
                 delete latexContainer['_$litPart$'];
+                // FR-017 + FR-054: show raw LaTeX source and KaTeX error
+                // message alongside a non-colour error indicator (⚠ icon).
+                const errMsg =
+                  err instanceof Error
+                    ? err.message.split('\n')[0].slice(0, 120)
+                    : 'Invalid LaTeX';
                 render(
-                  html`<span class="error-placeholder">Error equation</span>`,
+                  html`<span
+                    class="error-placeholder"
+                    title="${errMsg}"
+                    aria-label="LaTeX error: ${errMsg}"
+                    role="img"
+                  >
+                    <!-- Non-colour indicator (FR-054 WCAG AA): warning triangle -->
+                    <span class="error-placeholder__icon" aria-hidden="true"
+                      >⚠</span
+                    >
+                    <span class="error-placeholder__source">${latex}</span>
+                  </span>`,
                   latexContainer
                 );
               }

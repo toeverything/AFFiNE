@@ -18,6 +18,7 @@
     "@blocksuite/affine-inline-link": "workspace:*",
     "@blocksuite/affine-inline-mention": "workspace:*",
     "@blocksuite/affine-inline-reference": "workspace:*",
+    "@blocksuite/affine-inline-tag": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
@@ -49,6 +50,9 @@
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
     "./view": "./src/view.ts"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
   },
   "files": [
     "src",

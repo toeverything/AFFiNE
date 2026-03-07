@@ -32,7 +32,39 @@ export class MermaidPreview extends SignalWatcher(
       line-height: normal;
     }
 
-    .mermaid-preview-error,
+    .mermaid-preview-error {
+      color: ${unsafeCSSVarV2('button/error')};
+      font-feature-settings:
+        'liga' off,
+        'clig' off;
+
+      /* light/code/base */
+      font-family: 'IBM Plex Mono';
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+
+      /* FR-017: styled error panel with border and non-colour indicator (FR-054) */
+      border: 1.5px solid ${unsafeCSSVarV2('button/error')};
+      border-radius: 8px;
+      padding: 16px;
+      background: color-mix(
+        in srgb,
+        ${unsafeCSSVarV2('button/error')} 8%,
+        transparent
+      );
+    }
+
+    .mermaid-preview-error__icon {
+      /* Non-colour indicator (FR-054 WCAG AA): triangle with exclamation mark */
+      display: inline-block;
+      margin-bottom: 8px;
+      font-size: 24px;
+      line-height: 1;
+      /* aria-hidden is set in template to exclude from screen reader */
+    }
+
     .mermaid-preview-fallback {
       color: ${unsafeCSSVarV2('button/error')};
       font-feature-settings:
@@ -150,6 +182,9 @@ export class MermaidPreview extends SignalWatcher(
 
   @state()
   accessor svgContent: string = '';
+
+  @state()
+  accessor errorMessage: string = '';
 
   @query('.mermaid-preview-container')
   accessor container!: HTMLDivElement;
@@ -403,6 +438,11 @@ export class MermaidPreview extends SignalWatcher(
         return;
       }
 
+      // Extract user-readable parse error message (FR-017).
+      this.errorMessage =
+        error instanceof Error
+          ? error.message.split('\n')[0].slice(0, 200)
+          : 'Unknown error';
       this.state = 'error';
       this.retryCount = 0; // reset retry count
     } finally {
@@ -429,14 +469,31 @@ export class MermaidPreview extends SignalWatcher(
           [
             'error',
             () =>
-              html`<div class="mermaid-preview-error">
-                <div style="text-align: center; padding: 20px;">
-                  <div style="margin-bottom: 8px;">
-                    Failed to render diagram
+              html`<div
+                class="mermaid-preview-error"
+                role="alert"
+                aria-live="polite"
+              >
+                <div style="text-align: center; padding: 4px;">
+                  <!-- Non-colour error indicator (FR-054 WCAG AA): warning triangle -->
+                  <div class="mermaid-preview-error__icon" aria-hidden="true">
+                    ⚠
                   </div>
-                  <div style="font-size: 10px; opacity: 0.6;">
-                    Please check if your Mermaid code has syntax errors
+                  <div style="margin-bottom: 8px; font-weight: 600;">
+                    Diagram syntax error
                   </div>
+                  <div
+                    style="font-size: 10px; opacity: 0.75; margin-bottom: 4px;"
+                  >
+                    Check your Mermaid syntax and try again
+                  </div>
+                  ${this.errorMessage
+                    ? html`<div
+                        style="font-size: 10px; opacity: 0.6; font-family: 'IBM Plex Mono'; word-break: break-word;"
+                      >
+                        ${this.errorMessage}
+                      </div>`
+                    : nothing}
                 </div>
               </div>`,
           ],

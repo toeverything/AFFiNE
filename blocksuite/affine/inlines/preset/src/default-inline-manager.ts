@@ -4,6 +4,7 @@ import { LatexInlineSpecExtension } from '@blocksuite/affine-inline-latex';
 import { LinkInlineSpecExtension } from '@blocksuite/affine-inline-link';
 import { MentionInlineSpecExtension } from '@blocksuite/affine-inline-mention';
 import { ReferenceInlineSpecExtension } from '@blocksuite/affine-inline-reference';
+import { TagInlineSpecExtension } from '@blocksuite/affine-inline-tag';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { InlineManagerExtension } from '@blocksuite/std/inline';
 
@@ -34,5 +35,6 @@ export const DefaultInlineManagerExtension =
       FootNoteInlineSpecExtension.identifier,
       MentionInlineSpecExtension.identifier,
       CommentInlineSpecExtension.identifier,
+      TagInlineSpecExtension.identifier,
     ],
   });

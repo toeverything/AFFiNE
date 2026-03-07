@@ -21,6 +21,7 @@ import {
   type Transformer,
 } from '@blocksuite/store';
 
+import { splitTextByUrl } from '../../utils/url.js';
 import {
   type AdapterContext,
   AdapterFactoryIdentifier,
@@ -284,6 +285,15 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
         displayMode: NoteDisplayMode.DocAndEdgeless,
       },
       children: payload.file.split('\n').map((line): BlockSnapshot => {
+        const segments = splitTextByUrl(line);
+        const delta =
+          segments.length > 0
+            ? segments.map(seg =>
+                seg.link
+                  ? { insert: seg.text, attributes: { link: seg.link } }
+                  : { insert: seg.text }
+              )
+            : [{ insert: line }];
         return {
           type: 'block',
           id: nanoid(),
@@ -292,11 +302,7 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
             type: 'text',
             text: {
               '$blocksuite:internal:text$': true,
-              delta: [
-                {
-                  insert: line,
-                },
-              ],
+              delta,
             },
           },
           children: [],

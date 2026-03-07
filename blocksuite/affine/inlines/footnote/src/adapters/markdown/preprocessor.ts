@@ -52,3 +52,42 @@ const footnoteReferencePreprocessor: MarkdownAdapterPreprocessor = {
 
 export const FootnoteReferenceMarkdownPreprocessorExtension =
   MarkdownPreprocessorExtension(footnoteReferencePreprocessor);
+
+/**
+ * Converts inline footnote syntax `^[text]` to reference-style footnotes
+ * per FR-034a.
+ *
+ * `^[text]` → auto-generated `[^fn-N]` reference with `[^fn-N]: text`
+ * definition appended at end of document.
+ *
+ * @example
+ * "Hello^[World]" → "Hello[^fn-1]\n\n[^fn-1]: World"
+ */
+export function preprocessInlineFootnotes(content: string): string {
+  const definitions: string[] = [];
+  let counter = 1;
+
+  const result = content.replace(
+    /(?<!\\)\^\[([^\]]+)\]/g,
+    (_, text: string) => {
+      const label = `fn-${counter++}`;
+      definitions.push(`[^${label}]: ${text}`);
+      return `[^${label}]`;
+    }
+  );
+
+  if (definitions.length === 0) {
+    return result;
+  }
+
+  return result + '\n\n' + definitions.join('\n');
+}
+
+const inlineFootnotePreprocessor: MarkdownAdapterPreprocessor = {
+  name: 'inline-footnote',
+  levels: ['block', 'slice', 'doc'],
+  preprocess: preprocessInlineFootnotes,
+};
+
+export const InlineFootnoteMarkdownPreprocessorExtension =
+  MarkdownPreprocessorExtension(inlineFootnotePreprocessor);

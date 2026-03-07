@@ -63,6 +63,8 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Subscription } from 'rxjs';
 
+import { SourceModeEditor } from '../../../../blocksuite/block-suite-mode-switch/source-mode-editor';
+import { SourceModeToggle } from '../../../../blocksuite/block-suite-mode-switch/source-mode-toggle';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
@@ -303,6 +305,9 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   );
 
   const [hasScrollTop, setHasScrollTop] = useState(false);
+  const [isSourceMode, setIsSourceMode] = useState(false);
+  const exitSourceMode = useCallback(() => setIsSourceMode(false), []);
+  const enterSourceMode = useCallback(() => setIsSourceMode(true), []);
 
   const openOutlinePanel = useCallback(() => {
     workbench.openSidebar();
@@ -331,6 +336,14 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           page={doc.blockSuiteDoc}
           workspace={workspace}
           onDragging={setDragging}
+          sourceModeToggle={
+            mode === 'page' && !readonly ? (
+              <SourceModeToggle
+                isSourceMode={isSourceMode}
+                onToggle={isSourceMode ? exitSourceMode : enterSourceMode}
+              />
+            ) : undefined
+          }
         />
       </ViewHeader>
       <ViewBody>
@@ -354,7 +367,14 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                   { [styles.pageModeViewportContentBox]: mode === 'page' }
                 )}
               >
-                <PageDetailEditor onLoad={onLoad} readonly={readonly} />
+                {isSourceMode && mode === 'page' ? (
+                  <SourceModeEditor
+                    doc={doc.blockSuiteDoc}
+                    onExit={exitSourceMode}
+                  />
+                ) : (
+                  <PageDetailEditor onLoad={onLoad} readonly={readonly} />
+                )}
               </Scrollable.Viewport>
               <Scrollable.Scrollbar
                 className={clsx({

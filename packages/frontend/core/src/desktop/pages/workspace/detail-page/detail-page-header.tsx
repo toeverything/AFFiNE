@@ -80,6 +80,8 @@ const TemplateMark = memo(function TemplateMark({
 interface PageHeaderProps {
   page: Store;
   workspace: Workspace;
+  /** Optional source mode toggle button rendered in the header toolbar. */
+  sourceModeToggle?: React.ReactNode;
 }
 export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -123,7 +125,11 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
   );
 }
 
-export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
+export function NormalPageHeader({
+  page,
+  workspace,
+  sourceModeToggle,
+}: PageHeaderProps) {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -158,6 +164,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       <ViewTitle title={title} />
       <ViewIcon icon={currentMode ?? 'page'} />
       <EditorModeSwitch />
+      {sourceModeToggle}
       <BlocksuiteHeaderTitle inputHandleRef={titleInputHandleRef} />
       <TemplateMark />
       <div className={styles.iconButtonContainer}>

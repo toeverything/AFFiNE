@@ -14,6 +14,11 @@ import {
 } from '@blocksuite/affine-shared/adapters';
 import { type DeltaInsert, nanoid } from '@blocksuite/store';
 
+import {
+  getCalloutTypeConfig,
+  normaliseCalloutType,
+} from '../configs/callout-types.js';
+
 // Currently, the callout block children can only be paragraph block or list block
 // In mdast, the node types are `paragraph`, `list`, `heading`, `blockquote`
 const CALLOUT_BLOCK_CHILDREN_TYPES = new Set([
@@ -64,6 +69,24 @@ export const calloutBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
 
       const { walkerContext } = context;
       const calloutEmoji = getCalloutEmoji(o.node);
+
+      // Resolve Obsidian-style [!TYPE] callout data set by remark-callout.
+      const rawType = o.node.data?.calloutType as string | undefined;
+      const foldable = o.node.data?.foldable as boolean | undefined;
+      const folded = o.node.data?.folded as boolean | undefined;
+
+      let extraProps: Record<string, unknown> = {};
+      if (rawType) {
+        const canonicalType = normaliseCalloutType(rawType);
+        const config = getCalloutTypeConfig(canonicalType);
+        extraProps = {
+          calloutType: canonicalType,
+          backgroundColorName: config.backgroundColorName,
+          ...(foldable != null ? { foldable } : {}),
+          ...(folded != null ? { folded } : {}),
+        };
+      }
+
       walkerContext.openNode(
         {
           type: 'block',
@@ -71,6 +94,7 @@ export const calloutBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
           flavour: CalloutBlockSchema.model.flavour,
           props: {
             emoji: calloutEmoji,
+            ...extraProps,
           },
           children: [],
         },
@@ -158,6 +182,22 @@ export const calloutBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
             .closeNode();
         }
       } else {
+        // Serialise typed callouts as `> [!TYPE]` (FR-042 Obsidian round-trip).
+        const calloutType = o.node.props.calloutType as
+          | string
+          | null
+          | undefined;
+        const foldable = o.node.props.foldable as boolean | undefined;
+        const folded = o.node.props.folded as boolean | undefined;
+
+        let marker: string;
+        if (calloutType) {
+          const suffix = foldable ? (folded ? '-' : '+') : '';
+          marker = `[!${calloutType.toUpperCase()}]${suffix}`;
+        } else {
+          marker = `[!${emoji}]`;
+        }
+
         walkerContext
           .openNode(
             {
@@ -171,7 +211,7 @@ export const calloutBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
             children: [
               {
                 type: 'text',
-                value: `[!${emoji}]`,
+                value: marker,
               },
             ],
           })

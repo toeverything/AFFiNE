@@ -807,6 +807,7 @@ export const PackageList = [
       'blocksuite/affine/inlines/link',
       'blocksuite/affine/inlines/mention',
       'blocksuite/affine/inlines/reference',
+      'blocksuite/affine/inlines/tag',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
@@ -822,6 +823,16 @@ export const PackageList = [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
+      'blocksuite/affine/shared',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/inlines/tag',
+    name: '@blocksuite/affine-inline-tag',
+    workspaceDependencies: [
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -1558,6 +1569,7 @@ export type PackageName =
   | '@blocksuite/affine-inline-mention'
   | '@blocksuite/affine-inline-preset'
   | '@blocksuite/affine-inline-reference'
+  | '@blocksuite/affine-inline-tag'
   | '@blocksuite/affine-model'
   | '@blocksuite/affine-rich-text'
   | '@blocksuite/affine-shared'

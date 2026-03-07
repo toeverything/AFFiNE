@@ -40,6 +40,7 @@ import { LinkViewExtension } from '@blocksuite/affine-inline-link/view';
 import { MentionViewExtension } from '@blocksuite/affine-inline-mention/view';
 import { InlinePresetViewExtension } from '@blocksuite/affine-inline-preset/view';
 import { ReferenceViewExtension } from '@blocksuite/affine-inline-reference/view';
+import { TagViewExtension } from '@blocksuite/affine-inline-tag/view';
 import { DragHandleViewExtension } from '@blocksuite/affine-widget-drag-handle/view';
 import { EdgelessAutoConnectViewExtension } from '@blocksuite/affine-widget-edgeless-auto-connect/view';
 import { EdgelessDraggingAreaViewExtension } from '@blocksuite/affine-widget-edgeless-dragging-area/view';
@@ -102,6 +103,7 @@ export function getInternalViewExtensions() {
     ReferenceViewExtension,
     InlineLatexViewExtension,
     MentionViewExtension,
+    TagViewExtension,
     InlinePresetViewExtension,
 
     // Widget

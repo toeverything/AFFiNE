@@ -30,6 +30,7 @@ import { LatexStoreExtension as InlineLatexStoreExtension } from '@blocksuite/af
 import { LinkStoreExtension } from '@blocksuite/affine-inline-link/store';
 import { InlinePresetStoreExtension } from '@blocksuite/affine-inline-preset/store';
 import { ReferenceStoreExtension } from '@blocksuite/affine-inline-reference/store';
+import { TagStoreExtension } from '@blocksuite/affine-inline-tag/store';
 
 export function getInternalStoreExtensions() {
   return [
@@ -60,6 +61,7 @@ export function getInternalStoreExtensions() {
     LinkStoreExtension,
     ReferenceStoreExtension,
     InlineLatexStoreExtension,
+    TagStoreExtension,
     InlinePresetStoreExtension,
 
     BrushStoreExtension,

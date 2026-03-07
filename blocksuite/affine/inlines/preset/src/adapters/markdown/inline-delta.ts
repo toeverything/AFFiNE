@@ -49,9 +49,27 @@ export const inlineCodeDeltaToMarkdownAdapterMatcher =
     }),
   });
 
+/**
+ * Obsidian %% comment %% serialiser per FR-042 / contracts §2.
+ * Single-line → %%text%%
+ * Multi-line text (contains newlines) → %%\ntext\n%%
+ */
+export const obsidianCommentDeltaToMarkdownAdapterMatcher =
+  InlineDeltaToMarkdownAdapterExtension({
+    name: 'obsidian-comment',
+    match: delta => !!delta.attributes?.obsidianComment,
+    toAST: delta => {
+      const text = delta.insert;
+      const isMultiLine = text.includes('\n');
+      const value = isMultiLine ? `%%\n${text}\n%%` : `%%${text}%%`;
+      return { type: 'text', value };
+    },
+  });
+
 export const InlineDeltaToMarkdownAdapterExtensions = [
   inlineCodeDeltaToMarkdownAdapterMatcher,
   boldDeltaToMarkdownAdapterMatcher,
   italicDeltaToMarkdownAdapterMatcher,
   strikeDeltaToMarkdownAdapterMatcher,
+  obsidianCommentDeltaToMarkdownAdapterMatcher,
 ];

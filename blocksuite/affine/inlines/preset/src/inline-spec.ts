@@ -107,6 +107,49 @@ export const ColorInlineSpecExtension =
     },
   });
 
+/**
+ * Obsidian ==highlight== inline spec.
+ * Renders via affine-text using the highlight CSS token as background-color.
+ * Per contracts/inline-extensions.md §1.
+ */
+export const HighlightInlineSpecExtension =
+  InlineSpecExtension<AffineTextAttributes>({
+    name: 'highlight',
+    schema: z.object({
+      highlight: z.string().optional().nullable().catch(undefined),
+    }),
+    match: delta => {
+      return !!delta.attributes?.highlight;
+    },
+    renderer: ({ delta }) => {
+      return html`<affine-text .delta=${delta}></affine-text>`;
+    },
+  });
+
+/**
+ * Obsidian %% comment %% inline spec.
+ * Live preview: renders as a zero-width invisible span with aria-hidden="true".
+ * Source mode: rendered by a separate source-mode-aware renderer showing %% delimiters.
+ * Per contracts/inline-extensions.md §2 and FR-036, FR-051.
+ */
+export const ObsidianCommentInlineSpecExtension =
+  InlineSpecExtension<AffineTextAttributes>({
+    name: 'obsidian-comment',
+    schema: z.object({
+      obsidianComment: z.literal(true).optional().nullable().catch(undefined),
+    }),
+    match: delta => {
+      return !!delta.attributes?.obsidianComment;
+    },
+    renderer: () => {
+      // In live preview: zero-width span, aria-hidden so screen readers skip it.
+      return html`<span
+        style="display:inline;width:0;overflow:hidden;position:absolute;"
+        aria-hidden="true"
+      ></span>`;
+    },
+  });
+
 export const InlineSpecExtensions: ExtensionType[] = [
   BoldInlineSpecExtension,
   ItalicInlineSpecExtension,
@@ -115,4 +158,6 @@ export const InlineSpecExtensions: ExtensionType[] = [
   CodeInlineSpecExtension,
   BackgroundInlineSpecExtension,
   ColorInlineSpecExtension,
+  HighlightInlineSpecExtension,
+  ObsidianCommentInlineSpecExtension,
 ];

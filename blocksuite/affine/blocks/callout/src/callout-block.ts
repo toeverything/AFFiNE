@@ -30,8 +30,10 @@ import {
   calloutChildrenStyles,
   calloutEmojiContainerStyles,
   calloutEmojiStyles,
+  calloutFoldButtonStyles,
   calloutHostStyles,
 } from './callout-block-styles.js';
+import { getCalloutTypeConfig } from './configs/callout-types.js';
 import { IconPickerWrapper } from './icon-picker-wrapper.js';
 // Copy of renderUniLit and UniLit from affine-data-view
 export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
@@ -156,6 +158,11 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
     });
   }
 
+  private readonly _handleFoldToggle = () => {
+    const currentFolded = this.model.props.folded$.value ?? false;
+    this.store.updateBlock(this.model, { folded: !currentFolded });
+  };
+
   private readonly _handleBlockClick = (event: MouseEvent) => {
     // Check if the click target is emoji related element
     const target = event.target as HTMLElement;
@@ -215,16 +222,36 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
 
   override renderBlock() {
     const icon = this.model.props.icon$.value;
-    const backgroundColorName = this.model.props.backgroundColorName$.value;
+    const calloutType = this.model.props.calloutType$.value;
+    const foldable = this.model.props.foldable$.value ?? false;
+    const folded = this.model.props.folded$.value ?? false;
+
+    // When calloutType is set, use the preset config icon and backgroundColorName.
+    // Falls back to existing icon/backgroundColorName for legacy callouts.
+    let resolvedBackgroundName: string | null | undefined;
+    let iconContent: ReturnType<typeof getIcon> | string;
+
+    if (calloutType) {
+      const config = getCalloutTypeConfig(calloutType);
+      resolvedBackgroundName = config.backgroundColorName;
+      iconContent = config.icon;
+    } else {
+      resolvedBackgroundName = this.model.props.backgroundColorName$.value;
+      iconContent = getIcon(icon);
+    }
+
     const normalizedBackgroundName =
-      backgroundColorName === 'default' || backgroundColorName === ''
+      resolvedBackgroundName === 'default' || resolvedBackgroundName === ''
         ? 'grey'
-        : backgroundColorName;
+        : resolvedBackgroundName;
     const backgroundColor = (
       cssVarV2.block.callout.background as Record<string, string>
     )[normalizedBackgroundName ?? 'grey'];
 
-    const iconContent = getIcon(icon);
+    // FR-047: aria-label on icon from config label.
+    const iconLabel = calloutType
+      ? getCalloutTypeConfig(calloutType).label
+      : undefined;
 
     return html`
       <div
@@ -244,13 +271,39 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
                   marginTop: this._getEmojiMarginTop(),
                 })}
               >
-                <span class="${calloutEmojiStyles}" data-testid="callout-emoji"
+                <span
+                  class="${calloutEmojiStyles}"
+                  data-testid="callout-emoji"
+                  aria-label=${iconLabel ?? ''}
+                  role=${iconLabel ? 'img' : 'presentation'}
                   >${iconContent}</span
                 >
+                ${foldable
+                  ? html` <!-- Fold/expand toggle (T036, FR-050a) -->
+                      <button
+                        class="${calloutFoldButtonStyles}"
+                        aria-expanded=${!folded}
+                        aria-label=${folded
+                          ? 'Expand callout'
+                          : 'Collapse callout'}
+                        contenteditable="false"
+                        @click=${(e: MouseEvent) => {
+                          e.stopPropagation();
+                          this._handleFoldToggle();
+                        }}
+                      >
+                        ${folded ? '▶' : '▼'}
+                      </button>`
+                  : ''}
               </div>
             `
           : ''}
-        <div class="${calloutChildrenStyles}">
+        <div
+          class="${calloutChildrenStyles}"
+          style=${styleMap({
+            display: folded ? 'none' : undefined,
+          })}
+        >
           ${this.renderChildren(this.model)}
         </div>
       </div>

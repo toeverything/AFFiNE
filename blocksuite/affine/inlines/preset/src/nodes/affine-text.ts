@@ -13,6 +13,15 @@ export class AffineText extends ShadowlessElement {
       ? affineTextStyles(this.delta.attributes)
       : {};
 
+    // Obsidian %% comment %% — invisible in live preview (FR-036 / FR-051)
+    if (this.delta.attributes?.obsidianComment) {
+      return html`<span
+        aria-hidden="true"
+        style=${styleMap({ display: 'none' })}
+        ><v-text .str=${this.delta.insert}></v-text
+      ></span>`;
+    }
+
     // we need to avoid \n appearing before and after the span element, which will
     // cause the unexpected space
     if (this.delta.attributes?.code) {

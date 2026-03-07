@@ -97,6 +97,7 @@
     { "path": "./blocksuite/affine/inlines/mention" },
     { "path": "./blocksuite/affine/inlines/preset" },
     { "path": "./blocksuite/affine/inlines/reference" },
+    { "path": "./blocksuite/affine/inlines/tag" },
     { "path": "./blocksuite/affine/model" },
     { "path": "./blocksuite/affine/rich-text" },
     { "path": "./blocksuite/affine/shared" },

@@ -23,6 +23,8 @@ export interface TableColumn {
   order: string;
   backgroundColor?: string;
   width?: number;
+  /** Per-column text alignment imported from GFM `:---`, `:---:`, `---:` (FR-021). */
+  align?: TextAlign;
 }
 
 export interface TableBlockProps extends BlockMeta {

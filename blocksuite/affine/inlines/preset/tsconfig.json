@@ -15,6 +15,7 @@
     { "path": "../link" },
     { "path": "../mention" },
     { "path": "../reference" },
+    { "path": "../tag" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

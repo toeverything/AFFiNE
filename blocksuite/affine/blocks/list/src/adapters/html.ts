@@ -11,11 +11,40 @@ import type { Element } from 'hast';
 
 export const listBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
   flavour: ListBlockSchema.model.flavour,
-  toMatch: o => HastUtils.isElement(o.node) && o.node.tagName === 'li',
+  toMatch: o =>
+    HastUtils.isElement(o.node) &&
+    (o.node.tagName === 'li' || o.node.tagName === 'details'),
   fromMatch: o => o.node.flavour === ListBlockSchema.model.flavour,
   toBlockSnapshot: {
     enter: (o, context) => {
       if (!HastUtils.isElement(o.node)) {
+        return;
+      }
+
+      // Handle raw <details><summary> paste → toggle list block (FR-031)
+      if (o.node.tagName === 'details') {
+        const { walkerContext, deltaConverter } = context;
+        const summaryEl = HastUtils.querySelector(o.node, 'summary');
+        const collapsed = o.node.properties?.open === undefined;
+        walkerContext.openNode(
+          {
+            type: 'block',
+            id: nanoid(),
+            flavour: 'affine:list',
+            props: {
+              type: 'toggle',
+              text: {
+                '$blocksuite:internal:text$': true,
+                delta: summaryEl ? deltaConverter.astToDelta(summaryEl) : [],
+              },
+              checked: false,
+              collapsed,
+              order: null,
+            },
+            children: [],
+          },
+          'children'
+        );
         return;
       }
 

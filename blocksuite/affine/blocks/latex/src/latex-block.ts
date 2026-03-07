@@ -59,14 +59,35 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
             katex.render(latex, katexContainer, {
               displayMode: true,
             });
-          } catch {
+          } catch (err) {
             katexContainer.replaceChildren();
             // @ts-expect-error lit hack won't fix
             delete katexContainer['_$litPart$'];
+            // FR-017 + FR-054: show raw LaTeX source, KaTeX error message,
+            // and a non-colour indicator (⚠ icon) for WCAG AA compliance.
+            const errMsg =
+              err instanceof Error
+                ? err.message.split('\n')[0].slice(0, 200)
+                : 'Invalid LaTeX';
             render(
-              html`<span class="latex-block-error-placeholder"
-                >Error equation</span
-              >`,
+              html`<div
+                class="latex-block-error-placeholder"
+                role="alert"
+                aria-live="polite"
+              >
+                <!-- Non-colour indicator per FR-054 (WCAG AA) -->
+                <span
+                  class="latex-block-error-placeholder__icon"
+                  aria-hidden="true"
+                  >⚠</span
+                >
+                <span class="latex-block-error-placeholder__source"
+                  >${latex}</span
+                >
+                <span class="latex-block-error-placeholder__msg"
+                  >${errMsg}</span
+                >
+              </div>`,
               katexContainer
             );
           }

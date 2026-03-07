@@ -28,10 +28,15 @@ export function affineTextStyles(
     };
   }
 
+  // highlight: Obsidian ==text== attribute; uses token or CSS colour value.
+  // Falls back to background if both are set (background takes precedence for explicit colour picker usage).
+  const resolvedBackground =
+    props.background ?? (props.highlight ? props.highlight : undefined);
+
   return {
     'font-weight': props.bold ? 'bolder' : 'inherit',
     'font-style': props.italic ? 'italic' : 'normal',
-    'background-color': props.background ? props.background : undefined,
+    'background-color': resolvedBackground,
     color: props.color ? props.color : undefined,
     'text-decoration': textDecorations.length > 0 ? textDecorations : 'none',
     ...inlineCodeStyle,

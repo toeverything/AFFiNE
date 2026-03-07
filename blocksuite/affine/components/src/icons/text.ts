@@ -88,6 +88,11 @@ export const CheckBoxIcon = icons.CheckBoxCheckLinearIcon({
   height: '20',
 });
 
+export const ToggleListIcon = icons.CollapseIcon({
+  width: '20',
+  height: '20',
+});
+
 export const CodeBlockIcon = icons.CodeBlockIcon({
   width: '20',
   height: '20',

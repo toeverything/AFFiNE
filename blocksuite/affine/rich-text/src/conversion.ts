@@ -12,6 +12,7 @@ import {
   NumberedListIcon,
   QuoteIcon,
   TextIcon,
+  ToggleListIcon,
 } from '@blocksuite/affine-components/icons';
 import type { TemplateResult } from 'lit';
 
@@ -110,6 +111,15 @@ export const textConversionConfigs: TextConversionConfig[] = [
     searchAlias: ['checkbox'],
     hotkey: null,
     icon: CheckBoxIcon,
+  },
+  {
+    flavour: 'affine:list',
+    type: 'toggle',
+    name: 'Toggle List',
+    description: 'Create a collapsible toggle list.',
+    searchAlias: ['collapsible', 'details', 'disclosure'],
+    hotkey: null,
+    icon: ToggleListIcon,
   },
   {
     flavour: 'affine:code',

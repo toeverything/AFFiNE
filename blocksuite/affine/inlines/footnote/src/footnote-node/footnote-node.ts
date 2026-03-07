@@ -175,7 +175,16 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
   private readonly _FootNoteDefaultContent = (footnote: FootNote) => {
     return html`<span
       class="footnote-content-default"
+      role="link"
+      tabindex="0"
+      aria-label="Footnote ${footnote.label}"
       @click=${this.onFootnoteClick}
+      @keydown=${(e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.onFootnoteClick();
+        }
+      }}
       >${footnote.label}</span
     >`;
   };
