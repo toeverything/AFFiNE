@@ -34,7 +34,6 @@ export const Scenario = {
     'Remove background',
     'Upscale image',
   ],
-  rerank: ['Rerank results'],
   coding: [
     'Apply Updates',
     'Code Artifact',
@@ -124,7 +123,7 @@ const workflows: Prompt[] = [
   {
     name: 'workflow:presentation:step2',
     action: 'workflow:presentation:step2',
-    model: 'gpt-4o-2024-08-06',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -143,7 +142,7 @@ const workflows: Prompt[] = [
   {
     name: 'workflow:presentation:step4',
     action: 'workflow:presentation:step4',
-    model: 'gpt-4o-2024-08-06',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -187,7 +186,7 @@ const workflows: Prompt[] = [
   {
     name: 'workflow:brainstorm:step2',
     action: 'workflow:brainstorm:step2',
-    model: 'gpt-4o-2024-08-06',
+    model: 'gpt-5-mini',
     config: {
       frequencyPenalty: 0.5,
       presencePenalty: 0.5,
@@ -197,7 +196,8 @@ const workflows: Prompt[] = [
     messages: [
       {
         role: 'system',
-        content: `You are the creator of the mind map. You need to analyze and expand on the input and output it according to the indentation formatting template given below without redundancy.\nBelow is an example of indentation for a mind map, the title and content needs to be removed by text replacement and not retained. Please strictly adhere to the hierarchical indentation of the template and my requirements, bold, headings and other formatting (e.g. #, **) are not allowed, a maximum of five levels of indentation is allowed, and the last node of each node should make a judgment on whether to make a detailed statement or not based on the topic:\nexmaple:\n- {topic}\n  - {Level 1}\n    - {Level 2}\n      - {Level 3}\n        - {Level 4}\n  - {Level 1}\n    - {Level 2}\n      - {Level 3}\n  - {Level 1}\n    - {Level 2}\n      - {Level 3}`,
+        content:
+          'Use the Markdown nested unordered list syntax without any extra styles or plain text descriptions to analyze and expand the input into a mind map. Regardless of the content, the first-level list should contain only one item, which acts as the root. Each node label must be plain text only. Do not output markdown links, footnotes, citations, URLs, headings, bold text, code fences, or any explanatory text outside the nested list. A maximum of five levels of indentation is allowed.',
       },
       {
         role: 'assistant',
@@ -381,7 +381,11 @@ const textActions: Prompt[] = [
     name: 'Transcript audio',
     action: 'Transcript audio',
     model: 'gemini-2.5-flash',
-    optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+    optionalModels: [
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-3.1-pro-preview',
+    ],
     messages: [
       {
         role: 'system',
@@ -417,7 +421,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
   {
     name: 'Rerank results',
     action: 'Rerank results',
-    model: 'gpt-4.1',
+    model: 'gpt-5.2',
     messages: [
       {
         role: 'system',
@@ -432,7 +436,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
   {
     name: 'Generate a caption',
     action: 'Generate a caption',
-    model: 'gpt-5-mini',
+    model: 'gemini-2.5-flash',
     messages: [
       {
         role: 'user',
@@ -448,7 +452,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
   {
     name: 'Conversation Summary',
     action: 'Conversation Summary',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -473,7 +477,7 @@ Return only the summary text—no headings, labels, or commentary.`,
   {
     name: 'Summary',
     action: 'Summary',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -504,7 +508,7 @@ You are an assistant helping summarize a document. Use this format, replacing te
   {
     name: 'Summary as title',
     action: 'Summary as title',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -521,7 +525,7 @@ You are an assistant helping summarize a document. Use this format, replacing te
   {
     name: 'Summary the webpage',
     action: 'Summary the webpage',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'user',
@@ -533,7 +537,7 @@ You are an assistant helping summarize a document. Use this format, replacing te
   {
     name: 'Explain this',
     action: 'Explain this',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -576,7 +580,7 @@ A concise paragraph that captures the article's main argument and key conclusion
   {
     name: 'Explain this image',
     action: 'Explain this image',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gemini-2.5-flash',
     messages: [
       {
         role: 'system',
@@ -727,7 +731,7 @@ You are a highly accomplished professional translator, demonstrating profound pr
   {
     name: 'Summarize the meeting',
     action: 'Summarize the meeting',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -752,7 +756,7 @@ You are an assistant helping summarize a document. Use this format, replacing te
   {
     name: 'Find action for summary',
     action: 'Find action for summary',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -774,7 +778,7 @@ You are an assistant helping find actions of meeting summary. Use this format, r
   {
     name: 'Write an article about this',
     action: 'Write an article about this',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-pro',
     messages: [
       {
         role: 'system',
@@ -829,7 +833,7 @@ You are an assistant helping find actions of meeting summary. Use this format, r
   {
     name: 'Write a twitter about this',
     action: 'Write a twitter about this',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gemini-2.5-flash',
     messages: [
       {
         role: 'system',
@@ -915,7 +919,7 @@ You are an assistant helping find actions of meeting summary. Use this format, r
   {
     name: 'Write a blog post about this',
     action: 'Write a blog post about this',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-pro',
     messages: [
       {
         role: 'system',
@@ -1005,7 +1009,7 @@ You are an assistant helping find actions of meeting summary. Use this format, r
   {
     name: 'Change tone to',
     action: 'Change tone',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gemini-2.5-flash',
     messages: [
       {
         role: 'system',
@@ -1096,12 +1100,12 @@ You are an assistant helping find actions of meeting summary. Use this format, r
   {
     name: 'Brainstorm mindmap',
     action: 'Brainstorm mindmap',
-    model: 'gpt-4o-2024-08-06',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
         content:
-          'Use the Markdown nested unordered list syntax without any extra styles or plain text descriptions to brainstorm the questions or topics provided by user for a mind map. Regardless of the content, the first-level list should contain only one item, which acts as the root. Do not wrap everything into a single code block.',
+          'Use the Markdown nested unordered list syntax without any extra styles or plain text descriptions to brainstorm the questions or topics provided by user for a mind map. Regardless of the content, the first-level list should contain only one item, which acts as the root. Each node label must be plain text only. Do not output markdown links, footnotes, citations, URLs, headings, bold text, code fences, or any explanatory text outside the nested list.',
       },
       {
         role: 'user',
@@ -1113,12 +1117,12 @@ You are an assistant helping find actions of meeting summary. Use this format, r
   {
     name: 'Expand mind map',
     action: 'Expand mind map',
-    model: 'gpt-4o-2024-08-06',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
         content:
-          'You are a professional writer. Use the Markdown nested unordered list syntax without any extra styles or plain text descriptions to brainstorm the questions or topics provided by user for a mind map.',
+          'You are a professional writer. Use the Markdown nested unordered list syntax without any extra styles or plain text descriptions to expand the selected node in a mind map. The output must be exactly one subtree: the first bullet must repeat the selected node text as the subtree root, and it must include at least one new nested child bullet beneath it. Each node label must be plain text only. Do not output markdown links, footnotes, citations, URLs, headings, bold text, code fences, or any explanatory text outside the nested list.',
       },
       {
         role: 'user',
@@ -1190,7 +1194,7 @@ The output must be perfect. Adherence to every detail of these instructions is n
   {
     name: 'Improve grammar for it',
     action: 'Improve grammar for it',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -1259,7 +1263,7 @@ The output must be perfect. Adherence to every detail of these instructions is n
   {
     name: 'Find action items from it',
     action: 'Find action items from it',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -1283,7 +1287,7 @@ If there are items in the content that can be used as to-do tasks, please refer 
   {
     name: 'Check code error',
     action: 'Check code error',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -1343,7 +1347,7 @@ If there are items in the content that can be used as to-do tasks, please refer 
   {
     name: 'Create a presentation',
     action: 'Create a presentation',
-    model: 'gpt-4o-2024-08-06',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -1518,7 +1522,7 @@ When sent new notes, respond ONLY with the contents of the html file.`,
   {
     name: 'Continue writing',
     action: 'Continue writing',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.5-pro',
     messages: [
       {
         role: 'system',
@@ -1904,6 +1908,7 @@ const CHAT_PROMPT: Omit<Prompt, 'name'> = {
   optionalModels: [
     'gemini-2.5-flash',
     'gemini-2.5-pro',
+    'gemini-3.1-pro-preview',
     'claude-sonnet-4-5@20250929',
   ],
   messages: [
@@ -2074,7 +2079,11 @@ Below is the user's query. Please respond in the user's preferred language witho
       'codeArtifact',
       'blobRead',
     ],
-    proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+    proModels: [
+      'gemini-2.5-pro',
+      'gemini-3.1-pro-preview',
+      'claude-sonnet-4-5@20250929',
+    ],
   },
 };
 

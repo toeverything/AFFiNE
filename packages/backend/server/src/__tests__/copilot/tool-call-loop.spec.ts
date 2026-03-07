@@ -116,7 +116,7 @@ test('ToolCallLoop should execute tool call and continue to next round', async t
 
   const events: NativeLlmStreamEvent[] = [];
   for await (const event of loop.run({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     stream: true,
     messages: [{ role: 'user', content: [{ type: 'text', text: 'read doc' }] }],
   })) {

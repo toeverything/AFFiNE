@@ -5,6 +5,7 @@ import type {
 import type { GoogleVertexProvider } from '@ai-sdk/google-vertex';
 import {
   AISDKError,
+  type EmbeddingModel,
   embedMany,
   generateObject,
   generateText,
@@ -42,6 +43,34 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
   protected abstract instance:
     | GoogleGenerativeAIProvider
     | GoogleVertexProvider;
+
+  private getThinkingConfig(
+    model: string,
+    options: { includeThoughts: boolean; useDynamicBudget?: boolean }
+  ): NonNullable<GoogleGenerativeAIProviderOptions['thinkingConfig']> {
+    if (this.isGemini3Model(model)) {
+      return {
+        includeThoughts: options.includeThoughts,
+        thinkingLevel: 'high',
+      };
+    }
+
+    return {
+      includeThoughts: options.includeThoughts,
+      thinkingBudget: options.useDynamicBudget ? -1 : 12000,
+    };
+  }
+
+  private getEmbeddingModel(model: string) {
+    const provider = this.instance as typeof this.instance & {
+      embeddingModel?: (modelId: string) => EmbeddingModel;
+      textEmbeddingModel?: (modelId: string) => EmbeddingModel;
+    };
+
+    return (
+      provider.embeddingModel?.(model) ?? provider.textEmbeddingModel?.(model)
+    );
+  }
 
   private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
@@ -122,10 +151,10 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         schema,
         providerOptions: {
           google: {
-            thinkingConfig: {
-              thinkingBudget: -1,
+            thinkingConfig: this.getThinkingConfig(model.id, {
               includeThoughts: false,
-            },
+              useDynamicBudget: true,
+            }),
           },
         },
         abortSignal: options.signal,
@@ -234,7 +263,10 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         .counter('generate_embedding_calls')
         .add(1, { model: model.id });
 
-      const modelInstance = this.instance.textEmbeddingModel(model.id);
+      const modelInstance = this.getEmbeddingModel(model.id);
+      if (!modelInstance) {
+        throw new Error(`Embedding model is not available for ${model.id}`);
+      }
 
       const embeddings = await Promise.allSettled(
         messages.map(m =>
@@ -286,15 +318,18 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
   private getGeminiOptions(options: CopilotChatOptions, model: string) {
     const result: GoogleGenerativeAIProviderOptions = {};
     if (options?.reasoning && this.isReasoningModel(model)) {
-      result.thinkingConfig = {
-        thinkingBudget: 12000,
+      result.thinkingConfig = this.getThinkingConfig(model, {
         includeThoughts: true,
-      };
+      });
     }
     return result;
   }
 
+  private isGemini3Model(model: string) {
+    return model.startsWith('gemini-3');
+  }
+
   private isReasoningModel(model: string) {
-    return model.startsWith('gemini-2.5');
+    return model.startsWith('gemini-2.5') || this.isGemini3Model(model);
   }
 }

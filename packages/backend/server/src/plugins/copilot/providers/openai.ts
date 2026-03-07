@@ -18,6 +18,12 @@ import {
 import type { NodeTextMiddleware } from '../config';
 import { buildNativeRequest, NativeProviderAdapter } from './native';
 import { CopilotProvider } from './provider';
+import {
+  normalizeRerankModel,
+  OPENAI_RERANK_MAX_COMPLETION_TOKENS,
+  OPENAI_RERANK_TOP_LOGPROBS_LIMIT,
+  usesRerankReasoning,
+} from './rerank';
 import type {
   CopilotChatOptions,
   CopilotChatTools,
@@ -32,6 +38,30 @@ import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
 import { chatToGPTMessage } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
+
+const GPT_5_SAMPLING_UNSUPPORTED_MODELS = /^(gpt-5(?:$|[.-]))/;
+
+export function normalizeOpenAIOptionsForModel<
+  T extends {
+    frequencyPenalty?: number | null;
+    presencePenalty?: number | null;
+    temperature?: number | null;
+    topP?: number | null;
+  },
+>(options: T, model: string): T {
+  if (!GPT_5_SAMPLING_UNSUPPORTED_MODELS.test(model)) {
+    return options;
+  }
+
+  const normalizedOptions = { ...options };
+
+  delete normalizedOptions.frequencyPenalty;
+  delete normalizedOptions.presencePenalty;
+  delete normalizedOptions.temperature;
+  delete normalizedOptions.topP;
+
+  return normalizedOptions;
+}
 
 export type OpenAIConfig = {
   apiKey: string;
@@ -253,6 +283,34 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ],
     },
     {
+      name: 'GPT 5.2',
+      id: 'gpt-5.2',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
+      name: 'GPT 5.2 2025-12-11',
+      id: 'gpt-5.2-2025-12-11',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
       name: 'GPT 5 Nano',
       id: 'gpt-5-nano',
       capabilities: [
@@ -435,10 +493,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
@@ -472,10 +534,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
@@ -508,10 +574,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
@@ -542,10 +612,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request, schema } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         reasoning: this.getReasoning(options, model.id),
         middleware,
@@ -576,15 +650,21 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const scores = await Promise.all(
       chunkMessages.map(async messages => {
         const [system, msgs] = await chatToGPTMessage(messages);
+        const rerankModel = normalizeRerankModel(model.id);
         const response = await this.requestOpenAIJson(
           '/chat/completions',
           {
-            model: model.id,
+            model: rerankModel,
             messages: this.toOpenAIChatMessages(system, msgs),
             temperature: 0,
-            max_tokens: 16,
             logprobs: true,
-            top_logprobs: 16,
+            top_logprobs: OPENAI_RERANK_TOP_LOGPROBS_LIMIT,
+            ...(usesRerankReasoning(rerankModel)
+              ? {
+                  reasoning_effort: 'none' as const,
+                  max_completion_tokens: OPENAI_RERANK_MAX_COMPLETION_TOKENS,
+                }
+              : { max_tokens: OPENAI_RERANK_MAX_COMPLETION_TOKENS }),
           },
           options.signal
         );

@@ -18,7 +18,7 @@ test('NativeProviderAdapter streamText should append citation footnotes', async 
   const adapter = new NativeProviderAdapter(mockDispatch, {}, 3);
   const chunks: string[] = [];
   for await (const chunk of adapter.streamText({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     stream: true,
     messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
   })) {
@@ -36,7 +36,7 @@ test('NativeProviderAdapter streamObject should append citation footnotes', asyn
   const adapter = new NativeProviderAdapter(mockDispatch, {}, 3);
   const chunks = [];
   for await (const chunk of adapter.streamObject({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     stream: true,
     messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
   })) {
@@ -91,7 +91,7 @@ test('NativeProviderAdapter streamObject should append fallback attachment footn
   const adapter = new NativeProviderAdapter(dispatch, {}, 3);
   const chunks = [];
   for await (const chunk of adapter.streamObject({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     stream: true,
     messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
   })) {
@@ -148,7 +148,7 @@ test('NativeProviderAdapter streamObject should map tool and text events', async
 
   const events = [];
   for await (const event of adapter.streamObject({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     stream: true,
     messages: [{ role: 'user', content: [{ type: 'text', text: 'read' }] }],
   })) {
@@ -169,7 +169,7 @@ test('NativeProviderAdapter streamObject should map tool and text events', async
 
 test('buildNativeRequest should include rust middleware from profile', async t => {
   const { request } = await buildNativeRequest({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     messages: [{ role: 'user', content: 'hello' }],
     tools: {},
     middleware: {
@@ -195,7 +195,7 @@ test('NativeProviderAdapter streamText should skip citation footnotes when disab
   });
   const chunks: string[] = [];
   for await (const chunk of adapter.streamText({
-    model: 'gpt-4.1',
+    model: 'gpt-5-mini',
     stream: true,
     messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
   })) {

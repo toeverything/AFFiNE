@@ -1,7 +1,9 @@
 import test from 'ava';
 
 import { ProviderMiddlewareConfig } from '../../plugins/copilot/config';
+import { normalizeOpenAIOptionsForModel } from '../../plugins/copilot/providers/openai';
 import { CopilotProvider } from '../../plugins/copilot/providers/provider';
+import { normalizeRerankModel } from '../../plugins/copilot/providers/rerank';
 import {
   CopilotProviderType,
   ModelInputType,
@@ -12,7 +14,7 @@ class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
   readonly type = CopilotProviderType.OpenAI;
   readonly models = [
     {
-      id: 'gpt-4.1',
+      id: 'gpt-5-mini',
       capabilities: [
         {
           input: [ModelInputType.Text],
@@ -36,7 +38,7 @@ class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
   }
 
   exposeMetricLabels() {
-    return this.metricLabels('gpt-4.1');
+    return this.metricLabels('gpt-5-mini');
   }
 
   exposeMiddleware() {
@@ -96,4 +98,42 @@ test('getActiveProviderMiddleware should merge defaults with profile override', 
     'callout',
     'thinking_format',
   ]);
+});
+
+test('normalizeOpenAIOptionsForModel should drop sampling knobs for gpt-5.2', t => {
+  t.deepEqual(
+    normalizeOpenAIOptionsForModel(
+      {
+        temperature: 0.7,
+        topP: 0.8,
+        presencePenalty: 0.2,
+        frequencyPenalty: 0.1,
+        maxTokens: 128,
+      },
+      'gpt-5.4'
+    ),
+    { maxTokens: 128 }
+  );
+});
+
+test('normalizeOpenAIOptionsForModel should keep options for gpt-4.1', t => {
+  t.deepEqual(
+    normalizeOpenAIOptionsForModel(
+      { temperature: 0.7, topP: 0.8, maxTokens: 128 },
+      'gpt-4.1'
+    ),
+    { temperature: 0.7, topP: 0.8, maxTokens: 128 }
+  );
+});
+
+test('normalizeOpenAIRerankModel should keep supported rerank models', t => {
+  t.is(normalizeRerankModel('gpt-4.1'), 'gpt-4.1');
+  t.is(normalizeRerankModel('gpt-4.1-mini'), 'gpt-4.1-mini');
+  t.is(normalizeRerankModel('gpt-5.2'), 'gpt-5.2');
+});
+
+test('normalizeOpenAIRerankModel should fall back for unsupported models', t => {
+  t.is(normalizeRerankModel('gpt-5-mini'), 'gpt-5.2');
+  t.is(normalizeRerankModel('gemini-2.5-flash'), 'gpt-5.2');
+  t.is(normalizeRerankModel(undefined), 'gpt-5.2');
 });
