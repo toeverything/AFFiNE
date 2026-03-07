@@ -17,6 +17,7 @@ import {
 } from './config';
 import { type ConfigInputProps, ConfigRow } from './config-input-row';
 import { CopilotProfilesEditor } from './copilot-profiles-editor';
+import { CopilotScenarioEditor } from './copilot-scenario-editor';
 import { useAppConfig } from './use-app-config';
 
 export function SettingsPage() {
@@ -231,6 +232,12 @@ const AdminPanel = ({
                           }
                           onChange={onUpdate}
                           onErrorChange={onFieldErrorChange}
+                        />
+                        <CopilotScenarioEditor
+                          value={get(sourceConfig, 'scenarios') ?? {}}
+                          onChange={value =>
+                            onUpdate('copilot/scenarios', value)
+                          }
                         />
                       </>
                     )}

@@ -48,7 +48,7 @@ const PROVIDER_LABELS: Record<ProviderType, string> = {
 type ProviderConfigField = {
   key: string;
   label: string;
-  type: 'text' | 'url' | 'password';
+  type: 'text' | 'url' | 'password' | 'boolean';
   required?: boolean;
   placeholder?: string;
 };
@@ -67,6 +67,11 @@ const PROVIDER_CONFIG_FIELDS: Record<ProviderType, ProviderConfigField[]> = {
       label: 'Base URL',
       type: 'url',
       placeholder: 'https://api.openai.com/v1',
+    },
+    {
+      key: 'oldApiStyle',
+      label: 'Use Chat Completions API (legacy)',
+      type: 'boolean',
     },
   ],
   fal: [
@@ -160,7 +165,11 @@ function newProfileForm(type: ProviderType = 'openai'): ProfileFormData {
 function profileToForm(profile: Profile): ProfileFormData {
   const config: Record<string, string> = {};
   for (const [k, v] of Object.entries(profile.config)) {
-    config[k] = typeof v === 'string' ? v : JSON.stringify(v);
+    if (typeof v === 'boolean') {
+      config[k] = String(v);
+    } else {
+      config[k] = typeof v === 'string' ? v : JSON.stringify(v);
+    }
   }
   return {
     id: profile.id,
@@ -177,7 +186,10 @@ function formToProfile(form: ProfileFormData): Profile {
   const fields = PROVIDER_CONFIG_FIELDS[form.type] ?? [];
   for (const field of fields) {
     const value = form.config[field.key];
-    if (value !== undefined && value !== '') {
+    if (field.type === 'boolean') {
+      if (value === 'true') config[field.key] = true;
+      // omit false/undefined to keep config minimal
+    } else if (value !== undefined && value !== '') {
       config[field.key] = value;
     }
   }
@@ -309,31 +321,53 @@ function ProfileDialog({
               Provider Configuration
             </div>
             <div className="flex flex-col gap-3">
-              {fields.map(field => (
-                <div key={field.key} className="flex flex-col gap-1.5">
-                  <Label htmlFor={`config-${field.key}`}>
-                    {field.label}
-                    {field.required && (
-                      <span className="text-destructive ml-0.5">*</span>
-                    )}
-                  </Label>
-                  <Input
-                    id={`config-${field.key}`}
-                    type={field.type === 'password' ? 'password' : 'text'}
-                    value={form.config[field.key] ?? ''}
-                    onChange={e =>
-                      onFormChange({
-                        ...form,
-                        config: {
-                          ...form.config,
-                          [field.key]: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder={field.placeholder}
-                  />
-                </div>
-              ))}
+              {fields.map(field =>
+                field.type === 'boolean' ? (
+                  <div
+                    key={field.key}
+                    className="flex items-center justify-between"
+                  >
+                    <Label htmlFor={`config-${field.key}`}>{field.label}</Label>
+                    <Switch
+                      id={`config-${field.key}`}
+                      checked={form.config[field.key] === 'true'}
+                      onCheckedChange={checked =>
+                        onFormChange({
+                          ...form,
+                          config: {
+                            ...form.config,
+                            [field.key]: String(checked),
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div key={field.key} className="flex flex-col gap-1.5">
+                    <Label htmlFor={`config-${field.key}`}>
+                      {field.label}
+                      {field.required && (
+                        <span className="text-destructive ml-0.5">*</span>
+                      )}
+                    </Label>
+                    <Input
+                      id={`config-${field.key}`}
+                      type={field.type === 'password' ? 'password' : 'text'}
+                      value={form.config[field.key] ?? ''}
+                      onChange={e =>
+                        onFormChange({
+                          ...form,
+                          config: {
+                            ...form.config,
+                            [field.key]: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder={field.placeholder}
+                    />
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>

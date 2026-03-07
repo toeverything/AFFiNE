@@ -150,7 +150,6 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'copilot',
     fields: [
       'enabled',
-      'scenarios',
       'unsplash',
       'exa',
       {

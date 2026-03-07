@@ -362,6 +362,18 @@ export class CopilotSessionType {
   optionalModels!: string[];
 }
 
+@ObjectType('CopilotAvailableModelGroup')
+class CopilotAvailableModelGroup {
+  @Field(() => String)
+  provider!: string;
+
+  @Field(() => String)
+  profileId!: string;
+
+  @Field(() => [String])
+  models!: string[];
+}
+
 // ================== Resolver ==================
 
 @ObjectType('Copilot')
@@ -939,7 +951,18 @@ export class UserCopilotResolver {
 @Admin()
 @Resolver(() => String)
 export class PromptsManagementResolver {
-  constructor(private readonly cron: CopilotCronJobs) {}
+  constructor(
+    private readonly cron: CopilotCronJobs,
+    private readonly providerFactory: CopilotProviderFactory
+  ) {}
+
+  @Query(() => [CopilotAvailableModelGroup], {
+    description:
+      'List all available models across all configured provider profiles',
+  })
+  async listCopilotAvailableModels(): Promise<CopilotAvailableModelGroup[]> {
+    return this.providerFactory.listAllModels();
+  }
 
   @Mutation(() => Boolean, {
     description: 'Trigger generate missing titles cron job',

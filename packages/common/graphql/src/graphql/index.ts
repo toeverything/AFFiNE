@@ -479,6 +479,18 @@ export const importUsersMutation = {
 }`,
 };
 
+export const listCopilotAvailableModelsQuery = {
+  id: 'listCopilotAvailableModelsQuery' as const,
+  op: 'listCopilotAvailableModels',
+  query: `query listCopilotAvailableModels {
+  listCopilotAvailableModels {
+    provider
+    profileId
+    models
+  }
+}`,
+};
+
 export const listUsersQuery = {
   id: 'listUsersQuery' as const,
   op: 'listUsers',

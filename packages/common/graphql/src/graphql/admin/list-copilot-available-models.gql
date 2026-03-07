@@ -1,0 +1,7 @@
+query listCopilotAvailableModels {
+  listCopilotAvailableModels {
+    provider
+    profileId
+    models
+  }
+}

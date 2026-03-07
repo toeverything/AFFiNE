@@ -622,6 +622,12 @@ type CopilotProviderSideErrorDataType {
   provider: String!
 }
 
+type CopilotAvailableModelGroup {
+  models: [String!]!
+  profileId: String!
+  provider: String!
+}
+
 type CopilotQuota {
   limit: SafeInt
   used: SafeInt!
@@ -1867,6 +1873,9 @@ type Query {
 
   """get the whole app configuration"""
   appConfig: JSONObject!
+
+  """List all available models across all configured provider profiles"""
+  listCopilotAvailableModels: [CopilotAvailableModelGroup!]!
 
   """Apply updates to a doc using LLM and return the merged markdown."""
   applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String! @deprecated(reason: "use Mutation.applyDocUpdates")

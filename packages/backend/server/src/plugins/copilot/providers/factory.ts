@@ -216,6 +216,27 @@ export class CopilotProviderFactory {
     this.server.enableFeature(ServerFeature.Copilot);
   }
 
+  listAllModels(): Array<{
+    provider: string;
+    profileId: string;
+    models: string[];
+  }> {
+    const result: Array<{
+      provider: string;
+      profileId: string;
+      models: string[];
+    }> = [];
+    for (const [providerId, provider] of this.#providers) {
+      const models = provider.getAllModelsForProfile(providerId);
+      result.push({
+        provider: provider.type,
+        profileId: providerId,
+        models,
+      });
+    }
+    return result;
+  }
+
   unregister(providerId: string, provider: CopilotProvider) {
     const existed = this.#providers.get(providerId);
     if (!existed || existed !== provider) {

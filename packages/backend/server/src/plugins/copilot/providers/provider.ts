@@ -234,6 +234,19 @@ export abstract class CopilotProvider<C = any> implements OnModuleDestroy {
 
   async refreshOnlineModels() {}
 
+  getAllModelsForProfile(profileId: string): string[] {
+    const models = this.runWithProfile(profileId, () => {
+      const profileModels = this.getProfileModels();
+      const allModels = [
+        ...profileModels,
+        ...this.models,
+        ...this.onlineModelList,
+      ];
+      return [...new Set(allModels.map(m => m.id))];
+    });
+    return models;
+  }
+
   private findValidModel(
     cond: ModelFullConditions
   ): CopilotProviderModel | undefined {

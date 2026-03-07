@@ -566,6 +566,13 @@ export interface CopilotSessionsArgs {
   options?: InputMaybe<QueryChatSessionsInput>;
 }
 
+export interface CopilotAvailableModelGroup {
+  __typename?: 'CopilotAvailableModelGroup';
+  models: Array<Scalars['String']['output']>;
+  profileId: Scalars['String']['output'];
+  provider: Scalars['String']['output'];
+}
+
 export interface CopilotContext {
   __typename?: 'CopilotContext';
   /** list blobs in context */
@@ -2506,6 +2513,8 @@ export interface Query {
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
+  /** List all available models across all configured provider profiles */
+  listCopilotAvailableModels: Array<CopilotAvailableModelGroup>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
@@ -3901,6 +3910,20 @@ export type ImportUsersMutation = {
     | { __typename: 'UserImportFailedType'; email: string; error: string }
     | { __typename: 'UserType'; id: string; name: string; email: string }
   >;
+};
+
+export type ListCopilotAvailableModelsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ListCopilotAvailableModelsQuery = {
+  __typename?: 'Query';
+  listCopilotAvailableModels: Array<{
+    __typename?: 'CopilotAvailableModelGroup';
+    provider: string;
+    profileId: string;
+    models: Array<string>;
+  }>;
 };
 
 export type ListUsersQueryVariables = Exact<{
@@ -7547,6 +7570,11 @@ export type Queries =
       name: 'getUserByEmailQuery';
       variables: GetUserByEmailQueryVariables;
       response: GetUserByEmailQuery;
+    }
+  | {
+      name: 'listCopilotAvailableModelsQuery';
+      variables: ListCopilotAvailableModelsQueryVariables;
+      response: ListCopilotAvailableModelsQuery;
     }
   | {
       name: 'listUsersQuery';
