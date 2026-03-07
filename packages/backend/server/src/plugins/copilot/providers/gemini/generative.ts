@@ -21,25 +21,6 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
 
   readonly models = [
     {
-      name: 'Gemini 2.0 Flash',
-      id: 'gemini-2.0-flash-001',
-      capabilities: [
-        {
-          input: [
-            ModelInputType.Text,
-            ModelInputType.Image,
-            ModelInputType.Audio,
-          ],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-    {
       name: 'Gemini 2.5 Flash',
       id: 'gemini-2.5-flash',
       capabilities: [

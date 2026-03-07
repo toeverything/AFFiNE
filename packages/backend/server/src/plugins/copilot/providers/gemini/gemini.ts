@@ -63,8 +63,8 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
 
   private getEmbeddingModel(model: string) {
     const provider = this.instance as typeof this.instance & {
-      embeddingModel?: (modelId: string) => EmbeddingModel<string>;
-      textEmbeddingModel?: (modelId: string) => EmbeddingModel<string>;
+      embeddingModel?: (modelId: string) => EmbeddingModel;
+      textEmbeddingModel?: (modelId: string) => EmbeddingModel;
     };
 
     return (

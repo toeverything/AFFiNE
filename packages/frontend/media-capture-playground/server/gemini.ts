@@ -75,11 +75,7 @@ Output in JSON format with the following structure:
 export async function gemini(
   audioFilePath: string,
   options?: {
-    model?:
-      | 'gemini-1.5-flash'
-      | 'gemini-2.0-flash'
-      | 'gemini-2.5-flash'
-      | 'gemini-3.1-pro-preview';
+    model?: 'gemini-2.5-flash' | 'gemini-3.1-pro-preview';
     mode?: 'transcript' | 'summary';
   }
 ) {
