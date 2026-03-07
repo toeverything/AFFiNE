@@ -112,7 +112,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /home/node/.affine/config /home/node/.affine/storage && \
-    chown -R node:node /home/node/.affine
+    chown -R node:node /home/node/.affine && \
+    mkdir -p /app/src && chown node:node /app/src
 
 # Verify native binding exists in final image
 RUN ls -la /app/dist/server-native* 2>/dev/null; \
