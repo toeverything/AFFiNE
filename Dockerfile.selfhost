@@ -42,20 +42,29 @@ RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn --immutable --inline-builds
 
 # Build Rust native binding (cache cargo registry + target dir).
-# The napi build outputs to packages/backend/native/ so we copy the
-# artifact out of the cached target dir after the build.
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     --mount=type=cache,target=/app/target \
-    yarn workspace @affine/server-native build --target x86_64-unknown-linux-gnu
+    yarn workspace @affine/server-native build --target x86_64-unknown-linux-gnu && \
+    echo "=== Native binding files ===" && \
+    ls -la packages/backend/native/server-native* && \
+    file packages/backend/native/server-native.node
 
 # Build frontend assets
 RUN yarn affine @affine/web build
 RUN yarn affine @affine/admin build
 RUN yarn affine @affine/mobile build
 
-# Build server
-RUN yarn workspace @affine/server build
+# Build server — verify native binding is available for rspack bundling
+RUN ls -la packages/backend/native/server-native* && \
+    yarn workspace @affine/server build && \
+    echo "=== Server dist contents ===" && \
+    ls -la packages/backend/server/dist/
+
+# Copy the native binding into dist/ so it's alongside main.js at runtime.
+# rspack's node-loader emits it there during bundling, but as a fallback
+# we also ensure it exists.
+RUN cp packages/backend/native/server-native.node packages/backend/server/dist/server-native.node 2>/dev/null || true
 
 # Re-install production-only deps for the final server package
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
@@ -104,6 +113,11 @@ RUN apt-get update && \
 
 RUN mkdir -p /home/node/.affine/config /home/node/.affine/storage && \
     chown -R node:node /home/node/.affine
+
+# Verify native binding exists in final image
+RUN ls -la /app/dist/server-native* 2>/dev/null; \
+    ls -la /app/node_modules/@affine/server-native/server-native* 2>/dev/null; \
+    echo "=== Final image ready ==="
 
 ENV LD_PRELOAD=libjemalloc.so.2
 
