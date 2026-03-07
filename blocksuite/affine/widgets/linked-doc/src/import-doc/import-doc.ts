@@ -23,7 +23,11 @@ import { styles } from './styles.js';
 
 export type OnSuccessHandler = (
   pageIds: string[],
-  options: { isWorkspaceFile: boolean; importedCount: number }
+  options: {
+    isWorkspaceFile: boolean;
+    importedCount: number;
+    docEmojis?: Map<string, string>;
+  }
 ) => void;
 
 export type OnFailHandler = (message: string) => void;
@@ -152,14 +156,16 @@ export class ImportDoc extends WithDisposable(LitElement) {
     } else {
       this.abortController.abort();
     }
-    const pageIds = await ObsidianTransformer.importObsidianVault({
-      collection: this.collection,
-      schema: this.schema,
-      importedFiles: files,
-      extensions: this.extensions,
-    });
+    const { docIds, docEmojis } = await ObsidianTransformer.importObsidianVault(
+      {
+        collection: this.collection,
+        schema: this.schema,
+        importedFiles: files,
+        extensions: this.extensions,
+      }
+    );
     needLoading && this.abortController.abort();
-    this._onImportSuccess(pageIds);
+    this._onImportSuccess(docIds, { docEmojis });
   }
 
   private _onCloseClick(event: MouseEvent) {
@@ -173,15 +179,21 @@ export class ImportDoc extends WithDisposable(LitElement) {
 
   private _onImportSuccess(
     pageIds: string[],
-    options: { isWorkspaceFile?: boolean; importedCount?: number } = {}
+    options: {
+      isWorkspaceFile?: boolean;
+      importedCount?: number;
+      docEmojis?: Map<string, string>;
+    } = {}
   ) {
     const {
       isWorkspaceFile = false,
       importedCount: pagesImportedCount = pageIds.length,
+      docEmojis,
     } = options;
     this.onSuccess?.(pageIds, {
       isWorkspaceFile,
       importedCount: pagesImportedCount,
+      docEmojis,
     });
   }
 

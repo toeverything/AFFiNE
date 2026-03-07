@@ -467,14 +467,25 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       files,
       _handleImportAffineFile,
       _organizeService,
-      _explorerIconService
+      explorerIconService
     ) => {
-      const docIds = await ObsidianTransformer.importObsidianVault({
-        collection: docCollection,
-        schema: getAFFiNEWorkspaceSchema(),
-        importedFiles: files,
-        extensions: getStoreManager().config.init().value.get('store'),
-      });
+      const { docIds, docEmojis } =
+        await ObsidianTransformer.importObsidianVault({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          importedFiles: files,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+
+      if (explorerIconService) {
+        for (const [id, emoji] of docEmojis.entries()) {
+          explorerIconService.setIcon({
+            where: 'doc',
+            id,
+            icon: { type: IconType.Emoji as IconType.Emoji, unicode: emoji },
+          });
+        }
+      }
 
       return {
         docIds,

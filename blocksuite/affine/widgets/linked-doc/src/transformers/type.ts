@@ -11,6 +11,14 @@ export type ImportedFileEntry = {
 };
 
 /**
+ * Represents a markdown file entry with pre-resolved title and ID
+ */
+export type MarkdownFileImportEntry = ImportedFileEntry & {
+  pageId: string;
+  preferredTitle: string;
+};
+
+/**
  * Map of asset hash to File object for all media files in the zip
  * Key: SHA hash of the file content (blobId)
  * Value: File object containing the actual media data
