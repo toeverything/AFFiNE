@@ -241,6 +241,10 @@ export async function openDirectory(): Promise<File[] | null> {
             const fileHandle = handle as FileSystemFileHandle;
             if (fileHandle.getFile) {
               const file = await fileHandle.getFile();
+              Object.defineProperty(file, 'webkitRelativePath', {
+                value: relativePath,
+                writable: false,
+              });
               files.push(file);
             }
           } else if (handle.kind === 'directory') {
