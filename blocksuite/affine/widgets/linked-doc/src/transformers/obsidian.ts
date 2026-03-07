@@ -72,39 +72,56 @@ function preprocessBlockquoteLists(markdown: string): string {
   );
 }
 
-/**
- * Aggressively extracts all leading emojis from a string, including multiple clusters.
- */
 function extractTitleAndEmoji(rawTitle: string): {
   title: string;
   emoji: string | null;
 } {
-  // Use non-capturing group for combining characters to avoid ESLint warning
   const SINGLE_LEADING_EMOJI_RE =
     /^[\s\u200b]*((?:[\p{Emoji_Presentation}\p{Extended_Pictographic}\u200b]|\u200d|\ufe0f)+)/u;
 
-  let current = rawTitle;
-  let extractedEmoji = '';
-  let match;
+  let currentTitle = rawTitle;
+  let extractedEmojiClusters = '';
+  let emojiMatch;
 
-  while ((match = current.match(SINGLE_LEADING_EMOJI_RE))) {
-    extractedEmoji += (extractedEmoji ? ' ' : '') + match[1].trim();
-    current = current.slice(match[0].length);
+  while ((emojiMatch = currentTitle.match(SINGLE_LEADING_EMOJI_RE))) {
+    const matchedCluster = emojiMatch[1].trim();
+    extractedEmojiClusters +=
+      (extractedEmojiClusters ? ' ' : '') + matchedCluster;
+    currentTitle = currentTitle.slice(emojiMatch[0].length);
   }
 
-  const cleanedTitle = current.trim();
   return {
-    title: cleanedTitle,
-    emoji: extractedEmoji || null,
+    title: currentTitle.trim(),
+    emoji: extractedEmojiClusters || null,
   };
 }
 
 function preprocessTitleHeader(markdown: string): string {
-  // Only process the first H1 header found at the start of a line
-  return markdown.replace(/^(\s*#\s+)(.*)$/m, (_, prefix, titlePart) => {
-    const { title } = extractTitleAndEmoji(titlePart);
-    return `${prefix}${title}`;
-  });
+  return markdown.replace(
+    /^(\s*#\s+)(.*)$/m,
+    (_, headerPrefix, titleContent) => {
+      const { title: cleanTitle } = extractTitleAndEmoji(titleContent);
+      return `${headerPrefix}${cleanTitle}`;
+    }
+  );
+}
+
+function resolveWikilinkDisplayContent(
+  rawAlias: string | undefined,
+  pageEmoji: string | undefined
+): string {
+  if (!rawAlias) {
+    return ' ';
+  }
+
+  const { title: aliasTitle, emoji: aliasEmoji } =
+    extractTitleAndEmoji(rawAlias);
+
+  if (aliasEmoji && aliasEmoji === pageEmoji) {
+    return aliasTitle;
+  }
+
+  return rawAlias;
 }
 
 export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
@@ -115,66 +132,54 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
     if (!textNode.value) {
       return [];
     }
-    const val = textNode.value;
 
-    // [[Title]] or [[Title|Alias]]
+    const nodeContent = textNode.value;
     const wikilinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-
     const deltas: DeltaInsert<AffineTextAttributes>[] = [];
-    let lastIndex = 0;
-    let match;
 
-    while ((match = wikilinkRegex.exec(val)) !== null) {
-      if (match.index > lastIndex) {
-        deltas.push({ insert: val.substring(lastIndex, match.index) });
+    let lastProcessedIndex = 0;
+    let linkMatch;
+
+    while ((linkMatch = wikilinkRegex.exec(nodeContent)) !== null) {
+      if (linkMatch.index > lastProcessedIndex) {
+        deltas.push({
+          insert: nodeContent.substring(lastProcessedIndex, linkMatch.index),
+        });
       }
 
-      const [rawTarget, rawAlias] = match[1].split('|').map(s => s.trim()) as [
-        string,
-        string | undefined,
-      ];
-      const pageId =
-        context.configs.get('obsidian:pageId:' + rawTarget) ||
-        context.configs.get(
-          'obsidian:pageId:' + extractTitleAndEmoji(rawTarget).title
+      const [targetPageName, alias] = linkMatch[1]
+        .split('|')
+        .map(s => s.trim()) as [string, string | undefined];
+
+      const cleanTargetTitle = extractTitleAndEmoji(targetPageName).title;
+      const targetPageId =
+        context.configs.get('obsidian:pageId:' + targetPageName) ||
+        context.configs.get('obsidian:pageId:' + cleanTargetTitle);
+
+      if (targetPageId) {
+        const pageEmoji = context.configs.get(
+          'obsidian:pageEmoji:' + targetPageId
         );
-
-      if (pageId) {
-        const pageEmoji = context.configs.get('obsidian:pageEmoji:' + pageId);
-        let displayContent = rawAlias || ' ';
-
-        if (rawAlias) {
-          const aliasInfo = extractTitleAndEmoji(rawAlias);
-          // If the alias has a leading emoji that matches the page emoji, strip it
-          if (aliasInfo.emoji && aliasInfo.emoji === pageEmoji) {
-            displayContent = aliasInfo.title;
-          } else {
-            displayContent = rawAlias;
-          }
-        } else {
-          // Use a reference with a single space as display text.
-          // This forces AFFiNE to render the page title from metadata, which we've cleaned.
-          displayContent = ' ';
-        }
+        const displayContent = resolveWikilinkDisplayContent(alias, pageEmoji);
 
         deltas.push({
           insert: displayContent,
           attributes: {
             reference: {
               type: 'LinkedPage',
-              pageId,
+              pageId: targetPageId,
             },
           },
         });
       } else {
-        deltas.push({ insert: match[0] });
+        deltas.push({ insert: linkMatch[0] });
       }
 
-      lastIndex = wikilinkRegex.lastIndex;
+      lastProcessedIndex = wikilinkRegex.lastIndex;
     }
 
-    if (lastIndex < val.length) {
-      deltas.push({ insert: val.substring(lastIndex) });
+    if (lastProcessedIndex < nodeContent.length) {
+      deltas.push({ insert: nodeContent.substring(lastProcessedIndex) });
     }
 
     return deltas;
@@ -216,10 +221,11 @@ export async function importObsidianVault({
   const titleToPageIdMap = new Map<string, string>();
 
   for (const file of importedFiles) {
-    const path = file.webkitRelativePath || file.name;
+    const filePath = file.webkitRelativePath || file.name;
+    const isSystemFile =
+      filePath.includes('__MACOSX') || filePath.includes('.DS_Store');
 
-    // Skip OS or build-related files
-    if (path.includes('__MACOSX') || path.includes('.DS_Store')) {
+    if (isSystemFile) {
       continue;
     }
 
@@ -228,13 +234,12 @@ export async function importObsidianVault({
       const markdown = await file.text();
       const { content, meta } = parseFrontmatter(markdown);
 
-      // 1. Resolve title and emoji
+      const documentTitleCandidate = meta.title ?? fileNameWithoutExt;
       const { title: preferredTitle, emoji: leadingEmoji } =
-        extractTitleAndEmoji(meta.title ?? fileNameWithoutExt);
+        extractTitleAndEmoji(documentTitleCandidate);
 
-      // 2. Register mapping for cross-document links
       const newPageId = collection.idGenerator();
-      titleToPageIdMap.set(meta.title ?? fileNameWithoutExt, newPageId);
+      titleToPageIdMap.set(documentTitleCandidate, newPageId);
       titleToPageIdMap.set(preferredTitle, newPageId);
       titleToPageIdMap.set(fileNameWithoutExt, newPageId);
 
@@ -245,31 +250,29 @@ export async function importObsidianVault({
       markdownBlobs.push({
         filename: file.name,
         contentBlob: file,
-        fullPath: path,
+        fullPath: filePath,
         pageId: newPageId,
         preferredTitle,
         content,
         meta,
       });
     } else {
-      const ext = path.split('.').at(-1) ?? '';
+      const ext = filePath.split('.').at(-1) ?? '';
       const mime = extMimeMap.get(ext) ?? '';
       const key = await sha(await file.arrayBuffer());
-      pendingPathBlobIdMap.set(path, key);
+      pendingPathBlobIdMap.set(filePath, key);
       pendingAssets.set(key, new File([file], file.name, { type: mime }));
     }
   }
 
-  // Register existing documents in the workspace for cross-linking,
-  // but DO NOT overwrite IDs that were just generated for this import batch.
-  // This prevents wikilinks from resolving to old/trashed versions of the same file.
-  for (const meta of collection.meta.docMetas) {
-    if (meta.title && !titleToPageIdMap.has(meta.title)) {
-      titleToPageIdMap.set(meta.title, meta.id);
+  for (const existingDocMeta of collection.meta.docMetas) {
+    const titleExists =
+      existingDocMeta.title && !titleToPageIdMap.has(existingDocMeta.title);
+    if (titleExists) {
+      titleToPageIdMap.set(existingDocMeta.title!, existingDocMeta.id);
     }
   }
 
-  // Second pass: Actually create the documents and process the content
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
       const {
@@ -296,7 +299,6 @@ export async function importObsidianVault({
         ],
       });
 
-      // Inject cross-page links mapping and assets mapping
       for (const [title, id] of titleToPageIdMap.entries()) {
         job.adapterConfigs.set('obsidian:pageId:' + title, id);
       }
@@ -325,14 +327,6 @@ export async function importObsidianVault({
         snapshot.meta.id = predefinedId;
         const doc = await job.snapshotToDoc(snapshot);
         if (doc) {
-          // Ensure DocMeta title matches the stripped title to avoid double icons
-          // and ensure metadata reflects the cleaned name.
-          console.log(
-            'meta.title',
-            meta.title,
-            'preferredTitle',
-            preferredTitle
-          );
           meta.title = preferredTitle;
           applyMetaPatch(collection, doc.id, {
             ...meta,
