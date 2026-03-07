@@ -39,6 +39,7 @@ type BundleEntry = {
   assetPaths: string[];
 };
 
+/** Create a DI provider from the given extensions. */
 function getProvider(extensions: ExtensionType[]) {
   const container = new Container();
   extensions.forEach(ext => {
@@ -47,6 +48,12 @@ function getProvider(extensions: ExtensionType[]) {
   return container.provider();
 }
 
+/**
+ * Extract Bear tags from the trailing footer of a markdown document.
+ * Bear places tags (e.g. `#tag`, `#multi word tag#`, `#nested/tag`) at the end
+ * of notes. This scans from the bottom up, collecting tag-only lines (up to 5)
+ * and returns the deduplicated tags plus the content with those lines removed.
+ */
 function parseBearTags(markdown: string): {
   tags: string[];
   content: string;
@@ -97,6 +104,11 @@ function parseBearTags(markdown: string): {
   };
 }
 
+/**
+ * Parse Bear tags from a single line. Supports open tags (`#tag`),
+ * closed tags (`#multi word tag#`), and nested tags (`#parent/child`).
+ * Returns an empty array if the line contains non-tag content.
+ */
 function extractTagsFromLine(line: string): string[] {
   const tags: string[] = [];
   let remaining = line;
@@ -141,6 +153,7 @@ function extractTagsFromLine(line: string): string[] {
   return tags;
 }
 
+/** Deduplicate tags case-insensitively, normalizing to lowercase. */
 function deduplicateTags(tags: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -154,6 +167,11 @@ function deduplicateTags(tags: string[]): string[] {
   return result;
 }
 
+/**
+ * Build a nested folder hierarchy from Bear tags.
+ * Tags like `parent/child` create nested folders. Documents are attached
+ * as leaf nodes under their tag's folder using `__doc__` prefixed keys.
+ */
 function buildFolderHierarchyFromTags(
   tagDocMap: Map<string, string[]>
 ): FolderHierarchy {
@@ -208,6 +226,10 @@ const GFM_CALLOUT_MAP: Record<string, string> = {
   CAUTION: '\uD83D\uDD34',
 };
 
+/**
+ * Convert GFM-style callouts (`> [!NOTE]`, `> [!WARNING]`, etc.) to
+ * emoji-based callouts that AFFiNE's remark-callout plugin understands.
+ */
 function convertGfmCallouts(markdown: string): string {
   return markdown.replace(
     /^(>\s*)\[!(\w+)\]/gm,
@@ -230,6 +252,21 @@ const HIGHLIGHT_COLOR_MAP: Record<string, string> = {
   '\uD83D\uDFE0': 'orange',
 };
 
+/** Escape HTML special characters to prevent markup injection. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Convert Bear `==highlight==` syntax to `<mark>` HTML elements.
+ * Supports colored highlights via leading color emoji (e.g. `==🟢green text==`).
+ * Skips content inside fenced code blocks.
+ */
 function convertHighlights(markdown: string): string {
   const lines = markdown.split('\n');
   let inCodeBlock = false;
@@ -246,9 +283,9 @@ function convertHighlights(markdown: string): string {
           const color = HIGHLIGHT_COLOR_MAP[firstChar];
           if (color) {
             const text = content.slice(firstChar.length);
-            return `<mark data-color="${color}">${text}</mark>`;
+            return `<mark data-color="${color}">${escapeHtml(text)}</mark>`;
           }
-          return `<mark>${content}</mark>`;
+          return `<mark>${escapeHtml(content)}</mark>`;
         }
       );
     }
@@ -256,6 +293,7 @@ function convertHighlights(markdown: string): string {
   return lines.join('\n');
 }
 
+/** Extract the document title from the first `# heading` or fall back to the bundle name. */
 function extractTitle(markdown: string, bundleName: string): string {
   const lines = markdown.split('\n');
   for (const line of lines) {
