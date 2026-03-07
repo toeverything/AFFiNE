@@ -17,7 +17,12 @@ import type {
 import { extMimeMap, Transformer } from '@blocksuite/store';
 import type { Text } from 'mdast';
 
-import { applyMetaPatch, getProvider, parseFrontmatter } from './markdown.js';
+import {
+  applyMetaPatch,
+  getProvider,
+  type ParsedFrontmatterMeta,
+  parseFrontmatter,
+} from './markdown.js';
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 
 const CALLOUT_TYPE_MAP: Record<string, string> = {
@@ -96,17 +101,10 @@ function extractTitleAndEmoji(rawTitle: string): {
 
 function preprocessTitleHeader(markdown: string): string {
   // Only process the first H1 header found at the start of a line
-  const lines = markdown.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const h1Match = line.match(/^(\s*#\s+)(.*)$/);
-    if (h1Match) {
-      const { title } = extractTitleAndEmoji(h1Match[2]);
-      lines[i] = `${h1Match[1]}${title}`;
-      break; // Only strip from the primary title header
-    }
-  }
-  return lines.join('\n');
+  return markdown.replace(/^(\s*#\s+)(.*)$/m, (_, prefix, titlePart) => {
+    const { title } = extractTitleAndEmoji(titlePart);
+    return `${prefix}${title}`;
+  });
 }
 
 export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
@@ -198,6 +196,8 @@ export type ImportObsidianVaultResult = {
 type MarkdownFileImportEntry = ImportedFileEntry & {
   pageId: string;
   preferredTitle: string;
+  content: string;
+  meta: ParsedFrontmatterMeta;
 };
 
 export async function importObsidianVault({
@@ -226,7 +226,7 @@ export async function importObsidianVault({
     if (file.name.endsWith('.md')) {
       const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
       const markdown = await file.text();
-      const { meta } = parseFrontmatter(markdown);
+      const { content, meta } = parseFrontmatter(markdown);
 
       // 1. Resolve title and emoji
       const { title: preferredTitle, emoji: leadingEmoji } =
@@ -248,6 +248,8 @@ export async function importObsidianVault({
         fullPath: path,
         pageId: newPageId,
         preferredTitle,
+        content,
+        meta,
       });
     } else {
       const ext = path.split('.').at(-1) ?? '';
@@ -271,14 +273,12 @@ export async function importObsidianVault({
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
       const {
-        contentBlob,
         fullPath,
         pageId: predefinedId,
         preferredTitle,
+        content,
+        meta,
       } = markdownFile;
-
-      const markdown = await contentBlob.text();
-      const { content, meta } = parseFrontmatter(markdown);
 
       const job = new Transformer({
         schema,
