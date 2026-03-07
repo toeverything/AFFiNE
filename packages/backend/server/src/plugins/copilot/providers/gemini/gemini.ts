@@ -5,6 +5,7 @@ import type {
 import type { GoogleVertexProvider } from '@ai-sdk/google-vertex';
 import {
   AISDKError,
+  type EmbeddingModel,
   embedMany,
   generateObject,
   generateText,
@@ -43,10 +44,27 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     | GoogleGenerativeAIProvider
     | GoogleVertexProvider;
 
+  private getThinkingConfig(
+    model: string,
+    options: { includeThoughts: boolean; useDynamicBudget?: boolean }
+  ): NonNullable<GoogleGenerativeAIProviderOptions['thinkingConfig']> {
+    if (this.isGemini3Model(model)) {
+      return {
+        includeThoughts: options.includeThoughts,
+        thinkingLevel: 'high',
+      };
+    }
+
+    return {
+      includeThoughts: options.includeThoughts,
+      thinkingBudget: options.useDynamicBudget ? -1 : 12000,
+    };
+  }
+
   private getEmbeddingModel(model: string) {
     const provider = this.instance as typeof this.instance & {
-      embeddingModel?: (modelId: string) => unknown;
-      textEmbeddingModel?: (modelId: string) => unknown;
+      embeddingModel?: (modelId: string) => EmbeddingModel<string>;
+      textEmbeddingModel?: (modelId: string) => EmbeddingModel<string>;
     };
 
     return (
@@ -133,10 +151,10 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         schema,
         providerOptions: {
           google: {
-            thinkingConfig: {
-              thinkingBudget: -1,
+            thinkingConfig: this.getThinkingConfig(model.id, {
               includeThoughts: false,
-            },
+              useDynamicBudget: true,
+            }),
           },
         },
         abortSignal: options.signal,
@@ -300,15 +318,18 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
   private getGeminiOptions(options: CopilotChatOptions, model: string) {
     const result: GoogleGenerativeAIProviderOptions = {};
     if (options?.reasoning && this.isReasoningModel(model)) {
-      result.thinkingConfig = {
-        thinkingBudget: 12000,
+      result.thinkingConfig = this.getThinkingConfig(model, {
         includeThoughts: true,
-      };
+      });
     }
     return result;
   }
 
+  private isGemini3Model(model: string) {
+    return model.startsWith('gemini-3');
+  }
+
   private isReasoningModel(model: string) {
-    return model.startsWith('gemini-2.5') || model.startsWith('gemini-3');
+    return model.startsWith('gemini-2.5') || this.isGemini3Model(model);
   }
 }
