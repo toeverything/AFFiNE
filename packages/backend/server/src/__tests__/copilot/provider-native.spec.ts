@@ -1,6 +1,7 @@
 import test from 'ava';
 
 import { ProviderMiddlewareConfig } from '../../plugins/copilot/config';
+import { normalizeOpenAIOptionsForModel } from '../../plugins/copilot/providers/openai';
 import { CopilotProvider } from '../../plugins/copilot/providers/provider';
 import {
   CopilotProviderType,
@@ -12,7 +13,7 @@ class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
   readonly type = CopilotProviderType.OpenAI;
   readonly models = [
     {
-      id: 'gpt-4.1',
+      id: 'gpt-5-mini',
       capabilities: [
         {
           input: [ModelInputType.Text],
@@ -36,7 +37,7 @@ class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
   }
 
   exposeMetricLabels() {
-    return this.metricLabels('gpt-4.1');
+    return this.metricLabels('gpt-5-mini');
   }
 
   exposeMiddleware() {
@@ -96,4 +97,36 @@ test('getActiveProviderMiddleware should merge defaults with profile override', 
     'callout',
     'thinking_format',
   ]);
+});
+
+test('normalizeOpenAIOptionsForModel should drop sampling knobs for gpt-5.2', t => {
+  t.deepEqual(
+    normalizeOpenAIOptionsForModel(
+      {
+        temperature: 0.7,
+        topP: 0.8,
+        presencePenalty: 0.2,
+        frequencyPenalty: 0.1,
+        maxTokens: 128,
+      },
+      'gpt-5.4'
+    ),
+    { maxTokens: 128 }
+  );
+});
+
+test('normalizeOpenAIOptionsForModel should keep options for gpt-5-mini', t => {
+  t.deepEqual(
+    normalizeOpenAIOptionsForModel(
+      {
+        temperature: 0.7,
+        maxTokens: 128,
+      },
+      'gpt-5-mini'
+    ),
+    {
+      temperature: 0.7,
+      maxTokens: 128,
+    }
+  );
 });

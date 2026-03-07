@@ -4,7 +4,7 @@ import {
   type UploadFileResponse,
 } from '@google/generative-ai/server';
 
-const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
+const DEFAULT_MODEL = 'gemini-2.5-pro';
 
 export interface TranscriptionResult {
   title: string;
@@ -75,7 +75,7 @@ Output in JSON format with the following structure:
 export async function gemini(
   audioFilePath: string,
   options?: {
-    model?: 'gemini-2.5-flash' | 'gemini-3.1-pro-preview';
+    model?: 'gemini-2.5-flash' | 'gemini-2.5-pro';
     mode?: 'transcript' | 'summary';
   }
 ) {

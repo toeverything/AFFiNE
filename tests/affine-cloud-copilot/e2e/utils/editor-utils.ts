@@ -90,17 +90,34 @@ export class EditorUtils {
     return answer;
   }
 
-  private static createAction(page: Page, action: () => Promise<void>) {
+  private static createAction(
+    page: Page,
+    action: () => Promise<void>,
+    options?: { responseTimeoutMs?: number }
+  ) {
     return async () => {
+      const responseTimeoutMs = options?.responseTimeoutMs ?? 60000;
+
       await action();
+      await this.waitForAiAnswer(page);
+      await page.getByTestId('ai-generating').waitFor({
+        state: 'hidden',
+        timeout: 2 * 60000,
+      });
+
       const responses = new Set<string>();
       const answer = await this.waitForAiAnswer(page);
       const responsesMenu = answer.getByTestId('answer-responses');
-      await responsesMenu.isVisible();
-      await responsesMenu.scrollIntoViewIfNeeded({ timeout: 60000 });
+      await responsesMenu.waitFor({
+        state: 'visible',
+        timeout: responseTimeoutMs,
+      });
+      await responsesMenu.scrollIntoViewIfNeeded({
+        timeout: responseTimeoutMs,
+      });
       await responsesMenu
         .getByTestId('answer-insert-below-loading')
-        .waitFor({ state: 'hidden' });
+        .waitFor({ state: 'hidden', timeout: responseTimeoutMs });
 
       if (await responsesMenu.getByTestId('answer-insert-below').isVisible()) {
         responses.add('insert-below');
@@ -458,8 +475,10 @@ export class EditorUtils {
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
       ),
-      generatePresentation: this.createAction(page, () =>
-        page.getByTestId('action-generate-presentation').click()
+      generatePresentation: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-presentation').click(),
+        { responseTimeoutMs: 120000 }
       ),
       imageProcessing: this.createAction(page, () =>
         page.getByTestId('action-image-processing').click()
@@ -634,8 +653,10 @@ export class EditorUtils {
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
       ),
-      generatePresentation: this.createAction(page, () =>
-        page.getByTestId('action-generate-presentation').click()
+      generatePresentation: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-presentation').click(),
+        { responseTimeoutMs: 120000 }
       ),
       imageProcessing: this.createAction(page, () =>
         page.getByTestId('action-image-processing').click()

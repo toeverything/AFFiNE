@@ -33,6 +33,33 @@ import { chatToGPTMessage } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
+export function normalizeOpenAIOptionsForModel<
+  T extends {
+    frequencyPenalty?: number | null;
+    presencePenalty?: number | null;
+    temperature?: number | null;
+    topP?: number | null;
+  },
+>(options: T, model: string): T {
+  if (
+    !model.startsWith('gpt-5.1') &&
+    !model.startsWith('gpt-5.2') &&
+    !model.startsWith('gpt-5.3') &&
+    !model.startsWith('gpt-5.4')
+  ) {
+    return options;
+  }
+
+  const normalizedOptions = { ...options };
+
+  delete normalizedOptions.frequencyPenalty;
+  delete normalizedOptions.presencePenalty;
+  delete normalizedOptions.temperature;
+  delete normalizedOptions.topP;
+
+  return normalizedOptions;
+}
+
 export type OpenAIConfig = {
   apiKey: string;
   baseURL?: string;
@@ -435,10 +462,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
@@ -472,10 +503,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
@@ -508,10 +543,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
@@ -542,10 +581,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
       const { request, schema } = await buildNativeRequest({
         model: model.id,
         messages,
-        options,
+        options: normalizedOptions,
         tools,
         reasoning: this.getReasoning(options, model.id),
         middleware,
