@@ -14,11 +14,13 @@ test.describe('AIAction/CheckCodeError', () => {
   }) => {
     const { checkCodeError } = await utils.editor.askAIWithCode(
       page,
-      'consloe.log("Hello,World!");',
+      'console.log("Hello,World!"',
       'javascript'
     );
     const { answer, responses } = await checkCodeError();
-    await expect(answer).toHaveText(/console/);
+    const answerText = await answer.innerText();
+    expect(answerText).toMatch(/syntax|parenthesis|unexpected|missing/i);
+    expect(answerText).not.toMatch(/No syntax errors were found/i);
     await expect(responses).toEqual(
       new Set(['insert-below', 'replace-selection'])
     );

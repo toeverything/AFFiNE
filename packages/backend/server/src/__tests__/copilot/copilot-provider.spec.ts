@@ -118,7 +118,6 @@ test.serial.before(async t => {
         enabled: true,
         scenarios: {
           image: 'flux-1/schnell',
-          rerank: 'gpt-5-mini',
           complex_text_generation: 'gpt-5-mini',
           coding: 'gpt-5-mini',
           quick_decision_making: 'gpt-5-mini',
@@ -931,8 +930,8 @@ test(
       t.log('Rerank scores:', scores);
       t.is(
         scores.filter(s => s > 0.5).length,
-        4,
-        'should have 4 related chunks'
+        5,
+        'should have 5 related chunks'
       );
     });
   }

@@ -12,6 +12,7 @@ import {
   ThemeService,
 } from '@blocksuite/affine/shared/services';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/affine/std';
+import { ToolController } from '@blocksuite/affine/std/gfx';
 import type { BlockSchema, ExtensionType } from '@blocksuite/affine/store';
 import { literal } from 'lit/static-html.js';
 import type { z } from 'zod';
@@ -24,6 +25,7 @@ export const MiniMindmapSpecs: ExtensionType[] = [
   ThemeService,
   FlavourExtension('affine:page'),
   MindmapService,
+  ToolController,
   BlockViewExtension('affine:page', literal`mini-mindmap-root-block`),
   FlavourExtension('affine:surface'),
   MindMapView,

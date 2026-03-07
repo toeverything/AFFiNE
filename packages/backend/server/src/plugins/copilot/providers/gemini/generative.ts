@@ -21,25 +21,6 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
 
   readonly models = [
     {
-      name: 'Gemini 2.0 Flash',
-      id: 'gemini-2.0-flash-001',
-      capabilities: [
-        {
-          input: [
-            ModelInputType.Text,
-            ModelInputType.Image,
-            ModelInputType.Audio,
-          ],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-    {
       name: 'Gemini 2.5 Flash',
       id: 'gemini-2.5-flash',
       capabilities: [
@@ -60,6 +41,24 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
     {
       name: 'Gemini 2.5 Pro',
       id: 'gemini-2.5-pro',
+      capabilities: [
+        {
+          input: [
+            ModelInputType.Text,
+            ModelInputType.Image,
+            ModelInputType.Audio,
+          ],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Gemini 3.1 Pro Preview',
+      id: 'gemini-3.1-pro-preview',
       capabilities: [
         {
           input: [

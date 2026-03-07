@@ -16,6 +16,10 @@ import { PromptService } from '../prompt/service';
 import { CopilotProviderFactory } from '../providers/factory';
 import type { CopilotProvider } from '../providers/provider';
 import {
+  DEFAULT_RERANK_MODEL,
+  normalizeRerankModel,
+} from '../providers/rerank';
+import {
   type ModelFullConditions,
   ModelInputType,
   ModelOutputType,
@@ -114,10 +118,16 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     if (!prompt) {
       throw new CopilotPromptNotFound({ name: RERANK_PROMPT });
     }
-    const provider = await this.getProvider({ modelId: prompt.model });
+    const rerankModel = normalizeRerankModel(prompt.model);
+    if (prompt.model !== rerankModel) {
+      this.logger.warn(
+        `Unsupported rerank model "${prompt.model}" configured, falling back to "${DEFAULT_RERANK_MODEL}".`
+      );
+    }
+    const provider = await this.getProvider({ modelId: rerankModel });
 
     const ranks = await provider.rerank(
-      { modelId: prompt.model },
+      { modelId: rerankModel },
       embeddings.map(e => prompt.finish({ query, doc: e.content })),
       { signal }
     );
@@ -171,7 +181,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     );
 
     try {
-      // 4.1 mini's context windows large enough to handle all embeddings
+      // The rerank prompt is expected to handle the full deduped candidate list.
       const ranks = await this.getEmbeddingRelevance(
         query,
         sortedEmbeddings,

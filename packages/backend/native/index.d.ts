@@ -112,6 +112,8 @@ export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number |
 
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
 
+export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
+
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 
 /**

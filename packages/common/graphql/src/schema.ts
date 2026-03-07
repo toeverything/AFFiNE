@@ -1056,6 +1056,7 @@ export type ErrorDataUnion =
   | ExpectToUpdateDocUserRoleDataType
   | GraphqlBadRequestDataType
   | HttpRequestErrorDataType
+  | ImageFormatNotSupportedDataType
   | InvalidAppConfigDataType
   | InvalidAppConfigInputDataType
   | InvalidEmailDataType
@@ -1162,6 +1163,7 @@ export enum ErrorNames {
   FAILED_TO_UPSERT_SNAPSHOT = 'FAILED_TO_UPSERT_SNAPSHOT',
   GRAPHQL_BAD_REQUEST = 'GRAPHQL_BAD_REQUEST',
   HTTP_REQUEST_ERROR = 'HTTP_REQUEST_ERROR',
+  IMAGE_FORMAT_NOT_SUPPORTED = 'IMAGE_FORMAT_NOT_SUPPORTED',
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   INVALID_APP_CONFIG = 'INVALID_APP_CONFIG',
   INVALID_APP_CONFIG_INPUT = 'INVALID_APP_CONFIG_INPUT',
@@ -1312,6 +1314,11 @@ export interface GraphqlBadRequestDataType {
 export interface HttpRequestErrorDataType {
   __typename?: 'HttpRequestErrorDataType';
   message: Scalars['String']['output'];
+}
+
+export interface ImageFormatNotSupportedDataType {
+  __typename?: 'ImageFormatNotSupportedDataType';
+  format: Scalars['String']['output'];
 }
 
 export interface ImportUsersInput {

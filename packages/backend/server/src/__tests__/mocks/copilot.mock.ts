@@ -40,33 +40,6 @@ export class MockCopilotProvider extends OpenAIProvider {
       ],
     },
     {
-      id: 'gpt-4o',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
-      id: 'gpt-4o-2024-08-06',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
-      id: 'gpt-4.1-2025-04-14',
-      capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
-      ],
-    },
-    {
       id: 'gpt-5',
       capabilities: [
         {
@@ -86,6 +59,19 @@ export class MockCopilotProvider extends OpenAIProvider {
     },
     {
       id: 'gpt-5-mini',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
+      id: 'gpt-5-nano',
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
@@ -125,6 +111,23 @@ export class MockCopilotProvider extends OpenAIProvider {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
+      id: 'gemini-3.1-pro-preview',
+      capabilities: [
+        {
+          input: [
+            ModelInputType.Text,
+            ModelInputType.Image,
+            ModelInputType.Audio,
+          ],
           output: [
             ModelOutputType.Text,
             ModelOutputType.Object,

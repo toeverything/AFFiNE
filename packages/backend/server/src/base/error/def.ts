@@ -301,6 +301,11 @@ export const USER_FRIENDLY_ERRORS = {
   },
 
   // Input errors
+  image_format_not_supported: {
+    type: 'invalid_input',
+    args: { format: 'string' },
+    message: ({ format }) => `Image format not supported: ${format}`,
+  },
   query_too_long: {
     type: 'invalid_input',
     args: { max: 'number' },

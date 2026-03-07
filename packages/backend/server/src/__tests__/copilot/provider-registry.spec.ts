@@ -88,11 +88,11 @@ test('resolveModel should support explicit provider prefix and keep slash models
 
   const prefixed = resolveModel({
     registry,
-    modelId: 'openai-main/gpt-4.1',
+    modelId: 'openai-main/gpt-5-mini',
   });
   t.deepEqual(prefixed, {
-    rawModelId: 'openai-main/gpt-4.1',
-    modelId: 'gpt-4.1',
+    rawModelId: 'openai-main/gpt-5-mini',
+    modelId: 'gpt-5-mini',
     explicitProviderId: 'openai-main',
     candidateProviderIds: ['openai-main'],
   });
@@ -154,12 +154,15 @@ test('stripProviderPrefix should only strip matched provider prefix', t => {
   });
 
   t.is(
-    stripProviderPrefix(registry, 'openai-main', 'openai-main/gpt-4.1'),
-    'gpt-4.1'
+    stripProviderPrefix(registry, 'openai-main', 'openai-main/gpt-5-mini'),
+    'gpt-5-mini'
   );
   t.is(
-    stripProviderPrefix(registry, 'openai-main', 'another-main/gpt-4.1'),
-    'another-main/gpt-4.1'
+    stripProviderPrefix(registry, 'openai-main', 'another-main/gpt-5-mini'),
+    'another-main/gpt-5-mini'
   );
-  t.is(stripProviderPrefix(registry, 'openai-main', 'gpt-4.1'), 'gpt-4.1');
+  t.is(
+    stripProviderPrefix(registry, 'openai-main', 'gpt-5-mini'),
+    'gpt-5-mini'
+  );
 });

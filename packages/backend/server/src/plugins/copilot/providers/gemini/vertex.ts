@@ -51,6 +51,24 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
       ],
     },
     {
+      name: 'Gemini 3.1 Pro Preview',
+      id: 'gemini-3.1-pro-preview',
+      capabilities: [
+        {
+          input: [
+            ModelInputType.Text,
+            ModelInputType.Image,
+            ModelInputType.Audio,
+          ],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+        },
+      ],
+    },
+    {
       name: 'Gemini Embedding',
       id: 'gemini-embedding-001',
       capabilities: [
