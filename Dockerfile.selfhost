@@ -29,6 +29,10 @@ ENV HUSKY=0
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 ENV SENTRYCLI_SKIP_DOWNLOAD=1
+# Provide a dummy GITHUB_SHA so the HTML plugin skips git repo lookup
+# (.git is excluded by .dockerignore).
+ARG GITHUB_SHA="0000000000000000000000000000000000000000"
+ENV GITHUB_SHA=${GITHUB_SHA}
 
 # Install all dependencies
 RUN yarn --immutable --inline-builds
