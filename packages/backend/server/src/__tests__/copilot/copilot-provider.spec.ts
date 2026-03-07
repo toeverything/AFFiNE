@@ -930,8 +930,8 @@ test(
       t.log('Rerank scores:', scores);
       t.is(
         scores.filter(s => s > 0.5).length,
-        4,
-        'should have 4 related chunks'
+        5,
+        'should have 5 related chunks'
       );
     });
   }
