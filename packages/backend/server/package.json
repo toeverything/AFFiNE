@@ -4,9 +4,6 @@
   "version": "0.26.3",
   "description": "Affine Node.js server",
   "type": "module",
-  "bin": {
-    "run-test": "./scripts/run-test.ts"
-  },
   "scripts": {
     "build": "affine bundle -p @affine/server",
     "dev": "nodemon ./src/index.ts",

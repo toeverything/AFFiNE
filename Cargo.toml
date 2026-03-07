@@ -40,10 +40,19 @@ resolver = "3"
   dotenvy = "0.15"
   file-format = { version = "0.28", features = ["reader"] }
   homedir = "0.3"
+  image = { version = "0.25.9", default-features = false, features = [
+    "bmp",
+    "gif",
+    "jpeg",
+    "png",
+    "webp",
+  ] }
   infer = { version = "0.19.0" }
   lasso = { version = "0.7", features = ["multi-threaded"] }
   lib0 = { version = "0.16", features = ["lib0-serde"] }
   libc = "0.2"
+  libwebp-sys = "0.14.2"
+  little_exif = "0.6.23"
   llm_adapter = "0.1.1"
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }

@@ -40,6 +40,7 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
 export const getMime = serverNativeModule.getMime;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
+export const processImage = serverNativeModule.processImage;
 export const parseYDocFromBinary = serverNativeModule.parseDocFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
 export const parsePageDocFromBinary = serverNativeModule.parsePageDoc;
