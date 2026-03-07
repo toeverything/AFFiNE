@@ -1,3 +1,4 @@
+export { BearTransformer } from './bear.js';
 export { DocxTransformer } from './docx.js';
 export { HtmlTransformer } from './html.js';
 export { MarkdownTransformer } from './markdown.js';
