@@ -56,8 +56,12 @@ RUN yarn config set --json supportedArchitectures.cpu '["x64"]' && \
 # Generate Prisma client
 RUN yarn workspace @affine/server prisma generate
 
-# Move node_modules into server package for the final image
-RUN mv ./node_modules ./packages/backend/server/
+# Move node_modules into server package for the final image.
+# Replace the @affine/server-native symlink with the actual files
+# so the native binding resolves after the directory move.
+RUN mv ./node_modules ./packages/backend/server/ && \
+    rm -rf ./packages/backend/server/node_modules/@affine/server-native && \
+    cp -r ./packages/backend/native ./packages/backend/server/node_modules/@affine/server-native
 
 # ---------------------------------------------------------------------------
 # Stage 2: Clean up artifacts
