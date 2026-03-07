@@ -3,6 +3,7 @@ import test from 'ava';
 import { ProviderMiddlewareConfig } from '../../plugins/copilot/config';
 import { normalizeOpenAIOptionsForModel } from '../../plugins/copilot/providers/openai';
 import { CopilotProvider } from '../../plugins/copilot/providers/provider';
+import { normalizeRerankModel } from '../../plugins/copilot/providers/rerank';
 import {
   CopilotProviderType,
   ModelInputType,
@@ -115,18 +116,24 @@ test('normalizeOpenAIOptionsForModel should drop sampling knobs for gpt-5.2', t 
   );
 });
 
-test('normalizeOpenAIOptionsForModel should keep options for gpt-5-mini', t => {
+test('normalizeOpenAIOptionsForModel should keep options for gpt-4.1', t => {
   t.deepEqual(
     normalizeOpenAIOptionsForModel(
-      {
-        temperature: 0.7,
-        maxTokens: 128,
-      },
-      'gpt-5-mini'
+      { temperature: 0.7, topP: 0.8, maxTokens: 128 },
+      'gpt-4.1'
     ),
-    {
-      temperature: 0.7,
-      maxTokens: 128,
-    }
+    { temperature: 0.7, topP: 0.8, maxTokens: 128 }
   );
+});
+
+test('normalizeOpenAIRerankModel should keep supported rerank models', t => {
+  t.is(normalizeRerankModel('gpt-4.1'), 'gpt-4.1');
+  t.is(normalizeRerankModel('gpt-4.1-mini'), 'gpt-4.1-mini');
+  t.is(normalizeRerankModel('gpt-5.2'), 'gpt-5.2');
+});
+
+test('normalizeOpenAIRerankModel should fall back for unsupported models', t => {
+  t.is(normalizeRerankModel('gpt-5-mini'), 'gpt-5.2');
+  t.is(normalizeRerankModel('gemini-2.5-flash'), 'gpt-5.2');
+  t.is(normalizeRerankModel(undefined), 'gpt-5.2');
 });

@@ -34,7 +34,6 @@ export const Scenario = {
     'Remove background',
     'Upscale image',
   ],
-  rerank: ['Rerank results'],
   coding: [
     'Apply Updates',
     'Code Artifact',
@@ -422,7 +421,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
   {
     name: 'Rerank results',
     action: 'Rerank results',
-    model: 'gpt-5-mini',
+    model: 'gpt-5.2',
     messages: [
       {
         role: 'system',

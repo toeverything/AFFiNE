@@ -18,6 +18,12 @@ import {
 import type { NodeTextMiddleware } from '../config';
 import { buildNativeRequest, NativeProviderAdapter } from './native';
 import { CopilotProvider } from './provider';
+import {
+  normalizeRerankModel,
+  OPENAI_RERANK_MAX_COMPLETION_TOKENS,
+  OPENAI_RERANK_TOP_LOGPROBS_LIMIT,
+  usesRerankReasoning,
+} from './rerank';
 import type {
   CopilotChatOptions,
   CopilotChatTools,
@@ -33,6 +39,8 @@ import { chatToGPTMessage } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
+const GPT_5_SAMPLING_UNSUPPORTED_MODELS = /^(gpt-5(?:$|[.-]))/;
+
 export function normalizeOpenAIOptionsForModel<
   T extends {
     frequencyPenalty?: number | null;
@@ -41,12 +49,7 @@ export function normalizeOpenAIOptionsForModel<
     topP?: number | null;
   },
 >(options: T, model: string): T {
-  if (
-    !model.startsWith('gpt-5.1') &&
-    !model.startsWith('gpt-5.2') &&
-    !model.startsWith('gpt-5.3') &&
-    !model.startsWith('gpt-5.4')
-  ) {
+  if (!GPT_5_SAMPLING_UNSUPPORTED_MODELS.test(model)) {
     return options;
   }
 
@@ -619,15 +622,21 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const scores = await Promise.all(
       chunkMessages.map(async messages => {
         const [system, msgs] = await chatToGPTMessage(messages);
+        const rerankModel = normalizeRerankModel(model.id);
         const response = await this.requestOpenAIJson(
           '/chat/completions',
           {
-            model: model.id,
+            model: rerankModel,
             messages: this.toOpenAIChatMessages(system, msgs),
             temperature: 0,
-            max_tokens: 16,
             logprobs: true,
-            top_logprobs: 16,
+            top_logprobs: OPENAI_RERANK_TOP_LOGPROBS_LIMIT,
+            ...(usesRerankReasoning(rerankModel)
+              ? {
+                  reasoning_effort: 'none' as const,
+                  max_completion_tokens: OPENAI_RERANK_MAX_COMPLETION_TOKENS,
+                }
+              : { max_tokens: OPENAI_RERANK_MAX_COMPLETION_TOKENS }),
           },
           options.signal
         );

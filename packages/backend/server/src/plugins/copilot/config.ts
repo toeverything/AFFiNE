@@ -230,7 +230,6 @@ defineModuleConfig('copilot', {
         chat: 'gemini-2.5-flash',
         embedding: 'gemini-embedding-001',
         image: 'gpt-image-1',
-        rerank: 'gpt-5-mini',
         coding: 'claude-sonnet-4-5@20250929',
         complex_text_generation: 'gpt-5-mini',
         quick_decision_making: 'gpt-5-mini',

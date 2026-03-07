@@ -118,7 +118,6 @@ test.serial.before(async t => {
         enabled: true,
         scenarios: {
           image: 'flux-1/schnell',
-          rerank: 'gpt-5-mini',
           complex_text_generation: 'gpt-5-mini',
           coding: 'gpt-5-mini',
           quick_decision_making: 'gpt-5-mini',
