@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=assets /app /app
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends openssl libjemalloc2 && \
+  apt-get install -y --no-install-recommends openssl libmimalloc2.0 && \
   rm -rf /var/lib/apt/lists/*
 
 # The base image provides a 'node' user (uid=1000, gid=1000).
@@ -32,8 +32,8 @@ RUN apt-get update && \
 RUN mkdir -p /home/node/.affine/config /home/node/.affine/storage && \
   chown -R node:node /home/node/.affine
 
-# Enable jemalloc by preloading the library
-ENV LD_PRELOAD=libjemalloc.so.2
+# Enable mimalloc by preloading the library
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libmimalloc.so.2
 
 USER node
 
