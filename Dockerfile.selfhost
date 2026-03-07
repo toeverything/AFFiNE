@@ -2,15 +2,18 @@
 
 # Self-contained multi-stage build for AFFiNE self-hosted deployment.
 # Builds Rust native bindings, frontend assets, and server in Docker.
+# Uses BuildKit cache mounts for Cargo, Yarn, and APT to speed up rebuilds.
 
 # ---------------------------------------------------------------------------
 # Stage 1: Install dependencies and build everything
 # ---------------------------------------------------------------------------
 FROM node:22-bookworm AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl build-essential clang pkg-config libssl-dev jq && \
-    rm -rf /var/lib/apt/lists/*
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential clang pkg-config libssl-dev jq
 
 # Install Rust toolchain
 WORKDIR /app
@@ -34,11 +37,17 @@ ENV SENTRYCLI_SKIP_DOWNLOAD=1
 ARG GITHUB_SHA="0000000000000000000000000000000000000000"
 ENV GITHUB_SHA=${GITHUB_SHA}
 
-# Install all dependencies
-RUN yarn --immutable --inline-builds
+# Install all dependencies (cache yarn's global download cache)
+RUN --mount=type=cache,target=/root/.yarn/berry/cache \
+    yarn --immutable --inline-builds
 
-# Build Rust native binding
-RUN yarn workspace @affine/server-native build --target x86_64-unknown-linux-gnu
+# Build Rust native binding (cache cargo registry + target dir).
+# The napi build outputs to packages/backend/native/ so we copy the
+# artifact out of the cached target dir after the build.
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,target=/app/target \
+    yarn workspace @affine/server-native build --target x86_64-unknown-linux-gnu
 
 # Build frontend assets
 RUN yarn affine @affine/web build
@@ -49,7 +58,8 @@ RUN yarn affine @affine/mobile build
 RUN yarn workspace @affine/server build
 
 # Re-install production-only deps for the final server package
-RUN yarn config set --json supportedArchitectures.cpu '["x64"]' && \
+RUN --mount=type=cache,target=/root/.yarn/berry/cache \
+    yarn config set --json supportedArchitectures.cpu '["x64"]' && \
     yarn config set --json supportedArchitectures.libc '["glibc"]' && \
     yarn workspaces focus @affine/server --production
 
