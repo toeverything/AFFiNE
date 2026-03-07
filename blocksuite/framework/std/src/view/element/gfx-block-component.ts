@@ -31,6 +31,13 @@ function updateTransform(element: GfxBlockComponent) {
   element.style.transform = element.getCSSTransform();
 }
 
+function updateZIndex(element: GfxBlockComponent) {
+  const zIndex = element.toZIndex();
+  if (element.style.zIndex !== zIndex) {
+    element.style.zIndex = zIndex;
+  }
+}
+
 function updateBlockVisibility(view: GfxBlockComponent) {
   if (view.transformState$.value === 'active') {
     view.style.visibility = 'visible';
@@ -58,7 +65,14 @@ function handleGfxConnection(instance: GfxBlockComponent) {
     instance.store.slots.blockUpdated.subscribe(({ type, id }) => {
       if (id === instance.model.id && type === 'update') {
         updateTransform(instance);
+        updateZIndex(instance);
       }
+    })
+  );
+
+  instance.disposables.add(
+    instance.gfx.layer.slots.layerUpdated.subscribe(() => {
+      updateZIndex(instance);
     })
   );
 
@@ -66,6 +80,7 @@ function handleGfxConnection(instance: GfxBlockComponent) {
     effect(() => {
       updateBlockVisibility(instance);
       updateTransform(instance);
+      updateZIndex(instance);
     })
   );
 }
