@@ -181,6 +181,26 @@ export class LayerManager extends GfxExtension {
     return [...elements];
   }
 
+  private _getRelatedLocalElements(
+    relatedElements: GfxModel[],
+    group: GfxModel & GfxGroupCompatibleInterface
+  ) {
+    const relatedElementSet = new Set(relatedElements);
+    const localElements: GfxLocalElementModel[] = [];
+
+    this._surface?.localElementModels.forEach(localElement => {
+      if (
+        (localElement.creator && relatedElementSet.has(localElement.creator)) ||
+        localElement.group === group ||
+        localElement.groups.some(candidate => candidate === group)
+      ) {
+        localElements.push(localElement);
+      }
+    });
+
+    return localElements;
+  }
+
   private _syncGroupChildSnapshot(
     group: GfxModel & GfxGroupCompatibleInterface
   ) {
@@ -549,6 +569,18 @@ export class LayerManager extends GfxExtension {
     });
   }
 
+  private _refreshLocalElementsInLayer(elements: GfxLocalElementModel[]) {
+    const uniqueElements = [...new Set(elements)];
+
+    uniqueElements.forEach(element => {
+      this._removeFromLayer(element, 'canvas');
+    });
+
+    uniqueElements.sort(compare).forEach(element => {
+      this._insertIntoLayer(element as unknown as GfxModel, 'canvas');
+    });
+  }
+
   private _reset() {
     const elements = (
       this._doc
@@ -621,7 +653,12 @@ export class LayerManager extends GfxExtension {
         : undefined;
 
       const relatedElements = this._getRelatedGroupElements(group, oldChildIds);
+      const relatedLocalElements = this._getRelatedLocalElements(
+        relatedElements,
+        group
+      );
       this._refreshElementsInLayer(relatedElements);
+      this._refreshLocalElementsInLayer(relatedLocalElements);
       this._syncGroupChildSnapshot(group);
       return true;
     }
