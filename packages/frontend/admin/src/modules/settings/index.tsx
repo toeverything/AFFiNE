@@ -16,6 +16,7 @@ import {
   type AppConfig,
 } from './config';
 import { type ConfigInputProps, ConfigRow } from './config-input-row';
+import { CopilotProfilesEditor } from './copilot-profiles-editor';
 import { useAppConfig } from './use-app-config';
 
 export function SettingsPage() {
@@ -210,6 +211,29 @@ const AdminPanel = ({
                         />
                       );
                     })}
+
+                    {module === 'copilot' && (
+                      <>
+                        <CopilotProfilesEditor
+                          profiles={
+                            get(sourceConfig, 'providers.profiles') ?? []
+                          }
+                          onChange={value =>
+                            onUpdate('copilot/providers.profiles', value)
+                          }
+                        />
+                        <ConfigRow
+                          field="copilot/providers.defaults"
+                          desc="Default provider profile IDs per output type (text, object, embedding, image, structured) and a global fallback."
+                          type="JSON"
+                          defaultValue={
+                            get(sourceConfig, 'providers.defaults') ?? {}
+                          }
+                          onChange={onUpdate}
+                          onErrorChange={onFieldErrorChange}
+                        />
+                      </>
+                    )}
 
                     {operations?.map(Operation => (
                       <Operation
