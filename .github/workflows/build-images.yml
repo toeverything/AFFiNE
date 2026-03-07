@@ -12,6 +12,28 @@ on:
       git-short-hash:
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: Build channel
+        type: choice
+        required: true
+        default: stable
+        options:
+          - stable
+          - beta
+          - canary
+          - internal
+      app-version:
+        description: App version to stamp into build artifacts
+        type: string
+        required: true
+        default: 0.26.3
+      git-short-hash:
+        description: Tag suffix for the pushed image
+        type: string
+        required: true
+        default: manual
 
 permissions:
   contents: 'write'
@@ -272,4 +294,6 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: affine:${{ inputs.build-type }}-${{ inputs.git-short-hash }}
