@@ -147,9 +147,8 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
         });
       }
 
-      const [targetPageName, alias] = linkMatch[1]
-        .split('|')
-        .map(s => s.trim()) as [string, string | undefined];
+      const targetPageName = linkMatch[1].trim();
+      const alias = linkMatch[2]?.trim();
 
       const cleanTargetTitle = extractTitleAndEmoji(targetPageName).title;
       const targetPageId =
