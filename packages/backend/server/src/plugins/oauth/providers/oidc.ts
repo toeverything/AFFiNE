@@ -37,7 +37,9 @@ const OIDCUserInfoSchema = z
     preferred_username: z.string().optional(),
     email: z.string().email(),
     name: z.string().optional(),
-    email_verified: z.boolean().optional(),
+    email_verified: z
+      .union([z.boolean(), z.enum(['true', 'false', '1', '0', 'yes', 'no'])])
+      .optional(),
     groups: z.array(z.string()).optional(),
   })
   .passthrough();
