@@ -472,7 +472,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: samypr100/setup-dev-drive@v3
+      - uses: samypr100/setup-dev-drive@v4
         with:
           workspace-copy: true
           drive-size: 8GB
@@ -808,7 +808,7 @@ jobs:
           toolchain: nightly
           components: miri
       - name: Install latest nextest release
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.68.22
         with:
           tool: nextest@0.9.98
 
@@ -835,7 +835,7 @@ jobs:
         with:
           toolchain: stable
       - name: Install latest nextest release
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.68.22
         with:
           tool: nextest@0.9.98
 
@@ -900,7 +900,7 @@ jobs:
           no-build: 'true'
 
       - name: Install latest nextest release
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.68.22
         with:
           tool: nextest@0.9.98
 
