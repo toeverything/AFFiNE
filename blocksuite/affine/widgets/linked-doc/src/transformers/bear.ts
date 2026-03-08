@@ -229,18 +229,27 @@ const GFM_CALLOUT_MAP: Record<string, string> = {
 /**
  * Convert GFM-style callouts (`> [!NOTE]`, `> [!WARNING]`, etc.) to
  * emoji-based callouts that AFFiNE's remark-callout plugin understands.
+ * Skips content inside fenced code blocks.
  */
 function convertGfmCallouts(markdown: string): string {
-  return markdown.replace(
-    /^(>\s*)\[!(\w+)\]/gm,
-    (_match, prefix: string, type: string) => {
-      const emoji = GFM_CALLOUT_MAP[type.toUpperCase()];
-      if (emoji) {
-        return `${prefix}[!${emoji}]`;
-      }
-      return _match;
+  const lines = markdown.split('\n');
+  let inCodeBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trimStart().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
     }
-  );
+    if (!inCodeBlock) {
+      lines[i] = lines[i].replace(
+        /^(>\s*)\[!(\w+)\]/,
+        (_match, prefix: string, type: string) => {
+          const emoji = GFM_CALLOUT_MAP[type.toUpperCase()];
+          return emoji ? `${prefix}[!${emoji}]` : _match;
+        }
+      );
+    }
+  }
+  return lines.join('\n');
 }
 
 const HIGHLIGHT_COLOR_MAP: Record<string, string> = {
@@ -383,108 +392,116 @@ async function importBearBackup({
   const docIds: string[] = [];
   const tagDocMap = new Map<string, string[]>();
 
-  // Process bundles sequentially to limit memory
+  // Process bundles sequentially to limit memory.
+  // Each bundle is wrapped in try/catch so one bad note does not abort the
+  // entire import after earlier notes have already been written.
   for (const { entry, bearMeta } of validBundles) {
-    // Read markdown (decompress on demand)
-    const rawMarkdown = await zip.file(entry.markdownPath!)!.async('string');
-    if (!rawMarkdown.trim()) continue;
+    try {
+      // Read markdown (decompress on demand)
+      const rawMarkdown = await zip.file(entry.markdownPath!)!.async('string');
+      if (!rawMarkdown.trim()) continue;
 
-    const { tags, content: cleanedMarkdown } = parseBearTags(rawMarkdown);
-    const bundleDirName =
-      entry.bundlePath.split('/').findLast(Boolean) ?? 'Untitled';
-    const title = extractTitle(cleanedMarkdown, bundleDirName);
-    const markdown = convertHighlights(
-      convertGfmCallouts(cleanedMarkdown.replace(/<!--\s*\{[^}]*\}\s*-->/g, ''))
-    );
+      const { tags, content: cleanedMarkdown } = parseBearTags(rawMarkdown);
+      const bundleDirName =
+        entry.bundlePath.split('/').findLast(Boolean) ?? 'Untitled';
+      const title = extractTitle(cleanedMarkdown, bundleDirName);
+      const markdown = convertHighlights(
+        convertGfmCallouts(
+          cleanedMarkdown.replace(/<!--\s*\{[^}]*\}\s*-->/g, '')
+        )
+      );
 
-    // Read assets on demand (decompress only this bundle's assets)
-    const pendingAssets = new Map<string, File>();
-    const pendingPathBlobIdMap = new Map<string, string>();
+      // Read assets on demand (decompress only this bundle's assets)
+      const pendingAssets = new Map<string, File>();
+      const pendingPathBlobIdMap = new Map<string, string>();
 
-    for (const assetFullPath of entry.assetPaths) {
-      try {
-        const data = await zip.file(assetFullPath)!.async('arraybuffer');
-        const tbMatch = assetFullPath.match(/^.+?\.textbundle\/(.*)/i);
-        const assetRelPath = tbMatch ? tbMatch[1] : assetFullPath;
-        const ext = assetRelPath.split('.').at(-1) ?? '';
-        const mime = extMimeMap.get(ext) ?? '';
-        const key = await sha(data);
-        // Map both the full zip path and the relative path (assets/...)
-        pendingPathBlobIdMap.set(assetFullPath, key);
-        pendingPathBlobIdMap.set(assetRelPath, key);
+      for (const assetFullPath of entry.assetPaths) {
         try {
-          const decodedRel = decodeURIComponent(assetRelPath);
-          if (decodedRel !== assetRelPath) {
-            pendingPathBlobIdMap.set(decodedRel, key);
+          const data = await zip.file(assetFullPath)!.async('arraybuffer');
+          const tbMatch = assetFullPath.match(/^.+?\.textbundle\/(.*)/i);
+          const assetRelPath = tbMatch ? tbMatch[1] : assetFullPath;
+          const ext = assetRelPath.split('.').at(-1) ?? '';
+          const mime = extMimeMap.get(ext) ?? '';
+          const key = await sha(data);
+          // Map both the full zip path and the relative path (assets/...)
+          pendingPathBlobIdMap.set(assetFullPath, key);
+          pendingPathBlobIdMap.set(assetRelPath, key);
+          try {
+            const decodedRel = decodeURIComponent(assetRelPath);
+            if (decodedRel !== assetRelPath) {
+              pendingPathBlobIdMap.set(decodedRel, key);
+            }
+            const decodedFull = decodeURIComponent(assetFullPath);
+            if (decodedFull !== assetFullPath) {
+              pendingPathBlobIdMap.set(decodedFull, key);
+            }
+          } catch {
+            // Invalid URI encoding
           }
-          const decodedFull = decodeURIComponent(assetFullPath);
-          if (decodedFull !== assetFullPath) {
-            pendingPathBlobIdMap.set(decodedFull, key);
-          }
+          const fileName = assetRelPath.split('/').pop() ?? '';
+          pendingAssets.set(key, new File([data], fileName, { type: mime }));
         } catch {
-          // Invalid URI encoding
+          // Failed to read asset, skip
         }
-        const fileName = assetRelPath.split('/').pop() ?? '';
-        pendingAssets.set(key, new File([data], fileName, { type: mime }));
-      } catch {
-        // Failed to read asset, skip
-      }
-    }
-
-    const fullPath = `${entry.bundlePath}/text.md`;
-    const job = new Transformer({
-      schema,
-      blobCRUD: collection.blobSync,
-      docCRUD: {
-        create: (id: string) => collection.createDoc(id).getStore({ id }),
-        get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
-        delete: (id: string) => collection.removeDoc(id),
-      },
-      middlewares: [
-        defaultImageProxyMiddleware,
-        fileNameMiddleware(title),
-        filePathMiddleware(fullPath),
-        docLinkBaseURLMiddleware(collection.id),
-      ],
-    });
-
-    const assets = job.assets;
-    const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
-    for (const [p, key] of pendingPathBlobIdMap.entries()) {
-      pathBlobIdMap.set(p, key);
-    }
-    for (const [key, file] of pendingAssets.entries()) {
-      assets.set(key, file);
-    }
-
-    const mdAdapter = new MarkdownAdapter(job, provider);
-    const doc = await mdAdapter.toDoc({
-      file: markdown,
-      assets: job.assetsManager,
-    });
-
-    if (doc) {
-      docIds.push(doc.id);
-
-      const metaPatch: Record<string, unknown> = {};
-      if (bearMeta?.creationDate) {
-        const ts = Date.parse(String(bearMeta.creationDate));
-        if (!isNaN(ts)) metaPatch.createDate = ts;
-      }
-      if (bearMeta?.modificationDate) {
-        const ts = Date.parse(String(bearMeta.modificationDate));
-        if (!isNaN(ts)) metaPatch.updatedDate = ts;
-      }
-      if (Object.keys(metaPatch).length) {
-        collection.meta.setDocMeta(doc.id, metaPatch);
       }
 
-      for (const tag of tags) {
-        if (!tagDocMap.has(tag)) {
-          tagDocMap.set(tag, []);
+      const fullPath = `${entry.bundlePath}/text.md`;
+      const job = new Transformer({
+        schema,
+        blobCRUD: collection.blobSync,
+        docCRUD: {
+          create: (id: string) => collection.createDoc(id).getStore({ id }),
+          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
+          delete: (id: string) => collection.removeDoc(id),
+        },
+        middlewares: [
+          defaultImageProxyMiddleware,
+          fileNameMiddleware(title),
+          filePathMiddleware(fullPath),
+          docLinkBaseURLMiddleware(collection.id),
+        ],
+      });
+
+      const assets = job.assets;
+      const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
+      for (const [p, key] of pendingPathBlobIdMap.entries()) {
+        pathBlobIdMap.set(p, key);
+      }
+      for (const [key, file] of pendingAssets.entries()) {
+        assets.set(key, file);
+      }
+
+      const mdAdapter = new MarkdownAdapter(job, provider);
+      const doc = await mdAdapter.toDoc({
+        file: markdown,
+        assets: job.assetsManager,
+      });
+
+      if (doc) {
+        docIds.push(doc.id);
+
+        const metaPatch: Record<string, unknown> = {};
+        if (bearMeta?.creationDate) {
+          const ts = Date.parse(String(bearMeta.creationDate));
+          if (!isNaN(ts)) metaPatch.createDate = ts;
         }
-        tagDocMap.get(tag)!.push(doc.id);
+        if (bearMeta?.modificationDate) {
+          const ts = Date.parse(String(bearMeta.modificationDate));
+          if (!isNaN(ts)) metaPatch.updatedDate = ts;
+        }
+        if (Object.keys(metaPatch).length) {
+          collection.meta.setDocMeta(doc.id, metaPatch);
+        }
+
+        for (const tag of tags) {
+          if (!tagDocMap.has(tag)) {
+            tagDocMap.set(tag, []);
+          }
+          tagDocMap.get(tag)!.push(doc.id);
+        }
       }
+    } catch {
+      console.warn(`Failed to import bundle: ${entry.bundlePath}`);
     }
   }
 
