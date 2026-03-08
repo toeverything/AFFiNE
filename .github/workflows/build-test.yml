@@ -189,7 +189,7 @@ jobs:
           full-cache: true
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -246,7 +246,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-bs-${{ matrix.shard }}
           path: ./test-results
@@ -276,7 +276,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-bs-cross-browser
           path: ./test-results
@@ -309,7 +309,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-${{ matrix.shard }}
           path: ./test-results
@@ -340,7 +340,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-mobile-${{ matrix.shard }}
           path: ./test-results
@@ -368,7 +368,7 @@ jobs:
           full-cache: true
 
       - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
@@ -410,7 +410,7 @@ jobs:
           target: x86_64-unknown-linux-gnu
           package: '@affine/native'
       - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ${{ steps.filename.outputs.filename }}
@@ -449,7 +449,7 @@ jobs:
           target: ${{ matrix.spec.target }}
           package: '@affine/native'
       - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ${{ steps.filename.outputs.filename }}
@@ -498,7 +498,7 @@ jobs:
           target: ${{ matrix.spec.target }}
           package: '@affine/native'
       - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ${{ steps.filename.outputs.filename }}
@@ -523,7 +523,7 @@ jobs:
           target: 'x86_64-unknown-linux-gnu'
           package: '@affine/server-native'
       - name: Upload server-native.node
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: server-native.node
@@ -548,7 +548,7 @@ jobs:
       - name: zip web
         run: tar -czf dist.tar.gz --directory=packages/frontend/apps/electron-renderer/dist .
       - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: web
@@ -568,7 +568,7 @@ jobs:
           extra-flags: workspaces focus @affine-tools/cli @affine/monorepo @affine/native
           electron-install: false
       - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
@@ -625,7 +625,7 @@ jobs:
           full-cache: true
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -706,7 +706,7 @@ jobs:
           full-cache: true
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -769,7 +769,7 @@ jobs:
           full-cache: true
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -877,7 +877,7 @@ jobs:
 
       - name: upload fuzz artifacts
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fuzz-artifact
           path: packages/common/y-octo/utils/fuzz/artifacts/**/*
@@ -993,7 +993,7 @@ jobs:
           full-cache: true
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -1068,7 +1068,7 @@ jobs:
           hard-link-nm: false
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -1151,13 +1151,13 @@ jobs:
           hard-link-nm: false
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
 
       - name: Download affine.linux-x64-gnu.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
@@ -1173,7 +1173,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-server-${{ matrix.tests.shard }}
           path: ./test-results
@@ -1239,7 +1239,7 @@ jobs:
           echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
 
       - name: Download ${{ steps.filename.outputs.filename }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ steps.filename.outputs.filename }}
           path: ./packages/frontend/native
@@ -1311,7 +1311,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
           path: ./test-results

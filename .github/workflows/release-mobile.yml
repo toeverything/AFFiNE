@@ -46,7 +46,7 @@ jobs:
           SENTRY_RELEASE: ${{ inputs.app-version }}
           RELEASE_VERSION: ${{ inputs.app-version }}
       - name: Upload ios artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios
           path: packages/frontend/apps/ios/dist
@@ -73,7 +73,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_RELEASE: ${{ inputs.app-version }}
       - name: Upload android artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android
           path: packages/frontend/apps/android/dist
@@ -93,7 +93,7 @@ jobs:
         shell: bash
         run: ./packages/frontend/apps/ios/update_code_sign_identity.sh
       - name: Download mobile artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ios
           path: packages/frontend/apps/ios/dist
@@ -153,7 +153,7 @@ jobs:
         with:
           app-version: ${{ inputs.app-version }}
       - name: Download mobile artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: android
           path: packages/frontend/apps/android/dist

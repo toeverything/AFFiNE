@@ -22,7 +22,7 @@ jobs:
           target: 'x86_64-unknown-linux-gnu'
           package: '@affine/server-native'
       - name: Upload server-native.node
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-native.node
           path: ./packages/backend/native/server-native.node
@@ -74,7 +74,7 @@ jobs:
           full-cache: true
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native
@@ -144,7 +144,7 @@ jobs:
           hard-link-nm: false
 
       - name: Download server-native.node
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-native.node
           path: ./packages/backend/native

@@ -46,7 +46,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
       - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web
           path: ./packages/frontend/apps/web/dist
@@ -78,7 +78,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
       - name: Upload admin artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: admin
           path: ./packages/frontend/admin/dist
@@ -110,7 +110,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           PERFSEE_TOKEN: ${{ secrets.PERFSEE_TOKEN }}
       - name: Upload mobile artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mobile
           path: ./packages/frontend/apps/mobile/dist
@@ -154,7 +154,7 @@ jobs:
         run: |
           mv ./packages/backend/native/server-native.node ./packages/backend/native/${{ matrix.targets.file }}
       - name: Upload ${{ matrix.targets.file }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-native-${{ matrix.targets.file }}
           path: ./packages/backend/native/${{ matrix.targets.file }}
@@ -177,7 +177,7 @@ jobs:
           electron-install: false
           extra-flags: workspaces focus @affine/server @types/affine__env
       - name: Download server-native
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: server-native-*
           merge-multiple: true
@@ -187,7 +187,7 @@ jobs:
       - name: Build Server
         run: yarn workspace @affine/server build
       - name: Upload server dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-dist
           path: ./packages/backend/server/dist
@@ -204,7 +204,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download server dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-dist
           path: ./packages/backend/server/dist
@@ -229,19 +229,19 @@ jobs:
           scope: '@toeverything'
 
       - name: Download web artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: web
           path: ./packages/frontend/apps/web/dist
 
       - name: Download mobile artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mobile
           path: ./packages/frontend/apps/mobile/dist
 
       - name: Download admin artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: admin
           path: ./packages/frontend/admin/dist

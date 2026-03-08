@@ -91,7 +91,7 @@ jobs:
           target: ${{ inputs.target }}
           package: '@affine/native'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
@@ -196,7 +196,7 @@ jobs:
 
       - name: Upload Artifact
         if: ${{ inputs.platform == 'darwin' || inputs.platform == 'linux' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: affine-${{ inputs.platform }}-${{ inputs.arch }}-builds
           path: builds
@@ -217,7 +217,7 @@ jobs:
 
       - name: Save packaged artifacts for signing
         if: ${{ inputs.platform == 'win32' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: packaged-${{ inputs.platform }}-${{ inputs.arch }}
           path: |

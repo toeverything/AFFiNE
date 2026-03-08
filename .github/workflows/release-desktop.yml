@@ -68,7 +68,7 @@ jobs:
           RELEASE_VERSION: ${{ inputs.app-version }}
 
       - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
@@ -202,14 +202,14 @@ jobs:
         env:
           npm_config_arch: ${{ matrix.spec.arch }}
       - name: Download packaged artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: packaged-unsigned
       - name: unzip packaged artifacts
         run: Expand-Archive -Path packaged-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out
       - name: Download signed packaged file diff
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: signed-packaged-diff
@@ -257,7 +257,7 @@ jobs:
           echo $FILES_TO_BE_SIGNED
 
       - name: Save installer for signing
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: archive.zip
@@ -299,14 +299,14 @@ jobs:
     runs-on: ${{ matrix.spec.runner }}
     steps:
       - name: Download installer artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: installer-unsigned
       - name: unzip installer artifacts
         run: Expand-Archive -Path installer-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make
       - name: Download signed installer file diff
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: signed-installer-diff
@@ -352,7 +352,7 @@ jobs:
             ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
@@ -371,27 +371,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download Artifacts (macos-x64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine-darwin-x64-builds
           path: ./release
       - name: Download Artifacts (macos-arm64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine-darwin-arm64-builds
           path: ./release
       - name: Download Artifacts (windows-x64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine-win32-x64-builds
           path: ./release
       - name: Download Artifacts (windows-arm64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine-win32-arm64-builds
           path: ./release
       - name: Download Artifacts (linux-x64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: affine-linux-x64-builds
           path: ./release

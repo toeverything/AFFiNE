@@ -14,7 +14,7 @@ jobs:
     env:
       ARCHIVE_DIR: ${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.artifact-name }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ env.ARCHIVE_DIR }}
@@ -66,7 +66,7 @@ jobs:
           $Manifest | ConvertTo-Json -Depth 4 | Out-File -FilePath (Join-Path $DiffDir 'manifest.json') -Encoding utf8
           Write-Host "Collected $($SignedFiles.Count) signed files."
       - name: upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: signed-${{ inputs.artifact-name }}
           path: ${{ env.ARCHIVE_DIR }}/signed-diff
