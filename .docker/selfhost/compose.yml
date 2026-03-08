@@ -14,8 +14,8 @@ services:
         condition: service_completed_successfully
     volumes:
       # custom configurations
-      - ${UPLOAD_LOCATION}:/root/.affine/storage
-      - ${CONFIG_LOCATION}:/root/.affine/config
+      - ${UPLOAD_LOCATION}:/home/affine/.affine/storage
+      - ${CONFIG_LOCATION}:/home/affine/.affine/config
     env_file:
       - .env
     environment:
@@ -29,8 +29,8 @@ services:
     container_name: affine_migration_job
     volumes:
       # custom configurations
-      - ${UPLOAD_LOCATION}:/root/.affine/storage
-      - ${CONFIG_LOCATION}:/root/.affine/config
+      - ${UPLOAD_LOCATION}:/home/affine/.affine/storage
+      - ${CONFIG_LOCATION}:/home/affine/.affine/config
     command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
     env_file:
       - .env
