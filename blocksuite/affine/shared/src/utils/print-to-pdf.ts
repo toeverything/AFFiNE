@@ -17,7 +17,14 @@ export async function printToPdf(
   return new Promise<void>((resolve, reject) => {
     const iframe = document.createElement('iframe');
     document.body.append(iframe);
-    iframe.style.display = 'none';
+    // Use a hidden but rendering-enabled state instead of display: none
+    Object.assign(iframe.style, {
+      visibility: 'hidden',
+      position: 'absolute',
+      width: '0',
+      height: '0',
+      border: 'none',
+    });
     iframe.srcdoc = '<!DOCTYPE html>';
     iframe.onload = async () => {
       if (!iframe.contentWindow) {
@@ -28,47 +35,49 @@ export async function printToPdf(
         reject(new Error('Root element not defined, unable to print pdf'));
         return;
       }
-      iframe.contentWindow.document
-        .write(`<!DOCTYPE html><html><head><style>@media print {
-              html, body {
-                height: initial !important;
-                overflow: initial !important;
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-                color: #000 !important;
-                background: #fff !important;
-                color-scheme: light !important;
-              }
-              ::-webkit-scrollbar { 
-                display: none; 
-              }
-              :root, body {
-                --affine-text-primary: #000 !important;
-                --affine-text-secondary: #111 !important;
-                --affine-text-tertiary: #333 !important;
-                --affine-background-primary: #fff !important;
-                --affine-background-secondary: #fff !important;
-                --affine-background-tertiary: #fff !important;
-              }
-              body, [data-theme='dark'] {
-                color: #000 !important;
-                background: #fff !important;
-              }
-              body * {
-                color: #000 !important;
-                -webkit-text-fill-color: #000 !important;
-              }
-              :root {
-                --affine-note-shadow-box: none !important;
-                --affine-note-shadow-sticker: none !important;
-              }
-            }</style></head><body></body></html>`);
+
+      const doc = iframe.contentWindow.document;
+
+      doc.write(`<!DOCTYPE html><html><head><style>@media print {
+                html, body {
+                  height: initial !important;
+                  overflow: initial !important;
+                  print-color-adjust: exact;
+                  -webkit-print-color-adjust: exact;
+                  color: #000 !important;
+                  background: #fff !important;
+                  color-scheme: light !important;
+                }
+                ::-webkit-scrollbar { 
+                  display: none; 
+                }
+                :root, body {
+                  --affine-text-primary: #000 !important;
+                  --affine-text-secondary: #111 !important;
+                  --affine-text-tertiary: #333 !important;
+                  --affine-background-primary: #fff !important;
+                  --affine-background-secondary: #fff !important;
+                  --affine-background-tertiary: #fff !important;
+                }
+                body, [data-theme='dark'] {
+                  color: #000 !important;
+                  background: #fff !important;
+                }
+                body * {
+                  color: #000 !important;
+                  -webkit-text-fill-color: #000 !important;
+                }
+                :root {
+                  --affine-note-shadow-box: none !important;
+                  --affine-note-shadow-sticker: none !important;
+                }
+              }</style></head><body></body></html>`);
 
       // copy all styles to iframe
       for (const element of document.styleSheets) {
         try {
           for (const cssRule of element.cssRules) {
-            const target = iframe.contentWindow.document.styleSheets[0];
+            const target = doc.styleSheets[0];
             target.insertRule(cssRule.cssText, target.cssRules.length);
           }
         } catch (e) {
@@ -109,14 +118,11 @@ export async function printToPdf(
         );
       }
 
-      const importedRoot = iframe.contentWindow.document.importNode(
-        rootElement,
-        true
-      ) as HTMLDivElement;
+      const importedRoot = doc.importNode(rootElement, true) as HTMLDivElement;
 
       // force light theme in print iframe
-      iframe.contentWindow.document.documentElement.dataset.theme = 'light';
-      iframe.contentWindow.document.body.dataset.theme = 'light';
+      doc.documentElement.dataset.theme = 'light';
+      doc.body.dataset.theme = 'light';
       importedRoot.dataset.theme = 'light';
 
       // draw saved canvas image to canvas
@@ -135,17 +141,58 @@ export async function printToPdf(
         }
       }
 
-      // append to iframe and print
-      iframe.contentWindow.document.body.append(importedRoot);
+      // Remove lazy loading from all images and force reload
+      const allImages = importedRoot.querySelectorAll('img');
+      allImages.forEach(img => {
+        img.removeAttribute('loading');
+        const src = img.getAttribute('src');
+        if (src) img.setAttribute('src', src);
+      });
+
+      // append to iframe
+      doc.body.append(importedRoot);
 
       await options.beforeprint?.(iframe);
 
-      // browser may take some time to load font
-      await new Promise<void>(resolve => {
-        setTimeout(() => {
-          resolve();
-        }, 1000);
-      });
+      // Robust image waiting logic
+      const waitForImages = async (container: HTMLElement) => {
+        const images: HTMLImageElement[] = [];
+
+        const findImages = (root: Node) => {
+          if (root instanceof HTMLImageElement) {
+            images.push(root);
+          }
+          if (root instanceof HTMLElement || root instanceof ShadowRoot) {
+            root.childNodes.forEach(findImages);
+          }
+          if (root instanceof HTMLElement && root.shadowRoot) {
+            findImages(root.shadowRoot);
+          }
+        };
+
+        findImages(container);
+
+        await Promise.all(
+          images.map(img => {
+            if (img.complete && img.naturalWidth !== 0)
+              return Promise.resolve();
+            return new Promise(resolve => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            });
+          })
+        );
+      };
+
+      await waitForImages(importedRoot);
+
+      // browser may take some time to load font or other resources
+      await (doc.fonts?.ready ??
+        new Promise<void>(resolve => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        }));
 
       iframe.contentWindow.onafterprint = async () => {
         iframe.remove();
