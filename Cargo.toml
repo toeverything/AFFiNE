@@ -53,7 +53,7 @@ resolver = "3"
   libc = "0.2"
   libwebp-sys = "0.14.2"
   little_exif = "0.6.23"
-  llm_adapter = "0.1.1"
+  llm_adapter = "0.1.2"
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"

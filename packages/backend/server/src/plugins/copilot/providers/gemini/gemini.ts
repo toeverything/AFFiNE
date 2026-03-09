@@ -1,87 +1,49 @@
-import type {
-  GoogleGenerativeAIProvider,
-  GoogleGenerativeAIProviderOptions,
-} from '@ai-sdk/google';
-import type { GoogleVertexProvider } from '@ai-sdk/google-vertex';
-import {
-  AISDKError,
-  type EmbeddingModel,
-  embedMany,
-  generateObject,
-  generateText,
-  JSONParseError,
-  stepCountIs,
-  streamText,
-} from 'ai';
+import { ZodError } from 'zod';
 
 import {
-  CopilotPromptInvalid,
   CopilotProviderSideError,
   metrics,
   UserFriendlyError,
 } from '../../../../base';
+import {
+  llmDispatchStream,
+  llmEmbeddingDispatch,
+  llmStructuredDispatch,
+  type NativeLlmBackendConfig,
+  type NativeLlmEmbeddingRequest,
+  type NativeLlmRequest,
+  type NativeLlmStructuredRequest,
+} from '../../../../native';
+import type { NodeTextMiddleware } from '../../config';
+import type { CopilotToolSet } from '../../tools';
+import {
+  buildNativeEmbeddingRequest,
+  buildNativeRequest,
+  buildNativeStructuredRequest,
+  NativeProviderAdapter,
+  parseNativeStructuredOutput,
+  StructuredResponseParseError,
+} from '../native';
 import { CopilotProvider } from '../provider';
 import type {
   CopilotChatOptions,
   CopilotEmbeddingOptions,
   CopilotImageOptions,
-  CopilotProviderModel,
+  CopilotStructuredOptions,
   ModelConditions,
   PromptMessage,
   StreamObject,
 } from '../types';
 import { ModelOutputType } from '../types';
-import {
-  chatToGPTMessage,
-  StreamObjectParser,
-  TextStreamParser,
-} from '../utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
 export abstract class GeminiProvider<T> extends CopilotProvider<T> {
-  protected abstract instance:
-    | GoogleGenerativeAIProvider
-    | GoogleVertexProvider;
-
-  private getThinkingConfig(
-    model: string,
-    options: { includeThoughts: boolean; useDynamicBudget?: boolean }
-  ): NonNullable<GoogleGenerativeAIProviderOptions['thinkingConfig']> {
-    if (this.isGemini3Model(model)) {
-      return {
-        includeThoughts: options.includeThoughts,
-        thinkingLevel: 'high',
-      };
-    }
-
-    return {
-      includeThoughts: options.includeThoughts,
-      thinkingBudget: options.useDynamicBudget ? -1 : 12000,
-    };
-  }
-
-  private getEmbeddingModel(model: string) {
-    const provider = this.instance as typeof this.instance & {
-      embeddingModel?: (modelId: string) => EmbeddingModel;
-      textEmbeddingModel?: (modelId: string) => EmbeddingModel;
-    };
-
-    return (
-      provider.embeddingModel?.(model) ?? provider.textEmbeddingModel?.(model)
-    );
-  }
+  protected abstract createNativeConfig(): Promise<NativeLlmBackendConfig>;
 
   private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof AISDKError) {
-      this.logger.error('Throw error from ai sdk:', e);
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: e.name || 'unknown',
-        message: e.message,
-      });
     } else {
       return new CopilotProviderSideError({
         provider: this.type,
@@ -91,37 +53,76 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     }
   }
 
+  protected createNativeDispatch(backendConfig: NativeLlmBackendConfig) {
+    return (request: NativeLlmRequest, signal?: AbortSignal) =>
+      llmDispatchStream('gemini', backendConfig, request, signal);
+  }
+
+  protected createNativeStructuredDispatch(
+    backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmStructuredRequest) =>
+      llmStructuredDispatch('gemini', backendConfig, request);
+  }
+
+  protected createNativeEmbeddingDispatch(
+    backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmEmbeddingRequest) =>
+      llmEmbeddingDispatch('gemini', backendConfig, request);
+  }
+
+  protected createNativeAdapter(
+    backendConfig: NativeLlmBackendConfig,
+    tools: CopilotToolSet,
+    nodeTextMiddleware?: NodeTextMiddleware[]
+  ) {
+    return new NativeProviderAdapter(
+      this.createNativeDispatch(backendConfig),
+      tools,
+      this.MAX_STEPS,
+      { nodeTextMiddleware }
+    );
+  }
+
   async text(
     cond: ModelConditions,
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance = this.instance(model.id);
-      const { text } = await generateText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        abortSignal: options.signal,
-        providerOptions: {
-          google: this.getGeminiOptions(options, model.id),
-        },
-        tools: await this.getTools(options, model.id),
-        stopWhen: stepCountIs(this.MAX_STEPS),
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        attachmentCapability: cap,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
       });
-
-      if (!text) throw new Error('Failed to generate text');
-      return text.trim();
+      const adapter = this.createNativeAdapter(
+        backendConfig,
+        tools,
+        middleware.node?.text
+      );
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -129,55 +130,55 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
   override async structure(
     cond: ModelConditions,
     messages: PromptMessage[],
-    options: CopilotChatOptions = {}
+    options: CopilotStructuredOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Structured };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs, schema] = await chatToGPTMessage(messages);
-      if (!schema) {
-        throw new CopilotPromptInvalid('Schema is required');
-      }
-
-      const modelInstance = this.instance(model.id);
-      const { object } = await generateObject({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        schema,
-        providerOptions: {
-          google: {
-            thinkingConfig: this.getThinkingConfig(model.id, {
-              includeThoughts: false,
-              useDynamicBudget: true,
-            }),
-          },
-        },
-        abortSignal: options.signal,
-        maxRetries: options.maxRetries || 3,
-        experimental_repairText: async ({ text, error }) => {
-          if (error instanceof JSONParseError) {
-            // strange fixed response, temporarily replace it
-            const ret = text.replaceAll(/^ny\n/g, ' ').trim();
-            if (ret.startsWith('```') || ret.endsWith('```')) {
-              return ret
-                .replace(/```[\w\s]+\n/g, '')
-                .replace(/\n```/g, '')
-                .trim();
-            }
-            return ret;
-          }
-          return null;
-        },
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const structuredDispatch =
+        this.createNativeStructuredDispatch(backendConfig);
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Structured);
+      const { request, schema } = await buildNativeStructuredRequest({
+        model: model.id,
+        messages,
+        options,
+        attachmentCapability: cap,
+        reasoning: this.getReasoning(options, model.id),
+        responseSchema: options.schema,
+        middleware,
       });
-
-      return JSON.stringify(object);
+      let lastError: unknown;
+      const maxAttempts = Math.max(options.maxRetries ?? 3, 1);
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const response = await structuredDispatch(request);
+        try {
+          const parsed = parseNativeStructuredOutput(response);
+          const validated = schema.parse(parsed);
+          return JSON.stringify(validated);
+        } catch (error) {
+          lastError = error;
+          const retryableError =
+            error instanceof StructuredResponseParseError ||
+            error instanceof ZodError;
+          if (!retryableError || attempt === maxAttempts - 1) {
+            throw error;
+          }
+        }
+      }
+      throw lastError;
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -188,29 +189,49 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     options: CopilotChatOptions | CopilotImageOptions = {}
   ): AsyncIterable<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new TextStreamParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        yield result;
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
-      }
-      if (!options.signal?.aborted) {
-        const footnotes = parser.end();
-        if (footnotes.length) {
-          yield `\n\n${footnotes}`;
-        }
+      metrics.ai
+        .counter('chat_text_stream_calls')
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const tools = await this.getTools(
+        options as CopilotChatOptions,
+        model.id
+      );
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options: options as CopilotChatOptions,
+        tools,
+        attachmentCapability: cap,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createNativeAdapter(
+        backendConfig,
+        tools,
+        middleware.node?.text
+      );
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
+        yield chunk;
       }
     } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_stream_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -221,29 +242,46 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     options: CopilotChatOptions = {}
   ): AsyncIterable<StreamObject> {
     const fullCond = { ...cond, outputType: ModelOutputType.Object };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
         .counter('chat_object_stream_calls')
-        .add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new StreamObjectParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        if (result) {
-          yield result;
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Object);
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        attachmentCapability: cap,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createNativeAdapter(
+        backendConfig,
+        tools,
+        middleware.node?.text
+      );
+      for await (const chunk of adapter.streamObject(
+        request,
+        options.signal,
+        messages
+      )) {
+        yield chunk;
       }
     } catch (e: any) {
       metrics.ai
         .counter('chat_object_stream_errors')
-        .add(1, { model: model.id });
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -253,76 +291,54 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     messages: string | string[],
     options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
-    messages = Array.isArray(messages) ? messages : [messages];
+    const values = Array.isArray(messages) ? messages : [messages];
     const fullCond = { ...cond, outputType: ModelOutputType.Embedding };
-    await this.checkParams({ embeddings: messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      embeddings: values,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
         .counter('generate_embedding_calls')
-        .add(1, { model: model.id });
-
-      const modelInstance = this.getEmbeddingModel(model.id);
-      if (!modelInstance) {
-        throw new Error(`Embedding model is not available for ${model.id}`);
-      }
-
-      const embeddings = await Promise.allSettled(
-        messages.map(m =>
-          embedMany({
-            model: modelInstance,
-            values: [m],
-            maxRetries: 3,
-            providerOptions: {
-              google: {
-                outputDimensionality: options.dimensions || DEFAULT_DIMENSIONS,
-                taskType: 'RETRIEVAL_DOCUMENT',
-              },
-            },
-          })
-        )
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = await this.createNativeConfig();
+      const response = await this.createNativeEmbeddingDispatch(backendConfig)(
+        buildNativeEmbeddingRequest({
+          model: model.id,
+          inputs: values,
+          dimensions: options.dimensions || DEFAULT_DIMENSIONS,
+          taskType: 'RETRIEVAL_DOCUMENT',
+          middleware: this.getActiveProviderMiddleware(),
+        })
       );
-
-      return embeddings
-        .flatMap(e => (e.status === 'fulfilled' ? e.value.embeddings : null))
-        .filter((v): v is number[] => !!v && Array.isArray(v));
+      return response.embeddings;
     } catch (e: any) {
       metrics.ai
         .counter('generate_embedding_errors')
-        .add(1, { model: model.id });
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
 
-  private async getFullStream(
-    model: CopilotProviderModel,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ) {
-    const [system, msgs] = await chatToGPTMessage(messages);
-    const { fullStream } = streamText({
-      model: this.instance(model.id),
-      system,
-      messages: msgs,
-      abortSignal: options.signal,
-      providerOptions: {
-        google: this.getGeminiOptions(options, model.id),
-      },
-      tools: await this.getTools(options, model.id),
-      stopWhen: stepCountIs(this.MAX_STEPS),
-    });
-    return fullStream;
-  }
-
-  private getGeminiOptions(options: CopilotChatOptions, model: string) {
-    const result: GoogleGenerativeAIProviderOptions = {};
-    if (options?.reasoning && this.isReasoningModel(model)) {
-      result.thinkingConfig = this.getThinkingConfig(model, {
-        includeThoughts: true,
-      });
+  protected getReasoning(
+    options: CopilotChatOptions | CopilotImageOptions,
+    model: string
+  ): Record<string, unknown> | undefined {
+    if (
+      options &&
+      'reasoning' in options &&
+      options.reasoning &&
+      this.isReasoningModel(model)
+    ) {
+      return this.isGemini3Model(model)
+        ? { include_thoughts: true, thinking_level: 'high' }
+        : { include_thoughts: true, thinking_budget: 12000 };
     }
-    return result;
+
+    return undefined;
   }
 
   private isGemini3Model(model: string) {

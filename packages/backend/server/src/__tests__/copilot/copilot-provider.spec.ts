@@ -445,6 +445,48 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     type: 'object' as const,
   },
   {
+    name: 'Gemini native text',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content:
+          'In one short sentence, explain what AFFiNE AI is and mention AFFiNE by name.',
+      },
+    ],
+    config: { model: 'gemini-2.5-flash' },
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      t.assert(
+        result.toLowerCase().includes('affine'),
+        'should mention AFFiNE'
+      );
+    },
+    prefer: CopilotProviderType.Gemini,
+    type: 'text' as const,
+  },
+  {
+    name: 'Gemini native stream objects',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content:
+          'Respond with one short sentence about AFFiNE AI and mention AFFiNE by name.',
+      },
+    ],
+    config: { model: 'gemini-2.5-flash' },
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.truthy(checkStreamObjects(result), 'should be valid stream objects');
+      t.assert(
+        result.toLowerCase().includes('affine'),
+        'should mention AFFiNE'
+      );
+    },
+    prefer: CopilotProviderType.Gemini,
+    type: 'object' as const,
+  },
+  {
     name: 'Should transcribe short audio',
     promptName: ['Transcript audio'],
     messages: [
@@ -891,7 +933,7 @@ test(
   'should be able to rerank message chunks',
   runIfCopilotConfigured,
   async t => {
-    const { factory, prompt } = t.context;
+    const { factory } = t.context;
 
     await retry('rerank', t, async t => {
       const query = 'Is this content relevant to programming?';
@@ -908,14 +950,18 @@ test(
         'The stock market is experiencing significant fluctuations.',
       ];
 
-      const p = (await prompt.get('Rerank results'))!;
-      t.assert(p, 'should have prompt for rerank');
-      const provider = (await factory.getProviderByModel(p.model))!;
+      const provider = (await factory.getProviderByModel('gpt-5.2'))!;
       t.assert(provider, 'should have provider for rerank');
 
       const scores = await provider.rerank(
-        { modelId: p.model },
-        embeddings.map(e => p.finish({ query, doc: e }))
+        { modelId: 'gpt-5.2' },
+        {
+          query,
+          candidates: embeddings.map((text, index) => ({
+            id: String(index),
+            text,
+          })),
+        }
       );
 
       t.is(scores.length, 10, 'should return scores for all chunks');

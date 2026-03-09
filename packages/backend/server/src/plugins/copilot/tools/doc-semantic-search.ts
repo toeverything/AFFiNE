@@ -1,4 +1,3 @@
-import { tool } from 'ai';
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
@@ -9,6 +8,7 @@ import {
   type Models,
 } from '../../../models';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type {
   ContextSession,
   CopilotChatOptions,
@@ -103,7 +103,7 @@ export const createDocSemanticSearchTool = (
     abortSignal?: AbortSignal
   ) => Promise<ChunkSimilarity[] | string | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
     inputSchema: z.object({

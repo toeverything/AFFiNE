@@ -419,21 +419,6 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
     },
   },
   {
-    name: 'Rerank results',
-    action: 'Rerank results',
-    model: 'gpt-5.2',
-    messages: [
-      {
-        role: 'system',
-        content: `Judge whether the Document meets the requirements based on the Query and the Instruct provided. The answer must be "yes" or "no".`,
-      },
-      {
-        role: 'user',
-        content: `<Instruct>: Given a document search result, determine whether the result is relevant to the query.\n<Query>: {{query}}\n<Document>: {{doc}}`,
-      },
-    ],
-  },
-  {
     name: 'Generate a caption',
     action: 'Generate a caption',
     model: 'gemini-2.5-flash',

@@ -1,14 +1,14 @@
-import {
-  createVertex,
-  type GoogleVertexProvider,
-  type GoogleVertexProviderSettings,
-} from '@ai-sdk/google-vertex';
-
+import type { NativeLlmBackendConfig } from '../../../../native';
+import { GEMINI_ATTACHMENT_CAPABILITY } from '../attachments';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
-import { getGoogleAuth, VertexModelListSchema } from '../utils';
+import {
+  getGoogleAuth,
+  VertexModelListSchema,
+  type VertexProviderConfig,
+} from '../utils';
 import { GeminiProvider } from './gemini';
 
-export type GeminiVertexConfig = GoogleVertexProviderSettings;
+export type GeminiVertexConfig = VertexProviderConfig;
 
 export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
   override readonly type = CopilotProviderType.GeminiVertex;
@@ -23,12 +23,15 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
             ModelInputType.Text,
             ModelInputType.Image,
             ModelInputType.Audio,
+            ModelInputType.File,
           ],
           output: [
             ModelOutputType.Text,
             ModelOutputType.Object,
             ModelOutputType.Structured,
           ],
+          attachments: GEMINI_ATTACHMENT_CAPABILITY,
+          structuredAttachments: GEMINI_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -41,12 +44,15 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
             ModelInputType.Text,
             ModelInputType.Image,
             ModelInputType.Audio,
+            ModelInputType.File,
           ],
           output: [
             ModelOutputType.Text,
             ModelOutputType.Object,
             ModelOutputType.Structured,
           ],
+          attachments: GEMINI_ATTACHMENT_CAPABILITY,
+          structuredAttachments: GEMINI_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -59,12 +65,15 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
             ModelInputType.Text,
             ModelInputType.Image,
             ModelInputType.Audio,
+            ModelInputType.File,
           ],
           output: [
             ModelOutputType.Text,
             ModelOutputType.Object,
             ModelOutputType.Structured,
           ],
+          attachments: GEMINI_ATTACHMENT_CAPABILITY,
+          structuredAttachments: GEMINI_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -80,21 +89,13 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
       ],
     },
   ];
-
-  protected instance!: GoogleVertexProvider;
-
   override configured(): boolean {
     return !!this.config.location && !!this.config.googleAuthOptions;
   }
 
-  protected override setup() {
-    super.setup();
-    this.instance = createVertex(this.config);
-  }
-
   override async refreshOnlineModels() {
     try {
-      const { baseUrl, headers } = await getGoogleAuth(this.config, 'google');
+      const { baseUrl, headers } = await this.resolveVertexAuth();
       if (baseUrl && !this.onlineModelList.length) {
         const { publisherModels } = await fetch(`${baseUrl}/models`, {
           headers: headers(),
@@ -108,5 +109,20 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
     } catch (e) {
       this.logger.error('Failed to fetch available models', e);
     }
+  }
+
+  protected async resolveVertexAuth() {
+    return await getGoogleAuth(this.config, 'google');
+  }
+
+  protected override async createNativeConfig(): Promise<NativeLlmBackendConfig> {
+    const auth = await this.resolveVertexAuth();
+    const { Authorization: authHeader } = auth.headers();
+
+    return {
+      base_url: auth.baseUrl || '',
+      auth_token: authHeader.replace(/^Bearer\s+/i, ''),
+      request_layer: 'gemini_vertex',
+    };
   }
 }

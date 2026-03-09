@@ -5,9 +5,10 @@ use std::sync::{
 
 use llm_adapter::{
   backend::{
-    BackendConfig, BackendError, BackendProtocol, ReqwestHttpClient, dispatch_request, dispatch_stream_events_with,
+    BackendConfig, BackendError, BackendProtocol, ReqwestHttpClient, dispatch_embedding_request, dispatch_request,
+    dispatch_rerank_request, dispatch_stream_events_with, dispatch_structured_request,
   },
-  core::{CoreRequest, StreamEvent},
+  core::{CoreRequest, EmbeddingRequest, RerankRequest, StreamEvent, StructuredRequest},
   middleware::{
     MiddlewareConfig, PipelineContext, RequestMiddleware, StreamMiddleware, citation_indexing, clamp_max_tokens,
     normalize_messages, run_request_middleware_chain, run_stream_middleware_chain, stream_event_normalize,
@@ -40,6 +41,28 @@ struct LlmDispatchPayload {
   middleware: LlmMiddlewarePayload,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct LlmStructuredDispatchPayload {
+  #[serde(flatten)]
+  request: StructuredRequest,
+  #[serde(default)]
+  middleware: LlmMiddlewarePayload,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LlmEmbeddingDispatchPayload {
+  #[serde(flatten)]
+  request: EmbeddingRequest,
+  #[serde(default)]
+  middleware: LlmMiddlewarePayload,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LlmRerankDispatchPayload {
+  #[serde(flatten)]
+  request: RerankRequest,
+}
+
 #[napi]
 pub struct LlmStreamHandle {
   aborted: Arc<AtomicBool>,
@@ -62,6 +85,44 @@ pub fn llm_dispatch(protocol: String, backend_config_json: String, request_json:
 
   let response =
     dispatch_request(&ReqwestHttpClient::default(), &config, protocol, &request).map_err(map_backend_error)?;
+
+  serde_json::to_string(&response).map_err(map_json_error)
+}
+
+#[napi(catch_unwind)]
+pub fn llm_structured_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
+  let protocol = parse_protocol(&protocol)?;
+  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
+  let payload: LlmStructuredDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
+  let request = apply_structured_request_middlewares(payload.request, &payload.middleware)?;
+
+  let response = dispatch_structured_request(&ReqwestHttpClient::default(), &config, protocol, &request)
+    .map_err(map_backend_error)?;
+
+  serde_json::to_string(&response).map_err(map_json_error)
+}
+
+#[napi(catch_unwind)]
+pub fn llm_embedding_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
+  let protocol = parse_protocol(&protocol)?;
+  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
+  let payload: LlmEmbeddingDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
+  let request = apply_embedding_request_middlewares(payload.request, &payload.middleware)?;
+
+  let response = dispatch_embedding_request(&ReqwestHttpClient::default(), &config, protocol, &request)
+    .map_err(map_backend_error)?;
+
+  serde_json::to_string(&response).map_err(map_json_error)
+}
+
+#[napi(catch_unwind)]
+pub fn llm_rerank_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
+  let protocol = parse_protocol(&protocol)?;
+  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
+  let payload: LlmRerankDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
+
+  let response = dispatch_rerank_request(&ReqwestHttpClient::default(), &config, protocol, &payload.request)
+    .map_err(map_backend_error)?;
 
   serde_json::to_string(&response).map_err(map_json_error)
 }
@@ -153,6 +214,34 @@ pub fn llm_dispatch_stream(
 fn apply_request_middlewares(request: CoreRequest, middleware: &LlmMiddlewarePayload) -> Result<CoreRequest> {
   let chain = resolve_request_chain(&middleware.request)?;
   Ok(run_request_middleware_chain(request, &middleware.config, &chain))
+}
+
+fn apply_structured_request_middlewares(
+  request: StructuredRequest,
+  middleware: &LlmMiddlewarePayload,
+) -> Result<StructuredRequest> {
+  let mut core = request.as_core_request();
+  core = apply_request_middlewares(core, middleware)?;
+
+  Ok(StructuredRequest {
+    model: core.model,
+    messages: core.messages,
+    schema: core
+      .response_schema
+      .ok_or_else(|| Error::new(Status::InvalidArg, "Structured request schema is required"))?,
+    max_tokens: core.max_tokens,
+    temperature: core.temperature,
+    reasoning: core.reasoning,
+    strict: request.strict,
+    response_mime_type: request.response_mime_type,
+  })
+}
+
+fn apply_embedding_request_middlewares(
+  request: EmbeddingRequest,
+  _middleware: &LlmMiddlewarePayload,
+) -> Result<EmbeddingRequest> {
+  Ok(request)
 }
 
 #[derive(Clone)]
@@ -268,6 +357,7 @@ fn parse_protocol(protocol: &str) -> Result<BackendProtocol> {
     }
     "openai_responses" | "openai-responses" | "responses" => Ok(BackendProtocol::OpenaiResponses),
     "anthropic" | "anthropic_messages" | "anthropic-messages" => Ok(BackendProtocol::AnthropicMessages),
+    "gemini" | "gemini_generate_content" | "gemini-generate-content" => Ok(BackendProtocol::GeminiGenerateContent),
     other => Err(Error::new(
       Status::InvalidArg,
       format!("Unsupported llm backend protocol: {other}"),
@@ -293,6 +383,7 @@ mod tests {
     assert!(parse_protocol("chat-completions").is_ok());
     assert!(parse_protocol("responses").is_ok());
     assert!(parse_protocol("anthropic").is_ok());
+    assert!(parse_protocol("gemini").is_ok());
   }
 
   #[test]

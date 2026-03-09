@@ -1,12 +1,12 @@
-import { tool } from 'ai';
 import Exa from 'exa-js';
 import { z } from 'zod';
 
 import { Config } from '../../../base';
 import { toolError } from './error';
+import { defineTool } from './tool';
 
 export const createExaSearchTool = (config: Config) => {
-  return tool({
+  return defineTool({
     description: 'Search the web for information',
     inputSchema: z.object({
       query: z.string().describe('The query to search the web for.'),
