@@ -143,7 +143,7 @@ export class TextRenderer extends SignalWatcher(
       overflow-y: auto;
       overflow-x: hidden;
       padding: 0;
-      overscroll-behavior-y: none;
+      min-height: 0;
     }
     .text-renderer-container.show-scrollbar::-webkit-scrollbar {
       width: 5px;
