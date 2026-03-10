@@ -492,7 +492,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     return (
       request: NativeLlmRerankRequest
     ): Promise<NativeLlmRerankResponse> =>
-      llmRerankDispatch(this.getNativeProtocol(), backendConfig, request);
+      llmRerankDispatch('openai_chat', backendConfig, request);
   }
 
   private getReasoning(

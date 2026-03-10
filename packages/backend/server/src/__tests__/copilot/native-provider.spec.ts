@@ -81,6 +81,12 @@ class TestGeminiProvider extends GeminiProvider<{ apiKey: string }> {
   readonly dispatchRequests: NativeLlmRequest[] = [];
   readonly structuredRequests: NativeLlmStructuredRequest[] = [];
   readonly embeddingRequests: NativeLlmEmbeddingRequest[] = [];
+  readonly remoteAttachmentRequests: string[] = [];
+  readonly retryDelays: number[] = [];
+  remoteAttachmentResponses = new Map<
+    string,
+    { data: string; mimeType: string }
+  >();
   testTools: CopilotToolSet = {};
   testMiddleware: ProviderMiddlewareConfig = {
     rust: {
@@ -157,6 +163,19 @@ class TestGeminiProvider extends GeminiProvider<{ apiKey: string }> {
       this.embeddingRequests.push(request);
       return this.embeddingFactory(request);
     };
+  }
+
+  protected override async fetchRemoteAttach(url: string) {
+    this.remoteAttachmentRequests.push(url);
+    const response = this.remoteAttachmentResponses.get(url);
+    if (!response) {
+      throw new Error(`missing remote attachment stub for ${url}`);
+    }
+    return response;
+  }
+
+  protected override async waitForStructuredRetry(delayMs: number) {
+    this.retryDelays.push(delayMs);
   }
 
   protected override getActiveProviderMiddleware(): ProviderMiddlewareConfig {
@@ -792,7 +811,7 @@ test('GeminiProvider should retry only reparsable structured responses', async t
   t.deepEqual(JSON.parse(result), { summary: 'ok' });
 });
 
-test('GeminiProvider should not retry non-retriable structured errors', async t => {
+test('GeminiProvider should treat maxRetries as retry count for backend failures', async t => {
   const provider = new TestGeminiProvider();
   let attempts = 0;
   provider.structuredFactory = () => {
@@ -813,16 +832,22 @@ test('GeminiProvider should not retry non-retriable structured errors', async t 
           content: 'Summarize AFFiNE in one short sentence.',
         },
       ],
-      { schema: z.object({ summary: z.string() }), maxRetries: 3 }
+      { schema: z.object({ summary: z.string() }), maxRetries: 2 }
     )
   );
 
-  t.is(attempts, 1);
+  t.is(attempts, 3);
+  t.deepEqual(provider.retryDelays, [2_000, 4_000]);
   t.regex(error.message, /backend down/);
 });
 
 test('GeminiProvider should use native structured path for audio attachments', async t => {
   const provider = new TestGeminiProvider();
+  const inlineData = Buffer.from('audio-bytes', 'utf8').toString('base64');
+  provider.remoteAttachmentResponses.set('https://example.com/a.mp3', {
+    data: inlineData,
+    mimeType: 'audio/mpeg',
+  });
   provider.structuredFactory = () => ({
     id: 'structured_audio_1',
     model: 'gemini-2.5-flash',
@@ -862,11 +887,12 @@ test('GeminiProvider should use native structured path for audio attachments', a
     {
       type: 'audio',
       source: {
-        url: 'https://example.com/a.mp3',
+        data: inlineData,
         media_type: 'audio/mpeg',
       },
     },
   ]);
+  t.deepEqual(provider.remoteAttachmentRequests, ['https://example.com/a.mp3']);
   t.deepEqual(JSON.parse(result), [{ a: 'Speaker 1', s: 0, e: 1, t: 'Hello' }]);
 });
 
@@ -897,6 +923,11 @@ test('GeminiProvider should use native path for embeddings', async t => {
 
 test('GeminiProvider should use native path for non-image attachments', async t => {
   const provider = new TestGeminiProvider();
+  const inlineData = Buffer.from('pdf-bytes', 'utf8').toString('base64');
+  provider.remoteAttachmentResponses.set('https://example.com/a.pdf', {
+    data: inlineData,
+    mimeType: 'application/pdf',
+  });
   const messages: PromptMessage[] = [
     {
       role: 'user',
@@ -919,7 +950,63 @@ test('GeminiProvider should use native path for non-image attachments', async t 
     {
       type: 'file',
       source: {
-        url: 'https://example.com/a.pdf',
+        data: inlineData,
+        media_type: 'application/pdf',
+      },
+    },
+  ]);
+});
+
+test('GeminiProvider should inline remote image attachments for text requests', async t => {
+  const provider = new TestGeminiProvider();
+  const inlineData = Buffer.from('image-bytes', 'utf8').toString('base64');
+  provider.remoteAttachmentResponses.set('https://example.com/a.jpg', {
+    data: inlineData,
+    mimeType: 'image/jpeg',
+  });
+
+  const result = await provider.text({ modelId: 'gemini-2.5-flash' }, [
+    {
+      role: 'user',
+      content: 'describe this image',
+      attachments: ['https://example.com/a.jpg'],
+    },
+  ]);
+
+  t.is(result, 'native');
+  t.deepEqual(provider.dispatchRequests[0]?.messages[0]?.content, [
+    { type: 'text', text: 'describe this image' },
+    {
+      type: 'image',
+      source: {
+        data: inlineData,
+        media_type: 'image/jpeg',
+      },
+    },
+  ]);
+});
+
+test('GeminiProvider should preserve Google file urls for native Gemini API', async t => {
+  const provider = new TestGeminiProvider();
+
+  await provider.text({ modelId: 'gemini-2.5-flash' }, [
+    {
+      role: 'user',
+      content: 'summarize this file',
+      attachments: [
+        'https://generativelanguage.googleapis.com/v1beta/files/file-123',
+      ],
+      params: { mimetype: 'application/pdf' },
+    },
+  ]);
+
+  t.deepEqual(provider.remoteAttachmentRequests, []);
+  t.deepEqual(provider.dispatchRequests[0]?.messages[0]?.content, [
+    { type: 'text', text: 'summarize this file' },
+    {
+      type: 'file',
+      source: {
+        url: 'https://generativelanguage.googleapis.com/v1beta/files/file-123',
         media_type: 'application/pdf',
       },
     },
