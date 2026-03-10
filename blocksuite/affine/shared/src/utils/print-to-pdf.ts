@@ -93,12 +93,33 @@ export async function printToPdf(
         }
       }
 
+      // Recursive function to find all canvases, including those in shadow roots
+      const findAllCanvases = (root: Node): HTMLCanvasElement[] => {
+        const canvases: HTMLCanvasElement[] = [];
+        const traverse = (node: Node) => {
+          if (node instanceof HTMLCanvasElement) {
+            canvases.push(node);
+          }
+          if (node instanceof HTMLElement || node instanceof ShadowRoot) {
+            node.childNodes.forEach(traverse);
+          }
+          if (node instanceof HTMLElement && node.shadowRoot) {
+            traverse(node.shadowRoot);
+          }
+        };
+        traverse(root);
+        return canvases;
+      };
+
       // convert all canvas to image
       const canvasImgObjectUrlMap = new Map<string, string>();
-      const allCanvas = rootElement.getElementsByTagName('canvas');
+      const allCanvas = findAllCanvases(rootElement);
       let canvasKey = 1;
+      const canvasToKeyMap = new Map<HTMLCanvasElement, string>();
+
       for (const canvas of allCanvas) {
-        canvas.dataset['printToPdfCanvasKey'] = canvasKey.toString();
+        const key = canvasKey.toString();
+        canvasToKeyMap.set(canvas, key);
         canvasKey++;
         const canvasImgObjectUrl = await new Promise<Blob | null>(resolve => {
           try {
@@ -113,56 +134,38 @@ export async function printToPdf(
           );
           continue;
         }
-        canvasImgObjectUrlMap.set(
-          canvas.dataset['printToPdfCanvasKey'],
-          URL.createObjectURL(canvasImgObjectUrl)
-        );
+        canvasImgObjectUrlMap.set(key, URL.createObjectURL(canvasImgObjectUrl));
       }
 
-      // Mark elements with shadow roots to find them after cloning
-      const shadowRootElements = new Map<string, HTMLElement>();
-      let shadowIdCounter = 0;
-      const findShadowRoots = (root: HTMLElement) => {
-        if (root.shadowRoot) {
-          const id = `shadow-${shadowIdCounter++}`;
-          root.dataset['printShadowId'] = id;
-          shadowRootElements.set(id, root);
-        }
-        root.querySelectorAll('*').forEach(el => {
-          if (el instanceof HTMLElement && el.shadowRoot) {
-            const id = `shadow-${shadowIdCounter++}`;
-            el.dataset['printShadowId'] = id;
-            shadowRootElements.set(id, el);
+      // Recursive deep clone that flattens Shadow DOM into Light DOM
+      const deepCloneWithShadows = (node: Node): Node => {
+        const clone = doc.importNode(node, false);
+
+        if (
+          clone instanceof HTMLCanvasElement &&
+          node instanceof HTMLCanvasElement
+        ) {
+          const key = canvasToKeyMap.get(node);
+          if (key) {
+            clone.dataset['printToPdfCanvasKey'] = key;
           }
-        });
-      };
-      findShadowRoots(rootElement);
+        }
 
-      const importedRoot = doc.importNode(rootElement, true) as HTMLDivElement;
-
-      // Inject shadow DOM content into imported elements
-      shadowRootElements.forEach((originalEl, id) => {
-        const importedEl = importedRoot.querySelector(
-          `[data-print-shadow-id="${id}"]`
-        ) as HTMLElement | null;
-        if (importedEl && originalEl.shadowRoot) {
-          // Clone shadow root content into light DOM of imported element
-          originalEl.shadowRoot.childNodes.forEach(node => {
-            importedEl.append(doc.importNode(node, true));
+        const appendChildren = (source: Node) => {
+          source.childNodes.forEach(child => {
+            (clone as Element).append(deepCloneWithShadows(child));
           });
-        }
-      });
+        };
 
-      // Cleanup shadow IDs
-      shadowRootElements.forEach((originalEl, id) => {
-        delete originalEl.dataset['printShadowId'];
-        const importedEl = importedRoot.querySelector(
-          `[data-print-shadow-id="${id}"]`
-        ) as HTMLElement | null;
-        if (importedEl) {
-          delete importedEl.dataset['printShadowId'];
+        if (node instanceof HTMLElement && node.shadowRoot) {
+          appendChildren(node.shadowRoot);
         }
-      });
+        appendChildren(node);
+
+        return clone;
+      };
+
+      const importedRoot = deepCloneWithShadows(rootElement) as HTMLDivElement;
 
       // force light theme in print iframe
       doc.documentElement.dataset.theme = 'light';
