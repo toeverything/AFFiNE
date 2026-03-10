@@ -72,6 +72,7 @@ export async function printToPdf(
                   --affine-note-shadow-sticker: none !important;
                 }
               }</style></head><body></body></html>`);
+      doc.close();
 
       // copy all styles to iframe
       for (const element of document.styleSheets) {
@@ -174,8 +175,12 @@ export async function printToPdf(
 
         await Promise.all(
           images.map(img => {
-            if (img.complete && img.naturalWidth !== 0)
+            if (img.complete) {
+              if (img.naturalWidth === 0) {
+                console.warn('Image failed to load:', img.src);
+              }
               return Promise.resolve();
+            }
             return new Promise(resolve => {
               img.onload = resolve;
               img.onerror = resolve;
