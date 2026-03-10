@@ -131,11 +131,15 @@ const AttachmentUrlSchema = z.string().refine(value => {
 
   try {
     const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    return (
+      url.protocol === 'http:' ||
+      url.protocol === 'https:' ||
+      url.protocol === 'gs:'
+    );
   } catch {
     return false;
   }
-}, 'attachments must use https?:// or data: urls');
+}, 'attachments must use https?://, gs:// or data: urls');
 
 export const PromptAttachmentSourceKindSchema = z.enum([
   'url',

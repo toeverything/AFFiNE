@@ -193,6 +193,22 @@ class TestGeminiVertexProvider extends GeminiVertexProvider {
     project: 'p1',
     googleAuthOptions: {},
   } as any;
+  readonly dispatchRequests: NativeLlmRequest[] = [];
+  readonly remoteAttachmentRequests: string[] = [];
+  remoteAttachmentResponses = new Map<
+    string,
+    { data: string; mimeType: string }
+  >();
+  testTools: CopilotToolSet = {};
+  testMiddleware: ProviderMiddlewareConfig = {
+    rust: {
+      request: ['normalize_messages', 'tool_schema_rewrite'],
+      stream: ['stream_event_normalize', 'citation_indexing'],
+    },
+    node: {
+      text: ['citation_footnote', 'callout'],
+    },
+  };
 
   override get config() {
     return this.testConfig;
@@ -211,6 +227,36 @@ class TestGeminiVertexProvider extends GeminiVertexProvider {
       }),
       fetch: undefined,
     } as const;
+  }
+
+  protected override createNativeDispatch(
+    _backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmRequest) => {
+      this.dispatchRequests.push(request);
+      return stream(() => [
+        { type: 'text_delta', text: 'vertex native' },
+        { type: 'done', finish_reason: 'stop' },
+      ]);
+    };
+  }
+
+  // eslint-disable-next-line sonarjs/no-identical-functions
+  protected override async fetchRemoteAttach(url: string) {
+    this.remoteAttachmentRequests.push(url);
+    const response = this.remoteAttachmentResponses.get(url);
+    if (!response) {
+      throw new Error(`missing remote attachment stub for ${url}`);
+    }
+    return response;
+  }
+
+  protected override getActiveProviderMiddleware(): ProviderMiddlewareConfig {
+    return this.testMiddleware;
+  }
+
+  protected override async getTools(): Promise<CopilotToolSet> {
+    return this.testTools;
   }
 
   async exposeNativeConfig() {
@@ -1091,7 +1137,7 @@ test('GeminiProvider should reject unsupported attachment schemes at input valid
   );
 
   t.true(error instanceof CopilotPromptInvalid);
-  t.regex(error.message, /attachments must use https\?:\/\/ or data:/);
+  t.regex(error.message, /attachments must use https\?:\/\/, gs:\/\/ or data:/);
   t.is(provider.dispatchRequests.length, 0);
 });
 
@@ -1150,6 +1196,69 @@ test('GeminiVertexProvider should prefetch bearer token for native config', asyn
     auth_token: 'vertex-token',
     request_layer: 'gemini_vertex',
   });
+});
+
+test('GeminiVertexProvider should inline remote http attachments like Vertex SDK', async t => {
+  const provider = new TestGeminiVertexProvider();
+  const inlineData = Buffer.from('audio-bytes', 'utf8').toString('base64');
+  provider.remoteAttachmentResponses.set('https://example.com/a.mp3', {
+    data: inlineData,
+    mimeType: 'audio/mpeg',
+  });
+
+  const result = await provider.text(
+    { modelId: 'gemini-2.5-flash' },
+    [
+      {
+        role: 'user',
+        content: 'transcribe the audio',
+        attachments: ['https://example.com/a.mp3'],
+      },
+    ],
+    {}
+  );
+
+  t.is(result, 'vertex native');
+  t.deepEqual(provider.remoteAttachmentRequests, ['https://example.com/a.mp3']);
+  t.deepEqual(provider.dispatchRequests[0]?.messages[0]?.content, [
+    { type: 'text', text: 'transcribe the audio' },
+    {
+      type: 'audio',
+      source: {
+        data: inlineData,
+        media_type: 'audio/mpeg',
+      },
+    },
+  ]);
+});
+
+test('GeminiVertexProvider should preserve gs urls for native Vertex requests', async t => {
+  const provider = new TestGeminiVertexProvider();
+
+  const result = await provider.text(
+    { modelId: 'gemini-2.5-flash' },
+    [
+      {
+        role: 'user',
+        content: 'transcribe the audio',
+        attachments: ['gs://bucket/audio.opus'],
+      },
+    ],
+    {}
+  );
+
+  t.is(result, 'vertex native');
+  t.deepEqual(provider.remoteAttachmentRequests, []);
+  t.deepEqual(provider.dispatchRequests[0]?.messages[0]?.content, [
+    { type: 'text', text: 'transcribe the audio' },
+    {
+      type: 'audio',
+      source: {
+        url: 'gs://bucket/audio.opus',
+        media_type: 'audio/opus',
+      },
+    },
+  ]);
 });
 
 test('OpenAIProvider should use native structured dispatch', async t => {

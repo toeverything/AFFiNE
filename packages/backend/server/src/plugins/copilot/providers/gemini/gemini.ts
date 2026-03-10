@@ -70,7 +70,7 @@ function isYoutubeUrl(url: URL) {
   return !!url.searchParams.get('v');
 }
 
-function isGeminiApiFileUrl(url: URL, baseUrl: string) {
+function isGeminiFileUrl(url: URL, baseUrl: string) {
   try {
     const base = new URL(baseUrl);
     const basePath = base.pathname.replace(/\/+$/, '');
@@ -207,21 +207,17 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     return baseOptions;
   }
 
-  private shouldInlineRemoteAttach(
-    url: URL,
-    backendConfig: NativeLlmBackendConfig
-  ) {
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      return false;
+  private shouldInlineRemoteAttach(url: URL, config: NativeLlmBackendConfig) {
+    switch (config.request_layer) {
+      case 'gemini_api':
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+        return !(isGeminiFileUrl(url, config.base_url) || isYoutubeUrl(url));
+      case 'gemini_vertex':
+        if (url.protocol === 'gs:') return false;
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      default:
+        return false;
     }
-
-    if (backendConfig.request_layer !== 'gemini_api') {
-      return false;
-    }
-
-    return !(
-      isGeminiApiFileUrl(url, backendConfig.base_url) || isYoutubeUrl(url)
-    );
   }
 
   private toInlineAttach(
