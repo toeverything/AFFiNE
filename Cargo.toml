@@ -57,6 +57,7 @@ resolver = "3"
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"
+  matroska = "0.30"
   memory-indexer = "0.3.0"
   mimalloc = "0.1"
   mp4parse = "0.17"

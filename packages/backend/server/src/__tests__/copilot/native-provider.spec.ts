@@ -986,6 +986,33 @@ test('GeminiProvider should inline remote image attachments for text requests', 
   ]);
 });
 
+test('GeminiProvider should classify downloaded audio-only WebM attachments as audio', async t => {
+  const provider = new TestGeminiProvider();
+  const inlineData = Buffer.from('audio-bytes', 'utf8').toString('base64');
+  provider.remoteAttachmentResponses.set('https://example.com/a.webm', {
+    data: inlineData,
+    mimeType: 'audio/webm',
+  });
+
+  const result = await provider.text(
+    { modelId: 'gemini-2.5-flash' },
+    [
+      {
+        role: 'user',
+        content: 'transcribe this clip',
+        attachments: ['https://example.com/a.webm'],
+      },
+    ],
+    {}
+  );
+
+  t.is(result, 'native');
+  t.deepEqual(provider.dispatchRequests[0]?.messages[0]?.content, [
+    { type: 'text', text: 'transcribe this clip' },
+    { type: 'audio', source: { data: inlineData, media_type: 'audio/webm' } },
+  ]);
+});
+
 test('GeminiProvider should preserve Google file urls for native Gemini API', async t => {
   const provider = new TestGeminiProvider();
 

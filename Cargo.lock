@@ -186,6 +186,7 @@ dependencies = [
  "libwebp-sys",
  "little_exif",
  "llm_adapter",
+ "matroska",
  "mimalloc",
  "mp4parse",
  "napi",
@@ -647,6 +648,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "886559b1e163d56c765bc3a985febb4eee8009f625244511d8ee3c432e08c066"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "bitstream-io"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "680575de65ce8b916b82a447458b94a48776707d9c2681a9d8da351c06886a1f"
+dependencies = [
+ "core2",
 ]
 
 [[package]]
@@ -2952,6 +2962,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1525a2a28c7f4fa0fc98bb91ae755d1e2d1505079e05539e35bc876b5d65ae9"
 dependencies = [
  "regex-automata",
+]
+
+[[package]]
+name = "matroska"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fde85cd7fb5cf875c4a46fac0cbd6567d413bea2538cef6788e3a0e52a902b45"
+dependencies = [
+ "bitstream-io",
+ "phf 0.11.3",
 ]
 
 [[package]]

@@ -22,6 +22,7 @@ infer = { workspace = true }
 libwebp-sys = { workspace = true }
 little_exif = { workspace = true }
 llm_adapter = { workspace = true }
+matroska = { workspace = true }
 mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async"] }
 napi-derive = { workspace = true }

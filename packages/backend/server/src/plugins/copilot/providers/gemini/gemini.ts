@@ -10,6 +10,7 @@ import {
   safeFetch,
   UserFriendlyError,
 } from '../../../../base';
+import { sniffMime } from '../../../../base/storage/providers/utils';
 import {
   llmDispatchStream,
   llmEmbeddingDispatch,
@@ -145,9 +146,12 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
       response,
       GEMINI_REMOTE_ATTACHMENT_MAX_BYTES
     );
+    const headerMimeType = normalizeMimeType(
+      response.headers.get('content-type') || ''
+    );
     return {
       data: buffer.toString('base64'),
-      mimeType: normalizeMimeType(response.headers.get('content-type') || ''),
+      mimeType: normalizeMimeType(sniffMime(buffer, headerMimeType)),
     };
   }
 
