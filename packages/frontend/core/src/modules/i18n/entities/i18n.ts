@@ -55,6 +55,9 @@ export class I18n extends Entity {
     super();
     this.i18n.on('languageChanged', (language: Language) => {
       document.documentElement.lang = language;
+      document.documentElement.dir = SUPPORTED_LANGUAGES[language]?.rtl
+        ? 'rtl'
+        : 'ltr';
       this.cache.set('i18n_lng', language);
     });
   }
