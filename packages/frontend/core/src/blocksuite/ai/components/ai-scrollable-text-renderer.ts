@@ -46,10 +46,12 @@ export class AIScrollableTextRenderer extends WithDisposable(
 
   private readonly _onWheel = (e: WheelEvent) => {
     const container = this._scrollableTextRenderer;
-    if (container && container.scrollHeight > container.clientHeight) {
+    const canScroll =
+      container && container.scrollHeight > container.clientHeight;
+    if (canScroll) {
       e.stopPropagation();
     }
-    if (this.state === 'generating') {
+    if (this.state === 'generating' && !canScroll) {
       e.preventDefault();
     }
   };
