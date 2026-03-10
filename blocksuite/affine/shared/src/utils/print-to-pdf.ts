@@ -119,7 +119,50 @@ export async function printToPdf(
         );
       }
 
+      // Mark elements with shadow roots to find them after cloning
+      const shadowRootElements = new Map<string, HTMLElement>();
+      let shadowIdCounter = 0;
+      const findShadowRoots = (root: HTMLElement) => {
+        if (root.shadowRoot) {
+          const id = `shadow-${shadowIdCounter++}`;
+          root.dataset['printShadowId'] = id;
+          shadowRootElements.set(id, root);
+        }
+        root.querySelectorAll('*').forEach(el => {
+          if (el instanceof HTMLElement && el.shadowRoot) {
+            const id = `shadow-${shadowIdCounter++}`;
+            el.dataset['printShadowId'] = id;
+            shadowRootElements.set(id, el);
+          }
+        });
+      };
+      findShadowRoots(rootElement);
+
       const importedRoot = doc.importNode(rootElement, true) as HTMLDivElement;
+
+      // Inject shadow DOM content into imported elements
+      shadowRootElements.forEach((originalEl, id) => {
+        const importedEl = importedRoot.querySelector(
+          `[data-print-shadow-id="${id}"]`
+        ) as HTMLElement | null;
+        if (importedEl && originalEl.shadowRoot) {
+          // Clone shadow root content into light DOM of imported element
+          originalEl.shadowRoot.childNodes.forEach(node => {
+            importedEl.append(doc.importNode(node, true));
+          });
+        }
+      });
+
+      // Cleanup shadow IDs
+      shadowRootElements.forEach((originalEl, id) => {
+        delete originalEl.dataset['printShadowId'];
+        const importedEl = importedRoot.querySelector(
+          `[data-print-shadow-id="${id}"]`
+        ) as HTMLElement | null;
+        if (importedEl) {
+          delete importedEl.dataset['printShadowId'];
+        }
+      });
 
       // force light theme in print iframe
       doc.documentElement.dataset.theme = 'light';
@@ -158,15 +201,20 @@ export async function printToPdf(
       // Robust image waiting logic
       const waitForImages = async (container: HTMLElement) => {
         const images: HTMLImageElement[] = [];
+        const view = container.ownerDocument.defaultView;
+        if (!view) return;
 
         const findImages = (root: Node) => {
-          if (root instanceof HTMLImageElement) {
+          if (root instanceof view.HTMLImageElement) {
             images.push(root);
           }
-          if (root instanceof HTMLElement || root instanceof ShadowRoot) {
+          if (
+            root instanceof view.HTMLElement ||
+            root instanceof view.ShadowRoot
+          ) {
             root.childNodes.forEach(findImages);
           }
-          if (root instanceof HTMLElement && root.shadowRoot) {
+          if (root instanceof view.HTMLElement && root.shadowRoot) {
             findImages(root.shadowRoot);
           }
         };
