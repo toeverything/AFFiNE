@@ -582,10 +582,11 @@ export abstract class CopilotProvider<C = any> {
       if (
         multimodal &&
         requireAttachment &&
-        messages.some(
+        !messages.some(
           message =>
             message.role === 'user' &&
-            (!message.attachments || message.attachments.length === 0)
+            Array.isArray(message.attachments) &&
+            message.attachments.length > 0
         )
       ) {
         throw new CopilotPromptInvalid(
