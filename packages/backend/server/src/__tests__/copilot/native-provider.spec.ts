@@ -82,6 +82,7 @@ class TestGeminiProvider extends GeminiProvider<{ apiKey: string }> {
   readonly structuredRequests: NativeLlmStructuredRequest[] = [];
   readonly embeddingRequests: NativeLlmEmbeddingRequest[] = [];
   readonly remoteAttachmentRequests: string[] = [];
+  readonly remoteAttachmentSignals: Array<AbortSignal | undefined> = [];
   readonly retryDelays: number[] = [];
   remoteAttachmentResponses = new Map<
     string,
@@ -165,8 +166,12 @@ class TestGeminiProvider extends GeminiProvider<{ apiKey: string }> {
     };
   }
 
-  protected override async fetchRemoteAttach(url: string) {
+  protected override async fetchRemoteAttach(
+    url: string,
+    signal?: AbortSignal
+  ) {
     this.remoteAttachmentRequests.push(url);
+    this.remoteAttachmentSignals.push(signal);
     const response = this.remoteAttachmentResponses.get(url);
     if (!response) {
       throw new Error(`missing remote attachment stub for ${url}`);
@@ -195,6 +200,7 @@ class TestGeminiVertexProvider extends GeminiVertexProvider {
   } as any;
   readonly dispatchRequests: NativeLlmRequest[] = [];
   readonly remoteAttachmentRequests: string[] = [];
+  readonly remoteAttachmentSignals: Array<AbortSignal | undefined> = [];
   remoteAttachmentResponses = new Map<
     string,
     { data: string; mimeType: string }
@@ -242,8 +248,12 @@ class TestGeminiVertexProvider extends GeminiVertexProvider {
   }
 
   // eslint-disable-next-line sonarjs/no-identical-functions
-  protected override async fetchRemoteAttach(url: string) {
+  protected override async fetchRemoteAttach(
+    url: string,
+    signal?: AbortSignal
+  ) {
     this.remoteAttachmentRequests.push(url);
+    this.remoteAttachmentSignals.push(signal);
     const response = this.remoteAttachmentResponses.get(url);
     if (!response) {
       throw new Error(`missing remote attachment stub for ${url}`);
@@ -1042,6 +1052,30 @@ test('GeminiProvider should inline remote image attachments for text requests', 
       },
     },
   ]);
+});
+
+test('GeminiProvider should pass abort signal to remote attachment prefetch', async t => {
+  const provider = new TestGeminiProvider();
+  provider.remoteAttachmentResponses.set('https://example.com/a.jpg', {
+    data: Buffer.from('image-bytes', 'utf8').toString('base64'),
+    mimeType: 'image/jpeg',
+  });
+  const controller = new AbortController();
+
+  await provider.text(
+    { modelId: 'gemini-2.5-flash' },
+    [
+      {
+        role: 'user',
+        content: 'describe this image',
+        attachments: ['https://example.com/a.jpg'],
+      },
+    ],
+    { signal: controller.signal }
+  );
+
+  t.deepEqual(provider.remoteAttachmentRequests, ['https://example.com/a.jpg']);
+  t.is(provider.remoteAttachmentSignals[0], controller.signal);
 });
 
 test('GeminiProvider should classify downloaded audio-only WebM attachments as audio', async t => {

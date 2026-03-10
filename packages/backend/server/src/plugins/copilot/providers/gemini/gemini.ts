@@ -130,11 +130,11 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     );
   }
 
-  protected async fetchRemoteAttach(url: string) {
+  protected async fetchRemoteAttach(url: string, signal?: AbortSignal) {
     const parsed = new URL(url);
     const response = await safeFetch(
       parsed,
-      { method: 'GET' },
+      { method: 'GET', signal },
       this.buildAttachFetchOptions(parsed)
     );
     if (!response.ok) {
@@ -243,11 +243,13 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
 
   protected async prepareMessages(
     messages: PromptMessage[],
-    backendConfig: NativeLlmBackendConfig
+    backendConfig: NativeLlmBackendConfig,
+    signal?: AbortSignal
   ): Promise<PromptMessage[]> {
     const prepared: PromptMessage[] = [];
 
     for (const message of messages) {
+      signal?.throwIfAborted();
       if (!Array.isArray(message.attachments) || !message.attachments.length) {
         prepared.push(message);
         continue;
@@ -256,6 +258,7 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
       const attachments: PromptAttachment[] = [];
       let changed = false;
       for (const attachment of message.attachments) {
+        signal?.throwIfAborted();
         const rawUrl = promptAttachmentToUrl(attachment);
         if (!rawUrl || rawUrl.startsWith('data:')) {
           attachments.push(attachment);
@@ -281,7 +284,7 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
             ? message.params.mimetype
             : undefined
         );
-        const downloaded = await this.fetchRemoteAttach(rawUrl);
+        const downloaded = await this.fetchRemoteAttach(rawUrl, signal);
         attachments.push(
           this.toInlineAttach(
             attachment,
@@ -323,7 +326,11 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     try {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
       const backendConfig = await this.createNativeConfig();
-      const msg = await this.prepareMessages(messages, backendConfig);
+      const msg = await this.prepareMessages(
+        messages,
+        backendConfig,
+        options.signal
+      );
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
       const cap = this.getAttachCapability(model, ModelOutputType.Text);
@@ -366,7 +373,11 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     try {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
       const backendConfig = await this.createNativeConfig();
-      const msg = await this.prepareMessages(messages, backendConfig);
+      const msg = await this.prepareMessages(
+        messages,
+        backendConfig,
+        options.signal
+      );
       const structuredDispatch =
         this.createNativeStructuredDispatch(backendConfig);
       const middleware = this.getActiveProviderMiddleware();
@@ -432,7 +443,8 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
       const backendConfig = await this.createNativeConfig();
       const preparedMessages = await this.prepareMessages(
         messages,
-        backendConfig
+        backendConfig,
+        options.signal
       );
       const tools = await this.getTools(
         options as CopilotChatOptions,
@@ -487,7 +499,11 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         .counter('chat_object_stream_calls')
         .add(1, this.metricLabels(model.id));
       const backendConfig = await this.createNativeConfig();
-      const msg = await this.prepareMessages(messages, backendConfig);
+      const msg = await this.prepareMessages(
+        messages,
+        backendConfig,
+        options.signal
+      );
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
       const cap = this.getAttachCapability(model, ModelOutputType.Object);
