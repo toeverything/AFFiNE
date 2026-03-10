@@ -5,7 +5,6 @@ import type { PromptMessage } from '../providers/types';
 
 export type CopilotToolExecuteOptions = {
   signal?: AbortSignal;
-  abortSignal?: AbortSignal;
   messages?: PromptMessage[];
 };
 

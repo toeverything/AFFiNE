@@ -213,8 +213,7 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
         return !(isGeminiFileUrl(url, config.base_url) || isYoutubeUrl(url));
       case 'gemini_vertex':
-        if (url.protocol === 'gs:') return false;
-        return url.protocol === 'http:' || url.protocol === 'https:';
+        return false;
       default:
         return false;
     }
@@ -546,7 +545,6 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
           inputs: values,
           dimensions: options.dimensions || DEFAULT_DIMENSIONS,
           taskType: 'RETRIEVAL_DOCUMENT',
-          middleware: this.getActiveProviderMiddleware(),
         })
       );
       return response.embeddings;

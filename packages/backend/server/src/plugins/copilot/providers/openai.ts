@@ -705,11 +705,15 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     });
     const model = this.selectModel(normalizedCond);
 
-    const backendConfig = this.createNativeConfig();
-    const nativeRequest = buildOpenAIRerankRequest(model.id, request);
-    const response =
-      await this.createNativeRerankDispatch(backendConfig)(nativeRequest);
-    return response.scores;
+    try {
+      const backendConfig = this.createNativeConfig();
+      const nativeRequest = buildOpenAIRerankRequest(model.id, request);
+      const response =
+        await this.createNativeRerankDispatch(backendConfig)(nativeRequest);
+      return response.scores;
+    } catch (e: any) {
+      throw this.handleError(e);
+    }
   }
 
   // ====== text to image ======
@@ -1046,7 +1050,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
           model: model.id,
           inputs: input,
           dimensions: options.dimensions || DEFAULT_DIMENSIONS,
-          middleware: this.getActiveProviderMiddleware(),
         })
       );
       return response.embeddings;

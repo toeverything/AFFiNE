@@ -225,6 +225,30 @@ export abstract class CopilotProvider<C = any> {
     };
   }
 
+  private mergeModelConditions(
+    cond: ModelFullConditions,
+    inferredCond: Partial<ModelFullConditions>
+  ): ModelFullConditions {
+    return {
+      ...inferredCond,
+      ...cond,
+      inputTypes: this.unique([
+        ...(inferredCond.inputTypes ?? []),
+        ...(cond.inputTypes ?? []),
+      ]),
+      attachmentKinds: this.unique([
+        ...(inferredCond.attachmentKinds ?? []),
+        ...(cond.attachmentKinds ?? []),
+      ]),
+      attachmentSourceKinds: this.unique([
+        ...(inferredCond.attachmentSourceKinds ?? []),
+        ...(cond.attachmentSourceKinds ?? []),
+      ]),
+      hasRemoteAttachments:
+        cond.hasRemoteAttachments ?? inferredCond.hasRemoteAttachments,
+    };
+  }
+
   protected getAttachCapability(
     model: CopilotProviderModel,
     outputType: ModelOutputType
@@ -523,38 +547,9 @@ export abstract class CopilotProvider<C = any> {
     cond: ModelFullConditions;
     messages?: PromptMessage[];
     embeddings?: string[];
-    options?: CopilotChatOptions;
+    options?: CopilotChatOptions | CopilotStructuredOptions;
     withAttachment?: boolean;
   }): Promise<ModelFullConditions> {
-    const inferredCond = await this.inferModelConditionsFromMessages(
-      messages,
-      withAttachment
-    );
-    const mergedCond: ModelFullConditions = {
-      ...inferredCond,
-      ...cond,
-      inputTypes: this.unique([
-        ...(inferredCond.inputTypes ?? []),
-        ...(cond.inputTypes ?? []),
-      ]),
-      attachmentKinds: this.unique([
-        ...(inferredCond.attachmentKinds ?? []),
-        ...(cond.attachmentKinds ?? []),
-      ]),
-      attachmentSourceKinds: this.unique([
-        ...(inferredCond.attachmentSourceKinds ?? []),
-        ...(cond.attachmentSourceKinds ?? []),
-      ]),
-      hasRemoteAttachments:
-        cond.hasRemoteAttachments ?? inferredCond.hasRemoteAttachments,
-    };
-    const model = this.selectModel(mergedCond);
-    const multimodal = model.capabilities.some(c =>
-      [ModelInputType.Image, ModelInputType.Audio, ModelInputType.File].some(
-        t => c.input.includes(t)
-      )
-    );
-
     if (messages) {
       const { requireContent = true, requireAttachment = false } = options;
 
@@ -567,17 +562,50 @@ export abstract class CopilotProvider<C = any> {
           })
             .passthrough()
             .catchall(z.union([z.string(), z.number(), z.date(), z.null()]))
-            .refine(
-              m =>
-                !(multimodal && requireAttachment && m.role === 'user') ||
-                (m.attachments ? m.attachments.length > 0 : true),
-              { message: 'attachments required in multimodal mode' }
-            )
         )
         .optional();
 
       this.handleZodError(MessageSchema.safeParse(messages));
+
+      const inferredCond = await this.inferModelConditionsFromMessages(
+        messages,
+        withAttachment
+      );
+      const mergedCond = this.mergeModelConditions(cond, inferredCond);
+      const model = this.selectModel(mergedCond);
+      const multimodal = model.capabilities.some(c =>
+        [ModelInputType.Image, ModelInputType.Audio, ModelInputType.File].some(
+          t => c.input.includes(t)
+        )
+      );
+
+      if (
+        multimodal &&
+        requireAttachment &&
+        messages.some(
+          message =>
+            message.role === 'user' &&
+            (!message.attachments || message.attachments.length === 0)
+        )
+      ) {
+        throw new CopilotPromptInvalid(
+          'attachments required in multimodal mode'
+        );
+      }
+
+      if (embeddings) {
+        this.handleZodError(EmbeddingMessage.safeParse(embeddings));
+      }
+
+      return mergedCond;
     }
+
+    const inferredCond = await this.inferModelConditionsFromMessages(
+      messages,
+      withAttachment
+    );
+    const mergedCond = this.mergeModelConditions(cond, inferredCond);
+
     if (embeddings) {
       this.handleZodError(EmbeddingMessage.safeParse(embeddings));
     }

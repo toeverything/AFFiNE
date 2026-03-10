@@ -225,6 +225,20 @@ const checkStreamObjects = (result: string) => {
   }
 };
 
+const parseStreamObjects = (result: string): StreamObject[] => {
+  const streamObjects = JSON.parse(result);
+  return z.array(StreamObjectSchema).parse(streamObjects);
+};
+
+const getStreamObjectText = (result: string) =>
+  parseStreamObjects(result)
+    .filter(
+      (chunk): chunk is Extract<StreamObject, { type: 'text-delta' }> =>
+        chunk.type === 'text-delta'
+    )
+    .map(chunk => chunk.textDelta)
+    .join('');
+
 const retry = async (
   action: string,
   t: ExecutionContext<Tester>,
@@ -478,8 +492,9 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     config: { model: 'gemini-2.5-flash' },
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       t.truthy(checkStreamObjects(result), 'should be valid stream objects');
+      const assembledText = getStreamObjectText(result);
       t.assert(
-        result.toLowerCase().includes('affine'),
+        assembledText.toLowerCase().includes('affine'),
         'should mention AFFiNE'
       );
     },
@@ -758,14 +773,13 @@ for (const {
         const { factory, prompt: promptService } = t.context;
         const prompt = (await promptService.get(promptName))!;
         t.truthy(prompt, 'should have prompt');
-        const provider = (await factory.getProviderByModel(prompt.model, {
+        const finalConfig = Object.assign({}, prompt.config, config);
+        const modelId = finalConfig.model || prompt.model;
+        const provider = (await factory.getProviderByModel(modelId, {
           prefer,
         }))!;
         t.truthy(provider, 'should have provider');
         await retry(`action: ${promptName}`, t, async t => {
-          const finalConfig = Object.assign({}, prompt.config, config);
-          const modelId = finalConfig.model || prompt.model;
-
           switch (type) {
             case 'text': {
               const result = await provider.text(

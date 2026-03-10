@@ -285,7 +285,7 @@ export type CopilotChatTools = NonNullable<
 
 export const CopilotStructuredOptionsSchema =
   CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema)
-    .extend({ schema: z.any().optional() })
+    .extend({ schema: z.any().optional(), strict: z.boolean().optional() })
     .optional();
 
 export type CopilotStructuredOptions = z.infer<

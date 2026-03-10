@@ -5,7 +5,7 @@ use std::sync::{
 
 use llm_adapter::{
   backend::{
-    BackendConfig, BackendError, BackendProtocol, ReqwestHttpClient, dispatch_embedding_request, dispatch_request,
+    BackendConfig, BackendError, BackendProtocol, DefaultHttpClient, dispatch_embedding_request, dispatch_request,
     dispatch_rerank_request, dispatch_stream_events_with, dispatch_structured_request,
   },
   core::{CoreRequest, EmbeddingRequest, RerankRequest, StreamEvent, StructuredRequest},
@@ -50,14 +50,6 @@ struct LlmStructuredDispatchPayload {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct LlmEmbeddingDispatchPayload {
-  #[serde(flatten)]
-  request: EmbeddingRequest,
-  #[serde(default)]
-  middleware: LlmMiddlewarePayload,
-}
-
-#[derive(Debug, Clone, Deserialize)]
 struct LlmRerankDispatchPayload {
   #[serde(flatten)]
   request: RerankRequest,
@@ -84,7 +76,7 @@ pub fn llm_dispatch(protocol: String, backend_config_json: String, request_json:
   let request = apply_request_middlewares(payload.request, &payload.middleware)?;
 
   let response =
-    dispatch_request(&ReqwestHttpClient::default(), &config, protocol, &request).map_err(map_backend_error)?;
+    dispatch_request(&DefaultHttpClient::default(), &config, protocol, &request).map_err(map_backend_error)?;
 
   serde_json::to_string(&response).map_err(map_json_error)
 }
@@ -96,7 +88,7 @@ pub fn llm_structured_dispatch(protocol: String, backend_config_json: String, re
   let payload: LlmStructuredDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
   let request = apply_structured_request_middlewares(payload.request, &payload.middleware)?;
 
-  let response = dispatch_structured_request(&ReqwestHttpClient::default(), &config, protocol, &request)
+  let response = dispatch_structured_request(&DefaultHttpClient::default(), &config, protocol, &request)
     .map_err(map_backend_error)?;
 
   serde_json::to_string(&response).map_err(map_json_error)
@@ -106,10 +98,9 @@ pub fn llm_structured_dispatch(protocol: String, backend_config_json: String, re
 pub fn llm_embedding_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
   let protocol = parse_protocol(&protocol)?;
   let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
-  let payload: LlmEmbeddingDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
-  let request = apply_embedding_request_middlewares(payload.request, &payload.middleware)?;
+  let request: EmbeddingRequest = serde_json::from_str(&request_json).map_err(map_json_error)?;
 
-  let response = dispatch_embedding_request(&ReqwestHttpClient::default(), &config, protocol, &request)
+  let response = dispatch_embedding_request(&DefaultHttpClient::default(), &config, protocol, &request)
     .map_err(map_backend_error)?;
 
   serde_json::to_string(&response).map_err(map_json_error)
@@ -121,7 +112,7 @@ pub fn llm_rerank_dispatch(protocol: String, backend_config_json: String, reques
   let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
   let payload: LlmRerankDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
 
-  let response = dispatch_rerank_request(&ReqwestHttpClient::default(), &config, protocol, &payload.request)
+  let response = dispatch_rerank_request(&DefaultHttpClient::default(), &config, protocol, &payload.request)
     .map_err(map_backend_error)?;
 
   serde_json::to_string(&response).map_err(map_json_error)
@@ -159,7 +150,7 @@ pub fn llm_dispatch_stream(
     let mut aborted_by_user = false;
     let mut callback_dispatch_failed = false;
 
-    let result = dispatch_stream_events_with(&ReqwestHttpClient::default(), &config, protocol, &request, |event| {
+    let result = dispatch_stream_events_with(&DefaultHttpClient::default(), &config, protocol, &request, |event| {
       if aborted_in_worker.load(Ordering::Relaxed) {
         aborted_by_user = true;
         return Err(BackendError::Http(STREAM_ABORTED_REASON.to_string()));
@@ -235,13 +226,6 @@ fn apply_structured_request_middlewares(
     strict: request.strict,
     response_mime_type: request.response_mime_type,
   })
-}
-
-fn apply_embedding_request_middlewares(
-  request: EmbeddingRequest,
-  _middleware: &LlmMiddlewarePayload,
-) -> Result<EmbeddingRequest> {
-  Ok(request)
 }
 
 #[derive(Clone)]

@@ -196,10 +196,6 @@ export type NativeLlmEmbeddingRequest = {
   inputs: string[];
   dimensions?: number;
   task_type?: string;
-  middleware?: Pick<
-    NonNullable<NativeLlmRequest['middleware']>,
-    'request' | 'config'
-  >;
 };
 
 export type NativeLlmRerankCandidate = {

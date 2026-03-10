@@ -9,7 +9,7 @@ pub fn get_mime(input: &[u8]) -> String {
   } else {
     file_format::FileFormat::from_bytes(input).media_type().to_string()
   };
-  if let Some(container) = matroska_container_kind(input).or_else(|| match mimetype.as_str() {
+  if let Some(container) = matroska_container_kind(input).or(match mimetype.as_str() {
     "video/webm" | "application/webm" => Some(ContainerKind::WebM),
     "video/x-matroska" | "application/x-matroska" => Some(ContainerKind::Matroska),
     _ => None,

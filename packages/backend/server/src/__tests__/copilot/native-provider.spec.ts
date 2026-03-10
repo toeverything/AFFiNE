@@ -1,7 +1,7 @@
 import test from 'ava';
 import { z } from 'zod';
 
-import { CopilotPromptInvalid } from '../../base';
+import { CopilotPromptInvalid, CopilotProviderSideError } from '../../base';
 import type {
   NativeLlmBackendConfig,
   NativeLlmEmbeddingRequest,
@@ -745,6 +745,21 @@ test('buildNativeStructuredRequest should prefer explicit schema option', async 
   });
 });
 
+test('buildNativeStructuredRequest should preserve caller strictness override', async t => {
+  const provider = new TestOpenAIProvider();
+
+  await provider.structure(
+    { modelId: 'gpt-4.1' },
+    [
+      { role: 'system', content: 'Return JSON only.' },
+      { role: 'user', content: 'Summarize AFFiNE in one sentence.' },
+    ],
+    { schema: z.object({ summary: z.string() }), strict: false }
+  );
+
+  t.is(provider.structuredRequests[0]?.strict, false);
+});
+
 test('NativeProviderAdapter streamText should skip citation footnotes when disabled', async t => {
   const adapter = new NativeProviderAdapter(mockDispatch, {}, 3, {
     nodeTextMiddleware: ['callout'],
@@ -961,9 +976,6 @@ test('GeminiProvider should use native path for embeddings', async t => {
     inputs: ['first', 'second'],
     dimensions: 3,
     task_type: 'RETRIEVAL_DOCUMENT',
-    middleware: {
-      request: ['normalize_messages', 'tool_schema_rewrite'],
-    },
   });
 });
 
@@ -1141,6 +1153,28 @@ test('GeminiProvider should reject unsupported attachment schemes at input valid
   t.is(provider.dispatchRequests.length, 0);
 });
 
+test('GeminiProvider should validate malformed attachments before canonicalization', async t => {
+  const provider = new TestGeminiProvider();
+
+  const error = await t.throwsAsync(
+    provider.text(
+      { modelId: 'gemini-2.5-flash' },
+      [
+        {
+          role: 'user',
+          content: 'read this attachment',
+          attachments: [{ kind: 'url' }],
+        },
+      ] as any,
+      {}
+    )
+  );
+
+  t.true(error instanceof CopilotPromptInvalid);
+  t.regex(error.message, /attachments\[0\]/);
+  t.is(provider.dispatchRequests.length, 0);
+});
+
 test('GeminiProvider should drive tool loop on native path', async t => {
   const provider = new TestGeminiProvider();
   provider.testTools = {
@@ -1198,13 +1232,8 @@ test('GeminiVertexProvider should prefetch bearer token for native config', asyn
   });
 });
 
-test('GeminiVertexProvider should inline remote http attachments like Vertex SDK', async t => {
+test('GeminiVertexProvider should preserve remote http attachments like Vertex SDK', async t => {
   const provider = new TestGeminiVertexProvider();
-  const inlineData = Buffer.from('audio-bytes', 'utf8').toString('base64');
-  provider.remoteAttachmentResponses.set('https://example.com/a.mp3', {
-    data: inlineData,
-    mimeType: 'audio/mpeg',
-  });
 
   const result = await provider.text(
     { modelId: 'gemini-2.5-flash' },
@@ -1219,13 +1248,13 @@ test('GeminiVertexProvider should inline remote http attachments like Vertex SDK
   );
 
   t.is(result, 'vertex native');
-  t.deepEqual(provider.remoteAttachmentRequests, ['https://example.com/a.mp3']);
+  t.deepEqual(provider.remoteAttachmentRequests, []);
   t.deepEqual(provider.dispatchRequests[0]?.messages[0]?.content, [
     { type: 'text', text: 'transcribe the audio' },
     {
       type: 'audio',
       source: {
-        data: inlineData,
+        url: 'https://example.com/a.mp3',
         media_type: 'audio/mpeg',
       },
     },
@@ -1313,9 +1342,6 @@ test('OpenAIProvider should use native embedding dispatch', async t => {
     inputs: ['alpha', 'beta'],
     dimensions: 8,
     task_type: 'RETRIEVAL_DOCUMENT',
-    middleware: {
-      request: ['normalize_messages', 'tool_schema_rewrite'],
-    },
   });
 });
 
@@ -1341,4 +1367,31 @@ test('OpenAIProvider should use native rerank dispatch', async t => {
     { id: 'react', text: 'React is a UI library.' },
     { id: 'weather', text: 'The park is sunny today.' },
   ]);
+});
+
+test('OpenAIProvider rerank should normalize native dispatch errors', async t => {
+  class ErroringOpenAIProvider extends TestOpenAIProvider {
+    protected override createNativeRerankDispatch(
+      _backendConfig: NativeLlmBackendConfig
+    ) {
+      return async () => {
+        throw new Error('native rerank exploded');
+      };
+    }
+  }
+
+  const provider = new ErroringOpenAIProvider();
+
+  const error = await t.throwsAsync(
+    provider.rerank(
+      { modelId: 'gpt-4.1' },
+      {
+        query: 'programming',
+        candidates: [{ id: 'react', text: 'React is a UI library.' }],
+      }
+    )
+  );
+
+  t.true(error instanceof CopilotProviderSideError);
+  t.regex(error.message, /native rerank exploded/i);
 });

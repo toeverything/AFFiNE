@@ -275,7 +275,6 @@ export class ToolCallLoop {
     ) {
       return {
         signal: signalOrOptions,
-        abortSignal: signalOrOptions,
         messages: maybeMessages,
       };
     }
@@ -286,8 +285,7 @@ export class ToolCallLoop {
 
     return {
       ...signalOrOptions,
-      signal: signalOrOptions.signal ?? signalOrOptions.abortSignal,
-      abortSignal: signalOrOptions.abortSignal ?? signalOrOptions.signal,
+      signal: signalOrOptions.signal,
       messages: signalOrOptions.messages ?? maybeMessages,
     };
   }
@@ -318,7 +316,7 @@ export class ToolCallLoop {
           stream: true,
           messages,
         },
-        toolExecuteOptions.abortSignal
+        toolExecuteOptions.signal
       )) {
         switch (event.type) {
           case 'tool_call_delta': {

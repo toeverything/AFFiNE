@@ -153,7 +153,6 @@ test('ToolCallLoop should execute tool call and continue to next round', async t
 
   let executedArgs: Record<string, unknown> | null = null;
   let executedMessages: unknown;
-  let executedAbortSignal: AbortSignal | undefined;
   let executedSignal: AbortSignal | undefined;
   const loop = new ToolCallLoop(
     dispatch,
@@ -163,7 +162,6 @@ test('ToolCallLoop should execute tool call and continue to next round', async t
         execute: async (args, options) => {
           executedArgs = args;
           executedMessages = options.messages;
-          executedAbortSignal = options.abortSignal;
           executedSignal = options.signal;
           return { markdown: '# doc' };
         },
@@ -189,7 +187,6 @@ test('ToolCallLoop should execute tool call and continue to next round', async t
 
   t.deepEqual(executedArgs, { doc_id: 'a1' });
   t.deepEqual(executedMessages, originalMessages);
-  t.is(executedAbortSignal, signal);
   t.is(executedSignal, signal);
   t.true(
     dispatchRequests[1]?.messages.some(message => message.role === 'tool')

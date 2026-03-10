@@ -130,6 +130,13 @@ function resolveResponseSchema(
     : undefined;
 }
 
+function resolveResponseStrict(
+  systemMessage: PromptMessage | undefined,
+  options?: CopilotStructuredOptions
+) {
+  return options?.strict ?? systemMessage?.responseFormat?.strict ?? true;
+}
+
 export class StructuredResponseParseError extends Error {}
 
 function normalizeStructuredText(text: string) {
@@ -298,6 +305,7 @@ export async function buildNativeStructuredRequest({
   const systemMessage =
     copiedMessages[0]?.role === 'system' ? copiedMessages.shift() : undefined;
   const schema = resolveResponseSchema(systemMessage, responseSchema);
+  const strict = resolveResponseStrict(systemMessage, options);
 
   if (!schema) {
     throw new CopilotPromptInvalid('Schema is required');
@@ -329,7 +337,7 @@ export async function buildNativeStructuredRequest({
       max_tokens: options.maxTokens ?? undefined,
       temperature: options.temperature ?? undefined,
       reasoning,
-      strict: true,
+      strict,
       response_mime_type: 'application/json',
       middleware: middleware?.rust
         ? { request: middleware.rust.request }
@@ -344,24 +352,17 @@ export function buildNativeEmbeddingRequest({
   inputs,
   dimensions,
   taskType = 'RETRIEVAL_DOCUMENT',
-  middleware,
 }: {
   model: string;
   inputs: string[];
   dimensions?: number;
   taskType?: string;
-  middleware?: ProviderMiddlewareConfig;
 }): NativeLlmEmbeddingRequest {
   return {
     model,
     inputs,
     dimensions,
     task_type: taskType,
-    middleware: middleware?.rust
-      ? {
-          request: middleware.rust.request,
-        }
-      : undefined,
   };
 }
 
