@@ -5,6 +5,7 @@ import {
   enterPlaygroundRoom,
   focusRichText,
   getPageSnapshot,
+  getSelectedText,
   initEmptyParagraphState,
   initThreeParagraphs,
   inlineCode,
@@ -278,8 +279,10 @@ test('should cut work single line', async ({ page }, testInfo) => {
   await type(page, 'hello');
   await resetHistory(page);
   await dragBetweenIndices(page, [0, 1], [0, 4]);
+  await expect.poll(async () => getSelectedText(page)).toBe('ell');
   // cut
   await page.keyboard.press(`${SHORT_KEY}+x`);
+  await waitNextFrame(page);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
   );
