@@ -1,8 +1,8 @@
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
+import { defineTool } from './tool';
 import type {
   CopilotChatOptions,
   CopilotProviderFactory,
@@ -50,7 +50,7 @@ export const createDocEditTool = (
   prompt: PromptService,
   getContent: (targetId?: string) => Promise<string | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description: `
 Use this tool to propose an edit to a structured Markdown document with identifiable blocks. 
 Each block begins with a comment like <!-- block_id=... -->, and represents a unit of editable content such as a heading, paragraph, list, or code snippet.

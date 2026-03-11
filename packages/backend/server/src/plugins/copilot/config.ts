@@ -81,7 +81,7 @@ export type CopilotProviderProfile = CopilotProviderProfileCommon &
   }[CopilotProviderType];
 
 export type CopilotProviderDefaults = Partial<
-  Record<ModelOutputType, string>
+  Record<Exclude<ModelOutputType, ModelOutputType.Rerank>, string>
 > & {
   fallback?: string;
 };
@@ -184,6 +184,7 @@ const CopilotProviderDefaultsShape = z.object({
   [ModelOutputType.Object]: z.string().optional(),
   [ModelOutputType.Embedding]: z.string().optional(),
   [ModelOutputType.Image]: z.string().optional(),
+  [ModelOutputType.Rerank]: z.string().optional(),
   [ModelOutputType.Structured]: z.string().optional(),
   fallback: z.string().optional(),
 });

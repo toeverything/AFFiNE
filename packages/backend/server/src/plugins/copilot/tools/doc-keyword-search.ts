@@ -1,9 +1,9 @@
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
 import type { IndexerService, SearchDoc } from '../../indexer';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
 export const buildDocKeywordSearchGetter = (
@@ -37,7 +37,7 @@ export const buildDocKeywordSearchGetter = (
 export const createDocKeywordSearchTool = (
   searchDocs: (query: string) => Promise<SearchDoc[] | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-base lookup is sufficient.',
     inputSchema: z.object({

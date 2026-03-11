@@ -124,13 +124,96 @@ export const ChatMessageRole = Object.values(AiPromptRole) as [
   'user',
 ];
 
+const AttachmentUrlSchema = z.string().refine(value => {
+  if (value.startsWith('data:')) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === 'http:' ||
+      url.protocol === 'https:' ||
+      url.protocol === 'gs:'
+    );
+  } catch {
+    return false;
+  }
+}, 'attachments must use https?://, gs:// or data: urls');
+
+export const PromptAttachmentSourceKindSchema = z.enum([
+  'url',
+  'data',
+  'bytes',
+  'file_handle',
+]);
+
+export const PromptAttachmentKindSchema = z.enum(['image', 'audio', 'file']);
+
+const AttachmentProviderHintSchema = z
+  .object({
+    provider: z.nativeEnum(CopilotProviderType).optional(),
+    kind: PromptAttachmentKindSchema.optional(),
+  })
+  .strict();
+
+const PromptAttachmentSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('url'),
+      url: AttachmentUrlSchema,
+      mimeType: z.string().optional(),
+      fileName: z.string().optional(),
+      providerHint: AttachmentProviderHintSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('data'),
+      data: z.string(),
+      mimeType: z.string(),
+      encoding: z.enum(['base64', 'utf8']).optional(),
+      fileName: z.string().optional(),
+      providerHint: AttachmentProviderHintSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('bytes'),
+      data: z.string(),
+      mimeType: z.string(),
+      encoding: z.literal('base64').optional(),
+      fileName: z.string().optional(),
+      providerHint: AttachmentProviderHintSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('file_handle'),
+      fileHandle: z.string().trim().min(1),
+      mimeType: z.string().optional(),
+      fileName: z.string().optional(),
+      providerHint: AttachmentProviderHintSchema.optional(),
+    })
+    .strict(),
+]);
+
 export const ChatMessageAttachment = z.union([
-  z.string().url(),
+  AttachmentUrlSchema,
   z.object({
-    attachment: z.string(),
+    attachment: AttachmentUrlSchema,
     mimeType: z.string(),
   }),
+  PromptAttachmentSchema,
 ]);
+
+export const PromptResponseFormatSchema = z
+  .object({
+    type: z.literal('json_schema'),
+    schema: z.any(),
+    strict: z.boolean().optional(),
+  })
+  .strict();
 
 export const StreamObjectSchema = z.discriminatedUnion('type', [
   z.object({
@@ -161,6 +244,7 @@ export const PureMessageSchema = z.object({
   streamObjects: z.array(StreamObjectSchema).optional().nullable(),
   attachments: z.array(ChatMessageAttachment).optional().nullable(),
   params: z.record(z.any()).optional().nullable(),
+  responseFormat: PromptResponseFormatSchema.optional().nullable(),
 });
 
 export const PromptMessageSchema = PureMessageSchema.extend({
@@ -169,6 +253,12 @@ export const PromptMessageSchema = PureMessageSchema.extend({
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
 export type StreamObject = z.infer<typeof StreamObjectSchema>;
+export type PromptAttachment = z.infer<typeof ChatMessageAttachment>;
+export type PromptAttachmentSourceKind = z.infer<
+  typeof PromptAttachmentSourceKindSchema
+>;
+export type PromptAttachmentKind = z.infer<typeof PromptAttachmentKindSchema>;
+export type PromptResponseFormat = z.infer<typeof PromptResponseFormatSchema>;
 
 // ========== options ==========
 
@@ -194,7 +284,9 @@ export type CopilotChatTools = NonNullable<
 >[number];
 
 export const CopilotStructuredOptionsSchema =
-  CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema).optional();
+  CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema)
+    .extend({ schema: z.any().optional(), strict: z.boolean().optional() })
+    .optional();
 
 export type CopilotStructuredOptions = z.infer<
   typeof CopilotStructuredOptionsSchema
@@ -220,10 +312,22 @@ export type CopilotEmbeddingOptions = z.infer<
   typeof CopilotEmbeddingOptionsSchema
 >;
 
+export type CopilotRerankCandidate = {
+  id?: string;
+  text: string;
+};
+
+export type CopilotRerankRequest = {
+  query: string;
+  candidates: CopilotRerankCandidate[];
+  topK?: number;
+};
+
 export enum ModelInputType {
   Text = 'text',
   Image = 'image',
   Audio = 'audio',
+  File = 'file',
 }
 
 export enum ModelOutputType {
@@ -231,12 +335,21 @@ export enum ModelOutputType {
   Object = 'object',
   Embedding = 'embedding',
   Image = 'image',
+  Rerank = 'rerank',
   Structured = 'structured',
+}
+
+export interface ModelAttachmentCapability {
+  kinds: PromptAttachmentKind[];
+  sourceKinds?: PromptAttachmentSourceKind[];
+  allowRemoteUrls?: boolean;
 }
 
 export interface ModelCapability {
   input: ModelInputType[];
   output: ModelOutputType[];
+  attachments?: ModelAttachmentCapability;
+  structuredAttachments?: ModelAttachmentCapability;
   defaultForOutputType?: boolean;
 }
 
@@ -248,6 +361,9 @@ export interface CopilotProviderModel {
 
 export type ModelConditions = {
   inputTypes?: ModelInputType[];
+  attachmentKinds?: PromptAttachmentKind[];
+  attachmentSourceKinds?: PromptAttachmentSourceKind[];
+  hasRemoteAttachments?: boolean;
   modelId?: string;
 };
 

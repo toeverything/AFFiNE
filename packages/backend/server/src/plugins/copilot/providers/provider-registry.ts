@@ -5,7 +5,7 @@ import type {
   ProviderMiddlewareConfig,
 } from '../config';
 import { resolveProviderMiddleware } from './provider-middleware';
-import { CopilotProviderType, type ModelOutputType } from './types';
+import { CopilotProviderType, ModelOutputType } from './types';
 
 const PROVIDER_ID_PATTERN = /^[a-zA-Z0-9-_]+$/;
 
@@ -239,8 +239,13 @@ export function resolveModel({
     };
   }
 
+  const defaultProviderId =
+    outputType && outputType !== ModelOutputType.Rerank
+      ? registry.defaults[outputType]
+      : undefined;
+
   const fallbackOrder = [
-    ...(outputType ? [registry.defaults[outputType]] : []),
+    ...(defaultProviderId ? [defaultProviderId] : []),
     registry.defaults.fallback,
     ...registry.order,
   ].filter((id): id is string => !!id);

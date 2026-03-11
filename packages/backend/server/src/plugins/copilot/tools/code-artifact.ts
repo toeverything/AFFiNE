@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { CopilotProviderFactory, PromptService } from './types';
 
 const logger = new Logger('CodeArtifactTool');
@@ -16,7 +16,7 @@ export const createCodeArtifactTool = (
   promptService: PromptService,
   factory: CopilotProviderFactory
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Generate a single-file HTML snippet (with inline <style> and <script>) that accomplishes the requested functionality. The final HTML should be runnable when saved as an .html file and opened in a browser. Do NOT reference external resources (CSS, JS, images) except through data URIs.',
     inputSchema: z.object({
