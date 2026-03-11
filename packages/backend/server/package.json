@@ -25,8 +25,6 @@
   "dependencies": {
     "@affine/s3-compat": "workspace:*",
     "@affine/server-native": "workspace:*",
-    "@ai-sdk/google": "^3.0.46",
-    "@ai-sdk/google-vertex": "^4.0.83",
     "@apollo/server": "^4.13.0",
     "@fal-ai/serverless-client": "^0.15.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^3.0.0",
@@ -66,7 +64,6 @@
     "@queuedash/api": "^3.16.0",
     "@react-email/components": "^0.5.7",
     "@socket.io/redis-adapter": "^8.3.0",
-    "ai": "^6.0.118",
     "bullmq": "^5.40.2",
     "cookie-parser": "^1.4.7",
     "cross-env": "^10.1.0",

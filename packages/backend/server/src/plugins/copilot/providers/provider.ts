@@ -2,7 +2,6 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { Tool, ToolSet } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -27,6 +26,8 @@ import {
   buildDocSearchGetter,
   buildDocUpdateHandler,
   buildDocUpdateMetaHandler,
+  type CopilotTool,
+  type CopilotToolSet,
   createBlobReadTool,
   createCodeArtifactTool,
   createConversationSummaryTool,
@@ -42,6 +43,7 @@ import {
   createExaSearchTool,
   createSectionEditTool,
 } from '../tools';
+import { canonicalizePromptAttachment } from './attachments';
 import { CopilotProviderFactory } from './factory';
 import { resolveProviderMiddleware } from './provider-middleware';
 import { buildProviderRegistry } from './provider-registry';
@@ -52,12 +54,17 @@ import {
   type CopilotImageOptions,
   CopilotProviderModel,
   CopilotProviderType,
+  type CopilotRerankRequest,
   CopilotStructuredOptions,
   EmbeddingMessage,
+  type ModelAttachmentCapability,
   ModelCapability,
   ModelConditions,
   ModelFullConditions,
   ModelInputType,
+  ModelOutputType,
+  type PromptAttachmentKind,
+  type PromptAttachmentSourceKind,
   type PromptMessage,
   PromptMessageSchema,
   StreamObject,
@@ -163,6 +170,163 @@ export abstract class CopilotProvider<C = any> {
 
   async refreshOnlineModels() {}
 
+  private unique<T>(values: Iterable<T>) {
+    return Array.from(new Set(values));
+  }
+
+  private attachmentKindToInputType(
+    kind: PromptAttachmentKind
+  ): ModelInputType {
+    switch (kind) {
+      case 'image':
+        return ModelInputType.Image;
+      case 'audio':
+        return ModelInputType.Audio;
+      default:
+        return ModelInputType.File;
+    }
+  }
+
+  protected async inferModelConditionsFromMessages(
+    messages?: PromptMessage[],
+    withAttachment = true
+  ): Promise<Partial<ModelFullConditions>> {
+    if (!messages?.length || !withAttachment) return {};
+
+    const attachmentKinds: PromptAttachmentKind[] = [];
+    const attachmentSourceKinds: PromptAttachmentSourceKind[] = [];
+    const inputTypes: ModelInputType[] = [];
+    let hasRemoteAttachments = false;
+
+    for (const message of messages) {
+      if (!Array.isArray(message.attachments)) continue;
+
+      for (const attachment of message.attachments) {
+        const normalized = await canonicalizePromptAttachment(
+          attachment,
+          message
+        );
+        attachmentKinds.push(normalized.kind);
+        inputTypes.push(this.attachmentKindToInputType(normalized.kind));
+        attachmentSourceKinds.push(normalized.sourceKind);
+        hasRemoteAttachments = hasRemoteAttachments || normalized.isRemote;
+      }
+    }
+
+    return {
+      ...(attachmentKinds.length
+        ? { attachmentKinds: this.unique(attachmentKinds) }
+        : {}),
+      ...(attachmentSourceKinds.length
+        ? { attachmentSourceKinds: this.unique(attachmentSourceKinds) }
+        : {}),
+      ...(inputTypes.length ? { inputTypes: this.unique(inputTypes) } : {}),
+      ...(hasRemoteAttachments ? { hasRemoteAttachments } : {}),
+    };
+  }
+
+  private mergeModelConditions(
+    cond: ModelFullConditions,
+    inferredCond: Partial<ModelFullConditions>
+  ): ModelFullConditions {
+    return {
+      ...inferredCond,
+      ...cond,
+      inputTypes: this.unique([
+        ...(inferredCond.inputTypes ?? []),
+        ...(cond.inputTypes ?? []),
+      ]),
+      attachmentKinds: this.unique([
+        ...(inferredCond.attachmentKinds ?? []),
+        ...(cond.attachmentKinds ?? []),
+      ]),
+      attachmentSourceKinds: this.unique([
+        ...(inferredCond.attachmentSourceKinds ?? []),
+        ...(cond.attachmentSourceKinds ?? []),
+      ]),
+      hasRemoteAttachments:
+        cond.hasRemoteAttachments ?? inferredCond.hasRemoteAttachments,
+    };
+  }
+
+  protected getAttachCapability(
+    model: CopilotProviderModel,
+    outputType: ModelOutputType
+  ): ModelAttachmentCapability | undefined {
+    const capability =
+      model.capabilities.find(cap => cap.output.includes(outputType)) ??
+      model.capabilities[0];
+    if (!capability) {
+      return;
+    }
+    return this.resolveAttachmentCapability(capability, outputType);
+  }
+
+  private resolveAttachmentCapability(
+    cap: ModelCapability,
+    outputType?: ModelOutputType
+  ): ModelAttachmentCapability | undefined {
+    if (outputType === ModelOutputType.Structured) {
+      return cap.structuredAttachments ?? cap.attachments;
+    }
+    return cap.attachments;
+  }
+
+  private matchesAttachCapability(
+    cap: ModelCapability,
+    cond: ModelFullConditions
+  ) {
+    const {
+      attachmentKinds,
+      attachmentSourceKinds,
+      hasRemoteAttachments,
+      outputType,
+    } = cond;
+
+    if (
+      !attachmentKinds?.length &&
+      !attachmentSourceKinds?.length &&
+      !hasRemoteAttachments
+    ) {
+      return true;
+    }
+
+    const attachmentCapability = this.resolveAttachmentCapability(
+      cap,
+      outputType
+    );
+    if (!attachmentCapability) {
+      return !attachmentKinds?.some(
+        kind => !cap.input.includes(this.attachmentKindToInputType(kind))
+      );
+    }
+
+    if (
+      attachmentKinds?.some(kind => !attachmentCapability.kinds.includes(kind))
+    ) {
+      return false;
+    }
+
+    if (
+      attachmentSourceKinds?.length &&
+      attachmentCapability.sourceKinds?.length &&
+      attachmentSourceKinds.some(
+        kind => !attachmentCapability.sourceKinds?.includes(kind)
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      hasRemoteAttachments &&
+      attachmentCapability.allowRemoteUrls === false
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   private findValidModel(
     cond: ModelFullConditions
   ): CopilotProviderModel | undefined {
@@ -170,7 +334,8 @@ export abstract class CopilotProvider<C = any> {
     const matcher = (cap: ModelCapability) =>
       (!outputType || cap.output.includes(outputType)) &&
       (!inputTypes?.length ||
-        inputTypes.every(type => cap.input.includes(type)));
+        inputTypes.every(type => cap.input.includes(type))) &&
+      this.matchesAttachCapability(cap, cond);
 
     if (modelId) {
       const hasOnlineModel = this.onlineModelList.includes(modelId);
@@ -213,7 +378,7 @@ export abstract class CopilotProvider<C = any> {
   protected getProviderSpecificTools(
     _toolName: CopilotChatTools,
     _model: string
-  ): [string, Tool?] | undefined {
+  ): [string, CopilotTool?] | undefined {
     return;
   }
 
@@ -221,8 +386,8 @@ export abstract class CopilotProvider<C = any> {
   protected async getTools(
     options: CopilotChatOptions,
     model: string
-  ): Promise<ToolSet> {
-    const tools: ToolSet = {};
+  ): Promise<CopilotToolSet> {
+    const tools: CopilotToolSet = {};
     if (options?.tools?.length) {
       this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
       const ac = this.moduleRef.get(AccessController, { strict: false });
@@ -377,19 +542,14 @@ export abstract class CopilotProvider<C = any> {
     messages,
     embeddings,
     options = {},
+    withAttachment = true,
   }: {
     cond: ModelFullConditions;
     messages?: PromptMessage[];
     embeddings?: string[];
-    options?: CopilotChatOptions;
-  }) {
-    const model = this.selectModel(cond);
-    const multimodal = model.capabilities.some(c =>
-      [ModelInputType.Image, ModelInputType.Audio].some(t =>
-        c.input.includes(t)
-      )
-    );
-
+    options?: CopilotChatOptions | CopilotStructuredOptions;
+    withAttachment?: boolean;
+  }): Promise<ModelFullConditions> {
     if (messages) {
       const { requireContent = true, requireAttachment = false } = options;
 
@@ -402,20 +562,56 @@ export abstract class CopilotProvider<C = any> {
           })
             .passthrough()
             .catchall(z.union([z.string(), z.number(), z.date(), z.null()]))
-            .refine(
-              m =>
-                !(multimodal && requireAttachment && m.role === 'user') ||
-                (m.attachments ? m.attachments.length > 0 : true),
-              { message: 'attachments required in multimodal mode' }
-            )
         )
         .optional();
 
       this.handleZodError(MessageSchema.safeParse(messages));
+
+      const inferredCond = await this.inferModelConditionsFromMessages(
+        messages,
+        withAttachment
+      );
+      const mergedCond = this.mergeModelConditions(cond, inferredCond);
+      const model = this.selectModel(mergedCond);
+      const multimodal = model.capabilities.some(c =>
+        [ModelInputType.Image, ModelInputType.Audio, ModelInputType.File].some(
+          t => c.input.includes(t)
+        )
+      );
+
+      if (
+        multimodal &&
+        requireAttachment &&
+        !messages.some(
+          message =>
+            message.role === 'user' &&
+            Array.isArray(message.attachments) &&
+            message.attachments.length > 0
+        )
+      ) {
+        throw new CopilotPromptInvalid(
+          'attachments required in multimodal mode'
+        );
+      }
+
+      if (embeddings) {
+        this.handleZodError(EmbeddingMessage.safeParse(embeddings));
+      }
+
+      return mergedCond;
     }
+
+    const inferredCond = await this.inferModelConditionsFromMessages(
+      messages,
+      withAttachment
+    );
+    const mergedCond = this.mergeModelConditions(cond, inferredCond);
+
     if (embeddings) {
       this.handleZodError(EmbeddingMessage.safeParse(embeddings));
     }
+
+    return mergedCond;
   }
 
   abstract text(
@@ -476,7 +672,7 @@ export abstract class CopilotProvider<C = any> {
 
   async rerank(
     _model: ModelConditions,
-    _messages: PromptMessage[][],
+    _request: CopilotRerankRequest,
     _options?: CopilotChatOptions
   ): Promise<number[]> {
     throw new CopilotProviderNotSupported({

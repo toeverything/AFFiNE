@@ -33,10 +33,7 @@ import {
   ModelOutputType,
   OpenAIProvider,
 } from '../../plugins/copilot/providers';
-import {
-  CitationParser,
-  TextStreamParser,
-} from '../../plugins/copilot/providers/utils';
+import { TextStreamParser } from '../../plugins/copilot/providers/utils';
 import { ChatSessionService } from '../../plugins/copilot/session';
 import { CopilotStorage } from '../../plugins/copilot/storage';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript';
@@ -660,6 +657,55 @@ test('should be able to generate with message id', async t => {
   }
 });
 
+test('should preserve file handle attachments when merging user content into prompt', async t => {
+  const { prompt, session } = t.context;
+
+  await prompt.set(promptName, 'model', [
+    { role: 'user', content: '{{content}}' },
+  ]);
+
+  const sessionId = await session.create({
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    promptName,
+    pinned: false,
+  });
+  const s = (await session.get(sessionId))!;
+
+  const message = await session.createMessage({
+    sessionId,
+    content: 'Summarize this file',
+    attachments: [
+      {
+        kind: 'file_handle',
+        fileHandle: 'file_123',
+        mimeType: 'application/pdf',
+      },
+    ],
+  });
+
+  await s.pushByMessageId(message);
+  const finalMessages = s.finish({});
+
+  t.deepEqual(finalMessages, [
+    {
+      role: 'user',
+      content: 'Summarize this file',
+      attachments: [
+        {
+          kind: 'file_handle',
+          fileHandle: 'file_123',
+          mimeType: 'application/pdf',
+        },
+      ],
+      params: {
+        content: 'Summarize this file',
+      },
+    },
+  ]);
+});
+
 test('should save message correctly', async t => {
   const { prompt, session } = t.context;
 
@@ -1223,149 +1269,6 @@ test('should be able to run image executor', async t => {
   }
 
   Sinon.restore();
-});
-
-test('CitationParser should replace citation placeholders with URLs', t => {
-  const content =
-    'This is [a] test sentence with [citations [1]] and [[2]] and [3].';
-  const citations = ['https://example1.com', 'https://example2.com'];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  const result = parser.parse(content) + parser.end();
-
-  const expected = [
-    'This is [a] test sentence with [citations [^1]] and [^2] and [3].',
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-  ].join('\n');
-
-  t.is(result, expected);
-});
-
-test('CitationParser should replace chunks of citation placeholders with URLs', t => {
-  const contents = [
-    '[[]]',
-    'This is [',
-    'a] test sentence ',
-    'with citations [1',
-    '] and [',
-    '[2]] and [[',
-    '3]] and [[4',
-    ']] and [[5]',
-    '] and [[6]]',
-    ' and [7',
-  ];
-  const citations = [
-    'https://example1.com',
-    'https://example2.com',
-    'https://example3.com',
-    'https://example4.com',
-    'https://example5.com',
-    'https://example6.com',
-    'https://example7.com',
-  ];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current);
-  }, '');
-  result += parser.end();
-
-  const expected = [
-    '[[]]This is [a] test sentence with citations [^1] and [^2] and [^3] and [^4] and [^5] and [^6] and [7',
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
-    `[^4]: {"type":"url","url":"${encodeURIComponent(citations[3])}"}`,
-    `[^5]: {"type":"url","url":"${encodeURIComponent(citations[4])}"}`,
-    `[^6]: {"type":"url","url":"${encodeURIComponent(citations[5])}"}`,
-    `[^7]: {"type":"url","url":"${encodeURIComponent(citations[6])}"}`,
-  ].join('\n');
-  t.is(result, expected);
-});
-
-test('CitationParser should not replace citation already with URLs', t => {
-  const content =
-    'This is [a] test sentence with citations [1](https://example1.com) and [[2]](https://example2.com) and [[3](https://example3.com)].';
-  const citations = [
-    'https://example4.com',
-    'https://example5.com',
-    'https://example6.com',
-  ];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  const result = parser.parse(content) + parser.end();
-
-  const expected = [
-    content,
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
-  ].join('\n');
-  t.is(result, expected);
-});
-
-test('CitationParser should not replace chunks of citation already with URLs', t => {
-  const contents = [
-    'This is [a] test sentence with citations [1',
-    '](https://example1.com) and [[2]',
-    '](https://example2.com) and [[3](https://example3.com)].',
-  ];
-  const citations = [
-    'https://example4.com',
-    'https://example5.com',
-    'https://example6.com',
-  ];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current);
-  }, '');
-  result += parser.end();
-
-  const expected = [
-    contents.join(''),
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
-  ].join('\n');
-  t.is(result, expected);
-});
-
-test('CitationParser should replace openai style reference chunks', t => {
-  const contents = [
-    'This is [a] test sentence with citations ',
-    '([example1.com](https://example1.com))',
-  ];
-
-  const parser = new CitationParser();
-
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current);
-  }, '');
-  result += parser.end();
-
-  const expected = [
-    contents[0] + '[^1]',
-    `[^1]: {"type":"url","url":"${encodeURIComponent('https://example1.com')}"}`,
-  ].join('\n');
-  t.is(result, expected);
 });
 
 test('TextStreamParser should format different types of chunks correctly', t => {

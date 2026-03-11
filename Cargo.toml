@@ -53,10 +53,11 @@ resolver = "3"
   libc = "0.2"
   libwebp-sys = "0.14.2"
   little_exif = "0.6.23"
-  llm_adapter = "0.1.1"
+  llm_adapter = { version = "0.1.3", default-features = false }
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"
+  matroska = "0.30"
   memory-indexer = "0.3.0"
   mimalloc = "0.1"
   mp4parse = "0.17"

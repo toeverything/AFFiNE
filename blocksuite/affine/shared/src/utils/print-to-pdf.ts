@@ -73,6 +73,44 @@ export async function printToPdf(
                 }
               }</style></head><body></body></html>`);
       doc.close();
+      iframe.contentWindow.document
+        .write(`<!DOCTYPE html><html><head><style>@media print {
+              html, body {
+                height: initial !important;
+                overflow: initial !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+                color: #000 !important;
+                background: #fff !important;
+                color-scheme: light !important;
+              }
+              ::-webkit-scrollbar { 
+                display: none; 
+              }
+              :root, body {
+                --affine-text-primary: #000 !important;
+                --affine-text-secondary: #111 !important;
+                --affine-text-tertiary: #333 !important;
+                --affine-background-primary: #fff !important;
+                --affine-background-secondary: #fff !important;
+                --affine-background-tertiary: #fff !important;
+                --affine-background-code-block: #f5f5f5 !important;
+                --affine-quote-color: #e3e3e3 !important;
+                --affine-border-color: #e3e3e3 !important;
+              }
+              body, [data-theme='dark'] {
+                color: #000 !important;
+                background: #fff !important;
+              }
+              body * {
+                color: #000 !important;
+                -webkit-text-fill-color: #000 !important;
+              }
+              :root {
+                --affine-note-shadow-box: none !important;
+                --affine-note-shadow-sticker: none !important;
+              }
+            }</style></head><body></body></html>`);
 
       // copy all styles to iframe
       for (const element of document.styleSheets) {

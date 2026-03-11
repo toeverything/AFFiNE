@@ -1,4 +1,3 @@
-import { tool } from 'ai';
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
@@ -9,6 +8,7 @@ import {
   type Models,
 } from '../../../models';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type {
   ContextSession,
   CopilotChatOptions,
@@ -24,7 +24,7 @@ export const buildDocSearchGetter = (
   const searchDocs = async (
     options: CopilotChatOptions,
     query?: string,
-    abortSignal?: AbortSignal
+    signal?: AbortSignal
   ) => {
     if (!options || !query?.trim() || !options.user || !options.workspace) {
       return `Invalid search parameters.`;
@@ -36,8 +36,8 @@ export const buildDocSearchGetter = (
     if (!canAccess)
       return 'You do not have permission to access this workspace.';
     const [chunks, contextChunks] = await Promise.all([
-      context.matchWorkspaceAll(options.workspace, query, 10, abortSignal),
-      docContext?.matchFiles(query, 10, abortSignal) ?? [],
+      context.matchWorkspaceAll(options.workspace, query, 10, signal),
+      docContext?.matchFiles(query, 10, signal) ?? [],
     ]);
 
     const docChunks = await ac
@@ -100,10 +100,10 @@ export const buildDocSearchGetter = (
 export const createDocSemanticSearchTool = (
   searchDocs: (
     query: string,
-    abortSignal?: AbortSignal
+    signal?: AbortSignal
   ) => Promise<ChunkSimilarity[] | string | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
     inputSchema: z.object({
@@ -115,7 +115,7 @@ export const createDocSemanticSearchTool = (
     }),
     execute: async ({ query }, options) => {
       try {
-        return await searchDocs(query, options.abortSignal);
+        return await searchDocs(query, options.signal);
       } catch (e: any) {
         return toolError('Doc Semantic Search Failed', e.message);
       }

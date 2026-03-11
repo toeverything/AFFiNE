@@ -65,6 +65,21 @@ type NativeLlmModule = {
     backendConfigJson: string,
     requestJson: string
   ) => string | Promise<string>;
+  llmStructuredDispatch?: (
+    protocol: string,
+    backendConfigJson: string,
+    requestJson: string
+  ) => string | Promise<string>;
+  llmEmbeddingDispatch?: (
+    protocol: string,
+    backendConfigJson: string,
+    requestJson: string
+  ) => string | Promise<string>;
+  llmRerankDispatch?: (
+    protocol: string,
+    backendConfigJson: string,
+    requestJson: string
+  ) => string | Promise<string>;
   llmDispatchStream?: (
     protocol: string,
     backendConfigJson: string,
@@ -79,12 +94,20 @@ const nativeLlmModule = serverNativeModule as typeof serverNativeModule &
 export type NativeLlmProtocol =
   | 'openai_chat'
   | 'openai_responses'
-  | 'anthropic';
+  | 'anthropic'
+  | 'gemini';
 
 export type NativeLlmBackendConfig = {
   base_url: string;
   auth_token: string;
-  request_layer?: 'anthropic' | 'chat_completions' | 'responses' | 'vertex';
+  request_layer?:
+    | 'anthropic'
+    | 'chat_completions'
+    | 'responses'
+    | 'vertex'
+    | 'vertex_anthropic'
+    | 'gemini_api'
+    | 'gemini_vertex';
   headers?: Record<string, string>;
   no_streaming?: boolean;
   timeout_ms?: number;
@@ -100,6 +123,8 @@ export type NativeLlmCoreContent =
       call_id: string;
       name: string;
       arguments: Record<string, unknown>;
+      arguments_text?: string;
+      arguments_error?: string;
       thought?: string;
     }
   | {
@@ -109,8 +134,12 @@ export type NativeLlmCoreContent =
       is_error?: boolean;
       name?: string;
       arguments?: Record<string, unknown>;
+      arguments_text?: string;
+      arguments_error?: string;
     }
-  | { type: 'image'; source: Record<string, unknown> | string };
+  | { type: 'image'; source: Record<string, unknown> | string }
+  | { type: 'audio'; source: Record<string, unknown> | string }
+  | { type: 'file'; source: Record<string, unknown> | string };
 
 export type NativeLlmCoreMessage = {
   role: NativeLlmCoreRole;
@@ -133,20 +162,52 @@ export type NativeLlmRequest = {
   tool_choice?: 'auto' | 'none' | 'required' | { name: string };
   include?: string[];
   reasoning?: Record<string, unknown>;
+  response_schema?: Record<string, unknown>;
   middleware?: {
     request?: Array<
       'normalize_messages' | 'clamp_max_tokens' | 'tool_schema_rewrite'
     >;
     stream?: Array<'stream_event_normalize' | 'citation_indexing'>;
     config?: {
-      no_additional_properties?: boolean;
-      drop_property_format?: boolean;
-      drop_property_min_length?: boolean;
-      drop_array_min_items?: boolean;
-      drop_array_max_items?: boolean;
+      additional_properties_policy?: 'preserve' | 'forbid';
+      property_format_policy?: 'preserve' | 'drop';
+      property_min_length_policy?: 'preserve' | 'drop';
+      array_min_items_policy?: 'preserve' | 'drop';
+      array_max_items_policy?: 'preserve' | 'drop';
       max_tokens_cap?: number;
     };
   };
+};
+
+export type NativeLlmStructuredRequest = {
+  model: string;
+  messages: NativeLlmCoreMessage[];
+  schema: Record<string, unknown>;
+  max_tokens?: number;
+  temperature?: number;
+  reasoning?: Record<string, unknown>;
+  strict?: boolean;
+  response_mime_type?: string;
+  middleware?: NativeLlmRequest['middleware'];
+};
+
+export type NativeLlmEmbeddingRequest = {
+  model: string;
+  inputs: string[];
+  dimensions?: number;
+  task_type?: string;
+};
+
+export type NativeLlmRerankCandidate = {
+  id?: string;
+  text: string;
+};
+
+export type NativeLlmRerankRequest = {
+  model: string;
+  query: string;
+  candidates: NativeLlmRerankCandidate[];
+  top_n?: number;
 };
 
 export type NativeLlmDispatchResponse = {
@@ -159,8 +220,37 @@ export type NativeLlmDispatchResponse = {
     total_tokens: number;
     cached_tokens?: number;
   };
-  finish_reason: string;
+  finish_reason:
+    | 'stop'
+    | 'length'
+    | 'tool_calls'
+    | 'content_filter'
+    | 'error'
+    | string;
   reasoning_details?: unknown;
+};
+
+export type NativeLlmStructuredResponse = {
+  id: string;
+  model: string;
+  output_text: string;
+  usage: NativeLlmDispatchResponse['usage'];
+  finish_reason: NativeLlmDispatchResponse['finish_reason'];
+  reasoning_details?: unknown;
+};
+
+export type NativeLlmEmbeddingResponse = {
+  model: string;
+  embeddings: number[][];
+  usage?: {
+    prompt_tokens: number;
+    total_tokens: number;
+  };
+};
+
+export type NativeLlmRerankResponse = {
+  model: string;
+  scores: number[];
 };
 
 export type NativeLlmStreamEvent =
@@ -178,6 +268,8 @@ export type NativeLlmStreamEvent =
       call_id: string;
       name: string;
       arguments: Record<string, unknown>;
+      arguments_text?: string;
+      arguments_error?: string;
       thought?: string;
     }
   | {
@@ -187,6 +279,8 @@ export type NativeLlmStreamEvent =
       is_error?: boolean;
       name?: string;
       arguments?: Record<string, unknown>;
+      arguments_text?: string;
+      arguments_error?: string;
     }
   | { type: 'citation'; index: number; url: string }
   | {
@@ -200,7 +294,7 @@ export type NativeLlmStreamEvent =
     }
   | {
       type: 'done';
-      finish_reason?: string;
+      finish_reason?: NativeLlmDispatchResponse['finish_reason'];
       usage?: {
         prompt_tokens: number;
         completion_tokens: number;
@@ -226,6 +320,57 @@ export async function llmDispatch(
   );
   const responseText = await Promise.resolve(response);
   return JSON.parse(responseText) as NativeLlmDispatchResponse;
+}
+
+export async function llmStructuredDispatch(
+  protocol: NativeLlmProtocol,
+  backendConfig: NativeLlmBackendConfig,
+  request: NativeLlmStructuredRequest
+): Promise<NativeLlmStructuredResponse> {
+  if (!nativeLlmModule.llmStructuredDispatch) {
+    throw new Error('native llm structured dispatch is not available');
+  }
+  const response = nativeLlmModule.llmStructuredDispatch(
+    protocol,
+    JSON.stringify(backendConfig),
+    JSON.stringify(request)
+  );
+  const responseText = await Promise.resolve(response);
+  return JSON.parse(responseText) as NativeLlmStructuredResponse;
+}
+
+export async function llmEmbeddingDispatch(
+  protocol: NativeLlmProtocol,
+  backendConfig: NativeLlmBackendConfig,
+  request: NativeLlmEmbeddingRequest
+): Promise<NativeLlmEmbeddingResponse> {
+  if (!nativeLlmModule.llmEmbeddingDispatch) {
+    throw new Error('native llm embedding dispatch is not available');
+  }
+  const response = nativeLlmModule.llmEmbeddingDispatch(
+    protocol,
+    JSON.stringify(backendConfig),
+    JSON.stringify(request)
+  );
+  const responseText = await Promise.resolve(response);
+  return JSON.parse(responseText) as NativeLlmEmbeddingResponse;
+}
+
+export async function llmRerankDispatch(
+  protocol: NativeLlmProtocol,
+  backendConfig: NativeLlmBackendConfig,
+  request: NativeLlmRerankRequest
+): Promise<NativeLlmRerankResponse> {
+  if (!nativeLlmModule.llmRerankDispatch) {
+    throw new Error('native llm rerank dispatch is not available');
+  }
+  const response = nativeLlmModule.llmRerankDispatch(
+    protocol,
+    JSON.stringify(backendConfig),
+    JSON.stringify(request)
+  );
+  const responseText = await Promise.resolve(response);
+  return JSON.parse(responseText) as NativeLlmRerankResponse;
 }
 
 export class NativeStreamAdapter<T> implements AsyncIterableIterator<T> {

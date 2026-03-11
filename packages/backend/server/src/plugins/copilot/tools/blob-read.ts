@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { AccessController } from '../../../core/permission';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { ContextSession, CopilotChatOptions } from './types';
 
 const logger = new Logger('ContextBlobReadTool');
@@ -58,7 +58,7 @@ export const createBlobReadTool = (
     chunk?: number
   ) => Promise<object | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Return the content and basic metadata of a single attachment identified by blobId; more inclined to use search tools rather than this tool.',
     inputSchema: z.object({
