@@ -1,42 +1,19 @@
 import { DebugLogger } from '@affine/debug';
 import { nanoid } from 'nanoid';
 
+import { type Middleware, trackerState, type TrackProperties } from './state';
 import type { TelemetryEvent } from './telemetry';
 import { sendTelemetryEvent, setTelemetryContext } from './telemetry';
 
 const logger = new DebugLogger('telemetry');
 
-type TrackProperties = Record<string, unknown> | undefined;
 type RawTrackProperties = Record<string, unknown> | object | undefined;
 
-type Middleware = (
-  name: string,
-  properties?: TrackProperties
-) => Record<string, unknown>;
-
-const CLIENT_ID_KEY = 'affine_telemetry_client_id';
 const SESSION_ID_KEY = 'affine_telemetry_session_id';
 const SESSION_NUMBER_KEY = 'affine_telemetry_session_number';
 const SESSION_NUMBER_CURRENT_KEY = 'affine_telemetry_session_number_current';
 const LAST_ACTIVITY_KEY = 'affine_telemetry_last_activity_ms';
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
-
-let enabled = true;
-const clientStorage = localStorageSafe();
-const hasClientId = clientStorage?.getItem(CLIENT_ID_KEY);
-let clientId = readPersistentId(CLIENT_ID_KEY, clientStorage);
-let pendingFirstVisit = !hasClientId;
-let sessionId = 0;
-let sessionNumber = 0;
-let lastActivityMs = 0;
-let sessionStartSent = false;
-let engagementTrackingEnabled = false;
-let visibleSinceMs: number | null = null;
-let pendingEngagementMs = 0;
-
-let userId: string | undefined;
-let userProperties: Record<string, unknown> = {};
-const middlewares = new Set<Middleware>();
 
 export const tracker = {
   init() {
@@ -51,29 +28,32 @@ export const tracker = {
   },
 
   register(props: Record<string, unknown>) {
-    userProperties = {
-      ...userProperties,
+    trackerState.userProperties = {
+      ...trackerState.userProperties,
       ...props,
     };
-    setTelemetryContext({ userProperties });
+    setTelemetryContext({ userProperties: trackerState.userProperties });
   },
 
   reset() {
-    userId = undefined;
-    userProperties = {};
+    trackerState.userId = undefined;
+    trackerState.userProperties = {};
     startNewSession(Date.now(), sessionStorageSafe());
     setTelemetryContext(
-      { userId, userProperties },
+      {
+        userId: trackerState.userId,
+        userProperties: trackerState.userProperties,
+      },
       { replaceUserProperties: true }
     );
     this.init();
   },
 
   track(eventName: string, properties?: RawTrackProperties) {
-    if (!enabled) {
+    if (!trackerState.enabled) {
       return;
     }
-    const middlewareProperties = Array.from(middlewares).reduce(
+    const middlewareProperties = Array.from(trackerState.middlewares).reduce(
       (acc, middleware) => {
         return middleware(eventName, acc);
       },
@@ -84,10 +64,10 @@ export const tracker = {
   },
 
   track_pageview(properties?: { location?: string; [key: string]: unknown }) {
-    if (!enabled) {
+    if (!trackerState.enabled) {
       return;
     }
-    const middlewareProperties = Array.from(middlewares).reduce(
+    const middlewareProperties = Array.from(trackerState.middlewares).reduce(
       (acc, middleware) => {
         return middleware('track_pageview', acc);
       },
@@ -108,41 +88,41 @@ export const tracker = {
   },
 
   middleware(cb: Middleware): () => void {
-    middlewares.add(cb);
+    trackerState.middlewares.add(cb);
     return () => {
-      middlewares.delete(cb);
+      trackerState.middlewares.delete(cb);
     };
   },
 
   opt_out_tracking() {
-    enabled = false;
+    trackerState.enabled = false;
   },
 
   opt_in_tracking() {
-    enabled = true;
+    trackerState.enabled = true;
   },
 
   has_opted_in_tracking() {
-    return enabled;
+    return trackerState.enabled;
   },
 
   has_opted_out_tracking() {
-    return !enabled;
+    return !trackerState.enabled;
   },
 
   identify(nextUserId?: string) {
-    userId = nextUserId ? String(nextUserId) : undefined;
-    setTelemetryContext({ userId });
+    trackerState.userId = nextUserId ? String(nextUserId) : undefined;
+    setTelemetryContext({ userId: trackerState.userId });
   },
 
   get people() {
     return {
       set: (props: Record<string, unknown>) => {
-        userProperties = {
-          ...userProperties,
+        trackerState.userProperties = {
+          ...trackerState.userProperties,
           ...props,
         };
-        setTelemetryContext({ userProperties });
+        setTelemetryContext({ userProperties: trackerState.userProperties });
       },
     };
   },
@@ -193,45 +173,62 @@ function prepareSession(now: number) {
     if (expired) {
       startNewSession(now, sessionStorage);
     } else {
-      sessionId = storedSessionId;
-      sessionNumber = readCurrentSessionNumber(sessionStorage, clientStorage);
+      trackerState.sessionId = storedSessionId;
+      trackerState.sessionNumber = readCurrentSessionNumber(
+        sessionStorage,
+        trackerState.clientStorage
+      );
       updateLastActivity(now, sessionStorage);
     }
   } else {
     const expired =
-      !sessionId ||
-      !lastActivityMs ||
-      now - lastActivityMs > SESSION_TIMEOUT_MS;
+      !trackerState.sessionId ||
+      !trackerState.lastActivityMs ||
+      now - trackerState.lastActivityMs > SESSION_TIMEOUT_MS;
     if (expired) {
       startNewSession(now, null);
     } else {
-      lastActivityMs = now;
-      if (!sessionNumber) {
-        sessionNumber = 1;
+      trackerState.lastActivityMs = now;
+      if (!trackerState.sessionNumber) {
+        trackerState.sessionNumber = 1;
       }
     }
   }
 
   const preEvents: TelemetryEvent[] = [];
-  if (pendingFirstVisit) {
-    pendingFirstVisit = false;
+  if (trackerState.pendingFirstVisit) {
+    trackerState.pendingFirstVisit = false;
     preEvents.push(
       buildEvent(
         'first_visit',
-        mergeSessionParams({}, sessionId, sessionNumber, 1)
+        mergeSessionParams(
+          {},
+          trackerState.sessionId,
+          trackerState.sessionNumber,
+          1
+        )
       )
     );
   }
-  if (!sessionStartSent) {
-    sessionStartSent = true;
+  if (!trackerState.sessionStartSent) {
+    trackerState.sessionStartSent = true;
     preEvents.push(
       buildEvent(
         'session_start',
-        mergeSessionParams({}, sessionId, sessionNumber, 1)
+        mergeSessionParams(
+          {},
+          trackerState.sessionId,
+          trackerState.sessionNumber,
+          1
+        )
       )
     );
   }
-  return { sessionId, sessionNumber, preEvents };
+  return {
+    sessionId: trackerState.sessionId,
+    sessionNumber: trackerState.sessionNumber,
+    preEvents,
+  };
 }
 
 function mergeSessionParams(
@@ -256,62 +253,76 @@ function mergeSessionParams(
 }
 
 function startNewSession(now: number, sessionStorage: Storage | null) {
-  sessionId = Math.floor(now / 1000);
-  sessionNumber = incrementSessionNumber(clientStorage, sessionStorage);
+  trackerState.sessionId = Math.floor(now / 1000);
+  trackerState.sessionNumber = incrementSessionNumber(
+    trackerState.clientStorage,
+    sessionStorage
+  );
   updateLastActivity(now, sessionStorage);
-  writeNumber(sessionStorage, SESSION_ID_KEY, sessionId);
-  sessionStartSent = false;
+  writeNumber(sessionStorage, SESSION_ID_KEY, trackerState.sessionId);
+  trackerState.sessionStartSent = false;
   resetEngagementState(now);
 }
 
 function updateLastActivity(now: number, sessionStorage: Storage | null) {
-  lastActivityMs = now;
+  trackerState.lastActivityMs = now;
   writeNumber(sessionStorage, LAST_ACTIVITY_KEY, now);
 }
 
 function consumeEngagementTime(now: number) {
   initEngagementTracking(now);
-  if (visibleSinceMs !== null) {
-    pendingEngagementMs += now - visibleSinceMs;
-    visibleSinceMs = now;
+  if (trackerState.visibleSinceMs !== null) {
+    trackerState.pendingEngagementMs += now - trackerState.visibleSinceMs;
+    trackerState.visibleSinceMs = now;
   }
-  const engagementMs = Math.max(0, Math.round(pendingEngagementMs));
-  pendingEngagementMs = 0;
+  const engagementMs = Math.max(
+    0,
+    Math.round(trackerState.pendingEngagementMs)
+  );
+  trackerState.pendingEngagementMs = 0;
   return engagementMs;
 }
 
 function resetEngagementState(now: number) {
-  pendingEngagementMs = 0;
-  visibleSinceMs = isDocumentVisible() ? now : null;
+  trackerState.pendingEngagementMs = 0;
+  trackerState.visibleSinceMs = isDocumentVisible() ? now : null;
 }
 
 function initEngagementTracking(now: number) {
-  if (engagementTrackingEnabled || typeof document === 'undefined') {
+  if (
+    trackerState.engagementTrackingEnabled ||
+    typeof document === 'undefined'
+  ) {
     return;
   }
-  engagementTrackingEnabled = true;
+  trackerState.engagementTrackingEnabled = true;
   resetEngagementState(now);
 
-  document.addEventListener('visibilitychange', () => {
+  trackerState.visibilityChangeHandler = () => {
     const now = Date.now();
-    if (visibleSinceMs !== null) {
-      pendingEngagementMs += now - visibleSinceMs;
+    if (trackerState.visibleSinceMs !== null) {
+      trackerState.pendingEngagementMs += now - trackerState.visibleSinceMs;
     }
-    visibleSinceMs = isDocumentVisible() ? now : null;
+    trackerState.visibleSinceMs = isDocumentVisible() ? now : null;
     if (!isDocumentVisible()) {
       dispatchUserEngagement(now);
     }
-  });
+  };
+  document.addEventListener(
+    'visibilitychange',
+    trackerState.visibilityChangeHandler
+  );
 
   if (typeof window !== 'undefined') {
-    window.addEventListener('pagehide', () => {
+    trackerState.pageHideHandler = () => {
       dispatchUserEngagement(Date.now());
-    });
+    };
+    window.addEventListener('pagehide', trackerState.pageHideHandler);
   }
 }
 
 function dispatchUserEngagement(now: number) {
-  if (!enabled) {
+  if (!trackerState.enabled) {
     return;
   }
   const engagementMs = consumeEngagementTime(now);
@@ -377,7 +388,7 @@ function readCurrentSessionNumber(
 
   const fallback = localStorage
     ? (readPositiveNumber(localStorage, SESSION_NUMBER_KEY) ?? 1)
-    : sessionNumber || 1;
+    : trackerState.sessionNumber || 1;
 
   writeNumber(sessionStorage, SESSION_NUMBER_CURRENT_KEY, fallback);
   if (localStorage && !readPositiveNumber(localStorage, SESSION_NUMBER_KEY)) {
@@ -391,7 +402,7 @@ function incrementSessionNumber(
   sessionStorage: Storage | null
 ) {
   if (!localStorage) {
-    const next = (sessionNumber || 0) + 1;
+    const next = (trackerState.sessionNumber || 0) + 1;
     writeNumber(sessionStorage, SESSION_NUMBER_CURRENT_KEY, next);
     return next;
   }
@@ -410,10 +421,10 @@ function buildEvent(
     schemaVersion: 1,
     eventName,
     params,
-    userId,
-    userProperties,
-    clientId,
-    sessionId,
+    userId: trackerState.userId,
+    userProperties: trackerState.userProperties,
+    clientId: trackerState.clientId,
+    sessionId: trackerState.sessionId,
     eventId: nanoid(),
     timestampMicros: Date.now() * 1000,
     context: buildContext(),
@@ -443,33 +454,6 @@ function normalizeProperties(properties?: RawTrackProperties): TrackProperties {
     return undefined;
   }
   return properties as Record<string, unknown>;
-}
-
-function readPersistentId(key: string, storage: Storage | null, renew = false) {
-  if (!storage) {
-    return nanoid();
-  }
-  if (!renew) {
-    const existing = storage.getItem(key);
-    if (existing) {
-      return existing;
-    }
-  }
-  const id = nanoid();
-  try {
-    storage.setItem(key, id);
-  } catch {
-    return id;
-  }
-  return id;
-}
-
-function localStorageSafe(): Storage | null {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage;
-  } catch {
-    return null;
-  }
 }
 
 function sessionStorageSafe(): Storage | null {

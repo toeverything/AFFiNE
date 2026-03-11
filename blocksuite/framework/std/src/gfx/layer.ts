@@ -596,7 +596,7 @@ export class LayerManager extends GfxExtension {
   private _updateLayer(
     element: GfxModel | GfxLocalElementModel,
     props?: Record<string, unknown>,
-    oldValues?: Record<string, unknown>
+    _oldValues?: Record<string, unknown>
   ) {
     const modelType = this._getModelType(element);
     const isLocalElem = element instanceof GfxLocalElementModel;
@@ -613,16 +613,7 @@ export class LayerManager extends GfxExtension {
     };
 
     if (shouldUpdateGroupChildren) {
-      const group = element as GfxModel & GfxGroupCompatibleInterface;
-      const oldChildIds = childIdsChanged
-        ? Array.isArray(oldValues?.['childIds'])
-          ? (oldValues['childIds'] as string[])
-          : this._groupChildSnapshot.get(group.id)
-        : undefined;
-
-      const relatedElements = this._getRelatedGroupElements(group, oldChildIds);
-      this._refreshElementsInLayer(relatedElements);
-      this._syncGroupChildSnapshot(group);
+      this._reset();
       return true;
     }
 

@@ -24,13 +24,10 @@ export default defineConfig({
     setupFiles: [resolve(rootDir, './scripts/setup/global.ts')],
     include: ['./test/**/*.spec.ts'],
     testTimeout: 5000,
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    pool: 'forks',
+    maxWorkers: 1,
     coverage: {
-      provider: 'istanbul', // or 'c8'
+      provider: 'istanbul', // or 'istanbul'
       reporter: ['lcov'],
       reportsDirectory: resolve(rootDir, '.coverage/electron'),
     },

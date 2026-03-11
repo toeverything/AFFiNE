@@ -31,6 +31,7 @@ import { SubscriptionPlan, SubscriptionStatus } from '../payment/types';
 import { ChatMessageCache } from './message';
 import { ChatPrompt } from './prompt/chat-prompt';
 import { PromptService } from './prompt/service';
+import { promptAttachmentHasSource } from './providers/attachments';
 import { CopilotProviderFactory } from './providers/factory';
 import { buildProviderRegistry } from './providers/provider-registry';
 import {
@@ -38,6 +39,7 @@ import {
   type PromptMessage,
   type PromptParams,
 } from './providers/types';
+import { promptAttachmentToUrl } from './providers/utils';
 import {
   type ChatHistory,
   type ChatMessage,
@@ -272,11 +274,7 @@ export class ChatSession implements AsyncDisposable {
         lastMessage.attachments || [],
       ]
         .flat()
-        .filter(v =>
-          typeof v === 'string'
-            ? !!v.trim()
-            : v && v.attachment.trim() && v.mimeType
-        );
+        .filter(v => promptAttachmentHasSource(v));
       //insert all previous user message content before first user message
       finished.splice(firstUserMessageIndex, 0, ...messages);
 
@@ -466,8 +464,8 @@ export class ChatSessionService {
               messages: preload.concat(messages).map(m => ({
                 ...m,
                 attachments: m.attachments
-                  ?.map(a => (typeof a === 'string' ? a : a.attachment))
-                  .filter(a => !!a),
+                  ?.map(a => promptAttachmentToUrl(a))
+                  .filter((a): a is string => !!a),
               })),
             };
           } else {

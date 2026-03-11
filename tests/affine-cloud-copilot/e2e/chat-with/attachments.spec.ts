@@ -74,13 +74,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer2,
         },
       ],
-      `What is Attachment${randomStr1}? What is Attachment${randomStr2}?`
+      `Which animal is Attachment${randomStr1} and which animal is Attachment${randomStr2}? Answer with both attachment names.`
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: `What is Attachment${randomStr1}? What is Attachment${randomStr2}?`,
+        content: `Which animal is Attachment${randomStr1} and which animal is Attachment${randomStr2}? Answer with both attachment names.`,
       },
       {
         role: 'assistant',
@@ -89,14 +89,11 @@ test.describe('AIChatWith/Attachments', () => {
     ]);
 
     await expect(async () => {
-      const { content, message } =
-        await utils.chatPanel.getLatestAssistantMessage(page);
+      const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
       expect(content).toMatch(new RegExp(`Attachment${randomStr1}`));
       expect(content).toMatch(new RegExp(`Attachment${randomStr2}`));
-      const footnoteCount = await message
-        .locator('affine-footnote-node')
-        .count();
-      expect(footnoteCount > 0 || /sources?/i.test(content)).toBe(true);
+      expect(content).toMatch(/cat/i);
+      expect(content).toMatch(/dog/i);
     }).toPass({ timeout: 20000 });
   });
 });

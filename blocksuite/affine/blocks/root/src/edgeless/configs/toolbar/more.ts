@@ -22,6 +22,7 @@ import {
   FrameBlockModel,
   ImageBlockModel,
   isExternalEmbedModel,
+  MindmapElementModel,
   NoteBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
@@ -401,7 +402,17 @@ function reorderElements(
 ) {
   if (!models.length) return;
 
-  for (const model of models) {
+  const normalizedModels = Array.from(
+    new Map(
+      models.map(model => {
+        const reorderTarget =
+          model.group instanceof MindmapElementModel ? model.group : model;
+        return [reorderTarget.id, reorderTarget];
+      })
+    ).values()
+  );
+
+  for (const model of normalizedModels) {
     const index = ctx.gfx.layer.getReorderedIndex(model, type);
 
     // block should be updated in transaction

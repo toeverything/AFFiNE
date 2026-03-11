@@ -3,8 +3,13 @@
  */
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const sendTelemetryEvent = vi.fn().mockResolvedValue({ queued: true });
-const setTelemetryContext = vi.fn();
+import { resetTrackerState } from '../state';
+import { tracker } from '../tracker';
+
+const { sendTelemetryEvent, setTelemetryContext } = vi.hoisted(() => ({
+  sendTelemetryEvent: vi.fn().mockResolvedValue({ queued: true }),
+  setTelemetryContext: vi.fn(),
+}));
 
 vi.mock('../telemetry', () => ({
   sendTelemetryEvent,
@@ -27,17 +32,11 @@ beforeEach(() => {
   sendTelemetryEvent.mockClear();
   setTelemetryContext.mockClear();
   vi.useRealTimers();
-  vi.resetModules();
+  resetTrackerState();
 });
 
-async function loadTracker() {
-  return await import('../tracker');
-}
-
 describe('tracker session signals', () => {
-  test('sends first_visit and session_start on first event', async () => {
-    const { tracker } = await loadTracker();
-
+  test('sends first_visit and session_start on first event', () => {
     tracker.track('test_event');
 
     const events = sendTelemetryEvent.mock.calls.map(call => call[0]);
@@ -48,14 +47,12 @@ describe('tracker session signals', () => {
     ]);
 
     const firstVisit = events[0];
-    expect(typeof (firstVisit.params as any).session_id).toBe('number');
-    expect((firstVisit.params as any).session_number).toBe(1);
-    expect((firstVisit.params as any).engagement_time_msec).toBe(1);
+    expect(typeof firstVisit.params?.session_id).toBe('number');
+    expect(firstVisit.params?.session_number).toBe(1);
+    expect(firstVisit.params?.engagement_time_msec).toBe(1);
   });
 
-  test('does not repeat first_visit for later events', async () => {
-    const { tracker } = await loadTracker();
-
+  test('does not repeat first_visit for later events', () => {
     tracker.track('event_a');
     tracker.track('event_b');
 
@@ -64,10 +61,9 @@ describe('tracker session signals', () => {
     expect(names.filter(name => name === 'session_start')).toHaveLength(1);
   });
 
-  test('increments session_number after idle timeout', async () => {
+  test('increments session_number after idle timeout', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
-    const { tracker } = await loadTracker();
 
     tracker.track('event_a');
     sendTelemetryEvent.mockClear();

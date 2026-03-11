@@ -9,6 +9,8 @@ use napi_derive::napi;
 pub struct NativeMarkdownResult {
   pub title: String,
   pub markdown: String,
+  pub known_unsupported_blocks: Vec<String>,
+  pub unknown_blocks: Vec<String>,
 }
 
 impl From<MarkdownResult> for NativeMarkdownResult {
@@ -16,6 +18,8 @@ impl From<MarkdownResult> for NativeMarkdownResult {
     Self {
       title: result.title,
       markdown: result.markdown,
+      known_unsupported_blocks: result.known_unsupported_blocks,
+      unknown_blocks: result.unknown_blocks,
     }
   }
 }

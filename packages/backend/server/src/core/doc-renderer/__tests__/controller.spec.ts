@@ -129,6 +129,8 @@ test('should return markdown content and skip page view when accept is text/mark
   const markdown = Sinon.stub(docReader, 'getDocMarkdown').resolves({
     title: 'markdown-doc',
     markdown: '# markdown-doc',
+    knownUnsupportedBlocks: [],
+    unknownBlocks: [],
   });
   const docContent = Sinon.stub(docReader, 'getDocContent');
   const record = Sinon.stub(

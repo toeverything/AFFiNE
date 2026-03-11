@@ -31,6 +31,13 @@ function updateTransform(element: GfxBlockComponent) {
   element.style.transform = element.getCSSTransform();
 }
 
+function updateZIndex(element: GfxBlockComponent) {
+  const zIndex = element.toZIndex();
+  if (element.style.zIndex !== zIndex) {
+    element.style.zIndex = zIndex;
+  }
+}
+
 function updateBlockVisibility(view: GfxBlockComponent) {
   if (view.transformState$.value === 'active') {
     view.style.visibility = 'visible';
@@ -58,7 +65,14 @@ function handleGfxConnection(instance: GfxBlockComponent) {
     instance.store.slots.blockUpdated.subscribe(({ type, id }) => {
       if (id === instance.model.id && type === 'update') {
         updateTransform(instance);
+        updateZIndex(instance);
       }
+    })
+  );
+
+  instance.disposables.add(
+    instance.gfx.layer.slots.layerUpdated.subscribe(() => {
+      updateZIndex(instance);
     })
   );
 
@@ -66,6 +80,7 @@ function handleGfxConnection(instance: GfxBlockComponent) {
     effect(() => {
       updateBlockVisibility(instance);
       updateTransform(instance);
+      updateZIndex(instance);
     })
   );
 }
@@ -105,6 +120,12 @@ export abstract class GfxBlockComponent<
 
   onBoxSelected(_: BoxSelectionContext) {}
 
+  getCSSScaleVal(): number {
+    const viewport = this.gfx.viewport;
+    const { zoom, viewScale } = viewport;
+    return zoom / viewScale;
+  }
+
   getCSSTransform() {
     const viewport = this.gfx.viewport;
     const { translateX, translateY, zoom, viewScale } = viewport;
@@ -115,7 +136,7 @@ export abstract class GfxBlockComponent<
     const deltaX = scaledX - bound.x;
     const deltaY = scaledY - bound.y;
 
-    return `translate(${translateX / viewScale + deltaX}px, ${translateY / viewScale + deltaY}px) scale(${zoom / viewScale})`;
+    return `translate(${translateX / viewScale + deltaX}px, ${translateY / viewScale + deltaY}px) scale(${this.getCSSScaleVal()})`;
   }
 
   getRenderingRect() {
@@ -217,6 +238,10 @@ export function toGfxBlockComponent<
     override connectedCallback(): void {
       super.connectedCallback();
       handleGfxConnection(this);
+    }
+
+    getCSSScaleVal(): number {
+      return GfxBlockComponent.prototype.getCSSScaleVal.call(this);
     }
 
     getCSSTransform() {

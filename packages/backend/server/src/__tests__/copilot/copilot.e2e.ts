@@ -16,6 +16,7 @@ import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
 } from '../../plugins/copilot/embedding';
+import { ChatMessageCache } from '../../plugins/copilot/message';
 import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
@@ -416,6 +417,7 @@ test('should be able to use test provider', async t => {
 
 test('should create message correctly', async t => {
   const { app } = t.context;
+  const messageCache = app.get(ChatMessageCache);
 
   {
     const { id } = await createWorkspace(app);
@@ -463,6 +465,19 @@ test('should create message correctly', async t => {
         new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
       );
       t.truthy(messageId, 'should be able to create message with blob');
+
+      const message = await messageCache.get(messageId);
+      const attachment = message?.attachments?.[0] as
+        | { attachment: string; mimeType: string }
+        | undefined;
+      const payload = Buffer.from(
+        attachment?.attachment.split(',').at(1) || '',
+        'base64'
+      );
+
+      t.is(attachment?.mimeType, 'image/webp');
+      t.is(payload.subarray(0, 4).toString('ascii'), 'RIFF');
+      t.is(payload.subarray(8, 12).toString('ascii'), 'WEBP');
     }
 
     // with attachments

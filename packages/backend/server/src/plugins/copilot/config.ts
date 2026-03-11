@@ -81,7 +81,7 @@ export type CopilotProviderProfile = CopilotProviderProfileCommon &
   }[CopilotProviderType];
 
 export type CopilotProviderDefaults = Partial<
-  Record<ModelOutputType, string>
+  Record<Exclude<ModelOutputType, ModelOutputType.Rerank>, string>
 > & {
   fallback?: string;
 };
@@ -184,6 +184,7 @@ const CopilotProviderDefaultsShape = z.object({
   [ModelOutputType.Object]: z.string().optional(),
   [ModelOutputType.Embedding]: z.string().optional(),
   [ModelOutputType.Image]: z.string().optional(),
+  [ModelOutputType.Rerank]: z.string().optional(),
   [ModelOutputType.Structured]: z.string().optional(),
   fallback: z.string().optional(),
 });
@@ -230,9 +231,8 @@ defineModuleConfig('copilot', {
         chat: 'gemini-2.5-flash',
         embedding: 'gemini-embedding-001',
         image: 'gpt-image-1',
-        rerank: 'gpt-4.1',
         coding: 'claude-sonnet-4-5@20250929',
-        complex_text_generation: 'gpt-4o-2024-08-06',
+        complex_text_generation: 'gpt-5-mini',
         quick_decision_making: 'gpt-5-mini',
         quick_text_generation: 'gemini-2.5-flash',
         polish_and_summarize: 'gemini-2.5-flash',
