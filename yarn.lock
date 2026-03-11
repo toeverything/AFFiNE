@@ -23694,7 +23694,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-type@npm:21.3.0, file-type@npm:^21.0.0":
+"file-type@npm:21.3.0":
   version: 21.3.0
   resolution: "file-type@npm:21.3.0"
   dependencies:
@@ -23703,6 +23703,18 @@ __metadata:
     token-types: "npm:^6.1.1"
     uint8array-extras: "npm:^1.4.0"
   checksum: 10/8eb8707f34d0a0fd6c2d2b223edf1ed6235cb00a44a90216741be9e812ae08dc8497dbf4e2dd63e629728509cdf361070ed32ae2280724744463ab459da81a83
+  languageName: node
+  linkType: hard
+
+"file-type@npm:^21.0.0":
+  version: 21.3.1
+  resolution: "file-type@npm:21.3.1"
+  dependencies:
+    "@tokenizer/inflate": "npm:^0.4.1"
+    strtok3: "npm:^10.3.4"
+    token-types: "npm:^6.1.1"
+    uint8array-extras: "npm:^1.4.0"
+  checksum: 10/0f99d4fa85184ea635cdccdfa677c7838bff790cdffde7fa9ec9f52e94fa8c0e7b6c2eeeb3f6a3d6dcc0a036192c13a8ec7008bdcef374e745ae0d64a162ad33
   languageName: node
   linkType: hard
 
